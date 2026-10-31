@@ -49,7 +49,10 @@ final class CodePatternsScreenshotVisibility {
 			return "Control is disposed";
 		}
 		Point size= control.getSize();
-		return regionProblem(control, new Rectangle(0, 0, size.x, size.y));
+		// A bordered control's (0, 0) is its client origin, not its outer top-left.
+		// Map the outer location from the parent so every border edge is checked.
+		Point outerOrigin= control.getDisplay().map(control.getParent(), control, control.getLocation());
+		return regionProblem(control, new Rectangle(outerOrigin.x, outerOrigin.y, size.x, size.y));
 	}
 
 	private static Rectangle viewportOnDisplay(Composite parent) {

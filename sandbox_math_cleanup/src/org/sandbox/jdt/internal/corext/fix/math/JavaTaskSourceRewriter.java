@@ -17,6 +17,7 @@ import org.eclipse.text.edits.ReplaceEdit;
 final class JavaTaskSourceRewriter {
     private JavaTaskSourceRewriter() { }
     record Applied(MathematicalAnalysis.Replacement replacement, MathematicalAnalysis.VerifiedRegion evidence) { }
+    record Attempt(Optional<Applied> applied, long remaining) { }
     static final class BudgetOverrun extends IllegalArgumentException {
         private static final long serialVersionUID = 1L;
         final long additional;
@@ -46,7 +47,13 @@ final class JavaTaskSourceRewriter {
     static Optional<Applied> optimize(CompilationUnit ast, String source, JavaComputationTask task,
             MathCleanUpOptions options, long allowance, IProgressMonitor monitor,
             Map<String, String> compiler, MathematicalAnalysis.SourceEnvironment environment) {
-        if (!task.matchesSource(source) || allowance < 6000) return Optional.empty();
+        return optimizeWithRemaining(ast, source, task, options, allowance, monitor, compiler, environment).applied();
+    }
+
+    static Attempt optimizeWithRemaining(CompilationUnit ast, String source, JavaComputationTask task,
+            MathCleanUpOptions options, long allowance, IProgressMonitor monitor,
+            Map<String, String> compiler, MathematicalAnalysis.SourceEnvironment environment) {
+        if (!task.matchesSource(source) || allowance < 6000) return new Attempt(Optional.empty(), allowance);
         CancellationToken token = () -> Thread.currentThread().isInterrupted() || monitor.isCanceled();
         // Reserve the full allocation: re-extraction and Java parsing have no exact SDK work receipt.
         var sourceWork = new SourceWork(allowance / 4, token);
@@ -55,9 +62,10 @@ final class JavaTaskSourceRewriter {
         var searched = optimizer.optimize(request, token);
         if (searched instanceof OptimizationResult.BudgetExceeded exceeded) completed(exceeded.work(), allowance / 4);
         if (searched instanceof OptimizationResult.Unsupported unsupported && unsupported.work() >= 0) completed(unsupported.work(), allowance / 4);
-        if (!(searched instanceof OptimizationResult.Candidate candidate)) return Optional.empty();
+        if (!(searched instanceof OptimizationResult.Candidate candidate))
+            return new Attempt(Optional.empty(), allowance - MathematicalAnalysis.consumedWork(searched, allowance / 4));
         var edit = edits(ast, source, task, candidate.plan(), options, token, sourceWork);
-        if (!edit.hasChildren()) return Optional.empty();
+        if (!edit.hasChildren()) return new Attempt(Optional.empty(), 0);
         try {
             var document = new Document(source); edit.apply(document); String generated = document.get();
             var generatedAst = MathematicalAnalysis.checkGeneratedSource(ast, generated, compiler, options.targetJava(), monitor, environment);
@@ -70,13 +78,13 @@ final class JavaTaskSourceRewriter {
             var emittedPlan = bindEmitted(task, emitted, source, generated, sourceWork);
             var verified = optimizer.verify(request, emittedPlan, token);
             if (verified instanceof VerificationResult.BudgetExceeded exceeded) completed(exceeded.work(), allowance / 4);
-            if (!(verified instanceof VerificationResult.Verified proof)) return Optional.empty();
+            if (!(verified instanceof VerificationResult.Verified proof)) return new Attempt(Optional.empty(), 0);
             var prepared = sourceWork.prepare(emittedPlan);
             String before = source.substring(task.start(), task.start() + task.length());
             int newLength = task.length() + generated.length() - source.length();
             String after = generated.substring(task.start(), task.start() + newLength);
             long beforeWork = RuntimeCalculationPolicy.arithmeticOperations(before), afterWork = RuntimeCalculationPolicy.arithmeticOperations(after);
-            if (afterWork >= beforeWork) return Optional.empty();
+            if (afterWork >= beforeWork) return new Attempt(Optional.empty(), 0);
             var cost = new OptimizationResult.CostAssessment(beforeWork * 10, afterWork * 10, 0, 0,
                     candidate.cost().sourceCost(), prepared.cost(), true);
             // This is a fresh proof of emitted source, not an invented derivation of the producer's plan.
@@ -85,15 +93,15 @@ final class JavaTaskSourceRewriter {
                     OptimizationResult.SearchCompletion.IMPROVEMENT_FOUND, 0);
             var described = ComputationExplanations.describe(request, realized, allowance / 4, token);
             completed(described.work(), allowance / 4);
-            if (described.explanation().isEmpty()) return Optional.empty();
+            if (described.explanation().isEmpty()) return new Attempt(Optional.empty(), 0);
             var names = new LinkedHashMap<String, String>();
             task.schedule().stream().filter(e -> e.kind() != JavaComputationTask.Kind.SOURCE_READ)
                     .forEach(e -> names.put(e.valueId(), e.kind() + ": " + e.bindingKey())); //$NON-NLS-1$
             var explanation = new ComputationExplanation(task.inputNames(), names, Set.of(), described.explanation().orElseThrow());
             String description = "Verified source task; original read/call/store order and local commits retained; arithmetic operations " //$NON-NLS-1$
                     + beforeWork + " -> " + afterWork + "; measured speedup: not assessed"; //$NON-NLS-1$ //$NON-NLS-2$
-            return Optional.of(new Applied(new MathematicalAnalysis.Replacement(task.start(), task.length(), after, description),
-                    new MathematicalAnalysis.VerifiedRegion(task.start(), task.length(), proof.evidence(), cost, before, after, explanation)));
+            return new Attempt(Optional.of(new Applied(new MathematicalAnalysis.Replacement(task.start(), task.length(), after, description),
+                    new MathematicalAnalysis.VerifiedRegion(task.start(), task.length(), proof.evidence(), cost, before, after, explanation))), 0);
         } catch (org.eclipse.jface.text.BadLocationException impossible) { throw new IllegalArgumentException(impossible); }
     }
 
@@ -178,6 +186,7 @@ final class JavaTaskSourceRewriter {
         boolean[] effect = {false};
         expression.accept(new ASTVisitor() { @Override public boolean preVisit2(ASTNode node) {
             if (node instanceof MethodInvocation || node instanceof ClassInstanceCreation || node instanceof ArrayAccess
+                    || node instanceof Expression value && value.resolveUnboxing()
                     || node instanceof FieldAccess || node instanceof QualifiedName
                     || node instanceof SimpleName name && name.resolveBinding() instanceof IVariableBinding binding && binding.isField()) effect[0] = true;
             return !effect[0];

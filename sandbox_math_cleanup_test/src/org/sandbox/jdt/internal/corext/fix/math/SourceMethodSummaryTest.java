@@ -52,6 +52,14 @@ class SourceMethodSummaryTest {
         var result = analyze(source); var document = new Document(source); result.newEdit().apply(document);
         assertTrue(document.get().contains("int a=add(x,y); z[0]=a; return y;"), document.get());
     }
+    @Test void methodReferenceRetainsForeignInitializationAndThrowingInitializer() throws Exception {
+        Files.writeString(directory.resolve("Helper.java"), HELPER, StandardCharsets.UTF_8);
+        String source = SOURCE.replace("int a=Helper.add(x,y);", "java.util.function.IntBinaryOperator f=Helper::add; int a=f.applyAsInt(x,y);");
+        var result = analyze(source); var document = new Document(source); result.newEdit().apply(document);
+        assertTrue(document.get().contains("f=Helper::add; int a=f.applyAsInt(x,y); z[0]=a; return y;"), document.get());
+        execute(source, "reference-original", false); execute(document.get(), "reference-generated", false);
+        execute(source, "reference-original-failure", true); execute(document.get(), "reference-generated-failure", true);
+    }
     @Test void mutableFieldsAndVirtualMethodsAreNotPureSummaries() throws Exception {
         for (String helper : List.of(HELPER.replace("return x+y;", "return x+y+Calculation.initialized;"),
                 HELPER.replace("static int add", "int add"))) {

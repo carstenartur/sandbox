@@ -12,9 +12,11 @@ package org.sandbox.jdt.ui.helper.views;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -35,6 +37,56 @@ import org.junit.jupiter.api.Test;
 /** Real SWT clipping and scroll-position tests; no screenshot baseline or SWTBot session is needed. */
 @SuppressWarnings("nls")
 class CodePatternsScreenshotVisibilityTest {
+
+	@Test
+	void uiDispatchPreservesFailuresEvenWhenWorkbenchHandlersConsumeThem() {
+		for (Throwable expected : List.of(new AssertionError("Fixture assertion"),
+				new IllegalStateException("Fixture exception"))) {
+			AtomicReference<Throwable> actual= new AtomicReference<>();
+			Display display= Display.getDefault();
+			display.syncExec(() -> {
+				Consumer<Error> errorHandler= display.getErrorHandler();
+				Consumer<RuntimeException> exceptionHandler= display.getRuntimeExceptionHandler();
+				try {
+					display.setErrorHandler(error -> { });
+					display.setRuntimeExceptionHandler(exception -> { });
+					try {
+						runOnDisplay(() -> {
+							if (expected instanceof Error error) {
+								throw error;
+							}
+							throw (RuntimeException) expected;
+						});
+					} catch (RuntimeException | Error failure) {
+						actual.set(failure);
+					}
+				} finally {
+					display.setErrorHandler(errorHandler);
+					display.setRuntimeExceptionHandler(exceptionHandler);
+				}
+			});
+			assertSame(expected, actual.get(), "UI fixture failures must reach JUnit unchanged");
+		}
+	}
+
+	private static void runOnDisplay(Runnable action) {
+		AtomicReference<Throwable> failure= new AtomicReference<>();
+		Display.getDefault().syncExec(() -> {
+			try {
+				action.run();
+			} catch (RuntimeException | Error thrown) {
+				failure.set(thrown);
+			}
+		});
+		// Workbench handlers can consume failures thrown inside syncExec, even on the UI thread.
+		// Rethrow outside SWT dispatch so JUnit receives the original failure.
+		if (failure.get() instanceof Error error) {
+			throw error;
+		}
+		if (failure.get() instanceof RuntimeException exception) {
+			throw exception;
+		}
+	}
 
 	@Test
 	void trailingEmptySpaceMayBeClippedButNotTheCheckboxLabel() {
@@ -149,6 +201,14 @@ class CodePatternsScreenshotVisibilityTest {
 				assertFalse(CodePatternsScreenshotVisibility.controlProblem(preview).isEmpty(), "Bottom edge");
 				preview.setLocation(-1, 10);
 				assertFalse(CodePatternsScreenshotVisibility.controlProblem(preview).isEmpty(), "Left edge");
+				preview.setLocation(10, -1);
+				assertFalse(CodePatternsScreenshotVisibility.controlProblem(preview).isEmpty(), "Top edge");
+				preview.setLocation(page.width - preview.getSize().x + 1, 10);
+				assertFalse(CodePatternsScreenshotVisibility.controlProblem(preview).isEmpty(), "Right edge");
+				preview.setLocation(0, 0);
+				assertEquals("", CodePatternsScreenshotVisibility.controlProblem(preview), "Top-left exact fit");
+				preview.setLocation(page.width - preview.getSize().x, page.height - preview.getSize().y);
+				assertEquals("", CodePatternsScreenshotVisibility.controlProblem(preview), "Bottom-right exact fit");
 				preview.setLocation(10, page.height - preview.getSize().y - 10);
 				assertEquals("", CodePatternsScreenshotVisibility.controlProblem(preview));
 			});
@@ -192,7 +252,7 @@ class CodePatternsScreenshotVisibilityTest {
 	}
 
 	private static void withGroup(int sectionY, BiConsumer<Button, ScrolledComposite> assertion) {
-		Display.getDefault().syncExec(() -> {
+		runOnDisplay(() -> {
 			Shell shell= new Shell(Display.getDefault());
 			try {
 				ScrolledComposite viewport= new ScrolledComposite(shell, SWT.H_SCROLL | SWT.V_SCROLL);
@@ -218,18 +278,20 @@ class CodePatternsScreenshotVisibilityTest {
 	}
 
 	private static void withTabFolder(int position, Consumer<StyledText> assertion) {
-		Display.getDefault().syncExec(() -> {
+		runOnDisplay(() -> {
 			Shell shell= new Shell(Display.getDefault());
 			try {
 				shell.setSize(700, 500);
 				TabFolder folder= new TabFolder(shell, position);
-				folder.setBounds(10, 10, 600, 400);
 				TabItem item= new TabItem(folder, SWT.NONE);
 				item.setText("Code Patterns");
 				Composite page= new Composite(folder, SWT.NONE);
 				item.setControl(page);
 				StyledText preview= new StyledText(page, SWT.BORDER);
 				preview.setText("boolean empty = list.isEmpty();");
+				// Resize after attaching the selected page: GTK initially allocates it at 1x1.
+				// shell.layout() cannot resize the page when the shell has no Layout.
+				folder.setBounds(10, 10, 600, 400);
 				shell.open();
 				shell.layout(true, true);
 				Rectangle client= page.getClientArea();
@@ -243,7 +305,7 @@ class CodePatternsScreenshotVisibilityTest {
 	}
 
 	private static void withOwnedDialog(BiConsumer<Button, StyledText> assertion) {
-		Display.getDefault().syncExec(() -> {
+		runOnDisplay(() -> {
 			Shell owner= new Shell(Display.getDefault());
 			try {
 				owner.setSize(80, 80);
@@ -267,7 +329,7 @@ class CodePatternsScreenshotVisibilityTest {
 	}
 
 	private static void withCheckbox(Consumer<Button> assertion) {
-		Display.getDefault().syncExec(() -> {
+		runOnDisplay(() -> {
 			Shell shell= new Shell(Display.getDefault());
 			try {
 				ScrolledComposite viewport= new ScrolledComposite(shell, SWT.H_SCROLL | SWT.V_SCROLL);

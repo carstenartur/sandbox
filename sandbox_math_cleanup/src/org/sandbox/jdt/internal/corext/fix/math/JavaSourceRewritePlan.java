@@ -129,6 +129,25 @@ public record JavaSourceRewritePlan(String unitName, String sourceSha256, int so
         if (source.length() != sourceLength || !hash(source).equals(sourceSha256)) throw new IllegalArgumentException("STALE_SOURCE_PLAN"); //$NON-NLS-1$
     }
 
+    /** Two precise edits: insert before the label chain, replace only the admitted expression. */
+    static JavaSourceRewritePlan hoist(CompilationUnit ast, String source, Statement envelope,
+            org.eclipse.jdt.core.dom.Expression expression, String declaration, String name) {
+        int start=envelope.getStartPosition(), length=envelope.getLength();
+        var pinned=new ArrayList<Node>();
+        for(Object value:ast.getCommentList()) {
+            ASTNode comment=(ASTNode)value;
+            if(comment.getStartPosition()>=start && comment.getStartPosition()+comment.getLength()<=start+length)
+                pinned.add(captureNode(comment,source));
+        }
+        var plan=new JavaSourceRewritePlan(ast.getJavaElement()==null?"Source.java":ast.getJavaElement().getElementName(), //$NON-NLS-1$
+                hash(source),source.length(),start,length,List.of(captureNode(envelope,source),captureNode(expression,source)),pinned,Map.of(),
+                List.of(new Change(start,0,hash(""),declaration), //$NON-NLS-1$
+                        new Change(expression.getStartPosition(),expression.getLength(),
+                                hash(source.substring(expression.getStartPosition(),expression.getStartPosition()+expression.getLength())),name)));
+        plan.resolve(ast,source);
+        return plan;
+    }
+
     static JavaSourceRewritePlan capture(CompilationUnit ast, String source, String unitName, JavaComputationRegion region,
             List<Statement> barriers, TextEdit edit, String prefix) {
         var nodes = new LinkedHashMap<String, Node>();

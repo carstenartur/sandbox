@@ -1,16 +1,17 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><title>Ordered source inputs</title></head>
 <body><h1>Ordered source inputs and authored formulas</h1>
-<p>In <strong>Preserve Java behavior</strong>, the mathematics adapter can capture
-one-dimensional primitive integral array reads, final primitive integral fields,
-and absolute indexed <code>get(int)</code> calls on <code>ByteBuffer</code>,
-<code>ShortBuffer</code>, <code>CharBuffer</code>, <code>IntBuffer</code> and
-<code>LongBuffer</code>. Select every involved primitive numeric type.</p>
-<p>Each original occurrence is a distinct input. The source operation executes
-exactly once and in its original order, even if its value becomes unused or the
-same expression appears twice. Only the captured numbers enter the shared
-Regelsuche search. No equality of memory reads, non-null receiver, index range,
-field value or purity of a virtual call is inferred.</p>
+<p>In <strong>Preserve Java behavior</strong>, including explicit mathematical
+opt-in, straight-line capture regions can read complete nested primitive integral
+arrays, nonvolatile field chains, eligible zero-argument numeric accessors on
+local/parameter receivers and actual unboxing of exact JDK integral wrappers.
+Absolute indexed <code>get(int)</code> calls on integral NIO buffers retain their
+existing support. Select every involved primitive numeric type.</p>
+<p>Each complete original occurrence is a distinct input. It executes exactly once
+in its original order, including dead/repeated reads, receiver dereferences,
+null/bounds checks, unboxing and class initialization. Only captured numbers enter
+Regelsuche search. No heap equality, non-null receiver, field stability or accessor
+purity is inferred; an opaque accessor can mutate or throw.</p>
 <pre>final int _mathRead = buffer.get(STRIDE * 2);</pre>
 <p>The capture retains the original expression, including the spelling of its
 index formula. The adapter no longer excludes the entire surrounding arithmetic
@@ -18,19 +19,30 @@ merely because this opaque index contains a constant calculation. It does not
 fold the formula or change the constant declaration. Constant formulas outside
 admitted captures retain the existing protection.</p>
 <h2>Safety boundaries</h2>
-<p>Array and buffer receivers must be resolved local variables or parameters.
-A final field may use its original lexical name, an unqualified <code>this</code>,
-a local receiver, or a type qualifier for a static field. Mutable and volatile
-fields, nested receiver chains and computed receivers are not admitted. Static
-field initialization and its exceptions are retained by executing the original
-field access, not by substituting its presumed value.</p>
+<p>Array/field receivers may use resolved locals/parameters, lexical fields,
+unqualified <code>this</code>, type qualifiers and local-rooted nonvolatile field
+chains. Mutable links and values are reread. Any volatile link, effectful receiver
+or unsupported computed receiver excludes the shape. Accessor receivers remain
+simple locals/parameters; static, generic, parameterized and varargs accessors are
+excluded. Known scalar/SAM/operation summaries take priority over opaque capture.</p>
+<p>Exact <code>Byte</code>, <code>Short</code>, <code>Character</code>,
+<code>Integer</code> and <code>Long</code> values qualify only at resolved Java
+unboxing or an eligible explicit primitive conversion. The original call/null
+conversion stays in the capture. Boxed reference identity/outputs, floating
+wrappers, arbitrary <code>Number</code> and <code>BigDecimal</code> are unsupported.</p>
 <p>Indices can contain primitive integral locals, compile-time constant names,
-literals, casts, and total arithmetic. Calls, mutation, division, remainder,
-nested reads and runtime field values in indices remain boundaries. A read which
-depends on a local produced earlier in the current region starts a new region.
-Potentially throwing arithmetic, observable writes and control flow also prevent
-unsafe motion. Relative <code>get()</code>, bulk reads, buffer writes, floating buffers,
-checked/fallback profiles and helper-body reads require separate support.</p>
+literals, casts and total arithmetic. Calls, mutation, division, remainder,
+nested index reads and runtime field values in indices remain boundaries.
+Receiver/index recursion and captured occurrence count are bounded at 64.
+A read depending on a local produced in the region starts a new region.
+Earlier throwing arithmetic, observable local commits, writes and control flow
+prevent unsafe capture placement. Relative <code>get()</code>, bulk reads, buffer
+writes, floating buffers, checked/fallback profiles and helper-body reads remain
+outside this contract.</p>
+<p>Expression-only lambda/branch edits cannot introduce capture statements. Loop
+motion excludes reads, calls and unboxing. New captures nested in retained
+helper/SAM arguments are rejected to avoid duplicate execution. These contexts
+are independently admitted fragments, not arbitrary combinations.</p>
 <h2>Ordered primitive array stores</h2>
 <p>A simple store such as <code>out[i] = (u &amp; v) | (~u &amp; w)</code> can now
 include its total primitive calculation in the verified region. The destination
@@ -38,8 +50,9 @@ must be a local one-dimensional integral array, with an index independent of
 locals produced in that region. The store remains at its original position and
 ends the region. Later reads execute after it, even when source and destination
 arrays are the same object. Carry values used afterwards remain live.</p>
-<p>Whole-file analysis tries established regions first. New store regions use
-the remaining work budget and cannot overlap an already accepted edit.</p>
+<p>Whole-file analysis tries established regions first. Deferred assignments and store regions follow established primary windows;
+richer reads then use the remaining budget before source tasks/contexts and
+stream/loop passes. Accepted edits cannot overlap and no phase resets the allowance.</p>
 <p>Compound stores, computed receivers, effectful indices and potentially throwing
 arithmetic remain boundaries. No equality of memory locations or whole-loop
 invariant is assumed, and repeated reads are not merged. This supports arithmetic

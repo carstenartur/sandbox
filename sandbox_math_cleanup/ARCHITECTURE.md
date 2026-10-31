@@ -1,6 +1,6 @@
 # Mathematics Cleanup
 
-This module participates in the explicit mathematics cleanup. Numerical proof and Java source emission are separate from the Eclipse UI. The [current qualification](../docs/superpowers/plans/2026-10-30-math-optimization-qualification.md) identifies tested revisions and pending integration gates separately from historical results.
+This module participates in the explicit mathematics cleanup. Numerical proof and Java source emission are separate from the Eclipse UI. The [current qualification](../docs/superpowers/plans/2026-10-31-java-mathematics-context-qualification.md) identifies tested revisions and pending integration gates separately from historical results.
 
 ## Complete computation tasks and CAS ownership
 
@@ -38,14 +38,14 @@ are charged within their share; reported completed-work overruns additionally
 debit the file budget even when an attempt is rejected.
 Indices depending on regionally changed locals, non-total arithmetic, unsupported
 calls and control-flow joins retain conservative boundaries; loop bodies are
-separate per-iteration tasks, not inferred loop invariants.
+separate per-iteration tasks. The separately admitted counted-loop pass described below supplies its own scheduling evidence.
 
 Task extraction may summarize a statically bound, straight-line primitive helper
 from actual project/sourcepath source, including nonprivate and cross-file helpers.
 The original call remains in place, preserving argument evaluation and class
 initialization (including failures). Method declarations and parsed source units
 are cached only for the current request. Source hashes are rechecked before an
-edit can be applied. Mutable state, virtual dispatch, recursion and unsupported
+edit can be applied. Mutable helper state, uncertain numerical dispatch, recursion and unsupported
 effects remain boundaries; there is no summary inferred from binary attachments.
 
 `JavaCandidateRanking` contributes actual emitted arithmetic, capture references,
@@ -92,18 +92,49 @@ stops still reserve the allocation or reported overshoot. The older explanation 
 reports presentation work separately from fresh re-verification; a complete
 explanation-call work ledger is a documented upstream follow-up.
 
+## Callable, iteration and scheduling adapters
+
+[Java computation contexts](JAVA_CONTEXTS.md) is the current coverage reference.
+`JavaExpressionContexts` keeps expression edits in place with exact primitive
+types and enclosing overload/SAM checks. `JavaScalarMethodBody` admits exact source
+instance/reference summaries without inferring purity from names. Pure ULR core
+`NumericIteration` describes numeric sources/elements/terminals separately from
+converter rendering; inspecting a stream never authorizes conversion.
+`JavaNumericStreamOptimizer` composes bounded adjacent primitive map graphs by
+resolved bindings and proves the per-element kernel while preserving the terminal.
+
+`JavaLoopInvariantAnalysis` admits exact fixed-count loops and total invariant
+primitive local arithmetic. `JavaLoopInvariantOptimizer` independently replays
+source controls, declaration/binding/no-write facts, the temporary and cost vector.
+`LoopSchedulingEvidence` records that adapter scheduling receipt separately from
+the SDK proof of one evaluation; no SDK search derivation is manufactured for
+motion. Conditional normal-completion cost applies when pinned array effects may
+throw. Operation estimates and retained storage are not runtime measurements.
+
+Analysis order is established primary/retry regions, deferred assignments, stores,
+richer reads, source tasks/expression contexts, then streams and loops, sharing
+the remaining allowance. `JavaTaskSourceRewriter.optimizeWithRemaining` refunds
+only unused no-candidate search work; failed candidate realization keeps its
+reservation. Expression-only contexts still cannot emit capture statements and
+loop candidates still exclude calls, reads and unboxing.
+
 ## Ordered primitive array inputs
 
-For `PRESERVE_JAVA`, including the explicit mathematical opt-in, a straight-line
-region can connect arithmetic that reads one-dimensional `byte`, `short`, `char`,
-`int`, or `long` arrays. Receivers may be resolved local variables or parameters,
-or nonvolatile fields referenced lexically, by unqualified `this`, or by a type.
-Each occurrence reevaluates its original field receiver; mutable fields are not
-assumed stable. Object-qualified and nested field receivers remain excluded.
-Indices may use primitive integral locals, compiler constants, literals, casts,
-and total arithmetic. Authored index formulas retain their original spelling;
-index calls, mutable fields, mutation, nested reads, division, and remainder stay
-outside this admission.
+For `PRESERVE_JAVA`, including explicit mathematical opt-in, straight-line
+regions can capture complete nested integral array loads and nonvolatile field
+chains rooted in locals/parameters, lexical names, unqualified `this` or types.
+Every complete occurrence rereads mutable links and values. Zero-argument numeric
+instance calls on local/parameter receivers can be opaque inputs, including
+impure/throwing calls; existing helper/SAM/known-operation summaries take priority.
+Exact integral JDK wrappers are numeric only at actual resolved unboxing or an
+eligible explicit primitive conversion call. Wrapper reference identity is not
+numeric equality. Absolute indexed integral buffer reads retain their old model.
+
+Indices use total primitive locals/constants, literals, casts and arithmetic.
+Authored formulas retain their original spelling. Calls, mutable field indices,
+mutation, nested index reads, division and remainder remain excluded. Volatile
+links and effectful/computed receivers remain boundaries. See
+[ordered input admission](FIELD_ARRAY_INPUTS.md) for exact composition limits.
 
 Each source read gets a distinct scalar input and an ordered `ArrayRead` source
 obligation. The source rewriter emits every read exactly once into a fresh final
@@ -122,8 +153,8 @@ preserve null and bounds exception precedence. Existing loop-body extraction
 remains local to each straight-line block; loop headers and writes are unchanged.
 
 Checked and guarded-fallback profiles still treat array reads as boundaries.
-Floating/reference/multidimensional arrays and helper-body memory accesses are
-not admitted. There are at most 64 captured reads per region. This is Java
+Floating arrays, arbitrary reference values and helper-body memory accesses are
+not admitted. Integral-wrapper array loads need actual unboxing. There are at most 64 captured reads per region. This is Java
 dependency admission, with no array formula catalogue, memory optimization, or
 additional mathematical search engine. `ArrayReadComputationTest` exercises the
 real extraction, proof, source-edit, compilation, execution, and Undo paths.

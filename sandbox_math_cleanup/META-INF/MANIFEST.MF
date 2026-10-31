@@ -9,7 +9,8 @@ Bundle-ActivationPolicy: lazy
 Bundle-Activator: org.sandbox.jdt.internal.ui.fix.MathematicalPlugin
 Bundle-ClassPath: .,
  lib/regelsuche-optimization-sdk.jar
-Require-Bundle: org.eclipse.core.runtime,
+Require-Bundle: org.sandbox.functional.core,
+ org.eclipse.core.runtime,
  org.eclipse.core.resources,
  org.eclipse.equinox.app,
  org.eclipse.jdt.core,
