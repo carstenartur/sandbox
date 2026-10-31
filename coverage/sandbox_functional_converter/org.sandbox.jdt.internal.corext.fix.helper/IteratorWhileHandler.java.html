@@ -290,10 +290,10 @@ import org.sandbox.jdt.internal.corext.fix.helper.IteratorPatternDetector.Iterat
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L293" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L294">			return &quot;items.stream().forEach(item -&gt; System.out.println(item));\n&quot;; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L293" title="All 2 branches covered.">		if (afterRefactoring) {</span>
+<span class="fc" id="L294">			return &quot;items.stream().forEach(item -&gt; System.out.println(item));\n&quot;; //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L296">		return &quot;Iterator&lt;String&gt; it = items.iterator();\n&quot; //$NON-NLS-1$</span>
+<span class="fc" id="L296">		return &quot;Iterator&lt;String&gt; it = items.iterator();\n&quot; //$NON-NLS-1$</span>
 				+ &quot;while (it.hasNext()) {\n&quot; //$NON-NLS-1$
 				+ &quot;    String item = it.next();\n&quot; //$NON-NLS-1$
 				+ &quot;    System.out.println(item);\n&quot; //$NON-NLS-1$

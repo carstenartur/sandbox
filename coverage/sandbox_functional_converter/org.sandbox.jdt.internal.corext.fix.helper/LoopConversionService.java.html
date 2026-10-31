@@ -7,18 +7,24 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.*;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.LongConsumer;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.jdt.core.ISourceRange;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
@@ -34,37 +40,89 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore.LoopConversi
 
 /** One semantic decision path for cleanup, Quick Assist and style diagnostics. */
 public final class LoopConversionService {
-<span class="fc" id="L37">	private static final String SCAN_ROOT = LoopConversionService.class.getName();</span>
+<span class="fc" id="L43">	private static final String SCAN_ROOT = LoopConversionService.class.getName();</span>
 
 	private LoopConversionService() {
 	}
 
 	public static EnumSet&lt;UseFunctionalCallFixCore&gt; handlers(LoopTargetFormat target) {
-<span class="fc bfc" id="L43" title="All 3 branches covered.">		return switch (target) {</span>
-<span class="fc" id="L44">		case STREAM -&gt; EnumSet.of(UseFunctionalCallFixCore.LOOP, UseFunctionalCallFixCore.ITERATOR_LOOP,</span>
-<span class="fc" id="L45">				UseFunctionalCallFixCore.TRADITIONAL_FOR_LOOP);</span>
-<span class="fc" id="L46">		case FOR_LOOP -&gt; EnumSet.of(UseFunctionalCallFixCore.STREAM_TO_FOR, UseFunctionalCallFixCore.ITERATOR_TO_FOR);</span>
-<span class="fc" id="L47">		case WHILE_LOOP -&gt; EnumSet.of(UseFunctionalCallFixCore.FOR_TO_ITERATOR, UseFunctionalCallFixCore.STREAM_TO_ITERATOR);</span>
+<span class="fc bfc" id="L49" title="All 3 branches covered.">		return switch (target) {</span>
+<span class="fc" id="L50">		case STREAM -&gt; EnumSet.of(UseFunctionalCallFixCore.LOOP, UseFunctionalCallFixCore.ITERATOR_LOOP,</span>
+<span class="fc" id="L51">				UseFunctionalCallFixCore.TRADITIONAL_FOR_LOOP);</span>
+<span class="fc" id="L52">		case FOR_LOOP -&gt; EnumSet.of(UseFunctionalCallFixCore.STREAM_TO_FOR, UseFunctionalCallFixCore.ITERATOR_TO_FOR);</span>
+<span class="fc" id="L53">		case WHILE_LOOP -&gt; EnumSet.of(UseFunctionalCallFixCore.FOR_TO_ITERATOR, UseFunctionalCallFixCore.STREAM_TO_ITERATOR);</span>
 		};
 	}
 
+	/** The explicit profile and ordinary cleanup share exactly the same routing. */
+	public static EnumSet&lt;UseFunctionalCallFixCore&gt; configuredHandlers(Map&lt;String, String&gt; options) {
+<span class="fc bfc" id="L59" title="All 2 branches covered.">		if (&quot;true&quot;.equals(options.get(LOOP_CONVERSION_ENABLED))) {</span>
+<span class="fc" id="L60">			var selected = handlers(LoopTargetFormat.fromId(options.get(LOOP_CONVERSION_TARGET_FORMAT)));</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">			selected.removeIf(handler -&gt; !&quot;true&quot;.equals(options.get(sourceOption(handler))));</span>
+<span class="fc" id="L62">			return selected;</span>
+		}
+<span class="fc bfc" id="L64" title="All 4 branches covered.">		if ((&quot;true&quot;.equals(options.get(USEFUNCTIONALLOOP_CLEANUP)) || &quot;true&quot;.equals(options.get(USEFUNCTIONALLOOP_CLEANUP_V2)))</span>
+<span class="fc bfc" id="L65" title="All 4 branches covered.">				&amp;&amp; !&quot;true&quot;.equals(options.get(USEFUNCTIONALLOOP_FORMAT_FOR)) &amp;&amp; !&quot;true&quot;.equals(options.get(USEFUNCTIONALLOOP_FORMAT_WHILE)))</span>
+<span class="fc" id="L66">			return handlers(LoopTargetFormat.STREAM);</span>
+<span class="fc" id="L67">		return EnumSet.noneOf(UseFunctionalCallFixCore.class);</span>
+	}
+
+	public static String sourceOption(UseFunctionalCallFixCore handler) {
+<span class="fc bfc" id="L71" title="All 4 branches covered.">		return switch (handler) {</span>
+<span class="fc" id="L72">		case LOOP, FOR_TO_ITERATOR -&gt; LOOP_CONVERSION_FROM_ENHANCED_FOR;</span>
+<span class="fc" id="L73">		case ITERATOR_LOOP, ITERATOR_TO_FOR -&gt; LOOP_CONVERSION_FROM_ITERATOR_WHILE;</span>
+<span class="fc" id="L74">		case STREAM_TO_FOR, STREAM_TO_ITERATOR -&gt; LOOP_CONVERSION_FROM_STREAM;</span>
+<span class="fc" id="L75">		case TRADITIONAL_FOR_LOOP -&gt; LOOP_CONVERSION_FROM_CLASSIC_FOR;</span>
+		};
+	}
+
+	/**
+	 * Render from a fresh, resolved working-copy AST without applying it. Callers
+	 * own the transaction and must also validate edits outside operation anchors
+	 * (for example imports). No numerical service is loaded by this API.
+	 */
+	public static CompilationUnitChange renderUnchanged(CompilationUnit unit, Map&lt;String, String&gt; options,
+			List&lt;? extends ISourceRange&gt; excluded, LongConsumer charge, IProgressMonitor monitor) throws CoreException {
+<span class="nc" id="L86">		var selected = configuredHandlers(options);</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">		if (selected.isEmpty()) return null;</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">		Runnable checkpoint = () -&gt; { if (monitor.isCanceled()) throw new OperationCanceledException(); };</span>
+<span class="nc" id="L89">		int[] size = {0, 0};</span>
+<span class="nc" id="L90">		unit.accept(new ASTVisitor() {</span>
+			@Override public void preVisit(ASTNode node) {
+<span class="nc" id="L92">				checkpoint.run(); charge.accept(1); size[0]++;</span>
+<span class="nc bnc" id="L93" title="All 6 branches missed.">				if (node instanceof ForStatement || node instanceof EnhancedForStatement || node instanceof WhileStatement</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">						|| isForEachStatement(node)) size[1]++;</span>
+<span class="nc" id="L95">			}</span>
+		});
+		// Reserve every selected traversal and nested-loop admission, including rejected work.
+<span class="nc" id="L98">		charge.accept((long) size[0] * (selected.size() + 1) * (size[1] + 1));</span>
+<span class="nc" id="L99">		Analysis analysis = analyze(unit, selected, checkpoint);</span>
+<span class="nc bnc" id="L100" title="All 2 branches missed.">		var safe = analysis.operations().stream().filter(operation -&gt; operation instanceof LoopConversionOperation loop</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">				&amp;&amp; excluded.stream().noneMatch(range -&gt; loop.getAnchor().getStartPosition() &lt; (long) range.getOffset() + range.getLength()</span>
+<span class="nc bnc" id="L102" title="All 4 branches missed.">						&amp;&amp; range.getOffset() &lt; (long) loop.getAnchor().getStartPosition() + loop.getAnchor().getLength())).toList();</span>
+<span class="nc" id="L103">		checkpoint.run(); charge.accept((long) size[0] * (safe.size() + 1));</span>
+<span class="nc" id="L104">		var fix = new Analysis(unit, safe, analysis.names()).createFix(&quot;Convert remaining loops&quot;);</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">		var change = fix == null ? null : fix.createChange(monitor);</span>
+<span class="nc" id="L106">		checkpoint.run(); return change;</span>
+	}
+
 	public record Analysis(CompilationUnit unit, List&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;String&gt; names) {
-<span class="fc" id="L52">		public Analysis {</span>
-<span class="fc" id="L53">			operations = List.copyOf(operations);</span>
-<span class="fc" id="L54">			names = Set.copyOf(names);</span>
-<span class="fc" id="L55">		}</span>
+<span class="fc" id="L110">		public Analysis {</span>
+<span class="fc" id="L111">			operations = List.copyOf(operations);</span>
+<span class="fc" id="L112">			names = Set.copyOf(names);</span>
+<span class="fc" id="L113">		}</span>
 
 		public CompilationUnitRewriteOperationsFixCore createFix(String label) {
-<span class="fc bfc" id="L58" title="All 2 branches covered.">			if (operations.isEmpty()) {</span>
-<span class="fc" id="L59">				return null;</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">			if (operations.isEmpty()) {</span>
+<span class="fc" id="L117">				return null;</span>
 			}
-<span class="fc" id="L61">			return new CompilationUnitRewriteOperationsFixCore(label, unit,</span>
-<span class="fc" id="L62">					operations.toArray(CompilationUnitRewriteOperation[]::new)) {</span>
+<span class="fc" id="L119">			return new CompilationUnitRewriteOperationsFixCore(label, unit,</span>
+<span class="fc" id="L120">					operations.toArray(CompilationUnitRewriteOperation[]::new)) {</span>
 				@Override
 				public CompilationUnitChange createChange(IProgressMonitor monitor) throws CoreException {
-<span class="fc" id="L65">					synchronized (unit) {</span>
-<span class="fc" id="L66">						try (var scope = new LoopVariableNames.Scope(unit, names)) {</span>
-<span class="fc" id="L67">							return super.createChange(monitor);</span>
+<span class="fc" id="L123">					synchronized (unit) {</span>
+<span class="fc" id="L124">						try (var scope = new LoopVariableNames.Scope(unit, names)) {</span>
+<span class="fc" id="L125">							return super.createChange(monitor);</span>
 						}
 					}
 				}
@@ -73,82 +131,87 @@ public final class LoopConversionService {
 
 		/** A caret targets the innermost enclosing loop, never a neighbouring loop. */
 		public Analysis atSelection(int offset, int length) {
-<span class="fc" id="L76">			ASTNode anchor = selection(unit, offset, length);</span>
-<span class="fc" id="L77">			List&lt;CompilationUnitRewriteOperation&gt; matches = operations.stream()</span>
-<span class="pc bpc" id="L78" title="2 of 4 branches missed.">					.filter(operation -&gt; operation instanceof LoopConversionOperation loop &amp;&amp; loop.getAnchor() == anchor)</span>
-<span class="fc" id="L79">					.toList();</span>
-<span class="fc" id="L80">			return new Analysis(unit, matches, names);</span>
+<span class="fc" id="L134">			ASTNode anchor = selection(unit, offset, length);</span>
+<span class="fc" id="L135">			List&lt;CompilationUnitRewriteOperation&gt; matches = operations.stream()</span>
+<span class="pc bpc" id="L136" title="2 of 4 branches missed.">					.filter(operation -&gt; operation instanceof LoopConversionOperation loop &amp;&amp; loop.getAnchor() == anchor)</span>
+<span class="fc" id="L137">					.toList();</span>
+<span class="fc" id="L138">			return new Analysis(unit, matches, names);</span>
 		}
 	}
 
 	/** Scope editor discovery before overlap suppression can hide a selected inner loop. */
 	public static Analysis analyzeSelection(CompilationUnit unit, EnumSet&lt;UseFunctionalCallFixCore&gt; handlers, int offset, int length) {
-<span class="fc" id="L86">		synchronized (unit) {</span>
-<span class="fc" id="L87">			ASTNode selected = selection(unit, offset, length);</span>
-<span class="fc bfc" id="L88" title="All 2 branches covered.">			if (selected == null) return new Analysis(unit, List.of(), Set.of());</span>
-<span class="fc" id="L89">			Object previous = unit.getProperty(SCAN_ROOT);</span>
-<span class="fc" id="L90">			unit.setProperty(SCAN_ROOT, selected);</span>
+<span class="fc" id="L144">		synchronized (unit) {</span>
+<span class="fc" id="L145">			ASTNode selected = selection(unit, offset, length);</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">			if (selected == null) return new Analysis(unit, List.of(), Set.of());</span>
+<span class="fc" id="L147">			Object previous = unit.getProperty(SCAN_ROOT);</span>
+<span class="fc" id="L148">			unit.setProperty(SCAN_ROOT, selected);</span>
 			try {
-<span class="fc" id="L92">				return analyze(unit, handlers).atSelection(offset, length);</span>
+<span class="fc" id="L150">				return analyze(unit, handlers).atSelection(offset, length);</span>
 			} finally {
-<span class="fc" id="L94">				unit.setProperty(SCAN_ROOT, previous);</span>
+<span class="fc" id="L152">				unit.setProperty(SCAN_ROOT, previous);</span>
 			}
 		}
 	}
 
 	static ASTNode scanRoot(CompilationUnit unit) {
-<span class="fc bfc" id="L100" title="All 2 branches covered.">		return unit.getProperty(SCAN_ROOT) instanceof ASTNode root ? root : unit;</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">		return unit.getProperty(SCAN_ROOT) instanceof ASTNode root ? root : unit;</span>
 	}
 
 	private static ASTNode selection(CompilationUnit unit, int offset, int length) {
-<span class="pc bpc" id="L104" title="3 of 6 branches missed.">		if (offset &lt; 0 || length &lt; 0 || (long) offset + length &gt; unit.getLength()) return null;</span>
-<span class="fc" id="L105">		ASTNode selected = NodeFinder.perform(unit, offset, length);</span>
-<span class="fc bfc" id="L106" title="All 6 branches covered.">		while (selected != null &amp;&amp; !(selected instanceof EnhancedForStatement || selected instanceof ForStatement</span>
-<span class="fc bfc" id="L107" title="All 4 branches covered.">				|| selected instanceof WhileStatement || isForEachStatement(selected))) selected = selected.getParent();</span>
-<span class="fc" id="L108">		return selected;</span>
+<span class="pc bpc" id="L162" title="3 of 6 branches missed.">		if (offset &lt; 0 || length &lt; 0 || (long) offset + length &gt; unit.getLength()) return null;</span>
+<span class="fc" id="L163">		ASTNode selected = NodeFinder.perform(unit, offset, length);</span>
+<span class="fc bfc" id="L164" title="All 6 branches covered.">		while (selected != null &amp;&amp; !(selected instanceof EnhancedForStatement || selected instanceof ForStatement</span>
+<span class="fc bfc" id="L165" title="All 4 branches covered.">				|| selected instanceof WhileStatement || isForEachStatement(selected))) selected = selected.getParent();</span>
+<span class="fc" id="L166">		return selected;</span>
 	}
 
 	public static Analysis analyze(CompilationUnit unit, EnumSet&lt;UseFunctionalCallFixCore&gt; handlers) {
-<span class="fc" id="L112">		synchronized (unit) {</span>
-<span class="fc" id="L113">			try (var scope = new LoopVariableNames.Scope(unit, Set.of())) {</span>
-<span class="fc" id="L114">				Set&lt;CompilationUnitRewriteOperation&gt; operations = new LinkedHashSet&lt;&gt;();</span>
-<span class="fc" id="L115">				Set&lt;ASTNode&gt; processed = new HashSet&lt;&gt;();</span>
-<span class="fc bfc" id="L116" title="All 2 branches covered.">				for (UseFunctionalCallFixCore handler : handlers) {</span>
-<span class="fc bfc" id="L117" title="All 2 branches covered.">					if (supportsSourceLevel(unit, handler)) {</span>
-<span class="fc" id="L118">						handler.findOperations(unit, operations, processed);</span>
+<span class="fc" id="L170">		return analyze(unit, handlers, () -&gt; { });</span>
+	}
+
+	private static Analysis analyze(CompilationUnit unit, EnumSet&lt;UseFunctionalCallFixCore&gt; handlers, Runnable checkpoint) {
+<span class="fc" id="L174">		synchronized (unit) {</span>
+<span class="fc" id="L175">			try (var scope = new LoopVariableNames.Scope(unit, Set.of())) {</span>
+<span class="fc" id="L176">				Set&lt;CompilationUnitRewriteOperation&gt; operations = new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L177">				Set&lt;ASTNode&gt; processed = new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">				for (UseFunctionalCallFixCore handler : handlers) {</span>
+<span class="fc" id="L179">					checkpoint.run();</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">					if (supportsSourceLevel(unit, handler)) {</span>
+<span class="fc" id="L181">						handler.findOperations(unit, operations, processed);</span>
 					}
 				}
-<span class="fc" id="L121">				List&lt;CompilationUnitRewriteOperation&gt; safe = new ArrayList&lt;&gt;(operations);</span>
-<span class="pc bpc" id="L122" title="1 of 4 branches missed.">				safe.removeIf(operation -&gt; operation instanceof LoopConversionOperation loop &amp;&amp; hasErrors(loop.getAnchor()));</span>
-<span class="pc bpc" id="L123" title="1 of 2 branches missed.">				safe.sort(Comparator.comparingInt(operation -&gt; operation instanceof LoopConversionOperation loop</span>
-<span class="pc" id="L124">						? loop.getAnchor().getStartPosition() : 0));</span>
-<span class="fc" id="L125">				return new Analysis(unit, safe, LoopVariableNames.usedNames(unit));</span>
+<span class="fc" id="L184">				List&lt;CompilationUnitRewriteOperation&gt; safe = new ArrayList&lt;&gt;(operations);</span>
+<span class="pc bpc" id="L185" title="1 of 4 branches missed.">				safe.removeIf(operation -&gt; operation instanceof LoopConversionOperation loop &amp;&amp; hasErrors(loop.getAnchor()));</span>
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">				safe.sort(Comparator.comparingInt(operation -&gt; operation instanceof LoopConversionOperation loop</span>
+<span class="pc" id="L187">						? loop.getAnchor().getStartPosition() : 0));</span>
+<span class="fc" id="L188">				return new Analysis(unit, safe, LoopVariableNames.usedNames(unit));</span>
 			}
 		}
 	}
 
 	private static boolean isForEachStatement(ASTNode node) {
-<span class="pc bpc" id="L131" title="1 of 4 branches missed.">		return node instanceof ExpressionStatement statement &amp;&amp; statement.getExpression() instanceof MethodInvocation call</span>
-<span class="fc bfc" id="L132" title="All 2 branches covered.">				&amp;&amp; Set.of(&quot;forEach&quot;, &quot;forEachOrdered&quot;).contains(call.getName().getIdentifier()); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L194" title="1 of 4 branches missed.">		return node instanceof ExpressionStatement statement &amp;&amp; statement.getExpression() instanceof MethodInvocation call</span>
+<span class="fc bfc" id="L195" title="All 2 branches covered.">				&amp;&amp; Set.of(&quot;forEach&quot;, &quot;forEachOrdered&quot;).contains(call.getName().getIdentifier()); //$NON-NLS-1$ //$NON-NLS-2$</span>
 	}
 
 	public static boolean hasErrors(ASTNode node) {
-<span class="fc bfc" id="L136" title="All 2 branches covered.">		for (var problem : ((CompilationUnit) node.getRoot()).getProblems()) {</span>
-<span class="pc bpc" id="L137" title="2 of 4 branches missed.">			if (problem.isError() &amp;&amp; problem.getSourceStart() &lt; node.getStartPosition() + node.getLength()</span>
-<span class="fc bfc" id="L138" title="All 2 branches covered.">					&amp;&amp; problem.getSourceEnd() &gt;= node.getStartPosition()) {</span>
-<span class="fc" id="L139">				return true;</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">		for (var problem : ((CompilationUnit) node.getRoot()).getProblems()) {</span>
+<span class="pc bpc" id="L200" title="2 of 4 branches missed.">			if (problem.isError() &amp;&amp; problem.getSourceStart() &lt; node.getStartPosition() + node.getLength()</span>
+<span class="fc bfc" id="L201" title="All 2 branches covered.">					&amp;&amp; problem.getSourceEnd() &gt;= node.getStartPosition()) {</span>
+<span class="fc" id="L202">				return true;</span>
 			}
 		}
-<span class="fc" id="L142">		return false;</span>
+<span class="fc" id="L205">		return false;</span>
 	}
 
 	private static boolean supportsSourceLevel(CompilationUnit unit, UseFunctionalCallFixCore handler) {
-<span class="pc bpc" id="L146" title="1 of 2 branches missed.">		if (unit.getJavaElement() == null) {</span>
-<span class="nc" id="L147">			return true;</span>
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">		if (unit.getJavaElement() == null) {</span>
+<span class="nc" id="L210">			return true;</span>
 		}
-<span class="fc" id="L149">		String source = unit.getJavaElement().getJavaProject().getOption(JavaCore.COMPILER_SOURCE, true);</span>
-<span class="fc bfc" id="L150" title="All 2 branches covered.">		String minimum = handlers(LoopTargetFormat.STREAM).contains(handler) ? JavaCore.VERSION_1_8 : JavaCore.VERSION_1_5;</span>
-<span class="fc bfc" id="L151" title="All 2 branches covered.">		return JavaCore.compareJavaVersions(source, minimum) &gt;= 0;</span>
+<span class="fc" id="L212">		String source = unit.getJavaElement().getJavaProject().getOption(JavaCore.COMPILER_SOURCE, true);</span>
+<span class="fc bfc" id="L213" title="All 2 branches covered.">		String minimum = handlers(LoopTargetFormat.STREAM).contains(handler) ? JavaCore.VERSION_1_8 : JavaCore.VERSION_1_5;</span>
+<span class="fc bfc" id="L214" title="All 2 branches covered.">		return JavaCore.compareJavaVersions(source, minimum) &gt;= 0;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

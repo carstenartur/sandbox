@@ -658,10 +658,10 @@ import org.sandbox.jdt.internal.corext.fix.helper.ConsecutiveLoopGroupDetector.C
     
     @Override
     public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L661" title="All 2 branches missed.">        if (afterRefactoring) {</span>
-<span class="nc" id="L662">            return &quot;items.forEach(item -&gt; System.out.println(item));\n&quot;; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L661" title="All 2 branches covered.">        if (afterRefactoring) {</span>
+<span class="fc" id="L662">            return &quot;items.forEach(item -&gt; System.out.println(item));\n&quot;; //$NON-NLS-1$</span>
         }
-<span class="nc" id="L664">        return &quot;for (String item : items)\n    System.out.println(item);\n&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L664">        return &quot;for (String item : items)\n    System.out.println(item);\n&quot;; //$NON-NLS-1$</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

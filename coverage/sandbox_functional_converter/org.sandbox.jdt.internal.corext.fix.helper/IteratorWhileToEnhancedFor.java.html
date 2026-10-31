@@ -84,11 +84,11 @@ import org.sandbox.jdt.internal.corext.fix.helper.IteratorPatternDetector.Iterat
 
 	@Override
 	public String getPreview(boolean after) {
-<span class="nc bnc" id="L87" title="All 2 branches missed.">		return after ? &quot;&quot;&quot;</span>
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">		return after ? &quot;&quot;&quot;</span>
 				for (String item : items) {
 					System.out.println(item);
 				}
-<span class="nc" id="L91">				&quot;&quot;&quot; : &quot;&quot;&quot;</span>
+<span class="pc" id="L91">				&quot;&quot;&quot; : &quot;&quot;&quot;</span>
 				Iterator&lt;String&gt; it = items.iterator();
 				while (it.hasNext()) {
 					String item = it.next();

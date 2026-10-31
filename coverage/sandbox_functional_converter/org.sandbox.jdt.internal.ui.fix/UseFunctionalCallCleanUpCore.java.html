@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
@@ -42,78 +43,73 @@ import org.sandbox.jdt.internal.corext.fix.helper.LoopTargetFormat;
 
 public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 
-<span class="fc" id="L45">	private Map&lt;String, String&gt; optionsMap = Map.of();</span>
+	// The superclass constructor calls setOptions; do not overwrite that reference
+	// with a field initializer. JDT edits these options after creating the preview.
+	private CleanUpOptions currentOptions;
 
 	public UseFunctionalCallCleanUpCore(Map&lt;String, String&gt; options) {
-<span class="fc" id="L48">		super(options);</span>
-<span class="fc" id="L49">		optionsMap = options;</span>
-<span class="fc" id="L50">	}</span>
+<span class="fc" id="L51">		super(options);</span>
+<span class="fc" id="L52">	}</span>
 
-<span class="fc" id="L52">	public UseFunctionalCallCleanUpCore() {</span>
-<span class="fc" id="L53">	}</span>
+<span class="fc" id="L54">	public UseFunctionalCallCleanUpCore() {</span>
+<span class="fc" id="L55">	}</span>
 
 	@Override
 	public void setOptions(CleanUpOptions options) {
-<span class="fc" id="L57">		super.setOptions(options);</span>
-<span class="fc" id="L58">		optionsMap = options.getKeys().stream().collect(Collectors.toMap(key -&gt; key, options::getValue));</span>
-<span class="fc" id="L59">	}</span>
+<span class="fc" id="L59">		super.setOptions(options);</span>
+<span class="fc" id="L60">		currentOptions = options;</span>
+<span class="fc" id="L61">	}</span>
 
 	@Override
 	public CleanUpRequirements getRequirements() {
-<span class="fc" id="L63">		return new CleanUpRequirements(requireAST(), false, false, null);</span>
+<span class="fc" id="L65">		return new CleanUpRequirements(requireAST(), false, false, null);</span>
 	}
 
 	public boolean requireAST() {
-<span class="fc bfc" id="L67" title="All 6 branches covered.">		return isEnabled(USEFUNCTIONALLOOP_CLEANUP) || isEnabled(USEFUNCTIONALLOOP_CLEANUP_V2) || isEnabled(LOOP_CONVERSION_ENABLED);</span>
+<span class="fc bfc" id="L69" title="All 6 branches covered.">		return isEnabled(USEFUNCTIONALLOOP_CLEANUP) || isEnabled(USEFUNCTIONALLOOP_CLEANUP_V2) || isEnabled(LOOP_CONVERSION_ENABLED);</span>
 	}
 
 	@Override
 	public ICleanUpFix createFix(CleanUpContext context) throws CoreException {
-<span class="pc bpc" id="L72" title="1 of 4 branches missed.">		if (context.getAST() == null || !requireAST()) {</span>
-<span class="fc" id="L73">			return null;</span>
+<span class="pc bpc" id="L74" title="1 of 4 branches missed.">		if (context.getAST() == null || !requireAST()) {</span>
+<span class="fc" id="L75">			return null;</span>
 		}
-<span class="fc" id="L75">		return LoopConversionService.analyze(context.getAST(), computeFixSet()).createFix(FunctionalCallCleanUpFix_refactor);</span>
+		// Both explicit profile flags delegate this transaction to the optional host.
+		// A stale flag must never suppress the standalone converter when math is absent.
+<span class="fc" id="L79">		var math = Platform.getBundle(&quot;sandbox_math_cleanup&quot;);</span>
+<span class="pc bpc" id="L80" title="1 of 4 branches missed.">		if (isEnabled(&quot;cleanup.loop_conversion.with_mathematics&quot;) &amp;&amp; isEnabled(&quot;cleanup.mathematics&quot;)</span>
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">				&amp;&amp; !(context instanceof org.eclipse.jdt.internal.ui.fix.IMultiLineCleanUp.MultiLineCleanUpContext)</span>
+<span class="pc bpc" id="L82" title="3 of 4 branches missed.">				&amp;&amp; math != null &amp;&amp; (math.getState() &amp; (org.osgi.framework.Bundle.RESOLVED</span>
+<span class="nc" id="L83">						| org.osgi.framework.Bundle.STARTING | org.osgi.framework.Bundle.ACTIVE)) != 0) return null;</span>
+<span class="fc" id="L84">		return LoopConversionService.analyze(context.getAST(), computeFixSet()).createFix(FunctionalCallCleanUpFix_refactor);</span>
 	}
 
 	@Override
 	public String[] getStepDescriptions() {
-<span class="pc bpc" id="L80" title="1 of 2 branches missed.">		return computeFixSet().isEmpty() ? new String[0] : new String[] { LoopConversion_Description };</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">		return computeFixSet().isEmpty() ? new String[0] : new String[] { LoopConversion_Description };</span>
 	}
 
 	@Override
 	public String getPreview() {
-<span class="nc" id="L85">		EnumSet&lt;UseFunctionalCallFixCore&gt; selected = computeFixSet();</span>
-<span class="nc bnc" id="L86" title="All 2 branches missed.">		EnumSet&lt;UseFunctionalCallFixCore&gt; shown = selected.isEmpty()</span>
-<span class="nc" id="L87">				? LoopConversionService.handlers(targetFormat()) : selected;</span>
-<span class="nc" id="L88">		return shown.stream().map(handler -&gt; handler.getPreview(selected.contains(handler)))</span>
-<span class="nc" id="L89">				.collect(Collectors.joining(System.lineSeparator()));</span>
+<span class="fc" id="L94">		Map&lt;String, String&gt; options = optionsSnapshot();</span>
+<span class="fc" id="L95">		EnumSet&lt;UseFunctionalCallFixCore&gt; selected = LoopConversionService.configuredHandlers(options);</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">		EnumSet&lt;UseFunctionalCallFixCore&gt; shown = selected.isEmpty()</span>
+<span class="fc" id="L97">				? LoopConversionService.handlers(LoopTargetFormat.fromId(options.get(LOOP_CONVERSION_TARGET_FORMAT))) : selected;</span>
+<span class="fc" id="L98">		return shown.stream().map(handler -&gt; handler.getPreview(selected.contains(handler)))</span>
+<span class="fc" id="L99">				.collect(Collectors.joining(System.lineSeparator()));</span>
 	}
 
-	private LoopTargetFormat targetFormat() {
-<span class="fc" id="L93">		return LoopTargetFormat.fromId(optionsMap.get(LOOP_CONVERSION_TARGET_FORMAT));</span>
+	private Map&lt;String, String&gt; optionsSnapshot() {
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">		return currentOptions == null ? Map.of() : currentOptions.getKeys().stream()</span>
+<span class="fc" id="L104">				.collect(Collectors.toMap(key -&gt; key, currentOptions::getValue));</span>
 	}
 
 	private EnumSet&lt;UseFunctionalCallFixCore&gt; computeFixSet() {
-		// An explicit target takes precedence over legacy stream-only profile flags.
-<span class="fc bfc" id="L98" title="All 2 branches covered.">		if (isEnabled(LOOP_CONVERSION_ENABLED)) {</span>
-<span class="fc" id="L99">			EnumSet&lt;UseFunctionalCallFixCore&gt; result = LoopConversionService.handlers(targetFormat());</span>
-<span class="fc bfc" id="L100" title="All 2 branches covered.">			result.removeIf(handler -&gt; !isEnabled(sourceOption(handler)));</span>
-<span class="fc" id="L101">			return result;</span>
-		}
-<span class="fc bfc" id="L103" title="All 4 branches covered.">		if ((isEnabled(USEFUNCTIONALLOOP_CLEANUP) || isEnabled(USEFUNCTIONALLOOP_CLEANUP_V2))</span>
-<span class="fc bfc" id="L104" title="All 4 branches covered.">				&amp;&amp; !isEnabled(USEFUNCTIONALLOOP_FORMAT_FOR) &amp;&amp; !isEnabled(USEFUNCTIONALLOOP_FORMAT_WHILE)) {</span>
-<span class="fc" id="L105">			return LoopConversionService.handlers(LoopTargetFormat.STREAM);</span>
-		}
-<span class="fc" id="L107">		return EnumSet.noneOf(UseFunctionalCallFixCore.class);</span>
+<span class="fc" id="L108">		return LoopConversionService.configuredHandlers(optionsSnapshot());</span>
 	}
 
 	public static String sourceOption(UseFunctionalCallFixCore handler) {
-<span class="fc bfc" id="L111" title="All 4 branches covered.">		return switch (handler) {</span>
-<span class="fc" id="L112">		case LOOP, FOR_TO_ITERATOR -&gt; LOOP_CONVERSION_FROM_ENHANCED_FOR;</span>
-<span class="fc" id="L113">		case ITERATOR_LOOP, ITERATOR_TO_FOR -&gt; LOOP_CONVERSION_FROM_ITERATOR_WHILE;</span>
-<span class="fc" id="L114">		case STREAM_TO_FOR, STREAM_TO_ITERATOR -&gt; LOOP_CONVERSION_FROM_STREAM;</span>
-<span class="fc" id="L115">		case TRADITIONAL_FOR_LOOP -&gt; LOOP_CONVERSION_FROM_CLASSIC_FOR;</span>
-		};
+<span class="fc" id="L112">		return LoopConversionService.sourceOption(handler);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
