@@ -135,8 +135,8 @@ public class AdditionalLoopPatternsTest {
 	}
 
 	@Test
-	@DisplayName("Index-based collection loop to IntStream.range()")
-	public void testIndexBasedCollectionLoop_toStream() throws CoreException {
+	@DisplayName("Index-based collection loop keeps repeated size() calls")
+	public void testIndexBasedCollectionLoop_noConversion() throws CoreException {
 		String given = """
 				package test1;
 				import java.util.*;
@@ -149,20 +149,8 @@ public class AdditionalLoopPatternsTest {
 					}
 				}
 				""";
-		String expected = """
-				package test1;
-				import java.util.*;
-				import java.util.stream.IntStream;
-				public class MyTest {
-					void process(List<String> items) {
-						IntStream.range(0, items.size()).forEach(i -> {
-							String item = items.get(i);
-							System.out.println(item);
-						});
-					}
-				}
-				""";
-		assertConversion("MyTest.java", given, expected);
+		// size() can be overridden or observe changes caused by calls in the body.
+		assertNoChange("MyTest.java", given);
 	}
 
 	@Test
