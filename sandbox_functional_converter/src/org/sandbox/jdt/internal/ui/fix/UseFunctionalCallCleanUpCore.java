@@ -43,11 +43,12 @@ import org.sandbox.jdt.internal.corext.fix.helper.LoopTargetFormat;
 
 public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 
-	private Map<String, String> optionsMap = Map.of();
+	// The superclass constructor calls setOptions; do not overwrite that reference
+	// with a field initializer. JDT edits these options after creating the preview.
+	private CleanUpOptions currentOptions;
 
 	public UseFunctionalCallCleanUpCore(Map<String, String> options) {
 		super(options);
-		optionsMap = options;
 	}
 
 	public UseFunctionalCallCleanUpCore() {
@@ -56,7 +57,7 @@ public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 	@Override
 	public void setOptions(CleanUpOptions options) {
 		super.setOptions(options);
-		optionsMap = options.getKeys().stream().collect(Collectors.toMap(key -> key, options::getValue));
+		currentOptions = options;
 	}
 
 	@Override
@@ -90,19 +91,21 @@ public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 
 	@Override
 	public String getPreview() {
-		EnumSet<UseFunctionalCallFixCore> selected = computeFixSet();
+		Map<String, String> options = optionsSnapshot();
+		EnumSet<UseFunctionalCallFixCore> selected = LoopConversionService.configuredHandlers(options);
 		EnumSet<UseFunctionalCallFixCore> shown = selected.isEmpty()
-				? LoopConversionService.handlers(targetFormat()) : selected;
+				? LoopConversionService.handlers(LoopTargetFormat.fromId(options.get(LOOP_CONVERSION_TARGET_FORMAT))) : selected;
 		return shown.stream().map(handler -> handler.getPreview(selected.contains(handler)))
 				.collect(Collectors.joining(System.lineSeparator()));
 	}
 
-	private LoopTargetFormat targetFormat() {
-		return LoopTargetFormat.fromId(optionsMap.get(LOOP_CONVERSION_TARGET_FORMAT));
+	private Map<String, String> optionsSnapshot() {
+		return currentOptions == null ? Map.of() : currentOptions.getKeys().stream()
+				.collect(Collectors.toMap(key -> key, currentOptions::getValue));
 	}
 
 	private EnumSet<UseFunctionalCallFixCore> computeFixSet() {
-		return LoopConversionService.configuredHandlers(optionsMap);
+		return LoopConversionService.configuredHandlers(optionsSnapshot());
 	}
 
 	public static String sourceOption(UseFunctionalCallFixCore handler) {
