@@ -2,6 +2,9 @@
 package org.sandbox.jdt.math.tests;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
@@ -118,7 +121,7 @@ class SourceNumericBranchTest {
     }
     private java.net.URLClassLoader compile(String source) throws Exception {
         var directory=java.nio.file.Files.createTempDirectory(temporary,"compiled-");
-        var file=directory.resolve("Sample.java"); java.nio.file.Files.writeString(file,source);
+        var file=directory.resolve("Sample.java"); Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0,javax.tools.ToolProvider.getSystemJavaCompiler().run(null,null,null,"--release","17","-d",directory.toString(),file.toString()));
         return new java.net.URLClassLoader(new java.net.URL[]{directory.toUri().toURL()},ClassLoader.getPlatformClassLoader());
     }

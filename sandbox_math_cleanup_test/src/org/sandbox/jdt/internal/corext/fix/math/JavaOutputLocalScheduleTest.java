@@ -2,6 +2,8 @@
 package org.sandbox.jdt.internal.corext.fix.math;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
@@ -31,7 +33,7 @@ class JavaOutputLocalScheduleTest {
         var body=new StringBuilder(emission.statements());
         locals.forEach((output,name)->body.append("int ").append(name).append(" = ").append(emission.outputValues().get(output)).append(';'));
         String source="public class Sample { public static int[] f(int n,int count) {"+body+"return new int[]{startG,a,b};}}";
-        Path file=temporary.resolve("Sample.java"); Files.writeString(file,source);
+        Path file=temporary.resolve("Sample.java"); Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0,ToolProvider.getSystemJavaCompiler().run(null,null,null,"--release","17","-d",temporary.toString(),file.toString()),source);
         try(var loader=new java.net.URLClassLoader(new java.net.URL[]{temporary.toUri().toURL()},ClassLoader.getPlatformClassLoader())) {
             var method=loader.loadClass("Sample").getMethod("f",int.class,int.class);
