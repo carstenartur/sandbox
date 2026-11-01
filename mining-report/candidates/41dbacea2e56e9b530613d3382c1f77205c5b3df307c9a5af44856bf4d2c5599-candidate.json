@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "41dbacea2e56e9b530613d3382c1f77205c5b3df307c9a5af44856bf4d2c5599",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.platform.adapters.adapt\u003e\n\u003c!description: Replace direct cast to IAdaptable and getAdapter() with Adapters.adapt() for safer adaptation, avoiding ClassCastException where object does not directly implement IAdaptable but can adapt to resource type.\u003e\n\u003c!severity: WARNING\u003e\n((org.eclipse.core.runtime.IAdaptable) $var).getAdapter($class.class)\n\u003d\u003e org.eclipse.core.runtime.Adapters.adapt($var, $class.class)\n;;",
+  "beforeExample": "import org.eclipse.core.resources.IResource;\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.core.runtime.IAdaptable;\n\npublic class MyClass {\n    public void myMethod(Object lastSegmentObj) {\n        // This is the target pattern\n        IResource selectedResource \u003d ((IAdaptable) lastSegmentObj).getAdapter(IResource.class);\n        System.out.println(\"Resource: \" + selectedResource);\n    }\n\n    public void anotherMethod(Object obj) throws CoreException {\n        // Another instance for completeness\n        Object result \u003d ((IAdaptable) obj).getAdapter(String.class); \n        System.out.println(\"Result: \" + result);\n    }\n}\n",
+  "afterExample": "import org.eclipse.core.resources.IResource;\nimport org.eclipse.core.runtime.Adapters; // Added import\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.core.runtime.IAdaptable;\n\npublic class MyClass {\n    public void myMethod(Object lastSegmentObj) {\n        // Transformed pattern\n        IResource selectedResource \u003d Adapters.adapt(lastSegmentObj, IResource.class);\n        System.out.println(\"Resource: \" + selectedResource);\n    }\n\n    public void anotherMethod(Object obj) throws CoreException {\n        // Transformed pattern\n        Object result \u003d Adapters.adapt(obj, String.class); \n        System.out.println(\"Result: \" + result);\n    }\n}\n",
+  "negativeExample": "import org.eclipse.core.resources.IResource;\nimport org.eclipse.core.runtime.IAdaptable;\nimport org.eclipse.core.runtime.CoreException;\n\npublic class NegativeMyClass {\n    public void noMatchMethod(IAdaptable adaptableObj) {\n        // Should not match: not a cast expression\n        IResource resource \u003d adaptableObj.getAdapter(IResource.class);\n        System.out.println(\"Directly adaptable: \" + resource);\n    }\n\n    public void noMatchOtherCast(Object obj) {\n        // Should not match: different method call (substring vs getAdapter)\n        String s \u003d ((String) obj).substring(0);\n        System.out.println(\"Substring: \" + s);\n    }\n\n    public void noMatchDifferentAdapter(Object obj) {\n        // Should not match: different adapter interface cast, no getAdapter() call\n        java.io.Serializable ser \u003d ((java.io.Serializable) obj);\n        System.out.println(\"Serializable: \" + ser);\n    }\n}\n",
+  "targetHintFile": "api-modernization.sandbox-hint",
+  "sourceCommit": "80e5c732e89a8f0102a825505c69bde1cc609843",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "API Modernization",
+  "summary": "Replaces `((IAdaptable) $var).getAdapter($class.class)` with `Adapters.adapt($var, $class.class)` for safer type adaptation.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-01T02:20:13.360591351Z",
+  "ruleFingerprint": "sha256:9b732ab3ce1693d9073c5c9fabe27cd1517c2c90371fbd0373949028d8157706",
+  "behaviorFingerprint": "sha256:02dbb0317b9a93337b2d7b30dbdd5b4867ff4d00866a2a8b93bddf72ab17af52",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-11-01T02:23:17.605903320Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

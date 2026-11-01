@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "d581590d5f23c7584e1677482988dbbfbf6c5031bcfc691f1d695b3570868aea",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new org.eclipse.swt.events.SelectionAdapter() { @java.lang.Override public void widgetSelected(org.eclipse.swt.events.SelectionEvent $e) { $body$ } }\n\u003d\u003e\norg.eclipse.swt.events.SelectionListener.widgetSelectedAdapter($e -\u003e { $body$ })\n;;",
+  "beforeExample": "import org.eclipse.swt.events.SelectionAdapter;\nimport org.eclipse.swt.events.SelectionEvent;\nimport org.eclipse.swt.widgets.Button;\n\npublic class MyClass {\n    Button button;\n    void setup() {\n        button.addSelectionListener(new SelectionAdapter() {\n            @Override\n            public void widgetSelected(SelectionEvent evt) {\n                System.out.println(\"Button selected\");\n                doSomething(evt);\n            }\n        });\n    }\n    void doSomething(SelectionEvent e) {}\n}",
+  "afterExample": "import org.eclipse.swt.events.SelectionEvent;\nimport org.eclipse.swt.events.SelectionListener;\nimport org.eclipse.swt.widgets.Button;\n\npublic class MyClass {\n    Button button;\n    void setup() {\n        button.addSelectionListener(SelectionListener.widgetSelectedAdapter(evt -\u003e {\n            System.out.println(\"Button selected\");\n            doSomething(evt);\n        }));\n    }\n    void doSomething(SelectionEvent e) {}\n}",
+  "negativeExample": "import org.eclipse.swt.accessibility.AccessibleAdapter;\nimport org.eclipse.swt.accessibility.AccessibleEvent;\nimport org.eclipse.swt.widgets.Control;\n\npublic class MyClass {\n    Control control;\n    void setup() {\n        control.getAccessible().addAccessibleListener(new AccessibleAdapter() {\n            @Override\n            public void getName(AccessibleEvent e) {\n                e.result \u003d \"Control name\";\n            }\n        });\n    }\n}",
+  "targetHintFile": "swt-listeners.sandbox-hint",
+  "sourceCommit": "a41f459946f4d2efc87756f70964a4f3fa63b8c4",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "SWT Modernization",
+  "summary": "Replaces anonymous SelectionAdapter implementation with a lambda using SelectionListener.widgetSelectedAdapter for conciseness and modern Java idiom.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-01T02:20:43.846630690Z",
+  "ruleFingerprint": "sha256:59102eb6c9ff6d81146cec3e0da14132642376b21c4ee87b044ed488b13bc2cc",
+  "behaviorFingerprint": "sha256:b8ef2feeb6af43d4b0c53cf034e334570a23ca5524dd71542cdc3f507f114830",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-11-01T02:23:17.620180403Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

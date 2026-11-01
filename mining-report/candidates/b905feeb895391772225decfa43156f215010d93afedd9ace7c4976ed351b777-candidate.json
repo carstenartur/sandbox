@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 3: The import org.eclipse.jface.text.StyledString cannot be resolved",
-    "verifiedAt": "2026-10-31T02:23:35.742555285Z",
+    "verifiedAt": "2026-11-01T02:23:11.820613860Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

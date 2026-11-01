@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "935f0faad34829d563585cbb4f0af542ae2f8b97b569857e47d3f5e81faccbf3",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "java.lang.Integer.valueOf($i).toString()\n\u003d\u003e java.lang.Integer.toString($i)\n;;",
+  "beforeExample": "class A {\n    public String formatInt(int value) {\n        return java.lang.Integer.valueOf(value).toString();\n    }\n}",
+  "afterExample": "class A {\n    public String formatInt(int value) {\n        return java.lang.Integer.toString(value);\n    }\n}",
+  "negativeExample": "class A {\n    public java.lang.Integer getBoxedInteger(int value) {\n        // This should not match, as .toString() is missing\n        return java.lang.Integer.valueOf(value);\n    }\n\n    public String formatLong(long value) {\n        // This should not match, as it\u0027s a Long, not Integer\n        return java.lang.Long.valueOf(value).toString();\n    }\n}",
+  "targetHintFile": "primitive-parsing.sandbox-hint",
+  "sourceCommit": "08b688f0bf87ffbfcef3971c22dfb210c2120d97",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "Primitive Parsing",
+  "summary": "Replaces `Integer.valueOf(int).toString()` with `Integer.toString(int)` to avoid unnecessary boxing.",
+  "sourceVersion": "21",
+  "status": "READY_FOR_REVIEW",
+  "discoveredAt": "2026-11-01T02:22:14.248988109Z",
+  "ruleFingerprint": "sha256:003397b9fe559635295a5a61d8200eb2829980886f412363358b36ceb903f31d",
+  "behaviorFingerprint": "sha256:94df33b89285682708e7953099e562e613d3d430c24512b03d5e8080dd60723a",
+  "verification": {
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Candidate behavior verified",
+    "verifiedAt": "2026-11-01T02:23:17.682577413Z",
+    "verifierVersion": "7",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-11-01T02:23:17.683137128Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-11-01T02:23:17.683160634Z"
+    }
+  ]
+}

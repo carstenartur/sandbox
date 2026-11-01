@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "24fd7b4a9f687d932488401400afc3248e703761165d274861c224be43c241d8",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "if ($var !\u003d null) {\n$stmt$\n}\n\u003d\u003e\n$stmt$\n;;",
+  "beforeExample": "import java.io.IOException;\n\nclass ProcessMonitorThread {\n    public void killThread() { /* ... */ }\n}\n\npublic class MyProcess {\n    private final ProcessMonitorThread fMonitor;\n\n    public MyProcess() {\n        this.fMonitor \u003d new ProcessMonitorThread();\n    }\n\n    public void terminate() throws IOException {\n        if (fMonitor !\u003d null) {\n            fMonitor.killThread();\n        }\n    }\n}",
+  "afterExample": "import java.io.IOException;\n\nclass ProcessMonitorThread {\n    public void killThread() { /* ... */ }\n}\n\npublic class MyProcess {\n    private final ProcessMonitorThread fMonitor;\n\n    public MyProcess() {\n        this.fMonitor \u003d new ProcessMonitorThread();\n    }\n\n    public void terminate() throws IOException {\n        fMonitor.killThread();\n    }\n}",
+  "negativeExample": "import java.io.IOException;\n\nclass ProcessMonitorThread {\n    public void killThread() { /* ... */ }\n}\n\npublic class MyProcess {\n    private ProcessMonitorThread fMonitor; // Not final\n\n    public MyProcess() {\n        this.fMonitor \u003d null; // Can be null\n    }\n\n    public void terminate() throws IOException {\n        // Should not match as fMonitor is not final and could be null\n        if (fMonitor !\u003d null) {\n            fMonitor.killThread();\n        }\n    }\n}",
+  "targetHintFile": "null_checks.sandbox-hint",
+  "sourceCommit": "9223452bf28e2ec766da65d4530e6e0921c90548",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "Redundant null check removal",
+  "summary": "Remove redundant null check for final fields",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-01T02:18:26.237229858Z",
+  "ruleFingerprint": "sha256:7ac36ecddc511749492cbecbac613a97ec365238c80365dcb12d951a5f6c18b4",
+  "behaviorFingerprint": "sha256:a452b8674ea705b5ae6fb315dc9c01b8d928769910a16a36e01457de51027e75",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 7: The public type MyProcess must be defined in its own file",
+    "verifiedAt": "2026-11-01T02:23:17.579285148Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

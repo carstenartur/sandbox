@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "61b6f7663c4f70e6ea23c670fce56a12369f3a04e4a1b2cc9138d674f2b97db0",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: use-standard-charsets-for-bytearrayoutputstream-tostring\u003e\n\u003c!description: Replace \u0027UTF8\u0027 string literal encoding with StandardCharsets.UTF_8 constant for ByteArrayOutputStream.toString(). This leverages the \u0027toString(Charset)\u0027 overload introduced in Java 10, which is type-safe and avoids UnsupportedEncodingException.\n\u003e\n\u003c!severity: WARNING\u003e\n\n$s.toString(\"UTF8\") :: sourceVersionGE(10) \u0026\u0026 instanceof($s, \"java.io.ByteArrayOutputStream\")\n\u003d\u003e $s.toString(java.nio.charset.StandardCharsets.UTF_8)\n;;",
+  "beforeExample": "import java.io.ByteArrayOutputStream;\nimport javax.xml.transform.TransformerException;\nimport javax.xml.transform.dom.DOMSource;\nimport javax.xml.transform.stream.StreamResult;\nimport javax.xml.transform.TransformerFactory;\nimport javax.xml.parsers.DocumentBuilderFactory;\nimport org.w3c.dom.Document;\n\nclass Example {\n    public static String serializeDocument(Document doc) throws TransformerException, java.io.IOException {\n        ByteArrayOutputStream s \u003d new ByteArrayOutputStream();\n        TransformerFactory factory \u003d TransformerFactory.newInstance();\n        javax.xml.transform.Transformer transformer \u003d factory.newTransformer();\n        DOMSource source \u003d new DOMSource(doc);\n        StreamResult outputTarget \u003d new StreamResult(s);\n        transformer.transform(source, outputTarget);\n        return s.toString(\"UTF8\");\n    }\n\n    public static void main(String[] args) throws Exception {\n        Document doc \u003d DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();\n        System.out.println(serializeDocument(doc));\n    }\n}",
+  "afterExample": "import java.io.ByteArrayOutputStream;\nimport java.nio.charset.StandardCharsets;\nimport javax.xml.transform.TransformerException;\nimport javax.xml.transform.dom.DOMSource;\nimport javax.xml.transform.stream.StreamResult;\nimport javax.xml.transform.TransformerFactory;\nimport javax.xml.parsers.DocumentBuilderFactory;\nimport org.w3c.dom.Document;\n\nclass Example {\n    public static String serializeDocument(Document doc) throws TransformerException, java.io.IOException {\n        ByteArrayOutputStream s \u003d new ByteArrayOutputStream();\n        TransformerFactory factory \u003d TransformerFactory.newInstance();\n        javax.xml.transform.Transformer transformer \u003d factory.newTransformer();\n        DOMSource source \u003d new DOMSource(doc);\n        StreamResult outputTarget \u003d new StreamResult(s);\n        transformer.transform(source, outputTarget);\n        return s.toString(StandardCharsets.UTF_8);\n    }\n\n    public static void main(String[] args) throws Exception {\n        Document doc \u003d DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();\n        System.out.println(serializeDocument(doc));\n    }\n}",
+  "negativeExample": "import java.io.ByteArrayOutputStream;\n\nclass NegativeExample {\n    // Should not match: Not a ByteArrayOutputStream\n    public String notAByteArrayOutputStream(java.io.File s) throws java.io.IOException {\n        return s.getName() + \"UTF8\";\n    }\n\n    // Should not match if target Java version is below 10\n    public String oldJavaVersionUsage(ByteArrayOutputStream s) throws java.io.IOException {\n        return s.toString(\"UTF8\");\n    }\n\n    // Should not match: not a toString() call\n    public String otherMethod(ByteArrayOutputStream s) throws java.io.IOException {\n        byte[] data \u003d \"test\".getBytes(\"UTF8\"); // different pattern\n        return new String(data);\n    }\n}",
+  "targetHintFile": "standard-charsets.sandbox-hint",
+  "sourceCommit": "a8d04604b949e0a250a90f41f578c9d8fd8de186",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "API Modernization",
+  "summary": "Replaces \u0027UTF8\u0027 string literal with `StandardCharsets.UTF_8` for `ByteArrayOutputStream.toString()` when Java 10+ is available.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-01T02:14:48.597182087Z",
+  "ruleFingerprint": "sha256:d35b2fa7e36af2360bbffa9723f27932722a739bb6b6468a3ba9fbf5738e69ee",
+  "behaviorFingerprint": "sha256:a4328d879201ae97319091ac5561d7d5f37e651caa73f115481fc288b09b08d0",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-11-01T02:23:17.539033835Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "778f4d5c9c4473a3092fb0409c23609a7c4223307a3ee3e7e47433b46a909ff6",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jface.resource.ImageDescriptor.createFromURL(org.eclipse.core.runtime.FileLocator.find($bundle, new org.eclipse.core.runtime.Path($path), null)) :: sourceVersionGE(11)\n\u003d\u003e\norg.eclipse.jface.resource.ImageDescriptor.createFromURLSupplier(true, () -\u003e org.eclipse.core.runtime.FileLocator.find($bundle, new org.eclipse.core.runtime.Path($path), null))\n;;",
+  "beforeExample": "package com.example;\n\nimport org.eclipse.core.runtime.FileLocator;\nimport org.eclipse.core.runtime.Path;\nimport org.eclipse.jface.resource.ImageDescriptor;\nimport org.osgi.framework.Bundle;\n\npublic class TestClass {\n    public ImageDescriptor getImage(Bundle bundle, String iconPath) {\n        // Assume bundle and iconPath are valid\n        return ImageDescriptor.createFromURL(FileLocator.find(bundle, new Path(iconPath), null));\n    }\n}",
+  "afterExample": "package com.example;\n\nimport org.eclipse.core.runtime.FileLocator;\nimport org.eclipse.core.runtime.Path;\nimport org.eclipse.jface.resource.ImageDescriptor;\nimport org.osgi.framework.Bundle;\n\npublic class TestClass {\n    public ImageDescriptor getImage(Bundle bundle, String iconPath) {\n        // Assume bundle and iconPath are valid\n        return ImageDescriptor.createFromURLSupplier(true, () -\u003e FileLocator.find(bundle, new Path(iconPath), null));\n    }\n}",
+  "negativeExample": "package com.example;\n\nimport java.net.MalformedURLException;\nimport java.net.URL;\nimport org.eclipse.jface.resource.ImageDescriptor;\n\npublic class TestClass {\n    public ImageDescriptor getAnotherImage(String urlString) throws MalformedURLException {\n        // This uses a direct URL, not FileLocator.find(bundle, new Path(path), null)\n        return ImageDescriptor.createFromURL(new URL(urlString));\n    }\n\n    public ImageDescriptor getImageOldJava(String urlString) throws MalformedURLException {\n        // This method would not match due to sourceVersionGE(11) guard if compiled with older Java.\n        // Also, the argument pattern is different.\n        return ImageDescriptor.createFromURL(new URL(urlString));\n    }\n}",
+  "targetHintFile": "modernize-java11.sandbox-hint",
+  "sourceCommit": "5c202200d26fa8f0fb07c46d3f92f5e4338b2f32",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "API Modernization",
+  "summary": "Modernize JFace ImageDescriptor creation from immediate URL to deferred supplier, leveraging `createFromURLSupplier` for performance, for images loaded via `FileLocator.find` with a `Path`. Requires Java 11+.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-01T02:15:55.362741010Z",
+  "ruleFingerprint": "sha256:5a138cf66c2547bc510159accc96ca152edd603edb9b7ab69bd33a70b261eae5",
+  "behaviorFingerprint": "sha256:559d16c679c3654b5361c898ad6b63f6cd9139f1e23c27c6520eee0380d5845b",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 5: The import org.eclipse.jface.resource cannot be resolved",
+    "verifiedAt": "2026-11-01T02:23:17.552287242Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
