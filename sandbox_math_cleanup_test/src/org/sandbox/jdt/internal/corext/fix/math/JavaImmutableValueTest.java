@@ -84,6 +84,46 @@ class JavaImmutableValueTest {
         assertTrue(generated.contains("BigInteger component reference identity may change"),generated);
         assertTrue(analysis.replacements().stream().anyMatch(edit->edit.description().contains("fresh wrapper")));
     }
+    @Test void selectionBudgetDoesNotIncludeUnselectedValueMethods() throws Exception {
+        String source=fixture(multiplication());var extra=new StringBuilder();
+        for(int i=0;i<50;i++)extra.append("public Calculation untouched").append(i)
+            .append("(){return new Calculation(amber,blue);}");
+        source=source.substring(0,source.length()-1)+extra+"}";
+        var analysis=MathematicalAnalysis.analyze(parse(source),source,options(),null,
+            source.indexOf(multiplication()),multiplication().length(),environment());
+        String generated=apply(source,analysis);
+        assertTrue(generated.contains("Mathematics value path"),analysis.diagnostics().toString());
+        assertTrue(generated.contains(extra));assertEquals(execute(source),execute(generated));
+    }
+    @Test void selectionsOnlyTouchingTheMethodBodyDoNotSelectIt() throws Exception {
+        String source=fixture(multiplication());int start=source.indexOf(multiplication())-1;
+        int end=start+multiplication().length()+2;
+        for(int[] selection:new int[][]{{start-1,1},{end,0}}) {
+            var analysis=MathematicalAnalysis.analyze(parse(source),source,options(),null,selection[0],selection[1],environment());
+            assertFalse(apply(source,analysis).contains("Mathematics value path"));
+        }
+    }
+    @Test void protectedEnvelopesReserveWorkBeforeDisjointValueOptimization() throws Exception {
+        String prefix="/*"+"x".repeat(8000)+"*/",source=prefix+fixture(multiplication());
+        var base=options();var limited=new MathCleanUpOptions(base.enabled(),base.kinds(),base.safety(),base.goal(),
+            110_000,base.maxStates(),base.checkedOptIn(),base.targetJava(),base.exclusions(),true);
+        var unprotected=MathematicalAnalysis.analyze(parse(source),source,limited,null,-1,0,environment());
+        assertTrue(apply(source,unprotected).contains("Mathematics value path"),unprotected.diagnostics().toString());
+        var ranges=List.of(new org.eclipse.jdt.core.SourceRange(0,prefix.length()));
+        var constrained=MathematicalAnalysis.analyze(parse(source),source,limited,null,-1,0,environment(),ranges);
+        assertFalse(apply(source,constrained).contains("Mathematics value path"),"protected envelopes consume the same request ledger");
+        var sufficient=MathematicalAnalysis.analyze(parse(source),source,base,null,-1,0,environment(),ranges);
+        String generated=apply(source,sufficient);assertTrue(generated.contains("Mathematics value path"),sufficient.diagnostics().toString());
+        assertTrue(generated.startsWith(prefix));assertEquals(execute(source),execute(generated));
+        for(boolean mathematical:List.of(false,true)) {
+            var exhausted=new MathCleanUpOptions(base.enabled(),base.kinds(),base.safety(),base.goal(),
+                1000,base.maxStates(),base.checkedOptIn(),base.targetJava(),base.exclusions(),mathematical);
+            var result=assertDoesNotThrow(()->MathematicalAnalysis.analyze(parse(source),source,exhausted,null,-1,0,environment(),ranges));
+            assertFalse(result.changed());assertTrue(result.evidence().isEmpty());assertTrue(result.documentation().isEmpty());
+            assertTrue(result.diagnostics().stream().anyMatch(d->d.code().equals("BUDGET_EXCEEDED")
+                && d.message().contains("Protected source envelopes")));
+        }
+    }
     @Test void initializerAssignmentCannotDisappearDuringProjection() throws Exception {
         String body="BigInteger a=other.amber; BigInteger first=a=amber.multiply(a); BigInteger second=a.add(a);"
             + "return new Calculation(first.subtract(first),second.add(first).subtract(first));";

@@ -212,12 +212,18 @@ public final class MathematicalAnalysis {
          protectedReservations.add(new Replacement(start, length, source.substring(start, start + length), "Protected source envelope")); //$NON-NLS-1$
          reservationWork += length;
       }
+      if (reservationWork > valueWork.remaining()) {
+         diagnostics.add(new Diagnostic("BUDGET_EXCEEDED", "Protected source envelopes exceed the analysis budget", 0, source.length(), Stage.BUDGET)); //$NON-NLS-1$ //$NON-NLS-2$
+         return new Analysis(List.of(), diagnostics, sourceDigest, compilerOptions);
+      }
+      valueWork.charge(reservationWork);
       // Existing specialized passes already reject collisions with this list.
       // Remove reservations before any final source/binding replay or public result.
       replacements.addAll(protectedReservations);
       MathematicalJavadoc documentation = new MathematicalJavadoc();
-      long valueSpent = JavaImmutableValueOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
+      JavaImmutableValueOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
             compilerOptions, environment, replacements, evidence, diagnostics, valueWork, documentation);
+      long valueSpent = valueWork.used; // Includes reservations even when the value pass is disabled.
       if (options.mathematicalOptIn() && options.kinds().contains(NumericKind.BIG_INTEGER)) sourceContext.takeWork(); // Already charged through the common value work meter.
       var valueRanges = new ArrayList<>(replacements);
       valueRanges.removeAll(protectedReservations);
@@ -251,7 +257,7 @@ public final class MathematicalAnalysis {
             "PINNED_SOURCE_EFFECT", "Call retained in its original order; only total local arithmetic crosses it", //$NON-NLS-1$ //$NON-NLS-2$
             node.getStartPosition(), node.getLength(), Stage.SOURCE))));
       diagnostics.addAll(connections.diagnostics());
-      long remainingWork = options.workBudget() - connections.work() - sourceContext.takeWork() - reservationWork - valueSpent;
+      long remainingWork = options.workBudget() - connections.work() - sourceContext.takeWork() - valueSpent;
       var iterationPreflight = JavaRuntimeIterationOptimizer.preflight(ast, options, remainingWork, cancellation);
       remainingWork -= iterationPreflight.work();
       long iterationReserve = iterationPreflight.admitted() ? Math.max(0, remainingWork / 3) : 0;

@@ -30,6 +30,8 @@ final class JavaImmutableValueOptimizer {
                 @Override public boolean visit(MethodDeclaration method) {
                     if(method.isConstructor() || Modifier.isStatic(method.getModifiers()) || method.getBody()==null
                         || method.getBody().statements().isEmpty())return false;
+                    if(selectionOffset>=0 && !overlaps(method.getBody().getStartPosition(),method.getBody().getLength(),
+                        selectionOffset,Math.max(1,selectionLength)))return false;
                     Object last=method.getBody().statements().getLast();
                     if(last instanceof ReturnStatement returned && returned.getExpression() instanceof ClassInstanceCreation creation
                         && creation.resolveTypeBinding()!=null && method.resolveBinding()!=null
@@ -39,7 +41,6 @@ final class JavaImmutableValueOptimizer {
             });
             for(int index=0;index<methods.size();index++) {
                 work.check();MethodDeclaration method=methods.get(index);Block body=method.getBody();int start=body.getStartPosition(),length=body.getLength();
-                if(selectionOffset>=0 && (selectionOffset>start+length || (long)selectionOffset+Math.max(1,selectionLength)<start))continue;
                 if(replacements.stream().anyMatch(edit->overlaps(start,length,edit.offset(),edit.length())))continue;
                 try {
                     var session=new JavaValueSourceSummary.Session(ast,options,work);
