@@ -231,6 +231,21 @@ public final class JavaComputationExtractor {
    }
 
    /** Decode one resolved expression for callers composing existing Java source contexts. */
+   Extraction extractForSourceProof(CompilationUnit unit, String source, Expression expression, MathCleanUpOptions options,
+         java.util.function.LongConsumer charge) {
+      var regions = new ArrayList<JavaComputationRegion>();
+      var diagnostics = new ArrayList<Diagnostic>();
+      var bindings = sourceBindings(unit, charge);
+      charge.accept(expression.getLength());
+      try {
+         Builder builder = new Builder(unit, options, bindings.declarations(), bindings.reserved(), expression, true, false, false);
+         builder.expressionOutput(expression);
+         finish(builder, regions, diagnostics);
+      } catch (Rejected rejected) { diagnostics.add(diagnostic(rejected)); }
+      return new Extraction(regions, diagnostics);
+   }
+
+   /** Decode one resolved expression for callers composing existing Java source contexts. */
    Extraction extractRuntimeExpression(CompilationUnit unit, String source, Expression expression, MathCleanUpOptions options) {
       var regions = new ArrayList<JavaComputationRegion>();
       var diagnostics = new ArrayList<Diagnostic>();
@@ -352,9 +367,14 @@ public final class JavaComputationExtractor {
    private record SourceBindings(Set<String> reserved, Map<String, VariableDeclarationFragment> declarations) { }
 
    private static SourceBindings sourceBindings(CompilationUnit unit) {
+      return sourceBindings(unit, amount -> { });
+   }
+
+   private static SourceBindings sourceBindings(CompilationUnit unit, java.util.function.LongConsumer charge) {
       var reserved = new HashSet<String>();
       var declarations = new HashMap<String, VariableDeclarationFragment>();
       unit.accept(new ASTVisitor() {
+         @Override public boolean preVisit2(ASTNode node) { charge.accept(1); return true; }
          @Override public boolean visit(SimpleName name) {
             if (name.isDeclaration() || name.resolveBinding() instanceof IVariableBinding
                   || name.getIdentifier().equals("java") && name.resolveBinding() instanceof ITypeBinding) //$NON-NLS-1$

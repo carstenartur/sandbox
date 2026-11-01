@@ -491,7 +491,9 @@ public final class MathematicalAnalysis {
                   if (region.outputs().stream().anyMatch(JavaComputationRegion.OutputBinding::arrayStore)
                         && candidate.obligations().guard() != GuardKind.NONE)
                      throw new IllegalArgumentException("ARRAY_STORE_GUARD_UNSUPPORTED"); //$NON-NLS-1$
-                  JavaComputationEmitter.Emission plain = emitter.emit(candidate.prepared(), region.inputNames(), reserved, options.targetJava());
+                  JavaComputationEmitter.Emission plain = emitter.emit(candidate.prepared(), region.inputNames(), reserved, options.targetJava(),
+                        options.safety() == SafetyProfile.PRESERVE_JAVA && region.receiverGuards().isEmpty()
+                              ? JavaComputationEmitter.outputLocals(region) : Map.of());
                   if (mathematicalBigInteger) plain = JavaOriginalExpressions.restore(ast, source, region, plain);
                   if (expressionOnly) {
                      if (candidate.obligations().guard() != GuardKind.NONE)
@@ -719,6 +721,9 @@ public final class MathematicalAnalysis {
       }
 
       remainingWork += iterationReserve;
+      remainingWork = JavaSourceNumericBranches.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
+            compilerOptions, environment, replacements, evidence, acceptedContexts, diagnostics, remainingWork - sourceContext.takeWork());
+      if (isCancelled(monitor)) return cancelled(sourceDigest, compilerOptions);
       var acceptedStreamPairs = new ArrayList<JavaNumericIterationContexts.Pair>();
       remainingWork = JavaNumericStreamOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength, compilerOptions,
             environment, replacements, evidence, diagnostics, acceptedStreamPairs, remainingWork - sourceContext.takeWork());
@@ -1048,7 +1053,7 @@ public final class MathematicalAnalysis {
       );
    }
 
-   private static String digest(String source) {
+   static String digest(String source) {
       try {
          return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(source.getBytes(StandardCharsets.UTF_8)));
       } catch (NoSuchAlgorithmException unavailable) {
@@ -1129,6 +1134,11 @@ public final class MathematicalAnalysis {
          MultiTextEdit edit = new MultiTextEdit();
 
          for (MathematicalAnalysis.Replacement replacement : this.replacements) {
+            evidence.stream().filter(e -> e.offset() == replacement.offset() && e.sourceNumericBranch() != null)
+                  .forEach(e -> {
+                     if (!sourceDigest.equals(e.sourceNumericBranch().sourceSha256()))
+                        throw new IllegalArgumentException("SOURCE_NUMERIC_BRANCH_VERSION_DIFFERS"); //$NON-NLS-1$
+                  });
             var plan = evidence.stream().filter(e -> e.offset() == replacement.offset() && e.length() == replacement.length()
                   && e.replacement().equals(replacement.replacement())).map(VerifiedRegion::sourcePlan).filter(Objects::nonNull).findFirst();
             if (plan.isPresent()) {
@@ -1194,12 +1204,18 @@ public final class MathematicalAnalysis {
 
    public record VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
       String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,
-      LoopSchedulingEvidence scheduling, FiniteSumEvidence finiteSum, RuntimeIterationEvidence runtimeIteration) {
+      LoopSchedulingEvidence scheduling, FiniteSumEvidence finiteSum, RuntimeIterationEvidence runtimeIteration,
+      SourceNumericBranchEvidence sourceNumericBranch) {
       public VerifiedRegion {
          if (sourcePlan != null) sourcePlan.requireEnvelope(offset, length, original, replacement);
          if (explanation != null && !proof.equals(explanation.verified().proof())) {
             throw new IllegalArgumentException("EXPLANATION_PROOF_BINDING_DIFFERS");
          }
+      }
+      public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
+            String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,
+            LoopSchedulingEvidence scheduling, FiniteSumEvidence finiteSum, RuntimeIterationEvidence runtimeIteration) {
+         this(offset, length, proof, cost, original, replacement, explanation, sourcePlan, scheduling, finiteSum, runtimeIteration, null);
       }
       public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
             String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,

@@ -140,6 +140,15 @@ public final class JavaSourceContext implements AutoCloseable {
         } catch (Unavailable unavailable) { return null; }
     }
 
+    static boolean chargeSourceWork(CompilationUnit unit, long amount) {
+        if (!(unit.getProperty(PROPERTY) instanceof JavaSourceContext context)) return false;
+        try { context.charge(amount); return true; }
+        catch (Unavailable unavailable) { return false; }
+    }
+    static List<Receipt> sourceReceipts(CompilationUnit unit) {
+        return unit.getProperty(PROPERTY) instanceof JavaSourceContext context ? context.checkpoint().receipts() : List.of();
+    }
+
     static Map<String, Fact> proveReceivers(CompilationUnit unit, JavaComputationRegion region, Map<String,Boolean> requirements) {
         if (!(unit.getProperty(PROPERTY) instanceof JavaSourceContext context)) return Map.of();
         var facts = new HashMap<String, Fact>();

@@ -15,6 +15,7 @@ import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.CastExpression;
 import org.eclipse.jdt.core.dom.CharacterLiteral;
+import org.eclipse.jdt.core.dom.ConditionalExpression;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.InfixExpression;
@@ -153,6 +154,11 @@ final class RuntimeCalculationPolicy {
             return constant(parentheses.getExpression(), declarations, visiting, depth + 1);
         if (expression instanceof CastExpression cast)
             return constant(cast.getExpression(), declarations, visiting, depth + 1);
+        // A layout selected from authored constants still belongs to source policy.
+        // This does not assume a constant condition, execute it or infer a numeric fact.
+        if (expression instanceof ConditionalExpression conditional)
+            return constant(conditional.getThenExpression(), declarations, visiting, depth + 1)
+                    && constant(conditional.getElseExpression(), declarations, visiting, depth + 1);
         if (expression instanceof PrefixExpression prefix) {
             var operator = prefix.getOperator();
             return (operator == PrefixExpression.Operator.PLUS || operator == PrefixExpression.Operator.MINUS

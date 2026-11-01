@@ -71,6 +71,12 @@ final class JavaExpressionContexts {
             return lambda.resolveMethodBinding() != null && !lambda.resolveMethodBinding().getReturnType().getName().equals("void"); //$NON-NLS-1$
         if (parent instanceof ConditionalExpression conditional)
             return conditional.getThenExpression() == expression || conditional.getElseExpression() == expression;
+        if (parent instanceof org.eclipse.jdt.core.dom.VariableDeclarationFragment fragment
+                && fragment.getInitializer() == expression
+                && fragment.getParent() instanceof org.eclipse.jdt.core.dom.VariableDeclarationStatement declaration
+                && declaration.fragments().size() == 1
+                && declaration.getParent() instanceof org.eclipse.jdt.core.dom.SwitchStatement)
+            return true;
         if (parent instanceof YieldStatement yield) return yield.getExpression() == expression;
         if (parent instanceof ReturnStatement returned)
             return returned.getExpression() == expression && !(returned.getParent() instanceof Block);
