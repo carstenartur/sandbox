@@ -107,8 +107,11 @@ final class JavaTailRecursionRewrite {
         unit.accept(new ASTVisitor() {
             @Override public void preVisit(ASTNode node) { work.tick(); }
             @Override public boolean visit(MethodDeclaration method) {
-                if (method.getStartPosition() == offset) result.add(method);
-                return false;
+                if (method.getStartPosition() == offset) {
+                    result.add(method);
+                    return false;
+                }
+                return true;
             }
         });
         return result.size() == 1 ? result.getFirst() : null;
