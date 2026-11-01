@@ -330,3 +330,61 @@ Run that explicit network corpus gate with Java 25:
 The gate writes a detailed receipt and an unpublished unified upstream patch to
 `qa/math-optimization/target/swt-current-patch/`; JGit applies the patch to the
 verified original sources and checks the complete generated files again.
+
+## Source-proved fixed powers
+
+`JavaFixedPowerSource` recognizes a resolved right-to-left bit loop, including
+its negative-exponent prefix and final unused square. The actual source supplies
+multiplication, square, identity and local bindings. Method names do not supply
+semantics. Multiplication and square must allocate fresh source values, and
+`JavaValueAlgebraProof` separately admits a total canonical residue domain and
+asks Regelsuche to prove associativity, both identity laws and square consistency.
+The synthetic law trace shares expression nodes; the original Java execution
+trace remains authoritative for source effects and totality, including dead work.
+A source identity must itself belong to the canonical domain. Conditional source
+constants never imply completed class initialization.
+
+`JavaFixedPowerConstant` interprets a bounded fragment of exact BigInteger source
+constants, including final fields assigned by a static block with an exact
+quotient/remainder check. It executes only enumerated, bounded BigInteger arithmetic
+on known values; analyzed Java is never invoked. Cycle, depth, magnitude, statement,
+request work and deadline bounds apply. Zero, one, negative and unavailable fixed
+exponents preserve their source behavior.
+
+`JavaFixedPowerOptimizer` admits simple local/parameter receivers and same-caller
+static final exponent fields. It groups accepted calls in one caller-type envelope,
+adds private static chain helpers and retains each original call verbatim as the
+fallback of a conditional. Guards establish nonnull nested links, exact BigInteger
+classes, bounded canonical components against the actual source modulus, the fixed
+exponent and source-defined constants. Structural private-field paths are never
+Java projections: every link requires a source-proved accessible getter with fresh
+binding/modifier agreement. Original null, subclass, noncanonical and changed
+constant behavior runs through the fallback.
+
+Regelsuche searches and independently replays the fixed-power plan. Complete
+emitted source is compiled, each generated helper is decoded independently back to
+the plan through resolved bindings, and that emitted plan is independently checked.
+`FixedPowerEvidence` records this source schedule with compact bindings to all
+four scalar law proofs; full scalar expression DAGs remain request-local and are
+not expanded into project-scan evidence JSON. Combined-source validation binds the whole generated envelope and replays
+its helpers under the original request meter and deadline; dependency receipts
+remain part of Apply validation. The envelope rejects overlapping later edits.
+Source algebra admission also requires every summarized method and static-field
+owner to belong to the existing guarded receiver/component type tree. A pure
+foreign helper body does not establish that its class has initialized: such a
+helper or constant rejects the fixed-power rewrite, preserving the original
+initialization order and failures even when the selected plan uses only squares.
+Source scalar operations, guard expressions and emitted locals contribute to the
+reported estimate; these estimates are not runtime measurements. Defaults are
+unchanged. Qualification of a twelve-component source algebra explicitly selects
+20 million work, 20 thousand states and the existing five-second deadline.
+
+The explicit mathematical contract is documented on each enclosing method within
+the verified caller-type envelope. It permits BigInteger component-reference
+identity changes while preserving a fresh wrapper and guarded original fallback.
+Calls already inside conditional expressions remain unchanged; repeated cleanup
+therefore cannot wrap its own retained power fallback in another schedule.
+The source receipt also retains the original structural call location and exact
+receiver, exponent and power-method bindings. Independent replay checks the guard,
+original fallback, helper invocation and its sole use at that location; a rebound
+type-envelope hash cannot authorize an altered or additional call site.

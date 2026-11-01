@@ -16,7 +16,11 @@ final class MathematicalJavadoc {
     private final Map<MethodDeclaration, LinkedHashSet<String>> notes = new LinkedHashMap<>();
 
     void add(CompilationUnit ast, JavaComputationRegion region, String note) {
-        ASTNode node = NodeFinder.perform(ast, region.start(), region.length());
+        add(ast, region.start(), region.length(), note);
+    }
+
+    void add(CompilationUnit ast, int start, int length, String note) {
+        ASTNode node = NodeFinder.perform(ast, start, length);
         while (node != null && !(node instanceof MethodDeclaration)) node = node.getParent();
         if (node == null) throw new IllegalArgumentException("MISSING_CONTRACT_METHOD");
         notes.computeIfAbsent((MethodDeclaration) node, key -> new LinkedHashSet<>()).add(note);

@@ -179,6 +179,20 @@ final class JavaValueSourceSummary {
             } finally {active.remove(key);}
         }
         boolean onlyOwner(ITypeBinding owner) { return invokedOwners.stream().allMatch(type->type.isEqualTo(owner)); }
+        /** A nonnull guarded receiver tree supplies these existing owner types, not arbitrary helper classes. */
+        void requireInitializedOwners(Shape receiver) {
+            var owners=new HashSet<String>();initializedOwners(receiver,owners);
+            for(var owner:invokedOwners) {
+                work.charge(1);if(!owners.contains(owner.getTypeDeclaration().getKey()))throw unavailable("VALUE_ALGEBRA_INITIALIZATION_OWNER"); //$NON-NLS-1$
+            }
+            for(var constant:statics.values()) {
+                work.charge(1);if(!owners.contains(constant.field().getDeclaringClass().getTypeDeclaration().getKey()))throw unavailable("VALUE_ALGEBRA_INITIALIZATION_OWNER"); //$NON-NLS-1$
+            }
+        }
+        private void initializedOwners(Shape shape,Set<String> owners) {
+            work.charge(1);if(!owners.add(shape.type().getTypeDeclaration().getKey()))return;
+            for(var component:shape.components())if(component.shape()!=null)initializedOwners(component.shape(),owners);
+        }
         /** Frame entries are exact, caller-established bindings; "this" optionally supplies the receiver. */
         Term project(Expression expression, Map<String,Term> frame) {
             noEffects(expression);
