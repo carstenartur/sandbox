@@ -38,8 +38,10 @@ class MathematicalRetryBudgetTest {
                     "java25-numeric/v1", first.assumptions(), options.safety(), options.goal(),
                     new OptimizationBudget(ordinaryAllowance, options.maxStates(), 64, 5000L), CheckedPolicy.NONE);
             var result = new ComputationOptimizer().optimize(request, CancellationToken.NONE);
-            if (!(result instanceof BudgetExceeded exceeded) || exceeded.work() <= ordinaryAllowance) continue;
-            overshoots++;
+            if (!(result instanceof BudgetExceeded exceeded)) continue;
+            // Under-allowance failures also conserve the exact unspent budget;
+            // an overshoot-only filter can omit successful later-method cases.
+            if (exceeded.work() > ordinaryAllowance) overshoots++;
 
             var isolated = MathematicalAnalysis.analyze(ast, source, options(budget - exceeded.work()),
                     new NullProgressMonitor(), secondOffset, 0);
@@ -52,7 +54,7 @@ class MathematicalRetryBudgetTest {
                     "Later search must receive exactly the unspent file budget at " + budget);
             admittedLaterMethod |= !isolated.evidence().isEmpty();
             exhaustedLaterMethod |= isolated.evidence().isEmpty();
-            if (admittedLaterMethod && exhaustedLaterMethod) break;
+            if (overshoots > 0 && admittedLaterMethod && exhaustedLaterMethod) break;
         }
         assertTrue(overshoots > 0, "Exercise a failed attempt that reports more work than its allowance");
         assertTrue(admittedLaterMethod, "Exercise a later method that still fits in the remaining budget");

@@ -1,6 +1,26 @@
 # Pinned Regelsuche optimization SDK
 
-## Current finite-series integration candidate
+## Current verified-value SDK integration candidate
+
+Published source revision: `93f0f35abaea58ea492441776be7c9d2a9be1695`.
+Source tree: `673af46945cf0389af0c0521e23e52616ef49351`.
+Standalone JAR SHA-256: `5ad54860d828a738d4df8dba87659b8a14009bfb208f79705a4b8529b9c58884`.
+
+The existing Maven `MavenOptimizationSdkDistributionTest` completed two clean
+six-module dependency/SDK builds, 302 SDK tests per build, and two fresh external
+consumers with empty dependency caches. All ten distribution files matched byte
+for byte. `qualification.json` is the unchanged generated qualification for this
+exact artifact, including the actual consumer output. The unchanged double-build
+receipt is `reproducibility-2026-11-01-published-value.json`.
+
+This is a local source-bound qualification of the published SDK revision, not a
+public Maven release or an Eclipse consumer/product qualification. The artifact
+retains `publiclyPublished: false`. This prerequisite updates the vendored SDK,
+artifact metadata and retry-budget test coverage; the Java adapter remains the
+baseline implementation from main `b24f806f35dc1ca121f13ae13dfb61cad9ad2749`.
+Later Java adapter features require their own review and qualification.
+
+## Preserved historical finite-series integration candidate
 
 Published source revision: `3a9250062f3f5ddb2ce46d8c1c3650801a77b4ef` on
 [`codex/verified-finite-sums`](https://github.com/carstenartur/regelsuche/tree/codex/verified-finite-sums).
@@ -12,7 +32,8 @@ The existing Maven `MavenOptimizationSdkDistributionTest` passed locally with
 Java 25.0.5 and Maven 3.9.16. It ran two clean six-module dependency/SDK builds,
 compiled and executed two fresh external consumers with empty dependency caches,
 and compared all ten distribution files byte for byte. The receipt is
-`reproducibility-2026-10-31-published-series.json`; `qualification.json` records this
+`reproducibility-2026-10-31-published-series.json`;
+`qualification-2026-10-31-published-series.json` records this
 exact artifact, its inputs and fresh consumer output. This is a local qualification,
 not a GitHub Actions result or an Eclipse product/distribution gate.
 
@@ -35,7 +56,7 @@ The original local qualification is retained without relabelling in
 `f7f73638e8b291a761aaa37dba44f3766f8e3608` and standalone JAR SHA-256
 `8314ebdd784421264bd50c3e98af02a5abf76458630784381c8c6bea5e964a7c`.
 The published commit has the same full source tree, but its different revision and
-commit timestamp produce a different source-bound artifact; the current receipt
+commit timestamp produce a different source-bound artifact; that receipt
 comes from a fresh qualification of the published revision.
 
 ## Preserved historical shared-rule qualification
