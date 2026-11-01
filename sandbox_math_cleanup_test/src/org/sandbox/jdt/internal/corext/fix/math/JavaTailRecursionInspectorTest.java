@@ -161,6 +161,22 @@ class JavaTailRecursionInspectorTest {
         assertEquals("WORK_LIMIT", exhausted.reason());
     }
 
+    @Test void oversizedLegalParameterNameReturnsNoDescriptor() {
+        String parameter = "a".repeat(4097);
+        var result = assertDoesNotThrow(() -> inspect("static long step(int n, long " + parameter
+                + ") { if (n <= 0) return " + parameter + "; return step(n - 1, " + parameter + "); }"));
+        assertTrue(result.iteration().isEmpty());
+        assertEquals("OUTSIDE_DIRECT_TAIL_FRAGMENT", result.reason());
+    }
+
+    @Test void oversizedBindingKeyWithShortParameterNamesReturnsNoDescriptor() {
+        String name = "step" + "x".repeat(4097);
+        var result = assertDoesNotThrow(() -> inspect("static long " + name
+                + "(int n, long a) { if (n <= 0) return a; return " + name + "(n - 1, a); }"));
+        assertTrue(result.iteration().isEmpty());
+        assertEquals("OUTSIDE_DIRECT_TAIL_FRAGMENT", result.reason());
+    }
+
     private static String method(String expression) {
         return "static long step(int n, long a) { if (n <= 0) return a; return " + expression + "; }";
     }

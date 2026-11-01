@@ -106,6 +106,43 @@ class JavaTailRecursionRewriteTest {
         // Deliberately do not claim equality of StackOverflowError behavior.
     }
 
+    @Test void oversizedStateIdentityReturnsNoPlan() {
+        String name = "step" + "x".repeat(4097);
+        String before = source("public static long " + name
+                + "(int n, long a) { if (n <= 0) return a; return " + name + "(n - 1, a); }");
+        var result = assertDoesNotThrow(() -> prepare(before));
+        assertTrue(result.plan().isEmpty());
+        assertEquals("OUTSIDE_DIRECT_TAIL_FRAGMENT", result.reason());
+    }
+
+    @Test void rewritesTheExactSelectedMethodInsideALocalClass() throws Exception {
+        String before = source("""
+            public static long step(int n, long a) {
+                class Local {
+                    static long step(int n, long a) {
+                        if (n <= 0) return a;
+                        return step(n - 1, a + n);
+                    }
+                    static long step(long n, long a) { return a - n; }
+                }
+                return Local.step(n, a);
+            }
+            """);
+        int offset = before.indexOf("static long step(int n, long a)", before.indexOf("class Local"));
+        var result = JavaTailRecursionRewrite.prepare("Sample.java", before, offset,
+                JavaTailRecursionRewrite.StackPolicy.ALLOW_FRAME_ELISION, BUDGET, () -> false);
+        var plan = result.plan().orElseThrow(() -> new AssertionError(result.reason()));
+        assertEquals(before.substring(0, offset), plan.preview().substring(0, offset));
+        assertTrue(plan.preview().contains("static long step(long n, long a) { return a - n; }"));
+        compare(before, plan.preview(), new Class<?>[]{int.class, long.class},
+                List.of(new Object[]{-4, 7L}, new Object[]{0, Long.MIN_VALUE}, new Object[]{30, Long.MAX_VALUE}));
+        assertEquals(before, plan.undo(plan.applyTo(before)));
+        var inexact = JavaTailRecursionRewrite.prepare("Sample.java", before, offset + 1,
+                JavaTailRecursionRewrite.StackPolicy.ALLOW_FRAME_ELISION, BUDGET, () -> false);
+        assertTrue(inexact.plan().isEmpty());
+        assertEquals("METHOD_NOT_FOUND", inexact.reason());
+    }
+
     private void compare(String before, String after, Class<?>[] parameters, List<Object[]> values) throws Exception {
         try (var original = compile(before, "original"); var generated = compile(after, "generated")) {
             var left = original.loadClass("Sample").getMethod("step", parameters);
