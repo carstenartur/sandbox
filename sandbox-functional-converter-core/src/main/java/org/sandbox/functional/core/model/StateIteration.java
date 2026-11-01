@@ -78,6 +78,10 @@ public record StateIteration(List<State> states, String stopCondition, List<Upda
         }
     }
 
+    /** Make the immutable boundary explicit to callers and bytecode analyzers. */
+    @Override public List<State> states() { return List.copyOf(states); }
+    @Override public List<Update> updates() { return List.copyOf(updates); }
+
     private static void text(String value, int maximum) {
         if (value == null || value.length() > maximum || value.isBlank()) {
             throw new IllegalArgumentException("Missing or oversized state-iteration text");

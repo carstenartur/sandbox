@@ -50,15 +50,15 @@ class StateIterationTest {
     @Test void rejectsAnUndeclaredCounterAndNondecreasingCountdown() {
         assertThrows(IllegalArgumentException.class,
                 () -> model(List.of(A), List.of(NEXT_A), Set.of()));
-        assertThrows(IllegalArgumentException.class, () -> new StateIteration.CountDown("n-key", 0, 0));
-        assertThrows(IllegalArgumentException.class, () -> new StateIteration.CountDown("n-key", -1, 0));
+        assertThrows(IllegalArgumentException.class, () -> assertNotNull(new StateIteration.CountDown("n-key", 0, 0)));
+        assertThrows(IllegalArgumentException.class, () -> assertNotNull(new StateIteration.CountDown("n-key", -1, 0)));
     }
 
     @Test void rejectsMissingOrOversizedSourceFragments() {
-        assertThrows(IllegalArgumentException.class, () -> new StateIteration.Update("n-key", " "));
+        assertThrows(IllegalArgumentException.class, () -> assertNotNull(new StateIteration.Update("n-key", " ")));
         assertThrows(IllegalArgumentException.class,
-                () -> new StateIteration.Update("n-key", "x".repeat(StateIteration.MAX_FRAGMENT_LENGTH + 1)));
-        assertThrows(IllegalArgumentException.class, () -> new StateIteration.State("", "n", "int"));
+                () -> assertNotNull(new StateIteration.Update("n-key", "x".repeat(StateIteration.MAX_FRAGMENT_LENGTH + 1))));
+        assertThrows(IllegalArgumentException.class, () -> assertNotNull(new StateIteration.State("", "n", "int")));
     }
 
     private static StateIteration model(List<StateIteration.State> states,
