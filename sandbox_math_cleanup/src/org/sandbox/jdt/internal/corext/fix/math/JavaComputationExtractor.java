@@ -237,6 +237,12 @@ public final class JavaComputationExtractor {
       var diagnostics = new ArrayList<Diagnostic>();
       var bindings = sourceBindings(unit, charge);
       charge.accept(expression.getLength());
+      // Numerical equality cannot authorize deleting an authored constant formula.
+      if (expression.getParent() instanceof Assignment assignment && assignment.getRightHandSide() == expression
+            && assignment.getParent() instanceof ExpressionStatement statement
+            && RuntimeCalculationPolicy.preserve(statement, bindings.declarations()))
+         return new Extraction(regions, diagnostics);
+      if (RuntimeCalculationPolicy.containsComputedConstant(expression, bindings.declarations())) return new Extraction(regions, diagnostics);
       try {
          Builder builder = new Builder(unit, options, bindings.declarations(), bindings.reserved(), expression, true, false, false);
          builder.expressionOutput(expression);

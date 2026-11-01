@@ -12,6 +12,8 @@ import org.eclipse.jface.text.Document;
 import org.eclipse.text.edits.TextEdit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
 import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
 import de.regelsuche.sdk.optimization.*;
@@ -40,6 +42,36 @@ class SourceNumericBranchTest {
                     assertEquals(invoke(before,a,Integer.MAX_VALUE,mode),invoke(after,a,Integer.MAX_VALUE,mode));
                 }
             }
+        }
+    }
+    @ParameterizedTest @ValueSource(booleans={false,true})
+    void equivalentBranchValuesPreserveAnAuthoredConstantFormulaOnEitherSide(boolean formulaOnLeft) throws Exception {
+        for (String condition : List.of("mode>0", "test()", "1/mode>0")) {
+            String source = source(condition, formulaOnLeft ? "32-11" : "21", formulaOnLeft ? "21" : "32-11");
+            var result = analyze(source);
+            var document = new Document(source); result.newEdit().apply(document);
+            try (var before = compile(source); var after = compile(document.get())) {
+                for (int mode : new int[]{-1, 0, 1})
+                    assertEquals(invoke(before, 0, 0, mode), invoke(after, 0, 0, mode));
+            }
+            assertTrue(document.get().contains("32-11"), document.get());
+            assertFalse(result.evidence().stream().anyMatch(e -> e.sourceNumericBranch() != null), result.replacements().toString());
+        }
+    }
+    @ParameterizedTest @ValueSource(booleans={false,true})
+    void equivalentBranchesRetainWholeFormulasFromRuntimeConstantChoices(boolean formulaOnLeft) throws Exception {
+        String formula = "2 + 12 * numberEntries + 4", simplified = "6 + 12 * numberEntries";
+        for (String condition : List.of("mode>0", "test()", "1/mode>0")) {
+            String source = source(condition, formulaOnLeft ? formula : simplified, formulaOnLeft ? simplified : formula)
+                    .replace("int value;", "int numberEntries = a > 0 ? 9 : 11; int value;");
+            var result = analyze(source);
+            var document = new Document(source); result.newEdit().apply(document);
+            try (var before = compile(source); var after = compile(document.get())) {
+                for (int mode : new int[]{-1, 0, 1}) for (int a : new int[]{-1, 0, 1})
+                    assertEquals(invoke(before, a, 0, mode), invoke(after, a, 0, mode));
+            }
+            assertTrue(document.get().contains(formula), document.get());
+            assertFalse(result.evidence().stream().anyMatch(e -> e.sourceNumericBranch() != null), result.replacements().toString());
         }
     }
     @Test void provedWholeBranchCanSubsumeItsEarlierScalarEditAndUseTheSimplerRhs() throws Exception {

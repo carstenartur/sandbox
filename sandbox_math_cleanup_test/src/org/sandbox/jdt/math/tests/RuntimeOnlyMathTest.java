@@ -29,6 +29,9 @@ class RuntimeOnlyMathTest {
     @Test void constantProductsAndNamedConstantExpressionsRemainUntouched() {
         for (String body : List.of("return 5 * 7 * 11 * 13 * 17 * 19 * 23 * 29;",
                 "final int p = 5 * 7 * 11; return p;",
+                "int p = true ? 7 : 11; return (p & x) | (~p & y);",
+                "int p = (3 > 2) ? 7 : 11; return (p & x) | (~p & y);",
+                "final boolean PICK = false; int p = PICK ? 7 : 11; return (p & x) | (~p & y);",
                 "int p = 5 * 7 * 11; return p + 0;")) {
             String source = source(body);
             var result = analyze(source);
@@ -41,6 +44,13 @@ class RuntimeOnlyMathTest {
         String source = source("int x = 9; int y = 10; int k = 8; int j = x * y + k * 11; return j;")
                 .replace("int x,int y,int z", "int unused1,int unused2,int unused3");
         assertFalse(analyze(source).changed());
+    }
+
+    @Test void wholeFormulasFromRuntimeConstantChoicesKeepTheirAuthoredLayout() {
+        String source = source("boolean isBiLevel = x > 0; int numberEntries = isBiLevel ? 9 : 11; "
+                + "int lengthDirectory = 2 + 12 * numberEntries + 4; return lengthDirectory;");
+        var result = analyze(source);
+        assertFalse(result.changed(), result.replacements().toString());
     }
 
     @Test void readableConstantStatementsAndNamesSurviveAnAdjacentRuntimeOptimization() throws Exception {
@@ -64,6 +74,20 @@ class RuntimeOnlyMathTest {
         assertFalse(generated.contains("~"), generated);
         assertFalse(generated.contains("if ("), generated);
         assertFalse(generated.contains("_math"), generated);
+        compare(source, generated);
+    }
+
+    @Test void runtimeConditionalMaskDoesNotMakeLaterArithmeticConstant() throws Exception {
+        String calculation = "int abs = (posMask & t) | (~posMask & -t);";
+        String mask = "int posMask = t > 0 ? -1 : 0;";
+        String source = source("int[] input = {x}; int i = 0; int t = input[i];\n" + mask
+                + "\n" + calculation + "\nreturn abs > y ? abs : z;");
+        var result = analyze(source);
+        var accepted = result.evidence().stream().filter(e -> e.original().equals(calculation)).findFirst()
+                .orElseThrow(() -> new AssertionError(result.diagnostics()));
+        assertEquals(source.indexOf(calculation), accepted.offset()); assertEquals(42, accepted.length());
+        String generated = rewrite(source);
+        assertTrue(generated.contains(mask), generated);
         compare(source, generated);
     }
 

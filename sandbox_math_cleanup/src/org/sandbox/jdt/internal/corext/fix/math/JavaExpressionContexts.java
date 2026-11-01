@@ -20,10 +20,14 @@ import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.NodeFinder;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SuperMethodInvocation;
+import org.eclipse.jdt.core.dom.SwitchStatement;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.YieldStatement;
 
 /** Structural boundaries for branch-local arithmetic and deferred callable bodies. */
@@ -59,6 +63,14 @@ final class JavaExpressionContexts {
     }
 
     static boolean expressionAnchor(Expression expression) {
+        // A constant initializer can change later overloads through a final local.
+        // Ancestor replay does not cover those uses; nested arms need the same boundary.
+        for (ASTNode node = expression; node instanceof Expression && !(node instanceof LambdaExpression); node = node.getParent()) {
+            if (node.getParent() instanceof VariableDeclarationFragment fragment && fragment.getInitializer() == node
+                    && fragment.getParent() instanceof VariableDeclarationStatement declaration
+                    && Modifier.isFinal(declaration.getModifiers()))
+                return false;
+        }
         ASTNode parent = expression.getParent();
         if (parent instanceof InfixExpression comparison && inLambda(comparison)
                 && List.of(InfixExpression.Operator.LESS, InfixExpression.Operator.LESS_EQUALS,
@@ -71,11 +83,11 @@ final class JavaExpressionContexts {
             return lambda.resolveMethodBinding() != null && !lambda.resolveMethodBinding().getReturnType().getName().equals("void"); //$NON-NLS-1$
         if (parent instanceof ConditionalExpression conditional)
             return conditional.getThenExpression() == expression || conditional.getElseExpression() == expression;
-        if (parent instanceof org.eclipse.jdt.core.dom.VariableDeclarationFragment fragment
+        if (parent instanceof VariableDeclarationFragment fragment
                 && fragment.getInitializer() == expression
-                && fragment.getParent() instanceof org.eclipse.jdt.core.dom.VariableDeclarationStatement declaration
+                && fragment.getParent() instanceof VariableDeclarationStatement declaration
                 && declaration.fragments().size() == 1
-                && declaration.getParent() instanceof org.eclipse.jdt.core.dom.SwitchStatement)
+                && declaration.getParent() instanceof SwitchStatement)
             return true;
         if (parent instanceof YieldStatement yield) return yield.getExpression() == expression;
         if (parent instanceof ReturnStatement returned)

@@ -92,7 +92,7 @@ final class RuntimeCalculationPolicy {
     private static boolean preserveExpression(Expression expression,
             Map<String, VariableDeclarationFragment> declarations) {
         if (!primitiveNumber(expression)) return false;
-        if (constant(expression, declarations, new HashSet<>(), 0)) return true;
+        if (constant(expression, declarations, new HashSet<>(), 0, true)) return true;
         return containsComputedConstant(expression, declarations);
     }
 
@@ -122,15 +122,15 @@ final class RuntimeCalculationPolicy {
                 // Its left-associative constant prefix is still an intentional
                 // formula even though no separate child node represents 3 * 2.
                 if (node instanceof InfixExpression chain && !chain.extendedOperands().isEmpty()
-                        && constant(chain.getLeftOperand(), declarations, new HashSet<>(), 0)
-                        && constant(chain.getRightOperand(), declarations, new HashSet<>(), 0)) {
+                        && constant(chain.getLeftOperand(), declarations, new HashSet<>(), 0, false)
+                        && constant(chain.getRightOperand(), declarations, new HashSet<>(), 0, false)) {
                     found[0] = true;
                     return false;
                 }
                 if (node instanceof Expression child
                         && (child instanceof InfixExpression || child instanceof CastExpression
                                 || child instanceof PrefixExpression || child instanceof QualifiedName)
-                        && constant(child, declarations, new HashSet<>(), 0)) {
+                        && constant(child, declarations, new HashSet<>(), 0, false)) {
                     found[0] = true;
                     return false;
                 }
@@ -147,29 +147,30 @@ final class RuntimeCalculationPolicy {
     }
 
     private static boolean constant(Expression expression, Map<String, VariableDeclarationFragment> declarations,
-            Set<String> visiting, int depth) {
+            Set<String> visiting, int depth, boolean wholeFormula) {
         if (depth > 64 || !primitiveNumber(expression)) return false;
         if (expression instanceof NumberLiteral || expression instanceof CharacterLiteral) return true;
         if (expression instanceof ParenthesizedExpression parentheses)
-            return constant(parentheses.getExpression(), declarations, visiting, depth + 1);
+            return constant(parentheses.getExpression(), declarations, visiting, depth + 1, wholeFormula);
         if (expression instanceof CastExpression cast)
-            return constant(cast.getExpression(), declarations, visiting, depth + 1);
-        // A layout selected from authored constants still belongs to source policy.
-        // This does not assume a constant condition, execute it or infer a numeric fact.
+            return constant(cast.getExpression(), declarations, visiting, depth + 1, wholeFormula);
+        // Preserve whole formulas assembled from selected authored constants.
+        // Subexpressions require a constant condition: runtime masks are not constants.
         if (expression instanceof ConditionalExpression conditional)
-            return constant(conditional.getThenExpression(), declarations, visiting, depth + 1)
-                    && constant(conditional.getElseExpression(), declarations, visiting, depth + 1);
+            return (wholeFormula || conditional.getExpression().resolveConstantExpressionValue() instanceof Boolean)
+                    && constant(conditional.getThenExpression(), declarations, visiting, depth + 1, wholeFormula)
+                    && constant(conditional.getElseExpression(), declarations, visiting, depth + 1, wholeFormula);
         if (expression instanceof PrefixExpression prefix) {
             var operator = prefix.getOperator();
             return (operator == PrefixExpression.Operator.PLUS || operator == PrefixExpression.Operator.MINUS
                     || operator == PrefixExpression.Operator.COMPLEMENT)
-                    && constant(prefix.getOperand(), declarations, visiting, depth + 1);
+                    && constant(prefix.getOperand(), declarations, visiting, depth + 1, wholeFormula);
         }
         if (expression instanceof InfixExpression infix) {
-            if (!constant(infix.getLeftOperand(), declarations, visiting, depth + 1)
-                    || !constant(infix.getRightOperand(), declarations, visiting, depth + 1)) return false;
+            if (!constant(infix.getLeftOperand(), declarations, visiting, depth + 1, wholeFormula)
+                    || !constant(infix.getRightOperand(), declarations, visiting, depth + 1, wholeFormula)) return false;
             for (Object operand : infix.extendedOperands())
-                if (!constant((Expression) operand, declarations, visiting, depth + 1)) return false;
+                if (!constant((Expression) operand, declarations, visiting, depth + 1, wholeFormula)) return false;
             return true;
         }
         if (!(expression instanceof Name name)
@@ -182,7 +183,7 @@ final class RuntimeCalculationPolicy {
         if (declaration == null || declaration.getStartPosition() >= expression.getStartPosition()
                 || !visiting.add(binding.getKey())) return false;
         try {
-            return constant(declaration.getInitializer(), declarations, visiting, depth + 1);
+            return constant(declaration.getInitializer(), declarations, visiting, depth + 1, wholeFormula);
         } finally {
             visiting.remove(binding.getKey());
         }
