@@ -2,6 +2,8 @@
 package org.sandbox.jdt.internal.corext.fix.math;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumSet;
@@ -58,7 +60,8 @@ class PrimitiveSourceGuardTest {
 
     @Test void sourceHelperDependenciesInvalidateTheirReceipt() throws Exception {
         Path helper = temporary.resolve("Helper.java");
-        Files.writeString(helper, "class Helper { static void error() { throw new IllegalArgumentException(); } }");
+        Files.writeString(helper, "class Helper { static void error() { throw new IllegalArgumentException(); } }",
+				StandardCharsets.UTF_8);
         String source = "class Sample { int f(int x) { if(x<0) Helper.error(); return 3-(x%4); } }";
         var environment = new MathematicalAnalysis.SourceEnvironment("Sample.java", List.of(), List.of(temporary.toString()), List.of());
         var ast = parse(source, environment);
@@ -69,7 +72,7 @@ class PrimitiveSourceGuardTest {
             assertFalse(checkpoint.receipts().isEmpty());
             assertTrue(checkpoint.current());
         }
-        Files.writeString(helper, "class Helper { static void error() { return; } }");
+        Files.writeString(helper, "class Helper { static void error() { return; } }", StandardCharsets.UTF_8);
         assertFalse(checkpoint.current(), "Changed throwing helper source invalidates Apply");
         var fresh = parse(source, environment);
         try (var context = JavaSourceContext.open(fresh, source, environment, new NullProgressMonitor(), options())) {
@@ -79,7 +82,8 @@ class PrimitiveSourceGuardTest {
 
     @Test void deferredProofUsesOnlyTheActualRemainderIncludingHelperDiscovery() throws Exception {
         Files.writeString(temporary.resolve("Helper.java"),
-                "class Helper { static void error() { throw new IllegalArgumentException(); } }");
+				"class Helper { static void error() { throw new IllegalArgumentException(); } }",
+				StandardCharsets.UTF_8);
         String source = "class Sample { int f(int x) { if(x<0) Helper.error(); return 3-(x%4); } }";
         var environment = new MathematicalAnalysis.SourceEnvironment("Sample.java", List.of(), List.of(temporary.toString()), List.of());
         for (long remaining : new long[] {0, 1, 16, 64}) {
