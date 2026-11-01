@@ -30,6 +30,16 @@ class BouncyCastleFinalPreparationBudgetTest {
     private static final String ENTRY = "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java";
     private static final String SOURCE_SHA256 = "afccf30d462347704f3e090542b75e81bb782e567abffee780af4dfd3e7de1a7";
 
+    // Exact accepted source spans from completed CI run 41336653257 on PR #1784.
+    // Additional candidates must not conceal losses within the unchanged full-file budget.
+    private record Span(int offset, int length) { }
+    private static final List<Span> MATHEMATICAL_BASELINE = List.of(
+            new Span(50036, 196), new Span(50750, 165), new Span(52342, 77), new Span(64177, 246),
+            new Span(64971, 292), new Span(66146, 87), new Span(72611, 451), new Span(76081, 81),
+            new Span(77214, 113), new Span(82149, 83), new Span(83332, 112), new Span(84387, 63),
+            new Span(87154, 53), new Span(90873, 157), new Span(106702, 304), new Span(110134, 418),
+            new Span(116440, 69), new Span(123678, 67), new Span(125905, 239), new Span(128239, 839));
+
     // Complete original fragments from accepted-differences.json in the qualification at
     // sandbox commit b8b56a8ab8166b5fd3070f0586aecce9387097e3:
     // qa/math-optimization/results/2026-10-11-generic-numeric-domains-main-integration/.
@@ -81,6 +91,7 @@ class BouncyCastleFinalPreparationBudgetTest {
         values.put(MathCleanUpOptions.GOAL, "LOWER_ESTIMATED_RUNTIME");
         values.put(MathCleanUpOptions.WORK_BUDGET, "1000000");
         values.put(MathCleanUpOptions.MAX_STATES, "20000");
+        values.put(MathCleanUpOptions.TIMEOUT_SECONDS, "5");
         values.put(MathCleanUpOptions.EXPLANATIONS, "NONTRIVIAL");
         values.put(MathCleanUpOptions.MATHEMATICAL_OPT_IN, Boolean.toString(mathematical));
         var options = MathCleanUpOptions.parse(values, 17);
@@ -91,6 +102,11 @@ class BouncyCastleFinalPreparationBudgetTest {
         assertAll(mathematical ? "mathematical Hawk coverage" : "strict Hawk coverage",
                 () -> assertAcceptedCoverage(analysis, source, HAWK_2471, first, 2471),
                 () -> assertAcceptedCoverage(analysis, source, HAWK_2575, second, 2575));
+        if (mathematical) {
+            var missing = MATHEMATICAL_BASELINE.stream().filter(span -> analysis.replacements().stream()
+                    .noneMatch(edit -> edit.offset() == span.offset() && edit.length() == span.length())).toList();
+            assertEquals(List.of(), missing, "Every baseline span must survive independently of new candidates");
+        }
 
         Document document = new Document(source);
         var undo = analysis.newEdit().apply(document, TextEdit.CREATE_UNDO);

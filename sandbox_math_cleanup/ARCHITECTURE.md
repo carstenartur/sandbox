@@ -266,3 +266,67 @@ permission to skip initialization, reuse object identity, assume associativity,
 claim canonical residues or cancel an inverse. Consumers must establish those
 obligations separately. Complete Fp12/Fp6/Fp2 multiplication and a structural rename
 are replayed against freshly compiled source with24 inputs and12 scalar outputs.
+
+## Source locals, primitive guards and redundant assignment branches
+
+Ordinary region emission can reuse a unique earlier output declaration as a
+source local. Its availability follows the original output order, independently
+of the SDK's node order. A local is never referenced by a generated prelude that
+executes before its declaration. Shared intermediate nodes retain their original
+capture strategy when this would be unsafe. The independent Java emission
+verifier declares these same source locals and proves the re-extracted outputs
+and trace. Authored layout arithmetic selected from immutable constant choices
+remains a source-policy boundary; it is not a numerical assumption.
+
+Primitive remainder regions can obtain nonnegative facts from binding-checked
+dominating guards on effectively final integral locals. Discovery requires the
+request's source context, shares its allowance and cancellation, and has an
+additional 4096-node bound. A guard can exit through an actual source-defined
+static helper chain. Every helper must have no return to its caller and must end
+in a proven throw or another proven throwing call; early-return lookalikes,
+recursion, instance dispatch, mutable locals and guessed aliases are rejected.
+The assumption records the input binding, helper binding chain and dependency
+fingerprints. The original guard and calls remain in place, preserving effects,
+exceptions and class initialization. Traditional switch-local initializers are
+expression edits with their original primitive type and evaluation point.
+Whole-file analysis first completes established regions and their retries.
+Primitive guard discovery then uses only the remaining file work, including
+transitive helper lookup, and retries uncovered regions only when new facts were
+proved. The original region identities retain context, slice and retry metadata.
+An explicit selection and direct extraction still prove these facts immediately.
+Receiver and BigInteger source proofs keep their existing scheduling.
+
+`JavaSourceNumericBranches` separately proves the RHS values of two primitive
+local assignments equal through the SDK verifier. It freshly parses and
+re-extracts the source to replay its `SourceNumericBranchEvidence`, which carries
+the exact source hash and target binding. The adapter removes a condition only
+when primitive local evaluation is pure and total. Other conditions execute once
+in their original position; condition comments remain, and comments elsewhere in
+the branch retain the original source. Calls, reads, division and remainder in
+the RHS remain conservative boundaries. Source-control estimates explicitly add
+one branch unit to the scalar estimate; they are separate from the numeric proof
+and are not runtime measurements. Discovery, parsing, extraction and both
+independent proof allowances debit the existing file budget.
+The replay can subsume a fully contained, already verified scalar edit and select
+the simpler original RHS. Its prior search work remains charged; protected
+reservations and source/scheduling plans cannot be subsumed. This lets ordinary
+scalar simplification and whole-branch realization cooperate without overlapping
+edits or replaying a removed expression context.
+
+The optional `SwtCurrentSourceRefinementTest` Maven/JUnit gate uses the reusable
+pinned JGit fixture and verifies that the exact upstream checkout matches the
+hash-pinned SWT 3.136.0 source archive. It reports ordinary whole-file results and
+`ImageData.getPixel` selection results separately. Original and ordinary generated
+complete classes are compiled and loaded for pixel boundaries, JPEG DCT calls,
+PNG Paeth random and aliased rows, and padding conversion exceptional/identity
+cases. The existing SWT 3.135.0 default QA baseline remains unchanged.
+
+Run that explicit network corpus gate with Java 25:
+
+```sh
+./mvnw -f qa/math-optimization/pom.xml -Dtest=SwtCurrentSourceRefinementTest -Dsandbox.math.swt.current=true test
+```
+
+The gate writes a detailed receipt and an unpublished unified upstream patch to
+`qa/math-optimization/target/swt-current-patch/`; JGit applies the patch to the
+verified original sources and checks the complete generated files again.

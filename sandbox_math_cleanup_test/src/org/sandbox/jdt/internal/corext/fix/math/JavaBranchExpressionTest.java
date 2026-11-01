@@ -4,6 +4,7 @@ package org.sandbox.jdt.internal.corext.fix.math;
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class JavaBranchExpressionTest extends JavaContextTestSupport {
@@ -26,6 +27,24 @@ class JavaBranchExpressionTest extends JavaContextTestSupport {
         assertFalse(analysis.changed(), analysis.diagnostics().toString());
         assertTrue(analysis.diagnostics().stream().anyMatch(d -> d.message().contains("EXPRESSION_CONTEXT_TYPE_CHANGED")),
                 analysis.diagnostics().toString());
+    }
+    @ParameterizedTest @CsvSource({"true,false,x-x", "true,true,x-x", "true,false,true?x-x:0", "true,true,true?x-x:0",
+            "false,false,true?x-x:0", "false,true,true?x-x:0"})
+    void localInitializationPreservesTheLaterConditionalOverload(boolean inSwitch, boolean finalLocal, String initializer) throws Exception {
+        String source = "public class Sample { static long tag(byte x){return 1;} static long tag(int x){return 2;}"
+                + " public static long run(int x){boolean flag=x>0; " + (inSwitch ? "switch(x){default: " : "")
+                + (finalLocal ? "final " : "") + "int value=" + initializer + "; return tag(flag?value:(byte)0);"
+                + (inSwitch ? "}" : "") + "}}";
+        var analysis = analyze(source);
+        var document = new org.eclipse.jface.text.Document(source);
+        analysis.newEdit().apply(document);
+        try (var before = compile(source); var after = compile(document.get())) {
+            for (int input : new int[]{Integer.MIN_VALUE, -1, 0, 1, Integer.MAX_VALUE}) {
+                assertEquals(2L, before.loadClass("Sample").getMethod("run", int.class).invoke(null, input));
+                assertEquals(2L, after.loadClass("Sample").getMethod("run", int.class).invoke(null, input), document.get());
+            }
+        }
+        assertEquals(!finalLocal, analysis.changed(), analysis.diagnostics().toString());
     }
     @Test void intArmIsNotWidenedBeforeItsArithmeticExecutes() throws Exception {
         String source = "public class Sample { public static long run(int x){return x>0 ? (x+1)-1 : 0L;}}";

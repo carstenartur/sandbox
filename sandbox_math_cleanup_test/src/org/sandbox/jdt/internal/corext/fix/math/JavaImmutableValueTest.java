@@ -105,12 +105,25 @@ class JavaImmutableValueTest {
     }
     @Test void protectedEnvelopesReserveWorkBeforeDisjointValueOptimization() throws Exception {
         String prefix="/*"+"x".repeat(8000)+"*/",source=prefix+fixture(multiplication());
-        var base=options();var limited=new MathCleanUpOptions(base.enabled(),base.kinds(),base.safety(),base.goal(),
-            110_000,base.maxStates(),base.checkedOptIn(),base.targetJava(),base.exclusions(),true);
-        var unprotected=MathematicalAnalysis.analyze(parse(source),source,limited,null,-1,0,environment());
+        var base=options();var ast=parse(source);
+        var unprotected=MathematicalAnalysis.analyze(ast,source,base,null,-1,0,environment());
+        assertTrue(apply(source,unprotected).contains("Mathematics value path"),unprotected.diagnostics().toString());
+        // Locate an observed admission boundary instead of assuming a fixed discovery cost.
+        long unavailable=1,available=base.workBudget();
+        while(available-unavailable>1) {
+            long candidate=unavailable+(available-unavailable)/2;
+            var values=new HashMap<>(base.toMap());values.put(MathCleanUpOptions.WORK_BUDGET,Long.toString(candidate));
+            var request=MathCleanUpOptions.parse(values,base.targetJava());
+            var result=MathematicalAnalysis.analyze(ast,source,request,null,-1,0,environment());
+            if(apply(source,result).contains("Mathematics value path"))available=candidate;
+            else unavailable=candidate;
+        }
+        var values=new HashMap<>(base.toMap());values.put(MathCleanUpOptions.WORK_BUDGET,Long.toString(available));
+        var limited=MathCleanUpOptions.parse(values,base.targetJava());
+        unprotected=MathematicalAnalysis.analyze(ast,source,limited,null,-1,0,environment());
         assertTrue(apply(source,unprotected).contains("Mathematics value path"),unprotected.diagnostics().toString());
         var ranges=List.of(new org.eclipse.jdt.core.SourceRange(0,prefix.length()));
-        var constrained=MathematicalAnalysis.analyze(parse(source),source,limited,null,-1,0,environment(),ranges);
+        var constrained=MathematicalAnalysis.analyze(ast,source,limited,null,-1,0,environment(),ranges);
         assertFalse(apply(source,constrained).contains("Mathematics value path"),"protected envelopes consume the same request ledger");
         var sufficient=MathematicalAnalysis.analyze(parse(source),source,base,null,-1,0,environment(),ranges);
         String generated=apply(source,sufficient);assertTrue(generated.contains("Mathematics value path"),sufficient.diagnostics().toString());

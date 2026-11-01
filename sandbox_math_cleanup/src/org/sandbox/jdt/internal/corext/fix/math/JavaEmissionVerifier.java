@@ -79,12 +79,14 @@ final class JavaEmissionVerifier {
       LinkedHashMap<String, String> outputNames = new LinkedHashMap<>();
       HashSet<String> reservedNames = new HashSet<>(region.reservedNames());
       int nextOutput = 0;
+      Map<String,String> authoredOutputs = JavaComputationEmitter.outputLocals(region);
 
       for (Output output : candidate.plan().outputs()) {
          String name;
-         do {
-            name = "_mathVerifiedOutput" + nextOutput++;
-         } while (!reservedNames.add(name));
+         if (!authoredOutputs.getOrDefault(output.name(), "").isEmpty()) name = authoredOutputs.get(output.name()); //$NON-NLS-1$
+         else do {
+               name = "_mathVerifiedOutput" + nextOutput++;
+            } while (!reservedNames.add(name));
 
          outputNames.put(output.name(), name);
          source.append(MathematicalAnalysis.javaType(NumericKind.fromType(output.type())))

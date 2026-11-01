@@ -143,6 +143,7 @@ public final class MathematicalAnalysis {
       var work = new JavaValueSourceSummary.Work(options.workBudget(), options, () -> isCancelled(original));
       var monitor = new RequestMonitor(original, work);
       try (var context = JavaSourceContext.open(ast, source, environment, monitor, options)) {
+         context.deferPrimitiveGuards(selectionOffset < 0);
          Analysis result = analyzeWithin(ast, source, options, monitor, selectionOffset, selectionLength, environment, context, protectedRegions, work);
          if (work.isCancelled()) return cancelled(result.sourceDigest(), result.compilerOptions());
          var dependencies = context.checkpoint();
@@ -272,6 +273,8 @@ public final class MathematicalAnalysis {
       boolean storesScheduled = selectionOffset >= 0;
       boolean contextsScheduled = false;
       boolean extendedReadsScheduled = selectionOffset >= 0;
+      boolean primitiveGuardsScheduled = selectionOffset >= 0;
+      var primitiveVariants = new java.util.IdentityHashMap<JavaComputationRegion, JavaComputationRegion>();
       var contextRegions = java.util.Collections.newSetFromMap(
             new java.util.IdentityHashMap<JavaComputationRegion, Boolean>());
       var extendedReadRegions = java.util.Collections.newSetFromMap(
@@ -279,7 +282,8 @@ public final class MathematicalAnalysis {
       var acceptedContexts = new ArrayList<JavaComputationRegion>();
 
       try {
-         for (int regionIndex = 0; regionIndex < pending.size() || !deferredAssignments.isEmpty() || !storesScheduled || !contextsScheduled || !extendedReadsScheduled; regionIndex++) {
+         for (int regionIndex = 0; regionIndex < pending.size() || !deferredAssignments.isEmpty() || !storesScheduled
+               || !contextsScheduled || !extendedReadsScheduled || !primitiveGuardsScheduled; regionIndex++) {
             if (regionIndex == pending.size()) {
                if (!deferredAssignments.isEmpty()) {
                   pending.addAll(deferredAssignments);
@@ -312,18 +316,38 @@ public final class MathematicalAnalysis {
                   contextRegions.addAll(contexts.regions());
                   pending.addAll(contexts.regions());
                }
+               if (regionIndex == pending.size() && !primitiveGuardsScheduled) {
+                  primitiveGuardsScheduled = true;
+                  remainingWork -= sourceContext.takeWork();
+                  var refinedOrigins = new ArrayList<JavaComputationRegion>();
+                  for (var originalRegion : pending) {
+                     if (remainingWork <= 0 || isCancelled(monitor)) break;
+                     if (primitiveVariants.containsKey(originalRegion) || replacements.stream().anyMatch(other ->
+                           overlaps(originalRegion.start(), originalRegion.length(), other.offset(), other.length()))) continue;
+                     var refined = sourceContext.refinePrimitives(originalRegion, remainingWork);
+                     remainingWork -= sourceContext.takeWork();
+                     if (!refined.assumptions().equals(originalRegion.assumptions())) {
+                        primitiveVariants.put(originalRegion, refined);
+                        refinedOrigins.add(originalRegion);
+                     }
+                  }
+                  // Keep the original identities for context, slice and retry metadata.
+                  scalarRetries.addAll(refinedOrigins);
+                  pending.addAll(refinedOrigins);
+               }
                if (regionIndex == pending.size()) break;
             }
             remainingWork -= sourceContext.takeWork();
-            JavaComputationRegion region = pending.get(regionIndex);
+            JavaComputationRegion originalRegion = pending.get(regionIndex);
+            JavaComputationRegion region = primitiveVariants.getOrDefault(originalRegion, originalRegion);
             if (valueRanges.stream().anyMatch(range -> overlaps(region.start(), region.length(), range.offset(), range.length()))) continue;
             if (protectedReservations.stream().anyMatch(range -> overlaps(region.start(), region.length(), range.offset(), range.length()))) continue;
-            boolean contextRegion = contextRegions.contains(region);
+            boolean contextRegion = contextRegions.contains(originalRegion);
             boolean expressionOnly = contextRegion && JavaExpressionContexts.expressionOnly(ast, region);
-            if ((contextRegion || extendedReadRegions.contains(region))
+            if ((contextRegion || extendedReadRegions.contains(originalRegion) || primitiveVariants.containsKey(originalRegion))
                   && replacements.stream().anyMatch(other -> overlaps(region.start(), region.length(), other.offset(), other.length()))) continue;
-            boolean scalarRetry = scalarRetries.remove(region);
-            var slice = connections.slices().get(region);
+            boolean scalarRetry = scalarRetries.remove(originalRegion);
+            var slice = connections.slices().get(originalRegion);
             if (isCancelled(monitor)) {
                return cancelled(sourceDigest, compilerOptions);
             }
@@ -491,7 +515,9 @@ public final class MathematicalAnalysis {
                   if (region.outputs().stream().anyMatch(JavaComputationRegion.OutputBinding::arrayStore)
                         && candidate.obligations().guard() != GuardKind.NONE)
                      throw new IllegalArgumentException("ARRAY_STORE_GUARD_UNSUPPORTED"); //$NON-NLS-1$
-                  JavaComputationEmitter.Emission plain = emitter.emit(candidate.prepared(), region.inputNames(), reserved, options.targetJava());
+                  JavaComputationEmitter.Emission plain = emitter.emit(candidate.prepared(), region.inputNames(), reserved, options.targetJava(),
+                        options.safety() == SafetyProfile.PRESERVE_JAVA && region.receiverGuards().isEmpty()
+                              ? JavaComputationEmitter.outputLocals(region) : Map.of());
                   if (mathematicalBigInteger) plain = JavaOriginalExpressions.restore(ast, source, region, plain);
                   if (expressionOnly) {
                      if (candidate.obligations().guard() != GuardKind.NONE)
@@ -713,12 +739,16 @@ public final class MathematicalAnalysis {
       } finally {
          monitor.done();
       }
+      sourceContext.deferPrimitiveGuards(false);
 
       if (isCancelled(monitor)) {
          return cancelled(sourceDigest, compilerOptions);
       }
 
       remainingWork += iterationReserve;
+      remainingWork = JavaSourceNumericBranches.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
+            compilerOptions, environment, replacements, evidence, acceptedContexts, diagnostics, remainingWork - sourceContext.takeWork());
+      if (isCancelled(monitor)) return cancelled(sourceDigest, compilerOptions);
       var acceptedStreamPairs = new ArrayList<JavaNumericIterationContexts.Pair>();
       remainingWork = JavaNumericStreamOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength, compilerOptions,
             environment, replacements, evidence, diagnostics, acceptedStreamPairs, remainingWork - sourceContext.takeWork());
@@ -1048,7 +1078,7 @@ public final class MathematicalAnalysis {
       );
    }
 
-   private static String digest(String source) {
+   static String digest(String source) {
       try {
          return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(source.getBytes(StandardCharsets.UTF_8)));
       } catch (NoSuchAlgorithmException unavailable) {
@@ -1129,6 +1159,11 @@ public final class MathematicalAnalysis {
          MultiTextEdit edit = new MultiTextEdit();
 
          for (MathematicalAnalysis.Replacement replacement : this.replacements) {
+            evidence.stream().filter(e -> e.offset() == replacement.offset() && e.sourceNumericBranch() != null)
+                  .forEach(e -> {
+                     if (!sourceDigest.equals(e.sourceNumericBranch().sourceSha256()))
+                        throw new IllegalArgumentException("SOURCE_NUMERIC_BRANCH_VERSION_DIFFERS"); //$NON-NLS-1$
+                  });
             var plan = evidence.stream().filter(e -> e.offset() == replacement.offset() && e.length() == replacement.length()
                   && e.replacement().equals(replacement.replacement())).map(VerifiedRegion::sourcePlan).filter(Objects::nonNull).findFirst();
             if (plan.isPresent()) {
@@ -1194,12 +1229,18 @@ public final class MathematicalAnalysis {
 
    public record VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
       String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,
-      LoopSchedulingEvidence scheduling, FiniteSumEvidence finiteSum, RuntimeIterationEvidence runtimeIteration) {
+      LoopSchedulingEvidence scheduling, FiniteSumEvidence finiteSum, RuntimeIterationEvidence runtimeIteration,
+      SourceNumericBranchEvidence sourceNumericBranch) {
       public VerifiedRegion {
          if (sourcePlan != null) sourcePlan.requireEnvelope(offset, length, original, replacement);
          if (explanation != null && !proof.equals(explanation.verified().proof())) {
             throw new IllegalArgumentException("EXPLANATION_PROOF_BINDING_DIFFERS");
          }
+      }
+      public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
+            String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,
+            LoopSchedulingEvidence scheduling, FiniteSumEvidence finiteSum, RuntimeIterationEvidence runtimeIteration) {
+         this(offset, length, proof, cost, original, replacement, explanation, sourcePlan, scheduling, finiteSum, runtimeIteration, null);
       }
       public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
             String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,

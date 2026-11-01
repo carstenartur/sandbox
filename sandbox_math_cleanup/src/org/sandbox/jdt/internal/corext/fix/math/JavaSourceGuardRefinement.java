@@ -12,6 +12,29 @@ final class JavaSourceGuardRefinement {
     private JavaSourceGuardRefinement() { }
 
     static JavaComputationRegion refine(JavaComputationRegion region, CompilationUnit unit) {
+        if (!JavaSourceContext.primitiveGuardsDeferred(unit)) region = refinePrimitives(region, unit);
+        return refineReceivers(region, unit);
+    }
+
+    static JavaComputationRegion refinePrimitives(JavaComputationRegion region, CompilationUnit unit) {
+        var primitiveFacts = region.trace().occurrences().stream().anyMatch(occurrence ->
+                de.regelsuche.sdk.optimization.JavaExpressions.operationOf(occurrence.expression()).orElse(null)
+                        == de.regelsuche.sdk.optimization.NumericOperation.REMAINDER)
+                ? JavaPrimitiveGuardFacts.nonnegative(unit, region) : java.util.Map.<String,String>of();
+        if (!primitiveFacts.isEmpty()) {
+            var assumptions = new HashSet<>(region.assumptions());
+            for (var entry : region.inputNames().entrySet()) {
+                if (primitiveFacts.containsKey(entry.getValue())) assumptions.add(new SemanticAssumption(Kind.NON_NEGATIVE, entry.getKey(), "",
+                        "binding-checked immutable primitive and dominating source guard at " + region.start() + "; "
+                        + primitiveFacts.get(entry.getValue()) + "; source dependencies=" + JavaSourceContext.sourceReceipts(unit)));
+            }
+            region = new JavaComputationRegion(region.plan(), region.trace(), region.outputs(), region.inputNames(), assumptions,
+                    region.reservedNames(), region.receiverGuards(), region.start(), region.length(), region.internalBindings(), region.arrayReads());
+        }
+        return region;
+    }
+
+    private static JavaComputationRegion refineReceivers(JavaComputationRegion region, CompilationUnit unit) {
         if (region.receiverGuards().isEmpty()) return region;
         var requirements = new HashMap<String, Boolean>();
         region.receiverGuards().forEach(name -> requirements.put(name, false));

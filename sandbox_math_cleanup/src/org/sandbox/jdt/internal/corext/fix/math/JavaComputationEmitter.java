@@ -92,9 +92,24 @@ public final class JavaComputationEmitter {
    );
 
    public JavaComputationEmitter.Emission emit(PreparedJointComputation plan, Map<String, String> inputNames, Set<String> reservedNames, int targetJava) {
+      return emit(plan, inputNames, reservedNames, targetJava, Map.of());
+   }
+
+   Emission emit(PreparedJointComputation plan, Map<String, String> inputNames, Set<String> reservedNames, int targetJava,
+         Map<String, String> outputLocals) {
       JavaComputationEmitter.State state = new JavaComputationEmitter.State(inputNames, reservedNames, targetJava, JavaComputationEmitter.Mode.PRESERVE, false, false);
-      Map<String, String> outputs = schedule(plan, state);
+      Map<String, String> outputs = schedule(plan, state, outputLocals);
       return new JavaComputationEmitter.Emission(state.code.toString(), outputs);
+   }
+
+   /** Only unique declarations can become available inputs to later source outputs. */
+   static Map<String,String> outputLocals(JavaComputationRegion region) {
+      var counts = new HashMap<String,Integer>();
+      region.outputs().forEach(output -> counts.merge(output.javaName(), 1, Integer::sum));
+      var names = new LinkedHashMap<String,String>();
+      for (var output : region.outputs()) names.put(output.id(), output.declaration() && !output.returnValue() && !output.arrayStore()
+            && counts.get(output.javaName()) == 1 && !region.inputNames().containsValue(output.javaName()) ? output.javaName() : ""); //$NON-NLS-1$
+      return names;
    }
 
    public JavaComputationEmitter.Emission emitChecked(OptimizationRequest request, Candidate candidate, Map<String, String> inputNames, Set<String> reservedNames, int targetJava) {
@@ -200,6 +215,11 @@ public final class JavaComputationEmitter {
    }
 
    private static Map<String, String> schedule(PreparedJointComputation plan, JavaComputationEmitter.State state) {
+      return schedule(plan, state, Map.of());
+   }
+
+   private static Map<String, String> schedule(PreparedJointComputation plan, JavaComputationEmitter.State state,
+         Map<String,String> outputLocals) {
       Objects.requireNonNull(plan);
       List<Node> nodes = plan.nodes();
       HashSet<Integer> required = new HashSet<>();
@@ -217,6 +237,23 @@ public final class JavaComputationEmitter {
       }
 
       HashMap<Integer, String> values = new HashMap<>();
+      var outputs = new LinkedHashMap<String,String>();
+      var outputOrder = new HashMap<String,Integer>();
+      int ordinal = 0;
+      if (!outputLocals.isEmpty() && !outputLocals.keySet().equals(plan.outputBindings().keySet()))
+         throw unsupported("MATH_OUTPUT_SOURCE_ORDER_DIFFERS"); //$NON-NLS-1$
+      for (String output : outputLocals.isEmpty() ? plan.outputBindings().keySet() : outputLocals.keySet()) outputOrder.put(output, ordinal++);
+      int[] firstConsumer = new int[nodes.size()];
+      java.util.Arrays.fill(firstConsumer, Integer.MAX_VALUE);
+      plan.outputBindings().forEach((name, index) -> firstConsumer[index] = Math.min(firstConsumer[index], outputOrder.get(name)));
+      for (int index = nodes.size()-1; index >= 0; index--)
+         for (int dependency : nodes.get(index).arguments())
+            firstConsumer[dependency] = Math.min(firstConsumer[dependency], firstConsumer[index]);
+      var reusable = new HashMap<Integer,String>();
+      plan.outputBindings().forEach((name, index) -> {
+         if (!outputLocals.getOrDefault(name, "").isEmpty() && outputOrder.get(name) == firstConsumer[index]) //$NON-NLS-1$
+            reusable.put(index, outputLocals.get(name));
+      });
       int[] uses = new int[nodes.size()];
       for (int output : plan.outputBindings().values()) uses[output]++;
       for (int index : required) {
@@ -225,6 +262,21 @@ public final class JavaComputationEmitter {
             for (int dependency : node.arguments()) uses[dependency]++;
          }
       }
+      // Prelude temporaries execute before the authored declarations. A reused
+      // output must therefore have no path into a materialized prelude node.
+      boolean changed;
+      do {
+         boolean[] prelude = new boolean[nodes.size()];
+         for (int index = nodes.size()-1; index >= 0; index--) {
+            Node node = nodes.get(index);
+            boolean temporary = required.contains(index) && !reusable.containsKey(index) && uses[index] > 1
+                  && !(node.expression() instanceof VariableExpr)
+                  && !(NumericKind.fromType(node.type()) != NumericKind.BIG_INTEGER && JavaExpressions.isLiteral(node.expression()));
+            if (temporary) prelude[index] = true;
+            if (prelude[index]) for (int dependency : node.arguments()) prelude[dependency] = true;
+         }
+         changed = reusable.keySet().removeIf(index -> prelude[index]);
+      } while (changed);
 
       for (int index = 0; index < nodes.size(); index++) {
          if (required.contains(index)) {
@@ -247,14 +299,18 @@ public final class JavaComputationEmitter {
             }
 
             boolean inline = state.mode == Mode.PRESERVE && (node.expression() instanceof VariableExpr
-                  || uses[index] == 1 || kind != NumericKind.BIG_INTEGER && JavaExpressions.isLiteral(node.expression()));
-            values.put(index, state.value(node.expression(), kind, arguments, inline));
+                  || reusable.containsKey(index) || uses[index] == 1 || kind != NumericKind.BIG_INTEGER && JavaExpressions.isLiteral(node.expression()));
+            String expression = state.value(node.expression(), kind, arguments, inline);
+            for (var binding : plan.outputBindings().entrySet()) if (binding.getValue() == index)
+               outputs.put(binding.getKey(), reusable.containsKey(index) && outputOrder.get(binding.getKey()) > firstConsumer[index]
+                     ? reusable.get(index) : expression);
+            values.put(index, reusable.getOrDefault(index, expression));
          }
       }
 
-      LinkedHashMap<String, String> outputs = new LinkedHashMap<>();
-      plan.outputBindings().forEach((name, index) -> outputs.put(name, values.get(index)));
-      return outputs;
+      var ordered = new LinkedHashMap<String,String>();
+      plan.outputBindings().forEach((name, index) -> ordered.put(name, outputs.get(name)));
+      return ordered;
    }
 
    private static void compareOutputs(

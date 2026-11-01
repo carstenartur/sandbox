@@ -61,6 +61,32 @@ class ProjectMathScanTest {
         Path path = directory.resolve("partial.properties"); Files.writeString(path, "cleanup.mathematics=true\n");
         assertThrows(IOException.class, () -> ProjectMathScan.profile(path, 17));
     }
+    @Test void strictReedMullerRetainsTheVerifiedRuntimeMaskSpan() throws Exception {
+        String entry = "org/bouncycastle/pqc/crypto/hqc/ReedMuller.java";
+        String binary = System.getProperty("sandbox.math.bc.mavenBinary");
+        Path output = directory.resolve("reed-muller");
+        ProjectMathScan.main(new String[] {binary, System.getProperty("sandbox.math.bc.mavenSources"),
+                "qa/math-optimization/profiles/bc-strict.properties", output.toString(),
+                "b37ac84b1d5435ab7b8d166c16ab9f75e09f68f8ec50479bae433939b241b03f", "17", entry});
+        var mapper = new ObjectMapper(); var report = mapper.readTree(output.resolve("review.json").toFile());
+        assertEquals("COMPLETED", report.path("status").asText());
+        var candidates = report.path("files").get(0).path("reviewCandidates");
+        assertTrue(java.util.stream.StreamSupport.stream(candidates.spliterator(), false)
+                .anyMatch(e -> e.path("offset").asInt() == 2062 && e.path("length").asInt() == 42),
+                "Missing accepted ReedMuller span 2062/42: " + candidates);
+        var evidence = mapper.readTree(output.resolve("evidence/" + entry + ".json").toFile());
+        var accepted = java.util.stream.StreamSupport.stream(evidence.spliterator(), false)
+                .filter(e -> e.path("offset").asInt() == 2062 && e.path("length").asInt() == 42).findFirst().orElseThrow();
+        assertEquals("int abs = (posMask & t) | (~posMask & -t);", accepted.path("original").asText());
+        assertEquals("BITVECTOR_TRUTH_TABLE", accepted.path("proof").path("proofMethods").get(0).asText());
+        assertTrue(accepted.path("cost").path("estimatedRuntimeImprovement").asBoolean());
+        for (String variant : java.util.List.of("original", "generated")) {
+            Path source = output.resolve(variant + "/" + entry);
+            assertTrue(Files.readString(source).contains("int posMask = t > 0 ? -1 : 0;"));
+            assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null, "--release", "17", "-cp", binary,
+                    "-d", Files.createDirectory(output.resolve(variant + "-classes")).toString(), source.toString()));
+        }
+    }
     @Test void maintainedCorpusProfilesAreCompleteAndPreserveTheirExplicitBudgets() throws Exception {
         for (String name : java.util.List.of("bc-strict", "bc-mathematical", "swt-strict")) {
             var options = ProjectMathScan.profile(Path.of("qa/math-optimization/profiles/" + name + ".properties"),
