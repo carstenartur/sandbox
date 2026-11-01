@@ -3,6 +3,7 @@ package org.sandbox.jdt.internal.corext.fix.math;
 
 import static org.junit.jupiter.api.Assertions.*;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 import de.regelsuche.sdk.optimization.*;
@@ -51,7 +52,9 @@ class JavaRecursiveValueSummaryTest {
                 String relative="org/bouncycastle/crypto/bls/"+name+".java";
                 String source=new String(archiveFile.getInputStream(archiveFile.getEntry(relative)).readAllBytes(),java.nio.charset.StandardCharsets.UTF_8);
                 if(renamed)source=rename(source);
-                Files.writeString(root.resolve("org/bouncycastle/crypto/bls/"+(renamed?rename(name):name)+".java"),source);
+                Files.writeString(
+						root.resolve("org/bouncycastle/crypto/bls/" + (renamed ? rename(name) : name) + ".java"),
+						source, StandardCharsets.UTF_8);
             }
         }
         return root;
@@ -64,7 +67,7 @@ class JavaRecursiveValueSummaryTest {
     private record Receipt(JavaValueSourceSummary.Summary summary,JavaSourceContext.Checkpoint checkpoint) { }
     private Receipt summary(Path root,boolean renamed) throws Exception {
         String type=renamed?"Canopy":"Fp12Element",name=renamed?"combine":"mul";
-        Path file=root.resolve("org/bouncycastle/crypto/bls/"+type+".java");String source=Files.readString(file);
+        Path file=root.resolve("org/bouncycastle/crypto/bls/"+type+".java");String source=Files.readString(file, StandardCharsets.UTF_8);
         var parser=ASTParser.newParser(AST.getJLSLatest());parser.setSource(source.toCharArray());parser.setUnitName(file.toString());parser.setResolveBindings(true);
         parser.setEnvironment(new String[]{binary.toString()},new String[]{root.toString()},new String[]{"UTF-8"},true);
         var compiler=new HashMap<String,String>();JavaCore.setComplianceOptions("17",compiler);parser.setCompilerOptions(compiler);
@@ -90,7 +93,8 @@ class JavaRecursiveValueSummaryTest {
     }
     @Test void transitiveBodyChangeInvalidatesReceiptAndChangesFingerprint() throws Exception {
         Path root=sources(false);var first=summary(root,false);Path helper=root.resolve("org/bouncycastle/crypto/bls/Fp2Element.java");
-        Files.writeString(helper,Files.readString(helper).replace("ac.subtract(bd)","ac.add(bd)"));
+        Files.writeString(helper, Files.readString(helper).replace("ac.subtract(bd)", "ac.add(bd)"),
+				StandardCharsets.UTF_8);
         assertFalse(first.checkpoint().current());assertNotEquals(first.summary().sourceFingerprint(),summary(root,false).summary().sourceFingerprint());
     }
     @Test void staticInitializerArithmeticIsMetadataRatherThanMethodRuntimeTrace() throws Exception {
@@ -121,12 +125,13 @@ class JavaRecursiveValueSummaryTest {
     }
     @Test void freshDefinitionMustStillBeStaticForAStaticValueReceipt() throws Exception {
         String holder="final class Holder {static final Calculation VALUE=Calculation.of(java.math.BigInteger.ONE,java.math.BigInteger.ZERO);}";
-        Files.writeString(directory.resolve("Holder.java"),holder);
+        Files.writeString(directory.resolve("Holder.java"), holder, StandardCharsets.UTF_8);
         String source=JavaImmutableValueTest.fixture(JavaImmutableValueTest.multiplication()).replace("public BigInteger[] parts()", "public static Calculation constant(){return Holder.VALUE;} public BigInteger[] parts()");
         var fixture=new JavaImmutableValueTest();fixture.directory=directory;var ast=fixture.parse(source);var options=JavaImmutableValueTest.options();
         var fields=new ArrayList<IVariableBinding>();ast.accept(new ASTVisitor(){@Override public boolean visit(QualifiedName name){
             if(name.toString().equals("Holder.VALUE"))fields.add((IVariableBinding)name.resolveBinding());return true;}});
-        Files.writeString(directory.resolve("Holder.java"),holder.replace("static final","final"));
+        Files.writeString(directory.resolve("Holder.java"), holder.replace("static final", "final"),
+				StandardCharsets.UTF_8);
         try(var context=JavaSourceContext.open(ast,source,fixture.environment(),null,options)) {
             var session=new JavaValueSourceSummary.Session(ast,options,new JavaValueSourceSummary.Work(options.workBudget(),options,()->false));
             assertThrows(IllegalArgumentException.class,()->session.constant(fields.getFirst()));
