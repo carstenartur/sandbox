@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "3afba6378e3ed7c77888907a2f114ec49f1ae0271bc2adece1132b60e314e415",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: system.getProperty.lineSeparator\u003e\n\u003c!description: Replace System.getProperty(\"line.separator\") with System.lineSeparator().\u003e\n\u003c!severity: INFO\u003e\njava.lang.System.getProperty(\"line.separator\")\n\u003d\u003e\njava.lang.System.lineSeparator()\n;;",
+  "beforeExample": "class MyClass {\n    void printLine() {\n        StringBuilder buffer \u003d new StringBuilder();\n        buffer.append(\"Hello\");\n        buffer.append(System.getProperty(\"line.separator\"));\n        System.out.println(buffer.toString());\n    }\n}\n",
+  "afterExample": "class MyClass {\n    void printLine() {\n        StringBuilder buffer \u003d new StringBuilder();\n        buffer.append(\"Hello\");\n        buffer.append(System.lineSeparator());\n        System.out.println(buffer.toString());\n    }\n}\n",
+  "negativeExample": "class MyClass {\n    void printLine() {\n        StringBuilder buffer \u003d new StringBuilder();\n        buffer.append(\"Hello\");\n        buffer.append(System.getProperty(\"file.encoding\")); // Must not match\n        System.out.println(buffer.toString());\n    }\n}\n",
+  "targetHintFile": "modernize.sandbox-hint",
+  "sourceCommit": "5a322df14122ebc566a988436717be558e7fb5b5",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "API Modernization",
+  "summary": "Replaces System.getProperty(\"line.separator\") with System.lineSeparator() for better readability and direct API usage.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-01T02:22:43.009657735Z",
+  "ruleFingerprint": "sha256:bbad256255f37aaac0cae8b3355157706e2ce33fe0ebc769de4a7e78ed8fbb23",
+  "behaviorFingerprint": "sha256:2d44aee80853384ab6ccbb008b8e5e263985787a36df230c5cd934b48ab9512e",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-11-01T02:23:17.718186995Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

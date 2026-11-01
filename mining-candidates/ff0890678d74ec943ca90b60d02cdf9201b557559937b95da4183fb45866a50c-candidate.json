@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "ff0890678d74ec943ca90b60d02cdf9201b557559937b95da4183fb45866a50c",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "java.lang.Boolean.valueOf($s).booleanValue()\n\u003d\u003e java.lang.Boolean.parseBoolean($s)\n;;",
+  "beforeExample": "class A {\n    public boolean parseBooleanString(String s) {\n        return (java.lang.Boolean.valueOf(s)).booleanValue();\n    }\n}",
+  "afterExample": "class A {\n    public boolean parseBooleanString(String s) {\n        return java.lang.Boolean.parseBoolean(s);\n    }\n}",
+  "negativeExample": "class A {\n    public java.lang.Boolean getBoxedBoolean(String s) {\n        // This should not match, as .booleanValue() is missing\n        return java.lang.Boolean.valueOf(s);\n    }\n\n    public boolean getDirectBoolean(boolean b) {\n        // This should not match, as it\u0027s already a primitive boolean\n        return b;\n    }\n}",
+  "targetHintFile": "primitive-parsing.sandbox-hint",
+  "sourceCommit": "a53a2a2bb488f2d4fe7a6ef3a2d84c80e78cd154",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "Primitive Parsing",
+  "summary": "Replaces `Boolean.valueOf(String).booleanValue()` with `Boolean.parseBoolean(String)` to avoid unnecessary boxing/unboxing.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-01T02:22:14.235837103Z",
+  "ruleFingerprint": "sha256:e61a4648d7a708283680a84f70e34244d33afb59a5cbe92cabfd07a972bfd29c",
+  "behaviorFingerprint": "sha256:caed9aee5a9d8c22ff04ba5bbc30c03e04a86848f3b0ed28d58d600cc567b2cf",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-11-01T02:23:17.664028708Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

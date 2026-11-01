@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "c78ec8eceaed3bd4aa1830daf0ee8460b81504bacfcdf507a3f60cc1efaaec15",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$receiver.equals($argument) :: enclosingClassExtends(\"org.eclipse.debug.core.sourcelookup.ISourceLookupDirector\")\n\u003d\u003e this.equalSourceElements($receiver, $argument)\n;;",
+  "beforeExample": "package org.eclipse.debug.core.sourcelookup;\n\nimport java.util.Collection;\nimport java.util.Objects;\n\ninterface ILaunchConfiguration {}\nclass CoreException extends Exception {}\ninterface ISourceContainer {}\n\npublic interface ISourceLookupDirector {\n    default boolean equalSourceElements(Object element1, Object element2) {\n        return Objects.equals(element1, element2);\n    }\n    Object[] getSourceElements(Object element);\n    void setSourceContainers(ISourceContainer[] containers);\n    ISourceContainer[] getSourceContainers();\n    void initialize(ILaunchConfiguration configuration) throws CoreException;\n    void dispose();\n    ILaunchConfiguration getLaunchConfiguration();\n    Object getSourceElement(Object element);\n}\n\npublic abstract class AbstractSourceLookupDirector implements ISourceLookupDirector {\n    public Object[] getSourceElements(Object element) { return null; }\n    public void setSourceContainers(ISourceContainer[] containers) {}\n    public ISourceContainer[] getSourceContainers() { return null; }\n    public void initialize(ILaunchConfiguration configuration) throws CoreException {}\n    public void dispose() {}\n    public ILaunchConfiguration getLaunchConfiguration() { return null; }\n    public Object getSourceElement(Object element) { return null; }\n\n    public void exampleMethod(Collection\u003cObject\u003e sources, Object sourceToAdd) {\n        for (Object obj : sources) {\n            if (obj.equals(sourceToAdd)) { // Target for cleanup\n                System.out.println(\"Found\");\n                return;\n            }\n        }\n    }\n}\n",
+  "afterExample": "package org.eclipse.debug.core.sourcelookup;\n\nimport java.util.Collection;\nimport java.util.Objects;\n\ninterface ILaunchConfiguration {}\nclass CoreException extends Exception {}\ninterface ISourceContainer {}\n\npublic interface ISourceLookupDirector {\n    default boolean equalSourceElements(Object element1, Object element2) {\n        return Objects.equals(element1, element2);\n    }\n    Object[] getSourceElements(Object element);\n    void setSourceContainers(ISourceContainer[] containers);\n    ISourceContainer[] getSourceContainers();\n    void initialize(ILaunchConfiguration configuration) throws CoreException;\n    void dispose();\n    ILaunchConfiguration getLaunchConfiguration();\n    Object getSourceElement(Object element);\n}\n\npublic abstract class AbstractSourceLookupDirector implements ISourceLookupDirector {\n    public Object[] getSourceElements(Object element) { return null; }\n    public void setSourceContainers(ISourceContainer[] containers) {}\n    public ISourceContainer[] getSourceContainers() { return null; }\n    public void initialize(ILaunchConfiguration configuration) throws CoreException {}\n    public void dispose() {}\n    public ILaunchConfiguration getLaunchConfiguration() { return null; }\n    public Object getSourceElement(Object element) { return null; }\n\n    public void exampleMethod(Collection\u003cObject\u003e sources, Object sourceToAdd) {\n        for (Object obj : sources) {\n            if (this.equalSourceElements(obj, sourceToAdd)) { // Cleaned up\n                System.out.println(\"Found\");\n                return;\n            }\n        }\n    }\n}\n",
+  "negativeExample": "package some.other.package;\n\nimport java.util.Collection;\n\nclass MyIndependentClass {\n    public void anotherMethod(Collection\u003cObject\u003e items, Object target) {\n        for (Object item : items) {\n            if (item.equals(target)) { // This should NOT be touched as MyIndependentClass does not extend ISourceLookupDirector\n                System.out.println(\"Item found\");\n                return;\n            }\n        }\n    }\n}\n",
+  "targetHintFile": "debug.sandbox-hint",
+  "sourceCommit": "519cf752fec01fa27513dd25b9c02a002ea0b8da",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "API Modernization",
+  "summary": "Replace direct `Object.equals()` call with `this.equalSourceElements()` when in a class that extends `ISourceLookupDirector`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-01T02:16:23.506171845Z",
+  "ruleFingerprint": "sha256:6200e4f042090b365bb06d5a01d285c9434bea28c00e218b38aaeaa70f2a1a4b",
+  "behaviorFingerprint": "sha256:376ab768a28937ca4eca33d96a258e359fb4f9c85658ed9350f0bf68ee8fd8f4",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 10: The public type ISourceLookupDirector must be defined in its own file",
+    "verifiedAt": "2026-11-01T02:23:17.566200976Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

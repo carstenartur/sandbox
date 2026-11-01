@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "4c01afaec91e5d0da51fae09d8ed82921b686411dc7c663d15244db7cea21f19",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: junit.assertThrows.lambdaToMethodRef\u003e\n\u003c!description: Replace no-argument lambda with method reference in JUnit Assert.assertThrows if calling a no-argument method.\u003e\n\u003c!severity: HINT\u003e\norg.junit.Assert.assertThrows($exceptionType, () -\u003e $receiver.$method())\n\u003d\u003e\norg.junit.Assert.assertThrows($exceptionType, $receiver::$method)\n;;",
+  "beforeExample": "import org.junit.Assert;\nimport org.junit.Test;\n\nclass MyTestException extends Exception {}\n\nclass MyService {\n    public void performAction() throws MyTestException {\n        if (System.currentTimeMillis() % 2 \u003d\u003d 0) {\n            throw new MyTestException();\n        }\n    }\n}\n\npublic class ExampleTest {\n    @Test\n    public void testPerformActionThrows() {\n        MyService service \u003d new MyService();\n        Assert.assertThrows(MyTestException.class, () -\u003e service.performAction());\n    }\n}",
+  "afterExample": "import org.junit.Assert;\nimport org.junit.Test;\n\nclass MyTestException extends Exception {}\n\nclass MyService {\n    public void performAction() throws MyTestException {\n        if (System.currentTimeMillis() % 2 \u003d\u003d 0) {\n            throw new MyTestException();\n        }\n    }\n}\n\npublic class ExampleTest {\n    @Test\n    public void testPerformActionThrows() {\n        MyService service \u003d new MyService();\n        Assert.assertThrows(MyTestException.class, service::performAction);\n    }\n}",
+  "negativeExample": "import org.junit.Assert;\nimport org.junit.Test;\n\nclass MyTestException extends Exception {}\n\nclass MyService {\n    public void performAction() throws MyTestException {\n        // complex logic\n    }\n    public void performActionWithArg(String arg) throws MyTestException {\n        if (arg \u003d\u003d null) {\n            throw new MyTestException();\n        }\n    }\n    public String getString() { return \"test\"; }\n}\n\npublic class NegativeExampleTest {\n    @Test\n    public void testWithArgLambda() {\n        MyService service \u003d new MyService();\n        // Should not match: lambda calls a method with arguments\n        Assert.assertThrows(MyTestException.class, () -\u003e service.performActionWithArg(service.getString()));\n    }\n\n    @Test\n    public void testComplexLambda() {\n        MyService service \u003d new MyService();\n        // Should not match: lambda has a complex body, not just a simple method call\n        Assert.assertThrows(MyTestException.class, () -\u003e {\n            System.out.println(\"Calling action...\");\n            service.performAction();\n        });\n    }\n}",
+  "targetHintFile": "modernize-java8.sandbox-hint",
+  "sourceCommit": "c239e1061cd3e02c6e3cb7f34b2be0be7fea7355",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "Java 8 Modernization",
+  "summary": "Replace no-argument lambda with method reference in JUnit Assert.assertThrows for simple method calls.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-01T02:21:18.745036815Z",
+  "ruleFingerprint": "sha256:8d5fd9e196014a4545cddd5b80387bd68b6c38628578c02a60518b89bcfed596",
+  "behaviorFingerprint": "sha256:a948717f040e6ac3606811b38bffdd5691b93f2f0ee8a10e3519ff025238f161",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-11-01T02:23:17.631121187Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

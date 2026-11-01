@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "b17fe8e83ee810856fcc8a3d0cd1ed9a465b3c5b38bc45a892cef13ee45064ee",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "java.lang.Boolean.valueOf($arg).booleanValue()\n\u003d\u003e\njava.lang.Boolean.parseBoolean($arg)\n;;",
+  "beforeExample": "class Test {\n    boolean process(String arg) {\n        // Original code context\n        return arg \u003d\u003d null || Boolean.valueOf(arg).booleanValue();\n    }\n    boolean anotherMethod(String s) {\n        // This method should not be affected by the cleanup\n        Boolean b \u003d Boolean.valueOf(s);\n        return b; // Implicit unboxing, not .booleanValue() call\n    }\n}",
+  "afterExample": "class Test {\n    boolean process(String arg) {\n        // Transformed code\n        return arg \u003d\u003d null || Boolean.parseBoolean(arg);\n    }\n    boolean anotherMethod(String s) {\n        // This method remains unchanged\n        Boolean b \u003d Boolean.valueOf(s);\n        return b;\n    }\n}",
+  "negativeExample": "class Test {\n    boolean process(String arg) {\n        // Already uses parseBoolean, should not match\n        return arg \u003d\u003d null || Boolean.parseBoolean(arg);\n    }\n    boolean anotherMethod(String s) {\n        // Explicitly getting a Boolean object, not calling booleanValue(), should not match\n        Boolean b \u003d java.lang.Boolean.valueOf(s);\n        return b.equals(java.lang.Boolean.TRUE);\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "f17bf6351bca623eb5966573df90f7175151f553",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "Simplification",
+  "summary": "Replaces \u0027Boolean.valueOf(String).booleanValue()\u0027 with \u0027Boolean.parseBoolean(String)\u0027 for direct primitive conversion.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-01T02:21:32.581574264Z",
+  "ruleFingerprint": "sha256:dedc2d981ffe2af19da229da17c1ff13eb35f9e521646580df6599f90d28b08c",
+  "behaviorFingerprint": "sha256:42dda542cc84d2803b5ee3c493997ebb0c97087f6cd6e5b30946f08a49118736",
+  "verification": {
+    "successful": false,
+    "stage": "AFTER_REWRITE",
+    "message": "Transformed syntax tree does not equal afterExample",
+    "verifiedAt": "2026-11-01T02:23:17.649627297Z",
+    "verifierVersion": "7",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": []
+}

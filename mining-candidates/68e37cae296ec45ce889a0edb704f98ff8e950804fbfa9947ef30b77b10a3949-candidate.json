@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "68e37cae296ec45ce889a0edb704f98ff8e950804fbfa9947ef30b77b10a3949",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "java.lang.Integer.valueOf($s, $radix).intValue()\n\u003d\u003e java.lang.Integer.parseInt($s, $radix)\n;;",
+  "beforeExample": "class A {\n    public int parseHex(String hexString) {\n        return java.lang.Integer.valueOf(hexString, 16).intValue();\n    }\n}",
+  "afterExample": "class A {\n    public int parseHex(String hexString) {\n        return java.lang.Integer.parseInt(hexString, 16);\n    }\n}",
+  "negativeExample": "class A {\n    public java.lang.Integer getBoxedInteger(String s, int radix) {\n        // This should not match, as .intValue() is missing\n        return java.lang.Integer.valueOf(s, radix);\n    }\n\n    public long parseLongHex(String hexString) {\n        // This should not match, as it\u0027s a Long, not Integer\n        return java.lang.Long.valueOf(hexString, 16).longValue();\n    }\n}",
+  "targetHintFile": "primitive-parsing.sandbox-hint",
+  "sourceCommit": "34d1c224bd4e292907ea59cc1752e2ad54e8739c",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "Primitive Parsing",
+  "summary": "Replaces `Integer.valueOf(String, int).intValue()` with `Integer.parseInt(String, int)` to avoid unnecessary boxing/unboxing.",
+  "sourceVersion": "21",
+  "status": "READY_FOR_REVIEW",
+  "discoveredAt": "2026-11-01T02:22:14.261475050Z",
+  "ruleFingerprint": "sha256:16b0127a86d6eed370acffb33c97f2e02ac45e9fad6a48dfab0c6b688ec957d0",
+  "behaviorFingerprint": "sha256:17025ffe2647144fa869dbac85257cf0ac78855a8c6c0a53b756fb04dfc19061",
+  "verification": {
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Candidate behavior verified",
+    "verifiedAt": "2026-11-01T02:23:17.706933368Z",
+    "verifierVersion": "7",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-11-01T02:23:17.707263066Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-11-01T02:23:17.707270758Z"
+    }
+  ]
+}
