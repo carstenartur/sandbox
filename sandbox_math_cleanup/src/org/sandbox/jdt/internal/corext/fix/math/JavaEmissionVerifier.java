@@ -189,7 +189,7 @@ final class JavaEmissionVerifier {
          request.budget(),
          CheckedPolicy.NONE
       );
-      VerificationResult replacementProof = new ComputationOptimizer().verify(replacementRequest, decodedPlan, cancellation);
+      VerificationResult replacementProof = new ComputationOptimizer().verify(MathematicalAnalysis.remainingTime(replacementRequest, cancellation), decodedPlan, cancellation);
       if (!(replacementProof instanceof Verified)) {
          throw new IllegalArgumentException("EMITTED_CANDIDATE_MISMATCH: " + replacementProof);
       }
@@ -199,12 +199,12 @@ final class JavaEmissionVerifier {
       OptimizationRequest emittedRequest = new OptimizationRequest(decodedPlan,
             new SourceEvaluationTrace(emittedOccurrences), request.selectedKinds(), request.semanticsRevision(),
             replacementAssumptions, SafetyProfile.PRESERVE_JAVA, request.goal(), request.budget(), CheckedPolicy.NONE);
-      VerificationResult emittedProof = new ComputationOptimizer().verify(emittedRequest, candidate.plan(), cancellation);
+      VerificationResult emittedProof = new ComputationOptimizer().verify(MathematicalAnalysis.remainingTime(emittedRequest, cancellation), candidate.plan(), cancellation);
       if (!(emittedProof instanceof Verified)) {
          throw new IllegalArgumentException("EMITTED_TRACE_NOT_PROVED: " + emittedProof);
       }
 
-      VerificationResult originalProof = new ComputationOptimizer().verify(request, decodedPlan, cancellation);
+      VerificationResult originalProof = new ComputationOptimizer().verify(MathematicalAnalysis.remainingTime(request, cancellation), decodedPlan, cancellation);
       if (!(originalProof instanceof Verified)) {
          throw new IllegalArgumentException("EMITTED_JAVA_NOT_PROVED: " + originalProof);
       }

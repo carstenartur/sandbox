@@ -27,8 +27,7 @@ final class JavaFiniteSumOptimizer {
             List<MathematicalAnalysis.Replacement> replacements,List<MathematicalAnalysis.VerifiedRegion> evidence,
             List<MathematicalAnalysis.Diagnostic> diagnostics,long remaining) {
         if(options.safety()!=SafetyProfile.PRESERVE_JAVA || options.mathematicalOptIn() || remaining<20000) return remaining;
-        long started=System.nanoTime(),timeout=options.timeoutSeconds()*1000000000L;
-        CancellationToken token=()->MathematicalAnalysis.isCancelled(monitor) || Thread.currentThread().isInterrupted() || System.nanoTime()-started>=timeout;
+        CancellationToken token=MathematicalAnalysis.cancellation(monitor,options);
         var work=new JavaLoopInvariantAnalysis.Work(remaining,token);
         var loops=new ArrayList<ASTNode>();
         try {
@@ -67,9 +66,9 @@ final class JavaFiniteSumOptimizer {
                     var proofs=new ArrayList<FiniteSumEvidence.ReductionProof>();
                     for(var reduction:context.reductions()) {
                         if(!options.kinds().contains(reduction.model().arithmetic().bits()==32?NumericKind.INT:NumericKind.LONG)) throw invalid();
-                        var search=new FiniteIterationOptimizer().search(reduction.model(),options.optimizationBudget(proofShare),token);
+                        var search=new FiniteIterationOptimizer().search(reduction.model(),MathematicalAnalysis.optimizationBudget(options,proofShare,token),token);
                         var candidate=search.candidate().orElseThrow(JavaFiniteSumOptimizer::invalid);
-                        var proof=new FiniteIterationVerifier().verify(reduction.model(),candidate,options.optimizationBudget(proofShare),token);
+                        var proof=new FiniteIterationVerifier().verify(reduction.model(),candidate,MathematicalAnalysis.optimizationBudget(options,proofShare,token),token);
                         if(!proof.verified()) throw invalid();
                         proofs.add(new FiniteSumEvidence.ReductionProof(reduction.model(),candidate.certificate(),candidate.result(),reduction.bindings(),proof.cost()));
                     }
@@ -103,8 +102,7 @@ final class JavaFiniteSumOptimizer {
     static void verify(CompilationUnit before,CompilationUnit after,String source,String generated,
             MathematicalAnalysis.VerifiedRegion receipt,List<MathematicalAnalysis.Replacement> edits,
             MathCleanUpOptions options,long allowance,CancellationToken parent) {
-        long started=System.nanoTime(),timeout=options.timeoutSeconds()*1000000000L;
-        CancellationToken token=()->parent.isCancelled() || System.nanoTime()-started>=timeout;
+        CancellationToken token=MathematicalAnalysis.deadline(parent,options);
         var work=new JavaLoopInvariantAnalysis.Work(allowance,token);
         work.charge(4L*(source.length()+generated.length()));
         var finite=receipt.finiteSum();
@@ -164,7 +162,7 @@ final class JavaFiniteSumOptimizer {
         },work,0);
         long permitted=allowance-work.used;
         if(permitted<1) throw new JavaLoopInvariantAnalysis.Limit();
-        var verified=new FiniteIterationVerifier().verify(reduction.model(),decoded,numerical.certificate(),options.optimizationBudget(permitted),token);
+        var verified=new FiniteIterationVerifier().verify(reduction.model(),decoded,numerical.certificate(),MathematicalAnalysis.optimizationBudget(options,permitted,token),token);
         work.charge(verified.work());
         if(!verified.verified() || !numerical.checkedCost().equals(verified.cost()) || !decoded.equals(numerical.emitted())) throw invalid();
         }

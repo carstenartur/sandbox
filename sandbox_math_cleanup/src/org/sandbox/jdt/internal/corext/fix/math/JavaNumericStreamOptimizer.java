@@ -29,7 +29,7 @@ final class JavaNumericStreamOptimizer {
             List<MathematicalAnalysis.VerifiedRegion> evidence, List<MathematicalAnalysis.Diagnostic> diagnostics,
             List<JavaNumericIterationContexts.Pair> accepted, long remaining) {
         if(options.safety()!=SafetyProfile.PRESERVE_JAVA || options.mathematicalOptIn() || remaining<12000) return remaining;
-        CancellationToken token=() -> MathematicalAnalysis.isCancelled(monitor);
+        CancellationToken token=MathematicalAnalysis.cancellation(monitor,options);
         var discovery=JavaNumericIterationContexts.discover(ast,source,remaining,token);
         remaining-=discovery.work();
         int pairs=discovery.contexts().stream().filter(JavaNumericIterationContexts.Context::standardMapChain)
@@ -51,7 +51,7 @@ final class JavaNumericStreamOptimizer {
                 // independent emission proofs. Each uses the same bounded request.
                 long proofShare=(allowance-8192)/5;
                 var request=new OptimizationRequest(region.plan(),region.trace(),options.kinds(),"java25-numeric/v1", //$NON-NLS-1$
-                        region.assumptions(),options.safety(),options.goal(),options.optimizationBudget(proofShare),CheckedPolicy.NONE);
+                        region.assumptions(),options.safety(),options.goal(),MathematicalAnalysis.optimizationBudget(options,proofShare,token),CheckedPolicy.NONE);
                 remaining-=proofShare;
                 var result=new ComputationOptimizer().optimize(request,token);
                 long searchWork=result instanceof Candidate candidate ? candidate.work() : MathematicalAnalysis.consumedWork(result,proofShare);
@@ -59,6 +59,7 @@ final class JavaNumericStreamOptimizer {
                 if(!(result instanceof Candidate candidate)) continue;
                 if(candidate.work()>proofShare) continue;
                 remaining-=proofShare;
+                request=MathematicalAnalysis.remainingTime(request,token);
                 var explained=ComputationExplanations.describe(request,candidate,proofShare,token);
                 remaining+=proofShare-(explained.work()>=0?explained.work():proofShare);
                 if(!(explained.verification() instanceof Verified) || explained.explanation().isEmpty()
