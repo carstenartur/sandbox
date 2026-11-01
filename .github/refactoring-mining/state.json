@@ -5416,9 +5416,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "lastProcessedCommit": "5bdc65e433a2f78b82c44af5828485ec0315c86d",
-      "lastProcessedDate": "2026-10-31T02:23:21.993794392Z",
-      "totalProcessed": 89,
+      "lastProcessedCommit": "8b3354c5542528933cd03edb9f0a9b995fcdb10a",
+      "lastProcessedDate": "2026-11-01T02:23:00.513103228Z",
+      "totalProcessed": 161,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -5519,8 +5519,8 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "API Misuse": 1,
-        "API Modernization": 1,
-        "API Migration": 2,
+        "API Modernization": 6,
+        "API Migration": 3,
         "Collections Modernization": 1,
         "Lambda Conversion": 1,
         "Control Flow Refactoring": 1,
@@ -5529,10 +5529,16 @@
         "Logging Cleanup": 1,
         "Static Factory Method": 1,
         "Lambda to Method Reference": 2,
-        "Anonymous Class to Lambda": 1
+        "Anonymous Class to Lambda": 1,
+        "Code Modernization": 1,
+        "Redundant null check removal": 1,
+        "SWT Modernization": 1,
+        "Java 8 Modernization": 1,
+        "Simplification": 1,
+        "Primitive Parsing": 3
       },
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 53570
+  "globalTotalProcessed": 53642
 }
