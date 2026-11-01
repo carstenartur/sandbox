@@ -3,6 +3,7 @@ package org.sandbox.jdt.internal.corext.fix.math;
 
 import static org.junit.jupiter.api.Assertions.*;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 import de.regelsuche.sdk.optimization.*;
@@ -33,7 +34,7 @@ class JavaImmutableValueTest {
             + "return new Calculation(reduce(a.subtract(b)),reduce(c.add(d)));";
     }
     CompilationUnit parse(String source) throws Exception {
-        Files.writeString(directory.resolve("Calculation.java"),source);
+        Files.writeString(directory.resolve("Calculation.java"), source, StandardCharsets.UTF_8);
         var parser=ASTParser.newParser(AST.getJLSLatest()); parser.setSource(source.toCharArray());
         parser.setUnitName(directory.resolve("Calculation.java").toString()); parser.setResolveBindings(true);
         parser.setEnvironment(new String[0],new String[]{directory.toString()},new String[]{"UTF-8"},true);
@@ -183,7 +184,7 @@ class JavaImmutableValueTest {
         assertEquals(List.of("0","3","21","-21"),executeScalar(generated));
     }
     private List<String> executeScalar(String source) throws Exception {
-        Path output=Files.createTempDirectory(directory,"scalarCompiled");Path file=output.resolve("Calculation.java");Files.writeString(file,source);
+        Path output=Files.createTempDirectory(directory,"scalarCompiled");Path file=output.resolve("Calculation.java");Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0,javax.tools.ToolProvider.getSystemJavaCompiler().run(null,null,null,"--release","17","-d",output.toString(),file.toString()));
         try(var loader=new java.net.URLClassLoader(new java.net.URL[]{output.toUri().toURL()},ClassLoader.getPlatformClassLoader())) {
             var method=loader.loadClass("Calculation").getMethod("run",BigInteger.class);var results=new ArrayList<String>();
@@ -211,11 +212,16 @@ class JavaImmutableValueTest {
     }
     @Test void sourceModulusDependencyIsRecheckedBeforeApply() throws Exception {
         String source=fixture(multiplication());String declaration=source.substring(source.indexOf("new BigInteger(\""),source.indexOf(";private Calculation"));
-        Files.writeString(directory.resolve("Modulus.java"),"final class Modulus {static final java.math.BigInteger VALUE="+declaration.replace("new BigInteger","new java.math.BigInteger")+";}");
+        Files.writeString(directory.resolve("Modulus.java"),
+				("final class Modulus {static final java.math.BigInteger VALUE="
+						+ declaration.replace("new BigInteger", "new java.math.BigInteger") + ";}"),
+				StandardCharsets.UTF_8);
         source=source.replace(declaration,"Modulus.VALUE");var result=analyze(source);
         assertTrue(apply(source,result).contains("Mathematics value path"),result.diagnostics().toString());
         assertEquals(1,result.sourceDependencies().receipts().size());
-        Files.writeString(directory.resolve("Modulus.java"),"final class Modulus {static final java.math.BigInteger VALUE=java.math.BigInteger.ONE;}");
+        Files.writeString(directory.resolve("Modulus.java"),
+				"final class Modulus {static final java.math.BigInteger VALUE=java.math.BigInteger.ONE;}",
+				StandardCharsets.UTF_8);
         assertFalse(result.matches(source,Map.of()));assertThrows(IllegalArgumentException.class,result::newEdit);
     }
     @Test void sourceSummaryAndAllSdkAllocationsShareTheOriginalDeadline() throws Exception {
@@ -246,7 +252,7 @@ class JavaImmutableValueTest {
                 Files.write(root.resolve(relative),zip.getInputStream(zip.getEntry(relative)).readAllBytes());
             }
         }
-        Path file=root.resolve("org/bouncycastle/crypto/bls/Fp2Element.java");source=Files.readString(file);
+        Path file=root.resolve("org/bouncycastle/crypto/bls/Fp2Element.java");source=Files.readString(file, StandardCharsets.UTF_8);
         var parser=ASTParser.newParser(AST.getJLSLatest());parser.setSource(source.toCharArray());parser.setUnitName(file.toString());parser.setResolveBindings(true);
         parser.setEnvironment(new String[]{binary.toString()},new String[]{root.toString()},new String[]{"UTF-8"},true);
         var compiler=new HashMap<String,String>();JavaCore.setComplianceOptions("17",compiler);parser.setCompilerOptions(compiler);
@@ -259,7 +265,7 @@ class JavaImmutableValueTest {
         assertEquals(executeActual(source,binary),executeActual(generated,binary));
     }
     private List<String> executeActual(String source,Path binary) throws Exception {
-        Path output=Files.createTempDirectory(directory,"actualCompiled");Path file=output.resolve("Fp2Element.java");Files.writeString(file,source);
+        Path output=Files.createTempDirectory(directory,"actualCompiled");Path file=output.resolve("Fp2Element.java");Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0,javax.tools.ToolProvider.getSystemJavaCompiler().run(null,null,null,"--release","17","-cp",binary.toString(),"-d",output.toString(),file.toString()));
         try(var loader=new IsolatedBC(output,binary)) {
             var type=loader.loadClass("org.bouncycastle.crypto.bls.Fp2Element");var constructor=type.getDeclaredConstructor(BigInteger.class,BigInteger.class);constructor.setAccessible(true);
@@ -276,7 +282,7 @@ class JavaImmutableValueTest {
         }
     }
     private List<String> execute(String source) throws Exception {
-        Path output=Files.createTempDirectory(directory,"compiled");Path file=output.resolve("Calculation.java");Files.writeString(file,source);
+        Path output=Files.createTempDirectory(directory,"compiled");Path file=output.resolve("Calculation.java");Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0,javax.tools.ToolProvider.getSystemJavaCompiler().run(null,null,null,"--release","17","-d",output.toString(),file.toString()));
         try(var loader=new java.net.URLClassLoader(new java.net.URL[]{output.toUri().toURL()},ClassLoader.getPlatformClassLoader())) {
             var type=loader.loadClass("Calculation");var factory=type.getMethod("of",BigInteger.class,BigInteger.class);
