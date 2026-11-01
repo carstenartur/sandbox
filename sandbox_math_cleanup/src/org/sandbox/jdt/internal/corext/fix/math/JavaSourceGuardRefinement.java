@@ -12,6 +12,11 @@ final class JavaSourceGuardRefinement {
     private JavaSourceGuardRefinement() { }
 
     static JavaComputationRegion refine(JavaComputationRegion region, CompilationUnit unit) {
+        if (!JavaSourceContext.primitiveGuardsDeferred(unit)) region = refinePrimitives(region, unit);
+        return refineReceivers(region, unit);
+    }
+
+    static JavaComputationRegion refinePrimitives(JavaComputationRegion region, CompilationUnit unit) {
         var primitiveFacts = region.trace().occurrences().stream().anyMatch(occurrence ->
                 de.regelsuche.sdk.optimization.JavaExpressions.operationOf(occurrence.expression()).orElse(null)
                         == de.regelsuche.sdk.optimization.NumericOperation.REMAINDER)
@@ -26,6 +31,10 @@ final class JavaSourceGuardRefinement {
             region = new JavaComputationRegion(region.plan(), region.trace(), region.outputs(), region.inputNames(), assumptions,
                     region.reservedNames(), region.receiverGuards(), region.start(), region.length(), region.internalBindings(), region.arrayReads());
         }
+        return region;
+    }
+
+    private static JavaComputationRegion refineReceivers(JavaComputationRegion region, CompilationUnit unit) {
         if (region.receiverGuards().isEmpty()) return region;
         var requirements = new HashMap<String, Boolean>();
         region.receiverGuards().forEach(name -> requirements.put(name, false));

@@ -71,6 +71,38 @@ class PrimitiveSourceGuardTest {
         }
         Files.writeString(helper, "class Helper { static void error() { return; } }");
         assertFalse(checkpoint.current(), "Changed throwing helper source invalidates Apply");
+        var fresh = parse(source, environment);
+        try (var context = JavaSourceContext.open(fresh, source, environment, new NullProgressMonitor(), options())) {
+            assertFalse(refined(fresh, source).stream().anyMatch(r -> nonnegative(r, "x")));
+        }
+    }
+
+    @Test void deferredProofUsesOnlyTheActualRemainderIncludingHelperDiscovery() throws Exception {
+        Files.writeString(temporary.resolve("Helper.java"),
+                "class Helper { static void error() { throw new IllegalArgumentException(); } }");
+        String source = "class Sample { int f(int x) { if(x<0) Helper.error(); return 3-(x%4); } }";
+        var environment = new MathematicalAnalysis.SourceEnvironment("Sample.java", List.of(), List.of(temporary.toString()), List.of());
+        for (long remaining : new long[] {0, 1, 16, 64}) {
+            var ast = parse(source, environment); var monitor = new NullProgressMonitor();
+            try (var context = JavaSourceContext.open(ast, source, environment, monitor, options())) {
+                context.deferPrimitiveGuards(true);
+                var region = new JavaComputationExtractor().extractRuntime(ast, source, options()).regions().getFirst();
+                assertFalse(nonnegative(region, "x"));
+                assertEquals(0, context.takeWork(), "Initial extraction must leave new primitive discovery for its later phase");
+                var common = new JavaValueSourceSummary.Work(2000, options(), () -> false);
+                JavaSourceContext.valueWork(ast, common);
+                try {
+                    context.refinePrimitives(region, remaining);
+                    assertTrue(common.used <= remaining, "An active common meter cannot spend beyond the scoped source remainder: "
+                            + common.used + " > " + remaining);
+                } finally { JavaSourceContext.valueWork(ast, null); }
+                assertTrue(context.takeWork() <= remaining, "Transitive source lookup shares the remaining allowance");
+                assertTrue(nonnegative(context.refinePrimitives(region, 1000), "x"));
+                context.takeWork(); monitor.setCanceled(true);
+                assertSame(region, context.refinePrimitives(region, 1000));
+                assertEquals(0, context.takeWork());
+            }
+        }
     }
 
     @Test void sourceFactDiscoveryStopsAtItsSharedAllowanceAndCancellation() {

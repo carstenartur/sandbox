@@ -41,6 +41,8 @@ public final class JavaSourceContext implements AutoCloseable {
     private final Map<String, Optional<MethodDeclaration>> methods = new HashMap<>();
     private final Map<String, Dependency> dependencies = new LinkedHashMap<>();
     private long work, accountedWork;
+    private long scopedAllowance = Long.MAX_VALUE;
+    private boolean primitiveGuardsDeferred;
     private int sourceChars;
     private JavaValueSourceSummary.Work valueWork;
 
@@ -63,6 +65,21 @@ public final class JavaSourceContext implements AutoCloseable {
     }
     @Override public void close() { root.setProperty(PROPERTY, null); }
     long takeWork() { long amount = work - accountedWork; accountedWork = work; return amount; }
+    void deferPrimitiveGuards(boolean deferred) { primitiveGuardsDeferred = deferred; }
+    static boolean primitiveGuardsDeferred(CompilationUnit unit) {
+        return unit.getProperty(PROPERTY) instanceof JavaSourceContext context && context.primitiveGuardsDeferred;
+    }
+    /** A late proof and all transitive helper discovery share the actual remaining file work. */
+    JavaComputationRegion refinePrimitives(JavaComputationRegion region, long remainingWork) {
+        if (remainingWork <= 0) return region;
+        long previous = scopedAllowance;
+        scopedAllowance = Math.min(previous, work + Math.min(remainingWork, allowance - work));
+        try {
+            charge(1);
+            return JavaSourceGuardRefinement.refinePrimitives(region, root);
+        } catch (Unavailable unavailable) { return region; }
+        finally { scopedAllowance = previous; } // Work already spent is never reset.
+    }
     Checkpoint checkpoint() { return dependencies.isEmpty() ? Checkpoint.EMPTY : new Checkpoint(List.copyOf(dependencies.values())); }
 
     /** Checks are immutable and request-bound; they are not serialized as executable report state. */
@@ -404,6 +421,7 @@ public final class JavaSourceContext implements AutoCloseable {
         return expression;
     }
     private void charge(long amount) {
+        if (amount > scopedAllowance - work) throw new Unavailable();
         if (valueWork != null) valueWork.charge(amount);
         if (amount > allowance - work || Thread.currentThread().isInterrupted() || monitor != null && monitor.isCanceled()) throw new Unavailable();
         work += amount;

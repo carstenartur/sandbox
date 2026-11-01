@@ -289,6 +289,12 @@ The assumption records the input binding, helper binding chain and dependency
 fingerprints. The original guard and calls remain in place, preserving effects,
 exceptions and class initialization. Traditional switch-local initializers are
 expression edits with their original primitive type and evaluation point.
+Whole-file analysis first completes established regions and their retries.
+Primitive guard discovery then uses only the remaining file work, including
+transitive helper lookup, and retries uncovered regions only when new facts were
+proved. The original region identities retain context, slice and retry metadata.
+An explicit selection and direct extraction still prove these facts immediately.
+Receiver and BigInteger source proofs keep their existing scheduling.
 
 `JavaSourceNumericBranches` separately proves the RHS values of two primitive
 local assignments equal through the SDK verifier. It freshly parses and
