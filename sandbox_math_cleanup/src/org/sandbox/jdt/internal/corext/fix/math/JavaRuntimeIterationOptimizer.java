@@ -40,8 +40,7 @@ final class JavaRuntimeIterationOptimizer {
             List<MathematicalAnalysis.Replacement> replacements,List<MathematicalAnalysis.VerifiedRegion> evidence,
             List<MathematicalAnalysis.Diagnostic> diagnostics,long remaining) {
         if(options.goal()!=OptimizationGoal.LOWER_ESTIMATED_RUNTIME || options.safety()!=SafetyProfile.PRESERVE_JAVA || options.mathematicalOptIn() || remaining<20000) return remaining;
-        long started=System.nanoTime(),timeout=options.timeoutSeconds()*1000000000L;
-        CancellationToken token=()->MathematicalAnalysis.isCancelled(monitor)||Thread.currentThread().isInterrupted()||System.nanoTime()-started>=timeout;
+        CancellationToken token=MathematicalAnalysis.cancellation(monitor,options);
         var work=new JavaLoopInvariantAnalysis.Work(remaining,token);var nodes=new ArrayList<ASTNode>();
         try {
             ast.accept(new ASTVisitor() {
@@ -61,22 +60,22 @@ final class JavaRuntimeIterationOptimizer {
                     if(!options.kinds().contains(kind))continue;
                     var sums=new ArrayList<PolynomialSumPlan>();LinearIterationOptimizer.Candidate linear=null;PolynomialSeries.NestedPlan nested=null;
                     for(var model:context.sums()) {
-                        var search=new PolynomialSumOptimizer().search(model,budget(options,remaining,work),token);work.charge(search.work());
+                        var search=new PolynomialSumOptimizer().search(model,budget(options,remaining,work,token),token);work.charge(search.work());
                         sums.add(search.plan().orElseThrow(()->new IllegalArgumentException(search.reason())));
                     }
                     if(context.linear()!=null) {
-                        var search=new LinearIterationOptimizer().search(context.linear(),budget(options,remaining,work),token);work.charge(search.work());
+                        var search=new LinearIterationOptimizer().search(context.linear(),budget(options,remaining,work,token),token);work.charge(search.work());
                         linear=search.candidate().orElseThrow(()->new IllegalArgumentException(search.reason()));
                     }
                     if(context.nested()!=null) {
                         // Nested factory does not expose work: reserve its entire allowance, including failures.
-                        var allocation=budget(options,remaining,work);work.charge(allocation.maximumWork());
+                        var allocation=budget(options,remaining,work,token);work.charge(allocation.maximumWork());
                         nested=PolynomialSeries.nested(context.nested(),allocation,token);
                     }
                     var proof=new RuntimeIterationEvidence(JavaFiniteSumOptimizer.hash(source),context.bindings(),sums,linear,nested,context.partition());
                     long proofAllowance=Math.min(proof.verificationLimit(),(remaining-work.used)/4);
                     if(proofAllowance<1)throw new JavaLoopInvariantAnalysis.Limit();
-                    verifyReserved(work,proofAllowance,()->proof.verify(options.optimizationBudget(proofAllowance),token));
+                    verifyReserved(work,proofAllowance,()->proof.verify(MathematicalAnalysis.optimizationBudget(options,proofAllowance,token),token));
                     if(!profitableStaticRange(context,proof))continue;
                     String replacement=JavaRuntimeIterationEmitter.emit(ast,source,context,proof,work);
                     String original=source.substring(offset,offset+length);
@@ -114,8 +113,8 @@ final class JavaRuntimeIterationOptimizer {
         var minimum=java.math.BigInteger.ONE.shiftLeft(h.counter().getType().getName().equals("int")?31:63).negate();
         var after=start.add(count.multiply(h.stride()));return after.compareTo(minimum)>=0 && after.compareTo(minimum.negate().subtract(java.math.BigInteger.ONE))<=0;
     }
-    private static OptimizationBudget budget(MathCleanUpOptions options,long remaining,JavaLoopInvariantAnalysis.Work work) {
-        long available=Math.min(100000,(remaining-work.used)/4);if(available<1)throw new JavaLoopInvariantAnalysis.Limit();return options.optimizationBudget(available);
+    private static OptimizationBudget budget(MathCleanUpOptions options,long remaining,JavaLoopInvariantAnalysis.Work work,CancellationToken token) {
+        long available=Math.min(100000,(remaining-work.used)/4);if(available<1)throw new JavaLoopInvariantAnalysis.Limit();return MathematicalAnalysis.optimizationBudget(options,available,token);
     }
     /** A throwing verifier cannot return its spent work: retain the whole reservation on failure. */
     private static void verifyReserved(JavaLoopInvariantAnalysis.Work work,long allowance,java.util.function.LongSupplier verification) {
@@ -128,8 +127,7 @@ final class JavaRuntimeIterationOptimizer {
     static long verify(CompilationUnit before,CompilationUnit after,String source,String generated,
             MathematicalAnalysis.VerifiedRegion receipt,List<MathematicalAnalysis.Replacement> edits,
             MathCleanUpOptions options,long allowance,CancellationToken parent) {
-        long started=System.nanoTime(),timeout=options.timeoutSeconds()*1000000000L;
-        CancellationToken token=()->parent.isCancelled() || System.nanoTime()-started>=timeout;
+        CancellationToken token=MathematicalAnalysis.deadline(parent,options);
         var work=new JavaLoopInvariantAnalysis.Work(allowance,token);work.charge(2L*(source.length()+generated.length()));
         var proof=receipt.runtimeIteration();
         if(proof==null || receipt.proof()!=null || receipt.scheduling()!=null || receipt.finiteSum()!=null || receipt.sourcePlan()==null
@@ -147,7 +145,7 @@ final class JavaRuntimeIterationOptimizer {
                 || !Objects.equals(proof.nested()==null?null:proof.nested().source(),context.nested()))throw invalid();
         if(allowance-work.used<1)throw new JavaLoopInvariantAnalysis.Limit();
         long proofAllowance=Math.min(options.workBudget(),allowance-work.used);
-        verifyReserved(work,proofAllowance,()->proof.verify(options.optimizationBudget(proofAllowance),token));
+        verifyReserved(work,proofAllowance,()->proof.verify(MathematicalAnalysis.optimizationBudget(options,proofAllowance,token),token));
         if(!proof.cost(options.goal()).equals(receipt.cost()))throw invalid();
         String rebuilt=JavaRuntimeIterationEmitter.emit(before,source,context,proof,work);
         int mapped=position(receipt.offset(),edits);

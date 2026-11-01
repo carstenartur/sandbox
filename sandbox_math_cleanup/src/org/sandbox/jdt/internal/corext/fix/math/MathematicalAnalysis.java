@@ -12,6 +12,7 @@ import de.regelsuche.sdk.optimization.ComputationOptimizer;
 import de.regelsuche.sdk.optimization.ComputationExplanations;
 import de.regelsuche.sdk.optimization.NumericKind;
 import de.regelsuche.sdk.optimization.OptimizationGoal;
+import de.regelsuche.sdk.optimization.OptimizationBudget;
 import de.regelsuche.sdk.optimization.OptimizationRequest;
 import de.regelsuche.sdk.optimization.OptimizationResult;
 import de.regelsuche.sdk.optimization.SafetyProfile;
@@ -40,6 +41,7 @@ import java.util.stream.Collectors;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.ProgressMonitorWrapper;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.ASTMatcher;
@@ -137,10 +139,16 @@ public final class MathematicalAnalysis {
       Objects.requireNonNull(ast);
       Objects.requireNonNull(source);
       Objects.requireNonNull(options);
-      try (var context = JavaSourceContext.open(ast, source, environment, progress, options)) {
-         Analysis result = analyzeWithin(ast, source, options, progress, selectionOffset, selectionLength, environment, context, protectedRegions);
+      IProgressMonitor original = progress == null ? new NullProgressMonitor() : progress;
+      var work = new JavaValueSourceSummary.Work(options.workBudget(), options, () -> isCancelled(original));
+      var monitor = new RequestMonitor(original, work);
+      try (var context = JavaSourceContext.open(ast, source, environment, monitor, options)) {
+         Analysis result = analyzeWithin(ast, source, options, monitor, selectionOffset, selectionLength, environment, context, protectedRegions, work);
+         if (work.isCancelled()) return cancelled(result.sourceDigest(), result.compilerOptions());
          var dependencies = context.checkpoint();
-         if (!dependencies.current()) {
+         boolean current = dependencies.current();
+         if (work.isCancelled()) return cancelled(result.sourceDigest(), result.compilerOptions());
+         if (!current) {
             var diagnostics = new ArrayList<>(result.diagnostics());
             diagnostics.add(new Diagnostic("SOURCE_DEPENDENCY_CHANGED", "Referenced source changed during analysis", 0, 0, Stage.SOURCE)); //$NON-NLS-1$ //$NON-NLS-2$
             return new Analysis(List.of(), diagnostics, result.sourceDigest(), result.compilerOptions(),
@@ -148,12 +156,17 @@ public final class MathematicalAnalysis {
          }
          return new Analysis(result.replacements(), result.diagnostics(), result.sourceDigest(), result.compilerOptions(),
                result.evidence(), result.documentation(), dependencies);
+      } catch (JavaValueSourceSummary.DeadlineExceeded expired) {
+         return cancelled(digest(source), ast.getJavaElement() == null ? Map.of() : ast.getJavaElement().getJavaProject().getOptions(true));
+      } catch (OperationCanceledException cancelled) {
+         if (Thread.currentThread().isInterrupted() || !work.isCancelled()) throw cancelled;
+         return cancelled(digest(source), ast.getJavaElement() == null ? Map.of() : ast.getJavaElement().getJavaProject().getOptions(true));
       }
    }
 
    private static Analysis analyzeWithin(CompilationUnit ast, String source, MathCleanUpOptions options,
          IProgressMonitor progress, int selectionOffset, int selectionLength, SourceEnvironment environment, JavaSourceContext sourceContext,
-         List<? extends org.eclipse.jdt.core.ISourceRange> protectedRegions) {
+         List<? extends org.eclipse.jdt.core.ISourceRange> protectedRegions, JavaValueSourceSummary.Work valueWork) {
       IProgressMonitor monitor = progress == null ? new NullProgressMonitor() : progress;
       Map<String, String> compilerOptions = ast.getJavaElement() == null ? Map.of() : ast.getJavaElement().getJavaProject().getOptions(true);
       String sourceDigest = digest(source);
@@ -199,9 +212,21 @@ public final class MathematicalAnalysis {
          protectedReservations.add(new Replacement(start, length, source.substring(start, start + length), "Protected source envelope")); //$NON-NLS-1$
          reservationWork += length;
       }
+      if (reservationWork > valueWork.remaining()) {
+         diagnostics.add(new Diagnostic("BUDGET_EXCEEDED", "Protected source envelopes exceed the analysis budget", 0, source.length(), Stage.BUDGET)); //$NON-NLS-1$ //$NON-NLS-2$
+         return new Analysis(List.of(), diagnostics, sourceDigest, compilerOptions);
+      }
+      valueWork.charge(reservationWork);
       // Existing specialized passes already reject collisions with this list.
       // Remove reservations before any final source/binding replay or public result.
       replacements.addAll(protectedReservations);
+      MathematicalJavadoc documentation = new MathematicalJavadoc();
+      JavaImmutableValueOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
+            compilerOptions, environment, replacements, evidence, diagnostics, valueWork, documentation);
+      long valueSpent = valueWork.used; // Includes reservations even when the value pass is disabled.
+      if (options.mathematicalOptIn() && options.kinds().contains(NumericKind.BIG_INTEGER)) sourceContext.takeWork(); // Already charged through the common value work meter.
+      var valueRanges = new ArrayList<>(replacements);
+      valueRanges.removeAll(protectedReservations);
       var extractor = new JavaComputationExtractor();
       JavaComputationExtractor.Extraction extraction = selectionOffset < 0
             ? extractor.extractRuntimeWithoutStores(ast, source, options) : extractor.extractRuntime(ast, source, options);
@@ -213,8 +238,7 @@ public final class MathematicalAnalysis {
       monitor.beginTask("Verify mathematics regions", extraction.regions().size());
       ComputationOptimizer optimizer = new ComputationOptimizer();
       JavaComputationEmitter emitter = new JavaComputationEmitter();
-      MathematicalJavadoc documentation = new MathematicalJavadoc();
-      CancellationToken cancellation = () -> isCancelled(monitor);
+      CancellationToken cancellation = valueWork.token();
       // New singleton assignments must not dilute the established regions' work shares.
       // Explicit selections still receive the whole available file budget immediately.
       var deferredAssignments = new ArrayList<JavaComputationRegion>();
@@ -233,7 +257,7 @@ public final class MathematicalAnalysis {
             "PINNED_SOURCE_EFFECT", "Call retained in its original order; only total local arithmetic crosses it", //$NON-NLS-1$ //$NON-NLS-2$
             node.getStartPosition(), node.getLength(), Stage.SOURCE))));
       diagnostics.addAll(connections.diagnostics());
-      long remainingWork = options.workBudget() - connections.work() - sourceContext.takeWork() - reservationWork;
+      long remainingWork = options.workBudget() - connections.work() - sourceContext.takeWork() - valueSpent;
       var iterationPreflight = JavaRuntimeIterationOptimizer.preflight(ast, options, remainingWork, cancellation);
       remainingWork -= iterationPreflight.work();
       long iterationReserve = iterationPreflight.admitted() ? Math.max(0, remainingWork / 3) : 0;
@@ -292,6 +316,7 @@ public final class MathematicalAnalysis {
             }
             remainingWork -= sourceContext.takeWork();
             JavaComputationRegion region = pending.get(regionIndex);
+            if (valueRanges.stream().anyMatch(range -> overlaps(region.start(), region.length(), range.offset(), range.length()))) continue;
             if (protectedReservations.stream().anyMatch(range -> overlaps(region.start(), region.length(), range.offset(), range.length()))) continue;
             boolean contextRegion = contextRegions.contains(region);
             boolean expressionOnly = contextRegion && JavaExpressionContexts.expressionOnly(ast, region);
@@ -337,7 +362,7 @@ public final class MathematicalAnalysis {
                   region.assumptions(),
                   options.safety(),
                   options.goal(),
-                  options.optimizationBudget(ordinaryWork),
+                  optimizationBudget(options, ordinaryWork, cancellation),
                   options.safety() == SafetyProfile.CHECKED_THROW ? CheckedPolicy.EXPLICIT_DEFAULT : CheckedPolicy.NONE
                );
 
@@ -359,7 +384,7 @@ public final class MathematicalAnalysis {
                      sourceRanked = false;
                      request = new OptimizationRequest(region.plan(), region.trace(), options.kinds(), "java25-numeric/v1",
                            region.assumptions(), SafetyProfile.CHECKED_THROW, OptimizationGoal.READABILITY,
-                           options.optimizationBudget(regionWork - ordinarySpent), CheckedPolicy.EXPLICIT_DEFAULT);
+                           optimizationBudget(options, regionWork - ordinarySpent, cancellation), CheckedPolicy.EXPLICIT_DEFAULT);
                      result = optimizer.optimize(request, cancellation);
                   }
                   if (!(result instanceof Candidate candidate)) {
@@ -433,6 +458,7 @@ public final class MathematicalAnalysis {
 
                   remainingWork -= candidate.work();
                   failureStage = Stage.PROOF;
+                  request = remainingTime(request, cancellation);
                   var explained = ComputationExplanations.describe(request, candidate, Math.max(0, remainingWork), cancellation);
                   remainingWork -= explained.work() >= 0 ? explained.work() : Math.max(0, remainingWork);
                   if (!(explained.verification() instanceof Verified) || explained.explanation().isEmpty()) {
@@ -777,6 +803,33 @@ public final class MathematicalAnalysis {
          }
       }
       return remainingWork;
+   }
+
+   /** Carries one request deadline through every source pass and parser callback. */
+   private static final class RequestMonitor extends ProgressMonitorWrapper {
+      private final JavaValueSourceSummary.Work work;
+      RequestMonitor(IProgressMonitor parent, JavaValueSourceSummary.Work work) { super(parent); this.work = work; }
+      @Override public boolean isCanceled() { return work.isCancelled(); }
+   }
+
+   static CancellationToken cancellation(IProgressMonitor monitor, MathCleanUpOptions options) {
+      return monitor instanceof RequestMonitor request ? request.work
+            : new JavaValueSourceSummary.Work(options.workBudget(), options, () -> isCancelled(monitor));
+   }
+
+   static CancellationToken deadline(CancellationToken parent, MathCleanUpOptions options) {
+      return parent instanceof JavaValueSourceSummary.Work ? parent
+            : new JavaValueSourceSummary.Work(options.workBudget(), options, parent);
+   }
+
+   static OptimizationBudget optimizationBudget(MathCleanUpOptions options, long amount, CancellationToken token) {
+      return token instanceof JavaValueSourceSummary.Work work ? work.budget(amount, options) : options.optimizationBudget(amount);
+   }
+
+   static OptimizationRequest remainingTime(OptimizationRequest request, CancellationToken token) {
+      if (!(token instanceof JavaValueSourceSummary.Work work)) return request;
+      return new OptimizationRequest(request.plan(), request.sourceTrace(), request.selectedKinds(), request.semanticsRevision(),
+            request.assumptions(), request.safetyProfile(), request.goal(), work.remainingTime(request.budget()), request.checkedPolicy());
    }
 
    /** Interrupts abort the entire invocation, never just the current candidate. */

@@ -31,6 +31,7 @@ public final class JavaSourceContext implements AutoCloseable {
     private static final String BIG_INTEGER = "java.math.BigInteger"; //$NON-NLS-1$
     private static final int MAX_UNITS = 24, MAX_DEPTH = 32, MAX_SOURCE_CHARS = 1_000_000;
     private final CompilationUnit root;
+    private final String rootSource;
     private final MathematicalAnalysis.SourceEnvironment environment;
     private final IProgressMonitor monitor;
     private final int targetJava;
@@ -41,10 +42,11 @@ public final class JavaSourceContext implements AutoCloseable {
     private final Map<String, Dependency> dependencies = new LinkedHashMap<>();
     private long work, accountedWork;
     private int sourceChars;
+    private JavaValueSourceSummary.Work valueWork;
 
     private JavaSourceContext(CompilationUnit root, String source, MathematicalAnalysis.SourceEnvironment environment,
             IProgressMonitor monitor, MathCleanUpOptions options, long remainingWork) {
-        this.root = root; this.environment = environment; this.monitor = monitor; this.targetJava = options.targetJava();
+        this.root = root; this.rootSource = source; this.environment = environment; this.monitor = monitor; this.targetJava = options.targetJava();
         if (remainingWork < 0) throw new IllegalArgumentException("NEGATIVE_SOURCE_ALLOWANCE"); //$NON-NLS-1$
         this.allowance = Math.min(32_000, remainingWork);
         // No project-dependent value is retained across requests, or in the mathematical AST.
@@ -89,8 +91,38 @@ public final class JavaSourceContext implements AutoCloseable {
     public record Receipt(String identity, String sha256) { }
     private interface Read { String get() throws Exception; }
     private record Dependency(String identity, String sha256, Read read) { }
-    private record Unit(CompilationUnit ast, String identity, String sha256) { }
+    private record Unit(CompilationUnit ast, String source, String identity, String sha256) { }
     record Fact(BigInteger value, String provenance) { }
+
+    record Definition(CompilationUnit unit, String source, ASTNode declaration) { }
+    static Definition definition(CompilationUnit request, IBinding binding) {
+        if (!(request.getProperty(PROPERTY) instanceof JavaSourceContext context) || binding == null || binding.isRecovered()) return null;
+        try {
+            context.charge(1);
+            ITypeBinding owner = binding instanceof ITypeBinding type ? type
+                : binding instanceof IMethodBinding method ? method.getDeclaringClass()
+                : binding instanceof IVariableBinding field ? field.getDeclaringClass() : null;
+            CompilationUnit ast = context.definitionUnit(binding, owner);
+            ASTNode declaration = ast == null ? null : ast.findDeclaringNode(binding.getKey());
+            if (declaration == null) return null;
+            String source = ast == context.root ? context.rootSource : context.units.values().stream()
+                .filter(unit -> unit.ast() == ast).findFirst().orElseThrow().source();
+            return new Definition(ast, source, declaration);
+        } catch (Unavailable unavailable) { return null; }
+    }
+    static Fact constant(CompilationUnit request, IVariableBinding binding) {
+        if (!(request.getProperty(PROPERTY) instanceof JavaSourceContext context)) return null;
+        try {
+            var value = context.constant(binding, new HashSet<>(), 0);
+            return value.isEmpty() ? null : new Fact(value.get(), context.checkpoint().receipts().toString());
+        } catch (Unavailable unavailable) { return null; }
+    }
+    static void valueWork(CompilationUnit request, JavaValueSourceSummary.Work work) {
+        if (request.getProperty(PROPERTY) instanceof JavaSourceContext context) context.valueWork = work;
+    }
+    static List<Receipt> receipts(CompilationUnit request) {
+        return request.getProperty(PROPERTY) instanceof JavaSourceContext context ? context.checkpoint().receipts() : List.of();
+    }
 
     /** Source-bound body cache used only where the original static call is retained. */
     static MethodDeclaration method(CompilationUnit unit, IMethodBinding binding) {
@@ -278,7 +310,7 @@ public final class JavaSourceContext implements AutoCloseable {
             CompilationUnit ast = (CompilationUnit)parser.createAST(monitor);
             if (!digest.equals(hash(read.get()))) throw new Unavailable();
             for (var problem : ast.getProblems()) if (problem.isError()) return null;
-            Unit unit = new Unit(ast, identity, digest); units.put(type, unit);
+            Unit unit = new Unit(ast, source, identity, digest); units.put(type, unit);
             return ast;
         } catch (Exception unavailable) { return null; }
     }
@@ -363,6 +395,7 @@ public final class JavaSourceContext implements AutoCloseable {
         return expression;
     }
     private void charge(long amount) {
+        if (valueWork != null) valueWork.charge(amount);
         if (amount > allowance - work || Thread.currentThread().isInterrupted() || monitor != null && monitor.isCanceled()) throw new Unavailable();
         work += amount;
     }

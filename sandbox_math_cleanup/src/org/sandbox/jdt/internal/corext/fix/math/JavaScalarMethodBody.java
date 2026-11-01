@@ -52,7 +52,26 @@ final class JavaScalarMethodBody {
             var parameter = (SingleVariableDeclaration) value;
             if (parameter.resolveBinding() == null || !scalar(parameter.resolveBinding().getType(), mathematical)) return null;
         }
-        return method;
+        return modeledWrites(method) ? method : null;
+    }
+
+    /** Only standalone local assignments have an ordered update in the scalar frame. */
+    private static boolean modeledWrites(MethodDeclaration method) {
+        boolean[] admitted = {true};
+        method.getBody().accept(new ASTVisitor() {
+            @Override public boolean visit(Assignment assignment) {
+                if (!(assignment.getParent() instanceof ExpressionStatement statement)
+                        || statement.getParent() != method.getBody()) admitted[0] = false;
+                return true;
+            }
+            @Override public boolean visit(PostfixExpression expression) { admitted[0] = false; return false; }
+            @Override public boolean visit(PrefixExpression expression) {
+                if (expression.getOperator() == PrefixExpression.Operator.INCREMENT
+                        || expression.getOperator() == PrefixExpression.Operator.DECREMENT) admitted[0] = false;
+                return true;
+            }
+        });
+        return admitted[0];
     }
 
     private static boolean admitted(IMethodBinding binding, boolean mathematical) {

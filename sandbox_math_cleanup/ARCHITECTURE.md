@@ -221,3 +221,48 @@ profiles and targets, and an actual rewrite with exceptions and exact Undo.
 post-call array contents and field identities after intervening rebinding/stores,
 including failures after the write and aliased inputs. These test requirements
 must pass in the normal Maven authority before qualification is claimed.
+
+## Immutable numeric values
+
+`JavaValueSourceSummary` admits source-defined top-level final nongeneric value
+classes whose private final components are assigned one-to-one by a pure private
+constructor. Source definitions and transitive constants come from the existing
+request-local `JavaSourceContext`; no class or arithmetic method name selects a
+formula. A `ScalarProjector` reuses the existing typed expression decoder.
+Assignments and increment/decrement are rejected throughout each admitted method
+and every expanded helper before decoding. Native/synchronized methods, finalizers,
+instance initializers, inheritance and constructor effects remain boundaries.
+
+Ordinary mathematical-mode analysis can project all BigInteger components of a
+straight-line whole-method result jointly. The SDK discovers the candidate;
+the adapter emits a guarded path, recompiles and re-extracts that actual branch,
+and independently checks its joint values before exposing Apply. It retains the
+original method body as the fallback and returns a fresh object through the
+original constructor. This path requires explicit mathematical opt-in: the existing
+contract permits BigInteger result reference identity changes, including shared
+component leaves. The enclosing method's Javadoc and review description state
+this distinction; a fresh wrapper does not guarantee fresh scalar components.
+Default preserve-Java profiles do not enter this path. No portable BigInteger
+allocation guarantee or deployment-runtime premise is inferred.
+Only same-class helpers and static values are emitted, so
+foreign initialization is not skipped. Source-defined constants are conditional
+facts: runtime guards check their exact current values. Inputs require nonnull
+exact BigInteger receivers and at most 4096 magnitude bits. A source modulus can
+supply a smaller guarded bound for the existing magnitude-aware cost model.
+Larger values, nulls and subclasses execute the original body.
+
+One value-work meter starts before preflight and shares a deadline and cancellation
+token across source facts, every method, SDK search, emitted-source replay and
+explanation. Each SDK verification reserves its complete allowance, including
+preparation and unsuccessful attempts. This does not increase configured defaults.
+
+The reusable summary session also composes nested immutable values, bounded to
+8 fields per type,32 BigInteger leaves and depth8. Recursive shape/method/constant
+cycles are rejected. Source-defined value constants may call admitted pure source
+factories; their initialization arithmetic supplies conditional metadata and is
+excluded from the summarized method's runtime trace. Whole-method emission remains
+restricted to direct BigInteger components. The recursive summary alone grants no
+permission to skip initialization, reuse object identity, assume associativity,
+claim canonical residues or cancel an inverse. Consumers must establish those
+obligations separately. Complete Fp12/Fp6/Fp2 multiplication and a structural rename
+are replayed against freshly compiled source with24 inputs and12 scalar outputs.

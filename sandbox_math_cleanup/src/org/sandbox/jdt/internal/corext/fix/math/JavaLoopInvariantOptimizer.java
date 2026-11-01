@@ -24,7 +24,7 @@ final class JavaLoopInvariantOptimizer {
             List<MathematicalAnalysis.Replacement> replacements,List<MathematicalAnalysis.VerifiedRegion> evidence,
             List<MathematicalAnalysis.Diagnostic> diagnostics,long remaining) {
         if(options.safety()!=SafetyProfile.PRESERVE_JAVA || options.mathematicalOptIn() || remaining<12000) return remaining;
-        CancellationToken token=()->MathematicalAnalysis.isCancelled(monitor);
+        CancellationToken token=MathematicalAnalysis.cancellation(monitor,options);
         var discovery=JavaLoopInvariantAnalysis.discover(ast,remaining,token);
         remaining-=discovery.work();
         if(discovery.contexts().isEmpty()) return remaining;
@@ -71,11 +71,11 @@ final class JavaLoopInvariantOptimizer {
                 var actual=decoded.regions().getFirst();
                 if(!region.inputNames().equals(actual.inputNames()) || !region.plan().inputs().equals(actual.plan().inputs()))
                     throw new IllegalArgumentException("LOOP_INITIALIZER_INPUTS_CHANGED"); //$NON-NLS-1$
-                var request=request(region,options,share);
+                var request=request(region,options,share,token);
                 var proof=new ComputationOptimizer().verify(request,actual.plan(),token);
                 remaining-=verificationOvershoot(proof,share);
                 if(remaining<0 || token.isCancelled()) break;
-                var reverse=new ComputationOptimizer().verify(request(actual,options,share),region.plan(),token);
+                var reverse=new ComputationOptimizer().verify(request(actual,options,share,token),region.plan(),token);
                 remaining-=verificationOvershoot(reverse,share);
                 if(remaining<0 || token.isCancelled()) break;
                 if(!(proof instanceof Verified verified) || !(reverse instanceof Verified)
@@ -97,9 +97,9 @@ final class JavaLoopInvariantOptimizer {
         return remaining;
     }
 
-    private static OptimizationRequest request(JavaComputationRegion region,MathCleanUpOptions options,long share) {
+    private static OptimizationRequest request(JavaComputationRegion region,MathCleanUpOptions options,long share,CancellationToken token) {
         return new OptimizationRequest(region.plan(),region.trace(),options.kinds(),"java25-numeric/v1",region.assumptions(), //$NON-NLS-1$
-                SafetyProfile.PRESERVE_JAVA,options.goal(),options.optimizationBudget(share),CheckedPolicy.NONE);
+                SafetyProfile.PRESERVE_JAVA,options.goal(),MathematicalAnalysis.optimizationBudget(options,share,token),CheckedPolicy.NONE);
     }
     private static long verificationOvershoot(de.regelsuche.sdk.optimization.VerificationResult result,long share) {
         long work=result instanceof Verified verified?verified.evidence().verificationWork()
