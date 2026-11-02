@@ -224,7 +224,8 @@ final class JavaFixedPowerOptimizer {
         for(ASTNode declaration:declarations) {
             work.charge(1);
             while(declaration!=null && !(declaration instanceof TypeDeclaration)){work.charge(1);declaration=declaration.getParent();}
-            if(!(declaration instanceof TypeDeclaration type))throw JavaValueSourceSummary.unavailable("VALUE_POWER_LOCAL_SOURCE_UNSUPPORTED"); //$NON-NLS-1$
+            if(declaration==null)throw JavaValueSourceSummary.unavailable("VALUE_POWER_LOCAL_SOURCE_UNSUPPORTED"); //$NON-NLS-1$
+            TypeDeclaration type=(TypeDeclaration)declaration;
             String key=type.resolveBinding().getKey();
             // The replacement hash already binds this owner; nested dependencies keep their own declaration.
             if(type!=owner && !hashes.containsKey(key)) {
