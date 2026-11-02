@@ -134,7 +134,7 @@ class CandidateVerificationCliTest {
 				$x + 0
 				=> $x
 				;;
-				"""); //$NON-NLS-1$
+				""", StandardCharsets.UTF_8); //$NON-NLS-1$
 		CandidateStore store = new CandidateStore(candidateDir);
 		store.save(candidate("commit-new", "2026-03-01T00:00:00Z")); //$NON-NLS-1$ //$NON-NLS-2$
 
