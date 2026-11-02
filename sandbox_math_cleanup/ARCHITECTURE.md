@@ -388,3 +388,29 @@ The source receipt also retains the original structural call location and exact
 receiver, exponent and power-method bindings. Independent replay checks the guard,
 original fallback, helper invocation and its sole use at that location; a rebound
 type-envelope hash cannot authorize an altered or additional call site.
+
+### Source-defined constant values and factory normalization
+
+The explicit mathematical profile can specialize a call with a source-defined
+immutable value constant and remove duplicate scalar normalization before a
+source-proved factory. Admission uses exact Java bindings, complete helper and
+factory source, guarded runtime components, and independent typed numeric replay.
+Class names and constant names supply no arithmetic permission.
+
+Constant operands are bound static fields read through an unqualified name or a
+type-qualified name. Guards retain that admitted source projection and replay its
+field binding; expression-qualified static reads keep their original evaluation.
+Selection intervals are half-open, so merely adjacent source is not selected.
+
+Constant specialization retains a legal fresh factory and the exact original
+call as its exceptional-input fallback. Factory normalization captures receiver
+and modulus expressions at their original evaluation point and proves every
+combination of guarded/raw and original/normalized arguments. Other consumers,
+interacting factory arguments, subclasses and changed source dependencies remain
+protected by rejection or the retained original path.
+
+Accepted methods document the mathematical reference-identity contract through
+the existing Javadoc mechanism. Conditional call envelopes remain intact,
+including a generated fallback on repeated cleanup. Search, source discovery,
+emitted replay and rejected scans use the same request work and cancellation
+budget. Guard-inclusive cost estimates are not measured speed claims.

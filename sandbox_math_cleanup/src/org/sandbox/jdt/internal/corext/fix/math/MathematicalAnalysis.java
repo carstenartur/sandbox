@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -50,6 +51,7 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.NodeFinder;
 import org.eclipse.jdt.core.dom.SimpleName;
@@ -183,7 +185,22 @@ public final class MathematicalAnalysis {
          return cancelled(sourceDigest, compilerOptions);
       }
 
-      if (!matchesAstSource(ast, source, compilerOptions, options.targetJava())) {
+      var residueCalls = new ArrayList<MethodInvocation>();
+      Consumer<MethodInvocation> collectResidueCalls = selectionOffset >= 0 && options.mathematicalOptIn() && options.kinds().contains(NumericKind.BIG_INTEGER)
+            ? call -> {
+               try { valueWork.charge(1); }
+               catch (JavaValueSourceSummary.DeadlineExceeded expired) { throw expired; }
+               catch (IllegalArgumentException exhausted) { throw new SourceDiscoveryLimit(exhausted); }
+               residueCalls.add(call);
+            } : null;
+      boolean currentSource;
+      try {
+         currentSource = matchesAstSource(ast, source, compilerOptions, options.targetJava(), collectResidueCalls);
+      } catch (SourceDiscoveryLimit exhausted) {
+         diagnostics.add(new Diagnostic("BUDGET_EXCEEDED", "Source call discovery exceeds the analysis budget", 0, source.length(), Stage.BUDGET)); //$NON-NLS-1$ //$NON-NLS-2$
+         return new Analysis(List.of(), diagnostics, sourceDigest, compilerOptions);
+      }
+      if (!currentSource) {
          diagnostics.add(new MathematicalAnalysis.Diagnostic("STALE_AST_SOURCE", "Resolved AST does not match the current source snapshot", 0, 0));
          return new MathematicalAnalysis.Analysis(replacements, diagnostics, sourceDigest, compilerOptions);
       }
@@ -223,6 +240,11 @@ public final class MathematicalAnalysis {
       replacements.addAll(protectedReservations);
       MathematicalJavadoc documentation = new MathematicalJavadoc();
       JavaFixedPowerOptimizer.optimize(ast,source,options,monitor,selectionOffset,selectionLength,compilerOptions,environment,replacements,evidence,diagnostics,valueWork);
+      if (selectionOffset >= 0)
+         JavaValueResidueOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
+               compilerOptions, environment, replacements, evidence, diagnostics, valueWork, documentation, residueCalls);
+      JavaValueCallOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
+            compilerOptions, environment, replacements, evidence, diagnostics, valueWork, documentation);
       JavaImmutableValueOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
             compilerOptions, environment, replacements, evidence, diagnostics, valueWork, documentation);
       long valueSpent = valueWork.used; // Includes reservations even when the value pass is disabled.
@@ -766,6 +788,21 @@ public final class MathematicalAnalysis {
             compilerOptions, environment, replacements, evidence, diagnostics, remainingWork - sourceContext.takeWork());
       if (isCancelled(monitor)) return cancelled(sourceDigest, compilerOptions);
 
+      if (selectionOffset < 0 && options.mathematicalOptIn() && options.kinds().contains(NumericKind.BIG_INTEGER)) {
+         // Established whole-file regions keep their shares; residue discovery uses only the real remainder.
+         remainingWork -= sourceContext.takeWork();
+         if (remainingWork > 0) {
+            valueWork.charge(Math.max(0, valueWork.remaining() - remainingWork));
+            long beforeResidue = valueWork.used;
+            if (valueWork.remaining() > 0)
+               JavaValueResidueOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
+                     compilerOptions, environment, replacements, evidence, diagnostics, valueWork, documentation);
+            remainingWork -= valueWork.used - beforeResidue;
+            sourceContext.takeWork(); // This phase's source lookups are already charged through valueWork.
+         }
+         if (isCancelled(monitor)) return cancelled(sourceDigest, compilerOptions);
+      }
+
       replacements.removeAll(protectedReservations);
       MathematicalAnalysis.Analysis analysis = new MathematicalAnalysis.Analysis(replacements, diagnostics, sourceDigest, compilerOptions, evidence, documentation.edits(source));
       if (replacements.size() > 1 || !analysis.documentation().isEmpty()) {
@@ -945,6 +982,12 @@ public final class MathematicalAnalysis {
    }
 
    private static boolean matchesAstSource(CompilationUnit original, String source, Map<String, String> options, int targetJava) {
+      return matchesAstSource(original, source, options, targetJava, null);
+   }
+
+   private static boolean matchesAstSource(CompilationUnit original, String source, Map<String, String> options, int targetJava,
+         Consumer<MethodInvocation> originalCalls) {
+      var originalPositions = sourcePositions(original, originalCalls);
       // Standalone clients can parse structured Javadoc with either setting.
       // Retry only that parser setting: syntax, documented text and source
       // positions must still match exactly; no stale-source guard is bypassed.
@@ -958,18 +1001,28 @@ public final class MathematicalAnalysis {
          compilerOptions.put(JavaCore.COMPILER_DOC_COMMENT_SUPPORT, documentation);
          parser.setCompilerOptions(compilerOptions);
          CompilationUnit parsed = (CompilationUnit) parser.createAST(null);
-         if (original.subtreeMatch(new ASTMatcher(true), parsed)
-               && sourcePositions(original).equals(sourcePositions(parsed))) return true;
+         var parsedPositions = sourcePositions(parsed, null);
+         if (originalPositions.equals(parsedPositions) && original.subtreeMatch(new ASTMatcher(true), parsed)) return true;
       }
       return false;
    }
 
-   private static List<Integer> sourcePositions(CompilationUnit ast) {
+   private static final class SourceDiscoveryLimit extends RuntimeException {
+      private static final long serialVersionUID = 1L;
+      SourceDiscoveryLimit(IllegalArgumentException cause) { super(cause); }
+   }
+
+   private static List<Integer> sourcePositions(CompilationUnit ast, Consumer<MethodInvocation> originalCalls) {
       final ArrayList<Integer> positions = new ArrayList<>();
       ast.accept(new ASTVisitor() {
          public void preVisit(ASTNode node) {
             positions.add(node.getStartPosition());
             positions.add(node.getLength());
+         }
+         @Override public boolean visit(MethodInvocation call) {
+            // Share only the mandatory bound-original walk; reparsed comparison ASTs never populate this list.
+            if (originalCalls != null) originalCalls.accept(call);
+            return true;
          }
       });
       return positions;
