@@ -19,6 +19,9 @@ public final class BlsBenchmarkReport {
         if (!measurements.isArray() || measurements.size() != 6) throw new IllegalArgumentException("Expected all six BLS timing rows");
         String digest = CorpusFiles.sha256(directory.resolve("benchmark.properties"));
         var pairs = new LinkedHashMap<String, Map<String, JsonNode>>();
+        var currentRuntime = Map.of("jvm", org.openjdk.jmh.util.Utils.getCurrentJvm(),
+                "jdkVersion", System.getProperty("java.version"), "vmName", System.getProperty("java.vm.name"),
+                "vmVersion", System.getProperty("java.vm.version"));
         JsonNode environment = null;
         for (var row : measurements) {
             String prefix = BlsBenchmark.class.getName() + ".", name = row.path("benchmark").asText();
@@ -31,6 +34,9 @@ public final class BlsBenchmarkReport {
                     || parameters.path("binaryArchive").asText().isBlank() || parameters.path("sourceArchive").asText().isBlank())
                 throw new IllegalArgumentException("Unknown or swapped BLS fixture configuration");
             FiniteSeriesBenchmarkReport.requireSettings(row);
+            for (var field : currentRuntime.entrySet())
+                if (!field.getValue().equals(row.path(field.getKey()).asText()))
+                    throw new IllegalArgumentException("Measurement differs from the qualified JVM: " + field.getKey());
             if (environment == null) environment = row;
             else {
                 for (String key : List.of("jvm", "jvmArgs", "jdkVersion", "vmName", "vmVersion", "jmhVersion"))
@@ -72,6 +78,7 @@ public final class BlsBenchmarkReport {
         report.put("fixtureManifestSha256", digest); report.put("reviewSha256", CorpusFiles.sha256(directory.resolve("review.json")));
         report.put("classes", cohort.path("classes")); report.put("options", scan.path("options"));
         report.put("javaRuntime", scan.path("javaRuntime")); report.put("jvmArgs", environment.path("jvmArgs"));
+        report.put("measurementRuntime", currentRuntime);
         report.put("comparisons", comparisons);
         report.put("interpretation", "All ten samples reconstruct the mean and 99.9% interval. Separated intervals are local directional evidence; overlap is inconclusive. Full generated guards and fallback paths remain timed. No optimizer cost weights, universal speedup or constant-time guarantee follows.");
         report.put("allocationInterpretation", "GC samples include JVM/harness work and final-trial source/runtime validation and cleanup outside primary latency timing. They cannot isolate candidate allocations. Raw samples are retained.");

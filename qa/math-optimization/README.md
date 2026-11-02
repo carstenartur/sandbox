@@ -79,8 +79,9 @@ fresh qualification; the scanner deliberately refuses to overwrite prior output.
 
 ## Complete BLS source cohort and whole-call measurements
 
-The separate, explicit `bc-bls.properties` profile uses the same Java 17 target,
-1,000,000 work units, 20,000 states and five-second per-file timeout. It opts into
+The separate, explicit `bc-bls.properties` profile retains the original BLS
+qualification limits: Java 17, 20,000,000 work units, 20,000 states and a
+five-second per-file timeout. It opts into
 mathematical semantics and the `AUDITED_OPENJDK_25_0_5_8` scalar deployment
 contract. The general `bc-mathematical` profile retains its own independent
 runtime choice. This contract must be satisfied by the deployed application;
@@ -114,6 +115,8 @@ Two forks, three 500 ms warmups, five 500 ms measurements and GC profiling produ
 `target/bc-bls-jmh.json`. The pre-measurement fixture hash is a raw JMH parameter.
 `target/bc-bls-performance.json` requires all three pairs, identical settings and
 environments, and reconstructs means and 99.9% intervals from all ten samples.
+Every row must identify the JVM executable, JDK version, VM name and VM version
+bound to the source qualification; consistently foreign runtime rows are rejected.
 Overlap is `INCONCLUSIVE`; separated intervals give a local direction. All
 guards, fallbacks and output encoding remain timed. GC samples also include
 trial verification/cleanup and cannot isolate candidate allocations.

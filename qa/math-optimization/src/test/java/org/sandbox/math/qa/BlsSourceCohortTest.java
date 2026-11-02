@@ -16,6 +16,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class BlsSourceCohortTest {
     private static final String PACKAGE = "org/bouncycastle/crypto/bls/";
@@ -32,11 +34,15 @@ class BlsSourceCohortTest {
         var entry = assertDoesNotThrow(() -> preparer.getMethod("main", String[].class));
         binary = Path.of(System.getProperty("sandbox.math.bc.jar"));
         sources = Path.of(System.getProperty("sandbox.math.bc.sourceArchive"));
-        profile = temporary.resolve("profile.properties"); cohort = temporary.resolve("cohort");
-        var options = BlsSourceCohort.read(Path.of("qa/math-optimization/profiles/bc-mathematical.properties"));
-        options.setProperty("cleanup.mathematics.valueRuntime", "AUDITED_OPENJDK_25_0_5_8");
-        try (var writer = Files.newBufferedWriter(profile)) { options.store(writer, "Explicit audited BLS fixture"); }
+        profile = Path.of("qa/math-optimization/profiles/bc-bls.properties").toAbsolutePath();
+        cohort = temporary.resolve("cohort");
         entry.invoke(null, (Object) new String[] {binary.toString(), sources.toString(), profile.toString(), cohort.toString()});
+        String export = System.getProperty("sandbox.math.corpus.evidence");
+        if (export != null && !export.isBlank()) {
+            Path receipts = Path.of(export).resolve("bls-source-cohort"); Files.createDirectories(receipts);
+            for (String file : List.of("review.json", "inputs.json", "cohort.json", "benchmark.properties"))
+                Files.copy(cohort.resolve(file), receipts.resolve(file), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        }
     }
 
     @Test void canonicalPreparationIncludesAllFiveWholeClassesAndPreservesUnchangedFp12() throws Exception {
@@ -139,6 +145,7 @@ class BlsSourceCohortTest {
         var result = JSON.readTree(report.toFile()); assertEquals(3, result.path("comparisons").size());
         assertEquals(CorpusFiles.sha256(raw), result.path("rawJmhSha256").asText());
         assertEquals(CorpusFiles.sha256(cohort.resolve("benchmark.properties")), result.path("fixtureManifestSha256").asText());
+        assertEquals(System.getProperty("java.version"), result.path("measurementRuntime").path("jdkVersion").asText());
         var expected = Map.of("G2_32", "LOWER_TIME", "G2_256", "INCONCLUSIVE", "PAIRING", "HIGHER_TIME");
         for (var row : result.path("comparisons")) assertEquals(expected.get(row.path("case").asText()), row.path("timing").asText());
     }
@@ -178,6 +185,15 @@ class BlsSourceCohortTest {
         reject(rows, changed);
     }
 
+    @ParameterizedTest @ValueSource(strings = {"jvm", "jdkVersion", "vmName", "vmVersion"})
+    void reportRejectsUniformForeignRuntime(String field) throws Exception {
+        var rows = measurements();
+        var foreign = Map.of("jvm", "/foreign/jdk/bin/java", "jdkVersion", "21.0.1",
+                "vmName", "Foreign VM", "vmVersion", "21.0.1+12");
+        for (var row : rows) ((ObjectNode) row).put(field, foreign.get(field));
+        reject(rows, cohort);
+    }
+
     private static BlsBenchmark.Inputs inputs(Path directory, String workload) throws Exception {
         var input = new BlsBenchmark.Inputs(); input.fixtureDirectory = directory.toString();
         input.fixtureManifestSha256 = CorpusFiles.sha256(directory.resolve("benchmark.properties"));
@@ -209,7 +225,8 @@ class BlsSourceCohortTest {
             row.putObject("params").put("workload", workload).put("fixtureDirectory", cohort.toString())
                     .put("fixtureManifestSha256", CorpusFiles.sha256(cohort.resolve("benchmark.properties")))
                     .put("binaryArchive", binary.toString()).put("sourceArchive", sources.toString());
-            row.put("jvm", "java"); row.put("jdkVersion", "25"); row.put("vmVersion", "25"); row.put("vmName", "test VM");
+            row.put("jvm", org.openjdk.jmh.util.Utils.getCurrentJvm()); row.put("jdkVersion", System.getProperty("java.version"));
+            row.put("vmVersion", System.getProperty("java.vm.version")); row.put("vmName", System.getProperty("java.vm.name"));
             row.put("jmhVersion", "1.37"); row.putArray("jvmArgs").add("-Xms128m").add("-Xmx512m");
             row.put("mode", "avgt"); row.put("threads", 1); row.put("forks", 2);
             row.put("warmupIterations", 3); row.put("measurementIterations", 5);
