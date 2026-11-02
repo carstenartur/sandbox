@@ -32,6 +32,7 @@ public final class BlsSourceCohort {
         Path profile = Path.of(args[2]).toAbsolutePath(), output = Path.of(args[3]).toAbsolutePath().normalize();
         CorpusFiles.requireHash(binary, BINARY_SHA); CorpusFiles.requireHash(sources, SOURCES_SHA);
         requireProfile(profile);
+        var qualificationRuntime = currentRuntime();
         var scan = new ArrayList<>(List.of(binary.toString(), sources.toString(), profile.toString(), output.toString(), SOURCES_SHA, "17"));
         scan.addAll(ENTRIES); ProjectMathScan.main(scan.toArray(String[]::new));
         var report = JSON.readTree(output.resolve("review.json").toFile()); requireReport(report);
@@ -72,6 +73,7 @@ public final class BlsSourceCohort {
         }
         var cohort = new LinkedHashMap<String, Object>();
         cohort.put("schema", "sandbox.bls-source-cohort/v1"); cohort.put("classes", classes);
+        cohort.put("qualificationRuntime", qualificationRuntime);
         cohort.put("files", artifacts); cohort.put("sourceDependencies", dependencies);
         cohort.put("scope", "Complete original and ordinary Apply sources; original inputs and unchanged Fp12 remain explicit. Numerical samples and timing do not prove constant-time behavior.");
         JSON.writerWithDefaultPrettyPrinter().writeValue(output.resolve("cohort.json").toFile(), cohort);
@@ -113,6 +115,8 @@ public final class BlsSourceCohort {
         if (!"sandbox.bls-source-cohort/v1".equals(cohort.path("schema").asText())
                 || cohort.path("classes").size() != ENTRIES.size() || !cohort.path("files").isObject()
                 || !cohort.path("sourceDependencies").isObject()) throw new IOException("Incomplete BLS cohort receipt");
+        if (!JSON.valueToTree(currentRuntime()).equals(cohort.path("qualificationRuntime")))
+            throw new IOException("Source qualification JVM changed or is missing from the cohort receipt");
         for (var file : cohort.path("files").properties()) CorpusFiles.requireHash(inside(directory, file.getKey()), file.getValue().asText());
         for (var file : cohort.path("sourceDependencies").properties())
             CorpusFiles.requireHash(inside(directory, "source-context/" + file.getKey()), file.getValue().asText());
@@ -144,6 +148,11 @@ public final class BlsSourceCohort {
             }
         }
         return cohort;
+    }
+
+    private static Map<String, String> currentRuntime() {
+        return Map.of("jvm", org.openjdk.jmh.util.Utils.getCurrentJvm(), "jdkVersion", System.getProperty("java.version"),
+                "vmName", System.getProperty("java.vm.name"), "vmVersion", System.getProperty("java.vm.version"));
     }
 
     private static MathCleanUpOptions requireProfile(Path profile) throws IOException {
