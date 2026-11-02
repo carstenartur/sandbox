@@ -30,7 +30,7 @@
     "id": "03-bouncy-castle-long",
     "kinds": "LONG",
     "packageName": "org.bouncycastle.crypto.digests",
-    "screenshotSha256": "9a9020c3fc5b49655acab5c03ac15fb96d1d262e56c6acc9f6882e54c6a1efe1",
+    "screenshotSha256": "92d47a8c164483fc55fbb653ed445b789653acc3a08a6209a9279987bb86159d",
     "sdkOptimizationSourceRevision": "70c13fb580062b1fd653f35b81b2fb7ed1903c28",
     "sdkSha256": "ba0293dedb3fde9ca2f3042dcef8ae4d6bb2d576adedff8ba7a2b4d186f1cbe1",
     "sourceArchive": "bcprov.source-1.85.2.jar",

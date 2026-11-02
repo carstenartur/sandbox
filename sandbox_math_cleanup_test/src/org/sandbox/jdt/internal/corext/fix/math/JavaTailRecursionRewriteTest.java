@@ -14,6 +14,8 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class JavaTailRecursionRewriteTest {
     @TempDir Path temporary;
@@ -32,9 +34,11 @@ class JavaTailRecursionRewriteTest {
         assertEquals("STACK_CHANGE_NOT_ACCEPTED", result.reason());
     }
 
-    @Test void nativeBridgeRetainsAuthoredDocumentationAndBothLoopFormsExecuteEqually() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings={JavaCore.ENABLED,JavaCore.DISABLED})
+    void nativeBridgeRetainsAuthoredDocumentationAndBothLoopFormsExecuteEqually(String documentation) throws Exception {
         String before=sum().replace("public static", "/** Authored sum. @param n count */ public static");
-        var ast=bound(before);int offset=((TypeDeclaration)ast.types().getFirst()).getMethods()[0].getStartPosition();
+        var ast=bound(before,documentation);int offset=((TypeDeclaration)ast.types().getFirst()).getMethods()[0].getStartPosition();
         for(String goal:List.of("READABILITY","LOWER_ESTIMATED_RUNTIME")) {
             var values=nativeOptions();values.put(MathCleanUpOptions.GOAL,goal);
             var result=JavaTailRecursionRewrite.prepare(ast,before,offset,MathCleanUpOptions.parse(values,17),new NullProgressMonitor());
@@ -58,13 +62,56 @@ class JavaTailRecursionRewriteTest {
         var cancelled=new NullProgressMonitor();cancelled.setCanceled(true);
         assertEquals("CANCELLED",JavaTailRecursionRewrite.prepare(ast,before,offset,MathCleanUpOptions.parse(values,17),cancelled).reason());
     }
+
+    @ParameterizedTest
+    @ValueSource(strings={"/* retain */","// retain   "})
+    void nativeBridgeRejectsDetachedCommentsAddedToTheSource(String comment) throws Exception {
+        String padding=" ".repeat(comment.length());
+        String before=sum().replace("{ if", "{ "+padding+"\nif");
+        String current=before.replace(padding,comment);
+        var ast=bound(before);var currentAst=bound(current);int offset=before.indexOf("public static");
+        assertEquals(before.length(),current.length());assertTrue(ast.getCommentList().isEmpty());
+        assertEquals(1,currentAst.getCommentList().size());
+        var options=MathCleanUpOptions.parse(nativeOptions(),17);
+        assertTrue(JavaTailRecursionRewrite.prepare(currentAst,current,offset,options,new NullProgressMonitor()).plan().isEmpty());
+        var result=JavaTailRecursionRewrite.prepare(ast,current,offset,options,new NullProgressMonitor());
+        if(result.plan().isPresent()) compare(current,result.plan().orElseThrow().applyTo(current),
+                new Class<?>[]{int.class,long.class},List.<Object[]>of(new Object[]{30,7L}));
+        assertTrue(result.plan().isEmpty(),()->"Stale AST admitted and rewrote the current comment: "+result.plan().orElseThrow().preview());
+        assertEquals("STALE_RECURSION_SOURCE",result.reason());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings={"// retain   \n    ","    /* retain */\n"})
+    void nativeBridgeRejectsChangedDetachedCommentKindsAndRanges(String prefix) {
+        String before="/* retain */\n    "+sum();String current=prefix+sum();
+        var ast=bound(before);int offset=before.indexOf("public static");
+        var options=MathCleanUpOptions.parse(nativeOptions(),17);
+        var unchanged=JavaTailRecursionRewrite.prepare(ast,before,offset,options,new NullProgressMonitor());
+        assertTrue(unchanged.plan().orElseThrow(()->new AssertionError(unchanged.reason())).preview().contains("/* retain */"));
+        assertEquals(before.length(),current.length());bound(current);
+        var result=JavaTailRecursionRewrite.prepare(ast,current,offset,options,new NullProgressMonitor());
+        assertTrue(result.plan().isEmpty(),()->"Stale detached comment accepted: "+prefix);
+        assertEquals("STALE_RECURSION_SOURCE",result.reason());
+    }
+
+    @Test void nativeBridgeRejectsAnAstWithoutCommentMetadata() {
+        String before=sum();var ast=AST.newAST(AST.getJLSLatest(),false).newCompilationUnit();
+        var result=assertDoesNotThrow(()->JavaTailRecursionRewrite.prepare(ast,before,before.indexOf("public static"),
+                MathCleanUpOptions.parse(nativeOptions(),17),new NullProgressMonitor()));
+        assertTrue(result.plan().isEmpty());assertEquals("STALE_RECURSION_SOURCE",result.reason());
+    }
     private static HashMap<String,String> nativeOptions() {
         var values=new HashMap<>(MathCleanUpOptions.defaults(17).toMap());values.put(MathCleanUpOptions.CLEANUP,"true");
         values.put(MathCleanUpOptions.TAIL_RECURSION,"true");values.put(MathCleanUpOptions.KINDS,"INT,LONG");
         values.put(MathCleanUpOptions.WORK_BUDGET,Long.toString(BUDGET));return values;
     }
     private static CompilationUnit bound(String source) {
+        return bound(source,null);
+    }
+    private static CompilationUnit bound(String source,String documentation) {
         var parser=ASTParser.newParser(AST.getJLSLatest());var compiler=new HashMap<String,String>();JavaCore.setComplianceOptions("17",compiler);
+        if(documentation!=null) compiler.put(JavaCore.COMPILER_DOC_COMMENT_SUPPORT,documentation);
         parser.setCompilerOptions(compiler);parser.setSource(source.toCharArray());parser.setUnitName("Sample.java");
         parser.setEnvironment(null,null,null,true);parser.setResolveBindings(true);var ast=(CompilationUnit)parser.createAST(null);
         for(var problem:ast.getProblems()) assertFalse(problem.isError(),problem.toString());return ast;

@@ -1015,6 +1015,7 @@ public final class MathematicalAnalysis {
 
    private static boolean matchesAstSource(CompilationUnit original, String source, Map<String,String> options, int targetJava,
          Consumer<MethodInvocation> originalCalls, LongConsumer charge, IProgressMonitor monitor) {
+      if (original.getCommentList() == null) return false;
       var originalPositions = sourcePositions(original, originalCalls, charge);
       // Standalone clients can parse structured Javadoc with either setting.
       // Retry only that parser setting: syntax, documented text and source
@@ -1061,6 +1062,14 @@ public final class MathematicalAnalysis {
             return true;
          }
       });
+      // Line/block comments are detached from the ordinary AST walk.
+      for (Object entry : ast.getCommentList()) {
+         if (charge != null) charge.accept(1);
+         var comment = (org.eclipse.jdt.core.dom.Comment) entry;
+         positions.add(comment.getNodeType());
+         positions.add(comment.getStartPosition());
+         positions.add(comment.getLength());
+      }
       return positions;
    }
 

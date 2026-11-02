@@ -30,7 +30,7 @@
     "id": "04-bouncy-castle-swapped-choice",
     "kinds": "INT",
     "packageName": "org.bouncycastle.crypto.digests",
-    "screenshotSha256": "322953785aa9708570d5abecb104e6ba75e819709ac0a9269f8428fb653e6469",
+    "screenshotSha256": "094362aab9b6cea4ad134d318d187159fb3aed3a966b8fd73612b21c3364b793",
     "sdkOptimizationSourceRevision": "70c13fb580062b1fd653f35b81b2fb7ed1903c28",
     "sdkSha256": "ba0293dedb3fde9ca2f3042dcef8ae4d6bb2d576adedff8ba7a2b4d186f1cbe1",
     "sourceArchive": "bcprov.source-1.85.2.jar",
