@@ -2,6 +2,27 @@
 
 This module participates in the explicit mathematics cleanup. Numerical proof and Java source emission are separate from the Eclipse UI. The [current qualification](../docs/superpowers/plans/2026-10-31-java-mathematics-context-qualification.md) identifies the tested revisions and boundaries of its dated evidence; consult the linked integration PR for current CI results.
 
+## Native tail and converter transaction
+
+`FunctionalMathCoordinator` owns a private working copy and one aggregate work
+reservation/deadline. Separate default-off tail consent enters the bounded source
+inspector, emitter and independent `JavaTailRecursionReplay`; the resolved AST is
+checked against the current text before inspection. The bridge preserves source
+method identity, primitive expression widths, simultaneous updates and comments.
+Only the strict Estimated Runtime profile exposes its counted-loop envelope to
+the existing finite/affine SDK proofs. Ordinary mathematical mode retains the
+replayed loop. Subsequent ordinary mathematics and optional style conversion
+exclude transferred bodies, with source-bound Javadoc retaining that protection
+on repeated invocation. This adds no general Java OrderedMatrixChain adapter.
+
+The optional converter remains independent from tail consent. The existing
+`FunctionalMathSnapshot` validates protected text/bindings through document edit
+events, while `FunctionalMathChange` retains one Preview/Apply/Undo and freshness
+checks for source, dependencies, compiler, classpath and profiles. The source-only
+tail API remains available for bounded tests; native changes use the project AST
+and compiler environment. See [TAIL_RECURSION.md](TAIL_RECURSION.md) for admission
+and the explicit frame/stack contract.
+
 ## Complete computation tasks and CAS ownership
 
 `JavaComputationExtractor.extractTasks` exports bounded,

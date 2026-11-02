@@ -54,11 +54,34 @@ profile invalidates the prepared result. If another cleanup has already changed
 the file during this invocation, run the combined operation on the current file.</p>
 <p>All combined phases share one work allowance and one best-effort total time
 limit, including preparation, reparsing and rejected searches. There are at most
-two numerical phases and one converter phase. Exhaustion or cancellation discards
+two ordinary numerical phases, one optional tail-iteration phase and one converter phase. Exhaustion or cancellation discards
 the private result. These limits can yield fewer candidates than two independent
 cleanup invocations with separate full budgets. Quick Assist remains restricted
 to its mathematics selection. The combined option adds no save action, and the
 ordinary Functional Converter continues to run without the mathematics feature.</p>
+<h2 id="tail-recursion">Convert verified tail recursion</h2>
+<p>Enable <strong>Convert verified tail recursion (accept changed stack behavior)</strong>
+separately, select the method's int/long kinds, and run a whole-file cleanup.
+The option defaults to false. Select All, selection Quick Assist and save actions
+never grant permission to remove recursive frames. The method Javadoc records
+<code>ALLOW_FRAME_ELISION</code>: stack observation and <code>StackOverflowError</code>
+can change even when primitive state and evaluation order are independently verified.</p>
+<p>The supported source fragment is a static primitive method with a
+<code>counter &lt;= 0</code> exit and directly returned self-call decrementing that
+counter by one. State arguments must use pure admitted primitive expressions.
+Unknown dispatch, other calls, division, synchronization and body comments decline
+conversion. Up to eight state parameters and eight candidate methods are considered.</p>
+<p>Tail transfer precedes mathematics on a private copy. Its bodies remain protected
+from unrelated rewrites and the optional Functional Converter, including repeated
+cleanup. Mathematical mode can produce the verified ordinary loop. Existing
+finite-series/affine acceleration additionally requires <strong>Preserve Java</strong>,
+mathematical mode off and <strong>Lower estimated runtime</strong>. No general Java
+OrderedMatrixChain consumer is introduced. These are source/numerical proofs,
+not measured speedup claims.</p>
+<p>All phases share work, cancellation and the total best-effort time limit; the
+result remains one file preview and one Undo. Changed source, project/compiler
+settings or either consent invalidate the prepared change. Mathematics exclusions
+also exclude tail transfer; the separate converter keeps its own settings.</p>
 <h2 id="options">Independent options</h2>
 <table><thead><tr><th>Option</th><th>Meaning</th></tr></thead><tbody>
 <tr><td>Numeric types</td><td>Only BigInteger; int and long; float and double; or a
@@ -338,7 +361,7 @@ Add <code>--apply</code> to request application. Applying
 <code>cleanup.mathematics.checkedOptIn=true</code> in the configuration and
 <code>--accept-checked</code> on the command line. A candidate and an applied
 change are distinct report outcomes. Estimated costs are not measured timings.</p>
-<p>The mathematics configuration has twelve strict keys. This example explicitly
+<p>The mathematics configuration has fourteen strict keys. This example explicitly
 enables the otherwise disabled cleanup, selects the default numeric/safety
 profiles, and excludes generated files:</p>
 <pre>cleanup.mathematics=true
@@ -350,6 +373,8 @@ cleanup.mathematics.maxStates=2000
 cleanup.mathematics.timeoutSeconds=5
 cleanup.mathematics.checkedOptIn=false
 cleanup.mathematics.mathematicalOptIn=false
+cleanup.mathematics.tailRecursion=false
+cleanup.mathematics.valueRuntime=UNSPECIFIED
 cleanup.mathematics.underflowChecks=false
 cleanup.mathematics.explanations=NONTRIVIAL
 cleanup.mathematics.exclusions=**/generated/**</pre>

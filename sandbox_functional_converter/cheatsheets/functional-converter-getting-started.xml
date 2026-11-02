@@ -62,6 +62,23 @@
          confirm="false"/>
    </item>
 
+   <item title="Optionally Coordinate Mathematics and Tail Conversion">
+      <description>
+         With Mathematics installed, its separate default-off option can verify
+         mathematics before converting remaining loops with this profile. Use
+         <b>Preserve Java behavior</b> without Mathematical mode. The whole-file
+         operation has one preview and Undo and shares work and cancellation.
+         <br/><br/>
+         Tail recursion has its own default-off consent on the Mathematics page:
+         removing recursive frames can change stack observation and
+         <b>StackOverflowError</b>. Select All, Quick Assist and save actions do
+         not grant it. Replayed tail bodies remain protected from style conversion.
+         Existing finite-series/affine acceleration additionally requires the
+         strict <b>Lower estimated runtime</b> profile; Mathematical mode retains
+         the verified ordinary loop. Review the generated contract and file diff.
+      </description>
+   </item>
+
    <item title="Run the Cleanup on Java Files">
       <description>
          Apply the functional conversion cleanup to your

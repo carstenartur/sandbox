@@ -60,6 +60,25 @@ overflow behavior and BigInteger result identity. **Select All does not grant
 that consent.** Review the [safety profiles](../sandbox_math_cleanup_help/html/cleanup.html#safety)
 and generated contracts before accepting a change.
 
+### Explicit tail conversion and optional style conversion
+
+The independent **Convert verified tail recursion (accept changed stack behavior)**
+checkbox defaults to false. It admits a source-proved static primitive countdown
+and records `ALLOW_FRAME_ELISION` in the method Javadoc: removing recursive frames
+can change stack observation and `StackOverflowError`. Select All, selection Quick
+Assist and save actions do not grant this consent. Mathematical mode can retain
+the verified ordinary loop; existing finite-series/affine acceleration additionally
+requires Preserve Java, mathematical mode off and Lower estimated runtime.
+
+The separate Functional Converter option also defaults to false. Whole-file
+coordination uses one private source, shared work/deadline and one native
+Preview/Apply/Undo; transferred tail bodies and verified numerical fallbacks are
+protected. Source or profile drift invalidates the prepared change. See
+[tail contracts and boundaries](TAIL_RECURSION.md) and the
+[native configuration guide](../sandbox_math_cleanup_help/html/cleanup.html#tail-recursion).
+The exact SDK70 transfer is documented in [lib/README.md](lib/README.md);
+OrderedMatrixChain rules have no new general Java consumer here.
+
 ### Verified whole-task rewrites
 
 Under `PRESERVE_JAVA`, ordinary cleanup can rewrite bounded straight-line primitive

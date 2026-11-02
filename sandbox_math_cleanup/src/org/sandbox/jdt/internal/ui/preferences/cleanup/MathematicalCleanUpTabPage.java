@@ -113,6 +113,9 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 		CheckboxPreference enabled= createCheckboxPref(group, columns, "Enable explicit mathematics cleanup", //$NON-NLS-1$
 				MathCleanUpOptions.CLEANUP, FALSE_TRUE);
 		createLabel(columns, group, "Runs locally during explicit cleanup or Quick Assist. Never runs when saving."); //$NON-NLS-1$
+		CheckboxPreference tail= createCheckboxPref(group, columns, "Convert verified tail recursion (accept changed stack behavior)", //$NON-NLS-1$
+				MathCleanUpOptions.TAIL_RECURSION, FALSE_TRUE);
+		wrappedLabel(columns, group, MathCleanUpOptions.TAIL_WARNING);
 		CheckboxPreference combined= createCheckboxPref(group, columns, "Then convert remaining loops using the Functional Converter profile", //$NON-NLS-1$
 				FunctionalMathOptions.ENABLED, FALSE_TRUE);
 		wrappedLabel(columns, group, "Optional whole-file cleanup: mathematics first, then the selected loop style. " //$NON-NLS-1$
@@ -205,6 +208,7 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 			kindPreset.setEnabled(active);
 			kindButtons.values().forEach(button -> button.setEnabled(active));
 			setEnabledIfChanged(safety, active && !mathematical.getChecked());
+			setEnabledIfChanged(tail, active);
 			setEnabledIfChanged(combined, active && safety.hasValue(SafetyProfile.PRESERVE_JAVA.name()) && !mathematical.getChecked());
 			setEnabledIfChanged(optIn, active && checked);
 			setEnabledIfChanged(mathematical, active && safety.hasValue(SafetyProfile.PRESERVE_JAVA.name()));
@@ -236,6 +240,7 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 		optIn.addObserver((source, value) -> refresh.run());
 		mathematical.addObserver((source, value) -> safetyChanged.run());
 		combined.addObserver((source, value) -> refresh.run());
+		tail.addObserver((source, value) -> refresh.run());
 		// Only the master participates in Select All. Contract-changing consent stays explicit.
 		registerPreference(enabled);
 		// JDT registers contributed pages only after createContents has returned.
