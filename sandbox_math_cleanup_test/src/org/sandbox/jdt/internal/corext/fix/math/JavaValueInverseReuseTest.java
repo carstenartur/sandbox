@@ -6,6 +6,8 @@ import java.nio.file.Path;
 import java.util.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class JavaValueInverseReuseTest {
     @TempDir Path directory;
@@ -117,6 +119,17 @@ class JavaValueInverseReuseTest {
         var execution=new JavaValueReuseTest();execution.directory=directory;
         assertEquals(true,execution.executeIdentity(probe,false,8,"fastGuard"),"The exact emitted guard must exercise detachment, not only fallback");
         assertEquals(false,execution.executeIdentity(source,false,8,"scale"));assertEquals(false,execution.executeIdentity(generated,false,8,"scale"));
+        String once=source.replace("Leaf second=x.reciprocal().copy();","Leaf second=first;");
+        var single=MathematicalAnalysis.analyze(helper.parse(once),once,JavaValueReuseTest.options(),null,-1,0,helper.environment());
+        var one=single.evidence().stream().filter(item->item.valueInverse()!=null).findFirst().orElseThrow();
+        var two=result.evidence().stream().filter(item->item.valueInverse()!=null).findFirst().orElseThrow();
+        var onePrior=one.valueInverse().previousRegion();var twoPrior=two.valueInverse().previousRegion();
+        assertNotNull(onePrior);assertNotNull(twoPrior);
+        assertAll("The prior reuse cost is added once; both later inverse occurrences must be counted",
+            ()->assertEquals(2*(one.cost().sourceCost().operationWork()-onePrior.cost().sourceCost().operationWork()),
+                two.cost().sourceCost().operationWork()-twoPrior.cost().sourceCost().operationWork(),"source inverse work"),
+            ()->assertEquals(2*(one.cost().candidateCost().operationWork()-onePrior.cost().candidateCost().operationWork()),
+                two.cost().candidateCost().operationWork()-twoPrior.cost().candidateCost().operationWork(),"candidate inverse work"));
     }
     @Test void squareProducerMustRespectTheScalarOriginWhitelist() throws Exception {
         String source=fixture().replace("public Leaf square(){return combine(this);}",
@@ -161,6 +174,61 @@ class JavaValueInverseReuseTest {
             var result=MathematicalAnalysis.analyze(fixture.parse(source),source,JavaValueReuseTest.options(),null,-1,0,fixture.environment());
             assertFalse(fixture.apply(source,result).contains("Mathematics inverse reuse"));
         }
+    }
+
+    @ParameterizedTest @ValueSource(booleans={false,true})
+    void speculativeRejectionGuardMustNotDuplicateAnUnprovedScalarCallback(boolean helperCall) throws Exception {
+        String source=fixture().replace("public boolean rejected(){return amber.signum()==0 && blue.signum()==0;}",
+            "public static final BigInteger PROBE=new Probe();private BigInteger rejectionProbe(){return PROBE;}"
+                +"public boolean rejected(){return amber.equals(BigInteger.valueOf(100)) && "+(helperCall?"rejectionProbe()":"PROBE")+".signum()==0;}")
+            .replace("public static Leaf scale(Leaf x){","public static String observe(Leaf x){try{Leaf answer=scale(x);return answer.first()+\":\"+answer.second()+\":\"+Probe.calls;}"
+                +"catch(ArithmeticException failure){return failure.getClass().getSimpleName()+\":\"+Probe.calls;}}public static Leaf scale(Leaf x){")
+            +"final class Probe extends java.math.BigInteger {static int calls;Probe(){super(\"0\");}@Override public int signum(){calls++;return super.signum();}}";
+        var execution=new JavaValueReuseTest();execution.directory=directory;
+        Object original=execution.executeIdentity(source,false,100,"observe");assertEquals("ArithmeticException:1",original);
+        var helper=new JavaImmutableValueTest();helper.directory=directory;
+        var result=MathematicalAnalysis.analyze(helper.parse(source),source,JavaValueReuseTest.options(),null,-1,0,helper.environment());
+        String generated=helper.apply(source,result);
+        assertEquals(original,execution.executeIdentity(generated,false,100,"observe"),()->"diagnostics="+result.diagnostics()
+            +"; inverse costs="+result.evidence().stream().filter(item->item.valueInverse()!=null).map(item->item.cost()).toList()
+            +"\noriginal:\n"+source+"\ngenerated:\n"+generated);
+    }
+
+    @ParameterizedTest @ValueSource(strings={"super","concatenation","constructor"})
+    void speculativeRejectionGuardMustNotInvokeImplicitCallbacks(String callback) throws Exception {
+        String rejection=switch(callback) {
+            case "super" -> "public boolean rejected(){return amber.equals(BigInteger.valueOf(100)) && super.toString() instanceof String;}"
+                +"public int hashCode(){return PROBE.signum();}";
+            case "concatenation" -> "public boolean rejected(){return amber.equals(BigInteger.valueOf(100)) && (\"\"+this) instanceof String;}"
+                +"public String toString(){return \"\"+PROBE.signum();}";
+            case "constructor" -> "public boolean rejected(){if(amber.equals(BigInteger.valueOf(100))){try{throw new ProbeException(\"probe\");}"
+                +"catch(ProbeException ignored){}return true;}return false;}";
+            default -> throw new AssertionError(callback);
+        };
+        String source=fixture().replace("public boolean rejected(){return amber.signum()==0 && blue.signum()==0;}",
+            "public static final BigInteger PROBE=new Probe();"+rejection)
+            .replace("public static Leaf scale(Leaf x){","public static String observe(Leaf x){try{Leaf answer=scale(x);return answer.first()+\":\"+answer.second()+\":\"+Probe.calls;}"
+                +"catch(ArithmeticException failure){return failure.getClass().getSimpleName()+\":\"+Probe.calls;}}public static Leaf scale(Leaf x){")
+            +"final class Probe extends java.math.BigInteger {static int calls;Probe(){super(\"0\");}@Override public int signum(){calls++;return super.signum();}}"
+            +"final class ProbeException extends RuntimeException {ProbeException(String ignored){Probe.calls++;}}";
+        var execution=new JavaValueReuseTest();execution.directory=directory;
+        Object original=execution.executeIdentity(source,false,100,"observe");assertEquals("ArithmeticException:1",original);
+        var helper=new JavaImmutableValueTest();helper.directory=directory;
+        var result=MathematicalAnalysis.analyze(helper.parse(source),source,JavaValueReuseTest.options(),null,-1,0,helper.environment());
+        String generated=helper.apply(source,result);
+        assertEquals(original,execution.executeIdentity(generated,false,100,"observe"),()->callback+": "+result.diagnostics()
+            +"\noriginal:\n"+source+"\ngenerated:\n"+generated);
+    }
+
+    @Test void aPureTransitiveRejectionHelperKeepsTheQualifiedInverse() throws Exception {
+        String source=fixture().replace("public boolean rejected(){return amber.signum()==0 && blue.signum()==0;}",
+            "private boolean zero(BigInteger component){return component.signum()==0 && \"zero\" instanceof String;}public boolean rejected(){return zero(amber) && zero(blue);}");
+        var helper=new JavaImmutableValueTest();helper.directory=directory;
+        var result=MathematicalAnalysis.analyze(helper.parse(source),source,JavaValueReuseTest.options(),null,-1,0,helper.environment());
+        String generated=helper.apply(source,result);
+        assertTrue(result.evidence().stream().anyMatch(item->item.valueInverse()!=null),result.diagnostics().toString());
+        var execution=new JavaValueCallTest();execution.directory=directory;
+        assertEquals(execution.execute(source),execution.execute(generated));
     }
 
     @Test void compositeModulusUsesOnlyTheRetainedSuccessfulUnitPremise() throws Exception {

@@ -113,6 +113,30 @@ class JavaValueReuseTest {
         assertEquals(1,executeIdentity(established,false,8,"scale"));
         assertEquals(executeIdentity(established,false,8,"scale"),executeIdentity(helper.apply(established,allowed),false,8,"scale"));
     }
+    @Test void skippedFirstSwitchArmCannotInitializeStaticsBeforeTheOriginalFallback() throws Exception {
+        String source=JavaValueCallTest.fixture().replace("static final Leaf TWIST=Leaf.of(BigInteger.ONE,BigInteger.ONE);","public static int calls;public static String initializedBy;")
+            .replace("public static Leaf scale(Leaf x){return x.combine(TWIST);}",
+                "public static String observe(Leaf x){Leaf result=scale(x);return result.first()+\":\"+result.second()+\":\"+calls+\":\"+initializedBy;}"
+                +"public static Leaf scale(Leaf x){Leaf a=switch(1){case 0->x.square().copy();default->x;};Leaf b=x.square().copy();return a.combine(b);}")
+            .replace(".mod(P)",".mod(Foreign.P)")
+            .replace("public Leaf combine(Leaf other)",
+                "public Leaf square(){return combine(this);}"
+                +"public Leaf copy(){return new Leaf(amber,blue);}public Leaf combine(Leaf other)")
+            +"final class Foreign {static {Calculation.calls++;Calculation.initializedBy=new Throwable().getStackTrace()[1].getMethodName();}"
+                +"public static final java.math.BigInteger P=java.math.BigInteger.valueOf(101);}";
+        var helper=new JavaImmutableValueTest();helper.directory=directory;
+        var result=MathematicalAnalysis.analyze(helper.parse(source),source,options(),null,-1,0,helper.environment());
+        String generated=helper.apply(source,result);
+        assertTrue(generated.contains("Mathematics value reuse"),result.diagnostics().toString());
+        assertEquals("94:44:1:combine",executeIdentity(source,false,8,"observe"));
+        assertEquals("94:44:1:combine",executeIdentity(generated,false,8,"observe"),generated);
+        String taken=source.replace("switch(1)","switch(0)");
+        var takenResult=MathematicalAnalysis.analyze(helper.parse(taken),taken,options(),null,-1,0,helper.environment());
+        String takenGenerated=helper.apply(taken,takenResult);
+        assertTrue(takenGenerated.contains("Mathematics value reuse"),takenResult.diagnostics().toString());
+        assertEquals("14:28:1:combine",executeIdentity(taken,false,8,"observe"));
+        assertEquals("14:28:1:combine",executeIdentity(takenGenerated,false,8,"observe"));
+    }
     @Test void repeatedSourceTextCannotShareDifferentlyBoundArguments() throws Exception {
         String source=JavaValueCallTest.fixture().replace("static final Leaf TWIST=Leaf.of(BigInteger.ONE,BigInteger.ONE);","public static final BigInteger K=BigInteger.valueOf(17);")
             .replace("public static Leaf scale(Leaf x){return x.combine(TWIST);}","public static String scale(Leaf x){Leaf a=x.stretch(K).copy();BigInteger K=BigInteger.valueOf(23);Leaf b=x.stretch(K).copy();return b.first()+\",\"+b.second();}")

@@ -67,7 +67,8 @@ final class JavaValueReuseOptimizer {
                     }
                     var factory=JavaValueDetachment.factory(ast,session,access,summary,work);
                     String name="mathSharedValue"+groups.size();while(!names.add(name))name+="_"; //$NON-NLS-1$ //$NON-NLS-2$
-                    String guards=guard(summary,access,base.getIdentifier())+" && "+JavaValueDetachment.exactStatics(factory.staticValues(),access,work)
+                    // A skipped first occurrence must reach its original fallback before any source static is read.
+                    String guards=name+" != null && "+guard(summary,access,base.getIdentifier())+" && "+JavaValueDetachment.exactStatics(factory.staticValues(),access,work)
                         +" && "+JavaValueDetachment.guard(access,name,List.of(base.getIdentifier()),factory.staticValues());
                     groups.add(new Group(calls,base,summary,guards,name,access,JavaValueDetachment.factoryCost(ast,access,options,work,4096),factory.staticValues()));
                 } catch(IllegalArgumentException unavailable) {

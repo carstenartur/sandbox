@@ -53,7 +53,7 @@ final class JavaValueInverseOptimizer {
                     var detachmentBase=session.symbolic(access.shape(),"inverseBase");
                     var detachmentSource=JavaValueInverseSource.project(ast,session,opportunity.retained().resolveMethodBinding(),detachmentBase,work);
                     var factory=JavaValueDetachment.factory(ast,session,access,detachmentSource.summary(),work);
-                    String guards=guards(proof,access,base,temporary,work)+" && "+JavaValueDetachment.exactStatics(factory.staticValues().stream().filter(value->proof.statics().stream().noneMatch(known->known.field().isEqualTo(value.field()) && known.value().equals(value.value()))).toList(),access,work);
+                    String guards=guards(ast,proof,access,base,temporary,work)+" && "+JavaValueDetachment.exactStatics(factory.staticValues().stream().filter(value->proof.statics().stream().noneMatch(known->known.field().isEqualTo(value.field()) && known.value().equals(value.value()))).toList(),access,work);
                     if(squareCache!=null)guards+=" && "+exactValue(access,squareCache.getIdentifier());
                     var detachedStatics=new LinkedHashMap<String,JavaValueSourceSummary.StaticValue>();
                     for(var field:proof.statics())detachedStatics.put(field.field().getKey(),field);
@@ -85,7 +85,8 @@ final class JavaValueInverseOptimizer {
                     candidateWork+=JavaValueDetachment.factoryCost(ast,access,options,work,proof.algebra().modulus().bitLength());
                     candidateWork+=JavaValueDetachment.guardCost(guards,proof.algebra().modulus().bitLength())+JavaValueDetachment.copyCost(access,proof.algebra().modulus().bitLength());
                     if(candidateWork>=originalWork)throw unavailable("VALUE_INVERSE_COST:"+originalWork+"->"+candidateWork);
-                    long originalTotal=originalWork,candidateTotal=candidateWork;
+                    if(originalWork>Long.MAX_VALUE/later.size() || candidateWork>Long.MAX_VALUE/later.size())throw unavailable("VALUE_INVERSE_COST_OVERFLOW");
+                    long originalTotal=originalWork*later.size(),candidateTotal=candidateWork*later.size();
                     if(previous!=null){originalTotal+=previous.cost().sourceCost().operationWork();candidateTotal+=previous.cost().candidateCost().operationWork();}
                     var cost=LoopSchedulingEvidence.cost(originalTotal,candidateTotal,options.goal());
                     var factoryProofs=new ArrayList<VerificationEvidence>();
@@ -149,7 +150,11 @@ final class JavaValueInverseOptimizer {
             uses.admitConsumerShape(later,method);
         }
     }
-    private static String guards(JavaValueInverseProof.Receipt proof,JavaValueAccess.Access access,String base,String retained,JavaValueSourceSummary.Work work) {
+    private static String guards(CompilationUnit ast,JavaValueInverseProof.Receipt proof,JavaValueAccess.Access access,String base,String retained,JavaValueSourceSummary.Work work) {
+        var fields=new HashSet<String>();
+        for(var component:access.shape().components()){work.charge(1);fields.add(component.field().getVariableDeclaration().getKey());}
+        for(var value:proof.statics()){work.charge(1);fields.add(value.field().getVariableDeclaration().getKey());}
+        rejectionOrigins(ast,proof.later().rejection(),fields,new HashSet<>(),new HashSet<>(),work);
         var guards=new LinkedHashSet<String>();String modulus="new java.math.BigInteger(\""+proof.algebra().modulus()+"\")";
         for(String object:List.of(base,retained)) {
             guards.add(object+" != null");for(int i=0;i<access.shape().leaves();i++) {
@@ -171,6 +176,52 @@ final class JavaValueInverseOptimizer {
         }
         if(!Modifier.isPublic(proof.later().rejection().getModifiers()))throw unavailable("VALUE_INVERSE_REJECTION_ACCESS");
         guards.add("!"+base+"."+proof.later().rejection().getName()+"()");return String.join(" && ",guards);
+    }
+    /** Speculative predicates need a closed syntax and already guarded field roots, beyond structural use admission. */
+    private static void rejectionOrigins(CompilationUnit ast,IMethodBinding method,Set<String> fields,Set<String> active,
+            Set<String> proved,JavaValueSourceSummary.Work work) {
+        work.charge(1);
+        if(method==null || method.isRecovered())throw unavailable("VALUE_INVERSE_REJECTION_BINDING");
+        String key=method.getMethodDeclaration().getKey();if(proved.contains(key))return;
+        if(!active.add(key) || active.size()>32)throw unavailable("VALUE_INVERSE_REJECTION_RECURSION");
+        try {
+            var definition=JavaSourceContext.definition(ast,method.getMethodDeclaration());
+            if(definition==null || !(definition.declaration() instanceof MethodDeclaration source) || source.getBody()==null
+                || source.resolveBinding()==null || !key.equals(source.resolveBinding().getMethodDeclaration().getKey()))
+                throw unavailable("VALUE_INVERSE_REJECTION_SOURCE");
+            source.getBody().accept(new ASTVisitor(){
+                @Override public void preVisit(ASTNode node) {
+                    work.charge(1);
+                    if(node instanceof Statement && !(node instanceof Block || node instanceof ReturnStatement
+                        || node instanceof IfStatement || node instanceof VariableDeclarationStatement))
+                        throw unavailable("VALUE_INVERSE_REJECTION_STATEMENT");
+                    if(node instanceof Expression expression) {
+                        boolean allowed=switch(node.getNodeType()) {
+                            case ASTNode.SIMPLE_NAME,ASTNode.QUALIFIED_NAME,ASTNode.FIELD_ACCESS,ASTNode.THIS_EXPRESSION,
+                                ASTNode.BOOLEAN_LITERAL,ASTNode.NUMBER_LITERAL,ASTNode.CHARACTER_LITERAL,ASTNode.STRING_LITERAL,
+                                ASTNode.TEXT_BLOCK,ASTNode.NULL_LITERAL,ASTNode.METHOD_INVOCATION,ASTNode.PARENTHESIZED_EXPRESSION,
+                                ASTNode.CAST_EXPRESSION,ASTNode.CONDITIONAL_EXPRESSION,ASTNode.INSTANCEOF_EXPRESSION -> true;
+                            case ASTNode.INFIX_EXPRESSION,ASTNode.PREFIX_EXPRESSION -> {
+                                var type=expression.resolveTypeBinding();yield type!=null && !type.isRecovered() && type.isPrimitive();
+                            }
+                            default -> false;
+                        };
+                        if(!allowed)throw unavailable("VALUE_INVERSE_REJECTION_EXPRESSION");
+                    }
+                }
+                @Override public boolean visit(SimpleName name) {
+                    var binding=name.resolveBinding();if(binding==null || binding.isRecovered())throw unavailable("VALUE_INVERSE_REJECTION_BINDING");
+                    if(binding instanceof IVariableBinding field && field.isField() && !fields.contains(field.getVariableDeclaration().getKey()))
+                        throw unavailable("VALUE_INVERSE_REJECTION_UNGUARDED_ORIGIN");
+                    return true;
+                }
+                @Override public boolean visit(MethodInvocation call) {
+                    var target=call.resolveMethodBinding();if(target==null || target.isRecovered())throw unavailable("VALUE_INVERSE_REJECTION_BINDING");
+                    if(!JavaValueSourceSummary.big(target.getDeclaringClass()))rejectionOrigins(ast,target,fields,active,proved,work);
+                    return true;
+                }
+            });proved.add(key);
+        } finally {active.remove(key);}
     }
     private static String exactValue(JavaValueAccess.Access access,String value) {
         var guards=new ArrayList<String>();guards.add(value+" != null");
