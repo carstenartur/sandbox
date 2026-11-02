@@ -1,0 +1,330 @@
+{
+  "schema": "sandbox.bls-publication-mapping/v1",
+  "result": "PASS",
+  "candidate": {
+    "worktree": "/tmp/sandbox-bls-publication-ready",
+    "branch": "codex/bls-publication-ready-20261102",
+    "head": "a226360ade62e962bacd053c07166158e9a0f3fa",
+    "tree": "652696bc384c8a6c809a70499d13fe8e51d8cc8f",
+    "parent": "80e16c7da0f094969d207815757d234b5a3bab11",
+    "trackedStatus": ""
+  },
+  "nativeBase": {
+    "localHead": "80e16c7da0f094969d207815757d234b5a3bab11",
+    "publicHead": "36b8e60ce32b20d6d0e0d70ac2b58aafe59377d8",
+    "tree": "c124a6e750303e0ba6e0a1c3322df5ceaf87fe6c"
+  },
+  "qualifiedSource": {
+    "path": "/tmp/sandbox-bls-on-native",
+    "head": "9c2d121686dd2bfcd774d820312ca603d8fc4b4f",
+    "tree": "d9736c8cd1e397508784e7d79fd1cb08ac978312",
+    "unchangedHeadTreeAndTrackedStatus": true
+  },
+  "payload": {
+    "path": "/workspace/scratch/0eb32b15fbb4/recovery/bls/publication-on-native-payload.json",
+    "bytes": 127989,
+    "sha256": "f72998cccb52c23c10713403f43ab3375f9c32842c54f8803a5499d382336d33"
+  },
+  "scopeAgainstNative": {
+    "files": 11,
+    "additions": 884,
+    "deletions": 3,
+    "changedTextLines": 887,
+    "onlyPayloadPaths": true
+  },
+  "payloadFiles": [
+    {
+      "path": "qa/math-optimization/README.md",
+      "mode": "100644",
+      "bytes": 17758,
+      "sha256": "8907a9b2ea0526ce6013a08003e30f44205bb2060cbc7e08fb431664b99e9c50",
+      "payloadBlob": "43e16295bfacad0c16eda0b1512624a88822fc30",
+      "qualifiedBlob": "43e16295bfacad0c16eda0b1512624a88822fc30",
+      "originalSourceBlob": "43e16295bfacad0c16eda0b1512624a88822fc30"
+    },
+    {
+      "path": "qa/math-optimization/pom.xml",
+      "mode": "100644",
+      "bytes": 14733,
+      "sha256": "f3a83ba7e8f3e51e76b002e49b886bec936cc7d8deefb622a7138dfb727b537c",
+      "payloadBlob": "bb30b2e62b71b4470ac236dc08a898b5c703fbb0",
+      "qualifiedBlob": "bb30b2e62b71b4470ac236dc08a898b5c703fbb0",
+      "originalSourceBlob": "bb30b2e62b71b4470ac236dc08a898b5c703fbb0"
+    },
+    {
+      "path": "qa/math-optimization/profiles/bc-bls.properties",
+      "mode": "100644",
+      "bytes": 713,
+      "sha256": "e1bd041d34a79707e8e6820b50a2fcdcf7619937ff0ce2b2cf6ad12a43427552",
+      "payloadBlob": "e5aeeadd38d95c49118d72b84a2a70380c8bea8b",
+      "qualifiedBlob": "e5aeeadd38d95c49118d72b84a2a70380c8bea8b",
+      "originalSourceBlob": "e5aeeadd38d95c49118d72b84a2a70380c8bea8b"
+    },
+    {
+      "path": "qa/math-optimization/src/main/java/org/sandbox/math/qa/BlsBenchmark.java",
+      "mode": "100644",
+      "bytes": 11473,
+      "sha256": "4a5497b1b22db05f2090580c5babdba287011acdcefc797893a500e4478739f4",
+      "payloadBlob": "d8206c1ab76f109dc21aa627f73a8ae3ba8c96e6",
+      "qualifiedBlob": "d8206c1ab76f109dc21aa627f73a8ae3ba8c96e6",
+      "originalSourceBlob": "d8206c1ab76f109dc21aa627f73a8ae3ba8c96e6"
+    },
+    {
+      "path": "qa/math-optimization/src/main/java/org/sandbox/math/qa/BlsBenchmarkReport.java",
+      "mode": "100644",
+      "bytes": 7373,
+      "sha256": "20edea40322c177599ba4f7eee63ebddebda0e47c1b8ce61e1d66b5cb7e20637",
+      "payloadBlob": "3def302e2c06d5e68eacc93be54ecef73792cba1",
+      "qualifiedBlob": "3def302e2c06d5e68eacc93be54ecef73792cba1",
+      "originalSourceBlob": "3def302e2c06d5e68eacc93be54ecef73792cba1"
+    },
+    {
+      "path": "qa/math-optimization/src/main/java/org/sandbox/math/qa/BlsBenchmarkRunner.java",
+      "mode": "100644",
+      "bytes": 1834,
+      "sha256": "4fb637822bd0d3bff13a62cc33411c4802abb2369728ba858732f35da6bf88af",
+      "payloadBlob": "ae3d0bd21b62aa6872570fb2889097b9af0b510c",
+      "qualifiedBlob": "ae3d0bd21b62aa6872570fb2889097b9af0b510c",
+      "originalSourceBlob": "ae3d0bd21b62aa6872570fb2889097b9af0b510c"
+    },
+    {
+      "path": "qa/math-optimization/src/main/java/org/sandbox/math/qa/BlsSourceCohort.java",
+      "mode": "100644",
+      "bytes": 14561,
+      "sha256": "606f8afa196072af6aa8f3764895cde35f49e8429f9f301a4d2691514a463d5c",
+      "payloadBlob": "6011ad03322629684e38857a6133aaef1753831a",
+      "qualifiedBlob": "6011ad03322629684e38857a6133aaef1753831a",
+      "originalSourceBlob": "6011ad03322629684e38857a6133aaef1753831a"
+    },
+    {
+      "path": "qa/math-optimization/src/main/java/org/sandbox/math/qa/FiniteSeriesBenchmarkReport.java",
+      "mode": "100644",
+      "bytes": 11285,
+      "sha256": "96cc9ba1bf7a75884e8de47688cd0474e4f52a1665f787b4098ce1c7ae4534df",
+      "payloadBlob": "b3301d4172f449ebb4543927087cd6b9bbf6c345",
+      "qualifiedBlob": "b3301d4172f449ebb4543927087cd6b9bbf6c345",
+      "originalSourceBlob": "b3301d4172f449ebb4543927087cd6b9bbf6c345"
+    },
+    {
+      "path": "qa/math-optimization/src/main/java/org/sandbox/math/qa/ProjectMathScan.java",
+      "mode": "100644",
+      "bytes": 18945,
+      "sha256": "1490c9a40c07145505ccd400931c06df7ae4ea2bc16acd4b424ecce6e480ba94",
+      "payloadBlob": "a03234055becd3beb01c18b415b284de26f18a6c",
+      "qualifiedBlob": "a03234055becd3beb01c18b415b284de26f18a6c",
+      "originalSourceBlob": "a03234055becd3beb01c18b415b284de26f18a6c"
+    },
+    {
+      "path": "qa/math-optimization/src/test/java/org/sandbox/math/qa/BlsSourceCohortTest.java",
+      "mode": "100644",
+      "bytes": 17022,
+      "sha256": "3cb782a1eb1d84d16fd50c9fc99b680e4591769bbfe828f67d0c4a2be24523d5",
+      "payloadBlob": "9b4d25e22ffb8f94969753a85cf033d3f79b3e95",
+      "qualifiedBlob": "9b4d25e22ffb8f94969753a85cf033d3f79b3e95",
+      "originalSourceBlob": "9b4d25e22ffb8f94969753a85cf033d3f79b3e95"
+    },
+    {
+      "path": "qa/math-optimization/src/test/java/org/sandbox/math/qa/BlsUpstreamSourceIdentityTest.java",
+      "mode": "100644",
+      "bytes": 2965,
+      "sha256": "74a96d1475eecc16ab564131b61bf93e4a9c64db338c9f9d992ddecdfbf00a83",
+      "payloadBlob": "31386bfe68dc8d749c6097c27ddf088b1dda6e5f",
+      "qualifiedBlob": "31386bfe68dc8d749c6097c27ddf088b1dda6e5f",
+      "originalSourceBlob": "31386bfe68dc8d749c6097c27ddf088b1dda6e5f"
+    }
+  ],
+  "completeMapping": {
+    "entries": 3556,
+    "equal": 3551,
+    "different": 5,
+    "path": "/workspace/scratch/0eb32b15fbb4/recovery/bls/publication-ready-all-blobs.tsv.gz",
+    "bytes": 128968,
+    "sha256": "01d77cb15f1e43cef08055288d83ad7e41a37d3a4edd764bb42639dadd843400",
+    "uncompressedBytes": 618662,
+    "uncompressedSha256": "fe86f0316b1cf815967f311401bdd1ed1e0b6e093559b97e4074c058cfa8663f",
+    "gzipRoundTripVerified": true,
+    "pathSetsEqual": true,
+    "modesAndTypesEqual": true
+  },
+  "categories": {
+    "qa": {
+      "count": 196,
+      "allBlobsEqual": true
+    },
+    "sdk": {
+      "count": 13,
+      "allBlobsEqual": true
+    },
+    "profiles": {
+      "count": 4,
+      "allBlobsEqual": true
+    },
+    "allEntriesExceptTheFiveHelpProvenanceFiles": {
+      "count": 3551,
+      "allBlobsEqual": true
+    }
+  },
+  "differences": [
+    {
+      "path": "sandbox_math_cleanup_help/images/01-bouncy-castle-choice.provenance.json",
+      "qualified": {
+        "mode": "100644",
+        "type": "blob",
+        "blob": "0b95207b701bdb22905ca12a4c09892a73571d81",
+        "sha256": "c692ed1def2dec667efd5cbb65f70b26f3607274c65a96d4d630103f8315d7ee"
+      },
+      "candidate": {
+        "mode": "100644",
+        "type": "blob",
+        "blob": "1445945472e808901085756c09860cc28ba2baff",
+        "sha256": "4d4d50fc205eea7c6e3bae002dde0831d0a5e51589b058266b4ed0cffd756972"
+      },
+      "jsonDifferences": [
+        {
+          "path": "/evidence/adapterBaseRevision",
+          "qualified": "0343431c70d55f971ac61b2436ab5965cb5c6865",
+          "candidate": "ae693e5006e104824112880be7db92b3403bd93d"
+        },
+        {
+          "path": "/evidence/adapterClassesSha256",
+          "qualified": "7d1937943aab91a2dd3ebc65a9dcd651a200165d5ce3796d36ba94d5be69be33",
+          "candidate": "08518a0b85228e81124c5523d3db97ac664c384d65c5898332622ed9b0ecdce4"
+        },
+        {
+          "path": "/evidence/adapterSourceState",
+          "qualified": "main 0343431c70d55f971ac61b2436ab5965cb5c6865 plus native tail bridge, default-off tail consent and qualified SDK70; capture binds the actual compiled adapter fingerprint",
+          "candidate": "main ae693e5006e104824112880be7db92b3403bd93d plus native tail bridge, detached-comment freshness checks, default-off tail consent and qualified SDK70; capture binds the actual compiled adapter fingerprint"
+        }
+      ]
+    },
+    {
+      "path": "sandbox_math_cleanup_help/images/02-bouncy-castle-majority.provenance.json",
+      "qualified": {
+        "mode": "100644",
+        "type": "blob",
+        "blob": "cc135775a93324ca13af6d950bf398ddeeebb7a1",
+        "sha256": "e3de5a7ea7af8cbb0dbadfc9ae178eab9526d3cc259ff71e1297eb2b9c4c2679"
+      },
+      "candidate": {
+        "mode": "100644",
+        "type": "blob",
+        "blob": "292a307fd627663e4300ba766495a5e9ce807ac1",
+        "sha256": "2d0918f5c608ed2174e40712345ea000aa1b299475f7fa787cce1e31540c8744"
+      },
+      "jsonDifferences": [
+        {
+          "path": "/evidence/adapterBaseRevision",
+          "qualified": "0343431c70d55f971ac61b2436ab5965cb5c6865",
+          "candidate": "ae693e5006e104824112880be7db92b3403bd93d"
+        },
+        {
+          "path": "/evidence/adapterClassesSha256",
+          "qualified": "7d1937943aab91a2dd3ebc65a9dcd651a200165d5ce3796d36ba94d5be69be33",
+          "candidate": "08518a0b85228e81124c5523d3db97ac664c384d65c5898332622ed9b0ecdce4"
+        },
+        {
+          "path": "/evidence/adapterSourceState",
+          "qualified": "main 0343431c70d55f971ac61b2436ab5965cb5c6865 plus native tail bridge, default-off tail consent and qualified SDK70; capture binds the actual compiled adapter fingerprint",
+          "candidate": "main ae693e5006e104824112880be7db92b3403bd93d plus native tail bridge, detached-comment freshness checks, default-off tail consent and qualified SDK70; capture binds the actual compiled adapter fingerprint"
+        }
+      ]
+    },
+    {
+      "path": "sandbox_math_cleanup_help/images/03-bouncy-castle-long.provenance.json",
+      "qualified": {
+        "mode": "100644",
+        "type": "blob",
+        "blob": "50e49d0b8ce860da34391a24e8ae8b1001156793",
+        "sha256": "d09fa73ca7e4bda622b81448448974db89738bf8d8e98d9be5f869b93b7b3e64"
+      },
+      "candidate": {
+        "mode": "100644",
+        "type": "blob",
+        "blob": "c229ec8f0ec56a54c6d2e7519101fb38f68bf274",
+        "sha256": "22d5b03a3cbf1bbaa28917017f83f3d2fe873ae9466cdc24c6b0331322783f3b"
+      },
+      "jsonDifferences": [
+        {
+          "path": "/evidence/adapterBaseRevision",
+          "qualified": "0343431c70d55f971ac61b2436ab5965cb5c6865",
+          "candidate": "ae693e5006e104824112880be7db92b3403bd93d"
+        },
+        {
+          "path": "/evidence/adapterClassesSha256",
+          "qualified": "7d1937943aab91a2dd3ebc65a9dcd651a200165d5ce3796d36ba94d5be69be33",
+          "candidate": "08518a0b85228e81124c5523d3db97ac664c384d65c5898332622ed9b0ecdce4"
+        },
+        {
+          "path": "/evidence/adapterSourceState",
+          "qualified": "main 0343431c70d55f971ac61b2436ab5965cb5c6865 plus native tail bridge, default-off tail consent and qualified SDK70; capture binds the actual compiled adapter fingerprint",
+          "candidate": "main ae693e5006e104824112880be7db92b3403bd93d plus native tail bridge, detached-comment freshness checks, default-off tail consent and qualified SDK70; capture binds the actual compiled adapter fingerprint"
+        }
+      ]
+    },
+    {
+      "path": "sandbox_math_cleanup_help/images/04-bouncy-castle-swapped-choice.provenance.json",
+      "qualified": {
+        "mode": "100644",
+        "type": "blob",
+        "blob": "e9206c572175c925fc87b6965f5af3a6ae839e9a",
+        "sha256": "9e3b15f74d5f664a10507e7e24a32da8e495db7054ee1a3d81f290afad79fcc7"
+      },
+      "candidate": {
+        "mode": "100644",
+        "type": "blob",
+        "blob": "3ce3d217c23dc408c863d01a7f0e4cfe4c8c3777",
+        "sha256": "f9b807a4ec896aaaff339cee25691340373fa5d48b97e0e6ad4ec33fb3596e30"
+      },
+      "jsonDifferences": [
+        {
+          "path": "/evidence/adapterBaseRevision",
+          "qualified": "0343431c70d55f971ac61b2436ab5965cb5c6865",
+          "candidate": "ae693e5006e104824112880be7db92b3403bd93d"
+        },
+        {
+          "path": "/evidence/adapterClassesSha256",
+          "qualified": "7d1937943aab91a2dd3ebc65a9dcd651a200165d5ce3796d36ba94d5be69be33",
+          "candidate": "08518a0b85228e81124c5523d3db97ac664c384d65c5898332622ed9b0ecdce4"
+        },
+        {
+          "path": "/evidence/adapterSourceState",
+          "qualified": "main 0343431c70d55f971ac61b2436ab5965cb5c6865 plus native tail bridge, default-off tail consent and qualified SDK70; capture binds the actual compiled adapter fingerprint",
+          "candidate": "main ae693e5006e104824112880be7db92b3403bd93d plus native tail bridge, detached-comment freshness checks, default-off tail consent and qualified SDK70; capture binds the actual compiled adapter fingerprint"
+        }
+      ]
+    },
+    {
+      "path": "sandbox_math_cleanup_help/images/05-bouncy-castle-modular-square.provenance.json",
+      "qualified": {
+        "mode": "100644",
+        "type": "blob",
+        "blob": "4553794e440f201a641ed600f588746fcb54395a",
+        "sha256": "f80b6534f79d111c2ad75d12111e8d2f54045c63d4a1177726cf5e06784243a7"
+      },
+      "candidate": {
+        "mode": "100644",
+        "type": "blob",
+        "blob": "65eb75acab981e17e0549ce11ade3ece53a16aad",
+        "sha256": "0c758cbbd0f59406f3f56375545d1e87442bfea274989209a0df4a04e3c533d4"
+      },
+      "jsonDifferences": [
+        {
+          "path": "/evidence/adapterBaseRevision",
+          "qualified": "0343431c70d55f971ac61b2436ab5965cb5c6865",
+          "candidate": "ae693e5006e104824112880be7db92b3403bd93d"
+        },
+        {
+          "path": "/evidence/adapterClassesSha256",
+          "qualified": "7d1937943aab91a2dd3ebc65a9dcd651a200165d5ce3796d36ba94d5be69be33",
+          "candidate": "08518a0b85228e81124c5523d3db97ac664c384d65c5898332622ed9b0ecdce4"
+        },
+        {
+          "path": "/evidence/adapterSourceState",
+          "qualified": "main 0343431c70d55f971ac61b2436ab5965cb5c6865 plus native tail bridge, default-off tail consent and qualified SDK70; capture binds the actual compiled adapter fingerprint",
+          "candidate": "main ae693e5006e104824112880be7db92b3403bd93d plus native tail bridge, detached-comment freshness checks, default-off tail consent and qualified SDK70; capture binds the actual compiled adapter fingerprint"
+        }
+      ]
+    }
+  ],
+  "verificationScope": "Git trees, file bytes, modes, payload SHA256 and complete blob mapping only; no JVM, Maven, JMH or remote operation executed."
+}

@@ -1,0 +1,79 @@
+{
+  "runId": 41500326710,
+  "artifactId": 13169890665,
+  "head": "36b8e60ce32b20d6d0e0d70ac2b58aafe59377d8",
+  "zipSha256": "1987be8c1cc562b9aa8e84a40efe845f0b38e2edaabc378fe2063a2dce55a5d2",
+  "zipEntries": 37,
+  "files": [
+    {
+      "path": "sandbox_math_cleanup_help/images/01-bouncy-castle-choice.png",
+      "bytes": 67070,
+      "sha256": "b7d41130a2b8fcbf7c80477eca4a5fca98100ac3034fe7f26ae9b90556056223",
+      "matchesCurrentCheckout": true
+    },
+    {
+      "path": "sandbox_math_cleanup_help/images/01-bouncy-castle-choice.provenance.json",
+      "bytes": 21290,
+      "sha256": "4d4d50fc205eea7c6e3bae002dde0831d0a5e51589b058266b4ed0cffd756972",
+      "matchesCurrentCheckout": true,
+      "changedEvidenceKeys": [],
+      "changedTopLevelKeys": []
+    },
+    {
+      "path": "sandbox_math_cleanup_help/images/02-bouncy-castle-majority.png",
+      "bytes": 62289,
+      "sha256": "9fe1c1111cbef3fe0ff138aa8dfd725c9f3497257d160fe9fe8b2d0866bd93a4",
+      "matchesCurrentCheckout": true
+    },
+    {
+      "path": "sandbox_math_cleanup_help/images/02-bouncy-castle-majority.provenance.json",
+      "bytes": 18583,
+      "sha256": "2d0918f5c608ed2174e40712345ea000aa1b299475f7fa787cce1e31540c8744",
+      "matchesCurrentCheckout": true,
+      "changedEvidenceKeys": [],
+      "changedTopLevelKeys": []
+    },
+    {
+      "path": "sandbox_math_cleanup_help/images/03-bouncy-castle-long.png",
+      "bytes": 72450,
+      "sha256": "92d47a8c164483fc55fbb653ed445b789653acc3a08a6209a9279987bb86159d",
+      "matchesCurrentCheckout": true
+    },
+    {
+      "path": "sandbox_math_cleanup_help/images/03-bouncy-castle-long.provenance.json",
+      "bytes": 25291,
+      "sha256": "22d5b03a3cbf1bbaa28917017f83f3d2fe873ae9466cdc24c6b0331322783f3b",
+      "matchesCurrentCheckout": true,
+      "changedEvidenceKeys": [],
+      "changedTopLevelKeys": []
+    },
+    {
+      "path": "sandbox_math_cleanup_help/images/04-bouncy-castle-swapped-choice.png",
+      "bytes": 60960,
+      "sha256": "094362aab9b6cea4ad134d318d187159fb3aed3a966b8fd73612b21c3364b793",
+      "matchesCurrentCheckout": true
+    },
+    {
+      "path": "sandbox_math_cleanup_help/images/04-bouncy-castle-swapped-choice.provenance.json",
+      "bytes": 24327,
+      "sha256": "f9b807a4ec896aaaff339cee25691340373fa5d48b97e0e6ad4ec33fb3596e30",
+      "matchesCurrentCheckout": true,
+      "changedEvidenceKeys": [],
+      "changedTopLevelKeys": []
+    },
+    {
+      "path": "sandbox_math_cleanup_help/images/05-bouncy-castle-modular-square.png",
+      "bytes": 185304,
+      "sha256": "3487f20290758fbe3458f12f9ee3cdad1f011b4ec51de3d6df7aa36cbb2fb1b3",
+      "matchesCurrentCheckout": true
+    },
+    {
+      "path": "sandbox_math_cleanup_help/images/05-bouncy-castle-modular-square.provenance.json",
+      "bytes": 20719,
+      "sha256": "0c758cbbd0f59406f3f56375545d1e87442bfea274989209a0df4a04e3c533d4",
+      "matchesCurrentCheckout": true,
+      "changedEvidenceKeys": [],
+      "changedTopLevelKeys": []
+    }
+  ]
+}

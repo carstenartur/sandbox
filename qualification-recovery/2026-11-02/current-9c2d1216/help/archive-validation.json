@@ -1,0 +1,186 @@
+{
+  "run": 41500326710,
+  "artifact": 13169890665,
+  "head": "36b8e60ce32b20d6d0e0d70ac2b58aafe59377d8",
+  "zipSha256": "1987be8c1cc562b9aa8e84a40efe845f0b38e2edaabc378fe2063a2dce55a5d2",
+  "tarSha256": "4c2f53fe74b48d4454cd6085492936c783f6ab0d992ae22c18856075db12cf88",
+  "zipFiles": 37,
+  "tarFiles": 35,
+  "tarDirectories": 28,
+  "manifestedPayloads": 34,
+  "headersAndCRCs": "PASS",
+  "manifests": "PASS",
+  "matchingMathFiles": 10,
+  "files": [
+    {
+      "sha256": "0462d521d0257e43f110953f69bd5f525bd2fd2f79ccec723882b0a529cd8574",
+      "path": "sandbox_extra_search_help/images/git-file-history.png",
+      "bytes": 17412
+    },
+    {
+      "sha256": "094362aab9b6cea4ad134d318d187159fb3aed3a966b8fd73612b21c3364b793",
+      "path": "sandbox_math_cleanup_help/images/04-bouncy-castle-swapped-choice.png",
+      "bytes": 60960
+    },
+    {
+      "sha256": "0a9d7527f593c5011c3484fd95bbb1483443eb0df4015b187cbb4416d69f91c2",
+      "path": "sandbox_extra_search_help/images/git-authors.png",
+      "bytes": 11504
+    },
+    {
+      "sha256": "0b10c892064c6cdb18f106d0eba046809ba81065d3c084f757aaf0d25136d7a8",
+      "path": "sandbox_css_cleanup_help/images/css-cleanup-preferences.png",
+      "bytes": 62740
+    },
+    {
+      "sha256": "0c758cbbd0f59406f3f56375545d1e87442bfea274989209a0df4a04e3c533d4",
+      "path": "sandbox_math_cleanup_help/images/05-bouncy-castle-modular-square.provenance.json",
+      "bytes": 20719
+    },
+    {
+      "sha256": "1e741935d1a521a6a4f195a7f85d64bd45c01edbe2b8d279ec974fbc7acee856",
+      "path": "sandbox_xml_cleanup_help/images/xml-cleanup.png",
+      "bytes": 57214
+    },
+    {
+      "sha256": "22d5b03a3cbf1bbaa28917017f83f3d2fe873ae9466cdc24c6b0331322783f3b",
+      "path": "sandbox_math_cleanup_help/images/03-bouncy-castle-long.provenance.json",
+      "bytes": 25291
+    },
+    {
+      "sha256": "2d0918f5c608ed2174e40712345ea000aa1b299475f7fa787cce1e31540c8744",
+      "path": "sandbox_math_cleanup_help/images/02-bouncy-castle-majority.provenance.json",
+      "bytes": 18583
+    },
+    {
+      "sha256": "3487f20290758fbe3458f12f9ee3cdad1f011b4ec51de3d6df7aa36cbb2fb1b3",
+      "path": "sandbox_math_cleanup_help/images/05-bouncy-castle-modular-square.png",
+      "bytes": 185304
+    },
+    {
+      "sha256": "48441b50a0796e6bae6d351aafb4e905f1bbb36ba46004ee31f968de3e810068",
+      "path": "sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-multi-file-selection.png",
+      "bytes": 72620
+    },
+    {
+      "sha256": "4bb301558a2457d0c663d8f43d93b70bf880b9ca938b3576a81a2e527ffd55d6",
+      "path": "sandbox_platform_helper_help/images/platform-status-cleanup.png",
+      "bytes": 47768
+    },
+    {
+      "sha256": "4d4d50fc205eea7c6e3bae002dde0831d0a5e51589b058266b4ed0cffd756972",
+      "path": "sandbox_math_cleanup_help/images/01-bouncy-castle-choice.provenance.json",
+      "bytes": 21290
+    },
+    {
+      "sha256": "5fd31bb564ae503dafa381da789545652aa405d7596c1929300064b95131fad0",
+      "path": "sandbox_int_to_enum_help/images/int-to-enum-cleanup.png",
+      "bytes": 68266
+    },
+    {
+      "sha256": "61e7ab71c22b38b9c9cffbc2ad0a0a31847d1c29b117439d08de9216eda06bcc",
+      "path": "sandbox_method_reuse_help/images/method-reuse-cleanup.png",
+      "bytes": 70507
+    },
+    {
+      "sha256": "62be16e461bea90352a140a58d5c4eea48099749029d558fa8c9f56eac28d14b",
+      "path": "sandbox_jface_cleanup_help/images/jface-cleanup.png",
+      "bytes": 103719
+    },
+    {
+      "sha256": "648c98051ebf2820390cbc982b3dc824bf989afa783b8fac89fb146580b28035",
+      "path": "sandbox_xml_cleanup_help/images/xml-cleanup-marker-quick-fix.provenance.json",
+      "bytes": 365
+    },
+    {
+      "sha256": "765fa060c1cec2f089eeacc9a04c6b1c47e18d0e29396080665f2cb8504236f9",
+      "path": "sandbox_triggerpattern_help/images/llm-rule-inference-preferences.png",
+      "bytes": 69329
+    },
+    {
+      "sha256": "866174b4dd0eef75b8b2c15bb26da12a2d69866c1c57f751992ae3a5e821894d",
+      "path": "sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-single-file-steps.png",
+      "bytes": 79815
+    },
+    {
+      "sha256": "885d9fa96427bab96457ca4dcf99244544bc45935e97fa0cef663003d691aec3",
+      "path": "sandbox_encoding_quickfix_help/images/explicit-encoding-cleanup.png",
+      "bytes": 120896
+    },
+    {
+      "sha256": "8dad60efdf5f658e0630adf6fc6c2c94ee3e49476ae630a9d918dfa46aea9194",
+      "path": "sandbox_use_general_type_help/images/use-general-type-cleanup.png",
+      "bytes": 39534
+    },
+    {
+      "sha256": "8e28731bc6c899d5e67b99768459b0fd61ea80818cfbbf600e06c6b9eb3dfab5",
+      "path": "sandbox_junit_cleanup_help/images/junit-coordinated-preview.png",
+      "bytes": 148520
+    },
+    {
+      "sha256": "92d47a8c164483fc55fbb653ed445b789653acc3a08a6209a9279987bb86159d",
+      "path": "sandbox_math_cleanup_help/images/03-bouncy-castle-long.png",
+      "bytes": 72450
+    },
+    {
+      "sha256": "9fe1c1111cbef3fe0ff138aa8dfd725c9f3497257d160fe9fe8b2d0866bd93a4",
+      "path": "sandbox_math_cleanup_help/images/02-bouncy-castle-majority.png",
+      "bytes": 62289
+    },
+    {
+      "sha256": "a00f0ea088062bf50704669356747d87224d8e06682dba6cc5959b10b8e0268a",
+      "path": "sandbox_extra_search_help/images/git-search.png",
+      "bytes": 18201
+    },
+    {
+      "sha256": "a1a4603886f7796bcf72c1c9b52d830e07a8a1dbabc322be8ce2188f758440c9",
+      "path": "sandbox_triggerpattern_help/images/refactoring-mining-view.png",
+      "bytes": 44323
+    },
+    {
+      "sha256": "b7d41130a2b8fcbf7c80477eca4a5fca98100ac3034fe7f26ae9b90556056223",
+      "path": "sandbox_math_cleanup_help/images/01-bouncy-castle-choice.png",
+      "bytes": 67070
+    },
+    {
+      "sha256": "be31c4dac39f325528b7b40398c577f0975b23a71aa471fcf753092af840cc6e",
+      "path": "sandbox_int_to_enum_help/images/int-to-enum-coordinated-preview.png",
+      "bytes": 124134
+    },
+    {
+      "sha256": "c43a5c33ffb6022463c5369bffc4d4219417c8187000de0d6d368e69798b166d",
+      "path": "sandbox_xml_cleanup_help/images/xml-cleanup-marker-quick-fix.png",
+      "bytes": 91469
+    },
+    {
+      "sha256": "cd6d848e2c965925aaf1bb55828e66d618865b3c6fad089695dd8924562a1ac1",
+      "path": "sandbox_junit_cleanup_help/images/junit-migration-cleanup.png",
+      "bytes": 143080
+    },
+    {
+      "sha256": "e14499192cc3d903a3ecf601017b817f6d54c9a8d6f921f51fc2b689e941c27f",
+      "path": "sandbox_functional_converter_help/images/functional-converter-cleanup.png",
+      "bytes": 60390
+    },
+    {
+      "sha256": "f258c1572f7f08e35d12a19584d960d3d4e538a529f219b26f9208f956ba3e3c",
+      "path": "sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-diff-step.png",
+      "bytes": 72885
+    },
+    {
+      "sha256": "f9b807a4ec896aaaff339cee25691340373fa5d48b97e0e6ad4ec33fb3596e30",
+      "path": "sandbox_math_cleanup_help/images/04-bouncy-castle-swapped-choice.provenance.json",
+      "bytes": 24327
+    },
+    {
+      "sha256": "fa12e1d7eaa8237d4d73ab184775dde9c9955cb6429c73f89eeca3b6dfceeab1",
+      "path": "sandbox_triggerpattern_help/images/new-hint-rule-wizard.png",
+      "bytes": 75650
+    },
+    {
+      "sha256": "fc087d2e1d8d8cdbb3d9c50f678623cacce6b436993b0bb60f2c491e4b37da39",
+      "path": "sandbox_triggerpattern_help/images/code-patterns-cleanup.png",
+      "bytes": 130381
+    }
+  ]
+}

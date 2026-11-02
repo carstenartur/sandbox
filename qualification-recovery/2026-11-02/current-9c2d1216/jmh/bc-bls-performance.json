@@ -1,0 +1,300 @@
+{
+  "schema" : "sandbox.bls-whole-call-performance/v1",
+  "rawJmhSha256" : "394aac651f89a40ef6d09469bb1e3a75b096da3cecfa456f90a85fe97184e7e4",
+  "fixtureManifestSha256" : "daeb9d5449ca3e6433a153f3734d37999087e2ccb1528c3db4e8c0fdee784931",
+  "reviewSha256" : "0f0faf013ef786e17db15aa5fee8a310460ab9669ad09a15ddf72b3ed3997502",
+  "classes" : {
+    "org/bouncycastle/crypto/bls/BLS12_381G2HashToCurve.java" : {
+      "generatedSha256" : "c5c77430d497a03479c5f9e73b5a2a74ed1ea67cc7da2e443f7606dc29fc2dd3",
+      "originalSha256" : "f38ce5cd9f54df04afb9a335d709b79f85bdde53fce3cee05ac308c466f7e13f",
+      "acceptedRegions" : 2
+    },
+    "org/bouncycastle/crypto/bls/BLS12_381Pairing.java" : {
+      "generatedSha256" : "dacb0faf94d09a86f12ed0640e38e18059e38fac14f75a43cb6de68502aafef1",
+      "originalSha256" : "796d1a157cb2893054caf901bea7c6471ddbad47a86c3fc640c2978bc5888da0",
+      "acceptedRegions" : 1
+    },
+    "org/bouncycastle/crypto/bls/Fp12Element.java" : {
+      "generatedSha256" : "c4a0bba167311890878798e94c3566dc8d603b24ec5d58a88c462629b8cd0354",
+      "originalSha256" : "c4a0bba167311890878798e94c3566dc8d603b24ec5d58a88c462629b8cd0354",
+      "acceptedRegions" : 0
+    },
+    "org/bouncycastle/crypto/bls/Fp2Element.java" : {
+      "generatedSha256" : "8d8b95aec88d70886204ca048aa2f7132585d5f1d0673e7cba986ec8e0c11ebc",
+      "originalSha256" : "b59fd659daf0de62923b1f3be85dfe0329aa45fb43add8a28b6befa8e4517a85",
+      "acceptedRegions" : 1
+    },
+    "org/bouncycastle/crypto/bls/Fp6Element.java" : {
+      "generatedSha256" : "760c5e22c1c26205742a1104128ae6be346f482e09c01ae5d7b733fe2e5d1c36",
+      "originalSha256" : "cfcb0d5c98b901b6033039869fef98b464ae12a214cd5c0c5445347057fb6b1d",
+      "acceptedRegions" : 5
+    }
+  },
+  "options" : {
+    "cleanup.mathematics.timeoutSeconds" : "5",
+    "cleanup.mathematics.maxStates" : "20000",
+    "cleanup.mathematics.underflowChecks" : "false",
+    "cleanup.mathematics.valueRuntime" : "AUDITED_OPENJDK_25_0_5_8",
+    "cleanup.mathematics.tailRecursion" : "false",
+    "cleanup.mathematics.checkedOptIn" : "false",
+    "cleanup.mathematics.mathematicalOptIn" : "true",
+    "cleanup.mathematics.safetyProfile" : "PRESERVE_JAVA",
+    "cleanup.mathematics.goal" : "LOWER_ESTIMATED_RUNTIME",
+    "cleanup.mathematics.exclusions" : "",
+    "cleanup.mathematics.explanations" : "NONTRIVIAL",
+    "cleanup.mathematics.workBudget" : "20000000",
+    "cleanup.mathematics" : "true",
+    "cleanup.mathematics.numericKinds" : "BIG_INTEGER,BYTE,SHORT,CHAR,INT,LONG,FLOAT,DOUBLE"
+  },
+  "javaRuntime" : "25.0.5+8-LTS",
+  "jvmArgs" : [ "-Dfile.encoding=UTF-8", "-Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts", "-Dhttps.proxyHost=browser-proxy", "-Dhttps.proxyPort=8889", "-Dhttp.proxyHost=browser-proxy", "-Dhttp.proxyPort=8889", "-Xmx512m", "-Xms128m", "-Xmx512m" ],
+  "measurementRuntime" : {
+    "jvm" : "/tmp/jdt-pr5614-tools/jdk-25.0.5+8/bin/java",
+    "vmName" : "OpenJDK 64-Bit Server VM",
+    "vmVersion" : "25.0.5+8-LTS",
+    "jdkVersion" : "25.0.5"
+  },
+  "comparisons" : [ {
+    "case" : "G2_32",
+    "generatedAllocations" : {
+      "score" : 3.1154113578599174E7,
+      "scoreError" : 1874206.8857411903,
+      "scoreConfidence" : [ 2.9279906692857984E7, 3.3028320464340363E7 ],
+      "scorePercentiles" : {
+        "0.0" : 3.0565468E7,
+        "50.0" : 3.0572683939393938E7,
+        "90.0" : 3.376664274285714E7,
+        "95.0" : 3.383704E7,
+        "99.0" : 3.383704E7,
+        "99.9" : 3.383704E7,
+        "99.99" : 3.383704E7,
+        "99.999" : 3.383704E7,
+        "99.9999" : 3.383704E7,
+        "100.0" : 3.383704E7
+      },
+      "scoreUnit" : "B/op",
+      "rawData" : [ [ 3.056938153846154E7, 3.0573481333333332E7, 3.0575664888888888E7, 3.0565468E7, 3.383704E7 ], [ 3.0569071384615384E7, 3.0571886545454547E7, 3.0575218666666668E7, 3.0570856E7, 3.313306742857143E7 ] ]
+    },
+    "timing" : "INCONCLUSIVE",
+    "generatedOverOriginal" : 1.2836359003617972,
+    "generatedMicros" : {
+      "score" : 45464.50721991564,
+      "scoreError" : 11021.11372315279,
+      "scoreConfidence" : [ 34443.39349676285, 56485.62094306843 ],
+      "scorePercentiles" : {
+        "0.0" : 36090.1105,
+        "50.0" : 43773.380000000005,
+        "90.0" : 57464.43664777778,
+        "95.0" : 57483.4093,
+        "99.0" : 57483.4093,
+        "99.9" : 57483.4093,
+        "99.99" : 57483.4093,
+        "99.999" : 57483.4093,
+        "99.9999" : 57483.4093,
+        "100.0" : 57483.4093
+      },
+      "scoreUnit" : "us/op",
+      "rawData" : [ [ 41455.78138461539, 44404.94075, 57293.68277777778, 57483.4093, 49022.218 ], [ 41460.96976923077, 46190.12618181818, 43141.81925, 38102.014285714286, 36090.1105 ] ]
+    },
+    "originalMicros" : {
+      "score" : 35418.53823744047,
+      "scoreError" : 2274.1989795643285,
+      "scoreConfidence" : [ 33144.33925787614, 37692.737217004804 ],
+      "scorePercentiles" : {
+        "0.0" : 33419.0793125,
+        "50.0" : 35496.34061666667,
+        "90.0" : 37543.72852142857,
+        "95.0" : 37609.58964285714,
+        "99.0" : 37609.58964285714,
+        "99.9" : 37609.58964285714,
+        "99.99" : 37609.58964285714,
+        "99.999" : 37609.58964285714,
+        "99.9999" : 37609.58964285714,
+        "100.0" : 37609.58964285714
+      },
+      "scoreUnit" : "us/op",
+      "rawData" : [ [ 36039.8145, 36950.97842857143, 36809.434285714284, 37609.58964285714, 36276.50907142857 ], [ 34952.866733333336, 34251.97153333333, 33623.86513333333, 33419.0793125, 34251.273733333335 ] ]
+    },
+    "originalAllocations" : {
+      "score" : 2.4403843722857144E7,
+      "scoreError" : 1579576.1564253855,
+      "scoreConfidence" : [ 2.2824267566431757E7, 2.598341987928253E7 ],
+      "scorePercentiles" : {
+        "0.0" : 2.3906745714285713E7,
+        "50.0" : 2.390883146666667E7,
+        "90.0" : 2.6452668403809525E7,
+        "95.0" : 2.6469650285714287E7,
+        "99.0" : 2.6469650285714287E7,
+        "99.9" : 2.6469650285714287E7,
+        "99.99" : 2.6469650285714287E7,
+        "99.999" : 2.6469650285714287E7,
+        "99.9999" : 2.6469650285714287E7,
+        "100.0" : 2.6469650285714287E7
+      },
+      "scoreUnit" : "B/op",
+      "rawData" : [ [ 2.390959485714286E7, 2.390854457142857E7, 2.390828E7, 2.3906745714285713E7, 2.6469650285714287E7 ], [ 2.39099104E7, 2.3908613333333332E7, 2.39090496E7, 2.3908217E7, 2.6299831466666665E7 ] ]
+    }
+  }, {
+    "case" : "G2_256",
+    "generatedAllocations" : {
+      "score" : 3.114396634358974E7,
+      "scoreError" : 1832906.4653314424,
+      "scoreConfidence" : [ 2.93110598782583E7, 3.2976872808921184E7 ],
+      "scorePercentiles" : {
+        "0.0" : 3.056654646153846E7,
+        "50.0" : 3.0569769230769232E7,
+        "90.0" : 3.353345533846154E7,
+        "95.0" : 3.3556327333333336E7,
+        "99.0" : 3.3556327333333336E7,
+        "99.9" : 3.3556327333333336E7,
+        "99.99" : 3.3556327333333336E7,
+        "99.999" : 3.3556327333333336E7,
+        "99.9999" : 3.3556327333333336E7,
+        "100.0" : 3.3556327333333336E7
+      },
+      "scoreUnit" : "B/op",
+      "rawData" : [ [ 3.0566979692307692E7, 3.0573057333333332E7, 3.0569769230769232E7, 3.0568620923076924E7, 3.3556327333333336E7 ], [ 3.056654646153846E7, 3.0567812307692308E7, 3.057317353846154E7, 3.0569769230769232E7, 3.3327607384615384E7 ] ]
+    },
+    "timing" : "HIGHER_TIME",
+    "generatedOverOriginal" : 1.1606822616871544,
+    "generatedMicros" : {
+      "score" : 40299.8186775641,
+      "scoreError" : 2487.3717270436964,
+      "scoreConfidence" : [ 37812.4469505204, 42787.1904046078 ],
+      "scorePercentiles" : {
+        "0.0" : 38660.217615384616,
+        "50.0" : 40051.17473076923,
+        "90.0" : 43031.50890833333,
+        "95.0" : 43048.80925,
+        "99.0" : 43048.80925,
+        "99.9" : 43048.80925,
+        "99.99" : 43048.80925,
+        "99.999" : 43048.80925,
+        "99.9999" : 43048.80925,
+        "100.0" : 43048.80925
+      },
+      "scoreUnit" : "us/op",
+      "rawData" : [ [ 40920.26276923077, 43048.80925, 39985.240923076926, 39132.53292307692, 42875.80583333333 ], [ 40897.06046153846, 40117.108538461536, 38680.39338461538, 38680.75507692308, 38660.217615384616 ] ]
+    },
+    "originalMicros" : {
+      "score" : 34720.80172827381,
+      "scoreError" : 1623.4256519833766,
+      "scoreConfidence" : [ 33097.37607629043, 36344.22738025719 ],
+      "scorePercentiles" : {
+        "0.0" : 33014.8216875,
+        "50.0" : 34514.038700000005,
+        "90.0" : 36252.21837857143,
+        "95.0" : 36270.19835714286,
+        "99.0" : 36270.19835714286,
+        "99.9" : 36270.19835714286,
+        "99.99" : 36270.19835714286,
+        "99.999" : 36270.19835714286,
+        "99.9999" : 36270.19835714286,
+        "100.0" : 36270.19835714286
+      },
+      "scoreUnit" : "us/op",
+      "rawData" : [ [ 35461.72293333333, 34464.189333333336, 33860.34593333333, 33014.8216875, 33809.186266666664 ], [ 34146.40053333333, 36270.19835714286, 34563.88806666667, 35526.8656, 36090.39857142857 ] ]
+    },
+    "originalAllocations" : {
+      "score" : 2.4400338135714285E7,
+      "scoreError" : 1579767.9136714938,
+      "scoreConfidence" : [ 2.282057022204279E7, 2.598010604938578E7 ],
+      "scorePercentiles" : {
+        "0.0" : 2.39046064E7,
+        "50.0" : 2.3905222133333333E7,
+        "90.0" : 2.645074581714286E7,
+        "95.0" : 2.6468078285714287E7,
+        "99.0" : 2.6468078285714287E7,
+        "99.9" : 2.6468078285714287E7,
+        "99.99" : 2.6468078285714287E7,
+        "99.999" : 2.6468078285714287E7,
+        "99.9999" : 2.6468078285714287E7,
+        "100.0" : 2.6468078285714287E7
+      },
+      "scoreUnit" : "B/op",
+      "rawData" : [ [ 2.3904648E7, 2.39055472E7, 2.39052336E7, 2.39047425E7, 2.62947536E7 ], [ 2.3905672533333335E7, 2.390488857142857E7, 2.3905210666666668E7, 2.39046064E7, 2.6468078285714287E7 ] ]
+    }
+  }, {
+    "case" : "PAIRING",
+    "generatedAllocations" : {
+      "score" : 9.112555949333334E7,
+      "scoreError" : 2409050.493823125,
+      "scoreConfidence" : [ 8.871650899951021E7, 9.353460998715647E7 ],
+      "scorePercentiles" : {
+        "0.0" : 9.03683216E7,
+        "50.0" : 9.03712872E7,
+        "90.0" : 9.42965896E7,
+        "95.0" : 9.433471733333333E7,
+        "99.0" : 9.433471733333333E7,
+        "99.9" : 9.433471733333333E7,
+        "99.99" : 9.433471733333333E7,
+        "99.999" : 9.433471733333333E7,
+        "99.9999" : 9.433471733333333E7,
+        "100.0" : 9.433471733333333E7
+      },
+      "scoreUnit" : "B/op",
+      "rawData" : [ [ 9.03699688E7, 9.03771352E7, 9.03683216E7, 9.03708904E7, 9.395344E7 ], [ 9.03683232E7, 9.0371684E7, 9.03727344E7, 9.036838E7, 9.433471733333333E7 ] ]
+    },
+    "timing" : "HIGHER_TIME",
+    "generatedOverOriginal" : 2.2177158469120912,
+    "generatedMicros" : {
+      "score" : 52592.22409444444,
+      "scoreError" : 2319.998440808573,
+      "scoreConfidence" : [ 50272.22565363587, 54912.222535253015 ],
+      "scorePercentiles" : {
+        "0.0" : 50497.7404,
+        "50.0" : 52292.10895,
+        "90.0" : 55658.61258,
+        "95.0" : 55850.51744444444,
+        "99.0" : 55850.51744444444,
+        "99.9" : 55850.51744444444,
+        "99.99" : 55850.51744444444,
+        "99.999" : 55850.51744444444,
+        "99.9999" : 55850.51744444444,
+        "100.0" : 55850.51744444444
+      },
+      "scoreUnit" : "us/op",
+      "rawData" : [ [ 50497.7404, 52998.088, 51924.7955, 51349.8603, 51397.2152 ], [ 53388.3374, 52274.235, 52309.9829, 53931.4688, 55850.51744444444 ] ]
+    },
+    "originalMicros" : {
+      "score" : 23714.590923662712,
+      "scoreError" : 2085.313686326989,
+      "scoreConfidence" : [ 21629.277237335722, 25799.904609989702 ],
+      "scorePercentiles" : {
+        "0.0" : 22178.70408695652,
+        "50.0" : 23533.381913419915,
+        "90.0" : 26006.86213,
+        "95.0" : 26011.1078,
+        "99.0" : 26011.1078,
+        "99.9" : 26011.1078,
+        "99.99" : 26011.1078,
+        "99.999" : 26011.1078,
+        "99.9999" : 26011.1078,
+        "100.0" : 26011.1078
+      },
+      "scoreUnit" : "us/op",
+      "rawData" : [ [ 22283.62552173913, 23976.254863636364, 23947.929190476192, 23118.834636363637, 24085.641476190478 ], [ 26011.1078, 22671.910652173912, 22903.249909090908, 22178.70408695652, 25968.6511 ] ]
+    },
+    "originalAllocations" : {
+      "score" : 5.663230236363636E7,
+      "scoreError" : 1120181.3099416413,
+      "scoreConfidence" : [ 5.551212105369472E7, 5.7752483673578E7 ],
+      "scorePercentiles" : {
+        "0.0" : 5.62205059047619E7,
+        "50.0" : 5.633423868774703E7,
+        "90.0" : 5.8109367689523816E7,
+        "95.0" : 5.81288292E7,
+        "99.0" : 5.81288292E7,
+        "99.9" : 5.81288292E7,
+        "99.99" : 5.81288292E7,
+        "99.999" : 5.81288292E7,
+        "99.9999" : 5.81288292E7,
+        "100.0" : 5.81288292E7
+      },
+      "scoreUnit" : "B/op",
+      "rawData" : [ [ 5.6227248347826086E7, 5.622499418181818E7, 5.62205059047619E7, 5.622485381818182E7, 5.79342140952381E7 ], [ 5.63546628E7, 5.633923791304348E7, 5.633087563636363E7, 5.633760173913044E7, 5.81288292E7 ] ]
+    }
+  } ],
+  "interpretation" : "All ten samples reconstruct the mean and 99.9% interval. Separated intervals are local directional evidence; overlap is inconclusive. Full generated guards and fallback paths remain timed. No optimizer cost weights, universal speedup or constant-time guarantee follows.",
+  "allocationInterpretation" : "GC samples include JVM/harness work and final-trial source/runtime validation and cleanup outside primary latency timing. They cannot isolate candidate allocations. Raw samples are retained."
+}

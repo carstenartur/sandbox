@@ -1,0 +1,887 @@
+{
+  "schema": "sandbox.independent-performance-review/v1",
+  "status": "VERIFIED",
+  "source": {
+    "before": {
+      "head": "9c2d121686dd2bfcd774d820312ca603d8fc4b4f",
+      "tree": "d9736c8cd1e397508784e7d79fd1cb08ac978312",
+      "trackedStatus": ""
+    },
+    "after": {
+      "head": "9c2d121686dd2bfcd774d820312ca603d8fc4b4f",
+      "tree": "d9736c8cd1e397508784e7d79fd1cb08ac978312",
+      "trackedStatus": ""
+    },
+    "checkout": "/tmp/sandbox-bls-on-native"
+  },
+  "completion": {
+    "directory": "/workspace/scratch/0eb32b15fbb4/recovery/current-measurement-9c2d1216",
+    "started": "2026-11-02T18:31:13Z",
+    "finished": "2026-11-02T18:36:20Z",
+    "exitCode": 0,
+    "mavenExitCode": 0,
+    "sourceCurrent": true
+  },
+  "fullCompilationCompletion": {
+    "directory": "/workspace/scratch/0eb32b15fbb4/recovery/full-integration-9c2d1216-retry1",
+    "started": "2026-11-02T18:19:46Z",
+    "finished": "2026-11-02T18:29:49Z",
+    "exitCode": 0,
+    "mavenExitCode": 0,
+    "sourceCurrent": true
+  },
+  "files": {
+    "bc-bls-jmh.json": {
+      "path": "/tmp/sandbox-bls-on-native/qa/math-optimization/target/bc-bls-jmh.json",
+      "bytes": 46660,
+      "sha256": "394aac651f89a40ef6d09469bb1e3a75b096da3cecfa456f90a85fe97184e7e4",
+      "mtimeUTC": "2026-11-02T18:32:59.847Z",
+      "newerThanMeasurementStart": true
+    },
+    "bc-bls-performance.json": {
+      "path": "/tmp/sandbox-bls-on-native/qa/math-optimization/target/bc-bls-performance.json",
+      "bytes": 13537,
+      "sha256": "52b888d8d7788d67be15b530de8942355ef68e763955c8c79ff6d6ed5aa8c618",
+      "mtimeUTC": "2026-11-02T18:33:00.887Z",
+      "newerThanMeasurementStart": true
+    },
+    "bc-hash-to-curve.json": {
+      "path": "/tmp/sandbox-bls-on-native/qa/math-optimization/target/bc-hash-to-curve.json",
+      "bytes": 122167,
+      "sha256": "ee587b4068fbf5d47fa0207e4522e404e834c7e3f9d65ed5ed3d63ce49fb4b8c",
+      "mtimeUTC": "2026-11-02T18:36:20.186Z",
+      "newerThanMeasurementStart": true
+    },
+    "bc-performance-review.json": {
+      "path": "/tmp/sandbox-bls-on-native/qa/math-optimization/target/bc-performance-review.json",
+      "bytes": 27773,
+      "sha256": "9854f88a817318039bcd2a1e777905523355635eac60a2d963f5fa11f994b9d0",
+      "mtimeUTC": "2026-11-02T18:36:20.582Z",
+      "newerThanMeasurementStart": true
+    },
+    "bc-bls/benchmark.properties": {
+      "path": "/tmp/sandbox-bls-on-native/qa/math-optimization/target/bc-bls/benchmark.properties",
+      "bytes": 1860,
+      "sha256": "daeb9d5449ca3e6433a153f3734d37999087e2ccb1528c3db4e8c0fdee784931",
+      "mtimeUTC": "2026-11-02T18:31:22.719Z"
+    },
+    "bc-bls/cohort.json": {
+      "path": "/tmp/sandbox-bls-on-native/qa/math-optimization/target/bc-bls/cohort.json",
+      "bytes": 4717,
+      "sha256": "e7c22e4a30405e73b217ba2278029abd48c8e9a8434522d6cf78d36921a85ba3",
+      "mtimeUTC": "2026-11-02T18:31:22.719Z"
+    },
+    "bc-bls/inputs.json": {
+      "path": "/tmp/sandbox-bls-on-native/qa/math-optimization/target/bc-bls/inputs.json",
+      "bytes": 101463,
+      "sha256": "106c03f725427a80be025cfe0e07c2b79777e704563da8caada9691508a750af",
+      "mtimeUTC": "2026-11-02T18:31:16.117Z"
+    },
+    "bc-bls/review.json": {
+      "path": "/tmp/sandbox-bls-on-native/qa/math-optimization/target/bc-bls/review.json",
+      "bytes": 156938,
+      "sha256": "0f0faf013ef786e17db15aa5fee8a310460ab9669ad09a15ddf72b3ed3997502",
+      "mtimeUTC": "2026-11-02T18:31:22.673Z"
+    },
+    "bc-bls/profile.properties": {
+      "path": "/tmp/sandbox-bls-on-native/qa/math-optimization/target/bc-bls/profile.properties",
+      "bytes": 713,
+      "sha256": "e1bd041d34a79707e8e6820b50a2fcdcf7619937ff0ce2b2cf6ad12a43427552",
+      "mtimeUTC": "2026-11-02T18:31:22.709Z"
+    },
+    "bc-mathematical/benchmark.properties": {
+      "path": "/tmp/sandbox-bls-on-native/qa/math-optimization/target/bc-mathematical/benchmark.properties",
+      "bytes": 16895,
+      "sha256": "f64186a58aed080165ec3ba11ef6c13fc2e790ba4af845b097b91ef153ab655f",
+      "mtimeUTC": "2026-11-02T18:29:48.932Z"
+    },
+    "bc-mathematical/inputs.json": {
+      "path": "/tmp/sandbox-bls-on-native/qa/math-optimization/target/bc-mathematical/inputs.json",
+      "bytes": 283731,
+      "sha256": "38ecc8201d742d0a551fa5216124179e14fa130ada76631b8ddf65f8c5db0aea",
+      "mtimeUTC": "2026-11-02T18:27:45.746Z"
+    },
+    "bc-mathematical/review.json": {
+      "path": "/tmp/sandbox-bls-on-native/qa/math-optimization/target/bc-mathematical/review.json",
+      "bytes": 23620989,
+      "sha256": "4a556c3dfda1503cec277126172a5e661261f37358cfdbb6f16e355d69d323ee",
+      "mtimeUTC": "2026-11-02T18:29:48.892Z"
+    },
+    "measurement/run.log": {
+      "path": "/workspace/scratch/0eb32b15fbb4/recovery/current-measurement-9c2d1216/run.log",
+      "bytes": 180662,
+      "sha256": "b3da255b8fd2e710aed25e9878ef24d615e6445158efcfd6890824f486971d6b"
+    },
+    "measurement/command.sh": {
+      "path": "/workspace/scratch/0eb32b15fbb4/recovery/current-measurement-9c2d1216/command.sh",
+      "bytes": 3090,
+      "sha256": "3cf7290e965ed52517803a445cf3315e083252cf4caa36c795169bde6a91af95"
+    },
+    "sdk/qualification.json": {
+      "path": "/tmp/sandbox-bls-on-native/sandbox_math_cleanup/lib/qualification.json",
+      "bytes": 1914,
+      "sha256": "e205e3e0243019fcd70ad65ae27ce83104169a80574a7b5f2fc9db47cae0d1b7"
+    },
+    "jdk/release": {
+      "path": "/tmp/jdt-pr5614-tools/jdk-25.0.5+8/release",
+      "bytes": 1604,
+      "sha256": "8545053a54a73969a65db2c8157f40f89bcdcf7526ae90a7ce9b3061c01bc34a"
+    },
+    "jdk/bin/java": {
+      "path": "/tmp/jdt-pr5614-tools/jdk-25.0.5+8/bin/java",
+      "bytes": 16264,
+      "sha256": "1bf1aaef01e4f8d7c85d913c60fb2ee4624cbe54d4053254c59657b7ea913b25"
+    },
+    "profiles/bc-bls.properties": {
+      "path": "/tmp/sandbox-bls-on-native/qa/math-optimization/profiles/bc-bls.properties",
+      "bytes": 713,
+      "sha256": "e1bd041d34a79707e8e6820b50a2fcdcf7619937ff0ce2b2cf6ad12a43427552"
+    },
+    "profiles/bc-mathematical.properties": {
+      "path": "/tmp/sandbox-bls-on-native/qa/math-optimization/profiles/bc-mathematical.properties",
+      "bytes": 688,
+      "sha256": "de1a5f6eaa47bc22040a13ab3aa975206a74b24ad1c0e635000a5ef30b8c978a"
+    }
+  },
+  "measurement": {
+    "rows": 22,
+    "primarySamples": 220,
+    "blsRows": 6,
+    "swuRows": 16,
+    "completedForks": 44,
+    "commonSettings": {
+      "mode": "avgt",
+      "threads": 1,
+      "forks": 2,
+      "warmupIterations": 3,
+      "warmupTime": "500 ms",
+      "warmupBatchSize": 1,
+      "measurementIterations": 5,
+      "measurementTime": "500 ms",
+      "measurementBatchSize": 1,
+      "jmhVersion": "1.37"
+    },
+    "runtimes": {
+      "bls": {
+        "jvm": "/tmp/jdt-pr5614-tools/jdk-25.0.5+8/bin/java",
+        "jdkVersion": "25.0.5",
+        "vmName": "OpenJDK 64-Bit Server VM",
+        "vmVersion": "25.0.5+8-LTS",
+        "jvmArgs": [
+          "-Dfile.encoding=UTF-8",
+          "-Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts",
+          "-Dhttps.proxyHost=browser-proxy",
+          "-Dhttps.proxyPort=8889",
+          "-Dhttp.proxyHost=browser-proxy",
+          "-Dhttp.proxyPort=8889",
+          "-Xmx512m",
+          "-Xms128m",
+          "-Xmx512m"
+        ]
+      },
+      "swu": {
+        "jvm": "/tmp/jdt-pr5614-tools/jdk-25.0.5+8/bin/java",
+        "jdkVersion": "25.0.5",
+        "vmName": "OpenJDK 64-Bit Server VM",
+        "vmVersion": "25.0.5+8-LTS",
+        "jvmArgs": [
+          "-Dfile.encoding=UTF-8",
+          "-Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts",
+          "-Dhttps.proxyHost=browser-proxy",
+          "-Dhttps.proxyPort=8889",
+          "-Dhttp.proxyHost=browser-proxy",
+          "-Dhttp.proxyPort=8889",
+          "-Xmx512m"
+        ]
+      }
+    },
+    "independentStatistics": {
+      "method": "Closed-form Student-t CDF for df=9, independent bisection at probability 0.9995; unbiased sample variance over ten iteration observations per row.",
+      "confidence": 0.999,
+      "degreesOfFreedom": 9,
+      "criticalValue": 4.780912585931025,
+      "maxMeanDifferenceMicros": 0,
+      "maxErrorDifferenceMicros": 4.2382453102618456e-10,
+      "maxIntervalDifferenceMicros": 4.220055416226387e-10,
+      "maxPercentileDifference": 0,
+      "allocationMetricReconstructionAlsoPassed": true
+    }
+  },
+  "comparisons": {
+    "bls": [
+      {
+        "case": "G2_32",
+        "originalMicros": 35418.53823744047,
+        "originalCI99_9": [
+          33144.33925787614,
+          37692.737217004804
+        ],
+        "generatedMicros": 45464.50721991564,
+        "generatedCI99_9": [
+          34443.39349676285,
+          56485.62094306843
+        ],
+        "generatedOverOriginal": 1.2836359003617972,
+        "reportedRatio": 1.2836359003617972,
+        "timing": "INCONCLUSIVE",
+        "intervalOverlapMicros": 3249.3437202414425
+      },
+      {
+        "case": "G2_256",
+        "originalMicros": 34720.80172827381,
+        "originalCI99_9": [
+          33097.37607629043,
+          36344.22738025719
+        ],
+        "generatedMicros": 40299.8186775641,
+        "generatedCI99_9": [
+          37812.4469505204,
+          42787.1904046078
+        ],
+        "generatedOverOriginal": 1.1606822616871544,
+        "reportedRatio": 1.1606822616871544,
+        "timing": "HIGHER_TIME",
+        "intervalOverlapMicros": -1468.2195702633762
+      },
+      {
+        "case": "PAIRING",
+        "originalMicros": 23714.590923662712,
+        "originalCI99_9": [
+          21629.277237335722,
+          25799.904609989702
+        ],
+        "generatedMicros": 52592.22409444444,
+        "generatedCI99_9": [
+          50272.22565363587,
+          54912.222535253015
+        ],
+        "generatedOverOriginal": 2.2177158469120912,
+        "reportedRatio": 2.2177158469120912,
+        "timing": "HIGHER_TIME",
+        "intervalOverlapMicros": -24472.321043646334
+      }
+    ],
+    "swu": [
+      {
+        "case": "P256_XMD_SHA_256/32",
+        "originalMicros": 94.68177915161425,
+        "originalCI99_9": [
+          90.54221827884773,
+          98.82134002438077
+        ],
+        "generatedMicros": 94.18323456548566,
+        "generatedCI99_9": [
+          88.96265062831435,
+          99.40381850265697
+        ],
+        "generatedOverOriginal": 0.9947345245241931,
+        "reportedRatio": 0.9947345245241931,
+        "timing": "INCONCLUSIVE",
+        "intervalOverlapMicros": 8.279121745532734
+      },
+      {
+        "case": "P256_XMD_SHA_256/256",
+        "originalMicros": 98.337771410043,
+        "originalCI99_9": [
+          92.41886608846802,
+          104.25667673161799
+        ],
+        "generatedMicros": 92.22640436954896,
+        "generatedCI99_9": [
+          86.18010323279583,
+          98.27270550630209
+        ],
+        "generatedOverOriginal": 0.9378533095384963,
+        "reportedRatio": 0.9378533095384963,
+        "timing": "INCONCLUSIVE",
+        "intervalOverlapMicros": 5.853839417833612
+      },
+      {
+        "case": "P384_XMD_SHA_384/32",
+        "originalMicros": 225.98759187791924,
+        "originalCI99_9": [
+          166.31114801728785,
+          285.66403573855064
+        ],
+        "generatedMicros": 208.07944730404557,
+        "generatedCI99_9": [
+          177.3837660112228,
+          238.77512859686834
+        ],
+        "generatedOverOriginal": 0.920756071494634,
+        "reportedRatio": 0.920756071494634,
+        "timing": "INCONCLUSIVE",
+        "intervalOverlapMicros": 61.39136258564321
+      },
+      {
+        "case": "P384_XMD_SHA_384/256",
+        "originalMicros": 206.2055871244732,
+        "originalCI99_9": [
+          188.08728174733693,
+          224.32389250160946
+        ],
+        "generatedMicros": 236.8142085298579,
+        "generatedCI99_9": [
+          216.1429931812519,
+          257.48542387846385
+        ],
+        "generatedOverOriginal": 1.1484374009076108,
+        "reportedRatio": 1.1484374009076108,
+        "timing": "INCONCLUSIVE",
+        "intervalOverlapMicros": 8.180899320356048
+      },
+      {
+        "case": "P521_XMD_SHA_512/32",
+        "originalMicros": 356.8535076342555,
+        "originalCI99_9": [
+          322.5733330656352,
+          391.1336822028758
+        ],
+        "generatedMicros": 388.998235026094,
+        "generatedCI99_9": [
+          353.9676441389509,
+          424.0288259132371
+        ],
+        "generatedOverOriginal": 1.090078216142362,
+        "reportedRatio": 1.090078216142362,
+        "timing": "INCONCLUSIVE",
+        "intervalOverlapMicros": 37.1660380639222
+      },
+      {
+        "case": "P521_XMD_SHA_512/256",
+        "originalMicros": 357.3080028558491,
+        "originalCI99_9": [
+          320.16785349955785,
+          394.44815221214037
+        ],
+        "generatedMicros": 385.2077460098471,
+        "generatedCI99_9": [
+          348.6471960610308,
+          421.7682959586634
+        ],
+        "generatedOverOriginal": 1.0780831745469013,
+        "reportedRatio": 1.0780831745469013,
+        "timing": "INCONCLUSIVE",
+        "intervalOverlapMicros": 45.80095615110679
+      },
+      {
+        "case": "BLS12_381_G1_XMD_SHA_256_SSWU_RO/32",
+        "originalMicros": 823.3910892494976,
+        "originalCI99_9": [
+          711.7200064055719,
+          935.0621720934232
+        ],
+        "generatedMicros": 851.5665820293922,
+        "generatedCI99_9": [
+          776.12984968269,
+          927.0033143760944
+        ],
+        "generatedOverOriginal": 1.0342188458774504,
+        "reportedRatio": 1.0342188458774504,
+        "timing": "INCONCLUSIVE",
+        "intervalOverlapMicros": 150.87346469339855
+      },
+      {
+        "case": "BLS12_381_G1_XMD_SHA_256_SSWU_RO/256",
+        "originalMicros": 828.9550370167733,
+        "originalCI99_9": [
+          755.0258954117929,
+          902.8841786217537
+        ],
+        "generatedMicros": 815.4279335797639,
+        "generatedCI99_9": [
+          701.9761672462805,
+          928.8796999132474
+        ],
+        "generatedOverOriginal": 0.9836817404648502,
+        "reportedRatio": 0.9836817404648502,
+        "timing": "INCONCLUSIVE",
+        "intervalOverlapMicros": 147.85828320995506
+      }
+    ]
+  },
+  "statisticalRows": [
+    {
+      "group": "bls",
+      "case": "G2_32",
+      "variant": "generated",
+      "samples": 10,
+      "forks": 2,
+      "samplesPerFork": 5,
+      "meanMicros": 45464.50721991564,
+      "standardDeviationMicros": 7289.7843435706545,
+      "standardErrorMicros": 2305.2322177118695,
+      "error99_9Micros": 11021.113723152366,
+      "confidence99_9Micros": [
+        34443.393496763274,
+        56485.62094306801
+      ]
+    },
+    {
+      "group": "bls",
+      "case": "G2_256",
+      "variant": "generated",
+      "samples": 10,
+      "forks": 2,
+      "samplesPerFork": 5,
+      "meanMicros": 40299.8186775641,
+      "standardDeviationMicros": 1645.2423891018825,
+      "standardErrorMicros": 520.2713252618935,
+      "error99_9Micros": 2487.371727043601,
+      "confidence99_9Micros": [
+        37812.4469505205,
+        42787.1904046077
+      ]
+    },
+    {
+      "group": "bls",
+      "case": "PAIRING",
+      "variant": "generated",
+      "samples": 10,
+      "forks": 2,
+      "samplesPerFork": 5,
+      "meanMicros": 52592.22409444444,
+      "standardDeviationMicros": 1534.535323357193,
+      "standardErrorMicros": 485.2626771791712,
+      "error99_9Micros": 2319.998440808484,
+      "confidence99_9Micros": [
+        50272.22565363596,
+        54912.22253525293
+      ]
+    },
+    {
+      "group": "bls",
+      "case": "G2_32",
+      "variant": "original",
+      "samples": 10,
+      "forks": 2,
+      "samplesPerFork": 5,
+      "meanMicros": 35418.53823744047,
+      "standardDeviationMicros": 1504.2418154677966,
+      "standardErrorMicros": 475.68302885449384,
+      "error99_9Micros": 2274.1989795642407,
+      "confidence99_9Micros": [
+        33144.33925787623,
+        37692.73721700472
+      ]
+    },
+    {
+      "group": "bls",
+      "case": "G2_256",
+      "variant": "original",
+      "samples": 10,
+      "forks": 2,
+      "samplesPerFork": 5,
+      "meanMicros": 34720.80172827381,
+      "standardDeviationMicros": 1073.7955526144367,
+      "standardErrorMicros": 339.5639687620793,
+      "error99_9Micros": 1623.4256519833145,
+      "confidence99_9Micros": [
+        33097.37607629049,
+        36344.22738025712
+      ]
+    },
+    {
+      "group": "bls",
+      "case": "PAIRING",
+      "variant": "original",
+      "samples": 10,
+      "forks": 2,
+      "samplesPerFork": 5,
+      "meanMicros": 23714.590923662712,
+      "standardDeviationMicros": 1379.3058890305533,
+      "standardErrorMicros": 436.17481994200045,
+      "error99_9Micros": 2085.3136863269087,
+      "confidence99_9Micros": [
+        21629.277237335802,
+        25799.904609989622
+      ]
+    },
+    {
+      "group": "swu",
+      "case": "P256_XMD_SHA_256/32",
+      "variant": "generated",
+      "samples": 10,
+      "forks": 2,
+      "samplesPerFork": 5,
+      "meanMicros": 94.18323456548566,
+      "standardDeviationMicros": 3.4530930362817314,
+      "standardErrorMicros": 1.0919638967116718,
+      "error99_9Micros": 5.220583937171118,
+      "confidence99_9Micros": [
+        88.96265062831455,
+        99.40381850265678
+      ]
+    },
+    {
+      "group": "swu",
+      "case": "P256_XMD_SHA_256/256",
+      "variant": "generated",
+      "samples": 10,
+      "forks": 2,
+      "samplesPerFork": 5,
+      "meanMicros": 92.22640436954896,
+      "standardDeviationMicros": 3.9992538386227308,
+      "standardErrorMicros": 1.26467510712193,
+      "error99_9Micros": 6.046301136752903,
+      "confidence99_9Micros": [
+        86.18010323279606,
+        98.27270550630186
+      ]
+    },
+    {
+      "group": "swu",
+      "case": "P384_XMD_SHA_384/32",
+      "variant": "generated",
+      "samples": 10,
+      "forks": 2,
+      "samplesPerFork": 5,
+      "meanMicros": 208.07944730404557,
+      "standardDeviationMicros": 20.303292618565063,
+      "standardErrorMicros": 6.420464867554986,
+      "error99_9Micros": 30.695681292821607,
+      "confidence99_9Micros": [
+        177.38376601122397,
+        238.77512859686718
+      ]
+    },
+    {
+      "group": "swu",
+      "case": "P384_XMD_SHA_384/256",
+      "variant": "generated",
+      "samples": 10,
+      "forks": 2,
+      "samplesPerFork": 5,
+      "meanMicros": 236.8142085298579,
+      "standardDeviationMicros": 13.672729072224652,
+      "standardErrorMicros": 4.323696569863075,
+      "error99_9Micros": 20.671215348605177,
+      "confidence99_9Micros": [
+        216.1429931812527,
+        257.48542387846305
+      ]
+    },
+    {
+      "group": "swu",
+      "case": "P521_XMD_SHA_512/32",
+      "variant": "generated",
+      "samples": 10,
+      "forks": 2,
+      "samplesPerFork": 5,
+      "meanMicros": 388.998235026094,
+      "standardDeviationMicros": 23.170566914545233,
+      "standardErrorMicros": 7.327176612730296,
+      "error99_9Micros": 35.030590887141734,
+      "confidence99_9Micros": [
+        353.96764413895227,
+        424.0288259132357
+      ]
+    },
+    {
+      "group": "swu",
+      "case": "P521_XMD_SHA_512/256",
+      "variant": "generated",
+      "samples": 10,
+      "forks": 2,
+      "samplesPerFork": 5,
+      "meanMicros": 385.2077460098471,
+      "standardDeviationMicros": 24.182540104755546,
+      "standardErrorMicros": 7.647190633939436,
+      "error99_9Micros": 36.56054994881491,
+      "confidence99_9Micros": [
+        348.64719606103216,
+        421.768295958662
+      ]
+    },
+    {
+      "group": "swu",
+      "case": "BLS12_381_G1_XMD_SHA_256_SSWU_RO/32",
+      "variant": "generated",
+      "samples": 10,
+      "forks": 2,
+      "samplesPerFork": 5,
+      "meanMicros": 851.5665820293922,
+      "standardDeviationMicros": 49.89672769965808,
+      "standardErrorMicros": 15.778730732013353,
+      "error99_9Micros": 75.4367323466993,
+      "confidence99_9Micros": [
+        776.1298496826929,
+        927.0033143760915
+      ]
+    },
+    {
+      "group": "swu",
+      "case": "BLS12_381_G1_XMD_SHA_256_SSWU_RO/256",
+      "variant": "generated",
+      "samples": 10,
+      "forks": 2,
+      "samplesPerFork": 5,
+      "meanMicros": 815.4279335797639,
+      "standardDeviationMicros": 75.04131893955946,
+      "standardErrorMicros": 23.730148647213916,
+      "error99_9Micros": 113.4517663334791,
+      "confidence99_9Micros": [
+        701.9761672462848,
+        928.879699913243
+      ]
+    },
+    {
+      "group": "swu",
+      "case": "P256_XMD_SHA_256/32",
+      "variant": "original",
+      "samples": 10,
+      "forks": 2,
+      "samplesPerFork": 5,
+      "meanMicros": 94.68177915161425,
+      "standardDeviationMicros": 2.7380632119018284,
+      "standardErrorMicros": 0.8658516127126031,
+      "error99_9Micros": 4.13956087276636,
+      "confidence99_9Micros": [
+        90.54221827884788,
+        98.82134002438062
+      ]
+    },
+    {
+      "group": "swu",
+      "case": "P256_XMD_SHA_256/256",
+      "variant": "original",
+      "samples": 10,
+      "forks": 2,
+      "samplesPerFork": 5,
+      "meanMicros": 98.337771410043,
+      "standardDeviationMicros": 3.9149893947334404,
+      "standardErrorMicros": 1.2380283502761684,
+      "error99_9Micros": 5.918905321574758,
+      "confidence99_9Micros": [
+        92.41886608846825,
+        104.25667673161776
+      ]
+    },
+    {
+      "group": "swu",
+      "case": "P384_XMD_SHA_384/32",
+      "variant": "original",
+      "samples": 10,
+      "forks": 2,
+      "samplesPerFork": 5,
+      "meanMicros": 225.98759187791924,
+      "standardDeviationMicros": 39.47227268159937,
+      "standardErrorMicros": 12.48222860970963,
+      "error99_9Micros": 59.67644386062909,
+      "confidence99_9Micros": [
+        166.31114801729015,
+        285.66403573854836
+      ]
+    },
+    {
+      "group": "swu",
+      "case": "P384_XMD_SHA_384/256",
+      "variant": "original",
+      "samples": 10,
+      "forks": 2,
+      "samplesPerFork": 5,
+      "meanMicros": 206.2055871244732,
+      "standardDeviationMicros": 11.984137192306951,
+      "standardErrorMicros": 3.7897169319625275,
+      "error99_9Micros": 18.11830537713556,
+      "confidence99_9Micros": [
+        188.08728174733764,
+        224.32389250160875
+      ]
+    },
+    {
+      "group": "swu",
+      "case": "P521_XMD_SHA_512/32",
+      "variant": "original",
+      "samples": 10,
+      "forks": 2,
+      "samplesPerFork": 5,
+      "meanMicros": 356.8535076342555,
+      "standardDeviationMicros": 22.674212982688477,
+      "standardErrorMicros": 7.1702157177055605,
+      "error99_9Micros": 34.280174568618975,
+      "confidence99_9Micros": [
+        322.5733330656365,
+        391.13368220287447
+      ]
+    },
+    {
+      "group": "swu",
+      "case": "P521_XMD_SHA_512/256",
+      "variant": "original",
+      "samples": 10,
+      "forks": 2,
+      "samplesPerFork": 5,
+      "meanMicros": 357.3080028558491,
+      "standardDeviationMicros": 24.565909226269802,
+      "standardErrorMicros": 7.7684225947957275,
+      "error99_9Micros": 37.14014935628985,
+      "confidence99_9Micros": [
+        320.16785349955927,
+        394.44815221213895
+      ]
+    },
+    {
+      "group": "swu",
+      "case": "BLS12_381_G1_XMD_SHA_256_SSWU_RO/32",
+      "variant": "original",
+      "samples": 10,
+      "forks": 2,
+      "samplesPerFork": 5,
+      "meanMicros": 823.3910892494976,
+      "standardDeviationMicros": 73.8635070641803,
+      "standardErrorMicros": 23.357691829074664,
+      "error99_9Micros": 111.67108284392133,
+      "confidence99_9Micros": [
+        711.7200064055762,
+        935.0621720934189
+      ]
+    },
+    {
+      "group": "swu",
+      "case": "BLS12_381_G1_XMD_SHA_256_SSWU_RO/256",
+      "variant": "original",
+      "samples": 10,
+      "forks": 2,
+      "samplesPerFork": 5,
+      "meanMicros": 828.9550370167733,
+      "standardDeviationMicros": 48.89954976813668,
+      "standardErrorMicros": 15.463395382407047,
+      "error99_9Micros": 73.92914160497754,
+      "confidence99_9Micros": [
+        755.0258954117958,
+        902.8841786217508
+      ]
+    }
+  ],
+  "bindings": {
+    "fixtureManifestSha256": "daeb9d5449ca3e6433a153f3734d37999087e2ccb1528c3db4e8c0fdee784931",
+    "cohortFilesVerified": 17,
+    "sourceDependenciesVerified": 7,
+    "classBindings": [
+      {
+        "path": "org/bouncycastle/crypto/bls/BLS12_381G2HashToCurve.java",
+        "generatedSha256": "c5c77430d497a03479c5f9e73b5a2a74ed1ea67cc7da2e443f7606dc29fc2dd3",
+        "originalSha256": "f38ce5cd9f54df04afb9a335d709b79f85bdde53fce3cee05ac308c466f7e13f",
+        "acceptedRegions": 2,
+        "originalArchiveBytesEqual": true
+      },
+      {
+        "path": "org/bouncycastle/crypto/bls/BLS12_381Pairing.java",
+        "generatedSha256": "dacb0faf94d09a86f12ed0640e38e18059e38fac14f75a43cb6de68502aafef1",
+        "originalSha256": "796d1a157cb2893054caf901bea7c6471ddbad47a86c3fc640c2978bc5888da0",
+        "acceptedRegions": 1,
+        "originalArchiveBytesEqual": true
+      },
+      {
+        "path": "org/bouncycastle/crypto/bls/Fp12Element.java",
+        "generatedSha256": "c4a0bba167311890878798e94c3566dc8d603b24ec5d58a88c462629b8cd0354",
+        "originalSha256": "c4a0bba167311890878798e94c3566dc8d603b24ec5d58a88c462629b8cd0354",
+        "acceptedRegions": 0,
+        "originalArchiveBytesEqual": true
+      },
+      {
+        "path": "org/bouncycastle/crypto/bls/Fp2Element.java",
+        "generatedSha256": "8d8b95aec88d70886204ca048aa2f7132585d5f1d0673e7cba986ec8e0c11ebc",
+        "originalSha256": "b59fd659daf0de62923b1f3be85dfe0329aa45fb43add8a28b6befa8e4517a85",
+        "acceptedRegions": 1,
+        "originalArchiveBytesEqual": true
+      },
+      {
+        "path": "org/bouncycastle/crypto/bls/Fp6Element.java",
+        "generatedSha256": "760c5e22c1c26205742a1104128ae6be346f482e09c01ae5d7b733fe2e5d1c36",
+        "originalSha256": "cfcb0d5c98b901b6033039869fef98b464ae12a214cd5c0c5445347057fb6b1d",
+        "acceptedRegions": 5,
+        "originalArchiveBytesEqual": true
+      }
+    ],
+    "allTenBlsSourceVariantsEqualHistorical7fcd": true,
+    "historicalCohort": {
+      "path": "/workspace/scratch/0eb32b15fbb4/recovery/current-evidence-7fcd719-ee20d376/jmh/fixtures/bc-bls/cohort.json",
+      "sha256": "ee529d287d7668f96ada16892ed080adb73c68386e14157226ee611ea1a8a021"
+    },
+    "blsScan": {
+      "status": "COMPLETED",
+      "parsedFiles": 5,
+      "parseErrorFiles": 0
+    },
+    "swuCorpusScan": {
+      "status": "COMPLETED_WITH_PARSE_ERRORS",
+      "parsedFiles": 3126,
+      "parseErrorFiles": 10
+    },
+    "blsProfile": {
+      "cleanup.mathematics.timeoutSeconds": "5",
+      "cleanup.mathematics.maxStates": "20000",
+      "cleanup.mathematics.underflowChecks": "false",
+      "cleanup.mathematics.valueRuntime": "AUDITED_OPENJDK_25_0_5_8",
+      "cleanup.mathematics.tailRecursion": "false",
+      "cleanup.mathematics.checkedOptIn": "false",
+      "cleanup.mathematics.mathematicalOptIn": "true",
+      "cleanup.mathematics.safetyProfile": "PRESERVE_JAVA",
+      "cleanup.mathematics.goal": "LOWER_ESTIMATED_RUNTIME",
+      "cleanup.mathematics.exclusions": "",
+      "cleanup.mathematics.explanations": "NONTRIVIAL",
+      "cleanup.mathematics.workBudget": "20000000",
+      "cleanup.mathematics": "true",
+      "cleanup.mathematics.numericKinds": "BIG_INTEGER,BYTE,SHORT,CHAR,INT,LONG,FLOAT,DOUBLE"
+    },
+    "swuProfile": {
+      "cleanup.mathematics.maxStates": "20000",
+      "cleanup.mathematics.timeoutSeconds": "5",
+      "cleanup.mathematics.numericKinds": "BIG_INTEGER,BYTE,SHORT,CHAR,INT,LONG,FLOAT,DOUBLE",
+      "cleanup.mathematics": "true",
+      "cleanup.mathematics.workBudget": "1000000",
+      "cleanup.mathematics.explanations": "NONTRIVIAL",
+      "cleanup.mathematics.exclusions": "",
+      "cleanup.mathematics.goal": "LOWER_ESTIMATED_RUNTIME",
+      "cleanup.mathematics.safetyProfile": "PRESERVE_JAVA",
+      "cleanup.mathematics.mathematicalOptIn": "true",
+      "cleanup.mathematics.checkedOptIn": "false",
+      "cleanup.mathematics.tailRecursion": "false",
+      "cleanup.mathematics.valueRuntime": "UNSPECIFIED",
+      "cleanup.mathematics.underflowChecks": "false"
+    },
+    "swuSource": {
+      "path": "org/bouncycastle/crypto/hash2curve/impl/SimplifiedShallueVanDeWoestijneMapToCurve.java",
+      "originalSha256": "6cd8fbd459615e6936bd8eeea7413ea6a85dc91e6dd558de7d6c118c4d523119",
+      "generatedSha256": "3c3fe40670a3144489b067f1bc9c330ef3d2829e6144c087f68302f8446d4b45",
+      "acceptedRegions": 3,
+      "status": "ANALYZED",
+      "parseErrors": []
+    },
+    "binary": {
+      "path": "/tmp/jdt-pr5614-m2/org/bouncycastle/bcprov-jdk18on/1.85.2/bcprov-jdk18on-1.85.2.jar",
+      "sha256": "986b0fb92ec10e0c66b43e036ce0077e6150cfaecd1db9fb92b56672e157afe5"
+    },
+    "sources": {
+      "path": "/tmp/jdt-pr5614-m2/org/bouncycastle/bcprov-jdk18on/1.85.2/bcprov-jdk18on-1.85.2-sources.jar",
+      "sha256": "b37ac84b1d5435ab7b8d166c16ab9f75e09f68f8ec50479bae433939b241b03f"
+    },
+    "runtimeFilesVerified": 475,
+    "loadedBindings": {
+      "loaded:de.regelsuche.sdk.optimization.ComputationOptimizer": "/tmp/sandbox-bls-on-native/sandbox_math_cleanup/lib/regelsuche-optimization-sdk.jar",
+      "loaded:org.eclipse.jdt.core.JavaCore": "/tmp/jdt-pr5614-m2/org/eclipse/jdt/org.eclipse.jdt.core/3.47.0/org.eclipse.jdt.core-3.47.0.jar",
+      "loaded:org.sandbox.jdt.internal.corext.fix.math.MathReviewReport": "/tmp/sandbox-bls-on-native/qa/math-optimization/target/classes",
+      "loaded:org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis": "/tmp/sandbox-bls-on-native/qa/math-optimization/target/classes",
+      "loaded:org.sandbox.math.qa.ProjectMathScan": "/tmp/sandbox-bls-on-native/qa/math-optimization/target/classes"
+    },
+    "sharedBlsSwuRuntimeInputs": true,
+    "sdk": {
+      "path": "/tmp/sandbox-bls-on-native/sandbox_math_cleanup/lib/regelsuche-optimization-sdk.jar",
+      "sha256": "ba0293dedb3fde9ca2f3042dcef8ae4d6bb2d576adedff8ba7a2b4d186f1cbe1",
+      "sourceRevision": "70c13fb580062b1fd653f35b81b2fb7ed1903c28",
+      "version": "0.5.2-issue1657-70c13fb58006"
+    },
+    "currentFileHashesVerified": 509
+  },
+  "limits": [
+    "Results are local directional observations for these complete calls and this JVM; no optimizer costs or budgets are changed.",
+    "G2_32 confidence intervals overlap; its larger mean does not establish a directional timing conclusion.",
+    "GC profiler observations include JVM/harness activity and trial-end validation/cleanup; they do not isolate candidate allocations.",
+    "Output equality checks exercise fixed samples; neither timing nor those checks prove constant-time behavior.",
+    "BLS raw rows directly carry the fixture manifest digest; SWU rows carry the scan directory, whose manifest and source hashes are checked by benchmark setup/teardown.",
+    "The broader SWU corpus receipt records 10 parse-error files; the measured SWU source itself is ANALYZED with no parse errors and three accepted regions.",
+    "This reviewer ran no JVM, Python, Maven, benchmark or new production test."
+  ]
+}

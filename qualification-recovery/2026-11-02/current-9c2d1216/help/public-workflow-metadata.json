@@ -1,0 +1,502 @@
+{
+  "run": {
+    "id": 41500326710,
+    "name": "Eclipse Help screenshots",
+    "node_id": "WFR_kwLOFYv10c8AAAAJqZy7Ng",
+    "head_branch": "codex/native-tail-cleanup-20261102",
+    "head_sha": "36b8e60ce32b20d6d0e0d70ac2b58aafe59377d8",
+    "path": ".github/workflows/eclipse-help-screenshots.yml",
+    "display_title": "Integrate explicit native tail recursion, qualified SDK70 and genuine Help captures",
+    "run_number": 1548,
+    "event": "pull_request",
+    "status": "completed",
+    "conclusion": "success",
+    "workflow_id": 329429033,
+    "check_suite_id": 112462168037,
+    "check_suite_node_id": "CS_kwDOFYv10c8AAAAaL0R_5Q",
+    "url": "https://api.github.com/repos/carstenartur/sandbox/actions/runs/41500326710",
+    "html_url": "https://github.com/carstenartur/sandbox/actions/runs/41500326710",
+    "pull_requests": [
+      {
+        "url": "https://api.github.com/repos/carstenartur/sandbox/pulls/1792",
+        "id": 5124615785,
+        "number": 1792,
+        "head": {
+          "ref": "codex/native-tail-cleanup-20261102",
+          "sha": "36b8e60ce32b20d6d0e0d70ac2b58aafe59377d8",
+          "repo": {
+            "id": 361493969,
+            "url": "https://api.github.com/repos/carstenartur/sandbox",
+            "name": "sandbox"
+          }
+        },
+        "base": {
+          "ref": "main",
+          "sha": "ae693e5006e104824112880be7db92b3403bd93d",
+          "repo": {
+            "id": 361493969,
+            "url": "https://api.github.com/repos/carstenartur/sandbox",
+            "name": "sandbox"
+          }
+        }
+      }
+    ],
+    "created_at": "2026-11-02T18:24:49Z",
+    "updated_at": "2026-11-02T18:38:49Z",
+    "actor": {
+      "login": "carstenartur",
+      "id": 3164220,
+      "node_id": "MDQ6VXNlcjMxNjQyMjA=",
+      "avatar_url": "https://avatars.githubusercontent.com/u/3164220?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carstenartur",
+      "html_url": "https://github.com/carstenartur",
+      "followers_url": "https://api.github.com/users/carstenartur/followers",
+      "following_url": "https://api.github.com/users/carstenartur/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carstenartur/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carstenartur/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carstenartur/subscriptions",
+      "organizations_url": "https://api.github.com/users/carstenartur/orgs",
+      "repos_url": "https://api.github.com/users/carstenartur/repos",
+      "events_url": "https://api.github.com/users/carstenartur/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carstenartur/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "run_attempt": 1,
+    "referenced_workflows": [],
+    "run_started_at": "2026-11-02T18:24:49Z",
+    "triggering_actor": {
+      "login": "carstenartur",
+      "id": 3164220,
+      "node_id": "MDQ6VXNlcjMxNjQyMjA=",
+      "avatar_url": "https://avatars.githubusercontent.com/u/3164220?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carstenartur",
+      "html_url": "https://github.com/carstenartur",
+      "followers_url": "https://api.github.com/users/carstenartur/followers",
+      "following_url": "https://api.github.com/users/carstenartur/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carstenartur/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carstenartur/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carstenartur/subscriptions",
+      "organizations_url": "https://api.github.com/users/carstenartur/orgs",
+      "repos_url": "https://api.github.com/users/carstenartur/repos",
+      "events_url": "https://api.github.com/users/carstenartur/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carstenartur/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "jobs_url": "https://api.github.com/repos/carstenartur/sandbox/actions/runs/41500326710/jobs",
+    "logs_url": "https://api.github.com/repos/carstenartur/sandbox/actions/runs/41500326710/logs",
+    "check_suite_url": "https://api.github.com/repos/carstenartur/sandbox/check-suites/112462168037",
+    "artifacts_url": "https://api.github.com/repos/carstenartur/sandbox/actions/runs/41500326710/artifacts",
+    "cancel_url": "https://api.github.com/repos/carstenartur/sandbox/actions/runs/41500326710/cancel",
+    "rerun_url": "https://api.github.com/repos/carstenartur/sandbox/actions/runs/41500326710/rerun",
+    "previous_attempt_url": null,
+    "workflow_url": "https://api.github.com/repos/carstenartur/sandbox/actions/workflows/329429033",
+    "head_commit": {
+      "id": "36b8e60ce32b20d6d0e0d70ac2b58aafe59377d8",
+      "tree_id": "c124a6e750303e0ba6e0a1c3322df5ceaf87fe6c",
+      "message": "Record canonical Help provenance for detached-comment freshness",
+      "timestamp": "2026-11-02T18:22:49Z",
+      "author": {
+        "name": "Carsten Hammer",
+        "email": "carsten.hammer@t-online.de"
+      },
+      "committer": {
+        "name": "Carsten Hammer",
+        "email": "carsten.hammer@t-online.de"
+      }
+    },
+    "repository": {
+      "id": 361493969,
+      "node_id": "MDEwOlJlcG9zaXRvcnkzNjE0OTM5Njk=",
+      "name": "sandbox",
+      "full_name": "carstenartur/sandbox",
+      "private": false,
+      "owner": {
+        "login": "carstenartur",
+        "id": 3164220,
+        "node_id": "MDQ6VXNlcjMxNjQyMjA=",
+        "avatar_url": "https://avatars.githubusercontent.com/u/3164220?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/carstenartur",
+        "html_url": "https://github.com/carstenartur",
+        "followers_url": "https://api.github.com/users/carstenartur/followers",
+        "following_url": "https://api.github.com/users/carstenartur/following{/other_user}",
+        "gists_url": "https://api.github.com/users/carstenartur/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/carstenartur/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/carstenartur/subscriptions",
+        "organizations_url": "https://api.github.com/users/carstenartur/orgs",
+        "repos_url": "https://api.github.com/users/carstenartur/repos",
+        "events_url": "https://api.github.com/users/carstenartur/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/carstenartur/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "html_url": "https://github.com/carstenartur/sandbox",
+      "description": "Experimental Java modernization toolkit built on Eclipse JDT — safe cleanups, quick fixes, reusable transformation patterns, static analysis and refactoring mining.",
+      "fork": false,
+      "url": "https://api.github.com/repos/carstenartur/sandbox",
+      "forks_url": "https://api.github.com/repos/carstenartur/sandbox/forks",
+      "keys_url": "https://api.github.com/repos/carstenartur/sandbox/keys{/key_id}",
+      "collaborators_url": "https://api.github.com/repos/carstenartur/sandbox/collaborators{/collaborator}",
+      "teams_url": "https://api.github.com/repos/carstenartur/sandbox/teams",
+      "hooks_url": "https://api.github.com/repos/carstenartur/sandbox/hooks",
+      "issue_events_url": "https://api.github.com/repos/carstenartur/sandbox/issues/events{/number}",
+      "events_url": "https://api.github.com/repos/carstenartur/sandbox/events",
+      "assignees_url": "https://api.github.com/repos/carstenartur/sandbox/assignees{/user}",
+      "branches_url": "https://api.github.com/repos/carstenartur/sandbox/branches{/branch}",
+      "tags_url": "https://api.github.com/repos/carstenartur/sandbox/tags",
+      "blobs_url": "https://api.github.com/repos/carstenartur/sandbox/git/blobs{/sha}",
+      "git_tags_url": "https://api.github.com/repos/carstenartur/sandbox/git/tags{/sha}",
+      "git_refs_url": "https://api.github.com/repos/carstenartur/sandbox/git/refs{/sha}",
+      "trees_url": "https://api.github.com/repos/carstenartur/sandbox/git/trees{/sha}",
+      "statuses_url": "https://api.github.com/repos/carstenartur/sandbox/statuses/{sha}",
+      "languages_url": "https://api.github.com/repos/carstenartur/sandbox/languages",
+      "stargazers_url": "https://api.github.com/repos/carstenartur/sandbox/stargazers",
+      "contributors_url": "https://api.github.com/repos/carstenartur/sandbox/contributors",
+      "subscribers_url": "https://api.github.com/repos/carstenartur/sandbox/subscribers",
+      "subscription_url": "https://api.github.com/repos/carstenartur/sandbox/subscription",
+      "commits_url": "https://api.github.com/repos/carstenartur/sandbox/commits{/sha}",
+      "git_commits_url": "https://api.github.com/repos/carstenartur/sandbox/git/commits{/sha}",
+      "comments_url": "https://api.github.com/repos/carstenartur/sandbox/comments{/number}",
+      "issue_comment_url": "https://api.github.com/repos/carstenartur/sandbox/issues/comments{/number}",
+      "contents_url": "https://api.github.com/repos/carstenartur/sandbox/contents/{+path}",
+      "compare_url": "https://api.github.com/repos/carstenartur/sandbox/compare/{base}...{head}",
+      "merges_url": "https://api.github.com/repos/carstenartur/sandbox/merges",
+      "archive_url": "https://api.github.com/repos/carstenartur/sandbox/{archive_format}{/ref}",
+      "downloads_url": "https://api.github.com/repos/carstenartur/sandbox/downloads",
+      "issues_url": "https://api.github.com/repos/carstenartur/sandbox/issues{/number}",
+      "pulls_url": "https://api.github.com/repos/carstenartur/sandbox/pulls{/number}",
+      "milestones_url": "https://api.github.com/repos/carstenartur/sandbox/milestones{/number}",
+      "notifications_url": "https://api.github.com/repos/carstenartur/sandbox/notifications{?since,all,participating}",
+      "labels_url": "https://api.github.com/repos/carstenartur/sandbox/labels{/name}",
+      "releases_url": "https://api.github.com/repos/carstenartur/sandbox/releases{/id}",
+      "deployments_url": "https://api.github.com/repos/carstenartur/sandbox/deployments"
+    },
+    "head_repository": {
+      "id": 361493969,
+      "node_id": "MDEwOlJlcG9zaXRvcnkzNjE0OTM5Njk=",
+      "name": "sandbox",
+      "full_name": "carstenartur/sandbox",
+      "private": false,
+      "owner": {
+        "login": "carstenartur",
+        "id": 3164220,
+        "node_id": "MDQ6VXNlcjMxNjQyMjA=",
+        "avatar_url": "https://avatars.githubusercontent.com/u/3164220?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/carstenartur",
+        "html_url": "https://github.com/carstenartur",
+        "followers_url": "https://api.github.com/users/carstenartur/followers",
+        "following_url": "https://api.github.com/users/carstenartur/following{/other_user}",
+        "gists_url": "https://api.github.com/users/carstenartur/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/carstenartur/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/carstenartur/subscriptions",
+        "organizations_url": "https://api.github.com/users/carstenartur/orgs",
+        "repos_url": "https://api.github.com/users/carstenartur/repos",
+        "events_url": "https://api.github.com/users/carstenartur/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/carstenartur/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "html_url": "https://github.com/carstenartur/sandbox",
+      "description": "Experimental Java modernization toolkit built on Eclipse JDT — safe cleanups, quick fixes, reusable transformation patterns, static analysis and refactoring mining.",
+      "fork": false,
+      "url": "https://api.github.com/repos/carstenartur/sandbox",
+      "forks_url": "https://api.github.com/repos/carstenartur/sandbox/forks",
+      "keys_url": "https://api.github.com/repos/carstenartur/sandbox/keys{/key_id}",
+      "collaborators_url": "https://api.github.com/repos/carstenartur/sandbox/collaborators{/collaborator}",
+      "teams_url": "https://api.github.com/repos/carstenartur/sandbox/teams",
+      "hooks_url": "https://api.github.com/repos/carstenartur/sandbox/hooks",
+      "issue_events_url": "https://api.github.com/repos/carstenartur/sandbox/issues/events{/number}",
+      "events_url": "https://api.github.com/repos/carstenartur/sandbox/events",
+      "assignees_url": "https://api.github.com/repos/carstenartur/sandbox/assignees{/user}",
+      "branches_url": "https://api.github.com/repos/carstenartur/sandbox/branches{/branch}",
+      "tags_url": "https://api.github.com/repos/carstenartur/sandbox/tags",
+      "blobs_url": "https://api.github.com/repos/carstenartur/sandbox/git/blobs{/sha}",
+      "git_tags_url": "https://api.github.com/repos/carstenartur/sandbox/git/tags{/sha}",
+      "git_refs_url": "https://api.github.com/repos/carstenartur/sandbox/git/refs{/sha}",
+      "trees_url": "https://api.github.com/repos/carstenartur/sandbox/git/trees{/sha}",
+      "statuses_url": "https://api.github.com/repos/carstenartur/sandbox/statuses/{sha}",
+      "languages_url": "https://api.github.com/repos/carstenartur/sandbox/languages",
+      "stargazers_url": "https://api.github.com/repos/carstenartur/sandbox/stargazers",
+      "contributors_url": "https://api.github.com/repos/carstenartur/sandbox/contributors",
+      "subscribers_url": "https://api.github.com/repos/carstenartur/sandbox/subscribers",
+      "subscription_url": "https://api.github.com/repos/carstenartur/sandbox/subscription",
+      "commits_url": "https://api.github.com/repos/carstenartur/sandbox/commits{/sha}",
+      "git_commits_url": "https://api.github.com/repos/carstenartur/sandbox/git/commits{/sha}",
+      "comments_url": "https://api.github.com/repos/carstenartur/sandbox/comments{/number}",
+      "issue_comment_url": "https://api.github.com/repos/carstenartur/sandbox/issues/comments{/number}",
+      "contents_url": "https://api.github.com/repos/carstenartur/sandbox/contents/{+path}",
+      "compare_url": "https://api.github.com/repos/carstenartur/sandbox/compare/{base}...{head}",
+      "merges_url": "https://api.github.com/repos/carstenartur/sandbox/merges",
+      "archive_url": "https://api.github.com/repos/carstenartur/sandbox/{archive_format}{/ref}",
+      "downloads_url": "https://api.github.com/repos/carstenartur/sandbox/downloads",
+      "issues_url": "https://api.github.com/repos/carstenartur/sandbox/issues{/number}",
+      "pulls_url": "https://api.github.com/repos/carstenartur/sandbox/pulls{/number}",
+      "milestones_url": "https://api.github.com/repos/carstenartur/sandbox/milestones{/number}",
+      "notifications_url": "https://api.github.com/repos/carstenartur/sandbox/notifications{?since,all,participating}",
+      "labels_url": "https://api.github.com/repos/carstenartur/sandbox/labels{/name}",
+      "releases_url": "https://api.github.com/repos/carstenartur/sandbox/releases{/id}",
+      "deployments_url": "https://api.github.com/repos/carstenartur/sandbox/deployments"
+    }
+  },
+  "jobs": {
+    "total_count": 1,
+    "jobs": [
+      {
+        "id": 125465842987,
+        "run_id": 41500326710,
+        "workflow_name": "Eclipse Help screenshots",
+        "head_branch": "codex/native-tail-cleanup-20261102",
+        "run_url": "https://api.github.com/repos/carstenartur/sandbox/actions/runs/41500326710",
+        "run_attempt": 1,
+        "node_id": "CR_kwDOFYv10c8AAAAdNljVKw",
+        "head_sha": "36b8e60ce32b20d6d0e0d70ac2b58aafe59377d8",
+        "url": "https://api.github.com/repos/carstenartur/sandbox/actions/jobs/125465842987",
+        "html_url": "https://github.com/carstenartur/sandbox/actions/runs/41500326710/job/125465842987",
+        "status": "completed",
+        "conclusion": "success",
+        "created_at": "2026-11-02T18:24:50Z",
+        "started_at": "2026-11-02T18:24:52Z",
+        "completed_at": "2026-11-02T18:38:48Z",
+        "name": "Reproduce screenshots from the checkout",
+        "steps": [
+          {
+            "name": "Set up job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 1,
+            "started_at": "2026-11-02T18:24:53Z",
+            "completed_at": "2026-11-02T18:24:54Z"
+          },
+          {
+            "name": "Checkout",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 2,
+            "started_at": "2026-11-02T18:24:54Z",
+            "completed_at": "2026-11-02T18:25:31Z"
+          },
+          {
+            "name": "Checkout pinned JDT UI PDE XML screenshot corpus",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 3,
+            "started_at": "2026-11-02T18:25:31Z",
+            "completed_at": "2026-11-02T18:25:33Z"
+          },
+          {
+            "name": "Verify and configure pinned screenshot corpus",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 4,
+            "started_at": "2026-11-02T18:25:33Z",
+            "completed_at": "2026-11-02T18:25:33Z"
+          },
+          {
+            "name": "Set up JDK 25",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 5,
+            "started_at": "2026-11-02T18:25:33Z",
+            "completed_at": "2026-11-02T18:25:35Z"
+          },
+          {
+            "name": "Verify pinned Maven Wrapper",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 6,
+            "started_at": "2026-11-02T18:25:35Z",
+            "completed_at": "2026-11-02T18:25:36Z"
+          },
+          {
+            "name": "Verify preinstalled Eclipse desktop runtime",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 7,
+            "started_at": "2026-11-02T18:25:36Z",
+            "completed_at": "2026-11-02T18:25:36Z"
+          },
+          {
+            "name": "Reproduce Eclipse Help screenshots",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 8,
+            "started_at": "2026-11-02T18:25:36Z",
+            "completed_at": "2026-11-02T18:36:52Z"
+          },
+          {
+            "name": "Verify the merge-gate test executed",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 9,
+            "started_at": "2026-11-02T18:36:52Z",
+            "completed_at": "2026-11-02T18:36:52Z"
+          },
+          {
+            "name": "Restore patched-host atomic preview image",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 10,
+            "started_at": "2026-11-02T18:36:52Z",
+            "completed_at": "2026-11-02T18:36:52Z"
+          },
+          {
+            "name": "Verify real Cleanup preview evidence",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 11,
+            "started_at": "2026-11-02T18:36:52Z",
+            "completed_at": "2026-11-02T18:36:53Z"
+          },
+          {
+            "name": "Stage generated Help screenshot evidence",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 12,
+            "started_at": "2026-11-02T18:36:53Z",
+            "completed_at": "2026-11-02T18:36:54Z"
+          },
+          {
+            "name": "Verify committed screenshots are reproducible",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 13,
+            "started_at": "2026-11-02T18:36:54Z",
+            "completed_at": "2026-11-02T18:36:56Z"
+          },
+          {
+            "name": "Upload generated Help screenshot evidence",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 14,
+            "started_at": "2026-11-02T18:36:56Z",
+            "completed_at": "2026-11-02T18:36:57Z"
+          },
+          {
+            "name": "Upload reproduced screenshots",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 15,
+            "started_at": "2026-11-02T18:36:57Z",
+            "completed_at": "2026-11-02T18:36:59Z"
+          },
+          {
+            "name": "Upload SWTBot diagnostics",
+            "status": "completed",
+            "conclusion": "skipped",
+            "number": 16,
+            "started_at": "2026-11-02T18:36:59Z",
+            "completed_at": "2026-11-02T18:36:59Z"
+          },
+          {
+            "name": "Post Set up JDK 25",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 30,
+            "started_at": "2026-11-02T18:36:59Z",
+            "completed_at": "2026-11-02T18:36:59Z"
+          },
+          {
+            "name": "Post Checkout pinned JDT UI PDE XML screenshot corpus",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 31,
+            "started_at": "2026-11-02T18:36:59Z",
+            "completed_at": "2026-11-02T18:36:59Z"
+          },
+          {
+            "name": "Post Checkout",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 32,
+            "started_at": "2026-11-02T18:36:59Z",
+            "completed_at": "2026-11-02T18:36:59Z"
+          },
+          {
+            "name": "Complete job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 33,
+            "started_at": "2026-11-02T18:36:59Z",
+            "completed_at": "2026-11-02T18:36:59Z"
+          }
+        ],
+        "check_run_url": "https://api.github.com/repos/carstenartur/sandbox/check-runs/125465842987",
+        "labels": [
+          "ubuntu-24.04"
+        ],
+        "runner_id": 1000381567,
+        "runner_name": "GitHub Actions 1000381567",
+        "runner_group_id": 0,
+        "runner_group_name": "GitHub Actions"
+      }
+    ]
+  },
+  "actualCheckout": {
+    "sha": "320282e477248ff45a7a4eab368126ec75994c11",
+    "node_id": "C_kwDOFYv10doAKDMyMDI4MmU0NzcyNDhmZjQ1YTdhNGVhYjM2ODEyNmVjNzU5OTRjMTE",
+    "url": "https://api.github.com/repos/carstenartur/sandbox/git/commits/320282e477248ff45a7a4eab368126ec75994c11",
+    "html_url": "https://github.com/carstenartur/sandbox/commit/320282e477248ff45a7a4eab368126ec75994c11",
+    "author": {
+      "name": "Carsten Hammer",
+      "email": "carsten.hammer@t-online.de",
+      "date": "2026-11-02T18:24:47Z"
+    },
+    "committer": {
+      "name": "GitHub",
+      "email": "noreply@github.com",
+      "date": "2026-11-02T18:24:47Z"
+    },
+    "tree": {
+      "sha": "c124a6e750303e0ba6e0a1c3322df5ceaf87fe6c",
+      "url": "https://api.github.com/repos/carstenartur/sandbox/git/trees/c124a6e750303e0ba6e0a1c3322df5ceaf87fe6c"
+    },
+    "message": "Merge 36b8e60ce32b20d6d0e0d70ac2b58aafe59377d8 into ae693e5006e104824112880be7db92b3403bd93d",
+    "parents": [
+      {
+        "sha": "ae693e5006e104824112880be7db92b3403bd93d",
+        "url": "https://api.github.com/repos/carstenartur/sandbox/git/commits/ae693e5006e104824112880be7db92b3403bd93d",
+        "html_url": "https://github.com/carstenartur/sandbox/commit/ae693e5006e104824112880be7db92b3403bd93d"
+      },
+      {
+        "sha": "36b8e60ce32b20d6d0e0d70ac2b58aafe59377d8",
+        "url": "https://api.github.com/repos/carstenartur/sandbox/git/commits/36b8e60ce32b20d6d0e0d70ac2b58aafe59377d8",
+        "html_url": "https://github.com/carstenartur/sandbox/commit/36b8e60ce32b20d6d0e0d70ac2b58aafe59377d8"
+      }
+    ],
+    "verification": {
+      "verified": true,
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJq6NVvCRC1aQ7uu5UhlAAAEPYQAAZMmGGioKMCKOMbhyfSPZRd\nTmXHFaQU8Od0+5CdF1ZtkhRkKnAlzt0eacYuAjmQjcXa+wfIIbi+/xEICMf9QYz4\nE0MrXqZ4NwyzPuk1+I5bvfjQhwK2IB4dRfyFy32Pt+xoGCXqKyF3uS7MC+eKTjoV\noiWAMJCgHadocH/Kf9B2bjxzAjuBaVjmyuDKRyhNaFMzyRYq9njF/z4VyIZcaezX\ndLLOURoiNE7e33LkQMusE9pCup+S9lM1l2QyQP814LSbV+ZAJQygHKZXHzvozLFE\nEFN80XQR/B++lYt7G535yRBSLGCuwnX2w4hIhda9QhpYEebg4x49gNaabefNFan2\n2gmWllEBsli8OscYhN4wR6moIhyyx7iTH6X5du0S0rITHe5fwim+IcUTQBOfYKrr\n8DgzXPUfwgGQ/8ofSYA5UVDK7fRNY9JvCl3V76Hv+drVOaz0NW85w96jm4ntiKo0\n47NEjr+Y1Ajh5Iho5PJUbWFxAy/LDKJWyU9PUoKYyJ56y4by2TEpdFt8MgerAgse\nd96YjhKTQfnhR2i4i4IRITKm8Xb+HZJ9hk2fZLSN5rjEIR+yd2RPXy13wyNucBqJ\nGU8s/T9eB1WKV12dOlP8HnvnERhhhB3BB0NouaGJPsaqFKydIheqnmvK6xdtxQta\nr2A067LCv0aSy7lC1kH1\n=+01R\n-----END PGP SIGNATURE-----\n",
+      "payload": "tree c124a6e750303e0ba6e0a1c3322df5ceaf87fe6c\nparent ae693e5006e104824112880be7db92b3403bd93d\nparent 36b8e60ce32b20d6d0e0d70ac2b58aafe59377d8\nauthor Carsten Hammer <carsten.hammer@t-online.de> 1793643887 +0000\ncommitter GitHub <noreply@github.com> 1793643887 +0000\n\nMerge 36b8e60ce32b20d6d0e0d70ac2b58aafe59377d8 into ae693e5006e104824112880be7db92b3403bd93d\n",
+      "verified_at": "2026-11-02T18:24:47Z"
+    }
+  },
+  "artifact": {
+    "id": 13169890665,
+    "name": "generated-help-screenshots-1548-41500326710",
+    "size_in_bytes": 3975501,
+    "url": "https://api.github.com/repos/carstenartur/sandbox/actions/artifacts/13169890665",
+    "archive_download_url": "https://api.github.com/repos/carstenartur/sandbox/actions/artifacts/13169890665/zip",
+    "expired": false,
+    "created_at": "2026-11-02T18:36:57Z",
+    "expires_at": "2026-11-11T18:24:49Z",
+    "updated_at": "2026-11-02T18:36:57Z",
+    "digest": "sha256:1987be8c1cc562b9aa8e84a40efe845f0b38e2edaabc378fe2063a2dce55a5d2",
+    "workflow_run": {
+      "id": 41500326710,
+      "repository_id": 361493969,
+      "head_repository_id": 361493969,
+      "head_branch": "codex/native-tail-cleanup-20261102",
+      "head_sha": "36b8e60ce32b20d6d0e0d70ac2b58aafe59377d8"
+    }
+  }
+}
