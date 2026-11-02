@@ -2,6 +2,9 @@
 package org.sandbox.jdt.internal.corext.fix.math;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import org.junit.jupiter.api.Test;
@@ -295,11 +298,14 @@ class JavaValueInverseReuseTest {
 
     @Test void changedInverseDependencyRevokesTheOrdinaryApplyReceipt() throws Exception {
         String source=fixture();int split=source.indexOf("final class Leaf");Path dependency=directory.resolve("Leaf.java");
-        java.nio.file.Files.writeString(dependency,"import java.math.BigInteger;"+source.substring(split));source=source.substring(0,split);
+        Files.writeString(dependency, ("import java.math.BigInteger;" + source.substring(split)),
+				StandardCharsets.UTF_8);source=source.substring(0,split);
         var fixture=new JavaImmutableValueTest();fixture.directory=directory;
         var result=MathematicalAnalysis.analyze(fixture.parse(source),source,JavaValueReuseTest.options(),null,-1,0,fixture.environment());
         assertTrue(result.evidence().stream().anyMatch(item->item.valueInverse()!=null),result.diagnostics().toString());
-        java.nio.file.Files.writeString(dependency,java.nio.file.Files.readString(dependency).replace("n.modInverse(P)","n.modInverse(P.add(BigInteger.ONE))"));
+        Files.writeString(dependency,
+				Files.readString(dependency).replace("n.modInverse(P)", "n.modInverse(P.add(BigInteger.ONE))"),
+				StandardCharsets.UTF_8);
         assertFalse(result.matches(source,java.util.Map.of()));assertThrows(IllegalArgumentException.class,result::newEdit);
     }
 
