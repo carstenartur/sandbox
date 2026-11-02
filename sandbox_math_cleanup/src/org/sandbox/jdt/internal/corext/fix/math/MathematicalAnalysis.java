@@ -222,6 +222,7 @@ public final class MathematicalAnalysis {
       // Remove reservations before any final source/binding replay or public result.
       replacements.addAll(protectedReservations);
       MathematicalJavadoc documentation = new MathematicalJavadoc();
+      JavaFixedPowerOptimizer.optimize(ast,source,options,monitor,selectionOffset,selectionLength,compilerOptions,environment,replacements,evidence,diagnostics,valueWork);
       JavaImmutableValueOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
             compilerOptions, environment, replacements, evidence, diagnostics, valueWork, documentation);
       long valueSpent = valueWork.used; // Includes reservations even when the value pass is disabled.
@@ -772,6 +773,13 @@ public final class MathematicalAnalysis {
             Document combined = new Document(source);
             analysis.newEdit().apply(combined);
             CompilationUnit combinedAst = checkGeneratedSource(ast, combined.get(), compilerOptions, options.targetJava(), (IProgressMonitor)monitor, environment);
+            if(evidence.stream().anyMatch(region->region.fixedPower()!=null)) {
+               valueWork.charge(Math.max(0,valueWork.remaining()-Math.max(0,remainingWork)));
+               long beforePowerReplay=valueWork.used;
+               for (var region : evidence) if(region.fixedPower()!=null)
+                  JavaFixedPowerOptimizer.verifyCombined(combinedAst,combined.get(),region,options,valueWork);
+               remainingWork-=valueWork.used-beforePowerReplay;
+            }
             for (var region : acceptedContexts) JavaExpressionContexts.verifyBoundary(ast, combinedAst, region, replacements);
             for (var pair : acceptedStreamPairs) JavaNumericStreamOptimizer.verifyBoundary(ast, combinedAst, pair, replacements);
             var scheduleWork = new JavaLoopInvariantAnalysis.Work(Math.max(0, remainingWork), cancellation);
@@ -1230,7 +1238,7 @@ public final class MathematicalAnalysis {
    public record VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
       String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,
       LoopSchedulingEvidence scheduling, FiniteSumEvidence finiteSum, RuntimeIterationEvidence runtimeIteration,
-      SourceNumericBranchEvidence sourceNumericBranch) {
+      SourceNumericBranchEvidence sourceNumericBranch, FixedPowerEvidence fixedPower) {
       public VerifiedRegion {
          if (sourcePlan != null) sourcePlan.requireEnvelope(offset, length, original, replacement);
          if (explanation != null && !proof.equals(explanation.verified().proof())) {
@@ -1240,7 +1248,13 @@ public final class MathematicalAnalysis {
       public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
             String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,
             LoopSchedulingEvidence scheduling, FiniteSumEvidence finiteSum, RuntimeIterationEvidence runtimeIteration) {
-         this(offset, length, proof, cost, original, replacement, explanation, sourcePlan, scheduling, finiteSum, runtimeIteration, null);
+         this(offset, length, proof, cost, original, replacement, explanation, sourcePlan, scheduling, finiteSum, runtimeIteration, null, null);
+      }
+      public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
+            String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,
+            LoopSchedulingEvidence scheduling, FiniteSumEvidence finiteSum, RuntimeIterationEvidence runtimeIteration,
+            SourceNumericBranchEvidence sourceNumericBranch) {
+         this(offset, length, proof, cost, original, replacement, explanation, sourcePlan, scheduling, finiteSum, runtimeIteration, sourceNumericBranch, null);
       }
       public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
             String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,

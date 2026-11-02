@@ -29,7 +29,7 @@ import org.eclipse.jdt.core.dom.*;
 public final class JavaSourceContext implements AutoCloseable {
     private static final String PROPERTY = JavaSourceContext.class.getName();
     private static final String BIG_INTEGER = "java.math.BigInteger"; //$NON-NLS-1$
-    private static final int MAX_UNITS = 24, MAX_DEPTH = 32, MAX_SOURCE_CHARS = 1_000_000;
+    private static final int MAX_UNITS = 24, MAX_DEPTH = 32, MAX_SOURCE_CHARS = 1_000_000, MAX_LOCAL_DEFINITIONS = 1024;
     private final CompilationUnit root;
     private final String rootSource;
     private final MathematicalAnalysis.SourceEnvironment environment;
@@ -37,7 +37,7 @@ public final class JavaSourceContext implements AutoCloseable {
     private final int targetJava;
     private final long allowance;
     private final Map<String, Unit> units = new HashMap<>();
-    private final Map<String, Optional<BigInteger>> values = new HashMap<>();
+    private final Map<String, Constant> values = new HashMap<>();
     private final Map<String, Optional<MethodDeclaration>> methods = new HashMap<>();
     private final Map<String, Dependency> dependencies = new LinkedHashMap<>();
     private long work, accountedWork;
@@ -45,6 +45,7 @@ public final class JavaSourceContext implements AutoCloseable {
     private boolean primitiveGuardsDeferred;
     private int sourceChars;
     private JavaValueSourceSummary.Work valueWork;
+    private Set<ASTNode> localDefinitions;
 
     private JavaSourceContext(CompilationUnit root, String source, MathematicalAnalysis.SourceEnvironment environment,
             IProgressMonitor monitor, MathCleanUpOptions options, long remainingWork) {
@@ -112,6 +113,30 @@ public final class JavaSourceContext implements AutoCloseable {
     record Fact(BigInteger value, String provenance) { }
 
     record Definition(CompilationUnit unit, String source, ASTNode declaration) { }
+    private record Constant(Optional<BigInteger> value, Set<ASTNode> declarations) { }
+    /** Only definitions actually read in this scope; nested constant reads retain their transitive provenance. */
+    record LocalSources(JavaSourceContext context, Set<ASTNode> previous, Set<ASTNode> declarations) implements AutoCloseable {
+        @Override public void close() {
+            context.localDefinitions = previous;
+            if (previous != null) declarations.forEach(context::recordLocal);
+        }
+    }
+    static LocalSources captureLocalSources(CompilationUnit request) {
+        if (!(request.getProperty(PROPERTY) instanceof JavaSourceContext context))
+            throw JavaValueSourceSummary.unavailable("VALUE_SOURCE_CONTEXT_REQUIRED"); //$NON-NLS-1$
+        return context.captureLocalSources();
+    }
+    private LocalSources captureLocalSources() {
+        var captured = new LocalSources(this, localDefinitions, new HashSet<>());
+        localDefinitions = captured.declarations();
+        return captured;
+    }
+    private void recordLocal(ASTNode declaration) {
+        if (localDefinitions == null || declaration.getRoot() != root) return;
+        charge(1);
+        if (!localDefinitions.contains(declaration) && localDefinitions.size() >= MAX_LOCAL_DEFINITIONS) throw new Unavailable();
+        localDefinitions.add(declaration);
+    }
     static Definition definition(CompilationUnit request, IBinding binding) {
         if (!(request.getProperty(PROPERTY) instanceof JavaSourceContext context) || binding == null || binding.isRecovered()) return null;
         try {
@@ -148,7 +173,7 @@ public final class JavaSourceContext implements AutoCloseable {
             context.charge(1);
             String key = binding.getMethodDeclaration().getKey();
             var cached = context.methods.get(key);
-            if (cached != null) return cached.orElse(null);
+            if (cached != null) { cached.ifPresent(context::recordLocal); return cached.orElse(null); }
             CompilationUnit definition = context.definitionUnit(binding.getMethodDeclaration(), binding.getDeclaringClass());
             ASTNode node = definition == null ? null : definition.findDeclaringNode(key);
             MethodDeclaration method = node instanceof MethodDeclaration declaration ? declaration : null;
@@ -212,18 +237,18 @@ public final class JavaSourceContext implements AutoCloseable {
         charge(1);
         String key = field.getVariableDeclaration().getKey();
         if (depth > MAX_DEPTH || key == null || !constantField(field)) return Optional.empty();
-        if (values.containsKey(key)) return values.get(key);
+        var cached = values.get(key);
+        if (cached != null) { cached.declarations().forEach(this::recordLocal); return cached.value(); }
         if (!active.add(key)) return Optional.empty();
-        Optional<BigInteger> value;
-        try {
+        try (var captured = captureLocalSources()) {
             CompilationUnit ast = definitionUnit(field);
             ASTNode declaration = ast == null ? null : ast.findDeclaringNode(key);
-            value = declaration instanceof VariableDeclarationFragment fragment && constantField(fragment.resolveBinding())
+            Optional<BigInteger> value = declaration instanceof VariableDeclarationFragment fragment && constantField(fragment.resolveBinding())
                 && key.equals(fragment.resolveBinding().getVariableDeclaration().getKey())
                 ? expression(fragment.getInitializer(), active, depth + 1) : Optional.empty();
+            values.put(key, new Constant(value, Set.copyOf(captured.declarations())));
+            return value;
         } finally { active.remove(key); }
-        values.put(key, value);
-        return value;
     }
     /** Binding keys survive modifier changes; both the caller and the fresh definition must qualify. */
     private static boolean constantField(IVariableBinding field) {
@@ -285,7 +310,8 @@ public final class JavaSourceContext implements AutoCloseable {
         return definitionUnit(field.getVariableDeclaration(), field.getDeclaringClass());
     }
     private CompilationUnit definitionUnit(IBinding member, ITypeBinding owner) {
-        if (root.findDeclaringNode(member.getKey()) != null) return root;
+        ASTNode local = root.findDeclaringNode(member.getKey());
+        if (local != null) { recordLocal(local); return root; }
         while (owner != null && owner.getDeclaringClass() != null) owner = owner.getDeclaringClass();
         if (owner == null || owner.isRecovered()) return null;
         String type = owner.getQualifiedName();

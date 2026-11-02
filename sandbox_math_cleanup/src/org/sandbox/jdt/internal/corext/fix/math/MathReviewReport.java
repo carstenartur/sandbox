@@ -22,6 +22,15 @@ public final class MathReviewReport {
     }
 
     private static MathCandidateReview.Assessment assess(MathematicalAnalysis.VerifiedRegion region, MathCleanUpOptions options) {
+        if (region.fixedPower() != null) {
+            try {
+                region.fixedPower().requireCost(region.cost(),options.goal());
+                var assessment=MathCandidateReview.assess(region.original(),region.replacement(),region.cost().sourceScore(),
+                    region.cost().candidateScore(),region.cost().estimatedRuntimeImprovement(),true,region.fixedPower().chains().size(),options.targetJava());
+                var reasons=new java.util.ArrayList<>(assessment.cautions());reasons.add(region.fixedPower().description());
+                return new MathCandidateReview.Assessment(assessment.disposition(),assessment.estimatedScoreSaving(),assessment.changedLines(),assessment.addedBranches(),assessment.addedLocals(),reasons);
+            } catch(IllegalArgumentException unavailable){return unassessed(unavailable.getMessage());}
+        }
         if (region.runtimeIteration() != null) {
             try {
                 region.runtimeIteration().requireCost(region.cost(), options);
