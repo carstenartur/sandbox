@@ -18,9 +18,9 @@ public record FixedPowerEvidence(String ownerBinding,String replacementHash,List
     }
     public record Chain(String helper,BigInteger exponent,FixedPowerPlan plan,String multiplicationBinding,String squareBinding,
             String algebraFingerprint,String guard,String fallback,List<Law> laws,
-            String receiverBinding,String powerBinding,String exponentBinding,List<SiteStep> sourcePath) {
+            String receiverBinding,String powerBinding,String exponentBinding,List<SiteStep> sourcePath,List<String> guardBindings) {
         public Chain {
-            laws=List.copyOf(laws);sourcePath=List.copyOf(sourcePath);
+            laws=List.copyOf(laws);sourcePath=List.copyOf(sourcePath);guardBindings=List.copyOf(guardBindings);
             if(laws.size()!=4 || sourcePath.isEmpty() || sourcePath.size()>64)throw new IllegalArgumentException("VALUE_POWER_SOURCE_RECEIPT"); //$NON-NLS-1$
         }
     }

@@ -14,6 +14,46 @@ class JavaFixedPowerInitializationTest {
 
     @Test void retainsSuccessfulForeignInitializationInSourceOrder()throws Exception {verify(false);}
     @Test void retainsThrowingForeignInitializationAndSubsequentFailure()throws Exception {verify(true);}
+    @Test void rejectsShadowedGuardOwnersBeforeForeignInitialization()throws Exception {verifyShadowed(false);}
+    @Test void rejectsShadowedGuardOwnersBeforeForeignInitializationFailure()throws Exception {verifyShadowed(true);}
+
+    private static String shadowedSource(boolean throwing) {
+        return JavaFixedPowerOptimizerTest.source().replace("return value.raise(FIXED);","Other Calculation=null;return value.raise(FIXED);")
+            +"final class Other{static{System.setProperty(\""+PROPERTY+"\",\"foreign\");"
+            +(throwing?"if(System.getProperty(\""+PROPERTY+"\")!=null)throw new IllegalStateException(\"foreign\");":"")
+            +"}static final Calculation ONE=Calculation.ONE;static final java.math.BigInteger P=java.math.BigInteger.ONE;}";
+    }
+    private void verifyShadowed(boolean throwing)throws Exception {
+        String source=shadowedSource(throwing);var fixture=new JavaImmutableValueTest();fixture.directory=directory;
+        var analysis=MathematicalAnalysis.analyze(fixture.parse(source),source,JavaValueAlgebraProofTest.options(),null,-1,0,fixture.environment());
+        var expected=List.of("null","returned:null","returned:null");
+        assertEquals(expected,execute(source));assertEquals(expected,execute(fixture.apply(source,analysis)));
+        assertTrue(analysis.evidence().stream().noneMatch(region->region.fixedPower()!=null));
+    }
+    @Test void rejectsLocallyReboundJdkGuardTypes()throws Exception {
+        String source=JavaFixedPowerOptimizerTest.source().replace("return value.raise(FIXED);",
+            "class java{static class math{static class BigInteger extends Scalar{BigInteger(String value){super(value);}}}}return value.raise(FIXED);")
+            +"class Scalar extends java.math.BigInteger{Scalar(String value){super(value);}}";
+        var fixture=new JavaImmutableValueTest();fixture.directory=directory;
+        var analysis=MathematicalAnalysis.analyze(fixture.parse(source),source,JavaValueAlgebraProofTest.options(),null,-1,0,fixture.environment());
+        var expected=List.of("null","returned:null","returned:null");
+        assertEquals(expected,execute(source));assertEquals(expected,execute(fixture.apply(source,analysis)));
+        assertTrue(analysis.evidence().stream().noneMatch(region->region.fixedPower()!=null));
+    }
+    @Test void independentlyRejectsReboundGuardFieldsWithAnUpdatedEnvelopeHash()throws Exception {
+        String source=shadowedSource(false).replace("Other Calculation=null;","Other harmless=null;");
+        var fixture=new JavaImmutableValueTest();fixture.directory=directory;var options=JavaValueAlgebraProofTest.options();
+        var analysis=MathematicalAnalysis.analyze(fixture.parse(source),source,options,null,-1,0,fixture.environment());
+        var region=analysis.evidence().stream().filter(value->value.fixedPower()!=null).findFirst().orElseThrow();var evidence=region.fixedPower();
+        String generated=fixture.apply(source,analysis),changed=generated.replace("Other harmless=null;","Other Calculation=null;");
+        assertEquals(List.of("null","returned:null","returned:null"),execute(generated));
+        assertEquals(List.of("null","returned:foreign","returned:foreign"),execute(changed));
+        var after=fixture.parse(changed);var owner=after.findDeclaringNode(evidence.ownerBinding());
+        var rebound=new FixedPowerEvidence(evidence.ownerBinding(),JavaComputationTask.hash(changed.substring(owner.getStartPosition(),owner.getStartPosition()+owner.getLength())),
+            evidence.chains(),evidence.dependencies(),evidence.sourceWork(),evidence.scheduledWork(),evidence.localTypeHashes());
+        var altered=new MathematicalAnalysis.VerifiedRegion(region.offset(),region.length(),region.proof(),region.cost(),region.original(),region.replacement(),null,region.sourcePlan(),null,null,null,null,rebound);
+        assertThrows(IllegalArgumentException.class,()->JavaFixedPowerOptimizer.verifyCombined(after,changed,altered,options,new JavaValueSourceSummary.Work(options.workBudget(),options,()->false)));
+    }
 
     private void verify(boolean throwing)throws Exception {
         String source=JavaFixedPowerOptimizerTest.source().replace("d201000000010000","10000000000000000")
