@@ -40,6 +40,7 @@ public final class JavaSourceContext implements AutoCloseable {
     private final Map<String, Constant> values = new HashMap<>();
     private final Map<String, Optional<MethodDeclaration>> methods = new HashMap<>();
     private final Map<String, Dependency> dependencies = new LinkedHashMap<>();
+    private final Map<String, ValueRuntimeEvidence> valueRuntimes = new LinkedHashMap<>();
     private long work, accountedWork;
     private long scopedAllowance = Long.MAX_VALUE;
     private boolean primitiveGuardsDeferred;
@@ -81,18 +82,26 @@ public final class JavaSourceContext implements AutoCloseable {
         } catch (Unavailable unavailable) { return region; }
         finally { scopedAllowance = previous; } // Work already spent is never reset.
     }
-    Checkpoint checkpoint() { return dependencies.isEmpty() ? Checkpoint.EMPTY : new Checkpoint(List.copyOf(dependencies.values())); }
+    Checkpoint checkpoint() { return dependencies.isEmpty() && valueRuntimes.isEmpty() ? Checkpoint.EMPTY : new Checkpoint(List.copyOf(dependencies.values()),List.copyOf(valueRuntimes.values())); }
+
+    static void runtime(CompilationUnit ast,ValueRuntimeEvidence runtime) {
+        if (!(ast.getProperty(PROPERTY) instanceof JavaSourceContext context)) throw new IllegalArgumentException("VALUE_RUNTIME_CONTEXT");
+        context.valueRuntimes.put(runtime.contract(),runtime);
+    }
 
     /** Checks are immutable and request-bound; they are not serialized as executable report state. */
     public static final class Checkpoint {
-        public static final Checkpoint EMPTY = new Checkpoint(List.of());
+        public static final Checkpoint EMPTY = new Checkpoint(List.of(),List.of());
         private final List<Dependency> dependencies;
-        private Checkpoint(List<Dependency> dependencies) { this.dependencies = List.copyOf(dependencies); }
+        private final List<ValueRuntimeEvidence> valueRuntimes;
+        private Checkpoint(List<Dependency> dependencies,List<ValueRuntimeEvidence> valueRuntimes) { this.dependencies = List.copyOf(dependencies); this.valueRuntimes=List.copyOf(valueRuntimes); }
+        public List<ValueRuntimeEvidence> valueRuntimes() { return valueRuntimes; }
         static Checkpoint detached(List<Receipt> receipts) {
             return new Checkpoint(receipts.stream().map(receipt -> new Dependency(receipt.identity(), receipt.sha256(),
-                () -> { throw new IOException("SOURCE_CONTEXT_MUST_BE_REBUILT"); })).toList()); //$NON-NLS-1$
+                () -> { throw new IOException("SOURCE_CONTEXT_MUST_BE_REBUILT"); })).toList(),List.of()); //$NON-NLS-1$
         }
         public boolean current() {
+            for(var runtime:valueRuntimes)if(!runtime.current())return false;
             for (var dependency : dependencies) {
                 try { if (!dependency.sha256().equals(hash(dependency.read().get()))) return false; }
                 catch (Exception unavailable) { return false; }

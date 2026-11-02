@@ -418,6 +418,7 @@ public final class JavaComputationEmitter {
             case MOD_POW -> "modPow";
             case MOD_MULTIPLY -> null;
             case MOD -> "mod";
+            case MOD_INVERSE -> "modInverse";
             case POW -> "pow";
          };
          return operation == NumericOperation.MOD_MULTIPLY

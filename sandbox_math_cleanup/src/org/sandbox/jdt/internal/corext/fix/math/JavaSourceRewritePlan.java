@@ -39,7 +39,11 @@ import org.eclipse.text.edits.TextEdit;
 /** Immutable source-version-bound edit group. JDT objects live only in resolve(), never in the SDK graph.
  * An occurrence can reference several syntax nodes; node identity is not mathematical equality. */
 public record JavaSourceRewritePlan(String unitName, String sourceSha256, int sourceLength, int start, int length,
-        List<Node> nodes, List<Node> pinned, Map<String, List<String>> occurrenceOrigins, List<Change> changes) {
+        List<Node> nodes, List<Node> pinned, Map<String, List<String>> occurrenceOrigins, List<Change> changes, ValueRuntimeEvidence valueRuntime) {
+    public JavaSourceRewritePlan(String unitName,String sourceSha256,int sourceLength,int start,int length,
+        List<Node> nodes,List<Node> pinned,Map<String,List<String>> occurrenceOrigins,List<Change> changes) {
+        this(unitName,sourceSha256,sourceLength,start,length,nodes,pinned,occurrenceOrigins,changes,null);
+    }
     private static final Pattern OCCURRENCE = Pattern.compile("operation@(\\d+):\\d+"); //$NON-NLS-1$
     public record Node(String id, int offset, int length, int nodeType, String bindingKey, String textSha256) {
         public Node {
@@ -101,6 +105,7 @@ public record JavaSourceRewritePlan(String unitName, String sourceSha256, int so
         return newEdit();
     }
     TextEdit newEdit() {
+        if(valueRuntime!=null)valueRuntime.requireCurrent();
         var edit = new MultiTextEdit();
         for (var change : changes) edit.addChild(new ReplaceEdit(change.offset(), change.length(), change.replacement()));
         return edit;
