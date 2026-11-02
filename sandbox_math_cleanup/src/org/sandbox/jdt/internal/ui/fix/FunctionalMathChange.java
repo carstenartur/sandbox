@@ -30,7 +30,7 @@ final class FunctionalMathChange extends CompilationUnitChange {
  private final MathematicalEnvironment.Snapshot environment;
  FunctionalMathChange(ICompilationUnit unit,FunctionalMathCoordinator.Plan plan,BooleanSupplier optionsCurrent,
    MathematicalEnvironment.Snapshot environment) {
-  super("Optimize verified mathematics and convert remaining loops",unit);
+  super("Apply verified mathematics and explicitly selected loop conversions",unit);
   this.unit=unit;this.plan=plan;this.optionsCurrent=optionsCurrent;this.environment=environment;
   var replacement=new ReplaceEdit(0,plan.original().length(),plan.result());
   replacement.addChild(new MathematicalValidationEdit(0,()->current(false)));

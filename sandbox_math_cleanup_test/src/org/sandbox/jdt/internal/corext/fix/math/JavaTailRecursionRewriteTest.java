@@ -7,7 +7,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.HashMap;
 import javax.tools.ToolProvider;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.dom.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -26,6 +30,44 @@ class JavaTailRecursionRewriteTest {
                 JavaTailRecursionRewrite.StackPolicy.PRESERVE_STACK, BUDGET, () -> false);
         assertTrue(result.plan().isEmpty());
         assertEquals("STACK_CHANGE_NOT_ACCEPTED", result.reason());
+    }
+
+    @Test void nativeBridgeRetainsAuthoredDocumentationAndBothLoopFormsExecuteEqually() throws Exception {
+        String before=sum().replace("public static", "/** Authored sum. @param n count */ public static");
+        var ast=bound(before);int offset=((TypeDeclaration)ast.types().getFirst()).getMethods()[0].getStartPosition();
+        for(String goal:List.of("READABILITY","LOWER_ESTIMATED_RUNTIME")) {
+            var values=nativeOptions();values.put(MathCleanUpOptions.GOAL,goal);
+            var result=JavaTailRecursionRewrite.prepare(ast,before,offset,MathCleanUpOptions.parse(values,17),new NullProgressMonitor());
+            var plan=result.plan().orElseThrow(()->new AssertionError(result.reason()));
+            assertTrue(plan.preview().contains("Authored sum."));assertTrue(plan.preview().contains("ALLOW_FRAME_ELISION"));
+            assertTrue(plan.preview().contains(goal.equals("READABILITY")?"while":"for ("));
+            assertInstanceOf(Block.class,NodeFinder.perform(bound(plan.preview()),plan.bodyOffset(),plan.bodyLength()));
+            compare(before,plan.preview(),new Class<?>[]{int.class,long.class},
+                List.of(new Object[]{-1,Long.MIN_VALUE},new Object[]{0,7L},new Object[]{30,Long.MAX_VALUE}));
+        }
+    }
+
+    @Test void nativeBridgeRejectsStaleSourceMissingConsentKindsAndExhaustedWork() {
+        String before=sum();var ast=bound(before);int offset=before.indexOf("public static");var values=nativeOptions();
+        var stale=JavaTailRecursionRewrite.prepare(ast,before.replace("a + n","a - n"),offset,MathCleanUpOptions.parse(values,17),new NullProgressMonitor());
+        assertTrue(stale.plan().isEmpty());assertEquals("STALE_RECURSION_SOURCE",stale.reason());
+        for(String key:List.of(MathCleanUpOptions.TAIL_RECURSION,MathCleanUpOptions.CLEANUP,MathCleanUpOptions.KINDS,MathCleanUpOptions.WORK_BUDGET)) {
+            var changed=new HashMap<>(values);changed.put(key,key.equals(MathCleanUpOptions.KINDS)?"INT":key.equals(MathCleanUpOptions.WORK_BUDGET)?"1":"false");
+            assertTrue(JavaTailRecursionRewrite.prepare(ast,before,offset,MathCleanUpOptions.parse(changed,17),new NullProgressMonitor()).plan().isEmpty(),key);
+        }
+        var cancelled=new NullProgressMonitor();cancelled.setCanceled(true);
+        assertEquals("CANCELLED",JavaTailRecursionRewrite.prepare(ast,before,offset,MathCleanUpOptions.parse(values,17),cancelled).reason());
+    }
+    private static HashMap<String,String> nativeOptions() {
+        var values=new HashMap<>(MathCleanUpOptions.defaults(17).toMap());values.put(MathCleanUpOptions.CLEANUP,"true");
+        values.put(MathCleanUpOptions.TAIL_RECURSION,"true");values.put(MathCleanUpOptions.KINDS,"INT,LONG");
+        values.put(MathCleanUpOptions.WORK_BUDGET,Long.toString(BUDGET));return values;
+    }
+    private static CompilationUnit bound(String source) {
+        var parser=ASTParser.newParser(AST.getJLSLatest());var compiler=new HashMap<String,String>();JavaCore.setComplianceOptions("17",compiler);
+        parser.setCompilerOptions(compiler);parser.setSource(source.toCharArray());parser.setUnitName("Sample.java");
+        parser.setEnvironment(null,null,null,true);parser.setResolveBindings(true);var ast=(CompilationUnit)parser.createAST(null);
+        for(var problem:ast.getProblems()) assertFalse(problem.isError(),problem.toString());return ast;
     }
 
     @Test void finalParametersRemainFinalAndActualGeneratedCodeMatches() throws Exception {

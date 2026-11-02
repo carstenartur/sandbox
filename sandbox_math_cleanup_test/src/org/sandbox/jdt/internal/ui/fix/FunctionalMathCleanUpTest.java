@@ -52,9 +52,11 @@ import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
 /** Native JDT source snapshots and one explicit, atomic cleanup transaction. */
 class FunctionalMathCleanUpTest {
     private static final String COMBINED="cleanup.loop_conversion.with_mathematics";
+    private static final String TAIL="cleanup.mathematics.tailRecursion";
     private static final NullProgressMonitor MONITOR=new NullProgressMonitor();
     private IProject project;
     private IJavaProject java;
+    private String lastDiagnostics;
     @TempDir Path compiled;
     @BeforeEach void createProject() throws Exception {
         project=ResourcesPlugin.getWorkspace().getRoot().getProject("FunctionalMath-"+UUID.randomUUID());
@@ -93,6 +95,7 @@ class FunctionalMathCleanUpTest {
         var cleanup=new MathematicalCleanUpCore(options);
         assertFalse(cleanup.checkPreConditions(java,new ICompilationUnit[]{unit},MONITOR).hasFatalError());
         var fix=cleanup.createFix(new CleanUpContext(unit,parse(unit)));
+        lastDiagnostics=cleanup.checkPostConditions(MONITOR).toString();
         assertNotNull(fix,()->cleanup.checkPostConditions(MONITOR).toString());
         return fix.createChange(MONITOR);
     }
@@ -102,6 +105,112 @@ class FunctionalMathCleanUpTest {
             void show(java.util.List<String> values) { for(String value:values) { System.out.println(value); } }
         }
         """;
+    private static final String TAIL_SOURCE="""
+        public class Sample {
+            public static long run(int n) { return step(n, 7L); }
+            static long step(final int n, final long total) {
+                if (n <= 0) return total;
+                return step(n - 1, total + n);
+            }
+            void show(java.util.List<String> values) { for(String value:values) System.out.println(value); }
+        }
+        """;
+    private static Map<String,String> tailOptions() {
+        var values=options();values.put(COMBINED,"false");values.put(TAIL,"true");
+        values.put(MathCleanUpOptions.GOAL,"READABILITY");return values;
+    }
+    @Test void explicitTailConsentHasOneNativePreviewApplyUndoAndCompiledEquality() throws Exception {
+        var settings=tailOptions();var unit=unit(TAIL_SOURCE);var change=change(unit,settings);
+        String preview=change.getPreviewContent(MONITOR);assertTrue(preview.contains("while"),preview);
+        assertFalse(preview.contains("return step(n - 1"),preview);assertTrue(preview.contains("for(String value:"),preview);
+        assertTrue(preview.contains("frame"),"The changed stack contract must be documented on the method");
+        assertEquals(TAIL_SOURCE,unit.getSource());assertEquals(1,change.getTextEditChangeGroups().length);
+        compareRun(TAIL_SOURCE,preview,-1,0,1,30,300);
+        var undo=change.perform(MONITOR);parse(unit);assertEquals(preview,unit.getSource());
+        var repeated=new MathematicalCleanUpCore(settings);repeated.checkPreConditions(java,new ICompilationUnit[]{unit},MONITOR);
+        assertNull(repeated.createFix(new CleanUpContext(unit,parse(unit))),"Reapplying keeps the proven loop intact");
+        undo.perform(MONITOR);assertEquals(TAIL_SOURCE,unit.getSource());
+    }
+    @Test void tailAndConverterConsentsRemainSeparateAndSelectionCannotConvertFrames() throws Exception {
+        var settings=tailOptions();settings.put(COMBINED,"true");var unit=unit(TAIL_SOURCE);
+        String preview=change(unit,settings).getPreviewContent(MONITOR);
+        assertTrue(preview.contains("while"),preview);assertTrue(preview.contains(".forEach("),preview);
+        var cleanup=new MathematicalCleanUpCore(settings);cleanup.checkPreConditions(java,new ICompilationUnit[]{unit},MONITOR);
+        assertNull(cleanup.createFix(new org.eclipse.jdt.internal.ui.fix.IMultiLineCleanUp.MultiLineCleanUpContext(
+            unit,parse(unit),new org.eclipse.jface.text.IRegion[]{new org.eclipse.jface.text.Region(0,TAIL_SOURCE.length())})));
+        settings.put(COMBINED,"false");settings.put(TAIL,"false");cleanup=new MathematicalCleanUpCore(settings);
+        cleanup.checkPreConditions(java,new ICompilationUnit[]{unit},MONITOR);assertNull(cleanup.createFix(new CleanUpContext(unit,parse(unit))));
+        var registry=JavaPlugin.getDefault().getCleanUpRegistry();
+        assertEquals("false",registry.getDefaultOptions(CleanUpConstants.DEFAULT_CLEAN_UP_OPTIONS).getValue(TAIL));
+        assertFalse(registry.getDefaultOptions(CleanUpConstants.DEFAULT_SAVE_ACTION_OPTIONS).getKeys().contains(TAIL));
+    }
+    @Test void acceleratedTailUsesTheExistingStrictRuntimeIterationProofOnly() throws Exception {
+        var settings=tailOptions();settings.put(MathCleanUpOptions.GOAL,"LOWER_ESTIMATED_RUNTIME");
+        var unit=unit(TAIL_SOURCE);String preview=change(unit,settings).getPreviewContent(MONITOR);
+        assertTrue(preview.contains("$series"),preview+"\n"+lastDiagnostics);compareRun(TAIL_SOURCE,preview,-1,0,1,30,300);
+        settings.put(MathCleanUpOptions.MATHEMATICAL_OPT_IN,"true");
+        preview=change(unit,settings).getPreviewContent(MONITOR);
+        assertTrue(preview.contains("while"),preview);assertFalse(preview.contains("$series"),preview);
+        compareRun(TAIL_SOURCE,preview,-1,0,1,30,300);
+    }
+    @Test void changedTailConsentAndExhaustedSharedWorkKeepThePrimaryUntouched() throws Exception {
+        var settings=tailOptions();persist(settings);var unit=unit(TAIL_SOURCE);var copy=change(unit,settings).getEdit().copy();
+        new ProjectScope(project).getNode(JavaUI.ID_PLUGIN).put(TAIL,"false");var document=new Document(TAIL_SOURCE);
+        assertThrows(MalformedTreeException.class,()->copy.apply(document));assertEquals(TAIL_SOURCE,document.get());
+        settings.put(MathCleanUpOptions.WORK_BUDGET,"1");var cleanup=new MathematicalCleanUpCore(settings);
+        cleanup.checkPreConditions(java,new ICompilationUnit[]{unit},MONITOR);assertNull(cleanup.createFix(new CleanUpContext(unit,parse(unit))));
+        assertTrue(cleanup.checkPostConditions(MONITOR).toString().contains("BUDGET_EXCEEDED"));assertEquals(TAIL_SOURCE,unit.getSource());
+    }
+    @Test void multipleTailBodiesStayProtectedAndCancellationAfterTransferIsAtomic() throws Exception {
+        String source=TAIL_SOURCE.replace("return step(n, 7L);","return step(n, 7L) + other(3L,n,5L);")
+            .replace("    void show", "    static long other(long left,int n,long right) { if(n<=0)return left+right; return other(right,n-1,left+right); }\n    void show");
+        var settings=tailOptions();settings.put(COMBINED,"true");var unit=unit(source);
+        var change=change(unit,settings);String preview=change.getPreviewContent(MONITOR);
+        assertFalse(preview.contains("return step(n - 1"));assertFalse(preview.contains("return other(right,n-1"));
+        assertTrue(preview.contains(".forEach("));compareRun(source,preview,-1,0,1,20);
+        var cancel=new NullProgressMonitor(){@Override public void subTask(String name){if(name.equals("Verify original mathematics"))setCanceled(true);}};
+        var cleanup=new MathematicalCleanUpCore(settings);cleanup.checkPreConditions(java,new ICompilationUnit[]{unit},cancel);
+        try {assertThrows(OperationCanceledException.class,()->cleanup.createFix(new CleanUpContext(unit,parse(unit))));}
+        finally {MathematicalAnalysisJob.cancelAllAndWait(Duration.ofSeconds(20));}
+        assertEquals(source,unit.getSource());
+        settings.put(MathCleanUpOptions.EXCLUSIONS,"**/Sample.java");String excluded=change(unit,settings).getPreviewContent(MONITOR);
+        assertTrue(excluded.contains("return step(n - 1"));assertTrue(excluded.contains("return other(right,n-1"));assertTrue(excluded.contains(".forEach("));
+    }
+    @Test void tailAndAuditedValueReuseCoexistInOneNativeTransaction() throws Exception {
+        String source="""
+            import java.math.BigInteger;
+            public final class Sample {
+                static final Leaf TWIST=Leaf.of(BigInteger.ONE,BigInteger.ONE);
+                public static String run(int n) { Leaf v=scale(Leaf.of(BigInteger.valueOf(n),BigInteger.valueOf(3))); return v.first()+":"+v.second()+":"+step(n,7L); }
+                static long step(int n,long a) { if(n<=0)return a; return step(n-1,a+n); }
+                static Leaf scale(Leaf x) { Leaf a=x.square().combine(TWIST); Leaf b=x.square().combine(TWIST); return a.combine(b); }
+            }
+            final class Leaf {
+                private final BigInteger amber,blue; public static final BigInteger P=BigInteger.valueOf(101);
+                private Leaf(BigInteger a,BigInteger b){this.amber=a;this.blue=b;}
+                public static Leaf of(BigInteger a,BigInteger b){return new Leaf(a.mod(P),b.mod(P));}
+                public BigInteger first(){return amber;} public BigInteger second(){return blue;}
+                public Leaf square(){return combine(this);}
+                public Leaf combine(Leaf other){BigInteger a=amber.multiply(other.amber),b=blue.multiply(other.blue);
+                    BigInteger c=amber.multiply(other.blue),d=blue.multiply(other.amber);return new Leaf(a.subtract(b).mod(P),c.add(d).mod(P));}
+            }
+            """;
+        var settings=tailOptions();settings.put(MathCleanUpOptions.KINDS,"INT,LONG,BIG_INTEGER");settings.put(MathCleanUpOptions.GOAL,"LOWER_ESTIMATED_RUNTIME");
+        settings.put(MathCleanUpOptions.MATHEMATICAL_OPT_IN,"true");settings.put(MathCleanUpOptions.VALUE_RUNTIME,"AUDITED_OPENJDK_25_0_5_8");
+        settings.put(MathCleanUpOptions.WORK_BUDGET,"20000000");settings.put(MathCleanUpOptions.MAX_STATES,"20000");settings.put(MathCleanUpOptions.TIMEOUT_SECONDS,"5");
+        var unit=unit(source);var change=change(unit,settings);String preview=change.getPreviewContent(MONITOR);
+        assertTrue(preview.contains("Mathematics value reuse"),preview+"\n"+lastDiagnostics);assertTrue(preview.contains("while"),preview);
+        assertTrue(preview.contains("audited OpenJDK 25.0.5+8"),preview);assertTrue(preview.contains("frame"),preview);
+        assertFalse(preview.contains("$series"),"Mathematical mode retains an ordinary verified tail loop");
+        compareRun(source,preview,8,17);assertEquals(source,unit.getSource());
+        var undo=change.perform(MONITOR);parse(unit);undo.perform(MONITOR);assertEquals(source,unit.getSource());
+    }
+    private void compareRun(String beforeSource,String afterSource,int... inputs) throws Exception {
+        try(var before=compile(beforeSource);var after=compile(afterSource)) {
+            for(int input:inputs)assertEquals(before.loadClass("Sample").getMethod("run",int.class).invoke(null,input),
+                after.loadClass("Sample").getMethod("run",int.class).invoke(null,input),"n="+input);
+        }
+    }
     @Test void mathematicsPrecedesStyleWithOnePreviewApplyAndUndo() throws Exception {
         var unit=unit(SOURCE);var change=change(unit,options());
         String preview=change.getPreviewContent(MONITOR);

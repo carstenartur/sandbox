@@ -53,6 +53,7 @@ public final class MathematicalCleanUpCore extends AbstractCleanUp {
     for(ICompilationUnit unit:units) originalSources.put(unit.getPrimary().getHandleIdentifier(),unit.getPrimary().getSource());
     if(options.safety()==SafetyProfile.CHECKED_THROW) diagnostics.addWarning(MathCleanUpOptions.CHECKED_WARNING);
     if(options.mathematicalOptIn()) diagnostics.addWarning(MathCleanUpOptions.MATHEMATICAL_WARNING);
+    if(options.tailRecursion()) diagnostics.addWarning(MathCleanUpOptions.TAIL_WARNING);
    }
   } catch(IllegalArgumentException | CoreException invalid) { diagnostics.addFatalError(invalid.getMessage()); }
   return diagnostics;
@@ -78,9 +79,9 @@ public final class MathematicalCleanUpCore extends AbstractCleanUp {
   }
   MathematicalEnvironment.Snapshot environment=environments.get(project.getHandleIdentifier());
   if(environment==null) environment=MathematicalEnvironment.capture(project);
-  if(FunctionalMathOptions.enabled(values)) {
+  if(FunctionalMathOptions.enabled(values) || options.tailRecursion()) {
    if(context instanceof org.eclipse.jdt.internal.ui.fix.IMultiLineCleanUp.MultiLineCleanUpContext) {
-    diagnostics.addInfo("Combined cleanup is available only for an explicit whole-file operation");return null;
+    diagnostics.addInfo("Tail and combined cleanup require an explicit whole-file operation");return null;
    }
    var combined=combinedProfiles.computeIfAbsent(project.getHandleIdentifier(),key->FunctionalMathOptions.capture(project,values));
    try {
@@ -141,6 +142,7 @@ public final class MathematicalCleanUpCore extends AbstractCleanUp {
   } catch(IllegalArgumentException invalid) { return "// Invalid mathematics options: "+invalid.getMessage()+"\n"; }
  }
  static String label(MathCleanUpOptions options) {
+  if(options.tailRecursion()) return "Optimize mathematics and convert verified tail recursion (explicit frame elision)";
   if(options.mathematicalOptIn()) return "Optimize mathematics (explicit mathematical contract; document local ranges)";
   return options.safety()==SafetyProfile.CHECKED_THROW?"Optimize mathematics (CHECKED_THROW: may add ArithmeticException)"
     :"Optimize verified mathematics ("+options.safety()+")";
