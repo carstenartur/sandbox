@@ -68,7 +68,7 @@ class JavaValueReuseTest {
             assertEquals(original,executeInitializer(generated,initializer.isEmpty()));
         }
     }
-    private String executeInitializer(String source,boolean instance) throws Exception {
+    String executeInitializer(String source,boolean instance) throws Exception {
         Path output=Files.createTempDirectory(directory,"initializer");Path file=output.resolve("Calculation.java");Files.writeString(file,source);
         assertEquals(0,javax.tools.ToolProvider.getSystemJavaCompiler().run(null,null,null,"--release","17","-d",output.toString(),file.toString()));
         try(var loader=new java.net.URLClassLoader(new java.net.URL[]{output.toUri().toURL()},ClassLoader.getPlatformClassLoader())) {
@@ -212,7 +212,7 @@ class JavaValueReuseTest {
         @Override public int hashCode(){return super.hashCode();}
         @Override public java.math.BigInteger add(java.math.BigInteger argument){boolean same=previous==argument;previous=argument;return same?ONE:ZERO;}
     }
-    private Object executeIdentity(String source,boolean callback,int value,String method) throws Exception {
+    Object executeIdentity(String source,boolean callback,int value,String method) throws Exception {
         Path output=Files.createTempDirectory(directory,"identity");Path file=output.resolve("Calculation.java");Files.writeString(file,source);
         assertEquals(0,javax.tools.ToolProvider.getSystemJavaCompiler().run(null,null,null,"--release","17","-d",output.toString(),file.toString()));
         try(var loader=new java.net.URLClassLoader(new java.net.URL[]{output.toUri().toURL()},ClassLoader.getPlatformClassLoader())) {
@@ -256,16 +256,20 @@ class JavaValueReuseTest {
         assertEquals(executeIdentity(source,false,8,"scale"),executeIdentity(generated,false,8,"scale"));
     }
     @Test void scalarStaticMethodThroughANullValueQualifierCannotEnterReuseGuard() throws Exception {
-        String source=fixture()
+        for(boolean inverse:new boolean[]{false,true}) {
+        String source=(inverse?JavaValueInverseReuseTest.fixture():fixture())
             .replace("public static Leaf scale(Leaf x){", "public static int calls;public static int scale(Leaf x){Names java=new Names();")
             .replace("return a.combine(b);", "Leaf answer=a.combine(b);return calls;")
+            .replace("return weighted.combine(x.reciprocal());", "Leaf answer=weighted.combine(x.reciprocal());return calls;")
             +"class Names {public final MathNamespace math=null;}class MathNamespace {public final java.math.BigInteger BigInteger=null;}";
         var helper=new JavaImmutableValueTest();helper.directory=directory;
         var result=MathematicalAnalysis.analyze(helper.parse(source),source,options(),null,-1,0,helper.environment());
         String generated=helper.apply(source,result);
         assertTrue(result.diagnostics().stream().anyMatch(item->item.code().equals("VALUE_REUSE_LIMIT") && item.message().startsWith("VALUE_GUARD_BINDING_")),result.diagnostics().toString());
+        if(inverse)assertTrue(result.diagnostics().stream().anyMatch(item->item.code().equals("VALUE_INVERSE_UNAVAILABLE") && item.message().startsWith("VALUE_GUARD_BINDING_")),result.diagnostics().toString());
         assertEquals(0,executeIdentity(source,false,8,"scale"));
         assertEquals(executeIdentity(source,false,8,"scale"),executeIdentity(generated,false,8,"scale"));
+        }
     }
     @Test void completeActualG2SharesTheRepeatedSquaresAndCube() throws Exception {
         Path archive=Path.of(System.getProperty("sandbox.math.bc.sourceArchive")),binary=Path.of(System.getProperty("sandbox.math.bc.jar"));
@@ -286,10 +290,13 @@ class JavaValueReuseTest {
         var fixture=new JavaImmutableValueTest();fixture.directory=directory;String generated=fixture.apply(source,result);
         assertTrue(generated.contains("Mathematics value reuse"),result.diagnostics().toString());
         assertTrue(generated.contains("Mathematics factory residue"),result.diagnostics().toString());
-        assertEquals(3,generated.split(" = null;",-1).length-source.split(" = null;",-1).length,"three shared values");
+        assertTrue(generated.contains("Mathematics inverse reuse"),result.diagnostics().toString());
+        assertEquals(4,generated.split(" = null;",-1).length-source.split(" = null;",-1).length,"three shared values and the retained original inverse");
+        assertTrue(result.evidence().stream().filter(item->item.valueInverse()!=null).allMatch(item->item.valueInverse().previousRegion()!=null));
         String json=new com.fasterxml.jackson.databind.ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result.evidence());
         assertTrue(json.length()<1_000_000,"actual scan evidence must remain compact: "+json.length());assertFalse(json.contains("unitRootRequest"));
         assertTrue(json.contains("factoryProofs"));assertTrue(json.contains(ValueRuntimeEvidence.CONTRACT));
+        assertTrue(json.contains("successfulOccurrence"));assertTrue(json.contains("unitRootSourceCommitment"));
         assertEquals(executeActual(source,binary),executeActual(generated,binary));
     }
     private List<String> executeActual(String source,Path binary) throws Exception {

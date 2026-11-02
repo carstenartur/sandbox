@@ -99,11 +99,11 @@ class JavaValueResidueTest {
         assertFalse(apply(source).contains("Mathematics factory residue"));
     }
     @Test void cancellationAndExhaustedSourceBudgetCannotExposePartialEdits() throws Exception {
-        for(String source:List.of(fixture(),JavaValueCallTest.fixture())) {
-            var fixture=new JavaImmutableValueTest();fixture.directory=directory;var ast=fixture.parse(source);var normal=JavaValueCallTest.options();
+        for(String source:List.of(fixture(),JavaValueCallTest.fixture(),JavaValueReuseTest.fixture(),JavaValueInverseReuseTest.fixture())) {
+            var fixture=new JavaImmutableValueTest();fixture.directory=directory;var ast=fixture.parse(source);var normal=JavaValueReuseTest.options();
             var cancelled=new org.eclipse.core.runtime.NullProgressMonitor();cancelled.setCanceled(true);
             assertTrue(MathematicalAnalysis.analyze(ast,source,normal,cancelled,-1,0,fixture.environment()).replacements().isEmpty());
-            var exhausted=new MathCleanUpOptions(true,normal.kinds(),normal.safety(),normal.goal(),1,normal.maxStates(),false,17,List.of(),true);
+            var exhausted=new MathCleanUpOptions(true,normal.kinds(),normal.safety(),normal.goal(),1,normal.maxStates(),false,17,List.of(),true).withValueRuntime(normal.valueRuntime());
             assertTrue(MathematicalAnalysis.analyze(ast,source,exhausted,null,-1,0,fixture.environment()).replacements().isEmpty());
         }
     }

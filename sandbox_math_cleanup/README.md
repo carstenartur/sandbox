@@ -256,3 +256,15 @@ The rewrite's structured runtime evidence includes the implementation/source
 commitments and compact independent factory proof receipts. The profile setting
 participates in options/cache identity; runtime bytecode and source dependencies
 are checked again before Apply. Work/state/time limits are unchanged.
+
+The inverse pass applies the same runtime and detachment contract to a narrower
+source pattern: a cube of an unchanged local value, a successful original inverse
+of that cube, and a later inverse of the base. Independently checked source laws
+establish the multiplication and inverse equations. The successful scalar inverse
+establishes the required unit premise even for an admitted composite modulus.
+The first inverse stays at its original evaluation position, including its
+exceptions. A later guarded call may use the verified square multiplied by that
+retained inverse, followed by a fresh wrapper and separate scalar copies; its
+original call remains the fallback. The realized cost must include any uncached
+square, guards, factory and copies. Compact receipts retain the exact successful
+occurrence, source laws, unit-root commitments, emitted plan and prior reuse proof.

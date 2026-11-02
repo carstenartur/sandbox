@@ -22,10 +22,13 @@ class JavaValueRuntimeTest {
         assertNotEquals(qualified.toMap(),qualified.withValueRuntime(MathCleanUpOptions.ValueRuntime.UNSPECIFIED).toMap());
     }
     @Test void unspecifiedRuntimeRejectsObjectReuse() throws Exception {
-        String source=JavaValueReuseTest.fixture();var helper=new JavaImmutableValueTest();helper.directory=directory;
+        for(String source:List.of(JavaValueReuseTest.fixture(),JavaValueInverseReuseTest.fixture())) {
+        var helper=new JavaImmutableValueTest();helper.directory=directory;
         var result=MathematicalAnalysis.analyze(helper.parse(source),source,JavaValueCallTest.options(),null,-1,0,helper.environment());
         String generated=helper.apply(source,result);assertFalse(generated.contains("Mathematics value reuse"));
+        assertFalse(generated.contains("Mathematics inverse reuse"));
         assertTrue(result.diagnostics().stream().anyMatch(item->item.message().equals("VALUE_RUNTIME_UNSPECIFIED")));
+        }
     }
     @Test void unspecifiedRuntimeDoesNotSpendTheOtherFamiliesWorkAllowance() throws Exception {
         String source=JavaValueReuseTest.fixture();var helper=new JavaImmutableValueTest();helper.directory=directory;
@@ -36,8 +39,20 @@ class JavaValueRuntimeTest {
         assertEquals(0,work.used,"A disabled runtime-qualified family must not scan the entire source against other families' allowance");
         assertTrue(diagnostics.stream().anyMatch(item->item.message().equals("VALUE_RUNTIME_UNSPECIFIED")),diagnostics.toString());
     }
+    @Test void unspecifiedInverseRuntimeChecksCancellationWithoutDiscoveryOrWork() throws Exception {
+        for(String source:List.of(JavaValueCallTest.fixture(),JavaValueInverseReuseTest.fixture()))for(boolean cancelled:new boolean[]{false,true}) {
+            var helper=new JavaImmutableValueTest();helper.directory=directory;var options=JavaValueCallTest.options();
+            var checks=new java.util.concurrent.atomic.AtomicInteger();
+            var work=new JavaValueSourceSummary.Work(1,options,()->{checks.incrementAndGet();return cancelled;});
+            var diagnostics=new ArrayList<MathematicalAnalysis.Diagnostic>();var replacements=new ArrayList<MathematicalAnalysis.Replacement>();
+            JavaValueInverseOptimizer.optimize(helper.parse(source),source,options,null,-1,0,Map.of(),helper.environment(),replacements,new ArrayList<>(),diagnostics,work,new MathematicalJavadoc());
+            assertEquals(0,work.used);assertTrue(replacements.isEmpty());assertTrue(checks.get()>0,"Disabled inverse discovery must still honor cancellation");
+            assertTrue(diagnostics.stream().anyMatch(item->item.message().equals(cancelled?"VALUE_DEADLINE":"VALUE_RUNTIME_UNSPECIFIED")),diagnostics.toString());
+        }
+    }
     @Test void mismatchedRuntimeReceiptRevokesMatchesAndApply() throws Exception {
-        String source=JavaValueReuseTest.fixture();var helper=new JavaImmutableValueTest();helper.directory=directory;
+        for(String source:List.of(JavaValueReuseTest.fixture(),JavaValueInverseReuseTest.fixture())) {
+        var helper=new JavaImmutableValueTest();helper.directory=directory;
         var result=MathematicalAnalysis.analyze(helper.parse(source),source,JavaValueReuseTest.options(),null,-1,0,helper.environment());
         var region=result.evidence().stream().filter(item->item.sourcePlan()!=null && item.sourcePlan().valueRuntime()!=null).findFirst().orElseThrow();
         var plan=region.sourcePlan();var runtime=plan.valueRuntime();assertTrue(runtime.current());assertFalse(runtime.factoryProofs().isEmpty());
@@ -48,9 +63,10 @@ class JavaValueRuntimeTest {
         assertFalse(changed.current());
         var badPlan=new JavaSourceRewritePlan(plan.unitName(),plan.sourceSha256(),plan.sourceLength(),plan.start(),plan.length(),plan.nodes(),plan.pinned(),plan.occurrenceOrigins(),plan.changes(),changed);
         var badRegion=new MathematicalAnalysis.VerifiedRegion(region.offset(),region.length(),region.proof(),region.cost(),region.original(),region.replacement(),region.explanation(),badPlan,
-            region.scheduling(),region.finiteSum(),region.runtimeIteration(),region.sourceNumericBranch(),region.fixedPower());
+            region.scheduling(),region.finiteSum(),region.runtimeIteration(),region.sourceNumericBranch(),region.fixedPower(),region.valueInverse());
         var evidence=new ArrayList<>(result.evidence());evidence.set(evidence.indexOf(region),badRegion);
         var drift=new MathematicalAnalysis.Analysis(result.replacements(),result.diagnostics(),result.sourceDigest(),result.compilerOptions(),evidence,result.documentation(),result.sourceDependencies());
         assertFalse(drift.matches(source,Map.of()));assertThrows(IllegalArgumentException.class,drift::newEdit);
+        }
     }
 }
