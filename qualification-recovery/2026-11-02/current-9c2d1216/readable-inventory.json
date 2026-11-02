@@ -1,0 +1,92 @@
+[
+  {
+    "path": "full-review.md",
+    "originalPath": "/workspace/scratch/0eb32b15fbb4/recovery/full-integration-9c2d1216-independent-review.md",
+    "bytes": 10324,
+    "sha256": "9f236d3f2c4095b7df5faa994eaf1eb62fa19bb79675ada4a4d5f6f2efd797d2"
+  },
+  {
+    "path": "retention-review.md",
+    "originalPath": "/workspace/scratch/0eb32b15fbb4/recovery/retention-difference-review-9c2d1216.md",
+    "bytes": 12263,
+    "sha256": "61220dbb3cdcc24edf6c494a02611e3d7a10745a6f04ff558a0df14d976a0c39"
+  },
+  {
+    "path": "performance-review.md",
+    "originalPath": "/workspace/scratch/0eb32b15fbb4/recovery/current-performance-review-9c2d1216.md",
+    "bytes": 14844,
+    "sha256": "672deb86df650aac948c6396d1a46e0c5c29f8edbfc6b81bf9312707ba47f432"
+  },
+  {
+    "path": "performance-review.json",
+    "originalPath": "/workspace/scratch/0eb32b15fbb4/recovery/current-performance-review-9c2d1216.json",
+    "bytes": 30957,
+    "sha256": "ed34a43835b027c65a22d4803a7698b53412feb5c2182de3d3c619ed395765e7"
+  },
+  {
+    "path": "performance-verifier.cjs",
+    "originalPath": "/workspace/scratch/0eb32b15fbb4/recovery/current-performance-review-9c2d1216.cjs",
+    "bytes": 22302,
+    "sha256": "a242e77d1529a6c785855be7b0471b20ae1fb3cce064cab63b3e9b3ba10f1918"
+  },
+  {
+    "path": "jmh/bc-bls-jmh.json",
+    "originalPath": "/tmp/sandbox-bls-on-native/qa/math-optimization/target/bc-bls-jmh.json",
+    "bytes": 46660,
+    "sha256": "394aac651f89a40ef6d09469bb1e3a75b096da3cecfa456f90a85fe97184e7e4"
+  },
+  {
+    "path": "jmh/bc-bls-performance.json",
+    "originalPath": "/tmp/sandbox-bls-on-native/qa/math-optimization/target/bc-bls-performance.json",
+    "bytes": 13537,
+    "sha256": "52b888d8d7788d67be15b530de8942355ef68e763955c8c79ff6d6ed5aa8c618"
+  },
+  {
+    "path": "jmh/bc-hash-to-curve.json",
+    "originalPath": "/tmp/sandbox-bls-on-native/qa/math-optimization/target/bc-hash-to-curve.json",
+    "bytes": 122167,
+    "sha256": "ee587b4068fbf5d47fa0207e4522e404e834c7e3f9d65ed5ed3d63ce49fb4b8c"
+  },
+  {
+    "path": "jmh/bc-performance-review.json",
+    "originalPath": "/tmp/sandbox-bls-on-native/qa/math-optimization/target/bc-performance-review.json",
+    "bytes": 27773,
+    "sha256": "9854f88a817318039bcd2a1e777905523355635eac60a2d963f5fa11f994b9d0"
+  },
+  {
+    "path": "publication-mapping.md",
+    "originalPath": "/workspace/scratch/0eb32b15fbb4/recovery/bls/publication-ready-mapping.md",
+    "bytes": 5770,
+    "sha256": "63947c2f576de13b15b25b2bd2c09198c44f1e93c04be54faefe6f284e57e082"
+  },
+  {
+    "path": "publication-mapping.json",
+    "originalPath": "/workspace/scratch/0eb32b15fbb4/recovery/bls/publication-ready-mapping.json",
+    "bytes": 14709,
+    "sha256": "9dfb7c7c05b745b7e5e7292143640359ec8b926b9dbd81044d0b4f4d44fc8c54"
+  },
+  {
+    "path": "help/independent-final-review.md",
+    "originalPath": "/workspace/scratch/0eb32b15fbb4/recovery/native-help-41500326710-root/independent-final-review.md",
+    "bytes": 5856,
+    "sha256": "42c60cabf7e0fbc006ec39a4f90dc15e82f7eb5f70342fc571dafe3420238bc3"
+  },
+  {
+    "path": "help/public-workflow-metadata.json",
+    "originalPath": "/workspace/scratch/0eb32b15fbb4/recovery/native-help-41500326710-root/public-workflow-metadata.json",
+    "bytes": 25917,
+    "sha256": "0bfdbc3a56a1b53c6ef579337dfd309924212a1a09256b9572a663b420b23ea5"
+  },
+  {
+    "path": "help/archive-validation.json",
+    "originalPath": "/workspace/scratch/0eb32b15fbb4/recovery/native-help-41500326710-root/archive-validation.json",
+    "bytes": 7283,
+    "sha256": "c5707fcd9170a7b3f8cf6890c4e3b93cd452fd473efc4c5c75cac0cc23982ffc"
+  },
+  {
+    "path": "help/root-validation.json",
+    "originalPath": "/workspace/scratch/0eb32b15fbb4/recovery/native-help-41500326710-root/root-validation.json",
+    "bytes": 2993,
+    "sha256": "6852ed7ae2448f43b0cc1d7549db2972bc372736b3fe42942a1475f3308c8226"
+  }
+]

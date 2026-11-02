@@ -1,0 +1,136 @@
+{
+  "schema": "sandbox.current-qualification-checkpoint/v1",
+  "qualifiedSource": {
+    "commit": "9c2d121686dd2bfcd774d820312ca603d8fc4b4f",
+    "tree": "d9736c8cd1e397508784e7d79fd1cb08ac978312",
+    "clean": true
+  },
+  "publication": {
+    "nativeMerge": "7458aa94907e7bbff5259fdeaf864fbb57a223c7",
+    "nativeTree": "c124a6e750303e0ba6e0a1c3322df5ceaf87fe6c",
+    "blsCandidateCommit": "e7616695a9b5a70b26df9b58c8eb7891ffc08e5f",
+    "blsCandidateTree": "652696bc384c8a6c809a70499d13fe8e51d8cc8f",
+    "trackedEntries": 3556,
+    "identicalEntries": 3551,
+    "differences": "Five genuine Help-provenance JSON files only; production/QA/SDK/profile/test/PNG blobs unchanged.",
+    "mapping": "publication-mapping.json"
+  },
+  "full": {
+    "tests": 1144,
+    "suites": 130,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1,
+    "completedUTC": "2026-11-02T18:29:49Z",
+    "elapsed": "10:01",
+    "mavenExit": 0,
+    "wrapperExit": 0,
+    "independentReview": "APPROVED",
+    "review": "full-review.md"
+  },
+  "retention": {
+    "tests": 16,
+    "suites": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "strict": {
+      "baseline": 146,
+      "current": 146,
+      "retained": 146,
+      "added": 0,
+      "lost": 0,
+      "costChanges": 0
+    },
+    "mathematical": {
+      "baseline": 149,
+      "current": 153,
+      "retained": 149,
+      "added": 4,
+      "lost": 0,
+      "costChanges": 0
+    },
+    "independentReview": "APPROVED",
+    "review": "retention-review.md"
+  },
+  "measurement": {
+    "completedUTC": "2026-11-02T18:36:20Z",
+    "elapsed": "5:06",
+    "mavenExit": 0,
+    "wrapperExit": 0,
+    "rawRows": 22,
+    "primarySamples": 220,
+    "forks": 44,
+    "independentReview": "VERIFIED",
+    "review": "performance-review.md",
+    "g2_32": {
+      "ratio": 1.2836359003617972,
+      "result": "INCONCLUSIVE"
+    },
+    "g2_256": {
+      "ratio": 1.1606822616871544,
+      "result": "HIGHER_TIME"
+    },
+    "pairing": {
+      "ratio": 2.2177158469120912,
+      "result": "HIGHER_TIME"
+    },
+    "swu": "All eight pairs INCONCLUSIVE",
+    "limitations": "No general speedup, isolated candidate allocation, constant-time or causal tuning claim."
+  },
+  "help": {
+    "run": 41500326710,
+    "job": 125465842987,
+    "publicHead": "36b8e60ce32b20d6d0e0d70ac2b58aafe59377d8",
+    "actualCheckout": "320282e477248ff45a7a4eab368126ec75994c11",
+    "tree": "c124a6e750303e0ba6e0a1c3322df5ceaf87fe6c",
+    "tests": 9,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "mathFilesExact": 10,
+    "artifact": 13169890665,
+    "zipBytes": 3975501,
+    "zipSha256": "1987be8c1cc562b9aa8e84a40efe845f0b38e2edaabc378fe2063a2dce55a5d2",
+    "independentReview": "APPROVED",
+    "review": "help/independent-final-review.md"
+  },
+  "archives": [
+    {
+      "role": "Complete current test/corpus/retention/JMH evidence",
+      "filename": "complete-current-evidence-9c2d1216.tar.gz",
+      "bytes": 52199315,
+      "sha256": "253eb11d40ef97685b5469de49e353c889b784e179f95274b26686fac4765def",
+      "gitBlobSha1": "3f89a76c33a79cfbf97dcb9e53e3ba827f5a8a6f",
+      "parts": 67,
+      "manifest": "complete-parts/manifest.json"
+    },
+    {
+      "role": "Complete public and local Help evidence",
+      "filename": "complete-help-evidence-20261102-retry1.tar.gz",
+      "bytes": 9982181,
+      "sha256": "a4b301298d1592708f7fc287da6f4ae4023a3c138700762f4f9e5e923349b29e",
+      "gitBlobSha1": "36037383d67f359fc3f171ba8211d7516ded45ba",
+      "parts": 13,
+      "manifest": "help-parts/manifest.json"
+    }
+  ],
+  "remoteBlobConfirmation": {
+    "fullParts": 67,
+    "helpParts": 13,
+    "allExpectedGitBlobShasMatched": true
+  },
+  "note": "Archive creation receipts retain their original pre-publication published:false value. This checkpoint anchors the confirmed raw binary parts and current readable evidence. Historical 7fcd719 evidence remains separately attributed. First incomplete test attempt and failed archive attempts are not represented as successful qualified process exits.",
+  "archiveIndependentVerification": {
+    "status": "APPROVED",
+    "report": "archive-verification/review.md",
+    "receipt": "archive-verification/verification.json",
+    "inputFiles": 11167,
+    "regularMembers": 11169,
+    "directoryMembers": 1301,
+    "totalMembers": 12470,
+    "sha256sumsEntries": 11168,
+    "originalInputCompleteness": "PASS",
+    "sourceIdentityStable": true
+  }
+}

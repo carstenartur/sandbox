@@ -1,0 +1,20 @@
+{
+  "archive": "/workspace/scratch/0eb32b15fbb4/recovery/complete-help-evidence-20261102-retry1.tar.gz",
+  "bytes": 9982181,
+  "sha256": "a4b301298d1592708f7fc287da6f4ae4023a3c138700762f4f9e5e923349b29e",
+  "inputFiles": 67,
+  "inputDirectories": 31,
+  "inputBytes": 13391038,
+  "archiveEntries": 101,
+  "manifestSha256": "f507e2e7b01d48126a8da198710d18cef8a99755a9251d0a745575da1c1658d7",
+  "sha256sumsSha256": "354bd05b2b5d0ca3a2156f97481e491a6a24340d8bfa5b93928b63b2d229d3e1",
+  "fileList": "/workspace/scratch/0eb32b15fbb4/recovery/complete-help-evidence-20261102-retry1.tar-input.nul",
+  "fileListSha256": "1306585d86c6f501b2880ca9940392071cfaaa26d52900d6e47865abac452643",
+  "gzipIntegrity": "PASS",
+  "exactArchiveInventory": "PASS",
+  "extractedManifestAndAllPayloadHashes": "PASS",
+  "originalAndStageFileHashes": "PASS",
+  "published": false,
+  "verificationNote": "Separate complete verification after the initial Node tar-list invocation reported EPERM despite child status 0. No failed invocation was accepted as a pass. Fresh gzip, tar listing/extraction and all SHA256SUMS checks exited 0. Original partial retained unchanged.",
+  "firstFailedAttempt": "/workspace/scratch/0eb32b15fbb4/recovery/complete-help-evidence-20261102.failure.json"
+}

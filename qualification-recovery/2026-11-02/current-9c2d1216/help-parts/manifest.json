@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 1,
+  "repository": "carstenartur/sandbox",
+  "finalPublicHead": "36b8e60ce32b20d6d0e0d70ac2b58aafe59377d8",
+  "finalTree": "c124a6e750303e0ba6e0a1c3322df5ceaf87fe6c",
+  "workflowRuns": [
+    41497649570,
+    41500326710
+  ],
+  "original": {
+    "filename": "complete-help-evidence-20261102-retry1.tar.gz",
+    "bytes": 9982181,
+    "sha256": "a4b301298d1592708f7fc287da6f4ae4023a3c138700762f4f9e5e923349b29e",
+    "gitBlobSha1": "36037383d67f359fc3f171ba8211d7516ded45ba"
+  },
+  "partSizeBytes": 786432,
+  "partCount": 13,
+  "parts": [
+    {
+      "index": 0,
+      "path": "part000",
+      "offset": 0,
+      "bytes": 786432,
+      "sha256": "be9b890c57455a1921081b52ef70407cec4f29c6b55fe6cb01c7184c03a33095",
+      "gitBlobSha1": "977b235e44a91e61eb4918ec9ebf1f805686ba15"
+    },
+    {
+      "index": 1,
+      "path": "part001",
+      "offset": 786432,
+      "bytes": 786432,
+      "sha256": "df212691858f4c72d95b5ba26d37dabf3582ce096296d5dc133fe9fe4583fe7e",
+      "gitBlobSha1": "4cb816e91eafab9da1d9357ae646e3eb7a53e41c"
+    },
+    {
+      "index": 2,
+      "path": "part002",
+      "offset": 1572864,
+      "bytes": 786432,
+      "sha256": "f4879433e6f32a99e3b14dac6b18e2e3d46f7c9f0f31cff317e78ca1bf18901a",
+      "gitBlobSha1": "0555fe6700ded70641d4cfa7738e7c33501fbdee"
+    },
+    {
+      "index": 3,
+      "path": "part003",
+      "offset": 2359296,
+      "bytes": 786432,
+      "sha256": "e051e85d517a5c3575b2c435f25cd731d93147e1e6cf423417ccf3ae4ab3c3f4",
+      "gitBlobSha1": "b30928bca8ba6aa7056e2f0f82b01f116657d6a7"
+    },
+    {
+      "index": 4,
+      "path": "part004",
+      "offset": 3145728,
+      "bytes": 786432,
+      "sha256": "1c0b95d1200578365927c27ef93a0575b555c456f65daf704bfa9d155073a505",
+      "gitBlobSha1": "3893a41abac9a8954bf872f09a0dbcf0f454849d"
+    },
+    {
+      "index": 5,
+      "path": "part005",
+      "offset": 3932160,
+      "bytes": 786432,
+      "sha256": "e66baec8c8cfdd1482f4e291050ae3c61467c38adb2040b62b88a12f2209f3f9",
+      "gitBlobSha1": "f0f687bc0f41ec407530fe9d915c0c45ec239521"
+    },
+    {
+      "index": 6,
+      "path": "part006",
+      "offset": 4718592,
+      "bytes": 786432,
+      "sha256": "8cf2efc5b48731bfb98f3f8e3684d0e92572c5d933b5db919b36dd0b4dc2c9e7",
+      "gitBlobSha1": "1dd9c494cd22ff61f7f3d07b1d5bf8318cb774ca"
+    },
+    {
+      "index": 7,
+      "path": "part007",
+      "offset": 5505024,
+      "bytes": 786432,
+      "sha256": "b713224ef20f1a95eea7b6fe796d8a816f85d89a79c7841566806229763b91a8",
+      "gitBlobSha1": "6615fb02a738c96e1ba96714c5490021990ff514"
+    },
+    {
+      "index": 8,
+      "path": "part008",
+      "offset": 6291456,
+      "bytes": 786432,
+      "sha256": "21f1b28b468e39ad9737ad266f5f67e293707e8bc3c0bd7ad07531722c4abe95",
+      "gitBlobSha1": "7af310485518b776d163959a28e411defd2315fb"
+    },
+    {
+      "index": 9,
+      "path": "part009",
+      "offset": 7077888,
+      "bytes": 786432,
+      "sha256": "2f1b918fdbb6a02fb20ad9bfe54c3718ed8c4911db6e191327c99f17abf86d4d",
+      "gitBlobSha1": "d4c8c449606386be6eb209e574de381967863409"
+    },
+    {
+      "index": 10,
+      "path": "part010",
+      "offset": 7864320,
+      "bytes": 786432,
+      "sha256": "65a9a00dbba1d291ce6de630bdcebbf5c9004a64bf4969a7c0d39c8f8f5f361a",
+      "gitBlobSha1": "b32c947530d3c86218970cf02c9094e14c706b7d"
+    },
+    {
+      "index": 11,
+      "path": "part011",
+      "offset": 8650752,
+      "bytes": 786432,
+      "sha256": "3fac03a5389e4b5617691ba3828746b80036061398ee0eecf4d033abfd788bf4",
+      "gitBlobSha1": "7504e4848d80c2ecfb4cafe76af6b0561e0211ad"
+    },
+    {
+      "index": 12,
+      "path": "part012",
+      "offset": 9437184,
+      "bytes": 544997,
+      "sha256": "a008c51f8f36624bf0ff05feb9ccd714f5da4aaecf52eaad50a118a5eeb93c1d",
+      "gitBlobSha1": "d77bf008c44d7705941a7fd266390f163ef09351"
+    }
+  ],
+  "reassembly": "Concatenate the listed raw binary parts in index order. Verify each part and final size/SHA-256, then gzip -t and extract. No base64 decoding."
+}

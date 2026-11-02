@@ -1,0 +1,216 @@
+{
+  "schema": "sandbox.independent-archive-verification/v1",
+  "result": "PASS",
+  "startedUTC": "2026-11-02T19:08:02.570Z",
+  "finishedUTC": "2026-11-02T19:08:15.199Z",
+  "archive": {
+    "path": "/workspace/scratch/0eb32b15fbb4/recovery/complete-current-evidence-9c2d1216.tar.gz",
+    "bytes": 52199315,
+    "sha256": "253eb11d40ef97685b5469de49e353c889b784e179f95274b26686fac4765def",
+    "gitBlob": "3f89a76c33a79cfbf97dcb9e53e3ba827f5a8a6f",
+    "snapshotBefore": {
+      "dev": 27,
+      "ino": 1611915,
+      "bytes": 52199315,
+      "mtimeMs": 1793645988571.8335,
+      "ctimeMs": 1793645990419.8633
+    },
+    "snapshotAfter": {
+      "dev": 27,
+      "ino": 1611915,
+      "bytes": 52199315,
+      "mtimeMs": 1793645988571.8335,
+      "ctimeMs": 1793645990419.8633
+    },
+    "unchangedDuringVerification": true
+  },
+  "metadata": {
+    "manifestSha256": "cedda43c1733bc0b009467ca996bc54ceff133e97d99bf0e078a157a28a5137a",
+    "sha256sumsSha256": "85ec13ffe475df27d8aaaf26711cf4d44284f201d1da70233d33b1383f2761c7",
+    "outerReceiptSha256": "62dbdf6e09624f7e7946faac12a45337b53db7c6f9c16a36799b32209f85a66c",
+    "fileListSha256": "ff0511d1593b2fa2b603880b43c7924804e1c3f993bd1ae5a3db2e79a750cc97",
+    "fileListBytes": 1089354
+  },
+  "gzip": {
+    "externalGzipTestExit": 0,
+    "externalGzipTestDurationMs": 1742,
+    "nodeZlibStreamIntegrity": "PASS"
+  },
+  "tar": {
+    "physicalHeaders": 14046,
+    "gnuLongNameHeaders": 1576,
+    "uncompressedBytes": 461363200,
+    "trailingZeroBytes": 5632,
+    "allHeaderChecksumsValid": true,
+    "terminatorZeroBlocks": 2,
+    "onlyRegularFilesAndDirectories": true,
+    "uniqueCanonicalPaths": true,
+    "rootConfined": true,
+    "entryInventoryExact": true,
+    "uid": 0,
+    "gid": 0,
+    "mtime": 0
+  },
+  "inventory": {
+    "inputFiles": 11167,
+    "manifestDirectories": 1298,
+    "regularFiles": 11169,
+    "directories": 1301,
+    "members": 12470,
+    "inputBytes": 443621935,
+    "regularFileBytes": 450522344,
+    "checksumLines": 11168,
+    "allPayloadHashesMatchManifest": true,
+    "allChecksumEntriesVerified": true,
+    "allExtractedFilesRehashed": true,
+    "allOriginalStageFilesRehashed": true,
+    "allOriginalInputFilesRehashed": true,
+    "originalInputInventoriesExact": true,
+    "canonicalInventorySha256": "8531762e2ba3487ef4134f1bdb47fb62bc91d75c58d500b4b960e0667a6cb7a6"
+  },
+  "extractionDirectory": "/workspace/scratch/0eb32b15fbb4/recovery/complete-current-evidence-9c2d1216-independent-verification/extracted",
+  "source": {
+    "checkout": "/tmp/sandbox-bls-on-native",
+    "before": {
+      "head": "9c2d121686dd2bfcd774d820312ca603d8fc4b4f",
+      "tree": "d9736c8cd1e397508784e7d79fd1cb08ac978312",
+      "trackedStatus": ""
+    },
+    "after": {
+      "head": "9c2d121686dd2bfcd774d820312ca603d8fc4b4f",
+      "tree": "d9736c8cd1e397508784e7d79fd1cb08ac978312",
+      "trackedStatus": ""
+    }
+  },
+  "completedRuns": [
+    {
+      "label": "full-retry",
+      "startedUTC": "2026-11-02T18:19:46Z",
+      "finishedUTC": "2026-11-02T18:29:49Z",
+      "wrapperExit": 0,
+      "mavenExit": 0,
+      "identitiesMatch": true,
+      "trackedStatesClean": true,
+      "sourceCurrent": true
+    },
+    {
+      "label": "retention",
+      "startedUTC": "2026-11-02T18:30:18Z",
+      "finishedUTC": "2026-11-02T18:30:30Z",
+      "wrapperExit": 0,
+      "mavenExit": 0,
+      "identitiesMatch": true,
+      "trackedStatesClean": true,
+      "sourceCurrent": true
+    },
+    {
+      "label": "measurement",
+      "startedUTC": "2026-11-02T18:31:13Z",
+      "finishedUTC": "2026-11-02T18:36:20Z",
+      "wrapperExit": 0,
+      "mavenExit": 0,
+      "identitiesMatch": true,
+      "trackedStatesClean": true,
+      "sourceCurrent": true
+    }
+  ],
+  "firstAttempt": {
+    "status": "INCOMPLETE_COMPLETION_CHAIN",
+    "processExitCode": null,
+    "missingAutomaticPostRunReceipt": true,
+    "notAQualifiedProcessExit": true,
+    "omittedPreservedTarget": true,
+    "observationAndLogHashMatch": true
+  },
+  "sourceMapping": {
+    "qualifiedHead": "9c2d121686dd2bfcd774d820312ca603d8fc4b4f",
+    "qualifiedTree": "d9736c8cd1e397508784e7d79fd1cb08ac978312",
+    "candidateHead": "a226360ade62e962bacd053c07166158e9a0f3fa",
+    "candidateTree": "652696bc384c8a6c809a70499d13fe8e51d8cc8f",
+    "nativeLocalHead": "80e16c7da0f094969d207815757d234b5a3bab11",
+    "nativeTree": "c124a6e750303e0ba6e0a1c3322df5ceaf87fe6c",
+    "trackedEntries": 3556,
+    "equalBlobs": 3551,
+    "differentBlobs": 5,
+    "differentPaths": [
+      "sandbox_math_cleanup_help/images/01-bouncy-castle-choice.provenance.json",
+      "sandbox_math_cleanup_help/images/02-bouncy-castle-majority.provenance.json",
+      "sandbox_math_cleanup_help/images/03-bouncy-castle-long.provenance.json",
+      "sandbox_math_cleanup_help/images/04-bouncy-castle-swapped-choice.provenance.json",
+      "sandbox_math_cleanup_help/images/05-bouncy-castle-modular-square.provenance.json"
+    ],
+    "elevenQaPayloadBlobsVerified": true,
+    "scopeAgainstNative": 11,
+    "completeMappingMatchesActualGitTrees": true
+  },
+  "currentMeasurementEvidenceHashes": {
+    "target/bc-bls-jmh.json": "394aac651f89a40ef6d09469bb1e3a75b096da3cecfa456f90a85fe97184e7e4",
+    "target/bc-bls-performance.json": "52b888d8d7788d67be15b530de8942355ef68e763955c8c79ff6d6ed5aa8c618",
+    "target/bc-hash-to-curve.json": "ee587b4068fbf5d47fa0207e4522e404e834c7e3f9d65ed5ed3d63ce49fb4b8c",
+    "target/bc-performance-review.json": "9854f88a817318039bcd2a1e777905523355635eac60a2d963f5fa11f994b9d0",
+    "reviews/003-current-performance-review-9c2d1216.md": "672deb86df650aac948c6396d1a46e0c5c29f8edbfc6b81bf9312707ba47f432",
+    "reviews/004-current-performance-review-9c2d1216.json": "ed34a43835b027c65a22d4803a7698b53412feb5c2182de3d3c619ed395765e7",
+    "reviews/005-current-performance-review-9c2d1216.cjs": "a242e77d1529a6c785855be7b0471b20ae1fb3cce064cab63b3e9b3ba10f1918"
+  },
+  "externalHelp": [
+    {
+      "runId": "41497649570",
+      "artifactId": "13167153444",
+      "bytes": 3975867,
+      "sha256": "4940df1988b2c73455297195a98ecf2b16676707917abf44038509b1dec46725",
+      "embedded": false,
+      "identityVerified": true
+    },
+    {
+      "runId": "41500326710",
+      "artifactId": "13169890665",
+      "bytes": 3975501,
+      "sha256": "1987be8c1cc562b9aa8e84a40efe845f0b38e2edaabc378fe2063a2dce55a5d2",
+      "embedded": false,
+      "identityVerified": true
+    }
+  ],
+  "scope": "Archive integrity, complete inventories, byte preservation and source/completion receipts only. No JVM, Maven, benchmark, archived code execution, remote write, or new semantic/performance review.",
+  "residualPartial": {
+    "path": "/workspace/scratch/0eb32b15fbb4/recovery/complete-current-evidence-9c2d1216.tar.gz.partial",
+    "included": false,
+    "treatment": "Separate unqualified residual; untouched and excluded from completion claims. Bounded /proc check found no matching active archiver before verification."
+  },
+  "verifier": {
+    "path": "/workspace/scratch/0eb32b15fbb4/recovery/complete-current-evidence-9c2d1216-independent-verification/verify.cjs",
+    "sha256": "133097534676286a9b1451d793f486ec8613689bd42591eee2b22e1a14967599"
+  },
+  "copyStage": {
+    "manifestedInventoryComplete": true,
+    "unmanifestedEntries": [
+      {
+        "path": "runs/retention/reports/bc-mathematical/.retention.json.dOF5kS",
+        "type": "file",
+        "bytes": 62652416,
+        "mode": 384,
+        "snapshot": {
+          "dev": 27,
+          "ino": 1847783,
+          "bytes": 62652416,
+          "mtimeMs": 1793645985896.4434,
+          "ctimeMs": 1793645987795.821
+        },
+        "sha256": "e449d13dcecba46dede7ee35fd37891306fbe85d6d0ddd121ef96f379f495090",
+        "originalSourceCounterpart": {
+          "path": "/workspace/scratch/0eb32b15fbb4/recovery/current-retention-9c2d1216/reports/bc-mathematical/.retention.json.dOF5kS",
+          "exists": false
+        },
+        "listedRetention": {
+          "archivePath": "runs/retention/reports/bc-mathematical/retention.json",
+          "originalPath": "/workspace/scratch/0eb32b15fbb4/recovery/current-retention-9c2d1216/reports/bc-mathematical/retention.json",
+          "bytes": 63608411,
+          "sha256": "a0e071e6407e0166c65127675f2815fe57d9e153da80da5287f049475bf18cec",
+          "sameSha256": false
+        }
+      }
+    ],
+    "unmanifestedEntriesInArchive": false,
+    "inventoryUnchangedDuringVerification": true,
+    "causeNotEstablished": true
+  }
+}
