@@ -20,7 +20,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 30: The public type ExampleClass must be defined in its own file",
-    "verifiedAt": "2026-11-01T02:23:15.976959671Z",
+    "verifiedAt": "2026-11-02T02:22:47.465063208Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0
