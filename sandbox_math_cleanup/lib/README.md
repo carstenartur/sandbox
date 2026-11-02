@@ -1,6 +1,27 @@
 # Pinned Regelsuche optimization SDK
 
-## Current verified-value SDK integration candidate
+## Current SDK70 integration candidate
+
+Published source revision: `70c13fb580062b1fd653f35b81b2fb7ed1903c28`.
+Standalone JAR SHA-256: `ba0293dedb3fde9ca2f3042dcef8ae4d6bb2d576adedff8ba7a2b4d186f1cbe1`.
+The exact artifact and `qualification.json` were recovered from Sandbox staging
+commit `1573e539f14313409ed5e16e1d80ea95b97493b5`. Their Git blob IDs are
+`43f02adbaacc2db5028f2eb80ef7f8dae8423673` and
+`9029f42ef1464afc68167ee3457df2d3b32c2e22`, respectively.
+
+The retained qualification records its original external consumer output; it is
+not a fresh test run of the reconstructed Java/native adapter. That adapter needs
+its own Maven/JUnit and native lifecycle qualification. No missing double-build
+receipt or test count is inferred. The distribution retains
+`publiclyPublished: false`; this transfer is not a new Regelsuche release.
+
+This SDK includes the ordered matrix-chain model and its ordered/factor rules.
+The Java integration uses the existing source-proved affine-state transfer and
+finite-series route. It does not add a general Java consumer for
+`OrderedMatrixChain` rules. Historical Help capture fingerprints remain tied to
+their original captured adapter and SDK until genuine public recapture.
+
+## Preserved historical verified-value SDK integration
 
 Published source revision: `93f0f35abaea58ea492441776be7c9d2a9be1695`.
 Source tree: `673af46945cf0389af0c0521e23e52616ef49351`.
@@ -9,7 +30,7 @@ Standalone JAR SHA-256: `5ad54860d828a738d4df8dba87659b8a14009bfb208f79705a4b852
 The existing Maven `MavenOptimizationSdkDistributionTest` completed two clean
 six-module dependency/SDK builds, 302 SDK tests per build, and two fresh external
 consumers with empty dependency caches. All ten distribution files matched byte
-for byte. `qualification.json` is the unchanged generated qualification for this
+for byte. `qualification-2026-11-01-published-value.json` is the unchanged generated qualification for this
 exact artifact, including the actual consumer output. The unchanged double-build
 receipt is `reproducibility-2026-11-01-published-value.json`.
 

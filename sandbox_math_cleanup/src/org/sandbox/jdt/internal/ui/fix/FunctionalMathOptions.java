@@ -37,7 +37,8 @@ public record FunctionalMathOptions(Map<String,String> requested,Map<String,Stri
    throw new IllegalArgumentException("Combined cleanup requires Preserve Java behavior without mathematical mode");
  }
  boolean current(IJavaProject project,Map<String,String> values) {
-  return requested.equals(relevant(values)) && persisted.equals(persisted(project)) && converterAvailable();
+  return requested.equals(relevant(values)) && persisted.equals(persisted(project))
+    && (!enabled(requested) || converterAvailable());
  }
  private static Map<String,String> persisted(IJavaProject project) {
   return relevant(CleanUpPreferenceUtil.loadOptions(new ProjectScope(project.getProject())));

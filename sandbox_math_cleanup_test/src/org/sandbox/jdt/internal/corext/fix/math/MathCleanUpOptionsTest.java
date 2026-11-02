@@ -10,6 +10,26 @@ import org.junit.jupiter.api.Test;
 import de.regelsuche.sdk.optimization.*;
 
 class MathCleanUpOptionsTest {
+ @Test void tailConsentIsDefaultOffIndependentAndSurvivesRuntimeSelection() {
+  String key="cleanup.mathematics.tailRecursion";
+  var defaults=MathCleanUpOptions.defaults(17);assertEquals("false",defaults.toMap().get(key));
+  var legacy=new MathCleanUpOptions(true,Set.of(NumericKind.INT),SafetyProfile.PRESERVE_JAVA,
+    OptimizationGoal.READABILITY,100000,2000,false,17,List.of(),true,MathCleanUpOptions.ExplanationMode.NONE,5);
+  assertEquals("false",legacy.toMap().get(key));
+  var runtimeLegacy=new MathCleanUpOptions(true,Set.of(NumericKind.INT),SafetyProfile.PRESERVE_JAVA,
+    OptimizationGoal.READABILITY,100000,2000,false,17,List.of(),true,MathCleanUpOptions.ExplanationMode.NONE,5,
+    MathCleanUpOptions.ValueRuntime.AUDITED_OPENJDK_25_0_5_8);
+  assertEquals("false",runtimeLegacy.toMap().get(key));
+  for(boolean enabled:List.of(false,true)) for(boolean mathematical:List.of(false,true)) {
+   var values=new HashMap<>(defaults.toMap());values.put(MathCleanUpOptions.CLEANUP,Boolean.toString(enabled));
+   values.put(MathCleanUpOptions.MATHEMATICAL_OPT_IN,Boolean.toString(mathematical));values.put(key,"true");
+   var parsed=assertDoesNotThrow(()->MathCleanUpOptions.parse(values,17));
+   assertEquals("true",parsed.toMap().get(key));assertEquals(enabled,parsed.enabled());assertEquals(mathematical,parsed.mathematicalOptIn());
+   assertEquals(parsed,MathCleanUpOptions.parse(parsed.toMap(),17));
+   assertEquals("true",parsed.withValueRuntime(MathCleanUpOptions.ValueRuntime.AUDITED_OPENJDK_25_0_5_8).toMap().get(key));
+  }
+  assertThrows(IllegalArgumentException.class,()->MathCleanUpOptions.parse(Map.of(key,"yes"),17));
+ }
  @Test void disabledDefaultSelectsOnlyBigIntegerAndPreservesJava() {
   var options= assertDoesNotThrow(() -> MathCleanUpOptions.defaults(17));
   assertFalse(options.enabled()); assertEquals(Set.of(NumericKind.BIG_INTEGER),options.kinds());
@@ -61,7 +81,7 @@ class MathCleanUpOptionsTest {
  }
  @Test void optionFamiliesAndHistoricalConstructorsRemainIndependent() {
   var defaults=MathCleanUpOptions.defaults(17);
-  assertEquals(13,defaults.toMap().size());
+  assertEquals(14,defaults.toMap().size());
   assertEquals(MathCleanUpOptions.ValueRuntime.UNSPECIFIED,defaults.valueRuntime());
   assertEquals(5,defaults.timeoutSeconds());
   assertFalse(defaults.mathematicalOptIn());

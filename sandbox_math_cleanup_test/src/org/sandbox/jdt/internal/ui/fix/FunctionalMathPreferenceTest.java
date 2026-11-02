@@ -33,16 +33,21 @@ class FunctionalMathPreferenceTest {
                 var controls=controls(shell);
                 var master=button(controls,"Enable explicit mathematics cleanup");
                 var combined=button(controls,"Then convert remaining loops using the Functional Converter profile");
+                var tail=button(controls,"Convert verified tail recursion (accept changed stack behavior)");
+                assertFalse(tail.getSelection());select(tail,true);
                 var mathematical=button(controls,"Mathematical mode: accept changed overflow behavior and BigInteger result identity");
                 var safety=controls.stream().filter(Combo.class::isInstance).map(Combo.class::cast)
                         .filter(combo->List.of(combo.getItems()).contains("Preserve Java behavior")).findFirst().orElseThrow();
                 select(master,false);assertFalse(combined.getEnabled());assertTrue(combined.getSelection());
+                assertFalse(tail.getEnabled());assertTrue(tail.getSelection());
                 assertTrue(status.get()==null || status.get().isOK(),()->String.valueOf(status.get()));
                 assertEquals("true",values.get(FunctionalMathOptions.ENABLED),"Disabled mathematics keeps the opt-in dormant");
                 select(master,true);assertTrue(combined.getEnabled());
+                assertTrue(tail.getEnabled());assertTrue(tail.getSelection());
                 safety.select(1);safety.notifyListeners(SWT.Selection,new Event());
                 assertFalse(combined.getSelection());assertFalse(combined.getEnabled());
                 assertEquals("false",values.get(FunctionalMathOptions.ENABLED));
+                assertEquals("true",values.get("cleanup.mathematics.tailRecursion"));
                 assertTrue(status.get()==null || status.get().isOK(),()->String.valueOf(status.get()));
                 safety.select(0);safety.notifyListeners(SWT.Selection,new Event());select(combined,true);select(mathematical,true);
                 assertFalse(combined.getSelection());assertFalse(combined.getEnabled());
