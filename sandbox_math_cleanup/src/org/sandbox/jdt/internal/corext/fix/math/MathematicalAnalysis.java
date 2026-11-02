@@ -245,6 +245,8 @@ public final class MathematicalAnalysis {
                compilerOptions, environment, replacements, evidence, diagnostics, valueWork, documentation, residueCalls);
       JavaValueReuseOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
             compilerOptions, environment, replacements, evidence, diagnostics, valueWork, documentation);
+      JavaValueInverseOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
+            compilerOptions, environment, replacements, evidence, diagnostics, valueWork, documentation);
       JavaValueCallOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
             compilerOptions, environment, replacements, evidence, diagnostics, valueWork, documentation);
       JavaImmutableValueOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
@@ -1294,12 +1296,18 @@ public final class MathematicalAnalysis {
    public record VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
       String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,
       LoopSchedulingEvidence scheduling, FiniteSumEvidence finiteSum, RuntimeIterationEvidence runtimeIteration,
-      SourceNumericBranchEvidence sourceNumericBranch, FixedPowerEvidence fixedPower) {
+      SourceNumericBranchEvidence sourceNumericBranch, FixedPowerEvidence fixedPower, ValueInverseEvidence valueInverse) {
       public VerifiedRegion {
          if (sourcePlan != null) sourcePlan.requireEnvelope(offset, length, original, replacement);
          if (explanation != null && !proof.equals(explanation.verified().proof())) {
             throw new IllegalArgumentException("EXPLANATION_PROOF_BINDING_DIFFERS");
          }
+      }
+      public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
+            String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,
+            LoopSchedulingEvidence scheduling, FiniteSumEvidence finiteSum, RuntimeIterationEvidence runtimeIteration,
+            SourceNumericBranchEvidence sourceNumericBranch, FixedPowerEvidence fixedPower) {
+         this(offset,length,proof,cost,original,replacement,explanation,sourcePlan,scheduling,finiteSum,runtimeIteration,sourceNumericBranch,fixedPower,null);
       }
       public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
             String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,
