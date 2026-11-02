@@ -1,0 +1,1289 @@
+{
+  "zipSha256": "228b03a5baa3e0cd58e948c1fd8cd33a797c06894d1a1a9a997df2254da6a1fd",
+  "tarSha256": "230c526132c2ac16b6dc192ae7022a911d9b799efee24629f184d1bf5f672737",
+  "manifestEntriesVerifiedInBothContainers": 34,
+  "zipAndTarCorrespondingBytesIdentical": true,
+  "manifestFilesIdentical": true,
+  "baseline": "Immutable asset blobs from ee20d376 and 36be6f4; never the concurrently regenerated 6a1a working files.",
+  "comparisons": [
+    {
+      "file": "01-bouncy-castle-choice.png",
+      "localBytes": 67071,
+      "publicBytes": 67070,
+      "localSha256": "96e03facc1360d3bb91077d11517db6fed3dd7564f6c5122b181a7c034ccb4a1",
+      "publicSha256": "b7d41130a2b8fcbf7c80477eca4a5fca98100ac3034fe7f26ae9b90556056223",
+      "identicalBytes": false,
+      "baselineGitCommits": [
+        "ee20d3766f7d8d051f1f69341a6e5627fbb4f025",
+        "36be6f4476ce10e218833a5fe64fd9362358c7c8"
+      ],
+      "localPng": {
+        "chunks": [
+          {
+            "type": "IHDR",
+            "length": 13,
+            "dataSha256": "2e55b546710e10463feb5a666942a99ef3ce80b89a1b4ea4b2facc99b60ba69e",
+            "crc32": "fe159c03"
+          },
+          {
+            "type": "sBIT",
+            "length": 4,
+            "dataSha256": "918bd027f59087bef8e055f9b587b25486d58c606d8658d4ce7b1199274f6744",
+            "crc32": "7c086488"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "82988496b58fc6a8803cc1eb5002607d5a5ca65b7f1acd228888848402a3b621",
+            "crc32": "47412a65"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "58bd0d92433e8e491fc2f2449341c551b4bfab75be5153719ef379ab67c07d02",
+            "crc32": "a34018b5"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "b4fd084e2b28d0e62927b944077fe3319dce90da11675ba7880a7ca85a993e1c",
+            "crc32": "3675e670"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "73dd812f7face601bd61e2c48fdce0e0824139c799c8a4821771539771e222a8",
+            "crc32": "fd31dd78"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "4b013dcd970fc4dc142f3e8bde450d965ab07351044ec941c5bf4f90afb71f96",
+            "crc32": "7cd0bb4e"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "749da587b55dd4593c6e2626bb168b30fb4fa1d9edbaf5b5440e830f337b776a",
+            "crc32": "6e44591b"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "aa7a5a54a53cca768b60a76828da5f756ed92b87e2040ac47b5eb6d1b858dc47",
+            "crc32": "a1c34532"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "93a9d7ff19dd12c9c9bcd95ddf33050c75d333eea64991d44664dfa35ba2b47a",
+            "crc32": "7359096f"
+          },
+          {
+            "type": "IDAT",
+            "length": 1366,
+            "dataSha256": "6e26b9e4845dcd54e8d91340a85926a4d8b6c4f5994a3bba386b49ca98f40051",
+            "crc32": "3aec9a54"
+          },
+          {
+            "type": "IEND",
+            "length": 0,
+            "dataSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "crc32": "ae426082"
+          }
+        ],
+        "IHDR": [
+          1280,
+          900,
+          8,
+          6,
+          0,
+          0,
+          0
+        ],
+        "idatBytes": 66902,
+        "idatSha256": "72aaca27c8916680be75546c402a5a9014578d75294a6aff5e0a2a56a739ea6a",
+        "zlibHeader": "789c",
+        "zlibAdlerTrailer": "9a3ff757",
+        "inflatedBytes": 4608900,
+        "inflatedSha256": "728ba1c360dded7a902f69d528d3150a2be7974bb510172d21cb5bff50a367a7",
+        "imageMode": "RGBA",
+        "rgbaSha256": "01b363c1afda06e25429ea6c3b2c6682f04b0418143c45aeba4b608112ca80f3"
+      },
+      "publicPng": {
+        "chunks": [
+          {
+            "type": "IHDR",
+            "length": 13,
+            "dataSha256": "2e55b546710e10463feb5a666942a99ef3ce80b89a1b4ea4b2facc99b60ba69e",
+            "crc32": "fe159c03"
+          },
+          {
+            "type": "sBIT",
+            "length": 4,
+            "dataSha256": "918bd027f59087bef8e055f9b587b25486d58c606d8658d4ce7b1199274f6744",
+            "crc32": "7c086488"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "485cfb06dfc5135f8674fe934b4329b8c928d868cbd1929ad3395923bd653b7a",
+            "crc32": "1fcadb3f"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "4739da4f8526fe848929eea3989b4da1714fd2813357c3421b32516ec504f4e6",
+            "crc32": "cf3921e8"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "a507f0467d7c998bf0b99abb592c67c5ed782b5e2e1450c5902d355428e2d718",
+            "crc32": "baefca71"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "6d8dd6da8386600ecf83089d909ad240ac4df15c575bcdf9e6a5a3d04fa86c9a",
+            "crc32": "da98eb65"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "d9d5a58ef9de56fa1668f1b8d2293e226c1e7b85c6f5518437db3457e0d26e45",
+            "crc32": "3d474b69"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "234ae9a77dac17afcb012b8f99f49c35ac17936b99e485da1fa66a9a9c6c5c93",
+            "crc32": "a59fc8ca"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "5957b1da3d7bbd4bf661f35daf19ce1aae0323ac0c8601957218d91bc86e478e",
+            "crc32": "2ef94b3a"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "d34ca78d342037c33457adc09ba39fcabbc20350919c1bc701098953a3748f54",
+            "crc32": "c4804141"
+          },
+          {
+            "type": "IDAT",
+            "length": 1365,
+            "dataSha256": "9f3958af2113530bc241d430fdc07413f4a44b9f6d9558c2df5a9698be38694e",
+            "crc32": "7b356753"
+          },
+          {
+            "type": "IEND",
+            "length": 0,
+            "dataSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "crc32": "ae426082"
+          }
+        ],
+        "IHDR": [
+          1280,
+          900,
+          8,
+          6,
+          0,
+          0,
+          0
+        ],
+        "idatBytes": 66901,
+        "idatSha256": "4d261e91ded0526d3b051f5c8739442b2fd7e1f349ef53913d9485a207a08970",
+        "zlibHeader": "789c",
+        "zlibAdlerTrailer": "ceff1794",
+        "inflatedBytes": 4608900,
+        "inflatedSha256": "1fa846e0454a0ddc55292b287eaf2b0b73ae78b922f93c619743c8825efa0345",
+        "imageMode": "RGBA",
+        "rgbaSha256": "e32c097a892d686cb862d0c641fcfd37459a9099ddeb6c8d2694802c2316d5ae"
+      },
+      "inflatedBytesIdentical": false,
+      "inflatedDifferingBytes": 2773,
+      "differingPixels": 1172,
+      "differenceBounds": [
+        13,
+        13,
+        1266,
+        795
+      ],
+      "publicEqualsMain0343Png": true
+    },
+    {
+      "file": "01-bouncy-castle-choice.provenance.json",
+      "localBytes": 21255,
+      "publicBytes": 21255,
+      "localSha256": "b3cffa190cb2dc58d0f2d6bd165bb58b8ad510233dad476f5c8ee0376fc42316",
+      "publicSha256": "c692ed1def2dec667efd5cbb65f70b26f3607274c65a96d4d630103f8315d7ee",
+      "identicalBytes": false,
+      "baselineGitCommits": [
+        "ee20d3766f7d8d051f1f69341a6e5627fbb4f025",
+        "36be6f4476ce10e218833a5fe64fd9362358c7c8"
+      ],
+      "jsonDifferences": [
+        {
+          "path": ".evidence.screenshotSha256",
+          "local": "96e03facc1360d3bb91077d11517db6fed3dd7564f6c5122b181a7c034ccb4a1",
+          "public": "b7d41130a2b8fcbf7c80477eca4a5fca98100ac3034fe7f26ae9b90556056223"
+        }
+      ]
+    },
+    {
+      "file": "02-bouncy-castle-majority.png",
+      "localBytes": 62308,
+      "publicBytes": 62289,
+      "localSha256": "be9eb3a7b99169ee0b463627be2154f2446a084e7c19345f52d3643bb9f4100d",
+      "publicSha256": "9fe1c1111cbef3fe0ff138aa8dfd725c9f3497257d160fe9fe8b2d0866bd93a4",
+      "identicalBytes": false,
+      "baselineGitCommits": [
+        "ee20d3766f7d8d051f1f69341a6e5627fbb4f025",
+        "36be6f4476ce10e218833a5fe64fd9362358c7c8"
+      ],
+      "localPng": {
+        "chunks": [
+          {
+            "type": "IHDR",
+            "length": 13,
+            "dataSha256": "2e55b546710e10463feb5a666942a99ef3ce80b89a1b4ea4b2facc99b60ba69e",
+            "crc32": "fe159c03"
+          },
+          {
+            "type": "sBIT",
+            "length": 4,
+            "dataSha256": "918bd027f59087bef8e055f9b587b25486d58c606d8658d4ce7b1199274f6744",
+            "crc32": "7c086488"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "cc427ae6ed9a5b3bf4e1f6a262b29938c1a7c967c834fe95e48485cb7aff32aa",
+            "crc32": "72ff373c"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "09abf4945de67904b67c460df8c8fc903f7b78570b772a21dbe8ad1edd367855",
+            "crc32": "c95418a1"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "17cc9481b8b7ca7f7fb31aee16bf0b2596796147c22ec48816ce03c2f73e9f95",
+            "crc32": "48624c78"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "fa4ad6d3a71ee2adb8f4f8abb3970580582428c7199bf4e8552ba27b63f5af3f",
+            "crc32": "48c9fc39"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "76e9a54baf9b04ac8c7e81fa1169e0e4bcf7d1d6ef81054345ba2d3232e6089e",
+            "crc32": "f5408dcb"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "c3dd4d6e4d5367e9d53fad3a28a549d1f3b760eb04cdd3b9692082b59cfce47a",
+            "crc32": "599e6948"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "bfecb7d281a33633989e7ed352113a05a3ac56f1f387b603e08905809d9b3465",
+            "crc32": "63eaa156"
+          },
+          {
+            "type": "IDAT",
+            "length": 4807,
+            "dataSha256": "0b57c28bb8b1ce17bee237f34e64fd80f2c98d00a1b06869c80c7f770a6b158a",
+            "crc32": "a5810d28"
+          },
+          {
+            "type": "IEND",
+            "length": 0,
+            "dataSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "crc32": "ae426082"
+          }
+        ],
+        "IHDR": [
+          1280,
+          900,
+          8,
+          6,
+          0,
+          0,
+          0
+        ],
+        "idatBytes": 62151,
+        "idatSha256": "d8beaaa90f5999a0ec54311965315744a3f8e7edea347a078693d4ed401b33ec",
+        "zlibHeader": "789c",
+        "zlibAdlerTrailer": "979465c9",
+        "inflatedBytes": 4608900,
+        "inflatedSha256": "a825238760c5485af3a14958d22b3c5ad6346f5ae1e76f9a68bddbb09479b618",
+        "imageMode": "RGBA",
+        "rgbaSha256": "b1edd7eb2661a19c182618073f69d4ffd35cc6becd7b184233ccba96f646b6a1"
+      },
+      "publicPng": {
+        "chunks": [
+          {
+            "type": "IHDR",
+            "length": 13,
+            "dataSha256": "2e55b546710e10463feb5a666942a99ef3ce80b89a1b4ea4b2facc99b60ba69e",
+            "crc32": "fe159c03"
+          },
+          {
+            "type": "sBIT",
+            "length": 4,
+            "dataSha256": "918bd027f59087bef8e055f9b587b25486d58c606d8658d4ce7b1199274f6744",
+            "crc32": "7c086488"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "5b82fdc9b6fade017f929599bd79ce1282731669feaecad5342f0aeb66aa2ef0",
+            "crc32": "f3f1ba2e"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "105ce6c0284de36487d6a69704e494bb664a5354a3d500ecba1b573ef5fb4d33",
+            "crc32": "31206688"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "d1cf699c39aa4879285c676e10e6344a9a364de81c5ac571644f4480f309d4ca",
+            "crc32": "ef02e6b0"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "ce1a91deb23a2a7494ef582f7c4d78bb56e416a32d56087c9cd3472a245f423f",
+            "crc32": "54b7c467"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "43a7e51e0716e066e704af3ac967147d5d0213c4bb77b6ef371e7b3b60bd4a39",
+            "crc32": "edc17702"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "b3df21a07038bce91f6206b04964b4e21a83e32597c774c337bf500a7e626918",
+            "crc32": "278d78f7"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "4d299e218676cbbe15e6fd553eddcfde7daaca253c0b983a0b897a087ea18bab",
+            "crc32": "b7a69c7d"
+          },
+          {
+            "type": "IDAT",
+            "length": 4788,
+            "dataSha256": "83004612392b6a8560e87b518f4ef4a051a9b353e624d622bea0f10f43680ac5",
+            "crc32": "675a0fd0"
+          },
+          {
+            "type": "IEND",
+            "length": 0,
+            "dataSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "crc32": "ae426082"
+          }
+        ],
+        "IHDR": [
+          1280,
+          900,
+          8,
+          6,
+          0,
+          0,
+          0
+        ],
+        "idatBytes": 62132,
+        "idatSha256": "7842cf3fe1bcdd632d14000c4f2b022d2b6ee7f762f0fb76cd164978251efda5",
+        "zlibHeader": "789c",
+        "zlibAdlerTrailer": "ad8484d3",
+        "inflatedBytes": 4608900,
+        "inflatedSha256": "74ddc64ef9d562ccdd6d9461dd7586511a6fd5706e30552224bb2ab286bc8b09",
+        "imageMode": "RGBA",
+        "rgbaSha256": "eb5c9fb4f2fb71ac88c2e7ef78d4231a8726f5677dae3dfe92b2987e33135d92"
+      },
+      "inflatedBytesIdentical": false,
+      "inflatedDifferingBytes": 2771,
+      "differingPixels": 1172,
+      "differenceBounds": [
+        13,
+        13,
+        1266,
+        795
+      ],
+      "publicEqualsMain0343Png": true
+    },
+    {
+      "file": "02-bouncy-castle-majority.provenance.json",
+      "localBytes": 18548,
+      "publicBytes": 18548,
+      "localSha256": "aa26f9fc99c983ee02638b8f6dc699709d37b15e360031d1ebdbd24e3327a1e4",
+      "publicSha256": "e3de5a7ea7af8cbb0dbadfc9ae178eab9526d3cc259ff71e1297eb2b9c4c2679",
+      "identicalBytes": false,
+      "baselineGitCommits": [
+        "ee20d3766f7d8d051f1f69341a6e5627fbb4f025",
+        "36be6f4476ce10e218833a5fe64fd9362358c7c8"
+      ],
+      "jsonDifferences": [
+        {
+          "path": ".evidence.screenshotSha256",
+          "local": "be9eb3a7b99169ee0b463627be2154f2446a084e7c19345f52d3643bb9f4100d",
+          "public": "9fe1c1111cbef3fe0ff138aa8dfd725c9f3497257d160fe9fe8b2d0866bd93a4"
+        }
+      ]
+    },
+    {
+      "file": "03-bouncy-castle-long.png",
+      "localBytes": 72463,
+      "publicBytes": 72450,
+      "localSha256": "9a9020c3fc5b49655acab5c03ac15fb96d1d262e56c6acc9f6882e54c6a1efe1",
+      "publicSha256": "92d47a8c164483fc55fbb653ed445b789653acc3a08a6209a9279987bb86159d",
+      "identicalBytes": false,
+      "baselineGitCommits": [
+        "ee20d3766f7d8d051f1f69341a6e5627fbb4f025",
+        "36be6f4476ce10e218833a5fe64fd9362358c7c8"
+      ],
+      "localPng": {
+        "chunks": [
+          {
+            "type": "IHDR",
+            "length": 13,
+            "dataSha256": "2e55b546710e10463feb5a666942a99ef3ce80b89a1b4ea4b2facc99b60ba69e",
+            "crc32": "fe159c03"
+          },
+          {
+            "type": "sBIT",
+            "length": 4,
+            "dataSha256": "918bd027f59087bef8e055f9b587b25486d58c606d8658d4ce7b1199274f6744",
+            "crc32": "7c086488"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "afebfcc5146214bb7b1b8a5ac5d7f486848cf7eaec290ac26a6ed2c0a95ee79f",
+            "crc32": "21dcd320"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "8d98a3d1a3f1652e368d4b257f74ee602af3b29f233a96227e40c47a74bb2366",
+            "crc32": "7c97838e"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "4086fb3d915d97a6a0419a11d85a3986065d4162a0d8676a8b5e890212a1ceb5",
+            "crc32": "ed43e2e7"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "0426d635172475f1050fddd90830a6f3d5a9e1b9f7126ce3e2b504cb229a63f8",
+            "crc32": "12e13a98"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "d0812ffcff4b66a427b9f65be4944a64b70c12659a50c1ba333ee7a374e9a880",
+            "crc32": "493d3dad"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "a9686711fa69c495b54257d2cc243f675e750c25e7c4118b8a583bf6ef5a7ec8",
+            "crc32": "8c9e2432"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "4d8299ead3545bb7a2e9477ff2f4f566dc4f18c3897dfeb96d7d9936bf33c3ba",
+            "crc32": "095b4d59"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "bd4e9956218beb962de461b39e2b46d696f912e64922cd525115cae66010a15e",
+            "crc32": "af6ec301"
+          },
+          {
+            "type": "IDAT",
+            "length": 6758,
+            "dataSha256": "f5f6b70965cd2148c7c9df2269a9c031b9a80cbbaac64eb4cf77d03b5f0b14a8",
+            "crc32": "87d11a88"
+          },
+          {
+            "type": "IEND",
+            "length": 0,
+            "dataSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "crc32": "ae426082"
+          }
+        ],
+        "IHDR": [
+          1280,
+          900,
+          8,
+          6,
+          0,
+          0,
+          0
+        ],
+        "idatBytes": 72294,
+        "idatSha256": "cee751ca908ebd4349fa7c837ed3f8716a777a9a5679dd5e59ffabf5092da6d0",
+        "zlibHeader": "789c",
+        "zlibAdlerTrailer": "544bc5e2",
+        "inflatedBytes": 4608900,
+        "inflatedSha256": "696c8e6105a63c6062f4f0c31f528b2e98dcf606ba28c40a4113582287c53c06",
+        "imageMode": "RGBA",
+        "rgbaSha256": "b56e2e26db92c7260952cf97e9cc83dc1796dc4aab75ea4aaf5e65751133dadd"
+      },
+      "publicPng": {
+        "chunks": [
+          {
+            "type": "IHDR",
+            "length": 13,
+            "dataSha256": "2e55b546710e10463feb5a666942a99ef3ce80b89a1b4ea4b2facc99b60ba69e",
+            "crc32": "fe159c03"
+          },
+          {
+            "type": "sBIT",
+            "length": 4,
+            "dataSha256": "918bd027f59087bef8e055f9b587b25486d58c606d8658d4ce7b1199274f6744",
+            "crc32": "7c086488"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "8d984fb7e7baa909d2f6e224d26528da3bc0d49a750cd9726c1e12e7c8a00ffb",
+            "crc32": "5df88d71"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "06df5724d75fd17479c967c150f08beb24aab678add329deb5f1e12a1dcd51dc",
+            "crc32": "3a70ddad"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "f18592c4ff38a81875fd53c6ce1f71cd143cc929839dfbb9ad467d20dd6cbe0e",
+            "crc32": "d8be88cc"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "d9ace9b24c0d65eef03e4f0fab26dbc069f134a3662b87d6776977f190f2132c",
+            "crc32": "90c9670f"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "051907fcedfcf69f19e4b21120732e83f7077a630691f058a8aac8894395f5f4",
+            "crc32": "4c921b33"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "3dccd200ba611bcc19a98084b265c53885fb6f4d798b63afd11c3afba67a54e8",
+            "crc32": "5d1206d0"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "5a1cd6f86ab170aee048a8175ad6a9e7f2d6eead3a0f4632181057a1bc83cec7",
+            "crc32": "89eb4346"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "7ff1463dc177119a45656f71d32a7e0c6efe65bde2c006cdafb60b27dcd47546",
+            "crc32": "ecb32df5"
+          },
+          {
+            "type": "IDAT",
+            "length": 6745,
+            "dataSha256": "07fbe0d43e44f04be36eaaec6dab4baf6a3dd034ca9889dce8e6cd7780232521",
+            "crc32": "038a294a"
+          },
+          {
+            "type": "IEND",
+            "length": 0,
+            "dataSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "crc32": "ae426082"
+          }
+        ],
+        "IHDR": [
+          1280,
+          900,
+          8,
+          6,
+          0,
+          0,
+          0
+        ],
+        "idatBytes": 72281,
+        "idatSha256": "07d78216c702253cff75ee6d67a6fc4e06f67fc6d3d21852df8e2d7f1e613a3a",
+        "zlibHeader": "789c",
+        "zlibAdlerTrailer": "68fae641",
+        "inflatedBytes": 4608900,
+        "inflatedSha256": "47950af8fc39e4db99e5d4f0d83b44e661e5bf0946a264cbd4a9eef6bc2d1fa7",
+        "imageMode": "RGBA",
+        "rgbaSha256": "ea7e9517055dd11d4c373efce4c4bac2cf7f3b0cb07fc3dbee929f05d525db3b"
+      },
+      "inflatedBytesIdentical": false,
+      "inflatedDifferingBytes": 2752,
+      "differingPixels": 1172,
+      "differenceBounds": [
+        13,
+        13,
+        1266,
+        795
+      ],
+      "publicEqualsMain0343Png": true
+    },
+    {
+      "file": "03-bouncy-castle-long.provenance.json",
+      "localBytes": 25256,
+      "publicBytes": 25256,
+      "localSha256": "930c04e41a3abb9fc8b9d4f3131324be2689641ba92379b6adb1060f79c77ec6",
+      "publicSha256": "d09fa73ca7e4bda622b81448448974db89738bf8d8e98d9be5f869b93b7b3e64",
+      "identicalBytes": false,
+      "baselineGitCommits": [
+        "ee20d3766f7d8d051f1f69341a6e5627fbb4f025",
+        "36be6f4476ce10e218833a5fe64fd9362358c7c8"
+      ],
+      "jsonDifferences": [
+        {
+          "path": ".evidence.screenshotSha256",
+          "local": "9a9020c3fc5b49655acab5c03ac15fb96d1d262e56c6acc9f6882e54c6a1efe1",
+          "public": "92d47a8c164483fc55fbb653ed445b789653acc3a08a6209a9279987bb86159d"
+        }
+      ]
+    },
+    {
+      "file": "04-bouncy-castle-swapped-choice.png",
+      "localBytes": 60966,
+      "publicBytes": 60960,
+      "localSha256": "322953785aa9708570d5abecb104e6ba75e819709ac0a9269f8428fb653e6469",
+      "publicSha256": "094362aab9b6cea4ad134d318d187159fb3aed3a966b8fd73612b21c3364b793",
+      "identicalBytes": false,
+      "baselineGitCommits": [
+        "ee20d3766f7d8d051f1f69341a6e5627fbb4f025",
+        "36be6f4476ce10e218833a5fe64fd9362358c7c8"
+      ],
+      "localPng": {
+        "chunks": [
+          {
+            "type": "IHDR",
+            "length": 13,
+            "dataSha256": "2e55b546710e10463feb5a666942a99ef3ce80b89a1b4ea4b2facc99b60ba69e",
+            "crc32": "fe159c03"
+          },
+          {
+            "type": "sBIT",
+            "length": 4,
+            "dataSha256": "918bd027f59087bef8e055f9b587b25486d58c606d8658d4ce7b1199274f6744",
+            "crc32": "7c086488"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "bbde8cee220e4000d06bbed4c5ae710463bfb48c689b445f0e5c42fd417e52b6",
+            "crc32": "07fe2b34"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "96fcd1ebd415f0ba0167ca2fda3b19a04658e6f14de5c314bed20fdd40202944",
+            "crc32": "3a6a0c70"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "ec8f39318f03aa00eec5bae53a98497ffbed849f4f48f4a32d38bc1d0c113af5",
+            "crc32": "1c4355a3"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "951733d6b1fea9b8cc91fbf0d68865a897f00aa149d33bb270c72ca4ac9b12a5",
+            "crc32": "01778665"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "0339c2ff6549c6a7bf50399c09714559157ca567abab0b98efd956fd01c88765",
+            "crc32": "6e970cdf"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "fc1edbcd831e4ddc955b489109ada05a6e6d02c12713d9dd7e74a88b09a4a904",
+            "crc32": "ad6cb5c8"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "a6f5c2159c0b20ca7184f25147e5bd692af8264a5056dd2d1446f7bcb6b9d040",
+            "crc32": "3c56dabf"
+          },
+          {
+            "type": "IDAT",
+            "length": 3465,
+            "dataSha256": "b7351e8951a41a39d05d5c7ed3905c54f0a681fa3caee3bc9734bf189cfaa554",
+            "crc32": "ec269b02"
+          },
+          {
+            "type": "IEND",
+            "length": 0,
+            "dataSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "crc32": "ae426082"
+          }
+        ],
+        "IHDR": [
+          1280,
+          900,
+          8,
+          6,
+          0,
+          0,
+          0
+        ],
+        "idatBytes": 60809,
+        "idatSha256": "dc459fe39ca679541552e97fa6d02d7e0069713a285c0d2daa89c82c36f922cb",
+        "zlibHeader": "789c",
+        "zlibAdlerTrailer": "2f8a27ca",
+        "inflatedBytes": 4608900,
+        "inflatedSha256": "4e4f42470fd3fc940e63b0ae0c1499ac57615066c8805ba7ca505fce8c713523",
+        "imageMode": "RGBA",
+        "rgbaSha256": "0f7137d8cbaac4693df2a77d977f3c422a9f40a6e30381e34e3cf78bd74d2f79"
+      },
+      "publicPng": {
+        "chunks": [
+          {
+            "type": "IHDR",
+            "length": 13,
+            "dataSha256": "2e55b546710e10463feb5a666942a99ef3ce80b89a1b4ea4b2facc99b60ba69e",
+            "crc32": "fe159c03"
+          },
+          {
+            "type": "sBIT",
+            "length": 4,
+            "dataSha256": "918bd027f59087bef8e055f9b587b25486d58c606d8658d4ce7b1199274f6744",
+            "crc32": "7c086488"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "882d17e05f6def92d75ba6d1f90b978977da7cd8047f91d5b18df0fe92bca1bd",
+            "crc32": "c28033d2"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "62da82b1567ee8da4b12b4e6a7cd5521bcc6f7ccadb6286392e65065207e3957",
+            "crc32": "87e85742"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "acd0d5c33b2a89af48240b6ee62b39f58687f53899d38f6dbe23efb99e9ca1df",
+            "crc32": "2ba0e0e2"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "534e28ca58e734e88e48edd1cb8dd08b02fa1d77ec164ada5bf3640e3c2d6446",
+            "crc32": "8d1ee3cd"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "881200202484359ff70915b0c51d163a5bfcbf54347b106e1642b7c6e4e157af",
+            "crc32": "4a399238"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "e6bd321585ef84c3198868c824160e7bb06b33eb01904e712d6eb7cd55dbb990",
+            "crc32": "6c0c415b"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "8c3850106d12a5b9aa3f37249be7dacefa8f76b608e49f5810aa79824967469c",
+            "crc32": "6ed91ba2"
+          },
+          {
+            "type": "IDAT",
+            "length": 3459,
+            "dataSha256": "55edc07a4caf3696f60ab293895c5fc53bac7255a7a34b13612530e83b625bff",
+            "crc32": "12785e3f"
+          },
+          {
+            "type": "IEND",
+            "length": 0,
+            "dataSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "crc32": "ae426082"
+          }
+        ],
+        "IHDR": [
+          1280,
+          900,
+          8,
+          6,
+          0,
+          0,
+          0
+        ],
+        "idatBytes": 60803,
+        "idatSha256": "112a9d377ea99eba53c40e1243d7dc2101c2918d792ba6b11bd14a6a90b64d15",
+        "zlibHeader": "789c",
+        "zlibAdlerTrailer": "5fe54824",
+        "inflatedBytes": 4608900,
+        "inflatedSha256": "a8c5d1ed8f614351c05380f3d4e929f587454a4e8b61e9fcb6e1899ce3f05705",
+        "imageMode": "RGBA",
+        "rgbaSha256": "4575124e4e6977d64235be030838fc399f6d82cbb6403fe18568b5975cada371"
+      },
+      "inflatedBytesIdentical": false,
+      "inflatedDifferingBytes": 2771,
+      "differingPixels": 1172,
+      "differenceBounds": [
+        13,
+        13,
+        1266,
+        795
+      ],
+      "publicEqualsMain0343Png": true
+    },
+    {
+      "file": "04-bouncy-castle-swapped-choice.provenance.json",
+      "localBytes": 24292,
+      "publicBytes": 24292,
+      "localSha256": "70591d4da211ad16fe48a3be4eba1fea25c3315fe7b7ab1084695cef553d84c7",
+      "publicSha256": "9e3b15f74d5f664a10507e7e24a32da8e495db7054ee1a3d81f290afad79fcc7",
+      "identicalBytes": false,
+      "baselineGitCommits": [
+        "ee20d3766f7d8d051f1f69341a6e5627fbb4f025",
+        "36be6f4476ce10e218833a5fe64fd9362358c7c8"
+      ],
+      "jsonDifferences": [
+        {
+          "path": ".evidence.screenshotSha256",
+          "local": "322953785aa9708570d5abecb104e6ba75e819709ac0a9269f8428fb653e6469",
+          "public": "094362aab9b6cea4ad134d318d187159fb3aed3a966b8fd73612b21c3364b793"
+        }
+      ]
+    },
+    {
+      "file": "05-bouncy-castle-modular-square.png",
+      "localBytes": 185309,
+      "publicBytes": 185304,
+      "localSha256": "38fa509a5be6aba0b84b67e9b31d2e355d36675ebc05aeccc4f384a87e61d985",
+      "publicSha256": "3487f20290758fbe3458f12f9ee3cdad1f011b4ec51de3d6df7aa36cbb2fb1b3",
+      "identicalBytes": false,
+      "baselineGitCommits": [
+        "ee20d3766f7d8d051f1f69341a6e5627fbb4f025",
+        "36be6f4476ce10e218833a5fe64fd9362358c7c8"
+      ],
+      "localPng": {
+        "chunks": [
+          {
+            "type": "IHDR",
+            "length": 13,
+            "dataSha256": "2e55b546710e10463feb5a666942a99ef3ce80b89a1b4ea4b2facc99b60ba69e",
+            "crc32": "fe159c03"
+          },
+          {
+            "type": "sBIT",
+            "length": 4,
+            "dataSha256": "918bd027f59087bef8e055f9b587b25486d58c606d8658d4ce7b1199274f6744",
+            "crc32": "7c086488"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "346d6f9ee230da2335b18894e3caff19446537bb5e7c7ab58eba1ede6c0412b3",
+            "crc32": "45581913"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "b5fcc688c6160d1d0741039483b8853b552074b54830857ae0722eae95995b07",
+            "crc32": "7775ab15"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "894da8f900246a1039baf804b641c3355241d8edb2a20661f0cb42e44215a2bf",
+            "crc32": "9ce31869"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "e26574243d9a2a6fb3ba231ac23a8717f5b5ab917a782d9d5b9336fe11d866ce",
+            "crc32": "6c43e591"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "bb6d254cae6ffcba4ab1bcec9e0065b269f5da0198c6fc1b5baf1c33694d6011",
+            "crc32": "c2fd3f48"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "342971b2688882972de4ee492c2716056b637a47113d215993bd9b315cbc2b09",
+            "crc32": "9c63f74a"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "004c458d6d79de3e817c1829c7b091b06fcf74e40613ad3c28d7489518bc3b9d",
+            "crc32": "8ce774c2"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "70dabc20121d374aaa6ac9e1b7fd90539a11375c7d5ec5411a354116f446205e",
+            "crc32": "4149d6eb"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "a4eb69d671684ad26bf390c9953bc800b5895424ae8a5562634909422b12064e",
+            "crc32": "f35ef856"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "86fff454cd276fcb8a2201a74b3e1af4acd9b046cd40660eeb76403320ff6e2c",
+            "crc32": "858d7a7b"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "f12b78204cb748c78eef6d77131a10ede9fc2b26493564f9ab3db5164898c511",
+            "crc32": "198f28ae"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "8bb7b98297e129aed075e439f38731f3658677f2ca85595ffc8ce445bae3ce5e",
+            "crc32": "f1a6af48"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "3a0fc72beff2f1102365022ebacd8aa0b56fc87af92f4785c54556b03f7d8195",
+            "crc32": "7745e0b7"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "34618dee2ae4f0422ab5128602ee78a0dff13776c0a58434dc8638cff5a7b1c2",
+            "crc32": "5138f1d4"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "767091881859cb0529558058a5c10eeb9d9f6164b3140b258021f5e0e0707d95",
+            "crc32": "f131d314"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "39186f4063f4aee757172f37b14664f88cbe66c492c15c312ac4b2b86ed183f7",
+            "crc32": "03a218dc"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "4b581caa2085b5ed16f84e4780fbe8c4c9caea406d11e210f39f787fa3d08735",
+            "crc32": "f5a5a51e"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "0a4b5ff95ad3863eb01214aab5317fd437ce88d3f40984a3429b2fc538fb0be0",
+            "crc32": "7c8642b1"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "4234478d60f4ad500e04aebe0f9aa79b790a03e9aacc869abcfaea41141d6c87",
+            "crc32": "1782ba34"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "afa81e9a9c912a694fb6bd689f5186f52d79182088365c380ff40aca4d5d532b",
+            "crc32": "19bd851e"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "b83cec3ea3826f9fbe0cdfe0a16040d6b87bba6ffc9f418e41dea907fdee7510",
+            "crc32": "3af8376c"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "e8a31eda472fd6c03b60356dcc7b7871c0f3ea48ef5b67af707873368752fd39",
+            "crc32": "12c135ef"
+          },
+          {
+            "type": "IDAT",
+            "length": 4748,
+            "dataSha256": "ce7982ea533d6f2abad2a8547b696f8d9b3e3921f33572ee04cdc81a6b7ddd5d",
+            "crc32": "667ef372"
+          },
+          {
+            "type": "IEND",
+            "length": 0,
+            "dataSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "crc32": "ae426082"
+          }
+        ],
+        "IHDR": [
+          1280,
+          900,
+          8,
+          6,
+          0,
+          0,
+          0
+        ],
+        "idatBytes": 184972,
+        "idatSha256": "1b2fa8cfc8260d9a9966cd328031b29278e3a45848fb9273fe12657905a7a1cb",
+        "zlibHeader": "789c",
+        "zlibAdlerTrailer": "e44564c8",
+        "inflatedBytes": 4608900,
+        "inflatedSha256": "47db3e6ec6d40df6a76b63781c7da378f995beb132ebd2d472a550a23c38794d",
+        "imageMode": "RGBA",
+        "rgbaSha256": "7c656b73464b7746cbb743cab5e2b0a635f86d893269fcb92f03ce01fb8d1178"
+      },
+      "publicPng": {
+        "chunks": [
+          {
+            "type": "IHDR",
+            "length": 13,
+            "dataSha256": "2e55b546710e10463feb5a666942a99ef3ce80b89a1b4ea4b2facc99b60ba69e",
+            "crc32": "fe159c03"
+          },
+          {
+            "type": "sBIT",
+            "length": 4,
+            "dataSha256": "918bd027f59087bef8e055f9b587b25486d58c606d8658d4ce7b1199274f6744",
+            "crc32": "7c086488"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "70583b4bed3fedf3807df9055a1e0b05a5c99e53c7498152c1cf60ce581a2f10",
+            "crc32": "592821e1"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "34ccca8cc6f706901b06e006653e39364bb835ca330916f4fa554e24d8ea941a",
+            "crc32": "873a2a34"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "0e38e143dc00a43e519b8fda6f284441226e76a4708c8376da8b205160e7e298",
+            "crc32": "af7d9612"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "f4b2afa604699c34ca1c655fee957d74847c653ed82452c185a7350c8eae56e1",
+            "crc32": "d7e481b1"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "afd418a5e451e3b4d864c4ba4cc9b8959952a76b1f6aff4724f63cd02d570010",
+            "crc32": "6b6bd5f5"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "d70682d0018c9bbb37ba12510eb10d139913333c740b219392fead6790ce597f",
+            "crc32": "cc47ae6e"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "2bf4d846448df8815d7177932239d6406911b4778759be00983cd40301b2d97d",
+            "crc32": "807222c9"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "9c5dff690c27c9d4c02bf6cdc359feda684b220f2eb808ef3547024dc5a20636",
+            "crc32": "2b943c54"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "9fd8db0d5c5fe546b87d25c6ef47d511254907e8182a11bb12146ff4835f14aa",
+            "crc32": "bb724705"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "b97dafa6d78acb916e9100e536dc12118893f3983c0441c2724d0462e786a134",
+            "crc32": "57462429"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "445fa173dfda8a95cd0b65a8604360f1cb59683e8d170a457880e7973c29a347",
+            "crc32": "7991bee6"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "1ff769b77667bae6fd0372895d61579b1772d3b562d7da2a4ee3ed9c917550e1",
+            "crc32": "3381bfff"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "2974af72d30e467d8be78d8a0771c01fb05269bb49a26aeb0d79a79087e6bd58",
+            "crc32": "2dd431fc"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "66368b4731ea4c05836a79eeaefffd14e3e7224081955a2d2e52c18fa7df66df",
+            "crc32": "fbfb5bb1"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "7813e01759ab1cbfda62e58d2a26647a47b55e3336dd52cadf36f997d0745598",
+            "crc32": "d537ce51"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "59e0deeacbe40e627eb6f4b46e6a2377d2ae3f4c130671a0a9a9a28f2cbf6243",
+            "crc32": "75e9f962"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "2d58362ee1e481d33fc5178d0d4bc5d225ef1bf179b5e90739235ecdd3df7120",
+            "crc32": "21cdd0e5"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "f9fcb5b585dbf7a1cbff227b6aba4a7a9ddcc6a9e69deeeba9cb33a85bf1b399",
+            "crc32": "983bc39e"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "2a0786871ca081d51c03139644bbad91cb4d4441ef66e35aff84ab6957c70825",
+            "crc32": "637861b2"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "c4cd2f8694890e42ff427a865e4570e5dcba81198109ffdc25143caf04cd5024",
+            "crc32": "63d29388"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "17de12d9d16b6fc499517cb3adc67c93b18a2617b79c264df20fabcc11eaf8cd",
+            "crc32": "db8fed8d"
+          },
+          {
+            "type": "IDAT",
+            "length": 8192,
+            "dataSha256": "0aace27c4719631c316136556b2d99759b2dcec678879b42889fc1eb1ba78cea",
+            "crc32": "667e8075"
+          },
+          {
+            "type": "IDAT",
+            "length": 4743,
+            "dataSha256": "b58bbc377803406d9223eaacda89ceb95694dd6b25539554367cee7e756cb6d0",
+            "crc32": "0593bb41"
+          },
+          {
+            "type": "IEND",
+            "length": 0,
+            "dataSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "crc32": "ae426082"
+          }
+        ],
+        "IHDR": [
+          1280,
+          900,
+          8,
+          6,
+          0,
+          0,
+          0
+        ],
+        "idatBytes": 184967,
+        "idatSha256": "bf61de1088073674477672cd540e177bad4b7a0c9d67cfff7d0358ad001517e4",
+        "zlibHeader": "789c",
+        "zlibAdlerTrailer": "b41063ec",
+        "inflatedBytes": 4608900,
+        "inflatedSha256": "4616adbb3550a5365befd05dea53cb4c67d85fe4490744dc5e6d8324f3408954",
+        "imageMode": "RGBA",
+        "rgbaSha256": "b5314e698d3b90ba222bdb8c690086464ab5c3025d38b34eab2e11fcfa019ad6"
+      },
+      "inflatedBytesIdentical": false,
+      "inflatedDifferingBytes": 2694,
+      "differingPixels": 1175,
+      "differenceBounds": [
+        13,
+        13,
+        1266,
+        795
+      ],
+      "publicEqualsMain0343Png": true
+    },
+    {
+      "file": "05-bouncy-castle-modular-square.provenance.json",
+      "localBytes": 20684,
+      "publicBytes": 20684,
+      "localSha256": "96dd854a25639ccc128d795bb6112c450347aaf2c6c0b5dccfe104d09237c146",
+      "publicSha256": "f80b6534f79d111c2ad75d12111e8d2f54045c63d4a1177726cf5e06784243a7",
+      "identicalBytes": false,
+      "baselineGitCommits": [
+        "ee20d3766f7d8d051f1f69341a6e5627fbb4f025",
+        "36be6f4476ce10e218833a5fe64fd9362358c7c8"
+      ],
+      "jsonDifferences": [
+        {
+          "path": ".evidence.screenshotSha256",
+          "local": "38fa509a5be6aba0b84b67e9b31d2e355d36675ebc05aeccc4f384a87e61d985",
+          "public": "3487f20290758fbe3458f12f9ee3cdad1f011b4ec51de3d6df7aa36cbb2fb1b3"
+        }
+      ]
+    }
+  ]
+}

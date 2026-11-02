@@ -1,0 +1,364 @@
+{
+  "files": [
+    {
+      "bytes": 2,
+      "path": "jmh/run/exit-code.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "source": "/tmp/sandbox-recovered-integration/.superpowers/measurement-7fcd719-forks/exit-code.txt"
+    },
+    {
+      "bytes": 21,
+      "path": "jmh/run/finished-utc.txt",
+      "sha256": "5ff8c33793506056d35bf9d0871302f3e0f62efd0baf97f9df3c8d820b77c5bb",
+      "source": "/tmp/sandbox-recovered-integration/.superpowers/measurement-7fcd719-forks/finished-utc.txt"
+    },
+    {
+      "bytes": 82,
+      "path": "jmh/run/identity-after.txt",
+      "sha256": "18d89e4e0f29586b656d04a7b74dd96e0deda13c762486e2b6917c9d5913de5c",
+      "source": "/tmp/sandbox-recovered-integration/.superpowers/measurement-7fcd719-forks/identity-after.txt"
+    },
+    {
+      "bytes": 82,
+      "path": "jmh/run/identity-before.txt",
+      "sha256": "18d89e4e0f29586b656d04a7b74dd96e0deda13c762486e2b6917c9d5913de5c",
+      "source": "/tmp/sandbox-recovered-integration/.superpowers/measurement-7fcd719-forks/identity-before.txt"
+    },
+    {
+      "bytes": 181339,
+      "path": "jmh/run/run.log",
+      "sha256": "43c842681d0487922a1015dc1e29eaa7602ca7264f4b7ebd34f59ab723177d25",
+      "source": "/tmp/sandbox-recovered-integration/.superpowers/measurement-7fcd719-forks/run.log"
+    },
+    {
+      "bytes": 21,
+      "path": "jmh/run/started-utc.txt",
+      "sha256": "9b82f0b067b78e4d3afc5286ab7fe1128073cf9859b735de4e6864fe1ed12984",
+      "source": "/tmp/sandbox-recovered-integration/.superpowers/measurement-7fcd719-forks/started-utc.txt"
+    },
+    {
+      "bytes": 0,
+      "path": "jmh/run/tracked-after.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "/tmp/sandbox-recovered-integration/.superpowers/measurement-7fcd719-forks/tracked-after.txt"
+    },
+    {
+      "bytes": 0,
+      "path": "jmh/run/tracked-before.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "/tmp/sandbox-recovered-integration/.superpowers/measurement-7fcd719-forks/tracked-before.txt"
+    },
+    {
+      "bytes": 1522,
+      "path": "jmh/command.sh",
+      "sha256": "0e43c0b3f55f17cdfed6b19adffbf3ebc61b3c0639fadcfb8eb97ea77d80c173",
+      "source": "/workspace/scratch/0eb32b15fbb4/recovery/measure-combined-7fcd719-forks.sh"
+    },
+    {
+      "bytes": 14733,
+      "path": "jmh/command-inputs/pom.xml",
+      "sha256": "f3a83ba7e8f3e51e76b002e49b886bec936cc7d8deefb622a7138dfb727b537c",
+      "source": "/tmp/sandbox-recovered-integration/qa/math-optimization/pom.xml"
+    },
+    {
+      "bytes": 258,
+      "path": "jmh/invocation.json",
+      "sha256": "bd6abc8dea5ed0688704059afc218d0004c3e7ef280b43d908247af70ceb2258",
+      "source": "derived from retained wrapper and run identity"
+    },
+    {
+      "bytes": 46924,
+      "path": "jmh/results/bc-bls-jmh.json",
+      "sha256": "4515cfb5e34b7e3d6edd026cfc3578e7ac97bc87a3582b47e5b5c9cf8833e15d",
+      "source": "/tmp/sandbox-recovered-integration/qa/math-optimization/target/bc-bls-jmh.json"
+    },
+    {
+      "bytes": 13771,
+      "path": "jmh/results/bc-bls-performance.json",
+      "sha256": "b2bb87d1cb5a347d06b681013d594fec34601a96e9dcef10a009e6109ae6d9e5",
+      "source": "/tmp/sandbox-recovered-integration/qa/math-optimization/target/bc-bls-performance.json"
+    },
+    {
+      "bytes": 122341,
+      "path": "jmh/results/bc-hash-to-curve.json",
+      "sha256": "26954b16d5a9145aef743f735ee399a7245f7766f70aea35f8267182497322d5",
+      "source": "/tmp/sandbox-recovered-integration/qa/math-optimization/target/bc-hash-to-curve.json"
+    },
+    {
+      "bytes": 27812,
+      "path": "jmh/results/bc-performance-review.json",
+      "sha256": "c31acad66e7c41091446382e6e7c7456d1a03366af9efafbf1956036d90ca5f1",
+      "source": "/tmp/sandbox-recovered-integration/qa/math-optimization/target/bc-performance-review.json"
+    },
+    {
+      "bytes": 1860,
+      "path": "jmh/fixtures/bc-bls/benchmark.properties",
+      "sha256": "1b5f2671d712a01496c6509dbeeff6560b1e3ff88c8b3e882400dcc51d5feb14",
+      "source": "/tmp/sandbox-recovered-integration/qa/math-optimization/target/bc-bls/benchmark.properties"
+    },
+    {
+      "bytes": 4717,
+      "path": "jmh/fixtures/bc-bls/cohort.json",
+      "sha256": "ee529d287d7668f96ada16892ed080adb73c68386e14157226ee611ea1a8a021",
+      "source": "/tmp/sandbox-recovered-integration/qa/math-optimization/target/bc-bls/cohort.json"
+    },
+    {
+      "bytes": 160538,
+      "path": "jmh/fixtures/bc-bls/review.json",
+      "sha256": "925cd1e407a34589b080df13de6355e362b222fac0cea2ccb426da72b14ed16c",
+      "source": "/tmp/sandbox-recovered-integration/qa/math-optimization/target/bc-bls/review.json"
+    },
+    {
+      "bytes": 104983,
+      "path": "jmh/fixtures/bc-bls/inputs.json",
+      "sha256": "325074ecc0537dcf84dfea81892fc56f031f44a2484a60ac10ee1c85cbb8df4c",
+      "source": "/tmp/sandbox-recovered-integration/qa/math-optimization/target/bc-bls/inputs.json"
+    },
+    {
+      "bytes": 16895,
+      "path": "jmh/fixtures/bc-mathematical/benchmark.properties",
+      "sha256": "ed58b8194c819fac10a01d19ada2e96ba26b6acd5955997c3d4509b1641b3a14",
+      "source": "/tmp/sandbox-recovered-integration/qa/math-optimization/target/bc-mathematical/benchmark.properties"
+    },
+    {
+      "bytes": 713,
+      "path": "jmh/profiles/bc-bls.properties",
+      "sha256": "e1bd041d34a79707e8e6820b50a2fcdcf7619937ff0ce2b2cf6ad12a43427552",
+      "source": "/tmp/sandbox-recovered-integration/qa/math-optimization/profiles/bc-bls.properties"
+    },
+    {
+      "bytes": 688,
+      "path": "jmh/profiles/bc-mathematical.properties",
+      "sha256": "de1a5f6eaa47bc22040a13ab3aa975206a74b24ad1c0e635000a5ef30b8c978a",
+      "source": "/tmp/sandbox-recovered-integration/qa/math-optimization/profiles/bc-mathematical.properties"
+    },
+    {
+      "bytes": 270,
+      "path": "jmh/infrastructure-attempt/attempt-status.json",
+      "sha256": "57cc8e1bd9f4f6e96626588512676c23fdf23a4bbadbf2e83ddff59a8ebbe87c",
+      "source": "/tmp/sandbox-recovered-integration/.superpowers/measurement-7fcd719/attempt-status.json"
+    },
+    {
+      "bytes": 0,
+      "path": "jmh/infrastructure-attempt/empty-bc-bls-jmh.json",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "/tmp/sandbox-recovered-integration/.superpowers/measurement-7fcd719/empty-bc-bls-jmh.json"
+    },
+    {
+      "bytes": 6620,
+      "path": "jmh/infrastructure-attempt/run.log",
+      "sha256": "7d36aeb9a8dbfdca3ff9588f8cb327e7943f4c7e2d14a8a5e4d8f8119a624098",
+      "source": "/tmp/sandbox-recovered-integration/.superpowers/measurement-7fcd719/run.log"
+    },
+    {
+      "bytes": 1555,
+      "path": "jmh/infrastructure-attempt/command.sh",
+      "sha256": "5cefde66ffc0fa9caf1b9375c36a5a41ad720aecd54ff0fa0fc9fe5fd58580ee",
+      "source": "/workspace/scratch/0eb32b15fbb4/recovery/measure-combined-7fcd719.sh"
+    },
+    {
+      "bytes": 13379,
+      "path": "reviews/retention-difference-review-7fcd719.md",
+      "sha256": "047bdb6aa6d17d3a993ee5a19098d2d8a657eb87afb3be915cd19515483d3624",
+      "source": "/workspace/scratch/0eb32b15fbb4/recovery/retention-difference-review-7fcd719.md"
+    },
+    {
+      "bytes": 12363,
+      "path": "reviews/current-performance-review-7fcd719.md",
+      "sha256": "160d2aed2384cf8385dff3a4e0e09e0adfe9698cbbd94078d518c9ccf69629a8",
+      "source": "/workspace/scratch/0eb32b15fbb4/recovery/current-performance-review-7fcd719.md"
+    },
+    {
+      "bytes": 9815,
+      "path": "reviews/native-help-review-8a0a951.md",
+      "sha256": "281d6a455400162f6f1d8c6f27c7d57bc838c5bb61ccc404c4d7fc65a131631a",
+      "source": "/workspace/scratch/0eb32b15fbb4/recovery/native-help-review-8a0a951.md"
+    },
+    {
+      "bytes": 2,
+      "path": "native-help/run/exit-code.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "source": "/workspace/scratch/0eb32b15fbb4/recovery/native-help-8a0a951/exit-code.txt"
+    },
+    {
+      "bytes": 21,
+      "path": "native-help/run/finished-utc.txt",
+      "sha256": "99bff03a4138e994780a07704281c82604515c408ee5dbbf9ae64bd683bad3b6",
+      "source": "/workspace/scratch/0eb32b15fbb4/recovery/native-help-8a0a951/finished-utc.txt"
+    },
+    {
+      "bytes": 82,
+      "path": "native-help/run/identity-after.txt",
+      "sha256": "723f835ec2d7375f1a1cd695bc7d2b314bc5bc563b0772d3c41ad0a1ca236742",
+      "source": "/workspace/scratch/0eb32b15fbb4/recovery/native-help-8a0a951/identity-after.txt"
+    },
+    {
+      "bytes": 82,
+      "path": "native-help/run/identity-before.txt",
+      "sha256": "723f835ec2d7375f1a1cd695bc7d2b314bc5bc563b0772d3c41ad0a1ca236742",
+      "source": "/workspace/scratch/0eb32b15fbb4/recovery/native-help-8a0a951/identity-before.txt"
+    },
+    {
+      "bytes": 124,
+      "path": "native-help/run/report-copy-origin.json",
+      "sha256": "667c49f7cd002564760d865600f91ee16c440c52fb4f348eff8e3eb87ea968b9",
+      "source": "/workspace/scratch/0eb32b15fbb4/recovery/native-help-8a0a951/report-copy-origin.json"
+    },
+    {
+      "bytes": 305432,
+      "path": "native-help/run/run.log",
+      "sha256": "7eb3945c1658f3ad0160400ea19e5b1f680b01709ee08b0e53c8bed8a98826b9",
+      "source": "/workspace/scratch/0eb32b15fbb4/recovery/native-help-8a0a951/run.log"
+    },
+    {
+      "bytes": 0,
+      "path": "native-help/run/start-marker",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "/workspace/scratch/0eb32b15fbb4/recovery/native-help-8a0a951/start-marker"
+    },
+    {
+      "bytes": 21,
+      "path": "native-help/run/started-utc.txt",
+      "sha256": "72db971599493ee948305fffab204f32b1ee6cd19388bd501d2a0591fceed16a",
+      "source": "/workspace/scratch/0eb32b15fbb4/recovery/native-help-8a0a951/started-utc.txt"
+    },
+    {
+      "bytes": 78425,
+      "path": "native-help/run/surefire-reports/TEST-org.sandbox.jdt.ui.helper.views.MathematicsHelpScreenshotsSWTBotTest.xml",
+      "sha256": "81c84512ce6b4f76a260df8e0a78dff00ed2d36c4bde96f64195a16b0baf8812",
+      "source": "/workspace/scratch/0eb32b15fbb4/recovery/native-help-8a0a951/surefire-reports/TEST-org.sandbox.jdt.ui.helper.views.MathematicsHelpScreenshotsSWTBotTest.xml"
+    },
+    {
+      "bytes": 732,
+      "path": "native-help/run/tracked-after.txt",
+      "sha256": "09c0c0278dc7288d7f92d79adc61754848ada5ad4c7c77cd3da08168492b5915",
+      "source": "/workspace/scratch/0eb32b15fbb4/recovery/native-help-8a0a951/tracked-after.txt"
+    },
+    {
+      "bytes": 2789,
+      "path": "native-help/command.sh",
+      "sha256": "f835601b28ce41fb890deb30a3b236dd0b224b4a545de4c66220ccfaae7b6476",
+      "source": "/workspace/scratch/0eb32b15fbb4/recovery/capture-native-help.sh"
+    },
+    {
+      "bytes": 351,
+      "path": "native-help/invocation.json",
+      "sha256": "dbddd635a64241fad09dbac1489b7b4e73c7e123f692129655db76d5a8496eb7",
+      "source": "derived from retained wrapper and run identity"
+    },
+    {
+      "bytes": 187,
+      "path": "native-help/identity-ee20d376.txt",
+      "sha256": "2187b1df4b24a8d7cf933c8a29ac3f01ba09d60442d83d7bc7a7a1b45ee7c4b9",
+      "source": "git show ee20d3766f7d8d051f1f69341a6e5627fbb4f025"
+    },
+    {
+      "bytes": 67071,
+      "path": "native-help/assets/01-bouncy-castle-choice.png",
+      "sha256": "96e03facc1360d3bb91077d11517db6fed3dd7564f6c5122b181a7c034ccb4a1",
+      "source": "git:ee20d3766f7d8d051f1f69341a6e5627fbb4f025:sandbox_math_cleanup_help/images/01-bouncy-castle-choice.png"
+    },
+    {
+      "bytes": 21255,
+      "path": "native-help/assets/01-bouncy-castle-choice.provenance.json",
+      "sha256": "b3cffa190cb2dc58d0f2d6bd165bb58b8ad510233dad476f5c8ee0376fc42316",
+      "source": "git:ee20d3766f7d8d051f1f69341a6e5627fbb4f025:sandbox_math_cleanup_help/images/01-bouncy-castle-choice.provenance.json"
+    },
+    {
+      "bytes": 62308,
+      "path": "native-help/assets/02-bouncy-castle-majority.png",
+      "sha256": "be9eb3a7b99169ee0b463627be2154f2446a084e7c19345f52d3643bb9f4100d",
+      "source": "git:ee20d3766f7d8d051f1f69341a6e5627fbb4f025:sandbox_math_cleanup_help/images/02-bouncy-castle-majority.png"
+    },
+    {
+      "bytes": 18548,
+      "path": "native-help/assets/02-bouncy-castle-majority.provenance.json",
+      "sha256": "aa26f9fc99c983ee02638b8f6dc699709d37b15e360031d1ebdbd24e3327a1e4",
+      "source": "git:ee20d3766f7d8d051f1f69341a6e5627fbb4f025:sandbox_math_cleanup_help/images/02-bouncy-castle-majority.provenance.json"
+    },
+    {
+      "bytes": 72463,
+      "path": "native-help/assets/03-bouncy-castle-long.png",
+      "sha256": "9a9020c3fc5b49655acab5c03ac15fb96d1d262e56c6acc9f6882e54c6a1efe1",
+      "source": "git:ee20d3766f7d8d051f1f69341a6e5627fbb4f025:sandbox_math_cleanup_help/images/03-bouncy-castle-long.png"
+    },
+    {
+      "bytes": 25256,
+      "path": "native-help/assets/03-bouncy-castle-long.provenance.json",
+      "sha256": "930c04e41a3abb9fc8b9d4f3131324be2689641ba92379b6adb1060f79c77ec6",
+      "source": "git:ee20d3766f7d8d051f1f69341a6e5627fbb4f025:sandbox_math_cleanup_help/images/03-bouncy-castle-long.provenance.json"
+    },
+    {
+      "bytes": 60966,
+      "path": "native-help/assets/04-bouncy-castle-swapped-choice.png",
+      "sha256": "322953785aa9708570d5abecb104e6ba75e819709ac0a9269f8428fb653e6469",
+      "source": "git:ee20d3766f7d8d051f1f69341a6e5627fbb4f025:sandbox_math_cleanup_help/images/04-bouncy-castle-swapped-choice.png"
+    },
+    {
+      "bytes": 24292,
+      "path": "native-help/assets/04-bouncy-castle-swapped-choice.provenance.json",
+      "sha256": "70591d4da211ad16fe48a3be4eba1fea25c3315fe7b7ab1084695cef553d84c7",
+      "source": "git:ee20d3766f7d8d051f1f69341a6e5627fbb4f025:sandbox_math_cleanup_help/images/04-bouncy-castle-swapped-choice.provenance.json"
+    },
+    {
+      "bytes": 185309,
+      "path": "native-help/assets/05-bouncy-castle-modular-square.png",
+      "sha256": "38fa509a5be6aba0b84b67e9b31d2e355d36675ebc05aeccc4f384a87e61d985",
+      "source": "git:ee20d3766f7d8d051f1f69341a6e5627fbb4f025:sandbox_math_cleanup_help/images/05-bouncy-castle-modular-square.png"
+    },
+    {
+      "bytes": 20684,
+      "path": "native-help/assets/05-bouncy-castle-modular-square.provenance.json",
+      "sha256": "96dd854a25639ccc128d795bb6112c450347aaf2c6c0b5dccfe104d09237c146",
+      "source": "git:ee20d3766f7d8d051f1f69341a6e5627fbb4f025:sandbox_math_cleanup_help/images/05-bouncy-castle-modular-square.provenance.json"
+    },
+    {
+      "bytes": 0,
+      "path": "native-help/tracked-after-commit.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "git status after asset commit"
+    },
+    {
+      "bytes": 3195,
+      "path": "native-help/capture-commit-binding.json",
+      "sha256": "0831fdd59fa93f456ac236e810fcfa34ca09f7b3af7ecd45110b22b3225caef5",
+      "source": "independent Git-object and review-receipt comparison"
+    },
+    {
+      "bytes": 2620,
+      "path": "native-help/capture-source/BundleClassFingerprint.java",
+      "sha256": "de7a86d1fa31c72b3c2e73df5ca456ec95c356e302a67d501463db07526a65d5",
+      "source": "git:ee20d3766f7d8d051f1f69341a6e5627fbb4f025:sandbox_eclipse_help_swtbot_test/src/org/sandbox/jdt/ui/helper/views/BundleClassFingerprint.java"
+    },
+    {
+      "bytes": 27734,
+      "path": "native-help/capture-source/MathematicsHelpScreenshots.java",
+      "sha256": "039a5935f5103b32d1183444676a5de26dd8520c2d86e24e6befb227cea3ecab",
+      "source": "git:ee20d3766f7d8d051f1f69341a6e5627fbb4f025:sandbox_eclipse_help_swtbot_test/src/org/sandbox/jdt/ui/helper/views/MathematicsHelpScreenshots.java"
+    },
+    {
+      "bytes": 2549,
+      "path": "native-help/capture-source/MathematicsHelpScreenshotsSWTBotTest.java",
+      "sha256": "ad2c8232fbdad4f6a49de4e8fd98c7b254ff5f995439f4b58a7742d9a10f2047",
+      "source": "git:ee20d3766f7d8d051f1f69341a6e5627fbb4f025:sandbox_eclipse_help_swtbot_test/src/org/sandbox/jdt/ui/helper/views/MathematicsHelpScreenshotsSWTBotTest.java"
+    },
+    {
+      "bytes": 1914,
+      "path": "sdk/qualification.json",
+      "sha256": "e205e3e0243019fcd70ad65ae27ce83104169a80574a7b5f2fc9db47cae0d1b7",
+      "source": "/tmp/sandbox-native-on-main/sandbox_math_cleanup/lib/qualification.json"
+    },
+    {
+      "bytes": 692,
+      "path": "external-evidence.json",
+      "sha256": "2de76f0e63ba51c8b61d97644e153d63d4bd7d79492f6316e5ca81d8cb40ae87",
+      "source": "derived index of existing large evidence"
+    },
+    {
+      "bytes": 2165,
+      "path": "README.md",
+      "sha256": "8adf0c2c178a1b7a48b21799d23a51406dd4668c596d69efd8c132fd57f7955d",
+      "source": "packaging scope and identity note"
+    }
+  ]
+}

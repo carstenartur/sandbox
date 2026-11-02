@@ -1,0 +1,14 @@
+{
+  "existingFullEvidenceArchive": {
+    "bytes": 46526174,
+    "path": "/workspace/scratch/0eb32b15fbb4/recovery/full-test-retention-7fcd719-evidence.tar.gz",
+    "sha256": "108dd0c9d0be8c4ebcd379871a13cf5d1f9e0e61ce1667b31398f44f82cad4fa"
+  },
+  "omittedLargeCorpusReview": {
+    "binding": "jmh/fixtures/bc-mathematical/benchmark.properties reviewSha256; full corpus already archived separately",
+    "bytes": 23629645,
+    "sha256": "63ef3a39491e83e0e1f367af26a0c0ba5a869d9ec35569cf134fb40efd39e05c",
+    "sourcePath": "/tmp/sandbox-recovered-integration/qa/math-optimization/target/bc-mathematical/review.json"
+  },
+  "scope": "No full corpora, SDK binary, or Maven cache duplicated."
+}

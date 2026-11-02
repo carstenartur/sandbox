@@ -1,0 +1,332 @@
+{
+  "schema": "sandbox.native-freshness-review.evidence/v1",
+  "base": "36be6f4476ce10e218833a5fe64fd9362358c7c8",
+  "baseTree": "9954a7fa9585302036043898524d1e2b8c98a162",
+  "publicHead": "b639c482ac4d5707a60530619624dc1e7cf8481a",
+  "commit": "298def9d2ae0603857102c70819294b4cf156176",
+  "tree": "5b01c8734662a4948440244ccab62dd0fdca0506",
+  "review": "https://github.com/carstenartur/sandbox/pull/1792#discussion_r4445668187",
+  "change": {
+    "files": 2,
+    "additions": 58,
+    "deletions": 2
+  },
+  "fullNativeScope": {
+    "base": "ae693e5006e104824112880be7db92b3403bd93d",
+    "paths": 44,
+    "textPaths": 38,
+    "additions": 832,
+    "deletions": 168,
+    "changedTextLines": 1000
+  },
+  "sourceFiles": [
+    {
+      "path": "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/MathematicalAnalysis.java",
+      "mode": "100644",
+      "blob": "e47bc24cdcc224c0ae27b8b9591f74b6f0f48e6b",
+      "bytes": 95084,
+      "sha256": "d928b99e80e50c7f240c2e42813ab79e4130d68fbcf5e0ff30c993a077eaa697"
+    },
+    {
+      "path": "sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/math/JavaTailRecursionRewriteTest.java",
+      "mode": "100644",
+      "blob": "28ea0221bd2a49836e1cfaa82623ce20466595a1",
+      "bytes": 16422,
+      "sha256": "9b4602ba915198ec67f1ea1e3db7cc7695b4a1bcdd2f33c641548c66ba6fd205"
+    }
+  ],
+  "javaVersion": "25.0.5+8-LTS",
+  "runs": [
+    {
+      "stage": "red",
+      "exitCode": 1,
+      "log": "red.log",
+      "logSha256": "66e1741b64e62ece94ff019bf3783eeaa3e905c759c9ad9374e0d553a538a3c9",
+      "suites": [
+        {
+          "file": "red-xml/TEST-org.sandbox.jdt.internal.corext.fix.math.JavaTailRecursionRewriteTest.xml",
+          "sha256": "81ed30af743699ff06fd474e2251d3312003c18208fd1b492bf433c2c2876602",
+          "name": "org.sandbox.jdt.internal.corext.fix.math.JavaTailRecursionRewriteTest",
+          "tests": 2,
+          "failures": 2,
+          "errors": 0,
+          "skipped": 0,
+          "time": 1.863
+        }
+      ],
+      "totals": {
+        "tests": 2,
+        "failures": 2,
+        "errors": 0,
+        "skipped": 0
+      },
+      "mavenTotalTime": "12.688 s",
+      "finishedUTC": "2026-11-02T17:42:45.000Z"
+    },
+    {
+      "stage": "extended-red",
+      "exitCode": 1,
+      "log": "extended-red.log",
+      "logSha256": "0a88f8b59f62c0aed11baaae2ffbd4d400536975da46986a93b244893478294e",
+      "suites": [
+        {
+          "file": "extended-red-xml/TEST-org.sandbox.jdt.internal.corext.fix.math.JavaTailRecursionRewriteTest.xml",
+          "sha256": "de71b323393e688f78030521a2a19902627f536f624a190310df0f371bb03436",
+          "name": "org.sandbox.jdt.internal.corext.fix.math.JavaTailRecursionRewriteTest",
+          "tests": 4,
+          "failures": 4,
+          "errors": 0,
+          "skipped": 0,
+          "time": 1.852
+        }
+      ],
+      "totals": {
+        "tests": 4,
+        "failures": 4,
+        "errors": 0,
+        "skipped": 0
+      },
+      "mavenTotalTime": "11.705 s",
+      "finishedUTC": "2026-11-02T17:43:41.000Z"
+    },
+    {
+      "stage": "affected-green",
+      "exitCode": 0,
+      "log": "affected-green.log",
+      "logSha256": "3125662cfd145a5f4fd0647ec99baa67ebbeb35d44d1e042f023ed59897075ea",
+      "suites": [
+        {
+          "file": "affected-green-xml/TEST-org.sandbox.jdt.internal.corext.fix.math.JavaFiniteSumBudgetTest.xml",
+          "sha256": "678c7a7ea28ef986b0fefe0807d688d10d287e7c58e18b3ac099f35d40f9d9d8",
+          "name": "org.sandbox.jdt.internal.corext.fix.math.JavaFiniteSumBudgetTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "time": 0.115
+        },
+        {
+          "file": "affected-green-xml/TEST-org.sandbox.jdt.internal.corext.fix.math.JavaTailRecursionInspectorTest.xml",
+          "sha256": "df2e37d2c9fec7c73b48db9619d7538e3345e9c4916ed05ae4eb87bc78b5bbb1",
+          "name": "org.sandbox.jdt.internal.corext.fix.math.JavaTailRecursionInspectorTest",
+          "tests": 15,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "time": 0.874
+        },
+        {
+          "file": "affected-green-xml/TEST-org.sandbox.jdt.internal.corext.fix.math.JavaTailRecursionReplayTest.xml",
+          "sha256": "1992a305cd8340f47f9852ec3507281e53265be711b23fd252c5ac1bfbcaf05b",
+          "name": "org.sandbox.jdt.internal.corext.fix.math.JavaTailRecursionReplayTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "time": 0.11
+        },
+        {
+          "file": "affected-green-xml/TEST-org.sandbox.jdt.internal.corext.fix.math.JavaTailRecursionRewriteTest.xml",
+          "sha256": "5951b7c62d3501cc51a8859550c3d71d3122c490627c7dbe851b6a124954e1b3",
+          "name": "org.sandbox.jdt.internal.corext.fix.math.JavaTailRecursionRewriteTest",
+          "tests": 20,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "time": 2.215
+        },
+        {
+          "file": "affected-green-xml/TEST-org.sandbox.jdt.internal.corext.fix.math.JavaValueResidueTest.xml",
+          "sha256": "7052168cb3d81119e8c08ec6e86c05335bc5f87e6c65a00336b58e056fda5261",
+          "name": "org.sandbox.jdt.internal.corext.fix.math.JavaValueResidueTest",
+          "tests": 11,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "time": 3.751
+        },
+        {
+          "file": "affected-green-xml/TEST-org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptionsTest.xml",
+          "sha256": "fd6b4ff237210f29cfd79799288d0b19abe4fac52c20c1cc696ad9a6e320953a",
+          "name": "org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptionsTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "time": 0.024
+        },
+        {
+          "file": "affected-green-xml/TEST-org.sandbox.jdt.math.tests.DocumentedSourceSnapshotTest.xml",
+          "sha256": "996c0c23b33f3c0fa9d740f779bef390368483be0f88be4df1b4530a767f00ba",
+          "name": "org.sandbox.jdt.math.tests.DocumentedSourceSnapshotTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "time": 0.07
+        },
+        {
+          "file": "affected-green-xml/TEST-org.sandbox.jdt.math.tests.MathematicalInterruptionTest.xml",
+          "sha256": "1cb930fe37e51d411c0c5c84ee5fb13d3a8c09fc8c051f6ac45bc84cbc9bfe7f",
+          "name": "org.sandbox.jdt.math.tests.MathematicalInterruptionTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "time": 0.423
+        }
+      ],
+      "totals": {
+        "tests": 75,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "mavenTotalTime": "16.786 s",
+      "finishedUTC": "2026-11-02T17:45:27.000Z"
+    },
+    {
+      "stage": "missing-metadata-red",
+      "exitCode": 1,
+      "log": "missing-metadata-red.log",
+      "logSha256": "4738e9d06c874f253307cb214a812497aa1b7bf59c85c8f9f08af4d57d0f724d",
+      "suites": [
+        {
+          "file": "missing-metadata-red-xml/TEST-org.sandbox.jdt.internal.corext.fix.math.JavaTailRecursionRewriteTest.xml",
+          "sha256": "d58022fda8d13a8bc8f7b0d75f86632b12a63b8572b789eb46ce2fb3cdafb7f5",
+          "name": "org.sandbox.jdt.internal.corext.fix.math.JavaTailRecursionRewriteTest",
+          "tests": 1,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0,
+          "time": 0.152
+        }
+      ],
+      "totals": {
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      "mavenTotalTime": "10.271 s",
+      "finishedUTC": "2026-11-02T17:46:28.000Z"
+    },
+    {
+      "stage": "reviewed-green",
+      "exitCode": 0,
+      "log": "reviewed-green.log",
+      "logSha256": "45d4e4c3df597ac152f4083225fc85181d7b347e8f86f317a0aedc85604e63ee",
+      "suites": [
+        {
+          "file": "reviewed-green-xml/TEST-org.sandbox.jdt.internal.corext.fix.math.JavaFiniteSumBudgetTest.xml",
+          "sha256": "7c5c85afac7cadf97c18a6dcfcce04cbbd236bf0757f02c83788d7a2ab50aad2",
+          "name": "org.sandbox.jdt.internal.corext.fix.math.JavaFiniteSumBudgetTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "time": 0.103
+        },
+        {
+          "file": "reviewed-green-xml/TEST-org.sandbox.jdt.internal.corext.fix.math.JavaTailRecursionInspectorTest.xml",
+          "sha256": "68b1954d4f89d641f09113adbba815572491446e35df15abef4f4534329a8dd6",
+          "name": "org.sandbox.jdt.internal.corext.fix.math.JavaTailRecursionInspectorTest",
+          "tests": 15,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "time": 0.829
+        },
+        {
+          "file": "reviewed-green-xml/TEST-org.sandbox.jdt.internal.corext.fix.math.JavaTailRecursionReplayTest.xml",
+          "sha256": "11aa8dd0f1245c1365cd1a664bed6db0e03c64cb5a284cdbc0a306ce3678c3f7",
+          "name": "org.sandbox.jdt.internal.corext.fix.math.JavaTailRecursionReplayTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "time": 0.135
+        },
+        {
+          "file": "reviewed-green-xml/TEST-org.sandbox.jdt.internal.corext.fix.math.JavaTailRecursionRewriteTest.xml",
+          "sha256": "4ce9673a68b0d6a67d8f3e57ec9b68cc2efaa8e42a0e3ec8e94df0dd9277d393",
+          "name": "org.sandbox.jdt.internal.corext.fix.math.JavaTailRecursionRewriteTest",
+          "tests": 21,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "time": 2.078
+        },
+        {
+          "file": "reviewed-green-xml/TEST-org.sandbox.jdt.internal.corext.fix.math.JavaValueResidueTest.xml",
+          "sha256": "76df121a837823a8f3c5f149cd312641d35a41ad1986b5b98dd2fc371168f0dd",
+          "name": "org.sandbox.jdt.internal.corext.fix.math.JavaValueResidueTest",
+          "tests": 11,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "time": 3.693
+        },
+        {
+          "file": "reviewed-green-xml/TEST-org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptionsTest.xml",
+          "sha256": "50e5a3148d33c87d6c0f9aaac91c745f860c576eb7444ff6b4c7d6ab932eba4d",
+          "name": "org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptionsTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "time": 0.024
+        },
+        {
+          "file": "reviewed-green-xml/TEST-org.sandbox.jdt.math.tests.DocumentedSourceSnapshotTest.xml",
+          "sha256": "bb3074efd8dc5ac49ad518bddf5ddfef7903ae2af79738384405039ee1141cfc",
+          "name": "org.sandbox.jdt.math.tests.DocumentedSourceSnapshotTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "time": 0.07
+        },
+        {
+          "file": "reviewed-green-xml/TEST-org.sandbox.jdt.math.tests.MathematicalInterruptionTest.xml",
+          "sha256": "fffd8acce1c2f070e43255c600fc98f4cbf4c05cd156e49a83b696f06ff9ef45",
+          "name": "org.sandbox.jdt.math.tests.MathematicalInterruptionTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "time": 0.406
+        }
+      ],
+      "totals": {
+        "tests": 76,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "mavenTotalTime": "17.774 s",
+      "finishedUTC": "2026-11-02T17:47:09.000Z"
+    }
+  ],
+  "patch": {
+    "file": "final.patch",
+    "sha256": "27507acccc0aa9884e26ae567e43bc503dc33a0772012dc5b97ba5ce455e29a4"
+  },
+  "payload": {
+    "file": "payload.json",
+    "sha256": "9d0f7e36a8fd4c63628c8ff76d645cf1ab46d1305f42acecffdc7f06d2e803ff"
+  },
+  "independentReview": {
+    "agent": "/root/inverse_commit_review",
+    "approvedCommit": "298def9d2ae0603857102c70819294b4cf156176",
+    "approvedTree": "5b01c8734662a4948440244ccab62dd0fdca0506",
+    "status": "APPROVED"
+  },
+  "notPerformed": [
+    "complete corpus",
+    "native workbench",
+    "JMH",
+    "new Help capture",
+    "remote mutation"
+  ]
+}

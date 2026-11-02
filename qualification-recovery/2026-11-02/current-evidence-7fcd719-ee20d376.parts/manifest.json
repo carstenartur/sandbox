@@ -1,0 +1,65 @@
+{
+  "schema": "sandbox.split-immutable-evidence/v1",
+  "repository": "carstenartur/sandbox",
+  "original": {
+    "file": "current-evidence-7fcd719-ee20d376.tar.gz",
+    "bytes": 619504,
+    "sha256": "bbf0908acfa7bec106ba0c1c75005372bca200e1019bc9c977d2cd3c45ef193e",
+    "gitBlob": "caba46e1a8066f6b4b425f183530dcad0954d370"
+  },
+  "partByteLimit": 131072,
+  "orderedParts": [
+    {
+      "index": 1,
+      "file": "current-evidence-7fcd719-ee20d376.tar.gz.part-0001",
+      "offset": 0,
+      "bytes": 131072,
+      "sha256": "4a9644148a85c7779c01e4f9e0345f531bc50e52220123418e7a4cc1df93409e",
+      "gitBlob": "eba68c52b1d4d8701f45ed1a5097eeb0288bb6cc"
+    },
+    {
+      "index": 2,
+      "file": "current-evidence-7fcd719-ee20d376.tar.gz.part-0002",
+      "offset": 131072,
+      "bytes": 131072,
+      "sha256": "1dd6e3855eae246fa10aaffee4f31d10ae27f848853daf2ea3d6182ad46a091a",
+      "gitBlob": "d34b33e0c423efba9f4ed60ca09270aa553b1224"
+    },
+    {
+      "index": 3,
+      "file": "current-evidence-7fcd719-ee20d376.tar.gz.part-0003",
+      "offset": 262144,
+      "bytes": 131072,
+      "sha256": "52daac33cd2de0cb0cc39a2d393b268ea09b7939e46bf08863749463e3a36d7c",
+      "gitBlob": "b2853ba67f2feb166da85f889c2be05eb2389f1d"
+    },
+    {
+      "index": 4,
+      "file": "current-evidence-7fcd719-ee20d376.tar.gz.part-0004",
+      "offset": 393216,
+      "bytes": 131072,
+      "sha256": "6e4358528b8faf117d33c88ec538e4f01f533f924e01f0cd3b89e77cd9316fef",
+      "gitBlob": "557501e9a6a8008225f4263f893b55c1fe631d60"
+    },
+    {
+      "index": 5,
+      "file": "current-evidence-7fcd719-ee20d376.tar.gz.part-0005",
+      "offset": 524288,
+      "bytes": 95216,
+      "sha256": "a2d4c22ef38199bcc8a43952302068518f9aa4e459dd237b70699eefbb324ad9",
+      "gitBlob": "718f39c619560fd8e955e0bd82f384314cf60a2b"
+    }
+  ],
+  "reassembly": "Concatenate orderedParts file bytes in ascending index order without separators. Each Git blob contains the raw part bytes, not base64 text.",
+  "localVerification": {
+    "byteIdenticalToOriginal": true,
+    "sha256": "bbf0908acfa7bec106ba0c1c75005372bca200e1019bc9c977d2cd3c45ef193e",
+    "gitBlob": "caba46e1a8066f6b4b425f183530dcad0954d370",
+    "gzipCrc": "PASS",
+    "tarFiles": 62,
+    "internalSha256Checks": 61,
+    "internalSha256": "PASS"
+  },
+  "largeBlobUpload": "Previous 619504-byte create_blob call was interrupted without a confirmed remote result; these parts replace that upload transport.",
+  "partUploadStatus": "All five raw part Git blobs were confirmed before this manifest was committed. The reconstructed original is verified locally; its unsplit remote upload was not confirmed."
+}

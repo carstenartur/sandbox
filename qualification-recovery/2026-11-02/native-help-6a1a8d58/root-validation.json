@@ -1,0 +1,32 @@
+{
+  "sourceHead": "6a1a8d5890dcc9b48e39c88f55cf3660029688c2",
+  "classes": 350,
+  "adapterClassesSha256": "08518a0b85228e81124c5523d3db97ac664c384d65c5898332622ed9b0ecdce4",
+  "pairs": [
+    {
+      "file": "01-bouncy-castle-choice.provenance.json",
+      "pngSha256": "96e03facc1360d3bb91077d11517db6fed3dd7564f6c5122b181a7c034ccb4a1",
+      "jsonSha256": "cfa751adbbe0c8b19120aae35b3096512ec4ef8670b7e6aa4f51454a1c6ffeba"
+    },
+    {
+      "file": "02-bouncy-castle-majority.provenance.json",
+      "pngSha256": "be9eb3a7b99169ee0b463627be2154f2446a084e7c19345f52d3643bb9f4100d",
+      "jsonSha256": "7061320c4076ee3f548aedc380053931f732df082573abe064f98bc19a282fdb"
+    },
+    {
+      "file": "03-bouncy-castle-long.provenance.json",
+      "pngSha256": "9a9020c3fc5b49655acab5c03ac15fb96d1d262e56c6acc9f6882e54c6a1efe1",
+      "jsonSha256": "5d493cbf3492dee88406361849bc5719a264a12a3fb32ea19195b58f501840ac"
+    },
+    {
+      "file": "04-bouncy-castle-swapped-choice.provenance.json",
+      "pngSha256": "322953785aa9708570d5abecb104e6ba75e819709ac0a9269f8428fb653e6469",
+      "jsonSha256": "81b67a16fac2c717be7eff96c42833f63662b7bcc866dace5ef720dc4bf3862e"
+    },
+    {
+      "file": "05-bouncy-castle-modular-square.provenance.json",
+      "pngSha256": "38fa509a5be6aba0b84b67e9b31d2e355d36675ebc05aeccc4f384a87e61d985",
+      "jsonSha256": "233b072dcab784188c35fdedfe93b413bd4634a1b928f7f4f48b93f408261f1f"
+    }
+  ]
+}

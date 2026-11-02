@@ -106,7 +106,7 @@
       "independentReview": "APPROVED",
       "reviewer": "native_recovery_final_review",
       "sdkSha256": "ba0293dedb3fde9ca2f3042dcef8ae4d6bb2d576adedff8ba7a2b4d186f1cbe1",
-      "publicHelp": "pending actual-main capture"
+      "publicHelp": "Public canonical run 41492214472 pending; local capture independently approved"
     },
     "blsFocused": {
       "localHead": "8322e59c8cf9bc1589fc65e9c3d795379bc7a8ad",
@@ -183,6 +183,351 @@
       "reviewer": "inverse_commit_review",
       "thread": "PRRT_kwDOFYv10c6yjFCH",
       "threadResolved": true
+    },
+    "currentFull": {
+      "head": "7fcd71944ffdc2b231efdfd4706437b74cbd622b",
+      "tree": "2fa20615db38841fbb3bd390b0c8d3794ef28f8a",
+      "exit": 0,
+      "status": "BUILD_SUCCESS",
+      "counts": {
+        "tests": 1138,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1,
+        "suites": 130
+      },
+      "corpus": {
+        "strict": {
+          "parsed": 3126,
+          "parseErrorFiles": 10,
+          "acceptedRegions": 146
+        },
+        "mathematical": {
+          "parsed": 3126,
+          "parseErrorFiles": 10,
+          "acceptedRegions": 153
+        }
+      },
+      "sourceUnchanged": true,
+      "seconds": 556,
+      "finishedUTC": "2026-11-02T06:25:08Z",
+      "logSha256": "bad5e162fe7bc75cb5a9fca20a4f69725503a178c11f97606f790943fa2c9065"
+    },
+    "currentRetention": {
+      "head": "7fcd71944ffdc2b231efdfd4706437b74cbd622b",
+      "tree": "2fa20615db38841fbb3bd390b0c8d3794ef28f8a",
+      "tests": 16,
+      "suites": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 10.243,
+      "finishedUTC": "2026-11-02T06:26:00Z",
+      "profiles": {
+        "strict": {
+          "baseline": 146,
+          "current": 146,
+          "retained": 146,
+          "lost": 0,
+          "additions": 0,
+          "replacementChanges": 31,
+          "costChanges": 0,
+          "proofChanges": 0
+        },
+        "mathematical": {
+          "baseline": 149,
+          "current": 153,
+          "retained": 149,
+          "lost": 0,
+          "additions": 4,
+          "replacementChanges": 31,
+          "costChanges": 0,
+          "proofChanges": 1
+        }
+      },
+      "independentDifferenceReview": "APPROVED",
+      "output": "/workspace/scratch/0eb32b15fbb4/recovery/current-retention-7fcd719",
+      "reviewer": "inverse_commit_review",
+      "differenceClassification": {
+        "strict": {
+          "renames": 21,
+          "reusedDeclaredOutputs": 10
+        },
+        "mathematical": {
+          "renames": 22,
+          "reusedDeclaredOutputs": 9
+        },
+        "typedOutputTreesEqual": true,
+        "assumptionHashCause": "Only the absolute source-context provenance path changed; sorted length-prefixed hash reproduced exactly. All five semantic assumptions and both source dependency hashes are unchanged.",
+        "allOtherDifferencesExplained": true
+      }
+    },
+    "currentPerformance": {
+      "head": "7fcd71944ffdc2b231efdfd4706437b74cbd622b",
+      "tree": "2fa20615db38841fbb3bd390b0c8d3794ef28f8a",
+      "finishedUTC": "2026-11-02T06:38:12Z",
+      "seconds": 294,
+      "forks": 2,
+      "warmup": {
+        "iterations": 3,
+        "milliseconds": 500
+      },
+      "measurement": {
+        "iterations": 5,
+        "milliseconds": 500
+      },
+      "jmhVersion": "1.37",
+      "jdk": "25.0.5+8-LTS",
+      "results": [
+        {
+          "file": "bc-bls-performance.json",
+          "sha256": "b2bb87d1cb5a347d06b681013d594fec34601a96e9dcef10a009e6109ae6d9e5",
+          "rawJmhSha256": "4515cfb5e34b7e3d6edd026cfc3578e7ac97bc87a3582b47e5b5c9cf8833e15d",
+          "fixtureManifestSha256": "1b5f2671d712a01496c6509dbeeff6560b1e3ff88c8b3e882400dcc51d5feb14",
+          "comparisons": [
+            {
+              "case": "G2_32",
+              "originalMicros": 35261.45004523809,
+              "originalCI": [
+                33412.21978217366,
+                37110.680308302515
+              ],
+              "generatedMicros": 44017.33674434732,
+              "generatedCI": [
+                40305.92802073033,
+                47728.745467964305
+              ],
+              "ratio": 1.2483132907998964,
+              "timing": "HIGHER_TIME"
+            },
+            {
+              "case": "G2_256",
+              "originalMicros": 37637.31427076923,
+              "originalCI": [
+                32513.837349253237,
+                42760.79119228522
+              ],
+              "generatedMicros": 45916.62974469698,
+              "generatedCI": [
+                43059.39006761247,
+                48773.869421781485
+              ],
+              "ratio": 1.2199762558604725,
+              "timing": "HIGHER_TIME"
+            },
+            {
+              "case": "PAIRING",
+              "originalMicros": 22918.29181995106,
+              "originalCI": [
+                21230.691054831917,
+                24605.892585070203
+              ],
+              "generatedMicros": 55600.64595666666,
+              "generatedCI": [
+                53393.20056130528,
+                57808.09135202804
+              ],
+              "ratio": 2.4260379610082734,
+              "timing": "HIGHER_TIME"
+            }
+          ]
+        },
+        {
+          "file": "bc-performance-review.json",
+          "sha256": "c31acad66e7c41091446382e6e7c7456d1a03366af9efafbf1956036d90ca5f1",
+          "rawJmhSha256": "26954b16d5a9145aef743f735ee399a7245f7766f70aea35f8267182497322d5",
+          "comparisons": [
+            {
+              "case": "P256_XMD_SHA_256/32",
+              "originalMicros": 92.75568994153177,
+              "originalCI": [
+                78.47007746374544,
+                107.0413024193181
+              ],
+              "generatedMicros": 90.38124352816168,
+              "generatedCI": [
+                85.2482525055407,
+                95.51423455078265
+              ],
+              "ratio": 0.9744010700058744,
+              "timing": "INCONCLUSIVE"
+            },
+            {
+              "case": "P256_XMD_SHA_256/256",
+              "originalMicros": 89.70005583312809,
+              "originalCI": [
+                79.89020763566546,
+                99.50990403059072
+              ],
+              "generatedMicros": 91.89915794194071,
+              "generatedCI": [
+                85.58177171832082,
+                98.2165441655606
+              ],
+              "ratio": 1.0245161732441246,
+              "timing": "INCONCLUSIVE"
+            },
+            {
+              "case": "P384_XMD_SHA_384/32",
+              "originalMicros": 179.0242424853125,
+              "originalCI": [
+                170.0919043080435,
+                187.9565806625815
+              ],
+              "generatedMicros": 183.37077056773677,
+              "generatedCI": [
+                170.63801232214792,
+                196.10352881332562
+              ],
+              "ratio": 1.0242789916163497,
+              "timing": "INCONCLUSIVE"
+            },
+            {
+              "case": "P384_XMD_SHA_384/256",
+              "originalMicros": 199.99240162777258,
+              "originalCI": [
+                182.81911840156346,
+                217.1656848539817
+              ],
+              "generatedMicros": 180.36654394609508,
+              "generatedCI": [
+                167.09818628125436,
+                193.6349016109358
+              ],
+              "ratio": 0.9018669833356704,
+              "timing": "INCONCLUSIVE"
+            },
+            {
+              "case": "P521_XMD_SHA_512/32",
+              "originalMicros": 395.4399945934284,
+              "originalCI": [
+                341.96199060790116,
+                448.9179985789557
+              ],
+              "generatedMicros": 381.0708031135985,
+              "generatedCI": [
+                352.0441283601091,
+                410.09747786708795
+              ],
+              "ratio": 0.9636627764609303,
+              "timing": "INCONCLUSIVE"
+            },
+            {
+              "case": "P521_XMD_SHA_512/256",
+              "originalMicros": 359.2989317025083,
+              "originalCI": [
+                330.2798128098121,
+                388.3180505952045
+              ],
+              "generatedMicros": 408.1144518631879,
+              "generatedCI": [
+                347.84977522331826,
+                468.3791285030576
+              ],
+              "ratio": 1.1358632488256264,
+              "timing": "INCONCLUSIVE"
+            },
+            {
+              "case": "BLS12_381_G1_XMD_SHA_256_SSWU_RO/32",
+              "originalMicros": 790.3054217404172,
+              "originalCI": [
+                749.3076588901997,
+                831.3031845906346
+              ],
+              "generatedMicros": 839.9427524377245,
+              "generatedCI": [
+                789.6980075269107,
+                890.1874973485383
+              ],
+              "ratio": 1.062807782069868,
+              "timing": "INCONCLUSIVE"
+            },
+            {
+              "case": "BLS12_381_G1_XMD_SHA_256_SSWU_RO/256",
+              "originalMicros": 773.785601857285,
+              "originalCI": [
+                728.0903633704561,
+                819.4808403441139
+              ],
+              "generatedMicros": 809.5690271188739,
+              "generatedCI": [
+                759.9281791704855,
+                859.2098750672624
+              ],
+              "ratio": 1.046244625353198,
+              "timing": "INCONCLUSIVE"
+            }
+          ]
+        }
+      ],
+      "independentReview": "APPROVED",
+      "reviewer": "inverse_commit_review",
+      "rawRows": 22,
+      "samples": 220,
+      "pairs": 11,
+      "independentMaximumRelativeDifference": 1.91e-15
+    },
+    "nativeHelpLocal": {
+      "sourceHead": "8a0a95144809a9f07a30aad74b4856f22190b85d",
+      "sourceTree": "12bb77006ab52acee0c7bf08660104e08455677e",
+      "adapterBase": "0343431c70d55f971ac61b2436ab5965cb5c6865",
+      "assetCommit": "ee20d3766f7d8d051f1f69341a6e5627fbb4f025",
+      "assetTree": "48c4d8766fb854479422134110c163509726234b",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 135,
+      "finishedUTC": "2026-11-02T06:44:23Z",
+      "adapterClasses": 350,
+      "adapterClassesSha256": "7d1937943aab91a2dd3ebc65a9dcd651a200165d5ce3796d36ba94d5be69be33",
+      "bundleSha256": "56d2406676225dfde39f538ea157034c8f14faf452780c008184b950e3e69e19",
+      "independentReview": "APPROVED",
+      "reviewReceiptSha256": "281d6a455400162f6f1d8c6f27c7d57bc838c5bb61ccc404c4d7fc65a131631a"
+    },
+    "nativeFreshnessReview": {
+      "head": "298def9d2ae0603857102c70819294b4cf156176",
+      "tree": "5b01c8734662a4948440244ccab62dd0fdca0506",
+      "tests": 76,
+      "suites": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 17.774,
+      "finishedUTC": "2026-11-02T17:47:09Z",
+      "independentReview": "APPROVED",
+      "redCommentCases": 4,
+      "additionalMissingMetadataRed": 1,
+      "productionLinesAdded": 9,
+      "reviewReceiptSha256": "67357e8e1c182d9ba29d3d60252fdea8ef6f264be2f49ba927b6fa35a51d02fd"
+    },
+    "nativeHelpFreshnessLocal": {
+      "sourceHead": "6a1a8d5890dcc9b48e39c88f55cf3660029688c2",
+      "sourceTree": "f468d0e2c07bcc986a32fc8c47590db6849d5016",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 107,
+      "finishedUTC": "2026-11-02T17:51:52Z",
+      "adapterBase": "ae693e5006e104824112880be7db92b3403bd93d",
+      "adapterClassesSha256": "08518a0b85228e81124c5523d3db97ac664c384d65c5898332622ed9b0ecdce4",
+      "assetCommit": "134c534528d39ac964f5bf3ac383c0dd09bb97e6"
+    },
+    "publicHelpFirst": {
+      "head": "b639c482ac4d5707a60530619624dc1e7cf8481a",
+      "run": 41492214472,
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "mavenBuild": "SUCCESS",
+      "reproductionGate": "FAILED_FIVE_PNGS",
+      "artifactId": 13164808693,
+      "zipSha256": "228b03a5baa3e0cd58e948c1fd8cd33a797c06894d1a1a9a997df2254da6a1fd",
+      "tarSha256": "230c526132c2ac16b6dc192ae7022a911d9b799efee24629f184d1bf5f672737",
+      "verifiedManifestEntries": 34,
+      "allFiveSourcePanesPixelIdentical": true
     }
   },
   "archives": [
@@ -227,6 +572,34 @@
       "bytes": 12548,
       "sha256": "a9d8b70d6c33bda2fde2c6c4f95653892d74701f13bccb2f3ecde499927e9620",
       "gitBlob": "be802b183874ea0787664ece281bd7d507ea8105"
+    },
+    {
+      "name": "full-test-retention-7fcd719-evidence.tar.gz",
+      "bytes": 46526174,
+      "sha256": "108dd0c9d0be8c4ebcd379871a13cf5d1f9e0e61ce1667b31398f44f82cad4fa",
+      "reconstructedGitBlob": "e1152edcd2e2e7e0c656d48a8966d9df5864ac0c",
+      "storage": {
+        "kind": "raw-parts",
+        "parts": 60,
+        "manifest": "full-test-retention-7fcd719.parts/manifest.json"
+      }
+    },
+    {
+      "name": "current-evidence-7fcd719-ee20d376.tar.gz",
+      "bytes": 619504,
+      "sha256": "bbf0908acfa7bec106ba0c1c75005372bca200e1019bc9c977d2cd3c45ef193e",
+      "reconstructedGitBlob": "caba46e1a8066f6b4b425f183530dcad0954d370",
+      "storage": {
+        "kind": "raw-parts",
+        "parts": 5,
+        "manifest": "current-evidence-7fcd719-ee20d376.parts/manifest.json"
+      }
+    },
+    {
+      "name": "native-freshness-review-298def9-evidence.tar.gz",
+      "bytes": 63588,
+      "sha256": "03e82b766f77cfafcedea2b1f9629c1477eccbdb1d617131ddd7633a3b024b22",
+      "gitBlob": "540c1b304b42c19b655f188c702315bd43189fdf"
     }
   ],
   "currentCombinedSource": {
@@ -240,10 +613,48 @@
       "helpSdkMetadata": "9abd2c8f17004de7c7c58557e3031503907f5b72"
     },
     "publicCheckpoint": "9e0325b1df721295e441f7af89d793941417c66a",
-    "qualification": "FULL_GATE_RUNNING"
+    "qualification": "FULL_TEST_CORPUS_RETENTION_JMH_QUALIFIED"
   },
   "sourceReferences": {
     "native": "86398bd804e97a216d00e9fbb7d0011020c7efc0",
     "bls": "aeb838c9b7e3cc60545682f9ee3600ac9ce5f020"
+  },
+  "publicIntegration": {
+    "runtime": {
+      "pr": 1789,
+      "merge": "fc185a1ff261d7d454f9b0cbe99760999d488473"
+    },
+    "inverse": {
+      "pr": 1790,
+      "merge": "0343431c70d55f971ac61b2436ab5965cb5c6865"
+    },
+    "preservedInterveningMainRepair": {
+      "pr": 1791,
+      "merge": "ae693e5006e104824112880be7db92b3403bd93d",
+      "scope": "test-only Fp12 full source-law fixture timeout; no production changes"
+    },
+    "native": {
+      "pr": 1792,
+      "head": "b639c482ac4d5707a60530619624dc1e7cf8481a",
+      "tree": "9954a7fa9585302036043898524d1e2b8c98a162",
+      "base": "ae693e5006e104824112880be7db92b3403bd93d",
+      "status": "OPEN_CI_REVIEW_RUNNING"
+    },
+    "bls": {
+      "localHead": "5c87e381464b02fb39d0d9a18be4efc3618029cc",
+      "tree": "40a962fc1d0b8d6055fdfc4c80b7d8454037e0e8",
+      "status": "QUALIFIED_LOCAL_QA_SLICE_PENDING_NATIVE_MERGE"
+    }
+  },
+  "historyNotes": [
+    "Earlier qualification objects retain their historical tested source, SDK and then-pending fields. CurrentFull, currentRetention, currentPerformance and nativeHelpLocal supersede those pending states without relabeling old runs.",
+    "Both complete archives are preserved as ordered raw Git-blob parts; reassembly manifests retain original size, SHA-256 and Git-blob identities. Readable reviews and JMH reports expose exact archived bytes separately."
+  ],
+  "pending": {
+    "localCanonicalHelpSource": "134c534528d39ac964f5bf3ac383c0dd09bb97e6",
+    "localCanonicalHelp": "RUNNING",
+    "publicFreshnessFix": "NOT_YET_PUSHED",
+    "combinedQualificationAfterFreshnessFix": "PENDING",
+    "release": "NOT_STARTED"
   }
 }
