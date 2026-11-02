@@ -1,0 +1,115 @@
+{
+  "schema": 1,
+  "sourceCheckpoint": "df93c36e04bcc33beaa480f9d02dcb7f7761f4b2",
+  "qualifications": {
+    "runtime": {
+      "localHead": "e4b71631a246d95c81e549a7aa7099210f272240",
+      "publicHead": "e2d28022c77555b78cfbc4eca035eac125281c46",
+      "tree": "a36c2aca4330afe25754a5236fe6a56ddf0d2dad",
+      "tests": 56,
+      "suites": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 28.101,
+      "rootReviewed": true,
+      "independentReview": "APPROVED"
+    },
+    "inverse": {
+      "head": "f28577ffb7b09be6225ef0ca4d2acf2502175a33",
+      "tree": "c08282cd397e0eb0e9cbe8d564b804ff85fc770c",
+      "tests": 66,
+      "suites": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 34.704,
+      "independentReview": "APPROVED"
+    },
+    "combined": {
+      "head": "1d213529d73fe43bc4fb017bfffa088d1befe7a1",
+      "tree": "d92eff43fbfb376f88680e48002798e1056ff68d",
+      "suiteCount": 7,
+      "counts": {
+        "tests": 96,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "name": "org.sandbox.jdt.internal.corext.fix.math.JavaValueInverseReuseTest",
+          "tests": 28,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "name": "org.sandbox.jdt.internal.corext.fix.math.JavaValueInverseSourceTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "name": "org.sandbox.jdt.internal.corext.fix.math.JavaValueResidueTest",
+          "tests": 11,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "name": "org.sandbox.jdt.internal.corext.fix.math.JavaValueReuseTest",
+          "tests": 26,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "name": "org.sandbox.jdt.internal.corext.fix.math.JavaValueRuntimeTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "name": "org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptionsTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "name": "org.sandbox.jdt.math.tests.JavaComputationEmitterTest",
+          "tests": 16,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "seconds": 39.196,
+      "finishedUTC": "2026-11-02T05:19:17Z",
+      "sdkSha256": "5ad54860d828a738d4df8dba87659b8a14009bfb208f79705a4b8529b9c58884"
+    }
+  },
+  "archives": [
+    {
+      "name": "runtime-null-e4b7163-evidence.tar.gz",
+      "bytes": 20148,
+      "sha256": "77b42bce12b66162a5c4b67719ba6c51c4f2050424a83c68c6b5654062d1df32",
+      "gitBlob": "7856afb6de30e07ceb032fef95ed8e3f94b8401d"
+    },
+    {
+      "name": "inverse-predicate-f28577f-evidence.tar.gz",
+      "bytes": 27048,
+      "sha256": "3bd1283e4113ba42e1b067521dbf3aeb2d20709d3e432ffbe29b74c81cd187bf",
+      "gitBlob": "618fcfd3d8417a3649c51dd4098c718f63f95eb1"
+    },
+    {
+      "name": "combined-value-1d21352-evidence.tar.gz",
+      "bytes": 9055,
+      "sha256": "81133dccd10813d076759b98a97e7345ad09e85b26d0f7db76299658c7796791",
+      "gitBlob": "0f836b0dd376d74f6aabf8407ba6b0aaa1c0c90d"
+    }
+  ]
+}
