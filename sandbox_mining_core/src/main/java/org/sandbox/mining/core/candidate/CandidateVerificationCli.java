@@ -83,7 +83,16 @@ public final class CandidateVerificationCli {
 		CandidateStore store = new CandidateStore(candidateDir);
 		List<MiningCandidate> candidates = new ArrayList<>(store.loadAll());
 		migrateLegacyCandidates(candidates);
+		for (MiningCandidate candidate : candidates) {
+			if (!candidate.hasDeclaredSourceVersion()) {
+				candidate.setSourceVersion(defaultSourceVersion);
+				// A changed fallback may invalidate this revision's review.
+				// Complete that reset before selecting canonical candidates.
+				store.save(candidate);
+			}
+		}
 		candidates.sort(candidatePriority());
+		Map<String, String> reviewedRuleIndex = indexReviewedRules(candidates, curatedRuleIndex);
 		CandidateVerifier verifier = new CandidateVerifier();
 		Map<String, String> canonicalByRuleFingerprint = new HashMap<>();
 
@@ -91,9 +100,6 @@ public final class CandidateVerificationCli {
 		int failed = 0;
 		int duplicates = 0;
 		for (MiningCandidate candidate : candidates) {
-			if (!candidate.hasDeclaredSourceVersion()) {
-				candidate.setSourceVersion(defaultSourceVersion);
-			}
 			if (isDiscarded(candidate.getStatus())) {
 				store.save(candidate);
 				continue;
@@ -109,9 +115,9 @@ public final class CandidateVerificationCli {
 
 			if (candidate.getStatus() == CandidateStatus.READY_FOR_REVIEW) {
 				String fingerprint = semanticFingerprint(candidate);
-				String curatedReference = curatedRuleIndex.get(fingerprint);
-				if (curatedReference != null) {
-					markDuplicate(candidate, "curated rule " + curatedReference); //$NON-NLS-1$
+				String reviewedReference = reviewedRuleIndex.get(fingerprint);
+				if (reviewedReference != null) {
+					markDuplicate(candidate, reviewedReference);
 					duplicates++;
 				} else {
 					String canonicalId = canonicalByRuleFingerprint.putIfAbsent(
@@ -136,9 +142,9 @@ public final class CandidateVerificationCli {
 			}
 
 			String fingerprint = semanticFingerprint(candidate);
-			String curatedReference = curatedRuleIndex.get(fingerprint);
-			if (curatedReference != null) {
-				markDuplicate(candidate, "curated rule " + curatedReference); //$NON-NLS-1$
+			String reviewedReference = reviewedRuleIndex.get(fingerprint);
+			if (reviewedReference != null) {
+				markDuplicate(candidate, reviewedReference);
 				duplicates++;
 			} else {
 				String canonicalId = canonicalByRuleFingerprint.putIfAbsent(
@@ -166,6 +172,35 @@ public final class CandidateVerificationCli {
 				+ failed + " failed, " + duplicates + " duplicates, " //$NON-NLS-1$ //$NON-NLS-2$
 				+ ready + " ready for review"); //$NON-NLS-1$
 		return 0;
+	}
+
+	private static Map<String, String> indexReviewedRules(List<MiningCandidate> candidates,
+			Map<String, String> curatedRuleIndex) {
+		Map<String, String> reviewed = new HashMap<>();
+		// Rejections sort after active candidates. Index them first so another
+		// source commit cannot make the same reviewed rule ready again.
+		for (MiningCandidate candidate : candidates) {
+			CandidateVerification verification = candidate.getVerification();
+			if (candidate.getStatus() != CandidateStatus.REJECTED
+					|| verification == null || !verification.successful()) {
+				continue;
+			}
+			try {
+				String reference = "rejected candidate " + candidate.getCandidateId(); //$NON-NLS-1$
+				String reason = candidate.getRejectionReason();
+				if (reason != null && !reason.isBlank()) {
+					reference += ": " + reason; //$NON-NLS-1$
+				}
+				reviewed.putIfAbsent(semanticFingerprint(candidate), reference);
+			} catch (IOException e) {
+				// A malformed legacy rejection must not block unrelated candidates.
+				System.err.println("Cannot index rejected candidate " + candidate.getCandidateId() //$NON-NLS-1$
+						+ ": " + e.getMessage()); //$NON-NLS-1$
+			}
+		}
+		curatedRuleIndex.forEach((fingerprint, reference) ->
+				reviewed.putIfAbsent(fingerprint, "curated rule " + reference)); //$NON-NLS-1$
+		return reviewed;
 	}
 
 	private static String semanticFingerprint(MiningCandidate candidate) throws IOException {

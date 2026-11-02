@@ -100,6 +100,14 @@ java -cp sandbox_mining_core/target/sandbox-mining-core.jar \
 
 The command writes `candidates.json`, `candidates.html`, and copies individual candidate JSON files into the report directory.
 
+## Review evidence and rejection memory
+
+A successful verifier result establishes compilation, matching and the expected rewrite for the supplied examples. It does **not** prove semantic equivalence for every input, overload, locale or evaluation context. Review must also inspect existing JDT/Sandbox implementations. The [2026-11-02 six-candidate review](../docs/mining-candidate-review-2026-11-02.md) records concrete counterexamples and upstream coverage.
+
+`CandidateVerificationCli` builds a rejection index from records whose **current status is `REJECTED` and whose stored verification succeeded**. It compares parsed, normalized rule fingerprints before admitting already-ready candidates and after successful verification of new candidates. A matching proposal becomes `DUPLICATE`, with the rejected candidate ID and reason in its diagnostic. The original rejection remains unchanged; already `APPROVED` and `PROMOTED` candidates retain their existing lifecycle handling.
+
+Malformed or unverified rejected records cannot suppress a valid proposal. Changed DSL guards produce a distinct fingerprint and remain eligible for verification and review. This is exact normalized DSL identity, including placeholder names, rather than equivalence across renamed placeholders or alternative implementations. Only current rejected revisions participate; normal content revision rules still clear obsolete verification and rejection state. Missing source-version defaults and any resulting revision resets are persisted before indexing, so an invalidated rejection cannot suppress a valid proposal. Authoritative decisions remain on `mining/candidates`; `known-rules.json` is not a rejection registry.
+
 ## Lifecycle
 
 ```text
