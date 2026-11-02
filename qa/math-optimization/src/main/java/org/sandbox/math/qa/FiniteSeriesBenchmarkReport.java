@@ -81,7 +81,7 @@ public final class FiniteSeriesBenchmarkReport {
                 "comparisons", rows));
     }
 
-    private static void requireSettings(JsonNode row) {
+    static void requireSettings(JsonNode row) {
         for (var setting : Map.of("forks", 2, "threads", 1, "warmupIterations", 3, "measurementIterations", 5,
                 "warmupBatchSize", 1, "measurementBatchSize", 1).entrySet()) {
             var value = row.path(setting.getKey());
@@ -103,7 +103,7 @@ public final class FiniteSeriesBenchmarkReport {
         if (!flags.containsAll(List.of("-Xms128m", "-Xmx512m"))) throw new IllegalArgumentException("Unqualified heap settings");
     }
 
-    private static JsonNode verifiedTiming(JsonNode metric) {
+    static JsonNode verifiedTiming(JsonNode metric) {
         var samples = metric.path("rawData"); var statistics = new ListStatistics();
         if (!metric.isObject() || !"us/op".equals(metric.path("scoreUnit").asText()) || !samples.isArray() || samples.size() != 2)
             throw new IllegalArgumentException("Missing independent fork samples");
