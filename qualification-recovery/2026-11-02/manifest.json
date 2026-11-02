@@ -90,6 +90,99 @@
       "seconds": 39.196,
       "finishedUTC": "2026-11-02T05:19:17Z",
       "sdkSha256": "5ad54860d828a738d4df8dba87659b8a14009bfb208f79705a4b8529b9c58884"
+    },
+    "native": {
+      "head": "9ad6f36aa3c7f3acd43b0998568922c5683f2d54",
+      "tree": "60c2345284e89e3f90faf30f0f12eecd78aeab9c",
+      "tests": 151,
+      "suites": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "modules": 8,
+      "spotbugs": "all passed",
+      "seconds": 131,
+      "finishedUTC": "2026-11-02T05:50:26Z",
+      "independentReview": "APPROVED",
+      "reviewer": "native_recovery_final_review",
+      "sdkSha256": "ba0293dedb3fde9ca2f3042dcef8ae4d6bb2d576adedff8ba7a2b4d186f1cbe1",
+      "publicHelp": "pending actual-main capture"
+    },
+    "blsFocused": {
+      "localHead": "8322e59c8cf9bc1589fc65e9c3d795379bc7a8ad",
+      "tree": "ee505cb03cdc6ae5ec18ddbdbe49f1053b55069e",
+      "checkpoint": "aeb838c9b7e3cc60545682f9ee3600ac9ce5f020",
+      "tests": 23,
+      "suites": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 35.722,
+      "finishedUTC": "2026-11-02T05:46:22Z",
+      "regions": {
+        "G2": 2,
+        "Pairing": 1,
+        "Fp12": 0,
+        "Fp2": 1,
+        "Fp6": 5
+      },
+      "independentReview": "APPROVED by Root",
+      "currentSdk": "93f0f35abaea58ea492441776be7c9d2a9be1695",
+      "pending": [
+        "Native/SDK70 integration",
+        "tail=false in explicit BLS profile",
+        "exact upstream identity",
+        "canonical current whole-call JMH"
+      ]
+    },
+    "retentionAuditor": {
+      "schema": 1,
+      "sourceManifestSha256": "d65ccb77d453549c946e19b460d242515235830ae030afc78932632d10fb5b4d",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "executedPassing": 14,
+      "seconds": 6.122,
+      "finishedUTC": "2026-11-02T05:47:26Z",
+      "currentRetentionExecuted": false,
+      "skippedTest": "CurrentRetentionTest: needs the actual fresh full-corpus scan and explicit source identity",
+      "baselineIntegrityRegions": {
+        "strict": 146,
+        "mathematical": 149
+      },
+      "baselineZipSha256": "a37d6bf5ab2962184b051c806d6a7382e040816d0c4224547f127f8aa1f7e1ed",
+      "red": {
+        "tests": 13,
+        "failures": 13,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 2.915
+      },
+      "zipBindingRed": {
+        "tests": 14,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": 5.319
+      }
+    },
+    "inverseStaticInitialization": {
+      "localHead": "4b7b862bd1a54d0b31a96c69363980c6bd8a54df",
+      "tree": "396855226b26e32fe055d117b28ca1db8d51053c",
+      "publicHead": "18e58f7ea1d5e44f9f64a3a1e891c828bcfc38c8",
+      "tests": 74,
+      "suites": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 44.009,
+      "isolatedTests": 2,
+      "productionChange": false,
+      "independentReview": "APPROVED",
+      "reviewer": "inverse_commit_review",
+      "thread": "PRRT_kwDOFYv10c6yjFCH",
+      "threadResolved": true
     }
   },
   "archives": [
@@ -110,6 +203,47 @@
       "bytes": 9055,
       "sha256": "81133dccd10813d076759b98a97e7345ad09e85b26d0f7db76299658c7796791",
       "gitBlob": "0f836b0dd376d74f6aabf8407ba6b0aaa1c0c90d"
+    },
+    {
+      "name": "native-9ad6f36-evidence.tar.gz",
+      "bytes": 808918,
+      "sha256": "023da19fb2eac782d1fad39e3147bd34b9f788cce745c6f04a0b71e429338aac",
+      "gitBlob": "32a1482076f321323433a5b5fc8539bd9f59d227"
+    },
+    {
+      "name": "qualification-8322e59.tar.gz",
+      "bytes": 165751,
+      "sha256": "42d9903e226c9ae62f4728288a90781489acb0672cfda7512b825503b1894b58",
+      "gitBlob": "4a6542061b01112da637d31ae7c915de31b417e3"
+    },
+    {
+      "name": "retention-auditor-evidence.tar.gz",
+      "bytes": 47473,
+      "sha256": "1a8bd118de21b65d935c9d1c6d70b627b4e37b66eee59926e6e22534cc4dd574",
+      "gitBlob": "2da45bd55e96ba5846e2e537168acadb9976a38f"
+    },
+    {
+      "name": "inverse-static-init-4b7b862-evidence.tar.gz",
+      "bytes": 12548,
+      "sha256": "a9d8b70d6c33bda2fde2c6c4f95653892d74701f13bccb2f3ecde499927e9620",
+      "gitBlob": "be802b183874ea0787664ece281bd7d507ea8105"
     }
-  ]
+  ],
+  "currentCombinedSource": {
+    "local": {
+      "head": "7fcd71944ffdc2b231efdfd4706437b74cbd622b",
+      "tree": "2fa20615db38841fbb3bd390b0c8d3794ef28f8a",
+      "native": "9ad6f36aa3c7f3acd43b0998568922c5683f2d54",
+      "bls": "8322e59c8cf9bc1589fc65e9c3d795379bc7a8ad",
+      "inverseTest": "4b7b862bd1a54d0b31a96c69363980c6bd8a54df",
+      "sdk": "ba0293dedb3fde9ca2f3042dcef8ae4d6bb2d576adedff8ba7a2b4d186f1cbe1",
+      "helpSdkMetadata": "9abd2c8f17004de7c7c58557e3031503907f5b72"
+    },
+    "publicCheckpoint": "9e0325b1df721295e441f7af89d793941417c66a",
+    "qualification": "FULL_GATE_RUNNING"
+  },
+  "sourceReferences": {
+    "native": "86398bd804e97a216d00e9fbb7d0011020c7efc0",
+    "bls": "aeb838c9b7e3cc60545682f9ee3600ac9ce5f020"
+  }
 }
