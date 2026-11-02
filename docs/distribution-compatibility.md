@@ -44,7 +44,7 @@ ARM64/AArch64 product archives are not currently built or advertised.
 
 ## Automated runtime coverage
 
-The required pull-request gate is **Distribution Smoke Test**. Its native matrix covers Linux GTK x86-64, Windows x86-64 and macOS Cocoa x86-64. On each platform it:
+The **Distribution Smoke Test** runs native verification on Linux GTK x86-64 and Windows x86-64 for pull requests, pushes, scheduled runs and normal manual dispatches. Tycho also assembles the macOS Cocoa x86-64 archive, but these runs do not establish native macOS runtime qualification. On each CI platform it:
 
 1. builds the product and update site from a clean checkout;
 2. parses p2 metadata and verifies all published feature/artifact references;
@@ -56,7 +56,7 @@ The required pull-request gate is **Distribution Smoke Test**. Its native matrix
 8. upgrades the published stable 1.3.6 aggregate and its components to the candidate in one p2 transaction, then verifies installed cleanup behavior;
 9. executes the native mathematics Workbench scenarios and separately verifies installed mathematics analysis/apply/idempotence without a display.
 
-The independent 1.3.4 legacy-feature migration and aggregate-metadata-only update cases remain part of the gate. Linux additionally qualifies cleanup consumers against a Docker image built from the same candidate. Release acceptance requires successful results for the exact candidate revision on every advertised platform; an older successful matrix is supporting evidence.
+The independent 1.3.4 legacy-feature migration and aggregate-metadata-only update cases remain part of the gate. Linux additionally qualifies cleanup consumers against a Docker image built from the same candidate. Release acceptance requires successful native results for the exact candidate revision on both Linux and Windows; an older successful matrix is supporting evidence. Native macOS verification can be reproduced locally with the same Maven commands above, but is not an automated release prerequisite.
 
 ## Publication channels
 

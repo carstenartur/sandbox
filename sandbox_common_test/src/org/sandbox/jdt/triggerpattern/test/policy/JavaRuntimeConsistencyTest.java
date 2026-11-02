@@ -130,7 +130,7 @@ public class JavaRuntimeConsistencyTest {
 			do { assertEquals("25", versions.group(1), name); } while (versions.find());
 		}
 		String nativeWorkflow = read(".github/workflows/distribution-smoke.yml");
-		for (String runner : List.of("ubuntu-24.04", "windows-2025", "macos-15-intel")) assertTrue(nativeWorkflow.contains(runner), runner);
+		for (String runner : List.of("ubuntu-24.04", "windows-2025")) assertTrue(nativeWorkflow.contains(runner), runner);
 		assertTrue(nativeWorkflow.contains("-Pdistribution"), "Retain the complete distribution gate");
 	}
 
