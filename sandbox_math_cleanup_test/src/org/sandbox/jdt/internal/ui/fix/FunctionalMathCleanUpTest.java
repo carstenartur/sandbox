@@ -56,6 +56,7 @@ class FunctionalMathCleanUpTest {
     private static final NullProgressMonitor MONITOR=new NullProgressMonitor();
     private IProject project;
     private IJavaProject java;
+    private String lastDiagnostics;
     @TempDir Path compiled;
     @BeforeEach void createProject() throws Exception {
         project=ResourcesPlugin.getWorkspace().getRoot().getProject("FunctionalMath-"+UUID.randomUUID());
@@ -94,6 +95,7 @@ class FunctionalMathCleanUpTest {
         var cleanup=new MathematicalCleanUpCore(options);
         assertFalse(cleanup.checkPreConditions(java,new ICompilationUnit[]{unit},MONITOR).hasFatalError());
         var fix=cleanup.createFix(new CleanUpContext(unit,parse(unit)));
+        lastDiagnostics=cleanup.checkPostConditions(MONITOR).toString();
         assertNotNull(fix,()->cleanup.checkPostConditions(MONITOR).toString());
         return fix.createChange(MONITOR);
     }
@@ -145,7 +147,7 @@ class FunctionalMathCleanUpTest {
     @Test void acceleratedTailUsesTheExistingStrictRuntimeIterationProofOnly() throws Exception {
         var settings=tailOptions();settings.put(MathCleanUpOptions.GOAL,"LOWER_ESTIMATED_RUNTIME");
         var unit=unit(TAIL_SOURCE);String preview=change(unit,settings).getPreviewContent(MONITOR);
-        assertTrue(preview.contains("$series"),preview);compareRun(TAIL_SOURCE,preview,-1,0,1,30,300);
+        assertTrue(preview.contains("$series"),preview+"\n"+lastDiagnostics);compareRun(TAIL_SOURCE,preview,-1,0,1,30,300);
         settings.put(MathCleanUpOptions.MATHEMATICAL_OPT_IN,"true");
         preview=change(unit,settings).getPreviewContent(MONITOR);
         assertTrue(preview.contains("while"),preview);assertFalse(preview.contains("$series"),preview);
@@ -185,7 +187,7 @@ class FunctionalMathCleanUpTest {
             }
             final class Leaf {
                 private final BigInteger amber,blue; public static final BigInteger P=BigInteger.valueOf(101);
-                private Leaf(BigInteger a,BigInteger b){amber=a;blue=b;}
+                private Leaf(BigInteger a,BigInteger b){this.amber=a;this.blue=b;}
                 public static Leaf of(BigInteger a,BigInteger b){return new Leaf(a.mod(P),b.mod(P));}
                 public BigInteger first(){return amber;} public BigInteger second(){return blue;}
                 public Leaf square(){return combine(this);}
@@ -197,7 +199,7 @@ class FunctionalMathCleanUpTest {
         settings.put(MathCleanUpOptions.MATHEMATICAL_OPT_IN,"true");settings.put(MathCleanUpOptions.VALUE_RUNTIME,"AUDITED_OPENJDK_25_0_5_8");
         settings.put(MathCleanUpOptions.WORK_BUDGET,"20000000");settings.put(MathCleanUpOptions.MAX_STATES,"20000");settings.put(MathCleanUpOptions.TIMEOUT_SECONDS,"5");
         var unit=unit(source);var change=change(unit,settings);String preview=change.getPreviewContent(MONITOR);
-        assertTrue(preview.contains("Mathematics value reuse"),preview);assertTrue(preview.contains("while"),preview);
+        assertTrue(preview.contains("Mathematics value reuse"),preview+"\n"+lastDiagnostics);assertTrue(preview.contains("while"),preview);
         assertTrue(preview.contains("audited OpenJDK 25.0.5+8"),preview);assertTrue(preview.contains("frame"),preview);
         assertFalse(preview.contains("$series"),"Mathematical mode retains an ordinary verified tail loop");
         compareRun(source,preview,8,17);assertEquals(source,unit.getSource());

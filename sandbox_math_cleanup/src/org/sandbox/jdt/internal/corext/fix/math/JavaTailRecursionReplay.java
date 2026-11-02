@@ -48,9 +48,8 @@ final class JavaTailRecursionReplay {
                     || loop.initializers().size()!=1 || loop.updaters().size()!=1
                     || !(loop.initializers().getFirst() instanceof Assignment init) || init.getOperator()!=Assignment.Operator.ASSIGN
                     || !stateKeys.get(counter).equals(key(init.getLeftHandSide())) || !stateKeys.get(counter).equals(key(init.getRightHandSide()))
-                    || !(loop.updaters().getFirst() instanceof Assignment update) || update.getOperator()!=Assignment.Operator.ASSIGN
-                    || !stateKeys.get(counter).equals(key(update.getLeftHandSide()))
-                    || !expression((Expression)call.arguments().get(counter),update.getRightHandSide(),bindings,checkpoint,0)) return false;
+                    || !counterUpdate((Expression)call.arguments().get(counter),(Expression)loop.updaters().getFirst(),
+                        model.states().get(counter).bindingKey(),stateKeys.get(counter),bindings,checkpoint)) return false;
             // The pure, nonthrowing decrement can be committed after the other states.
             // Their next values still read the previous counter and all previous state.
             block=loopBody;
@@ -89,6 +88,21 @@ final class JavaTailRecursionReplay {
         return value instanceof InfixExpression comparison && comparison.getOperator()==operator
                 && !comparison.hasExtendedOperands() && binding.equals(key(JavaPrimitiveStateExpressions.unwrap(comparison.getLeftOperand())))
                 && JavaPrimitiveStateExpressions.literal(comparison.getRightOperand(),0);
+    }
+
+    private static boolean counterUpdate(Expression original,Expression emitted,String before,String after,
+            Map<String,String> bindings,Runnable checkpoint) {
+        checkpoint.run();
+        if(emitted instanceof Assignment update && update.getOperator()==Assignment.Operator.ASSIGN
+                && after.equals(key(update.getLeftHandSide()))) return expression(original,update.getRightHandSide(),bindings,checkpoint,0);
+        original=JavaPrimitiveStateExpressions.unwrap(original);
+        if(!(original instanceof InfixExpression step) || step.getOperator()!=InfixExpression.Operator.MINUS || step.hasExtendedOperands()
+                || !before.equals(key(JavaPrimitiveStateExpressions.unwrap(step.getLeftOperand())))
+                || !JavaPrimitiveStateExpressions.literal(step.getRightOperand(),1)
+                || !(emitted instanceof PostfixExpression decrement) || decrement.getOperator()!=PostfixExpression.Operator.DECREMENT
+                || !after.equals(key(decrement.getOperand()))) return false;
+        var from=original.resolveTypeBinding();var to=emitted.resolveTypeBinding();
+        return from!=null && to!=null && !from.isRecovered() && !to.isRecovered() && from.isPrimitive() && from.isEqualTo(to);
     }
 
     private static boolean sameSignature(MethodDeclaration original, MethodDeclaration target) {

@@ -34,6 +34,14 @@ class JavaTailRecursionReplayTest {
                 counted.replace("count = count;","count = n;"),
                 counted.replace("total + count","total + count - 1"))) assertFalse(verify(altered),altered);
     }
+    @Test void replayChecksTheCanonicalUpdaterAcceptedByTheIterationInspector() {
+        String counted=canonical().replace("count = count - 1", "count--");assertTrue(verify(counted));
+        assertFalse(verify(counted.replace("count--", "count++")));
+        assertFalse(verify(counted.replace("count--", "total--")));
+        var model=JavaTailRecursionInspector.inspect(method(BEFORE),BEFORE,100_000,()->false).iteration().orElseThrow();
+        assertFalse(JavaTailRecursionReplay.verify(method(BEFORE.replace("n - 1","n - 2")),method(counted),model,()->{}),
+            "The emitted decrement must match the actual original argument, not only the supplied model");
+    }
     private static String canonical() {
         return """
             public class Sample { public static long step(int n, long a) {

@@ -1003,10 +1003,6 @@ public final class MathematicalAnalysis {
       return generated.replace("\n", delimiter + indentation);
    }
 
-   private static boolean matchesAstSource(CompilationUnit original, String source, Map<String, String> options, int targetJava) {
-      return matchesAstSource(original, source, options, targetJava, null);
-   }
-
    private static boolean matchesAstSource(CompilationUnit original, String source, Map<String, String> options, int targetJava,
          Consumer<MethodInvocation> originalCalls) {
       return matchesAstSource(original, source, options, targetJava, originalCalls, null, null);

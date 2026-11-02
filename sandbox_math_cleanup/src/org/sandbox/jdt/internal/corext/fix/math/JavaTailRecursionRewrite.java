@@ -190,8 +190,7 @@ public final class JavaTailRecursionRewrite {
         if(counter<0) code.append("    while (!( ").append(renamed(exit.getExpression(), names, source, work)).append(" )) {\n"); //$NON-NLS-1$ //$NON-NLS-2$
         else {
             String name=states.get(counter);
-            code.append("    for (").append(name).append(" = ").append(name).append("; ").append(name).append(" > 0; ").append(name).append(" = ") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
-                .append(renamed((Expression)call.arguments().get(counter),names,source,work)).append(") {\n"); //$NON-NLS-1$
+            code.append("    for (").append(name).append(" = ").append(name).append("; ").append(name).append(" > 0; ").append(name).append("--) {\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
         }
         for (int i = 0; i < next.size(); i++) {
             if(i==counter) continue;
