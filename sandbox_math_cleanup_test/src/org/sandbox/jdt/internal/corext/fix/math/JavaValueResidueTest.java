@@ -3,6 +3,7 @@ package org.sandbox.jdt.internal.corext.fix.math;
 
 import static org.junit.jupiter.api.Assertions.*;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 import org.junit.jupiter.api.Test;
@@ -109,11 +110,14 @@ class JavaValueResidueTest {
     }
     @Test void changedFactoryDependencyInvalidatesTheOrdinaryApplyReceipt() throws Exception {
         for(String source:List.of(fixture(),JavaValueCallTest.fixture())) {
-            int split=source.indexOf("final class Leaf");Path dependency=directory.resolve("Leaf.java");Files.writeString(dependency,"import java.math.BigInteger;"+source.substring(split));
+            int split=source.indexOf("final class Leaf");Path dependency=directory.resolve("Leaf.java");Files.writeString(dependency, ("import java.math.BigInteger;" + source.substring(split)),
+					StandardCharsets.UTF_8);
             source=source.substring(0,split);var fixture=new JavaImmutableValueTest();fixture.directory=directory;
             var result=MathematicalAnalysis.analyze(fixture.parse(source),source,JavaValueCallTest.options(),null,-1,0,fixture.environment());
             assertFalse(result.replacements().isEmpty(),result.diagnostics().toString());
-            Files.writeString(dependency,Files.readString(dependency).replace("a.mod(P)","a.mod(P.add(BigInteger.ONE))"));
+            Files.writeString(dependency,
+					Files.readString(dependency).replace("a.mod(P)", "a.mod(P.add(BigInteger.ONE))"),
+					StandardCharsets.UTF_8);
             assertFalse(result.matches(source,Map.of()));assertThrows(IllegalArgumentException.class,result::newEdit);
         }
     }
@@ -123,7 +127,7 @@ class JavaValueResidueTest {
         return fixture.apply(source,result);
     }
     private List<String> execute(String source) throws Exception {
-        Path output=Files.createTempDirectory(directory,"residue");Path file=output.resolve("Calculation.java");Files.writeString(file,source);
+        Path output=Files.createTempDirectory(directory,"residue");Path file=output.resolve("Calculation.java");Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0,javax.tools.ToolProvider.getSystemJavaCompiler().run(null,null,null,"--release","17","-d",output.toString(),file.toString()));
         try(var loader=new java.net.URLClassLoader(new java.net.URL[]{output.toUri().toURL()},ClassLoader.getPlatformClassLoader())) {
             var owner=loader.loadClass("Calculation");var leaf=loader.loadClass("Leaf");var method=owner.getMethod("scale",BigInteger.class,BigInteger.class);
