@@ -2,6 +2,8 @@
 package org.sandbox.jdt.internal.corext.fix.math;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 import org.junit.jupiter.api.io.TempDir;
@@ -58,7 +60,7 @@ class JavaValueCallAdmissionTest {
     }
 
     private List<String> execute(String source)throws Exception {
-        Path output=Files.createTempDirectory(directory,"cross-type");Path file=output.resolve("Calculation.java");Files.writeString(file,source);
+        Path output=Files.createTempDirectory(directory,"cross-type");Path file=output.resolve("Calculation.java");Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0,javax.tools.ToolProvider.getSystemJavaCompiler().run(null,null,null,"--release","17","-d",output.toString(),file.toString()));
         try(var loader=new java.net.URLClassLoader(new java.net.URL[]{output.toUri().toURL()},ClassLoader.getPlatformClassLoader())) {
             var run=loader.loadClass("Calculation").getMethod("run",boolean.class);var results=new ArrayList<String>();

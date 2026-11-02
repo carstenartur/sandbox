@@ -3,6 +3,7 @@ package org.sandbox.jdt.internal.corext.fix.math;
 
 import static org.junit.jupiter.api.Assertions.*;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 import de.regelsuche.sdk.optimization.*;
@@ -80,7 +81,7 @@ class JavaValueCallTest {
         }
     }
     private String staticObservation(String source,boolean invoke) throws Exception {
-        Path output=Files.createTempDirectory(directory,"static-projection");Path file=output.resolve("Calculation.java");Files.writeString(file,source);
+        Path output=Files.createTempDirectory(directory,"static-projection");Path file=output.resolve("Calculation.java");Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0,javax.tools.ToolProvider.getSystemJavaCompiler().run(null,null,null,"--release","17","-d",output.toString(),file.toString()));
         try(var loader=new java.net.URLClassLoader(new java.net.URL[]{output.toUri().toURL()},ClassLoader.getPlatformClassLoader())) {
             try {
@@ -102,7 +103,7 @@ class JavaValueCallTest {
                 String relative="org/bouncycastle/crypto/bls/"+name+".java";Files.write(root.resolve(relative),zip.getInputStream(zip.getEntry(relative)).readAllBytes());
             }
         }
-        Path file=root.resolve("org/bouncycastle/crypto/bls/Fp6Element.java");String source=Files.readString(file);
+        Path file=root.resolve("org/bouncycastle/crypto/bls/Fp6Element.java");String source=Files.readString(file, StandardCharsets.UTF_8);
         var parser=org.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.getJLSLatest());parser.setSource(source.toCharArray());parser.setUnitName(file.toString());parser.setResolveBindings(true);
         parser.setEnvironment(new String[]{binary.toString()},new String[]{root.toString()},new String[]{"UTF-8"},true);
         var compiler=new HashMap<String,String>();org.eclipse.jdt.core.JavaCore.setComplianceOptions("17",compiler);parser.setCompilerOptions(compiler);
@@ -114,7 +115,7 @@ class JavaValueCallTest {
         assertEquals(executeActual(source,binary),executeActual(generated,binary));
     }
     private List<String> executeActual(String source,Path binary) throws Exception {
-        Path output=Files.createTempDirectory(directory,"actualcall");Path file=output.resolve("Fp6Element.java");Files.writeString(file,source);
+        Path output=Files.createTempDirectory(directory,"actualcall");Path file=output.resolve("Fp6Element.java");Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0,javax.tools.ToolProvider.getSystemJavaCompiler().run(null,null,null,"--release","17","-cp",binary.toString(),"-d",output.toString(),file.toString()));
         try(var loader=new JavaImmutableValueTest.IsolatedBC(output,binary)) {
             var type=loader.loadClass("org.bouncycastle.crypto.bls.Fp6Element");var leaf=loader.loadClass("org.bouncycastle.crypto.bls.Fp2Element");
@@ -141,11 +142,14 @@ class JavaValueCallTest {
     }
     @Test void freshGetterVisibilityMustAgreeWithTheAlreadyResolvedDependencyBinding() throws Exception {
         String source=fixture();int split=source.indexOf("final class Leaf");Path dependency=directory.resolve("Leaf.java");
-        Files.writeString(dependency,"import java.math.BigInteger;"+source.substring(split));source=source.substring(0,split);
+        Files.writeString(dependency, ("import java.math.BigInteger;" + source.substring(split)),
+				StandardCharsets.UTF_8);source=source.substring(0,split);
         var fixture=new JavaImmutableValueTest();fixture.directory=directory;var ast=fixture.parse(source);
         var calls=new ArrayList<org.eclipse.jdt.core.dom.MethodInvocation>();ast.accept(new org.eclipse.jdt.core.dom.ASTVisitor(){
             @Override public boolean visit(org.eclipse.jdt.core.dom.MethodInvocation call){if(call.getName().getIdentifier().equals("combine"))calls.add(call);return true;}});
-        Files.writeString(dependency,Files.readString(dependency).replace("public BigInteger first()","private BigInteger first()"));
+        Files.writeString(dependency,
+				Files.readString(dependency).replace("public BigInteger first()", "private BigInteger first()"),
+				StandardCharsets.UTF_8);
         var options=options();try(var context=JavaSourceContext.open(ast,source,fixture.environment(),null,options)) {
             var work=new JavaValueSourceSummary.Work(options.workBudget(),options,()->false);var session=new JavaValueSourceSummary.Session(ast,options,work);
             assertThrows(IllegalArgumentException.class,()->JavaValueAccess.discover(ast,session,calls.getFirst().getExpression().resolveTypeBinding(),work));
@@ -156,7 +160,7 @@ class JavaValueCallTest {
         assertFalse(apply(source,analyze(source)).contains("Mathematics constant value"));
     }
     List<String> execute(String source) throws Exception {
-        Path output=Files.createTempDirectory(directory,"valuecall");Path file=output.resolve("Calculation.java");Files.writeString(file,source);
+        Path output=Files.createTempDirectory(directory,"valuecall");Path file=output.resolve("Calculation.java");Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0,javax.tools.ToolProvider.getSystemJavaCompiler().run(null,null,null,"--release","17","-d",output.toString(),file.toString()));
         try(var loader=new java.net.URLClassLoader(new java.net.URL[]{output.toUri().toURL()},ClassLoader.getPlatformClassLoader())) {
             var owner=loader.loadClass("Calculation");var type=loader.loadClass("Leaf");
@@ -197,7 +201,7 @@ class JavaValueCallTest {
         assertEquals(executeInitialization(source),executeInitialization(generated));assertFalse(generated.contains("Mathematics constant value"));
     }
     private String executeInitialization(String source) throws Exception {
-        Path output=Files.createTempDirectory(directory,"initialization");Path file=output.resolve("Calculation.java");Files.writeString(file,source);
+        Path output=Files.createTempDirectory(directory,"initialization");Path file=output.resolve("Calculation.java");Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0,javax.tools.ToolProvider.getSystemJavaCompiler().run(null,null,null,"--release","17","-d",output.toString(),file.toString()));
         System.clearProperty("value.init.probe");
         try(var loader=new java.net.URLClassLoader(new java.net.URL[]{output.toUri().toURL()},ClassLoader.getPlatformClassLoader())) {

@@ -3,6 +3,7 @@ package org.sandbox.jdt.internal.corext.fix.math;
 
 import static org.junit.jupiter.api.Assertions.*;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -35,8 +36,8 @@ class JavaValueGuardTypeBindingTest {
         var helper=new JavaImmutableValueTest();helper.directory=directory;
         var analysis=MathematicalAnalysis.analyze(helper.parse(source),source,JavaValueCallTest.options(),null,-1,0,helper.environment());
         String generated=helper.apply(source,analysis);
-        Files.writeString(directory.resolve("original.java.txt"),source);
-        Files.writeString(directory.resolve("generated.java.txt"),generated);
+        Files.writeString(directory.resolve("original.java.txt"), source, StandardCharsets.UTF_8);
+        Files.writeString(directory.resolve("generated.java.txt"), generated, StandardCharsets.UTF_8);
         String marker=residue?"Mathematics factory residue":"Mathematics constant value";
         boolean accepted=generated.contains(marker);
         var original=execute(source,residue);var actual=execute(generated,residue);
@@ -47,7 +48,7 @@ class JavaValueGuardTypeBindingTest {
     }
 
     private List<String> execute(String source,boolean residue) throws Exception {
-        Path output=Files.createTempDirectory(directory,"compiled");Path file=output.resolve("Calculation.java");Files.writeString(file,source);
+        Path output=Files.createTempDirectory(directory,"compiled");Path file=output.resolve("Calculation.java");Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0,javax.tools.ToolProvider.getSystemJavaCompiler().run(null,null,null,"--release","17","-d",output.toString(),file.toString()));
         try(var loader=new java.net.URLClassLoader(new java.net.URL[]{output.toUri().toURL()},ClassLoader.getPlatformClassLoader())) {
             var owner=loader.loadClass("Calculation");var leaf=loader.loadClass("Leaf");
