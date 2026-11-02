@@ -1,6 +1,8 @@
 /* Copyright (c) 2026 Carsten Hammer. SPDX-License-Identifier: EPL-2.0 */
 package org.sandbox.jdt.internal.corext.fix.math;
 import static org.junit.jupiter.api.Assertions.*;
+
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.math.BigInteger;
 import java.util.*;
@@ -100,7 +102,7 @@ class JavaFixedPowerOptimizerTest {
         assertThrows(IllegalArgumentException.class,()->JavaFixedPowerOptimizer.verifyCombined(fixture.parse(changed),changed,region,options,new JavaValueSourceSummary.Work(options.workBudget(),options,()->false)));
     }
     private List<String> execute(String source)throws Exception {
-        Path root=Files.createTempDirectory(directory,"execute");Path input=root.resolve("Calculation.java");Files.writeString(input,source);
+        Path root=Files.createTempDirectory(directory,"execute");Path input=root.resolve("Calculation.java");Files.writeString(input, source, StandardCharsets.UTF_8);
         assertEquals(0,javax.tools.ToolProvider.getSystemJavaCompiler().run(null,null,null,"--release","17","-d",root.toString(),input.toString()));
         try(var loader=new java.net.URLClassLoader(new java.net.URL[]{root.toUri().toURL()},ClassLoader.getPlatformClassLoader())) {
             var type=loader.loadClass("Calculation");var factory=type.getMethod("of",BigInteger.class,BigInteger.class);var fixed=type.getMethod("fixed",type);var parts=type.getMethod("parts");var modulusField=type.getDeclaredField("P");modulusField.setAccessible(true);BigInteger modulus=(BigInteger)modulusField.get(null);
