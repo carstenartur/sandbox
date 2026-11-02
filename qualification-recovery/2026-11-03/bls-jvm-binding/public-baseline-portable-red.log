@@ -1,0 +1,81 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -----------------< org.sandbox.qa:math-qualification >------------------
+[INFO] Building Standalone qualification of the production mathematics core 1.0.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.4.0:resources (default-resources) @ math-qualification ---
+[INFO] skip non existing resourceDirectory /workspace/scratch/4ed3a04e028b/sandbox-bls/qa/math-optimization/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.16.0:compile (default-compile) @ math-qualification ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 131 source files with javac [debug release 25] to target/classes
+[INFO] Benchmark entries for org.sandbox.benchmarks.MathematicsOptimizationBenchmark already exist, overwriting
+[INFO] Benchmark entries for org.sandbox.math.qa.FiniteSeriesBenchmark already exist, overwriting
+[INFO] Benchmark entries for org.sandbox.math.qa.BlsBenchmark already exist, overwriting
+[INFO] Benchmark entries for org.sandbox.math.qa.BouncyCastleHashToCurveBenchmark already exist, overwriting
+[INFO] /workspace/scratch/4ed3a04e028b/sandbox-bls/sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaValueUseProof.java: /workspace/scratch/4ed3a04e028b/sandbox-bls/qa/math-optimization/../../sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaValueUseProof.java uses unchecked or unsafe operations.
+[INFO] /workspace/scratch/4ed3a04e028b/sandbox-bls/sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaValueUseProof.java: Recompile with -Xlint:unchecked for details.
+[INFO] 
+[INFO] --- resources:3.4.0:testResources (default-testResources) @ math-qualification ---
+[INFO] Copying 11 resources from ../../sandbox_math_cleanup_test/src to target/test-classes
+[INFO] 
+[INFO] --- compiler:3.16.0:testCompile (default-testCompile) @ math-qualification ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 131 source files with javac [debug release 25] to target/test-classes
+[INFO] 
+[INFO] --- surefire:3.6.0:test (default-test) @ math-qualification ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running org.sandbox.math.qa.BlsSourceCohortTest
+COMPLETED parsed=5 parseErrorFiles=0 acceptedRegions=9
+BLS_COHORT classes=5 acceptedRegions=9 parseErrorFiles=0
+[ERROR] Tests run: 3, Failures: 2, Errors: 0, Skipped: 0, Time elapsed: 16.93 s <<< FAILURE! -- in org.sandbox.math.qa.BlsSourceCohortTest
+[ERROR] org.sandbox.math.qa.BlsSourceCohortTest.differentExecutableAndHomeCannotConsumeSourceQualification(String)[1] -- Time elapsed: 3.663 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: A different executable must not consume the qualified cohort:  ==> expected: not equal but was: <0>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:159)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:139)
+	at org.junit.jupiter.api.AssertNotEquals.failEqual(AssertNotEquals.java:282)
+	at org.junit.jupiter.api.AssertNotEquals.assertNotEquals(AssertNotEquals.java:96)
+	at org.junit.jupiter.api.Assertions.assertNotEquals(Assertions.java:2095)
+	at org.sandbox.math.qa.BlsSourceCohortTest.differentExecutableAndHomeCannotConsumeSourceQualification(BlsSourceCohortTest.java:211)
+
+[ERROR] org.sandbox.math.qa.BlsSourceCohortTest.differentExecutableAndHomeCannotConsumeSourceQualification(String)[2] -- Time elapsed: 0.819 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: A different executable must not consume the qualified cohort:  ==> expected: not equal but was: <0>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:159)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:139)
+	at org.junit.jupiter.api.AssertNotEquals.failEqual(AssertNotEquals.java:282)
+	at org.junit.jupiter.api.AssertNotEquals.assertNotEquals(AssertNotEquals.java:96)
+	at org.junit.jupiter.api.Assertions.assertNotEquals(Assertions.java:2095)
+	at org.sandbox.math.qa.BlsSourceCohortTest.differentExecutableAndHomeCannotConsumeSourceQualification(BlsSourceCohortTest.java:211)
+
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Failures: 
+[ERROR]   BlsSourceCohortTest.differentExecutableAndHomeCannotConsumeSourceQualification:211 A different executable must not consume the qualified cohort:  ==> expected: not equal but was: <0>
+[ERROR]   BlsSourceCohortTest.differentExecutableAndHomeCannotConsumeSourceQualification:211 A different executable must not consume the qualified cohort:  ==> expected: not equal but was: <0>
+[INFO] 
+[ERROR] Tests run: 3, Failures: 2, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  26.488 s
+[INFO] Finished at: 2026-11-03T04:32:09+05:30
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.6.0:test (default-test) on project math-qualification: There are test failures.
+[ERROR] 
+[ERROR] See /workspace/scratch/4ed3a04e028b/sandbox-bls/qa/math-optimization/target/surefire-reports for the individual test results.
+[ERROR] See dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

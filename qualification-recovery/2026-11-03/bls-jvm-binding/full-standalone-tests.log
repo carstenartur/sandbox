@@ -1,0 +1,581 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -----------------< org.sandbox.qa:math-qualification >------------------
+[INFO] Building Standalone qualification of the production mathematics core 1.0.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.4.0:resources (default-resources) @ math-qualification ---
+[INFO] skip non existing resourceDirectory /workspace/scratch/4ed3a04e028b/sandbox-bls/qa/math-optimization/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.16.0:compile (default-compile) @ math-qualification ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 131 source files with javac [debug release 25] to target/classes
+[INFO] /workspace/scratch/4ed3a04e028b/sandbox-bls/sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaValueUseProof.java: /workspace/scratch/4ed3a04e028b/sandbox-bls/qa/math-optimization/../../sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaValueUseProof.java uses unchecked or unsafe operations.
+[INFO] /workspace/scratch/4ed3a04e028b/sandbox-bls/sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaValueUseProof.java: Recompile with -Xlint:unchecked for details.
+[INFO] 
+[INFO] --- resources:3.4.0:testResources (default-testResources) @ math-qualification ---
+[INFO] Copying 11 resources from ../../sandbox_math_cleanup_test/src to target/test-classes
+[INFO] 
+[INFO] --- compiler:3.16.0:testCompile (default-testCompile) @ math-qualification ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 131 source files with javac [debug release 25] to target/test-classes
+[INFO] 
+[INFO] --- surefire:3.6.0:test (default-test) @ math-qualification ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaImmutableValueTest
+[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 13.35 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaImmutableValueTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaFixedPowerDependenciesTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.254 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaFixedPowerDependenciesTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaTailRecursionInspectorTest
+[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.094 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaTailRecursionInspectorTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaValueResidueTest
+[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.176 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaValueResidueTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaBranchExpressionTest
+[INFO] Tests run: 18, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.444 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaBranchExpressionTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaNumericStreamTest
+[INFO] Tests run: 32, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 5.959 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaNumericStreamTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.PrimitiveSourceGuardTest
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.098 s -- in org.sandbox.jdt.internal.corext.fix.math.PrimitiveSourceGuardTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.SourceBackedConstantTest
+[INFO] Tests run: 24, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.248 s -- in org.sandbox.jdt.internal.corext.fix.math.SourceBackedConstantTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaPartitionedSumTest
+[INFO] Tests run: 35, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 11.44 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaPartitionedSumTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaValueInverseSourceTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.043 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaValueInverseSourceTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaSeriesFinalReviewTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 5.212 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaSeriesFinalReviewTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaValueAlgebraProofTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.817 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaValueAlgebraProofTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaSourceNumericBranchWorkTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.184 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaSourceNumericBranchWorkTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaFiniteSumFormsTest
+[INFO] Tests run: 32, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 5.468 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaFiniteSumFormsTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaRuntimeIterationReviewTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.507 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaRuntimeIterationReviewTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaValueCallAdmissionTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.400 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaValueCallAdmissionTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaValueCallTest
+[INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.694 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaValueCallTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaLoopInvariantTest
+[INFO] Tests run: 54, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6.174 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaLoopInvariantTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaComputationSliceExpansionTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.010 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaComputationSliceExpansionTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptionsTest
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.014 s -- in org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptionsTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaSourceGuardRefinementTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.502 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaSourceGuardRefinementTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.RuntimeCalculationPolicyTest
+[INFO] Tests run: 13, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.014 s -- in org.sandbox.jdt.internal.corext.fix.math.RuntimeCalculationPolicyTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaEmissionVerifierTest
+[INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.121 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaEmissionVerifierTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaEarlyExitGuardIntegrationTest
+EARLY_GUARD_DIFFERENTIAL throwing=false comparisons=36
+EARLY_GUARD_DIFFERENTIAL throwing=true comparisons=36
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.456 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaEarlyExitGuardIntegrationTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaFixedPowerSourceTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.023 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaFixedPowerSourceTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaFixedPowerConstantTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.034 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaFixedPowerConstantTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaFiniteSumTest
+[INFO] Tests run: 35, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.833 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaFiniteSumTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.SourceMethodSummaryTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.707 s -- in org.sandbox.jdt.internal.corext.fix.math.SourceMethodSummaryTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaTailRecursionReplayTest
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.048 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaTailRecursionReplayTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaRegionSourceRewriterTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.028 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaRegionSourceRewriterTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaValueRuntimeTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.730 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaValueRuntimeTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.MathCandidateReviewTest
+[INFO] Tests run: 13, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.011 s -- in org.sandbox.jdt.internal.corext.fix.math.MathCandidateReviewTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.CapturedSourceFormulaPolicyTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.011 s -- in org.sandbox.jdt.internal.corext.fix.math.CapturedSourceFormulaPolicyTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaDominatingGuardFactsTest
+[INFO] Tests run: 23, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.101 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaDominatingGuardFactsTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaRecursiveValueSummaryTest
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.505 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaRecursiveValueSummaryTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.PrimitiveSourceGuardSchedulingTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.058 s -- in org.sandbox.jdt.internal.corext.fix.math.PrimitiveSourceGuardSchedulingTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaFixedPowerInitializationTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.842 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaFixedPowerInitializationTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaFixedPowerActualTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.787 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaFixedPowerActualTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaOutputLocalScheduleTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.073 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaOutputLocalScheduleTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaFixedPowerOptimizerTest
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.167 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaFixedPowerOptimizerTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaFixedPowerWorkTest
+FIXED_DISCOVERY_WORK constant=true attached=false Spent[common=616, source=522, remaining=49384]
+FIXED_DISCOVERY_WORK constant=true attached=true Spent[common=616, source=522, remaining=49384]
+FIXED_DISCOVERY_WORK constant=false attached=false Spent[common=607, source=520, remaining=49393]
+FIXED_DISCOVERY_WORK constant=false attached=true Spent[common=607, source=520, remaining=49393]
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.028 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaFixedPowerWorkTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.InstanceMethodExpansionTest
+[INFO] Tests run: 13, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.991 s -- in org.sandbox.jdt.internal.corext.fix.math.InstanceMethodExpansionTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaCandidateRankingTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.001 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaCandidateRankingTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaCallableContextTest
+[INFO] Tests run: 18, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.870 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaCallableContextTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaRuntimePrimitiveGuardTest
+[INFO] Tests run: 14, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.706 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaRuntimePrimitiveGuardTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaEarlyExitGuardFactsTest
+[INFO] Tests run: 26, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.101 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaEarlyExitGuardFactsTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaValueInverseReuseTest
+Inverse static provenance: establishedOriginalAccess=false, original=before:after:foreign:, generated=before:after:foreign:, inverse=false, rejection=[VALUE_INVERSE_ALGEBRA:[UNITY:VALUE_ALGEBRA_INITIALIZATION_OWNER]]
+Inverse static provenance: establishedOriginalAccess=true, original=before:foreign:after:, generated=before:foreign:after:, inverse=true, rejection=[]
+[INFO] Tests run: 30, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 10.18 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaValueInverseReuseTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaArrayStoreTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.296 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaArrayStoreTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaValueReuseTest
+[INFO] Tests run: 26, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 10.87 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaValueReuseTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaTailRecursionRewriteTest
+[INFO] Tests run: 21, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.631 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaTailRecursionRewriteTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaRuntimeIterationTest
+[INFO] Tests run: 36, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 5.619 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaRuntimeIterationTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.MathSearchBudgetPreferencesTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.007 s -- in org.sandbox.jdt.internal.corext.fix.math.MathSearchBudgetPreferencesTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.IncomingAssignmentBoundaryTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.012 s -- in org.sandbox.jdt.internal.corext.fix.math.IncomingAssignmentBoundaryTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaSourceReadShapeTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.720 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaSourceReadShapeTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaFiniteSumBudgetTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.054 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaFiniteSumBudgetTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.JavaValueGuardTypeBindingTest
+VALUE_GUARD_TYPE constant accepted=false original=[97, 18, 0] generated=[97, 18, 0] diagnostics=[Diagnostic[code=VALUE_REUSE_LIMIT, message=VALUE_RUNTIME_UNSPECIFIED, offset=0, length=1055, stage=SOURCE], Diagnostic[code=VALUE_INVERSE_LIMIT, message=VALUE_RUNTIME_UNSPECIFIED, offset=0, length=1055, stage=SOURCE], Diagnostic[code=VALUE_CALL_UNAVAILABLE, message=VALUE_CALL_GUARD_TYPE, offset=301, length=16, stage=SOURCE], Diagnostic[code=VALUE_NO_CANDIDATE, message=Inconclusive[diagnostic=INCOMPLETE_SEARCH_RELATION, work=1030070], offset=695, length=194, stage=SEARCH], Diagnostic[code=UNRESOLVED_OR_NONNUMERIC_TYPE, message=UNRESOLVED_OR_NONNUMERIC_TYPE, offset=294, length=24, stage=SOURCE], Diagnostic[code=SIDE_EFFECT_BOUNDARY, message=SIDE_EFFECT_BOUNDARY, offset=472, length=13, stage=SOURCE], Diagnostic[code=SIDE_EFFECT_BOUNDARY, message=SIDE_EFFECT_BOUNDARY, offset=485, length=12, stage=SOURCE], Diagnostic[code=UNRESOLVED_OR_NONNUMERIC_TYPE, message=UNRESOLVED_OR_NONNUMERIC_TYPE, offset=547, length=35, stage=SOURCE], Diagnostic[code=MULTIPLE_DECLARATORS, message=MULTIPLE_DECLARATORS, offset=696, length=69, stage=SOURCE], Diagnostic[code=MULTIPLE_DECLARATORS, message=MULTIPLE_DECLARATORS, offset=765, length=69, stage=SOURCE], Diagnostic[code=UNRESOLVED_OR_NONNUMERIC_TYPE, message=UNRESOLVED_OR_NONNUMERIC_TYPE, offset=834, length=54, stage=SOURCE], Diagnostic[code=SIDE_EFFECT_BOUNDARY, message=SIDE_EFFECT_BOUNDARY, offset=1011, length=23, stage=SOURCE], Diagnostic[code=SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION, message=SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION, offset=1041, length=11, stage=SOURCE]]
+VALUE_GUARD_TYPE residue accepted=false original=[7, 11, 0] generated=[7, 11, 0] diagnostics=[Diagnostic[code=VALUE_REUSE_LIMIT, message=VALUE_RUNTIME_UNSPECIFIED, offset=0, length=1234, stage=SOURCE], Diagnostic[code=VALUE_INVERSE_LIMIT, message=VALUE_RUNTIME_UNSPECIFIED, offset=0, length=1234, stage=SOURCE], Diagnostic[code=FIELD_OR_VOLATILE_INPUT, message=FIELD_OR_VOLATILE_INPUT, offset=332, length=6, stage=SOURCE], Diagnostic[code=FIELD_OR_VOLATILE_INPUT, message=FIELD_OR_VOLATILE_INPUT, offset=359, length=6, stage=SOURCE], Diagnostic[code=UNRESOLVED_OR_NONNUMERIC_TYPE, message=UNRESOLVED_OR_NONNUMERIC_TYPE, offset=367, length=20, stage=SOURCE], Diagnostic[code=SIDE_EFFECT_BOUNDARY, message=SIDE_EFFECT_BOUNDARY, offset=651, length=13, stage=SOURCE], Diagnostic[code=SIDE_EFFECT_BOUNDARY, message=SIDE_EFFECT_BOUNDARY, offset=664, length=12, stage=SOURCE], Diagnostic[code=UNRESOLVED_OR_NONNUMERIC_TYPE, message=UNRESOLVED_OR_NONNUMERIC_TYPE, offset=726, length=35, stage=SOURCE], Diagnostic[code=MULTIPLE_DECLARATORS, message=MULTIPLE_DECLARATORS, offset=875, length=69, stage=SOURCE], Diagnostic[code=MULTIPLE_DECLARATORS, message=MULTIPLE_DECLARATORS, offset=944, length=69, stage=SOURCE], Diagnostic[code=UNRESOLVED_OR_NONNUMERIC_TYPE, message=UNRESOLVED_OR_NONNUMERIC_TYPE, offset=1013, length=54, stage=SOURCE], Diagnostic[code=SIDE_EFFECT_BOUNDARY, message=SIDE_EFFECT_BOUNDARY, offset=1190, length=23, stage=SOURCE], Diagnostic[code=SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION, message=SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION, offset=1220, length=11, stage=SOURCE], Diagnostic[code=VALUE_RESIDUE_UNAVAILABLE, message=GENERATED_REGION_INVALID: Type mismatch: cannot convert from BigInteger to java.math.BigInteger, offset=202, length=186, stage=SOURCE]]
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.722 s -- in org.sandbox.jdt.internal.corext.fix.math.JavaValueGuardTypeBindingTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.MathReviewReportTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.101 s -- in org.sandbox.jdt.internal.corext.fix.math.MathReviewReportTest
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.MathExplanationReviewTest
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.101 s -- in org.sandbox.jdt.internal.corext.fix.math.MathExplanationReviewTest
+[INFO] Running org.sandbox.jdt.triggerpattern.test.policy.PinnedGitRepositoryTest
+SLF4J(W): No SLF4J providers were found.
+SLF4J(W): Defaulting to no-operation (NOP) logger implementation
+SLF4J(W): See https://www.slf4j.org/codes.html#noProviders for further details.
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.738 s -- in org.sandbox.jdt.triggerpattern.test.policy.PinnedGitRepositoryTest
+[INFO] Running org.sandbox.jdt.math.tests.RuntimeOnlyMathTest
+[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.877 s -- in org.sandbox.jdt.math.tests.RuntimeOnlyMathTest
+[INFO] Running org.sandbox.jdt.math.tests.BouncyCastlePreparationBoundaryTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.213 s -- in org.sandbox.jdt.math.tests.BouncyCastlePreparationBoundaryTest
+[INFO] Running org.sandbox.jdt.math.tests.WordProjectionCleanupTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.176 s -- in org.sandbox.jdt.math.tests.WordProjectionCleanupTest
+[INFO] Running org.sandbox.jdt.math.tests.MathematicalExplanationTest
+ACTUAL_EXPLAINED_JAVA=public class Calculation { public static int compute(int x,int a,int b) { // Verified mathematics (PRESERVE_JAVA).
+// Java integral wraparound and explicit conversions are preserved.
+// Original values:
+// return value = ((x * (a + b)) - (x * a));
+// Replacement values:
+// return value = (x * b);
+// Recorded search path:
+// Search step 1/2 [core-algebra/ast_distribute_left_add]:
+// final int _math0 = x * a;
+// return value = ((_math0 + (x * b)) - _math0);
+// Search step 2/2 [typed-local-algebra-at-subexpression]:
+// return value = (x * b);
+// Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied.
+// Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order.
+// Independent numeric proof: BITVECTOR_POLYNOMIAL_MOD_2_32.
+// Estimated operation work: 4 -> 1; not a timing measurement.
+return (x * b); }}
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.480 s -- in org.sandbox.jdt.math.tests.MathematicalExplanationTest
+[INFO] Running org.sandbox.jdt.math.tests.JavaTaskOptimizationTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.846 s -- in org.sandbox.jdt.math.tests.JavaTaskOptimizationTest
+[INFO] Running org.sandbox.jdt.math.tests.BouncyCastleModularResidueTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.437 s -- in org.sandbox.jdt.math.tests.BouncyCastleModularResidueTest
+[INFO] Running org.sandbox.jdt.math.tests.JavaComputationTaskTest
+NAT256_SDK_SEARCH JDT Inconclusive[diagnostic=INCOMPLETE_SEARCH_RELATION, work=261936]
+NAT256_SDK_SEARCH manual Inconclusive[diagnostic=INCOMPLETE_SEARCH_RELATION, work=262011]
+NAT256_TASK_COMPARISON editRegions=25 taskOutputs=26 reads=16 stores=8
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.422 s -- in org.sandbox.jdt.math.tests.JavaComputationTaskTest
+[INFO] Running org.sandbox.jdt.math.tests.MathematicalInterruptionTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.233 s -- in org.sandbox.jdt.math.tests.MathematicalInterruptionTest
+[INFO] Running org.sandbox.jdt.math.tests.SourceSliceBudgetBoundaryTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.037 s -- in org.sandbox.jdt.math.tests.SourceSliceBudgetBoundaryTest
+[INFO] Running org.sandbox.jdt.math.tests.SourceComputationSliceTest
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.079 s -- in org.sandbox.jdt.math.tests.SourceComputationSliceTest
+[INFO] Running org.sandbox.jdt.math.tests.JavaComputationEmitterTest
+[INFO] Tests run: 16, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.120 s -- in org.sandbox.jdt.math.tests.JavaComputationEmitterTest
+[INFO] Running org.sandbox.jdt.math.tests.FloatingPointRoundTripTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.937 s -- in org.sandbox.jdt.math.tests.FloatingPointRoundTripTest
+[INFO] Running org.sandbox.jdt.math.tests.MathematicalPreparationBudgetTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.616 s -- in org.sandbox.jdt.math.tests.MathematicalPreparationBudgetTest
+[INFO] Running org.sandbox.jdt.math.tests.BigIntegerMethodExpansionTest
+[INFO] Tests run: 17, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.491 s -- in org.sandbox.jdt.math.tests.BigIntegerMethodExpansionTest
+[INFO] Running org.sandbox.jdt.math.tests.JavaComputationExtractorTest
+[INFO] Tests run: 13, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.136 s -- in org.sandbox.jdt.math.tests.JavaComputationExtractorTest
+[INFO] Running org.sandbox.jdt.math.tests.SourceComputationSliceSafetyTest
+[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.363 s -- in org.sandbox.jdt.math.tests.SourceComputationSliceSafetyTest
+[INFO] Running org.sandbox.jdt.math.tests.RuntimeConstantExpressionsTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.007 s -- in org.sandbox.jdt.math.tests.RuntimeConstantExpressionsTest
+[INFO] Running org.sandbox.jdt.math.tests.JavaComputationRoundTripTest
+warning: [options] source value 8 is obsolete and will be removed in a future release
+warning: [options] target value 8 is obsolete and will be removed in a future release
+warning: [options] To suppress warnings about obsolete options, use -Xlint:-options.
+3 warnings
+warning: [options] source value 8 is obsolete and will be removed in a future release
+warning: [options] target value 8 is obsolete and will be removed in a future release
+warning: [options] To suppress warnings about obsolete options, use -Xlint:-options.
+3 warnings
+warning: [options] source value 8 is obsolete and will be removed in a future release
+warning: [options] target value 8 is obsolete and will be removed in a future release
+warning: [options] To suppress warnings about obsolete options, use -Xlint:-options.
+3 warnings
+warning: [options] source value 8 is obsolete and will be removed in a future release
+warning: [options] target value 8 is obsolete and will be removed in a future release
+warning: [options] To suppress warnings about obsolete options, use -Xlint:-options.
+3 warnings
+warning: [options] source value 8 is obsolete and will be removed in a future release
+warning: [options] target value 8 is obsolete and will be removed in a future release
+warning: [options] To suppress warnings about obsolete options, use -Xlint:-options.
+3 warnings
+warning: [options] source value 8 is obsolete and will be removed in a future release
+warning: [options] target value 8 is obsolete and will be removed in a future release
+warning: [options] To suppress warnings about obsolete options, use -Xlint:-options.
+3 warnings
+warning: [options] source value 8 is obsolete and will be removed in a future release
+warning: [options] target value 8 is obsolete and will be removed in a future release
+warning: [options] To suppress warnings about obsolete options, use -Xlint:-options.
+3 warnings
+warning: [options] source value 8 is obsolete and will be removed in a future release
+warning: [options] target value 8 is obsolete and will be removed in a future release
+warning: [options] To suppress warnings about obsolete options, use -Xlint:-options.
+3 warnings
+warning: [options] source value 8 is obsolete and will be removed in a future release
+warning: [options] target value 8 is obsolete and will be removed in a future release
+warning: [options] To suppress warnings about obsolete options, use -Xlint:-options.
+3 warnings
+warning: [options] source value 8 is obsolete and will be removed in a future release
+warning: [options] target value 8 is obsolete and will be removed in a future release
+warning: [options] To suppress warnings about obsolete options, use -Xlint:-options.
+3 warnings
+warning: [options] source value 8 is obsolete and will be removed in a future release
+warning: [options] target value 8 is obsolete and will be removed in a future release
+warning: [options] To suppress warnings about obsolete options, use -Xlint:-options.
+3 warnings
+warning: [options] source value 8 is obsolete and will be removed in a future release
+warning: [options] target value 8 is obsolete and will be removed in a future release
+warning: [options] To suppress warnings about obsolete options, use -Xlint:-options.
+3 warnings
+[INFO] Tests run: 17, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 5.216 s -- in org.sandbox.jdt.math.tests.JavaComputationRoundTripTest
+[INFO] Running org.sandbox.jdt.math.tests.MathDiagnosticStageTest
+[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.062 s -- in org.sandbox.jdt.math.tests.MathDiagnosticStageTest
+[INFO] Running org.sandbox.jdt.math.tests.SourceComputationSliceBoundaryTest
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.164 s -- in org.sandbox.jdt.math.tests.SourceComputationSliceBoundaryTest
+[INFO] Running org.sandbox.jdt.math.tests.ArrayReadComputationTest
+[INFO] Tests run: 19, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.023 s -- in org.sandbox.jdt.math.tests.ArrayReadComputationTest
+[INFO] Running org.sandbox.jdt.math.tests.MathematicalPresentationBudgetTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.017 s -- in org.sandbox.jdt.math.tests.MathematicalPresentationBudgetTest
+[INFO] Running org.sandbox.jdt.math.tests.JavaSourceReferencesTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.007 s -- in org.sandbox.jdt.math.tests.JavaSourceReferencesTest
+[INFO] Running org.sandbox.jdt.math.tests.MathematicalSearchDerivationTest
+ACTUAL_JAVA_SEARCH_PATH=public class Calculation { public static int compute(int x,int a,int b) { // Verified mathematics (PRESERVE_JAVA).
+// Java integral wraparound and explicit conversions are preserved.
+// Original values:
+// return value = ((x * (a + b)) - (x * a));
+// Replacement values:
+// return value = (x * b);
+// Recorded search path:
+// Search step 1/2 [core-algebra/ast_distribute_left_add]:
+// final int _math0 = x * a;
+// return value = ((_math0 + (x * b)) - _math0);
+// Search step 2/2 [typed-local-algebra-at-subexpression]:
+// return value = (x * b);
+// Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied.
+// Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order.
+// Independent numeric proof: BITVECTOR_POLYNOMIAL_MOD_2_32.
+// Estimated operation work: 4 -> 1; not a timing measurement.
+return (x * b); }}
+ACTUAL_JAVA_SEARCH_PATH=public class Calculation {
+    private static int blend(int p, int q) { return p+q; }
+    public static int compute(int distance, int scale, int bias) {
+        // Preserve this explanation of the input.
+        // Verified mathematics (PRESERVE_JAVA).
+        // Java integral wraparound and explicit conversions are preserved.
+        // Original values:
+        // return value = ((distance * (scale + bias)) - (distance * scale));
+        // Replacement values:
+        // return value = (distance * bias);
+        // Recorded search path:
+        // Search step 1/2 [core-algebra/ast_distribute_left_add]:
+        // final int _math0 = distance * scale;
+        // return value = ((_math0 + (distance * bias)) - _math0);
+        // Search step 2/2 [typed-local-algebra-at-subexpression]:
+        // return value = (distance * bias);
+        // Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied.
+        // Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order.
+        // Independent numeric proof: BITVECTOR_POLYNOMIAL_MOD_2_32.
+        // Estimated operation work: 4 -> 1; not a timing measurement.
+        return (distance * bias);
+    }
+}
+
+ACTUAL_JAVA_SEARCH_PATH=public class Calculation { public static int compute(int x,int a,int b) { // Verified mathematics (PRESERVE_JAVA).
+// Java integral wraparound and explicit conversions are preserved.
+// Original values:
+// return value = (((x * (a + b)) - (x * a)) + ((a * (x + b)) - (a * x)));
+// Replacement values:
+// return value = ((x * b) + ((a * (x + b)) - (a * x)));
+// Recorded search path:
+// Search step 1/2 [core-algebra/ast_distribute_left_add]:
+// final int _math0 = x * a;
+// return value = (((_math0 + (x * b)) - _math0) + ((a * (x + b)) - (a * x)));
+// Search step 2/2 [typed-local-algebra-at-subexpression]:
+// return value = ((x * b) + ((a * (x + b)) - (a * x)));
+// Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied.
+// Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order.
+// Independent numeric proof: BITVECTOR_POLYNOMIAL_MOD_2_32, TYPED_STRUCTURAL_IDENTITY, TYPED_OPERATION_CONGRUENCE.
+// Estimated operation work: 9 -> 6; not a timing measurement.
+return ((x * b) + ((a * (x + b)) - (a * x))); }}
+ACTUAL_JAVA_SEARCH_PATH=public class Calculation { public static int compute(int x,int a,int b) { return (x * b); }}
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.827 s -- in org.sandbox.jdt.math.tests.MathematicalSearchDerivationTest
+[INFO] Running org.sandbox.jdt.math.tests.MathematicalRetryBudgetTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.192 s -- in org.sandbox.jdt.math.tests.MathematicalRetryBudgetTest
+[INFO] Running org.sandbox.jdt.math.tests.MathTargetProfileTest
+warning: [options] source value 8 is obsolete and will be removed in a future release
+warning: [options] target value 8 is obsolete and will be removed in a future release
+warning: [options] To suppress warnings about obsolete options, use -Xlint:-options.
+3 warnings
+warning: [options] source value 8 is obsolete and will be removed in a future release
+warning: [options] target value 8 is obsolete and will be removed in a future release
+warning: [options] To suppress warnings about obsolete options, use -Xlint:-options.
+3 warnings
+[INFO] Tests run: 19, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.523 s -- in org.sandbox.jdt.math.tests.MathTargetProfileTest
+[INFO] Running org.sandbox.jdt.math.tests.SwtAssignmentRegionTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.247 s -- in org.sandbox.jdt.math.tests.SwtAssignmentRegionTest
+[INFO] Running org.sandbox.jdt.math.tests.BigIntegerMagnitudeFactsTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.032 s -- in org.sandbox.jdt.math.tests.BigIntegerMagnitudeFactsTest
+[INFO] Running org.sandbox.jdt.math.tests.FieldArrayStateVisibilityTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.179 s -- in org.sandbox.jdt.math.tests.FieldArrayStateVisibilityTest
+[INFO] Running org.sandbox.jdt.math.tests.ScalarMethodExpansionTest
+SCALAR_METHOD_GENERATED=public class Calculation {
+private static int join(int x,int a) { x += a; return x; }
+private static int multiply(int x,int a) { int value=x; value *= a; return value; }
+private static int total(int x,int a,int b) { return multiply(x,join(a,b)); }
+
+public static int compute(int x,int a,int b) {
+return (x * b);
+}}
+SCALAR_METHOD_GENERATED=public class Calculation {
+private static int combine(int p,int q) { return p+q; }
+private static long combine(long p,long q) { return p-q; }
+
+public static int compute(int x,int a,int b) {
+return (x * b);
+}}
+SCALAR_METHOD_GENERATED=public class Calculation {
+private static int keep(int ignored,int value) { return value; }
+public static int compute(int x,int a,int b) {
+return keep(10/a,x)+b-b;
+}}
+SCALAR_METHOD_GENERATED=public class Calculation {
+private static int product(int x,int a) { return x*a; }
+public static int compute(int x,int a,int b) {
+return (x * (a + b));
+}}
+SCALAR_METHOD_GENERATED=public class Calculation {
+private static int keep(int p,int q) { int discarded=10/q; return p; }
+public static int compute(int x,int a,int b) {
+return keep(x,a)+b-b;
+}}
+SCALAR_METHOD_GENERATED=public class Calculation {
+private static int offset() { return 1; } private static int subtract(int p,int q) { return p-q; }
+public static int compute(int x,int a,int b) {
+return x;
+}}
+SCALAR_METHOD_GENERATED=public class Calculation {
+private static byte convert(int p) { return (byte)p; }
+public static int compute(int x,int a,int b) {
+return ((int) ((byte) x));
+}}
+SCALAR_METHOD_GENERATED=public class Calculation {
+private static int sum(int p,int q) { /* Meaning belongs here. */ return p+q; }
+public static int compute(int x,int a,int b) {
+return (x * b);
+}}
+SCALAR_METHOD_GENERATED=public class Calculation {
+private static int merge(int p,int q) { int value=p+q; return value; }
+public static int compute(int x,int a,int b) {
+return (x * b);
+}}
+SCALAR_METHOD_GENERATED=public class Calculation {
+private static long sum(int p,int q) { return p+q; }
+public static int compute(int x,int a,int b) {
+return ((int) 0L);
+}}
+[INFO] Tests run: 18, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.418 s -- in org.sandbox.jdt.math.tests.ScalarMethodExpansionTest
+[INFO] Running org.sandbox.jdt.math.tests.ArrayScalarRetryBudgetTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.139 s -- in org.sandbox.jdt.math.tests.ArrayScalarRetryBudgetTest
+[INFO] Running org.sandbox.jdt.math.tests.MathHeldoutQualificationTest
+HELDOUT stencil-int-original changed=true oracleCases=320
+HELDOUT stencil-int-renamed changed=true oracleCases=320
+HELDOUT stencil-int-reduced changed=false oracleCases=320
+HELDOUT stencil-double-negative changed=false oracleCases=144
+HELDOUT bernstein-bigint-original changed=false oracleCases=881
+HELDOUT bernstein-bigint-renamed changed=false oracleCases=881
+HELDOUT bernstein-bigint-reduced changed=false oracleCases=881
+HELDOUT adder-long-original changed=true oracleCases=320
+HELDOUT adder-long-reduced changed=false oracleCases=320
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.500 s -- in org.sandbox.jdt.math.tests.MathHeldoutQualificationTest
+[INFO] Running org.sandbox.jdt.math.tests.JavaExtendedSourceReadTest
+[INFO] Tests run: 13, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 5.357 s -- in org.sandbox.jdt.math.tests.JavaExtendedSourceReadTest
+[INFO] Running org.sandbox.jdt.math.tests.DocumentedSourceSnapshotTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.033 s -- in org.sandbox.jdt.math.tests.DocumentedSourceSnapshotTest
+[INFO] Running org.sandbox.jdt.math.tests.BouncyCastleBigIntegerTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.720 s -- in org.sandbox.jdt.math.tests.BouncyCastleBigIntegerTest
+[INFO] Running org.sandbox.jdt.math.tests.SwtImageDataRuntimeCorpusTest
+SWT_MATH_CORPUS targetJava=21 extracted=195 accepted=0 source=af3f375de7982e8f576352df1f5de88bdd1d5b34aa026d4bf189b7fb7a81b187 generated=af3f375de7982e8f576352df1f5de88bdd1d5b34aa026d4bf189b7fb7a81b187
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.440 s -- in org.sandbox.jdt.math.tests.SwtImageDataRuntimeCorpusTest
+[INFO] Running org.sandbox.jdt.math.tests.MathVariableRegionsTest
+[INFO] Tests run: 30, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.121 s -- in org.sandbox.jdt.math.tests.MathVariableRegionsTest
+[INFO] Running org.sandbox.jdt.math.tests.PreservedArraySourceTest
+PRESERVED_BC_KECCAK_FIELD_READS=1 regions=97
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.531 s -- in org.sandbox.jdt.math.tests.PreservedArraySourceTest
+[INFO] Running org.sandbox.jdt.math.tests.FieldArrayOrderingTest
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.240 s -- in org.sandbox.jdt.math.tests.FieldArrayOrderingTest
+[INFO] Running org.sandbox.jdt.math.tests.NewUpstreamMathPilotTest
+NEW_UPSTREAM_MATH id=imaging extracted=5 accepted=1 targetJava=8 upstreamJava=8
+warning: [options] source value 8 is obsolete and will be removed in a future release
+warning: [options] target value 8 is obsolete and will be removed in a future release
+warning: [options] To suppress warnings about obsolete options, use -Xlint:-options.
+3 warnings
+warning: [options] source value 8 is obsolete and will be removed in a future release
+warning: [options] target value 8 is obsolete and will be removed in a future release
+warning: [options] To suppress warnings about obsolete options, use -Xlint:-options.
+3 warnings
+PAETH_REQUIRED_OPTIMIZATION sourceAddSubtract=5 generatedAddSubtract=3
+NEW_UPSTREAM_MATH_COMPLETE {"acceptedRegions":1,"binaryArchiveSha256":"19da061ae2d28d97dc0489a8735a48c2626168c462cd0c0a0bac87996921af5e","coordinates":"org.apache.commons:commons-imaging:1.0.0-alpha6","diagnosticCounts":{"ARRAY_CAPTURE_COST_EXCEEDS_BENEFIT":4,"CONSTANT_EXPRESSION_PRESERVED":3,"FINITE_SUM_UNAVAILABLE":1,"METHOD_BODY_METHOD_CONTROL_FLOW_OR_EFFECT":1,"NOIMPROVEMENT":4,"RUNTIME_ITERATION_UNAVAILABLE":1,"SIDE_EFFECT_BOUNDARY":1,"VERIFIED_CANDIDATE":1},"diagnostics":[{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":1115,"length":35,"stage":"SOURCE"},{"code":"CONSTANT_EXPRESSION_PRESERVED","message":"Intentional constant source is outside runtime cleanup","offset":1900,"length":13,"stage":"SOURCE"},{"code":"CONSTANT_EXPRESSION_PRESERVED","message":"Intentional constant source is outside runtime cleanup","offset":2067,"length":14,"stage":"SOURCE"},{"code":"CONSTANT_EXPRESSION_PRESERVED","message":"Intentional constant source is outside runtime cleanup","offset":2198,"length":18,"stage":"SOURCE"},{"code":"METHOD_BODY_METHOD_CONTROL_FLOW_OR_EFFECT","message":"METHOD_BODY_METHOD_CONTROL_FLOW_OR_EFFECT","offset":2394,"length":59,"stage":"SOURCE"},{"code":"VERIFIED_CANDIDATE","message":"Mathematics PRESERVE_JAVA; estimated operation work 8 -> 6; check work 0; proof java-numeric-independent/v15-bounded-big-integer-left-shift; assumptions []; estimated score 91 -> 71; measured speedup: not assessed\nVerified mathematics (PRESERVE_JAVA).\nJava integral wraparound and explicit conversions are preserved.\nOriginal values:\nfinal int _math0 = (a + b) - c;\npa = (java.lang.Math.abs((_math0 - a)));\npb = (java.lang.Math.abs((_math0 - b)));\npc = (java.lang.Math.abs((_math0 - c)));\nReplacement values:\nfinal int _math0 = b - c;\nfinal int _math1 = a - c;\npa = (java.lang.Math.abs(_math0));\npb = (java.lang.Math.abs(_math1));\npc = (java.lang.Math.abs((_math1 + _math0)));\nRecorded search path:\nSearch step 1/3 [core-algebra/ast_signed_additive_normalize]:\nfinal int _math0 = (a + b) - c;\npa = (java.lang.Math.abs((b - c)));\npb = (java.lang.Math.abs((_math0 - b)));\npc = (java.lang.Math.abs((_math0 - c)));\nSearch step 2/3 [core-algebra/ast_signed_additive_normalize]:\npa = (java.lang.Math.abs((b - c)));\npb = (java.lang.Math.abs((a - c)));\npc = (java.lang.Math.abs((((a + b) - c) - c)));\nSearch step 3/3 [core-algebra/ast_signed_additive_normalize]:\nfinal int _math0 = b - c;\nfinal int _math1 = a - c;\npa = (java.lang.Math.abs(_math0));\npb = (java.lang.Math.abs(_math1));\npc = (java.lang.Math.abs((_math1 + _math0)));\nEach compound proposal is one recorded search step; no unrecorded primitive expansion is implied.\nSelected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order.\nIndependent numeric proof: BITVECTOR_POLYNOMIAL_MOD_2_32, TYPED_OPERATION_CONGRUENCE.\nEstimated operation work: 8 -> 6; not a timing measurement.","offset":1287,"length":192,"stage":"RESULT"},{"code":"ARRAY_CAPTURE_COST_EXCEEDS_BENEFIT","message":"No improvement after emitted capture costs participate in candidate selection","offset":1926,"length":40,"stage":"COST"},{"code":"NOIMPROVEMENT","message":"NoImprovement[diagnostic=NO_IMPROVEMENT_WITH_FULL_POLICY_COST, searchCompletion=EXHAUSTED_BOUNDED_SPACE, work=2076]","offset":1926,"length":40,"stage":"SEARCH"},{"code":"ARRAY_CAPTURE_COST_EXCEEDS_BENEFIT","message":"No improvement after emitted capture costs participate in candidate selection","offset":2017,"length":22,"stage":"COST"},{"code":"NOIMPROVEMENT","message":"NoImprovement[diagnostic=NO_IMPROVEMENT_WITH_FULL_POLICY_COST, searchCompletion=EXHAUSTED_BOUNDED_SPACE, work=754]","offset":2017,"length":22,"stage":"SEARCH"},{"code":"ARRAY_CAPTURE_COST_EXCEEDS_BENEFIT","message":"No improvement after emitted capture costs participate in candidate selection","offset":2128,"length":14,"stage":"COST"},{"code":"NOIMPROVEMENT","message":"NoImprovement[diagnostic=NO_IMPROVEMENT_WITH_FULL_POLICY_COST, searchCompletion=EXHAUSTED_BOUNDED_SPACE, work=754]","offset":2128,"length":14,"stage":"SEARCH"},{"code":"ARRAY_CAPTURE_COST_EXCEEDS_BENEFIT","message":"No improvement after emitted capture costs participate in candidate selection","offset":2281,"length":26,"stage":"COST"},{"code":"NOIMPROVEMENT","message":"NoImprovement[diagnostic=NO_IMPROVEMENT_WITH_FULL_POLICY_COST, searchCompletion=EXHAUSTED_BOUNDED_SPACE, work=754]","offset":2281,"length":26,"stage":"SEARCH"},{"code":"FINITE_SUM_UNAVAILABLE","message":"FINITE_SUM_NOT_ADMITTED","offset":1849,"length":807,"stage":"SOURCE"},{"code":"RUNTIME_ITERATION_UNAVAILABLE","message":"RUNTIME_ITERATION_NOT_ADMITTED","offset":1849,"length":807,"stage":"SOURCE"}],"evidence":[{"offset":1287,"length":192,"proof":{"schemaRevision":"regelsuche.optimization-evidence/v1","semanticsRevision":"java25-numeric/v1","checkerRevision":"java-numeric-independent/v15-bounded-big-integer-left-shift","generatorRevision":"java-core-algebra-proposals/v13-filtered-value-arithmetic","sourceHash":"75ae70e5cafc3ae4d2d438bde2043c4e57a91d6defd2db7d406addaa05ddf121","candidateHash":"d178f2726511712ac905f3c99fec2dc7381ba097c6eb58757c82671456a99754","traceHash":"cc3d824c81e838557c6412c6bc6a94108cd0180b769b52a8a7bfa3928097eda4","assumptionsHash":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","safetyProfile":"PRESERVE_JAVA","checkedPolicy":{"revision":"java-checked/v1","checkIntegralRange":false,"requireFinite":false,"compareFloatingPointBits":false,"checkTinyInexactUnderflow":false},"obligations":{"guard":"NONE","originalTrace":{"occurrences":[{"sourceId":"operation@1301:0","expression":{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"operation@1301:1","expression":{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"operation@1366:2","expression":{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input0"}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"operation@1357:3","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input0"}]}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"operation@1432:4","expression":{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input1"}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"operation@1423:5","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input1"}]}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"operation@1472:6","expression":{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input2"}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"operation@1463:7","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input2"}]}]},"declaredKind":"INT","evaluatedKind":"INT"}]},"replacementTrace":{"occurrences":[{"sourceId":"prepared-operation-0","expression":{"name":"j_int_subtract","arguments":[{"name":"input1"},{"name":"input2"}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"prepared-operation-1","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"input1"},{"name":"input2"}]}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"prepared-operation-2","expression":{"name":"j_int_subtract","arguments":[{"name":"input0"},{"name":"input2"}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"prepared-operation-3","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"input0"},{"name":"input2"}]}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"prepared-operation-4","expression":{"name":"j_int_add","arguments":[{"name":"j_int_subtract","arguments":[{"name":"input0"},{"name":"input2"}]},{"name":"j_int_subtract","arguments":[{"name":"input1"},{"name":"input2"}]}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"prepared-operation-5","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_add","arguments":[{"name":"j_int_subtract","arguments":[{"name":"input0"},{"name":"input2"}]},{"name":"j_int_subtract","arguments":[{"name":"input1"},{"name":"input2"}]}]}]},"declaredKind":"INT","evaluatedKind":"INT"}]},"checkIntegralRange":false,"requireFinite":false,"compareFloatingPointBits":false,"estimatedCheckWork":0,"fallbackOperationCount":0},"proofMethods":["BITVECTOR_POLYNOMIAL_MOD_2_32","TYPED_OPERATION_CONGRUENCE"],"verificationWork":826},"cost":{"sourceScore":91,"candidateScore":71,"checkWork":0,"fallbackOperations":0,"sourceCost":{"operationWork":8,"peakLiveStorage":5,"retainedOutputStorage":3,"outputBindings":3,"operationCount":8,"inspectionWork":260},"candidateCost":{"operationWork":6,"peakLiveStorage":5,"retainedOutputStorage":3,"outputBindings":3,"operationCount":6,"inspectionWork":244},"estimatedRuntimeImprovement":true},"original":"final int p = a + b - c; // ; initial estimate\n        final int pa = Math.abs(p - a); // ; distances to a, b, c\n        final int pb = Math.abs(p - b);\n        final int pc = Math.abs(p - c);","replacement":"// Verified mathematics (PRESERVE_JAVA).\n        // Java integral wraparound and explicit conversions are preserved.\n        // Original values:\n        // final int _math0 = (a + b) - c;\n        // pa = (java.lang.Math.abs((_math0 - a)));\n        // pb = (java.lang.Math.abs((_math0 - b)));\n        // pc = (java.lang.Math.abs((_math0 - c)));\n        // Replacement values:\n        // final int _math0 = b - c;\n        // final int _math1 = a - c;\n        // pa = (java.lang.Math.abs(_math0));\n        // pb = (java.lang.Math.abs(_math1));\n        // pc = (java.lang.Math.abs((_math1 + _math0)));\n        // Recorded search path:\n        // Search step 1/3 [core-algebra/ast_signed_additive_normalize]:\n        // final int _math0 = (a + b) - c;\n        // pa = (java.lang.Math.abs((b - c)));\n        // pb = (java.lang.Math.abs((_math0 - b)));\n        // pc = (java.lang.Math.abs((_math0 - c)));\n        // Search step 2/3 [core-algebra/ast_signed_additive_normalize]:\n        // pa = (java.lang.Math.abs((b - c)));\n        // pb = (java.lang.Math.abs((a - c)));\n        // pc = (java.lang.Math.abs((((a + b) - c) - c)));\n        // Search step 3/3 [core-algebra/ast_signed_additive_normalize]:\n        // final int _math0 = b - c;\n        // final int _math1 = a - c;\n        // pa = (java.lang.Math.abs(_math0));\n        // pb = (java.lang.Math.abs(_math1));\n        // pc = (java.lang.Math.abs((_math1 + _math0)));\n        // Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied.\n        // Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order.\n        // Independent numeric proof: BITVECTOR_POLYNOMIAL_MOD_2_32, TYPED_OPERATION_CONGRUENCE.\n        // Estimated operation work: 8 -> 6; not a timing measurement.\n        final int _math0 = b - c;\n        final int _math1 = a - c;\n         // ; initial estimate\n        final int pa = (java.lang.Math.abs(_math0)); // ; distances to a, b, c\n        final int pb = (java.lang.Math.abs(_math1));\n        final int pc = (java.lang.Math.abs((_math1 + _math0)));","explanation":{"inputNames":{"input0":"a","input1":"b","input2":"c"},"outputNames":{"output1":"pa","output2":"pb","output3":"pc"},"guardedReceivers":[],"verified":{"proof":{"schemaRevision":"regelsuche.optimization-evidence/v1","semanticsRevision":"java25-numeric/v1","checkerRevision":"java-numeric-independent/v15-bounded-big-integer-left-shift","generatorRevision":"java-core-algebra-proposals/v13-filtered-value-arithmetic","sourceHash":"75ae70e5cafc3ae4d2d438bde2043c4e57a91d6defd2db7d406addaa05ddf121","candidateHash":"d178f2726511712ac905f3c99fec2dc7381ba097c6eb58757c82671456a99754","traceHash":"cc3d824c81e838557c6412c6bc6a94108cd0180b769b52a8a7bfa3928097eda4","assumptionsHash":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","safetyProfile":"PRESERVE_JAVA","checkedPolicy":{"revision":"java-checked/v1","checkIntegralRange":false,"requireFinite":false,"compareFloatingPointBits":false,"checkTinyInexactUnderflow":false},"obligations":{"guard":"NONE","originalTrace":{"occurrences":[{"sourceId":"operation@1301:0","expression":{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"operation@1301:1","expression":{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"operation@1366:2","expression":{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input0"}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"operation@1357:3","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input0"}]}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"operation@1432:4","expression":{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input1"}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"operation@1423:5","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input1"}]}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"operation@1472:6","expression":{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input2"}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"operation@1463:7","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input2"}]}]},"declaredKind":"INT","evaluatedKind":"INT"}]},"replacementTrace":{"occurrences":[{"sourceId":"prepared-operation-0","expression":{"name":"j_int_subtract","arguments":[{"name":"input1"},{"name":"input2"}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"prepared-operation-1","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"input1"},{"name":"input2"}]}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"prepared-operation-2","expression":{"name":"j_int_subtract","arguments":[{"name":"input0"},{"name":"input2"}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"prepared-operation-3","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"input0"},{"name":"input2"}]}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"prepared-operation-4","expression":{"name":"j_int_add","arguments":[{"name":"j_int_subtract","arguments":[{"name":"input0"},{"name":"input2"}]},{"name":"j_int_subtract","arguments":[{"name":"input1"},{"name":"input2"}]}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"prepared-operation-5","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_add","arguments":[{"name":"j_int_subtract","arguments":[{"name":"input0"},{"name":"input2"}]},{"name":"j_int_subtract","arguments":[{"name":"input1"},{"name":"input2"}]}]}]},"declaredKind":"INT","evaluatedKind":"INT"}]},"checkIntegralRange":false,"requireFinite":false,"compareFloatingPointBits":false,"estimatedCheckWork":0,"fallbackOperationCount":0},"proofMethods":["BITVECTOR_POLYNOMIAL_MOD_2_32","TYPED_OPERATION_CONGRUENCE"],"verificationWork":826},"assumptions":[],"obligations":{"guard":"NONE","originalTrace":{"occurrences":[{"sourceId":"operation@1301:0","expression":{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"operation@1301:1","expression":{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"operation@1366:2","expression":{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input0"}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"operation@1357:3","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input0"}]}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"operation@1432:4","expression":{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input1"}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"operation@1423:5","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input1"}]}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"operation@1472:6","expression":{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input2"}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"operation@1463:7","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input2"}]}]},"declaredKind":"INT","evaluatedKind":"INT"}]},"replacementTrace":{"occurrences":[{"sourceId":"prepared-operation-0","expression":{"name":"j_int_subtract","arguments":[{"name":"input1"},{"name":"input2"}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"prepared-operation-1","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"input1"},{"name":"input2"}]}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"prepared-operation-2","expression":{"name":"j_int_subtract","arguments":[{"name":"input0"},{"name":"input2"}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"prepared-operation-3","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"input0"},{"name":"input2"}]}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"prepared-operation-4","expression":{"name":"j_int_add","arguments":[{"name":"j_int_subtract","arguments":[{"name":"input0"},{"name":"input2"}]},{"name":"j_int_subtract","arguments":[{"name":"input1"},{"name":"input2"}]}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"prepared-operation-5","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_add","arguments":[{"name":"j_int_subtract","arguments":[{"name":"input0"},{"name":"input2"}]},{"name":"j_int_subtract","arguments":[{"name":"input1"},{"name":"input2"}]}]}]},"declaredKind":"INT","evaluatedKind":"INT"}]},"checkIntegralRange":false,"requireFinite":false,"compareFloatingPointBits":false,"estimatedCheckWork":0,"fallbackOperationCount":0},"original":{"steps":[{"index":0,"kind":"INT","expression":{"name":"input0"},"arguments":[],"shared":false},{"index":1,"kind":"INT","expression":{"name":"input1"},"arguments":[],"shared":false},{"index":2,"kind":"INT","expression":{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},"arguments":[0,1],"shared":false},{"index":3,"kind":"INT","expression":{"name":"input2"},"arguments":[],"shared":false},{"index":4,"kind":"INT","expression":{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},"arguments":[2,3],"shared":true},{"index":5,"kind":"INT","expression":{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input0"}]},"arguments":[4,0],"shared":false},{"index":6,"kind":"INT","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input0"}]}]},"arguments":[5],"shared":false},{"index":7,"kind":"INT","expression":{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input1"}]},"arguments":[4,1],"shared":false},{"index":8,"kind":"INT","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input1"}]}]},"arguments":[7],"shared":false},{"index":9,"kind":"INT","expression":{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input2"}]},"arguments":[4,3],"shared":false},{"index":10,"kind":"INT","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input2"}]}]},"arguments":[9],"shared":false}],"outputs":{"output1":6,"output2":8,"output3":10}},"replacement":{"steps":[{"index":0,"kind":"INT","expression":{"name":"input1"},"arguments":[],"shared":false},{"index":1,"kind":"INT","expression":{"name":"input2"},"arguments":[],"shared":false},{"index":2,"kind":"INT","expression":{"name":"j_int_subtract","arguments":[{"name":"input1"},{"name":"input2"}]},"arguments":[0,1],"shared":true},{"index":3,"kind":"INT","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"input1"},{"name":"input2"}]}]},"arguments":[2],"shared":false},{"index":4,"kind":"INT","expression":{"name":"input0"},"arguments":[],"shared":false},{"index":5,"kind":"INT","expression":{"name":"j_int_subtract","arguments":[{"name":"input0"},{"name":"input2"}]},"arguments":[4,1],"shared":true},{"index":6,"kind":"INT","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"input0"},{"name":"input2"}]}]},"arguments":[5],"shared":false},{"index":7,"kind":"INT","expression":{"name":"j_int_add","arguments":[{"name":"j_int_subtract","arguments":[{"name":"input0"},{"name":"input2"}]},{"name":"j_int_subtract","arguments":[{"name":"input1"},{"name":"input2"}]}]},"arguments":[5,2],"shared":false},{"index":8,"kind":"INT","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_add","arguments":[{"name":"j_int_subtract","arguments":[{"name":"input0"},{"name":"input2"}]},{"name":"j_int_subtract","arguments":[{"name":"input1"},{"name":"input2"}]}]}]},"arguments":[7],"shared":false}],"outputs":{"output1":3,"output2":6,"output3":8}},"originalModularPowers":0,"replacementModularPowers":0,"presentationWork":590},"derivation":{"evidence":{"schemaRevision":"regelsuche.optimization-evidence/v1","semanticsRevision":"java25-numeric/v1","checkerRevision":"java-numeric-independent/v15-bounded-big-integer-left-shift","generatorRevision":"java-core-algebra-proposals/v13-filtered-value-arithmetic","sourceHash":"75ae70e5cafc3ae4d2d438bde2043c4e57a91d6defd2db7d406addaa05ddf121","candidateHash":"d178f2726511712ac905f3c99fec2dc7381ba097c6eb58757c82671456a99754","traceHash":"cc3d824c81e838557c6412c6bc6a94108cd0180b769b52a8a7bfa3928097eda4","assumptionsHash":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","safetyProfile":"PRESERVE_JAVA","checkedPolicy":{"revision":"java-checked/v1","checkIntegralRange":false,"requireFinite":false,"compareFloatingPointBits":false,"checkTinyInexactUnderflow":false},"obligations":{"guard":"NONE","originalTrace":{"occurrences":[{"sourceId":"operation@1301:0","expression":{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"operation@1301:1","expression":{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"operation@1366:2","expression":{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input0"}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"operation@1357:3","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input0"}]}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"operation@1432:4","expression":{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input1"}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"operation@1423:5","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input1"}]}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"operation@1472:6","expression":{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input2"}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"operation@1463:7","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input2"}]}]},"declaredKind":"INT","evaluatedKind":"INT"}]},"replacementTrace":{"occurrences":[{"sourceId":"prepared-operation-0","expression":{"name":"j_int_subtract","arguments":[{"name":"input1"},{"name":"input2"}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"prepared-operation-1","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"input1"},{"name":"input2"}]}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"prepared-operation-2","expression":{"name":"j_int_subtract","arguments":[{"name":"input0"},{"name":"input2"}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"prepared-operation-3","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"input0"},{"name":"input2"}]}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"prepared-operation-4","expression":{"name":"j_int_add","arguments":[{"name":"j_int_subtract","arguments":[{"name":"input0"},{"name":"input2"}]},{"name":"j_int_subtract","arguments":[{"name":"input1"},{"name":"input2"}]}]},"declaredKind":"INT","evaluatedKind":"INT"},{"sourceId":"prepared-operation-5","expression":{"name":"j_int_abs","arguments":[{"name":"j_int_add","arguments":[{"name":"j_int_subtract","arguments":[{"name":"input0"},{"name":"input2"}]},{"name":"j_int_subtract","arguments":[{"name":"input1"},{"name":"input2"}]}]}]},"declaredKind":"INT","evaluatedKind":"INT"}]},"checkIntegralRange":false,"requireFinite":false,"compareFloatingPointBits":false,"estimatedCheckWork":0,"fallbackOperationCount":0},"proofMethods":["BITVECTOR_POLYNOMIAL_MOD_2_32","TYPED_OPERATION_CONGRUENCE"],"verificationWork":826},"candidateLimit":64,"generationBudget":888644,"steps":[{"rule":"core-algebra/ast_signed_additive_normalize","before":{"name":"jointoutputs","arguments":[{"name":"jointoutput","arguments":[{"name":"output1"},{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input0"}]}]}]},{"name":"jointoutput","arguments":[{"name":"output2"},{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input1"}]}]}]},{"name":"jointoutput","arguments":[{"name":"output3"},{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input2"}]}]}]}]},"after":{"name":"jointoutputs","arguments":[{"name":"jointoutput","arguments":[{"name":"output1"},{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"input1"},{"name":"input2"}]}]}]},{"name":"jointoutput","arguments":[{"name":"output2"},{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input1"}]}]}]},{"name":"jointoutput","arguments":[{"name":"output3"},{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input2"}]}]}]}]}},{"rule":"core-algebra/ast_signed_additive_normalize","before":{"name":"jointoutputs","arguments":[{"name":"jointoutput","arguments":[{"name":"output1"},{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"input1"},{"name":"input2"}]}]}]},{"name":"jointoutput","arguments":[{"name":"output2"},{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input1"}]}]}]},{"name":"jointoutput","arguments":[{"name":"output3"},{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input2"}]}]}]}]},"after":{"name":"jointoutputs","arguments":[{"name":"jointoutput","arguments":[{"name":"output1"},{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"input1"},{"name":"input2"}]}]}]},{"name":"jointoutput","arguments":[{"name":"output2"},{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"input0"},{"name":"input2"}]}]}]},{"name":"jointoutput","arguments":[{"name":"output3"},{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input2"}]}]}]}]}},{"rule":"core-algebra/ast_signed_additive_normalize","before":{"name":"jointoutputs","arguments":[{"name":"jointoutput","arguments":[{"name":"output1"},{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"input1"},{"name":"input2"}]}]}]},{"name":"jointoutput","arguments":[{"name":"output2"},{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"input0"},{"name":"input2"}]}]}]},{"name":"jointoutput","arguments":[{"name":"output3"},{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_subtract","arguments":[{"name":"j_int_add","arguments":[{"name":"input0"},{"name":"input1"}]},{"name":"input2"}]},{"name":"input2"}]}]}]}]},"after":{"name":"jointoutputs","arguments":[{"name":"jointoutput","arguments":[{"name":"output1"},{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"input1"},{"name":"input2"}]}]}]},{"name":"jointoutput","arguments":[{"name":"output2"},{"name":"j_int_abs","arguments":[{"name":"j_int_subtract","arguments":[{"name":"input0"},{"name":"input2"}]}]}]},{"name":"jointoutput","arguments":[{"name":"output3"},{"name":"j_int_abs","arguments":[{"name":"j_int_add","arguments":[{"name":"j_int_subtract","arguments":[{"name":"input0"},{"name":"input2"}]},{"name":"j_int_subtract","arguments":[{"name":"input1"},{"name":"input2"}]}]}]}]}]}}]}},"sourcePlan":null,"scheduling":null,"finiteSum":null,"runtimeIteration":null,"sourceNumericBranch":null,"fixedPower":null,"valueInverse":null}],"executionComparison":{"predictorByteTriples":16777216,"scanlines":60,"scope":"Complete Paeth class; exhaustive byte-domain comparison and scanline samples; no timing claim"},"extractedRegions":5,"extractionDiagnostics":[{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":1115,"length":35},{"code":"CONSTANT_EXPRESSION_PRESERVED","message":"Intentional constant source is outside runtime cleanup","offset":1900,"length":13},{"code":"CONSTANT_EXPRESSION_PRESERVED","message":"Intentional constant source is outside runtime cleanup","offset":2067,"length":14},{"code":"CONSTANT_EXPRESSION_PRESERVED","message":"Intentional constant source is outside runtime cleanup","offset":2198,"length":18},{"code":"METHOD_BODY_METHOD_CONTROL_FLOW_OR_EFFECT","message":"METHOD_BODY_METHOD_CONTROL_FLOW_OR_EFFECT","offset":2394,"length":59},{"code":"ARRAY_READ_ARITHMETIC_BOUNDARY","message":"ARRAY_READ_ARITHMETIC_BOUNDARY","offset":2485,"length":31}],"generatedSha256":"6617b775824346d10b21d9bc85a37e8eb23ac690bf1a204a20c3c25852c822b9","javaRuntime":"25.0.5+8-LTS","options":{"cleanup.mathematics.safetyProfile":"PRESERVE_JAVA","cleanup.mathematics.mathematicalOptIn":"false","cleanup.mathematics.checkedOptIn":"false","cleanup.mathematics.tailRecursion":"false","cleanup.mathematics.valueRuntime":"UNSPECIFIED","cleanup.mathematics.underflowChecks":"false","cleanup.mathematics.maxStates":"20000","cleanup.mathematics.timeoutSeconds":"5","cleanup.mathematics.numericKinds":"BYTE,SHORT,CHAR,INT,LONG","cleanup.mathematics":"true","cleanup.mathematics.workBudget":"1000000","cleanup.mathematics.explanations":"NONTRIVIAL","cleanup.mathematics.exclusions":"","cleanup.mathematics.goal":"LOWER_ESTIMATED_RUNTIME"},"pilotTargetJava":8,"predictorAddSubtractOperationsAfter":3,"predictorAddSubtractOperationsBefore":5,"requiredPredictorAddSubtractMaximum":3,"reviewCandidates":[{"offset":1287,"length":192,"assessment":{"disposition":"LARGE_REWRITE_REVIEW","estimatedScoreSaving":20,"changedLines":43,"addedBranches":0,"addedLocals":1,"cautions":["ESTIMATE_NOT_BENCHMARK","TIMING_BEHAVIOR_NOT_VERIFIED","LARGE_REWRITE"]}}],"sourceArchiveSha256":"057d8900847c14d643f3b0875cb9bc25f3438803140dc297c42a81b09f24b071","sourceEntry":"org/apache/commons/imaging/formats/png/scanlinefilters/ScanlineFilterPaeth.java","sourceEntrySha256":"7a5d07df8194d963e73227242191bd5ad1aa23fd8eec2447737e2b86039ee140","status":"COMPLETE","upstreamDeclaredJava":8}
+NEW_UPSTREAM_MATH id=jcodec extracted=6 accepted=0 targetJava=8 upstreamJava=6
+warning: [options] source value 8 is obsolete and will be removed in a future release
+warning: [options] target value 8 is obsolete and will be removed in a future release
+warning: [options] To suppress warnings about obsolete options, use -Xlint:-options.
+3 warnings
+warning: [options] source value 8 is obsolete and will be removed in a future release
+warning: [options] target value 8 is obsolete and will be removed in a future release
+warning: [options] To suppress warnings about obsolete options, use -Xlint:-options.
+3 warnings
+NEW_UPSTREAM_MATH_COMPLETE {"acceptedRegions":0,"binaryArchiveSha256":"e07abdd06f4cf3356a9490e132035dbbb5bfad1a6a602126d1a4686a762ecb7e","coordinates":"org.jcodec:jcodec:0.2.3","diagnosticCounts":{"ARRAY_CAPTURE_COST_EXCEEDS_BENEFIT":1,"ARRAY_READ_DEPENDENCY_BOUNDARY":1,"ARRAY_SCALAR_RETRY":2,"CONSTANT_EXPRESSION_PRESERVED":3,"INCONCLUSIVE":2,"NOIMPROVEMENT":18,"NO_RUNTIME_IMPROVEMENT":8,"PARTIAL_OUTPUT_OR_EXTERNAL_WRITE":5,"SIDE_EFFECT_BOUNDARY":35,"UNRESOLVED_OR_NONNUMERIC_TYPE":9},"diagnostics":[{"code":"UNRESOLVED_OR_NONNUMERIC_TYPE","message":"UNRESOLVED_OR_NONNUMERIC_TYPE","offset":630,"length":39,"stage":"SOURCE"},{"code":"UNRESOLVED_OR_NONNUMERIC_TYPE","message":"UNRESOLVED_OR_NONNUMERIC_TYPE","offset":678,"length":45,"stage":"SOURCE"},{"code":"UNRESOLVED_OR_NONNUMERIC_TYPE","message":"UNRESOLVED_OR_NONNUMERIC_TYPE","offset":732,"length":42,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":783,"length":35,"stage":"SOURCE"},{"code":"UNRESOLVED_OR_NONNUMERIC_TYPE","message":"UNRESOLVED_OR_NONNUMERIC_TYPE","offset":827,"length":22,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":968,"length":36,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":1013,"length":37,"stage":"SOURCE"},{"code":"UNRESOLVED_OR_NONNUMERIC_TYPE","message":"UNRESOLVED_OR_NONNUMERIC_TYPE","offset":1059,"length":14,"stage":"SOURCE"},{"code":"CONSTANT_EXPRESSION_PRESERVED","message":"Intentional constant source is outside runtime cleanup","offset":3483,"length":36,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":3532,"length":63,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":3608,"length":63,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":3684,"length":63,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":3760,"length":63,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":3836,"length":63,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":3912,"length":63,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":3988,"length":63,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":4064,"length":63,"stage":"SOURCE"},{"code":"PARTIAL_OUTPUT_OR_EXTERNAL_WRITE","message":"PARTIAL_OUTPUT_OR_EXTERNAL_WRITE","offset":4141,"length":34,"stage":"SOURCE"},{"code":"ARRAY_READ_DEPENDENCY_BOUNDARY","message":"ARRAY_READ_DEPENDENCY_BOUNDARY","offset":4286,"length":36,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":4770,"length":33,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":4856,"length":26,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":4946,"length":26,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":5041,"length":27,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":5137,"length":26,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":5226,"length":26,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":5347,"length":68,"stage":"SOURCE"},{"code":"UNRESOLVED_OR_NONNUMERIC_TYPE","message":"UNRESOLVED_OR_NONNUMERIC_TYPE","offset":6872,"length":13,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":6424,"length":30,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":6467,"length":30,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":6510,"length":30,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":6553,"length":30,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":6596,"length":30,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":6639,"length":30,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":6682,"length":30,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":6725,"length":30,"stage":"SOURCE"},{"code":"PARTIAL_OUTPUT_OR_EXTERNAL_WRITE","message":"PARTIAL_OUTPUT_OR_EXTERNAL_WRITE","offset":6769,"length":23,"stage":"SOURCE"},{"code":"PARTIAL_OUTPUT_OR_EXTERNAL_WRITE","message":"PARTIAL_OUTPUT_OR_EXTERNAL_WRITE","offset":6805,"length":23,"stage":"SOURCE"},{"code":"UNRESOLVED_OR_NONNUMERIC_TYPE","message":"UNRESOLVED_OR_NONNUMERIC_TYPE","offset":6841,"length":12,"stage":"SOURCE"},{"code":"CONSTANT_EXPRESSION_PRESERVED","message":"Intentional constant source is outside runtime cleanup","offset":9425,"length":32,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":9470,"length":49,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":9532,"length":49,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":9594,"length":49,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":9656,"length":49,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":9718,"length":49,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":9780,"length":49,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":9842,"length":49,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":9904,"length":49,"stage":"SOURCE"},{"code":"PARTIAL_OUTPUT_OR_EXTERNAL_WRITE","message":"PARTIAL_OUTPUT_OR_EXTERNAL_WRITE","offset":9966,"length":23,"stage":"SOURCE"},{"code":"PARTIAL_OUTPUT_OR_EXTERNAL_WRITE","message":"PARTIAL_OUTPUT_OR_EXTERNAL_WRITE","offset":10002,"length":23,"stage":"SOURCE"},{"code":"UNRESOLVED_OR_NONNUMERIC_TYPE","message":"UNRESOLVED_OR_NONNUMERIC_TYPE","offset":10160,"length":25,"stage":"SOURCE"},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":10267,"length":36,"stage":"SOURCE"},{"code":"UNRESOLVED_OR_NONNUMERIC_TYPE","message":"UNRESOLVED_OR_NONNUMERIC_TYPE","offset":10312,"length":19,"stage":"SOURCE"},{"code":"CONSTANT_EXPRESSION_PRESERVED","message":"Intentional constant source is outside runtime cleanup","offset":10663,"length":47,"stage":"SOURCE"},{"code":"INCONCLUSIVE","message":"Inconclusive[diagnostic=INCOMPLETE_SEARCH_RELATION, work=73858]","offset":1537,"length":1857,"stage":"SEARCH_OR_PROOF"},{"code":"ARRAY_SCALAR_RETRY","message":"Retrying contained scalar regions within the remaining file budget","offset":1537,"length":1857,"stage":"UNKNOWN"},{"code":"NOIMPROVEMENT","message":"NoImprovement[diagnostic=NO_IMPROVEMENT_WITH_FULL_POLICY_COST, searchCompletion=EXHAUSTED_BOUNDED_SPACE, work=6313]","offset":1946,"length":135,"stage":"SEARCH"},{"code":"NOIMPROVEMENT","message":"NoImprovement[diagnostic=NO_IMPROVEMENT_WITH_FULL_POLICY_COST, searchCompletion=EXHAUSTED_BOUNDED_SPACE, work=1584]","offset":2526,"length":21,"stage":"SEARCH"},{"code":"ARRAY_CAPTURE_COST_EXCEEDS_BENEFIT","message":"No improvement after emitted capture costs participate in candidate selection","offset":6361,"length":49,"stage":"COST"},{"code":"NOIMPROVEMENT","message":"NoImprovement[diagnostic=NO_IMPROVEMENT_WITH_FULL_POLICY_COST, searchCompletion=EXHAUSTED_BOUNDED_SPACE, work=1053]","offset":6361,"length":49,"stage":"SEARCH"},{"code":"INCONCLUSIVE","message":"Inconclusive[diagnostic=INCOMPLETE_SEARCH_RELATION, work=102890]","offset":7431,"length":1905,"stage":"SEARCH_OR_PROOF"},{"code":"ARRAY_SCALAR_RETRY","message":"Retrying contained scalar regions within the remaining file budget","offset":7431,"length":1905,"stage":"UNKNOWN"},{"code":"NOIMPROVEMENT","message":"NoImprovement[diagnostic=NO_IMPROVEMENT_WITH_FULL_POLICY_COST, searchCompletion=EXHAUSTED_BOUNDED_SPACE, work=15624]","offset":7779,"length":231,"stage":"SEARCH"},{"code":"NOIMPROVEMENT","message":"NoImprovement[diagnostic=NO_IMPROVEMENT_WITH_FULL_POLICY_COST, searchCompletion=EXHAUSTED_BOUNDED_SPACE, work=1584]","offset":8469,"length":21,"stage":"SEARCH"},{"code":"NOIMPROVEMENT","message":"NoImprovement[diagnostic=NO_IMPROVEMENT_WITH_FULL_POLICY_COST, searchCompletion=EXHAUSTED_BOUNDED_SPACE, work=4543]","offset":10386,"length":46,"stage":"SEARCH"},{"code":"NOIMPROVEMENT","message":"NoImprovement[diagnostic=NO_IMPROVEMENT_WITH_FULL_POLICY_COST, searchCompletion=EXHAUSTED_BOUNDED_SPACE, work=746]","offset":10502,"length":17,"stage":"SEARCH"},{"code":"NOIMPROVEMENT","message":"NoImprovement[diagnostic=NO_IMPROVEMENT_WITH_FULL_POLICY_COST, searchCompletion=EXHAUSTED_BOUNDED_SPACE, work=1670]","offset":10589,"length":13,"stage":"SEARCH"},{"code":"NOIMPROVEMENT","message":"NoImprovement[diagnostic=NO_IMPROVEMENT_WITH_FULL_POLICY_COST, searchCompletion=EXHAUSTED_BOUNDED_SPACE, work=1584]","offset":2436,"length":17,"stage":"SEARCH"},{"code":"NOIMPROVEMENT","message":"NoImprovement[diagnostic=NO_IMPROVEMENT_WITH_FULL_POLICY_COST, searchCompletion=EXHAUSTED_BOUNDED_SPACE, work=1584]","offset":2466,"length":17,"stage":"SEARCH"},{"code":"NOIMPROVEMENT","message":"NoImprovement[diagnostic=NO_IMPROVEMENT_WITH_FULL_POLICY_COST, searchCompletion=EXHAUSTED_BOUNDED_SPACE, work=1584]","offset":2496,"length":17,"stage":"SEARCH"},{"code":"NOIMPROVEMENT","message":"NoImprovement[diagnostic=NO_IMPROVEMENT_WITH_FULL_POLICY_COST, searchCompletion=EXHAUSTED_BOUNDED_SPACE, work=1584]","offset":3246,"length":9,"stage":"SEARCH"},{"code":"NOIMPROVEMENT","message":"NoImprovement[diagnostic=NO_IMPROVEMENT_WITH_FULL_POLICY_COST, searchCompletion=EXHAUSTED_BOUNDED_SPACE, work=1584]","offset":3268,"length":9,"stage":"SEARCH"},{"code":"NO_RUNTIME_IMPROVEMENT","message":"Candidate improves storage or ordering only, not estimated runtime","offset":3291,"length":16,"stage":"COST"},{"code":"NO_RUNTIME_IMPROVEMENT","message":"Candidate improves storage or ordering only, not estimated runtime","offset":3320,"length":16,"stage":"COST"},{"code":"NO_RUNTIME_IMPROVEMENT","message":"Candidate improves storage or ordering only, not estimated runtime","offset":3349,"length":16,"stage":"COST"},{"code":"NO_RUNTIME_IMPROVEMENT","message":"Candidate improves storage or ordering only, not estimated runtime","offset":3378,"length":16,"stage":"COST"},{"code":"NOIMPROVEMENT","message":"NoImprovement[diagnostic=NO_IMPROVEMENT_WITH_FULL_POLICY_COST, searchCompletion=EXHAUSTED_BOUNDED_SPACE, work=1584]","offset":8379,"length":17,"stage":"SEARCH"},{"code":"NOIMPROVEMENT","message":"NoImprovement[diagnostic=NO_IMPROVEMENT_WITH_FULL_POLICY_COST, searchCompletion=EXHAUSTED_BOUNDED_SPACE, work=1584]","offset":8409,"length":17,"stage":"SEARCH"},{"code":"NOIMPROVEMENT","message":"NoImprovement[diagnostic=NO_IMPROVEMENT_WITH_FULL_POLICY_COST, searchCompletion=EXHAUSTED_BOUNDED_SPACE, work=1584]","offset":8439,"length":17,"stage":"SEARCH"},{"code":"NOIMPROVEMENT","message":"NoImprovement[diagnostic=NO_IMPROVEMENT_WITH_FULL_POLICY_COST, searchCompletion=EXHAUSTED_BOUNDED_SPACE, work=1584]","offset":9188,"length":9,"stage":"SEARCH"},{"code":"NOIMPROVEMENT","message":"NoImprovement[diagnostic=NO_IMPROVEMENT_WITH_FULL_POLICY_COST, searchCompletion=EXHAUSTED_BOUNDED_SPACE, work=1584]","offset":9210,"length":9,"stage":"SEARCH"},{"code":"NO_RUNTIME_IMPROVEMENT","message":"Candidate improves storage or ordering only, not estimated runtime","offset":9233,"length":16,"stage":"COST"},{"code":"NO_RUNTIME_IMPROVEMENT","message":"Candidate improves storage or ordering only, not estimated runtime","offset":9262,"length":16,"stage":"COST"},{"code":"NO_RUNTIME_IMPROVEMENT","message":"Candidate improves storage or ordering only, not estimated runtime","offset":9291,"length":16,"stage":"COST"},{"code":"NO_RUNTIME_IMPROVEMENT","message":"Candidate improves storage or ordering only, not estimated runtime","offset":9320,"length":16,"stage":"COST"}],"evidence":[],"executionComparison":{"decodedBlocks":512,"scope":"Complete IntDCT class under an explicit Java 8 test target; not Java 6 qualification, a codec-wide test or a timing measurement"},"extractedRegions":6,"extractionDiagnostics":[{"code":"UNRESOLVED_OR_NONNUMERIC_TYPE","message":"UNRESOLVED_OR_NONNUMERIC_TYPE","offset":630,"length":39},{"code":"UNRESOLVED_OR_NONNUMERIC_TYPE","message":"UNRESOLVED_OR_NONNUMERIC_TYPE","offset":678,"length":45},{"code":"UNRESOLVED_OR_NONNUMERIC_TYPE","message":"UNRESOLVED_OR_NONNUMERIC_TYPE","offset":732,"length":42},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":783,"length":35},{"code":"UNRESOLVED_OR_NONNUMERIC_TYPE","message":"UNRESOLVED_OR_NONNUMERIC_TYPE","offset":827,"length":22},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":968,"length":36},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":1013,"length":37},{"code":"UNRESOLVED_OR_NONNUMERIC_TYPE","message":"UNRESOLVED_OR_NONNUMERIC_TYPE","offset":1059,"length":14},{"code":"CONSTANT_EXPRESSION_PRESERVED","message":"Intentional constant source is outside runtime cleanup","offset":3483,"length":36},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":3532,"length":63},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":3608,"length":63},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":3684,"length":63},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":3760,"length":63},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":3836,"length":63},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":3912,"length":63},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":3988,"length":63},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":4064,"length":63},{"code":"PARTIAL_OUTPUT_OR_EXTERNAL_WRITE","message":"PARTIAL_OUTPUT_OR_EXTERNAL_WRITE","offset":4141,"length":34},{"code":"ARRAY_READ_DEPENDENCY_BOUNDARY","message":"ARRAY_READ_DEPENDENCY_BOUNDARY","offset":4286,"length":36},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":4770,"length":33},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":4856,"length":26},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":4946,"length":26},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":5041,"length":27},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":5137,"length":26},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":5226,"length":26},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":5347,"length":68},{"code":"UNRESOLVED_OR_NONNUMERIC_TYPE","message":"UNRESOLVED_OR_NONNUMERIC_TYPE","offset":6872,"length":13},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":6424,"length":30},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":6467,"length":30},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":6510,"length":30},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":6553,"length":30},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":6596,"length":30},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":6639,"length":30},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":6682,"length":30},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":6725,"length":30},{"code":"PARTIAL_OUTPUT_OR_EXTERNAL_WRITE","message":"PARTIAL_OUTPUT_OR_EXTERNAL_WRITE","offset":6769,"length":23},{"code":"PARTIAL_OUTPUT_OR_EXTERNAL_WRITE","message":"PARTIAL_OUTPUT_OR_EXTERNAL_WRITE","offset":6805,"length":23},{"code":"UNRESOLVED_OR_NONNUMERIC_TYPE","message":"UNRESOLVED_OR_NONNUMERIC_TYPE","offset":6841,"length":12},{"code":"CONSTANT_EXPRESSION_PRESERVED","message":"Intentional constant source is outside runtime cleanup","offset":9425,"length":32},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":9470,"length":49},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":9532,"length":49},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":9594,"length":49},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":9656,"length":49},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":9718,"length":49},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":9780,"length":49},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":9842,"length":49},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":9904,"length":49},{"code":"PARTIAL_OUTPUT_OR_EXTERNAL_WRITE","message":"PARTIAL_OUTPUT_OR_EXTERNAL_WRITE","offset":9966,"length":23},{"code":"PARTIAL_OUTPUT_OR_EXTERNAL_WRITE","message":"PARTIAL_OUTPUT_OR_EXTERNAL_WRITE","offset":10002,"length":23},{"code":"UNRESOLVED_OR_NONNUMERIC_TYPE","message":"UNRESOLVED_OR_NONNUMERIC_TYPE","offset":10160,"length":25},{"code":"SIDE_EFFECT_BOUNDARY","message":"SIDE_EFFECT_BOUNDARY","offset":10267,"length":36},{"code":"UNRESOLVED_OR_NONNUMERIC_TYPE","message":"UNRESOLVED_OR_NONNUMERIC_TYPE","offset":10312,"length":19},{"code":"CONSTANT_EXPRESSION_PRESERVED","message":"Intentional constant source is outside runtime cleanup","offset":10663,"length":47}],"generatedSha256":"222e382d2977f4f5bdc3b38bd1a73f8c75729e9f457b11c11c78a49371f1fb7c","javaRuntime":"25.0.5+8-LTS","options":{"cleanup.mathematics.safetyProfile":"PRESERVE_JAVA","cleanup.mathematics.mathematicalOptIn":"false","cleanup.mathematics.checkedOptIn":"false","cleanup.mathematics.tailRecursion":"false","cleanup.mathematics.valueRuntime":"UNSPECIFIED","cleanup.mathematics.underflowChecks":"false","cleanup.mathematics.maxStates":"20000","cleanup.mathematics.timeoutSeconds":"5","cleanup.mathematics.numericKinds":"BYTE,SHORT,CHAR,INT,LONG","cleanup.mathematics":"true","cleanup.mathematics.workBudget":"1000000","cleanup.mathematics.explanations":"NONTRIVIAL","cleanup.mathematics.exclusions":"","cleanup.mathematics.goal":"LOWER_ESTIMATED_RUNTIME"},"pilotTargetJava":8,"reviewCandidates":[],"sourceArchiveSha256":"c9f5f7d7472ebea186ed05d3ef5a254e75a10c7d267c0276663b6af63779d062","sourceEntry":"org/jcodec/common/dct/IntDCT.java","sourceEntrySha256":"222e382d2977f4f5bdc3b38bd1a73f8c75729e9f457b11c11c78a49371f1fb7c","status":"COMPLETE","upstreamDeclaredJava":6}
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.658 s -- in org.sandbox.jdt.math.tests.NewUpstreamMathPilotTest
+[INFO] Running org.sandbox.jdt.math.tests.CharacterLiteralRoundTripTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.387 s -- in org.sandbox.jdt.math.tests.CharacterLiteralRoundTripTest
+[INFO] Running org.sandbox.jdt.math.tests.OrderedSourceReadComputationTest
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.231 s -- in org.sandbox.jdt.math.tests.OrderedSourceReadComputationTest
+[INFO] Running org.sandbox.jdt.math.tests.FieldArrayCorpusTest
+warning: [options] source value 8 is obsolete and will be removed in a future release
+warning: [options] target value 8 is obsolete and will be removed in a future release
+warning: [options] To suppress warnings about obsolete options, use -Xlint:-options.
+3 warnings
+warning: [options] source value 8 is obsolete and will be removed in a future release
+warning: [options] target value 8 is obsolete and will be removed in a future release
+warning: [options] To suppress warnings about obsolete options, use -Xlint:-options.
+3 warnings
+BC_FIELD_ARRAY entry=org/bouncycastle/crypto/engines/HC128Engine.java sourceSha256=4a9bddfec7d888974a1f5194945845e781cd6652c4523b39c8bd9ea24067c06d extracted=16 fieldReads=4 accepted=4 targetJava=8 work=1000000 states=20000
+warning: [options] source value 8 is obsolete and will be removed in a future release
+warning: [options] target value 8 is obsolete and will be removed in a future release
+warning: [options] To suppress warnings about obsolete options, use -Xlint:-options.
+3 warnings
+BC_FIELD_ARRAY entry=org/bouncycastle/crypto/engines/CAST5Engine.java sourceSha256=75307236e481c224e6b9c464153d73624fd3743b8f00dccc03340e8119fdf3bb extracted=18 fieldReads=12 accepted=0 targetJava=8 work=1000000 states=20000
+warning: [options] source value 8 is obsolete and will be removed in a future release
+warning: [options] target value 8 is obsolete and will be removed in a future release
+warning: [options] To suppress warnings about obsolete options, use -Xlint:-options.
+3 warnings
+BC_FIELD_ARRAY entry=org/bouncycastle/crypto/digests/KeccakDigest.java sourceSha256=c288c644b93a0652f3cfe6de017945fa0fc874f61b4bfde56649731d43814f9a extracted=97 fieldReads=1 accepted=0 targetJava=8 work=1000000 states=20000
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.881 s -- in org.sandbox.jdt.math.tests.FieldArrayCorpusTest
+[INFO] Running org.sandbox.jdt.math.tests.MathematicalContractTest
+[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.203 s -- in org.sandbox.jdt.math.tests.MathematicalContractTest
+[INFO] Running org.sandbox.jdt.math.tests.MathematicalUnsupportedRetryTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.012 s -- in org.sandbox.jdt.math.tests.MathematicalUnsupportedRetryTest
+[INFO] Running org.sandbox.jdt.math.tests.MathSafetyProfileIntegrationTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.077 s -- in org.sandbox.jdt.math.tests.MathSafetyProfileIntegrationTest
+[INFO] Running org.sandbox.jdt.math.tests.IncomingCompoundAssignmentTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.391 s -- in org.sandbox.jdt.math.tests.IncomingCompoundAssignmentTest
+[INFO] Running org.sandbox.jdt.math.tests.BouncyCastleFinalPreparationBudgetTest
+HAWK_ACCEPTED originalLine=2471 offset=106702 length=304
+HAWK_ACCEPTED originalLine=2575 offset=110134 length=418
+HAWK_FINAL_PREPARATION mode=strict replacements=20 generatedSha256=e8f9c0536c634b6fe8141030bb65c2d47ca2d252977d2d45a564d317fd6b2e21
+HAWK_ACCEPTED originalLine=2471 offset=106702 length=304
+HAWK_ACCEPTED originalLine=2575 offset=110134 length=418
+HAWK_FINAL_PREPARATION mode=mathematical replacements=20 generatedSha256=711a9791a4410a24fe16288ce802d4ed8e99d0a20e37d7bb205631100c9a4005
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 5.288 s -- in org.sandbox.jdt.math.tests.BouncyCastleFinalPreparationBudgetTest
+[INFO] Running org.sandbox.jdt.math.tests.VerifiedComputationExplanationTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.128 s -- in org.sandbox.jdt.math.tests.VerifiedComputationExplanationTest
+[INFO] Running org.sandbox.jdt.math.tests.MathematicalExplanationIntegrationTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.042 s -- in org.sandbox.jdt.math.tests.MathematicalExplanationIntegrationTest
+[INFO] Running org.sandbox.jdt.math.tests.SourceNumericBranchTest
+[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.799 s -- in org.sandbox.jdt.math.tests.SourceNumericBranchTest
+[INFO] Running org.sandbox.jdt.math.tests.GeneralMathematicsRoundTripTest
+DIVISION_BOUNDARY_GENERATED=public class Calculation { public static int compute(int x,int a,int b) { return (x*2)/2; }}
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.336 s -- in org.sandbox.jdt.math.tests.GeneralMathematicsRoundTripTest
+[INFO] Running org.sandbox.jdt.math.tests.RuntimeComputedPrefixTest
+[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.054 s -- in org.sandbox.jdt.math.tests.RuntimeComputedPrefixTest
+[INFO] Running org.sandbox.jdt.math.tests.BouncyCastleVersionProjectionTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.345 s -- in org.sandbox.jdt.math.tests.BouncyCastleVersionProjectionTest
+[INFO] Running org.sandbox.jdt.math.tests.MathCorpusIntegrationTest
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.380 s -- in org.sandbox.jdt.math.tests.MathCorpusIntegrationTest
+[INFO] Running org.sandbox.jdt.math.tests.OutputLocalReuseTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.039 s -- in org.sandbox.jdt.math.tests.OutputLocalReuseTest
+[INFO] Running org.sandbox.jdt.math.tests.BouncyCastleRuntimeCorpusTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.871 s -- in org.sandbox.jdt.math.tests.BouncyCastleRuntimeCorpusTest
+[INFO] Running org.sandbox.jdt.math.tests.BouncyCastleSourceContextTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.198 s -- in org.sandbox.jdt.math.tests.BouncyCastleSourceContextTest
+[INFO] Running org.sandbox.math.qa.BouncyCastleHashToCurveBenchmarkTest
+COMPLETED parsed=1 parseErrorFiles=0 acceptedRegions=3
+COMPLETED parsed=3 parseErrorFiles=0 acceptedRegions=23
+COMPLETED parsed=3 parseErrorFiles=0 acceptedRegions=23
+COMPLETED parsed=1 parseErrorFiles=0 acceptedRegions=1
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 18.76 s -- in org.sandbox.math.qa.BouncyCastleHashToCurveBenchmarkTest
+[INFO] Running org.sandbox.math.qa.MultiReleaseBenchmarkLoaderTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.456 s -- in org.sandbox.math.qa.MultiReleaseBenchmarkLoaderTest
+[INFO] Running org.sandbox.math.qa.ProjectMathScanTest
+COMPLETED parsed=1 parseErrorFiles=0 acceptedRegions=1
+COMPLETED parsed=1 parseErrorFiles=0 acceptedRegions=1
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.334 s -- in org.sandbox.math.qa.ProjectMathScanTest
+[INFO] Running org.sandbox.math.qa.MathBenchmarkContractTest
+[INFO] Tests run: 13, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.975 s -- in org.sandbox.math.qa.MathBenchmarkContractTest
+[INFO] Running org.sandbox.math.qa.SourceContextProjectScanTest
+COMPLETED parsed=1 parseErrorFiles=0 acceptedRegions=1
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.233 s -- in org.sandbox.math.qa.SourceContextProjectScanTest
+[INFO] Running org.sandbox.math.qa.BlsUpstreamSourceIdentityTest
+[WARNING] Tests run: 1, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0 s -- in org.sandbox.math.qa.BlsUpstreamSourceIdentityTest
+[INFO] Running org.sandbox.math.qa.FiniteSeriesQualificationTest
+FINITE_SERIES_QUALIFIED family=polynomial count=16 manifest=80696e4279907fab64ae3b2c231eb13003577c00806ffc23541eca065e6f4c84 sdk=ba0293dedb3fde9ca2f3042dcef8ae4d6bb2d576adedff8ba7a2b4d186f1cbe1 comparisons=96 minimumIterations=4096
+FINITE_SERIES_QUALIFIED family=affine count=16 manifest=80696e4279907fab64ae3b2c231eb13003577c00806ffc23541eca065e6f4c84 sdk=ba0293dedb3fde9ca2f3042dcef8ae4d6bb2d576adedff8ba7a2b4d186f1cbe1 comparisons=96 minimumIterations=8192
+FINITE_SERIES_QUALIFIED family=product count=16 manifest=80696e4279907fab64ae3b2c231eb13003577c00806ffc23541eca065e6f4c84 sdk=ba0293dedb3fde9ca2f3042dcef8ae4d6bb2d576adedff8ba7a2b4d186f1cbe1 comparisons=96 minimumIterations=4096
+FINITE_SERIES_QUALIFIED family=stream count=16 manifest=80696e4279907fab64ae3b2c231eb13003577c00806ffc23541eca065e6f4c84 sdk=ba0293dedb3fde9ca2f3042dcef8ae4d6bb2d576adedff8ba7a2b4d186f1cbe1 comparisons=96 minimumIterations=4096
+FINITE_SERIES_QUALIFIED family=geometric count=16 manifest=80696e4279907fab64ae3b2c231eb13003577c00806ffc23541eca065e6f4c84 sdk=ba0293dedb3fde9ca2f3042dcef8ae4d6bb2d576adedff8ba7a2b4d186f1cbe1 comparisons=96 minimumIterations=8192
+FINITE_SERIES_QUALIFIED family=polynomial count=16 manifest=80696e4279907fab64ae3b2c231eb13003577c00806ffc23541eca065e6f4c84 sdk=ba0293dedb3fde9ca2f3042dcef8ae4d6bb2d576adedff8ba7a2b4d186f1cbe1 comparisons=96 minimumIterations=4096
+FINITE_SERIES_QUALIFIED family=stream count=16 manifest=80696e4279907fab64ae3b2c231eb13003577c00806ffc23541eca065e6f4c84 sdk=ba0293dedb3fde9ca2f3042dcef8ae4d6bb2d576adedff8ba7a2b4d186f1cbe1 comparisons=96 minimumIterations=4096
+FINITE_SERIES_QUALIFIED family=affine count=16 manifest=80696e4279907fab64ae3b2c231eb13003577c00806ffc23541eca065e6f4c84 sdk=ba0293dedb3fde9ca2f3042dcef8ae4d6bb2d576adedff8ba7a2b4d186f1cbe1 comparisons=96 minimumIterations=8192
+FINITE_SERIES_QUALIFIED family=geometric count=16 manifest=80696e4279907fab64ae3b2c231eb13003577c00806ffc23541eca065e6f4c84 sdk=ba0293dedb3fde9ca2f3042dcef8ae4d6bb2d576adedff8ba7a2b4d186f1cbe1 comparisons=96 minimumIterations=8192
+FINITE_SERIES_QUALIFIED family=product count=16 manifest=80696e4279907fab64ae3b2c231eb13003577c00806ffc23541eca065e6f4c84 sdk=ba0293dedb3fde9ca2f3042dcef8ae4d6bb2d576adedff8ba7a2b4d186f1cbe1 comparisons=96 minimumIterations=4096
+FINITE_SERIES_QUALIFIED family=polynomial count=16 manifest=80696e4279907fab64ae3b2c231eb13003577c00806ffc23541eca065e6f4c84 sdk=ba0293dedb3fde9ca2f3042dcef8ae4d6bb2d576adedff8ba7a2b4d186f1cbe1 comparisons=96 minimumIterations=4096
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 5.345 s -- in org.sandbox.math.qa.FiniteSeriesQualificationTest
+[INFO] Running org.sandbox.math.qa.FullCallBenchmarkReportTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.016 s -- in org.sandbox.math.qa.FullCallBenchmarkReportTest
+[INFO] Running org.sandbox.math.qa.CorpusFilesTest
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.013 s -- in org.sandbox.math.qa.CorpusFilesTest
+[INFO] Running org.sandbox.math.qa.MathCorpusRunnerTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.422 s -- in org.sandbox.math.qa.MathCorpusRunnerTest
+[INFO] Running org.sandbox.math.qa.SwtCurrentSourceRefinementTest
+[WARNING] Tests run: 1, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0.002 s -- in org.sandbox.math.qa.SwtCurrentSourceRefinementTest
+[INFO] Running org.sandbox.math.qa.BouncyCastleMathReferenceTest
+[WARNING] Tests run: 1, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0.008 s -- in org.sandbox.math.qa.BouncyCastleMathReferenceTest
+[INFO] Running org.sandbox.math.qa.BlsSourceCohortTest
+COMPLETED parsed=5 parseErrorFiles=0 acceptedRegions=9
+BLS_COHORT classes=5 acceptedRegions=9 parseErrorFiles=0
+[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 24.09 s -- in org.sandbox.math.qa.BlsSourceCohortTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 1147, Failures: 0, Errors: 0, Skipped: 3
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  04:18 min
+[INFO] Finished at: 2026-11-03T04:37:36+05:30
+[INFO] ------------------------------------------------------------------------

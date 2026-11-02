@@ -1,0 +1,47 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -----------------< org.sandbox.qa:math-qualification >------------------
+[INFO] Building Standalone qualification of the production mathematics core 1.0.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ math-qualification ---
+[INFO] Deleting /workspace/scratch/4ed3a04e028b/sandbox-bls/qa/math-optimization/target
+[INFO] 
+[INFO] --- resources:3.4.0:resources (default-resources) @ math-qualification ---
+[INFO] skip non existing resourceDirectory /workspace/scratch/4ed3a04e028b/sandbox-bls/qa/math-optimization/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.16.0:compile (default-compile) @ math-qualification ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 131 source files with javac [debug release 25] to target/classes
+[INFO] /workspace/scratch/4ed3a04e028b/sandbox-bls/sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaValueUseProof.java: /workspace/scratch/4ed3a04e028b/sandbox-bls/qa/math-optimization/../../sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaValueUseProof.java uses unchecked or unsafe operations.
+[INFO] /workspace/scratch/4ed3a04e028b/sandbox-bls/sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaValueUseProof.java: Recompile with -Xlint:unchecked for details.
+[INFO] 
+[INFO] --- resources:3.4.0:testResources (default-testResources) @ math-qualification ---
+[INFO] Copying 11 resources from ../../sandbox_math_cleanup_test/src to target/test-classes
+[INFO] 
+[INFO] --- compiler:3.16.0:testCompile (default-testCompile) @ math-qualification ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 131 source files with javac [debug release 25] to target/test-classes
+[INFO] 
+[INFO] --- surefire:3.6.0:test (default-test) @ math-qualification ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running org.sandbox.math.qa.BlsSourceCohortTest
+COMPLETED parsed=5 parseErrorFiles=0 acceptedRegions=9
+BLS_COHORT classes=5 acceptedRegions=9 parseErrorFiles=0
+[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 28.25 s -- in org.sandbox.math.qa.BlsSourceCohortTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  38.086 s
+[INFO] Finished at: 2026-11-03T04:33:02+05:30
+[INFO] ------------------------------------------------------------------------

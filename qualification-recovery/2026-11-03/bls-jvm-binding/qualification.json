@@ -1,0 +1,947 @@
+{
+  "schema": "sandbox.review-regression-evidence/v1",
+  "pullRequest": 1793,
+  "publicParent": "e7616695a9b5a70b26df9b58c8eb7891ffc08e5f",
+  "localCommit": "9980373e61e44a0da312f5dfc330122ecb6c1933",
+  "publishedCommit": "9ae38a5be286d7b637f2c4ae6c857f7a2f94527a",
+  "qualifiedTree": "1a762c9a25b1dee4826c01e94c52773961585425",
+  "runtime": "Temurin 25.0.5+8-LTS",
+  "baselineRegression": {
+    "tests": 3,
+    "failures": 2,
+    "errors": 0,
+    "skipped": 0
+  },
+  "focusedAfterFix": {
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "fullAfterFix": {
+    "tests": 1147,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 3
+  },
+  "fullSuites": [
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.CapturedSourceFormulaPolicyTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.IncomingAssignmentBoundaryTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.InstanceMethodExpansionTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaArrayStoreTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaBranchExpressionTest",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaCallableContextTest",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaCandidateRankingTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaComputationSliceExpansionTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaDominatingGuardFactsTest",
+      "tests": 23,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaEarlyExitGuardFactsTest",
+      "tests": 26,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaEarlyExitGuardIntegrationTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaEmissionVerifierTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaFiniteSumBudgetTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaFiniteSumFormsTest",
+      "tests": 32,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaFiniteSumTest",
+      "tests": 35,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaFixedPowerActualTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaFixedPowerConstantTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaFixedPowerDependenciesTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaFixedPowerInitializationTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaFixedPowerOptimizerTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaFixedPowerSourceTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaFixedPowerWorkTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaImmutableValueTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaLoopInvariantTest",
+      "tests": 54,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaNumericStreamTest",
+      "tests": 32,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaOutputLocalScheduleTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaPartitionedSumTest",
+      "tests": 35,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaRecursiveValueSummaryTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaRegionSourceRewriterTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaRuntimeIterationReviewTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaRuntimeIterationTest",
+      "tests": 36,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaRuntimePrimitiveGuardTest",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaSeriesFinalReviewTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaSourceGuardRefinementTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaSourceNumericBranchWorkTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaSourceReadShapeTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaTailRecursionInspectorTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaTailRecursionReplayTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaTailRecursionRewriteTest",
+      "tests": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaValueAlgebraProofTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaValueCallAdmissionTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaValueCallTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaValueGuardTypeBindingTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaValueInverseReuseTest",
+      "tests": 30,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaValueInverseSourceTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaValueResidueTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaValueReuseTest",
+      "tests": 26,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaValueRuntimeTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.MathCandidateReviewTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptionsTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.MathExplanationReviewTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.MathReviewReportTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.MathSearchBudgetPreferencesTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.PrimitiveSourceGuardSchedulingTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.PrimitiveSourceGuardTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.RuntimeCalculationPolicyTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.SourceBackedConstantTest",
+      "tests": 24,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.SourceMethodSummaryTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.ArrayReadComputationTest",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.ArrayScalarRetryBudgetTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.BigIntegerMagnitudeFactsTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.BigIntegerMethodExpansionTest",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.BouncyCastleBigIntegerTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.BouncyCastleFinalPreparationBudgetTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.BouncyCastleModularResidueTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.BouncyCastlePreparationBoundaryTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.BouncyCastleRuntimeCorpusTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.BouncyCastleSourceContextTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.BouncyCastleVersionProjectionTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.CharacterLiteralRoundTripTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.DocumentedSourceSnapshotTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.FieldArrayCorpusTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.FieldArrayOrderingTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.FieldArrayStateVisibilityTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.FloatingPointRoundTripTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.GeneralMathematicsRoundTripTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.IncomingCompoundAssignmentTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.JavaComputationEmitterTest",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.JavaComputationExtractorTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.JavaComputationRoundTripTest",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.JavaComputationTaskTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.JavaExtendedSourceReadTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.JavaSourceReferencesTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.JavaTaskOptimizationTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.MathCorpusIntegrationTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.MathDiagnosticStageTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.MathHeldoutQualificationTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.MathSafetyProfileIntegrationTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.MathTargetProfileTest",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.MathVariableRegionsTest",
+      "tests": 30,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.MathematicalContractTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.MathematicalExplanationIntegrationTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.MathematicalExplanationTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.MathematicalInterruptionTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.MathematicalPreparationBudgetTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.MathematicalPresentationBudgetTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.MathematicalRetryBudgetTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.MathematicalSearchDerivationTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.MathematicalUnsupportedRetryTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.NewUpstreamMathPilotTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.OrderedSourceReadComputationTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.OutputLocalReuseTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.PreservedArraySourceTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.RuntimeComputedPrefixTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.RuntimeConstantExpressionsTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.RuntimeOnlyMathTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.ScalarMethodExpansionTest",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.SourceComputationSliceBoundaryTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.SourceComputationSliceSafetyTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.SourceComputationSliceTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.SourceNumericBranchTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.SourceSliceBudgetBoundaryTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.SwtAssignmentRegionTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.SwtImageDataRuntimeCorpusTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.VerifiedComputationExplanationTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.WordProjectionCleanupTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.jdt.triggerpattern.test.policy.PinnedGitRepositoryTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.math.qa.BlsSourceCohortTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.math.qa.BlsUpstreamSourceIdentityTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    },
+    {
+      "name": "org.sandbox.math.qa.BouncyCastleHashToCurveBenchmarkTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.math.qa.BouncyCastleMathReferenceTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    },
+    {
+      "name": "org.sandbox.math.qa.CorpusFilesTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.math.qa.FiniteSeriesQualificationTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.math.qa.FullCallBenchmarkReportTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.math.qa.MathBenchmarkContractTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.math.qa.MathCorpusRunnerTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.math.qa.MultiReleaseBenchmarkLoaderTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.math.qa.ProjectMathScanTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.math.qa.SourceContextProjectScanTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "org.sandbox.math.qa.SwtCurrentSourceRefinementTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    }
+  ],
+  "logSha256": {
+    "WORKLOG.md": "ab4405de452aed2a7c08c7b53f63122960e028346c866ddeebec57f1f1c790d0",
+    "public-baseline-portable-red.log": "02f4a57d6aa5add13e9c00b665140127033f78658735d588de3a34f9833fa0ed",
+    "focused-green.log": "dbac28c6962e429556ad508f8fe126039b80ff0fe834d42848cb2d69c4255d1a",
+    "full-standalone-tests.log": "643fc9caec5f8d3c9b212df3053149d9a55ad8c5de80fd4d4a451ab16b075c85"
+  },
+  "newPerformanceMeasurement": false,
+  "nativePlatformQualification": false
+}
