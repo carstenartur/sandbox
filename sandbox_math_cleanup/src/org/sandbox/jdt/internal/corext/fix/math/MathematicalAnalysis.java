@@ -243,6 +243,8 @@ public final class MathematicalAnalysis {
       if (selectionOffset >= 0)
          JavaValueResidueOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
                compilerOptions, environment, replacements, evidence, diagnostics, valueWork, documentation, residueCalls);
+      JavaValueReuseOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
+            compilerOptions, environment, replacements, evidence, diagnostics, valueWork, documentation);
       JavaValueCallOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
             compilerOptions, environment, replacements, evidence, diagnostics, valueWork, documentation);
       JavaImmutableValueOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
@@ -1212,7 +1214,8 @@ public final class MathematicalAnalysis {
       }
 
       public boolean matches(String source, Map<String, String> options) {
-         return this.sourceDigest.equals(MathematicalAnalysis.digest(source)) && this.compilerOptions.equals(options) && sourceDependencies.current();
+         return this.sourceDigest.equals(MathematicalAnalysis.digest(source)) && this.compilerOptions.equals(options) && sourceDependencies.current()
+               && evidence.stream().allMatch(region->region.sourcePlan()==null || region.sourcePlan().valueRuntime()==null || region.sourcePlan().valueRuntime().current());
       }
 
       public TextEdit newEdit() {

@@ -101,6 +101,15 @@ class JavaComputationEmitterTest {
                 invoke(compile("java.math.BigInteger x, java.math.BigInteger y", emitted.statements() + returns(emitted.outputValues().values()),
                         8, BigInteger.class, BigInteger.class), x, y)[0]);
     }
+    @Test
+    void bigIntegerInverseEmissionPreservesJdkValueAndNonunitFailure() throws Exception {
+        var plan=plan(NumericKind.BIG_INTEGER,Map.of("x",NumericKind.BIG_INTEGER.type()),
+            op(NumericKind.BIG_INTEGER,NumericOperation.MOD_INVERSE,X,JavaExpressions.literal(BigInteger.valueOf(17))));
+        var emitted=plain(plan,17);
+        Method method=compile("java.math.BigInteger x",emitted.statements()+returns(emitted.outputValues().values()),17,BigInteger.class);
+        assertEquals(BigInteger.TWO,invoke(method,BigInteger.valueOf(9))[0]);
+        arithmetic(method,null,BigInteger.ZERO);
+    }
 
     @Test
     void preserveKeepsMathExactExceptions() throws Exception {

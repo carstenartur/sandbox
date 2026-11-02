@@ -160,6 +160,10 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 				"Mathematical mode: accept changed overflow behavior and BigInteger result identity", //$NON-NLS-1$
 				MathCleanUpOptions.MATHEMATICAL_OPT_IN, FALSE_TRUE);
 		wrappedLabel(columns, group, MathCleanUpOptions.MATHEMATICAL_WARNING);
+		ComboPreference valueRuntime= createComboPref(group, columns, "Value-reuse deployment runtime:", MathCleanUpOptions.VALUE_RUNTIME,
+                Arrays.stream(MathCleanUpOptions.ValueRuntime.values()).map(Enum::name).toArray(String[]::new),
+                new String[] { "Unspecified (no object reuse)", "Audited OpenJDK 25.0.5+8 implementation" });
+        wrappedLabel(columns, group, MathCleanUpOptions.VALUE_RUNTIME_WARNING);
 		ComboPreference goal= createComboPref(group, columns, "Optimization goal:", MathCleanUpOptions.GOAL, //$NON-NLS-1$
 				Arrays.stream(OptimizationGoal.values()).map(Enum::name).toArray(String[]::new),
 				new String[] { "Lower estimated runtime", "Lower allocation", "Readability" }); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -207,6 +211,7 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 			warning.setVisible(checked);
 			((GridData) warning.getLayoutData()).exclude= !checked;
 			setEnabledIfChanged(goal, active);
+            setEnabledIfChanged(valueRuntime, active && mathematical.getChecked());
             setEnabledIfChanged(explanations, active);
 			setEnabledIfChanged(budget, active);
 			setEnabledIfChanged(states, active);

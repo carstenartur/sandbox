@@ -1186,7 +1186,7 @@ public final class JavaComputationExtractor {
 
       Expr operation(NumericKind kind, NumericOperation operation, ASTNode node, Expr... operands) {
          if (options.mathematicalOptIn() && kind == NumericKind.BIG_INTEGER) {
-            if (operation == NumericOperation.MOD) requireGuardedPositive(operands[1], node);
+            if (operation == NumericOperation.MOD || operation == NumericOperation.MOD_INVERSE) requireGuardedPositive(operands[1], node);
             if (operation == NumericOperation.MOD_POW || operation == NumericOperation.MOD_MULTIPLY)
                requireGuardedPositive(operands[2], node);
             if (operation == NumericOperation.MOD_POW) requireGuardedPositive(operands[1], node);

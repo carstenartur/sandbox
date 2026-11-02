@@ -61,7 +61,8 @@ class MathCleanUpOptionsTest {
  }
  @Test void optionFamiliesAndHistoricalConstructorsRemainIndependent() {
   var defaults=MathCleanUpOptions.defaults(17);
-  assertEquals(12,defaults.toMap().size());
+  assertEquals(13,defaults.toMap().size());
+  assertEquals(MathCleanUpOptions.ValueRuntime.UNSPECIFIED,defaults.valueRuntime());
   assertEquals(5,defaults.timeoutSeconds());
   assertFalse(defaults.mathematicalOptIn());
   assertEquals(MathCleanUpOptions.ExplanationMode.NONTRIVIAL,defaults.explanations());
@@ -71,6 +72,13 @@ class MathCleanUpOptionsTest {
     OptimizationGoal.READABILITY,100000,2000,false,17,List.of(),true);
   var explained=new MathCleanUpOptions(true,Set.of(NumericKind.INT),SafetyProfile.PRESERVE_JAVA,
     OptimizationGoal.READABILITY,100000,2000,false,17,List.of(),MathCleanUpOptions.ExplanationMode.ALL);
+  var combined=new MathCleanUpOptions(true,Set.of(NumericKind.INT),SafetyProfile.PRESERVE_JAVA,
+    OptimizationGoal.READABILITY,100000,2000,false,17,List.of(),true,MathCleanUpOptions.ExplanationMode.ALL);
+  var timeout=new MathCleanUpOptions(true,Set.of(NumericKind.INT),SafetyProfile.PRESERVE_JAVA,
+    OptimizationGoal.READABILITY,100000,2000,false,17,List.of(),true,MathCleanUpOptions.ExplanationMode.ALL,9);
+  for(var historical:List.of(legacy,mathematical,explained,combined,timeout))
+   assertEquals(MathCleanUpOptions.ValueRuntime.UNSPECIFIED,historical.valueRuntime());
+  assertEquals(9,timeout.timeoutSeconds());
   assertFalse(legacy.mathematicalOptIn());
   assertEquals(MathCleanUpOptions.ExplanationMode.NONE,legacy.explanations());
   assertTrue(mathematical.mathematicalOptIn());
@@ -82,6 +90,7 @@ class MathCleanUpOptionsTest {
    values.put(MathCleanUpOptions.MATHEMATICAL_OPT_IN,Boolean.toString(optIn));
    values.put(MathCleanUpOptions.EXPLANATIONS,mode.name());
    var parsed=MathCleanUpOptions.parse(values,17);
+   assertEquals(MathCleanUpOptions.ValueRuntime.UNSPECIFIED,parsed.valueRuntime());
    assertEquals(optIn,parsed.mathematicalOptIn());assertEquals(mode,parsed.explanations());
    assertEquals(parsed,MathCleanUpOptions.parse(parsed.toMap(),17));
   }
