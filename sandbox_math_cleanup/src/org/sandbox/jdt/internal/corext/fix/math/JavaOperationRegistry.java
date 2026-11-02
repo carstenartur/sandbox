@@ -65,6 +65,7 @@ public final class JavaOperationRegistry {
                case "negate" -> Optional.of(NumericOperation.NEGATE);
                case "abs" -> Optional.of(NumericOperation.ABS);
                case "mod" -> Optional.of(NumericOperation.MOD);
+               case "modInverse" -> Optional.of(NumericOperation.MOD_INVERSE);
                case "modPow" -> Optional.of(NumericOperation.MOD_POW);
                case "pow" -> Optional.of(NumericOperation.POW);
                case "and" -> Optional.of(NumericOperation.AND);

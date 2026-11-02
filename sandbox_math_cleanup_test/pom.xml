@@ -30,6 +30,8 @@
     <sandbox.math.swt.sources>${project.build.directory}/corpus-inputs/swt-sources.jar</sandbox.math.swt.sources>
     <sandbox.math.bc.mavenBinary>${project.build.directory}/corpus-inputs/bc-binary.jar</sandbox.math.bc.mavenBinary>
     <sandbox.math.bc.mavenSources>${project.build.directory}/corpus-inputs/bc-sources.jar</sandbox.math.bc.mavenSources>
+    <sandbox.math.bc.jar>${project.build.directory}/corpus-inputs/bc-binary.jar</sandbox.math.bc.jar>
+    <sandbox.math.bc.sourceArchive>${project.build.directory}/corpus-inputs/bc-sources.jar</sandbox.math.bc.sourceArchive>
     <sandbox.math.imaging.binary>${project.build.directory}/corpus-inputs/imaging-binary.jar</sandbox.math.imaging.binary>
     <sandbox.math.imaging.sources>${project.build.directory}/corpus-inputs/imaging-sources.jar</sandbox.math.imaging.sources>
     <sandbox.math.jcodec.binary>${project.build.directory}/corpus-inputs/jcodec-binary.jar</sandbox.math.jcodec.binary>

@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -20,11 +22,12 @@ import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.Document;
 import org.sandbox.jdt.internal.corext.fix.helper.LoopConversionService;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
+import org.sandbox.jdt.internal.corext.fix.math.JavaTailRecursionRewrite;
 import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
 import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis.Analysis;
 import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis.Replacement;
 
-/** Bounded numerical phases followed by one style phase, entirely off the editor buffer. */
+/** Explicit tail transfer, bounded numerical phases and optional style conversion off the editor buffer. */
 final class FunctionalMathCoordinator {
  record Plan(String original,String result,Map<String,String> compilerOptions,List<Analysis> phases,long reservedWork) {
   Plan { compilerOptions=Map.copyOf(compilerOptions);phases=List.copyOf(phases); }
@@ -40,10 +43,19 @@ final class FunctionalMathCoordinator {
    copy=unit.getWorkingCopy(new WorkingCopyOwner(){},budget);
    copy.getBuffer().setContents(original);
    var document=new Document(original);var ast=parse(copy,compiler,budget);
-   var existingTemplates=templates(ast,budget);
+   var tail=tail(copy,ast,document,compiler,options,budget);ast=tail.ast();
+   if(!tail.bodies().isEmpty() && options.safety()==de.regelsuche.sdk.optimization.SafetyProfile.PRESERVE_JAVA
+     && !options.mathematicalOptIn() && options.goal()==de.regelsuche.sdk.optimization.OptimizationGoal.LOWER_ESTIMATED_RUNTIME) {
+    budget.phase("Verify transferred tail iterations");
+    var accelerated=MathematicalAnalysis.analyzeTailLoops(ast,document.get(),budget.allocate(options,3,4),budget,tailLoops(ast,tail.bodies(),budget));
+    budget.check();if(!accelerated.matches(document.get(),compiler)) throw new IllegalArgumentException("STALE_TAIL_ITERATION_PHASE");
+    phases.add(accelerated);applyMath(accelerated,document,tail.bodies());
+    if(accelerated.changed()) {copy.getBuffer().setContents(document.get());ast=parse(copy,compiler,budget);}
+   }
+   var existingTemplates=templates(ast,document.get(),budget);
    budget.phase("Verify original mathematics");
-   var first=MathematicalAnalysis.analyze(ast,original,budget.allocate(options,3,4),budget,-1,0,null,existingTemplates);
-   budget.check();if(!first.matches(original,compiler)) throw new IllegalArgumentException("STALE_MATHEMATICS_PHASE");
+   var first=MathematicalAnalysis.analyze(ast,document.get(),budget.allocate(options,3,4),budget,-1,0,null,existingTemplates);
+   budget.check();if(!first.matches(document.get(),compiler)) throw new IllegalArgumentException("STALE_MATHEMATICS_PHASE");
    phases.add(first);
    var edits=edits(first);var sums=fusedSums(ast,first,edits);
    List<ISourceRange> protectedRegions=applyMath(first,document,existingTemplates);
@@ -56,15 +68,17 @@ final class FunctionalMathCoordinator {
     if(second.changed()) {copy.getBuffer().setContents(document.get());ast=parse(copy,compiler,budget);}
    }
    var protectedAll=new ArrayList<ISourceRange>(protectedRegions);
-   protectedAll.addAll(templates(ast,budget));
-   var snapshot=new FunctionalMathSnapshot(ast,document.get(),protectedAll,budget::charge);
-   budget.phase("Convert remaining loops");
-   var conversion=LoopConversionService.renderUnchanged(ast,profile.requested(),snapshot.exclusions(),budget::charge,budget);
-   if(conversion!=null) {
-    document.addDocumentListener(snapshot);
-    try {conversion.getEdit().apply(document);} finally {document.removeDocumentListener(snapshot);}
-    copy.getBuffer().setContents(document.get());
-    snapshot.verify(parse(copy,compiler,budget),document);
+   protectedAll.addAll(templates(ast,document.get(),budget));
+   if(FunctionalMathOptions.enabled(profile.requested())) {
+    var snapshot=new FunctionalMathSnapshot(ast,document.get(),protectedAll,budget::charge);
+    budget.phase("Convert remaining loops");
+    var conversion=LoopConversionService.renderUnchanged(ast,profile.requested(),snapshot.exclusions(),budget::charge,budget);
+    if(conversion!=null) {
+     document.addDocumentListener(snapshot);
+     try {conversion.getEdit().apply(document);} finally {document.removeDocumentListener(snapshot);}
+     copy.getBuffer().setContents(document.get());
+     snapshot.verify(parse(copy,compiler,budget),document);
+    }
    }
    budget.check();
    if(phases.stream().anyMatch(phase->!phase.sourceDependencies().current())) throw new IllegalArgumentException("STALE_SOURCE_DEPENDENCY");
@@ -76,10 +90,72 @@ final class FunctionalMathCoordinator {
    catch(CoreException failure) {throw new IllegalStateException("Cannot discard private cleanup working copy",failure);}
   }
  }
- private static List<ISourceRange> templates(CompilationUnit ast,Budget budget) {
+ private record TailPhase(CompilationUnit ast,List<ISourceRange> bodies) { }
+ private static TailPhase tail(ICompilationUnit copy,CompilationUnit ast,Document document,Map<String,String> compiler,
+   MathCleanUpOptions options,Budget budget) throws CoreException {
+  if(!options.tailRecursion()) return new TailPhase(ast,List.of());
+  for(String exclusion:options.exclusions()) {
+   budget.charge(1L+exclusion.length());
+   if(FileSystems.getDefault().getPathMatcher("glob:"+exclusion).matches(Path.of(copy.getPath().toPortableString())))
+    return new TailPhase(ast,List.of());
+  }
+  var offsets=new ArrayList<Integer>();
+  ast.accept(new ASTVisitor() {
+   @Override public void preVisit(ASTNode node) {budget.charge(1);}
+   @Override public boolean visit(MethodDeclaration method) {
+    if(Modifier.isStatic(method.getModifiers()) && method.getBody()!=null && method.getBody().statements().size()==2
+      && method.getBody().statements().getFirst() instanceof IfStatement
+      && method.getBody().statements().get(1) instanceof ReturnStatement returned
+      && returned.getExpression()!=null && unparenthesized(returned.getExpression(),budget) instanceof MethodInvocation call
+      && call.getName().getIdentifier().equals(method.getName().getIdentifier())) {
+     if(offsets.size()==8) throw new IllegalArgumentException("TOO_MANY_TAIL_METHODS");
+     offsets.add(method.getStartPosition());
+    }return true;
+   }
+  });
+  offsets.sort(Comparator.reverseOrder());var bodies=new ArrayList<ISourceRange>();
+  for(int offset:offsets) {
+   budget.phase("Verify tail recursion");String before=document.get();
+   var result=JavaTailRecursionRewrite.prepare(ast,before,offset,budget.allocate(options,1,4),budget);
+   budget.check();
+   if("CANCELLED".equals(result.reason())) throw new OperationCanceledException();
+   if("WORK_LIMIT".equals(result.reason())) throw new IllegalArgumentException("TAIL_BUDGET_EXCEEDED: original buffer unchanged");
+   if(result.plan().isEmpty()) continue;
+   var plan=result.plan().orElseThrow();String after=plan.applyTo(before);int delta=after.length()-before.length();
+   for(int i=0;i<bodies.size();i++) {
+    var previous=bodies.get(i);bodies.set(i,new SourceRange(previous.getOffset()+delta,previous.getLength()));
+   }
+   document.set(after);copy.getBuffer().setContents(after);ast=parse(copy,compiler,budget);
+   bodies.add(new SourceRange(plan.bodyOffset(),plan.bodyLength()));
+  }
+  return new TailPhase(ast,List.copyOf(bodies));
+ }
+ private static List<ISourceRange> tailLoops(CompilationUnit ast,List<ISourceRange> bodies,Budget budget) {
+  var result=new ArrayList<ISourceRange>();
+  for(var range:bodies) {
+   var node=NodeFinder.perform(ast,range.getOffset(),range.getLength());
+   if(!(node instanceof Block body)) throw new IllegalArgumentException("TAIL_BODY_CHANGED");
+   int previous=result.size();
+   body.accept(new ASTVisitor() {
+    @Override public void preVisit(ASTNode child) {budget.charge(1);}
+    @Override public boolean visit(ForStatement loop) {result.add(new SourceRange(loop.getStartPosition(),loop.getLength()));return false;}
+   });
+   if(result.size()!=previous+1) throw new IllegalArgumentException("TAIL_LOOP_CHANGED");
+  }return result;
+ }
+ private static List<ISourceRange> templates(CompilationUnit ast,String source,Budget budget) {
   var ranges=new LinkedHashMap<Integer,ISourceRange>();
   ast.accept(new ASTVisitor() {
    @Override public void preVisit(ASTNode node) {budget.charge(1);}
+   @Override public boolean visit(MethodDeclaration method) {
+    if(method.getBody()!=null) {
+     int start=method.getStartPosition(),end=method.getBody().getStartPosition();budget.charge(end-start);
+     if(source.substring(start,end).contains("ALLOW_FRAME_ELISION")) {
+      var body=method.getBody();ranges.put(body.getStartPosition(),new SourceRange(body.getStartPosition(),body.getLength()));
+      return false;
+     }
+    }return true;
+   }
    @Override public boolean visit(VariableDeclarationFragment declaration) {
     if(declaration.getName().getIdentifier().startsWith("$series")) {
      ASTNode block=declaration;while(block!=null && !(block instanceof Block)) block=block.getParent();

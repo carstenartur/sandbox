@@ -33,6 +33,7 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.StoredConfig;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.TagOpt;
 import org.eclipse.jgit.util.FileUtils;
@@ -72,6 +73,29 @@ public final class PinnedGitRepository implements AutoCloseable {
 	 */
 	public static PinnedGitRepository cloneAt(Path directory, URI remote, String ref,
 			String expectedCommit) throws GitAPIException, IOException {
+		return cloneVerified(directory, remote, ref, expectedCommit, false);
+	}
+
+	/**
+	 * Fetches an advertised source ref and checks out an exact historical commit
+	 * only when it is reachable in that ref's fetched commit history.
+	 * Unlike {@link #cloneAt}, the advertised tip may have advanced.
+	 *
+	 * @param directory target checkout directory, which must not exist
+	 * @param remote exact repository URI
+	 * @param advertisedSourceRef advertised ref whose fetched history contains the pin
+	 * @param expectedCommit full exact historical commit ID
+	 * @return the verified detached fixture
+	 * @throws GitAPIException when discovery, fetch or checkout fails
+	 * @throws IOException when commit verification or cleanup fails
+	 */
+	public static PinnedGitRepository cloneAtCommit(Path directory, URI remote, String advertisedSourceRef,
+			String expectedCommit) throws GitAPIException, IOException {
+		return cloneVerified(directory, remote, advertisedSourceRef, expectedCommit, true);
+	}
+
+	private static PinnedGitRepository cloneVerified(Path directory, URI remote, String ref,
+			String expectedCommit, boolean historical) throws GitAPIException, IOException {
 		Objects.requireNonNull(directory, "directory"); //$NON-NLS-1$
 		Objects.requireNonNull(remote, "remote"); //$NON-NLS-1$
 		Objects.requireNonNull(ref, "ref"); //$NON-NLS-1$
@@ -119,14 +143,20 @@ public final class PinnedGitRepository implements AutoCloseable {
 			if (actualRef == null) {
 				throw new IllegalStateException("Fetched pinned ref cannot be resolved: " + PINNED_REF); //$NON-NLS-1$
 			}
-			if (!expected.equals(actualRef)) {
+			if (historical) {
+				try (RevWalk walk = new RevWalk(repository)) {
+					if (!walk.isMergedInto(walk.parseCommit(expected), walk.parseCommit(actualRef)))
+						throw new IllegalArgumentException("Expected commit is not an ancestor of fetched source ref: " + expectedCommit); //$NON-NLS-1$
+				}
+			} else if (!expected.equals(actualRef)) {
 				throw new IllegalArgumentException("Pinned ref " + advertisedRef.getName() + " resolves to " //$NON-NLS-1$ //$NON-NLS-2$
 						+ actualRef.name() + ", expected " + expected.name()); //$NON-NLS-1$
 			}
 
 			git.checkout().setName(expected.name()).call();
 			ObjectId head = repository.resolve(Constants.HEAD + "^{commit}"); //$NON-NLS-1$
-			if (!expected.equals(head)) {
+			if (!expected.equals(head) || !expected.name().equals(repository.getFullBranch())
+					|| !remote.toString().equals(config.getString("remote", Constants.DEFAULT_REMOTE_NAME, "url"))) { //$NON-NLS-1$ //$NON-NLS-2$
 				throw new IllegalStateException("Detached checkout resolved to " //$NON-NLS-1$
 						+ (head == null ? "<missing>" : head.name()) + ", expected " + expected.name()); //$NON-NLS-1$ //$NON-NLS-2$
 			}

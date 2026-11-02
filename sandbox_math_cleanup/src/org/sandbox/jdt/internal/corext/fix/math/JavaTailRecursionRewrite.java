@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
+import java.util.function.Function;
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.jdt.core.JavaCore;
@@ -15,27 +17,32 @@ import org.eclipse.jdt.core.dom.*;
 import org.sandbox.functional.core.model.StateIteration;
 
 /**
- * Bounded source-only tail-loop planning for self-contained compilation units.
- * This is not registered as a cleanup or save action. Project-dependent sources
- * remain outside this entry point rather than guessing unresolved bindings.
+ * Bounded tail-loop planning for standalone sources and resolved native project ASTs.
+ * The native bridge requires separate whole-file frame-elision consent; ordinary
+ * mathematics analysis and save actions never invoke it implicitly.
  * Numerical Java behavior is retained; frame/stack resource behavior requires
  * explicit opt-in. A plan owns its source snapshots, not a mutable AST.
  */
-final class JavaTailRecursionRewrite {
+public final class JavaTailRecursionRewrite {
     private static final int MAX_SOURCE = 1_000_000;
-    enum StackPolicy { PRESERVE_STACK, ALLOW_FRAME_ELISION }
-    record Result(Optional<Plan> plan, String reason, long work) { }
+    public enum StackPolicy { PRESERVE_STACK, ALLOW_FRAME_ELISION }
+    public record Result(Optional<Plan> plan, String reason, long work) { }
 
-    static final class Plan {
+    public static final class Plan {
         private final String before;
         private final String after;
-        private Plan(String before, String after) { this.before = before; this.after = after; }
-        String preview() { return after; }
-        String applyTo(String current) {
+        private final int bodyOffset,bodyLength;
+        private Plan(String before, String after, int bodyOffset, int bodyLength) {
+            this.before = before; this.after = after; this.bodyOffset=bodyOffset; this.bodyLength=bodyLength;
+        }
+        public String preview() { return after; }
+        public int bodyOffset() { return bodyOffset; }
+        public int bodyLength() { return bodyLength; }
+        public String applyTo(String current) {
             if (!before.equals(current)) throw new IllegalStateException("STALE_RECURSION_SOURCE"); //$NON-NLS-1$
             return after;
         }
-        String undo(String current) {
+        public String undo(String current) {
             if (!after.equals(current)) throw new IllegalStateException("STALE_RECURSION_RESULT"); //$NON-NLS-1$
             return before;
         }
@@ -55,29 +62,71 @@ final class JavaTailRecursionRewrite {
             if (source.length() > MAX_SOURCE || methodOffset < 0 || methodOffset >= source.length()
                     || unitName.isEmpty() || unitName.length() > 4096) throw new Stopped("SOURCE_LIMIT_OR_POSITION"); //$NON-NLS-1$
             CompilationUnit original = parse(unitName, source, work);
-            MethodDeclaration method = methodAt(original, methodOffset, work);
-            if (method == null) throw new Stopped("METHOD_NOT_FOUND"); //$NON-NLS-1$
-            var inspected = JavaTailRecursionInspector.inspect(method, source, maximum - work.used, cancelled);
-            work.charge(inspected.work());
-            StateIteration model = inspected.iteration().orElseThrow(() -> new Stopped(inspected.reason()));
-            String body = emit(method, model, source, work);
-            int start = method.getBody().getStartPosition(), end = start + method.getBody().getLength();
-            int newLength = source.length() - (end - start) + body.length();
-            if (newLength > MAX_SOURCE) throw new Stopped("GENERATED_SOURCE_LIMIT"); //$NON-NLS-1$
-            work.charge(1L + newLength / 64L);
-            String after = source.substring(0, start) + body + source.substring(end);
-            CompilationUnit emitted = parse(unitName, after, work);
-            MethodDeclaration replacement = methodAt(emitted, methodOffset, work);
-            if (replacement == null || !JavaTailRecursionReplay.verify(method, replacement, model, work::tick)) {
-                throw new Stopped("STATE_TRANSFER_REPLAY_FAILED"); //$NON-NLS-1$
-            }
-            work.tick();
-            return new Result(Optional.of(new Plan(source, after)), "VERIFIED_WITH_FRAME_ELISION", work.used); //$NON-NLS-1$
+            return prepared(original,source,methodOffset,work,null,text->parse(unitName,text,work));
         } catch (Stopped stopped) {
             return new Result(Optional.empty(), stopped.getMessage(), work.used);
         } catch (OperationCanceledException cancelledParse) {
             return new Result(Optional.empty(), "CANCELLED", work.used); //$NON-NLS-1$
         }
+    }
+
+    /** Native bridge: the existing project AST must match the complete current source. */
+    public static Result prepare(CompilationUnit original,String source,int methodOffset,
+            MathCleanUpOptions options,IProgressMonitor progress) {
+        Objects.requireNonNull(original);Objects.requireNonNull(source);Objects.requireNonNull(options);
+        IProgressMonitor monitor=progress==null?new NullProgressMonitor():progress;
+        var token=MathematicalAnalysis.cancellation(monitor,options);
+        var work=new Work(options.workBudget(),token::isCancelled);
+        try {
+            work.tick();
+            if(!options.enabled() || !options.tailRecursion()) throw new Stopped("STACK_CHANGE_NOT_ACCEPTED"); //$NON-NLS-1$
+            if(source.length()>MAX_SOURCE || methodOffset<0 || methodOffset>=source.length()) throw new Stopped("SOURCE_LIMIT_OR_POSITION"); //$NON-NLS-1$
+            Map<String,String> compiler=original.getJavaElement()==null?Map.of():original.getJavaElement().getJavaProject().getOptions(true);
+            if(!MathematicalAnalysis.matchesAstSource(original,source,compiler,options.targetJava(),work::charge,monitor))
+                throw new Stopped("STALE_RECURSION_SOURCE"); //$NON-NLS-1$
+            return prepared(original,source,methodOffset,work,options,text->{
+                work.charge(4L*text.length());
+                return MathematicalAnalysis.checkGeneratedSource(original,text,compiler,options.targetJava(),monitor,null);
+            });
+        } catch(Stopped stopped) {
+            return new Result(Optional.empty(),stopped.getMessage(),work.used);
+        } catch(OperationCanceledException cancelled) {
+            return new Result(Optional.empty(),"CANCELLED",work.used); //$NON-NLS-1$
+        } catch(IllegalArgumentException invalid) {
+            return new Result(Optional.empty(),invalid.getMessage(),work.used);
+        }
+    }
+
+    private static Result prepared(CompilationUnit original,String source,int methodOffset,Work work,
+            MathCleanUpOptions options,Function<String,CompilationUnit> parser) {
+        MethodDeclaration method=methodAt(original,methodOffset,work);
+        if(method==null) throw new Stopped("METHOD_NOT_FOUND"); //$NON-NLS-1$
+        var inspected=JavaTailRecursionInspector.inspect(method,source,work.maximum-work.used,work.cancelled);
+        work.charge(inspected.work());
+        StateIteration model=inspected.iteration().orElseThrow(()->new Stopped(inspected.reason()));
+        if(options!=null) {
+            var kinds=new ArrayList<>(model.states().stream().map(StateIteration.State::type).toList());
+            kinds.add(method.resolveBinding().getReturnType().getName());
+            for(String kind:kinds) if(!options.kinds().contains(de.regelsuche.sdk.optimization.NumericKind.valueOf(kind.toUpperCase(java.util.Locale.ROOT))))
+                throw new Stopped("TAIL_NUMERIC_KIND_NOT_SELECTED"); //$NON-NLS-1$
+        }
+        boolean counted=options!=null && options.safety()==de.regelsuche.sdk.optimization.SafetyProfile.PRESERVE_JAVA
+                && !options.mathematicalOptIn() && options.goal()==de.regelsuche.sdk.optimization.OptimizationGoal.LOWER_ESTIMATED_RUNTIME;
+        String body=emit(method,model,source,work,counted);
+        int start=method.getBody().getStartPosition(),end=start+method.getBody().getLength();
+        var after=new StringBuilder(source).replace(start,end,body);
+        if(options!=null) {
+            var documentation=new MathematicalJavadoc();
+            documentation.add(original,start,end-start,"Tail recursion: explicit ALLOW_FRAME_ELISION removes recursive frames and may change stack observation or StackOverflowError. Primitive state and evaluation order were independently replayed."); //$NON-NLS-1$
+            for(var edit:documentation.edits(source)) after.replace(edit.offset(),edit.offset()+edit.length(),edit.replacement());
+        }
+        if(after.length()>MAX_SOURCE) throw new Stopped("GENERATED_SOURCE_LIMIT"); //$NON-NLS-1$
+        work.charge(1L+after.length()/64L);String generated=after.toString();
+        CompilationUnit emitted=parser.apply(generated);
+        MethodDeclaration replacement=methodAt(emitted,methodOffset,work);
+        if(replacement==null || !JavaTailRecursionReplay.verify(method,replacement,model,work::tick)) throw new Stopped("STATE_TRANSFER_REPLAY_FAILED"); //$NON-NLS-1$
+        work.tick();
+        return new Result(Optional.of(new Plan(source,generated,replacement.getBody().getStartPosition(),replacement.getBody().getLength())),"VERIFIED_WITH_FRAME_ELISION",work.used); //$NON-NLS-1$
     }
 
     private static CompilationUnit parse(String unitName, String source, Work work) {
@@ -107,14 +156,17 @@ final class JavaTailRecursionRewrite {
         unit.accept(new ASTVisitor() {
             @Override public void preVisit(ASTNode node) { work.tick(); }
             @Override public boolean visit(MethodDeclaration method) {
-                if (method.getStartPosition() == offset) result.add(method);
-                return false;
+                if (method.getStartPosition() == offset) {
+                    result.add(method);
+                    return false;
+                }
+                return true;
             }
         });
         return result.size() == 1 ? result.getFirst() : null;
     }
 
-    private static String emit(MethodDeclaration method, StateIteration model, String source, Work work) {
+    private static String emit(MethodDeclaration method, StateIteration model, String source, Work work, boolean counted) {
         var reserved = new HashSet<String>();
         model.states().forEach(s -> reserved.add(s.name()));
         var states = new ArrayList<String>(); var next = new ArrayList<String>();
@@ -133,12 +185,20 @@ final class JavaTailRecursionRewrite {
             var state = model.states().get(i);
             code.append("    ").append(state.type()).append(' ').append(states.get(i)).append(" = ").append(state.name()).append(";\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
         }
-        code.append("    while (!( ").append(renamed(exit.getExpression(), names, source, work)).append(" )) {\n"); //$NON-NLS-1$ //$NON-NLS-2$
+        int counter=-1;
+        if(counted) for(int i=0;i<states.size();i++) if(model.states().get(i).bindingKey().equals(model.termination().counterBinding())) counter=i;
+        if(counter<0) code.append("    while (!( ").append(renamed(exit.getExpression(), names, source, work)).append(" )) {\n"); //$NON-NLS-1$ //$NON-NLS-2$
+        else {
+            String name=states.get(counter);
+            code.append("    for (").append(name).append(" = ").append(name).append("; ").append(name).append(" > 0; ").append(name).append("--) {\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
+        }
         for (int i = 0; i < next.size(); i++) {
+            if(i==counter) continue;
             code.append("        final ").append(model.states().get(i).type()).append(' ').append(next.get(i)).append(" = ") //$NON-NLS-1$ //$NON-NLS-2$
                 .append(renamed((Expression) call.arguments().get(i), names, source, work)).append(";\n"); //$NON-NLS-1$
         }
         for (int i = 0; i < next.size(); i++) {
+            if(i==counter) continue;
             code.append("        ").append(states.get(i)).append(" = ").append(next.get(i)).append(";\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
         }
         code.append("    }\n    return ").append(renamed(base.getExpression(), names, source, work)).append(";\n}"); //$NON-NLS-1$ //$NON-NLS-2$

@@ -13,7 +13,9 @@ import org.sandbox.jdt.internal.ui.fix.FunctionalMathOptions;
 class MathematicalOptionsInitializerTest {
  @Test void defaultsSupplyNormalizedMathematicsAndTheDisabledCombinedOptIn() {
   CleanUpOptions options=new CleanUpOptions();new MathematicalOptionsInitializer().setDefaultOptions(options);
-  assertEquals(13,options.getKeys().size());
+  assertEquals(15,options.getKeys().size());
+  assertEquals("false",options.getValue("cleanup.mathematics.tailRecursion"));
+  assertEquals("UNSPECIFIED",options.getValue(MathCleanUpOptions.VALUE_RUNTIME));
   assertEquals(CleanUpOptions.FALSE,options.getValue(FunctionalMathOptions.ENABLED));
   assertEquals("5",options.getValue(MathCleanUpOptions.TIMEOUT_SECONDS));
   assertEquals("NONTRIVIAL",options.getValue(MathCleanUpOptions.EXPLANATIONS));

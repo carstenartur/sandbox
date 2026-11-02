@@ -2,7 +2,7 @@
 
 Status: draft for review; publication remains held pending final qualification and acceptance.
 Baseline: [1.3.7](https://github.com/carstenartur/sandbox/releases/tag/v1.3.7).
-Candidate source: `d06ffc85a56ec61968ac2eee28031924ddd3368a` (2026-11-01).
+Candidate source: `7458aa94907e7bbff5259fdeaf864fbb57a223c7` (2026-11-02).
 
 ## Mathematics cleanup
 
@@ -56,23 +56,49 @@ Included through merged [#1776](https://github.com/carstenartur/sandbox/pull/177
 Included through merged [#1778](https://github.com/carstenartur/sandbox/pull/1778),
 including the correction that keeps previews aligned with live profile options.
 
-## Source-derived tail-state planning foundation
+## Explicit native tail-recursion cleanup
 
-- Add a neutral bounded ULR state descriptor and source-derived inspection for a
-  narrow static `int`/`long` direct-tail-recursion fragment, with at most eight
-  states and a counter that decreases by one to the `counter <= 0` exit.
-- Prepare a source-only loop plan after explicit `ALLOW_FRAME_ELISION` opt-in.
-  Independent typed replay checks the emitted state transfers; next-state values
-  use the old state in Java's left-to-right order before assignment.
-- Retain source-snapshot Apply/Undo, cancellation and shared work limits. Removing
-  frames changes observable stack/resource behavior, including possible
-  `StackOverflowError`; the strict stack policy produces no plan.
+- Convert the admitted static `int`/`long` countdown fragment only after the
+  separate, default-off tail-recursion consent. The emitted method records
+  `ALLOW_FRAME_ELISION`: removing frames can change stack observation and
+  `StackOverflowError`.
+- Derive bounded state transitions from Java source and independently replay the
+  generated loop. Next-state expressions keep the old state and Java evaluation
+  order; source/AST/comment freshness is checked.
+- Use ordinary native Preview/Apply/Undo with one private source and shared work
+  and time budgets. Protect transferred tail bodies from unrelated mathematics
+  and optional Functional Converter edits, including repeated Apply.
+- Keep Select All, selection Quick Assist and save actions from granting consent.
+  Existing finite-series/affine acceleration additionally requires Preserve Java,
+  Mathematical mode off and Lower estimated runtime. Other admitted cases retain
+  the verified ordinary loop.
 
-Included through merged [#1783](https://github.com/carstenartur/sandbox/pull/1783).
-This internal foundation registers no cleanup checkbox, default profile, Quick
-Assist or save action, and does not yet provide native Converter/UI integration,
-value-object summaries, affine/matrix extraction or mathematical iteration
-replacement. See [the exact source contract](sandbox_math_cleanup/TAIL_RECURSION.md).
+This extends the foundation in [#1783](https://github.com/carstenartur/sandbox/pull/1783)
+with [#1784](https://github.com/carstenartur/sandbox/pull/1784) and the native
+integration in [#1792](https://github.com/carstenartur/sandbox/pull/1792).
+General/mutual recursion, floating-point or value-object recursive state and
+arbitrary control flow remain outside the supported fragment. SDK70's
+OrderedMatrixChain rules have no new general Java consumer in this adapter.
+See [the source contract](sandbox_math_cleanup/TAIL_RECURSION.md).
+
+## Source-proved value arithmetic and refinements
+
+- Add source-proved immutable-value arithmetic, fixed powers, value constants
+  and factory residues in the admitted mathematical fragments.
+- Require the separate explicit audited-runtime consent for detached value reuse.
+  Verify inverse reuse and reject effectful speculative predicates.
+- Preserve SWT source intent, exact source spans and shared preparation budgets.
+  Correct tail-state identity limits and local-class method lookup.
+
+Included through [#1784](https://github.com/carstenartur/sandbox/pull/1784),
+[#1785](https://github.com/carstenartur/sandbox/pull/1785),
+[#1786](https://github.com/carstenartur/sandbox/pull/1786),
+[#1787](https://github.com/carstenartur/sandbox/pull/1787),
+[#1788](https://github.com/carstenartur/sandbox/pull/1788),
+[#1789](https://github.com/carstenartur/sandbox/pull/1789) and
+[#1790](https://github.com/carstenartur/sandbox/pull/1790).
+These bounded proofs and lower estimated costs are not measured speedup or
+cryptographic constant-time claims.
 
 ## Reliability and documentation
 
@@ -82,22 +108,31 @@ replacement. See [the exact source contract](sandbox_math_cleanup/TAIL_RECURSION
   source-backed examples and explicit fragment boundaries.
 - Update the qualified vendored value-arithmetic SDK and native mathematics Help
   provenance through merged [#1782](https://github.com/carstenartur/sandbox/pull/1782).
-  This SDK prerequisite does not itself add later Java adapter features.
+  Later adapter and SDK70 integration is included through #1784–#1792.
+- Include the Fp12 algebra-proof timeout correction in
+  [#1791](https://github.com/carstenartur/sandbox/pull/1791), and current native
+  mathematics Help provenance from #1792. The latest macOS distribution still
+  has a separate Hawk preparation-budget failure; full platform acceptance
+  remains incomplete.
 
 ## Dependencies and qualification limits
 
-The mathematics plug-in bundles a source-bound Regelsuche development distribution,
-not the public Regelsuche 0.5.0 Maven release and not a floating snapshot:
+The mathematics plug-in bundles the exact source-bound Regelsuche SDK70
+development distribution:
 
-- SDK source: `93f0f35abaea58ea492441776be7c9d2a9be1695`.
-- Standalone JAR SHA-256: `5ad54860d828a738d4df8dba87659b8a14009bfb208f79705a4b8529b9c58884`.
-- Receipt version: `0.5.1-issue1657-93f0f35abaea`; `publiclyPublished: false`.
+- SDK source: `70c13fb580062b1fd653f35b81b2fb7ed1903c28`.
+- Standalone JAR SHA-256: `ba0293dedb3fde9ca2f3042dcef8ae4d6bb2d576adedff8ba7a2b4d186f1cbe1`.
+- Receipt version: `0.5.2-issue1657-70c13fb58006`; `publiclyPublished: false`.
 - JGit storage remains the already released **0.11.8**.
 
-The current local source-bound receipt records two clean builds, 302 SDK tests
-per build, two fresh external consumers and ten byte-identical distribution files.
-It is not a remote CI result or an Eclipse product qualification. Historical
-finite-series receipts remain bound to their original SDK revisions.
+The exact artifact and unchanged generated qualification were transferred from
+staging commit `1573e539f14313409ed5e16e1d80ea95b97493b5`.
+The retained external-consumer output is historical qualification of that
+artifact, not a fresh test of the reconstructed Java/native adapter.
+The earlier 302-tests-per-build double-build receipt belongs to SDK source
+`93f0f35abaea58ea492441776be7c9d2a9be1695`, not SDK70. No missing
+SDK70 double-build receipt or test count is inferred.
+See [the current SDK provenance](sandbox_math_cleanup/lib/README.md).
 
 The SDK is included in the Eclipse bundle. Its numerical proof and reproducibility
 receipts are separate from Java source admission and native product verification.
@@ -116,15 +151,22 @@ Java integral division truncates.
 
 ## Release review
 
-These notes cover merged source only, including the counted-loop correctness fix
-[#1776](https://github.com/carstenartur/sandbox/pull/1776) and the optional combined
-mathematics/Functional Converter operation
-[#1778](https://github.com/carstenartur/sandbox/pull/1778), the qualified SDK/Help
-update [#1782](https://github.com/carstenartur/sandbox/pull/1782), and the internal
-tail-state foundation [#1783](https://github.com/carstenartur/sandbox/pull/1783).
-Main advanced after the original preparation; checks for the earlier source do
-not qualify this expanded candidate. Verify the final same-SHA checks before
-publication. Full release tests, the canonical dry run and manual acceptance
-remain outstanding; see [the preparation handoff](docs/releases/1.3.8-preparation.md).
+These notes cover merged source through
+[#1792](https://github.com/carstenartur/sandbox/pull/1792).
+Main advanced by nine commits after the previous preparation; the old PR checks
+and SDK receipt cannot qualify the expanded source.
+
+At the 2026-11-02 review, Core, Maven/Oomph, metrics, benchmark and Ubuntu/Windows
+distribution checks passed on `7458aa94907e7bbff5259fdeaf864fbb57a223c7`.
+The [macOS distribution job](https://github.com/carstenartur/sandbox/actions/runs/41505536028/job/125483768927)
+failed in `BouncyCastleFinalPreparationBudgetTest.strictAcceptsBothHawkFragmentsWithinTheFullFileBudget`:
+both original Hawk fragments lacked accepted replacements after `CANCELLED`.
+The Math module recorded 1,204 tests, one failure and no errors or skips.
+This is an unresolved gate; its root cause is not established by these notes.
+
+Native Eclipse consumer acceptance ran successfully on Ubuntu; Windows skipped
+that native step. Full platform/release tests, the canonical dry run and manual
+product acceptance remain outstanding; see
+[the preparation handoff](docs/releases/1.3.8-preparation.md).
 The existing release workflow generates its own commit-log notes; this curated
 draft must be explicitly incorporated in the publication review.

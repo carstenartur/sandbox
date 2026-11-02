@@ -61,7 +61,12 @@ final class JavaTailRecursionInspector {
             if (variable == null || variable.isRecovered() || !integral(variable.getType())) return null;
             String key = variable.getVariableDeclaration().getKey();
             if (key == null || !parameters.add(key)) return null;
-            states.add(new StateIteration.State(key, parameter.getName().getIdentifier(), variable.getType().getName()));
+            try {
+                states.add(new StateIteration.State(key, parameter.getName().getIdentifier(), variable.getType().getName()));
+            } catch (IllegalArgumentException unsupportedIdentity) {
+                // Legal Java identifiers and binding keys can exceed the model's limits.
+                return null;
+            }
         }
         String counter = counter(exit.getExpression());
         if (counter == null || !parameters.contains(counter)

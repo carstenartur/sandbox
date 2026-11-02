@@ -54,10 +54,10 @@ final class JavaTaskSourceRewriter {
             MathCleanUpOptions options, long allowance, IProgressMonitor monitor,
             Map<String, String> compiler, MathematicalAnalysis.SourceEnvironment environment) {
         if (!task.matchesSource(source) || allowance < 6000) return new Attempt(Optional.empty(), allowance);
-        CancellationToken token = () -> Thread.currentThread().isInterrupted() || monitor.isCanceled();
+        CancellationToken token = MathematicalAnalysis.cancellation(monitor, options);
         // Reserve the full allocation: re-extraction and Java parsing have no exact SDK work receipt.
         var sourceWork = new SourceWork(allowance / 4, token);
-        var request = task.numericRequest(options.goal(), options.optimizationBudget(allowance / 4));
+        var request = task.numericRequest(options.goal(), MathematicalAnalysis.optimizationBudget(options, allowance / 4, token));
         var optimizer = new ComputationOptimizer();
         var searched = optimizer.optimize(request, token);
         if (searched instanceof OptimizationResult.BudgetExceeded exceeded) completed(exceeded.work(), allowance / 4);
@@ -76,6 +76,7 @@ final class JavaTaskSourceRewriter {
                 sourceWork.charge(context.takeWork()); context.checkpoint().requireCurrent();
             }
             var emittedPlan = bindEmitted(task, emitted, source, generated, sourceWork);
+            request = MathematicalAnalysis.remainingTime(request, token);
             var verified = optimizer.verify(request, emittedPlan, token);
             if (verified instanceof VerificationResult.BudgetExceeded exceeded) completed(exceeded.work(), allowance / 4);
             if (!(verified instanceof VerificationResult.Verified proof)) return new Attempt(Optional.empty(), 0);
@@ -91,6 +92,7 @@ final class JavaTaskSourceRewriter {
             sourceWork.charge(prepared.cost().inspectionWork()); // Candidate's independent constructor preparation.
             var realized = new OptimizationResult.Candidate(emittedPlan, prepared, proof.evidence(), proof.obligations(), cost,
                     OptimizationResult.SearchCompletion.IMPROVEMENT_FOUND, 0);
+            request = MathematicalAnalysis.remainingTime(request, token);
             var described = ComputationExplanations.describe(request, realized, allowance / 4, token);
             completed(described.work(), allowance / 4);
             if (described.explanation().isEmpty()) return new Attempt(Optional.empty(), 0);

@@ -78,6 +78,27 @@ import org.eclipse.jdt.core.dom.WhileStatement;
 import org.eclipse.jdt.core.dom.InfixExpression.Operator;
 
 public final class JavaComputationExtractor {
+   /** Reuses the scalar decoder after the value adapter has resolved receiver/local bindings. */
+   static final class ScalarProjector {
+      private final Builder builder;
+      ScalarProjector(CompilationUnit unit, MathCleanUpOptions options) {
+         builder = new Builder(unit, options, Map.of(), Set.of(), unit, true, false, false);
+         builder.allowSourceHelpers = false; // The value session must admit every transitive helper itself.
+      }
+      Expr expression(Expression source, Map<Expression, Expr> substitutions) {
+         builder.substitutions = substitutions;
+         try { return builder.expression(source, false, 0); }
+         catch (Rejected rejected) { throw new IllegalArgumentException(rejected.getMessage(), rejected); }
+         finally { builder.substitutions = Map.of(); }
+      }
+      SourceEvaluationTrace trace() { return new SourceEvaluationTrace(builder.trace); }
+      int tracePosition() { return builder.trace.size(); }
+      void restoreTrace(int position) { builder.trace.subList(position, builder.trace.size()).clear(); }
+      Expr literal(Expression source) {
+         try { return JavaComputationExtractor.literal(source.resolveConstantExpressionValue(), source); }
+         catch (Rejected rejected) { throw new IllegalArgumentException(rejected.getMessage(), rejected); }
+      }
+   }
    static final String ORIGINAL_FALLBACK_MARKER = "Mathematics fallback: unchanged original Java behavior.";
    public JavaComputationExtractor.Extraction extract(CompilationUnit unit, String source, MathCleanUpOptions options) {
       return this.extract(unit, source, options, false, false);
@@ -210,6 +231,27 @@ public final class JavaComputationExtractor {
    }
 
    /** Decode one resolved expression for callers composing existing Java source contexts. */
+   Extraction extractForSourceProof(CompilationUnit unit, String source, Expression expression, MathCleanUpOptions options,
+         java.util.function.LongConsumer charge) {
+      var regions = new ArrayList<JavaComputationRegion>();
+      var diagnostics = new ArrayList<Diagnostic>();
+      var bindings = sourceBindings(unit, charge);
+      charge.accept(expression.getLength());
+      // Numerical equality cannot authorize deleting an authored constant formula.
+      if (expression.getParent() instanceof Assignment assignment && assignment.getRightHandSide() == expression
+            && assignment.getParent() instanceof ExpressionStatement statement
+            && RuntimeCalculationPolicy.preserve(statement, bindings.declarations()))
+         return new Extraction(regions, diagnostics);
+      if (RuntimeCalculationPolicy.containsComputedConstant(expression, bindings.declarations())) return new Extraction(regions, diagnostics);
+      try {
+         Builder builder = new Builder(unit, options, bindings.declarations(), bindings.reserved(), expression, true, false, false);
+         builder.expressionOutput(expression);
+         finish(builder, regions, diagnostics);
+      } catch (Rejected rejected) { diagnostics.add(diagnostic(rejected)); }
+      return new Extraction(regions, diagnostics);
+   }
+
+   /** Decode one resolved expression for callers composing existing Java source contexts. */
    Extraction extractRuntimeExpression(CompilationUnit unit, String source, Expression expression, MathCleanUpOptions options) {
       var regions = new ArrayList<JavaComputationRegion>();
       var diagnostics = new ArrayList<Diagnostic>();
@@ -331,9 +373,14 @@ public final class JavaComputationExtractor {
    private record SourceBindings(Set<String> reserved, Map<String, VariableDeclarationFragment> declarations) { }
 
    private static SourceBindings sourceBindings(CompilationUnit unit) {
+      return sourceBindings(unit, amount -> { });
+   }
+
+   private static SourceBindings sourceBindings(CompilationUnit unit, java.util.function.LongConsumer charge) {
       var reserved = new HashSet<String>();
       var declarations = new HashMap<String, VariableDeclarationFragment>();
       unit.accept(new ASTVisitor() {
+         @Override public boolean preVisit2(ASTNode node) { charge.accept(1); return true; }
          @Override public boolean visit(SimpleName name) {
             if (name.isDeclaration() || name.resolveBinding() instanceof IVariableBinding
                   || name.getIdentifier().equals("java") && name.resolveBinding() instanceof ITypeBinding) //$NON-NLS-1$
@@ -545,6 +592,8 @@ public final class JavaComputationExtractor {
       final List<JavaComputationRegion.ArrayRead> arrayReads = new ArrayList<>();
       final Set<SemanticAssumption> assumptions = new LinkedHashSet<>();
       final Set<String> receiverGuards = new LinkedHashSet<>();
+      Map<Expression, Expr> substitutions = Map.of();
+      boolean allowSourceHelpers = true;
       // Per-call Java frames. Never bind a helper's locals as caller inputs.
       final Deque<Map<String, Expr>> methodFrames = new ArrayDeque<>();
       final Set<String> activeMethods = new HashSet<>();
@@ -580,6 +629,7 @@ public final class JavaComputationExtractor {
             this.unit, this.options, this.declarations, this.reserved, this.scope, this.includeValues, this.runtimeOnly, this.arrayInputs, this.taskMode, this.extendedReads
          );
          copy.values.putAll(this.values);
+         copy.allowSourceHelpers = this.allowSourceHelpers;
          copy.inputKeys.putAll(this.inputKeys);
          copy.inputNames.putAll(this.inputNames);
          copy.inputTypes.putAll(this.inputTypes);
@@ -707,6 +757,9 @@ public final class JavaComputationExtractor {
          Expr value;
          NumericKind evaluatedKind;
          if (initializer instanceof Assignment assignment) {
+            // Initializer assignments write a different source binding. They are not a local commit.
+            if (!(assignment.getParent() instanceof ExpressionStatement))
+               throw reject("ASSIGNMENT_EXPRESSION_EFFECT", assignment); //$NON-NLS-1$
             Expression right = assignment.getRightHandSide();
             evaluatedKind = this.kind(right.resolveTypeBinding(), right);
             if (assignment.getOperator() == org.eclipse.jdt.core.dom.Assignment.Operator.ASSIGN) {
@@ -863,6 +916,8 @@ public final class JavaComputationExtractor {
       }
 
       Expr expression(Expression expression, boolean primitiveBoundary, int depth) {
+         Expr projected = substitutions.get(expression);
+         if (projected != null) return projected;
          if (depth > 64) {
             throw JavaComputationExtractor.reject("EXPRESSION_DEPTH_LIMIT", expression);
          }
@@ -1050,13 +1105,18 @@ public final class JavaComputationExtractor {
                   throw JavaComputationExtractor.reject("STATIC_CALL_EFFECTFUL_QUALIFIER", invocation);
                }
 
-               MethodDeclaration scalarMethod = JavaScalarMethodBody.resolve(this.unit, invocation, options.mathematicalOptIn(), taskMode);
+               MethodDeclaration scalarMethod = allowSourceHelpers
+                     ? JavaScalarMethodBody.resolve(this.unit, invocation, options.mathematicalOptIn(), taskMode) : null;
                if (scalarMethod != null) return methodInvocation(invocation, scalarMethod, depth + 1);
 
                if (method.getDeclaringClass().getQualifiedName().equals("java.math.BigInteger")
                   && method.getName().equals("valueOf")
                   && invocation.arguments().size() == 1) {
                   Expression argument = (Expression)invocation.arguments().getFirst();
+                  Expr substituted = substitutions.get(argument);
+                  if (substituted != null && JavaExpressions.isLiteral(substituted)
+                        && JavaExpressions.literalValue(substituted) instanceof Number constant)
+                     return JavaExpressions.literal(BigInteger.valueOf(constant.longValue()));
                   if ((argument instanceof NumberLiteral || argument instanceof PrefixExpression || argument instanceof Name)
                      && this.validatedConstant(argument) instanceof Number constant) {
                      return JavaExpressions.literal(BigInteger.valueOf(constant.longValue()));
@@ -1126,7 +1186,7 @@ public final class JavaComputationExtractor {
 
       Expr operation(NumericKind kind, NumericOperation operation, ASTNode node, Expr... operands) {
          if (options.mathematicalOptIn() && kind == NumericKind.BIG_INTEGER) {
-            if (operation == NumericOperation.MOD) requireGuardedPositive(operands[1], node);
+            if (operation == NumericOperation.MOD || operation == NumericOperation.MOD_INVERSE) requireGuardedPositive(operands[1], node);
             if (operation == NumericOperation.MOD_POW || operation == NumericOperation.MOD_MULTIPLY)
                requireGuardedPositive(operands[2], node);
             if (operation == NumericOperation.MOD_POW) requireGuardedPositive(operands[1], node);

@@ -2,6 +2,27 @@
 
 This module participates in the explicit mathematics cleanup. Numerical proof and Java source emission are separate from the Eclipse UI. The [current qualification](../docs/superpowers/plans/2026-10-31-java-mathematics-context-qualification.md) identifies the tested revisions and boundaries of its dated evidence; consult the linked integration PR for current CI results.
 
+## Native tail and converter transaction
+
+`FunctionalMathCoordinator` owns a private working copy and one aggregate work
+reservation/deadline. Separate default-off tail consent enters the bounded source
+inspector, emitter and independent `JavaTailRecursionReplay`; the resolved AST is
+checked against the current text before inspection. The bridge preserves source
+method identity, primitive expression widths, simultaneous updates and comments.
+Only the strict Estimated Runtime profile exposes its counted-loop envelope to
+the existing finite/affine SDK proofs. Ordinary mathematical mode retains the
+replayed loop. Subsequent ordinary mathematics and optional style conversion
+exclude transferred bodies, with source-bound Javadoc retaining that protection
+on repeated invocation. This adds no general Java OrderedMatrixChain adapter.
+
+The optional converter remains independent from tail consent. The existing
+`FunctionalMathSnapshot` validates protected text/bindings through document edit
+events, while `FunctionalMathChange` retains one Preview/Apply/Undo and freshness
+checks for source, dependencies, compiler, classpath and profiles. The source-only
+tail API remains available for bounded tests; native changes use the project AST
+and compiler environment. See [TAIL_RECURSION.md](TAIL_RECURSION.md) for admission
+and the explicit frame/stack contract.
+
 ## Complete computation tasks and CAS ownership
 
 `JavaComputationExtractor.extractTasks` exports bounded,
@@ -221,3 +242,196 @@ profiles and targets, and an actual rewrite with exceptions and exact Undo.
 post-call array contents and field identities after intervening rebinding/stores,
 including failures after the write and aliased inputs. These test requirements
 must pass in the normal Maven authority before qualification is claimed.
+
+## Immutable numeric values
+
+`JavaValueSourceSummary` admits source-defined top-level final nongeneric value
+classes whose private final components are assigned one-to-one by a pure private
+constructor. Source definitions and transitive constants come from the existing
+request-local `JavaSourceContext`; no class or arithmetic method name selects a
+formula. A `ScalarProjector` reuses the existing typed expression decoder.
+Assignments and increment/decrement are rejected throughout each admitted method
+and every expanded helper before decoding. Native/synchronized methods, finalizers,
+instance initializers, inheritance and constructor effects remain boundaries.
+
+Ordinary mathematical-mode analysis can project all BigInteger components of a
+straight-line whole-method result jointly. The SDK discovers the candidate;
+the adapter emits a guarded path, recompiles and re-extracts that actual branch,
+and independently checks its joint values before exposing Apply. It retains the
+original method body as the fallback and returns a fresh object through the
+original constructor. This path requires explicit mathematical opt-in: the existing
+contract permits BigInteger result reference identity changes, including shared
+component leaves. The enclosing method's Javadoc and review description state
+this distinction; a fresh wrapper does not guarantee fresh scalar components.
+Default preserve-Java profiles do not enter this path. No portable BigInteger
+allocation guarantee or deployment-runtime premise is inferred.
+Only same-class helpers and static values are emitted, so
+foreign initialization is not skipped. Source-defined constants are conditional
+facts: runtime guards check their exact current values. Inputs require nonnull
+exact BigInteger receivers and at most 4096 magnitude bits. A source modulus can
+supply a smaller guarded bound for the existing magnitude-aware cost model.
+Larger values, nulls and subclasses execute the original body.
+
+One value-work meter starts before preflight and shares a deadline and cancellation
+token across source facts, every method, SDK search, emitted-source replay and
+explanation. Each SDK verification reserves its complete allowance, including
+preparation and unsuccessful attempts. This does not increase configured defaults.
+
+The reusable summary session also composes nested immutable values, bounded to
+8 fields per type,32 BigInteger leaves and depth8. Recursive shape/method/constant
+cycles are rejected. Source-defined value constants may call admitted pure source
+factories; their initialization arithmetic supplies conditional metadata and is
+excluded from the summarized method's runtime trace. Whole-method emission remains
+restricted to direct BigInteger components. The recursive summary alone grants no
+permission to skip initialization, reuse object identity, assume associativity,
+claim canonical residues or cancel an inverse. Consumers must establish those
+obligations separately. Complete Fp12/Fp6/Fp2 multiplication and a structural rename
+are replayed against freshly compiled source with24 inputs and12 scalar outputs.
+
+## Source locals, primitive guards and redundant assignment branches
+
+Ordinary region emission can reuse a unique earlier output declaration as a
+source local. Its availability follows the original output order, independently
+of the SDK's node order. A local is never referenced by a generated prelude that
+executes before its declaration. Shared intermediate nodes retain their original
+capture strategy when this would be unsafe. The independent Java emission
+verifier declares these same source locals and proves the re-extracted outputs
+and trace. Authored layout arithmetic selected from immutable constant choices
+remains a source-policy boundary; it is not a numerical assumption.
+
+Primitive remainder regions can obtain nonnegative facts from binding-checked
+dominating guards on effectively final integral locals. Discovery requires the
+request's source context, shares its allowance and cancellation, and has an
+additional 4096-node bound. A guard can exit through an actual source-defined
+static helper chain. Every helper must have no return to its caller and must end
+in a proven throw or another proven throwing call; early-return lookalikes,
+recursion, instance dispatch, mutable locals and guessed aliases are rejected.
+The assumption records the input binding, helper binding chain and dependency
+fingerprints. The original guard and calls remain in place, preserving effects,
+exceptions and class initialization. Traditional switch-local initializers are
+expression edits with their original primitive type and evaluation point.
+Whole-file analysis first completes established regions and their retries.
+Primitive guard discovery then uses only the remaining file work, including
+transitive helper lookup, and retries uncovered regions only when new facts were
+proved. The original region identities retain context, slice and retry metadata.
+An explicit selection and direct extraction still prove these facts immediately.
+Receiver and BigInteger source proofs keep their existing scheduling.
+
+`JavaSourceNumericBranches` separately proves the RHS values of two primitive
+local assignments equal through the SDK verifier. It freshly parses and
+re-extracts the source to replay its `SourceNumericBranchEvidence`, which carries
+the exact source hash and target binding. The adapter removes a condition only
+when primitive local evaluation is pure and total. Other conditions execute once
+in their original position; condition comments remain, and comments elsewhere in
+the branch retain the original source. Calls, reads, division and remainder in
+the RHS remain conservative boundaries. Source-control estimates explicitly add
+one branch unit to the scalar estimate; they are separate from the numeric proof
+and are not runtime measurements. Discovery, parsing, extraction and both
+independent proof allowances debit the existing file budget.
+The replay can subsume a fully contained, already verified scalar edit and select
+the simpler original RHS. Its prior search work remains charged; protected
+reservations and source/scheduling plans cannot be subsumed. This lets ordinary
+scalar simplification and whole-branch realization cooperate without overlapping
+edits or replaying a removed expression context.
+
+The optional `SwtCurrentSourceRefinementTest` Maven/JUnit gate uses the reusable
+pinned JGit fixture and verifies that the exact upstream checkout matches the
+hash-pinned SWT 3.136.0 source archive. It reports ordinary whole-file results and
+`ImageData.getPixel` selection results separately. Original and ordinary generated
+complete classes are compiled and loaded for pixel boundaries, JPEG DCT calls,
+PNG Paeth random and aliased rows, and padding conversion exceptional/identity
+cases. The existing SWT 3.135.0 default QA baseline remains unchanged.
+
+Run that explicit network corpus gate with Java 25:
+
+```sh
+./mvnw -f qa/math-optimization/pom.xml -Dtest=SwtCurrentSourceRefinementTest -Dsandbox.math.swt.current=true test
+```
+
+The gate writes a detailed receipt and an unpublished unified upstream patch to
+`qa/math-optimization/target/swt-current-patch/`; JGit applies the patch to the
+verified original sources and checks the complete generated files again.
+
+## Source-proved fixed powers
+
+`JavaFixedPowerSource` recognizes a resolved right-to-left bit loop, including
+its negative-exponent prefix and final unused square. The actual source supplies
+multiplication, square, identity and local bindings. Method names do not supply
+semantics. Multiplication and square must allocate fresh source values, and
+`JavaValueAlgebraProof` separately admits a total canonical residue domain and
+asks Regelsuche to prove associativity, both identity laws and square consistency.
+The synthetic law trace shares expression nodes; the original Java execution
+trace remains authoritative for source effects and totality, including dead work.
+A source identity must itself belong to the canonical domain. Conditional source
+constants never imply completed class initialization.
+
+`JavaFixedPowerConstant` interprets a bounded fragment of exact BigInteger source
+constants, including final fields assigned by a static block with an exact
+quotient/remainder check. It executes only enumerated, bounded BigInteger arithmetic
+on known values; analyzed Java is never invoked. Cycle, depth, magnitude, statement,
+request work and deadline bounds apply. Zero, one, negative and unavailable fixed
+exponents preserve their source behavior.
+
+`JavaFixedPowerOptimizer` admits simple local/parameter receivers and same-caller
+static final exponent fields. It groups accepted calls in one caller-type envelope,
+adds private static chain helpers and retains each original call verbatim as the
+fallback of a conditional. Guards establish nonnull nested links, exact BigInteger
+classes, bounded canonical components against the actual source modulus, the fixed
+exponent and source-defined constants. Structural private-field paths are never
+Java projections: every link requires a source-proved accessible getter with fresh
+binding/modifier agreement. Original null, subclass, noncanonical and changed
+constant behavior runs through the fallback.
+
+Regelsuche searches and independently replays the fixed-power plan. Complete
+emitted source is compiled, each generated helper is decoded independently back to
+the plan through resolved bindings, and that emitted plan is independently checked.
+`FixedPowerEvidence` records this source schedule with compact bindings to all
+four scalar law proofs; full scalar expression DAGs remain request-local and are
+not expanded into project-scan evidence JSON. Combined-source validation binds the whole generated envelope and replays
+its helpers under the original request meter and deadline; dependency receipts
+remain part of Apply validation. The envelope rejects overlapping later edits.
+Source algebra admission also requires every summarized method and static-field
+owner to belong to the existing guarded receiver/component type tree. A pure
+foreign helper body does not establish that its class has initialized: such a
+helper or constant rejects the fixed-power rewrite, preserving the original
+initialization order and failures even when the selected plan uses only squares.
+Source scalar operations, guard expressions and emitted locals contribute to the
+reported estimate; these estimates are not runtime measurements. Defaults are
+unchanged. Qualification of a twelve-component source algebra explicitly selects
+20 million work, 20 thousand states and the existing five-second deadline.
+
+The explicit mathematical contract is documented on each enclosing method within
+the verified caller-type envelope. It permits BigInteger component-reference
+identity changes while preserving a fresh wrapper and guarded original fallback.
+Calls already inside conditional expressions remain unchanged; repeated cleanup
+therefore cannot wrap its own retained power fallback in another schedule.
+The source receipt also retains the original structural call location and exact
+receiver, exponent and power-method bindings. Independent replay checks the guard,
+original fallback, helper invocation and its sole use at that location; a rebound
+type-envelope hash cannot authorize an altered or additional call site.
+
+### Source-defined constant values and factory normalization
+
+The explicit mathematical profile can specialize a call with a source-defined
+immutable value constant and remove duplicate scalar normalization before a
+source-proved factory. Admission uses exact Java bindings, complete helper and
+factory source, guarded runtime components, and independent typed numeric replay.
+Class names and constant names supply no arithmetic permission.
+
+Constant operands are bound static fields read through an unqualified name or a
+type-qualified name. Guards retain that admitted source projection and replay its
+field binding; expression-qualified static reads keep their original evaluation.
+Selection intervals are half-open, so merely adjacent source is not selected.
+
+Constant specialization retains a legal fresh factory and the exact original
+call as its exceptional-input fallback. Factory normalization captures receiver
+and modulus expressions at their original evaluation point and proves every
+combination of guarded/raw and original/normalized arguments. Other consumers,
+interacting factory arguments, subclasses and changed source dependencies remain
+protected by rejection or the retained original path.
+
+Accepted methods document the mathematical reference-identity contract through
+the existing Javadoc mechanism. Conditional call envelopes remain intact,
+including a generated fallback on repeated cleanup. Search, source discovery,
+emitted replay and rejected scans use the same request work and cancellation
+budget. Guard-inclusive cost estimates are not measured speed claims.

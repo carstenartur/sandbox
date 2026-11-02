@@ -60,6 +60,25 @@ overflow behavior and BigInteger result identity. **Select All does not grant
 that consent.** Review the [safety profiles](../sandbox_math_cleanup_help/html/cleanup.html#safety)
 and generated contracts before accepting a change.
 
+### Explicit tail conversion and optional style conversion
+
+The independent **Convert verified tail recursion (accept changed stack behavior)**
+checkbox defaults to false. It admits a source-proved static primitive countdown
+and records `ALLOW_FRAME_ELISION` in the method Javadoc: removing recursive frames
+can change stack observation and `StackOverflowError`. Select All, selection Quick
+Assist and save actions do not grant this consent. Mathematical mode can retain
+the verified ordinary loop; existing finite-series/affine acceleration additionally
+requires Preserve Java, mathematical mode off and Lower estimated runtime.
+
+The separate Functional Converter option also defaults to false. Whole-file
+coordination uses one private source, shared work/deadline and one native
+Preview/Apply/Undo; transferred tail bodies and verified numerical fallbacks are
+protected. Source or profile drift invalidates the prepared change. See
+[tail contracts and boundaries](TAIL_RECURSION.md) and the
+[native configuration guide](../sandbox_math_cleanup_help/html/cleanup.html#tail-recursion).
+The exact SDK70 transfer is documented in [lib/README.md](lib/README.md);
+OrderedMatrixChain rules have no new general Java consumer here.
+
 ### Verified whole-task rewrites
 
 Under `PRESERVE_JAVA`, ordinary cleanup can rewrite bounded straight-line primitive
@@ -207,3 +226,64 @@ binding-checked guards in enclosing true branches can remove duplicate receiver
 checks without changing the numerical premises or explicit opt-in boundaries.
 See [practical review and repeatable BC/SWT profiles](../qa/math-optimization/PRACTICAL_REVIEW.md)
 for the supported fragment, remaining limits and exact archive-run commands.
+
+### Explicit runtime contract for immutable-value reuse
+
+Repeated immutable-value computations require the
+`cleanup.mathematics.valueRuntime` option. Its default is `UNSPECIFIED`, which
+leaves these computations unchanged. Neither the Java source level nor the
+running JVM's version/vendor properties opt a project in.
+
+`AUDITED_OPENJDK_25_0_5_8` explicitly declares that the transformed application will
+run with the audited OpenJDK 25.0.5+8 scalar implementation. Analysis and Apply
+check a SHA-256 commitment to the eight `java.math` implementation classes used
+by its BigInteger arithmetic. The commitment is
+`44c22b522dd865f70f0d14fea62ed1ebcaa472813a24447ab2cd4fe974d7d8c7`;
+the audited distribution's source archive SHA-256 is
+`bea1aec240aae5f19304cc95115ec7289ed39ae90b2ca59a7334c3ca40d23019`.
+The deployment requirement remains explicit after Apply: generated application
+code performs no class-resource reads, hashing, reflection or runtime discovery.
+The enclosing method's Javadoc retains the deployment requirement and describes
+the first evaluation, detached components, and original fallback.
+A different runtime must be requalified before using those transformed sources.
+This is a narrow implementation contract, not a general BigInteger API guarantee
+or a promise about every Java 25 runtime.
+
+The admitted exact scalar operations are add, subtract, multiply, mod, modInverse,
+negate, abs, shifts, valueOf(long), and the inspected primitive comparison/query
+methods. On the audited implementation their scalar results originate from an
+operand, a source static, a fresh allocation, or the finite cached range
+`[-16,16]`. Arbitrary BigInteger methods are not admitted by their class name.
+Source inspection and runtime guards cover every producer operand and static.
+Every call in a producer chain undergoes scalar-origin inspection. Each repeated
+occurrence must retain the same bindings and source projection; emitted fallbacks
+are replayed independently. Identical source spelling alone cannot justify reuse.
+
+Reuse retains the original first evaluation. A later result is reconstructed
+through a source-proven legal fresh factory using separate fresh
+`new BigInteger(cachedComponent.toByteArray())` components. Its guard requires
+pairwise numerical inequality between output components, inequality with all
+original inputs and source static origins, and exclusion of the cached range.
+The factory has its own purity, initialization, numeric and scalar-origin proof.
+Additional factory statics must belong to the receiver's class or already occur
+in the successful original producer's dependencies.
+If these obligations do not hold, the exact original expression executes at its
+original location. Consumers, including subclass callbacks, are never moved or
+speculatively repeated. Nested value trees remain outside this detachment proof.
+
+The rewrite's structured runtime evidence includes the implementation/source
+commitments and compact independent factory proof receipts. The profile setting
+participates in options/cache identity; runtime bytecode and source dependencies
+are checked again before Apply. Work/state/time limits are unchanged.
+
+The inverse pass applies the same runtime and detachment contract to a narrower
+source pattern: a cube of an unchanged local value, a successful original inverse
+of that cube, and a later inverse of the base. Independently checked source laws
+establish the multiplication and inverse equations. The successful scalar inverse
+establishes the required unit premise even for an admitted composite modulus.
+The first inverse stays at its original evaluation position, including its
+exceptions. A later guarded call may use the verified square multiplied by that
+retained inverse, followed by a fresh wrapper and separate scalar copies; its
+original call remains the fallback. The realized cost must include any uncached
+square, guards, factory and copies. Compact receipts retain the exact successful
+occurrence, source laws, unit-root commitments, emitted plan and prior reuse proof.

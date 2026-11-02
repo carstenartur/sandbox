@@ -185,6 +185,7 @@ public class MathematicalWorkbenchSWTBotTest {
   profile.bot().comboBoxWithLabel("Safety profile:").setSelection("Checked: throw ArithmeticException");
   assertFalse(button(profile.widget,"OK").isEnabled());
   button(profile.widget,"Select All").click();assertFalse(profile.bot().checkBox(CONSENT).isChecked(),"Select All must not supply checked consent");
+  assertFalse(profile.bot().checkBox("Convert verified tail recursion (accept changed stack behavior)").isChecked(),"Select All must not grant frame elision");
   profile.bot().checkBox(CONSENT).select();profile.bot().comboBoxWithLabel("Optimization goal:").setSelection("Readability");
   assertTrue(button(profile.widget,"OK").isEnabled());assertReachable(profile.widget,warning);
   assertFalse(ui(()->((GridData)warning.getLayoutData()).exclude));
@@ -338,7 +339,9 @@ public class MathematicalWorkbenchSWTBotTest {
   args[5]=classpath.toString();assertEquals(Integer.valueOf(1),application.start(context));assertArrayEquals(classpathContents,Files.readAllBytes(classpath));
   args[5]=report.toString();
   assertEquals(IApplication.EXIT_OK,application.start(context));assertEquals(before,unit.getSource());
-  var json=new ObjectMapper().readTree(Files.readString(report));assertEquals("analysis",json.path("mode").asText());assertEquals(12,json.path("requestedOptions").size());
+  var json=new ObjectMapper().readTree(Files.readString(report));assertEquals("analysis",json.path("mode").asText());assertEquals(14,json.path("requestedOptions").size());
+  assertEquals("false",json.path("requestedOptions").path("cleanup.mathematics.tailRecursion").asText());
+  assertEquals("UNSPECIFIED",json.path("requestedOptions").path(MathCleanUpOptions.VALUE_RUNTIME).asText());
   assertEquals("5",json.path("requestedOptions").path(MathCleanUpOptions.TIMEOUT_SECONDS).asText());
   assertEquals("NONTRIVIAL",json.path("requestedOptions").path(MathCleanUpOptions.EXPLANATIONS).asText());
   assertEquals("false",json.path("requestedOptions").path(MathCleanUpOptions.MATHEMATICAL_OPT_IN).asText());

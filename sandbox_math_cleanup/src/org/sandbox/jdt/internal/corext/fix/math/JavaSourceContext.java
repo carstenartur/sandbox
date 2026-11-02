@@ -29,22 +29,28 @@ import org.eclipse.jdt.core.dom.*;
 public final class JavaSourceContext implements AutoCloseable {
     private static final String PROPERTY = JavaSourceContext.class.getName();
     private static final String BIG_INTEGER = "java.math.BigInteger"; //$NON-NLS-1$
-    private static final int MAX_UNITS = 24, MAX_DEPTH = 32, MAX_SOURCE_CHARS = 1_000_000;
+    private static final int MAX_UNITS = 24, MAX_DEPTH = 32, MAX_SOURCE_CHARS = 1_000_000, MAX_LOCAL_DEFINITIONS = 1024;
     private final CompilationUnit root;
+    private final String rootSource;
     private final MathematicalAnalysis.SourceEnvironment environment;
     private final IProgressMonitor monitor;
     private final int targetJava;
     private final long allowance;
     private final Map<String, Unit> units = new HashMap<>();
-    private final Map<String, Optional<BigInteger>> values = new HashMap<>();
+    private final Map<String, Constant> values = new HashMap<>();
     private final Map<String, Optional<MethodDeclaration>> methods = new HashMap<>();
     private final Map<String, Dependency> dependencies = new LinkedHashMap<>();
+    private final Map<String, ValueRuntimeEvidence> valueRuntimes = new LinkedHashMap<>();
     private long work, accountedWork;
+    private long scopedAllowance = Long.MAX_VALUE;
+    private boolean primitiveGuardsDeferred;
     private int sourceChars;
+    private JavaValueSourceSummary.Work valueWork;
+    private Set<ASTNode> localDefinitions;
 
     private JavaSourceContext(CompilationUnit root, String source, MathematicalAnalysis.SourceEnvironment environment,
             IProgressMonitor monitor, MathCleanUpOptions options, long remainingWork) {
-        this.root = root; this.environment = environment; this.monitor = monitor; this.targetJava = options.targetJava();
+        this.root = root; this.rootSource = source; this.environment = environment; this.monitor = monitor; this.targetJava = options.targetJava();
         if (remainingWork < 0) throw new IllegalArgumentException("NEGATIVE_SOURCE_ALLOWANCE"); //$NON-NLS-1$
         this.allowance = Math.min(32_000, remainingWork);
         // No project-dependent value is retained across requests, or in the mathematical AST.
@@ -61,18 +67,41 @@ public final class JavaSourceContext implements AutoCloseable {
     }
     @Override public void close() { root.setProperty(PROPERTY, null); }
     long takeWork() { long amount = work - accountedWork; accountedWork = work; return amount; }
-    Checkpoint checkpoint() { return dependencies.isEmpty() ? Checkpoint.EMPTY : new Checkpoint(List.copyOf(dependencies.values())); }
+    void deferPrimitiveGuards(boolean deferred) { primitiveGuardsDeferred = deferred; }
+    static boolean primitiveGuardsDeferred(CompilationUnit unit) {
+        return unit.getProperty(PROPERTY) instanceof JavaSourceContext context && context.primitiveGuardsDeferred;
+    }
+    /** A late proof and all transitive helper discovery share the actual remaining file work. */
+    JavaComputationRegion refinePrimitives(JavaComputationRegion region, long remainingWork) {
+        if (remainingWork <= 0) return region;
+        long previous = scopedAllowance;
+        scopedAllowance = Math.min(previous, work + Math.min(remainingWork, allowance - work));
+        try {
+            charge(1);
+            return JavaSourceGuardRefinement.refinePrimitives(region, root);
+        } catch (Unavailable unavailable) { return region; }
+        finally { scopedAllowance = previous; } // Work already spent is never reset.
+    }
+    Checkpoint checkpoint() { return dependencies.isEmpty() && valueRuntimes.isEmpty() ? Checkpoint.EMPTY : new Checkpoint(List.copyOf(dependencies.values()),List.copyOf(valueRuntimes.values())); }
+
+    static void runtime(CompilationUnit ast,ValueRuntimeEvidence runtime) {
+        if (!(ast.getProperty(PROPERTY) instanceof JavaSourceContext context)) throw new IllegalArgumentException("VALUE_RUNTIME_CONTEXT");
+        context.valueRuntimes.put(runtime.contract(),runtime);
+    }
 
     /** Checks are immutable and request-bound; they are not serialized as executable report state. */
     public static final class Checkpoint {
-        public static final Checkpoint EMPTY = new Checkpoint(List.of());
+        public static final Checkpoint EMPTY = new Checkpoint(List.of(),List.of());
         private final List<Dependency> dependencies;
-        private Checkpoint(List<Dependency> dependencies) { this.dependencies = List.copyOf(dependencies); }
+        private final List<ValueRuntimeEvidence> valueRuntimes;
+        private Checkpoint(List<Dependency> dependencies,List<ValueRuntimeEvidence> valueRuntimes) { this.dependencies = List.copyOf(dependencies); this.valueRuntimes=List.copyOf(valueRuntimes); }
+        public List<ValueRuntimeEvidence> valueRuntimes() { return valueRuntimes; }
         static Checkpoint detached(List<Receipt> receipts) {
             return new Checkpoint(receipts.stream().map(receipt -> new Dependency(receipt.identity(), receipt.sha256(),
-                () -> { throw new IOException("SOURCE_CONTEXT_MUST_BE_REBUILT"); })).toList()); //$NON-NLS-1$
+                () -> { throw new IOException("SOURCE_CONTEXT_MUST_BE_REBUILT"); })).toList(),List.of()); //$NON-NLS-1$
         }
         public boolean current() {
+            for(var runtime:valueRuntimes)if(!runtime.current())return false;
             for (var dependency : dependencies) {
                 try { if (!dependency.sha256().equals(hash(dependency.read().get()))) return false; }
                 catch (Exception unavailable) { return false; }
@@ -89,8 +118,62 @@ public final class JavaSourceContext implements AutoCloseable {
     public record Receipt(String identity, String sha256) { }
     private interface Read { String get() throws Exception; }
     private record Dependency(String identity, String sha256, Read read) { }
-    private record Unit(CompilationUnit ast, String identity, String sha256) { }
+    private record Unit(CompilationUnit ast, String source, String identity, String sha256) { }
     record Fact(BigInteger value, String provenance) { }
+
+    record Definition(CompilationUnit unit, String source, ASTNode declaration) { }
+    private record Constant(Optional<BigInteger> value, Set<ASTNode> declarations) { }
+    /** Only definitions actually read in this scope; nested constant reads retain their transitive provenance. */
+    record LocalSources(JavaSourceContext context, Set<ASTNode> previous, Set<ASTNode> declarations) implements AutoCloseable {
+        @Override public void close() {
+            context.localDefinitions = previous;
+            if (previous != null) declarations.forEach(context::recordLocal);
+        }
+    }
+    static LocalSources captureLocalSources(CompilationUnit request) {
+        if (!(request.getProperty(PROPERTY) instanceof JavaSourceContext context))
+            throw JavaValueSourceSummary.unavailable("VALUE_SOURCE_CONTEXT_REQUIRED"); //$NON-NLS-1$
+        return context.captureLocalSources();
+    }
+    private LocalSources captureLocalSources() {
+        var captured = new LocalSources(this, localDefinitions, new HashSet<>());
+        localDefinitions = captured.declarations();
+        return captured;
+    }
+    private void recordLocal(ASTNode declaration) {
+        if (localDefinitions == null || declaration.getRoot() != root) return;
+        charge(1);
+        if (!localDefinitions.contains(declaration) && localDefinitions.size() >= MAX_LOCAL_DEFINITIONS) throw new Unavailable();
+        localDefinitions.add(declaration);
+    }
+    static Definition definition(CompilationUnit request, IBinding binding) {
+        if (!(request.getProperty(PROPERTY) instanceof JavaSourceContext context) || binding == null || binding.isRecovered()) return null;
+        try {
+            context.charge(1);
+            ITypeBinding owner = binding instanceof ITypeBinding type ? type
+                : binding instanceof IMethodBinding method ? method.getDeclaringClass()
+                : binding instanceof IVariableBinding field ? field.getDeclaringClass() : null;
+            CompilationUnit ast = context.definitionUnit(binding, owner);
+            ASTNode declaration = ast == null ? null : ast.findDeclaringNode(binding.getKey());
+            if (declaration == null) return null;
+            String source = ast == context.root ? context.rootSource : context.units.values().stream()
+                .filter(unit -> unit.ast() == ast).findFirst().orElseThrow().source();
+            return new Definition(ast, source, declaration);
+        } catch (Unavailable unavailable) { return null; }
+    }
+    static Fact constant(CompilationUnit request, IVariableBinding binding) {
+        if (!(request.getProperty(PROPERTY) instanceof JavaSourceContext context)) return null;
+        try {
+            var value = context.constant(binding, new HashSet<>(), 0);
+            return value.isEmpty() ? null : new Fact(value.get(), context.checkpoint().receipts().toString());
+        } catch (Unavailable unavailable) { return null; }
+    }
+    static void valueWork(CompilationUnit request, JavaValueSourceSummary.Work work) {
+        if (request.getProperty(PROPERTY) instanceof JavaSourceContext context) context.valueWork = work;
+    }
+    static List<Receipt> receipts(CompilationUnit request) {
+        return request.getProperty(PROPERTY) instanceof JavaSourceContext context ? context.checkpoint().receipts() : List.of();
+    }
 
     /** Source-bound body cache used only where the original static call is retained. */
     static MethodDeclaration method(CompilationUnit unit, IMethodBinding binding) {
@@ -99,13 +182,22 @@ public final class JavaSourceContext implements AutoCloseable {
             context.charge(1);
             String key = binding.getMethodDeclaration().getKey();
             var cached = context.methods.get(key);
-            if (cached != null) return cached.orElse(null);
+            if (cached != null) { cached.ifPresent(context::recordLocal); return cached.orElse(null); }
             CompilationUnit definition = context.definitionUnit(binding.getMethodDeclaration(), binding.getDeclaringClass());
             ASTNode node = definition == null ? null : definition.findDeclaringNode(key);
             MethodDeclaration method = node instanceof MethodDeclaration declaration ? declaration : null;
             context.methods.put(key, Optional.ofNullable(method));
             return method;
         } catch (Unavailable unavailable) { return null; }
+    }
+
+    static boolean chargeSourceWork(CompilationUnit unit, long amount) {
+        if (!(unit.getProperty(PROPERTY) instanceof JavaSourceContext context)) return false;
+        try { context.charge(amount); return true; }
+        catch (Unavailable unavailable) { return false; }
+    }
+    static List<Receipt> sourceReceipts(CompilationUnit unit) {
+        return unit.getProperty(PROPERTY) instanceof JavaSourceContext context ? context.checkpoint().receipts() : List.of();
     }
 
     static Map<String, Fact> proveReceivers(CompilationUnit unit, JavaComputationRegion region, Map<String,Boolean> requirements) {
@@ -154,18 +246,18 @@ public final class JavaSourceContext implements AutoCloseable {
         charge(1);
         String key = field.getVariableDeclaration().getKey();
         if (depth > MAX_DEPTH || key == null || !constantField(field)) return Optional.empty();
-        if (values.containsKey(key)) return values.get(key);
+        var cached = values.get(key);
+        if (cached != null) { cached.declarations().forEach(this::recordLocal); return cached.value(); }
         if (!active.add(key)) return Optional.empty();
-        Optional<BigInteger> value;
-        try {
+        try (var captured = captureLocalSources()) {
             CompilationUnit ast = definitionUnit(field);
             ASTNode declaration = ast == null ? null : ast.findDeclaringNode(key);
-            value = declaration instanceof VariableDeclarationFragment fragment && constantField(fragment.resolveBinding())
+            Optional<BigInteger> value = declaration instanceof VariableDeclarationFragment fragment && constantField(fragment.resolveBinding())
                 && key.equals(fragment.resolveBinding().getVariableDeclaration().getKey())
                 ? expression(fragment.getInitializer(), active, depth + 1) : Optional.empty();
+            values.put(key, new Constant(value, Set.copyOf(captured.declarations())));
+            return value;
         } finally { active.remove(key); }
-        values.put(key, value);
-        return value;
     }
     /** Binding keys survive modifier changes; both the caller and the fresh definition must qualify. */
     private static boolean constantField(IVariableBinding field) {
@@ -227,7 +319,8 @@ public final class JavaSourceContext implements AutoCloseable {
         return definitionUnit(field.getVariableDeclaration(), field.getDeclaringClass());
     }
     private CompilationUnit definitionUnit(IBinding member, ITypeBinding owner) {
-        if (root.findDeclaringNode(member.getKey()) != null) return root;
+        ASTNode local = root.findDeclaringNode(member.getKey());
+        if (local != null) { recordLocal(local); return root; }
         while (owner != null && owner.getDeclaringClass() != null) owner = owner.getDeclaringClass();
         if (owner == null || owner.isRecovered()) return null;
         String type = owner.getQualifiedName();
@@ -278,7 +371,7 @@ public final class JavaSourceContext implements AutoCloseable {
             CompilationUnit ast = (CompilationUnit)parser.createAST(monitor);
             if (!digest.equals(hash(read.get()))) throw new Unavailable();
             for (var problem : ast.getProblems()) if (problem.isError()) return null;
-            Unit unit = new Unit(ast, identity, digest); units.put(type, unit);
+            Unit unit = new Unit(ast, source, identity, digest); units.put(type, unit);
             return ast;
         } catch (Exception unavailable) { return null; }
     }
@@ -363,6 +456,8 @@ public final class JavaSourceContext implements AutoCloseable {
         return expression;
     }
     private void charge(long amount) {
+        if (amount > scopedAllowance - work) throw new Unavailable();
+        if (valueWork != null) valueWork.charge(amount);
         if (amount > allowance - work || Thread.currentThread().isInterrupted() || monitor != null && monitor.isCanceled()) throw new Unavailable();
         work += amount;
     }
