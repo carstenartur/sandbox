@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-10-30
+# Refactoring Mining Report — 2026-11-02
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -9,7 +9,7 @@
 | eclipse.platform | 311 | 71 | 4 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
-| sandbox | 1770 | 176 | 12 |
+| sandbox | 1862 | 182 | 12 |
 
 ## Details
 ### eclipse.jdt.core
@@ -401,8 +401,8 @@
 - `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/NewUpstreamMathPilotTest.java:157` — `input.clone()`
 - `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/NewUpstreamMathPilotTest.java:157` — `input.clone()`
 - `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/OrderedSourceReadComputationTest.java:48` — `values.clone()`
-- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/FieldArrayOrderingTest.java:156` — `left.clone()`
-- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/FieldArrayOrderingTest.java:157` — `right.clone()`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/FieldArrayOrderingTest.java:172` — `left.clone()`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/FieldArrayOrderingTest.java:173` — `right.clone()`
 - `sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/math/JavaArrayStoreTest.java:71` — `a.clone()`
 - `sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/math/JavaArrayStoreTest.java:71` — `b.clone()`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapperWorkspaceRuleTest.java:202` — `arguments.clone()`
@@ -412,6 +412,12 @@
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapperExitCodeTest.java:119` — `arguments.clone()`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapperPersistedClasspathTest.java:120` — `arguments.clone()`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWorkspacePathTest.java:210` — `arguments.clone()`
+- `qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java:158` — `data.clone()`
+- `qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java:158` — `data.clone()`
+- `qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java:174` — `first.clone()`
+- `qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java:185` — `first.clone()`
+- `qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java:185` — `previous.clone()`
+- `qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java:209` — `first.clone()`
 - `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java:273` — `fixes.clone()`
 - `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java:708` — `fixes.clone()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/cleanup/multifile/api/LineDelimiterPreserver.java:74` — `byteOrderMark.clone()`
@@ -435,7 +441,7 @@
 #### Rule: `arrays` → `arrays.aslist-contains.review`
 - `org/eclipse/jdt/internal/corext/dom/ASTNodes.java:1591` — `Arrays.asList(additionalExpectedOperators).contains(actualOperator)`
 - `org/eclipse/jdt/internal/corext/dom/ASTNodes.java:3301` — `Arrays.asList(fieldNames).contains(node.getName().getIdentifier())`
-- `sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/ui/fix/MathematicalWorkbenchSWTBotTest.java:445` — `Arrays.asList(labels).contains(control.getText().replace("&",""))`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/ui/fix/MathematicalWorkbenchSWTBotTest.java:447` — `Arrays.asList(labels).contains(control.getText().replace("&",""))`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java:42` — `Arrays.asList(filtered).contains("test")`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java:66` — `Arrays.asList(filtered).contains("--source")`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java:139` — `Arrays.asList(values).contains(expected.toFile().getPath())`

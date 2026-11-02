@@ -1,6 +1,6 @@
 {
   "summary": {
-    "totalMatches": 446,
+    "totalMatches": 452,
     "repositories": {
       "eclipse.jdt.core": {
         "files": 227,
@@ -33,8 +33,8 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1770,
-        "matches": 176,
+        "files": 1862,
+        "matches": 182,
         "rules": 12
       }
     }
@@ -2705,7 +2705,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/FieldArrayOrderingTest.java",
-      "line": 156,
+      "line": 172,
       "matchedCode": "left.clone()"
     },
     {
@@ -2713,7 +2713,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/FieldArrayOrderingTest.java",
-      "line": 157,
+      "line": 173,
       "matchedCode": "right.clone()"
     },
     {
@@ -2721,7 +2721,7 @@
       "hintFile": "arrays",
       "rule": "arrays.aslist-contains.review",
       "file": "sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/ui/fix/MathematicalWorkbenchSWTBotTest.java",
-      "line": 445,
+      "line": 447,
       "matchedCode": "Arrays.asList(labels).contains(control.getText().replace(\"&\",\"\"))"
     },
     {
@@ -2827,6 +2827,54 @@
       "file": "sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java",
       "line": 144,
       "matchedCode": "Arrays.asList(values).contains(unexpected.toFile().getPath())"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java",
+      "line": 158,
+      "matchedCode": "data.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java",
+      "line": 158,
+      "matchedCode": "data.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java",
+      "line": 174,
+      "matchedCode": "first.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java",
+      "line": 185,
+      "matchedCode": "first.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java",
+      "line": 185,
+      "matchedCode": "previous.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java",
+      "line": 209,
+      "matchedCode": "first.clone()"
     },
     {
       "repository": "sandbox",
