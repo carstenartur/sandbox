@@ -349,6 +349,7 @@ final class JavaValueSourceSummary {
     }
     static boolean big(ITypeBinding type) { return type!=null && !type.isRecovered() && type.getQualifiedName().equals("java.math.BigInteger"); } //$NON-NLS-1$
     static IVariableBinding variable(Expression expression) {
+        while(expression instanceof ParenthesizedExpression parentheses)expression=parentheses.getExpression();
         return expression instanceof Name name && name.resolveBinding() instanceof IVariableBinding binding?binding
             :expression instanceof FieldAccess access?access.resolveFieldBinding():null;
     }

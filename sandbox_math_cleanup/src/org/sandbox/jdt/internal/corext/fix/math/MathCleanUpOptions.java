@@ -23,7 +23,10 @@ import de.regelsuche.sdk.optimization.SafetyProfile;
 /** Immutable explicit numerical contract, independent of the host Java level. */
 public record MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, SafetyProfile safety,
         OptimizationGoal goal, long workBudget, int maxStates, boolean checkedOptIn,
-        int targetJava, List<String> exclusions, boolean mathematicalOptIn, ExplanationMode explanations, int timeoutSeconds) {
+        int targetJava, List<String> exclusions, boolean mathematicalOptIn, ExplanationMode explanations, int timeoutSeconds, ValueRuntime valueRuntime) {
+ public enum ValueRuntime { UNSPECIFIED, AUDITED_OPENJDK_25_0_5_8 }
+ public static final String VALUE_RUNTIME = "cleanup.mathematics.valueRuntime";
+ public static final String VALUE_RUNTIME_WARNING = "Value reuse requires deployment on the explicitly audited OpenJDK 25.0.5+8 scalar implementation. Analysis and Apply check its bytecode; Java source level is independent. Unmatched analysis/Apply runtimes reject reuse. Deployment elsewhere requires requalification.";
  public enum ExplanationMode { NONE, NONTRIVIAL, ALL }
  public static final String EXPLANATIONS = "cleanup.mathematics.explanations";
  public static final String CLEANUP = "cleanup.mathematics";
@@ -41,7 +44,7 @@ public record MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, Safety
  public static final String MATHEMATICAL_OPT_IN = "cleanup.mathematics.mathematicalOptIn";
  public static final String MATHEMATICAL_WARNING = "Mathematical mode may change overflow behavior and BigInteger result reference identity. Proven local ranges and contract changes are documented in Javadoc.";
  public static final String CHECKED_WARNING = "CHECKED_THROW changes the Java contract: numerical violations may throw ArithmeticException. Both the original and replacement operations must be checked.";
- private static final Set<String> KEYS= Set.of(CLEANUP,KINDS,SAFETY,GOAL,WORK_BUDGET,MAX_STATES,CHECKED_OPT_IN,EXCLUSIONS,UNDERFLOW,MATHEMATICAL_OPT_IN,EXPLANATIONS,TIMEOUT_SECONDS);
+ private static final Set<String> KEYS= Set.of(CLEANUP,KINDS,SAFETY,GOAL,WORK_BUDGET,MAX_STATES,CHECKED_OPT_IN,EXCLUSIONS,UNDERFLOW,MATHEMATICAL_OPT_IN,EXPLANATIONS,TIMEOUT_SECONDS,VALUE_RUNTIME);
 
  /** Existing programmatic callers retain their explicitly comment-free output. */
  public MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, SafetyProfile safety,
@@ -68,7 +71,15 @@ public record MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, Safety
   this(enabled,kinds,safety,goal,workBudget,maxStates,checkedOptIn,targetJava,exclusions,
     mathematicalOptIn,explanations,DEFAULT_TIMEOUT_SECONDS);
  }
+ public MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, SafetyProfile safety, OptimizationGoal goal, long workBudget, int maxStates, boolean checkedOptIn,
+   int targetJava, List<String> exclusions, boolean mathematicalOptIn, ExplanationMode explanations, int timeoutSeconds) {
+  this(enabled,kinds,safety,goal,workBudget,maxStates,checkedOptIn,targetJava,exclusions,mathematicalOptIn,explanations,timeoutSeconds,ValueRuntime.UNSPECIFIED);
+ }
+ public MathCleanUpOptions withValueRuntime(ValueRuntime runtime) {
+  return new MathCleanUpOptions(enabled,kinds,safety,goal,workBudget,maxStates,checkedOptIn,targetJava,exclusions,mathematicalOptIn,explanations,timeoutSeconds,runtime);
+ }
  public MathCleanUpOptions {
+  Objects.requireNonNull(valueRuntime,"valueRuntime");
   Objects.requireNonNull(explanations,"explanations");
   Objects.requireNonNull(kinds,"kinds"); Objects.requireNonNull(safety,"safety");
   Objects.requireNonNull(goal,"goal"); Objects.requireNonNull(exclusions,"exclusions");
@@ -119,7 +130,8 @@ public record MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, Safety
     paths.isEmpty()?List.of():Arrays.stream(paths.split(";",-1)).map(String::trim).toList(),
     bool(values,MATHEMATICAL_OPT_IN,false),
     ExplanationMode.valueOf(values.getOrDefault(EXPLANATIONS,defaults.explanations.name())),
-    Integer.parseInt(values.getOrDefault(TIMEOUT_SECONDS,Integer.toString(defaults.timeoutSeconds))));
+    Integer.parseInt(values.getOrDefault(TIMEOUT_SECONDS,Integer.toString(defaults.timeoutSeconds))),
+    ValueRuntime.valueOf(values.getOrDefault(VALUE_RUNTIME,defaults.valueRuntime.name())));
  }
 
  /** Allocate only the caller's remaining work; time is a separate best-effort bound. */
@@ -138,6 +150,7 @@ public record MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, Safety
   values.put(CHECKED_OPT_IN,Boolean.toString(checkedOptIn));values.put(EXCLUSIONS,String.join(";",exclusions));
   values.put(UNDERFLOW,"false");values.put(MATHEMATICAL_OPT_IN,Boolean.toString(mathematicalOptIn));
   values.put(TIMEOUT_SECONDS,Integer.toString(timeoutSeconds));
+  values.put(VALUE_RUNTIME,valueRuntime.name());
   values.put(EXPLANATIONS,explanations.name());return Map.copyOf(values);
  }
 
