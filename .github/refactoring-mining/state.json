@@ -5416,9 +5416,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "lastProcessedCommit": "8b3354c5542528933cd03edb9f0a9b995fcdb10a",
-      "lastProcessedDate": "2026-11-01T02:23:00.513103228Z",
-      "totalProcessed": 161,
+      "lastProcessedCommit": "69f058cee904aef61a97c44f3e2825dacfa9a6d4",
+      "lastProcessedDate": "2026-11-02T02:22:27.428702328Z",
+      "totalProcessed": 233,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -5510,6 +5510,15 @@
           "deferredAt": "2026-10-24T02:26:23.267464445Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "a8b1a4953b7317fc4d3a5e6ed1acd1b5c3121346",
+          "message": "Bug 577106: Accommodate addressableSize !\u003d 1 in integer renderings",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-02T02:19:58.258092962Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -5519,7 +5528,7 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "API Misuse": 1,
-        "API Modernization": 6,
+        "API Modernization": 7,
         "API Migration": 3,
         "Collections Modernization": 1,
         "Lambda Conversion": 1,
@@ -5535,10 +5544,12 @@
         "SWT Modernization": 1,
         "Java 8 Modernization": 1,
         "Simplification": 1,
-        "Primitive Parsing": 3
+        "Primitive Parsing": 3,
+        "Java 8+ Modernization": 1,
+        "String Literal Replacement": 1
       },
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 53642
+  "globalTotalProcessed": 53714
 }
