@@ -339,7 +339,7 @@ public class MathematicalWorkbenchSWTBotTest {
   args[5]=classpath.toString();assertEquals(Integer.valueOf(1),application.start(context));assertArrayEquals(classpathContents,Files.readAllBytes(classpath));
   args[5]=report.toString();
   assertEquals(IApplication.EXIT_OK,application.start(context));assertEquals(before,unit.getSource());
-  var json=new ObjectMapper().readTree(Files.readString(report));assertEquals("analysis",json.path("mode").asText());assertEquals(14,json.path("requestedOptions").size());
+  var json=new ObjectMapper().readTree(Files.readString(report, StandardCharsets.UTF_8));assertEquals("analysis",json.path("mode").asText());assertEquals(14,json.path("requestedOptions").size());
   assertEquals("false",json.path("requestedOptions").path("cleanup.mathematics.tailRecursion").asText());
   assertEquals("UNSPECIFIED",json.path("requestedOptions").path(MathCleanUpOptions.VALUE_RUNTIME).asText());
   assertEquals("5",json.path("requestedOptions").path(MathCleanUpOptions.TIMEOUT_SECONDS).asText());
