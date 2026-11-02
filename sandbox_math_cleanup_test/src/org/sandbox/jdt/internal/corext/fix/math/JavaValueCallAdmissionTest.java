@@ -44,14 +44,17 @@ class JavaValueCallAdmissionTest {
                 public Result convert(Result constant){return constant;}
             }
             final class Result {
-                static final Result FIXED=new Result(BigInteger.ONE,BigInteger.TWO%s);
-                private final BigInteger first,second%s;
-                private Result(BigInteger first,BigInteger second%s){this.first=first;this.second=second;%s}
+                static final Result FIXED=new Result(BigInteger.ONE,BigInteger.TWO@thirdArgument@);
+                private final BigInteger first,second@thirdField@;
+                private Result(BigInteger first,BigInteger second@thirdParameter@){this.first=first;this.second=second;@thirdAssignment@}
                 public static Result calculate(Leaf x){return x.convert(FIXED);}
-                public String text(){return first+":"+second%s;}
+                public String text(){return first+":"+second@thirdText@;}
             }
-            """.formatted(components==3?",BigInteger.valueOf(3)":"",components==3?",third":"",extra,
-                components==3?"this.third=third;":"",components==3?"+\":\"+third":"");
+            """.replace("@thirdArgument@",components==3?",BigInteger.valueOf(3)":"")
+                .replace("@thirdField@",components==3?",third":"")
+                .replace("@thirdParameter@",extra)
+                .replace("@thirdAssignment@",components==3?"this.third=third;":"")
+                .replace("@thirdText@",components==3?"+\":\"+third":"");
     }
 
     private List<String> execute(String source)throws Exception {
