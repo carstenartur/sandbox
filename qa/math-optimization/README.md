@@ -77,6 +77,55 @@ target, selected entries and parse-error set. Do not reuse the historical
 115/124 counts as a baseline for a different SDK or archive. Run `clean` for a
 fresh qualification; the scanner deliberately refuses to overwrite prior output.
 
+## Complete BLS source cohort and whole-call measurements
+
+The separate, explicit `bc-bls.properties` profile uses the same Java 17 target,
+1,000,000 work units, 20,000 states and five-second per-file timeout. It opts into
+mathematical semantics and the `AUDITED_OPENJDK_25_0_5_8` scalar deployment
+contract. The general `bc-mathematical` profile retains its own independent
+runtime choice. This contract must be satisfied by the deployed application;
+the target Java version alone does not grant it.
+
+```sh
+mvn -f qa/math-optimization/pom.xml clean verify -Pbc-bls-benchmark \
+  -Dsandbox.math.bc.upstream=true
+```
+
+Preparation runs the ordinary production scanner over five complete pinned
+BC 1.85.2 classes: `BLS12_381G2HashToCurve`, `BLS12_381Pairing`, `Fp12Element`,
+`Fp2Element` and `Fp6Element`. Every original source is checked against its
+archive entry. Ordinary Apply/byte-exact Undo and emitted-source checks come
+from the scanner. Unchanged Fp12 remains an explicit compiled cohort member.
+`cohort.json`, original evidence, source dependencies, profile, implementation
+and archive hashes bind the exact effective source. The optional upstream gate
+uses the shared JGit fixture to verify tag `r1rv85v2` at
+`854bd5c4286e1530132418906bf6175da7d9d83c` and compare all five complete files.
+
+The JMH harness compiles all five originals and all five ordinary generated
+sources in separate namespaces. Compiled cohort classes cannot silently fall
+back to the original JAR; other dependencies use its current multi-release view.
+Each trial compares sixteen varied complete inputs and proves that the exercised
+call paths load the compiled classes. Timed operations are complete G2
+hash-to-curve plus compression for 32/256-byte messages, or complete pairing
+plus serialization of all twelve resulting field components. Pairing input
+points, class compilation and source optimization are prepared outside timing.
+
+Two forks, three 500 ms warmups, five 500 ms measurements and GC profiling produce
+`target/bc-bls-jmh.json`. The pre-measurement fixture hash is a raw JMH parameter.
+`target/bc-bls-performance.json` requires all three pairs, identical settings and
+environments, and reconstructs means and 99.9% intervals from all ten samples.
+Overlap is `INCONCLUSIVE`; separated intervals give a local direction. All
+guards, fallbacks and output encoding remain timed. GC samples also include
+trial verification/cleanup and cannot isolate candidate allocations.
+
+For an already compiled, freshly qualified tree, preparation can be invoked
+separately with `-Pbc-bls-benchmark compile exec:exec@prepare-bls-source-cohort`,
+then timing/reporting with `exec:exec@measure-complete-bls-calls` and
+`exec:exec@report-complete-bls-calls`. Existing fixtures/raw results are never
+overwritten. Preserve the complete fixture and raw report together. No result
+automatically changes optimizer weights or establishes a general speedup or
+cryptographic constant-time guarantee.
+
 ## Finite-series generated-Java measurements
 
 The [2026-10-31 measured results](results/2026-10-31-finite-series/README.md)
