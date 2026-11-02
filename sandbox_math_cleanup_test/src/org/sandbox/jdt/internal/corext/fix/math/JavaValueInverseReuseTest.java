@@ -103,6 +103,32 @@ class JavaValueInverseReuseTest {
         assertTrue(result.diagnostics().stream().anyMatch(item->item.code().equals("VALUE_INVERSE_UNAVAILABLE")
             && item.message().equals("VALUE_DETACH_FACTORY_STATIC_INITIALIZATION")),result.diagnostics().toString());
     }
+    @ParameterizedTest @ValueSource(booleans={false,true})
+    void foreignInitializationRequiresAnEstablishedOriginalAccess(boolean establishedOriginalAccess) throws Exception {
+        String inverse="BigInteger n=amber.multiply(amber).add(blue.multiply(blue)).mod(P);BigInteger r=n.modInverse(P);"
+            +"return new Leaf(amber.multiply(r).mod(P),P.subtract(blue).multiply(r).mod(P));";
+        String identity="public static final Leaf UNITY=new Leaf(BigInteger.ONE,BigInteger.ZERO);";
+        String source=fixture().replace("public final class Calculation {","public final class Calculation {public static String observed;")
+            .replace(identity,"static {Calculation.observed=\"before:\";Calculation.scale(Leaf.of(BigInteger.valueOf(8),BigInteger.valueOf(3)));"
+                +"Calculation.observed+=\"after:\";}"+(establishedOriginalAccess?identity:identity.replace("BigInteger.ONE,BigInteger.ZERO","Foreign.ONE,Foreign.ZERO")));
+        if(establishedOriginalAccess)source=source.replace(inverse,inverse.replace("P","Foreign.P"));
+        source+="final class Foreign {static {Calculation.observed+=\"foreign:\";}"
+            +"public static final BigInteger ONE=BigInteger.ONE,ZERO=BigInteger.ZERO;"
+            +"public static final BigInteger P=new BigInteger(\"4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787\");}";
+        var execution=new JavaValueReuseTest();execution.directory=directory;
+        String original=execution.executeInitializer(source,false);
+        assertEquals(establishedOriginalAccess?"before:foreign:after:":"before:after:foreign:",original);
+        var helper=new JavaImmutableValueTest();helper.directory=directory;
+        var result=MathematicalAnalysis.analyze(helper.parse(source),source,JavaValueReuseTest.options(),null,-1,0,helper.environment());
+        String generated=helper.apply(source,result),observed=execution.executeInitializer(generated,false);
+        assertEquals(original,observed,()->result.diagnostics()+"\n"+generated);
+        assertEquals(establishedOriginalAccess,result.evidence().stream().anyMatch(item->item.valueInverse()!=null),result.diagnostics().toString());
+        var rejection=result.diagnostics().stream().filter(item->item.code().equals("VALUE_INVERSE_UNAVAILABLE")).map(MathematicalAnalysis.Diagnostic::message).toList();
+        if(!establishedOriginalAccess)assertTrue(rejection.contains("VALUE_INVERSE_ALGEBRA:[UNITY:VALUE_ALGEBRA_INITIALIZATION_OWNER]"),rejection.toString());
+        System.out.println("Inverse static provenance: establishedOriginalAccess="+establishedOriginalAccess+", original="+original+", generated="+observed
+            +", inverse="+result.evidence().stream().anyMatch(item->item.valueInverse()!=null)+", rejection="+rejection);
+    }
+
     @Test void reusedInverseHasExecutedFreshWrappersAndIndependentScalarCopies() throws Exception {
         String source=fixture().replace("public static Leaf scale(Leaf x){","public static boolean scale(Leaf x){")
             .replace("return weighted.combine(x.reciprocal());","Leaf first=x.reciprocal().copy();Leaf second=x.reciprocal().copy();return first==second || first.first()==second.first() || first.second()==second.second();")
