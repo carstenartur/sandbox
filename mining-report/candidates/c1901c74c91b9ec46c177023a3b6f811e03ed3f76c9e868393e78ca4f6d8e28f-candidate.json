@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "c1901c74c91b9ec46c177023a3b6f811e03ed3f76c9e868393e78ca4f6d8e28f",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: modernize.launch.executor\u003e\n\u003c!description: Replace direct static call to StandaloneLaunchConfigExecutor.launchProcess with LaunchConfigurationViewPlugin.getExecutor().launchProcess for API migration.\u003e\norg.eclipse.debug.ui.launchview.internal.launcher.StandaloneLaunchConfigExecutor.launchProcess($config$, $mode$, $build$, $wait$, $logFile$)\n\u003d\u003e\norg.eclipse.debug.ui.launchview.LaunchConfigurationViewPlugin.getExecutor().launchProcess($config$, $mode$, $build$, $wait$, $logFile$)\n;;",
+  "beforeExample": "package org.eclipse.debug.ui.launchview.internal.impl;\n\nimport java.io.File;\nimport org.eclipse.debug.core.ILaunchConfiguration;\nimport org.eclipse.debug.ui.launchview.internal.launcher.StandaloneLaunchConfigExecutor;\n\npublic class DebugCoreLaunchObject {\n    ILaunchConfiguration config;\n    public void launch(String mode, boolean build, boolean wait, File logFile) {\n        StandaloneLaunchConfigExecutor.launchProcess(config, mode, build, wait, logFile);\n    }\n}",
+  "afterExample": "package org.eclipse.debug.ui.launchview.internal.impl;\n\nimport java.io.File;\nimport org.eclipse.debug.core.ILaunchConfiguration;\nimport org.eclipse.debug.ui.launchview.LaunchConfigurationViewPlugin;\n\npublic class DebugCoreLaunchObject {\n    ILaunchConfiguration config;\n    public void launch(String mode, boolean build, boolean wait, File logFile) {\n        LaunchConfigurationViewPlugin.getExecutor().launchProcess(config, mode, build, wait, logFile);\n    }\n}",
+  "negativeExample": "package org.eclipse.debug.ui.launchview.internal.impl;\n\nimport java.io.File;\nimport org.eclipse.debug.core.ILaunchConfiguration;\n\n// This class should not be affected as it\u0027s a different executor\npublic class OtherExecutor {\n    public static void launchProcess(ILaunchConfiguration config, String mode, boolean build, boolean wait, File logFile) {\n        System.out.println(\"Other launch\");\n    }\n    ILaunchConfiguration config;\n    public void someMethod(String mode, boolean build, boolean wait, File logFile) {\n        OtherExecutor.launchProcess(config, mode, build, wait, logFile);\n    }\n}",
+  "targetHintFile": "modernize-api.sandbox-hint",
+  "sourceCommit": "bafaf82d058afcb6206c541de34c7905dff142e7",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "API Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-02T02:19:24.601036442Z",
+  "ruleFingerprint": "sha256:8a584d8de753ce8b8c2b681a51ee37cf548c071f99deb21c973bd595a298ab3d",
+  "behaviorFingerprint": "sha256:8e192d82fd290db4e7bc2bf1eb93e8c553a073668e96aae973093afdd024800e",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-11-02T02:22:50.509079463Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

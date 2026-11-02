@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "2887bc1652fe913acb728ed832330ac10f50d51d71069097c45970d479455c2c",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$receiver.setIconURI(\"platform:/plugin/\" + $id + \"/icons/remove_exc.png\")\n\u003d\u003e\n$receiver.setIconURI(\"platform:/plugin/\" + $id + \"/icons/delete_exc.png\")\n;;",
+  "beforeExample": "import org.eclipse.e4.ui.model.menu.MDirectMenuItem;\nimport org.eclipse.e4.ui.model.menu.MMenuFactory;\n\nclass MyClass {\n    void setupMenu() {\n        MDirectMenuItem item \u003d MMenuFactory.INSTANCE.createDirectMenuItem();\n        String PLUGIN_ID \u003d \"org.eclipse.debug.ui.launchview\";\n        item.setIconURI(\"platform:/plugin/\" + PLUGIN_ID + \"/icons/remove_exc.png\");\n    }\n}",
+  "afterExample": "import org.eclipse.e4.ui.model.menu.MDirectMenuItem;\nimport org.eclipse.e4.ui.model.menu.MMenuFactory;\n\nclass MyClass {\n    void setupMenu() {\n        MDirectMenuItem item \u003d MMenuFactory.INSTANCE.createDirectMenuItem();\n        String PLUGIN_ID \u003d \"org.eclipse.debug.ui.launchview\";\n        item.setIconURI(\"platform:/plugin/\" + PLUGIN_ID + \"/icons/delete_exc.png\");\n    }\n}",
+  "negativeExample": "import org.eclipse.e4.ui.model.menu.MDirectMenuItem;\nimport org.eclipse.e4.ui.model.menu.MMenuFactory;\n\nclass MyClass {\n    void setupMenu() {\n        MDirectMenuItem item \u003d MMenuFactory.INSTANCE.createDirectMenuItem();\n        String PLUGIN_ID \u003d \"some.other.plugin\";\n        item.setIconURI(\"platform:/plugin/\" + PLUGIN_ID + \"/icons/another_icon.png\");\n        item.setIconURI(\"platform:/plugin/\" + PLUGIN_ID + \"/icons/remove_exc.gif\"); // Different extension\n    }\n}",
+  "targetHintFile": "string-literals.sandbox-hint",
+  "sourceCommit": "6f1920aeee2419391e51609facabf1251cb5808e",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "String Literal Replacement",
+  "summary": "Replaces \u0027remove_exc.png\u0027 with \u0027delete_exc.png\u0027 in setIconURI method calls.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-02T02:22:27.458831308Z",
+  "ruleFingerprint": "sha256:ad6291635d0f0d32827dd28094fd24d342525ec5bb49058375d814dfc73c8d04",
+  "behaviorFingerprint": "sha256:167e4575684d881b86b3d88833f8a47082b95f73aec55725b080010d60c2e2f7",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The import org.eclipse.e4 cannot be resolved",
+    "verifiedAt": "2026-11-02T02:22:50.533408594Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
