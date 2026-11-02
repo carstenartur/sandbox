@@ -111,9 +111,10 @@ cryptographic constant-time claims.
   Later adapter and SDK70 integration is included through #1784–#1792.
 - Include the Fp12 algebra-proof timeout correction in
   [#1791](https://github.com/carstenartur/sandbox/pull/1791), and current native
-  mathematics Help provenance from #1792. The latest macOS distribution still
-  has a separate Hawk preparation-budget failure; full platform acceptance
-  remains incomplete.
+  mathematics Help provenance from #1792. The requested Linux/Windows native CI
+  scope is tracked by [#1794](https://github.com/carstenartur/sandbox/pull/1794).
+  macOS archives remain assembled without current native macOS qualification;
+  acceptance of the final integrated candidate remains incomplete.
 
 ## Dependencies and qualification limits
 
@@ -162,11 +163,13 @@ The [macOS distribution job](https://github.com/carstenartur/sandbox/actions/run
 failed in `BouncyCastleFinalPreparationBudgetTest.strictAcceptsBothHawkFragmentsWithinTheFullFileBudget`:
 both original Hawk fragments lacked accepted replacements after `CANCELLED`.
 The Math module recorded 1,204 tests, one failure and no errors or skips.
-This is an unresolved gate; its root cause is not established by these notes.
+This historical failure is retained. After #1794 is integrated, native macOS
+execution is outside the revised release prerequisites; removing the runner
+does not establish that the underlying analysis timeout was repaired.
 
 Native Eclipse consumer acceptance ran successfully on Ubuntu; Windows skipped
-that native step. Full platform/release tests, the canonical dry run and manual
-product acceptance remain outstanding; see
+that native step. Current-candidate Linux/Windows distribution checks, release
+tests, the canonical dry run and product acceptance remain outstanding; see
 [the preparation handoff](docs/releases/1.3.8-preparation.md).
 The existing release workflow generates its own commit-log notes; this curated
 draft must be explicitly incorporated in the publication review.
