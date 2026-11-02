@@ -2,6 +2,8 @@
 package org.sandbox.jdt.internal.corext.fix.math;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 import org.junit.jupiter.api.io.TempDir;
@@ -17,7 +19,8 @@ class JavaFixedPowerWorkTest {
         String dependency=rejectConstant
             ? "public final class PowerData {static final java.math.BigInteger VALUE=java.math.BigInteger.ZERO;}"
             : "public final class PowerData {public PowerData raise(java.math.BigInteger n){return this;}}";
-        Files.writeString(directory.resolve("PowerData.java"),dependency+"/*"+" ".repeat(16384)+"*/");
+        Files.writeString(directory.resolve("PowerData.java"), (dependency + "/*" + " ".repeat(16384) + "*/"),
+				StandardCharsets.UTF_8);
         String source="import java.math.BigInteger; public final class Calculation {static final BigInteger FIXED="
             +(rejectConstant?"PowerData.VALUE; public Calculation raise(BigInteger n){return this;} static Calculation call(Calculation value)"
                 :"BigInteger.TEN; static PowerData call(PowerData value)")+"{return value.raise(FIXED);}}";

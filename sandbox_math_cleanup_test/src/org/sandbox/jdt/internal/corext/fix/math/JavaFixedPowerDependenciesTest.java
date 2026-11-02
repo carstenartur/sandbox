@@ -3,6 +3,7 @@ package org.sandbox.jdt.internal.corext.fix.math;
 
 import static org.junit.jupiter.api.Assertions.*;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 import org.junit.jupiter.api.Test;
@@ -85,7 +86,7 @@ class JavaFixedPowerDependenciesTest {
     }
 
     private List<String> execute(String source,String... names)throws Exception {
-        Path root=Files.createTempDirectory(directory,"dependencies");Path file=root.resolve("Calculation.java");Files.writeString(file,source);
+        Path root=Files.createTempDirectory(directory,"dependencies");Path file=root.resolve("Calculation.java");Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0,javax.tools.ToolProvider.getSystemJavaCompiler().run(null,null,null,"--release","17","-d",root.toString(),file.toString()));
         try(var loader=new java.net.URLClassLoader(new java.net.URL[]{root.toUri().toURL()},ClassLoader.getPlatformClassLoader())) {
             var results=new ArrayList<String>();

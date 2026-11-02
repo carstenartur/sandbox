@@ -3,6 +3,7 @@ package org.sandbox.jdt.internal.corext.fix.math;
 
 import static org.junit.jupiter.api.Assertions.*;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 import org.eclipse.jdt.core.JavaCore;
@@ -24,7 +25,7 @@ class JavaFixedPowerActualTest {
                 String relative=entry.getName();String source=new String(zip.getInputStream(zip.getEntry(relative)).readAllBytes(),java.nio.charset.StandardCharsets.UTF_8);
                 // JDK BigInteger.modPow is intentionally retained; only value operations are renamed.
                 if(renamed)source=rename(source).replace("ySquared.raise(","ySquared.modPow(").replace("negThree.raise(","negThree.modPow(");
-                Files.writeString(root.resolve(renamed?rename(relative):relative),source);
+                Files.writeString(root.resolve(renamed ? rename(relative) : relative), source, StandardCharsets.UTF_8);
             }
         }
         return root;
@@ -38,7 +39,7 @@ class JavaFixedPowerActualTest {
     @Test void completeActualPairingBothFixedExponentsApplyCompileReplayAndUndo()throws Exception{exercise(false);}
     @Test void completeRenamedPairingHasTheSamePositiveGates()throws Exception{exercise(true);}
     private void exercise(boolean renamed)throws Exception {
-        Path root=fixture(renamed);String name=renamed?"Harness":"BLS12_381Pairing";Path caller=root.resolve("org/bouncycastle/crypto/bls/"+name+".java");String source=Files.readString(caller);
+        Path root=fixture(renamed);String name=renamed?"Harness":"BLS12_381Pairing";Path caller=root.resolve("org/bouncycastle/crypto/bls/"+name+".java");String source=Files.readString(caller, StandardCharsets.UTF_8);
         var environment=new MathematicalAnalysis.SourceEnvironment(caller.toString(),List.of(binary.toString()),List.of(root.toString()),List.of("UTF-8"));
         var options=JavaValueAlgebraProofTest.options();var ast=parse(source,root,name);
         var analysis=MathematicalAnalysis.analyze(ast,source,options,null,-1,0,environment);
@@ -52,11 +53,12 @@ class JavaFixedPowerActualTest {
         assertEquals(execute(root,name,source,renamed),execute(root,name,generated,renamed));
         String changed=generated.replace("// Mathematics fixed power:","// altered helper\n// Mathematics fixed power:");
         assertThrows(IllegalArgumentException.class,()->JavaFixedPowerOptimizer.verifyCombined(parse(changed,root,name),changed,powers.getFirst(),options,new JavaValueSourceSummary.Work(options.workBudget(),options,()->false)));
-        Path helper=root.resolve("org/bouncycastle/crypto/bls/"+(renamed?"Leaf":"Fp2Element")+".java");Files.writeString(helper,Files.readString(helper).replace("ac.subtract(bd)","ac.add(bd)"));
+        Path helper=root.resolve("org/bouncycastle/crypto/bls/"+(renamed?"Leaf":"Fp2Element")+".java");Files.writeString(helper, Files.readString(helper).replace("ac.subtract(bd)", "ac.add(bd)"),
+				StandardCharsets.UTF_8);
         assertThrows(IllegalArgumentException.class,analysis::newEdit);
     }
     private List<String> execute(Path root,String name,String callerSource,boolean renamed)throws Exception {
-        Path output=Files.createTempDirectory(directory,"classes");Path caller=root.resolve("org/bouncycastle/crypto/bls/"+name+".java");Files.writeString(caller,callerSource);
+        Path output=Files.createTempDirectory(directory,"classes");Path caller=root.resolve("org/bouncycastle/crypto/bls/"+name+".java");Files.writeString(caller, callerSource, StandardCharsets.UTF_8);
         var command=new ArrayList<>(List.of("--release","17","-cp",binary.toString(),"-d",output.toString()));
         try(var paths=Files.walk(root)){paths.filter(path->path.toString().endsWith(".java")).forEach(path->command.add(path.toString()));}
         assertEquals(0,javax.tools.ToolProvider.getSystemJavaCompiler().run(null,null,null,command.toArray(String[]::new)));

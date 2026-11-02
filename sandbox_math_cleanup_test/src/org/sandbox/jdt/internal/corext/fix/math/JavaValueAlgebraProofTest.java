@@ -2,6 +2,8 @@
 package org.sandbox.jdt.internal.corext.fix.math;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 import de.regelsuche.sdk.optimization.*;
@@ -62,7 +64,7 @@ class JavaValueAlgebraProofTest {
                 Files.write(root.resolve(relative),zip.getInputStream(zip.getEntry(relative)).readAllBytes());
             }
         }
-        Path file=root.resolve("org/bouncycastle/crypto/bls/Fp12Element.java");String source=Files.readString(file);
+        Path file=root.resolve("org/bouncycastle/crypto/bls/Fp12Element.java");String source=Files.readString(file, StandardCharsets.UTF_8);
         var parser=ASTParser.newParser(AST.getJLSLatest());parser.setSource(source.toCharArray());parser.setUnitName(file.toString());parser.setResolveBindings(true);
         parser.setEnvironment(new String[]{binary.toString()},new String[]{root.toString()},new String[]{"UTF-8"},true);
         var compiler=new HashMap<String,String>();JavaCore.setComplianceOptions("17",compiler);parser.setCompilerOptions(compiler);
