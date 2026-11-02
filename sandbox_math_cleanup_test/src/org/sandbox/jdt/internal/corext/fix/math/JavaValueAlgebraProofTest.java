@@ -68,7 +68,9 @@ class JavaValueAlgebraProofTest {
         var compiler=new HashMap<String,String>();JavaCore.setComplianceOptions("17",compiler);parser.setCompilerOptions(compiler);
         var ast=(CompilationUnit)parser.createAST(null);for(var problem:ast.getProblems())assertFalse(problem.isError(),problem.toString());
         var environment=new MathematicalAnalysis.SourceEnvironment(file.toString(),List.of(binary.toString()),List.of(root.toString()),List.of("UTF-8"));
-        var options=options();
+        // Qualify the complete source laws with time for cold CI runners, not the interactive default.
+        var options=new MathCleanUpOptions(true,Set.of(NumericKind.BIG_INTEGER),SafetyProfile.PRESERVE_JAVA,
+            OptimizationGoal.LOWER_ESTIMATED_RUNTIME,20_000_000,20_000,false,17,List.of(),true,MathCleanUpOptions.ExplanationMode.NONE,30);
         try(var context=JavaSourceContext.open(ast,source,environment,null,options)) {
             var work=new JavaValueSourceSummary.Work(options.workBudget(),options,()->false);var session=new JavaValueSourceSummary.Session(ast,options,work);
             var type=((TypeDeclaration)ast.types().getFirst()).resolveBinding();
