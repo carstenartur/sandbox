@@ -3,6 +3,7 @@ package org.sandbox.jdt.internal.corext.fix.math;
 
 import static org.junit.jupiter.api.Assertions.*;
 import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
 import org.junit.jupiter.api.Test;
@@ -69,7 +70,7 @@ class JavaValueReuseTest {
         }
     }
     private String executeInitializer(String source,boolean instance) throws Exception {
-        Path output=Files.createTempDirectory(directory,"initializer");Path file=output.resolve("Calculation.java");Files.writeString(file,source);
+        Path output=Files.createTempDirectory(directory,"initializer");Path file=output.resolve("Calculation.java");Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0,javax.tools.ToolProvider.getSystemJavaCompiler().run(null,null,null,"--release","17","-d",output.toString(),file.toString()));
         try(var loader=new java.net.URLClassLoader(new java.net.URL[]{output.toUri().toURL()},ClassLoader.getPlatformClassLoader())) {
             var owner=Class.forName("Calculation",true,loader);if(instance)owner.getConstructor().newInstance();
@@ -237,7 +238,7 @@ class JavaValueReuseTest {
         @Override public java.math.BigInteger add(java.math.BigInteger argument){boolean same=previous==argument;previous=argument;return same?ONE:ZERO;}
     }
     private Object executeIdentity(String source,boolean callback,int value,String method) throws Exception {
-        Path output=Files.createTempDirectory(directory,"identity");Path file=output.resolve("Calculation.java");Files.writeString(file,source);
+        Path output=Files.createTempDirectory(directory,"identity");Path file=output.resolve("Calculation.java");Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0,javax.tools.ToolProvider.getSystemJavaCompiler().run(null,null,null,"--release","17","-d",output.toString(),file.toString()));
         try(var loader=new java.net.URLClassLoader(new java.net.URL[]{output.toUri().toURL()},ClassLoader.getPlatformClassLoader())) {
             var leaf=loader.loadClass("Leaf");var constructor=leaf.getDeclaredConstructor(java.math.BigInteger.class,java.math.BigInteger.class);constructor.setAccessible(true);
@@ -300,7 +301,7 @@ class JavaValueReuseTest {
                 String relative="org/bouncycastle/crypto/bls/"+name+".java";Files.write(root.resolve(relative),zip.getInputStream(zip.getEntry(relative)).readAllBytes());
             }
         }
-        Path file=root.resolve("org/bouncycastle/crypto/bls/BLS12_381G2HashToCurve.java");String source=Files.readString(file);
+        Path file=root.resolve("org/bouncycastle/crypto/bls/BLS12_381G2HashToCurve.java");String source=Files.readString(file, StandardCharsets.UTF_8);
         var parser=org.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.getJLSLatest());parser.setSource(source.toCharArray());parser.setUnitName(file.toString());parser.setResolveBindings(true);
         parser.setEnvironment(new String[]{binary.toString()},new String[]{root.toString()},new String[]{"UTF-8"},true);
         var compiler=new HashMap<String,String>();org.eclipse.jdt.core.JavaCore.setComplianceOptions("17",compiler);parser.setCompilerOptions(compiler);
@@ -317,7 +318,7 @@ class JavaValueReuseTest {
         assertEquals(executeActual(source,binary),executeActual(generated,binary));
     }
     private List<String> executeActual(String source,Path binary) throws Exception {
-        Path output=Files.createTempDirectory(directory,"g2reuse");Path file=output.resolve("BLS12_381G2HashToCurve.java");Files.writeString(file,source);
+        Path output=Files.createTempDirectory(directory,"g2reuse");Path file=output.resolve("BLS12_381G2HashToCurve.java");Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0,javax.tools.ToolProvider.getSystemJavaCompiler().run(null,null,null,"--release","17","-cp",binary.toString(),"-d",output.toString(),file.toString()));
         try(var loader=new JavaImmutableValueTest.IsolatedBC(output,binary)) {
             var type=loader.loadClass("org.bouncycastle.crypto.bls.BLS12_381G2HashToCurve");var leaf=loader.loadClass("org.bouncycastle.crypto.bls.Fp2Element");
