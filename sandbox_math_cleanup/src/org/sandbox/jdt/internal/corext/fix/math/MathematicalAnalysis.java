@@ -38,6 +38,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 import java.util.stream.Collectors;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -74,19 +75,36 @@ public final class MathematicalAnalysis {
     */
    public static Analysis analyzeFreshSums(CompilationUnit ast, String source, MathCleanUpOptions options,
          IProgressMonitor monitor, List<? extends org.eclipse.jdt.core.ISourceRange> envelopes) {
+      return analyzeFreshIterations(ast, source, options, monitor, envelopes, false);
+   }
+
+   /** Only independently replayed tail-loop envelopes enter the existing iteration proofs. */
+   public static Analysis analyzeTailLoops(CompilationUnit ast, String source, MathCleanUpOptions options,
+         IProgressMonitor monitor, List<? extends org.eclipse.jdt.core.ISourceRange> envelopes) {
+      if (!options.enabled() || !options.tailRecursion() || options.safety() != SafetyProfile.PRESERVE_JAVA
+            || options.mathematicalOptIn() || options.goal() != OptimizationGoal.LOWER_ESTIMATED_RUNTIME)
+         throw new IllegalArgumentException("TAIL_ITERATION_PROFILE_REQUIRED"); //$NON-NLS-1$
+      return analyzeFreshIterations(ast, source, options, monitor, envelopes, true);
+   }
+
+   private static Analysis analyzeFreshIterations(CompilationUnit ast, String source, MathCleanUpOptions options,
+         IProgressMonitor monitor, List<? extends org.eclipse.jdt.core.ISourceRange> envelopes, boolean loops) {
       if (envelopes.size() > 8) throw new IllegalArgumentException("TOO_MANY_FRESH_SUMS"); //$NON-NLS-1$
-      Map<String,String> compiler = ast.getJavaElement().getJavaProject().getOptions(true);
-      if (!matchesAstSource(ast, source, compiler, options.targetJava())) throw new IllegalArgumentException("STALE_AST_SOURCE"); //$NON-NLS-1$
+      Map<String,String> compiler = ast.getJavaElement() == null ? Map.of() : ast.getJavaElement().getJavaProject().getOptions(true);
       var replacements = new ArrayList<Replacement>(); var evidence = new ArrayList<VerifiedRegion>();
       var diagnostics = new ArrayList<Diagnostic>(); long remaining = options.workBudget();
-      CancellationToken token = () -> isCancelled(monitor);
+      CancellationToken token = cancellation(monitor, options);
       try (var context = JavaSourceContext.open(ast, source, null, monitor, options)) {
+         var preparation = new JavaLoopInvariantAnalysis.Work(remaining, token);
+         if (!matchesAstSource(ast, source, compiler, options.targetJava(), loops ? preparation::charge : null, monitor))
+            throw new IllegalArgumentException("STALE_AST_SOURCE"); //$NON-NLS-1$
+         remaining -= preparation.used;
          for (var envelope : envelopes) {
             if (token.isCancelled()) throw new OperationCanceledException();
             var node = NodeFinder.perform(ast, envelope.getOffset(), envelope.getLength());
-            if (!(node instanceof org.eclipse.jdt.core.dom.MethodInvocation call)
-                  || !call.getName().getIdentifier().equals("sum") || !call.arguments().isEmpty() //$NON-NLS-1$
-                  || node.getStartPosition() != envelope.getOffset() || node.getLength() != envelope.getLength())
+            boolean admitted = loops ? node instanceof org.eclipse.jdt.core.dom.ForStatement || node instanceof org.eclipse.jdt.core.dom.WhileStatement
+                  : node instanceof MethodInvocation call && call.getName().getIdentifier().equals("sum") && call.arguments().isEmpty(); //$NON-NLS-1$
+            if (!admitted || node.getStartPosition() != envelope.getOffset() || node.getLength() != envelope.getLength())
                throw new IllegalArgumentException("FRESH_SUM_ENVELOPE_DIFFERS"); //$NON-NLS-1$
             remaining = JavaFiniteSumOptimizer.optimize(ast, source, options, monitor, envelope.getOffset(), envelope.getLength(),
                   compiler, null, replacements, evidence, diagnostics, remaining - context.takeWork());
@@ -101,9 +119,9 @@ public final class MathematicalAnalysis {
             var document = new Document(source);
             try { result.newEdit().apply(document); }
             catch (BadLocationException failure) { throw new IllegalArgumentException(failure); }
-            long preparation = 4L * source.length() + 4L * document.getLength();
-            if (preparation > remaining) throw new IllegalArgumentException("FRESH_SUM_BUDGET_EXCEEDED"); //$NON-NLS-1$
-            remaining -= preparation;
+            long replayPreparation = 4L * source.length() + 4L * document.getLength();
+            if (replayPreparation > remaining) throw new IllegalArgumentException("FRESH_SUM_BUDGET_EXCEEDED"); //$NON-NLS-1$
+            remaining -= replayPreparation;
             String generated = document.get();
             var after = checkGeneratedSource(ast, generated, compiler, options.targetJava(), monitor, null);
             for (var receipt : evidence) {
@@ -985,17 +1003,25 @@ public final class MathematicalAnalysis {
       return generated.replace("\n", delimiter + indentation);
    }
 
-   private static boolean matchesAstSource(CompilationUnit original, String source, Map<String, String> options, int targetJava) {
-      return matchesAstSource(original, source, options, targetJava, null);
-   }
-
    private static boolean matchesAstSource(CompilationUnit original, String source, Map<String, String> options, int targetJava,
          Consumer<MethodInvocation> originalCalls) {
-      var originalPositions = sourcePositions(original, originalCalls);
+      return matchesAstSource(original, source, options, targetJava, originalCalls, null, null);
+   }
+
+   static boolean matchesAstSource(CompilationUnit original, String source, Map<String,String> options, int targetJava,
+         LongConsumer charge, IProgressMonitor monitor) {
+      return matchesAstSource(original, source, options, targetJava, null, charge, monitor);
+   }
+
+   private static boolean matchesAstSource(CompilationUnit original, String source, Map<String,String> options, int targetJava,
+         Consumer<MethodInvocation> originalCalls, LongConsumer charge, IProgressMonitor monitor) {
+      if (original.getCommentList() == null) return false;
+      var originalPositions = sourcePositions(original, originalCalls, charge);
       // Standalone clients can parse structured Javadoc with either setting.
       // Retry only that parser setting: syntax, documented text and source
       // positions must still match exactly; no stale-source guard is bypassed.
       for (String documentation : List.of(JavaCore.ENABLED, JavaCore.DISABLED)) {
+         if (charge != null) charge.accept(4L * source.length());
          ASTParser parser = ASTParser.newParser(original.getAST().apiLevel());
          parser.setSource(source.toCharArray());
          HashMap<String, String> compilerOptions = new HashMap<>(options);
@@ -1004,8 +1030,9 @@ public final class MathematicalAnalysis {
          }
          compilerOptions.put(JavaCore.COMPILER_DOC_COMMENT_SUPPORT, documentation);
          parser.setCompilerOptions(compilerOptions);
-         CompilationUnit parsed = (CompilationUnit) parser.createAST(null);
-         var parsedPositions = sourcePositions(parsed, null);
+         CompilationUnit parsed = (CompilationUnit) parser.createAST(monitor);
+         var parsedPositions = sourcePositions(parsed, null, charge);
+         if (charge != null) charge.accept(originalPositions.size() + (long)parsedPositions.size());
          if (originalPositions.equals(parsedPositions) && original.subtreeMatch(new ASTMatcher(true), parsed)) return true;
       }
       return false;
@@ -1016,19 +1043,33 @@ public final class MathematicalAnalysis {
       SourceDiscoveryLimit(IllegalArgumentException cause) { super(cause); }
    }
 
-   private static List<Integer> sourcePositions(CompilationUnit ast, Consumer<MethodInvocation> originalCalls) {
+   private static List<Integer> sourcePositions(CompilationUnit ast, Consumer<MethodInvocation> originalCalls, LongConsumer charge) {
       final ArrayList<Integer> positions = new ArrayList<>();
       ast.accept(new ASTVisitor() {
+         private int depth;
          public void preVisit(ASTNode node) {
+            if (charge != null) {
+               charge.accept(1);
+               if (++depth > 128) throw new IllegalArgumentException("SOURCE_DEPTH_LIMIT"); //$NON-NLS-1$
+            }
             positions.add(node.getStartPosition());
             positions.add(node.getLength());
          }
+         @Override public void postVisit(ASTNode node) { if (charge != null) depth--; }
          @Override public boolean visit(MethodInvocation call) {
             // Share only the mandatory bound-original walk; reparsed comparison ASTs never populate this list.
             if (originalCalls != null) originalCalls.accept(call);
             return true;
          }
       });
+      // Line/block comments are detached from the ordinary AST walk.
+      for (Object entry : ast.getCommentList()) {
+         if (charge != null) charge.accept(1);
+         var comment = (org.eclipse.jdt.core.dom.Comment) entry;
+         positions.add(comment.getNodeType());
+         positions.add(comment.getStartPosition());
+         positions.add(comment.getLength());
+      }
       return positions;
    }
 

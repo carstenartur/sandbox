@@ -23,7 +23,9 @@ import de.regelsuche.sdk.optimization.SafetyProfile;
 /** Immutable explicit numerical contract, independent of the host Java level. */
 public record MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, SafetyProfile safety,
         OptimizationGoal goal, long workBudget, int maxStates, boolean checkedOptIn,
-        int targetJava, List<String> exclusions, boolean mathematicalOptIn, ExplanationMode explanations, int timeoutSeconds, ValueRuntime valueRuntime) {
+        int targetJava, List<String> exclusions, boolean mathematicalOptIn, ExplanationMode explanations, int timeoutSeconds, boolean tailRecursion, ValueRuntime valueRuntime) {
+ public static final String TAIL_RECURSION = "cleanup.mathematics.tailRecursion";
+ public static final String TAIL_WARNING = "Tail recursion conversion requires explicit ALLOW_FRAME_ELISION consent: removing recursive frames can change stack observation and StackOverflowError behavior. Numerical state transfer is verified independently.";
  public enum ValueRuntime { UNSPECIFIED, AUDITED_OPENJDK_25_0_5_8 }
  public static final String VALUE_RUNTIME = "cleanup.mathematics.valueRuntime";
  public static final String VALUE_RUNTIME_WARNING = "Value reuse requires deployment on the explicitly audited OpenJDK 25.0.5+8 scalar implementation. Analysis and Apply check its bytecode; Java source level is independent. Unmatched analysis/Apply runtimes reject reuse. Deployment elsewhere requires requalification.";
@@ -44,7 +46,7 @@ public record MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, Safety
  public static final String MATHEMATICAL_OPT_IN = "cleanup.mathematics.mathematicalOptIn";
  public static final String MATHEMATICAL_WARNING = "Mathematical mode may change overflow behavior and BigInteger result reference identity. Proven local ranges and contract changes are documented in Javadoc.";
  public static final String CHECKED_WARNING = "CHECKED_THROW changes the Java contract: numerical violations may throw ArithmeticException. Both the original and replacement operations must be checked.";
- private static final Set<String> KEYS= Set.of(CLEANUP,KINDS,SAFETY,GOAL,WORK_BUDGET,MAX_STATES,CHECKED_OPT_IN,EXCLUSIONS,UNDERFLOW,MATHEMATICAL_OPT_IN,EXPLANATIONS,TIMEOUT_SECONDS,VALUE_RUNTIME);
+ private static final Set<String> KEYS= Set.of(CLEANUP,KINDS,SAFETY,GOAL,WORK_BUDGET,MAX_STATES,CHECKED_OPT_IN,EXCLUSIONS,UNDERFLOW,MATHEMATICAL_OPT_IN,EXPLANATIONS,TIMEOUT_SECONDS,TAIL_RECURSION,VALUE_RUNTIME);
 
  /** Existing programmatic callers retain their explicitly comment-free output. */
  public MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, SafetyProfile safety,
@@ -73,10 +75,19 @@ public record MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, Safety
  }
  public MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, SafetyProfile safety, OptimizationGoal goal, long workBudget, int maxStates, boolean checkedOptIn,
    int targetJava, List<String> exclusions, boolean mathematicalOptIn, ExplanationMode explanations, int timeoutSeconds) {
-  this(enabled,kinds,safety,goal,workBudget,maxStates,checkedOptIn,targetJava,exclusions,mathematicalOptIn,explanations,timeoutSeconds,ValueRuntime.UNSPECIFIED);
+  this(enabled,kinds,safety,goal,workBudget,maxStates,checkedOptIn,targetJava,exclusions,mathematicalOptIn,explanations,timeoutSeconds,false,ValueRuntime.UNSPECIFIED);
+ }
+ /** Existing runtime choices never grant permission to remove recursive frames. */
+ public MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, SafetyProfile safety, OptimizationGoal goal, long workBudget, int maxStates, boolean checkedOptIn,
+   int targetJava, List<String> exclusions, boolean mathematicalOptIn, ExplanationMode explanations, int timeoutSeconds, ValueRuntime valueRuntime) {
+  this(enabled,kinds,safety,goal,workBudget,maxStates,checkedOptIn,targetJava,exclusions,mathematicalOptIn,explanations,timeoutSeconds,false,valueRuntime);
+ }
+ public MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, SafetyProfile safety, OptimizationGoal goal, long workBudget, int maxStates, boolean checkedOptIn,
+   int targetJava, List<String> exclusions, boolean mathematicalOptIn, ExplanationMode explanations, int timeoutSeconds, boolean tailRecursion) {
+  this(enabled,kinds,safety,goal,workBudget,maxStates,checkedOptIn,targetJava,exclusions,mathematicalOptIn,explanations,timeoutSeconds,tailRecursion,ValueRuntime.UNSPECIFIED);
  }
  public MathCleanUpOptions withValueRuntime(ValueRuntime runtime) {
-  return new MathCleanUpOptions(enabled,kinds,safety,goal,workBudget,maxStates,checkedOptIn,targetJava,exclusions,mathematicalOptIn,explanations,timeoutSeconds,runtime);
+  return new MathCleanUpOptions(enabled,kinds,safety,goal,workBudget,maxStates,checkedOptIn,targetJava,exclusions,mathematicalOptIn,explanations,timeoutSeconds,tailRecursion,runtime);
  }
  public MathCleanUpOptions {
   Objects.requireNonNull(valueRuntime,"valueRuntime");
@@ -131,6 +142,7 @@ public record MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, Safety
     bool(values,MATHEMATICAL_OPT_IN,false),
     ExplanationMode.valueOf(values.getOrDefault(EXPLANATIONS,defaults.explanations.name())),
     Integer.parseInt(values.getOrDefault(TIMEOUT_SECONDS,Integer.toString(defaults.timeoutSeconds))),
+    bool(values,TAIL_RECURSION,false),
     ValueRuntime.valueOf(values.getOrDefault(VALUE_RUNTIME,defaults.valueRuntime.name())));
  }
 
@@ -150,6 +162,7 @@ public record MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, Safety
   values.put(CHECKED_OPT_IN,Boolean.toString(checkedOptIn));values.put(EXCLUSIONS,String.join(";",exclusions));
   values.put(UNDERFLOW,"false");values.put(MATHEMATICAL_OPT_IN,Boolean.toString(mathematicalOptIn));
   values.put(TIMEOUT_SECONDS,Integer.toString(timeoutSeconds));
+  values.put(TAIL_RECURSION,Boolean.toString(tailRecursion));
   values.put(VALUE_RUNTIME,valueRuntime.name());
   values.put(EXPLANATIONS,explanations.name());return Map.copyOf(values);
  }
