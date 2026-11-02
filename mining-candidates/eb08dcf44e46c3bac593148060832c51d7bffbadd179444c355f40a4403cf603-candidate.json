@@ -13,8 +13,9 @@
   "category": "Readability",
   "summary": "Adds a default message to no-argument RuntimeException constructors to improve debuggability without altering runtime behavior.",
   "sourceVersion": "21",
-  "status": "READY_FOR_REVIEW",
+  "status": "REJECTED",
   "discoveredAt": "2026-09-30T02:34:54.832930020Z",
+  "rejectionReason": "UNSAFE: Inserting \"Unnamed runtime exception\" changes getMessage()/getLocalizedMessage() from null, changes toString()/printStackTrace(), and changes application branches on getMessage()\u003d\u003dnull. This invents application meaning rather than preserving behavior. A useful contextual message needs an author decision; no automatic cleanup is justified.",
   "ruleFingerprint": "sha256:6a76e81c73e0234de25fea25ebe7bc1ded990b3ca227074df1f2aed186bb3bbd",
   "behaviorFingerprint": "sha256:713c6e84b21c29551d78247dcb71f6cb54069d48dc61209cf2c92d3e58bee647",
   "verification": {
@@ -40,6 +41,13 @@
       "actor": "CandidateVerificationCli",
       "reason": "All deterministic candidate gates passed",
       "occurredAt": "2026-09-30T02:35:00.940617068Z"
+    },
+    {
+      "from": "READY_FOR_REVIEW",
+      "to": "REJECTED",
+      "actor": "ChatGPT (review delegated by carstenartur)",
+      "reason": "UNSAFE: Inserting \"Unnamed runtime exception\" changes getMessage()/getLocalizedMessage() from null, changes toString()/printStackTrace(), and changes application branches on getMessage()\u003d\u003dnull. This invents application meaning rather than preserving behavior. A useful contextual message needs an author decision; no automatic cleanup is justified.",
+      "occurredAt": "2026-11-02T22:58:58.311925551Z"
     }
   ]
 }

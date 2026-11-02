@@ -13,8 +13,9 @@
   "category": "String API Usage",
   "summary": "Replaces String.toLowerCase().equals(String) with String.equalsIgnoreCase(String) for improved readability, efficiency, and to avoid unnecessary intermediate String allocation.",
   "sourceVersion": "21",
-  "status": "READY_FOR_REVIEW",
+  "status": "REJECTED",
   "discoveredAt": "2026-09-18T02:26:22.494407157Z",
+  "rejectionReason": "UNSAFE: x.toLowerCase().equals(y) and x.equalsIgnoreCase(y) have different contracts. For x\u003d\"abc\", y\u003d\"ABC\" the results are false/true. Turkish default locale and Unicode expansion supply further counterexamples. A null receiver changes argument evaluation before the NPE; Object arguments accepted by equals may stop compiling. Type or lowercase-argument guards do not establish equivalence. No productive string hint is justified.",
   "ruleFingerprint": "sha256:4cfcd7b4dcba9c1f0bc4316737a3ace69bc15922120c77dedac9b063a151d8f1",
   "behaviorFingerprint": "sha256:efbe73369c468f6c7d5128fc73247b082e3ce24974b2ed51c4c24e60c9a83603",
   "verification": {
@@ -40,6 +41,13 @@
       "actor": "CandidateVerificationCli",
       "reason": "All deterministic candidate gates passed",
       "occurredAt": "2026-09-18T02:26:30.107489506Z"
+    },
+    {
+      "from": "READY_FOR_REVIEW",
+      "to": "REJECTED",
+      "actor": "ChatGPT (review delegated by carstenartur)",
+      "reason": "UNSAFE: x.toLowerCase().equals(y) and x.equalsIgnoreCase(y) have different contracts. For x\u003d\"abc\", y\u003d\"ABC\" the results are false/true. Turkish default locale and Unicode expansion supply further counterexamples. A null receiver changes argument evaluation before the NPE; Object arguments accepted by equals may stop compiling. Type or lowercase-argument guards do not establish equivalence. No productive string hint is justified.",
+      "occurredAt": "2026-11-02T22:58:56.670956250Z"
     }
   ]
 }
