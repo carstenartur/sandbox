@@ -34,9 +34,11 @@ final class JavaValueCallOptimizer {
             if(call.getExpression() instanceof SimpleName receiver && receiver.resolveBinding() instanceof IVariableBinding
                 && call.arguments().size()==1 && call.arguments().getFirst() instanceof Expression argument) {
                 IVariableBinding constant=constantField(argument);
-                if(constant!=null
-                && !JavaValueSourceSummary.big(constant.getType()) && call.resolveMethodBinding()!=null
-                && call.resolveMethodBinding().getReturnType().isEqualTo(constant.getType()))calls.add(call);
+                var receiverType=receiver.resolveTypeBinding();var target=call.resolveMethodBinding();
+                // The emitted getters and factory belong to this exact receiver value type.
+                if(constant!=null && receiverType!=null && !receiverType.isRecovered()
+                && !JavaValueSourceSummary.big(receiverType) && constant.getType().isEqualTo(receiverType)
+                && target!=null && target.getReturnType().isEqualTo(receiverType))calls.add(call);
             }
             return true;
         }});
@@ -190,7 +192,7 @@ final class JavaValueCallOptimizer {
         return binding instanceof IVariableBinding field && field.isField() && !field.isRecovered()
             && Modifier.isStatic(field.getModifiers()) && Modifier.isFinal(field.getModifiers())?field:null;
     }
-    /** Independently bind every emitted guard read to the admitted receiver and source fields. */
+    /** Bind guard reads to admitted source fields and emitted types/constructors to the actual JDK declarations. */
     private static void verifyGuardBindings(Expression guard,IVariableBinding receiver,IVariableBinding constant,
             List<JavaValueSourceSummary.StaticValue> statics,JavaValueSourceSummary.Work work) {
         var allowed=new HashSet<String>();allowed.add(receiver.getVariableDeclaration().getKey());allowed.add(constant.getVariableDeclaration().getKey());
@@ -212,8 +214,23 @@ final class JavaValueCallOptimizer {
                 return true;
             }
             @Override public boolean visit(FieldAccess field){throw JavaValueSourceSummary.unavailable("VALUE_CALL_GUARD_QUALIFIER");} //$NON-NLS-1$
+            @Override public boolean visit(TypeLiteral literal) {
+                if(!jdkType(literal.getType().resolveBinding(),"java.math.BigInteger"))throw JavaValueSourceSummary.unavailable("VALUE_CALL_GUARD_TYPE"); //$NON-NLS-1$ //$NON-NLS-2$
+                return true;
+            }
+            @Override public boolean visit(ClassInstanceCreation creation) {
+                var constructor=creation.resolveConstructorBinding();
+                if(constructor==null || constructor.isRecovered() || !constructor.isConstructor()
+                    || !jdkType(constructor.getDeclaringClass(),"java.math.BigInteger") || constructor.getParameterTypes().length!=1 //$NON-NLS-1$
+                    || !jdkType(constructor.getParameterTypes()[0],"java.lang.String")) //$NON-NLS-1$
+                    throw JavaValueSourceSummary.unavailable("VALUE_CALL_GUARD_CONSTRUCTOR"); //$NON-NLS-1$
+                return true;
+            }
         });
         if(!constantSeen[0])throw JavaValueSourceSummary.unavailable("VALUE_CALL_GUARD_CONSTANT_MISSING"); //$NON-NLS-1$
+    }
+    private static boolean jdkType(ITypeBinding type,String qualifiedName) {
+        return type!=null && !type.isRecovered() && !type.isFromSource() && !type.isNested() && qualifiedName.equals(type.getQualifiedName());
     }
     private static String literal(JavaValueSourceSummary.Scalar scalar,JavaValueSourceSummary.Work work) {
         return "new java.math.BigInteger(\""+evaluate(scalar,work)+"\")"; //$NON-NLS-1$ //$NON-NLS-2$
