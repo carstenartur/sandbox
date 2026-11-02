@@ -97,5 +97,29 @@
      </arguments></configuration></execution>
    </executions>
   </plugin></plugins></build></profile>
+  <profile><id>bc-bls-benchmark</id><build><plugins><plugin>
+   <groupId>org.codehaus.mojo</groupId><artifactId>exec-maven-plugin</artifactId><version>3.6.4</version>
+   <configuration><classpathScope>compile</classpathScope><longModulepath>false</longModulepath></configuration>
+   <executions>
+    <execution><id>prepare-bls-source-cohort</id><phase>verify</phase><goals><goal>exec</goal></goals><configuration>
+     <executable>${java.home}/bin/java</executable><workingDirectory>${repo}</workingDirectory><arguments>
+      <argument>-Xmx512m</argument><argument>-cp</argument><classpath/><argument>org.sandbox.math.qa.BlsSourceCohort</argument>
+      <argument>${bc.binary}</argument><argument>${bc.sources}</argument>
+      <argument>${repo}/qa/math-optimization/profiles/bc-bls.properties</argument><argument>${project.build.directory}/bc-bls</argument>
+     </arguments></configuration></execution>
+    <execution><id>measure-complete-bls-calls</id><phase>verify</phase><goals><goal>exec</goal></goals><configuration>
+     <executable>${java.home}/bin/java</executable><workingDirectory>${repo}</workingDirectory><arguments>
+      <argument>-Xmx512m</argument><argument>-cp</argument><classpath/><argument>org.sandbox.math.qa.BlsBenchmarkRunner</argument>
+      <argument>${project.build.directory}/bc-bls</argument><argument>${bc.binary}</argument><argument>${bc.sources}</argument>
+      <argument>${project.build.directory}/bc-bls-jmh.json</argument>
+     </arguments></configuration></execution>
+    <execution><id>report-complete-bls-calls</id><phase>verify</phase><goals><goal>exec</goal></goals><configuration>
+     <executable>${java.home}/bin/java</executable><workingDirectory>${repo}</workingDirectory><arguments>
+      <argument>-Xmx512m</argument><argument>-cp</argument><classpath/><argument>org.sandbox.math.qa.BlsBenchmarkReport</argument>
+      <argument>${project.build.directory}/bc-bls-jmh.json</argument><argument>${project.build.directory}/bc-bls</argument>
+      <argument>${project.build.directory}/bc-bls-performance.json</argument>
+     </arguments></configuration></execution>
+   </executions>
+  </plugin></plugins></build></profile>
  </profiles>
 </project>

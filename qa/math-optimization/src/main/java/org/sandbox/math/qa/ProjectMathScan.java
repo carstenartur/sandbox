@@ -238,7 +238,7 @@ public final class ProjectMathScan {
     private static String hash(byte[] bytes) throws Exception {
         return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
     }
-    private static Map<String, String> runtimeInputs() throws Exception {
+    static Map<String, String> runtimeInputs() throws Exception {
         Map<String, String> hashes = new TreeMap<>();
         // Standalone execution: retain every jar and compiled class, not just the two anchor classes.
         for (String entry : System.getProperty("java.class.path").split(java.io.File.pathSeparator)) {
