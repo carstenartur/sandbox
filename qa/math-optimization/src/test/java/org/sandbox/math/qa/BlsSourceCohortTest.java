@@ -24,7 +24,7 @@ class BlsSourceCohortTest {
     private static final List<String> TYPES = List.of("BLS12_381G2HashToCurve", "BLS12_381Pairing",
             "Fp12Element", "Fp2Element", "Fp6Element");
     @TempDir static Path temporary;
-    private static Path binary, sources, profile, cohort;
+    private static Path binary, sources, profile, cohort, alternateJava;
     private static final ObjectMapper JSON = new ObjectMapper();
 
     @BeforeAll static void prepareActualSources() throws Exception {
@@ -192,6 +192,99 @@ class BlsSourceCohortTest {
                 "vmName", "Foreign VM", "vmVersion", "21.0.1+12");
         for (var row : rows) ((ObjectNode) row).put(field, foreign.get(field));
         reject(rows, cohort);
+    }
+
+    @Test void unchangedQualificationRuntimeStillSetsUpAndReports() throws Exception {
+        for (String operation : List.of("setup", "report")) {
+            var result = runtimeProcess(Path.of(org.openjdk.jmh.util.Utils.getCurrentJvm()), operation, "qualified");
+            assertEquals(0, result.exit(), result.log());
+        }
+    }
+
+    @ParameterizedTest @ValueSource(strings = {"setup", "report"})
+    void differentExecutableAndHomeCannotConsumeSourceQualification(String operation) throws Exception {
+        var result = runtimeProcess(alternateJava(), operation, "foreign");
+        assertNotEquals(Path.of(System.getProperty("java.home")).toRealPath(),
+                Path.of(result.identity().path("javaHome").asText()).toRealPath());
+        assertNotEquals(Path.of(org.openjdk.jmh.util.Utils.getCurrentJvm()).toRealPath(),
+                Path.of(result.identity().path("jvm").asText()).toRealPath());
+        assertNotEquals(0, result.exit(), "A different executable must not consume the qualified cohort: " + result.log());
+        assertTrue(result.log().contains("qualification JVM"), result.log());
+        if (operation.equals("report")) assertFalse(Files.exists(result.directory().resolve("report.json")));
+    }
+
+    private record RuntimeResult(int exit, String log, com.fasterxml.jackson.databind.JsonNode identity, Path directory) { }
+    private static RuntimeResult runtimeProcess(Path javaExecutable, String operation, String label) throws Exception {
+        Path output = Files.createDirectory(temporary.resolve(operation + "-" + label)), log = output.resolve("process.log");
+        var process = new ProcessBuilder(javaExecutable.toString(), "-Xmx768m", "-cp", System.getProperty("java.class.path"),
+                RuntimeProbe.class.getName(), operation, cohort.toString(), binary.toString(), sources.toString(), output.toString())
+                .redirectErrorStream(true).redirectOutput(log.toFile()).start();
+        boolean finished = process.waitFor(90, java.util.concurrent.TimeUnit.SECONDS);
+        if (!finished) { process.destroyForcibly(); process.waitFor(); }
+        String export = System.getProperty("sandbox.math.corpus.evidence");
+        if (export != null && !export.isBlank()) {
+            Path retained = Path.of(export).resolve("bls-runtime-identity").resolve(operation + "-" + label);
+            Files.createDirectories(retained);
+            try (var files = Files.list(output)) {
+                for (Path file : files.toList())
+                    Files.copy(file, retained.resolve(file.getFileName()), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
+        String diagnostics = Files.readString(log);
+        assertTrue(finished, "Runtime child timed out: " + diagnostics);
+        var identity = JSON.readTree(output.resolve("runtime.json").toFile());
+        String executable = identity.path("executable").asText();
+        if (!executable.isBlank()) assertEquals(javaExecutable.toRealPath(), Path.of(executable).toRealPath(), diagnostics);
+        assertEquals(javaExecutable.toRealPath(), Path.of(identity.path("jvm").asText()).toRealPath(), diagnostics);
+        assertEquals(System.getProperty("java.runtime.version"), identity.path("javaRuntime").asText());
+        assertEquals(System.getProperty("java.version"), identity.path("jdkVersion").asText());
+        assertEquals(System.getProperty("java.vm.name"), identity.path("vmName").asText());
+        assertEquals(System.getProperty("java.vm.version"), identity.path("vmVersion").asText());
+        assertEquals(System.getProperty("java.class.path"), identity.path("classPath").asText());
+        assertEquals(JSON.readTree(cohort.resolve("review.json").toFile()).path("runtimeInputs"), identity.path("runtimeInputs"));
+        return new RuntimeResult(process.exitValue(), diagnostics, identity, output);
+    }
+
+    private static Path alternateJava() throws Exception {
+        if (alternateJava != null) return alternateJava;
+        Path original = Path.of(System.getProperty("java.home")).toRealPath();
+        Path copy = Files.createDirectory(temporary.resolve("separate-jdk"));
+        Files.walkFileTree(original, java.util.EnumSet.of(java.nio.file.FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
+                new java.nio.file.SimpleFileVisitor<>() {
+                    @Override public java.nio.file.FileVisitResult preVisitDirectory(Path directory,
+                            java.nio.file.attribute.BasicFileAttributes attributes) throws IOException {
+                        Files.createDirectories(copy.resolve(original.relativize(directory))); return java.nio.file.FileVisitResult.CONTINUE;
+                    }
+                    @Override public java.nio.file.FileVisitResult visitFile(Path file,
+                            java.nio.file.attribute.BasicFileAttributes attributes) throws IOException {
+                        Path destination = copy.resolve(original.relativize(file));
+                        try { Files.createLink(destination, file.toRealPath()); }
+                        catch (IOException | UnsupportedOperationException unavailable) {
+                            Files.copy(file, destination, java.nio.file.StandardCopyOption.COPY_ATTRIBUTES);
+                        }
+                        return java.nio.file.FileVisitResult.CONTINUE;
+                    }
+                });
+        alternateJava = copy.resolve("bin").resolve(Path.of(org.openjdk.jmh.util.Utils.getCurrentJvm()).getFileName());
+        return alternateJava;
+    }
+
+    public static final class RuntimeProbe {
+        public static void main(String[] args) throws Exception {
+            cohort = Path.of(args[1]); binary = Path.of(args[2]); sources = Path.of(args[3]); Path output = Path.of(args[4]);
+            JSON.writeValue(output.resolve("runtime.json").toFile(), Map.of(
+                    "jvm", org.openjdk.jmh.util.Utils.getCurrentJvm(), "javaHome", System.getProperty("java.home"),
+                    "executable", ProcessHandle.current().info().command().orElse(""),
+                    "javaRuntime", System.getProperty("java.runtime.version"), "classPath", System.getProperty("java.class.path"),
+                    "jdkVersion", System.getProperty("java.version"), "vmName", System.getProperty("java.vm.name"),
+                    "vmVersion", System.getProperty("java.vm.version"), "runtimeInputs", ProjectMathScan.runtimeInputs()));
+            if (args[0].equals("setup")) {
+                try (var input = inputs(cohort, "G2_32")) { input.setup(); }
+            } else {
+                Path raw = output.resolve("synthetic-jmh.json"); JSON.writeValue(raw.toFile(), measurements());
+                BlsBenchmarkReport.main(new String[]{raw.toString(), cohort.toString(), output.resolve("report.json").toString()});
+            }
+        }
     }
 
     private static BlsBenchmark.Inputs inputs(Path directory, String workload) throws Exception {

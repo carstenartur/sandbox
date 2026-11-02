@@ -115,8 +115,12 @@ Two forks, three 500 ms warmups, five 500 ms measurements and GC profiling produ
 `target/bc-bls-jmh.json`. The pre-measurement fixture hash is a raw JMH parameter.
 `target/bc-bls-performance.json` requires all three pairs, identical settings and
 environments, and reconstructs means and 99.9% intervals from all ten samples.
-Every row must identify the JVM executable, JDK version, VM name and VM version
-bound to the source qualification; consistently foreign runtime rows are rejected.
+Preparation records the JVM executable, JDK version, VM name and VM version in
+the manifest-bound `cohort.json` qualification receipt. Runner, trial setup and
+teardown require that same runtime; the reporter checks every raw row against
+the persisted identity, including when all rows and the reporting process agree
+on a different JDK installation. JVM arguments remain separately recorded because
+preparation and measurement intentionally use different heap arguments.
 Overlap is `INCONCLUSIVE`; separated intervals give a local direction. All
 guards, fallbacks and output encoding remain timed. GC samples also include
 trial verification/cleanup and cannot isolate candidate allocations.
