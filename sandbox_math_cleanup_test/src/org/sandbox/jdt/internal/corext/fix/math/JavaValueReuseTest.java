@@ -98,7 +98,7 @@ class JavaValueReuseTest {
     }
     @Test void aFactoryCannotIntroduceForeignStaticInitialization() throws Exception {
         String source=JavaValueCallTest.fixture().replace("static final Leaf TWIST=Leaf.of(BigInteger.ONE,BigInteger.ONE);","public static int calls;")
-            .replace("public static Leaf scale(Leaf x){return x.combine(TWIST);}","public static int scale(Leaf x){Leaf a=x.square().copy();Leaf b=x.square().copy();return calls;}")
+            .replace("public static Leaf scale(Leaf x){return x.combine(TWIST);}","public static int scale(Leaf x){Leaf a=x.square().copy();Leaf b=x.square().copy();a.first();b.first();return calls;}")
             .replace("return new Leaf(a.mod(P),b.mod(P));","return new Leaf(a.mod(Foreign.P),b.mod(Foreign.P));")
             .replace("public Leaf combine(Leaf other)","public Leaf square(){return combine(this);}public Leaf copy(){return new Leaf(amber,blue);}public Leaf combine(Leaf other)")
             +"final class Foreign {static {Calculation.calls++;}public static final java.math.BigInteger P=java.math.BigInteger.valueOf(101);}";
@@ -204,13 +204,23 @@ class JavaValueReuseTest {
     }
     @Test void independentSubclassCallbackCannotObserveSharedOperandIdentity() throws Exception {
         String source=JavaValueCallTest.fixture()
-            .replace("public static Leaf scale(Leaf x){return x.combine(TWIST);}","public static boolean scale(Leaf x,Leaf y){Leaf a=x.square().observe(y);Leaf b=x.square().observe(y);return b.first().equals(BigInteger.ONE);}")
+            .replace("public static Leaf scale(Leaf x){return x.combine(TWIST);}","public static boolean scale(Leaf x,Leaf y){Leaf a=x.square().observe(y);Leaf b=x.square().observe(y);a.first();return b.first().equals(BigInteger.ONE);}")
             .replace("public Leaf combine(Leaf other)","public Leaf square(){return combine(this);}public Leaf observe(Leaf other){return new Leaf(other.amber.add(amber),blue);}public Leaf combine(Leaf other)");
         assertIdentityPreserved(source,true);
     }
-    @Test void callbackCanObserveSharedOperandEvenWhenEveryResultComponentUsesArithmetic() throws Exception {
+    @Test void opaqueReuseCannotClaimAnUnusedAuthoredFirstResultWarning() throws Exception {
         String source=JavaValueCallTest.fixture()
             .replace("public static Leaf scale(Leaf x){return x.combine(TWIST);}","public static boolean scale(Leaf x,Leaf y){Leaf a=x.square().observe(y);Leaf b=x.square().observe(y);return b.first().equals(BigInteger.ONE);}")
+            .replace("public Leaf combine(Leaf other)","public Leaf square(){return combine(this);}public Leaf observe(Leaf other){return new Leaf(other.amber.add(amber),blue);}public Leaf combine(Leaf other)");
+        var helper=new JavaImmutableValueTest();helper.directory=directory;
+        var result=MathematicalAnalysis.analyze(helper.parse(source),source,options(),null,-1,0,helper.environment());
+        assertTrue(result.diagnostics().stream().anyMatch(d->d.message().startsWith("GENERATED_DIAGNOSTIC_INTRODUCED: 536870973 [a]")),result.diagnostics().toString());
+        String generated=helper.apply(source,result);assertEquals(source,generated);
+        assertEquals(false,executeIdentity(generated,true,8,"scale"));
+    }
+    @Test void callbackCanObserveSharedOperandEvenWhenEveryResultComponentUsesArithmetic() throws Exception {
+        String source=JavaValueCallTest.fixture()
+            .replace("public static Leaf scale(Leaf x){return x.combine(TWIST);}","public static boolean scale(Leaf x,Leaf y){Leaf a=x.square().observe(y);Leaf b=x.square().observe(y);a.first();return b.first().equals(BigInteger.ONE);}")
             .replace("public Leaf combine(Leaf other)","public Leaf square(){return combine(this);}public Leaf observe(Leaf other){return new Leaf(other.amber.add(amber),blue.add(BigInteger.ONE));}public Leaf combine(Leaf other)");
         assertIdentityPreserved(source,true);
     }
@@ -268,7 +278,7 @@ class JavaValueReuseTest {
     }
     @Test void shadowedJavaPackageCannotInvokeAnUnrelatedGuardCallback() throws Exception {
         String source=JavaValueCallTest.fixture()
-            .replace("public static Leaf scale(Leaf x){return x.combine(TWIST);}","public static int calls;public static int scale(Leaf x){Names java=new Names();Leaf a=x.square().copy();Leaf b=x.square().copy();return calls;}")
+            .replace("public static Leaf scale(Leaf x){return x.combine(TWIST);}","public static int calls;public static int scale(Leaf x){Names java=new Names();System.identityHashCode(java);Leaf a=x.square().copy();Leaf b=x.square().copy();a.first();b.first();return calls;}")
             .replace("public Leaf combine(Leaf other)","public Leaf square(){return combine(this);}public Leaf copy(){return new Leaf(amber,blue);}public Leaf combine(Leaf other)")
             +"class Names {public final MathNamespace math=new MathNamespace();}class MathNamespace {public final ProbeInteger BigInteger=new ProbeInteger();}"
             +"class ProbeInteger {public java.math.BigInteger valueOf(long n){Calculation.calls++;return java.math.BigInteger.valueOf(n);}}";
@@ -282,15 +292,15 @@ class JavaValueReuseTest {
     @Test void scalarStaticMethodThroughANullValueQualifierCannotEnterReuseGuard() throws Exception {
         for(boolean inverse:new boolean[]{false,true}) {
         String source=(inverse?JavaValueInverseReuseTest.fixture():fixture())
-            .replace("public static Leaf scale(Leaf x){", "public static int calls;public static int scale(Leaf x){Names java=new Names();")
-            .replace("return a.combine(b);", "Leaf answer=a.combine(b);return calls;")
-            .replace("return weighted.combine(x.reciprocal());", "Leaf answer=weighted.combine(x.reciprocal());return calls;")
+            .replace("public static Leaf scale(Leaf x){", "public static int calls;public static int scale(Leaf x){Names java=new Names();System.identityHashCode(java);")
+            .replace("return a.combine(b);", "Leaf answer=a.combine(b);answer.first();return calls;")
+            .replace("return weighted.combine(x.reciprocal());", "Leaf answer=weighted.combine(x.reciprocal());answer.first();return calls;")
             +"class Names {public final MathNamespace math=null;}class MathNamespace {public final java.math.BigInteger BigInteger=null;}";
         var helper=new JavaImmutableValueTest();helper.directory=directory;
         var result=MathematicalAnalysis.analyze(helper.parse(source),source,options(),null,-1,0,helper.environment());
         String generated=helper.apply(source,result);
-        assertTrue(result.diagnostics().stream().anyMatch(item->item.code().equals("VALUE_REUSE_LIMIT") && item.message().startsWith("VALUE_GUARD_BINDING_")),result.diagnostics().toString());
-        if(inverse)assertTrue(result.diagnostics().stream().anyMatch(item->item.code().equals("VALUE_INVERSE_UNAVAILABLE") && item.message().startsWith("VALUE_GUARD_BINDING_")),result.diagnostics().toString());
+        assertTrue(result.diagnostics().stream().anyMatch(item->item.code().equals("VALUE_REUSE_LIMIT") && (item.message().startsWith("VALUE_GUARD_BINDING_") || item.message().startsWith("GENERATED_DIAGNOSTIC_INTRODUCED: 603979893"))),result.diagnostics().toString());
+        if(inverse)assertTrue(result.diagnostics().stream().anyMatch(item->item.code().equals("VALUE_INVERSE_UNAVAILABLE") && (item.message().startsWith("VALUE_GUARD_BINDING_") || item.message().startsWith("GENERATED_DIAGNOSTIC_INTRODUCED: 603979893"))),result.diagnostics().toString());
         assertEquals(0,executeIdentity(source,false,8,"scale"));
         assertEquals(executeIdentity(source,false,8,"scale"),executeIdentity(generated,false,8,"scale"));
         }

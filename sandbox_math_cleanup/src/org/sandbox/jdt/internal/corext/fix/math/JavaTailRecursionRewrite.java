@@ -2,13 +2,14 @@
 package org.sandbox.jdt.internal.corext.fix.math;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
@@ -62,7 +63,7 @@ public final class JavaTailRecursionRewrite {
             if (source.length() > MAX_SOURCE || methodOffset < 0 || methodOffset >= source.length()
                     || unitName.isEmpty() || unitName.length() > 4096) throw new Stopped("SOURCE_LIMIT_OR_POSITION"); //$NON-NLS-1$
             CompilationUnit original = parse(unitName, source, work);
-            return prepared(original,source,methodOffset,work,null,text->parse(unitName,text,work));
+            return prepared(original,source,methodOffset,work,null,(text,edits)->parse(unitName,text,work));
         } catch (Stopped stopped) {
             return new Result(Optional.empty(), stopped.getMessage(), work.used);
         } catch (OperationCanceledException cancelledParse) {
@@ -84,9 +85,9 @@ public final class JavaTailRecursionRewrite {
             Map<String,String> compiler=original.getJavaElement()==null?Map.of():original.getJavaElement().getJavaProject().getOptions(true);
             if(!MathematicalAnalysis.matchesAstSource(original,source,compiler,options.targetJava(),work::charge,monitor))
                 throw new Stopped("STALE_RECURSION_SOURCE"); //$NON-NLS-1$
-            return prepared(original,source,methodOffset,work,options,text->{
+            return prepared(original,source,methodOffset,work,options,(text,edits)->{
                 work.charge(4L*text.length());
-                return MathematicalAnalysis.checkGeneratedSource(original,text,compiler,options.targetJava(),monitor,null);
+                return MathematicalAnalysis.checkGeneratedSource(original,source,text,compiler,options.targetJava(),monitor,null,edits);
             });
         } catch(Stopped stopped) {
             return new Result(Optional.empty(),stopped.getMessage(),work.used);
@@ -98,7 +99,7 @@ public final class JavaTailRecursionRewrite {
     }
 
     private static Result prepared(CompilationUnit original,String source,int methodOffset,Work work,
-            MathCleanUpOptions options,Function<String,CompilationUnit> parser) {
+            MathCleanUpOptions options,BiFunction<String,List<GeneratedSourceDiagnostics.Edit>,CompilationUnit> parser) {
         MethodDeclaration method=methodAt(original,methodOffset,work);
         if(method==null) throw new Stopped("METHOD_NOT_FOUND"); //$NON-NLS-1$
         var inspected=JavaTailRecursionInspector.inspect(method,source,work.maximum-work.used,work.cancelled);
@@ -115,14 +116,19 @@ public final class JavaTailRecursionRewrite {
         String body=emit(method,model,source,work,counted);
         int start=method.getBody().getStartPosition(),end=start+method.getBody().getLength();
         var after=new StringBuilder(source).replace(start,end,body);
+        var diagnosticEdits=new ArrayList<GeneratedSourceDiagnostics.Edit>();
+        diagnosticEdits.add(new GeneratedSourceDiagnostics.Edit(start,end-start,body.length()));
         if(options!=null) {
             var documentation=new MathematicalJavadoc();
             documentation.add(original,start,end-start,"Tail recursion: explicit ALLOW_FRAME_ELISION removes recursive frames and may change stack observation or StackOverflowError. Primitive state and evaluation order were independently replayed."); //$NON-NLS-1$
-            for(var edit:documentation.edits(source)) after.replace(edit.offset(),edit.offset()+edit.length(),edit.replacement());
+            for(var edit:documentation.edits(source)) {
+                diagnosticEdits.add(new GeneratedSourceDiagnostics.Edit(edit.offset(),edit.length(),edit.replacement().length()));
+                after.replace(edit.offset(),edit.offset()+edit.length(),edit.replacement());
+            }
         }
         if(after.length()>MAX_SOURCE) throw new Stopped("GENERATED_SOURCE_LIMIT"); //$NON-NLS-1$
         work.charge(1L+after.length()/64L);String generated=after.toString();
-        CompilationUnit emitted=parser.apply(generated);
+        CompilationUnit emitted=parser.apply(generated,diagnosticEdits);
         MethodDeclaration replacement=methodAt(emitted,methodOffset,work);
         if(replacement==null || !JavaTailRecursionReplay.verify(method,replacement,model,work::tick)) throw new Stopped("STATE_TRANSFER_REPLAY_FAILED"); //$NON-NLS-1$
         work.tick();
@@ -190,7 +196,7 @@ public final class JavaTailRecursionRewrite {
         if(counter<0) code.append("    while (!( ").append(renamed(exit.getExpression(), names, source, work)).append(" )) {\n"); //$NON-NLS-1$ //$NON-NLS-2$
         else {
             String name=states.get(counter);
-            code.append("    for (").append(name).append(" = ").append(name).append("; ").append(name).append(" > 0; ").append(name).append("--) {\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
+            code.append("    for (; ").append(name).append(" > 0; ").append(name).append("--) {\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
         }
         for (int i = 0; i < next.size(); i++) {
             if(i==counter) continue;

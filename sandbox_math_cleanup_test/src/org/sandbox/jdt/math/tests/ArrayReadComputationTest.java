@@ -70,7 +70,7 @@ class ArrayReadComputationTest {
         String source = source("int unused = words[i] & mask; return (value + 1) - 1;");
         String generated = rewrite(source);
         assertEquals(1, occurrences(generated, "words[i]"), generated);
-        assertFalse(generated.contains("int unused"), generated);
+        assertTrue(generated.contains("int unused"), "A dead capture warning must retain its original declaration: "+generated);
         try (var before = compile(source); var after = compile(generated)) {
             assertEquals(19L, compare(before, after, new int[] {5}, null, 0, 0, -1, 19));
             assertEquals(NullPointerException.class, compare(before, after, null, null, 0, 0, -1, 19));

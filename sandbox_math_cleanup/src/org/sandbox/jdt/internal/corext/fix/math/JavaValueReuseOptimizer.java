@@ -79,7 +79,7 @@ final class JavaValueReuseOptimizer {
                 for(var group:groups){for(var call:group.calls())mappings.put(call,group);declarations.append(group.base().resolveTypeBinding().getQualifiedName()).append(' ').append(group.name()).append(" = null;\n");} //$NON-NLS-1$
                 String original=source.substring(start,start+length);String rewritten=render(block,source,mappings,null);String replacement=rewritten.substring(0,1)+declarations+rewritten.substring(1);
                 String generated=source.substring(0,start)+replacement+source.substring(start+length);work.charge(generated.length());
-                var after=MathematicalAnalysis.checkGeneratedSource(ast,generated,compiler,options.targetJava(),monitor,environment);work.check();
+                var after=MathematicalAnalysis.checkGeneratedSource(ast,source,generated,compiler,options.targetJava(),monitor,environment,start,length,replacement.length());work.check();
                 var factoryProofs=new ArrayList<VerificationEvidence>();
                 var proofs=new ArrayList<VerificationResult.Verified>();var operationWork=new IdentityHashMap<Group,Long>();
                 try(var context=JavaSourceContext.open(after,generated,environment,monitor,options,work.remaining())) {

@@ -3,6 +3,7 @@ package org.sandbox.jdt.internal.ui.fix;
 
 import static org.junit.jupiter.api.Assertions.*;
 import java.util.HashMap;
+import java.util.Arrays;
 import java.util.UUID;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -15,13 +16,15 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.launching.JavaRuntime;
 import org.eclipse.jface.text.Document;
 import org.eclipse.text.edits.MalformedTreeException;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
 import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
 
 /** Native Eclipse/JDT lifecycle, including guarded copies of the multipart edit. */
 class MathematicalSliceChangeTest {
-    @Test void previewApplyUndoAndStaleCopiedEditUseTheSameAtomicSourcePlan() throws Exception {
+    @ParameterizedTest @ValueSource(booleans={false,true})
+    void previewApplyUndoAndStaleCopiedEditUseTheSameAtomicSourcePlan(boolean diagnosticsEnabled) throws Exception {
         var monitor=new NullProgressMonitor();
         IProject project=ResourcesPlugin.getWorkspace().getRoot().getProject("MathSlice-"+UUID.randomUUID());
         try {
@@ -33,9 +36,20 @@ class MathematicalSliceChangeTest {
             var java=JavaCore.create(project);
             java.setRawClasspath(new IClasspathEntry[]{JavaCore.newSourceEntry(folder.getFullPath()),
                     JavaRuntime.getDefaultJREContainerEntry()},bin.getFullPath(),monitor);
-            var compilerOptions=java.getOptions(false);JavaCore.setComplianceOptions("17",compilerOptions);java.setOptions(compilerOptions);
+            var compilerOptions=java.getOptions(false);JavaCore.setComplianceOptions("17",compilerOptions);
+            if(diagnosticsEnabled) {
+                compilerOptions.put(JavaCore.COMPILER_PB_UNNECESSARY_TYPE_CHECK,JavaCore.WARNING);
+                compilerOptions.put(JavaCore.COMPILER_PB_NON_NLS_STRING_LITERAL,JavaCore.WARNING);
+            }
+            java.setOptions(compilerOptions);var projectOptions=java.getOptions(true);
             String source="class Sample { static void audit(){} int f(int a,int b,int c) {\n"
                     +"int left=a*b;\naudit(); // unchanged effect\nint right=a*c;\nreturn left+right;\n}}";
+            if(diagnosticsEnabled) {
+                source=source.replace("audit(){}","audit(int value){}").replace("audit();","audit((int)a);")
+                        .replace("a*b;","a*b+0+0+0;").replace("a*c;","a*c+0+0+0;");
+                String second=source.substring(source.indexOf("int f("),source.length()-1).replace("int f(","int g(");
+                source=source.substring(0,source.length()-1)+second+"}";
+            }
             var pack=java.getPackageFragmentRoot(folder).createPackageFragment("",true,monitor);
             var unit=pack.createCompilationUnit("Sample.java",source,true,monitor);
             var parser=ASTParser.newParser(AST.getJLSLatest());parser.setSource(unit);parser.setResolveBindings(true);
@@ -44,10 +58,11 @@ class MathematicalSliceChangeTest {
             var settings=new HashMap<>(MathCleanUpOptions.defaults(17).toMap());
             settings.put(MathCleanUpOptions.CLEANUP,"true");settings.put(MathCleanUpOptions.KINDS,"INT");
             settings.put(MathCleanUpOptions.WORK_BUDGET,"1000000");settings.put(MathCleanUpOptions.MAX_STATES,"20000");
-            settings.put(MathCleanUpOptions.EXPLANATIONS,"NONE");
+            if(!diagnosticsEnabled) settings.put(MathCleanUpOptions.EXPLANATIONS,"NONE");
             var options=MathCleanUpOptions.parse(settings,17);
             var result=MathematicalAnalysis.analyze(ast,source,options,monitor,-1,0);
-            assertEquals(1,result.evidence().size(),result.diagnostics().toString());
+            assertEquals(diagnosticsEnabled?2:1,result.evidence().size(),result.diagnostics().toString());
+            assertEquals(projectOptions,java.getOptions(true));assertTrue(result.matches(source,projectOptions));
             assertNotNull(result.evidence().getFirst().sourcePlan());
             var environment=MathematicalEnvironment.capture(java,monitor);
             var change=new MathematicalChange("Connected mathematics",unit,result,options,()->options,environment);
@@ -55,7 +70,17 @@ class MathematicalSliceChangeTest {
             assertEquals(1,change.getTextEditChangeGroups().length);
             assertFalse(change.isValid(monitor).hasFatalError());
             String preview=change.getPreviewContent(monitor);
-            assertTrue(preview.contains("audit(); // unchanged effect"));
+            assertTrue(preview.contains(diagnosticsEnabled?"audit((int)a); // unchanged effect":"audit(); // unchanged effect"));
+            if(diagnosticsEnabled) {
+                assertTrue(preview.contains("// Verified mathematics"));
+                var previewParser=ASTParser.newParser(AST.getJLSLatest());previewParser.setProject(java);
+                previewParser.setUnitName(unit.getPath().toPortableString());previewParser.setSource(preview.toCharArray());
+                previewParser.setResolveBindings(true);previewParser.setCompilerOptions(projectOptions);
+                var previewAst=(CompilationUnit)previewParser.createAST(monitor);
+                assertEquals(2,Arrays.stream(ast.getProblems()).filter(p->p.isWarning()).count());
+                assertEquals(2,Arrays.stream(previewAst.getProblems()).filter(p->p.isWarning()).count());
+                for(var problem:previewAst.getProblems())assertFalse(problem.isError(),problem.toString());
+            }
             var copied=change.getEdit().copy();
             var undo=change.perform(monitor);assertEquals(preview,unit.getSource());
             assertNotNull(undo);undo.perform(monitor);assertEquals(source,unit.getSource());

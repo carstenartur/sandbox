@@ -8,6 +8,25 @@ import org.eclipse.jdt.core.dom.NodeFinder;
 import org.eclipse.jface.text.Document;
 
 class JavaRuntimeIterationReviewTest extends JavaContextTestSupport {
+    @Test void fittingRuntimeConstantsIntroduceNoStringLiteralWarnings() {
+        String source="public class Sample {public static int run(int n){int sum=0;for(int i=1;i<=n;i++)sum+=i;return sum;}}";
+        var result=analyze(source);
+        var receipt=result.evidence().stream().filter(e->e.runtimeIteration()!=null).findFirst().orElseThrow();
+        assertFalse(receipt.replacement().contains("new java.math.BigInteger(\""),receipt.replacement());
+        var compiler=GeneratedSourceDiagnosticsTest.compiler();
+        String generated=source.substring(0,receipt.offset())+receipt.replacement()+source.substring(receipt.offset()+receipt.length());
+        assertTrue(java.util.Arrays.stream(GeneratedSourceDiagnosticsTest.parse(generated.replace("Sample","Calculation"),compiler).getProblems())
+                .noneMatch(p->p.getID()==org.eclipse.jdt.core.compiler.IProblem.NonExternalizedStringLiteral));
+    }
+    @Test void activeNlsOptionsPermitTheActualRuntimeCandidateWithoutChangingOptions() {
+        String source="class Calculation { static int run(int n){int sum=0;for(int i=1;i<=n;i++)sum+=i;return sum;}}";
+        var compiler=new java.util.HashMap<String,String>();org.eclipse.jdt.core.JavaCore.setComplianceOptions("17",compiler);
+        compiler.put(org.eclipse.jdt.core.JavaCore.COMPILER_PB_NON_NLS_STRING_LITERAL,org.eclipse.jdt.core.JavaCore.WARNING);
+        var environment=new MathematicalAnalysis.SourceEnvironment("Calculation.java",List.of(),List.of(),List.of(),compiler);
+        var result=MathematicalAnalysis.analyze(GeneratedSourceDiagnosticsTest.parse(source,compiler),source,options(),null,-1,0,environment);
+        assertTrue(result.evidence().stream().anyMatch(e->e.runtimeIteration()!=null),result.diagnostics().toString());
+        assertTrue(result.matches(source,compiler));assertEquals(compiler,result.compilerOptions());
+    }
     @Test void innerTerminationUsesItsOwnWidthInBothDirections() throws Exception {
         for(boolean wideOuter:List.of(true,false)) {
             String loop="for("+(wideOuter?"long":"int")+" i=0;i<n;i++)for("+(wideOuter?"int":"long")+" j=0;j<=n;j++)sum+=1;";

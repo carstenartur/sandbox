@@ -287,3 +287,25 @@ retained inverse, followed by a fresh wrapper and separate scalar copies; its
 original call remains the fallback. The realized cost must include any uncached
 square, guards, factory and copies. Compact receipts retain the exact successful
 occurrence, source laws, unit-root commitments, emitted plan and prior reuse proof.
+
+### Runtime explanations and repeated cleanup
+
+Runtime iteration comments follow `NONE`, `NONTRIVIAL` and `ALL`; runtime plans
+are nontrivial. They name actual accumulators (or the stream sum), modulo 2^32 or
+2^64 arithmetic or exact BigInteger values, the checked family and emitted guards.
+They are bounded presentation of checked runtime evidence, not scalar search
+steps. Comments stay inside generated blocks/supplier bodies; authored comments
+and exact Undo are retained. NONE remains comment-free.
+
+Checked constant sums with exclusive unit-stride int headers use primitive count
+arithmetic for every count, without crossover or fallback. Other admitted int
+constant sums retain primitive count/endpoint guards and original fallback;
+general polynomial/linear templates retain their BigInteger computation and
+applicable guards. Crossovers estimate work, not measured speed.
+
+Repeated cleanup conservatively excludes structurally recognized generated
+runtime envelopes, including fast-path scalar work and original fallback bodies,
+even in NONE mode. Recognition requires connected local bindings and template
+structure; a name or comment alone is insufficient. Matching authored structures
+may also remain unchanged. This exclusion never supplies mathematical premises
+or replaces independent source/proof replay. Nearby calculations remain eligible.

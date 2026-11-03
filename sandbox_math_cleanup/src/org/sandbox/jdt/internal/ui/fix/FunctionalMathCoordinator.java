@@ -145,6 +145,7 @@ final class FunctionalMathCoordinator {
  }
  private static List<ISourceRange> templates(CompilationUnit ast,String source,Budget budget) {
   var ranges=new LinkedHashMap<Integer,ISourceRange>();
+  boolean[] runtime={false};
   ast.accept(new ASTVisitor() {
    @Override public void preVisit(ASTNode node) {budget.charge(1);}
    @Override public boolean visit(MethodDeclaration method) {
@@ -157,40 +158,11 @@ final class FunctionalMathCoordinator {
     }return true;
    }
    @Override public boolean visit(VariableDeclarationFragment declaration) {
-    if(declaration.getName().getIdentifier().startsWith("$series")) {
-     ASTNode block=declaration;while(block!=null && !(block instanceof Block)) block=block.getParent();
-     // The primitive distance guard emits an original fallback before the first
-     // state declaration. Protect its complete wrapper, but never an arbitrary
-     // enclosing user conditional or the rest of the containing method.
-     if(block!=null && block.getParent() instanceof IfStatement guard && guard.getElseStatement()==block
-       && guard.getParent() instanceof Block wrapper && wrapper.statements().size()==1
-       && wrapper.statements().get(0)==guard && templateWrapper(wrapper)
-       && primitiveGuard(guard.getExpression(),budget)) block=wrapper;
-     if(block!=null) ranges.put(block.getStartPosition(),new SourceRange(block.getStartPosition(),block.getLength()));
-    }return true;
+    runtime[0]|=declaration.getName().getIdentifier().startsWith("$series");return true;
    }
-  });return List.copyOf(ranges.values());
- }
- private static boolean templateWrapper(Block wrapper) {
-  if(wrapper.getParent() instanceof Statement) return true;
-  if(!(wrapper.getParent() instanceof MethodDeclaration method) || !method.parameters().isEmpty()
-    || !(method.getParent() instanceof AnonymousClassDeclaration anonymous)
-    || !(anonymous.getParent() instanceof ClassInstanceCreation creation)) return false;
-  var type=creation.getType().resolveBinding();if(type==null || type.isRecovered()) return false;
-  return type.getQualifiedName().equals("java.util.function.IntSupplier") && method.getName().getIdentifier().equals("getAsInt")
-    || type.getQualifiedName().equals("java.util.function.LongSupplier") && method.getName().getIdentifier().equals("getAsLong");
- }
- private static boolean primitiveGuard(Expression expression,Budget budget) {
-  if(!(unparenthesized(expression,budget) instanceof InfixExpression comparison)
-    || comparison.getOperator()!=InfixExpression.Operator.LESS || !comparison.extendedOperands().isEmpty()
-    || !(unparenthesized(comparison.getRightOperand(),budget) instanceof NumberLiteral limit) || !limit.getToken().endsWith("L")) return false;
-  return unparenthesized(comparison.getLeftOperand(),budget) instanceof InfixExpression distance
-    && distance.getOperator()==InfixExpression.Operator.MINUS && distance.extendedOperands().isEmpty()
-    && longCast(distance.getLeftOperand(),budget) && longCast(distance.getRightOperand(),budget);
- }
- private static boolean longCast(Expression expression,Budget budget) {
-  return unparenthesized(expression,budget) instanceof CastExpression cast
-    && cast.getType() instanceof PrimitiveType type && type.getPrimitiveTypeCode()==PrimitiveType.LONG;
+  });
+  if(runtime[0])for(var range:org.sandbox.jdt.internal.corext.fix.math.JavaRuntimeIterationTemplates.ranges(ast,budget::charge))ranges.put(range.getOffset(),range);
+  return List.copyOf(ranges.values());
  }
  private static Expression unparenthesized(Expression expression,Budget budget) {
   while(expression instanceof ParenthesizedExpression nested) {budget.charge(1);expression=nested.getExpression();}
