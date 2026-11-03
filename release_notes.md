@@ -3,6 +3,7 @@
 Status: draft for review; publication remains held pending final qualification and acceptance.
 Baseline: [1.3.7](https://github.com/carstenartur/sandbox/releases/tag/v1.3.7).
 Candidate source: `ef946b6fad6276694f32389311cb7e71cf7f3955` (2026-11-03, after #1797).
+Qualification snapshot: **2026-11-03 at 20:22 UTC**.
 The source includes #1798, the Linux/Windows native CI scope, mining source-evidence
 admission from #1796 and the reusable upstream qualification infrastructure from
 #1797. Only the release-preparation PR #1779 remains open and draft in this release
@@ -203,6 +204,13 @@ prevents an isolated allocation-savings claim. This experiment does not measure
 the nine separately qualified digest rewrites. Smaller digest-helper bytecode
 does not itself establish faster execution.
 
+A separate [QA benchmark completed on 3 November](https://github.com/carstenartur/sandbox/actions/runs/41697761447)
+records **seven inconclusive BC timing pairs and one slower generated case**:
+`P384_XMD_SHA_384` with 32-byte input needs **2.0645% more time**, with separated
+99.9% intervals. This observation applies to that run and does not establish a
+general speedup. The [preparation handoff](docs/releases/1.3.8-preparation.md)
+retains the exact timings, test scope and historical performance alerts.
+
 The historical [finite-series qualification](qa/math-optimization/results/2026-10-31-finite-series/README.md)
 used SDK source `3a9250062f3f5ddb2ce46d8c1c3650801a77b4ef`; it is not a fresh
 measurement of the current SDK. Its whole-call JMH run shows separated 99.9% intervals for
@@ -221,7 +229,7 @@ Main `ef946b6fad6276694f32389311cb7e71cf7f3955` has tree
 [QA Maven execution](https://github.com/carstenartur/sandbox/actions/runs/41697761523)
 passed 6,662 test occurrences with 12 skips, including all 1,239 mathematics
 cases; the separate Oomph workspace execution passed 38 tests.
-[Metrics](https://github.com/carstenartur/sandbox/actions/runs/41697761160)
+[QA metrics](https://github.com/carstenartur/sandbox/actions/runs/41697761160)
 recorded 6,869 passes and 12 skips, with LINE coverage **44,441/64,240 = 69.1796%**
 above the unchanged 63% gate. The 25-module aggregate excludes the mathematics
 plug-in, so this is not its coverage percentage. These overlapping reactor
@@ -229,13 +237,21 @@ counts are not additive. The fresh
 [SWT comparison](https://github.com/carstenartur/sandbox/actions/runs/41697761447/job/126132695087)
 passed 4,550 occurrences with 462 identical skips in each phase.
 
+The separate [preparation metrics run](https://github.com/carstenartur/sandbox/actions/runs/41706632758)
+on `8b7b84207a0e44f8f65d52fa7151b31f125276f0` passed **6,869 tests with
+12 skips**, including all **1,239 mathematics cases**. Its LINE result is
+**44,444/64,240 = 69.1843%**, above the unchanged **63%** gate; the 25-module
+aggregate still excludes the mathematics plug-in. These results belong to that
+preparation head. This documentation refresh needs its own applicable checks.
+
 The 33 QA paths merged in #1797 change no runtime source from main `64235a3…`.
-Linux and Windows distribution acceptance completed on #1796's identical runtime
-tree; its atomic Help retry also passed. Push path filters therefore schedule no
-new Maven/Oomph or distribution run for the QA-only merge. The actual new main
-metrics, benchmark/SWT and security runs retain their own recorded states in
-[the preparation handoff](docs/releases/1.3.8-preparation.md). The generic PR
-benchmark is still running and supplies no new performance result.
+Linux and Windows distribution acceptance completed on that runtime main and
+#1796's identical runtime tree; its atomic Help retry also passed. Push path
+filters therefore schedule no new Maven/Oomph or distribution run for the QA-only
+merge. At the 20:22 UTC snapshot, final main's metrics build, SWT, CodeQL, Core and
+Codacy had succeeded; quality publication was pending and the generic main
+benchmark was still running. The [preparation handoff](docs/releases/1.3.8-preparation.md)
+records these separate execution states.
 
 The handoff preserves the historical source boundaries and provisioning failures;
 later successful executions do not establish a permanent Oomph repair. Native
