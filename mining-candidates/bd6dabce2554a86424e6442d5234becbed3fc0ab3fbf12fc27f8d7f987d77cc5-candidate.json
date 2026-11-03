@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "bd6dabce2554a86424e6442d5234becbed3fc0ab3fbf12fc27f8d7f987d77cc5",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new org.eclipse.jface.viewers.ViewerComparator(java.lang.String.CASE_INSENSITIVE_ORDER) :: inClass(\"org.eclipse.debug.ui.launchview.internal.view.LaunchViewImpl\")\n\u003d\u003e\nnew org.eclipse.debug.ui.launchview.internal.view.LaunchViewComparator()\n;;",
+  "beforeExample": "package org.eclipse.debug.ui.launchview.internal.view;\n\nimport org.eclipse.jface.viewers.TreeViewer;\nimport org.eclipse.jface.viewers.ViewerComparator;\nimport org.eclipse.swt.widgets.Composite;\n\npublic class LaunchViewImpl {\n    private TreeViewer treeViewer;\n    public LaunchViewImpl(Composite parent) {\n        this.treeViewer \u003d new TreeViewer(parent);\n        treeViewer.getViewer().setComparator(new ViewerComparator(String.CASE_INSENSITIVE_ORDER));\n    }\n    public TreeViewer getViewer() { return treeViewer; }\n}\n",
+  "afterExample": "package org.eclipse.debug.ui.launchview.internal.view;\n\nimport org.eclipse.jface.viewers.TreeViewer;\n//import org.eclipse.jface.viewers.ViewerComparator; // Import becomes unused\nimport org.eclipse.swt.widgets.Composite;\n\npublic class LaunchViewImpl {\n    private TreeViewer treeViewer;\n    public LaunchViewImpl(Composite parent) {\n        this.treeViewer \u003d new TreeViewer(parent);\n        treeViewer.getViewer().setComparator(new LaunchViewComparator());\n    }\n    public TreeViewer getViewer() { return treeViewer; }\n}\n// Assuming LaunchViewComparator is defined elsewhere or will be added as a new file in a full refactoring.\nclass LaunchViewComparator extends org.eclipse.jface.viewers.ViewerComparator {\n    public LaunchViewComparator() {\n        super(String.CASE_INSENSITIVE_ORDER);\n    }\n    @Override public int category(Object element) { return super.category(element); }\n    @Override public int compare(org.eclipse.jface.viewers.Viewer viewer, Object e1, Object e2) { return super.compare(viewer, e1, e2); }\n}\n",
+  "negativeExample": "package com.example;\n\nimport org.eclipse.jface.viewers.TreeViewer;\nimport org.eclipse.jface.viewers.ViewerComparator;\nimport org.eclipse.swt.widgets.Composite;\n\npublic class MyOtherView {\n    private TreeViewer treeViewer;\n    public MyOtherView(Composite parent) {\n        this.treeViewer \u003d new TreeViewer(parent);\n        treeViewer.getViewer().setComparator(new ViewerComparator(String.CASE_INSENSITIVE_ORDER));\n    }\n    public TreeViewer getViewer() { return treeViewer; }\n}\n",
+  "targetHintFile": "launchview.sandbox-hint",
+  "sourceCommit": "61e2a7bc301dc73f7b8006c22a2774cf37ad4075",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "Constructor Replacement",
+  "summary": "Replace the instantiation of ViewerComparator with String.CASE_INSENSITIVE_ORDER with LaunchViewComparator in LaunchViewImpl.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-03T02:35:31.617664403Z",
+  "ruleFingerprint": "sha256:b61d4263e963391bc07a16d8e43bf8bf63a19c75dec35644ff4deb950a0ad5da",
+  "behaviorFingerprint": "sha256:7c8804527822c1afa41ba024e205286af5419be7cb6b6b2bc333c1208462f575",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jface.viewers cannot be resolved",
+    "verifiedAt": "2026-11-03T02:36:13.531418389Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "f26235246d80c3f83ccefddd00cdcce4ac107b25b2dc36c1f47367f3f632ef4f",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: junit.assertThatIsToAssertEquals\u003e\n\u003c!description: Replace Hamcrest assertThat(actual, is(expected)) with JUnit assertEquals(expected, actual).\u003e\n\u003c!severity: WARNING\u003e\n\norg.hamcrest.MatcherAssert.assertThat($actual, org.hamcrest.CoreMatchers.is($expected))\n\u003d\u003e\norg.junit.Assert.assertEquals($expected, $actual)\n;;",
+  "beforeExample": "import static org.hamcrest.CoreMatchers.is;\nimport static org.hamcrest.MatcherAssert.assertThat;\n\n// Mock class for compilation\nclass DebugCoreMessages {\n    public static String RuntimeProcess_terminate_failed \u003d \"Failed to terminate process\";\n}\n\npublic class TestClass {\n    public void testAsserts() {\n        String actualMessage \u003d \"Actual message\";\n        String expectedMessage \u003d DebugCoreMessages.RuntimeProcess_terminate_failed;\n        assertThat(actualMessage, is(expectedMessage));\n    }\n\n    public void anotherTest() {\n        Object obj \u003d new Object();\n        assertThat(obj, is(\"some string\"));\n    }\n}\n",
+  "afterExample": "import static org.junit.Assert.assertEquals;\n\n// Mock class for compilation\nclass DebugCoreMessages {\n    public static String RuntimeProcess_terminate_failed \u003d \"Failed to terminate process\";\n}\n\npublic class TestClass {\n    public void testAsserts() {\n        String actualMessage \u003d \"Actual message\";\n        String expectedMessage \u003d DebugCoreMessages.RuntimeProcess_terminate_failed;\n        assertEquals(expectedMessage, actualMessage);\n    }\n\n    public void anotherTest() {\n        Object obj \u003d new Object();\n        assertEquals(\"some string\", obj);\n    }\n}\n",
+  "negativeExample": "import static org.hamcrest.CoreMatchers.containsString;\nimport static org.hamcrest.MatcherAssert.assertThat;\nimport static org.junit.Assert.assertFalse;\n\npublic class TestClass {\n    public void testNotIsMatcher() {\n        String actualValue \u003d \"hello world\";\n        assertThat(actualValue, containsString(\"hello\")); // Uses \u0027containsString\u0027 matcher, not \u0027is\u0027\n    }\n\n    public void testNoHamcrest() {\n        // This is not a Hamcrest assertThat call\n        assertFalse(false);\n    }\n}\n",
+  "targetHintFile": "junit.sandbox-hint",
+  "sourceCommit": "2e7a31500b12f2f155deb51d437df130ea950924",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "Testing/Assertions",
+  "summary": "Replaces Hamcrest `assertThat($actual, is($expected))` with JUnit `assertEquals($expected, $actual)` to simplify assertions and improve error messages.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-03T02:31:59.341442423Z",
+  "ruleFingerprint": "sha256:2de76faa611ba4804353341f0f43110a8575658373b6e0aeabd538f876225ccd",
+  "behaviorFingerprint": "sha256:035aa6d154384c6c0bfa7771d5b47c837bf1db979c86ae217c49d3cb205f16c4",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-11-03T02:36:13.422745825Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

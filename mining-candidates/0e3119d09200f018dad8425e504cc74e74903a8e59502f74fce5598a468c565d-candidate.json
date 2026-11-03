@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "0e3119d09200f018dad8425e504cc74e74903a8e59502f74fce5598a468c565d",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.adapt.getAdapterToAdaptersAdapt\u003e\n\u003c!description: Replace IAdaptable.getAdapter(Class) with org.eclipse.core.runtime.Adapters.adapt(IAdaptable, Class) for safer adaptation.\u003e\n\u003c!severity: HINT\u003e\n\u003c!tags: eclipse, modernization\u003e\n\n$element.getAdapter($Type.class) :: instanceof($element, \"org.eclipse.core.runtime.IAdaptable\")\n\u003d\u003e org.eclipse.core.runtime.Adapters.adapt($element, $Type.class)\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.core.resources.IResource;\nimport org.eclipse.core.runtime.IAdaptable;\n\npublic class TestClass {\n    public IResource getResourceAdapter(IAdaptable element) {\n        if (element !\u003d null) {\n            IResource resource \u003d element.getAdapter(IResource.class);\n            return resource;\n        }\n        return null;\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.core.resources.IResource;\nimport org.eclipse.core.runtime.IAdaptable;\nimport org.eclipse.core.runtime.Adapters;\n\npublic class TestClass {\n    public IResource getResourceAdapter(IAdaptable element) {\n        if (element !\u003d null) {\n            IResource resource \u003d Adapters.adapt(element, IResource.class);\n            return resource;\n        }\n        return null;\n    }\n}",
+  "negativeExample": "package test;\nimport org.eclipse.core.runtime.IAdaptable;\n\npublic class TestClass {\n    // Not calling getAdapter\n    public Object someOtherMethod(IAdaptable element) {\n        return element.toString();\n    }\n\n    // Not an IAdaptable type for $element, so the guard will prevent matching\n    public Object getAdapterFromObject(Object obj) {\n        // This pattern will not match because \u0027obj\u0027 is not of type IAdaptable\n        // The rule is designed to apply when $element is statically known as IAdaptable\n        return \"\"; \n    }\n}",
+  "targetHintFile": "eclipse.sandbox-hint",
+  "sourceCommit": "b3b7abef4e229246cb10fef2bdaefce4327471b4",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "Eclipse Modernization",
+  "summary": "Replace calls to `IAdaptable.getAdapter` with `org.eclipse.core.runtime.Adapters.adapt` for improved safety and consistency, especially in Eclipse platforms.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-03T02:33:04.324023074Z",
+  "ruleFingerprint": "sha256:265ce33519270b41542de6489bd55b13c3f84ee7d9a5565bd08aaddeca3f1518",
+  "behaviorFingerprint": "sha256:b0a639e32bbc1c39260b67045fb06140023ac8931ca64e22a84ffc5ec68286f6",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-11-03T02:36:13.469272008Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

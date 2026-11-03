@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 3: The import org.eclipse.jdt.core.IClasspathEntry conflicts with a type defined in the same file",
-    "verifiedAt": "2026-11-02T02:22:37.324774103Z",
+    "verifiedAt": "2026-11-03T02:36:00.869450325Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

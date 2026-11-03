@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "3e4947d0f564fb4ebc4cbd5df6d5e41cdab5d700d81689a98dbfe31ab632e299",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\"booleanEnabled\" :: inClass(\"org.eclipse.ui.internal.console.ansi.preferences.AnsiConsolePreferenceConstants\")\n\u003d\u003e\n\"ANSI_support_enabled\"\n;;",
+  "beforeExample": "package org.eclipse.ui.internal.console.ansi.preferences;\n\npublic class AnsiConsolePreferenceConstants {\n\tpublic static final String PREF_ANSI_CONSOLE_ENABLED \u003d \"booleanEnabled\"; //$NON-NLS-1$\n\tpublic static final String PREF_WINDOWS_MAPPING \u003d \"booleanWindowsMapping\"; //$NON-NLS-1$\n\tpublic static final String PREF_SHOW_ESCAPES \u003d \"booleanShowEscapes\"; //$NON-NLS-1$\n\tpublic static final String PREF_COLOR_PALETTE \u003d \"choiceColorPalette\"; //$NON-NLS-1$\n\tpublic static final String PREF_KEEP_STDERR_COLOR \u003d \"booleanKeepStderrColor\"; //$NON-NLS-1$\n\tpublic static final String PREF_PUT_RTF_IN_CLIPBOARD \u003d \"booleanPutRtfInClipboard\"; //$NON-NLS-1$\n\n\tprivate AnsiConsolePreferenceConstants() {\n\t}\n}\n",
+  "afterExample": "package org.eclipse.ui.internal.console.ansi.preferences;\n\npublic class AnsiConsolePreferenceConstants {\n\tpublic static final String PREF_ANSI_CONSOLE_ENABLED \u003d \"ANSI_support_enabled\"; //$NON-NLS-1$\n\tpublic static final String PREF_WINDOWS_MAPPING \u003d \"booleanWindowsMapping\"; //$NON-NLS-1$\n\tpublic static final String PREF_SHOW_ESCAPES \u003d \"booleanShowEscapes\"; //$NON-NLS-1$\n\tpublic static final String PREF_COLOR_PALETTE \u003d \"choiceColorPalette\"; //$NON-NLS-1$\n\tpublic static final String PREF_KEEP_STDERR_COLOR \u003d \"booleanKeepStderrColor\"; //$NON-NLS-1$\n\tpublic static final String PREF_PUT_RTF_IN_CLIPBOARD \u003d \"booleanPutRtfInClipboard\"; //$NON-NLS-1$\n\n\tprivate AnsiConsolePreferenceConstants() {\n\t}\n}\n",
+  "negativeExample": "package com.example;\n\npublic class MyOtherConstants {\n\tpublic static final String SOME_FLAG \u003d \"booleanEnabled\";\n}\n",
+  "targetHintFile": "ansi-preferences.sandbox-hint",
+  "sourceCommit": "8c62b3234dffec29e9e2a85392e185068745fc57",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "String Literal Replacement",
+  "summary": "Replace the string literal \u0027booleanEnabled\u0027 with \u0027ANSI_support_enabled\u0027 within the AnsiConsolePreferenceConstants class.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-03T02:35:31.586496914Z",
+  "ruleFingerprint": "sha256:83231b56cfb3b311d914a4b02e12949ac6a3cc8d49e07b41c06fea866fdc6e6e",
+  "behaviorFingerprint": "sha256:2162a62c937e234d16bd9c199a09dfdb536c32c905092a0ce08ca84405447ff3",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The public type AnsiConsolePreferenceConstants must be defined in its own file",
+    "verifiedAt": "2026-11-03T02:36:13.509904092Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
