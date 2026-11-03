@@ -57,25 +57,29 @@ class InstanceMethodExpansionTest {
         assertTrue(generated(source).contains("return y;"));
     }
     @Test void retainedFinalClassReceiverKeepsNullCheckAndStore() throws Exception {
-        Files.writeString(directory.resolve("Helper.java"), "public final class Helper { public int add(int x,int y){return x+y;} }");
+        Files.writeString(directory.resolve("Helper.java"),
+				"public final class Helper { public int add(int x,int y){return x+y;} }", StandardCharsets.UTF_8);
         String source = "public class Calculation { public static int run(Helper h,int x,int y,int[] out) {int a=h.add(x,y); out[0]=a; return a-x;} }";
         String output = generated(source);
         assertTrue(output.contains("int a=h.add(x,y); out[0]=a; return y;"), output);
         compareExecutions(source, output, true);
     }
     @Test void retainedReferenceKeepsCreationCallCommentsAndDependencyReceipt() throws Exception {
-        Files.writeString(directory.resolve("Helper.java"), "public class Helper { public static int add(int x,int y){return x+y;} }");
+        Files.writeString(directory.resolve("Helper.java"),
+				"public class Helper { public static int add(int x,int y){return x+y;} }", StandardCharsets.UTF_8);
         String source = retained("java.util.function.IntBinaryOperator f=Helper::add; /*creation*/", "f.applyAsInt(x,y)");
         var result = analyze(source); var document = new Document(source); result.newEdit().apply(document);
         String output = document.get();
         assertTrue(output.contains("f=Helper::add; /*creation*/ int a=f.applyAsInt(x,y); out[0]=a; return y;"), output);
         assertEquals(1, result.sourceDependencies().receipts().size());
         compareExecutions(source, output, false);
-        Files.writeString(directory.resolve("Helper.java"), "public class Helper { public static int add(int x,int y){return x-y;} }");
+        Files.writeString(directory.resolve("Helper.java"),
+				"public class Helper { public static int add(int x,int y){return x-y;} }", StandardCharsets.UTF_8);
         assertFalse(result.matches(source, Map.of())); assertThrows(IllegalArgumentException.class, result::newEdit);
     }
     @Test void boundReferenceKeepsNullReceiverAndThrowingFactoryAtCreation() throws Exception {
-        Files.writeString(directory.resolve("Helper.java"), "public final class Helper { public int add(int x,int y){return x+y;} }");
+        Files.writeString(directory.resolve("Helper.java"),
+				"public final class Helper { public int add(int x,int y){return x+y;} }", StandardCharsets.UTF_8);
         for (String receiver : List.of("h", "factory(h)")) {
             String source = "public class Calculation { public static Helper factory(Helper h) {if(h==null) throw new IllegalStateException(); return h;}"
                     + " public static int run(Helper h,int x,int y,int[] out) {java.util.function.IntBinaryOperator f="
@@ -162,7 +166,10 @@ class InstanceMethodExpansionTest {
     }
     @Test void exactFinalMethodReferenceSelectsResolvedOverloadAndRejectsState() throws Exception {
         for (String body : List.of("return x+y;", "return x+y+state;", "return x+y+this.state;")) {
-            Files.writeString(directory.resolve("Helper.java"), "public class Helper {int state;public final int add(int x,int y){"+body+"} public final long add(long x,long y){return x-y;} }");
+            Files.writeString(directory.resolve("Helper.java"),
+					("public class Helper {int state;public final int add(int x,int y){" + body
+							+ "} public final long add(long x,long y){return x-y;} }"),
+					StandardCharsets.UTF_8);
             String source = "public class Calculation {public static int run(Helper h,int x,int y,int[] out){"
                     + "java.util.function.IntBinaryOperator f=h::add;int a=f.applyAsInt(x,y);out[0]=a;return a-x;} }";
             String output = generated(source);
@@ -173,19 +180,22 @@ class InstanceMethodExpansionTest {
         for (boolean reference : List.of(false,true)) for (boolean finalClass : List.of(false,true)) {
             String originalHelper = finalClass ? "public final class Helper {public int add(int x,int y){return x+y;}}"
                     : "public class Helper {public final int add(int x,int y){return x+y;}}";
-            Files.writeString(directory.resolve("Helper.java"), originalHelper);
+            Files.writeString(directory.resolve("Helper.java"), originalHelper, StandardCharsets.UTF_8);
             String source = "class Calculation {int run(Helper h,int x,int y){"
                     + (reference ? "java.util.function.IntBinaryOperator f=h::add;return f.applyAsInt(x,y)-x;" : "return h.add(x,y)-x;") + "}}";
             var unit = parse(source); var calls = new ArrayList<MethodInvocation>();
             unit.accept(new ASTVisitor(){@Override public boolean visit(MethodInvocation call){calls.add(call);return true;}});
-            Files.writeString(directory.resolve("Helper.java"), originalHelper.replace("final ", ""));
+            Files.writeString(directory.resolve("Helper.java"), originalHelper.replace("final ", ""),
+					StandardCharsets.UTF_8);
             try (var context = JavaSourceContext.open(unit, source, environment(), null, options())) {
                 assertNull(JavaScalarMethodBody.resolve(unit, calls.getFirst(), false, true));
             }
         }
     }
     @Test void overrideDispatchIsNotReplacedByTheBaseBody() throws Exception {
-        Files.writeString(directory.resolve("Helper.java"), "public class Helper {public int add(int x,int y){return x+y;}} class OverrideHelper extends Helper {public int add(int x,int y){return x-y;}}");
+        Files.writeString(directory.resolve("Helper.java"),
+				"public class Helper {public int add(int x,int y){return x+y;}} class OverrideHelper extends Helper {public int add(int x,int y){return x-y;}}",
+				StandardCharsets.UTF_8);
         for (String call : List.of("h.add(x,y)", "f.applyAsInt(x,y)")) {
             String source = "public class Calculation {public static int run(Helper h,int x,int y,int[] out){"
                     + (call.startsWith("f") ? "java.util.function.IntBinaryOperator f=h::add;" : "")
@@ -194,7 +204,8 @@ class InstanceMethodExpansionTest {
         }
     }
     @Test void parameterizedReferenceTargetIsOutsideThePrimitiveContract() throws Exception {
-        Files.writeString(directory.resolve("Helper.java"), "public final class Helper<T> {public int add(int x,int y){return x+y;}}");
+        Files.writeString(directory.resolve("Helper.java"),
+				"public final class Helper<T> {public int add(int x,int y){return x+y;}}", StandardCharsets.UTF_8);
         String source = "class Calculation {int run(Helper<String> h,int x,int y,int[] out){"
                 + "java.util.function.IntBinaryOperator f=h::add;int a=f.applyAsInt(x,y);out[0]=a;return a-x;} }";
         assertTrue(generated(source).contains("return a-x;"));
@@ -202,7 +213,7 @@ class InstanceMethodExpansionTest {
     private void compareExecutions(String original, String generated, boolean receiver) throws Exception {
         var outcomes = new ArrayList<List<String>>();
         for (String source : List.of(original, generated)) {
-            Path output = Files.createTempDirectory(directory, "compiled"); Path file = output.resolve("Calculation.java"); Files.writeString(file, source);
+            Path output = Files.createTempDirectory(directory, "compiled"); Path file = output.resolve("Calculation.java"); Files.writeString(file, source, StandardCharsets.UTF_8);
             assertEquals(0, javax.tools.ToolProvider.getSystemJavaCompiler().run(null,null,null,"--release","17","-d",output.toString(),file.toString(),directory.resolve("Helper.java").toString()));
             try (var loader = new java.net.URLClassLoader(new java.net.URL[]{output.toUri().toURL()}, ClassLoader.getPlatformClassLoader())) {
                 Class<?> type = loader.loadClass("Calculation"), helper = loader.loadClass("Helper");
