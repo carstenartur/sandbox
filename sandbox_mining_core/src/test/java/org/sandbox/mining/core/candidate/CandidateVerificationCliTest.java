@@ -262,6 +262,44 @@ class CandidateVerificationCliTest {
 	}
 
 	@Test
+	void legacyFilenameMigrationPrecedesSourceVersionInvalidation() throws IOException {
+		Path candidateDir = tempDir.resolve("legacy-rejection"); //$NON-NLS-1$
+		Files.createDirectories(candidateDir);
+		Path legacyPath = candidateDir.resolve("legacy-rejected-candidate.json"); //$NON-NLS-1$
+		MiningCandidate example = candidate("same-commit", "2026-01-01T00:00:00Z"); //$NON-NLS-1$ //$NON-NLS-2$
+		writeLegacyCandidate(legacyPath, example.getDslRule(), example.getBeforeExample(),
+				example.getAfterExample(), example.getNegativeExample());
+		// Raw schema-v1 data has neither a canonical filename nor sourceVersion.
+		Files.writeString(legacyPath, Files.readString(legacyPath).replace(
+				"\"status\": \"DSL_VALID\"", """
+				"status": "REJECTED",
+				"rejectionReason": "Review of the implicit source-21 revision",
+				"verification": { "successful": true, "stage": "SUCCESS",
+				  "message": "Candidate behavior verified", "verifierVersion": "7",
+				  "verifiedAt": "2026-01-01T00:00:00Z", "matches": 1, "replacements": 1 }
+				""")); //$NON-NLS-1$
+		CandidateStore store = new CandidateStore(candidateDir);
+		MiningCandidate valid = candidate("source-17", "2025-12-31T00:00:00Z"); //$NON-NLS-1$ //$NON-NLS-2$
+		valid.setSourceVersion("17"); //$NON-NLS-1$
+		store.save(valid);
+
+		assertEquals(0, CandidateVerificationCli.run(new String[] {
+				"--candidate-dir", candidateDir.toString(), //$NON-NLS-1$
+				"--report-dir", tempDir.resolve("report").toString(), //$NON-NLS-1$ //$NON-NLS-2$
+				"--source-version", "17" //$NON-NLS-1$ //$NON-NLS-2$
+		}));
+
+		assertEquals(CandidateStatus.READY_FOR_REVIEW,
+				store.findById(valid.getCandidateId()).orElseThrow().getStatus());
+		MiningCandidate revised = store.findById(example.getCandidateId()).orElseThrow();
+		assertEquals(2, revised.getRevision());
+		assertEquals("17", revised.getSourceVersion()); //$NON-NLS-1$
+		assertNull(revised.getRejectionReason());
+		assertEquals(2, store.loadAll().size());
+		assertFalse(Files.exists(legacyPath));
+	}
+
+	@Test
 	void malformedRejectedRuleDoesNotAbortVerification() throws IOException {
 		Path candidateDir = tempDir.resolve("malformed-rejection"); //$NON-NLS-1$
 		CandidateStore store = new CandidateStore(candidateDir);

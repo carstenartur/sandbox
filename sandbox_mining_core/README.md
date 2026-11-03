@@ -102,6 +102,42 @@ The command writes `candidates.json`, `candidates.html`, and copies individual c
 
 ## Review evidence and rejection memory
 
+New discovery responses must explicitly set `noCleanup: false`, report numeric
+confidence between 0.80 and 1, and include `sourceEvidence` with a Java file path
+and short original `before`/`after` spans (at most 512 characters each). Confidence
+is an admission signal, not a calibrated probability of correctness. Invalid
+fields in an identifiable answer finish with a diagnostic instead of triggering
+another model request; absent or truncated response slots remain retryable.
+The prompt explicitly asks for relevant type, side-effect, null,
+locale and numeric conditions and for rejection of existing JDT-cleanup applications.
+
+The local evidence gate uses JGit to require the spans in the removed and added
+lines of the same edit block, overlapping the same actual Java-token change.
+Unchanged quotes beside comment-only or unrelated edits are insufficient.
+JDT tokenization includes visible hunk context up to the selected edit,
+ignores formatting/comments, and preserves literal contents; CRLF becomes LF.
+It cannot recover lexical context outside the hunk. Concrete literals in the DSL replacement must occur
+in the original after span. This catches the invented exception-message example
+even if the model quotes the correct hunk. The selected original hunk and Java
+source version travel with the candidate and are rechecked on staging/replay.
+Old candidate decisions are retained; old evaluations without evidence cannot
+create new candidates automatically.
+
+This is an evidence-consistency pilot, **not complete original-project replay or
+a semantic-equivalence proof**. Generated before/after/negative examples still
+test the DSL's rewriting behavior; human review remains required for safe
+generalization and JDT overlap. A real diagnostic-message change can satisfy the
+provenance gate while still being unsuitable as a behavior-preserving cleanup.
+
+The pilot adds **zero model calls**; the brief evidence fields add some prompt and
+response tokens. No second-pass review is enabled. Gemini's existing 18-request
+default now counts every HTTP attempt, including failed requests and retries.
+It is a client-lifetime guard, not a shared daily quota or a guarantee about the
+free tier. Check the project's actual RPM/TPM/RPD in
+[Google AI Studio](https://aistudio.google.com/rate-limit?timeRange=last-28-days).
+Offline regression tests establish rejection of malformed/unsubstantiated
+responses; improved live-model precision or recall requires a later bounded comparison.
+
 A successful verifier result establishes compilation, matching and the expected rewrite for the supplied examples. It does **not** prove semantic equivalence for every input, overload, locale or evaluation context. Review must also inspect existing JDT/Sandbox implementations. The [2026-11-02 six-candidate review](../docs/mining-candidate-review-2026-11-02.md) records concrete counterexamples and upstream coverage.
 
 `CandidateVerificationCli` builds a rejection index from records whose **current status is `REJECTED` and whose stored verification succeeded**. It compares parsed, normalized rule fingerprints before admitting already-ready candidates and after successful verification of new candidates. A matching proposal becomes `DUPLICATE`, with the rejected candidate ID and reason in its diagnostic. The original rejection remains unchanged; already `APPROVED` and `PROMOTED` candidates retain their existing lifecycle handling.

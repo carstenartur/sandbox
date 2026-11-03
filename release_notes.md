@@ -2,10 +2,10 @@
 
 Status: draft for review; publication remains held pending final qualification and acceptance.
 Baseline: [1.3.7](https://github.com/carstenartur/sandbox/releases/tag/v1.3.7).
-Candidate source: `4483cd97a85c582dedd5fb0b82914c6bc457710b` (2026-11-03, after #1794).
-The source includes #1798 and the Linux/Windows native CI scope. The mining
-follow-up #1796 and reusable upstream qualification PR #1797 remain open and are
-not included in this candidate. Release 1.3.8 has not been published.
+Candidate source: `64235a3bc11d085629de7cf776a881635b7efd4d` (2026-11-03, after #1796).
+The source includes #1798, the Linux/Windows native CI scope and the mining
+source-evidence follow-up #1796. Reusable upstream qualification PR #1797 remains
+open and is not included in this candidate. Release 1.3.8 has not been published.
 
 ## Mathematics cleanup
 
@@ -133,6 +133,9 @@ cryptographic constant-time claims.
 - Keep scheduled verification from cancelling active checks.
 - Retain reviewed DSL rejections when mining rediscovers the same evidence,
   through merged [#1795](https://github.com/carstenartur/sandbox/pull/1795).
+- Check source evidence before admitting mined cleanup candidates, within the
+  existing Gemini request budget, through merged
+  [#1796](https://github.com/carstenartur/sandbox/pull/1796).
 - Explain supported Sandbox workflows and refresh mathematics guidance with
   source-backed examples and explicit fragment boundaries.
 - Update the qualified vendored value-arithmetic SDK and native mathematics Help
@@ -207,26 +210,27 @@ Java integral division truncates.
 
 ## Release review
 
-These notes describe main `4483cd97a85c582dedd5fb0b82914c6bc457710b`.
-Its fresh [Maven](https://github.com/carstenartur/sandbox/actions/runs/41689251092),
-[metrics](https://github.com/carstenartur/sandbox/actions/runs/41689250861) and
-[Linux/Windows distribution](https://github.com/carstenartur/sandbox/actions/runs/41689250866)
-checks are still running at this refresh. Earlier successful PR and upstream
-comparisons retain their original source identities and do not constitute a
-completed release qualification of this main revision.
+These notes describe main `64235a3bc11d085629de7cf776a881635b7efd4d`.
+Its fresh [Maven](https://github.com/carstenartur/sandbox/actions/runs/41697334445),
+[metrics](https://github.com/carstenartur/sandbox/actions/runs/41697334310) and
+[Linux/Windows distribution](https://github.com/carstenartur/sandbox/actions/runs/41697334451)
+checks remain pending at this refresh. The merged #1796 PR tree is identical
+to this main tree; its successful Maven and required metrics runs retain their
+own execution identities. They do not make the new main-triggered runs complete.
 
-Two workstreams remain outside this candidate:
+[#1797](https://github.com/carstenartur/sandbox/pull/1797) remains outside this
+candidate. Its new head `673c4a5928dfd0a22a3541c38c6fb14fdde5388d` incorporates
+the current main and retains the QA changes and historical receipts unchanged.
+Current-head checks are pending. The successful SWT comparison and metrics retry
+on its earlier `4de0510c…` head remain evidence for those recorded executions.
+Update the final candidate source again after QA integration.
 
-- [#1796](https://github.com/carstenartur/sandbox/pull/1796): stronger mining
-  source-evidence admission within the existing Gemini request budget.
-- [#1797](https://github.com/carstenartur/sandbox/pull/1797): reusable native SWT
-  and JDT before/after qualification infrastructure and retained evidence.
-
-The earlier main Oomph failure and cancelled retry, and the historical macOS
-failures, remain documented in [the preparation handoff](docs/releases/1.3.8-preparation.md).
-No Sandbox fix is inferred from those provisioning failures. Native Eclipse
-consumer qualification remains Linux-only within the Linux/Windows matrix.
-Final integration checks, the canonical release dry run and product/release-asset
-acceptance remain outstanding.
+[The preparation handoff](docs/releases/1.3.8-preparation.md) records the earlier
+main's successful Maven/Oomph execution, its separate Linux distribution failure,
+the prior provisioning failures and the historical macOS failures. None establishes
+a permanent Oomph repair or a source fix for the distribution dependency failure.
+Native Eclipse consumer qualification remains Linux-only within the Linux/Windows
+matrix. Final integration checks, the canonical release dry run and
+product/release-asset acceptance remain outstanding.
 The existing release workflow generates its own commit-log notes; this curated
 draft must be explicitly incorporated in the publication review.

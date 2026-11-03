@@ -23,11 +23,22 @@ import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.triggerpattern.api.GuardFunction;
 import org.sandbox.jdt.triggerpattern.api.GuardFunctionResolverHolder;
+import org.sandbox.jdt.triggerpattern.llm.SourceEvidence;
 
 /** Tests deterministic behavior verification for mined candidates. */
 class CandidateVerifierTest {
 
 	private final CandidateVerifier verifier = new CandidateVerifier();
+
+	@Test
+	void rejectsUnsubstantiatedStoredEvidenceBeforeVerifyingGeneratedExamples() {
+		MiningCandidate candidate = validCandidate();
+		candidate.setSourceEvidence(new SourceEvidence("Test.java", "1 + 0", "1"));
+		CandidateVerification result = verifier.verify(candidate);
+		assertFalse(result.successful());
+		assertEquals(CandidateVerification.Stage.SCHEMA, result.stage());
+		assertTrue(result.message().contains("hunk"));
+	}
 
 	@Test
 	void verifiesFullSourceReplacementAndNegativeExample() {

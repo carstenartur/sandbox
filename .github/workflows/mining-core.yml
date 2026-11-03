@@ -225,7 +225,7 @@ jobs:
               after_block = fenced(candidate.get('afterExample'), 'java')
               negative_block = fenced(candidate.get('negativeExample'), 'java')
               body = f'''<!-- mining-candidate-id: {candidate_id} -->
-          ## Verified mining candidate
+          ## Mining candidate — example rewrite checked
 
           | Field | Value |
           |---|---|
@@ -235,6 +235,7 @@ jobs:
           | Rule fingerprint | `{inline(candidate.get("ruleFingerprint"))}` |
           | Behavior fingerprint | `{inline(candidate.get("behaviorFingerprint"))}` |
           | Source | {source}/commit/{commit} |
+          | Source file | `{inline((candidate.get("sourceEvidence") or {}).get("path") or "not retained")}` |
           | Target hint file | `{inline(candidate.get("targetHintFile"))}` |
           | Verifier | `{inline(verification.get("verifierVersion"))}` |
 
@@ -242,19 +243,25 @@ jobs:
 
           `{inline(verification.get("stage") or "unknown")}` — {inline(verification.get("message") or "No diagnostic")}
 
+          This checks the supplied examples, not general semantic equivalence. Human review is still required.
+
+          ### Original changed hunk
+
+          {fenced((candidate.get('sourceEvidence') or {}).get('diffHunk') or 'Not retained for this legacy candidate.', 'diff')}
+
           ### Proposed DSL
 
           {dsl_block}
 
-          ### Before
+          ### Generated before example
 
           {before_block}
 
-          ### After
+          ### Generated expected after example
 
           {after_block}
 
-          ### Negative example
+          ### Generated negative example
 
           {negative_block}
 

@@ -26,6 +26,9 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.sandbox.jdt.triggerpattern.llm.SourceEvidence;
 
 /** Tests candidate persistence, revisioning, and status queries. */
 class CandidateStoreTest {
@@ -96,8 +99,9 @@ class CandidateStoreTest {
 		assertEquals("CandidateStore", boundary.actor()); //$NON-NLS-1$
 	}
 
-	@Test
-	void sourceVersionChangeAlsoRequiresNewVerification() throws IOException {
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void sourceMetadataChangeAlsoRequiresNewVerification(boolean evidence) throws IOException {
 		CandidateStore store = new CandidateStore(tempDir);
 		MiningCandidate original = createCandidate("abc1234567890", 0); //$NON-NLS-1$
 		original.setStatus(CandidateStatus.READY_FOR_REVIEW);
@@ -105,7 +109,11 @@ class CandidateStoreTest {
 		store.save(original);
 
 		MiningCandidate changedVersion = store.loadAll().get(0);
-		changedVersion.setSourceVersion("17"); //$NON-NLS-1$
+		if (evidence) {
+			changedVersion.setSourceEvidence(new SourceEvidence("Test.java", "1 + 0", "1", "changed hunk"));
+		} else {
+			changedVersion.setSourceVersion("17"); //$NON-NLS-1$
+		}
 		store.save(changedVersion);
 
 		MiningCandidate revision = store.loadAll().get(0);

@@ -359,6 +359,19 @@ return CommitEvaluation.TrafficLight.NOT_APPLICABLE;
 
 static CommitEvaluation createEvaluation(JsonObject eval, String commitHash,
 String commitMessage, String repoUrl) {
+CommitEvaluation declined = DiscoveryAdmission.explicitDecline(eval, commitHash, commitMessage, repoUrl);
+if (declined != null) {
+return declined;
+}
+try {
+return parseCandidateFields(eval, commitHash, commitMessage, repoUrl);
+} catch (RuntimeException e) {
+return DiscoveryAdmission.malformedFields(eval, commitHash, commitMessage, repoUrl, e);
+}
+}
+
+private static CommitEvaluation parseCandidateFields(JsonObject eval, String commitHash,
+String commitMessage, String repoUrl) {
 boolean relevant = getBooleanOrDefault(eval, "relevant", false); //$NON-NLS-1$
 String category = getStringOrNull(eval, "category"); //$NON-NLS-1$
 if (relevant && (category == null || category.isBlank())) {
@@ -366,7 +379,7 @@ System.err.println("Warning: relevant commit " + commitHash //$NON-NLS-1$
 + " has no category, defaulting to 'Uncategorized'"); //$NON-NLS-1$
 category = "Uncategorized"; //$NON-NLS-1$
 }
-return new CommitEvaluation(
+return DiscoveryAdmission.apply(eval, new CommitEvaluation(
 commitHash,
 commitMessage,
 repoUrl,
@@ -392,7 +405,8 @@ getStringOrNull(eval, "summary"), //$NON-NLS-1$
 null,
 getStringOrNull(eval, "beforeExample"), //$NON-NLS-1$
 getStringOrNull(eval, "afterExample"), //$NON-NLS-1$
-getStringOrNull(eval, "negativeExample")); //$NON-NLS-1$
+getStringOrNull(eval, "negativeExample"), //$NON-NLS-1$
+DiscoveryAdmission.sourceVersion(eval), DiscoveryAdmission.sourceEvidence(eval)));
 }
 
 static String getStringOrNull(JsonObject obj, String key) {
