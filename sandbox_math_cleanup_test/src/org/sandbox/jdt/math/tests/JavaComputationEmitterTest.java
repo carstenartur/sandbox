@@ -39,6 +39,67 @@ class JavaComputationEmitterTest {
     private static final Expr Y = new VariableExpr("y");
 
     @Test
+    void narrowPromotionNeedsNoRedundantIntCast() throws Exception {
+        for (NumericKind kind : List.of(NumericKind.BYTE,NumericKind.SHORT,NumericKind.CHAR)) {
+            Expr promoted=JavaExpressions.cast(kind,NumericKind.INT,X);
+            var plan=plan(NumericKind.INT,Map.of("x",kind.type()),
+                    op(NumericKind.INT,NumericOperation.OR,promoted,JavaExpressions.literal(1)));
+            var emitted=plain(plan,17);
+            String body=emitted.statements()+returns(emitted.outputValues().values());
+            assertFalse(body.contains("(int)"),body);
+            Class<?> type=kind==NumericKind.BYTE?byte.class:kind==NumericKind.SHORT?short.class:char.class;
+            Object argument=kind==NumericKind.BYTE?(Object)(byte)-2:kind==NumericKind.SHORT?(Object)(short)-2:(Object)'\ufffe';
+            assertEquals(kind==NumericKind.CHAR?65535:-1,invoke(compile(kind.name().toLowerCase()+" x",body,17,type),argument)[0]);
+        }
+    }
+
+    @Test
+    void signedLongBigIntegerLiteralsAvoidStringWarningsAndRemainExact() throws Exception {
+        for (BigInteger value:List.of(BigInteger.valueOf(Long.MIN_VALUE),BigInteger.valueOf(Long.MAX_VALUE),BigInteger.valueOf(-42))) {
+            var emitted=plain(plan(NumericKind.BIG_INTEGER,Map.of(),JavaExpressions.literal(value)),17);
+            String body=emitted.statements()+returns(emitted.outputValues().values());
+            assertTrue(body.contains("java.math.BigInteger.valueOf("),body);
+            assertFalse(body.contains("\""),body);
+            assertEquals(value,invoke(compile("",body,17))[0]);
+        }
+    }
+
+    @Test
+    void promotedNarrowValuesKeepTypedOutputAndExactOverloadKinds() throws Exception {
+        for (NumericKind kind:List.of(NumericKind.BYTE,NumericKind.SHORT,NumericKind.CHAR)) {
+            Expr promotion=JavaExpressions.cast(kind,NumericKind.INT,X);
+            for (Expr expression:List.of(promotion,op(NumericKind.INT,NumericOperation.ADD,promotion,JavaExpressions.literal(1)),
+                    op(NumericKind.INT,NumericOperation.SHIFT_LEFT,promotion,JavaExpressions.literal(1)),
+                    op(NumericKind.INT,NumericOperation.ADD_EXACT,promotion,JavaExpressions.literal(1)))) {
+                var emitted=plain(plan(NumericKind.INT,Map.of("x",kind.type()),expression),17);
+                String body=emitted.statements()+"int value="+emitted.outputValues().values().iterator().next()+"; return new Object[]{value};";
+                if(expression!=promotion) assertFalse(body.contains("(int)"),body);
+                Class<?> type=kind==NumericKind.BYTE?byte.class:kind==NumericKind.SHORT?short.class:char.class;
+                Object argument=kind==NumericKind.BYTE?(Object)(byte)5:kind==NumericKind.SHORT?(Object)(short)5:(Object)'\u0005';
+                int expected=expression==promotion?5:JavaExpressions.operationOf(expression).orElseThrow()==NumericOperation.SHIFT_LEFT?10:6;
+                assertEquals(expected,invoke(compile(kind.name().toLowerCase()+" x",body,17,type),argument)[0]);
+            }
+        }
+    }
+    @Test
+    void standalonePromotionOutputRetainsIntBoxingAtUntypedBoundary() throws Exception {
+        var emitted=plain(plan(NumericKind.INT,Map.of("x",NumericKind.CHAR.type()),JavaExpressions.cast(NumericKind.CHAR,NumericKind.INT,X)),17);
+        Object actual=invoke(compile("char x",emitted.statements()+returns(emitted.outputValues().values()),17,char.class),'A')[0];
+        assertEquals(65,actual);
+        assertInstanceOf(Integer.class,actual);
+        String body=emitted.statements()+"return new Object[]{String.valueOf("+emitted.outputValues().values().iterator().next()+")};";
+        assertEquals("65",invoke(compile("char x",body,17,char.class),'A')[0]);
+    }
+
+    @Test
+    void bigIntegerBeyondSignedLongRemainsExact() throws Exception {
+        for (BigInteger value:List.of(BigInteger.ONE.shiftLeft(63),BigInteger.ONE.shiftLeft(63).negate().subtract(BigInteger.ONE))) {
+            var emitted=plain(plan(NumericKind.BIG_INTEGER,Map.of(),JavaExpressions.literal(value)),17);
+            assertEquals(value,invoke(compile("",emitted.statements()+returns(emitted.outputValues().values()),17))[0]);
+        }
+    }
+
+    @Test
     void sharedDagIsEmittedOnceWithCollisionFreeJava8Names() throws Exception {
         Expr product = op(NumericKind.INT, NumericOperation.MULTIPLY, X, JavaExpressions.literal(2));
         var plan = new JointComputationPlan(Map.of("x", NumericKind.INT.type()), Map.of(),

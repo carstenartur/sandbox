@@ -59,7 +59,14 @@ class JavaRuntimeIterationTest extends JavaContextTestSupport {
         String source="public class Sample {public static String run(int n){java.math.BigInteger sum=java.math.BigInteger.ONE;for(int i=1;i<=n;i++) sum=sum.add(java.math.BigInteger.valueOf(i).pow(3));return sum==null?null:sum.toString();}}";
         compare(source,transformed(source),-1,0,1,100,5000);
         String nullable=source.replace("java.math.BigInteger.ONE","null");
-        String generated=transformed(nullable);compare(nullable,generated,-1,0);
+        var nullableResult=analyze(nullable);
+        assertTrue(nullableResult.evidence().stream().noneMatch(e->e.runtimeIteration()!=null),nullableResult.diagnostics().toString());
+        assertTrue(nullableResult.diagnostics().stream().anyMatch(d->d.message()!=null && d.message().startsWith("GENERATED_DIAGNOSTIC_INTRODUCED")));
+        var nullableDocument=new org.eclipse.jface.text.Document(nullable);
+        nullableResult.newEdit().apply(nullableDocument);
+        String generated=nullableDocument.get();
+        assertFalse(nullableResult.changed());assertEquals(nullable,generated);
+        compare(nullable,generated,-1,0);
         try(var before=compile(nullable);var after=compile(generated)) {
             for(var loader:java.util.List.of(before,after)) {
                 var error=assertThrows(java.lang.reflect.InvocationTargetException.class,()->loader.loadClass("Sample").getMethod("run",int.class).invoke(null,5000));

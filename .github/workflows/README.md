@@ -349,6 +349,20 @@ consumer workflow file. No implicit `[skip cleanup]` title convention exists.
 
 ## CI & Testing Workflows
 
+### Distribution Smoke Test (`distribution-smoke.yml`)
+
+Pull requests, pushes to `main`, scheduled runs and normal manual dispatches
+verify the complete distribution on Ubuntu 24.04 and Windows 2025 with Java 25.
+Each runner executes the Maven distribution build and installed-mathematics
+verification. Linux also verifies native cleanup consumers in the candidate
+Docker image.
+
+Tycho continues to assemble Linux, Windows and macOS product archives. Native
+macOS execution is outside this CI matrix and is not a release prerequisite.
+The [distribution compatibility guide](../../docs/distribution-compatibility.md)
+describes the resulting coverage and the commands for local native verification.
+Manual SDK qualification remains available through `regelsuche_sdk_revision`.
+
 The canonical product verification and the quality-evidence publication are deliberately separate:
 
 - `maven.yml` provides the normal Maven/Tycho build signal for relevant pushes and pull requests. It does not publish the authoritative `/tests/` or `/coverage/` pages.

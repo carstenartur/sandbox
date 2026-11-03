@@ -73,7 +73,7 @@ final class JavaImmutableValueOptimizer {
                     String replacement="{\n// Mathematics value path: independently verified joint components.\nif ("+guard(summary)+") {\n"+optimized+"}\n// " //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                         +JavaComputationExtractor.ORIGINAL_FALLBACK_MARKER+"\n"+original.substring(1,original.length()-1)+"\n}"; //$NON-NLS-1$ //$NON-NLS-2$
                     String generated=source.substring(0,start)+replacement+source.substring(start+length);work.charge(generated.length());
-                    var after=MathematicalAnalysis.checkGeneratedSource(ast,generated,compiler,options.targetJava(),monitor,environment);work.check();
+                    var after=MathematicalAnalysis.checkGeneratedSource(ast,source,generated,compiler,options.targetJava(),monitor,environment,start,length,replacement.length());work.check();
                     MethodDeclaration replayMethod=(MethodDeclaration)after.findDeclaringNode(method.resolveBinding().getKey());
                     if(replayMethod==null || replayMethod.getBody().statements().isEmpty() || !(replayMethod.getBody().statements().getFirst() instanceof IfStatement condition)
                         || !(condition.getThenStatement() instanceof Block branch))throw JavaValueSourceSummary.unavailable("VALUE_REPLAY_SHAPE"); //$NON-NLS-1$

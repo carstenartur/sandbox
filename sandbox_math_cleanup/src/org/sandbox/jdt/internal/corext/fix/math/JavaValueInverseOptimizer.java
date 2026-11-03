@@ -39,7 +39,7 @@ final class JavaValueInverseOptimizer {
                     var access=JavaValueAccess.discover(ast,session,opportunity.base().resolveTypeBinding(),work);
                     String original=source.substring(start,start+length),intermediate=previous==null?original:previous.replacement();
                     String intermediateSource=source.substring(0,start)+intermediate+source.substring(start+length);
-                    work.charge(intermediateSource.length());var middle=MathematicalAnalysis.checkGeneratedSource(ast,intermediateSource,compiler,options.targetJava(),monitor,environment);
+                    work.charge(intermediateSource.length());var middle=MathematicalAnalysis.checkGeneratedSource(ast,source,intermediateSource,compiler,options.targetJava(),monitor,environment,start,length,intermediate.length());
                     Block middleBlock=findBlock(middle,start,intermediate.length());
                     var retained=calls(middleBlock,opportunity.retained().resolveMethodBinding(),opportunity.powered().resolveBinding(),work);
                     var later=calls(middleBlock,opportunity.retained().resolveMethodBinding(),(IVariableBinding)opportunity.base().resolveBinding(),work);
@@ -68,7 +68,7 @@ final class JavaValueInverseOptimizer {
                         +opportunity.base().resolveTypeBinding().getQualifiedName()+" "+detached+";\n";
                     edits.add(new Edit(start+1,0,declaration));
                     String replacement=apply(intermediate,start,edits);String generated=source.substring(0,start)+replacement+source.substring(start+length);
-                    work.charge(generated.length());var after=MathematicalAnalysis.checkGeneratedSource(ast,generated,compiler,options.targetJava(),monitor,environment);
+                    work.charge(generated.length());var after=MathematicalAnalysis.checkGeneratedSource(ast,source,generated,compiler,options.targetJava(),monitor,environment,start,length,replacement.length());
                     var premises=new UnitInverseReusePlan.Premises(BigInteger.valueOf(3),proof.algebra().sourceFingerprint(),
                         "canonical source residues mod "+proof.algebra().modulus(),opportunity.base().resolveBinding().getKey(),
                         opportunity.powered().resolveBinding().getKey(),opportunity.retained().resolveMethodBinding().getKey()+"@"+opportunity.retained().getStartPosition(),true,true);

@@ -20,6 +20,7 @@ import java.util.jar.JarFile;
 import javax.tools.ToolProvider;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ArrayAccess;
@@ -76,8 +77,16 @@ class FieldArrayCorpusTest {
                 }).count();
                 var environment = new MathematicalAnalysis.SourceEnvironment(entry, List.of(binary.toString()), List.of(), List.of());
                 var analysis = MathematicalAnalysis.analyze(ast, source, options, new NullProgressMonitor(), -1, 0, environment);
-                assertFalse(analysis.diagnostics().stream().anyMatch(d -> List.of("CANCELLED", "STALE_AST_SOURCE",
-                        "COMBINED_EDITS_INVALID").contains(d.code())), analysis.diagnostics().toString());
+                assertFalse(analysis.diagnostics().stream().anyMatch(d -> List.of("CANCELLED", "STALE_AST_SOURCE").contains(d.code())), analysis.diagnostics().toString());
+                var combinedFailures=analysis.diagnostics().stream().filter(d->d.code().equals("COMBINED_EDITS_INVALID")).toList();
+                if(!combinedFailures.isEmpty()) {
+                    assertEquals("org/bouncycastle/crypto/engines/HC128Engine.java",entry,analysis.diagnostics().toString());
+                    assertEquals(1,combinedFailures.size(),analysis.diagnostics().toString());
+                    assertTrue(combinedFailures.getFirst().message().startsWith("GENERATED_DIAGNOSTIC_INTRODUCED: "
+                            +IProblem.UnusedPrivateMethod+" [org.bouncycastle.crypto.engines.HC128Engine, rotateRight, int, int] @"),
+                            combinedFailures.getFirst().message());
+                    assertFalse(analysis.changed());
+                }
                 assertEquals(analysis.replacements().size(), analysis.evidence().size());
                 for (var change : analysis.replacements()) {
                     var evidence = analysis.evidence().stream().filter(e -> e.offset() == change.offset()
@@ -89,6 +98,7 @@ class FieldArrayCorpusTest {
                 var document = new Document(source);
                 var undo = analysis.newEdit().apply(document, TextEdit.CREATE_UNDO);
                 String generated = document.get();
+                if(!combinedFailures.isEmpty()) assertEquals(source,generated,"The known combined warning decline must apply no edits");
                 undo.apply(document);
                 assertEquals(source, document.get(), "Complete source Undo: " + entry);
                 parse(generated, entry, binary);

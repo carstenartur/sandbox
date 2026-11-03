@@ -23,6 +23,14 @@ import de.regelsuche.sdk.optimization.OptimizationResult.Candidate;
 
 class JavaEmissionVerifierTest {
     @Test
+    void implicitCharPromotionSurvivesIndependentEmissionReplay() {
+        Fixture fixture=fixture("class Calculation { int compute(char x) { int r=(x+1)+(x+1); return r; }}",
+                NumericKind.INT,SafetyProfile.PRESERVE_JAVA);
+        assertFalse(fixture.emission().statements().contains("(int)"));
+        assertTrue(fixture.emission().outputValues().values().stream().noneMatch(v->v.contains("(int)")));
+        assertDoesNotThrow(()->verify(fixture,fixture.emission()));
+    }
+    @Test
     void validEmissionPassesIndependentParsingAndBothProofs() {
         Fixture fixture = fixture(NumericKind.INT, SafetyProfile.PRESERVE_JAVA, "(x+1)-1");
         assertDoesNotThrow(() -> verify(fixture, fixture.emission()));
@@ -153,7 +161,7 @@ class JavaEmissionVerifierTest {
         parser.setCompilerOptions(compilerOptions);
         CompilationUnit ast = (CompilationUnit) parser.createAST(null);
         for (var problem : ast.getProblems()) assertFalse(problem.isError(), problem.getMessage());
-        var options = new MathCleanUpOptions(true, Set.of(kind), profile, OptimizationGoal.READABILITY,
+        var options = new MathCleanUpOptions(true, kind==NumericKind.INT ? Set.of(kind,NumericKind.CHAR) : Set.of(kind), profile, OptimizationGoal.READABILITY,
                 100_000, 2000, profile == SafetyProfile.CHECKED_THROW, 17, List.of());
         var extraction = new JavaComputationExtractor().extract(ast, source, options);
         assertEquals(1, extraction.regions().size(), extraction.diagnostics().toString());

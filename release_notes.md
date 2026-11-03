@@ -2,7 +2,10 @@
 
 Status: draft for review; publication remains held pending final qualification and acceptance.
 Baseline: [1.3.7](https://github.com/carstenartur/sandbox/releases/tag/v1.3.7).
-Candidate source: `7458aa94907e7bbff5259fdeaf864fbb57a223c7` (2026-11-02).
+Candidate source: `4483cd97a85c582dedd5fb0b82914c6bc457710b` (2026-11-03, after #1794).
+The source includes #1798 and the Linux/Windows native CI scope. The mining
+follow-up #1796 and reusable upstream qualification PR #1797 remain open and are
+not included in this candidate. Release 1.3.8 has not been published.
 
 ## Mathematics cleanup
 
@@ -19,7 +22,8 @@ Candidate source: `7458aa94907e7bbff5259fdeaf864fbb57a223c7` (2026-11-02).
 - Add verified finite-series loop and sequential stream reductions: polynomial,
   affine, geometric/product and bounded coupled, nested, periodic or piecewise
   fragments. Runtime templates apply under the estimated-runtime goal and strict
-  Preserve Java policy, with original-code fallbacks for short ranges or failed guards.
+  Preserve Java policy. Guards and original-code fallbacks remain where required;
+  eligible exclusive unit-stride constant sums now use primitive arithmetic directly.
 - Avoid BigInteger setup before the original short-range path for admitted
   primitive int/unit-stride ranges, while retaining large-range safety guards.
 
@@ -29,6 +33,29 @@ See merged [#1767](https://github.com/carstenartur/sandbox/pull/1767),
 [#1772](https://github.com/carstenartur/sandbox/pull/1772),
 [#1774](https://github.com/carstenartur/sandbox/pull/1774) and
 [#1777](https://github.com/carstenartur/sandbox/pull/1777).
+
+## Generated Java and explanations
+
+- Emit compact primitive calculations for independently proved constant-increment
+  sums where the Java context permits them. Exclusive unit-stride `int` headers
+  need no BigInteger work or retained fallback; other supported headers keep
+  termination guards and the original fallback.
+- Reject generated Java errors and new warnings using the project's compiler
+  options. Existing warnings are accepted only on matching, unchanged source
+  ranges; equal warning totals alone are insufficient.
+- Remove redundant casts and unused generated work where evaluation order,
+  exceptions and Java expression types remain correct. Use `BigInteger.valueOf`
+  for constants that fit a signed `long`.
+- Explain runtime transformations under the existing `NONE`, `NONTRIVIAL` and
+  `ALL` comment modes. Comments name the targets, arithmetic contract and actual
+  guards, and distinguish estimated work from measured timing.
+- Preserve recognized generated calculations and their fallback loops on a
+  second cleanup. Retain counted-tail acceleration with independently replayed
+  parameter binding and initialization.
+
+Included through merged [#1798](https://github.com/carstenartur/sandbox/pull/1798).
+These output-quality improvements do not establish a general runtime speedup;
+the measured limits below remain part of the release assessment.
 
 ## Functional Converter correctness
 
@@ -104,6 +131,8 @@ cryptographic constant-time claims.
 
 - Retry temporary Gemini overloads during nightly commit mining.
 - Keep scheduled verification from cancelling active checks.
+- Retain reviewed DSL rejections when mining rediscovers the same evidence,
+  through merged [#1795](https://github.com/carstenartur/sandbox/pull/1795).
 - Explain supported Sandbox workflows and refresh mathematics guidance with
   source-backed examples and explicit fragment boundaries.
 - Update the qualified vendored value-arithmetic SDK and native mathematics Help
@@ -111,10 +140,17 @@ cryptographic constant-time claims.
   Later adapter and SDK70 integration is included through #1784–#1792.
 - Include the Fp12 algebra-proof timeout correction in
   [#1791](https://github.com/carstenartur/sandbox/pull/1791), and current native
-  mathematics Help provenance from #1792. The requested Linux/Windows native CI
-  scope is tracked by [#1794](https://github.com/carstenartur/sandbox/pull/1794).
-  macOS archives remain assembled without current native macOS qualification;
-  acceptance of the final integrated candidate remains incomplete.
+  mathematics Help provenance from #1792.
+- Skip unnecessary liveness traversal when a mathematics region has no local
+  outputs. Merged [#1794](https://github.com/carstenartur/sandbox/pull/1794) also
+  limits native distribution CI to Linux and Windows. macOS archives remain
+  assembled without current native macOS qualification. The scope change does
+  not establish that the historical macOS analysis timeouts were repaired.
+- Qualify complete BLS12-381 G2 and pairing Apply outputs with source-bound JMH,
+  and bind preparation measurements and reporting to the same JVM. See the
+  [complete-output qualification](https://github.com/carstenartur/sandbox/commit/88c0ba5d4127b208cdc7485dbf330f62cf69c62e)
+  and [preparation-JVM correction](https://github.com/carstenartur/sandbox/commit/e3867ac14b45fcd880fe11ee81f43ea1575248d2).
+  These bounded results do not qualify every BLS path or cryptographic constant-time behavior.
 
 ## Dependencies and qualification limits
 
@@ -140,36 +176,57 @@ receipts are separate from Java source admission and native product verification
 Generated Java does not require the SDK at runtime. A newer Regelsuche release is
 not a prerequisite for shipping this exact qualified artifact.
 
+## Measured performance and qualification limits
+
+The [#1798 MethodInfo experiment](https://github.com/carstenartur/sandbox/pull/1798)
+compares original JDT, the earlier generated BigInteger form and the new primitive
+form. For the four measured cases with 4,096, 4,097, 8,192 and 65,535
+exception-table entries, the new form needs 36–53% less time than the earlier
+generated form. Against original JDT, however, the
+synthetic maximum of **65,535 handlers remains 21.1% slower**: 402.219 versus
+332.144 ns/op, with separated 99.9% intervals. Every other original comparison,
+including the real ClassFileReader control, has overlapping intervals. This is
+neither a demonstrated general speedup nor a measurement of compiler throughput.
+
+The final #1798 [BC SWU benchmark](https://github.com/carstenartur/sandbox/actions/runs/41605344693)
+measures three transformed regions in a complete hash-to-curve call. **All eight
+timing pairs are inconclusive.** Preparation/check work in the GC-profiler setup
+prevents an isolated allocation-savings claim. This experiment does not measure
+the nine separately qualified digest rewrites. Smaller digest-helper bytecode
+does not itself establish faster execution.
+
 The historical [finite-series qualification](qa/math-optimization/results/2026-10-31-finite-series/README.md)
 used SDK source `3a9250062f3f5ddb2ce46d8c1c3650801a77b4ef`; it is not a fresh
 measurement of the current SDK. Its whole-call JMH run shows separated 99.9% intervals for
 five specific large-input pairs on its recorded environment. Small-input results
 are mostly inconclusive; this is not a general speedup guarantee or a newly tuned
-crossover. All eight recorded complete Bouncy Castle hash-to-curve pairs remain
-inconclusive. Accepted-region counts and cost estimates are not timing measurements
-or constant-time qualification. Exact rational telescoping remains SDK-only because
+crossover. Its results remain attributed to that earlier artifact and environment.
+Accepted-region counts and cost estimates are not timing measurements or
+constant-time qualification. Exact rational telescoping remains SDK-only because
 Java integral division truncates.
 
 ## Release review
 
-These notes cover merged source through
-[#1792](https://github.com/carstenartur/sandbox/pull/1792).
-Main advanced by nine commits after the previous preparation; the old PR checks
-and SDK receipt cannot qualify the expanded source.
+These notes describe main `4483cd97a85c582dedd5fb0b82914c6bc457710b`.
+Its fresh [Maven](https://github.com/carstenartur/sandbox/actions/runs/41689251092),
+[metrics](https://github.com/carstenartur/sandbox/actions/runs/41689250861) and
+[Linux/Windows distribution](https://github.com/carstenartur/sandbox/actions/runs/41689250866)
+checks are still running at this refresh. Earlier successful PR and upstream
+comparisons retain their original source identities and do not constitute a
+completed release qualification of this main revision.
 
-At the 2026-11-02 review, Core, Maven/Oomph, metrics, benchmark and Ubuntu/Windows
-distribution checks passed on `7458aa94907e7bbff5259fdeaf864fbb57a223c7`.
-The [macOS distribution job](https://github.com/carstenartur/sandbox/actions/runs/41505536028/job/125483768927)
-failed in `BouncyCastleFinalPreparationBudgetTest.strictAcceptsBothHawkFragmentsWithinTheFullFileBudget`:
-both original Hawk fragments lacked accepted replacements after `CANCELLED`.
-The Math module recorded 1,204 tests, one failure and no errors or skips.
-This historical failure is retained. After #1794 is integrated, native macOS
-execution is outside the revised release prerequisites; removing the runner
-does not establish that the underlying analysis timeout was repaired.
+Two workstreams remain outside this candidate:
 
-Native Eclipse consumer acceptance ran successfully on Ubuntu; Windows skipped
-that native step. Current-candidate Linux/Windows distribution checks, release
-tests, the canonical dry run and product acceptance remain outstanding; see
-[the preparation handoff](docs/releases/1.3.8-preparation.md).
+- [#1796](https://github.com/carstenartur/sandbox/pull/1796): stronger mining
+  source-evidence admission within the existing Gemini request budget.
+- [#1797](https://github.com/carstenartur/sandbox/pull/1797): reusable native SWT
+  and JDT before/after qualification infrastructure and retained evidence.
+
+The earlier main Oomph failure and cancelled retry, and the historical macOS
+failures, remain documented in [the preparation handoff](docs/releases/1.3.8-preparation.md).
+No Sandbox fix is inferred from those provisioning failures. Native Eclipse
+consumer qualification remains Linux-only within the Linux/Windows matrix.
+Final integration checks, the canonical release dry run and product/release-asset
+acceptance remain outstanding.
 The existing release workflow generates its own commit-log notes; this curated
 draft must be explicitly incorporated in the publication review.

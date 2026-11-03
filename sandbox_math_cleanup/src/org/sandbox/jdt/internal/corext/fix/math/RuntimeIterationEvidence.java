@@ -11,7 +11,9 @@ import de.regelsuche.symbol.SymbolId;
 
 /** Untrusted runtime polynomial/linear transport; source and emitted template require separate replay. */
 public record RuntimeIterationEvidence(String sourceSha256,List<FiniteSumEvidence.Binding> bindings,
-        List<PolynomialSumPlan> sums,LinearIterationOptimizer.Candidate linear,PolynomialSeries.NestedPlan nested,Partition partition) {
+        List<PolynomialSumPlan> sums,LinearIterationOptimizer.Candidate linear,PolynomialSeries.NestedPlan nested,Partition partition,EmissionStrategy strategy) {
+    /** Java lowering choice; independent source replay must derive this value again. */
+    public enum EmissionStrategy { BIG_INTEGER, PRIMITIVE_UNIT, PRIMITIVE_GUARDED }
     /** Value-only source correspondence: no AST identity can qualify a partition. */
     public record Partition(int period,int residue,boolean inclusive,boolean firstOnLow,int splitOffset,int splitLength,List<SymbolId> starts) {
         public Partition {
@@ -25,10 +27,17 @@ public record RuntimeIterationEvidence(String sourceSha256,List<FiniteSumEvidenc
             LinearIterationOptimizer.Candidate linear,PolynomialSeries.NestedPlan nested) {
         this(sourceSha256,bindings,sums,linear,nested,null);
     }
+    public RuntimeIterationEvidence(String sourceSha256,List<FiniteSumEvidence.Binding> bindings,List<PolynomialSumPlan> sums,
+            LinearIterationOptimizer.Candidate linear,PolynomialSeries.NestedPlan nested,Partition partition) {
+        this(sourceSha256,bindings,sums,linear,nested,partition,EmissionStrategy.BIG_INTEGER);
+    }
+    RuntimeIterationEvidence withStrategy(EmissionStrategy selected) {
+        return new RuntimeIterationEvidence(sourceSha256,bindings,sums,linear,nested,partition,selected);
+    }
     /** Conservative crossover policy, not timings: BigInteger allocations and matrix products have explicit cost. */
     public static final int MAX_EMITTED_CHARACTERS=60000, MAX_PARAMETER_BITS=1024, MAX_RESULT_BITS=65536, MAX_NAME_ATTEMPTS=16;
     public RuntimeIterationEvidence {
-        Objects.requireNonNull(sourceSha256);bindings=List.copyOf(bindings);sums=List.copyOf(sums);
+        Objects.requireNonNull(sourceSha256);Objects.requireNonNull(strategy);bindings=List.copyOf(bindings);sums=List.copyOf(sums);
         if(sums.size()>(partition==null?8:32) || (sums.isEmpty()?0:1)+(linear==null?0:1)+(nested==null?0:1)!=1
                 || partition!=null && (sums.size()!=partition.starts().size() || linear!=null || nested!=null)) throw new IllegalArgumentException("RUNTIME_PROOF_SHAPE");
     }
@@ -49,7 +58,7 @@ public record RuntimeIterationEvidence(String sourceSha256,List<FiniteSumEvidenc
         return new OptimizationBudget(budget.maximumWork()-used,budget.maximumStates(),budget.maximumCandidates(),budget.timeoutMillis());
     }
     public long minimumIterations() {
-        long count=4096;
+        long count=strategy==EmissionStrategy.BIG_INTEGER?4096:16;
         while(count*sourceOperations()<=candidateOperations(count) && count<(1L<<40)) count*=2;
         return count;
     }
@@ -60,6 +69,7 @@ public record RuntimeIterationEvidence(String sourceSha256,List<FiniteSumEvidenc
         return Math.max(1,sums.stream().mapToLong(p->operations(p.source().term())+1).sum());
     }
     private long candidateOperations(long count) {
+        if(strategy!=EmissionStrategy.BIG_INTEGER)return (strategy==EmissionStrategy.PRIMITIVE_UNIT?8:16)+3L*sums.size();
         long scalar=32; // advisory allocation/arithmetic weight, explicitly not a timing measurement
         if(linear!=null) {
             long d=linear.transition().matrix().size(),bits=64-Long.numberOfLeadingZeros(count);
@@ -86,6 +96,10 @@ public record RuntimeIterationEvidence(String sourceSha256,List<FiniteSumEvidenc
     }
     long verificationLimit() {return 100000L*(partition==null?1:sums.size());}
     public String description() {
+        if(strategy!=EmissionStrategy.BIG_INTEGER)return "Verified runtime constant sum using primitive Java arithmetic; "
+                +(strategy==EmissionStrategy.PRIMITIVE_UNIT?"cost reference at "+minimumIterations()+" iterations; guaranteed-terminating exclusive unit-stride int headers use the closed form for every count. "
+                        :"guarded crossover at "+minimumIterations()+" iterations; original execution below threshold or on failed counter-range guards. ")
+                +"Scores estimate primitive count/guard work and modular accumulator updates; this estimate is not a measured speedup; source bindings, strategy and the complete emitted template are replayed.";
         return "Verified runtime "+(partition!=null?(partition.period()>0?"periodic polynomial sum (nonnegative indices)":"piecewise polynomial sum"):linear!=null?"linear transition by binary matrix powering":nested!=null?"nested polynomial sum":"polynomial sum in the binomial basis")
                 +"; guarded crossover at "+minimumIterations()+" iterations; original execution below threshold or on failed termination/type/growth guards. "
                 +"Scores use source expression operation counts and emitted degree/dimension/count-bit work with a documented 32-unit BigInteger allocation/arithmetic weight; this crossover heuristic is not a measured speedup; source bindings and the complete emitted template are replayed.";

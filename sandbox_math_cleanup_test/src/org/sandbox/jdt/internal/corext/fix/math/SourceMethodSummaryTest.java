@@ -74,8 +74,8 @@ class SourceMethodSummaryTest {
 				StandardCharsets.UTF_8);
         Files.writeString(directory.resolve("Calculation.java"), SOURCE, StandardCharsets.UTF_8);
         var environment = new MathematicalAnalysis.SourceEnvironment(directory.resolve("Calculation.java").toString(), List.of(), List.of(directory.toString()), List.of("UTF-8"));
-        var ast = MathematicalAnalysis.checkGeneratedSource(AST.newAST(AST.getJLSLatest(), false).newCompilationUnit(), SOURCE,
-                Map.of(), 17, new org.eclipse.core.runtime.NullProgressMonitor(), environment);
+        var ast = MathematicalAnalysis.checkGeneratedSource(AST.newAST(AST.getJLSLatest(), false).newCompilationUnit(), "", SOURCE,
+                Map.of(), 17, new org.eclipse.core.runtime.NullProgressMonitor(), environment, 0, 0, SOURCE.length());
         try (var context = JavaSourceContext.open(ast, SOURCE, environment, null, options(), 100)) {
             var tasks = new JavaComputationExtractor().extractTasks(ast, SOURCE, options());
             assertTrue(context.takeWork() <= 100);

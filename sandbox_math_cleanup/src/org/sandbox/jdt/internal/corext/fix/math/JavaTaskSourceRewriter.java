@@ -67,8 +67,9 @@ final class JavaTaskSourceRewriter {
         var edit = edits(ast, source, task, candidate.plan(), options, token, sourceWork);
         if (!edit.hasChildren()) return new Attempt(Optional.empty(), 0);
         try {
+            var diagnosticEdits = GeneratedSourceDiagnostics.edits(edit);
             var document = new Document(source); edit.apply(document); String generated = document.get();
-            var generatedAst = MathematicalAnalysis.checkGeneratedSource(ast, generated, compiler, options.targetJava(), monitor, environment);
+            var generatedAst = MathematicalAnalysis.checkGeneratedSource(ast, source, generated, compiler, options.targetJava(), monitor, environment, diagnosticEdits);
             JavaComputationTask emitted;
             try (var context = JavaSourceContext.open(generatedAst, generated, environment, monitor, options, sourceWork.remaining)) {
                 emitted = new JavaComputationExtractor().extractTasks(generatedAst, generated, options).tasks().stream()

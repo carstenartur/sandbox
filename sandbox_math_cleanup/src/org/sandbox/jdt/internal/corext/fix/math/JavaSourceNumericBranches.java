@@ -72,7 +72,7 @@ final class JavaSourceNumericBranches {
                 if(!(verified instanceof Verified proof)) continue;
                 // Fresh parsing/bindings and a second independent proof replay the exact receipt.
                 work.charge(source.length());
-                var fresh=MathematicalAnalysis.checkGeneratedSource(ast,source,compiler,options.targetJava(),monitor,environment);
+                var fresh=MathematicalAnalysis.checkGeneratedSource(ast,source,source,compiler,options.targetJava(),monitor,environment,List.of());
                 ASTNode anchor=NodeFinder.perform(fresh,node.getStartPosition(),node.getLength());
                 var replay=anchor instanceof IfStatement condition?decode(fresh,source,condition,options,allowance,work,fingerprint):null;
                 if(replay==null || !replay.receipt().equals(branch.receipt()) || !replay.condition().equals(branch.condition())
@@ -85,8 +85,8 @@ final class JavaSourceNumericBranches {
                 String replacement=branch.receipt().conditionRetained()
                         ? "{ if ("+source.substring(branch.condition().start(),branch.condition().end())+") {} "+assignment+"; }" : assignment+";"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
                 work.charge(source.length()+replacement.length());
-                MathematicalAnalysis.checkGeneratedSource(ast,source.substring(0,node.getStartPosition())+replacement
-                        +source.substring(node.getStartPosition()+node.getLength()),compiler,options.targetJava(),monitor,environment);
+                MathematicalAnalysis.checkGeneratedSource(ast,source,source.substring(0,node.getStartPosition())+replacement
+                        +source.substring(node.getStartPosition()+node.getLength()),compiler,options.targetJava(),monitor,environment,node.getStartPosition(),node.getLength(),replacement.length());
                 work.charge(branch.left().getLength()+branch.right().getLength());
                 var scalar=ComputationOptimizer.prepare(branch.request().plan()).cost();
                 var alternative=ComputationOptimizer.prepare(branch.other()).cost();

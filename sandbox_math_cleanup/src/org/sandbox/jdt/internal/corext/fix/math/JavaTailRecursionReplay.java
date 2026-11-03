@@ -20,6 +20,7 @@ final class JavaTailRecursionReplay {
         if (body.size() != count + 2 || target.parameters().size() != count) return false;
         var bindings = new HashMap<String, String>();
         var stateKeys = new ArrayList<String>(); var nextKeys = new ArrayList<String>();
+        boolean headerInitialized=false;
         for (int i = 0; i < count; i++) {
             checkpoint.run();
             if (!(body.get(i) instanceof VariableDeclarationStatement declaration)
@@ -27,9 +28,14 @@ final class JavaTailRecursionReplay {
             VariableDeclarationFragment fragment = declaration(declaration, model.states().get(i).type());
             var parameter = ((SingleVariableDeclaration) target.parameters().get(i)).resolveBinding();
             String parameterKey = key(parameter);
-            if (fragment == null || parameterKey == null || !parameterKey.equals(key(fragment.getInitializer()))) return false;
+            if (fragment == null || parameterKey == null) return false;
             String state = key(fragment.resolveBinding());
             if (state == null || stateKeys.contains(state)) return false;
+            if(fragment.getInitializer()==null) {
+                if(!model.states().get(i).bindingKey().equals(model.termination().counterBinding())
+                        || !(body.get(count) instanceof ForStatement loop) || !parameterInitializer(loop,state,parameterKey)) return false;
+                headerInitialized=true;
+            } else if(!parameterKey.equals(key(fragment.getInitializer()))) return false;
             stateKeys.add(state); bindings.put(model.states().get(i).bindingKey(), state);
         }
         var exit = (IfStatement) original.getBody().statements().getFirst();
@@ -45,9 +51,7 @@ final class JavaTailRecursionReplay {
             if(counter<0 || model.termination().decrement()!=1 || model.termination().stopAtOrBelow()!=0
                     || !countdown(exit.getExpression(),model.states().get(counter).bindingKey(),InfixExpression.Operator.LESS_EQUALS)
                     || !countdown(loop.getExpression(),stateKeys.get(counter),InfixExpression.Operator.GREATER)
-                    || loop.initializers().size()!=1 || loop.updaters().size()!=1
-                    || !(loop.initializers().getFirst() instanceof Assignment init) || init.getOperator()!=Assignment.Operator.ASSIGN
-                    || !stateKeys.get(counter).equals(key(init.getLeftHandSide())) || !stateKeys.get(counter).equals(key(init.getRightHandSide()))
+                    || (!headerInitialized && !counterInitializer(loop,stateKeys.get(counter))) || loop.updaters().size()!=1
                     || !counterUpdate((Expression)call.arguments().get(counter),(Expression)loop.updaters().getFirst(),
                         model.states().get(counter).bindingKey(),stateKeys.get(counter),bindings,checkpoint)) return false;
             // The pure, nonthrowing decrement can be committed after the other states.
@@ -81,6 +85,18 @@ final class JavaTailRecursionReplay {
                 : (ReturnStatement) ((Block) exit.getThenStatement()).statements().getFirst();
         return body.get(count + 1) instanceof ReturnStatement result
                 && expression(base.getExpression(), result.getExpression(), bindings, checkpoint, 0);
+    }
+
+    private static boolean counterInitializer(ForStatement loop,String counter) {
+        return loop.initializers().isEmpty() || loop.initializers().size()==1
+                && loop.initializers().getFirst() instanceof Assignment init && init.getOperator()==Assignment.Operator.ASSIGN
+                && counter.equals(key(init.getLeftHandSide())) && counter.equals(key(init.getRightHandSide()));
+    }
+
+    private static boolean parameterInitializer(ForStatement loop,String counter,String parameter) {
+        return loop.initializers().size()==1 && loop.initializers().getFirst() instanceof Assignment init
+                && init.getOperator()==Assignment.Operator.ASSIGN
+                && counter.equals(key(init.getLeftHandSide())) && parameter.equals(key(init.getRightHandSide()));
     }
 
     private static boolean countdown(Expression value,String binding,InfixExpression.Operator operator) {
@@ -118,7 +134,7 @@ final class JavaTailRecursionReplay {
         if (binding == null || binding.isRecovered() || !binding.isPrimitive() || !type.equals(binding.getName())
                 || node.fragments().size() != 1) return null;
         var fragment = (VariableDeclarationFragment) node.fragments().getFirst();
-        return fragment.extraDimensions().isEmpty() && fragment.getInitializer() != null ? fragment : null;
+        return fragment.extraDimensions().isEmpty() ? fragment : null;
     }
     private static String key(IVariableBinding binding) {
         return binding == null || binding.isRecovered() ? null : binding.getVariableDeclaration().getKey();

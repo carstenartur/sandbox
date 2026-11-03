@@ -12,14 +12,14 @@ final class JavaPartitionedSumEmitter {
                     .append(source,split.getStartPosition(),split.getStartPosition()+split.getLength()).append("));\n");
         }
     }
-    static void prepare(JavaRuntimeIterationEmitter.Output out,RuntimeIterationEvidence.Partition partition,String p) {
+    static void prepare(JavaRuntimeIterationEmitter.Output out,RuntimeIterationEvidence.Partition partition,String p,java.util.Set<Integer> starts) {
         if(partition.period()>0) {
             String period=BIG+".valueOf("+partition.period()+")";
             for(int part=0;part<partition.period();part++) {
                 String offset=p+"offset"+part;
                 out.append(BIG).append(' ').append(offset).append(" = ").append(BIG).append(".valueOf(").append(part)
                         .append(").subtract(").append(p).append("start.mod(").append(period).append(")).mod(").append(period).append(");\n");
-                out.append(BIG).append(' ').append(p).append("partStart").append(part).append(" = ").append(p).append("start.add(").append(offset).append(");\n");
+                if(starts.contains(part)) out.append(BIG).append(' ').append(p).append("partStart").append(part).append(" = ").append(p).append("start.add(").append(offset).append(");\n");
                 // The numerator is at least -1; clamp before division to express the SDK's nonnegative count.
                 out.append(BIG).append(' ').append(p).append("partCount").append(part).append(" = ").append(p).append("count.subtract(")
                         .append(offset).append(").add(").append(BIG).append(".valueOf(").append(partition.period()-1)
@@ -29,8 +29,8 @@ final class JavaPartitionedSumEmitter {
             out.append(BIG).append(' ').append(p).append("partCount0 = ").append(p).append("split.subtract(").append(p).append("start)")
                     .append(partition.inclusive()?".add("+BIG+".ONE)":"").append(".max(").append(BIG).append(".ZERO).min(").append(p).append("count);\n");
             out.append(BIG).append(' ').append(p).append("partCount1 = ").append(p).append("count.subtract(").append(p).append("partCount0);\n");
-            out.append(BIG).append(' ').append(p).append("partStart0 = ").append(p).append("start;\n");
-            out.append(BIG).append(' ').append(p).append("partStart1 = ").append(p).append("start.add(").append(p).append("partCount0);\n");
+            if(starts.contains(0)) out.append(BIG).append(' ').append(p).append("partStart0 = ").append(p).append("start;\n");
+            if(starts.contains(1)) out.append(BIG).append(' ').append(p).append("partStart1 = ").append(p).append("start.add(").append(p).append("partCount0);\n");
         }
     }
 }
