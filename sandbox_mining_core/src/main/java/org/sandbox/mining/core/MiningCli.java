@@ -685,6 +685,10 @@ promptBuilder.setTypeContext(context);
 }
 List<String> hashes = commitDataList.stream().map(CommitData::commitHash).toList();
 List<String> messages = commitDataList.stream().map(CommitData::commitMessage).toList();
+Map<String, String> diffsByCommit = new HashMap<>();
+for (CommitData data : commitDataList) {
+diffsByCommit.put(data.commitHash(), data.diff());
+}
 String previousResults = knownRulesContext.isEmpty() ? null : knownRulesContext;
 String prompt = promptBuilder.buildBatchPrompt(dslContext,
 categoryManager.getCategoriesJson(), commitDataList, previousResults);
@@ -697,10 +701,7 @@ if (evaluations != null) {
 for (CommitEvaluation evaluation : evaluations) {
 if (evaluation != null) {
 if (evaluation.trafficLight() == CommitEvaluation.TrafficLight.GREEN) {
-String evaluatedHash = evaluation.commitHash();
-String originalDiff = commitDataList.stream()
-.filter(data -> data.commitHash().equals(evaluatedHash))
-.map(CommitData::diff).findFirst().orElse(null);
+String originalDiff = diffsByCommit.get(evaluation.commitHash());
 var checked = SourceEvidenceVerifier.verify(evaluation.sourceEvidence(), evaluation.dslRule(), originalDiff);
 evaluation = checked.problem() == null ? evaluation.withSourceEvidence(checked.evidence())
 : evaluation.withoutCandidate("Source evidence: " + checked.problem());

@@ -363,6 +363,15 @@ CommitEvaluation declined = DiscoveryAdmission.explicitDecline(eval, commitHash,
 if (declined != null) {
 return declined;
 }
+try {
+return parseCandidateFields(eval, commitHash, commitMessage, repoUrl);
+} catch (RuntimeException e) {
+return DiscoveryAdmission.malformedFields(eval, commitHash, commitMessage, repoUrl, e);
+}
+}
+
+private static CommitEvaluation parseCandidateFields(JsonObject eval, String commitHash,
+String commitMessage, String repoUrl) {
 boolean relevant = getBooleanOrDefault(eval, "relevant", false); //$NON-NLS-1$
 String category = getStringOrNull(eval, "category"); //$NON-NLS-1$
 if (relevant && (category == null || category.isBlank())) {

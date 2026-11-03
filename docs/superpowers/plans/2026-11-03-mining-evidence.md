@@ -40,3 +40,6 @@ Tests use local recorded diffs and fake transport, never live provider credentia
 The first behavioral regressions must fail before their fixes. Full verification
 uses `mvn -o -pl sandbox_common_core,sandbox_mining_core -am clean verify` with the
 existing cached repository. A live prompt comparison remains a separate experiment.
+
+PR1796 review regressions additionally cover malformed positive answer fields,
+actual token-edit overlap, repeated quotes, and partial trailing comment context.

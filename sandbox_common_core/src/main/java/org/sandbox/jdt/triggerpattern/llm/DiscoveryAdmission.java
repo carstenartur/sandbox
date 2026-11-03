@@ -23,8 +23,20 @@ final class DiscoveryAdmission {
 			return null;
 		}
 		String reason = string(answer, "reason"); //$NON-NLS-1$
+		return completedNonCandidate(answer, commitHash, message, repoUrl,
+				reason == null || reason.isBlank() ? "Model returned noCleanup" : reason); //$NON-NLS-1$
+	}
+
+	static CommitEvaluation malformedFields(JsonObject answer, String commitHash, String message, String repoUrl,
+			RuntimeException failure) {
+		return completedNonCandidate(answer, commitHash, message, repoUrl,
+				"Malformed candidate response fields: " + failure.getClass().getSimpleName()); //$NON-NLS-1$
+	}
+
+	private static CommitEvaluation completedNonCandidate(JsonObject answer, String commitHash, String message,
+			String repoUrl, String reason) {
 		return new CommitEvaluation(commitHash, message, repoUrl, Instant.now(), null, false,
-				reason == null || reason.isBlank() ? "Model returned noCleanup" : reason, //$NON-NLS-1$
+				reason,
 				false, null, 0, 0, 0, TrafficLight.NOT_APPLICABLE, string(answer, "category"), false, null, //$NON-NLS-1$
 				false, null, null, null, null, string(answer, "summary"), null, null, null, null, //$NON-NLS-1$
 				sourceVersion(answer), sourceEvidence(answer));

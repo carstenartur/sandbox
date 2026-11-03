@@ -91,4 +91,42 @@ class SourceEvidenceVerifierTest {
 		var evidence = new SourceEvidence("Processor.java", "new RuntimeException ( )", AFTER);
 		assertNull(SourceEvidenceVerifier.verify(evidence, DSL, DIFF.replace("\n", "\r\n")).problem());
 	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void unchangedQuotesCannotBorrowACommentOrUnrelatedCodeChange(boolean unrelatedCodeChange) {
+		String before = "boolean a = items.size() == 0; boolean b = items.isEmpty(); int n = 1; // old";
+		String after = before.replace("// old", "// new");
+		if (unrelatedCodeChange) {
+			after = after.replace("n = 1", "n = 2");
+		}
+		assertNotNull(checkCollectionEdit(before, after).problem());
+	}
+
+	@Test
+	void findsChangedOccurrencesAfterUnchangedOccurrencesOfBothQuotes() {
+		String common = "boolean a = items.size() == 0; boolean b = items.isEmpty(); ";
+		assertNull(checkCollectionEdit(common + "boolean c = items.size() == 0;",
+				common + "boolean c = items.isEmpty();").problem());
+	}
+
+	@Test
+	void partialCommentAfterTheEvidenceDoesNotDiscardARealEdit() {
+		String partial = DIFF.replace("-1,3 +1,3", "-1,5 +1,5") + " /**\n  * continued outside the hunk\n";
+		assertNull(SourceEvidenceVerifier.verify(new SourceEvidence("Processor.java", BEFORE, AFTER), DSL, partial).problem());
+	}
+
+	@Test
+	void earlierCommentEditDoesNotHideLaterJavaEvidence() {
+		String prefix = " /*\n-old documentation\n+new documentation\n */\n";
+		String mixed = DIFF.replace("@@ -1,3 +1,3 @@\n", "@@ -1,6 +1,6 @@\n" + prefix);
+		assertNull(SourceEvidenceVerifier.verify(new SourceEvidence("Processor.java", BEFORE, AFTER), DSL, mixed).problem());
+	}
+
+	private static SourceEvidenceVerifier.Result checkCollectionEdit(String before, String after) {
+		String diff = "diff --git a/T.java b/T.java\n--- a/T.java\n+++ b/T.java\n@@ -1,1 +1,1 @@\n-"
+				+ before + "\n+" + after + "\n";
+		return SourceEvidenceVerifier.verify(new SourceEvidence("T.java", "items.size() == 0", "items.isEmpty()"),
+				"$x.size() == 0\n=> $x.isEmpty()\n;;", diff);
+	}
 }

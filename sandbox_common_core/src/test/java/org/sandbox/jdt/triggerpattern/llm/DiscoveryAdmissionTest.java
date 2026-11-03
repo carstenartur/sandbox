@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -25,22 +26,23 @@ import com.google.gson.JsonParser;
 
 /** Admission tests exercise both actual provider response parsers without HTTP. */
 class DiscoveryAdmissionTest {
+	private record FieldChange(String field, String value) {}
 
 	static Stream<Arguments> rejectedResponses() {
-		return Stream.of(true, false).flatMap(gemini -> Stream.of(
-				new String[] { "noCleanup", "true" }, new String[] { "noCleanup", null },
-				new String[] { "noCleanup", "\"false\"" }, new String[] { "confidence", null },
-				new String[] { "confidence", "0.79" }, new String[] { "confidence", "1.01" },
-				new String[] { "confidence", "-1" }, new String[] { "confidence", "1e999" },
-				new String[] { "confidence", "\"NaN\"" }, new String[] { "confidence", "\"0.9\"" },
-				new String[] { "relevant", "false" }, new String[] { "canImplementInCurrentDsl", "false" },
-				new String[] { "isDuplicate", "true" }, new String[] { "sourceEvidence", null },
-				new String[] { "sourceEvidence", "{}" })
-				.map(change -> Arguments.of(gemini, change[0], change[1])));
+		return Stream.of(Boolean.TRUE, Boolean.FALSE).flatMap(gemini -> Stream.of(
+				new FieldChange("noCleanup", "true"), new FieldChange("noCleanup", null),
+				new FieldChange("noCleanup", "\"false\""), new FieldChange("confidence", null),
+				new FieldChange("confidence", "0.79"), new FieldChange("confidence", "1.01"),
+				new FieldChange("confidence", "-1"), new FieldChange("confidence", "1e999"),
+				new FieldChange("confidence", "\"NaN\""), new FieldChange("confidence", "\"0.9\""),
+				new FieldChange("relevant", "false"), new FieldChange("canImplementInCurrentDsl", "false"),
+				new FieldChange("isDuplicate", "true"), new FieldChange("sourceEvidence", null),
+				new FieldChange("sourceEvidence", "{}"))
+				.map(change -> Arguments.of(gemini, change.field(), change.value())));
 	}
 
 	@ParameterizedTest
-	@MethodSource("rejectedResponses")
+	@MethodSource({ "rejectedResponses", "malformedFields" })
 	void contradictoryOrIncompleteCandidateRemainsACompletedEvaluation(boolean gemini, String field, String value) {
 		JsonObject candidate = candidate();
 		if (value == null) candidate.remove(field);
@@ -54,6 +56,44 @@ class DiscoveryAdmissionTest {
 		assertFalse(result.canImplementInCurrentDsl());
 		assertNull(result.dslRule());
 		assertNotNull(result.irrelevantReason());
+	}
+
+	static Stream<Arguments> malformedFields() {
+		return Stream.of(Boolean.TRUE, Boolean.FALSE).flatMap(gemini -> Stream.of(
+				new FieldChange("relevant", "{}"), new FieldChange("dslRule", "{}"),
+				new FieldChange("reusability", "\"n/a\""))
+				.map(change -> Arguments.of(gemini, change.field(), change.value())));
+	}
+
+	@ParameterizedTest
+	@MethodSource("malformedFields")
+	void batchRetainsMalformedCandidateAndItsValidNeighbor(boolean gemini, String field, String value) {
+		JsonObject malformed = candidate();
+		malformed.add(field, JsonParser.parseString(value));
+		JsonArray input = new JsonArray();
+		input.add(malformed);
+		input.add(candidate());
+		List<CommitEvaluation> results = parseBatch(gemini, input);
+		assertEquals(List.of("a", "b"), results.stream().map(CommitEvaluation::commitHash).toList());
+		CommitEvaluation rejected = results.get(0);
+		assertEquals(TrafficLight.NOT_APPLICABLE, rejected.trafficLight());
+		assertEquals("17", rejected.sourceVersion());
+		assertFalse(rejected.relevant());
+		assertFalse(rejected.canImplementInCurrentDsl());
+		assertNull(rejected.dslRule());
+		assertTrue(rejected.irrelevantReason().startsWith("Malformed candidate response fields"));
+		assertEquals(TrafficLight.GREEN, results.get(1).trafficLight());
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = { true, false })
+	void nonObjectAndMissingBatchSlotsRemainIncomplete(boolean gemini) {
+		JsonArray input = new JsonArray();
+		input.add(com.google.gson.JsonNull.INSTANCE);
+		input.add(candidate());
+		assertEquals(List.of("b"), parseBatch(gemini, input).stream().map(CommitEvaluation::commitHash).toList());
+		input.remove(0);
+		assertEquals(List.of("a"), parseBatch(gemini, input).stream().map(CommitEvaluation::commitHash).toList());
 	}
 
 	@ParameterizedTest
@@ -117,7 +157,7 @@ class DiscoveryAdmissionTest {
 
 	private static JsonObject declinedWithMalformedUnusedFields() {
 		JsonObject input = candidate();
-		input.addProperty("noCleanup", true);
+		input.addProperty("noCleanup", Boolean.TRUE);
 		input.addProperty("reason", "Context-dependent change");
 		input.addProperty("reusability", "n/a");
 		input.add("relevant", new JsonObject());
@@ -138,6 +178,13 @@ class DiscoveryAdmissionTest {
 		String body = response(gemini, input.toString());
 		return gemini ? new GeminiClient("unused").parseResponse(body, "commit", "message", "repo")
 				: new OpenAiClient("unused").parseResponse(body, "commit", "message", "repo");
+	}
+
+	private static List<CommitEvaluation> parseBatch(boolean gemini, JsonArray input) {
+		String body = response(gemini, input.toString());
+		return gemini
+				? new GeminiClient("unused").parseBatchResponse(body, List.of("a", "b"), List.of("first", "second"), "repo")
+				: new OpenAiClient("unused").parseBatchResponse(body, List.of("a", "b"), List.of("first", "second"), "repo");
 	}
 
 	private static String response(boolean gemini, String text) {

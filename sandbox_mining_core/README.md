@@ -105,13 +105,16 @@ The command writes `candidates.json`, `candidates.html`, and copies individual c
 New discovery responses must explicitly set `noCleanup: false`, report numeric
 confidence between 0.80 and 1, and include `sourceEvidence` with a Java file path
 and short original `before`/`after` spans (at most 512 characters each). Confidence
-is an admission signal, not a calibrated probability of correctness. Missing or
-contradictory responses finish with a diagnostic instead of triggering another
-model request. The prompt explicitly asks for relevant type, side-effect, null,
+is an admission signal, not a calibrated probability of correctness. Invalid
+fields in an identifiable answer finish with a diagnostic instead of triggering
+another model request; absent or truncated response slots remain retryable.
+The prompt explicitly asks for relevant type, side-effect, null,
 locale and numeric conditions and for rejection of existing JDT-cleanup applications.
 
 The local evidence gate uses JGit to require the spans in the removed and added
-lines of the same edit block. JDT tokenization includes visible hunk context,
+lines of the same edit block, overlapping the same actual Java-token change.
+Unchanged quotes beside comment-only or unrelated edits are insufficient.
+JDT tokenization includes visible hunk context up to the selected edit,
 ignores formatting/comments, and preserves literal contents; CRLF becomes LF.
 It cannot recover lexical context outside the hunk. Concrete literals in the DSL replacement must occur
 in the original after span. This catches the invented exception-message example

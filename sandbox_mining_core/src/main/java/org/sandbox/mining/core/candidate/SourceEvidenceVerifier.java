@@ -6,13 +6,16 @@ package org.sandbox.mining.core.candidate;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.ToolFactory;
 import org.eclipse.jdt.core.compiler.ITerminalSymbols;
 import org.eclipse.jdt.core.compiler.InvalidInputException;
+import org.eclipse.jgit.diff.DiffAlgorithm;
+import org.eclipse.jgit.diff.DiffAlgorithm.SupportedAlgorithm;
+import org.eclipse.jgit.diff.Sequence;
+import org.eclipse.jgit.diff.SequenceComparator;
 import org.eclipse.jgit.patch.Patch;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 import org.sandbox.jdt.triggerpattern.llm.SourceEvidence;
@@ -107,9 +110,17 @@ public final class SourceEvidenceVerifier {
 		}
 		// Scan with visible hunk context so changed text inside comments is not Java evidence.
 		for (Edit edit : edits) {
-			if (Collections.indexOfSubList(tokens(removed.toString(), edit.oldStart(), edit.oldEnd()), before) >= 0
-					&& Collections.indexOfSubList(tokens(added.toString(), edit.newStart(), edit.newEnd()), after) >= 0) {
-				return true;
+			try {
+				var oldTokens = new TokenSequence(tokens(removed.toString(), edit.oldStart(), edit.oldEnd()));
+				var newTokens = new TokenSequence(tokens(added.toString(), edit.newStart(), edit.newEnd()));
+				for (var change : DiffAlgorithm.getAlgorithm(SupportedAlgorithm.HISTOGRAM).diff(COMPARATOR, oldTokens, newTokens)) {
+					if (changedOccurrence(oldTokens.values, before, change.getBeginA(), change.getEndA())
+							&& changedOccurrence(newTokens.values, after, change.getBeginB(), change.getEndB())) {
+						return true;
+					}
+				}
+			} catch (InvalidInputException e) {
+				// Insufficient lexical context for this block must not hide a later valid edit.
 			}
 		}
 		return false;
@@ -117,13 +128,42 @@ public final class SourceEvidenceVerifier {
 
 	private record Edit(int oldStart, int oldEnd, int newStart, int newEnd) {}
 
+	private static boolean changedOccurrence(List<Token> tokens, List<Token> quote, int start, int end) {
+		for (int i = 0; i + quote.size() <= tokens.size(); i++) {
+			int limit = i + quote.size();
+			boolean overlaps = start == end ? i <= start && start <= limit : i < end && start < limit;
+			if (overlaps && tokens.subList(i, limit).equals(quote)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static final class TokenSequence extends Sequence {
+		private final List<Token> values;
+		private TokenSequence(List<Token> values) { this.values = List.copyOf(values); }
+		@Override public int size() { return values.size(); }
+	}
+
+	private static final SequenceComparator<TokenSequence> COMPARATOR = new SequenceComparator<>() {
+		@Override public boolean equals(TokenSequence a, int ai, TokenSequence b, int bi) {
+			return a.values.get(ai).equals(b.values.get(bi));
+		}
+		@Override public int hash(TokenSequence sequence, int index) {
+			return sequence.values.get(index).hashCode();
+		}
+	};
+
 	private static List<Token> tokens(String source) throws InvalidInputException {
 		return tokens(source, 0, source.length());
 	}
 
 	private static List<Token> tokens(String source, int start, int end) throws InvalidInputException {
+		if (start >= end) {
+			return List.of();
+		}
 		var scanner = ToolFactory.createScanner(false, false, false, JavaCore.VERSION_25);
-		scanner.setSource(source.toCharArray());
+		scanner.setSource(source.substring(0, end).toCharArray());
 		List<Token> result = new ArrayList<>();
 		for (int kind = scanner.getNextToken(); kind != ITerminalSymbols.TokenNameEOF; kind = scanner.getNextToken()) {
 			if (scanner.getCurrentTokenStartPosition() >= start && scanner.getCurrentTokenEndPosition() < end) {

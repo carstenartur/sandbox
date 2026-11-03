@@ -331,7 +331,7 @@ class MiningCliTest {
 	void testSaveCandidatesRejectsNewEvaluationWithoutSourceEvidence() throws IOException {
 		var evaluation = new CommitEvaluation("hash", "change", "repo", Instant.now(), null,
 				true, null, false, null, 0, 0, 0, TrafficLight.GREEN, "Strings", false,
-				null, true, "$x.toString() => String.valueOf($x)\n;;", "strings.sandbox-hint",
+				null, true, "$x.toString()\n=> String.valueOf($x)\n;;", "strings.sandbox-hint",
 				null, null, "change", "VALID", "before", "after", "negative");
 		var store = new CandidateStore(tempDir.resolve("unproven"));
 		assertTrue(MiningCli.saveCandidates(List.of(evaluation), store,
@@ -493,14 +493,10 @@ class MiningCliTest {
 	}
 
 	private static SourceEvidence sourceEvidence(String before, String after) {
-		String hunk = """
-				diff --git a/Example.java b/Example.java
-				--- a/Example.java
-				+++ b/Example.java
-				@@ -1,1 +1,1 @@
-				-class Example { Object m() { return %s; } }
-				+class Example { Object m() { return %s; } }
-				""".formatted(before, after);
+		String hunk = String.join("\n", "diff --git a/Example.java b/Example.java",
+				"--- a/Example.java", "+++ b/Example.java", "@@ -1,1 +1,1 @@",
+				"-class Example { Object m() { return " + before + "; } }",
+				"+class Example { Object m() { return " + after + "; } }", "");
 		return new SourceEvidence("Example.java", before, after, hunk);
 	}
 }
