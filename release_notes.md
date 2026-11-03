@@ -2,10 +2,11 @@
 
 Status: draft for review; publication remains held pending final qualification and acceptance.
 Baseline: [1.3.7](https://github.com/carstenartur/sandbox/releases/tag/v1.3.7).
-Candidate source: `64235a3bc11d085629de7cf776a881635b7efd4d` (2026-11-03, after #1796).
-The source includes #1798, the Linux/Windows native CI scope and the mining
-source-evidence follow-up #1796. Reusable upstream qualification PR #1797 remains
-open and is not included in this candidate. Release 1.3.8 has not been published.
+Candidate source: `ef946b6fad6276694f32389311cb7e71cf7f3955` (2026-11-03, after #1797).
+The source includes #1798, the Linux/Windows native CI scope, mining source-evidence
+admission from #1796 and the reusable upstream qualification infrastructure from
+#1797. Only the release-preparation PR #1779 remains open and draft in this release
+workstream. Release 1.3.8 has not been published.
 
 ## Mathematics cleanup
 
@@ -136,6 +137,10 @@ cryptographic constant-time claims.
 - Check source evidence before admitting mined cleanup candidates, within the
   existing Gemini request budget, through merged
   [#1796](https://github.com/carstenartur/sandbox/pull/1796).
+- Add reusable native SWT/JDT before-and-after qualification with source-bound
+  Apply evidence, exact test inventories and retained raw reports, through merged
+  [#1797](https://github.com/carstenartur/sandbox/pull/1797). Historical receipts
+  retain their original tested sources and measurement limits.
 - Explain supported Sandbox workflows and refresh mathematics guidance with
   source-backed examples and explicit fragment boundaries.
 - Update the qualified vendored value-arithmetic SDK and native mathematics Help
@@ -210,27 +215,33 @@ Java integral division truncates.
 
 ## Release review
 
-These notes describe main `64235a3bc11d085629de7cf776a881635b7efd4d`.
-Its fresh [Maven](https://github.com/carstenartur/sandbox/actions/runs/41697334445),
-[metrics](https://github.com/carstenartur/sandbox/actions/runs/41697334310) and
-[Linux/Windows distribution](https://github.com/carstenartur/sandbox/actions/runs/41697334451)
-checks remain pending at this refresh. The merged #1796 PR tree is identical
-to this main tree; its successful Maven and required metrics runs retain their
-own execution identities. They do not make the new main-triggered runs complete.
+Main `ef946b6fad6276694f32389311cb7e71cf7f3955` has tree
+`bc6ddc4aa0a8ede8951eda47715e4d5e057347df`, identical to tested QA head
+`673c4a5928dfd0a22a3541c38c6fb14fdde5388d`. The completed
+[QA Maven execution](https://github.com/carstenartur/sandbox/actions/runs/41697761523)
+passed 6,662 test occurrences with 12 skips, including all 1,239 mathematics
+cases; the separate Oomph workspace execution passed 38 tests.
+[Metrics](https://github.com/carstenartur/sandbox/actions/runs/41697761160)
+recorded 6,869 passes and 12 skips, with LINE coverage **44,441/64,240 = 69.1796%**
+above the unchanged 63% gate. The 25-module aggregate excludes the mathematics
+plug-in, so this is not its coverage percentage. These overlapping reactor
+counts are not additive. The fresh
+[SWT comparison](https://github.com/carstenartur/sandbox/actions/runs/41697761447/job/126132695087)
+passed 4,550 occurrences with 462 identical skips in each phase.
 
-[#1797](https://github.com/carstenartur/sandbox/pull/1797) remains outside this
-candidate. Its new head `673c4a5928dfd0a22a3541c38c6fb14fdde5388d` incorporates
-the current main and retains the QA changes and historical receipts unchanged.
-Current-head checks are pending. The successful SWT comparison and metrics retry
-on its earlier `4de0510c…` head remain evidence for those recorded executions.
-Update the final candidate source again after QA integration.
+The 33 QA paths merged in #1797 change no runtime source from main `64235a3…`.
+Linux and Windows distribution acceptance completed on #1796's identical runtime
+tree; its atomic Help retry also passed. Push path filters therefore schedule no
+new Maven/Oomph or distribution run for the QA-only merge. The actual new main
+metrics, benchmark/SWT and security runs retain their own recorded states in
+[the preparation handoff](docs/releases/1.3.8-preparation.md). The generic PR
+benchmark is still running and supplies no new performance result.
 
-[The preparation handoff](docs/releases/1.3.8-preparation.md) records the earlier
-main's successful Maven/Oomph execution, its separate Linux distribution failure,
-the prior provisioning failures and the historical macOS failures. None establishes
-a permanent Oomph repair or a source fix for the distribution dependency failure.
-Native Eclipse consumer qualification remains Linux-only within the Linux/Windows
-matrix. Final integration checks, the canonical release dry run and
-product/release-asset acceptance remain outstanding.
+The handoff preserves the historical source boundaries and provisioning failures;
+later successful executions do not establish a permanent Oomph repair. Native
+Eclipse consumer qualification remains Linux-only within the Linux/Windows matrix.
+Release-preparation PR [#1779](https://github.com/carstenartur/sandbox/pull/1779)
+remains draft while the canonical release dry run and stable-version,
+product and release-evidence acceptance are outstanding.
 The existing release workflow generates its own commit-log notes; this curated
 draft must be explicitly incorporated in the publication review.

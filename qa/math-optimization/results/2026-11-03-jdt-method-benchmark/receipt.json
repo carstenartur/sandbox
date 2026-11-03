@@ -1,0 +1,618 @@
+{
+  "scope": "Measured unchanged qualified R4_41 compiler.batch JARs; fresh ClassFileReader(..., false) and first getArgumentNames for every method on every operation; analysis-only bridge, no product recompilation or edits.",
+  "startedUtc": "2026-11-03T05:25:57Z",
+  "endedUtc": "2026-11-03T05:28:42Z",
+  "jmhVersion": "1.37",
+  "jmhCases": 18,
+  "forksPerCase": 2,
+  "warmup": "3 x 500 ms per fork",
+  "measurement": "5 x 500 ms per fork",
+  "threads": 1,
+  "confidenceLevel": "JMH 99.9%; overlapping intervals are reported descriptively, not proof of equivalence",
+  "jvmArgs": [
+    "-Danalysis.root=/workspace/scratch/330c17e56514/jdt-method-benchmark",
+    "-Xms1g",
+    "-Xmx1g",
+    "-XX:+UseG1GC",
+    "-Xverify:all"
+  ],
+  "jvm": "openjdk version \"25.0.5\" 2026-10-20 LTS\nOpenJDK Runtime Environment Temurin-25.0.5+8 (build 25.0.5+8-LTS)\nOpenJDK 64-Bit Server VM Temurin-25.0.5+8 (build 25.0.5+8-LTS, mixed mode, sharing)",
+  "toolHashFile": "evidence/tool-sha256.txt",
+  "syntheticFixtureDefinition": {
+    "classFileVersion": 52,
+    "methods": 1,
+    "method": "public static int target(int value)",
+    "codeLengthBytes": 3,
+    "code": "iload_0; ireturn; athrow",
+    "exceptionEntryBytes": 8,
+    "entry": "start_pc=0, end_pc=2, handler_pc=2, catch_type=0; legal duplicate catch-all handlers",
+    "followingAttribute": "LocalVariableTable contains value at local index 0, start_pc 0 and length 3; StackMapTable describes Throwable stack at handler bci 2.",
+    "scope": "Handler count is independent of method code_length. 65535 handlers means 524280 table bytes with only 3 instruction bytes, a valid extremal fixture rather than a representative real class.",
+    "executedBranches": "0 skips the existing outer block; 24, 79 and 4095 execute the first original-loop fallback after the threshold comparison; 4096, 4097, 8192 and 65535 execute the BigInteger branch with the inner guard succeeding. The second fallback on failed BigInteger range checks is unreachable for this concrete unsigned-u2At domain and was not executed."
+  },
+  "gates": {
+    "tests": "10",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.661",
+    "jvmVerification": "Synthetic fixtures use complete Java 8 classfiles, valid StackMapTable, legal duplicate exception handlers; every fixture was defined and target(7) invoked under -Xverify:all before timing.",
+    "pathGate": "All methods have argumentNames == null before first decode. Synthetic expected name value occurs in LVT beyond the entire exception table; all eight counts return it identically in before/after. Repeated getter returns identical cached object.",
+    "bypassControls": "MethodParameters control returns parameterViaMethodParameters with populated cache; fullyInitialize=true also prepopulates names. Neither control is timed.",
+    "realControl": "Unchanged before ClassFileReader.class; 67 methods with equal before/after names, all initially uncached; input SHA-256 bbbd6045ebd668f43229be9550c771cc4c987ec29fc5b3863c60c892296d4a32. Reviewed maximum exception-table count is 24, no MethodParameters attributes."
+  },
+  "comparisons": [
+    {
+      "input": "0",
+      "exceptionTableEntries": 0,
+      "exceptionTableBytes": 0,
+      "methodCodeLengthBytes": 3,
+      "time": {
+        "before": {
+          "score": 325.3799497197384,
+          "scoreError": 35.2270645926447,
+          "scoreConfidence": [
+            290.1528851270937,
+            360.6070143123831
+          ],
+          "scoreUnit": "ns/op"
+        },
+        "after": {
+          "score": 319.31258972117854,
+          "scoreError": 31.59351049585813,
+          "scoreConfidence": [
+            287.7190792253204,
+            350.9061002170367
+          ],
+          "scoreUnit": "ns/op"
+        },
+        "ratioAfterBefore": 0.9813529997660092,
+        "confidenceIntervalsOverlap": true
+      },
+      "gc.alloc.rate.norm": {
+        "before": {
+          "score": 672.0047223384352,
+          "scoreError": 5.63864952070887E-4,
+          "scoreConfidence": [
+            672.0041584734831,
+            672.0052862033872
+          ],
+          "scoreUnit": "B/op"
+        },
+        "after": {
+          "score": 672.0046468023094,
+          "scoreError": 6.345896359183745E-4,
+          "scoreConfidence": [
+            672.0040122126735,
+            672.0052813919452
+          ],
+          "scoreUnit": "B/op"
+        },
+        "ratioAfterBefore": 0.9999998875958408,
+        "confidenceIntervalsOverlap": true
+      }
+    },
+    {
+      "input": "24",
+      "exceptionTableEntries": 24,
+      "exceptionTableBytes": 192,
+      "methodCodeLengthBytes": 3,
+      "time": {
+        "before": {
+          "score": 343.86845828289336,
+          "scoreError": 56.40661348716399,
+          "scoreConfidence": [
+            287.46184479572935,
+            400.27507177005737
+          ],
+          "scoreUnit": "ns/op"
+        },
+        "after": {
+          "score": 341.5173176359738,
+          "scoreError": 53.53746900264624,
+          "scoreConfidence": [
+            287.9798486333276,
+            395.05478663862004
+          ],
+          "scoreUnit": "ns/op"
+        },
+        "ratioAfterBefore": 0.9931626743009232,
+        "confidenceIntervalsOverlap": true
+      },
+      "gc.alloc.rate.norm": {
+        "before": {
+          "score": 672.0050477385458,
+          "scoreError": 7.832087488448865E-4,
+          "scoreConfidence": [
+            672.004264529797,
+            672.0058309472947
+          ],
+          "scoreUnit": "B/op"
+        },
+        "after": {
+          "score": 672.0049796768033,
+          "scoreError": 0.001139126956758506,
+          "scoreConfidence": [
+            672.0038405498465,
+            672.00611880376
+          ],
+          "scoreUnit": "B/op"
+        },
+        "ratioAfterBefore": 0.9999998987184058,
+        "confidenceIntervalsOverlap": true
+      }
+    },
+    {
+      "input": "79",
+      "exceptionTableEntries": 79,
+      "exceptionTableBytes": 632,
+      "methodCodeLengthBytes": 3,
+      "time": {
+        "before": {
+          "score": 344.0176026971059,
+          "scoreError": 46.81097913824653,
+          "scoreConfidence": [
+            297.20662355885935,
+            390.8285818353524
+          ],
+          "scoreUnit": "ns/op"
+        },
+        "after": {
+          "score": 367.61805017416265,
+          "scoreError": 57.98284424673311,
+          "scoreConfidence": [
+            309.6352059274295,
+            425.60089442089577
+          ],
+          "scoreUnit": "ns/op"
+        },
+        "ratioAfterBefore": 1.0686024415379582,
+        "confidenceIntervalsOverlap": true
+      },
+      "gc.alloc.rate.norm": {
+        "before": {
+          "score": 672.0049885050978,
+          "scoreError": 7.875485255754108E-4,
+          "scoreConfidence": [
+            672.0042009565723,
+            672.0057760536233
+          ],
+          "scoreUnit": "B/op"
+        },
+        "after": {
+          "score": 672.0053665288892,
+          "scoreError": 0.0010546230853355702,
+          "scoreConfidence": [
+            672.0043119058039,
+            672.0064211519746
+          ],
+          "scoreUnit": "B/op"
+        },
+        "ratioAfterBefore": 1.000000562531228,
+        "confidenceIntervalsOverlap": true
+      }
+    },
+    {
+      "input": "4095",
+      "exceptionTableEntries": 4095,
+      "exceptionTableBytes": 32760,
+      "methodCodeLengthBytes": 3,
+      "time": {
+        "before": {
+          "score": 374.9868012230994,
+          "scoreError": 97.9796025725038,
+          "scoreConfidence": [
+            277.0071986505956,
+            472.9664037956032
+          ],
+          "scoreUnit": "ns/op"
+        },
+        "after": {
+          "score": 325.1801012340023,
+          "scoreError": 23.829131684620876,
+          "scoreConfidence": [
+            301.3509695493814,
+            349.0092329186232
+          ],
+          "scoreUnit": "ns/op"
+        },
+        "ratioAfterBefore": 0.8671774584421587,
+        "confidenceIntervalsOverlap": true
+      },
+      "gc.alloc.rate.norm": {
+        "before": {
+          "score": 680.0054657592992,
+          "scoreError": 0.0017396423478908674,
+          "scoreConfidence": [
+            680.0037261169514,
+            680.0072054016471
+          ],
+          "scoreUnit": "B/op"
+        },
+        "after": {
+          "score": 680.004725639249,
+          "scoreError": 6.191103270778904E-4,
+          "scoreConfidence": [
+            680.004106528922,
+            680.0053447495761
+          ],
+          "scoreUnit": "B/op"
+        },
+        "ratioAfterBefore": 0.9999989115969099,
+        "confidenceIntervalsOverlap": true
+      }
+    },
+    {
+      "input": "4096",
+      "exceptionTableEntries": 4096,
+      "exceptionTableBytes": 32768,
+      "methodCodeLengthBytes": 3,
+      "time": {
+        "before": {
+          "score": 324.0836373852884,
+          "scoreError": 44.13923463101171,
+          "scoreConfidence": [
+            279.94440275427667,
+            368.22287201630013
+          ],
+          "scoreUnit": "ns/op"
+        },
+        "after": {
+          "score": 806.5317373032683,
+          "scoreError": 183.81024995221605,
+          "scoreConfidence": [
+            622.7214873510522,
+            990.3419872554844
+          ],
+          "scoreUnit": "ns/op"
+        },
+        "ratioAfterBefore": 2.4886530644076275,
+        "confidenceIntervalsOverlap": false
+      },
+      "gc.alloc.rate.norm": {
+        "before": {
+          "score": 680.0047772161489,
+          "scoreError": 7.889117187878816E-4,
+          "scoreConfidence": [
+            680.0039883044301,
+            680.0055661278677
+          ],
+          "scoreUnit": "B/op"
+        },
+        "after": {
+          "score": 1920.01168507395,
+          "scoreError": 0.0024632090322363716,
+          "scoreConfidence": [
+            1920.009221864918,
+            1920.0141482829822
+          ],
+          "scoreUnit": "B/op"
+        },
+        "ratioAfterBefore": 2.8235267595239963,
+        "confidenceIntervalsOverlap": false
+      }
+    },
+    {
+      "input": "4097",
+      "exceptionTableEntries": 4097,
+      "exceptionTableBytes": 32776,
+      "methodCodeLengthBytes": 3,
+      "time": {
+        "before": {
+          "score": 346.89058000602495,
+          "scoreError": 49.77939952727927,
+          "scoreConfidence": [
+            297.11118047874567,
+            396.66997953330423
+          ],
+          "scoreUnit": "ns/op"
+        },
+        "after": {
+          "score": 767.2149064477683,
+          "scoreError": 108.52203717365128,
+          "scoreConfidence": [
+            658.692869274117,
+            875.7369436214195
+          ],
+          "scoreUnit": "ns/op"
+        },
+        "ratioAfterBefore": 2.211691382436626,
+        "confidenceIntervalsOverlap": false
+      },
+      "gc.alloc.rate.norm": {
+        "before": {
+          "score": 680.0050320139796,
+          "scoreError": 7.301412074041957E-4,
+          "scoreConfidence": [
+            680.0043018727722,
+            680.0057621551871
+          ],
+          "scoreUnit": "B/op"
+        },
+        "after": {
+          "score": 2072.0111649147666,
+          "scoreError": 0.002012689192453829,
+          "scoreConfidence": [
+            2072.0091522255743,
+            2072.013177603959
+          ],
+          "scoreUnit": "B/op"
+        },
+        "ratioAfterBefore": 3.047052694269136,
+        "confidenceIntervalsOverlap": false
+      }
+    },
+    {
+      "input": "8192",
+      "exceptionTableEntries": 8192,
+      "exceptionTableBytes": 65536,
+      "methodCodeLengthBytes": 3,
+      "time": {
+        "before": {
+          "score": 343.83146922328194,
+          "scoreError": 55.861358631693875,
+          "scoreConfidence": [
+            287.9701105915881,
+            399.6928278549758
+          ],
+          "scoreUnit": "ns/op"
+        },
+        "after": {
+          "score": 743.2426272175683,
+          "scoreError": 116.13561085820953,
+          "scoreConfidence": [
+            627.1070163593588,
+            859.3782380757777
+          ],
+          "scoreUnit": "ns/op"
+        },
+        "ratioAfterBefore": 2.1616480565218748,
+        "confidenceIntervalsOverlap": false
+      },
+      "gc.alloc.rate.norm": {
+        "before": {
+          "score": 680.0050476233323,
+          "scoreError": 7.162095666533198E-4,
+          "scoreConfidence": [
+            680.0043314137656,
+            680.005763832899
+          ],
+          "scoreUnit": "B/op"
+        },
+        "after": {
+          "score": 1920.0108038106978,
+          "scoreError": 0.0020915631752996466,
+          "scoreConfidence": [
+            1920.0087122475225,
+            1920.012895373873
+          ],
+          "scoreUnit": "B/op"
+        },
+        "ratioAfterBefore": 2.8235243407696413,
+        "confidenceIntervalsOverlap": false
+      }
+    },
+    {
+      "input": "65535",
+      "exceptionTableEntries": 65535,
+      "exceptionTableBytes": 524280,
+      "methodCodeLengthBytes": 3,
+      "time": {
+        "before": {
+          "score": 343.12715174610867,
+          "scoreError": 27.39813691729536,
+          "scoreConfidence": [
+            315.7290148288133,
+            370.525288663404
+          ],
+          "scoreUnit": "ns/op"
+        },
+        "after": {
+          "score": 753.779835548323,
+          "scoreError": 98.1137161402092,
+          "scoreConfidence": [
+            655.6661194081138,
+            851.8935516885323
+          ],
+          "scoreUnit": "ns/op"
+        },
+        "ratioAfterBefore": 2.1967944877357595,
+        "confidenceIntervalsOverlap": false
+      },
+      "gc.alloc.rate.norm": {
+        "before": {
+          "score": 680.0049900160946,
+          "scoreError": 6.278445888855938E-4,
+          "scoreConfidence": [
+            680.0043621715057,
+            680.0056178606834
+          ],
+          "scoreUnit": "B/op"
+        },
+        "after": {
+          "score": 2072.0109541822067,
+          "scoreError": 0.0016822267725759327,
+          "scoreConfidence": [
+            2072.009271955434,
+            2072.0126364089792
+          ],
+          "scoreUnit": "B/op"
+        },
+        "ratioAfterBefore": 3.047052572560042,
+        "confidenceIntervalsOverlap": false
+      }
+    },
+    {
+      "input": "real-ClassFileReader",
+      "time": {
+        "before": {
+          "score": 18782.46095787668,
+          "scoreError": 1999.3036724672754,
+          "scoreConfidence": [
+            16783.157285409405,
+            20781.764630343954
+          ],
+          "scoreUnit": "ns/op"
+        },
+        "after": {
+          "score": 18342.635054130365,
+          "scoreError": 2279.2318763634657,
+          "scoreConfidence": [
+            16063.4031777669,
+            20621.86693049383
+          ],
+          "scoreUnit": "ns/op"
+        },
+        "ratioAfterBefore": 0.9765831588984687,
+        "confidenceIntervalsOverlap": true
+      },
+      "gc.alloc.rate.norm": {
+        "before": {
+          "score": 33744.270505099485,
+          "scoreError": 0.028346532095582348,
+          "scoreConfidence": [
+            33744.24215856739,
+            33744.29885163158
+          ],
+          "scoreUnit": "B/op"
+        },
+        "after": {
+          "score": 33744.263560694075,
+          "scoreError": 0.03298169718119039,
+          "scoreConfidence": [
+            33744.230578996896,
+            33744.296542391254
+          ],
+          "scoreUnit": "B/op"
+        },
+        "ratioAfterBefore": 0.9999997942049034,
+        "confidenceIntervalsOverlap": true
+      }
+    }
+  ],
+  "exitCodes": "bridge compile 0; Maven/JUnit 0; JMH 0. Initial launcher attempt exited 127 because /usr/bin/time was absent, before Java started; preserved under evidence/launcher-attempt-1. Replaced only outer timing wrapper with Bash time; no measurement rerun.",
+  "limits": [
+    "Steady-state JMH on one container/JDK/CPU configuration; no cold-start or general end-to-end product-speed claim.",
+    "Full fresh reader and first names decode includes generated guard, fallback or BigInteger cost, and unrelated reader/name-array overhead; no standalone primitive-add loop timing.",
+    "Synthetic handler entries are legal duplicates chosen to isolate table size, not a representative distribution of Java classfiles.",
+    "The single real control is 67-method ClassFileReader.class, maximum reviewed table count 24; not a corpus coverage or workload representativeness claim.",
+    "The same immutable input byte array is reused across operations and variants; file I/O, class loading and JVM fixture verification are outside timing.",
+    "Every operation has a fresh ClassFileReader and fresh MethodInfo objects, but the reused input byte array and internal CharDeduplication thread cache are warm in this steady-state measurement; this does not model a fresh process or cold name cache.",
+    "The inner BigInteger-range-check failure fallback is unreachable for this concrete start=0, stride=1 and u2At count range 0..65535; it was not executed. The timing includes only reachable guards and branches for each stated input.",
+    "Bridge MethodHandle call and returned char[][][] consumption are common to both variants; this measures only the existing generated transformation, not a proposed primitive rewrite.",
+    "No JIT assembly inspection was performed; bytecode differences or constant running time alone do not establish a specific JIT transformation.",
+    "Only 2 forks and 5 measured iterations per fork; do not infer equivalence from overlapping confidence intervals or apply these microbenchmark ratios to a full compiler/application."
+  ],
+  "mavenVersion": "3.9.16",
+  "junitVersion": "6.1.3",
+  "qualifiedCoreCommit": "6725c16c24d94c83302346dc384bb915a0f2fe1a",
+  "buildScope": "This project compiled only analysis/bridge sources; measured product JARs were already qualified and were not rebuilt or modified.",
+  "qualifiedIdentities": {
+    "after": {
+      "jar": "/workspace/scratch/330c17e56514/jdt-math-qualification/core-transformed/org.eclipse.jdt.core.compiler.batch/target/org.eclipse.jdt.core.compiler.batch-3.46.100-SNAPSHOT.jar",
+      "jarSha256": "231d8531e42cdd2cb34d8eff0cd1fddf86b8b1be11d475abecb389782923125d",
+      "methodInfoSha256": "2ae8970c5e04e60dcaa1e85c4d962876db14a15abbe3d82e2c083ca8c03fdb90",
+      "methodInfoCodeSource": "/workspace/scratch/330c17e56514/jdt-math-qualification/core-transformed/org.eclipse.jdt.core.compiler.batch/target/org.eclipse.jdt.core.compiler.batch-3.46.100-SNAPSHOT.jar",
+      "loaderParent": "jdk.internal.loader.ClassLoaders$PlatformClassLoader",
+      "jvmVersion": "25.0.5+8-LTS",
+      "jvmVendor": "Eclipse Adoptium",
+      "jvmHome": "/tmp/jdt-pr5614-tools/jdk-25.0.5+8",
+      "bridgeSha256": "136643cdda964650c103a982f3c10516185d08b579c4fa529cdc89be42166d7b"
+    },
+    "before": {
+      "jar": "/workspace/scratch/330c17e56514/jdt-math-qualification/core-original/org.eclipse.jdt.core.compiler.batch/target/org.eclipse.jdt.core.compiler.batch-3.46.100-SNAPSHOT.jar",
+      "jarSha256": "eb6c7af97ef7f8ae79ffd21eeea5e1f28142c5925defa59232f8685e75520a9a",
+      "methodInfoSha256": "bc0956e48f95176ea2223d2a64f404445ea1c39f629ff11da8d59c9367ebf883",
+      "methodInfoCodeSource": "/workspace/scratch/330c17e56514/jdt-math-qualification/core-original/org.eclipse.jdt.core.compiler.batch/target/org.eclipse.jdt.core.compiler.batch-3.46.100-SNAPSHOT.jar",
+      "loaderParent": "jdk.internal.loader.ClassLoaders$PlatformClassLoader",
+      "jvmVersion": "25.0.5+8-LTS",
+      "jvmVendor": "Eclipse Adoptium",
+      "jvmHome": "/tmp/jdt-pr5614-tools/jdk-25.0.5+8",
+      "bridgeSha256": "136643cdda964650c103a982f3c10516185d08b579c4fa529cdc89be42166d7b"
+    }
+  },
+  "identicalInputs": {
+    "0": {
+      "bytes": "272",
+      "sha256": "165e19ec8f9cf40068629d8e8c73d74035e9c7ea27d7723249847a498d99ddf7"
+    },
+    "24": {
+      "bytes": "465",
+      "sha256": "616f3bfe4a67deb0f5fd0ee92e42c9372bd37bb5a19eeff71fdce1f1ee9a8847"
+    },
+    "4095": {
+      "bytes": "33035",
+      "sha256": "02f59a9d6551072e0aa927371d03068ad8ce85b5237162494fde5179b5870434"
+    },
+    "4096": {
+      "bytes": "33043",
+      "sha256": "07d5a96de5eece1e61eab9a8da37b7023f31baa05f02273ebdebb4c057306fc7"
+    },
+    "4097": {
+      "bytes": "33051",
+      "sha256": "1d07094b88942b70dc40b6c47aa0529a119ea07b01594b74d4250b1ea9641564"
+    },
+    "65535": {
+      "bytes": "524556",
+      "sha256": "a07cbf4ab452a9a3e599331f0ffe69bf6f9110fb67bcbda9fb5a96b543091a23"
+    },
+    "79": {
+      "bytes": "905",
+      "sha256": "4fa478cdf2fa4b9f2b423c302de75ef61a09e794451c2f1f3769716880e0927f"
+    },
+    "8192": {
+      "bytes": "65811",
+      "sha256": "dbea03f94df24c68e10f9677ab49acd9a771e2da746882ab02284942fb63da7e"
+    },
+    "real-ClassFileReader": {
+      "bytes": "35224",
+      "sha256": "bbbd6045ebd668f43229be9550c771cc4c987ec29fc5b3863c60c892296d4a32"
+    }
+  },
+  "originProofCount": 54,
+  "originProofScope": "18 JUnit variant/input proofs and 36 individual JMH-fork proofs; identical variant hashes and input hashes checked when aggregating. Full proof blocks retained only in raw receipt/archive.",
+  "rawArtifacts": {
+    "jdt-method-benchmark-raw.tar.gz": {
+      "sha256": "bbb4a1caa153c4d66c2141e8a33a321ef2eb7e1458ebdd9864a6d34a44f0e4f1",
+      "bytes": 119937
+    },
+    "receipt.json": {
+      "sha256": "23e3c99880d143e1af77c0955d548e255f01285b455e9b7ce18e52afa7848362",
+      "bytes": 124995
+    },
+    "evidence/jmh-results.json": {
+      "sha256": "8ce630627c3ba34854a0cfd74734230409ea5c5ae5a3be611a986331981c9735",
+      "bytes": 130849
+    },
+    "evidence/jmh.log": {
+      "sha256": "a28bcbb9e02ce2088f8b04f3c11988cbe9ee29d9980c3223a9fe65f8b0c42a60",
+      "bytes": 111208
+    },
+    "evidence/gates.log": {
+      "sha256": "06d57f8039c18394b277bb198834d672414649725618cce13d073a82e1fe1e8c",
+      "bytes": 2060
+    },
+    "target/surefire-reports/TEST-measure.FixtureTest.xml": {
+      "sha256": "77e2536cac79bb5efa3eb409e3ca758a49306d32d5e551ec96aa652ec2f20bf8",
+      "bytes": 7713
+    },
+    "evidence/tool-sha256.txt": {
+      "sha256": "187b020e159c8659dd1a04365b14811f7b58ddb523c6997e271bb914b390e9b9",
+      "bytes": 939
+    },
+    "evidence/analysis-tool-sha256.txt": {
+      "sha256": "7aca69eec7b67f88fbaa83dcbfdf1cc98659b0abcd574f122ce91d884cfceb72",
+      "bytes": 722
+    },
+    "evidence/artifact-manifest.sha256": {
+      "sha256": "d0e2e16fdcaffd18d735df2bd9a06126f20ded120ea84488a76159d0e22c9bcb",
+      "bytes": 14362
+    }
+  },
+  "findings": {
+    "synthetic4096AndAbove": "On all four measured 4096/4097/8192/65535 handler fixtures, after/before average-time ratio is 2.16–2.49 and normalized allocation ratio 2.82–3.05; each pair's 99.9% time intervals is disjoint. This actual generated branch did not improve the measured complete fresh read/name-decode operation.",
+    "syntheticBelow4096": "All four 0/24/79/4095 pairs have overlapping 99.9% time intervals and unchanged normalized allocation within reported intervals; no resolved time improvement or regression in this bounded run.",
+    "realControl": "ClassFileReader.class: 18.78 µs/op before versus 18.34 µs/op after, overlapping 99.9% time intervals and unchanged approximately 33744 B/op; no established speedup.",
+    "scope": "Steady-state fresh-reader measurement, one real class plus legal synthetic extremal cases; no cold-start, overall compiler/application or representative-corpus performance claim; no JIT assembly claim."
+  }
+}
