@@ -1,0 +1,263 @@
+{
+  "schema": "sandbox.local-bytecode-inspection/v1",
+  "analysisUtc": "2026-11-03T02:11:44Z",
+  "repositoryHead": "95bfbddc067d0033a86fb2af97baf6b5cd81e297",
+  "compilerVersion": "javac 25.0.5",
+  "runtimeVersion": "openjdk version \"25.0.5\" 2026-10-20 LTS\nOpenJDK Runtime Environment Temurin-25.0.5+8 (build 25.0.5+8-LTS)\nOpenJDK 64-Bit Server VM Temurin-25.0.5+8 (build 25.0.5+8-LTS, mixed mode, sharing)",
+  "jdkHome": "/tmp/jdt-pr5614-tools/jdk-25.0.5+8",
+  "jdkFileSha256": {
+    "bin/java": "1bf1aaef01e4f8d7c85d913c60fb2ee4624cbe54d4053254c59657b7ea913b25",
+    "bin/javac": "269e2dff1d0b1c34e2ea0a801b5456aaf19024ed3542f947b995fc3ec36a5ca9",
+    "bin/javap": "ca8946288ae35eaa6afa1f32c671ba2ac8b5df854b41933d1436575dac2446d0",
+    "lib/modules": "f5463cffa81c51b3c13f57e2c23eacceab2b12e842069acf2facd5485f63bc85",
+    "lib/ct.sym": "6d2a6d8b7230ed32dbfefe16e902e8629d10eb49c3337bc202ae2d83a18339bc",
+    "release": "8545053a54a73969a65db2c8157f40f89bcdcf7526ae90a7ce9b3061c01bc34a"
+  },
+  "compileOptions": {
+    "bc": [
+      "--release",
+      "17",
+      "-g:none"
+    ],
+    "swt": [
+      "--release",
+      "21",
+      "-g:none"
+    ]
+  },
+  "classpathSha256": {
+    "bcprov-jdk18on-1.85.2.jar": "986b0fb92ec10e0c66b43e036ce0077e6150cfaecd1db9fb92b56672e157afe5",
+    "org.eclipse.swt.gtk.linux.x86_64_3.136.0.v20261029-1803.jar": "6c2b69d1c2096d9915df958536aeb6a7efec8210901e3b54b322d8423dbf0119"
+  },
+  "sourceArchiveSha256": {
+    "swt": "7bbb0b52c43152f2b8c1faeee458f1e24fb04f8a9d516c3409cd509e6415dcbc",
+    "bcprov-jdk18on-1.85.2-sources.jar": "b37ac84b1d5435ab7b8d166c16ab9f75e09f68f8ec50479bae433939b241b03f"
+  },
+  "sources": {
+    "LongDigest": {
+      "original": {
+        "sourceSha256": "d1f4784bb7f6c668dcc40414bfd3e2556583d56ae2a7cdba7f426290b3072a8e",
+        "classSha256": "c93a33ee79c19155ea810aea2449948c68f456a63515b21a4156b565520af581"
+      },
+      "generated": {
+        "sourceSha256": "1128b85ea30d8140fbce923e37d6855f4d35cb2230a0d0aa14ae993b5e04fdfb",
+        "classSha256": "f9187e0b69545a196f8af5e5437e6fe03f80df89f24b23ce46906ad48151e388"
+      }
+    },
+    "MD4Digest": {
+      "original": {
+        "sourceSha256": "98b69ba1f337dd1208b6920e43a1aad6be5992763a48629954fbb11d162fc81f",
+        "classSha256": "57081086ed8fb8cf2c8d91f1427724323a06f3fd0c42f94b49bdb600b39e76b3"
+      },
+      "generated": {
+        "sourceSha256": "f4217f54fc8da48893b5731551f63fb03d4e87ba8daa71218b7892c69a3043b0",
+        "classSha256": "28c958da2b30a4f199e77529e1e22ba0a313ccfd928ab0e3035f33a5dc7ebd19"
+      }
+    },
+    "MD5Digest": {
+      "original": {
+        "sourceSha256": "65e341b50e57f21e3bfa0128af7a6bc6f9921662f0cc8135e22cd45743db1271",
+        "classSha256": "9b3a09fd4915fc26d88fda7f801cd09b96d4f57902144832926889b036a1b7bb"
+      },
+      "generated": {
+        "sourceSha256": "1880373260fc19bae3399bae9468a024ca9acf970957864e37b57b1138a174f7",
+        "classSha256": "fc2e95f0268a72c3da5ce9f4f7cfb0264f17638f2b4a7b6cf40d5e0d7d36aa93"
+      }
+    },
+    "SHA1Digest": {
+      "original": {
+        "sourceSha256": "5818247460b60c2b93d9c52b081fb0dd1dab803df1720f54e1ca4f6d5efba534",
+        "classSha256": "2e0122561300788bc8860aaef3d1fe753a5e56ae9e0f113f068a1e7d3d33ebfa"
+      },
+      "generated": {
+        "sourceSha256": "ffcd7d82a5c3999c9766874983fc0117669c72a4ce531ef627d59e0050449527",
+        "classSha256": "5b92f0eb851b27a3eaefa1e9d45629f8eba2744b9a73aa370a054c2ed565ff23"
+      }
+    },
+    "SHA256Digest": {
+      "original": {
+        "sourceSha256": "dc5d6fe54171af285b6779f37b01ca3839b383348d7ea5dfd71b57fd7246db65",
+        "classSha256": "85a733179ab569bc3159d2b87ba6e37cc776b9a497ea338b6f10e6e5d8c8087a"
+      },
+      "generated": {
+        "sourceSha256": "9fe7c5c19530449ddb558b9fdb72b13d6080b4effb9945300cb65cfc571fa0cf",
+        "classSha256": "800ccae19f2f4d28de71cd7fca64328bbe36bdfd29a78c63ad9c4651d6a6e252"
+      }
+    },
+    "StyledTextRenderer": {
+      "original": {
+        "sourceSha256": "8abb6d9aadd7347d4dbd1c27bf7adc699b788eb3d33148c6581b0b7ff967e25b",
+        "classSha256": "48d52a9fe4005ab8be65204312ac77164952028d3d926b346aec3d11d46ae6d7"
+      },
+      "generated": {
+        "sourceSha256": "0ecb8a4f21b5db5264af40cac0abc276543bef97e5bd7533981a30c9a7123989",
+        "classSha256": "59aada9ed86e7e1931b086d560c0e7dabe0235435b9185e20543faa31cc15d09"
+      }
+    }
+  },
+  "methodMetrics": [
+    {
+      "classFile": "original/org/bouncycastle/crypto/digests/SHA1Digest.class",
+      "method": "f(III)I",
+      "instructions": 10,
+      "codeBytes": 10,
+      "branches": 0,
+      "allocations": 0,
+      "maxStack": 3,
+      "maxLocals": 4,
+      "handlers": 0
+    },
+    {
+      "classFile": "original/org/bouncycastle/crypto/digests/SHA1Digest.class",
+      "method": "g(III)I",
+      "instructions": 12,
+      "codeBytes": 12,
+      "branches": 0,
+      "allocations": 0,
+      "maxStack": 3,
+      "maxLocals": 4,
+      "handlers": 0
+    },
+    {
+      "classFile": "generated/org/bouncycastle/crypto/digests/SHA1Digest.class",
+      "method": "f(III)I",
+      "instructions": 8,
+      "codeBytes": 8,
+      "branches": 0,
+      "allocations": 0,
+      "maxStack": 4,
+      "maxLocals": 4,
+      "handlers": 0
+    },
+    {
+      "classFile": "generated/org/bouncycastle/crypto/digests/SHA1Digest.class",
+      "method": "g(III)I",
+      "instructions": 10,
+      "codeBytes": 10,
+      "branches": 0,
+      "allocations": 0,
+      "maxStack": 3,
+      "maxLocals": 4,
+      "handlers": 0
+    },
+    {
+      "classFile": "original/org/bouncycastle/crypto/digests/LongDigest.class",
+      "method": "Ch(JJJ)J",
+      "instructions": 10,
+      "codeBytes": 13,
+      "branches": 0,
+      "allocations": 0,
+      "maxStack": 6,
+      "maxLocals": 7,
+      "handlers": 0
+    },
+    {
+      "classFile": "original/org/bouncycastle/crypto/digests/LongDigest.class",
+      "method": "Maj(JJJ)J",
+      "instructions": 12,
+      "codeBytes": 14,
+      "branches": 0,
+      "allocations": 0,
+      "maxStack": 6,
+      "maxLocals": 7,
+      "handlers": 0
+    },
+    {
+      "classFile": "generated/org/bouncycastle/crypto/digests/LongDigest.class",
+      "method": "Ch(JJJ)J",
+      "instructions": 8,
+      "codeBytes": 10,
+      "branches": 0,
+      "allocations": 0,
+      "maxStack": 8,
+      "maxLocals": 7,
+      "handlers": 0
+    },
+    {
+      "classFile": "generated/org/bouncycastle/crypto/digests/LongDigest.class",
+      "method": "Maj(JJJ)J",
+      "instructions": 10,
+      "codeBytes": 12,
+      "branches": 0,
+      "allocations": 0,
+      "maxStack": 6,
+      "maxLocals": 7,
+      "handlers": 0
+    },
+    {
+      "classFile": "swt-original-classes/org/eclipse/swt/custom/StyledTextRenderer.class",
+      "method": "addMerge([I[Lorg/eclipse/swt/custom/StyleRange;III)I",
+      "instructions": 334,
+      "codeBytes": 562,
+      "branches": 15,
+      "allocations": 2,
+      "maxStack": 7,
+      "maxLocals": 13,
+      "handlers": 0
+    },
+    {
+      "classFile": "swt-original-classes/org/eclipse/swt/custom/StyledTextRenderer.class",
+      "method": "getTextLayout(I)Lorg/eclipse/swt/graphics/TextLayout;",
+      "instructions": 100,
+      "codeBytes": 201,
+      "branches": 7,
+      "allocations": 0,
+      "maxStack": 5,
+      "maxLocals": 6,
+      "handlers": 2
+    },
+    {
+      "classFile": "swt-original-classes/org/eclipse/swt/custom/StyledTextRenderer.class",
+      "method": "getTextLayout(IIII)Lorg/eclipse/swt/graphics/TextLayout;",
+      "instructions": 1352,
+      "codeBytes": 2883,
+      "branches": 140,
+      "allocations": 14,
+      "maxStack": 7,
+      "maxLocals": 40,
+      "handlers": 0
+    },
+    {
+      "classFile": "swt-generated-classes/org/eclipse/swt/custom/StyledTextRenderer.class",
+      "method": "addMerge([I[Lorg/eclipse/swt/custom/StyleRange;III)I",
+      "instructions": 330,
+      "codeBytes": 556,
+      "branches": 15,
+      "allocations": 2,
+      "maxStack": 7,
+      "maxLocals": 13,
+      "handlers": 0
+    },
+    {
+      "classFile": "swt-generated-classes/org/eclipse/swt/custom/StyledTextRenderer.class",
+      "method": "getTextLayout(I)Lorg/eclipse/swt/graphics/TextLayout;",
+      "instructions": 100,
+      "codeBytes": 201,
+      "branches": 7,
+      "allocations": 0,
+      "maxStack": 5,
+      "maxLocals": 6,
+      "handlers": 2
+    },
+    {
+      "classFile": "swt-generated-classes/org/eclipse/swt/custom/StyledTextRenderer.class",
+      "method": "getTextLayout(IIII)Lorg/eclipse/swt/graphics/TextLayout;",
+      "instructions": 1339,
+      "codeBytes": 2860,
+      "branches": 138,
+      "allocations": 14,
+      "maxStack": 7,
+      "maxLocals": 40,
+      "handlers": 0
+    }
+  ],
+  "limits": [
+    "Counts are static JVM instructions, not executed instructions or CPU time.",
+    "Code bytes exclude class metadata; whole-class hashes are retained only for identity.",
+    "No JIT assembly, profile, latency, throughput, allocation rate or constant-time claim.",
+    "SWT generated source comes from the hash-verified prior ordinary Apply receipt for the identical pinned current source.",
+    "javap constant-pool references were compared by resolved symbol/value, not numeric pool index.",
+    "BLS timing was not repeated."
+  ],
+  "metricsProbeSha256": "0dbafac40233acf50f473f5f0d2751c8a30b6e3f9f0eb552404201901fdea009"
+}

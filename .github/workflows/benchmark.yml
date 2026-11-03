@@ -11,6 +11,8 @@ on:
       - 'sandbox_math_cleanup_test/**'
       - 'sandbox-functional-converter-core/**'
       - 'sandbox-ast-api/**'
+      - 'sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/JUnitXmlInventoryComparator*.java'
+      - 'sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/PinnedGitRepository*.java'
       - '.github/workflows/benchmark.yml'
   pull_request:
     branches:
@@ -22,10 +24,84 @@ on:
       - 'sandbox_math_cleanup_test/**'
       - 'sandbox-functional-converter-core/**'
       - 'sandbox-ast-api/**'
+      - 'sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/JUnitXmlInventoryComparator*.java'
+      - 'sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/PinnedGitRepository*.java'
       - '.github/workflows/benchmark.yml'
   workflow_dispatch:
 
 jobs:
+  swt-before-after:
+    name: Pinned SWT mathematics before and after
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    env:
+      MAVEN_OPTS: -Declipse.p2.mirrors=false
+      SWT_GTK4: '0'
+      GDK_BACKEND: x11
+    steps:
+      - name: Checkout Sandbox
+        uses: actions/checkout@v7
+        with:
+          path: sandbox
+      - name: Checkout pinned SWT with its matching native binaries
+        uses: actions/checkout@v7
+        with:
+          repository: eclipse-platform/eclipse.platform.swt
+          ref: 221d1de66c33292400c91cbd17e3121f72b04ea3
+          fetch-depth: 0
+          lfs: true
+          path: upstream/swt
+      - name: Set up Java 25
+        uses: actions/setup-java@v6
+        with:
+          java-version: '25'
+          distribution: temurin
+          cache: maven
+          cache-dependency-path: sandbox/qa/math-optimization/pom.xml
+      - name: Install GTK and headless display dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xvfb xauth dbus-daemon libgtk-3-0 libwebkit2gtk-4.1-0 ripgrep
+      - name: Verify pinned sources and produce ordinary Apply patch
+        working-directory: sandbox
+        env:
+          # This gate reads pinned Java sources and compiles against hashed P2 jars.
+          # The separate upstream checkout above retains its real native binaries.
+          GIT_LFS_SKIP_SMUDGE: '1'
+        run: >-
+          ./mvnw --batch-mode --no-transfer-progress
+          -f qa/math-optimization/pom.xml
+          -Dtest=SwtCurrentSourceRefinementTest
+          -Dsandbox.math.swt.current=true test
+      - name: Execute changed JPEG, TIFF and native renderer methods
+        working-directory: sandbox
+        run: >-
+          dbus-run-session -- xvfb-run -a
+          ./mvnw --batch-mode --no-transfer-progress
+          -f qa/math-optimization/pom.xml
+          -Dtest=SwtChangedMethodsTest
+          -Dsandbox.math.swt.methods=true
+          -Dsandbox.math.swt.methods.binary=${{ github.workspace }}/sandbox/qa/math-optimization/target/org.eclipse.swt.gtk.linux.x86_64_3.136.0.v20261029-1803.jar
+          -Dsandbox.math.swt.methods.sources=${{ github.workspace }}/sandbox/qa/math-optimization/target/org.eclipse.swt.gtk.linux.x86_64.source_3.136.0.v20261029-1803.jar
+          test
+      - name: Run complete upstream Linux GTK tests before and after
+        run: >-
+          bash sandbox/qa/math-optimization/run-swt-before-after.sh
+          upstream/swt swt-evidence "${{ github.workspace }}/sandbox/mvnw"
+      - name: Retain source, patch and all test outcomes
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: swt-math-before-after
+          path: |
+            swt-evidence/
+            sandbox/qa/math-optimization/target/swt-current-patch/
+            sandbox/qa/math-optimization/target/surefire-reports/
+            upstream/swt/**/target/surefire-reports/
+
   benchmark:
     runs-on: ubuntu-latest
     permissions:
