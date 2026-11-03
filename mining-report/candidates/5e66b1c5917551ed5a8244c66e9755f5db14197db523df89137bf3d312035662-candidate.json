@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "5e66b1c5917551ed5a8244c66e9755f5db14197db523df89137bf3d312035662",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "TestUtil.log(org.eclipse.core.runtime.IStatus.ERROR, $owner$, $message$)\n\u003d\u003e\nTestUtil.log(org.eclipse.core.runtime.IStatus.ERROR, $owner$, $message$, new java.lang.RuntimeException($message$))\n;;",
+  "beforeExample": "package org.eclipse.debug.tests;\nimport org.eclipse.core.runtime.IStatus;\npublic class TestUtil {\n    public static void log(int severity, String owner, String message) {\n        System.err.println(\"[\" + owner + \"] \" + message);\n    }\n    public static void log(int severity, String owner, String message, Throwable t) {\n        System.err.println(\"[\" + owner + \"] \" + message + \" : \" + t.getMessage());\n        t.printStackTrace();\n    }\n    public void someMethod() {\n        String owner \u003d \"MyTest\";\n        String message \u003d \"Some job is still running or waiting to run: \";\n        log(IStatus.ERROR, owner, message);\n    }\n}",
+  "afterExample": "package org.eclipse.debug.tests;\nimport org.eclipse.core.runtime.IStatus;\npublic class TestUtil {\n    public static void log(int severity, String owner, String message) {\n        System.err.println(\"[\" + owner + \"] \" + message);\n    }\n    public static void log(int severity, String owner, String message, Throwable t) {\n        System.err.println(\"[\" + owner + \"] \" + message + \" : \" + t.getMessage());\n        t.printStackTrace();\n    }\n    public void someMethod() {\n        String owner \u003d \"MyTest\";\n        String message \u003d \"Some job is still running or waiting to run: \";\n        log(IStatus.ERROR, owner, message, new java.lang.RuntimeException(message));\n    }\n}",
+  "negativeExample": "package org.eclipse.debug.tests;\nimport org.eclipse.core.runtime.IStatus;\npublic class TestUtil {\n    public static void log(int severity, String owner, String message) {\n        System.err.println(\"[\" + owner + \"] \" + message);\n    }\n    public static void log(int severity, String owner, String message, Throwable t) {\n        System.err.println(\"[\" + owner + \"] \" + message + \" : \" + t.getMessage());\n        t.printStackTrace();\n    }\n    public void someOtherMethod() {\n        String owner \u003d \"MyTest\";\n        String message \u003d \"Informational message\";\n        log(IStatus.INFO, owner, message); // Different severity, should not match\n    }\n    public void yetAnotherMethod() {\n        String owner \u003d \"MyTest\";\n        String message \u003d \"Error message with existing exception\";\n        log(IStatus.ERROR, owner, message, new IllegalArgumentException(\"Existing cause\")); // Already has Throwable, should not match\n    }\n}",
+  "targetHintFile": "logging.sandbox-hint",
+  "sourceCommit": "4f7c9bb0a045966f15eefba59dad8197d3f7a9fb",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "Logging Improvement",
+  "summary": "Adds a RuntimeException to an existing TestUtil.log call for ERROR severity.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-03T02:31:27.637077313Z",
+  "ruleFingerprint": "sha256:cd00623cff532ffb66fa22222a70453e40f187af3ea8c0e79a409d492ce4bf5c",
+  "behaviorFingerprint": "sha256:ebd05ea817f847e6d7531d698009dd68d3d81d16c83d1ef6247fd26a69662cb0",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The public type TestUtil must be defined in its own file",
+    "verifiedAt": "2026-11-03T02:36:13.381442762Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

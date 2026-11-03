@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "ac84cbf94af9fd6d17e16933676c5376004acc27978291dc18732ec3e8a3ecb7",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "() -\u003e $target.$method($args$)\n\u003d\u003e $target::$method\n;;",
+  "beforeExample": "import java.util.concurrent.atomic.AtomicInteger;\nimport java.util.function.Runnable;\n\nclass Example {\n    AtomicInteger counter \u003d new AtomicInteger(0);\n    \n    public void runTask() {\n        Runnable task \u003d () -\u003e counter.incrementAndGet();\n        execute(task);\n    }\n\n    private void execute(Runnable r) {\n        r.run();\n    }\n}",
+  "afterExample": "import java.util.concurrent.atomic.AtomicInteger;\nimport java.util.function.Runnable;\n\nclass Example {\n    AtomicInteger counter \u003d new AtomicInteger(0);\n    \n    public void runTask() {\n        Runnable task \u003d counter::incrementAndGet;\n        execute(task);\n    }\n\n    private void execute(Runnable r) {\n        r.run();\n    }\n}",
+  "negativeExample": "import java.util.concurrent.atomic.AtomicInteger;\nimport java.util.function.Runnable;\nimport java.util.function.Consumer;\n\nclass Example {\n    AtomicInteger counter \u003d new AtomicInteger(0);\n    \n    public void runTask() {\n        // Not a simple method call, multiple statements\n        Runnable task1 \u003d () -\u003e {\n            counter.incrementAndGet();\n            System.out.println(\"Done\");\n        };\n        execute(task1);\n\n        // Lambda takes arguments, not \u0027() -\u003e ...\u0027\n        Consumer\u003cInteger\u003e task2 \u003d (val) -\u003e counter.addAndGet(val);\n        executeConsumer(task2, 1);\n\n        // Body is not a method call on a target\n        Runnable task3 \u003d () -\u003e System.out.println(\"Hello\");\n        execute(task3);\n    }\n\n    private void execute(Runnable r) {\n        r.run();\n    }\n\n    private void executeConsumer(Consumer\u003cInteger\u003e c, int val) {\n        c.accept(val);\n    }\n}",
+  "targetHintFile": "modernize-java8.sandbox-hint",
+  "sourceCommit": "8903e930a8ea1701d7459c4e210afaf1b6fb4369",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "Modernization",
+  "summary": "Replace single-expression lambda `() -\u003e target.method()` with a method reference `target::method`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-03T02:32:37.653864200Z",
+  "ruleFingerprint": "sha256:4ed713c035f5570e67a834349ac5033787ca3b653b3087ce8b7b531858cadd06",
+  "behaviorFingerprint": "sha256:93473bf39e8803aab76991502ba70b804d7d623bcd312b6c77b2fa37b3cb60cf",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 2: The import java.util.function.Runnable cannot be resolved",
+    "verifiedAt": "2026-11-03T02:36:13.448014819Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

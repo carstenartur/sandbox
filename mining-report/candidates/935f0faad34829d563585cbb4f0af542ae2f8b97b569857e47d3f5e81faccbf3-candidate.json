@@ -13,8 +13,9 @@
   "category": "Primitive Parsing",
   "summary": "Replaces `Integer.valueOf(int).toString()` with `Integer.toString(int)` to avoid unnecessary boxing.",
   "sourceVersion": "21",
-  "status": "READY_FOR_REVIEW",
+  "status": "REJECTED",
   "discoveredAt": "2026-11-01T02:22:14.248988109Z",
+  "rejectionReason": "DUPLICATE_AND_UNSAFE: JDT PrimitiveSerializationCleanUp (CleanUpConstants.PRIMITIVE_SERIALIZATION) already implements this exact case and broader wrapper cases. CleanUpTest.testPrimitiveSerialization and testDoNotUsePrimitiveSerialization cover it. The submitted DSL lacks overload/type safeguards: Integer.valueOf(\"42\").toString() compiles, but Integer.toString(\"42\") does not. Small uncovered variants do not establish a substantial advantage over the existing cleanup. Upstream source: https://github.com/eclipse-jdt/eclipse.jdt.ui/blob/581053e8712f71993e2088cdacfff75f5c173879/org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/fix/PrimitiveSerializationCleanUp.java",
   "ruleFingerprint": "sha256:003397b9fe559635295a5a61d8200eb2829980886f412363358b36ceb903f31d",
   "behaviorFingerprint": "sha256:94df33b89285682708e7953099e562e613d3d430c24512b03d5e8080dd60723a",
   "verification": {
@@ -40,6 +41,13 @@
       "actor": "CandidateVerificationCli",
       "reason": "All deterministic candidate gates passed",
       "occurredAt": "2026-11-01T02:23:17.683160634Z"
+    },
+    {
+      "from": "READY_FOR_REVIEW",
+      "to": "REJECTED",
+      "actor": "ChatGPT (review delegated by carstenartur)",
+      "reason": "DUPLICATE_AND_UNSAFE: JDT PrimitiveSerializationCleanUp (CleanUpConstants.PRIMITIVE_SERIALIZATION) already implements this exact case and broader wrapper cases. CleanUpTest.testPrimitiveSerialization and testDoNotUsePrimitiveSerialization cover it. The submitted DSL lacks overload/type safeguards: Integer.valueOf(\"42\").toString() compiles, but Integer.toString(\"42\") does not. Small uncovered variants do not establish a substantial advantage over the existing cleanup. Upstream source: https://github.com/eclipse-jdt/eclipse.jdt.ui/blob/581053e8712f71993e2088cdacfff75f5c173879/org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/fix/PrimitiveSerializationCleanUp.java",
+      "occurredAt": "2026-11-02T22:59:00.446203096Z"
     }
   ]
 }

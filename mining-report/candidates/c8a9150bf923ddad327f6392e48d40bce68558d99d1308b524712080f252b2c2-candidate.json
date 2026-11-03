@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "c8a9150bf923ddad327f6392e48d40bce68558d99d1308b524712080f252b2c2",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: stream-tostring-to-joining\u003e\n\u003c!description: Replace Stream.toString() with a Collector.joining() for useful debugging output, as Stream.toString() does not represent elements.\nConsider adjusting the delimiter and mapper function for specific contexts, but Object::toString is a safe default.\u003e\n\u003c!severity: HINT\u003e\n$collection.stream().toString() :: instanceof($collection, \"java.util.Collection\")\n\u003d\u003e $collection.stream().map(java.lang.Object::toString).collect(java.util.stream.Collectors.joining(\", \"))\n;;",
+  "beforeExample": "import java.util.ArrayList;\nimport java.util.List;\nimport java.util.stream.Stream;\n\n// Simplified IStatus and Status for the example\u0027s self-contained compilation\ninterface IStatus {\n    int ERROR \u003d 4;\n    String getMessage();\n}\n\nclass Status implements IStatus {\n    private int severity;\n    private String plugin;\n    private String message;\n    public Status(int severity, String plugin, String message) {\n        this.severity \u003d severity;\n        this.plugin \u003d plugin;\n        this.message \u003d message;\n    }\n    @Override public String getMessage() { return message; }\n    @Override public String toString() { return \"Status(\" + message + \")\"; }\n}\n\npublic class Example {\n    public void methodWithStream() {\n        List\u003cIStatus\u003e errors \u003d new ArrayList\u003c\u003e();\n        errors.add(new Status(IStatus.ERROR, \"pluginId\", \"Error one\"));\n        errors.add(new Status(IStatus.ERROR, \"pluginId\", \"Error two\"));\n        // This is the pattern to match: Stream.toString() is usually not desired\n        String streamDescription \u003d errors.stream().toString();\n        System.out.println(streamDescription);\n    }\n}",
+  "afterExample": "import java.util.ArrayList;\nimport java.util.List;\nimport java.util.stream.Collectors; // Now required for the replacement\nimport java.util.stream.Stream;\n\n// Simplified IStatus and Status for the example\u0027s self-contained compilation\ninterface IStatus {\n    int ERROR \u003d 4;\n    String getMessage();\n}\n\nclass Status implements IStatus {\n    private int severity;\n    private String plugin;\n    private String message;\n    public Status(int severity, String plugin, String message) {\n        this.severity \u003d severity;\n        this.plugin \u003d plugin;\n        this.message \u003d message;\n    }\n    @Override public String getMessage() { return message; }\n    @Override public String toString() { return \"Status(\" + message + \")\"; }\n}\n\npublic class Example {\n    public void methodWithStream() {\n        List\u003cIStatus\u003e errors \u003d new ArrayList\u003c\u003e();\n        errors.add(new Status(IStatus.ERROR, \"pluginId\", \"Error one\"));\n        errors.add(new Status(IStatus.ERROR, \"pluginId\", \"Error two\"));\n        // The transformed code: using Collectors.joining for meaningful output\n        String streamDescription \u003d errors.stream().map(java.lang.Object::toString).collect(java.util.stream.Collectors.joining(\", \"));\n        System.out.println(streamDescription);\n    }\n}",
+  "negativeExample": "import java.util.ArrayList;\nimport java.util.List;\n\n// Simplified IStatus and Status for the example\u0027s self-contained compilation\ninterface IStatus {\n    int ERROR \u003d 4;\n    String getMessage();\n}\n\nclass Status implements IStatus {\n    private int severity;\n    private String plugin;\n    private String message;\n    public Status(int severity, String plugin, String message) {\n        this.severity \u003d severity;\n        this.plugin \u003d plugin;\n        this.message \u003d message;\n    }\n    @Override public String getMessage() { return message; }\n    @Override public String toString() { return \"Status(\" + message + \")\"; }\n}\n\npublic class Example {\n    public void anotherMethod() {\n        List\u003cString\u003e stringList \u003d new ArrayList\u003c\u003e();\n        stringList.add(\"item1\");\n        stringList.add(\"item2\");\n        // This is List.toString(), not Stream.toString(), should not match\n        String listString \u003d stringList.toString();\n        System.out.println(listString);\n    }\n\n    public void yetAnotherMethod() {\n        String s \u003d \"hello\";\n        // This is String.toString(), not Stream.toString(), should not match\n        String s2 \u003d s.toString();\n        System.out.println(s2);\n    }\n}",
+  "targetHintFile": "modernize.sandbox-hint",
+  "sourceCommit": "066078a9302a6ceca753fe04c1ec30183e2751bd",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "Stream API Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-03T02:31:02.414373783Z",
+  "ruleFingerprint": "sha256:33e3988cb2cac2130f1b2e2235e64b0a538cb0750320d3b782749022fd204790",
+  "behaviorFingerprint": "sha256:0505d63775794b4232580c6deb89db547ee56acef7f0b9d8c288690205253053",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-11-03T02:36:13.356932921Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

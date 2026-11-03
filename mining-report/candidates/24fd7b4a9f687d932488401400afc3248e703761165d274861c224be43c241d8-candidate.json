@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 7: The public type MyProcess must be defined in its own file",
-    "verifiedAt": "2026-11-02T02:22:50.306526845Z",
+    "verifiedAt": "2026-11-03T02:36:13.122005724Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

@@ -13,8 +13,9 @@
   "category": "Redundant Code",
   "summary": "Remove redundant null check before instanceof operator.",
   "sourceVersion": "21",
-  "status": "READY_FOR_REVIEW",
+  "status": "REJECTED",
   "discoveredAt": "2026-09-29T02:34:17.968042654Z",
+  "rejectionReason": "DUPLICATE_AND_UNSAFE: JDT EvaluateNullableCleanUpCore (CleanUpConstants.EVALUATE_NULLABLE) already implements and tests this case in CleanUpTest.testEvaluateNullable/testDoNotEvaluateNullable. Sandbox null-safety.sandbox-hint also has null.safety.remove-redundant-null-check.instanceof guarded by isStableValue($x). The submitted unguarded rule can remove observable evaluations such as list.remove(0). It adds no material capability. Upstream source: https://github.com/eclipse-jdt/eclipse.jdt.ui/blob/581053e8712f71993e2088cdacfff75f5c173879/org.eclipse.jdt.core.manipulation/common/org/eclipse/jdt/internal/ui/fix/EvaluateNullableCleanUpCore.java",
   "ruleFingerprint": "sha256:d8d650285a00ded926caf47b04f5dd52c2f11eead725dba8bb372dff99fd1b0a",
   "behaviorFingerprint": "sha256:04634275418f8194a2cce44b66fe41904923136d297e014e75eacdf33a600830",
   "verification": {
@@ -40,6 +41,13 @@
       "actor": "CandidateVerificationCli",
       "reason": "All deterministic candidate gates passed",
       "occurredAt": "2026-09-29T02:34:24.744685253Z"
+    },
+    {
+      "from": "READY_FOR_REVIEW",
+      "to": "REJECTED",
+      "actor": "ChatGPT (review delegated by carstenartur)",
+      "reason": "DUPLICATE_AND_UNSAFE: JDT EvaluateNullableCleanUpCore (CleanUpConstants.EVALUATE_NULLABLE) already implements and tests this case in CleanUpTest.testEvaluateNullable/testDoNotEvaluateNullable. Sandbox null-safety.sandbox-hint also has null.safety.remove-redundant-null-check.instanceof guarded by isStableValue($x). The submitted unguarded rule can remove observable evaluations such as list.remove(0). It adds no material capability. Upstream source: https://github.com/eclipse-jdt/eclipse.jdt.ui/blob/581053e8712f71993e2088cdacfff75f5c173879/org.eclipse.jdt.core.manipulation/common/org/eclipse/jdt/internal/ui/fix/EvaluateNullableCleanUpCore.java",
+      "occurredAt": "2026-11-02T22:58:57.356465072Z"
     }
   ]
 }

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "6805dd5afe2c617547b8335f0601c78a322601ef00b6b88fbe5470e8f7d0e482",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: add-null-check-before-attribute-access\u003e\n\u003c!description: Add null check before calling getAttribute on an IProcess object if not already present.\u003e\n\u003c!severity: WARNING\u003e\n\nif ($proc.getAttribute($attr) !\u003d null) :: instanceof($proc, \"org.eclipse.debug.core.model.IProcess\")\n\u003d\u003e\nif ($proc !\u003d null \u0026\u0026 $proc.getAttribute($attr) !\u003d null)\n;;",
+  "beforeExample": "import org.eclipse.debug.core.model.IProcess;\n\nclass MyClass {\n    // Assuming IProcess.ATTR_PROCESS_ID is a static final String\n    public static final String ATTR_PROCESS_ID \u003d \"id\";\n\n    void checkProcessId(IProcess proc) {\n        // This pattern should match\n        if (proc.getAttribute(ATTR_PROCESS_ID) !\u003d null) {\n            System.out.println(\"Process has an ID.\");\n        }\n    }\n\n    IProcess getNullableProcess() {\n        return null; // Simulate a potentially null process\n    }\n\n    void exampleUsage() {\n        IProcess p \u003d getNullableProcess();\n        checkProcessId(p);\n    }\n}",
+  "afterExample": "import org.eclipse.debug.core.model.IProcess;\n\nclass MyClass {\n    // Assuming IProcess.ATTR_PROCESS_ID is a static final String\n    public static final String ATTR_PROCESS_ID \u003d \"id\";\n\n    void checkProcessId(IProcess proc) {\n        // Expected transformation\n        if (proc !\u003d null \u0026\u0026 proc.getAttribute(ATTR_PROCESS_ID) !\u003d null) {\n            System.out.println(\"Process has an ID.\");\n        }\n    }\n\n    IProcess getNullableProcess() {\n        return null; // Simulate a potentially null process\n    }\n\n    void exampleUsage() {\n        IProcess p \u003d getNullableProcess();\n        checkProcessId(p);\n    }\n}",
+  "negativeExample": "import org.eclipse.debug.core.model.IProcess;\n\nclass MyClass {\n    public static final String ATTR_PROCESS_ID \u003d \"id\";\n\n    void checkProcessIdSafe(IProcess proc) {\n        // Already contains the null check, should not match\n        if (proc !\u003d null \u0026\u0026 proc.getAttribute(ATTR_PROCESS_ID) !\u003d null) {\n            System.out.println(\"Process has an ID.\");\n        }\n    }\n\n    void checkOtherAttribute(IProcess proc) {\n        // Different method call, should not match\n        if (proc.getName() !\u003d null) {\n            System.out.println(\"Process name: \" + proc.getName());\n        }\n    }\n}",
+  "targetHintFile": "nullability.sandbox-hint",
+  "sourceCommit": "f2cf00272cda50d83c470bf1c5c952c6a4d86b54",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "Null Safety",
+  "summary": "Adds a null check for an IProcess object before accessing its \u0027getAttribute\u0027 method within an \u0027if\u0027 condition, when the null check is missing.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-03T02:35:51.498114256Z",
+  "ruleFingerprint": "sha256:1667a834544389c91b9d6762498e0a8c823cf789ea0a64791cfe40b7ac8ae27d",
+  "behaviorFingerprint": "sha256:2486649bc3b16774bb6b7d659f4be73a4a804b2e4563508dfee70d49c1b3914b",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-11-03T02:36:13.549627275Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

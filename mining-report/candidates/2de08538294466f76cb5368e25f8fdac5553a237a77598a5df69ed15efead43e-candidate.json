@@ -13,8 +13,9 @@
   "category": "Redundant Code",
   "summary": "Remove redundant Math.round() call on integer expressions",
   "sourceVersion": "21",
-  "status": "READY_FOR_REVIEW",
+  "status": "REJECTED",
   "discoveredAt": "2026-10-03T02:32:48.844364940Z",
+  "rejectionReason": "UNSAFE: Math.round(intExpression) invokes round(float), so x\u003d16777217 returns 16777216 before and 16777217 after. The issue fixture differs for lines\u003d167772170. Even exact constants can change conditional typing/overload selection and string identity by becoming constant expressions. Replacing calls in statement or void-lambda contexts may not compile. A future useful implementation needs resolved bindings, range proof, and Java context/constantness preservation in sandbox_math_cleanup; no justified narrow cleanup was found.",
   "ruleFingerprint": "sha256:79c8f1a4003a91a679b59b7eafcffdb28183e8364af393cc324d6b3ccb693190",
   "behaviorFingerprint": "sha256:5548fddb2b650b37ef8a94e03214d99808fd6c736c97d7478d9b44e1f3a89e74",
   "verification": {
@@ -40,6 +41,13 @@
       "actor": "CandidateVerificationCli",
       "reason": "All deterministic candidate gates passed",
       "occurredAt": "2026-10-03T02:32:59.851042215Z"
+    },
+    {
+      "from": "READY_FOR_REVIEW",
+      "to": "REJECTED",
+      "actor": "ChatGPT (review delegated by carstenartur)",
+      "reason": "UNSAFE: Math.round(intExpression) invokes round(float), so x\u003d16777217 returns 16777216 before and 16777217 after. The issue fixture differs for lines\u003d167772170. Even exact constants can change conditional typing/overload selection and string identity by becoming constant expressions. Replacing calls in statement or void-lambda contexts may not compile. A future useful implementation needs resolved bindings, range proof, and Java context/constantness preservation in sandbox_math_cleanup; no justified narrow cleanup was found.",
+      "occurredAt": "2026-11-02T22:58:59.017721688Z"
     }
   ]
 }

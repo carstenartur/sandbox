@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "803cbef2921a6a213a57284b2b9eee6990d2263ddd16cecf0db43487b7ed3d1c",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$e$.printStackTrace()\n\u003d\u003e\norg.eclipse.debug.internal.ui.DebugUIPlugin.log($e$)\n;;",
+  "beforeExample": "package org.eclipse.debug.internal.ui.launchConfigurations;\nimport org.eclipse.core.runtime.CoreException;\n// Simulate DebugUIPlugin.log for compilation\n// In real code, DebugUIPlugin.log would be defined elsewhere and implicitly imported or fully qualified\npublic class ShowCommandLineDialog {\n    public static class DebugUIPlugin {\n        public static void log(Throwable t) {\n            System.err.println(\"Logged exception: \" + t.getMessage());\n            t.printStackTrace(); // Simulate internal logging\n        }\n    }\n    public void someMethod() {\n        try {\n            throw new CoreException(null);\n        } catch (CoreException e) {\n            e.printStackTrace();\n        }\n    }\n}",
+  "afterExample": "package org.eclipse.debug.internal.ui.launchConfigurations;\nimport org.eclipse.core.runtime.CoreException;\n// Simulate DebugUIPlugin.log for compilation\npublic class ShowCommandLineDialog {\n    public static class DebugUIPlugin {\n        public static void log(Throwable t) {\n            System.err.println(\"Logged exception: \" + t.getMessage());\n            t.printStackTrace();\n        }\n    }\n    public void someMethod() {\n        try {\n            throw new CoreException(null);\n        } catch (CoreException e) {\n            org.eclipse.debug.internal.ui.DebugUIPlugin.log(e);\n        }\n    }\n}",
+  "negativeExample": "package org.eclipse.debug.internal.ui.launchConfigurations;\nimport org.eclipse.core.runtime.CoreException;\n// Simulate DebugUIPlugin.log for compilation\npublic class ShowCommandLineDialog {\n    public static class DebugUIPlugin {\n        public static void log(Throwable t) {\n            System.err.println(\"Logged exception: \" + t.getMessage());\n            t.printStackTrace();\n        }\n    }\n    public void anotherMethod() {\n        String msg \u003d \"Error occurred\";\n        System.err.println(msg); // Different pattern, should not match\n    }\n    public void yetAnotherMethod(Throwable t) {\n        // Already uses the desired logging, should not match\n        org.eclipse.debug.internal.ui.DebugUIPlugin.log(t);\n    }\n}",
+  "targetHintFile": "logging.sandbox-hint",
+  "sourceCommit": "f6e8a19fbbbfc6e6e3cb1194f3fb5346e126c8de",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "Logging Best Practice",
+  "summary": "Replaces Throwable.printStackTrace() with a call to DebugUIPlugin.log().",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-03T02:31:27.698752717Z",
+  "ruleFingerprint": "sha256:2311052d9c9939899a990c6d1267b86f434f1dde5d2fe67e7c2463dfe369ee3d",
+  "behaviorFingerprint": "sha256:30f5072de5cd84f76ad4e8fc5da854578c459d874a31413dee63dbf3a4bdbd9b",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 5: The public type ShowCommandLineDialog must be defined in its own file",
+    "verifiedAt": "2026-11-03T02:36:13.403977508Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

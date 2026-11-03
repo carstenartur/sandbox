@@ -13,8 +13,9 @@
   "category": "Primitive Parsing",
   "summary": "Replaces `Integer.valueOf(String, int).intValue()` with `Integer.parseInt(String, int)` to avoid unnecessary boxing/unboxing.",
   "sourceVersion": "21",
-  "status": "READY_FOR_REVIEW",
+  "status": "REJECTED",
   "discoveredAt": "2026-11-01T02:22:14.261475050Z",
+  "rejectionReason": "DUPLICATE: JDT PrimitiveParsingCleanUp (CleanUpConstants.PRIMITIVE_PARSING) already handles Integer.valueOf(String,int).intValue(), with exact radix examples in CleanUpTest.testPrimitiveParsing and boxed-result negatives in testDoNotUsePrimitiveParsing. It additionally handles Long, Short, Byte and applicable implicit-unboxing cases. The proposal adds no material capability. Upstream source: https://github.com/eclipse-jdt/eclipse.jdt.ui/blob/581053e8712f71993e2088cdacfff75f5c173879/org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/fix/PrimitiveParsingCleanUp.java",
   "ruleFingerprint": "sha256:16b0127a86d6eed370acffb33c97f2e02ac45e9fad6a48dfab0c6b688ec957d0",
   "behaviorFingerprint": "sha256:17025ffe2647144fa869dbac85257cf0ac78855a8c6c0a53b756fb04dfc19061",
   "verification": {
@@ -40,6 +41,13 @@
       "actor": "CandidateVerificationCli",
       "reason": "All deterministic candidate gates passed",
       "occurredAt": "2026-11-01T02:23:17.707270758Z"
+    },
+    {
+      "from": "READY_FOR_REVIEW",
+      "to": "REJECTED",
+      "actor": "ChatGPT (review delegated by carstenartur)",
+      "reason": "DUPLICATE: JDT PrimitiveParsingCleanUp (CleanUpConstants.PRIMITIVE_PARSING) already handles Integer.valueOf(String,int).intValue(), with exact radix examples in CleanUpTest.testPrimitiveParsing and boxed-result negatives in testDoNotUsePrimitiveParsing. It additionally handles Long, Short, Byte and applicable implicit-unboxing cases. The proposal adds no material capability. Upstream source: https://github.com/eclipse-jdt/eclipse.jdt.ui/blob/581053e8712f71993e2088cdacfff75f5c173879/org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/fix/PrimitiveParsingCleanUp.java",
+      "occurredAt": "2026-11-02T22:58:59.726129680Z"
     }
   ]
 }
