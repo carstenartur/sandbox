@@ -31,7 +31,8 @@ final class JavaRegionLiveness {
          if (!output.returnValue()) lastVersions.put(output.bindingKey(), output);
       }
       int end = region.start() + region.length();
-      unit.accept(new ASTVisitor() {
+      // A return-only region has no local binding whose visibility can change.
+      if (!locals.isEmpty()) unit.accept(new ASTVisitor() {
          @Override public boolean visit(SimpleName name) {
             if ((name.getStartPosition() < region.start() || name.getStartPosition() >= end)
                   && name.resolveBinding() instanceof IVariableBinding binding
