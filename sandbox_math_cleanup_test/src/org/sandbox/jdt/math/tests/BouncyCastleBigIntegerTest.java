@@ -50,12 +50,21 @@ class BouncyCastleBigIntegerTest {
         var options = MathCleanUpOptions.parse(values, 17);
         var environment = new MathematicalAnalysis.SourceEnvironment(ENTRY, List.of(dependency.toString()), List.of(), List.of());
         var result = MathematicalAnalysis.analyze(parse(original, dependency), original, options, new NullProgressMonitor(), -1, 0, environment);
-        assertEquals(3, result.replacements().size(), result.diagnostics().toString());
-        assertEquals(3, result.evidence().size());
+        assertEquals(4, result.replacements().size(), result.diagnostics().toString());
+        assertEquals(List.of(
+                "BigInteger tv1 = u.modPow(BigInteger.valueOf(2), p);",
+                "BigInteger tv2 = tv1.modPow(BigInteger.valueOf(2), p);",
+                "tv2 = tv3.modPow(BigInteger.valueOf(2), p);",
+                "BigInteger tv6 = tv4.modPow(BigInteger.valueOf(2), p);\n        BigInteger tv5 = A.multiply(tv6).mod(p);"),
+                result.evidence().stream().map(evidence -> evidence.original()).toList(),
+                "Keep the four reduced squares; do not postpone the first window's modular reductions");
         Document document = new Document(original);
         var undo = result.newEdit().apply(document, org.eclipse.text.edits.TextEdit.CREATE_UNDO);
         String generated = document.get(); undo.apply(document); assertEquals(original, document.get());
-        assertTrue(generated.contains("u.multiply(u)"), generated);
+        assertTrue(generated.contains("u.multiply(u).mod(p)"), generated);
+        assertTrue(generated.contains("tv1.multiply(tv1).mod(p)"), generated);
+        assertTrue(generated.contains("tv1 = this.z.multiply(tv1).mod(p);"), generated);
+        assertTrue(generated.contains("tv2 = tv2.add(tv1).mod(p);"), generated);
         assertEquals(original.split("/\\*\\*", -1).length, generated.split("/\\*\\*", -1).length);
         assertTrue(generated.contains("reference identity"));
         int documentedContracts = 0;
@@ -67,7 +76,7 @@ class BouncyCastleBigIntegerTest {
             }
         }
         assertEquals(1, documentedContracts, "The method contract remains deduplicated in Javadoc");
-        assertEquals(3, generated.lines().filter(line -> line.stripLeading()
+        assertEquals(4, generated.lines().filter(line -> line.stripLeading()
                 .startsWith("// Verified mathematics (MATHEMATICAL).")).count(),
                 "NONTRIVIAL explanations retain each verified region's changed contract");
         assertFalse(MathematicalAnalysis.analyze(parse(generated, dependency), generated, options,

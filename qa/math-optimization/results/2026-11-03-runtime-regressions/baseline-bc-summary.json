@@ -1,0 +1,131 @@
+{
+  "schema": "sandbox.runtime-regression-baseline/v1",
+  "sourceCommit": "ef946b6fad6276694f32389311cb7e71cf7f3955",
+  "workflowRun": 41704548802,
+  "job": 126156277224,
+  "artifactId": 13268854121,
+  "artifactSha256": "64da4ef613608257edc3b2f876990fb803cbf4aec2b2f72fd501a4e0ad8a45e4",
+  "scope": "Three opt-in SWU source regions; full hash-to-curve call. Not the nine digest edits.",
+  "comparisons": [
+    {
+      "case": "P256_XMD_SHA_256/32",
+      "classification": "INCONCLUSIVE",
+      "originalMicros": 73.8080617388599,
+      "generatedMicros": 73.99333727593421,
+      "originalConfidence999": [
+        73.229964537288,
+        74.38615894043181
+      ],
+      "generatedConfidence999": [
+        73.54060967774286,
+        74.44606487412555
+      ],
+      "timeRatio": 1.0025102344203243
+    },
+    {
+      "case": "P256_XMD_SHA_256/256",
+      "classification": "INCONCLUSIVE",
+      "originalMicros": 74.55296507676681,
+      "generatedMicros": 74.6953168416936,
+      "originalConfidence999": [
+        73.57172219555106,
+        75.53420795798256
+      ],
+      "generatedConfidence999": [
+        74.46116161381659,
+        74.92947206957061
+      ],
+      "timeRatio": 1.001909404472112
+    },
+    {
+      "case": "P384_XMD_SHA_384/32",
+      "classification": "HIGHER_TIME",
+      "originalMicros": 147.82000219979452,
+      "generatedMicros": 151.7717270962448,
+      "originalConfidence999": [
+        147.56064676532222,
+        148.0793576342668
+      ],
+      "generatedConfidence999": [
+        150.78342669548553,
+        152.76002749700407
+      ],
+      "timeRatio": 1.0267333570399295
+    },
+    {
+      "case": "P384_XMD_SHA_384/256",
+      "classification": "INCONCLUSIVE",
+      "originalMicros": 150.80152610282946,
+      "generatedMicros": 154.3475344251341,
+      "originalConfidence999": [
+        149.23232161358774,
+        152.37073059207117
+      ],
+      "generatedConfidence999": [
+        150.54850909322985,
+        158.14655975703837
+      ],
+      "timeRatio": 1.0235144060802586
+    },
+    {
+      "case": "P521_XMD_SHA_512/32",
+      "classification": "HIGHER_TIME",
+      "originalMicros": 289.8914452745689,
+      "generatedMicros": 302.5600728299667,
+      "originalConfidence999": [
+        285.73296314052067,
+        294.0499274086172
+      ],
+      "generatedConfidence999": [
+        299.2069952714591,
+        305.9131503884743
+      ],
+      "timeRatio": 1.0437012811585342
+    },
+    {
+      "case": "P521_XMD_SHA_512/256",
+      "classification": "INCONCLUSIVE",
+      "originalMicros": 294.69950920754843,
+      "generatedMicros": 295.71699752773065,
+      "originalConfidence999": [
+        286.3213790115242,
+        303.0776394035727
+      ],
+      "generatedConfidence999": [
+        291.5677717099398,
+        299.8662233455215
+      ],
+      "timeRatio": 1.0034526298429145
+    },
+    {
+      "case": "BLS12_381_G1_XMD_SHA_256_SSWU_RO/32",
+      "classification": "INCONCLUSIVE",
+      "originalMicros": 631.5835675017267,
+      "generatedMicros": 635.42317720948,
+      "originalConfidence999": [
+        624.072831363383,
+        639.0943036400705
+      ],
+      "generatedConfidence999": [
+        625.6498800936196,
+        645.1964743253403
+      ],
+      "timeRatio": 1.0060793375656385
+    },
+    {
+      "case": "BLS12_381_G1_XMD_SHA_256_SSWU_RO/256",
+      "classification": "INCONCLUSIVE",
+      "originalMicros": 632.600657705227,
+      "generatedMicros": 637.9606726845799,
+      "originalConfidence999": [
+        623.0929387426975,
+        642.1083766677566
+      ],
+      "generatedConfidence999": [
+        620.0862544438038,
+        655.835090925356
+      ],
+      "timeRatio": 1.0084729835703876
+    }
+  ]
+}

@@ -45,13 +45,35 @@ class BigIntegerMethodExpansionTest {
         String declaration = type.equals("parameter") ? "" : type + " ";
         String original = source("static BigInteger observed; static void consume(BigInteger value) { observed=value; }",
                 declaration + local + "=x.modPow(BigInteger.TWO,m);\n"
-                + local + "=" + local + ".multiply(" + local + ").mod(m);\nconsume(" + local + ");\nreturn observed;");
+                + local + "=" + local + ".add(" + local + ");\nconsume(" + local + ");\nreturn observed;");
         var analysis = analyzeCaller(original, options(true));
         if (!type.equals("parameter")) {
             assertTrue(analysis.evidence().stream().anyMatch(e -> e.original().contains("modPow")
-                    && e.original().contains(local + ".multiply(" + local + ")")), analysis.diagnostics().toString());
+                    && e.original().contains(local + ".add(" + local + ")")), analysis.diagnostics().toString());
         }
         String generated = qualify(original, true);
+        assertOriginalFallbackOutcomes(original, generated);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "BigInteger", "var", "parameter" })
+    void twoReducedSquaresKeepTheirIntermediateBoundaryDuringSafeDecomposition(String type) throws Exception {
+        String local = type.equals("parameter") ? "x" : "result";
+        String declaration = type.equals("parameter") ? "" : type + " ";
+        String original = source("static BigInteger observed; static void consume(BigInteger value) { observed=value; }",
+                declaration + local + "=x.modPow(BigInteger.TWO,m);\n"
+                + local + "=" + local + ".multiply(" + local + ").mod(m);\nconsume(" + local + ");\nreturn observed;");
+        var analysis = analyzeCaller(original, options(true));
+        assertTrue(analysis.evidence().stream().anyMatch(e -> e.original().contains("modPow")), analysis.diagnostics().toString());
+        assertTrue(analysis.evidence().stream().noneMatch(e -> e.original().contains("modPow")
+                && e.original().contains(local + ".multiply(" + local + ")")), "Do not emit a joint fourth power with a lost reduction");
+        String generated = qualify(original, true);
+        assertTrue(generated.contains("x.multiply(x).mod(m)"), generated);
+        assertTrue(generated.contains(local + "=" + local + ".multiply(" + local + ").mod(m);"), generated);
+        assertOriginalFallbackOutcomes(original, generated);
+    }
+
+    private void assertOriginalFallbackOutcomes(String original, String generated) throws Exception {
         Method before = compile(original), after = compile(generated);
         BigInteger overridden = new BigInteger("3") {
             private static final long serialVersionUID = 1L;

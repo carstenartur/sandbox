@@ -1,0 +1,84 @@
+{
+  "schema": "sandbox.runtime-regression-verification/v1",
+  "sourceCommit": "6b29610b958246bd365ca396591b60bd078f3f77",
+  "finishedUtc": "2026-11-03T22:24:16Z",
+  "command": "mvn-runtime -B --no-transfer-progress -f qa/math-optimization/pom.xml -Dmaven.repo.local=/workspace/scratch/330c17e56514/m2-integration clean verify",
+  "java": "25.0.5+8",
+  "maven": "3.9.16",
+  "counts": {
+    "tests": 1231,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 9
+  },
+  "passed": 1222,
+  "reportCount": 137,
+  "archive": "combined-suite-green.tar.gz",
+  "archiveSha256": "0ff8f1b6e8e2c0e824b60e7767e3678d9149d890241de2f11b06a6a0302a1e61",
+  "buildInputGitObjects": {
+    "sandbox_math_cleanup/src": "0ab8095dd92862a7b0440f05e028e64c795b71aa",
+    "sandbox_math_cleanup_test/src": "57023b532980851d0bd42386de904b2dfcb3b690",
+    "qa/math-optimization/src": "786eeb8b390d608a0cac3ed14528019e407d9fc2",
+    "qa/math-optimization/pom.xml": "bde69eccca56d03ce74b62471492a9268dcc66b3",
+    "sandbox-functional-converter-core/src": "f59f9aafa0cad3b11564f1cd52468ae0bd42616b",
+    "sandbox_math_cleanup/lib": "ef4ab7e74e64798a7d2aaae788d19053915e03fd"
+  },
+  "scope": "Complete existing standalone mathematics Maven suite; native/product and canonical stable release qualification are separate. Final reporting commit adds documentation/evidence only.",
+  "skips": [
+    {
+      "class": "org.sandbox.jdt.triggerpattern.test.policy.JdtMathQualificationTest",
+      "test": "pinnedOfficialReactorsPreserveBehavior",
+      "reason": "System property [sandbox.math.jdt.family] does not exist"
+    },
+    {
+      "class": "org.sandbox.jdt.triggerpattern.test.policy.SwtUpstreamInventoryTest",
+      "test": "configuredSwtModulesPreserveExecutedTests",
+      "reason": "System property [sandbox.math.swt.upstream] does not exist"
+    },
+    {
+      "class": "org.sandbox.math.qa.BlsUpstreamSourceIdentityTest",
+      "test": "allFiveCompleteSourcesMatchThePinnedUpstreamRelease",
+      "reason": "System property [sandbox.math.bc.upstream] does not exist"
+    },
+    {
+      "class": "org.sandbox.math.qa.BouncyCastleMathReferenceTest",
+      "test": "exactPinnedTreesRemainUnchangedWithHonestUnsupportedDiagnostics",
+      "reason": "Requires configured verified BC mirror (math.qa.bcMirror); assumption not supplied."
+    },
+    {
+      "class": "org.sandbox.math.qa.SwtChangedMethodsTest",
+      "test": "rendererExecutesBothScrollBranchesWithRealWidgets",
+      "reason": "System property [sandbox.math.swt.methods] does not exist"
+    },
+    {
+      "class": "org.sandbox.math.qa.SwtChangedMethodsTest",
+      "test": "tiffPalettePreservesEndiannessAndReadFailures",
+      "reason": "System property [sandbox.math.swt.methods] does not exist"
+    },
+    {
+      "class": "org.sandbox.math.qa.SwtChangedMethodsTest",
+      "test": "jpegStoragePreservesPixelsAndPartialWrites",
+      "reason": "System property [sandbox.math.swt.methods] does not exist"
+    },
+    {
+      "class": "org.sandbox.math.qa.SwtChangedMethodsTest",
+      "test": "jpegExtractionPreservesPixelsAndPartialWrites",
+      "reason": "System property [sandbox.math.swt.methods] does not exist"
+    },
+    {
+      "class": "org.sandbox.math.qa.SwtCurrentSourceRefinementTest",
+      "test": "exactUpstreamSourcesCompileExecuteAndUndoThroughOrdinaryApply",
+      "reason": "System property [sandbox.math.swt.current] does not exist"
+    }
+  ],
+  "independentReview": "No blocking findings across MethodInfo1bb66e41b and BC6b348bc17+c7358b318; integrated6b29610b9.",
+  "previousCombinedRun": {
+    "sourceCommit": "0f252d7ef3823e6aad2fcfa8df28264cf3f10145",
+    "tests": 1227,
+    "failures": 6,
+    "errors": 0,
+    "skipped": 9,
+    "archive": "combined-suite-red.tar.gz",
+    "sha256": "efdc391975a9024274af888d9c48b8dc0da6617cd8f3274274ceebce80ff8753"
+  }
+}

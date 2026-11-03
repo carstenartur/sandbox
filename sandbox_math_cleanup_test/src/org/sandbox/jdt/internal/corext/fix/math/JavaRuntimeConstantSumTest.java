@@ -12,6 +12,24 @@ class JavaRuntimeConstantSumTest extends JavaContextTestSupport {
     private static MathematicalAnalysis.VerifiedRegion receipt(String source) {
         return analyze(source).evidence().stream().filter(e->e.runtimeIteration()!=null).findFirst().orElseThrow();
     }
+    @Test void deadIntCounterUsesOnlyAccumulatorRingAndReappliesUnchanged() throws Exception {
+        for(String loop:List.of("for(int i=a;i<b;i++)sum+=8;","for(int i=a;i>b;i--)sum-=7;")) {
+            String original=source("int",loop),generated=changed(original);
+            assertFalse(generated.contains("long "),generated);
+            assertFalse(generated.contains("(long)"),generated);
+            assertFalse(analyze(generated).changed());
+            boolean descending=loop.contains("i--");
+            try(var after=compile(generated)) {
+                var actual=after.loadClass("Sample").getMethod("run",int.class,int.class,int.class);
+                for(int[] input:new int[][]{{Integer.MIN_VALUE,Integer.MAX_VALUE},{Integer.MAX_VALUE,Integer.MIN_VALUE},
+                        {-1,Integer.MAX_VALUE},{Integer.MIN_VALUE,0},{0,0},{17,-20},{-20,17}}) {
+                    long distance=descending?(long)input[0]-input[1]:(long)input[1]-input[0];
+                    int expected=(int)(Integer.MAX_VALUE+Math.max(0L,distance)*(descending?-7L:8L));
+                    assertEquals(expected,actual.invoke(null,input[0],input[1],Integer.MAX_VALUE),loop);
+                }
+            }
+        }
+    }
     @Test void constantUpdatesUsePrimitiveArithmeticAcrossCrossoverAndAccumulatorWrap() throws Exception {
         for(String width:List.of("int","long")) for(String term:List.of("1","-3",width.equals("int")?"2147483647":"9223372036854775807L")) {
             String original=source(width,"for(int i=a;i<b;i++)sum+="+term+";");
@@ -117,7 +135,7 @@ class JavaRuntimeConstantSumTest extends JavaContextTestSupport {
                         null,null,null,proof.strategy())))
             reject(source,receipt,forged,receipt.replacement(),receipt.cost());
         reject(source,receipt,proof,receipt.replacement(),proof.withStrategy(RuntimeIterationEvidence.EmissionStrategy.BIG_INTEGER).cost(options().goal()));
-        String mutated=receipt.replacement().replace("count<0L","count>0L");assertNotEquals(receipt.replacement(),mutated);
+        String mutated=receipt.replacement().replace("start<","start>");assertNotEquals(receipt.replacement(),mutated);
         reject(source,receipt,proof,mutated,receipt.cost());
     }
     private static void reject(String source,MathematicalAnalysis.VerifiedRegion receipt,RuntimeIterationEvidence proof,String replacement,
