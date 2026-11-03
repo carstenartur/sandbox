@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-03",
+  "scope": "Static bytecode metrics for the complete named methods in the already-built qualified before/after JDT JARs. No product compilation or test execution.",
+  "upstreamCoreSha": "6725c16c24d94c83302346dc384bb915a0f2fe1a",
+  "sandboxRuntimeCommit": "95bfbddc067d0033a86fb2af97baf6b5cd81e297",
+  "mathPatchSha256": "985cf7854c20983bf26f47842740b981f85a56c233831f1ff0de521212a98df9",
+  "analysisTool": {
+    "upstreamAnalysisSource": "../math-status-main/qa/math-optimization/results/2026-11-03-bytecode/InstructionMetrics.java",
+    "upstreamAnalysisSourceSha256": "c8c2d1018d8d34bba2003219860706a752f193c4406c16780f4b74b37f66c930",
+    "analysisSource": "InstructionMetrics.java",
+    "analysisSourceSha256": "954d905bb1855571091797972b08e2fa50aa00fe35265d0320e931be775e6932",
+    "onlyChange": "Method-name selection changed to decodeCodeAttribute, digit, inlineTagCompletion. Counting logic unchanged.",
+    "runtime": "Eclipse Adoptium Temurin25.0.5+8",
+    "productCompilation": false,
+    "analysisExecution": "JDK25 source-file launcher; analysis reader compiled in memory only."
+  },
+  "metrics": [
+    {
+      "class": "MethodInfo",
+      "method": "decodeCodeAttribute(I)V",
+      "before": {
+        "instructions": 81,
+        "codeBytes": 143,
+        "branches": 6,
+        "allocations": 0,
+        "maxStack": 5,
+        "maxLocals": 9,
+        "handlers": 0,
+        "callSites": 9
+      },
+      "after": {
+        "instructions": 189,
+        "codeBytes": 404,
+        "branches": 16,
+        "allocations": 8,
+        "maxStack": 5,
+        "maxLocals": 11,
+        "handlers": 0,
+        "callSites": 38
+      },
+      "delta": {
+        "instructions": 108,
+        "codeBytes": 261,
+        "branches": 10,
+        "allocations": 8,
+        "maxStack": 0,
+        "maxLocals": 2,
+        "handlers": 0,
+        "callSites": 29
+      }
+    },
+    {
+      "class": "ScannerHelper",
+      "method": "digit(CI)I",
+      "before": {
+        "instructions": 69,
+        "codeBytes": 147,
+        "branches": 12,
+        "allocations": 0,
+        "maxStack": 2,
+        "maxLocals": 2,
+        "handlers": 0,
+        "callSites": 1
+      },
+      "after": {
+        "instructions": 65,
+        "codeBytes": 141,
+        "branches": 12,
+        "allocations": 0,
+        "maxStack": 2,
+        "maxLocals": 2,
+        "handlers": 0,
+        "callSites": 1
+      },
+      "delta": {
+        "instructions": -4,
+        "codeBytes": -6,
+        "branches": 0,
+        "allocations": 0,
+        "maxStack": 0,
+        "maxLocals": 0,
+        "handlers": 0,
+        "callSites": 0
+      }
+    },
+    {
+      "class": "CompletionEngine",
+      "method": "inlineTagCompletion([C[C)[C",
+      "before": {
+        "instructions": 55,
+        "codeBytes": 78,
+        "branches": 0,
+        "allocations": 1,
+        "maxStack": 5,
+        "maxLocals": 7,
+        "handlers": 0,
+        "callSites": 2
+      },
+      "after": {
+        "instructions": 51,
+        "codeBytes": 74,
+        "branches": 0,
+        "allocations": 1,
+        "maxStack": 5,
+        "maxLocals": 7,
+        "handlers": 0,
+        "callSites": 2
+      },
+      "delta": {
+        "instructions": -4,
+        "codeBytes": -4,
+        "branches": 0,
+        "allocations": 0,
+        "maxStack": 0,
+        "maxLocals": 0,
+        "handlers": 0,
+        "callSites": 0
+      }
+    }
+  ],
+  "definitions": {
+    "instructions": "Count of JVM Instruction elements in the complete method Code attribute, including every control-flow path.",
+    "codeBytes": "CodeAttribute.codeLength: encoded JVM instruction array bytes; excludes constant pool, exception table, other metadata, classfile/container overhead and JIT machine code.",
+    "branches": "BranchInstruction plus LookupSwitchInstruction/TableSwitchInstruction sites; a switch counts as one site, not its number of targets.",
+    "callSites": "InvokeInstruction and InvokeDynamicInstruction sites, including constructors; static sites, not executed call counts.",
+    "allocations": "Explicit new/newarray/anewarray/multianewarray sites; excludes allocations inside called methods and any runtime/JIT elimination.",
+    "maxStack": "Code attribute max_stack in JVM operand-stack slots, not peak heap consumption.",
+    "maxLocals": "Code attribute max_locals in JVM local-variable slots."
+  },
+  "findings": [
+    "ScannerHelper removes four instructions and six encoded bytes; its branch/call/allocation sites and maxStack are unchanged.",
+    "CompletionEngine removes four instructions and four encoded bytes; its branch/call/allocation sites and maxStack are unchanged.",
+    "MethodInfo adds 108 instructions and 261 encoded bytes, ten branch sites, 29 call sites and eight explicit allocation sites; maxStack remains 5, maxLocals rises from 9 to 11.",
+    "MethodInfo contains the original-loop fallback plus the 4096-iteration crossover and a BigInteger closed-form path, so a source-level loop optimization produces a substantially larger complete method.",
+    "No conclusion about runtime speed, executed instructions, measured allocation volume or JIT machine-code size follows from these static counts. BigInteger methods can allocate beyond the eight explicit new sites counted here."
+  ],
+  "evidence": {
+    "inputClasses": "input-classes.json",
+    "inputClassesSha256": "ad4e520ee41cc085b02865377aa6a70e7ca686648a92b9b3a705f146a79f0fb1",
+    "rawMetrics": "instruction-metrics.tsv",
+    "rawMetricsSha256": "b894f6d0de16d2a0bb846b38405e2d1a5656becb5c62f9eb8fabaa388267ee0e",
+    "command": "executed-command.txt",
+    "commandSha256": "9a02bfe61f5f4e0594fe3a97c2f254c7fdb1298fb948606b3b05c593606de158",
+    "analysisExit": 0,
+    "allSixClassBytesMatchCompilerOutputs": true
+  }
+}

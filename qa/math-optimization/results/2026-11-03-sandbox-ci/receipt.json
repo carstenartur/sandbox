@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "scope": "Actual retained JUnit XML from the regular Sandbox Maven CI job; no new test execution or before/after regression comparison.",
+  "commit": "55a98f69cd59fbcdb67813091ea2af3a3cc92374",
+  "job": {
+    "runId": 41572836063,
+    "jobId": 125710159305,
+    "url": "https://github.com/carstenartur/sandbox/actions/runs/41572836063/job/125710159305",
+    "conclusion": "SUCCESS"
+  },
+  "artifact": {
+    "id": 13202364573,
+    "name": "test-reports-8770",
+    "bytes": 25361455,
+    "sha256": "69e1a89af8ff2daf60f2ac781269573328e7e64f0424855558d7224e85cb18c5",
+    "file": "test-reports-8770.zip",
+    "sizeAndHashVerified": true
+  },
+  "wholeBuild": {
+    "xmlReports": 717,
+    "reportedTestcaseOccurrences": 6538,
+    "executedNonSkippedCases": 6526,
+    "passed": 6526,
+    "skipped": 12,
+    "failures": 0,
+    "errors": 0,
+    "uniqueReportedIdentities": 6538,
+    "duplicateOccurrences": 0
+  },
+  "mathematicsModule": {
+    "name": "sandbox_math_cleanup_test",
+    "xmlReports": 136,
+    "reportedTestcaseOccurrences": 1188,
+    "executedNonSkippedCases": 1188,
+    "passed": 1188,
+    "skipped": 0,
+    "failures": 0,
+    "errors": 0,
+    "uniqueReportedIdentities": 1188,
+    "duplicateOccurrences": 0
+  },
+  "modulesWithReports": 28,
+  "moduleQualifiedUniqueReportedIdentities": 6538,
+  "xmlReportStructure": {
+    "suiteElements": 717,
+    "wrapperElements": 0,
+    "testcaseElements": 6538
+  },
+  "skippedByModule": {
+    "sandbox-jgit-server-webapp": 1,
+    "sandbox_functional_converter_test": 3,
+    "sandbox_junit_cleanup_test": 5,
+    "sandbox_mining_core": 1,
+    "sandbox_xml_cleanup_test": 2
+  },
+  "reader": {
+    "implementation": "Unmodified JUnitXmlInventoryComparator.collect(Path,Supplier<DocumentBuilderFactory>)",
+    "gitPath": "sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/JUnitXmlInventoryComparator.java",
+    "sourceSha256": "1bdb482383d17f3d6d55baa1a558189fb9f96dd6732450811b8a0e174d5f8788",
+    "adapterSourceSha256": "f7b47c20aeaf5ed7204d7f83bb4265e1b3b26bc56ab51f304b83f570778b15b7",
+    "classAndDependencyManifest": "reader-input-sha256.txt",
+    "classAndDependencyManifestSha256": "ddd7c1b33f31e7b593ca38b03c4c39c304899b106d552d3843f2a23b14067aac",
+    "jdk": "Eclipse Adoptium Temurin25.0.5+8",
+    "exit": 0,
+    "parseErrors": 0,
+    "sourceIdentityBasis": "Byte-identical to the existing comparator at Sandbox95bfbddc067d0033a86fb2af97baf6b5cd81e297; reused compiled classes hashed separately. Reader provenance is independent of the tested CI head."
+  },
+  "definitions": [
+    "Reported testcase occurrences retain multiplicity and include skips; only non-skipped cases count as executed here.",
+    "A unique reported identity is comparator classname (or suite fallback) + # + test name; parameter/display names are preserved. This is not the number of unique Java test methods.",
+    "717 testsuite XML elements are report/container records, not additional testcase executions and not a count of JUnit engine runtime containers.",
+    "Suite-level tests attributes are not summed on top of testcase records.",
+    "The separate Oomph job and independent upstream SWT/JDT/BC qualification jobs are outside this Maven artifact."
+  ],
+  "evidence": {
+    "inventorySummarySha256": "91e8f299e1bd6a453ce145a3acd04a37a53a204b451cf6186e9d21c3238b0da9",
+    "moduleInventoriesSha256": "c9e9007422eeedc95d73e4b1e5413ad28885439913778ee137474d749d313bc3",
+    "fullTestInventorySha256": "58dc3537b989fc2fc49b5ed320651583884884363cba2aa723c3cdfe5c7fa0c0",
+    "skippedTestsSha256": "e200f6b12ba8067e20943b7b899fec9355b273a0988d3a6c4ffdb49b818c1e33",
+    "jobLogSha256": "a49e203ccc15a9df0296d40d01321f5ee0df305ff088564466fc1c38c79e683e",
+    "commandSha256": "c4cfed45b02dffc4520fdc79626e330722d0d627fe6387d84498a669231ac16e"
+  }
+}

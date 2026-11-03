@@ -55,6 +55,8 @@ target/
 *.ear
 *.zip
 *.tar.gz
+!qa/math-optimization/results/2026-11-03-bc-upstream/bc-strict-digest-upstream-evidence.tar.gz
+!qa/math-optimization/results/2026-11-03-jdt-method-benchmark/jdt-method-benchmark-raw.tar.gz
 *.rar
 
 # Exclude JAR files except in specific directories for p2 repository

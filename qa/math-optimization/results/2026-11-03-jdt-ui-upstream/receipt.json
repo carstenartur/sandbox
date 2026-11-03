@@ -1,0 +1,143 @@
+{
+  "schema": "sandbox.jdt-ui-upstream-qualification/v1",
+  "result": "PASS",
+  "scope": "Complete pinned official 25-module JDT UI reactor before and after native mathematics Apply to manipulation and UI; both scans accepted zero changes. This does not qualify the separately transformed JDT Core inside the UI reactor.",
+  "source": {
+    "sandboxBase": "95bfbddc067d0033a86fb2af97baf6b5cd81e297",
+    "sandboxHead": "55a98f69cd59fbcdb67813091ea2af3a3cc92374",
+    "testedMergeCommit": "6ed17ad6312e6e6e42b4eeb9505293b6cf75a7a0",
+    "testedTree": "fce86c51e33fd36096f58deb03a0e3b8963ad69d",
+    "core": "6725c16c24d94c83302346dc384bb915a0f2fe1a",
+    "ui": "54bd63e6453a7eb5db0bfc1d60f17e9568095619",
+    "releng": "10be605e8924c917d5f0013930278a2b1cb756f5",
+    "ref": "R4_41"
+  },
+  "job": {
+    "runId": 41572836149,
+    "jobId": 125710470055,
+    "url": "https://github.com/carstenartur/sandbox/actions/runs/41572836149/job/125710470055",
+    "conclusion": "success",
+    "qualificationSeconds": 2790
+  },
+  "artifact": {
+    "id": 13204696421,
+    "name": "jdt-math-before-after-ui",
+    "file": "jdt-math-before-after-ui.zip",
+    "bytes": 137595992,
+    "sha256": "73f0fef9e85314fe326757153f9ea7e3ed59ad5d8364ff7d6da75a732ec2230c",
+    "downloadSizeAndHashVerified": true
+  },
+  "nativeProduct": {
+    "productCommit": "6ed17ad6312e6e6e42b4eeb9505293b6cf75a7a0",
+    "adapterSha256": "f55fa7cdfaaa350e30c2ac4939af555df165e5fdd57fdaa64c458554aef90187",
+    "embeddedSdkSha256": "ba0293dedb3fde9ca2f3042dcef8ae4d6bb2d576adedff8ba7a2b4d186f1cbe1",
+    "profileSha256": "b0f85dc616ddb3d37a5f779566be70afeb7285cffc312e91c31bd0f3e26e2eb9"
+  },
+  "nativeApply": [
+    {
+      "project": "org.eclipse.jdt.core.manipulation",
+      "sourceUnits": 945,
+      "replacements": 0,
+      "status": "SUCCESS",
+      "allOriginalAndObservedWrittenSourceHashesMatch": true,
+      "receiptSha256": "f5baf2236c4c48082029e15c474ad7383fb958ebf3a184713dde67377d526c56"
+    },
+    {
+      "project": "org.eclipse.jdt.ui",
+      "sourceUnits": 1716,
+      "replacements": 0,
+      "status": "SUCCESS",
+      "allOriginalAndObservedWrittenSourceHashesMatch": true,
+      "receiptSha256": "55d6895bed3bf3ea9145fd8520e3f57582313f933c02af1094c7f0ef0452b9ff"
+    }
+  ],
+  "mathematicsPatch": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "builds": {
+    "modules": 25,
+    "command": "Official clean verify, build-individual-bundles, skipTests=false, fail-at-end, no compliance/test filters",
+    "baseline": {
+      "exit": 0,
+      "minutesSeconds": "19:04"
+    },
+    "generated": {
+      "exit": 0,
+      "minutesSeconds": "13:39",
+      "offlineAgainstBaselineDependencyCache": true
+    },
+    "timingsAreNotPerformanceMeasurements": true
+  },
+  "inventories": {
+    "all": {
+      "reportFilesPerPhase": 7,
+      "testsPerPhase": 9577,
+      "passedPerPhase": 9423,
+      "skippedPerPhase": 154,
+      "failuresPerPhase": 0,
+      "errorsPerPhase": 0,
+      "result": "PASS"
+    },
+    "requiredModules": [
+      {
+        "module": "org.eclipse.jdt.ui.tests",
+        "testsPerPhase": 4006,
+        "passedPerPhase": 3995,
+        "skippedPerPhase": 11
+      },
+      {
+        "module": "org.eclipse.jdt.ui.tests.refactoring",
+        "testsPerPhase": 4478,
+        "passedPerPhase": 4365,
+        "skippedPerPhase": 113
+      },
+      {
+        "module": "org.eclipse.jdt.text.tests",
+        "testsPerPhase": 1035,
+        "passedPerPhase": 1005,
+        "skippedPerPhase": 30
+      }
+    ],
+    "sampleProjectAdditionalTestsPerPhase": 58,
+    "exactBeforeAfterIdentitiesMultiplicitiesAndStates": true,
+    "unexpectedMissing": [],
+    "unexpectedAdded": [],
+    "problems": [],
+    "comparisonSha256": "17b3c909691c4b19222be1fa6bdfb61fa09fc16817f9736973d89da4458b039c"
+  },
+  "artifactIntegrity": {
+    "exactCompilerClassSetsAndBytesMatchPackagedMainJarsInBothPhases": true,
+    "allConfiguredRuntimeBundlesWithEachTargetSymbolicNameUseExactReactorMainJar": true,
+    "prebuiltJarInJarLoaderSourceUnitsUnchanged": 5,
+    "compiledClassCountsPerPhase": {
+      "org.eclipse.jdt.ui": 3510,
+      "org.eclipse.jdt.core.manipulation": 1723
+    },
+    "beforeAfterCompilerOutputDirectoriesByteIdentical": true,
+    "independentReadOnlyComparison": "diff -qr baseline/classes generated/classes; exit 0",
+    "beforeJarSha256": {
+      "org.eclipse.jdt.ui": "707d8151b40932f89dacd284f031d81135ba0fc8d4c13077619a70fb8448e68b",
+      "org.eclipse.jdt.core.manipulation": "3964752210207da71b95c71043c423caaabd225f22cc0c485c909395f5f96874"
+    },
+    "generatedJarSha256": {
+      "org.eclipse.jdt.ui": "2e3670822b670875fead1d5e3067337086b5a92a5ec072f278ad17ae8bbb3c6b",
+      "org.eclipse.jdt.core.manipulation": "57595d9a6dbf7b5c0ec7018a509efd0f510b75017ddd33f56cea1c9c94962dc7"
+    }
+  },
+  "evidence": {
+    "inputIdentitiesSha256": "d32416b9456af6bbb96f1b26cfbfe642b258155803ba5431eb793d99c7d49da9",
+    "baselineCommandSha256": "ceac023a1de5b1879d646b7ae4bec58db710e3b233dd968f966b42e78bad7313",
+    "generatedCommandSha256": "8fa2e2354631536be30f70bad5a5d93bf60a2596d82087a4ce16b69bc6941981",
+    "buildInputsManifestSha256": "dd29dfa07205f76920368f2f8437468c477568d45de31d456fb76fa0c229cf79",
+    "originalSourceHashesSha256": "5b8adeb0b73f8b184fbff874bd9b60b85920e6e1a956d6a42c29aefb5c54e17d",
+    "baselineMavenLogSha256": "17ea72ade1a8b143aa0e402f08cecd727d996993f88f655f8b3f94e130bcd143",
+    "generatedMavenLogSha256": "4809d839ce44cd1e6efcfe444116f202c2a67d871e5ee469c93454e2fd751435"
+  },
+  "limitations": [
+    "Complete reported test inventories include upstream skips; no skip was added or removed between phases.",
+    "Zero-change Apply establishes a scanned and verified corpus, not a measured optimization gain.",
+    "UI and Core run as independent official reactors; this UI result does not test the separately transformed Core within a joint UI/Core product.",
+    "No runtime benchmark or whole-project warning-delta measurement was performed in this UI qualification."
+  ]
+}

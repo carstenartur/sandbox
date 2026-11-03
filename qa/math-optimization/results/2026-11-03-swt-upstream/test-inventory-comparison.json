@@ -1,0 +1,22 @@
+{
+  "baseline": {
+    "reportFiles": 175,
+    "tests": 5012,
+    "passed": 4550,
+    "skipped": 462,
+    "failures": 0,
+    "errors": 0
+  },
+  "migrated": {
+    "reportFiles": 175,
+    "tests": 5012,
+    "passed": 4550,
+    "skipped": 462,
+    "failures": 0,
+    "errors": 0
+  },
+  "unexpectedMissing": [],
+  "unexpectedAdded": [],
+  "problems": [],
+  "result": "PASS"
+}
