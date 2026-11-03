@@ -45,7 +45,6 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.ProgressMonitorWrapper;
 import org.eclipse.jdt.core.JavaCore;
-import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.ASTMatcher;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
@@ -117,13 +116,15 @@ public final class MathematicalAnalysis {
          var result = new Analysis(replacements, diagnostics, digest(source), compiler, evidence);
          if (replacements.size() > 1) {
             var document = new Document(source);
-            try { result.newEdit().apply(document); }
+            var combinedEdit = result.newEdit();
+            var diagnosticEdits = GeneratedSourceDiagnostics.edits(combinedEdit);
+            try { combinedEdit.apply(document); }
             catch (BadLocationException failure) { throw new IllegalArgumentException(failure); }
             long replayPreparation = 4L * source.length() + 4L * document.getLength();
             if (replayPreparation > remaining) throw new IllegalArgumentException("FRESH_SUM_BUDGET_EXCEEDED"); //$NON-NLS-1$
             remaining -= replayPreparation;
             String generated = document.get();
-            var after = checkGeneratedSource(ast, generated, compiler, options.targetJava(), monitor, null);
+            var after = checkGeneratedSource(ast, source, generated, compiler, options.targetJava(), monitor, null, diagnosticEdits);
             for (var receipt : evidence) {
                if (remaining < 1) throw new IllegalArgumentException("FRESH_SUM_BUDGET_EXCEEDED"); //$NON-NLS-1$
                if (receipt.finiteSum() != null) {
@@ -178,10 +179,10 @@ public final class MathematicalAnalysis {
          return new Analysis(result.replacements(), result.diagnostics(), result.sourceDigest(), result.compilerOptions(),
                result.evidence(), result.documentation(), dependencies);
       } catch (JavaValueSourceSummary.DeadlineExceeded expired) {
-         return cancelled(digest(source), ast.getJavaElement() == null ? Map.of() : ast.getJavaElement().getJavaProject().getOptions(true));
+         return cancelled(digest(source), compilerOptions(ast,environment));
       } catch (OperationCanceledException cancelled) {
          if (Thread.currentThread().isInterrupted() || !work.isCancelled()) throw cancelled;
-         return cancelled(digest(source), ast.getJavaElement() == null ? Map.of() : ast.getJavaElement().getJavaProject().getOptions(true));
+         return cancelled(digest(source), compilerOptions(ast,environment));
       }
    }
 
@@ -189,7 +190,7 @@ public final class MathematicalAnalysis {
          IProgressMonitor progress, int selectionOffset, int selectionLength, SourceEnvironment environment, JavaSourceContext sourceContext,
          List<? extends org.eclipse.jdt.core.ISourceRange> protectedRegions, JavaValueSourceSummary.Work valueWork) {
       IProgressMonitor monitor = progress == null ? new NullProgressMonitor() : progress;
-      Map<String, String> compilerOptions = ast.getJavaElement() == null ? Map.of() : ast.getJavaElement().getJavaProject().getOptions(true);
+      Map<String, String> compilerOptions = compilerOptions(ast,environment);
       String sourceDigest = digest(source);
       ArrayList<Replacement> replacements = new ArrayList<>();
       ArrayList<Diagnostic> diagnostics = new ArrayList<>();
@@ -637,12 +638,14 @@ public final class MathematicalAnalysis {
                         throw new IllegalArgumentException("SOURCE_PLAN_REPLACEMENT_DIFFERS"); //$NON-NLS-1$
                   }
                   CompilationUnit generatedAst = checkGeneratedSource(
-                     ast,
+                     ast, source,
                      source.substring(0, region.start()) + replacement + source.substring(region.start() + region.length()),
                      compilerOptions,
                      options.targetJava(),
                      (IProgressMonitor)monitor,
-                     environment
+                     environment, sourcePlan == null
+                           ? List.of(new GeneratedSourceDiagnostics.Edit(region.start(),region.length(),replacement.length()))
+                           : GeneratedSourceDiagnostics.edits(sourcePlan)
                   );
                   if (contextRegion) JavaExpressionContexts.verifyBoundary(ast, generatedAst, region, replacement.length());
                   if (isCancelled(monitor)) {
@@ -830,8 +833,10 @@ public final class MathematicalAnalysis {
       if (replacements.size() > 1 || !analysis.documentation().isEmpty()) {
          try {
             Document combined = new Document(source);
-            analysis.newEdit().apply(combined);
-            CompilationUnit combinedAst = checkGeneratedSource(ast, combined.get(), compilerOptions, options.targetJava(), (IProgressMonitor)monitor, environment);
+            var combinedEdit = analysis.newEdit();
+            var diagnosticEdits = GeneratedSourceDiagnostics.edits(combinedEdit);
+            combinedEdit.apply(combined);
+            CompilationUnit combinedAst = checkGeneratedSource(ast, source, combined.get(), compilerOptions, options.targetJava(), (IProgressMonitor)monitor, environment, diagnosticEdits);
             if(evidence.stream().anyMatch(region->region.fixedPower()!=null)) {
                valueWork.charge(Math.max(0,valueWork.remaining()-Math.max(0,remainingWork)));
                long beforePowerReplay=valueWork.used;
@@ -1121,7 +1126,8 @@ public final class MathematicalAnalysis {
    }
 
    static CompilationUnit checkGeneratedSource(
-      CompilationUnit original, String generated, Map<String, String> compilerOptions, int targetJava, IProgressMonitor monitor, MathematicalAnalysis.SourceEnvironment environment
+      CompilationUnit original, String source, String generated, Map<String, String> compilerOptions, int targetJava, IProgressMonitor monitor, MathematicalAnalysis.SourceEnvironment environment,
+      List<GeneratedSourceDiagnostics.Edit> edits
    ) {
       ASTParser parser = ASTParser.newParser(original.getAST().apiLevel());
       if (original.getJavaElement() != null) {
@@ -1162,12 +1168,19 @@ public final class MathematicalAnalysis {
       parser.setSource(generated.toCharArray());
       CompilationUnit generatedAst = (CompilationUnit)parser.createAST(monitor);
 
-      for (IProblem problem : generatedAst.getProblems()) {
-         if (problem.isError()) {
-            throw new IllegalArgumentException("GENERATED_REGION_INVALID: " + problem.getMessage());
-         }
-      }
+      GeneratedSourceDiagnostics.verify(original, source, generatedAst, generated, edits, monitor);
       return generatedAst;
+   }
+
+   static CompilationUnit checkGeneratedSource(CompilationUnit original, String source, String generated, Map<String,String> compilerOptions,
+         int targetJava, IProgressMonitor monitor, SourceEnvironment environment, int offset, int length, int replacementLength) {
+      return checkGeneratedSource(original, source, generated, compilerOptions, targetJava, monitor, environment,
+            List.of(new GeneratedSourceDiagnostics.Edit(offset,length,replacementLength)));
+   }
+
+   private static Map<String,String> compilerOptions(CompilationUnit ast, SourceEnvironment environment) {
+      return ast.getJavaElement() != null ? Map.copyOf(ast.getJavaElement().getJavaProject().getOptions(true))
+            : environment == null ? Map.of() : environment.compilerOptions();
    }
 
    static String javaType(NumericKind kind) {
@@ -1317,20 +1330,17 @@ public final class MathematicalAnalysis {
    public record Replacement(int offset, int length, String replacement, String description) {
    }
 
-   public record SourceEnvironment(String unitName, List<String> classpath, List<String> sourcepath, List<String> encodings) {
+   public record SourceEnvironment(String unitName, List<String> classpath, List<String> sourcepath, List<String> encodings,
+         Map<String,String> compilerOptions) {
       public SourceEnvironment(String unitName, List<String> classpath, List<String> sourcepath, List<String> encodings) {
+         this(unitName,classpath,sourcepath,encodings,Map.of());
+      }
+      public SourceEnvironment {
          Objects.requireNonNull(unitName);
-         classpath = List.copyOf(classpath);
-         sourcepath = List.copyOf(sourcepath);
-         encodings = List.copyOf(encodings);
-         if (!unitName.isBlank() && (encodings.isEmpty() || encodings.size() == sourcepath.size())) {
-            this.unitName = unitName;
-            this.classpath = classpath;
-            this.sourcepath = sourcepath;
-            this.encodings = encodings;
-         } else {
-            throw new IllegalArgumentException("INVALID_SOURCE_ENVIRONMENT");
-         }
+         classpath = List.copyOf(classpath); sourcepath = List.copyOf(sourcepath); encodings = List.copyOf(encodings);
+         compilerOptions = Map.copyOf(compilerOptions);
+         if (unitName.isBlank() || !encodings.isEmpty() && encodings.size() != sourcepath.size())
+            throw new IllegalArgumentException("INVALID_SOURCE_ENVIRONMENT"); //$NON-NLS-1$
       }
    }
 

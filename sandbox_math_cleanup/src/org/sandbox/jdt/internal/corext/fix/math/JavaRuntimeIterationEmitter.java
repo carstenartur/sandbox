@@ -7,6 +7,7 @@ import org.eclipse.jdt.core.dom.*;
 import de.regelsuche.ast.*;
 import de.regelsuche.sdk.optimization.iteration.PolynomialSumPlan;
 import de.regelsuche.symbol.SymbolId;
+import org.sandbox.jdt.internal.corext.fix.math.RuntimeIterationEvidence.EmissionStrategy;
 
 /** Deterministic standalone lowering of independently checked SDK transport. No synthesis or loop unrolling. */
 final class JavaRuntimeIterationEmitter {
@@ -27,7 +28,38 @@ final class JavaRuntimeIterationEmitter {
     static String emit(CompilationUnit unit,String source,JavaRuntimeIterationAnalysis.Context context,RuntimeIterationEvidence evidence,JavaLoopInvariantAnalysis.Work work) {
         return new JavaRuntimeIterationEmitter(context,evidence,source,work).emit(unit,source);
     }
+    /** Only checked constant coefficients are lowered; no Java-side polynomial synthesis. */
+    static EmissionStrategy strategy(JavaRuntimeIterationAnalysis.Context context,RuntimeIterationEvidence evidence) {
+        var h=context.header();
+        if(context.stream() || context.partition()!=null || context.linear()!=null || context.nested()!=null
+                || evidence.partition()!=null || evidence.linear()!=null || evidence.nested()!=null
+                || !(context.width().equals("int") || context.width().equals("long"))
+                || !JavaFiniteSumAnalysis.type(h.counter().getType(),"int")
+                || !JavaFiniteSumAnalysis.type(h.start().resolveTypeBinding(),"int")
+                || !JavaFiniteSumAnalysis.type(h.bound().resolveTypeBinding(),"int")
+                || evidence.sums().isEmpty() || evidence.sums().size()!=context.targets().size()
+                || !evidence.sums().stream().map(PolynomialSumPlan::source).toList().equals(context.sums()))return EmissionStrategy.BIG_INTEGER;
+        var unit=(CompilationUnit)context.node().getRoot();
+        for(int state=0;state<evidence.sums().size();state++) {
+            var plan=evidence.sums().get(state);var target=context.targets().get(state);
+            if(plan.coefficients().size()!=1 || !(plan.coefficients().getFirst() instanceof NumberExpr number)
+                    || !number.value().denominator().equals(BigInteger.ONE)
+                    || !(plan.initial() instanceof VariableExpr initial) || !plan.initial().equals(plan.source().initial())
+                    || !(unit.findDeclaringNode(target) instanceof VariableDeclaration declaration)
+                    || !JavaFiniteSumAnalysis.type(target.getType(),context.width()))return EmissionStrategy.BIG_INTEGER;
+            boolean matched=context.bindings().stream().anyMatch(binding->initial.symbol().filter(binding.symbol()::equals).isPresent()
+                    && binding.declarationOffset()==declaration.getName().getStartPosition()
+                    && binding.name().equals(target.getName()) && binding.primitiveType().equals(context.width()));
+            if(!matched)return EmissionStrategy.BIG_INTEGER;
+        }
+        return !h.once() && !h.inclusive() && h.stride().abs().equals(BigInteger.ONE)
+                ?EmissionStrategy.PRIMITIVE_UNIT:EmissionStrategy.PRIMITIVE_GUARDED;
+    }
     private String emit(CompilationUnit unit,String source) {
+        if(evidence.strategy()!=EmissionStrategy.BIG_INTEGER) {
+            if(evidence.strategy()!=strategy(context,evidence))throw invalid();
+            return primitive(unit,source);
+        }
         var h=context.header();String p=prefix;
         var out=new Output(work);
         if(context.stream()) out.append("(new java.util.function.").append(context.width().equals("int")?"IntSupplier":"LongSupplier").append("(){public ").append(context.width()).append(" getAs").append(context.width().equals("int")?"Int":"Long").append("(){\n");
@@ -54,7 +86,7 @@ final class JavaRuntimeIterationEmitter {
         String adjusted=distance+(h.inclusive()?"":".subtract("+BIG+".ONE)");
         out.append(BIG).append(' ').append(p).append("count = ").append(adjusted).append(".signum()<0 ? ").append(BIG).append(".ZERO : ").append(count).append(";\n");
         if(h.once()) out.append(p).append("count = ").append(p).append("count.max(").append(BIG).append(".ONE);\n");
-        out.append(BIG).append(' ').append(p).append("after = ").append(p).append("start.add(").append(p).append("count.multiply(").append(number(h.stride())).append("));\n");
+        if(!context.stream()) out.append(BIG).append(' ').append(p).append("after = ").append(p).append("start.add(").append(p).append("count.multiply(").append(number(h.stride())).append("));\n");
         String counterWidth=context.stream()?context.width():h.counter().getType().getName();
         BigInteger min=BigInteger.ONE.shiftLeft(counterWidth.equals("int")?31:63).negate(),max=min.negate().subtract(BigInteger.ONE);
         out.append("if(").append(p).append("count.compareTo(").append(number(BigInteger.valueOf(evidence.minimumIterations()))).append(")>=0");
@@ -77,7 +109,13 @@ final class JavaRuntimeIterationEmitter {
         if(evidence.linear()!=null) linear(out,source);
         else {
             List<PolynomialSumPlan> plans=evidence.nested()!=null?List.of(evidence.nested().outer()):evidence.sums();
-            if(context.partition()!=null)JavaPartitionedSumEmitter.prepare(out,context.partition(),p);
+            if(context.partition()!=null) {
+                var symbols=new HashSet<SymbolId>();
+                for(var plan:plans) { collectSymbols(plan.initial(),symbols,0); for(var value:plan.coefficients())collectSymbols(value,symbols,0); }
+                var starts=new HashSet<Integer>();
+                for(int part=0;part<context.partition().starts().size();part++)if(symbols.contains(context.partition().starts().get(part)))starts.add(part);
+                JavaPartitionedSumEmitter.prepare(out,context.partition(),p,starts);
+            }
             for(int state=0;state<plans.size();state++) polynomial(out,plans.get(state),state,context.partition()==null?p+"count":p+"partCount"+state);
             if(context.partition()==null)for(int state=0;state<plans.size();state++) assign(out,state,p+"result"+state);
             else {
@@ -91,6 +129,42 @@ final class JavaRuntimeIterationEmitter {
         if(primitiveGuard)out.append("}\n");
         if(context.stream()) out.append("}}).getAs").append(context.width().equals("int")?"Int":"Long").append("()");else out.append('}');
         return out.toString();
+    }
+    private String primitive(CompilationUnit unit,String source) {
+        var h=context.header();String p=prefix;var out=new Output(work);
+        // Header arithmetic runs in its authored int width; only the captured values are widened.
+        out.append("{\nint ").append(p).append("start=(").append(text(source,h.start())).append("), ")
+                .append(p).append("bound=(").append(text(source,h.bound())).append(");\n");
+        out.append("long ").append(p).append("count=");
+        String distance=h.stride().signum()>0?"(long)"+p+"bound-"+p+"start":"(long)"+p+"start-"+p+"bound";
+        if(evidence.strategy()==EmissionStrategy.PRIMITIVE_UNIT) {
+            out.append(distance).append(";\nif(").append(p).append("count<0L)").append(p).append("count=0L;\n");
+        } else {
+            out.append(distance).append(h.inclusive()?"":"-1L").append(";\n")
+                    .append(p).append("count=").append(p).append("count<0L?0L:").append(p).append("count/")
+                    .append(h.stride().abs().longValueExact()).append("L+1L;\n");
+            if(h.once())out.append("if(").append(p).append("count==0L)").append(p).append("count=1L;\n");
+        }
+        boolean guarded=evidence.strategy()==EmissionStrategy.PRIMITIVE_GUARDED;
+        if(guarded || h.live())out.append("long ").append(p).append("after=").append(p).append("start+")
+                .append(p).append("count*(").append(h.stride().longValueExact()).append("L);\n");
+        if(guarded)out.append("if(").append(p).append("count>=").append(evidence.minimumIterations()).append("L && ")
+                .append(p).append("after>=-2147483648L && ").append(p).append("after<=2147483647L){\n");
+        for(Object item:unit.getCommentList()) {
+            work.tick();ASTNode comment=(ASTNode)item;
+            if(comment.getStartPosition()>=context.node().getStartPosition() && comment.getStartPosition()+comment.getLength()<=context.node().getStartPosition()+context.node().getLength())out.append(text(source,comment)).append('\n');
+        }
+        for(int state=0;state<evidence.sums().size();state++) {
+            var coefficient=((NumberExpr)evidence.sums().get(state).coefficients().getFirst()).value().numerator();
+            // Compound assignment narrows to the source accumulator ring, including long product wrap.
+            long value=context.width().equals("int")?coefficient.intValue():coefficient.longValue();
+            out.append(context.targets().get(state).getName()).append(" += ");
+            out.append(p).append("count*(").append(value).append("L)");
+            out.append(";\n");
+        }
+        if(h.live())out.append(h.counter().getName()).append("=(int)").append(p).append("after;\n");
+        if(guarded)out.append("}else{\n").append(fallback(source)).append("\n}\n");
+        return out.append('}').toString();
     }
     private void polynomial(Output out,PolynomialSumPlan plan,int state,String count) {
         String p=prefix;
@@ -188,6 +262,11 @@ final class JavaRuntimeIterationEmitter {
         var fraction=fraction(expression,0);
         return fraction.denominator().equals(BigInteger.ONE)?fraction.numerator():join("(",fraction.numerator(),").divide(",number(fraction.denominator()),")");
     }
+    private void collectSymbols(Expr expression,Set<SymbolId> symbols,int depth) {
+        work.tick();if(depth>64)throw invalid();
+        if(expression instanceof VariableExpr variable) symbols.add(variable.symbol().orElseThrow());
+        else if(expression instanceof BinaryExpr binary) {collectSymbols(binary.left(),symbols,depth+1);collectSymbols(binary.right(),symbols,depth+1);}
+    }
     private Fraction fraction(Expr expression,int depth) {
         work.tick();if(depth>64) throw invalid();
         if(expression instanceof NumberExpr value) {
@@ -215,7 +294,8 @@ final class JavaRuntimeIterationEmitter {
     }
     private String number(BigInteger number) {
         int bits=number.abs().bitLength();if(bits>RuntimeIterationEvidence.MAX_RESULT_BITS)throw invalid();
-        work.charge((long)bits+1);return join("new ",BIG,"(\"",number.toString(),"\")");
+        work.charge((long)bits+1);
+        return number.bitLength()<=63 ? join(BIG,".valueOf(",number.toString(),"L)") : join("new ",BIG,"(\"",number.toString(),"\")");
     }
     private String text(String source,ASTNode node) {
         if(node.getLength()>RuntimeIterationEvidence.MAX_EMITTED_CHARACTERS)throw invalid();

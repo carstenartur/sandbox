@@ -47,7 +47,7 @@ class InstanceMethodExpansionTest {
     }
     @Test void removableImplicitAndExplicitThisHaveExactDispatch() throws Exception {
         for (String modifier : List.of("private", "final")) for (String receiver : List.of("", "this.")) {
-            String source = "public class Calculation { " + modifier + " int add(int x,int y){return x+y;}"
+            String source = "public class Calculation { " + modifier + " int add(int x,int y){return x+y;} public int reference(int x,int y){return add(x,y);}"
                     + " public int run(int x,int y) {return " + receiver + "add(x,y)-x;} }";
             String output = generated(source);
             assertTrue(output.contains("return y;"), output);

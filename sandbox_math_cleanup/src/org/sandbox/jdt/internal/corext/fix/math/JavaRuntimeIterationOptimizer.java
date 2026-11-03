@@ -72,7 +72,8 @@ final class JavaRuntimeIterationOptimizer {
                         var allocation=budget(options,remaining,work,token);work.charge(allocation.maximumWork());
                         nested=PolynomialSeries.nested(context.nested(),allocation,token);
                     }
-                    var proof=new RuntimeIterationEvidence(JavaFiniteSumOptimizer.hash(source),context.bindings(),sums,linear,nested,context.partition());
+                    var transport=new RuntimeIterationEvidence(JavaFiniteSumOptimizer.hash(source),context.bindings(),sums,linear,nested,context.partition());
+                    var proof=transport.withStrategy(JavaRuntimeIterationEmitter.strategy(context,transport));
                     long proofAllowance=Math.min(proof.verificationLimit(),(remaining-work.used)/4);
                     if(proofAllowance<1)throw new JavaLoopInvariantAnalysis.Limit();
                     verifyReserved(work,proofAllowance,()->proof.verify(MathematicalAnalysis.optimizationBudget(options,proofAllowance,token),token));
@@ -83,7 +84,7 @@ final class JavaRuntimeIterationOptimizer {
                             List.of(new JavaSourceRewritePlan.Change(offset,length,JavaFiniteSumOptimizer.hash(original),replacement)));
                     String generated=source.substring(0,offset)+replacement+source.substring(offset+length);
                     work.charge(4L*generated.length());
-                    var after=MathematicalAnalysis.checkGeneratedSource(ast,generated,compilerOptions,options.targetJava(),monitor,environment);
+                    var after=MathematicalAnalysis.checkGeneratedSource(ast,source,generated,compilerOptions,options.targetJava(),monitor,environment,GeneratedSourceDiagnostics.edits(plan));
                     var receipt=new MathematicalAnalysis.VerifiedRegion(offset,length,null,proof.cost(options.goal()),original,replacement,null,plan,null,null,proof);
                     var edit=new MathematicalAnalysis.Replacement(offset,length,replacement,proof.description());
                     long replayAllowance=remaining-work.used;
@@ -146,6 +147,7 @@ final class JavaRuntimeIterationOptimizer {
         if(allowance-work.used<1)throw new JavaLoopInvariantAnalysis.Limit();
         long proofAllowance=Math.min(options.workBudget(),allowance-work.used);
         verifyReserved(work,proofAllowance,()->proof.verify(MathematicalAnalysis.optimizationBudget(options,proofAllowance,token),token));
+        if(proof.strategy()!=JavaRuntimeIterationEmitter.strategy(context,proof))throw invalid();
         if(!proof.cost(options.goal()).equals(receipt.cost()))throw invalid();
         String rebuilt=JavaRuntimeIterationEmitter.emit(before,source,context,proof,work);
         int mapped=position(receipt.offset(),edits);
