@@ -52,11 +52,11 @@ upstream failures must remain visible rather than being reclassified as passes.
       retain the five accepted changes, UI zero-change result and warning delta.
 - [x] Reproduce Tycho's replacement of changed Core bytecode with release bytecode;
       use the same separately recorded build-only correction in both variants.
-- [ ] Run original upstream builds/tests, ordinary cleanup, and identical rebuilt
+- [x] Run original upstream builds/tests, ordinary cleanup, and identical rebuilt
       tests wherever dependencies and baseline prerequisites are available.
 - [x] Independently review the additions and run the inventory regressions; add a
       native CI path and require positive execution in both SWT test modules.
-- [ ] Record exact commands, versions, results and remaining blocked stages in
+- [x] Record exact commands, versions, results and remaining blocked stages in
       `docs/qa/math-upstream-qualification-20261103.md`.
 
 ## Acceptance
@@ -85,3 +85,44 @@ in a prebuilt jar-in-jar-loader ZIP. A complete zero-change UI scan is valid.
 Regression fixtures must first demonstrate the relevant false-green cases.
 The generated Java is retained exactly; new warnings and source growth are
 reported instead of silently repairing the output before measuring it.
+
+Completed on tested head `55a98f69cd59fbcdb67813091ea2af3a3cc92374`: both native
+Core 20-module reactors pass with identical 290,650 passing executions and zero
+skips/failures/errors per phase. Both native UI 25-module reactors pass with
+identical 9,577 cases, 9,423 passed and 154 skipped per phase. Core repeats the
+five local edits and 13 warnings; UI again accepts no edits. The separately
+recorded interrupted/local environment failures remain visible as history.
+
+## Targeted MethodInfo usefulness measurement
+
+The actual local Apply output adds 13 warnings and expands the complete
+`decodeCodeAttribute` method from 81 to 189 JVM instructions. While the native
+Core regression comparison runs, measure this concrete unresolved usefulness
+question with the already-qualified original/generated compiler JARs. Keep the
+experiment isolated from the product sources and the running CI checkout.
+
+Use JMH for complete fresh ClassFileReader/name-decoding calls, including the
+generated threshold, guards and fallback. Bind loaded classes to the retained
+JAR/Class hashes. Before measurement, JUnit must validate complete JVM-verifiable
+input classfiles and expected parameter names, so a preinitialized or cached
+MethodInfo cannot silently bypass the changed method. Cover ordinary small
+exception tables and both sides of the 4,096-entry threshold, plus a bounded
+large-table stress case. Separate synthetic boundaries from any real-class
+control and preserve identical input bytes in both variants.
+
+Use the same bounded initial JMH protocol as the retained BC comparison: two
+forks, three 500 ms warmups and five 500 ms measurements per fork, with time and
+normalized allocation results. Preserve code, commands, hashes, raw samples and
+limitations as analysis evidence. This is a steady-state measurement, not a
+cold-start claim, and does not substitute for the full native Core tests.
+
+Completed: ten JUnit gates pass; all 18 JMH cases and 36 forks complete. The
+four valid synthetic inputs at or above 4,096 handlers require 2.16–2.49 times
+the full operation time and 2.82–3.05 times the allocated bytes after cleanup,
+with separate 99.9% intervals. Smaller cases and the single real-class control
+have overlapping intervals. Independent read-only review confirms the measured
+path, warm-cache scope, exact reachable branches and loaded product identities.
+The generated code remains unchanged for qualification; this result rejects a
+usefulness claim for its present form rather than changing the running experiment.
+Compact receipts are retained in the repository results directory and complete
+analysis sources, fixtures and raw measurements in the evidence archive.

@@ -1,0 +1,520 @@
+{
+  "schema": "sandbox.retained-benchmark-scope-review/v1",
+  "reviewedAtUtc": "2026-11-03T05:08:54Z",
+  "repository": "carstenartur/sandbox",
+  "runId": 41572836149,
+  "jobId": 125709486574,
+  "jobUrl": "https://github.com/carstenartur/sandbox/actions/runs/41572836149/job/125709486574",
+  "jobConclusion": "success",
+  "pullRequestHead": "55a98f69cd59fbcdb67813091ea2af3a3cc92374",
+  "actualCiCheckout": "6ed17ad6312e6e6e42b4eeb9505293b6cf75a7a0",
+  "ciTree": "fce86c51e33fd36096f58deb03a0e3b8963ad69d",
+  "reviewOperation": "Read existing artifacts and actual benchmark implementation only; no benchmarks, builds or tests were started during this review.",
+  "artifacts": [
+    {
+      "id": 13204319603,
+      "name": "bc-math-qualification.zip",
+      "sha256": "eb650ad0b6a02edbbf30c2288b5be03b5d8b4b8e0950738613b741fccf1cf46e",
+      "bytes": 25602514,
+      "localArchive": "bc-math-qualification.zip",
+      "localSizeAndSha256Verified": true
+    },
+    {
+      "id": 13204104737,
+      "name": "benchmark-results.zip",
+      "sha256": "d63bec052e63591dbda6c6de400e2b3d54b432e318c2c4fac7ee26e1870e00f4",
+      "bytes": 8702,
+      "localArchive": "benchmark-results.zip",
+      "localSizeAndSha256Verified": true
+    }
+  ],
+  "retainedFiles": {
+    "job.log": "d5eb79320b40fe3388dd9447a77ea2f5e19a33736654e1ba335e5247863d46a5",
+    "bc-math-qualification/bc-hash-to-curve.json": "7897a7d6bee541c665c1a7533655e306f23f0b1b7d7c12eb32a820b018246e34",
+    "bc-math-qualification/bc-performance-review.json": "abde71600ea10c796af8a57f098f8bfbb5d462a46e1d2c0c970bda79f8a3383f",
+    "bc-math-qualification/bc-mathematical/benchmark.properties": "6eaf3b1dade9ba867d1a20615b0c2742cc287f5de1a5cfc0e73916eb2f56ff39",
+    "bc-math-qualification/bc-mathematical/review.json": "7a824353248ea1406287a6e55cfa65bd3f438ac6fab77be1f9ff3685c63efbca",
+    "bc-math-qualification/bc-strict/review.json": "b575015d7508364e88e7e731d47063ab7e86163ccbc9af57677da64a7ef1a735",
+    "benchmark-results/jmh-result.json": "ac9fc00dbf40a70c740e368aabdd943bebe32cbb12c4008d727f8f117bc496dc"
+  },
+  "measuredTarget": {
+    "coordinate": "org.bouncycastle:bcprov-jdk18on:1.85.2",
+    "binarySha256": "986b0fb92ec10e0c66b43e036ce0077e6150cfaecd1db9fb92b56672e157afe5",
+    "sourceArchiveSha256": "b37ac84b1d5435ab7b8d166c16ab9f75e09f68f8ec50479bae433939b241b03f",
+    "profile": "qa/math-optimization/profiles/bc-mathematical.properties",
+    "profileSha256": "de1a5f6eaa47bc22040a13ab3aa975206a74b24ad1c0e635000a5ef30b8c978a",
+    "profileOptions": {
+      "safety": "PRESERVE_JAVA",
+      "goal": "LOWER_ESTIMATED_RUNTIME",
+      "mathematicalOptIn": true,
+      "explanations": "NONTRIVIAL",
+      "workBudget": 1000000,
+      "maxStates": 20000,
+      "timeoutMillis": 5000,
+      "valueRuntime": "UNSPECIFIED"
+    },
+    "sourcePath": "org/bouncycastle/crypto/hash2curve/impl/SimplifiedShallueVanDeWoestijneMapToCurve.java",
+    "originalSourceSha256": "6cd8fbd459615e6936bd8eeea7413ea6a85dc91e6dd558de7d6c118c4d523119",
+    "generatedSourceSha256": "3c3fe40670a3144489b067f1bc9c330ef3d2829e6144c087f68302f8446d4b45",
+    "replacementClassCountPerVariant": 1,
+    "acceptedRegions": 3,
+    "extractedRegionsInSelectedClass": 12,
+    "selectedClassStatus": "ANALYZED",
+    "ordinaryApplyOutput": true,
+    "sourceBytesCopiedWithoutEditing": true,
+    "strictProfileExportsThisClass": false,
+    "contract": "MATHEMATICAL: BigInteger numerical values preserved; result reference identity may change. Exact BigInteger, non-null, bitLength < 4096 and positive-modulus guards surround the optimized calculations; the original calculation is the fallback.",
+    "relationshipToNineDigestEdits": "Not measured. Only this SWU class and a small identical API bridge are compiled. Digest classes are loaded unchanged from the pinned binary jar, even though the scanner export corpus also contains digest changes.",
+    "relationshipToOtherTargets": "No SWT or JDT refactoring is measured. No BLS G2/Fp2/Fp6 corpus-wide replacement is measured.",
+    "wholeScanContext": {
+      "changedSourceExports": 65,
+      "acceptedRegions": 153,
+      "sourceContextFiles": 3136,
+      "parsedFiles": 3126,
+      "parseErrorFiles": 10,
+      "status": "COMPLETED_WITH_PARSE_ERRORS",
+      "qualification": "A source scan and exact Apply/Undo export, not a whole-library compile/test qualification."
+    }
+  },
+  "benchmarkImplementation": {
+    "path": "qa/math-optimization/src/main/java/org/sandbox/math/qa/BouncyCastleHashToCurveBenchmark.java",
+    "sha256": "59ae5ee5d075acad9cbf1333c920a1cfad2ad65ba8962e0b8804b0459f465936",
+    "sourceSnapshotMatchesHead55": true,
+    "reportGeneratorPath": "qa/math-optimization/src/main/java/org/sandbox/math/qa/FullCallBenchmarkReport.java",
+    "reportGeneratorSha256": "e8ceda3ebfab6ee85767184a7a9c7a9f7fe0b6ad3d6a080d04d5e6778fb67617",
+    "ciCommand": "mvn -f qa/math-optimization/pom.xml clean verify -Pbc-corpus,bc-benchmark",
+    "jmhMainArguments": [
+      "-Xmx512m",
+      "-cp",
+      "<Maven compile classpath>",
+      "org.openjdk.jmh.Main",
+      "BouncyCastleHashToCurveBenchmark",
+      "-p",
+      "scanDirectory=<project.build.directory>/bc-mathematical",
+      "-p",
+      "binaryArchive=<pinned bc.binary>",
+      "-foe",
+      "true",
+      "-prof",
+      "gc",
+      "-rf",
+      "json",
+      "-rff",
+      "<project.build.directory>/bc-hash-to-curve.json"
+    ],
+    "compileArguments": [
+      "--release",
+      "17",
+      "-proc:none",
+      "-cp",
+      "<pinned binary archive>",
+      "-d",
+      "<isolated variant output>",
+      "<entire SWU source>",
+      "<same HashCall.java bridge>"
+    ],
+    "measuredCall": "hashing.hashToCurve(message).getEncoded(false)",
+    "setupOnly": "HashToEllipticCurve.getInstance(profile, \"sandbox-qualified-source-test\"), class compilation, input preparation, and before/after equality checks occur in @Setup(Level.Trial), outside the measured call.",
+    "guardsAndFallbacks": "Included unmodified in each complete generated SWU class and therefore in the compiled measured call path.",
+    "classLoading": "Separate variant namespaces with platform parent. The SWU replacement is loaded from the compiled variant; other BC classes are read from the same JarFile opened with JarFile.runtimeVersion() for Multi-Release awareness.",
+    "loadedReplacementGate": "Both loaders must record the compiled SWU class was loaded while computing the complete hashToCurve outputs.",
+    "freshnessGates": "Manifest, binary, review and selected original/generated source hashes are rechecked before and after trial setup and at teardown.",
+    "messagesPerCase": 64,
+    "messageSizesBytes": [
+      32,
+      256
+    ],
+    "inputRandomSeed": 93802455,
+    "inputTraversal": "messages[cursor++ & 63]",
+    "correctnessPrecheck": "All 64 messages per curve/size case must have identical complete original/generated encoded outputs during trial setup.",
+    "jmhResultConsumption": "Each benchmark returns the encoded byte[] result to JMH.",
+    "forcedFallbackScenarios": false
+  },
+  "measurement": {
+    "jmhVersion": "1.37",
+    "jdkVersion": "25.0.5",
+    "vmName": "OpenJDK 64-Bit Server VM",
+    "vmVersion": "25.0.5+8-LTS",
+    "jvmArgs": [
+      "-Xmx512m"
+    ],
+    "threads": 1,
+    "forksPerVariantAndCase": 2,
+    "warmup": {
+      "iterationsPerFork": 3,
+      "millisecondsPerIteration": 500
+    },
+    "measurement": {
+      "iterationsPerFork": 5,
+      "millisecondsPerIteration": 500
+    },
+    "mode": "AverageTime",
+    "timeUnit": "us/op",
+    "allocationUnit": "B/op",
+    "profiler": "gc",
+    "confidenceLevel": 0.999,
+    "curves": [
+      "P256_XMD_SHA_256",
+      "P384_XMD_SHA_384",
+      "P521_XMD_SHA_512",
+      "BLS12_381_G1_XMD_SHA_256_SSWU_RO"
+    ],
+    "messageSizesBytes": [
+      32,
+      256
+    ],
+    "casePairs": 8,
+    "jmhRows": 16,
+    "rawPrimarySamplesPerVariantAndCase": 10
+  },
+  "comparisons": [
+    {
+      "case": "P256_XMD_SHA_256/32",
+      "originalTime": {
+        "mean": 87.18639402107522,
+        "confidenceInterval999": [
+          86.39247265139737,
+          87.98031539075306
+        ],
+        "unit": "us/op"
+      },
+      "generatedTime": {
+        "mean": 88.20029345345833,
+        "confidenceInterval999": [
+          87.68964058217861,
+          88.71094632473805
+        ],
+        "unit": "us/op"
+      },
+      "generatedToOriginalTimeRatio": 1.0116291015790608,
+      "timing": "INCONCLUSIVE",
+      "originalAllocation": {
+        "mean": 53998.613781880784,
+        "confidenceInterval999": [
+          53944.95433800827,
+          54052.2732257533
+        ],
+        "unit": "B/op"
+      },
+      "generatedAllocation": {
+        "mean": 51197.350409275336,
+        "confidenceInterval999": [
+          51143.36817203054,
+          51251.33264652013
+        ],
+        "unit": "B/op"
+      },
+      "generatedToOriginalAllocationRatio": 0.9481234206507462,
+      "allocationReductionPercent": 5.187657934925383,
+      "allocationDirection": "LOWER_GENERATED"
+    },
+    {
+      "case": "P256_XMD_SHA_256/256",
+      "originalTime": {
+        "mean": 88.68794953735525,
+        "confidenceInterval999": [
+          87.33456014075911,
+          90.0413389339514
+        ],
+        "unit": "us/op"
+      },
+      "generatedTime": {
+        "mean": 89.16084005182027,
+        "confidenceInterval999": [
+          88.50542171901095,
+          89.81625838462959
+        ],
+        "unit": "us/op"
+      },
+      "generatedToOriginalTimeRatio": 1.0053320717970353,
+      "timing": "INCONCLUSIVE",
+      "originalAllocation": {
+        "mean": 54171.61382450169,
+        "confidenceInterval999": [
+          54116.406665938375,
+          54226.82098306501
+        ],
+        "unit": "B/op"
+      },
+      "generatedAllocation": {
+        "mean": 51403.013542857734,
+        "confidenceInterval999": [
+          51348.49940254387,
+          51457.5276831716
+        ],
+        "unit": "B/op"
+      },
+      "generatedToOriginalAllocationRatio": 0.9488920472147402,
+      "allocationReductionPercent": 5.110795278525981,
+      "allocationDirection": "LOWER_GENERATED"
+    },
+    {
+      "case": "P384_XMD_SHA_384/32",
+      "originalTime": {
+        "mean": 174.26916449189338,
+        "confidenceInterval999": [
+          172.06095315416374,
+          176.477375829623
+        ],
+        "unit": "us/op"
+      },
+      "generatedTime": {
+        "mean": 176.73787045472807,
+        "confidenceInterval999": [
+          175.60007049065212,
+          177.87567041880402
+        ],
+        "unit": "us/op"
+      },
+      "generatedToOriginalTimeRatio": 1.0141660515216937,
+      "timing": "INCONCLUSIVE",
+      "originalAllocation": {
+        "mean": 78295.69347433833,
+        "confidenceInterval999": [
+          78189.41235223533,
+          78401.97459644133
+        ],
+        "unit": "B/op"
+      },
+      "generatedAllocation": {
+        "mean": 75141.7528883875,
+        "confidenceInterval999": [
+          75033.69130708647,
+          75249.81446968854
+        ],
+        "unit": "B/op"
+      },
+      "generatedToOriginalAllocationRatio": 0.9597175726276115,
+      "allocationReductionPercent": 4.028242737238852,
+      "allocationDirection": "LOWER_GENERATED"
+    },
+    {
+      "case": "P384_XMD_SHA_384/256",
+      "originalTime": {
+        "mean": 176.1771833382134,
+        "confidenceInterval999": [
+          174.58833344948832,
+          177.7660332269385
+        ],
+        "unit": "us/op"
+      },
+      "generatedTime": {
+        "mean": 179.79162036694353,
+        "confidenceInterval999": [
+          176.3709647502866,
+          183.21227598360048
+        ],
+        "unit": "us/op"
+      },
+      "generatedToOriginalTimeRatio": 1.0205159201676608,
+      "timing": "INCONCLUSIVE",
+      "originalAllocation": {
+        "mean": 78578.77270463631,
+        "confidenceInterval999": [
+          78472.18772134953,
+          78685.3576879231
+        ],
+        "unit": "B/op"
+      },
+      "generatedAllocation": {
+        "mean": 75415.84648597047,
+        "confidenceInterval999": [
+          75308.43504586321,
+          75523.25792607773
+        ],
+        "unit": "B/op"
+      },
+      "generatedToOriginalAllocationRatio": 0.9597483377533176,
+      "allocationReductionPercent": 4.025166224668242,
+      "allocationDirection": "LOWER_GENERATED"
+    },
+    {
+      "case": "P521_XMD_SHA_512/32",
+      "originalTime": {
+        "mean": 341.79826532881077,
+        "confidenceInterval999": [
+          335.8112484664552,
+          347.78528219116635
+        ],
+        "unit": "us/op"
+      },
+      "generatedTime": {
+        "mean": 354.00387258293773,
+        "confidenceInterval999": [
+          337.62276667515044,
+          370.384978490725
+        ],
+        "unit": "us/op"
+      },
+      "generatedToOriginalTimeRatio": 1.0357099742515812,
+      "timing": "INCONCLUSIVE",
+      "originalAllocation": {
+        "mean": 104325.3612423217,
+        "confidenceInterval999": [
+          104128.19970342504,
+          104522.52278121836
+        ],
+        "unit": "B/op"
+      },
+      "generatedAllocation": {
+        "mean": 99552.73086544166,
+        "confidenceInterval999": [
+          99351.71117334778,
+          99753.75055753553
+        ],
+        "unit": "B/op"
+      },
+      "generatedToOriginalAllocationRatio": 0.9542524433172638,
+      "allocationReductionPercent": 4.574755668273623,
+      "allocationDirection": "LOWER_GENERATED"
+    },
+    {
+      "case": "P521_XMD_SHA_512/256",
+      "originalTime": {
+        "mean": 346.74934651208656,
+        "confidenceInterval999": [
+          337.97804761599923,
+          355.5206454081739
+        ],
+        "unit": "us/op"
+      },
+      "generatedTime": {
+        "mean": 353.15148890637636,
+        "confidenceInterval999": [
+          342.3500203540405,
+          363.9529574587122
+        ],
+        "unit": "us/op"
+      },
+      "generatedToOriginalTimeRatio": 1.0184633149526834,
+      "timing": "INCONCLUSIVE",
+      "originalAllocation": {
+        "mean": 104638.40738676954,
+        "confidenceInterval999": [
+          104439.84823913651,
+          104836.96653440257
+        ],
+        "unit": "B/op"
+      },
+      "generatedAllocation": {
+        "mean": 99861.8276150086,
+        "confidenceInterval999": [
+          99668.99962496068,
+          100054.65560505653
+        ],
+        "unit": "B/op"
+      },
+      "generatedToOriginalAllocationRatio": 0.9543515627669531,
+      "allocationReductionPercent": 4.564843723304691,
+      "allocationDirection": "LOWER_GENERATED"
+    },
+    {
+      "case": "BLS12_381_G1_XMD_SHA_256_SSWU_RO/32",
+      "originalTime": {
+        "mean": 771.5492288432239,
+        "confidenceInterval999": [
+          755.6779354780083,
+          787.4205222084395
+        ],
+        "unit": "us/op"
+      },
+      "generatedTime": {
+        "mean": 776.972532026468,
+        "confidenceInterval999": [
+          763.111602361367,
+          790.833461691569
+        ],
+        "unit": "us/op"
+      },
+      "generatedToOriginalTimeRatio": 1.0070291084230298,
+      "timing": "INCONCLUSIVE",
+      "originalAllocation": {
+        "mean": 630586.4986755576,
+        "confidenceInterval999": [
+          623303.1523948184,
+          637869.8449562967
+        ],
+        "unit": "B/op"
+      },
+      "generatedAllocation": {
+        "mean": 631760.8900815592,
+        "confidenceInterval999": [
+          631334.7429369276,
+          632187.0372261908
+        ],
+        "unit": "B/op"
+      },
+      "generatedToOriginalAllocationRatio": 1.0018623795600894,
+      "allocationReductionPercent": -0.1862379560089389,
+      "allocationDirection": "INCONCLUSIVE"
+    },
+    {
+      "case": "BLS12_381_G1_XMD_SHA_256_SSWU_RO/256",
+      "originalTime": {
+        "mean": 770.9835155030848,
+        "confidenceInterval999": [
+          757.8857588982927,
+          784.081272107877
+        ],
+        "unit": "us/op"
+      },
+      "generatedTime": {
+        "mean": 784.5908756908622,
+        "confidenceInterval999": [
+          769.5238714464683,
+          799.657879935256
+        ],
+        "unit": "us/op"
+      },
+      "generatedToOriginalTimeRatio": 1.017649352955229,
+      "timing": "INCONCLUSIVE",
+      "originalAllocation": {
+        "mean": 631156.072953857,
+        "confidenceInterval999": [
+          623544.3637957404,
+          638767.7821119736
+        ],
+        "unit": "B/op"
+      },
+      "generatedAllocation": {
+        "mean": 623239.2274440367,
+        "confidenceInterval999": [
+          622716.9390033663,
+          623761.5158847072
+        ],
+        "unit": "B/op"
+      },
+      "generatedToOriginalAllocationRatio": 0.9874565961589044,
+      "allocationReductionPercent": 1.2543403841095646,
+      "allocationDirection": "INCONCLUSIVE"
+    }
+  ],
+  "interpretation": {
+    "timing": "All eight time comparisons have overlapping 99.9% JMH confidence intervals and are INCONCLUSIVE under the existing report rule. Generated mean times are approximately 0.5–3.6% higher; this is not proof of a slowdown, speedup, or equivalent runtime.",
+    "allocations": "Six P256/P384/P521 comparisons have non-overlapping intervals in the direction of lower generated allocated bytes per operation, approximately 4.0–5.2% lower. Both BLS G1 allocation comparisons overlap and remain inconclusive.",
+    "intervalRule": "Non-overlapping intervals are directional evidence, not a general performance guarantee. Allocation directions are derived by applying the same non-overlap rule to the raw JMH gc.alloc.rate.norm intervals.",
+    "limits": [
+      "Allocated bytes per operation is not peak heap usage or RSS.",
+      "Normal public-API message inputs are measured; forced fallback-branch coverage is not demonstrated.",
+      "This is not a constant-time proof or cryptographic side-channel qualification.",
+      "These results do not justify automatic optimizer cost-weight changes.",
+      "The three-region SWU result cannot be attributed to our separate nine digest edits."
+    ]
+  },
+  "otherArtifact": {
+    "path": "benchmark-results/jmh-result.json",
+    "rows": 48,
+    "contents": "Generic Sandbox AST parsing, pattern matching, loop transformation, AST API wrapper and local mathematics fixture benchmarks.",
+    "mathematicsFixture": {
+      "fixtureDirectory": "qa/math-optimization/fixtures/local/small",
+      "inputScenario": "default",
+      "forks": 2,
+      "warmupIterations": 3,
+      "warmupTime": "500 ms",
+      "measurementIterations": 5,
+      "measurementTime": "500 ms"
+    },
+    "methodInfoClarification": "org.sandbox.benchmarks.astapi.MethodInfoBenchmark benchmarks the Sandbox AST API wrapper; it does not benchmark JDT org.eclipse.jdt.internal.compiler.classfmt.MethodInfo.decodeCodeAttribute.",
+    "upstreamPerformanceClaim": false
+  }
+}

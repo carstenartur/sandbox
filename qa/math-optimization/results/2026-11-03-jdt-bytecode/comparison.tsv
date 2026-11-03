@@ -1,0 +1,10 @@
+class	method	phase	instructions	codeBytes	branches	callSites	allocations	maxStack	maxLocals
+MethodInfo	decodeCodeAttribute(I)V	before	81	143	6	9	0	5	9
+MethodInfo	decodeCodeAttribute(I)V	after	189	404	16	38	8	5	11
+MethodInfo	decodeCodeAttribute(I)V	delta	108	261	10	29	8	0	2
+ScannerHelper	digit(CI)I	before	69	147	12	1	0	2	2
+ScannerHelper	digit(CI)I	after	65	141	12	1	0	2	2
+ScannerHelper	digit(CI)I	delta	-4	-6	0	0	0	0	0
+CompletionEngine	inlineTagCompletion([C[C)[C	before	55	78	0	2	1	5	7
+CompletionEngine	inlineTagCompletion([C[C)[C	after	51	74	0	2	1	5	7
+CompletionEngine	inlineTagCompletion([C[C)[C	delta	-4	-4	0	0	0	0	0

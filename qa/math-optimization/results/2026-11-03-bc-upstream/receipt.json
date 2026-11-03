@@ -1,0 +1,214 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS_FOR_NINE_STRICT_DIGEST_REWRITES",
+  "completedAtUtc": "2026-11-03T05:11:44Z",
+  "scope": {
+    "upstreamTag": "r1rv85v2",
+    "sourceCommit": "854bd5c4286e1530132418906bf6175da7d9d83c",
+    "testDataCommit": "ada04f6a4e53984e6a64a8524e02c616eb755712",
+    "patch": "nine-strict-digest-apply.patch",
+    "patchSha256": "337a8c1c53b947e83f564f310b86b3289698f1a8eb137cd764936c573ca39411",
+    "changedJavaFiles": 5,
+    "changedHelperBodies": 9,
+    "helpers": [
+      "SHA1Digest.f",
+      "SHA1Digest.g",
+      "SHA256Digest.Ch",
+      "LongDigest.Ch",
+      "LongDigest.Maj",
+      "MD4Digest.F",
+      "MD4Digest.G",
+      "MD5Digest.F",
+      "MD5Digest.G"
+    ],
+    "officialGradleTasks": [
+      ":core:test",
+      ":prov:test",
+      ":prov:test25"
+    ],
+    "testFilters": [],
+    "testFull": false,
+    "upstreamTestAndBuildSourcesUnchanged": true
+  },
+  "runtime": {
+    "java": "Temurin 25.0.5+8",
+    "gradle": "9.1.0",
+    "coreCompilation": "Actual upstream JavaCompile, --release 8, no debug; classfile major 52",
+    "providerEffectiveRuntime": "Java 25 multi-release JAR view; SHA256Digest and LongDigest use version-9 entries",
+    "activeProcessorCount": 2,
+    "maxGradleWorkers": 1,
+    "resolvedDependencyJarCount": 82,
+    "dependencyJarPathsAndHashesEqual": true,
+    "separateDependencyCaches": true,
+    "dependencyIdentity": "resolved-dependencies-before-after.json",
+    "dependencyIdentitySha256": "168c60242bd2366d1f08312512799d7aa34cbb434740d26a4bb5b6888a874963",
+    "identicalBuildConfigurationFiles": 7,
+    "buildConfigurationIdentity": "build-inputs-before-after.sha256",
+    "jdkIdentity": "upstream-bytecode-comparison/receipt.json",
+    "sameJdkHashesAtProviderContinuation": true
+  },
+  "standardTests": {
+    "result": "PASS",
+    "baseline": {
+      "singleUninterruptedInvocation": true,
+      "exitCode": 0,
+      "receipt": "baseline-standard-test-receipt.json",
+      "log": "baseline-standard-test.log",
+      "logSha256": "8c6960e08a27f245746cd5ff4b3ecffc024acebff9cb430edb0a636ff444b367"
+    },
+    "after": {
+      "singleUninterruptedInvocation": false,
+      "initialInvocation": {
+        "exitCode": null,
+        "status": "INTERRUPTED_WITHOUT_FINAL_EXIT_RECEIPT",
+        "receipt": "after-standard-test-receipt.json",
+        "log": "after-standard-test.log",
+        "observation": "after-attempt-interruption.json",
+        "retainedCompletedTasks": [
+          ":core:test",
+          ":prov:test25"
+        ]
+      },
+      "continuation": {
+        "command": [
+          "./gradlew",
+          "--no-daemon",
+          "--max-workers=1",
+          "--console=plain",
+          ":prov:test",
+          "--stacktrace",
+          "--offline"
+        ],
+        "exitCode": 0,
+        "startedAtUtc": "2026-11-03T04:55:45Z",
+        "endedAtUtc": "2026-11-03T05:08:10Z",
+        "elapsedSeconds": 745,
+        "gradleResult": "BUILD SUCCESSFUL in 12m 24s",
+        "receipt": "after-provider-resume-receipt.json",
+        "log": "after-provider-resume.log",
+        "logSha256": "953b49071ad20ed7aab478a895a20aec88b846517be271a2a33a76811d330be4",
+        "coreTestsRerun": false,
+        "java25TestsRerun": false,
+        "productCompilationAndJars": "UP-TO-DATE; identical artifacts retained"
+      }
+    },
+    "comparison": {
+      "implementation": "Unmodified existing JUnitXmlInventoryComparator via RetainedJUnitInventory; Mapping.empty()",
+      "comparatorSource": "inventory-comparison/JUnitXmlInventoryComparator.java",
+      "comparatorSourceSha256": "1bdb482383d17f3d6d55baa1a558189fb9f96dd6732450811b8a0e174d5f8788",
+      "adapterSource": "inventory-comparison/RetainedJUnitInventory.java",
+      "adapterSourceSha256": "f7b47c20aeaf5ed7204d7f83bb4265e1b3b26bc56ab51f304b83f570778b15b7",
+      "exactTaskSeparatedIdentityStateMultisets": true,
+      "missing": 0,
+      "added": 0,
+      "problems": 0,
+      "taskResults": [
+        {
+          "task": ":core:test",
+          "beforeExecutions": 662,
+          "afterExecutions": 662,
+          "beforeReportFiles": 121,
+          "afterReportFiles": 121,
+          "uniqueClassnameNameKeysPerPhase": 647,
+          "result": "PASS",
+          "comparatorExitCode": 0,
+          "receipt": "inventory-comparison/core-test.json",
+          "receiptSha256": "e65f447443c4641fc8d02d99cad035c96b32218b65ba78d878e82cd892d10fe8"
+        },
+        {
+          "task": ":prov:test",
+          "beforeExecutions": 682,
+          "afterExecutions": 682,
+          "beforeReportFiles": 74,
+          "afterReportFiles": 74,
+          "uniqueClassnameNameKeysPerPhase": 672,
+          "result": "PASS",
+          "comparatorExitCode": 0,
+          "receipt": "inventory-comparison/provider-test.json",
+          "receiptSha256": "a0057a78e5a13a5a4acb6192f2af33180c39b4db3c329f0c159dceca59a17ffe"
+        },
+        {
+          "task": ":prov:test25",
+          "beforeExecutions": 11,
+          "afterExecutions": 11,
+          "beforeReportFiles": 3,
+          "afterReportFiles": 3,
+          "uniqueClassnameNameKeysPerPhase": 11,
+          "result": "PASS",
+          "comparatorExitCode": 0,
+          "receipt": "inventory-comparison/provider-java25.json",
+          "receiptSha256": "fd3e716e7bd79fa4b97c81f08eb6419690948cbf5d1c434b8da0f686622e4161"
+        }
+      ],
+      "totalsPerPhase": {
+        "testExecutions": 1355,
+        "reportFiles": 198,
+        "passed": 1355,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    }
+  },
+  "changedHelperCoverage": {
+    "basis": "Actual Core JaCoCo reports and retained execution data",
+    "beforeCovered": 9,
+    "afterCovered": 9,
+    "instructionCoverageEveryChangedHelper": "100%",
+    "receipt": "helper-coverage-before-after.json",
+    "receiptSha256": "2a56417104ca2a2228b2c5104100b7526958f2c7caf20ba4d05e720be533c388"
+  },
+  "bytecode": {
+    "ordinaryCoreAndEffectiveJava25ProviderCompared": true,
+    "executableBodiesPerVariant": 108,
+    "onlyChangedBodies": 9,
+    "instructionsSavedPerChangedHelper": 2,
+    "branchesCallsAndExplicitAllocationsRemainZero": true,
+    "operandStackCanIncrease": true,
+    "runtimePerformanceConclusion": false,
+    "constantTimeConclusion": false,
+    "ordinaryCoreReceipt": "upstream-bytecode-comparison/receipt.json",
+    "effectiveProviderReceipt": "mr-runtime-evidence/compact-receipt.json",
+    "effectiveProviderReceiptSha256": "4b81f829a450ef1a25b0b7753f334922065078e3303b99bad50cb8f2bfcaa72f",
+    "standardTestClasspathEvidence": "Isolated replay of captured task classpaths, not live instrumentation: core/test resolves core main classes, prov/test resolves prov main classes, prov/test25 resolves bccore before bcprov."
+  },
+  "supplementalEffectiveProviderJarChecks": {
+    "reason": "Standard task classpaths bypass the effective multi-release Provider implementation",
+    "result": "PASS",
+    "testFramework": "Unchanged official SimpleTest.perform() with TestResult.isSuccessful(); failed test or provenance mismatch causes nonzero exit",
+    "officialTestClassInvocationsPerPhase": 8,
+    "passedPerPhase": 8,
+    "exitCodes": [
+      0,
+      0
+    ],
+    "separateFromStandard1355Executions": true,
+    "digests": [
+      "SHA1",
+      "SHA256",
+      "MD4",
+      "MD5",
+      "SHA384",
+      "SHA512",
+      "SHA512t224",
+      "SHA512t256"
+    ],
+    "actualLoadedDigestClassesPerPhase": 13,
+    "allLoadedDigestClassesBoundToEffectiveProviderJarBytes": true,
+    "originalExpectedVectorsUnchanged": true,
+    "baselineProviderJarSha256": "7e95b8a6c312e2d1db95f0003406fb0f191fbcfd522b787c9ec89adf6b956d42",
+    "afterProviderJarSha256": "d4e78f9353711168f62e4081fba1abae70fe0fdfa281f345fef0408cec652a81",
+    "bothJarHashesRecheckedAfterProviderContinuation": true,
+    "receipt": "provider-jar-kat/summary.json",
+    "receiptSha256": "9c72cb2c65870b0b2e1f8fe58fffc4b380594a3950fa544c4cb1d541505c5059"
+  },
+  "limitations": [
+    "The successful after qualification combines retained Core and Java-25 KDF task results from an interrupted first invocation with the later successful full Provider-only continuation; the first invocation has no known final exit code.",
+    "Counts are test executions, including duplicate classname/name keys; they are not counts of unique methods.",
+    "The official standard PQC sampler uses vector zero and a time-based offset for later vectors. Exact JUnit identity/state equality does not establish identical sampled PQC vectors. Exhaustive testFull was not requested.",
+    "Scope is the nine strict digest rewrites on this pinned Core/Provider build and Java 25; unrelated PKIX, TLS, PGP, MLS and mail modules and the historical broader candidate corpus are not qualified here.",
+    "The targeted provider-JAR checks contain eight official test class invocations per phase; their nested vectors/assertions are not counted as additional standard JUnit executions.",
+    "Instruction coverage and successful tests establish exercised behavior, not a proof over all inputs. Static bytecode reduction and operational test durations establish neither runtime speedup nor constant-time behavior.",
+    "The separately run JMH map-to-curve benchmark does not execute these nine digest rewrites, so its findings cannot be transferred to this digest qualification."
+  ]
+}

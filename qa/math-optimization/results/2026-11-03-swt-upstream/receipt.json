@@ -27,5 +27,26 @@
   "generatedBuildUsesBaselineCacheOffline": true,
   "tychoBaselineReplace": "none",
   "mainTestClasspathUsesLocalReactorSwtJars": true,
-  "newRuntimeBenchmarkPerformed": false
+  "newRuntimeBenchmarkPerformed": false,
+  "repeatVerification": {
+    "runUrl": "https://github.com/carstenartur/sandbox/actions/runs/41572836149/job/125709486876",
+    "runId": 41572836149,
+    "jobId": 125709486876,
+    "jobConclusion": "success",
+    "sandboxHead": "55a98f69cd59fbcdb67813091ea2af3a3cc92374",
+    "testedMergeCommit": "6ed17ad6312e6e6e42b4eeb9505293b6cf75a7a0",
+    "testedTree": "fce86c51e33fd36096f58deb03a0e3b8963ad69d",
+    "archiveArtifactId": 13201864228,
+    "archiveSha256": "abe573bf2e290452f955bb9c2da6cb019726e7c2f89fef925b306ca4990f9e85",
+    "samePatchSha256": true,
+    "exactBeforeAfterInventoryWithinRun": true,
+    "sameInventorySummaryAsFirstRun": true,
+    "testsBeforeAndAfter": 5012,
+    "passedBeforeAndAfter": 4550,
+    "skippedBeforeAndAfter": 462,
+    "failuresBeforeAndAfter": 0,
+    "errorsBeforeAndAfter": 0,
+    "liveSourceTestPassedWithoutSkips": true,
+    "allFourChangedMethodTestsPassedWithoutSkips": true
+  }
 }

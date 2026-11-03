@@ -1,0 +1,670 @@
+{
+  "schema": "sandbox.retained-upstream-jdt-qualification/v1",
+  "reviewedAtUtc": "2026-11-03T05:41:05.807Z",
+  "repository": "carstenartur/sandbox",
+  "runId": 41572836149,
+  "jobId": 125710470044,
+  "jobUrl": "https://github.com/carstenartur/sandbox/actions/runs/41572836149/job/125710470044",
+  "jobConclusion": "success",
+  "pullRequestHead": "55a98f69cd59fbcdb67813091ea2af3a3cc92374",
+  "ciCheckout": "6ed17ad6312e6e6e42b4eeb9505293b6cf75a7a0",
+  "ciTree": "fce86c51e33fd36096f58deb03a0e3b8963ad69d",
+  "qualifierElapsedSeconds": 7100,
+  "artifact": {
+    "id": 13207157596,
+    "name": "jdt-math-before-after-core",
+    "bytes": 94936514,
+    "sha256": "4af4c968fd09adb568f9f852cd725ea1ceb80165c8e4532721f189d5c3ae02f1",
+    "localArchive": "jdt-math-before-after-core.zip",
+    "sizeAndSha256Verified": true
+  },
+  "evidenceRoot": "extracted/jdt-evidence-core",
+  "inputs": {
+    "adapterSha256": "f55fa7cdfaaa350e30c2ac4939af555df165e5fdd57fdaa64c458554aef90187",
+    "uiCommit": "54bd63e6453a7eb5db0bfc1d60f17e9568095619",
+    "relengCommit": "10be605e8924c917d5f0013930278a2b1cb756f5",
+    "profileSha256": "b0f85dc616ddb3d37a5f779566be70afeb7285cffc312e91c31bd0f3e26e2eb9",
+    "sdkSha256": "ba0293dedb3fde9ca2f3042dcef8ae4d6bb2d576adedff8ba7a2b4d186f1cbe1",
+    "family": "core",
+    "coreCommit": "6725c16c24d94c83302346dc384bb915a0f2fe1a",
+    "productCommit": "6ed17ad6312e6e6e42b4eeb9505293b6cf75a7a0"
+  },
+  "sourceApply": {
+    "projects": [
+      {
+        "project": "org.eclipse.jdt.core.compiler.batch",
+        "compilationUnits": 553,
+        "changedFiles": [
+          {
+            "path": "/org.eclipse.jdt.core.compiler.batch/src/org/eclipse/jdt/internal/compiler/classfmt/MethodInfo.java",
+            "changes": 1,
+            "originalSha256": "b56e235b2d3892cdc4fa2d5d95d9cbf047c8e38b3e0c80219c825232bd2b6a45",
+            "generatedSha256": "293a969e1eb9b4658e8d558a59c8a473b3b2feb980d7556b80dfb56b10cfeecd",
+            "observedWrittenSha256": "293a969e1eb9b4658e8d558a59c8a473b3b2feb980d7556b80dfb56b10cfeecd"
+          },
+          {
+            "path": "/org.eclipse.jdt.core.compiler.batch/src/org/eclipse/jdt/internal/compiler/parser/AbstractCommentParser.java",
+            "changes": 1,
+            "originalSha256": "454de862d0b684708cf4a1f1d392fef2975c02f57805ab231bf58696168f4e51",
+            "generatedSha256": "e12565172ea9969b3350a45e9e8677e9ab18a6d38e31c766bc5c640b1f394c0a",
+            "observedWrittenSha256": "e12565172ea9969b3350a45e9e8677e9ab18a6d38e31c766bc5c640b1f394c0a"
+          },
+          {
+            "path": "/org.eclipse.jdt.core.compiler.batch/src/org/eclipse/jdt/internal/compiler/parser/ScannerHelper.java",
+            "changes": 2,
+            "originalSha256": "dbd26b5a033bdd1bec61d276d2bdb59506566cea4a42958bc40164cf7efa1a18",
+            "generatedSha256": "56be22db4058a1dea839fa632baa9eca64b0f3f64ca1796dd12a5d90d9035db8",
+            "observedWrittenSha256": "56be22db4058a1dea839fa632baa9eca64b0f3f64ca1796dd12a5d90d9035db8"
+          }
+        ],
+        "changes": 4,
+        "status": "SUCCESS",
+        "allOriginalAndObservedSourceHashesVerified": true,
+        "receiptFile": "org.eclipse.jdt.core.compiler.batch.json",
+        "receiptSha256": "77afa7c137241d3062cd1c3a1db9994c0e504f0a01f29d9d89518f0d90796913"
+      },
+      {
+        "project": "org.eclipse.jdt.core",
+        "compilationUnits": 1073,
+        "changedFiles": [
+          {
+            "path": "/org.eclipse.jdt.core/codeassist/org/eclipse/jdt/internal/codeassist/CompletionEngine.java",
+            "changes": 1,
+            "originalSha256": "f4802d1dda35044dc9fcb89bfc86794a82c16d85262b6a056990767244b67992",
+            "generatedSha256": "f19370062348bbe97667333a3a8460fc12e48f445927a7441273e3be4e962411",
+            "observedWrittenSha256": "f19370062348bbe97667333a3a8460fc12e48f445927a7441273e3be4e962411"
+          }
+        ],
+        "changes": 1,
+        "status": "SUCCESS",
+        "allOriginalAndObservedSourceHashesVerified": true,
+        "receiptFile": "org.eclipse.jdt.core.json",
+        "receiptSha256": "014dbddfe3b902f35449a103866135fecd47db6bc4ca502f7a57bcf32f2749b5"
+      }
+    ],
+    "totalCompilationUnits": 1626,
+    "totalChangedFiles": 4,
+    "totalChanges": 5,
+    "patchSha256": "316d2ee4361ff2bfaa3d1b1842c93ae4179c05f8052a33ec65e44c9e303d01ef",
+    "localPatchSha256": "985cf7854c20983bf26f47842740b981f85a56c233831f1ff0de521212a98df9",
+    "patchFilesByteIdentical": false,
+    "sourcePatchHunksAndPathsIdentical": true,
+    "onlyDifference": "Exactly four Git index headers use ten-character blob abbreviations in CI instead of seven-character abbreviations locally. Every source path and patch hunk is identical.",
+    "canonicalPatchSha256ExcludingOnlyGitIndexHeaders": "0584ca57f35ad54bd62d1f1fd4b114e6b0db8d8d5c26d8b0b4ebddbda46b9e4c"
+  },
+  "tests": {
+    "authority": "Unmodified JUnitXmlInventoryComparator executed by successful JdtMathQualificationTest in CI",
+    "countingUnit": "Reported testcase executions with multiplicity; not unique Java methods, suites or runtime containers",
+    "allReports": {
+      "baseline": {
+        "reportFiles": 24,
+        "tests": 290650,
+        "passed": 290650,
+        "skipped": 0,
+        "failures": 0,
+        "errors": 0
+      },
+      "generated": {
+        "reportFiles": 24,
+        "tests": 290650,
+        "passed": 290650,
+        "skipped": 0,
+        "failures": 0,
+        "errors": 0
+      },
+      "result": "PASS",
+      "unexpectedMissing": 0,
+      "unexpectedAdded": 0,
+      "problems": [],
+      "sha256": "644d6d6c72a62c62108c2da6ec801e0947762d61e995b95649fbc629527c1578"
+    },
+    "moduleInventories": {
+      "org.eclipse.jdt.apt.pluggable.tests.json": {
+        "baseline": {
+          "reportFiles": 1,
+          "tests": 34,
+          "passed": 34,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        "generated": {
+          "reportFiles": 1,
+          "tests": 34,
+          "passed": 34,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        "result": "PASS",
+        "unexpectedMissing": 0,
+        "unexpectedAdded": 0,
+        "problems": [],
+        "sha256": "72b6765c02c6d4165d46c8590b55a069d899d3a3e4dddf9dd6f1a0c0eaed302c"
+      },
+      "org.eclipse.jdt.apt.tests.json": {
+        "baseline": {
+          "reportFiles": 1,
+          "tests": 123,
+          "passed": 123,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        "generated": {
+          "reportFiles": 1,
+          "tests": 123,
+          "passed": 123,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        "result": "PASS",
+        "unexpectedMissing": 0,
+        "unexpectedAdded": 0,
+        "problems": [],
+        "sha256": "cb11621a209ccdc5d206ecc2c314dbbeaf666de037afbf6b973f0804716689b5"
+      },
+      "org.eclipse.jdt.compiler.apt.tests.json": {
+        "baseline": {
+          "reportFiles": 14,
+          "tests": 252,
+          "passed": 252,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        "generated": {
+          "reportFiles": 14,
+          "tests": 252,
+          "passed": 252,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        "result": "PASS",
+        "unexpectedMissing": 0,
+        "unexpectedAdded": 0,
+        "problems": [],
+        "sha256": "7c1eba5606efebac726014f4ae68c1ba030b0aeb73f9693e98c69869eccc4e23"
+      },
+      "org.eclipse.jdt.compiler.tool.tests.json": {
+        "baseline": {
+          "reportFiles": 1,
+          "tests": 75,
+          "passed": 75,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        "generated": {
+          "reportFiles": 1,
+          "tests": 75,
+          "passed": 75,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        "result": "PASS",
+        "unexpectedMissing": 0,
+        "unexpectedAdded": 0,
+        "problems": [],
+        "sha256": "ebecaae0bc3b067da36f41c1b2b5c93a45d13bd703d8c9be7b84192d8fdad1f5"
+      },
+      "org.eclipse.jdt.core.tests.builder.json": {
+        "baseline": {
+          "reportFiles": 1,
+          "tests": 387,
+          "passed": 387,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        "generated": {
+          "reportFiles": 1,
+          "tests": 387,
+          "passed": 387,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        "result": "PASS",
+        "unexpectedMissing": 0,
+        "unexpectedAdded": 0,
+        "problems": [],
+        "sha256": "488625d8df801f8215546c696f8d8c48f4455ad15934fdf68c70514298ff6779"
+      },
+      "org.eclipse.jdt.core.tests.compiler.json": {
+        "baseline": {
+          "reportFiles": 3,
+          "tests": 264689,
+          "passed": 264689,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        "generated": {
+          "reportFiles": 3,
+          "tests": 264689,
+          "passed": 264689,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        "result": "PASS",
+        "unexpectedMissing": 0,
+        "unexpectedAdded": 0,
+        "problems": [],
+        "sha256": "fe54c1870ee3688ba220dd82d496f862b7c49e7d95495c03767e019fd5f3b485"
+      },
+      "org.eclipse.jdt.core.tests.model.json": {
+        "baseline": {
+          "reportFiles": 2,
+          "tests": 25089,
+          "passed": 25089,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        "generated": {
+          "reportFiles": 2,
+          "tests": 25089,
+          "passed": 25089,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        "result": "PASS",
+        "unexpectedMissing": 0,
+        "unexpectedAdded": 0,
+        "problems": [],
+        "sha256": "12e3d9d85d6de03e82193431268fa502ca4fd3b8cb0d642605bbd297a9084dd7"
+      },
+      "org.eclipse.jdt.core.tests.performance.json": {
+        "baseline": {
+          "reportFiles": 1,
+          "tests": 1,
+          "passed": 1,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        "generated": {
+          "reportFiles": 1,
+          "tests": 1,
+          "passed": 1,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        "result": "PASS",
+        "unexpectedMissing": 0,
+        "unexpectedAdded": 0,
+        "problems": [],
+        "sha256": "79427db41f225bf00e8eca624f821c6e63395a3d2b8a18f8e75cc2e1c22d9680"
+      },
+      "all/reports.json": {
+        "baseline": {
+          "reportFiles": 24,
+          "tests": 290650,
+          "passed": 290650,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        "generated": {
+          "reportFiles": 24,
+          "tests": 290650,
+          "passed": 290650,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        "result": "PASS",
+        "unexpectedMissing": 0,
+        "unexpectedAdded": 0,
+        "problems": [],
+        "sha256": "644d6d6c72a62c62108c2da6ec801e0947762d61e995b95649fbc629527c1578"
+      }
+    },
+    "officialPerformanceModuleScope": "The pinned default configuration runs OneTest, one testcase; this is not the complete opt-in JDT performance suite.",
+    "noAddedTestFiltersOrFailureIgnores": true
+  },
+  "phases": {
+    "baseline": {
+      "exitCode": 0,
+      "reactorModules": 20,
+      "allReactorModulesSucceeded": true,
+      "finishedAtUtc": "2026-11-03T04:35:23Z",
+      "mavenTotalTime": "57:22 min",
+      "command": "dbus-run-session -- xvfb-run -a -s -screen\\ 0\\ 1280x1024x24\\ -noreset /home/runner/work/sandbox/sandbox/sandbox/mvnw --batch-mode --no-transfer-progress --no-snapshot-updates -f /tmp/junit-11602250787981484347/reactor.xml -Djdt-ui-source=core -Dmaven.repo.local=/tmp/junit-11602250787981484347/m2 -Pbuild-individual-bundles -DskipTests=false -DforkCount=1 -Dtycho.baseline.replace=none -DcompilerBaselineReplace=none -Dsurefire.testArgLine=-Xmx2g -Dtycho.surefire.argLine=-Xmx2g -Dcbi-ecj-version=3.47.0-20261102.234213-18 -Declipse-sdk-repo=https://download.eclipse.org/eclipse/updates/4.41/R-4.41-202608281142/ --fail-at-end clean verify",
+      "commandSha256": "ee839cef1aa241ae0c257734179b928b4a8ea58bbf84b7cb4cb3e229ee97fa8a",
+      "mavenLogSha256": "236f3498460e5e531f27743dcd7084f6a27e5be6bacfb6c9bf105db168c136cc",
+      "verifiedBundleHashesFile": "baseline/verified-bundle-hashes.json",
+      "verifiedBundleHashesSha256": "5b5fecaa111cfaf1cc575884700339e8d5513497ab407d25a157a7e16afdae65",
+      "bundleHashes": {
+        "org.eclipse.jdt.core.compiler.batch": "9ae487f0c52099c95780b2224e5760a71c3e0ef87ed2cdf7c315200054cf6749",
+        "org.eclipse.jdt.core": "21358fee5a32521237863513269bc47489d78ec520b8a51333813c9e12c519ff",
+        "org.eclipse.jdt.core-embedded-antadapter": "f907970baa2d49c2f32d2edde84e8b29879c5055db11c6d02b8e62f507e51d73"
+      },
+      "retainedBundleHashesRechecked": true,
+      "compilerOutputClassCounts": {
+        "org.eclipse.jdt.core": 1456,
+        "org.eclipse.jdt.core-antadapter": 5,
+        "org.eclipse.jdt.core.compiler.batch": 811
+      },
+      "testRuntimeConfigurations": [
+        {
+          "module": "org.eclipse.jdt.apt.pluggable.tests",
+          "mainBundles": {
+            "org.eclipse.jdt.core.compiler.batch": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core.compiler.batch/target/org.eclipse.jdt.core.compiler.batch-3.46.100-SNAPSHOT.jar"
+            },
+            "org.eclipse.jdt.core": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core/target/org.eclipse.jdt.core-3.47.0-SNAPSHOT.jar"
+            }
+          }
+        },
+        {
+          "module": "org.eclipse.jdt.apt.tests",
+          "mainBundles": {
+            "org.eclipse.jdt.core.compiler.batch": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core.compiler.batch/target/org.eclipse.jdt.core.compiler.batch-3.46.100-SNAPSHOT.jar"
+            },
+            "org.eclipse.jdt.core": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core/target/org.eclipse.jdt.core-3.47.0-SNAPSHOT.jar"
+            }
+          }
+        },
+        {
+          "module": "org.eclipse.jdt.compiler.apt.tests",
+          "mainBundles": {
+            "org.eclipse.jdt.core.compiler.batch": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core.compiler.batch/target/org.eclipse.jdt.core.compiler.batch-3.46.100-SNAPSHOT.jar"
+            },
+            "org.eclipse.jdt.core": {
+              "configured": false,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core/target/org.eclipse.jdt.core-3.47.0-SNAPSHOT.jar"
+            }
+          }
+        },
+        {
+          "module": "org.eclipse.jdt.compiler.tool.tests",
+          "mainBundles": {
+            "org.eclipse.jdt.core.compiler.batch": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core.compiler.batch/target/org.eclipse.jdt.core.compiler.batch-3.46.100-SNAPSHOT.jar"
+            },
+            "org.eclipse.jdt.core": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core/target/org.eclipse.jdt.core-3.47.0-SNAPSHOT.jar"
+            }
+          }
+        },
+        {
+          "module": "org.eclipse.jdt.core.tests.builder",
+          "mainBundles": {
+            "org.eclipse.jdt.core.compiler.batch": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core.compiler.batch/target/org.eclipse.jdt.core.compiler.batch-3.46.100-SNAPSHOT.jar"
+            },
+            "org.eclipse.jdt.core": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core/target/org.eclipse.jdt.core-3.47.0-SNAPSHOT.jar"
+            }
+          }
+        },
+        {
+          "module": "org.eclipse.jdt.core.tests.compiler",
+          "mainBundles": {
+            "org.eclipse.jdt.core.compiler.batch": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core.compiler.batch/target/org.eclipse.jdt.core.compiler.batch-3.46.100-SNAPSHOT.jar"
+            },
+            "org.eclipse.jdt.core": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core/target/org.eclipse.jdt.core-3.47.0-SNAPSHOT.jar"
+            }
+          }
+        },
+        {
+          "module": "org.eclipse.jdt.core.tests.model",
+          "mainBundles": {
+            "org.eclipse.jdt.core.compiler.batch": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core.compiler.batch/target/org.eclipse.jdt.core.compiler.batch-3.46.100-SNAPSHOT.jar"
+            },
+            "org.eclipse.jdt.core": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core/target/org.eclipse.jdt.core-3.47.0-SNAPSHOT.jar"
+            }
+          }
+        },
+        {
+          "module": "org.eclipse.jdt.core.tests.performance",
+          "mainBundles": {
+            "org.eclipse.jdt.core.compiler.batch": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core.compiler.batch/target/org.eclipse.jdt.core.compiler.batch-3.46.100-SNAPSHOT.jar"
+            },
+            "org.eclipse.jdt.core": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core/target/org.eclipse.jdt.core-3.47.0-SNAPSHOT.jar"
+            }
+          }
+        }
+      ],
+      "configuredCompilerBatchInEveryTestRuntime": true,
+      "configuredCoreRuntimeCount": 7,
+      "methodInfo": {
+        "containingBundle": "org.eclipse.jdt.core.compiler.batch",
+        "classEntry": "org/eclipse/jdt/internal/compiler/classfmt/MethodInfo.class",
+        "retainedJarEntrySha256": "bc0956e48f95176ea2223d2a64f404445ea1c39f629ff11da8d59c9367ebf883",
+        "freshCompilerOutputSha256": "bc0956e48f95176ea2223d2a64f404445ea1c39f629ff11da8d59c9367ebf883",
+        "matchingBenchmarkVariant": "before",
+        "matchingBenchmarkClassSha256": "bc0956e48f95176ea2223d2a64f404445ea1c39f629ff11da8d59c9367ebf883",
+        "all811CompilerClassFilesMatchLocalBenchmarkBuild": true,
+        "coreMainJarContainsMethodInfo": false,
+        "coreManifestReexportsCompilerBatch": true
+      }
+    },
+    "generated": {
+      "exitCode": 0,
+      "reactorModules": 20,
+      "allReactorModulesSucceeded": true,
+      "finishedAtUtc": "2026-11-03T05:34:47Z",
+      "mavenTotalTime": "55:59 min",
+      "command": "dbus-run-session -- xvfb-run -a -s -screen\\ 0\\ 1280x1024x24\\ -noreset /home/runner/work/sandbox/sandbox/sandbox/mvnw --batch-mode --no-transfer-progress --no-snapshot-updates -f /tmp/junit-11602250787981484347/reactor.xml -Djdt-ui-source=core -Dmaven.repo.local=/tmp/junit-11602250787981484347/m2 -Pbuild-individual-bundles -DskipTests=false -DforkCount=1 -Dtycho.baseline.replace=none -DcompilerBaselineReplace=none -Dsurefire.testArgLine=-Xmx2g -Dtycho.surefire.argLine=-Xmx2g -Dcbi-ecj-version=3.47.0-20261102.234213-18 -Declipse-sdk-repo=https://download.eclipse.org/eclipse/updates/4.41/R-4.41-202608281142/ --fail-at-end clean verify --offline",
+      "commandSha256": "591c4ab940355bfb858122d9740087b525423590b4685b97d1662f197f27a847",
+      "mavenLogSha256": "0bed66239f82b4dbc0c5f916d678d78b9e6a289c5b1c3622cc889211adadbd74",
+      "verifiedBundleHashesFile": "generated/verified-bundle-hashes.json",
+      "verifiedBundleHashesSha256": "6910ba3d204ab9eec03d883f9ad15ffd4abb7470d90c2caf591b74283751578f",
+      "bundleHashes": {
+        "org.eclipse.jdt.core.compiler.batch": "10f94812597c87f58234b3b05ed63d13168bca54d0612a22a1ce67ce31fc9519",
+        "org.eclipse.jdt.core": "b03ea3b5ca2aa725649dda400bba515714723946f192510944824fddf809c29e",
+        "org.eclipse.jdt.core-embedded-antadapter": "ab05b38d0fbb3ec262348ccdbf54149ef59021f7b9f40ed0dd11394e2309fb71"
+      },
+      "retainedBundleHashesRechecked": true,
+      "compilerOutputClassCounts": {
+        "org.eclipse.jdt.core": 1456,
+        "org.eclipse.jdt.core-antadapter": 5,
+        "org.eclipse.jdt.core.compiler.batch": 811
+      },
+      "testRuntimeConfigurations": [
+        {
+          "module": "org.eclipse.jdt.apt.pluggable.tests",
+          "mainBundles": {
+            "org.eclipse.jdt.core.compiler.batch": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core.compiler.batch/target/org.eclipse.jdt.core.compiler.batch-3.46.100-SNAPSHOT.jar"
+            },
+            "org.eclipse.jdt.core": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core/target/org.eclipse.jdt.core-3.47.0-SNAPSHOT.jar"
+            }
+          }
+        },
+        {
+          "module": "org.eclipse.jdt.apt.tests",
+          "mainBundles": {
+            "org.eclipse.jdt.core.compiler.batch": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core.compiler.batch/target/org.eclipse.jdt.core.compiler.batch-3.46.100-SNAPSHOT.jar"
+            },
+            "org.eclipse.jdt.core": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core/target/org.eclipse.jdt.core-3.47.0-SNAPSHOT.jar"
+            }
+          }
+        },
+        {
+          "module": "org.eclipse.jdt.compiler.apt.tests",
+          "mainBundles": {
+            "org.eclipse.jdt.core.compiler.batch": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core.compiler.batch/target/org.eclipse.jdt.core.compiler.batch-3.46.100-SNAPSHOT.jar"
+            },
+            "org.eclipse.jdt.core": {
+              "configured": false,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core/target/org.eclipse.jdt.core-3.47.0-SNAPSHOT.jar"
+            }
+          }
+        },
+        {
+          "module": "org.eclipse.jdt.compiler.tool.tests",
+          "mainBundles": {
+            "org.eclipse.jdt.core.compiler.batch": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core.compiler.batch/target/org.eclipse.jdt.core.compiler.batch-3.46.100-SNAPSHOT.jar"
+            },
+            "org.eclipse.jdt.core": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core/target/org.eclipse.jdt.core-3.47.0-SNAPSHOT.jar"
+            }
+          }
+        },
+        {
+          "module": "org.eclipse.jdt.core.tests.builder",
+          "mainBundles": {
+            "org.eclipse.jdt.core.compiler.batch": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core.compiler.batch/target/org.eclipse.jdt.core.compiler.batch-3.46.100-SNAPSHOT.jar"
+            },
+            "org.eclipse.jdt.core": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core/target/org.eclipse.jdt.core-3.47.0-SNAPSHOT.jar"
+            }
+          }
+        },
+        {
+          "module": "org.eclipse.jdt.core.tests.compiler",
+          "mainBundles": {
+            "org.eclipse.jdt.core.compiler.batch": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core.compiler.batch/target/org.eclipse.jdt.core.compiler.batch-3.46.100-SNAPSHOT.jar"
+            },
+            "org.eclipse.jdt.core": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core/target/org.eclipse.jdt.core-3.47.0-SNAPSHOT.jar"
+            }
+          }
+        },
+        {
+          "module": "org.eclipse.jdt.core.tests.model",
+          "mainBundles": {
+            "org.eclipse.jdt.core.compiler.batch": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core.compiler.batch/target/org.eclipse.jdt.core.compiler.batch-3.46.100-SNAPSHOT.jar"
+            },
+            "org.eclipse.jdt.core": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core/target/org.eclipse.jdt.core-3.47.0-SNAPSHOT.jar"
+            }
+          }
+        },
+        {
+          "module": "org.eclipse.jdt.core.tests.performance",
+          "mainBundles": {
+            "org.eclipse.jdt.core.compiler.batch": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core.compiler.batch/target/org.eclipse.jdt.core.compiler.batch-3.46.100-SNAPSHOT.jar"
+            },
+            "org.eclipse.jdt.core": {
+              "configured": true,
+              "reactorPath": "/tmp/junit-11602250787981484347/core/org.eclipse.jdt.core/target/org.eclipse.jdt.core-3.47.0-SNAPSHOT.jar"
+            }
+          }
+        }
+      ],
+      "configuredCompilerBatchInEveryTestRuntime": true,
+      "configuredCoreRuntimeCount": 7,
+      "methodInfo": {
+        "containingBundle": "org.eclipse.jdt.core.compiler.batch",
+        "classEntry": "org/eclipse/jdt/internal/compiler/classfmt/MethodInfo.class",
+        "retainedJarEntrySha256": "2ae8970c5e04e60dcaa1e85c4d962876db14a15abbe3d82e2c083ca8c03fdb90",
+        "freshCompilerOutputSha256": "2ae8970c5e04e60dcaa1e85c4d962876db14a15abbe3d82e2c083ca8c03fdb90",
+        "matchingBenchmarkVariant": "after",
+        "matchingBenchmarkClassSha256": "2ae8970c5e04e60dcaa1e85c4d962876db14a15abbe3d82e2c083ca8c03fdb90",
+        "all811CompilerClassFilesMatchLocalBenchmarkBuild": true,
+        "coreMainJarContainsMethodInfo": false,
+        "coreManifestReexportsCompilerBatch": true
+      }
+    }
+  },
+  "buildConfiguration": {
+    "sameInBothPhases": true,
+    "patchSha256": "57e0ea442dfa2ddc424d59a7a6b1174911b618a10f325fdcc513bc04699def2c",
+    "change": "Only org.eclipse.jdt.core/pom.xml baselineReplace common -> none, applied before baseline and retained for generated, to prevent published release JARs from replacing newly compiled classes.",
+    "profile": "build-individual-bundles",
+    "testFiltering": "Official pinned reactor defaults; skipTests=false, fail-at-end, no extra test include/exclude filters.",
+    "toolchains": [
+      8,
+      17,
+      21,
+      25
+    ],
+    "generatedOffline": true
+  },
+  "runtimeEvidence": {
+    "ciGate": "Successful qualification verifies exact compiled .class entry inventory and bytes against each reactor main JAR, inspects configured runtime bundle symbolic names and rejects a different main bundle with the same BSN; it also verifies the Ant adapter and embedded adapter.",
+    "localReview": "Retained JAR hashes rechecked, MethodInfo entry bytes extracted directly from the configured compiler.batch JAR copies and compared with the local JMH input. All 811 compiler.batch class bytes match the respective local build; messages.properties differs in build-version stamping.",
+    "scope": "Runtime configuration and artifact-byte binding; the CI does not retain a separate per-class ProtectionDomain CodeSource trace. JMH has its own class-origin proofs.",
+    "jdtCoreBundleArchitecture": "MethodInfo resides in the separately configured org.eclipse.jdt.core.compiler.batch main bundle. The org.eclipse.jdt.core main bundle requires/reexports compiler.batch and does not contain MethodInfo itself.",
+    "uiAgainstTransformedCore": false
+  },
+  "compileWarnings": {
+    "comparisonFile": "warning-comparison.json",
+    "comparisonSha256": "16b9de98a1b79633bb4bef9319c01d58769d6b6c3e5798393146b4db832e6313",
+    "baselineSourceDiagnostics": 226,
+    "generatedSourceDiagnostics": 239,
+    "introducedSourceDiagnostics": 13,
+    "introducedByMessage": {
+      "Unnecessary cast from int to long": 3,
+      "Non-externalized string literal; it should be followed by //$NON-NLS-<n>$": 8,
+      "Unnecessary cast from char to int": 2
+    },
+    "otherAddedWarnings": "Three additional Tycho warning occurrences about same-version artifacts having changed contents; separate from the thirteen introduced source diagnostics.",
+    "compileErrors": 0
+  },
+  "fileSha256": {
+    "input-identities.json": "73b237b06dd1aea20636d597255c9b2a4fb0162f248bdc8a1352d24fdd96b749",
+    "original-source-hashes.json": "6f72639fc4eb8da6d4d9fab5fb83d6985796353538e1253bf3dd32c951cd9da2",
+    "build-configuration.patch": "57e0ea442dfa2ddc424d59a7a6b1174911b618a10f325fdcc513bc04699def2c",
+    "configured-core.pom.xml": "8f032de2a528c3f55df07b42008b2188b48ca3045cad43f9f7d28d2b658fac35",
+    "original-core.pom.xml": "6e8ebd95946bc237180b098da052add77cc10657c092f334e45078bf37a5b409",
+    "math-profile.properties": "b0f85dc616ddb3d37a5f779566be70afeb7285cffc312e91c31bd0f3e26e2eb9",
+    "mathematics.patch": "316d2ee4361ff2bfaa3d1b1842c93ae4179c05f8052a33ec65e44c9e303d01ef"
+  },
+  "limits": [
+    "Core and UI are independently qualified; the UI job did not run against this transformed Core.",
+    "Passing tests establish this pinned configuration and executed inventory, not universal behavioral equivalence or performance improvement.",
+    "Reactor wall-clock totals are test/build durations and are not optimization benchmarks.",
+    "Thirteen new compiler warnings remain, and the separately measured MethodInfo branch has its own performance findings; green tests do not establish useful optimization."
+  ],
+  "newTestsOrBuildsExecutedDuringReview": false
+}
