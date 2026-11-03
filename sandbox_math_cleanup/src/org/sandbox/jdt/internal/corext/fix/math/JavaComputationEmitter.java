@@ -367,7 +367,9 @@ public final class JavaComputationEmitter {
       ArrayList<Check> checks = new ArrayList<>();
       Object literal = operands.size()>1 && JavaExpressions.isLiteral(JavaExpressions.operands(expression).get(1))
             ? JavaExpressions.literalValue(JavaExpressions.operands(expression).get(1)) : null;
-      Long divisor = literal instanceof Number number ? number.longValue() : literal instanceof Character character ? (long)character.charValue() : null;
+      Long divisor = null;
+      if (literal instanceof Number number) divisor = Long.valueOf(number.longValue());
+      else if (literal instanceof Character character) divisor = Long.valueOf(character.charValue());
       if (operation == NumericOperation.DIVIDE || operation == NumericOperation.REMAINDER) {
          if (divisor == null || divisor == 0) checks.add(new JavaComputationEmitter.Check(right + " != 0", "MATH_DIVIDE_BY_ZERO"));
       }

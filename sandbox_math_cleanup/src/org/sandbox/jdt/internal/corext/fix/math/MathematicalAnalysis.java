@@ -56,6 +56,7 @@ import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.NodeFinder;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.Document;
@@ -213,8 +214,10 @@ public final class MathematicalAnalysis {
                residueCalls.add(call);
             } : null;
       boolean currentSource;
+      boolean[] runtimeTemplates = {false};
       try {
-         currentSource = matchesAstSource(ast, source, compilerOptions, options.targetJava(), collectResidueCalls);
+         currentSource = matchesAstSource(ast, source, compilerOptions, options.targetJava(), collectResidueCalls,
+               declaration -> { if (declaration.getName().getIdentifier().startsWith("$series")) runtimeTemplates[0] = true; }); //$NON-NLS-1$
       } catch (SourceDiscoveryLimit exhausted) {
          diagnostics.add(new Diagnostic("BUDGET_EXCEEDED", "Source call discovery exceeds the analysis budget", 0, source.length(), Stage.BUDGET)); //$NON-NLS-1$ //$NON-NLS-2$
          return new Analysis(List.of(), diagnostics, sourceDigest, compilerOptions);
@@ -241,12 +244,29 @@ public final class MathematicalAnalysis {
       }
 
       var protectedReservations = new ArrayList<Replacement>();
+      var protectedAll = new ArrayList<org.eclipse.jdt.core.ISourceRange>(protectedRegions);
+      try {
+         if (runtimeTemplates[0]) protectedAll.addAll(JavaRuntimeIterationTemplates.ranges(ast, valueWork::charge));
+      } catch (JavaValueSourceSummary.DeadlineExceeded expired) { throw expired; }
+      catch (IllegalArgumentException exhausted) {
+         diagnostics.add(new Diagnostic("BUDGET_EXCEEDED", "Runtime template discovery exceeds the analysis budget", 0, source.length(), Stage.BUDGET)); //$NON-NLS-1$ //$NON-NLS-2$
+         return new Analysis(List.of(), diagnostics, sourceDigest, compilerOptions);
+      }
+      protectedAll.sort(Comparator.comparingInt(org.eclipse.jdt.core.ISourceRange::getOffset));
+      var mergedProtection = new ArrayList<org.eclipse.jdt.core.ISourceRange>();
       long reservationWork = 0;
-      for (var range : protectedRegions) {
+      for (var range : protectedAll) {
          int start = range.getOffset(), length = range.getLength();
          if (start < 0 || length < 1 || (long) start + length > source.length())
             throw new IllegalArgumentException("INVALID_PROTECTED_SOURCE_RANGE"); //$NON-NLS-1$
-         protectedReservations.add(new Replacement(start, length, source.substring(start, start + length), "Protected source envelope")); //$NON-NLS-1$
+         if (!mergedProtection.isEmpty()) {
+            var previous = mergedProtection.getLast();
+            if (start <= previous.getOffset() + previous.getLength()) {
+               mergedProtection.removeLast();reservationWork -= previous.getLength();
+               length = Math.max(start + length, previous.getOffset() + previous.getLength()) - previous.getOffset();start = previous.getOffset();
+            }
+         }
+         mergedProtection.add(new org.eclipse.jdt.core.SourceRange(start, length));
          reservationWork += length;
       }
       if (reservationWork > valueWork.remaining()) {
@@ -254,6 +274,8 @@ public final class MathematicalAnalysis {
          return new Analysis(List.of(), diagnostics, sourceDigest, compilerOptions);
       }
       valueWork.charge(reservationWork);
+      for (var range : mergedProtection) protectedReservations.add(new Replacement(range.getOffset(), range.getLength(),
+            source.substring(range.getOffset(), range.getOffset()+range.getLength()), "Protected source envelope")); //$NON-NLS-1$
       // Existing specialized passes already reject collisions with this list.
       // Remove reservations before any final source/binding replay or public result.
       replacements.addAll(protectedReservations);
@@ -291,6 +313,7 @@ public final class MathematicalAnalysis {
       var deferredAssignments = new ArrayList<JavaComputationRegion>();
       var primaryRegions = new ArrayList<JavaComputationRegion>();
       for (var region : extraction.regions()) {
+         if (protectedReservations.stream().anyMatch(r -> region.start() < r.offset() + r.length() && r.offset() < region.start() + region.length())) continue;
          if (selectionOffset < 0 && incomingIntegralAssignment(region)) deferredAssignments.add(region);
          else primaryRegions.add(region);
       }
@@ -305,7 +328,7 @@ public final class MathematicalAnalysis {
             node.getStartPosition(), node.getLength(), Stage.SOURCE))));
       diagnostics.addAll(connections.diagnostics());
       long remainingWork = options.workBudget() - connections.work() - sourceContext.takeWork() - valueSpent;
-      var iterationPreflight = JavaRuntimeIterationOptimizer.preflight(ast, options, remainingWork, cancellation);
+      var iterationPreflight = JavaRuntimeIterationOptimizer.preflight(ast, options, remainingWork, cancellation, protectedReservations);
       remainingWork -= iterationPreflight.work();
       long iterationReserve = iterationPreflight.admitted() ? Math.max(0, remainingWork / 3) : 0;
       remainingWork -= iterationReserve;
@@ -620,15 +643,13 @@ public final class MathematicalAnalysis {
                         continue;
                      }
                   }
-                  if (!expressionOnly && (options.explanations() == MathCleanUpOptions.ExplanationMode.ALL
-                        || options.explanations() == MathCleanUpOptions.ExplanationMode.NONTRIVIAL && explanationText.nontrivial())) {
+                  if (!expressionOnly && explanationText.emitted(options.explanations())) {
                      replacement = indentGenerated(explanationText.sourceComment(), source, region.start()) + replacement;
                   }
                   JavaSourceRewritePlan sourcePlan = null;
                   if (slice != null) {
                      String prefix = indentGenerated(plain.statements(), source, region.start());
-                     if (options.explanations() == MathCleanUpOptions.ExplanationMode.ALL
-                           || options.explanations() == MathCleanUpOptions.ExplanationMode.NONTRIVIAL && explanationText.nontrivial())
+                     if (explanationText.emitted(options.explanations()))
                         prefix = indentGenerated(explanationText.sourceComment(), source, region.start()) + prefix;
                      String unitName = ast.getJavaElement() != null ? ast.getJavaElement().getPath().toPortableString()
                            : environment != null ? environment.unitName() : "source@" + sourceDigest; //$NON-NLS-1$
@@ -1009,19 +1030,19 @@ public final class MathematicalAnalysis {
    }
 
    private static boolean matchesAstSource(CompilationUnit original, String source, Map<String, String> options, int targetJava,
-         Consumer<MethodInvocation> originalCalls) {
-      return matchesAstSource(original, source, options, targetJava, originalCalls, null, null);
+         Consumer<MethodInvocation> originalCalls, Consumer<VariableDeclarationFragment> originalDeclarations) {
+      return matchesAstSource(original, source, options, targetJava, originalCalls, originalDeclarations, null, null);
    }
 
    static boolean matchesAstSource(CompilationUnit original, String source, Map<String,String> options, int targetJava,
          LongConsumer charge, IProgressMonitor monitor) {
-      return matchesAstSource(original, source, options, targetJava, null, charge, monitor);
+      return matchesAstSource(original, source, options, targetJava, null, null, charge, monitor);
    }
 
    private static boolean matchesAstSource(CompilationUnit original, String source, Map<String,String> options, int targetJava,
-         Consumer<MethodInvocation> originalCalls, LongConsumer charge, IProgressMonitor monitor) {
+         Consumer<MethodInvocation> originalCalls, Consumer<VariableDeclarationFragment> originalDeclarations, LongConsumer charge, IProgressMonitor monitor) {
       if (original.getCommentList() == null) return false;
-      var originalPositions = sourcePositions(original, originalCalls, charge);
+      var originalPositions = sourcePositions(original, originalCalls, originalDeclarations, charge);
       // Standalone clients can parse structured Javadoc with either setting.
       // Retry only that parser setting: syntax, documented text and source
       // positions must still match exactly; no stale-source guard is bypassed.
@@ -1036,7 +1057,7 @@ public final class MathematicalAnalysis {
          compilerOptions.put(JavaCore.COMPILER_DOC_COMMENT_SUPPORT, documentation);
          parser.setCompilerOptions(compilerOptions);
          CompilationUnit parsed = (CompilationUnit) parser.createAST(monitor);
-         var parsedPositions = sourcePositions(parsed, null, charge);
+         var parsedPositions = sourcePositions(parsed, null, null, charge);
          if (charge != null) charge.accept(originalPositions.size() + (long)parsedPositions.size());
          if (originalPositions.equals(parsedPositions) && original.subtreeMatch(new ASTMatcher(true), parsed)) return true;
       }
@@ -1048,7 +1069,8 @@ public final class MathematicalAnalysis {
       SourceDiscoveryLimit(IllegalArgumentException cause) { super(cause); }
    }
 
-   private static List<Integer> sourcePositions(CompilationUnit ast, Consumer<MethodInvocation> originalCalls, LongConsumer charge) {
+   private static List<Integer> sourcePositions(CompilationUnit ast, Consumer<MethodInvocation> originalCalls,
+         Consumer<VariableDeclarationFragment> originalDeclarations, LongConsumer charge) {
       final ArrayList<Integer> positions = new ArrayList<>();
       ast.accept(new ASTVisitor() {
          private int depth;
@@ -1064,6 +1086,11 @@ public final class MathematicalAnalysis {
          @Override public boolean visit(MethodInvocation call) {
             // Share only the mandatory bound-original walk; reparsed comparison ASTs never populate this list.
             if (originalCalls != null) originalCalls.accept(call);
+            return true;
+         }
+         @Override public boolean visit(VariableDeclarationFragment declaration) {
+            // Candidate routing shares the mandatory walk; full structural discovery is separately charged.
+            if (originalDeclarations != null) originalDeclarations.accept(declaration);
             return true;
          }
       });

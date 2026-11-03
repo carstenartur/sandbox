@@ -16,9 +16,11 @@ final class JavaRuntimeIterationEmitter {
     private final RuntimeIterationEvidence evidence;
     private final JavaLoopInvariantAnalysis.Work work;
     private final String prefix;
+    private final MathCleanUpOptions.ExplanationMode explanations;
     private final Map<SymbolId,String> names=new HashMap<>();
-    private JavaRuntimeIterationEmitter(JavaRuntimeIterationAnalysis.Context context,RuntimeIterationEvidence evidence,String source,JavaLoopInvariantAnalysis.Work work) {
+    private JavaRuntimeIterationEmitter(JavaRuntimeIterationAnalysis.Context context,RuntimeIterationEvidence evidence,String source,JavaLoopInvariantAnalysis.Work work,MathCleanUpOptions.ExplanationMode explanations) {
         this.context=context;this.evidence=evidence;this.work=work;
+        this.explanations=explanations;
         prefix=freshPrefix(source,context.node().getStartPosition(),work);
         names.put(context.startSymbol(),prefix+"start");names.put(context.countSymbol(),prefix+"count");
         if(context.partition()!=null)for(int part=0;part<context.partition().starts().size();part++)
@@ -26,7 +28,15 @@ final class JavaRuntimeIterationEmitter {
         for(var binding:context.bindings()) names.put(binding.symbol(),binding.primitiveType().equals(BIG)?binding.name():join(BIG,".valueOf((long)(",binding.name(),"))"));
     }
     static String emit(CompilationUnit unit,String source,JavaRuntimeIterationAnalysis.Context context,RuntimeIterationEvidence evidence,JavaLoopInvariantAnalysis.Work work) {
-        return new JavaRuntimeIterationEmitter(context,evidence,source,work).emit(unit,source);
+        return emit(unit,source,context,evidence,work,MathCleanUpOptions.ExplanationMode.NONE);
+    }
+    static String emit(CompilationUnit unit,String source,JavaRuntimeIterationAnalysis.Context context,RuntimeIterationEvidence evidence,JavaLoopInvariantAnalysis.Work work,MathCleanUpOptions.ExplanationMode explanations) {
+        return new JavaRuntimeIterationEmitter(context,evidence,source,work,explanations).emit(unit,source);
+    }
+    private void explain(Output out) {
+        if(explanations==MathCleanUpOptions.ExplanationMode.NONE)return;
+        var explanation=MathExplanation.renderRuntime(context,evidence,work);
+        if(explanation.emitted(explanations))out.append(explanation.sourceComment());
     }
     /** Only checked constant coefficients are lowered; no Java-side polynomial synthesis. */
     static EmissionStrategy strategy(JavaRuntimeIterationAnalysis.Context context,RuntimeIterationEvidence evidence) {
@@ -64,6 +74,7 @@ final class JavaRuntimeIterationEmitter {
         var out=new Output(work);
         if(context.stream()) out.append("(new java.util.function.").append(context.width().equals("int")?"IntSupplier":"LongSupplier").append("(){public ").append(context.width()).append(" getAs").append(context.width().equals("int")?"Int":"Long").append("(){\n");
         else out.append("{\n");
+        explain(out);
         boolean primitiveGuard=h.stride().abs().equals(BigInteger.ONE)
                 && JavaFiniteSumAnalysis.type(h.start().resolveTypeBinding(),"int")
                 && JavaFiniteSumAnalysis.type(h.bound().resolveTypeBinding(),"int")
@@ -133,7 +144,8 @@ final class JavaRuntimeIterationEmitter {
     private String primitive(CompilationUnit unit,String source) {
         var h=context.header();String p=prefix;var out=new Output(work);
         // Header arithmetic runs in its authored int width; only the captured values are widened.
-        out.append("{\nint ").append(p).append("start=(").append(text(source,h.start())).append("), ")
+        out.append("{\n");explain(out);
+        out.append("int ").append(p).append("start=(").append(text(source,h.start())).append("), ")
                 .append(p).append("bound=(").append(text(source,h.bound())).append(");\n");
         out.append("long ").append(p).append("count=");
         String distance=h.stride().signum()>0?"(long)"+p+"bound-"+p+"start":"(long)"+p+"start-"+p+"bound";

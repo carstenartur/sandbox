@@ -13,12 +13,17 @@ final class JavaRuntimeIterationOptimizer {
     private JavaRuntimeIterationOptimizer() { }
     record Reservation(boolean admitted,long work) { }
     static Reservation preflight(CompilationUnit unit,MathCleanUpOptions options,long available,CancellationToken token) {
+        return preflight(unit,options,available,token,List.of());
+    }
+    static Reservation preflight(CompilationUnit unit,MathCleanUpOptions options,long available,CancellationToken token,List<MathematicalAnalysis.Replacement> protectedRegions) {
         if(available<20000 || options.goal()!=OptimizationGoal.LOWER_ESTIMATED_RUNTIME || options.safety()!=SafetyProfile.PRESERVE_JAVA || options.mathematicalOptIn())return new Reservation(false,0);
         var work=new JavaLoopInvariantAnalysis.Work(Math.min(20000,available/100),token);
         var nodes=new ArrayList<ASTNode>();int[] visited={0};
         try {
             unit.accept(new ASTVisitor() {
-                @Override public boolean preVisit2(ASTNode node) {visited[0]++;return !token.isCancelled();}
+                @Override public boolean preVisit2(ASTNode node) {
+                    visited[0]++;return !token.isCancelled() && protectedRegions.stream().noneMatch(r -> node.getStartPosition()>=r.offset() && node.getStartPosition()<r.offset()+r.length());
+                }
                 @Override public boolean visit(ForStatement node) {nodes.add(node);return true;}
                 @Override public boolean visit(WhileStatement node) {nodes.add(node);return true;}
                 @Override public boolean visit(DoStatement node) {nodes.add(node);return true;}
@@ -78,7 +83,7 @@ final class JavaRuntimeIterationOptimizer {
                     if(proofAllowance<1)throw new JavaLoopInvariantAnalysis.Limit();
                     verifyReserved(work,proofAllowance,()->proof.verify(MathematicalAnalysis.optimizationBudget(options,proofAllowance,token),token));
                     if(!profitableStaticRange(context,proof))continue;
-                    String replacement=JavaRuntimeIterationEmitter.emit(ast,source,context,proof,work);
+                    String replacement=JavaRuntimeIterationEmitter.emit(ast,source,context,proof,work,options.explanations());
                     String original=source.substring(offset,offset+length);
                     var plan=new JavaSourceRewritePlan("Source.java",JavaFiniteSumOptimizer.hash(source),source.length(),offset,length,List.of(),List.of(),Map.of(),
                             List.of(new JavaSourceRewritePlan.Change(offset,length,JavaFiniteSumOptimizer.hash(original),replacement)));
@@ -149,7 +154,7 @@ final class JavaRuntimeIterationOptimizer {
         verifyReserved(work,proofAllowance,()->proof.verify(MathematicalAnalysis.optimizationBudget(options,proofAllowance,token),token));
         if(proof.strategy()!=JavaRuntimeIterationEmitter.strategy(context,proof))throw invalid();
         if(!proof.cost(options.goal()).equals(receipt.cost()))throw invalid();
-        String rebuilt=JavaRuntimeIterationEmitter.emit(before,source,context,proof,work);
+        String rebuilt=JavaRuntimeIterationEmitter.emit(before,source,context,proof,work,options.explanations());
         int mapped=position(receipt.offset(),edits);
         if(!rebuilt.equals(receipt.replacement()) || mapped<0 || (long)mapped+rebuilt.length()>generated.length()
                 || !generated.substring(mapped,mapped+rebuilt.length()).equals(rebuilt))throw invalid();
