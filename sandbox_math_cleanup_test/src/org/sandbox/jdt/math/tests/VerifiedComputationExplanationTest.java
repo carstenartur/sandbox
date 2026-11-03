@@ -56,6 +56,7 @@ class VerifiedComputationExplanationTest {
 
     @Test void helperCallsUseTheSameExplanationPathWithoutAnExpectedFormula() throws Exception {
         String source = "public class Calculation { private static int join(int p,int q){return p+q;}"
+                + " public static int reference(int p,int q){return join(p,q);}"
                 + " public static int compute(int x,int a,int b){return x*join(a,b)-x*a;} }";
         var analysis = analyze(source, SafetyProfile.PRESERVE_JAVA, new NullProgressMonitor());
         var json = explanation(analysis);

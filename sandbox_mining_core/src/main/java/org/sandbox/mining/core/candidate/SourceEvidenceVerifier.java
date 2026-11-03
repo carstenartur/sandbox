@@ -80,6 +80,10 @@ public final class SourceEvidenceVerifier {
 		}
 	}
 
+	/**
+	 * Returns whether any independent edit block supplies matching token evidence.
+	 * Incomplete lexical context disqualifies only that block, allowing a later match.
+	 */
 	private static boolean matchesEdit(String hunk, List<Token> before, List<Token> after) throws InvalidInputException {
 		StringBuilder removed = new StringBuilder();
 		StringBuilder added = new StringBuilder();
@@ -120,7 +124,8 @@ public final class SourceEvidenceVerifier {
 					}
 				}
 			} catch (InvalidInputException e) {
-				// Insufficient lexical context for this block must not hide a later valid edit.
+				// An edit boundary can fall inside a comment. Reject this block as evidence, then continue:
+				// a later block may have enough visible context to yield valid Java tokens.
 			}
 		}
 		return false;

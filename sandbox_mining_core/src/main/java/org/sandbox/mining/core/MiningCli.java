@@ -685,7 +685,7 @@ promptBuilder.setTypeContext(context);
 }
 List<String> hashes = commitDataList.stream().map(CommitData::commitHash).toList();
 List<String> messages = commitDataList.stream().map(CommitData::commitMessage).toList();
-Map<String, String> diffsByCommit = new HashMap<>();
+Map<String, String> diffsByCommit = HashMap.newHashMap(commitDataList.size());
 for (CommitData data : commitDataList) {
 diffsByCommit.put(data.commitHash(), data.diff());
 }

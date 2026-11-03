@@ -92,7 +92,7 @@ class JavaValueInverseReuseTest {
     @Test void aDetachedInverseFactoryCannotIntroduceForeignStaticInitialization() throws Exception {
         String source=fixture().replace("static final Leaf TWIST=Leaf.of(BigInteger.ONE,BigInteger.ONE);","public static int calls;")
             .replace("public static Leaf scale(Leaf x){","public static int scale(Leaf x){")
-            .replace("return weighted.combine(x.reciprocal());","Leaf answer=weighted.combine(x.reciprocal());return calls;")
+            .replace("return weighted.combine(x.reciprocal());","Leaf answer=weighted.combine(x.reciprocal());answer.first();return calls;")
             .replace("return new Leaf(a.mod(P),b.mod(P));","return new Leaf(a.mod(Foreign.P),b.mod(Foreign.P));")
             +"final class Foreign {static {Calculation.calls++;}public static final java.math.BigInteger P=new java.math.BigInteger(\"4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787\");}";
         var helper=new JavaImmutableValueTest();helper.directory=directory;
@@ -131,7 +131,7 @@ class JavaValueInverseReuseTest {
 
     @Test void reusedInverseHasExecutedFreshWrappersAndIndependentScalarCopies() throws Exception {
         String source=fixture().replace("public static Leaf scale(Leaf x){","public static boolean scale(Leaf x){")
-            .replace("return weighted.combine(x.reciprocal());","Leaf first=x.reciprocal().copy();Leaf second=x.reciprocal().copy();return first==second || first.first()==second.first() || first.second()==second.second();")
+            .replace("return weighted.combine(x.reciprocal());","Leaf first=x.reciprocal().copy();Leaf second=x.reciprocal().copy();weighted.first();return first==second || first.first()==second.first() || first.second()==second.second();")
             .replace("public Leaf square()","public Leaf copy(){return new Leaf(amber,blue);}public Leaf square()");
         var helper=new JavaImmutableValueTest();helper.directory=directory;
         var result=MathematicalAnalysis.analyze(helper.parse(source),source,JavaValueReuseTest.options(),null,-1,0,helper.environment());
@@ -275,12 +275,12 @@ class JavaValueInverseReuseTest {
     }
     private static String authoredCache(String initialization) {
         return fixture().replace("public static Leaf scale(Leaf x){","public static Leaf scale(Leaf x){"+initialization
-                +"Leaf a=x.combine(x).copy();Leaf b=x.combine(x).copy();")
+                +"Leaf a=x.combine(x).copy();Leaf b=x.combine(x).copy();a.first();b.first();System.identityHashCode(cache);")
             .replace("Leaf weighted=x.square().combine(powered.reciprocal());","Leaf weighted=x.combine(powered.reciprocal());")
             .replace("public Leaf square()","public Leaf copy(){return new Leaf(amber,blue);}public Leaf square()");
     }
     @Test void unrelatedReuseCannotQualifyAnUnexecutedNonsquareCache() throws Exception {
-        String source=authoredCache("Leaf cache=Leaf.of(BigInteger.valueOf(7),BigInteger.valueOf(11));if(false)cache=x.square();");
+        String source=authoredCache("Leaf cache=Leaf.of(BigInteger.valueOf(7),BigInteger.valueOf(11));if(x.first().signum()<0)cache=x.square();");
         var helper=new JavaImmutableValueTest();helper.directory=directory;
         var result=MathematicalAnalysis.analyze(helper.parse(source),source,JavaValueReuseTest.options(),null,-1,0,helper.environment());
         String generated=helper.apply(source,result);assertTrue(generated.contains("Mathematics value reuse"),result.diagnostics().toString());

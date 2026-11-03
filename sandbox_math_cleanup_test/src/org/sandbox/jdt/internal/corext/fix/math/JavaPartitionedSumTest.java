@@ -58,7 +58,10 @@ class JavaPartitionedSumTest extends JavaContextTestSupport {
     }
     @Test void constantFiniteLimitsAndComments() throws Exception {
         String source=sample("for(int i=1;i<50000;i++){/* keep branch rationale */if(i<25000)sum+=i*i;else sum+=i*i*i;}");
-        assertTrue(changed(source).contains("/* keep branch rationale */"));compare(source,0);
+        var result=analyze(source);
+        assertFalse(result.changed());
+        assertTrue(result.diagnostics().stream().anyMatch(d->d.message().startsWith("GENERATED_DIAGNOSTIC_INTRODUCED")),result.diagnostics().toString());
+        var document=new org.eclipse.jface.text.Document(source);result.newEdit().apply(document);assertEquals(source,document.get());
     }
     @ParameterizedTest @ValueSource(strings={
         "for(int i=0;i<n;i+=2)if(i%3==1)sum+=i;",

@@ -68,7 +68,7 @@ public class SimplifiedShallueVanDeWoestijneMapToCurve implements MapToCurve
         // Premise: POSITIVE(p).
         // Retain exact-receiver, non-null and magnitude guards for: B, p, u, z.
         // Original values:
-        // final java.math.BigInteger _math0 = new java.math.BigInteger("2");
+        // final java.math.BigInteger _math0 = java.math.BigInteger.valueOf(2L);
         // final java.math.BigInteger _math1 = (z.multiply((u.modPow(_math0, p)))).mod(p);
         // final java.math.BigInteger _math2 = ((_math1.modPow(_math0, p)).add(_math1)).mod(p);
         // tv1 = _math1;
@@ -83,7 +83,7 @@ public class SimplifiedShallueVanDeWoestijneMapToCurve implements MapToCurve
         // Recorded search path:
         // Search step 1/6 [modpow-small-binary-chain]:
         // final java.math.BigInteger _math0 = z.multiply((u.multiply(u).mod(p))).mod(p);
-        // final java.math.BigInteger _math1 = ((_math0.modPow(new java.math.BigInteger("2"), p)).add(_math0)).mod(p);
+        // final java.math.BigInteger _math1 = ((_math0.modPow(java.math.BigInteger.valueOf(2L), p)).add(_math0)).mod(p);
         // tv1 = _math0;
         // tv2 = _math1;
         // tv3 = (B.multiply(((_math1.add(java.math.BigInteger.ONE)).mod(p))).mod(p));
@@ -150,7 +150,7 @@ public class SimplifiedShallueVanDeWoestijneMapToCurve implements MapToCurve
         // Premise: POSITIVE(p).
         // Retain exact-receiver, non-null and magnitude guards for: p, tv3.
         // Original values:
-        // tv2 = (tv3.modPow(new java.math.BigInteger("2"), p));
+        // tv2 = (tv3.modPow(java.math.BigInteger.valueOf(2L), p));
         // Replacement values:
         // tv2 = tv3.multiply(tv3).mod(p);
         // Recorded search path:
@@ -177,7 +177,7 @@ public class SimplifiedShallueVanDeWoestijneMapToCurve implements MapToCurve
         // Premise: POSITIVE(p).
         // Retain exact-receiver, non-null and magnitude guards for: A, p, tv4.
         // Original values:
-        // final java.math.BigInteger _math0 = tv4.modPow(new java.math.BigInteger("2"), p);
+        // final java.math.BigInteger _math0 = tv4.modPow(java.math.BigInteger.valueOf(2L), p);
         // tv6 = _math0;
         // tv5 = ((A.multiply(_math0)).mod(p));
         // Replacement values:

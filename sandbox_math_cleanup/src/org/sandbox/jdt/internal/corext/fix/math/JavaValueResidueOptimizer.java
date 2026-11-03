@@ -90,7 +90,7 @@ final class JavaValueResidueOptimizer {
                     String original=text(source,block);var rewritten=new StringBuilder(original);edits.sort(Comparator.comparingInt(MathematicalAnalysis.Replacement::offset).reversed());
                     for(var edit:edits)rewritten.replace(edit.offset()-start,edit.offset()-start+edit.length(),edit.replacement());String replacement=rewritten.toString();
                     String generated=source.substring(0,start)+replacement+source.substring(start+length);work.charge(generated.length());
-                    var after=MathematicalAnalysis.checkGeneratedSource(ast,generated,compiler,options.targetJava(),monitor,environment);work.check();
+                    var after=MathematicalAnalysis.checkGeneratedSource(ast,source,generated,compiler,options.targetJava(),monitor,environment,start,length,replacement.length());work.check();
                     var replayBlock=(Block)NodeFinder.perform(after,start,replacement.length());var replayFactory=findFactory(replayBlock,factory,arguments,work);
                     VerificationResult.Verified finalProof=null;JavaValueSourceSummary.Summary fast=null;
                     try(var context=JavaSourceContext.open(after,generated,environment,monitor,options,work.remaining())) {

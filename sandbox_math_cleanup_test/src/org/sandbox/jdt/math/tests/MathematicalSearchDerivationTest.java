@@ -36,6 +36,7 @@ class MathematicalSearchDerivationTest {
         String source = """
                 public class Calculation {
                     private static int blend(int p, int q) { return p+q; }
+                    public static int reference(int p,int q){return blend(p,q);}
                     public static int compute(int distance, int scale, int bias) {
                         // Preserve this explanation of the input.
                         return distance*blend(scale,bias)-distance*scale;

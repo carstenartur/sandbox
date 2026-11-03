@@ -55,6 +55,15 @@ final class JavaOriginalExpressions {
     private static ASTNode normalize(ASTNode input, Map<BigInteger, Expression> literals, int depth) {
         if (depth > 128) throw new IllegalArgumentException("SOURCE_RENDERING_BOUND"); //$NON-NLS-1$
         AST ast = input.getAST();
+        if (input instanceof MethodInvocation call && call.getExpression() != null
+                && "java.math.BigInteger".equals(call.getExpression().toString()) && "valueOf".equals(call.getName().getIdentifier()) //$NON-NLS-1$ //$NON-NLS-2$
+                && call.arguments().size() == 1) {
+            String argument = call.arguments().getFirst().toString();
+            try {
+                Expression original = argument.endsWith("L") ? literals.get(new BigInteger(argument.substring(0,argument.length()-1))) : null; //$NON-NLS-1$
+                if (original != null) return ASTNode.copySubtree(ast, original);
+            } catch (NumberFormatException unsupported) { /* Only emitted signed decimal constants qualify. */ }
+        }
         if (input instanceof ClassInstanceCreation creation && creation.getAnonymousClassDeclaration() == null
                 && "java.math.BigInteger".equals(creation.getType().toString()) && creation.arguments().size() == 1 //$NON-NLS-1$
                 && creation.arguments().getFirst() instanceof StringLiteral literal) {

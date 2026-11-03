@@ -53,7 +53,7 @@ class JavaExtendedSourceReadTest {
                 + "return calculate(owner,new Reader(owner),mask);}"
                 + "static int calculate(Node owner,Reader reader,int mask){int a=owner.parent.value & mask;"
                 + "int unused=reader.next(); int b=owner.parent.value & mask; return a ^ b;} }";
-        String generated = rewrite(source);
+        String generated = MathTestSupport.diagnosticDecline(source,options());
         assertEquals(2, occurrences(generated, "owner.parent.value"));
         assertEquals(1, occurrences(generated, "reader.next()"));
         int first = generated.indexOf("owner.parent.value"), call = generated.indexOf("reader.next()");
@@ -79,7 +79,7 @@ class JavaExtendedSourceReadTest {
                 + "public static long run(int mode,int mask){log=\"\"; return calculate(mode==1?null:new Reader(mode),new Reader(0),mask);}"
                 + "static int calculate(Reader first,Reader second,int mask){int unused=first.next();"
                 + "int a=first.next() & mask; int b=second.next() & mask; return a ^ b;} }";
-        String generated = rewrite(source);
+        String generated = MathTestSupport.diagnosticDecline(source,options());
         assertEquals(2, occurrences(generated, "first.next()"));
         assertEquals(1, occurrences(generated, "second.next()"));
         var extraction = new JavaComputationExtractor().extractRuntime(MathTestSupport.parse(source), source, options());

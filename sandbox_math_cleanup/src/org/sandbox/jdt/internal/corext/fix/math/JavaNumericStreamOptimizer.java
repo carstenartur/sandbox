@@ -72,7 +72,7 @@ final class JavaNumericStreamOptimizer {
                         pair.first().getExpression().getStartPosition()+pair.first().getExpression().getLength());
                 String replacement=prefix+".map("+pair.parameterName()+" -> "+emitted.outputValues().get(region.outputs().getFirst().id())+")"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 String generated=source.substring(0,region.start())+replacement+source.substring(region.start()+region.length());
-                var generatedAst=MathematicalAnalysis.checkGeneratedSource(ast,generated,compilerOptions,options.targetJava(),monitor,environment);
+                var generatedAst=MathematicalAnalysis.checkGeneratedSource(ast,source,generated,compilerOptions,options.targetJava(),monitor,environment,region.start(),region.length(),replacement.length());
                 var edit=new MathematicalAnalysis.Replacement(region.start(),region.length(),replacement,
                         "Mathematics PRESERVE_JAVA; independently verified composed per-element kernel; standard sequential JDK map chain; terminal retained; " //$NON-NLS-1$
                         +"estimated operation work "+candidate.cost().sourceCost().operationWork()+" -> "+candidate.cost().candidateCost().operationWork()); //$NON-NLS-1$ //$NON-NLS-2$
