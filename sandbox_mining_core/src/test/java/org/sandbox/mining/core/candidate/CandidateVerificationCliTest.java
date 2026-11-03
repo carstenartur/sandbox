@@ -15,6 +15,7 @@ package org.sandbox.mining.core.candidate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -27,6 +28,9 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /** Tests end-to-end candidate verification, migration, and duplicate policy. */
 class CandidateVerificationCliTest {
@@ -146,6 +150,176 @@ class CandidateVerificationCliTest {
 				duplicate.getVerification().stage());
 		assertTrue(duplicate.getVerification().message()
 				.contains("curated rule arithmetic.sandbox-hint#rule 1")); //$NON-NLS-1$
+	}
+
+	@ParameterizedTest
+	@EnumSource(value = CandidateStatus.class, names = { "DISCOVERED", "READY_FOR_REVIEW" })
+	void rejectedRuleDoesNotReturnFromAnotherCommit(CandidateStatus initialStatus) throws IOException {
+		Path candidateDir = tempDir.resolve("rejected-rule"); //$NON-NLS-1$
+		CandidateStore store = new CandidateStore(candidateDir);
+		MiningCandidate rejected = readyCandidate("reviewed", "2026-02-01T00:00:00Z"); //$NON-NLS-1$ //$NON-NLS-2$
+		String reason = "Already covered by a binding-aware cleanup"; //$NON-NLS-1$
+		rejected.transitionTo(CandidateStatus.REJECTED, "reviewer", reason); //$NON-NLS-1$
+		store.save(rejected);
+
+		// An earlier discovery date and different metadata must not bypass review.
+		MiningCandidate rediscovered = initialStatus == CandidateStatus.READY_FOR_REVIEW
+				? readyCandidate("other-commit", "2026-01-01T00:00:00Z") //$NON-NLS-1$ //$NON-NLS-2$
+				: candidate("other-commit", "2026-01-01T00:00:00Z"); //$NON-NLS-1$ //$NON-NLS-2$
+		rediscovered.setDslRule("@id: rediscovered\n// Another source\n$x + 0\n=> $x\n;;"); //$NON-NLS-1$
+		store.save(rediscovered);
+
+		verifyCandidates(candidateDir);
+
+		MiningCandidate retained = store.findById(rejected.getCandidateId()).orElseThrow();
+		assertEquals(CandidateStatus.REJECTED, retained.getStatus());
+		assertEquals(reason, retained.getRejectionReason());
+		assertEquals(rejected.getTransitions(), retained.getTransitions());
+		assertEquals(rejected.getVerification(), retained.getVerification());
+		assertEquals(rejected.getRevision(), retained.getRevision());
+		MiningCandidate duplicate = store.findById(rediscovered.getCandidateId()).orElseThrow();
+		assertEquals(CandidateStatus.DUPLICATE, duplicate.getStatus());
+		assertEquals(CandidateVerification.Stage.DUPLICATE, duplicate.getVerification().stage());
+		assertTrue(duplicate.getVerification().message().contains(rejected.getCandidateId()));
+		assertTrue(duplicate.getVerification().message().contains(reason));
+		assertTrue(store.loadByStatus(CandidateStatus.READY_FOR_REVIEW).isEmpty());
+
+		verifyCandidates(candidateDir);
+		assertEquals(duplicate.getTransitions(),
+				store.findById(duplicate.getCandidateId()).orElseThrow().getTransitions());
+		assertEquals(rejected.getTransitions(),
+				store.findById(rejected.getCandidateId()).orElseThrow().getTransitions());
+	}
+
+	@Test
+	void guardDistinctRefinementCanBeReviewedAfterRejection() throws IOException {
+		Path candidateDir = tempDir.resolve("guarded-refinement"); //$NON-NLS-1$
+		CandidateStore store = new CandidateStore(candidateDir);
+		MiningCandidate rejected = readyCandidate("unguarded", "2026-01-01T00:00:00Z"); //$NON-NLS-1$ //$NON-NLS-2$
+		rejected.transitionTo(CandidateStatus.REJECTED, "reviewer", "String concatenation is not addition"); //$NON-NLS-1$ //$NON-NLS-2$
+		store.save(rejected);
+		MiningCandidate refined = candidate("guarded", "2026-02-01T00:00:00Z"); //$NON-NLS-1$ //$NON-NLS-2$
+		refined.setDslRule("$x + 0 :: instanceof($x, \"int\")\n=> $x\n;;"); //$NON-NLS-1$
+		refined.setNegativeExample("class T { String m(String value) { return value + 0; } }"); //$NON-NLS-1$
+		store.save(refined);
+
+		verifyCandidates(candidateDir);
+
+		MiningCandidate result = store.findById(refined.getCandidateId()).orElseThrow();
+		assertEquals(CandidateStatus.READY_FOR_REVIEW, result.getStatus());
+		assertTrue(result.getVerification().successful());
+		assertEquals(CandidateStatus.REJECTED,
+				store.findById(rejected.getCandidateId()).orElseThrow().getStatus());
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void unverifiedRejectionDoesNotSuppressValidProposal(boolean failedVerification) throws IOException {
+		Path candidateDir = tempDir.resolve("unverified-rejection"); //$NON-NLS-1$
+		CandidateStore store = new CandidateStore(candidateDir);
+		MiningCandidate rejected = candidate("invalid", "2026-01-01T00:00:00Z"); //$NON-NLS-1$ //$NON-NLS-2$
+		if (failedVerification) {
+			rejected.setVerification(CandidateVerification.failure(
+					CandidateVerification.Stage.AFTER_REWRITE, "Invalid example", CandidateVerifier.VERSION, 1, 1)); //$NON-NLS-1$
+		}
+		rejected.transitionTo(CandidateStatus.REJECTED, "policy", "Incomplete proposal"); //$NON-NLS-1$ //$NON-NLS-2$
+		store.save(rejected);
+		MiningCandidate valid = candidate("valid", "2026-02-01T00:00:00Z"); //$NON-NLS-1$ //$NON-NLS-2$
+		store.save(valid);
+
+		verifyCandidates(candidateDir);
+
+		assertEquals(CandidateStatus.READY_FOR_REVIEW,
+				store.findById(valid.getCandidateId()).orElseThrow().getStatus());
+	}
+
+	@Test
+	void sourceVersionRevisionInvalidatesRejectionBeforeDuplicateSelection() throws IOException {
+		Path candidateDir = tempDir.resolve("source-version-revision"); //$NON-NLS-1$
+		CandidateStore store = new CandidateStore(candidateDir);
+		MiningCandidate rejected = readyCandidate("reviewed", "2026-02-01T00:00:00Z"); //$NON-NLS-1$ //$NON-NLS-2$
+		// Blank legacy data uses the implicit source 21 until the CLI supplies 17.
+		rejected.setSourceVersion(""); //$NON-NLS-1$
+		rejected.transitionTo(CandidateStatus.REJECTED, "reviewer", "Review of the source-21 revision"); //$NON-NLS-1$ //$NON-NLS-2$
+		store.save(rejected);
+		assertFalse(store.findById(rejected.getCandidateId()).orElseThrow().hasDeclaredSourceVersion());
+		MiningCandidate valid = candidate("source-17", "2026-01-01T00:00:00Z"); //$NON-NLS-1$ //$NON-NLS-2$
+		valid.setSourceVersion("17"); //$NON-NLS-1$
+		store.save(valid);
+
+		assertEquals(0, CandidateVerificationCli.run(new String[] {
+				"--candidate-dir", candidateDir.toString(), //$NON-NLS-1$
+				"--report-dir", tempDir.resolve("report").toString(), //$NON-NLS-1$ //$NON-NLS-2$
+				"--source-version", "17" //$NON-NLS-1$ //$NON-NLS-2$
+		}));
+
+		MiningCandidate revised = store.findById(rejected.getCandidateId()).orElseThrow();
+		assertEquals(2, revised.getRevision());
+		assertEquals("17", revised.getSourceVersion()); //$NON-NLS-1$
+		assertNull(revised.getRejectionReason());
+		assertEquals(CandidateStatus.READY_FOR_REVIEW,
+				store.findById(valid.getCandidateId()).orElseThrow().getStatus());
+	}
+
+	@Test
+	void malformedRejectedRuleDoesNotAbortVerification() throws IOException {
+		Path candidateDir = tempDir.resolve("malformed-rejection"); //$NON-NLS-1$
+		CandidateStore store = new CandidateStore(candidateDir);
+		MiningCandidate rejected = readyCandidate("legacy", "2026-01-01T00:00:00Z"); //$NON-NLS-1$ //$NON-NLS-2$
+		rejected.transitionTo(CandidateStatus.REJECTED, "reviewer", "Unusable legacy proposal"); //$NON-NLS-1$ //$NON-NLS-2$
+		rejected.setDslRule(""); //$NON-NLS-1$
+		store.save(rejected);
+		MiningCandidate valid = candidate("valid", "2026-02-01T00:00:00Z"); //$NON-NLS-1$ //$NON-NLS-2$
+		store.save(valid);
+
+		verifyCandidates(candidateDir);
+
+		assertEquals(CandidateStatus.READY_FOR_REVIEW,
+				store.findById(valid.getCandidateId()).orElseThrow().getStatus());
+		assertEquals(CandidateStatus.REJECTED,
+				store.findById(rejected.getCandidateId()).orElseThrow().getStatus());
+	}
+
+	@ParameterizedTest
+	@EnumSource(value = CandidateStatus.class, names = { "APPROVED", "PROMOTED" })
+	void rejectionDoesNotOverrideExistingApproval(CandidateStatus approvedStatus) throws IOException {
+		Path candidateDir = tempDir.resolve("existing-approval"); //$NON-NLS-1$
+		CandidateStore store = new CandidateStore(candidateDir);
+		MiningCandidate rejected = readyCandidate("rejected", "2026-01-01T00:00:00Z"); //$NON-NLS-1$ //$NON-NLS-2$
+		rejected.transitionTo(CandidateStatus.REJECTED, "reviewer", "Rejected source proposal"); //$NON-NLS-1$ //$NON-NLS-2$
+		store.save(rejected);
+		MiningCandidate approved = readyCandidate("approved", "2026-02-01T00:00:00Z"); //$NON-NLS-1$ //$NON-NLS-2$
+		approved.transitionTo(CandidateStatus.APPROVED, "reviewer", "Separate approval"); //$NON-NLS-1$ //$NON-NLS-2$
+		if (approvedStatus == CandidateStatus.PROMOTED) {
+			approved.transitionTo(CandidateStatus.PROMOTED, "reviewer", "Merged"); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+		store.save(approved);
+
+		verifyCandidates(candidateDir);
+
+		MiningCandidate retained = store.findById(approved.getCandidateId()).orElseThrow();
+		assertEquals(approvedStatus, retained.getStatus());
+		assertEquals(approved.getTransitions(), retained.getTransitions());
+		assertEquals(approved.getVerification(), retained.getVerification());
+	}
+
+	private void verifyCandidates(Path candidateDir) throws IOException {
+		assertEquals(0, CandidateVerificationCli.run(new String[] {
+				"--candidate-dir", candidateDir.toString(), //$NON-NLS-1$
+				"--report-dir", tempDir.resolve("report").toString() //$NON-NLS-1$ //$NON-NLS-2$
+		}));
+	}
+
+	private static MiningCandidate readyCandidate(String commit, String discoveredAt) {
+		MiningCandidate candidate = candidate(commit, discoveredAt);
+		candidate.setSourceVersion("21"); //$NON-NLS-1$
+		CandidateVerification verification = new CandidateVerifier().verify(candidate);
+		assertTrue(verification.successful(), verification.message());
+		candidate.setVerification(verification);
+		candidate.transitionTo(CandidateStatus.DSL_VALID, "test", "verified"); //$NON-NLS-1$ //$NON-NLS-2$
+		candidate.transitionTo(CandidateStatus.BEHAVIOR_VALID, "test", "verified"); //$NON-NLS-1$ //$NON-NLS-2$
+		candidate.transitionTo(CandidateStatus.READY_FOR_REVIEW, "test", "verified"); //$NON-NLS-1$ //$NON-NLS-2$
+		return candidate;
 	}
 
 	@Test

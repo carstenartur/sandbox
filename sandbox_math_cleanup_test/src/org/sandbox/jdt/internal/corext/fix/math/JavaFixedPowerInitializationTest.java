@@ -41,11 +41,11 @@ class JavaFixedPowerInitializationTest {
         assertTrue(analysis.evidence().stream().noneMatch(region->region.fixedPower()!=null));
     }
     @Test void independentlyRejectsReboundGuardFieldsWithAnUpdatedEnvelopeHash()throws Exception {
-        String source=shadowedSource(false).replace("Other Calculation=null;","Other harmless=null;");
+        String source=shadowedSource(false).replace("Other Calculation=null;","Other harmless=null;System.identityHashCode(harmless);");
         var fixture=new JavaImmutableValueTest();fixture.directory=directory;var options=JavaValueAlgebraProofTest.options();
         var analysis=MathematicalAnalysis.analyze(fixture.parse(source),source,options,null,-1,0,fixture.environment());
         var region=analysis.evidence().stream().filter(value->value.fixedPower()!=null).findFirst().orElseThrow();var evidence=region.fixedPower();
-        String generated=fixture.apply(source,analysis),changed=generated.replace("Other harmless=null;","Other Calculation=null;");
+        String generated=fixture.apply(source,analysis),changed=generated.replace("Other harmless=null;System.identityHashCode(harmless);","Other Calculation=null;System.identityHashCode(Calculation);");
         assertEquals(List.of("null","returned:null","returned:null"),execute(generated));
         assertEquals(List.of("null","returned:foreign","returned:foreign"),execute(changed));
         var after=fixture.parse(changed);var owner=after.findDeclaringNode(evidence.ownerBinding());

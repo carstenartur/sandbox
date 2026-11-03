@@ -106,7 +106,7 @@ final class JavaFixedPowerOptimizer {
                     edits.sort(Comparator.comparingInt(Edit::offset).reversed());for(var edit:edits)replaced.replace(edit.offset(),edit.offset()+edit.length(),edit.replacement());
                     replaced.insert(replaced.length()-1,helpers);String replacement=replaced.toString(),generated=source.substring(0,start)+replacement+source.substring(start+length);
                     work.charge(generated.length());if(generated.length()>1_000_000)throw JavaValueSourceSummary.unavailable("VALUE_POWER_GENERATED_SOURCE_BOUND"); //$NON-NLS-1$
-                    var parsed=MathematicalAnalysis.checkGeneratedSource(ast,generated,compiler,options.targetJava(),monitor,environment);
+                    var parsed=MathematicalAnalysis.checkGeneratedSource(ast,source,generated,compiler,options.targetJava(),monitor,environment,start,length,replacement.length());
                     var schedule=new FixedPowerEvidence(owner.resolveBinding().getKey(),JavaComputationTask.hash(replacement),chains,JavaSourceContext.receipts(ast),before,after,localTypes(localSources.declarations(),source,owner,work));
                     var plan=new JavaSourceRewritePlan("Source.java",JavaComputationTask.hash(source),source.length(),start,length,List.of(),List.of(),Map.of(), //$NON-NLS-1$
                         List.of(new JavaSourceRewritePlan.Change(start,length,JavaComputationTask.hash(original),replacement)));

@@ -1,0 +1,124 @@
+# Mining candidate review — 2026-11-02
+
+Review baseline: Sandbox `7458aa94907e7bbff5259fdeaf864fbb57a223c7` and
+Eclipse JDT UI `master` at [`581053e8712f71993e2088cdacfff75f5c173879`](https://github.com/eclipse-jdt/eclipse.jdt.ui/commit/581053e8712f71993e2088cdacfff75f5c173879).
+These are promotion decisions; the candidate data branch and review workflow
+remain authoritative for lifecycle actions and issue state.
+
+## Decisions
+
+| Candidate | Submitted transformation | Decision and reason |
+|---|---|---|
+| [#1625](https://github.com/carstenartur/sandbox/issues/1625) | `x.toLowerCase().equals(y)` → `x.equalsIgnoreCase(y)` | **Reject:** different case, locale, Unicode, argument-type and null-receiver evaluation contracts. |
+| [#1644](https://github.com/carstenartur/sandbox/issues/1644) | Remove null check before `instanceof` | **Reject:** existing JDT cleanup and guarded Sandbox rule; the unguarded proposal can remove an observable evaluation. |
+| [#1645](https://github.com/carstenartur/sandbox/issues/1645) | Add `"Unnamed runtime exception"` | **Reject:** invents an observable exception message and changes application behavior. |
+| [#1648](https://github.com/carstenartur/sandbox/issues/1648) | `Math.round(intExpression)` → `intExpression` | **Reject:** implicit conversion to `float` can lose precision; a type guard cannot establish identity. |
+| [#1780](https://github.com/carstenartur/sandbox/issues/1780) | `Integer.valueOf(s, radix).intValue()` → `Integer.parseInt(s, radix)` | **Reject:** exact case already implemented and tested by JDT primitive parsing. |
+| [#1781](https://github.com/carstenartur/sandbox/issues/1781) | `Integer.valueOf(i).toString()` → `Integer.toString(i)` | **Reject:** already implemented by JDT primitive serialization; the proposal also lacks its overload/type safeguards. |
+
+## Executable semantic counterexamples
+
+Save this as `CandidateCounterexamples.java` and run `java CandidateCounterexamples.java`.
+The observed output below was reproduced with Java 25.0.5+8.
+
+```java
+import java.util.Locale;
+
+public class CandidateCounterexamples {
+    public static void main(String[] args) {
+        Locale previous = Locale.getDefault();
+        try {
+            Locale.setDefault(Locale.ROOT);
+            String x = "abc", y = "ABC";
+            System.out.println(x.toLowerCase().equals(y) + " / " + x.equalsIgnoreCase(y));
+            x = "\u0130"; y = "i\u0307";
+            System.out.println(x.toLowerCase().equals(y) + " / " + x.equalsIgnoreCase(y));
+            Locale.setDefault(Locale.forLanguageTag("tr"));
+            x = "I"; y = "i";
+            System.out.println(x.toLowerCase().equals(y) + " / " + x.equalsIgnoreCase(y));
+        } finally {
+            Locale.setDefault(previous);
+        }
+        RuntimeException before = new RuntimeException();
+        RuntimeException after = new RuntimeException("Unnamed runtime exception");
+        System.out.println(before.getMessage() + " / " + after.getMessage());
+        System.out.println((before.getMessage() == null) + " / " + (after.getMessage() == null));
+        int n = 16_777_217;
+        System.out.println(Math.round(n) + " / " + n);
+        int lines = 167_772_170;
+        System.out.println(Math.max(Math.round(lines / 10), 10) + " / " + Math.max(lines / 10, 10));
+        boolean first = true;
+        System.out.println(selected(first ? Math.round(1) : (byte) 2) + " / "
+                + selected(first ? 1 : (byte) 2));
+        System.out.println((("v=" + Math.round(1)) == "v=1") + " / " + (("v=" + 1) == "v=1"));
+    }
+    static String selected(int n) { return "int"; }
+    static String selected(byte n) { return "byte"; }
+}
+```
+
+```text
+false / true
+true / false
+false / true
+null / Unnamed runtime exception
+true / false
+16777216 / 16777217
+16777216 / 16777217
+int / byte
+false / true
+```
+
+For #1625, `equals(Object)` also accepts an `Object` argument that cannot compile
+as an `equalsIgnoreCase(String)` argument. When `x` is null, the original fails
+before evaluating `y`; the replacement evaluates `y` before failing. String-only
+bindings and a lowercase-argument check do not solve the locale/Unicode cases.
+The [String API](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html#toLowerCase())
+documents default-locale lowercasing and locale-independent case comparison.
+
+For #1645, the changed detail message also changes `getLocalizedMessage()`,
+`toString()` and the first line of `printStackTrace()`; see the
+[constructor contract](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/RuntimeException.html).
+A contextual message requires an application-author decision.
+
+For #1648, `javap -c` confirms `i2f` followed by `Math.round:(F)I`.
+The [JLS widening-conversion rules](https://docs.oracle.com/javase/specs/jls/se25/html/jls-5.html#jls-5.1.2)
+permit this precision loss. The last two output lines show why even an exactly
+representable constant is insufficient: replacement can change conditional
+typing and make string concatenation a constant expression. Even a bounded,
+nonconstant operand has context requirements: `Math.round(n / 128);` is a valid
+statement and `() -> Math.round(n / 128)` can implement `Runnable`; replacing the
+call with `n / 128` makes both forms fail compilation.
+
+## Existing implementations and coverage
+
+All upstream links below use the pinned JDT revision above. Tests are in
+[`org.eclipse.jdt.ui.tests/ui/org/eclipse/jdt/ui/tests/quickfix/CleanUpTest.java`](https://github.com/eclipse-jdt/eclipse.jdt.ui/blob/581053e8712f71993e2088cdacfff75f5c173879/org.eclipse.jdt.ui.tests/ui/org/eclipse/jdt/ui/tests/quickfix/CleanUpTest.java).
+
+| Candidate | Upstream source and option | Positive / negative tests |
+|---|---|---|
+| #1644 | [`org.eclipse.jdt.core.manipulation/common/org/eclipse/jdt/internal/ui/fix/EvaluateNullableCleanUpCore.java`](https://github.com/eclipse-jdt/eclipse.jdt.ui/blob/581053e8712f71993e2088cdacfff75f5c173879/org.eclipse.jdt.core.manipulation/common/org/eclipse/jdt/internal/ui/fix/EvaluateNullableCleanUpCore.java); `EVALUATE_NULLABLE` | `testEvaluateNullable` / `testDoNotEvaluateNullable` |
+| #1780 | [`org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/fix/PrimitiveParsingCleanUp.java`](https://github.com/eclipse-jdt/eclipse.jdt.ui/blob/581053e8712f71993e2088cdacfff75f5c173879/org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/fix/PrimitiveParsingCleanUp.java); `PRIMITIVE_PARSING` | `testPrimitiveParsing` / `testDoNotUsePrimitiveParsing` |
+| #1781 | [`org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/fix/PrimitiveSerializationCleanUp.java`](https://github.com/eclipse-jdt/eclipse.jdt.ui/blob/581053e8712f71993e2088cdacfff75f5c173879/org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/fix/PrimitiveSerializationCleanUp.java); `PRIMITIVE_SERIALIZATION` | `testPrimitiveSerialization` / `testDoNotUsePrimitiveSerialization` |
+
+JDT's null cleanup checks expression passivity; removing one occurrence of
+`list.remove(0)` is observable. Sandbox already supplies
+[`null.safety.remove-redundant-null-check.instanceof`](../sandbox_common_core/src/main/resources/org/sandbox/jdt/triggerpattern/internal/null-safety.sandbox-hint)
+with `isStableValue($x)`. JDT's numeric cleanups resolve method signatures.
+For #1781, `Integer.valueOf("42").toString()` compiles, whereas the proposed
+`Integer.toString("42")` does not; the upstream negative test preserves this case.
+
+## Ownership and follow-up boundary
+
+JDT owns the existing primitive parsing, primitive serialization and null-check
+cleanups. Preserve Sandbox's existing guarded null-safety rule instead of adding
+an unguarded copy. Any worthwhile future `Math.round` optimization belongs in
+[`sandbox_math_cleanup`](../sandbox_math_cleanup/README.md), with Java binding,
+range, evaluation and expression-context contracts; its arithmetic proof belongs
+at the existing Regelsuche boundary. A contrived constant-only rule supplies no
+demonstrated material addition here.
+
+Rejection persistence and rediscovery suppression belong to
+[`sandbox_mining_core`](../sandbox_mining_core/README.md#review-evidence-and-rejection-memory).
+The supplied examples establish matching and replacement behavior, not semantic
+equivalence for every input. No new productive cleanup follows from this review.
