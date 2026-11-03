@@ -22,6 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -143,7 +145,7 @@ class MiningCliTest {
 		Path repoDir = tempDir.resolve("repo-" + System.nanoTime());
 		Files.createDirectories(repoDir);
 		exec(repoDir, "git", "init", ".");
-		Files.writeString(repoDir.resolve("file.txt"), "content");
+		Files.writeString(repoDir.resolve("file.txt"), "content", StandardCharsets.UTF_8);
 		exec(repoDir, "git", "add", ".");
 		exec(repoDir, "git", "-c", "user.name=Test", "-c", "user.email=test@test.com",
 				"commit", "-m", message);
@@ -206,7 +208,7 @@ class MiningCliTest {
 	@Test
 	void testReadCommitList() throws IOException {
 		Path file = tempDir.resolve("commits.txt");
-		Files.writeString(file, "# comment\nabc123\n\ndef456\n  ghi789  \n");
+		Files.writeString(file, "# comment\nabc123\n\ndef456\n  ghi789  \n", StandardCharsets.UTF_8);
 		List<String> hashes = MiningCli.readCommitList(file);
 		assertEquals(3, hashes.size());
 		assertEquals("abc123", hashes.get(0));
@@ -217,7 +219,7 @@ class MiningCliTest {
 	@Test
 	void testReadCommitListEmpty() throws IOException {
 		Path file = tempDir.resolve("empty-commits.txt");
-		Files.writeString(file, "# only comments\n\n# another comment\n");
+		Files.writeString(file, "# only comments\n\n# another comment\n", StandardCharsets.UTF_8);
 		List<String> hashes = MiningCli.readCommitList(file);
 		assertTrue(hashes.isEmpty());
 	}
@@ -241,7 +243,7 @@ class MiningCliTest {
 		} finally {
 			System.setErr(oldErr);
 		}
-		String errOutput = errStream.toString();
+		String errOutput = errStream.toString(Charset.defaultCharset());
 		assertFalse(errOutput.contains("Unknown option"), //$NON-NLS-1$
 				"No flags should be reported as unknown, but got: " + errOutput); //$NON-NLS-1$
 	}
@@ -250,7 +252,7 @@ class MiningCliTest {
 	void testCommitListFlagParsing() throws IOException {
 		// Create a valid commit list file
 		Path commitList = tempDir.resolve("commit-list.txt");
-		Files.writeString(commitList, "abc123\ndef456\n");
+		Files.writeString(commitList, "abc123\ndef456\n", StandardCharsets.UTF_8);
 
 		MiningCli cli = new MiningCli();
 		ByteArrayOutputStream errStream = new ByteArrayOutputStream();
@@ -263,7 +265,7 @@ class MiningCliTest {
 		} finally {
 			System.setErr(oldErr);
 		}
-		String errOutput = errStream.toString();
+		String errOutput = errStream.toString(Charset.defaultCharset());
 		assertFalse(errOutput.contains("Unknown option"), //$NON-NLS-1$
 				"--commit-list should be recognized, but got: " + errOutput); //$NON-NLS-1$
 	}
@@ -272,7 +274,7 @@ class MiningCliTest {
 	void testKeywordFilterFlagParsing() throws IOException {
 		// Create a valid keyword file
 		Path keywordFile = tempDir.resolve("keywords.txt");
-		Files.writeString(keywordFile, "refactor\ncleanup\n");
+		Files.writeString(keywordFile, "refactor\ncleanup\n", StandardCharsets.UTF_8);
 
 		MiningCli cli = new MiningCli();
 		ByteArrayOutputStream errStream = new ByteArrayOutputStream();
@@ -285,7 +287,7 @@ class MiningCliTest {
 		} finally {
 			System.setErr(oldErr);
 		}
-		String errOutput = errStream.toString();
+		String errOutput = errStream.toString(Charset.defaultCharset());
 		assertFalse(errOutput.contains("Unknown option"), //$NON-NLS-1$
 				"--keyword-filter should be recognized, but got: " + errOutput); //$NON-NLS-1$
 	}
@@ -293,9 +295,9 @@ class MiningCliTest {
 	@Test
 	void testCommitListAndKeywordFilterCombined() throws IOException {
 		Path commitList = tempDir.resolve("commit-list.txt");
-		Files.writeString(commitList, "abc123\n");
+		Files.writeString(commitList, "abc123\n", StandardCharsets.UTF_8);
 		Path keywordFile = tempDir.resolve("keywords.txt");
-		Files.writeString(keywordFile, "refactor\n");
+		Files.writeString(keywordFile, "refactor\n", StandardCharsets.UTF_8);
 
 		MiningCli cli = new MiningCli();
 		ByteArrayOutputStream errStream = new ByteArrayOutputStream();
@@ -311,7 +313,7 @@ class MiningCliTest {
 		} finally {
 			System.setErr(oldErr);
 		}
-		String errOutput = errStream.toString();
+		String errOutput = errStream.toString(Charset.defaultCharset());
 		assertFalse(errOutput.contains("Unknown option"), //$NON-NLS-1$
 				"Combined flags should be recognized, but got: " + errOutput); //$NON-NLS-1$
 	}
@@ -481,7 +483,7 @@ class MiningCliTest {
 		previous.setRejectionReason("Keep the review rationale");
 		store.save(previous);
 		Path file = store.getStoreDir().resolve(previous.toFileName());
-		String reviewed = Files.readString(file);
+		String reviewed = Files.readString(file, StandardCharsets.UTF_8);
 		var rediscovered = new CommitEvaluation("hash", "change", "repo", Instant.now(), null,
 				true, null, false, null, 8, 8, 1, TrafficLight.GREEN, "Collections", false, null,
 				true, rule, "collections.sandbox-hint", null, null, "new summary", "VALID",
@@ -489,7 +491,7 @@ class MiningCliTest {
 				.withSourceEvidence(sourceEvidence("java.util.Collections.emptyList()", "java.util.List.of()"));
 		assertTrue(MiningCli.saveCandidates(List.of(rediscovered), store,
 				new org.sandbox.jdt.triggerpattern.internal.DslValidator(), System.out).isEmpty());
-		assertEquals(reviewed, Files.readString(file));
+		assertEquals(reviewed, Files.readString(file, StandardCharsets.UTF_8));
 	}
 
 	private static SourceEvidence sourceEvidence(String before, String after) {
