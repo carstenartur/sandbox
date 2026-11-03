@@ -27,6 +27,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.net.ssl.SSLException;
 
@@ -51,7 +52,7 @@ public class GeminiClient implements LlmClient {
 	private static final String API_URL_TEMPLATE =
 			"https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s";
 	private static final int RATE_LIMIT_DELAY_MS = 15000;
-	/** Maximum number of API requests allowed per day (leaves buffer from 20 RPD limit). */
+	/** Maximum HTTP attempts per client instance, including failed attempts and retries. */
 	public static final int MAX_DAILY_REQUESTS = 18;
 	private static final int MAX_RETRIES = 5;
 	private static final int INITIAL_BACKOFF_MS = 5000;
@@ -66,10 +67,10 @@ public class GeminiClient implements LlmClient {
 	private final RetryWait retryWait;
 	private final Gson gson;
 	private long lastRequestTime;
-	private int dailyRequestCount;
+	private final AtomicInteger dailyRequestCount = new AtomicInteger();
 	private Instant lastSuccessfulCall;
 	private Duration maxFailureDuration;
-	private int rateLimitDelayMs = RATE_LIMIT_DELAY_MS;
+	private final AtomicInteger rateLimitDelayMs = new AtomicInteger(RATE_LIMIT_DELAY_MS);
 	private int consecutive429Batches;
 	private boolean lastResponseTruncated;
 
@@ -150,25 +151,26 @@ public class GeminiClient implements LlmClient {
 	}
 
 	/**
-	 * Returns the number of API requests used in this session.
+	 * Returns the number of HTTP attempts reserved by this client instance.
+	 * The legacy method name does not imply a project-wide daily quota.
 	 *
-	 * @return the daily request count
+	 * @return the number of attempted requests, including failures and retries
 	 */
 	@Override
 
 	public int getDailyRequestCount() {
-		return dailyRequestCount;
+		return dailyRequestCount.get();
 	}
 
 	/**
-	 * Returns true if the daily API quota has not yet been exhausted.
+	 * Returns true if this client instance can attempt another HTTP request.
 	 *
-	 * @return true if more requests can be made today
+	 * @return true if the client lifetime request budget has not been exhausted
 	 */
 	@Override
 
 	public boolean hasRemainingQuota() {
-		return dailyRequestCount < MAX_DAILY_REQUESTS;
+		return getDailyRequestCount() < MAX_DAILY_REQUESTS;
 	}
 
 	/**
@@ -244,7 +246,6 @@ public class GeminiClient implements LlmClient {
 			return null;
 		}
 
-		dailyRequestCount++;
 		return parseResponse(responseBody, commitHash, commitMessage, repoUrl);
 	}
 
@@ -277,7 +278,6 @@ public class GeminiClient implements LlmClient {
 			return results;
 		}
 
-		dailyRequestCount++;
 		return parseBatchResponse(responseBody, commitHashes, commitMessages, repoUrl);
 	}
 
@@ -387,6 +387,14 @@ public class GeminiClient implements LlmClient {
 		return gson.toJson(request);
 	}
 
+	private void reserveRequest() throws IOException {
+		int previousCount = dailyRequestCount.getAndUpdate(count -> Math.min(count + 1, MAX_DAILY_REQUESTS));
+		if (previousCount >= MAX_DAILY_REQUESTS) {
+			throw new IOException("Gemini client request budget exhausted after " //$NON-NLS-1$
+					+ previousCount + " HTTP attempts"); //$NON-NLS-1$
+		}
+	}
+
 	private String sendWithRetry(String requestBody) throws IOException {
 		int backoffMs = INITIAL_BACKOFF_MS;
 		boolean allAttempts429 = true;
@@ -400,6 +408,7 @@ public class GeminiClient implements LlmClient {
 						.POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
 						.build();
 
+				reserveRequest();
 				HttpResponse<String> response;
 				try {
 					response = httpClient.send(request,
@@ -423,9 +432,7 @@ public class GeminiClient implements LlmClient {
 					lastSuccessfulCall = Instant.now();
 					consecutive429Batches = 0;
 					// Gradually reduce delay after success
-					if (rateLimitDelayMs > RATE_LIMIT_DELAY_MS) {
-						rateLimitDelayMs = Math.max(RATE_LIMIT_DELAY_MS, rateLimitDelayMs / 2);
-					}
+					rateLimitDelayMs.updateAndGet(delay -> Math.max(RATE_LIMIT_DELAY_MS, delay / 2));
 					return response.body();
 				}
 
@@ -481,7 +488,7 @@ public class GeminiClient implements LlmClient {
 				lastSuccessfulCall = Instant.now().minus(maxFailureDuration.plusSeconds(1));
 			}
 			// Increase rate limit delay after 429 cascade
-			rateLimitDelayMs = Math.min(rateLimitDelayMs * 2, 120000);
+			rateLimitDelayMs.updateAndGet(delay -> Math.min(delay * 2, 120000));
 		}
 
 		System.err.println("Max retries exceeded for Gemini API call, entering post-failure cooldown of "
@@ -673,6 +680,19 @@ public class GeminiClient implements LlmClient {
 	 */
 	private static CommitEvaluation createEvaluation(JsonObject eval, String commitHash,
 			String commitMessage, String repoUrl) {
+		CommitEvaluation declined = DiscoveryAdmission.explicitDecline(eval, commitHash, commitMessage, repoUrl);
+		if (declined != null) {
+			return declined;
+		}
+		try {
+			return parseCandidateFields(eval, commitHash, commitMessage, repoUrl);
+		} catch (RuntimeException e) {
+			return DiscoveryAdmission.malformedFields(eval, commitHash, commitMessage, repoUrl, e);
+		}
+	}
+
+	private static CommitEvaluation parseCandidateFields(JsonObject eval, String commitHash,
+			String commitMessage, String repoUrl) {
 		boolean relevant = getBooleanOrDefault(eval, "relevant", false); //$NON-NLS-1$
 		String category = getStringOrNull(eval, "category"); //$NON-NLS-1$
 		// Default category for relevant commits without one
@@ -683,7 +703,7 @@ public class GeminiClient implements LlmClient {
 		}
 		String dslRule = sanitizeDslRule(getStringOrNull(eval, "dslRule")); //$NON-NLS-1$
 		String dslRuleAfterChange = sanitizeDslRule(getStringOrNull(eval, "dslRuleAfterChange")); //$NON-NLS-1$
-		return new CommitEvaluation(
+		return DiscoveryAdmission.apply(eval, new CommitEvaluation(
 				commitHash,
 				commitMessage,
 				repoUrl,
@@ -709,7 +729,8 @@ public class GeminiClient implements LlmClient {
 				null,
 				getStringOrNull(eval, "beforeExample"), //$NON-NLS-1$
 				getStringOrNull(eval, "afterExample"), //$NON-NLS-1$
-				getStringOrNull(eval, "negativeExample")); //$NON-NLS-1$
+				getStringOrNull(eval, "negativeExample"), //$NON-NLS-1$
+				DiscoveryAdmission.sourceVersion(eval), DiscoveryAdmission.sourceEvidence(eval)));
 	}
 
 	/**
@@ -750,9 +771,10 @@ public class GeminiClient implements LlmClient {
 	private void rateLimit() {
 		long now = System.currentTimeMillis();
 		long elapsed = now - lastRequestTime;
-		if (elapsed < rateLimitDelayMs && lastRequestTime > 0) {
+		int delayMs = rateLimitDelayMs.get();
+		if (elapsed < delayMs && lastRequestTime > 0) {
 			try {
-				Thread.sleep(rateLimitDelayMs - elapsed);
+				retryWait.pause(delayMs - elapsed);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 			}

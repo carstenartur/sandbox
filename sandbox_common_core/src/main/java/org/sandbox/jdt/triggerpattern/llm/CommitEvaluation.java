@@ -45,6 +45,7 @@ import java.time.Instant;
  * @param afterExample          expected Java code after the rule is applied
  * @param negativeExample       Java code example that should not match the rule
  * @param sourceVersion         Java source level for parsing and guard evaluation
+ * @param sourceEvidence        original changed spans, absent in legacy evaluations
  */
 public record CommitEvaluation(
 		String commitHash,
@@ -73,7 +74,41 @@ public record CommitEvaluation(
 		String beforeExample,
 		String afterExample,
 		String negativeExample,
-		String sourceVersion) {
+		String sourceVersion,
+		SourceEvidence sourceEvidence) {
+
+	/** Compatibility constructor for callers with a source version but no evidence. */
+	public CommitEvaluation(String commitHash, String commitMessage, String repoUrl,
+			Instant evaluatedAt, Instant commitDate, boolean relevant, String irrelevantReason,
+			boolean isDuplicate, String duplicateOf, int reusability, int codeImprovement,
+			int implementationEffort, TrafficLight trafficLight, String category, boolean isNewCategory,
+			String categoryReason, boolean canImplementInCurrentDsl, String dslRule, String targetHintFile,
+			String languageChangeNeeded, String dslRuleAfterChange, String summary, String dslValidationResult,
+			String beforeExample, String afterExample, String negativeExample, String sourceVersion) {
+		this(commitHash, commitMessage, repoUrl, evaluatedAt, commitDate, relevant, irrelevantReason,
+				isDuplicate, duplicateOf, reusability, codeImprovement, implementationEffort, trafficLight,
+				category, isNewCategory, categoryReason, canImplementInCurrentDsl, dslRule, targetHintFile,
+				languageChangeNeeded, dslRuleAfterChange, summary, dslValidationResult, beforeExample,
+				afterExample, negativeExample, sourceVersion, null);
+	}
+
+	/** Adds the locally checked evidence without changing the model decision. */
+	public CommitEvaluation withSourceEvidence(SourceEvidence evidence) {
+		return new CommitEvaluation(commitHash, commitMessage, repoUrl, evaluatedAt, commitDate,
+				relevant, irrelevantReason, isDuplicate, duplicateOf, reusability, codeImprovement,
+				implementationEffort, trafficLight, category, isNewCategory, categoryReason,
+				canImplementInCurrentDsl, dslRule, targetHintFile, languageChangeNeeded, dslRuleAfterChange,
+				summary, dslValidationResult, beforeExample, afterExample, negativeExample, sourceVersion, evidence);
+	}
+
+	/** Records a completed non-candidate rather than an unanswered commit to retry. */
+	public CommitEvaluation withoutCandidate(String reason) {
+		return new CommitEvaluation(commitHash, commitMessage, repoUrl, evaluatedAt, commitDate,
+				false, reason, isDuplicate, duplicateOf, reusability, codeImprovement,
+				implementationEffort, TrafficLight.NOT_APPLICABLE, category, isNewCategory, categoryReason,
+				false, null, targetHintFile, languageChangeNeeded, dslRuleAfterChange, summary, dslValidationResult,
+				beforeExample, afterExample, negativeExample, sourceVersion, sourceEvidence);
+	}
 
 	/**
 	 * Compatibility constructor for existing callers and persisted test fixtures.

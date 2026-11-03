@@ -82,7 +82,7 @@ public final class CandidateVerificationCli {
 
 		CandidateStore store = new CandidateStore(candidateDir);
 		List<MiningCandidate> candidates = new ArrayList<>(store.loadAll());
-		migrateLegacyCandidates(candidates);
+		migrateLegacyCandidates(candidates, store);
 		for (MiningCandidate candidate : candidates) {
 			if (!candidate.hasDeclaredSourceVersion()) {
 				candidate.setSourceVersion(defaultSourceVersion);
@@ -221,7 +221,8 @@ public final class CandidateVerificationCli {
 	 * This prevents multiple proposals from one commit from collapsing onto the
 	 * same schema-v2 filename during migration.
 	 */
-	private static void migrateLegacyCandidates(List<MiningCandidate> candidates) {
+	private static void migrateLegacyCandidates(List<MiningCandidate> candidates,
+			CandidateStore store) throws IOException {
 		Map<String, Integer> nextOrdinalByOrigin = new HashMap<>();
 		for (MiningCandidate candidate : candidates) {
 			if (candidate.getSchemaVersion() >= 2) {
@@ -240,6 +241,9 @@ public final class CandidateVerificationCli {
 			candidate.setCandidateOrdinal(ordinal);
 			candidate.setRevision(candidate.getRevision());
 			candidate.setSchemaVersion(2);
+			// Preserve the old source version under the canonical ID so a later
+			// fallback change can invalidate its verification and review revision.
+			store.save(candidate);
 		}
 	}
 

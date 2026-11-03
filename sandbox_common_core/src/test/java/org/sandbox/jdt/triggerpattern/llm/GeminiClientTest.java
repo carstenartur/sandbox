@@ -52,7 +52,7 @@ class GeminiClientTest {
 				  "candidates": [{
 				    "content": {
 				      "parts": [{
-				        "text": "```json\\n{\\n  \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"category\\": \\"Collections\\",\\n  \\"summary\\": \\"Replace ArrayList with List.of\\",\\n  \\"reusability\\": 4,\\n  \\"codeImprovement\\": 3,\\n  \\"implementationEffort\\": 2,\\n  \\"canImplementInCurrentDsl\\": true,\\n  \\"dslRule\\": \\"new java.util.ArrayList<>() => java.util.List.of()\\",\\n  \\"targetHintFile\\": \\"use-list-of.sandbox-hint\\"\\n}\\n```"
+				        "text": "```json\\n{\\n  \\"noCleanup\\": false, \\"confidence\\": 0.9, \\"sourceEvidence\\": {\\"path\\": \\"T.java\\", \\"before\\": \\"old()\\", \\"after\\": \\"newCall()\\"}, \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"category\\": \\"Collections\\",\\n  \\"summary\\": \\"Replace ArrayList with List.of\\",\\n  \\"reusability\\": 4,\\n  \\"codeImprovement\\": 3,\\n  \\"implementationEffort\\": 2,\\n  \\"canImplementInCurrentDsl\\": true,\\n  \\"dslRule\\": \\"new java.util.ArrayList<>() => java.util.List.of()\\",\\n  \\"targetHintFile\\": \\"use-list-of.sandbox-hint\\"\\n}\\n```"
 				      }]
 				    }
 				  }]
@@ -146,7 +146,7 @@ class GeminiClientTest {
 				  "candidates": [{
 				    "content": {
 				      "parts": [{
-				        "text": "```json\\n[{\\n  \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"category\\": \\"Collections\\",\\n  \\"summary\\": \\"First commit\\",\\n  \\"reusability\\": 4,\\n  \\"codeImprovement\\": 3,\\n  \\"implementationEffort\\": 2,\\n  \\"canImplementInCurrentDsl\\": true\\n},\\n{\\n  \\"relevant\\": false,\\n  \\"trafficLight\\": \\"NOT_APPLICABLE\\",\\n  \\"summary\\": \\"Second commit\\",\\n  \\"reusability\\": 1,\\n  \\"codeImprovement\\": 1,\\n  \\"implementationEffort\\": 1,\\n  \\"canImplementInCurrentDsl\\": false\\n}]\\n```"
+				        "text": "```json\\n[{\\n  \\"noCleanup\\": false, \\"confidence\\": 0.9, \\"sourceEvidence\\": {\\"path\\": \\"T.java\\", \\"before\\": \\"old()\\", \\"after\\": \\"newCall()\\"}, \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"category\\": \\"Collections\\",\\n  \\"summary\\": \\"First commit\\",\\n  \\"reusability\\": 4,\\n  \\"codeImprovement\\": 3,\\n  \\"implementationEffort\\": 2,\\n  \\"canImplementInCurrentDsl\\": true\\n},\\n{\\n  \\"relevant\\": false,\\n  \\"trafficLight\\": \\"NOT_APPLICABLE\\",\\n  \\"summary\\": \\"Second commit\\",\\n  \\"reusability\\": 1,\\n  \\"codeImprovement\\": 1,\\n  \\"implementationEffort\\": 1,\\n  \\"canImplementInCurrentDsl\\": false\\n}]\\n```"
 				      }]
 				    }
 				  }]
@@ -174,7 +174,7 @@ class GeminiClientTest {
 				  "candidates": [{
 				    "content": {
 				      "parts": [{
-				        "text": "```json\\n[{\\n  \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"summary\\": \\"Only one\\",\\n  \\"reusability\\": 5,\\n  \\"codeImprovement\\": 5,\\n  \\"implementationEffort\\": 5,\\n  \\"canImplementInCurrentDsl\\": true\\n}]\\n```"
+				        "text": "```json\\n[{\\n  \\"noCleanup\\": false, \\"confidence\\": 0.9, \\"sourceEvidence\\": {\\"path\\": \\"T.java\\", \\"before\\": \\"old()\\", \\"after\\": \\"newCall()\\"}, \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"summary\\": \\"Only one\\",\\n  \\"reusability\\": 5,\\n  \\"codeImprovement\\": 5,\\n  \\"implementationEffort\\": 5,\\n  \\"canImplementInCurrentDsl\\": true\\n}]\\n```"
 				      }]
 				    }
 				  }]
@@ -200,7 +200,7 @@ class GeminiClientTest {
 				  "candidates": [{
 				    "content": {
 				      "parts": [{
-				        "text": "```json\\n[{\\n  \\"relevant\\": true,\\n  \\"summary\\": \\"A\\",\\n  \\"reusability\\": 1,\\n  \\"codeImprovement\\": 1,\\n  \\"implementationEffort\\": 1,\\n  \\"canImplementInCurrentDsl\\": false,\\n  \\"trafficLight\\": \\"RED\\"\\n},{\\n  \\"relevant\\": false,\\n  \\"summary\\": \\"B\\",\\n  \\"reusability\\": 1,\\n  \\"codeImprovement\\": 1,\\n  \\"implementationEffort\\": 1,\\n  \\"canImplementInCurrentDsl\\": false,\\n  \\"trafficLight\\": \\"RED\\"\\n},{\\n  \\"relevant\\": false,\\n  \\"summary\\": \\"C\\",\\n  \\"reusability\\": 1,\\n  \\"codeImprovement\\": 1,\\n  \\"implementationEffort\\": 1,\\n  \\"canImplementInCurrentDsl\\": false,\\n  \\"trafficLight\\": \\"RED\\"\\n}]\\n```"
+				        "text": "```json\\n[{\\n  \\"noCleanup\\": false, \\"confidence\\": 0.9, \\"sourceEvidence\\": {\\"path\\": \\"T.java\\", \\"before\\": \\"old()\\", \\"after\\": \\"newCall()\\"}, \\"relevant\\": true,\\n  \\"summary\\": \\"A\\",\\n  \\"reusability\\": 1,\\n  \\"codeImprovement\\": 1,\\n  \\"implementationEffort\\": 1,\\n  \\"canImplementInCurrentDsl\\": false,\\n  \\"trafficLight\\": \\"RED\\"\\n},{\\n  \\"relevant\\": false,\\n  \\"summary\\": \\"B\\",\\n  \\"reusability\\": 1,\\n  \\"codeImprovement\\": 1,\\n  \\"implementationEffort\\": 1,\\n  \\"canImplementInCurrentDsl\\": false,\\n  \\"trafficLight\\": \\"RED\\"\\n},{\\n  \\"relevant\\": false,\\n  \\"summary\\": \\"C\\",\\n  \\"reusability\\": 1,\\n  \\"codeImprovement\\": 1,\\n  \\"implementationEffort\\": 1,\\n  \\"canImplementInCurrentDsl\\": false,\\n  \\"trafficLight\\": \\"RED\\"\\n}]\\n```"
 				      }]
 				    }
 				  }]
@@ -354,7 +354,7 @@ class GeminiClientTest {
 				    "finishReason": "MAX_TOKENS",
 				    "content": {
 				      "parts": [{
-				        "text": "```json\\n{\\n  \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"category\\": \\"Collections\\",\\n  \\"summary\\": \\"Replace ArrayList\\",\\n  \\"reusability\\": 4,\\n  \\"codeImprovement\\": 3,\\n  \\"implementationEffort\\": 2,\\n  \\"canImplementInCurrentDsl\\": true\\n}\\n```"
+				        "text": "```json\\n{\\n  \\"noCleanup\\": false, \\"confidence\\": 0.9, \\"sourceEvidence\\": {\\"path\\": \\"T.java\\", \\"before\\": \\"old()\\", \\"after\\": \\"newCall()\\"}, \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"category\\": \\"Collections\\",\\n  \\"summary\\": \\"Replace ArrayList\\",\\n  \\"reusability\\": 4,\\n  \\"codeImprovement\\": 3,\\n  \\"implementationEffort\\": 2,\\n  \\"canImplementInCurrentDsl\\": true\\n}\\n```"
 				      }]
 				    }
 				  }]
@@ -373,7 +373,7 @@ class GeminiClientTest {
 				    "finishReason": "SAFETY",
 				    "content": {
 				      "parts": [{
-				        "text": "```json\\n{\\n  \\"relevant\\": true\\n}\\n```"
+				        "text": "```json\\n{\\n  \\"noCleanup\\": false, \\"confidence\\": 0.9, \\"sourceEvidence\\": {\\"path\\": \\"T.java\\", \\"before\\": \\"old()\\", \\"after\\": \\"newCall()\\"}, \\"relevant\\": true\\n}\\n```"
 				      }]
 				    }
 				  }]
@@ -392,7 +392,7 @@ class GeminiClientTest {
 				    "finishReason": "STOP",
 				    "content": {
 				      "parts": [{
-				        "text": "```json\\n{\\n  \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"category\\": \\"Collections\\",\\n  \\"summary\\": \\"Replace ArrayList\\",\\n  \\"reusability\\": 4,\\n  \\"codeImprovement\\": 3,\\n  \\"implementationEffort\\": 2,\\n  \\"canImplementInCurrentDsl\\": true\\n}\\n```"
+				        "text": "```json\\n{\\n  \\"noCleanup\\": false, \\"confidence\\": 0.9, \\"sourceEvidence\\": {\\"path\\": \\"T.java\\", \\"before\\": \\"old()\\", \\"after\\": \\"newCall()\\"}, \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"category\\": \\"Collections\\",\\n  \\"summary\\": \\"Replace ArrayList\\",\\n  \\"reusability\\": 4,\\n  \\"codeImprovement\\": 3,\\n  \\"implementationEffort\\": 2,\\n  \\"canImplementInCurrentDsl\\": true\\n}\\n```"
 				      }]
 				    }
 				  }]
@@ -410,7 +410,7 @@ class GeminiClientTest {
 				  "candidates": [{
 				    "content": {
 				      "parts": [{
-				        "text": "```json\\n{\\n  \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"summary\\": \\"Replace ArrayList\\",\\n  \\"reusability\\": 4,\\n  \\"codeImprovement\\": 3,\\n  \\"implementationEffort\\": 2,\\n  \\"canImplementInCurrentDsl\\": true\\n}\\n```"
+				        "text": "```json\\n{\\n  \\"noCleanup\\": false, \\"confidence\\": 0.9, \\"sourceEvidence\\": {\\"path\\": \\"T.java\\", \\"before\\": \\"old()\\", \\"after\\": \\"newCall()\\"}, \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"summary\\": \\"Replace ArrayList\\",\\n  \\"reusability\\": 4,\\n  \\"codeImprovement\\": 3,\\n  \\"implementationEffort\\": 2,\\n  \\"canImplementInCurrentDsl\\": true\\n}\\n```"
 				      }]
 				    }
 				  }]
@@ -435,7 +435,7 @@ class GeminiClientTest {
 				  "candidates": [{
 				    "content": {
 				      "parts": [{
-				        "text": "```json\\n{\\n  \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"summary\\": \\"Replace size check\\",\\n  \\"category\\": \\"Collections\\",\\n  \\"reusability\\": 9,\\n  \\"codeImprovement\\": 7,\\n  \\"implementationEffort\\": 2,\\n  \\"canImplementInCurrentDsl\\": true,\\n  \\"dslRule\\": \\"<trigger>\\\\n$x.size() == 0\\\\n=> $x.isEmpty()\\\\n;;\\\\n</trigger>\\"\\n}\\n```"
+				        "text": "```json\\n{\\n  \\"noCleanup\\": false, \\"confidence\\": 0.9, \\"sourceEvidence\\": {\\"path\\": \\"T.java\\", \\"before\\": \\"old()\\", \\"after\\": \\"newCall()\\"}, \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"summary\\": \\"Replace size check\\",\\n  \\"category\\": \\"Collections\\",\\n  \\"reusability\\": 9,\\n  \\"codeImprovement\\": 7,\\n  \\"implementationEffort\\": 2,\\n  \\"canImplementInCurrentDsl\\": true,\\n  \\"dslRule\\": \\"<trigger>\\\\n$x.size() == 0\\\\n=> $x.isEmpty()\\\\n;;\\\\n</trigger>\\"\\n}\\n```"
 				      }]
 				    }
 				  }]
@@ -457,7 +457,7 @@ class GeminiClientTest {
 				  "candidates": [{
 				    "content": {
 				      "parts": [{
-				        "text": "```json\\n{\\n  \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"summary\\": \\"Use Map.entry\\",\\n  \\"category\\": \\"Java-Modernisierung\\",\\n  \\"reusability\\": 7,\\n  \\"codeImprovement\\": 5,\\n  \\"implementationEffort\\": 2,\\n  \\"canImplementInCurrentDsl\\": true,\\n  \\"dslRule\\": \\"new java.util.AbstractMap.SimpleEntry<>($key, $value)\\\\n=> java.util.Map.entry($key, $value)\\\\n<import>java.util.Map</import>\\\\n;;\\"\\n}\\n```"
+				        "text": "```json\\n{\\n  \\"noCleanup\\": false, \\"confidence\\": 0.9, \\"sourceEvidence\\": {\\"path\\": \\"T.java\\", \\"before\\": \\"old()\\", \\"after\\": \\"newCall()\\"}, \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"summary\\": \\"Use Map.entry\\",\\n  \\"category\\": \\"Java-Modernisierung\\",\\n  \\"reusability\\": 7,\\n  \\"codeImprovement\\": 5,\\n  \\"implementationEffort\\": 2,\\n  \\"canImplementInCurrentDsl\\": true,\\n  \\"dslRule\\": \\"new java.util.AbstractMap.SimpleEntry<>($key, $value)\\\\n=> java.util.Map.entry($key, $value)\\\\n<import>java.util.Map</import>\\\\n;;\\"\\n}\\n```"
 				      }]
 				    }
 				  }]
@@ -479,7 +479,7 @@ class GeminiClientTest {
 				  "candidates": [{
 				    "content": {
 				      "parts": [{
-				        "text": "```json\\n{\\n  \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"summary\\": \\"Clean rule\\",\\n  \\"category\\": \\"Collections\\",\\n  \\"reusability\\": 9,\\n  \\"codeImprovement\\": 7,\\n  \\"implementationEffort\\": 2,\\n  \\"canImplementInCurrentDsl\\": true,\\n  \\"dslRule\\": \\"$x.size() == 0\\\\n=> $x.isEmpty()\\\\n;;\\"\\n}\\n```"
+				        "text": "```json\\n{\\n  \\"noCleanup\\": false, \\"confidence\\": 0.9, \\"sourceEvidence\\": {\\"path\\": \\"T.java\\", \\"before\\": \\"old()\\", \\"after\\": \\"newCall()\\"}, \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"summary\\": \\"Clean rule\\",\\n  \\"category\\": \\"Collections\\",\\n  \\"reusability\\": 9,\\n  \\"codeImprovement\\": 7,\\n  \\"implementationEffort\\": 2,\\n  \\"canImplementInCurrentDsl\\": true,\\n  \\"dslRule\\": \\"$x.size() == 0\\\\n=> $x.isEmpty()\\\\n;;\\"\\n}\\n```"
 				      }]
 				    }
 				  }]

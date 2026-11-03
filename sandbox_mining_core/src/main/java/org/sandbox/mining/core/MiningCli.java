@@ -35,6 +35,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.sandbox.mining.core.candidate.CandidateStatus;
 import org.sandbox.mining.core.candidate.CandidateStore;
 import org.sandbox.mining.core.candidate.MiningCandidate;
+import org.sandbox.mining.core.candidate.SourceEvidenceVerifier;
 import org.sandbox.mining.core.category.CategoryManager;
 import org.sandbox.mining.core.comparison.DeltaReport;
 import org.sandbox.mining.core.comparison.ErrorFeedbackCollector;
@@ -684,6 +685,10 @@ promptBuilder.setTypeContext(context);
 }
 List<String> hashes = commitDataList.stream().map(CommitData::commitHash).toList();
 List<String> messages = commitDataList.stream().map(CommitData::commitMessage).toList();
+Map<String, String> diffsByCommit = HashMap.newHashMap(commitDataList.size());
+for (CommitData data : commitDataList) {
+diffsByCommit.put(data.commitHash(), data.diff());
+}
 String previousResults = knownRulesContext.isEmpty() ? null : knownRulesContext;
 String prompt = promptBuilder.buildBatchPrompt(dslContext,
 categoryManager.getCategoriesJson(), commitDataList, previousResults);
@@ -695,6 +700,12 @@ evaluationFailure = e;
 if (evaluations != null) {
 for (CommitEvaluation evaluation : evaluations) {
 if (evaluation != null) {
+if (evaluation.trafficLight() == CommitEvaluation.TrafficLight.GREEN) {
+String originalDiff = diffsByCommit.get(evaluation.commitHash());
+var checked = SourceEvidenceVerifier.verify(evaluation.sourceEvidence(), evaluation.dslRule(), originalDiff);
+evaluation = checked.problem() == null ? evaluation.withSourceEvidence(checked.evidence())
+: evaluation.withoutCandidate("Source evidence: " + checked.problem());
+}
 evaluationsByHash.putIfAbsent(evaluation.commitHash(), evaluation);
 }
 }
@@ -842,7 +853,8 @@ evaluation.categoryReason(), evaluation.canImplementInCurrentDsl(),
 evaluation.dslRule(), evaluation.targetHintFile(),
 evaluation.languageChangeNeeded(), evaluation.dslRuleAfterChange(),
 evaluation.summary(), validationResult,
-evaluation.beforeExample(), evaluation.afterExample(), evaluation.negativeExample());
+evaluation.beforeExample(), evaluation.afterExample(), evaluation.negativeExample(),
+evaluation.sourceVersion(), evaluation.sourceEvidence());
 if (evaluation.isNewCategory() && evaluation.category() != null) {
 categoryManager.addCategory(evaluation.category());
 }
@@ -942,6 +954,12 @@ private static List<MiningCandidate> saveCandidates(List<CommitEvaluation> evalu
 					+ eval.commitHash());
 			continue;
 		}
+		var source = eval.sourceEvidence();
+		var evidence = SourceEvidenceVerifier.verify(source, dslRule, source == null ? null : source.diffHunk());
+		if (evidence.problem() != null) {
+			log.println("  Skipped candidate: " + evidence.problem() + " (" + eval.commitHash() + ")");
+			continue;
+		}
 		MiningCandidate candidate = new MiningCandidate(
 				dslRule,
 				eval.beforeExample(),
@@ -953,6 +971,15 @@ private static List<MiningCandidate> saveCandidates(List<CommitEvaluation> evalu
 				eval.category(),
 				eval.summary(),
 				Instant.now().toString());
+		candidate.setSourceVersion(eval.sourceVersion());
+		candidate.setSourceEvidence(evidence.evidence());
+		var existing = candidateStore.findById(candidate.getCandidateId());
+		if (existing.isPresent() && switch (existing.get().getStatus()) {
+			case APPROVED, PROMOTED, REJECTED, DUPLICATE, SUPERSEDED -> true;
+			default -> false;
+		}) {
+			continue; // Discovery must not reopen a review decision when adding evidence.
+		}
 		// Replaying saved evaluations must not replace a reviewed candidate's
 		// corrected content or revision, but still recreate a missing candidate.
 		if (preserveExisting ? candidateStore.findById(candidate.getCandidateId()).isPresent()

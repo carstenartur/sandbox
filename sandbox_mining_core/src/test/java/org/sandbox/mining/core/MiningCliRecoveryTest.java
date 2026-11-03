@@ -47,6 +47,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation.TrafficLight;
 import org.sandbox.jdt.triggerpattern.llm.LlmClient;
+import org.sandbox.jdt.triggerpattern.llm.SourceEvidence;
 import org.sandbox.mining.core.candidate.CandidateStatus;
 import org.sandbox.mining.core.candidate.CandidateStore;
 import org.sandbox.mining.core.candidate.MiningCandidate;
@@ -157,7 +158,7 @@ class MiningCliRecoveryTest {
 	}
 
 	@ParameterizedTest
-	@EnumSource(value = CandidateStatus.class, names = { "READY_FOR_REVIEW", "PROMOTED" })
+	@EnumSource(value = CandidateStatus.class, names = { "READY_FOR_REVIEW", "APPROVED", "REJECTED", "PROMOTED" })
 	void restartReusesResultsAfterAGapWithoutReplacingCandidatesOrCountingThemTwice(CandidateStatus status)
 			throws Exception {
 		Fixture fixture = createRepository(5);
@@ -335,22 +336,61 @@ class MiningCliRecoveryTest {
 		assertEquals(2, fixture.loadState().getGlobalTotalProcessed());
 	}
 
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void invalidSourceEvidenceCompletesWithoutARepeatedModelRequest(boolean missing) throws Exception {
+		Fixture fixture = createRepository(1);
+		StubLlmClient client = new StubLlmClient((hashes, messages, repo) -> evaluations(hashes, messages, repo)
+				.stream().map(evaluation -> evaluation.withSourceEvidence(missing ? null : new SourceEvidence(
+						"Example0.java", "java.util.Collections.emptyList()", "java.util.Set.of()"))).toList());
+
+		new MiningCli(provider -> client).run(fixture.arguments(1));
+
+		assertEquals(1, client.calls);
+		assertEquals(fixture.hashes(), fixture.evaluatedCommits());
+		assertTrue(fixture.candidateCommits().isEmpty());
+		assertEquals(fixture.hashes().getFirst(), fixture.loadState().getLastProcessedCommit(fixture.repoUrl()));
+		assertEquals(1, fixture.loadState().getGlobalTotalProcessed());
+		assertTrue(fixture.loadState().getRepoState(fixture.repoUrl()).getDeferredCommits().isEmpty());
+		CommitEvaluation completed = new JsonReporter()
+				.loadExistingEvaluations(fixture.output().resolve("evaluations.json")).getFirst();
+		assertEquals(TrafficLight.NOT_APPLICABLE, completed.trafficLight());
+		assertFalse(completed.relevant());
+		assertNull(completed.dslRule());
+		assertTrue(completed.irrelevantReason().startsWith("Source evidence:"));
+
+		StubLlmClient resumed = new StubLlmClient(MiningCliRecoveryTest::evaluations);
+		new MiningCli(provider -> resumed).run(fixture.arguments(1));
+		assertTrue(resumed.requestedCommits().isEmpty());
+		assertTrue(fixture.candidateCommits().isEmpty());
+		assertEquals(1, fixture.loadState().getGlobalTotalProcessed());
+	}
+
 	private Fixture createRepository(int commitCount) throws Exception {
 		Path source = tempDir.resolve("source");
 		List<String> hashes = new ArrayList<>();
 		try (Git git = Git.init().setDirectory(source.toFile()).setInitialBranch("main").call()) {
 			for (int i = 0; i < commitCount; i++) {
-				Files.writeString(source.resolve("Example.java"),
-						"class Example { int value() { return " + i + "; } }\n");
-				git.add().addFilepattern("Example.java").call();
+				Files.writeString(source.resolve("Example" + i + ".java"),
+						"class Example" + i + " { Object value() { return java.util.Collections.emptyList(); } }\n");
+			}
+			git.add().addFilepattern(".").call();
+			PersonIdent baseline = new PersonIdent("Test", "test@example.com",
+					Date.from(Instant.parse("2023-12-31T00:00:00Z")), TimeZone.getTimeZone("UTC"));
+			git.commit().setMessage("baseline outside mining range").setAuthor(baseline).setCommitter(baseline).call();
+			for (int i = 0; i < commitCount; i++) {
+				Files.writeString(source.resolve("Example" + i + ".java"),
+						"class Example" + i + " { Object value() { return java.util.List.of(); } }\n");
+				git.add().addFilepattern("Example" + i + ".java").call();
 				PersonIdent author = new PersonIdent("Test", "test@example.com",
-						Date.from(Instant.parse("2024-01-01T00:00:00Z").plusSeconds(i)), TimeZone.getTimeZone("UTC"));
+						Date.from(Instant.parse("2024-01-01T00:00:00Z").plusSeconds(i + 1)), TimeZone.getTimeZone("UTC"));
 				hashes.add(git.commit().setMessage("change " + i).setAuthor(author).setCommitter(author).call().getName());
 			}
 		}
 		Path config = tempDir.resolve("repos.yml");
 		Files.writeString(config, """
 				mining:
+				  start-date: '2024-01-01'
 				  min-diff-lines-per-commit: 1
 				  max-diff-lines-per-commit: 500
 				  repositories:
@@ -375,6 +415,9 @@ class MiningCliRecoveryTest {
 		Set<String> candidateCommits() throws IOException {
 			List<MiningCandidate> candidates = new CandidateStore(source.getParent().resolve("mining-candidates")).loadAll();
 			assertTrue(candidates.stream().allMatch(candidate -> candidate.getStatus() == CandidateStatus.DSL_VALID));
+			assertTrue(candidates.stream().allMatch(candidate -> "17".equals(candidate.getSourceVersion())
+					&& candidate.getSourceEvidence() != null && candidate.getSourceEvidence().diffHunk() != null),
+					"Staged and replayed candidates retain their Java source level and locally copied Git hunk");
 			return candidates.stream().map(MiningCandidate::getSourceCommit).collect(Collectors.toSet());
 		}
 	}
@@ -388,7 +431,9 @@ class MiningCliRecoveryTest {
 					"collections.sandbox-hint", null, null, "Replace emptyList", null,
 					"class T { Object m() { return java.util.Collections.emptyList(); } }",
 					"class T { Object m() { return java.util.List.of(); } }",
-					"class T { Object m() { return java.util.Collections.emptySet(); } }"));
+					"class T { Object m() { return java.util.Collections.emptySet(); } }", "17",
+					new SourceEvidence("Example" + messages.get(i).strip().substring("change ".length()) + ".java",
+							"java.util.Collections.emptyList()", "java.util.List.of()")));
 		}
 		return results;
 	}
