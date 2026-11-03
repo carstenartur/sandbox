@@ -142,55 +142,60 @@ public class PromptBuilder {
 <span class="fc" id="L142">		prompt.append(&quot;- changes whose correctness depends on unavailable data-flow, overload, synchronization, or nullability facts;\n&quot;); //$NON-NLS-1$</span>
 <span class="fc" id="L143">		prompt.append(&quot;- multiple unrelated transformations in one proposal;\n&quot;); //$NON-NLS-1$</span>
 <span class="fc" id="L144">		prompt.append(&quot;- a candidate without complete compiling before, after, and negative examples.\n\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L145">	}</span>
+<span class="fc" id="L145">		prompt.append(&quot;- commits explicitly applying an existing JDT cleanup, or test diagnostics and intentional behavior changes.\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L146">		prompt.append(&quot;Check overload/type, null, repeated-evaluation/side-effect, locale/Unicode, and numeric-range preconditions; encode necessary guards or return noCleanup.\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L147">		prompt.append(&quot;Do not invent replacement literals. Cite a Java file path and short verbatim before/after spans from removed/added lines of the same diff hunk (at most 512 characters each).\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L148">		prompt.append(&quot;Examples are synthetic: the negative example should expose a semantic near miss (wrong overload, side effect, null or numeric boundary), not merely another method name.\n\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L149">	}</span>
 
 	private static void appendDslRuleChecklist(StringBuilder prompt) {
-<span class="fc" id="L148">		prompt.append(&quot;### DSL validation rules\n\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L149">		prompt.append(&quot;1. Emit plain DSL only; never emit XML tags.\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L150">		prompt.append(&quot;2. Use instanceof($var, \&quot;fully.qualified.Type\&quot;) for type guards; never use isType().\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L151">		prompt.append(&quot;3. End every rule with `;;` on its own line.\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L152">		prompt.append(&quot;4. A quick-fix rule contains exactly one `=&gt;`.\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L153">		prompt.append(&quot;5. Every replacement placeholder must be bound by the source pattern.\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L154">		prompt.append(&quot;6. Source and replacement must differ.\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L155">		prompt.append(&quot;7. Use fully qualified concrete API names and placeholders only for variable parts.\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L156">		prompt.append(&quot;8. Do not emit per-rule `/*!...*/` directives.\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L157">		prompt.append(&quot;9. Drop the proposal rather than returning invalid or context-dependent DSL.\n\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L158">	}</span>
+<span class="fc" id="L152">		prompt.append(&quot;### DSL validation rules\n\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L153">		prompt.append(&quot;1. Emit plain DSL only; never emit XML tags.\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L154">		prompt.append(&quot;2. Use instanceof($var, \&quot;fully.qualified.Type\&quot;) for type guards; never use isType().\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L155">		prompt.append(&quot;3. End every rule with `;;` on its own line.\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L156">		prompt.append(&quot;4. A quick-fix rule contains exactly one `=&gt;`.\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L157">		prompt.append(&quot;5. Every replacement placeholder must be bound by the source pattern.\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L158">		prompt.append(&quot;6. Source and replacement must differ.\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L159">		prompt.append(&quot;7. Use fully qualified concrete API names and placeholders only for variable parts.\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L160">		prompt.append(&quot;8. Do not emit per-rule `/*!...*/` directives.\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L161">		prompt.append(&quot;9. Drop the proposal rather than returning invalid or context-dependent DSL.\n\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L162">	}</span>
 
 	private static void appendJsonSchema(StringBuilder prompt, boolean array) {
-<span class="fc bfc" id="L161" title="All 2 branches covered.">		String prefix = array ? &quot;[\n  {\n&quot; : &quot;{\n&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc bfc" id="L162" title="All 2 branches covered.">		String indent = array ? &quot;    &quot; : &quot;  &quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L163">		prompt.append(prefix);</span>
-<span class="fc" id="L164">		prompt.append(indent).append(&quot;\&quot;noCleanup\&quot;: false,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L165">		prompt.append(indent).append(&quot;\&quot;reason\&quot;: \&quot;short reason, especially when noCleanup=true\&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L166">		prompt.append(indent).append(&quot;\&quot;relevant\&quot;: true,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L167">		prompt.append(indent).append(&quot;\&quot;trafficLight\&quot;: \&quot;GREEN|NOT_APPLICABLE\&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L168">		prompt.append(indent).append(&quot;\&quot;confidence\&quot;: 0.0,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L169">		prompt.append(indent).append(&quot;\&quot;category\&quot;: \&quot;short stable category\&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L170">		prompt.append(indent).append(&quot;\&quot;canImplementInCurrentDsl\&quot;: true,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L171">		prompt.append(indent).append(&quot;\&quot;dslRule\&quot;: \&quot;one raw .sandbox-hint rule or null\&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L172">		prompt.append(indent).append(&quot;\&quot;targetHintFile\&quot;: \&quot;simple .sandbox-hint filename or null\&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L173">		prompt.append(indent).append(&quot;\&quot;sourceVersion\&quot;: \&quot;21\&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L174">		prompt.append(indent).append(&quot;\&quot;beforeExample\&quot;: \&quot;minimal self-contained compiling Java class or null\&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L175">		prompt.append(indent).append(&quot;\&quot;afterExample\&quot;: \&quot;complete expected Java class or null\&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L176">		prompt.append(indent).append(&quot;\&quot;negativeExample\&quot;: \&quot;similar compiling class that must not match or null\&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L177">		prompt.append(indent).append(&quot;\&quot;summary\&quot;: \&quot;brief local transformation summary\&quot;\n&quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L178" title="All 2 branches covered.">		prompt.append(array ? &quot;  }\n]\n&quot; : &quot;}\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L179">		prompt.append(&quot;confidence must be between 0.0 and 1.0. When confidence is below 0.80, set noCleanup=true, relevant=false, trafficLight=NOT_APPLICABLE, and all candidate fields to null.\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L180">	}</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">		String prefix = array ? &quot;[\n  {\n&quot; : &quot;{\n&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">		String indent = array ? &quot;    &quot; : &quot;  &quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L167">		prompt.append(prefix);</span>
+<span class="fc" id="L168">		prompt.append(indent).append(&quot;\&quot;noCleanup\&quot;: false,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L169">		prompt.append(indent).append(&quot;\&quot;reason\&quot;: \&quot;short reason, especially when noCleanup=true\&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L170">		prompt.append(indent).append(&quot;\&quot;relevant\&quot;: true,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L171">		prompt.append(indent).append(&quot;\&quot;trafficLight\&quot;: \&quot;GREEN|NOT_APPLICABLE\&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L172">		prompt.append(indent).append(&quot;\&quot;confidence\&quot;: 0.0,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L173">		prompt.append(indent).append(&quot;\&quot;category\&quot;: \&quot;short stable category\&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L174">		prompt.append(indent).append(&quot;\&quot;canImplementInCurrentDsl\&quot;: true,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L175">		prompt.append(indent).append(&quot;\&quot;dslRule\&quot;: \&quot;one raw .sandbox-hint rule or null\&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L176">		prompt.append(indent).append(&quot;\&quot;targetHintFile\&quot;: \&quot;simple .sandbox-hint filename or null\&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L177">		prompt.append(indent).append(&quot;\&quot;sourceVersion\&quot;: \&quot;21\&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L178">		prompt.append(indent).append(&quot;\&quot;sourceEvidence\&quot;: {\&quot;path\&quot;: \&quot;original Java file path\&quot;, \&quot;before\&quot;: \&quot;verbatim removed span\&quot;, \&quot;after\&quot;: \&quot;verbatim added span\&quot;},\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L179">		prompt.append(indent).append(&quot;\&quot;beforeExample\&quot;: \&quot;minimal self-contained compiling Java class or null\&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L180">		prompt.append(indent).append(&quot;\&quot;afterExample\&quot;: \&quot;complete expected Java class or null\&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L181">		prompt.append(indent).append(&quot;\&quot;negativeExample\&quot;: \&quot;similar compiling class that must not match or null\&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L182">		prompt.append(indent).append(&quot;\&quot;summary\&quot;: \&quot;brief local transformation summary\&quot;\n&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">		prompt.append(array ? &quot;  }\n]\n&quot; : &quot;}\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L184">		prompt.append(&quot;confidence must be between 0.0 and 1.0. When confidence is below 0.80, set noCleanup=true, relevant=false, trafficLight=NOT_APPLICABLE, and all candidate fields to null.\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L185">	}</span>
 
 	private static String nullToEmpty(String value) {
-<span class="pc bpc" id="L183" title="1 of 2 branches missed.">		return value == null ? &quot;&quot; : value; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">		return value == null ? &quot;&quot; : value; //$NON-NLS-1$</span>
 	}
 
 	private static String loadResource(String resourcePath) {
-<span class="fc" id="L187">		try (InputStream input = PromptBuilder.class.getResourceAsStream(resourcePath)) {</span>
-<span class="pc bpc" id="L188" title="1 of 2 branches missed.">			if (input == null) {</span>
-<span class="nc" id="L189">				return &quot;(Resource not available: &quot; + resourcePath + ')'; //$NON-NLS-1$</span>
+<span class="fc" id="L192">		try (InputStream input = PromptBuilder.class.getResourceAsStream(resourcePath)) {</span>
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">			if (input == null) {</span>
+<span class="nc" id="L194">				return &quot;(Resource not available: &quot; + resourcePath + ')'; //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L191">			return new String(input.readAllBytes(), StandardCharsets.UTF_8);</span>
-<span class="nc bnc" id="L192" title="All 2 branches missed.">		} catch (IOException e) {</span>
-<span class="nc" id="L193">			return &quot;(Failed to load resource: &quot; + resourcePath + ')'; //$NON-NLS-1$</span>
+<span class="fc" id="L196">			return new String(input.readAllBytes(), StandardCharsets.UTF_8);</span>
+<span class="nc bnc" id="L197" title="All 2 branches missed.">		} catch (IOException e) {</span>
+<span class="nc" id="L198">			return &quot;(Failed to load resource: &quot; + resourcePath + ')'; //$NON-NLS-1$</span>
 		}
 	}
 }

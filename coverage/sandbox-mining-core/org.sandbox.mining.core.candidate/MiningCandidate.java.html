@@ -20,6 +20,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.sandbox.jdt.triggerpattern.llm.SourceEvidence;
+
 /**
  * Authoritative staged representation of one mined cleanup proposal.
  *
@@ -30,9 +32,9 @@ import java.util.List;
  */
 public class MiningCandidate {
 
-<span class="fc" id="L33">	private int schemaVersion = 2;</span>
+<span class="fc" id="L35">	private int schemaVersion = 2;</span>
 	private String candidateId;
-<span class="fc" id="L35">	private int revision = 1;</span>
+<span class="fc" id="L37">	private int revision = 1;</span>
 	private int candidateOrdinal;
 
 	private String dslRule;
@@ -42,9 +44,10 @@ public class MiningCandidate {
 	private String targetHintFile;
 	private String sourceCommit;
 	private String sourceRepo;
+	private SourceEvidence sourceEvidence;
 	private String category;
 	private String summary;
-<span class="fc" id="L47">	private String sourceVersion = &quot;21&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L50">	private String sourceVersion = &quot;21&quot;; //$NON-NLS-1$</span>
 	private CandidateStatus status;
 	private String discoveredAt;
 	private String rejectionReason;
@@ -52,39 +55,39 @@ public class MiningCandidate {
 	private String ruleFingerprint;
 	private String behaviorFingerprint;
 	private CandidateVerification verification;
-<span class="fc" id="L55">	private List&lt;CandidateTransition&gt; transitions = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L58">	private List&lt;CandidateTransition&gt; transitions = new ArrayList&lt;&gt;();</span>
 
 	/** No-arg constructor for Gson. */
-<span class="fc" id="L58">	public MiningCandidate() {</span>
-<span class="fc" id="L59">		this.status = CandidateStatus.DISCOVERED;</span>
-<span class="fc" id="L60">	}</span>
+<span class="fc" id="L61">	public MiningCandidate() {</span>
+<span class="fc" id="L62">		this.status = CandidateStatus.DISCOVERED;</span>
+<span class="fc" id="L63">	}</span>
 
 	/**
 	 * Creates a candidate with the fields currently supplied by commit discovery.
 	 */
 	public MiningCandidate(String dslRule, String beforeExample, String afterExample,
 			String negativeExample, String targetHintFile, String sourceCommit,
-<span class="fc" id="L67">			String sourceRepo, String category, String summary, String discoveredAt) {</span>
-<span class="fc" id="L68">		this.dslRule = dslRule;</span>
-<span class="fc" id="L69">		this.beforeExample = beforeExample;</span>
-<span class="fc" id="L70">		this.afterExample = afterExample;</span>
-<span class="fc" id="L71">		this.negativeExample = negativeExample;</span>
-<span class="fc" id="L72">		this.targetHintFile = targetHintFile;</span>
-<span class="fc" id="L73">		this.sourceCommit = sourceCommit;</span>
-<span class="fc" id="L74">		this.sourceRepo = sourceRepo;</span>
-<span class="fc" id="L75">		this.category = category;</span>
-<span class="fc" id="L76">		this.summary = summary;</span>
-<span class="fc" id="L77">		this.discoveredAt = discoveredAt;</span>
-<span class="fc" id="L78">		this.status = CandidateStatus.DISCOVERED;</span>
-<span class="fc" id="L79">	}</span>
+<span class="fc" id="L70">			String sourceRepo, String category, String summary, String discoveredAt) {</span>
+<span class="fc" id="L71">		this.dslRule = dslRule;</span>
+<span class="fc" id="L72">		this.beforeExample = beforeExample;</span>
+<span class="fc" id="L73">		this.afterExample = afterExample;</span>
+<span class="fc" id="L74">		this.negativeExample = negativeExample;</span>
+<span class="fc" id="L75">		this.targetHintFile = targetHintFile;</span>
+<span class="fc" id="L76">		this.sourceCommit = sourceCommit;</span>
+<span class="fc" id="L77">		this.sourceRepo = sourceRepo;</span>
+<span class="fc" id="L78">		this.category = category;</span>
+<span class="fc" id="L79">		this.summary = summary;</span>
+<span class="fc" id="L80">		this.discoveredAt = discoveredAt;</span>
+<span class="fc" id="L81">		this.status = CandidateStatus.DISCOVERED;</span>
+<span class="fc" id="L82">	}</span>
 
 	public int getSchemaVersion() {
-<span class="fc" id="L82">		return schemaVersion;</span>
+<span class="fc" id="L85">		return schemaVersion;</span>
 	}
 
 	public void setSchemaVersion(int schemaVersion) {
-<span class="fc" id="L86">		this.schemaVersion = schemaVersion;</span>
-<span class="fc" id="L87">	}</span>
+<span class="fc" id="L89">		this.schemaVersion = schemaVersion;</span>
+<span class="fc" id="L90">	}</span>
 
 	/**
 	 * Stable ID derived from repository, source commit, discovery category,
@@ -92,138 +95,147 @@ public class MiningCandidate {
 	 * deliberately excluded so corrections remain revisions of one candidate.
 	 */
 	public String getCandidateId() {
-<span class="pc bpc" id="L95" title="1 of 4 branches missed.">		if (candidateId == null || candidateId.isBlank()) {</span>
-<span class="fc" id="L96">			candidateId = sha256(nullToEmpty(sourceRepo) + '\n'</span>
-<span class="fc" id="L97">					+ nullToEmpty(sourceCommit) + '\n'</span>
-<span class="fc" id="L98">					+ nullToEmpty(category) + '\n'</span>
-<span class="fc" id="L99">					+ nullToEmpty(targetHintFile) + '\n'</span>
+<span class="pc bpc" id="L98" title="1 of 4 branches missed.">		if (candidateId == null || candidateId.isBlank()) {</span>
+<span class="fc" id="L99">			candidateId = sha256(nullToEmpty(sourceRepo) + '\n'</span>
+<span class="fc" id="L100">					+ nullToEmpty(sourceCommit) + '\n'</span>
+<span class="fc" id="L101">					+ nullToEmpty(category) + '\n'</span>
+<span class="fc" id="L102">					+ nullToEmpty(targetHintFile) + '\n'</span>
 					+ candidateOrdinal);
 		}
-<span class="fc" id="L102">		return candidateId;</span>
+<span class="fc" id="L105">		return candidateId;</span>
 	}
 
 	public void setCandidateId(String candidateId) {
-<span class="fc" id="L106">		this.candidateId = candidateId;</span>
-<span class="fc" id="L107">	}</span>
+<span class="fc" id="L109">		this.candidateId = candidateId;</span>
+<span class="fc" id="L110">	}</span>
 
 	public int getRevision() {
-<span class="fc" id="L110">		return revision;</span>
+<span class="fc" id="L113">		return revision;</span>
 	}
 
 	public void setRevision(int revision) {
-<span class="fc" id="L114">		this.revision = Math.max(1, revision);</span>
-<span class="fc" id="L115">	}</span>
+<span class="fc" id="L117">		this.revision = Math.max(1, revision);</span>
+<span class="fc" id="L118">	}</span>
 
 	public int getCandidateOrdinal() {
-<span class="fc" id="L118">		return candidateOrdinal;</span>
+<span class="fc" id="L121">		return candidateOrdinal;</span>
 	}
 
 	public void setCandidateOrdinal(int candidateOrdinal) {
-<span class="pc bpc" id="L122" title="1 of 2 branches missed.">		if (candidateOrdinal &lt; 0) {</span>
-<span class="nc" id="L123">			throw new IllegalArgumentException(&quot;candidateOrdinal must be &gt;= 0&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">		if (candidateOrdinal &lt; 0) {</span>
+<span class="nc" id="L126">			throw new IllegalArgumentException(&quot;candidateOrdinal must be &gt;= 0&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L125">		this.candidateOrdinal = candidateOrdinal;</span>
-<span class="fc" id="L126">		this.candidateId = null;</span>
-<span class="fc" id="L127">	}</span>
+<span class="fc" id="L128">		this.candidateOrdinal = candidateOrdinal;</span>
+<span class="fc" id="L129">		this.candidateId = null;</span>
+<span class="fc" id="L130">	}</span>
 
 	public String getDslRule() {
-<span class="fc" id="L130">		return dslRule;</span>
+<span class="fc" id="L133">		return dslRule;</span>
 	}
 
 	public void setDslRule(String dslRule) {
-<span class="fc" id="L134">		this.dslRule = dslRule;</span>
-<span class="fc" id="L135">		this.ruleFingerprint = null;</span>
-<span class="fc" id="L136">	}</span>
+<span class="fc" id="L137">		this.dslRule = dslRule;</span>
+<span class="fc" id="L138">		this.ruleFingerprint = null;</span>
+<span class="fc" id="L139">	}</span>
 
 	public String getBeforeExample() {
-<span class="fc" id="L139">		return beforeExample;</span>
+<span class="fc" id="L142">		return beforeExample;</span>
 	}
 
 	public void setBeforeExample(String beforeExample) {
-<span class="fc" id="L143">		this.beforeExample = beforeExample;</span>
-<span class="fc" id="L144">		this.behaviorFingerprint = null;</span>
-<span class="fc" id="L145">	}</span>
+<span class="fc" id="L146">		this.beforeExample = beforeExample;</span>
+<span class="fc" id="L147">		this.behaviorFingerprint = null;</span>
+<span class="fc" id="L148">	}</span>
 
 	public String getAfterExample() {
-<span class="fc" id="L148">		return afterExample;</span>
+<span class="fc" id="L151">		return afterExample;</span>
 	}
 
 	public void setAfterExample(String afterExample) {
-<span class="fc" id="L152">		this.afterExample = afterExample;</span>
-<span class="fc" id="L153">		this.behaviorFingerprint = null;</span>
-<span class="fc" id="L154">	}</span>
+<span class="fc" id="L155">		this.afterExample = afterExample;</span>
+<span class="fc" id="L156">		this.behaviorFingerprint = null;</span>
+<span class="fc" id="L157">	}</span>
 
 	public String getNegativeExample() {
-<span class="fc" id="L157">		return negativeExample;</span>
+<span class="fc" id="L160">		return negativeExample;</span>
 	}
 
 	public void setNegativeExample(String negativeExample) {
-<span class="fc" id="L161">		this.negativeExample = negativeExample;</span>
-<span class="fc" id="L162">		this.behaviorFingerprint = null;</span>
-<span class="fc" id="L163">	}</span>
+<span class="fc" id="L164">		this.negativeExample = negativeExample;</span>
+<span class="fc" id="L165">		this.behaviorFingerprint = null;</span>
+<span class="fc" id="L166">	}</span>
 
 	public String getTargetHintFile() {
-<span class="fc" id="L166">		return targetHintFile;</span>
+<span class="fc" id="L169">		return targetHintFile;</span>
 	}
 
 	public void setTargetHintFile(String targetHintFile) {
-<span class="fc" id="L170">		this.targetHintFile = targetHintFile;</span>
-<span class="fc" id="L171">		this.candidateId = null;</span>
-<span class="fc" id="L172">	}</span>
+<span class="fc" id="L173">		this.targetHintFile = targetHintFile;</span>
+<span class="fc" id="L174">		this.candidateId = null;</span>
+<span class="fc" id="L175">	}</span>
 
 	public String getSourceCommit() {
-<span class="fc" id="L175">		return sourceCommit;</span>
+<span class="fc" id="L178">		return sourceCommit;</span>
 	}
 
 	public void setSourceCommit(String sourceCommit) {
-<span class="nc" id="L179">		this.sourceCommit = sourceCommit;</span>
-<span class="nc" id="L180">		this.candidateId = null;</span>
-<span class="nc" id="L181">	}</span>
+<span class="nc" id="L182">		this.sourceCommit = sourceCommit;</span>
+<span class="nc" id="L183">		this.candidateId = null;</span>
+<span class="nc" id="L184">	}</span>
 
 	public String getSourceRepo() {
-<span class="fc" id="L184">		return sourceRepo;</span>
+<span class="fc" id="L187">		return sourceRepo;</span>
 	}
 
+	public SourceEvidence getSourceEvidence() {
+<span class="fc" id="L191">		return sourceEvidence;</span>
+	}
+
+	public void setSourceEvidence(SourceEvidence sourceEvidence) {
+<span class="fc" id="L195">		this.sourceEvidence = sourceEvidence;</span>
+<span class="fc" id="L196">		this.behaviorFingerprint = null;</span>
+<span class="fc" id="L197">	}</span>
+
 	public void setSourceRepo(String sourceRepo) {
-<span class="nc" id="L188">		this.sourceRepo = sourceRepo;</span>
-<span class="nc" id="L189">		this.candidateId = null;</span>
-<span class="nc" id="L190">	}</span>
+<span class="nc" id="L200">		this.sourceRepo = sourceRepo;</span>
+<span class="nc" id="L201">		this.candidateId = null;</span>
+<span class="nc" id="L202">	}</span>
 
 	public String getCategory() {
-<span class="fc" id="L193">		return category;</span>
+<span class="fc" id="L205">		return category;</span>
 	}
 
 	public void setCategory(String category) {
-<span class="nc" id="L197">		this.category = category;</span>
-<span class="nc" id="L198">		this.candidateId = null;</span>
-<span class="nc" id="L199">	}</span>
+<span class="nc" id="L209">		this.category = category;</span>
+<span class="nc" id="L210">		this.candidateId = null;</span>
+<span class="nc" id="L211">	}</span>
 
 	public String getSummary() {
-<span class="fc" id="L202">		return summary;</span>
+<span class="fc" id="L214">		return summary;</span>
 	}
 
 	public void setSummary(String summary) {
-<span class="nc" id="L206">		this.summary = summary;</span>
-<span class="nc" id="L207">	}</span>
+<span class="nc" id="L218">		this.summary = summary;</span>
+<span class="nc" id="L219">	}</span>
 
 	/**
 	 * Returns whether the serialized candidate explicitly declares a source
 	 * version instead of relying on the default returned by {@link #getSourceVersion()}.
 	 */
 	public boolean hasDeclaredSourceVersion() {
-<span class="fc bfc" id="L214" title="All 4 branches covered.">		return sourceVersion != null &amp;&amp; !sourceVersion.isBlank();</span>
+<span class="fc bfc" id="L226" title="All 4 branches covered.">		return sourceVersion != null &amp;&amp; !sourceVersion.isBlank();</span>
 	}
 
 	public String getSourceVersion() {
-<span class="fc bfc" id="L218" title="All 2 branches covered.">		return hasDeclaredSourceVersion() ? sourceVersion : &quot;21&quot;; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L230" title="All 2 branches covered.">		return hasDeclaredSourceVersion() ? sourceVersion : &quot;21&quot;; //$NON-NLS-1$</span>
 	}
 
 	public void setSourceVersion(String sourceVersion) {
-<span class="fc" id="L222">		this.sourceVersion = sourceVersion;</span>
-<span class="fc" id="L223">	}</span>
+<span class="fc" id="L234">		this.sourceVersion = sourceVersion;</span>
+<span class="fc" id="L235">	}</span>
 
 	public CandidateStatus getStatus() {
-<span class="pc bpc" id="L226" title="1 of 2 branches missed.">		return status == null ? CandidateStatus.DISCOVERED : status;</span>
+<span class="pc bpc" id="L238" title="1 of 2 branches missed.">		return status == null ? CandidateStatus.DISCOVERED : status;</span>
 	}
 
 	/**
@@ -231,109 +243,112 @@ public class MiningCandidate {
 	 * New operational code should use {@link #transitionTo(CandidateStatus, String, String)}.
 	 */
 	public void setStatus(CandidateStatus status) {
-<span class="fc" id="L234">		this.status = status;</span>
-<span class="fc" id="L235">	}</span>
+<span class="fc" id="L246">		this.status = status;</span>
+<span class="fc" id="L247">	}</span>
 
 	public String getDiscoveredAt() {
-<span class="fc" id="L238">		return discoveredAt;</span>
+<span class="fc" id="L250">		return discoveredAt;</span>
 	}
 
 	public void setDiscoveredAt(String discoveredAt) {
-<span class="nc" id="L242">		this.discoveredAt = discoveredAt;</span>
-<span class="nc" id="L243">	}</span>
+<span class="nc" id="L254">		this.discoveredAt = discoveredAt;</span>
+<span class="nc" id="L255">	}</span>
 
 	public String getRejectionReason() {
-<span class="fc" id="L246">		return rejectionReason;</span>
+<span class="fc" id="L258">		return rejectionReason;</span>
 	}
 
 	public void setRejectionReason(String rejectionReason) {
-<span class="fc" id="L250">		this.rejectionReason = rejectionReason;</span>
-<span class="fc" id="L251">	}</span>
+<span class="fc" id="L262">		this.rejectionReason = rejectionReason;</span>
+<span class="fc" id="L263">	}</span>
 
 	public String getRuleFingerprint() {
-<span class="pc bpc" id="L254" title="1 of 4 branches missed.">		if (ruleFingerprint == null || ruleFingerprint.isBlank()) {</span>
-<span class="fc" id="L255">			ruleFingerprint = &quot;sha256:&quot; + sha256(normalizeDsl(dslRule)); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L266" title="1 of 4 branches missed.">		if (ruleFingerprint == null || ruleFingerprint.isBlank()) {</span>
+<span class="fc" id="L267">			ruleFingerprint = &quot;sha256:&quot; + sha256(normalizeDsl(dslRule)); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L257">		return ruleFingerprint;</span>
+<span class="fc" id="L269">		return ruleFingerprint;</span>
 	}
 
 	public void setRuleFingerprint(String ruleFingerprint) {
-<span class="nc" id="L261">		this.ruleFingerprint = ruleFingerprint;</span>
-<span class="nc" id="L262">	}</span>
+<span class="nc" id="L273">		this.ruleFingerprint = ruleFingerprint;</span>
+<span class="nc" id="L274">	}</span>
 
 	public String getBehaviorFingerprint() {
-<span class="pc bpc" id="L265" title="1 of 4 branches missed.">		if (behaviorFingerprint == null || behaviorFingerprint.isBlank()) {</span>
-<span class="fc" id="L266">			String behavior = normalizeSourceForFingerprint(beforeExample) + '\n'</span>
-<span class="fc" id="L267">					+ normalizeSourceForFingerprint(afterExample) + '\n'</span>
-<span class="fc" id="L268">					+ normalizeSourceForFingerprint(negativeExample);</span>
-<span class="fc" id="L269">			behaviorFingerprint = &quot;sha256:&quot; + sha256(behavior); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L277" title="1 of 4 branches missed.">		if (behaviorFingerprint == null || behaviorFingerprint.isBlank()) {</span>
+<span class="fc" id="L278">			String behavior = normalizeSourceForFingerprint(beforeExample) + '\n'</span>
+<span class="fc" id="L279">					+ normalizeSourceForFingerprint(afterExample) + '\n'</span>
+<span class="fc" id="L280">					+ normalizeSourceForFingerprint(negativeExample);</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">			if (sourceEvidence != null) {</span>
+<span class="fc" id="L282">				behavior += '\n' + sourceEvidence.toString();</span>
+			}
+<span class="fc" id="L284">			behaviorFingerprint = &quot;sha256:&quot; + sha256(behavior); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L271">		return behaviorFingerprint;</span>
+<span class="fc" id="L286">		return behaviorFingerprint;</span>
 	}
 
 	public void setBehaviorFingerprint(String behaviorFingerprint) {
-<span class="nc" id="L275">		this.behaviorFingerprint = behaviorFingerprint;</span>
-<span class="nc" id="L276">	}</span>
+<span class="nc" id="L290">		this.behaviorFingerprint = behaviorFingerprint;</span>
+<span class="nc" id="L291">	}</span>
 
 	public CandidateVerification getVerification() {
-<span class="fc" id="L279">		return verification;</span>
+<span class="fc" id="L294">		return verification;</span>
 	}
 
 	public void setVerification(CandidateVerification verification) {
-<span class="fc" id="L283">		this.verification = verification;</span>
-<span class="fc" id="L284">	}</span>
+<span class="fc" id="L298">		this.verification = verification;</span>
+<span class="fc" id="L299">	}</span>
 
 	public List&lt;CandidateTransition&gt; getTransitions() {
-<span class="pc bpc" id="L287" title="1 of 2 branches missed.">		if (transitions == null) {</span>
-<span class="nc" id="L288">			transitions = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L302" title="1 of 2 branches missed.">		if (transitions == null) {</span>
+<span class="nc" id="L303">			transitions = new ArrayList&lt;&gt;();</span>
 		}
-<span class="fc" id="L290">		return List.copyOf(transitions);</span>
+<span class="fc" id="L305">		return List.copyOf(transitions);</span>
 	}
 
 	public void setTransitions(List&lt;CandidateTransition&gt; transitions) {
-<span class="pc bpc" id="L294" title="1 of 2 branches missed.">		this.transitions = transitions == null ? new ArrayList&lt;&gt;() : new ArrayList&lt;&gt;(transitions);</span>
-<span class="fc" id="L295">	}</span>
+<span class="pc bpc" id="L309" title="1 of 2 branches missed.">		this.transitions = transitions == null ? new ArrayList&lt;&gt;() : new ArrayList&lt;&gt;(transitions);</span>
+<span class="fc" id="L310">	}</span>
 
 	/**
 	 * Applies and records an allowed lifecycle transition.
 	 */
 	public void transitionTo(CandidateStatus target, String actor, String reason) {
-<span class="fc" id="L301">		CandidateStatus current = getStatus();</span>
-<span class="fc bfc" id="L302" title="All 2 branches covered.">		if (!current.canTransitionTo(target)) {</span>
-<span class="fc" id="L303">			throw new IllegalStateException(&quot;Invalid candidate transition: &quot; + current + &quot; -&gt; &quot; + target); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L316">		CandidateStatus current = getStatus();</span>
+<span class="fc bfc" id="L317" title="All 2 branches covered.">		if (!current.canTransitionTo(target)) {</span>
+<span class="fc" id="L318">			throw new IllegalStateException(&quot;Invalid candidate transition: &quot; + current + &quot; -&gt; &quot; + target); //$NON-NLS-1$ //$NON-NLS-2$</span>
 		}
-<span class="pc bpc" id="L305" title="1 of 2 branches missed.">		if (transitions == null) {</span>
-<span class="nc" id="L306">			transitions = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L320" title="1 of 2 branches missed.">		if (transitions == null) {</span>
+<span class="nc" id="L321">			transitions = new ArrayList&lt;&gt;();</span>
 		}
-<span class="fc" id="L308">		transitions.add(new CandidateTransition(current, target,</span>
-<span class="fc" id="L309">				nullToEmpty(actor), nullToEmpty(reason), Instant.now().toString()));</span>
-<span class="fc" id="L310">		status = target;</span>
-<span class="fc bfc" id="L311" title="All 2 branches covered.">		if (target == CandidateStatus.REJECTED) {</span>
-<span class="fc" id="L312">			rejectionReason = reason;</span>
+<span class="fc" id="L323">		transitions.add(new CandidateTransition(current, target,</span>
+<span class="fc" id="L324">				nullToEmpty(actor), nullToEmpty(reason), Instant.now().toString()));</span>
+<span class="fc" id="L325">		status = target;</span>
+<span class="fc bfc" id="L326" title="All 2 branches covered.">		if (target == CandidateStatus.REJECTED) {</span>
+<span class="fc" id="L327">			rejectionReason = reason;</span>
 		}
-<span class="fc" id="L314">	}</span>
+<span class="fc" id="L329">	}</span>
 
 	/** Returns the stable JSON file name for this candidate. */
 	public String toFileName() {
-<span class="fc" id="L318">		return getCandidateId() + &quot;-candidate.json&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L333">		return getCandidateId() + &quot;-candidate.json&quot;; //$NON-NLS-1$</span>
 	}
 
 	private static String normalizeDsl(String value) {
-<span class="pc bpc" id="L322" title="1 of 2 branches missed.">		if (value == null) {</span>
-<span class="nc" id="L323">			return &quot;&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L337" title="1 of 2 branches missed.">		if (value == null) {</span>
+<span class="nc" id="L338">			return &quot;&quot;; //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L325">		String[] lines = value.replace(&quot;\r\n&quot;, &quot;\n&quot;).replace('\r', '\n').split(&quot;\n&quot;, -1); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L326">		StringBuilder normalized = new StringBuilder();</span>
-<span class="fc bfc" id="L327" title="All 2 branches covered.">		for (String line : lines) {</span>
-<span class="fc" id="L328">			String trimmed = line.strip();</span>
-<span class="fc bfc" id="L329" title="All 2 branches covered.">			if (!trimmed.isEmpty()) {</span>
-<span class="fc bfc" id="L330" title="All 2 branches covered.">				if (!normalized.isEmpty()) {</span>
-<span class="fc" id="L331">					normalized.append('\n');</span>
+<span class="fc" id="L340">		String[] lines = value.replace(&quot;\r\n&quot;, &quot;\n&quot;).replace('\r', '\n').split(&quot;\n&quot;, -1); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L341">		StringBuilder normalized = new StringBuilder();</span>
+<span class="fc bfc" id="L342" title="All 2 branches covered.">		for (String line : lines) {</span>
+<span class="fc" id="L343">			String trimmed = line.strip();</span>
+<span class="fc bfc" id="L344" title="All 2 branches covered.">			if (!trimmed.isEmpty()) {</span>
+<span class="fc bfc" id="L345" title="All 2 branches covered.">				if (!normalized.isEmpty()) {</span>
+<span class="fc" id="L346">					normalized.append('\n');</span>
 				}
-<span class="fc" id="L333">				normalized.append(trimmed);</span>
+<span class="fc" id="L348">				normalized.append(trimmed);</span>
 			}
 		}
-<span class="fc" id="L336">		return normalized.toString();</span>
+<span class="fc" id="L351">		return normalized.toString();</span>
 	}
 
 	/**
@@ -341,35 +356,35 @@ public class MiningCandidate {
 	 * literals remains part of the behavior fingerprint.
 	 */
 	private static String normalizeSourceForFingerprint(String value) {
-<span class="fc bfc" id="L344" title="All 2 branches covered.">		return value == null ? &quot;&quot; : value.replace(&quot;\r\n&quot;, &quot;\n&quot;).replace('\r', '\n').strip(); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc bfc" id="L359" title="All 2 branches covered.">		return value == null ? &quot;&quot; : value.replace(&quot;\r\n&quot;, &quot;\n&quot;).replace('\r', '\n').strip(); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
 	}
 
 	private static String nullToEmpty(String value) {
-<span class="fc bfc" id="L348" title="All 2 branches covered.">		return value == null ? &quot;&quot; : value; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L363" title="All 2 branches covered.">		return value == null ? &quot;&quot; : value; //$NON-NLS-1$</span>
 	}
 
 	private static String sha256(String value) {
 		try {
-<span class="fc" id="L353">			MessageDigest digest = MessageDigest.getInstance(&quot;SHA-256&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L354">			byte[] hash = digest.digest(value.getBytes(StandardCharsets.UTF_8));</span>
-<span class="fc" id="L355">			StringBuilder hex = new StringBuilder(hash.length * 2);</span>
-<span class="fc bfc" id="L356" title="All 2 branches covered.">			for (byte b : hash) {</span>
-<span class="fc" id="L357">				hex.append(Character.forDigit((b &gt;&gt;&gt; 4) &amp; 0x0f, 16));</span>
-<span class="fc" id="L358">				hex.append(Character.forDigit(b &amp; 0x0f, 16));</span>
+<span class="fc" id="L368">			MessageDigest digest = MessageDigest.getInstance(&quot;SHA-256&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L369">			byte[] hash = digest.digest(value.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L370">			StringBuilder hex = new StringBuilder(hash.length * 2);</span>
+<span class="fc bfc" id="L371" title="All 2 branches covered.">			for (byte b : hash) {</span>
+<span class="fc" id="L372">				hex.append(Character.forDigit((b &gt;&gt;&gt; 4) &amp; 0x0f, 16));</span>
+<span class="fc" id="L373">				hex.append(Character.forDigit(b &amp; 0x0f, 16));</span>
 			}
-<span class="fc" id="L360">			return hex.toString();</span>
-<span class="nc" id="L361">		} catch (NoSuchAlgorithmException e) {</span>
-<span class="nc" id="L362">			throw new IllegalStateException(&quot;SHA-256 algorithm not available&quot;, e); //$NON-NLS-1$</span>
+<span class="fc" id="L375">			return hex.toString();</span>
+<span class="nc" id="L376">		} catch (NoSuchAlgorithmException e) {</span>
+<span class="nc" id="L377">			throw new IllegalStateException(&quot;SHA-256 algorithm not available&quot;, e); //$NON-NLS-1$</span>
 		}
 	}
 
 	@Override
 	public String toString() {
-<span class="nc" id="L368">		return &quot;MiningCandidate{&quot; //$NON-NLS-1$</span>
-<span class="nc" id="L369">				+ &quot;candidateId='&quot; + getCandidateId() + '\'' //$NON-NLS-1$</span>
+<span class="nc" id="L383">		return &quot;MiningCandidate{&quot; //$NON-NLS-1$</span>
+<span class="nc" id="L384">				+ &quot;candidateId='&quot; + getCandidateId() + '\'' //$NON-NLS-1$</span>
 				+ &quot;, revision=&quot; + revision //$NON-NLS-1$
 				+ &quot;, sourceCommit='&quot; + sourceCommit + '\'' //$NON-NLS-1$
-<span class="nc" id="L372">				+ &quot;, status=&quot; + getStatus() //$NON-NLS-1$</span>
+<span class="nc" id="L387">				+ &quot;, status=&quot; + getStatus() //$NON-NLS-1$</span>
 				+ &quot;, summary='&quot; + summary + '\'' //$NON-NLS-1$
 				+ '}';
 	}

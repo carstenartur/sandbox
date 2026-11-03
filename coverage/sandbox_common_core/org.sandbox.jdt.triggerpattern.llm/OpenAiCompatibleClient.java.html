@@ -325,8 +325,8 @@ try {
 <span class="fc" id="L325">}</span>
 <span class="fc" id="L326">int evalCount = evalArray.size();</span>
 <span class="fc" id="L327">int commitCount = Math.min(commitHashes.size(), commitMessages.size());</span>
-<span class="pc bpc" id="L328" title="1 of 2 branches missed.">if (evalCount != commitCount) {</span>
-<span class="nc" id="L329">System.err.println(&quot;Warning: &quot; + providerName + &quot; batch response count (&quot; + evalCount //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L328" title="All 2 branches covered.">if (evalCount != commitCount) {</span>
+<span class="fc" id="L329">System.err.println(&quot;Warning: &quot; + providerName + &quot; batch response count (&quot; + evalCount //$NON-NLS-1$ //$NON-NLS-2$</span>
 + &quot;) does not match commit count (&quot; + commitCount + &quot;). Processing min of both.&quot;); //$NON-NLS-1$
 }
 <span class="fc" id="L332">int limit = Math.min(evalCount, commitCount);</span>
@@ -336,8 +336,8 @@ try {
 try {
 <span class="fc" id="L337">JsonObject eval = evalArray.get(i).getAsJsonObject();</span>
 <span class="fc" id="L338">results.add(createEvaluation(eval, commitHash, commitMessage, repoUrl));</span>
-<span class="nc" id="L339">} catch (Exception e) {</span>
-<span class="nc" id="L340">System.err.println(&quot;Failed to parse &quot; + providerName + &quot; batch evaluation at index &quot; + i + &quot;: &quot; + e.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L339">} catch (Exception e) {</span>
+<span class="fc" id="L340">System.err.println(&quot;Failed to parse &quot; + providerName + &quot; batch evaluation at index &quot; + i + &quot;: &quot; + e.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$</span>
 <span class="fc" id="L341">}</span>
 }
 <span class="nc" id="L343">} catch (Exception e) {</span>
@@ -359,60 +359,74 @@ try {
 
 static CommitEvaluation createEvaluation(JsonObject eval, String commitHash,
 String commitMessage, String repoUrl) {
-<span class="fc" id="L362">boolean relevant = getBooleanOrDefault(eval, &quot;relevant&quot;, false); //$NON-NLS-1$</span>
-<span class="fc" id="L363">String category = getStringOrNull(eval, &quot;category&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L364" title="2 of 6 branches missed.">if (relevant &amp;&amp; (category == null || category.isBlank())) {</span>
-<span class="fc" id="L365">System.err.println(&quot;Warning: relevant commit &quot; + commitHash //$NON-NLS-1$</span>
-+ &quot; has no category, defaulting to 'Uncategorized'&quot;); //$NON-NLS-1$
-<span class="fc" id="L367">category = &quot;Uncategorized&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L362">CommitEvaluation declined = DiscoveryAdmission.explicitDecline(eval, commitHash, commitMessage, repoUrl);</span>
+<span class="fc bfc" id="L363" title="All 2 branches covered.">if (declined != null) {</span>
+<span class="fc" id="L364">return declined;</span>
 }
-<span class="fc" id="L369">return new CommitEvaluation(</span>
+try {
+<span class="fc" id="L367">return parseCandidateFields(eval, commitHash, commitMessage, repoUrl);</span>
+<span class="fc" id="L368">} catch (RuntimeException e) {</span>
+<span class="fc" id="L369">return DiscoveryAdmission.malformedFields(eval, commitHash, commitMessage, repoUrl, e);</span>
+}
+}
+
+private static CommitEvaluation parseCandidateFields(JsonObject eval, String commitHash,
+String commitMessage, String repoUrl) {
+<span class="fc" id="L375">boolean relevant = getBooleanOrDefault(eval, &quot;relevant&quot;, false); //$NON-NLS-1$</span>
+<span class="fc" id="L376">String category = getStringOrNull(eval, &quot;category&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L377" title="1 of 6 branches missed.">if (relevant &amp;&amp; (category == null || category.isBlank())) {</span>
+<span class="fc" id="L378">System.err.println(&quot;Warning: relevant commit &quot; + commitHash //$NON-NLS-1$</span>
++ &quot; has no category, defaulting to 'Uncategorized'&quot;); //$NON-NLS-1$
+<span class="fc" id="L380">category = &quot;Uncategorized&quot;; //$NON-NLS-1$</span>
+}
+<span class="fc" id="L382">return DiscoveryAdmission.apply(eval, new CommitEvaluation(</span>
 commitHash,
 commitMessage,
 repoUrl,
-<span class="fc" id="L373">Instant.now(),</span>
+<span class="fc" id="L386">Instant.now(),</span>
 null,
 relevant,
-<span class="fc" id="L376">getStringOrNull(eval, &quot;irrelevantReason&quot;), //$NON-NLS-1$</span>
-<span class="fc" id="L377">getBooleanOrDefault(eval, &quot;isDuplicate&quot;, false), //$NON-NLS-1$</span>
-<span class="fc" id="L378">getStringOrNull(eval, &quot;duplicateOf&quot;), //$NON-NLS-1$</span>
-<span class="fc" id="L379">getIntOrDefault(eval, &quot;reusability&quot;, 0), //$NON-NLS-1$</span>
-<span class="fc" id="L380">getIntOrDefault(eval, &quot;codeImprovement&quot;, 0), //$NON-NLS-1$</span>
-<span class="fc" id="L381">getIntOrDefault(eval, &quot;implementationEffort&quot;, 0), //$NON-NLS-1$</span>
-<span class="fc" id="L382">parseTrafficLight(getStringOrNull(eval, &quot;trafficLight&quot;)), //$NON-NLS-1$</span>
+<span class="fc" id="L389">getStringOrNull(eval, &quot;irrelevantReason&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L390">getBooleanOrDefault(eval, &quot;isDuplicate&quot;, false), //$NON-NLS-1$</span>
+<span class="fc" id="L391">getStringOrNull(eval, &quot;duplicateOf&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L392">getIntOrDefault(eval, &quot;reusability&quot;, 0), //$NON-NLS-1$</span>
+<span class="fc" id="L393">getIntOrDefault(eval, &quot;codeImprovement&quot;, 0), //$NON-NLS-1$</span>
+<span class="fc" id="L394">getIntOrDefault(eval, &quot;implementationEffort&quot;, 0), //$NON-NLS-1$</span>
+<span class="fc" id="L395">parseTrafficLight(getStringOrNull(eval, &quot;trafficLight&quot;)), //$NON-NLS-1$</span>
 category,
-<span class="fc" id="L384">getBooleanOrDefault(eval, &quot;isNewCategory&quot;, false), //$NON-NLS-1$</span>
-<span class="fc" id="L385">getStringOrNull(eval, &quot;categoryReason&quot;), //$NON-NLS-1$</span>
-<span class="fc" id="L386">getBooleanOrDefault(eval, &quot;canImplementInCurrentDsl&quot;, false), //$NON-NLS-1$</span>
-<span class="fc" id="L387">getStringOrNull(eval, &quot;dslRule&quot;), //$NON-NLS-1$</span>
-<span class="fc" id="L388">getStringOrNull(eval, &quot;targetHintFile&quot;), //$NON-NLS-1$</span>
-<span class="fc" id="L389">getStringOrNull(eval, &quot;languageChangeNeeded&quot;), //$NON-NLS-1$</span>
-<span class="fc" id="L390">getStringOrNull(eval, &quot;dslRuleAfterChange&quot;), //$NON-NLS-1$</span>
-<span class="fc" id="L391">getStringOrNull(eval, &quot;summary&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L397">getBooleanOrDefault(eval, &quot;isNewCategory&quot;, false), //$NON-NLS-1$</span>
+<span class="fc" id="L398">getStringOrNull(eval, &quot;categoryReason&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L399">getBooleanOrDefault(eval, &quot;canImplementInCurrentDsl&quot;, false), //$NON-NLS-1$</span>
+<span class="fc" id="L400">getStringOrNull(eval, &quot;dslRule&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L401">getStringOrNull(eval, &quot;targetHintFile&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L402">getStringOrNull(eval, &quot;languageChangeNeeded&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L403">getStringOrNull(eval, &quot;dslRuleAfterChange&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L404">getStringOrNull(eval, &quot;summary&quot;), //$NON-NLS-1$</span>
 null,
-<span class="fc" id="L393">getStringOrNull(eval, &quot;beforeExample&quot;), //$NON-NLS-1$</span>
-<span class="fc" id="L394">getStringOrNull(eval, &quot;afterExample&quot;), //$NON-NLS-1$</span>
-<span class="fc" id="L395">getStringOrNull(eval, &quot;negativeExample&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L406">getStringOrNull(eval, &quot;beforeExample&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L407">getStringOrNull(eval, &quot;afterExample&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L408">getStringOrNull(eval, &quot;negativeExample&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L409">DiscoveryAdmission.sourceVersion(eval), DiscoveryAdmission.sourceEvidence(eval)));</span>
 }
 
 static String getStringOrNull(JsonObject obj, String key) {
-<span class="fc" id="L399">JsonElement element = obj.get(key);</span>
-<span class="pc bpc" id="L400" title="1 of 4 branches missed.">return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsString() : null;</span>
+<span class="fc" id="L413">JsonElement element = obj.get(key);</span>
+<span class="pc bpc" id="L414" title="1 of 4 branches missed.">return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsString() : null;</span>
 }
 
 static boolean getBooleanOrDefault(JsonObject obj, String key, boolean defaultValue) {
-<span class="fc" id="L404">JsonElement element = obj.get(key);</span>
-<span class="pc bpc" id="L405" title="1 of 4 branches missed.">return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsBoolean() : defaultValue;</span>
+<span class="fc" id="L418">JsonElement element = obj.get(key);</span>
+<span class="pc bpc" id="L419" title="1 of 4 branches missed.">return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsBoolean() : defaultValue;</span>
 }
 
 static int getIntOrDefault(JsonObject obj, String key, int defaultValue) {
-<span class="fc" id="L409">JsonElement element = obj.get(key);</span>
-<span class="pc bpc" id="L410" title="2 of 4 branches missed.">return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsInt() : defaultValue;</span>
+<span class="fc" id="L423">JsonElement element = obj.get(key);</span>
+<span class="pc bpc" id="L424" title="1 of 4 branches missed.">return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsInt() : defaultValue;</span>
 }
 
 @Override
 public void close() {
-<span class="nc" id="L415">httpClient.close();</span>
-<span class="nc" id="L416">}</span>
+<span class="nc" id="L429">httpClient.close();</span>
+<span class="nc" id="L430">}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

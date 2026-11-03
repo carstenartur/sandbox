@@ -39,7 +39,7 @@ import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 	 */
 	public void collect(List&lt;CommitEvaluation&gt; evaluations) {
 <span class="fc bfc" id="L41" title="All 2 branches covered.">		for (CommitEvaluation eval : evaluations) {</span>
-<span class="pc bpc" id="L42" title="1 of 2 branches missed.">			if (eval.dslValidationResult() != null</span>
+<span class="fc bfc" id="L42" title="All 2 branches covered.">			if (eval.dslValidationResult() != null</span>
 <span class="fc bfc" id="L43" title="All 2 branches covered.">					&amp;&amp; !&quot;VALID&quot;.equals(eval.dslValidationResult())) { //$NON-NLS-1$</span>
 <span class="fc" id="L44">				validationErrors.add(eval.dslValidationResult());</span>
 <span class="fc" id="L45">				errorPatterns.merge(categorizeError(eval.dslValidationResult()), 1, Integer::sum);</span>

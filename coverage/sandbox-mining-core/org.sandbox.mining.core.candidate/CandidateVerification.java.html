@@ -52,7 +52,7 @@ import java.time.Instant;
 	public static CandidateVerification success(String verifierVersion, int matches,
 			int replacements) {
 <span class="fc" id="L54">		return new CandidateVerification(true, Stage.SUCCESS,</span>
-<span class="fc" id="L55">				&quot;Candidate behavior verified&quot;, Instant.now().toString(), //$NON-NLS-1$</span>
+<span class="fc" id="L55">				&quot;Example rewrite verified; semantic review still required&quot;, Instant.now().toString(), //$NON-NLS-1$</span>
 				verifierVersion, matches, replacements);
 	}
 }

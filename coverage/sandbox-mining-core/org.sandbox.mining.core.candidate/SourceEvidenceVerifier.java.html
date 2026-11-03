@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SourceEvidenceVerifier.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-mining-core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.mining.core.candidate</a> &gt; <span class="el_source">SourceEvidenceVerifier.java</span></div><h1>SourceEvidenceVerifier.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.mining.core.candidate;
+
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.ToolFactory;
+import org.eclipse.jdt.core.compiler.ITerminalSymbols;
+import org.eclipse.jdt.core.compiler.InvalidInputException;
+import org.eclipse.jgit.diff.DiffAlgorithm;
+import org.eclipse.jgit.diff.DiffAlgorithm.SupportedAlgorithm;
+import org.eclipse.jgit.diff.Sequence;
+import org.eclipse.jgit.diff.SequenceComparator;
+import org.eclipse.jgit.patch.Patch;
+import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
+import org.sandbox.jdt.triggerpattern.llm.SourceEvidence;
+
+/** Local consistency gate for the original source evidence; not a semantic proof. */
+public final class SourceEvidenceVerifier {
+<span class="fc" id="L25">	public record Result(SourceEvidence evidence, String problem) {}</span>
+
+	private SourceEvidenceVerifier() {}
+
+	/** Checks changed spans and replacement literals; returns the locally copied hunk. */
+	public static Result verify(SourceEvidence evidence, String dsl, String diff) {
+<span class="pc bpc" id="L31" title="2 of 6 branches missed.">		if (evidence == null || !shortText(evidence.path()) || !evidence.path().endsWith(&quot;.java&quot;)</span>
+<span class="fc bfc" id="L32" title="All 4 branches covered.">				|| !shortText(evidence.before()) || !shortText(evidence.after())) {</span>
+<span class="fc" id="L33">			return failure(&quot;Missing or invalid source evidence (Java path and spans up to 512 characters)&quot;);</span>
+		}
+<span class="pc bpc" id="L35" title="1 of 4 branches missed.">		if (diff == null || diff.isBlank()) {</span>
+<span class="fc" id="L36">			return failure(&quot;Original changed hunk is missing&quot;);</span>
+		}
+		try {
+<span class="fc" id="L39">			List&lt;Token&gt; before = tokens(evidence.before());</span>
+<span class="fc" id="L40">			List&lt;Token&gt; after = tokens(evidence.after());</span>
+<span class="pc bpc" id="L41" title="3 of 6 branches missed.">			if (before.isEmpty() || after.isEmpty() || before.equals(after)) {</span>
+<span class="nc" id="L42">				return failure(&quot;Source evidence must identify a changed Java expression or statement&quot;);</span>
+			}
+<span class="fc" id="L44">			var rules = new HintFileParser().parse(dsl).getRules();</span>
+<span class="pc bpc" id="L45" title="2 of 4 branches missed.">			if (rules.size() != 1 || rules.get(0).alternatives().size() != 1) {</span>
+<span class="nc" id="L46">				return failure(&quot;Source evidence requires one textual rewrite alternative&quot;);</span>
+			}
+<span class="fc" id="L48">			var alternative = rules.get(0).alternatives().get(0);</span>
+<span class="pc bpc" id="L49" title="3 of 6 branches missed.">			if (!alternative.hasTextReplacement() || alternative.hasStructuredActions() || alternative.isEmbeddedFix()) {</span>
+<span class="nc" id="L50">				return failure(&quot;Source evidence requires a textual replacement&quot;);</span>
+			}
+<span class="fc bfc" id="L52" title="All 2 branches covered.">			for (Token token : tokens(alternative.replacementPattern())) {</span>
+<span class="fc bfc" id="L53" title="All 4 branches covered.">				if (token.literal() &amp;&amp; !after.contains(token)) {</span>
+<span class="fc" id="L54">					return failure(&quot;Replacement literal is absent from the original after span&quot;);</span>
+				}
+<span class="fc" id="L56">			}</span>
+<span class="fc" id="L57">			byte[] bytes = diff.replace(&quot;\r\n&quot;, &quot;\n&quot;).getBytes(StandardCharsets.UTF_8);</span>
+<span class="fc" id="L58">			Patch patch = new Patch();</span>
+<span class="fc" id="L59">			patch.parse(bytes, 0, bytes.length);</span>
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">			if (!patch.getErrors().isEmpty()) {</span>
+<span class="nc" id="L61">				return failure(&quot;Original diff is malformed or incomplete&quot;);</span>
+			}
+<span class="fc bfc" id="L63" title="All 2 branches covered.">			for (var file : patch.getFiles()) {</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">				if (!evidence.path().equals(file.getNewPath())) {</span>
+<span class="fc" id="L65">					continue;</span>
+				}
+<span class="fc bfc" id="L67" title="All 2 branches covered.">				for (var hunk : file.getHunks()) {</span>
+<span class="fc" id="L68">					String text = new String(bytes, hunk.getStartOffset(),</span>
+<span class="fc" id="L69">							hunk.getEndOffset() - hunk.getStartOffset(), StandardCharsets.UTF_8);</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">					if (matchesEdit(text, before, after)) {</span>
+<span class="fc" id="L71">						String header = new String(bytes, file.getStartOffset(),</span>
+<span class="fc" id="L72">								file.getHunks().get(0).getStartOffset() - file.getStartOffset(), StandardCharsets.UTF_8);</span>
+<span class="fc" id="L73">						return new Result(new SourceEvidence(evidence.path(), evidence.before(), evidence.after(), header + text), null);</span>
+					}
+<span class="fc" id="L75">				}</span>
+<span class="fc" id="L76">			}</span>
+<span class="fc" id="L77">			return failure(&quot;Source spans do not occur in the same changed block of the named file&quot;);</span>
+<span class="nc" id="L78">		} catch (Exception e) {</span>
+<span class="nc" id="L79">			return failure(&quot;Cannot check source evidence: &quot; + e.getClass().getSimpleName());</span>
+		}
+	}
+
+	/**
+	 * Returns whether any independent edit block supplies matching token evidence.
+	 * Incomplete lexical context disqualifies only that block, allowing a later match.
+	 */
+	private static boolean matchesEdit(String hunk, List&lt;Token&gt; before, List&lt;Token&gt; after) throws InvalidInputException {
+<span class="fc" id="L88">		StringBuilder removed = new StringBuilder();</span>
+<span class="fc" id="L89">		StringBuilder added = new StringBuilder();</span>
+<span class="fc" id="L90">		List&lt;Edit&gt; edits = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L91">		int oldStart = -1, newStart = -1;</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">		for (String line : (hunk + &quot;\n &quot;).split(&quot;\n&quot;, -1)) {</span>
+<span class="pc bpc" id="L93" title="1 of 4 branches missed.">			if (line.startsWith(&quot;\\&quot;) || line.startsWith(&quot;@@&quot;)) {</span>
+<span class="fc" id="L94">				continue;</span>
+			}
+<span class="fc bfc" id="L96" title="All 6 branches covered.">			if ((line.startsWith(&quot;-&quot;) || line.startsWith(&quot;+&quot;)) &amp;&amp; oldStart &lt; 0) {</span>
+<span class="fc" id="L97">				oldStart = removed.length();</span>
+<span class="fc" id="L98">				newStart = added.length();</span>
+			}
+<span class="fc bfc" id="L100" title="All 2 branches covered.">			if (line.startsWith(&quot;-&quot;)) {</span>
+<span class="fc" id="L101">				removed.append(line.substring(1)).append('\n');</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">			} else if (line.startsWith(&quot;+&quot;)) {</span>
+<span class="fc" id="L103">				added.append(line.substring(1)).append('\n');</span>
+			} else {
+<span class="fc bfc" id="L105" title="All 2 branches covered.">				if (oldStart &gt;= 0) {</span>
+<span class="fc" id="L106">					edits.add(new Edit(oldStart, removed.length(), newStart, added.length()));</span>
+<span class="fc" id="L107">					oldStart = -1;</span>
+				}
+<span class="fc bfc" id="L109" title="All 2 branches covered.">				if (line.startsWith(&quot; &quot;)) {</span>
+<span class="fc" id="L110">					removed.append(line.substring(1)).append('\n');</span>
+<span class="fc" id="L111">					added.append(line.substring(1)).append('\n');</span>
+				}
+			}
+		}
+		// Scan with visible hunk context so changed text inside comments is not Java evidence.
+<span class="fc bfc" id="L116" title="All 2 branches covered.">		for (Edit edit : edits) {</span>
+			try {
+<span class="fc" id="L118">				var oldTokens = new TokenSequence(tokens(removed.toString(), edit.oldStart(), edit.oldEnd()));</span>
+<span class="fc" id="L119">				var newTokens = new TokenSequence(tokens(added.toString(), edit.newStart(), edit.newEnd()));</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">				for (var change : DiffAlgorithm.getAlgorithm(SupportedAlgorithm.HISTOGRAM).diff(COMPARATOR, oldTokens, newTokens)) {</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">					if (changedOccurrence(oldTokens.values, before, change.getBeginA(), change.getEndA())</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">							&amp;&amp; changedOccurrence(newTokens.values, after, change.getBeginB(), change.getEndB())) {</span>
+<span class="fc" id="L123">						return true;</span>
+					}
+<span class="fc" id="L125">				}</span>
+<span class="fc" id="L126">			} catch (InvalidInputException e) {</span>
+				// An edit boundary can fall inside a comment. Reject this block as evidence, then continue:
+				// a later block may have enough visible context to yield valid Java tokens.
+<span class="fc" id="L129">			}</span>
+<span class="fc" id="L130">		}</span>
+<span class="fc" id="L131">		return false;</span>
+	}
+
+<span class="fc" id="L134">	private record Edit(int oldStart, int oldEnd, int newStart, int newEnd) {}</span>
+
+	private static boolean changedOccurrence(List&lt;Token&gt; tokens, List&lt;Token&gt; quote, int start, int end) {
+<span class="fc bfc" id="L137" title="All 2 branches covered.">		for (int i = 0; i + quote.size() &lt;= tokens.size(); i++) {</span>
+<span class="fc" id="L138">			int limit = i + quote.size();</span>
+<span class="pc bpc" id="L139" title="2 of 10 branches missed.">			boolean overlaps = start == end ? i &lt;= start &amp;&amp; start &lt;= limit : i &lt; end &amp;&amp; start &lt; limit;</span>
+<span class="fc bfc" id="L140" title="All 4 branches covered.">			if (overlaps &amp;&amp; tokens.subList(i, limit).equals(quote)) {</span>
+<span class="fc" id="L141">				return true;</span>
+			}
+		}
+<span class="fc" id="L144">		return false;</span>
+	}
+
+	private static final class TokenSequence extends Sequence {
+		private final List&lt;Token&gt; values;
+<span class="fc" id="L149">		private TokenSequence(List&lt;Token&gt; values) { this.values = List.copyOf(values); }</span>
+<span class="fc" id="L150">		@Override public int size() { return values.size(); }</span>
+	}
+
+<span class="fc" id="L153">	private static final SequenceComparator&lt;TokenSequence&gt; COMPARATOR = new SequenceComparator&lt;&gt;() {</span>
+		@Override public boolean equals(TokenSequence a, int ai, TokenSequence b, int bi) {
+<span class="fc" id="L155">			return a.values.get(ai).equals(b.values.get(bi));</span>
+		}
+		@Override public int hash(TokenSequence sequence, int index) {
+<span class="fc" id="L158">			return sequence.values.get(index).hashCode();</span>
+		}
+	};
+
+	private static List&lt;Token&gt; tokens(String source) throws InvalidInputException {
+<span class="fc" id="L163">		return tokens(source, 0, source.length());</span>
+	}
+
+	private static List&lt;Token&gt; tokens(String source, int start, int end) throws InvalidInputException {
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">		if (start &gt;= end) {</span>
+<span class="nc" id="L168">			return List.of();</span>
+		}
+<span class="fc" id="L170">		var scanner = ToolFactory.createScanner(false, false, false, JavaCore.VERSION_25);</span>
+<span class="fc" id="L171">		scanner.setSource(source.substring(0, end).toCharArray());</span>
+<span class="fc" id="L172">		List&lt;Token&gt; result = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">		for (int kind = scanner.getNextToken(); kind != ITerminalSymbols.TokenNameEOF; kind = scanner.getNextToken()) {</span>
+<span class="pc bpc" id="L174" title="1 of 4 branches missed.">			if (scanner.getCurrentTokenStartPosition() &gt;= start &amp;&amp; scanner.getCurrentTokenEndPosition() &lt; end) {</span>
+<span class="fc" id="L175">				result.add(new Token(kind, new String(scanner.getCurrentTokenSource())));</span>
+			}
+		}
+<span class="fc" id="L178">		return result;</span>
+	}
+
+	private static boolean shortText(String text) {
+<span class="pc bpc" id="L182" title="1 of 6 branches missed.">		return text != null &amp;&amp; !text.isBlank() &amp;&amp; text.length() &lt;= 512;</span>
+	}
+
+	private static Result failure(String problem) {
+<span class="fc" id="L186">		return new Result(null, problem);</span>
+	}
+
+<span class="fc" id="L189">	private record Token(int kind, String text) {</span>
+		boolean literal() {
+<span class="fc bfc" id="L191" title="All 2 branches covered.">			return switch (kind) {</span>
+			case ITerminalSymbols.TokenNameStringLiteral, ITerminalSymbols.TokenNameCharacterLiteral,
+				ITerminalSymbols.TokenNameTextBlock, ITerminalSymbols.TokenNameIntegerLiteral,
+				ITerminalSymbols.TokenNameLongLiteral, ITerminalSymbols.TokenNameFloatingPointLiteral,
+				ITerminalSymbols.TokenNameDoubleLiteral, ITerminalSymbols.TokenNametrue,
+<span class="fc" id="L196">				ITerminalSymbols.TokenNamefalse, ITerminalSymbols.TokenNamenull -&gt; true;</span>
+<span class="fc" id="L197">			default -&gt; false;</span>
+			};
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

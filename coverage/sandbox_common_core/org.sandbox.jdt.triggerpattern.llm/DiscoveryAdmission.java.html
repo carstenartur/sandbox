@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>DiscoveryAdmission.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.llm</a> &gt; <span class="el_source">DiscoveryAdmission.java</span></div><h1>DiscoveryAdmission.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.llm;
+
+import java.time.Instant;
+
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation.TrafficLight;
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
+/** Enforces the same candidate-or-no-cleanup response contract for every provider. */
+final class DiscoveryAdmission {
+
+	private DiscoveryAdmission() {
+	}
+
+	/** An explicit decline is complete even when unused candidate fields are malformed. */
+	static CommitEvaluation explicitDecline(JsonObject answer, String commitHash, String message, String repoUrl) {
+<span class="fc bfc" id="L22" title="All 2 branches covered.">		if (!isBoolean(answer.get(&quot;noCleanup&quot;), true)) { //$NON-NLS-1$</span>
+<span class="fc" id="L23">			return null;</span>
+		}
+<span class="fc" id="L25">		String reason = string(answer, &quot;reason&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L26">		return completedNonCandidate(answer, commitHash, message, repoUrl,</span>
+<span class="pc bpc" id="L27" title="1 of 4 branches missed.">				reason == null || reason.isBlank() ? &quot;Model returned noCleanup&quot; : reason); //$NON-NLS-1$</span>
+	}
+
+	static CommitEvaluation malformedFields(JsonObject answer, String commitHash, String message, String repoUrl,
+			RuntimeException failure) {
+<span class="fc" id="L32">		return completedNonCandidate(answer, commitHash, message, repoUrl,</span>
+<span class="fc" id="L33">				&quot;Malformed candidate response fields: &quot; + failure.getClass().getSimpleName()); //$NON-NLS-1$</span>
+	}
+
+	private static CommitEvaluation completedNonCandidate(JsonObject answer, String commitHash, String message,
+			String repoUrl, String reason) {
+<span class="fc" id="L38">		return new CommitEvaluation(commitHash, message, repoUrl, Instant.now(), null, false,</span>
+				reason,
+<span class="fc" id="L40">				false, null, 0, 0, 0, TrafficLight.NOT_APPLICABLE, string(answer, &quot;category&quot;), false, null, //$NON-NLS-1$</span>
+<span class="fc" id="L41">				false, null, null, null, null, string(answer, &quot;summary&quot;), null, null, null, null, //$NON-NLS-1$</span>
+<span class="fc" id="L42">				sourceVersion(answer), sourceEvidence(answer));</span>
+	}
+
+	static CommitEvaluation apply(JsonObject answer, CommitEvaluation evaluation) {
+<span class="fc bfc" id="L46" title="All 2 branches covered.">		if (evaluation.trafficLight() != TrafficLight.GREEN) {</span>
+<span class="fc" id="L47">			return evaluation;</span>
+		}
+<span class="fc bfc" id="L49" title="All 2 branches covered.">		if (!isBoolean(answer.get(&quot;noCleanup&quot;), false)) { //$NON-NLS-1$</span>
+<span class="fc" id="L50">			return evaluation.withoutCandidate(&quot;Positive response must explicitly set noCleanup=false&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L52">		JsonElement confidence = answer.get(&quot;confidence&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L53" title="1 of 6 branches missed.">		if (confidence == null || !confidence.isJsonPrimitive() || !confidence.getAsJsonPrimitive().isNumber()</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">				|| !Double.isFinite(confidence.getAsDouble())</span>
+<span class="fc bfc" id="L55" title="All 4 branches covered.">				|| confidence.getAsDouble() &lt; 0.80 || confidence.getAsDouble() &gt; 1.0) {</span>
+<span class="fc" id="L56">			return evaluation.withoutCandidate(&quot;Confidence must be a finite number in [0.80, 1]&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc bfc" id="L58" title="All 2 branches covered.">		if (!isBoolean(answer.get(&quot;relevant&quot;), true) //$NON-NLS-1$</span>
+<span class="fc bfc" id="L59" title="All 4 branches covered.">				|| !isBoolean(answer.get(&quot;canImplementInCurrentDsl&quot;), true) || evaluation.isDuplicate()) { //$NON-NLS-1$</span>
+<span class="fc" id="L60">			return evaluation.withoutCandidate(&quot;GREEN conflicts with relevance, DSL support, or duplicate status&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc bfc" id="L62" title="All 2 branches covered.">		if (evaluation.sourceEvidence() == null) {</span>
+<span class="fc" id="L63">			return evaluation.withoutCandidate(&quot;Positive response needs a path and original before/after spans (1..512 characters)&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L65">		return evaluation;</span>
+	}
+
+	static String sourceVersion(JsonObject answer) {
+<span class="fc" id="L69">		String version = string(answer, &quot;sourceVersion&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L70" title="1 of 4 branches missed.">		return version == null || version.isBlank() ? &quot;21&quot; : version; //$NON-NLS-1$</span>
+	}
+
+	static SourceEvidence sourceEvidence(JsonObject answer) {
+<span class="fc" id="L74">		JsonElement value = answer.get(&quot;sourceEvidence&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L75" title="1 of 4 branches missed.">		if (value == null || !value.isJsonObject()) {</span>
+<span class="fc" id="L76">			return null;</span>
+		}
+<span class="fc" id="L78">		JsonObject evidence = value.getAsJsonObject();</span>
+<span class="fc" id="L79">		String path = string(evidence, &quot;path&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L80">		String before = string(evidence, &quot;before&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L81">		String after = string(evidence, &quot;after&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L82" title="1 of 6 branches missed.">		if (!shortNonblank(path) || !shortNonblank(before) || !shortNonblank(after)) {</span>
+<span class="fc" id="L83">			return null;</span>
+		}
+<span class="fc" id="L85">		return new SourceEvidence(path, before, after);</span>
+	}
+
+	private static boolean shortNonblank(String value) {
+<span class="pc bpc" id="L89" title="1 of 6 branches missed.">		return value != null &amp;&amp; !value.isBlank() &amp;&amp; value.length() &lt;= 512;</span>
+	}
+
+	private static boolean isBoolean(JsonElement value, boolean expected) {
+<span class="pc bpc" id="L93" title="1 of 6 branches missed.">		return value != null &amp;&amp; value.isJsonPrimitive() &amp;&amp; value.getAsJsonPrimitive().isBoolean()</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">				&amp;&amp; value.getAsBoolean() == expected;</span>
+	}
+
+	private static String string(JsonObject object, String field) {
+<span class="fc" id="L98">		JsonElement value = object.get(field);</span>
+<span class="pc bpc" id="L99" title="2 of 6 branches missed.">		return value != null &amp;&amp; value.isJsonPrimitive() &amp;&amp; value.getAsJsonPrimitive().isString()</span>
+<span class="fc" id="L100">				? value.getAsString() : null;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

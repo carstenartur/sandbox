@@ -45,8 +45,9 @@ import java.time.Instant;
  * @param afterExample          expected Java code after the rule is applied
  * @param negativeExample       Java code example that should not match the rule
  * @param sourceVersion         Java source level for parsing and guard evaluation
+ * @param sourceEvidence        original changed spans, absent in legacy evaluations
  */
-<span class="fc" id="L49">public record CommitEvaluation(</span>
+<span class="fc" id="L50">public record CommitEvaluation(</span>
 		String commitHash,
 		String commitMessage,
 		String repoUrl,
@@ -73,7 +74,41 @@ import java.time.Instant;
 		String beforeExample,
 		String afterExample,
 		String negativeExample,
-		String sourceVersion) {
+		String sourceVersion,
+		SourceEvidence sourceEvidence) {
+
+	/** Compatibility constructor for callers with a source version but no evidence. */
+	public CommitEvaluation(String commitHash, String commitMessage, String repoUrl,
+			Instant evaluatedAt, Instant commitDate, boolean relevant, String irrelevantReason,
+			boolean isDuplicate, String duplicateOf, int reusability, int codeImprovement,
+			int implementationEffort, TrafficLight trafficLight, String category, boolean isNewCategory,
+			String categoryReason, boolean canImplementInCurrentDsl, String dslRule, String targetHintFile,
+			String languageChangeNeeded, String dslRuleAfterChange, String summary, String dslValidationResult,
+			String beforeExample, String afterExample, String negativeExample, String sourceVersion) {
+<span class="fc" id="L88">		this(commitHash, commitMessage, repoUrl, evaluatedAt, commitDate, relevant, irrelevantReason,</span>
+				isDuplicate, duplicateOf, reusability, codeImprovement, implementationEffort, trafficLight,
+				category, isNewCategory, categoryReason, canImplementInCurrentDsl, dslRule, targetHintFile,
+				languageChangeNeeded, dslRuleAfterChange, summary, dslValidationResult, beforeExample,
+				afterExample, negativeExample, sourceVersion, null);
+<span class="fc" id="L93">	}</span>
+
+	/** Adds the locally checked evidence without changing the model decision. */
+	public CommitEvaluation withSourceEvidence(SourceEvidence evidence) {
+<span class="fc" id="L97">		return new CommitEvaluation(commitHash, commitMessage, repoUrl, evaluatedAt, commitDate,</span>
+				relevant, irrelevantReason, isDuplicate, duplicateOf, reusability, codeImprovement,
+				implementationEffort, trafficLight, category, isNewCategory, categoryReason,
+				canImplementInCurrentDsl, dslRule, targetHintFile, languageChangeNeeded, dslRuleAfterChange,
+				summary, dslValidationResult, beforeExample, afterExample, negativeExample, sourceVersion, evidence);
+	}
+
+	/** Records a completed non-candidate rather than an unanswered commit to retry. */
+	public CommitEvaluation withoutCandidate(String reason) {
+<span class="fc" id="L106">		return new CommitEvaluation(commitHash, commitMessage, repoUrl, evaluatedAt, commitDate,</span>
+				false, reason, isDuplicate, duplicateOf, reusability, codeImprovement,
+				implementationEffort, TrafficLight.NOT_APPLICABLE, category, isNewCategory, categoryReason,
+				false, null, targetHintFile, languageChangeNeeded, dslRuleAfterChange, summary, dslValidationResult,
+				beforeExample, afterExample, negativeExample, sourceVersion, sourceEvidence);
+	}
 
 	/**
 	 * Compatibility constructor for existing callers and persisted test fixtures.
@@ -106,30 +141,30 @@ import java.time.Instant;
 			String beforeExample,
 			String afterExample,
 			String negativeExample) {
-<span class="fc" id="L109">		this(commitHash, commitMessage, repoUrl, evaluatedAt, commitDate,</span>
+<span class="fc" id="L144">		this(commitHash, commitMessage, repoUrl, evaluatedAt, commitDate,</span>
 				relevant, irrelevantReason, isDuplicate, duplicateOf,
 				reusability, codeImprovement, implementationEffort, trafficLight,
 				category, isNewCategory, categoryReason, canImplementInCurrentDsl,
 				dslRule, targetHintFile, languageChangeNeeded, dslRuleAfterChange,
 				summary, dslValidationResult, beforeExample, afterExample,
 				negativeExample, &quot;21&quot;); //$NON-NLS-1$
-<span class="fc" id="L116">	}</span>
+<span class="fc" id="L151">	}</span>
 
 	/** Returns a usable source version even for legacy JSON with no field. */
 	public String sourceVersion() {
-<span class="pc bpc" id="L120" title="2 of 4 branches missed.">		return sourceVersion == null || sourceVersion.isBlank() ? &quot;21&quot; : sourceVersion; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L155" title="2 of 4 branches missed.">		return sourceVersion == null || sourceVersion.isBlank() ? &quot;21&quot; : sourceVersion; //$NON-NLS-1$</span>
 	}
 
 	/** Traffic light assessment retained for reporter compatibility. */
-<span class="fc" id="L124">	public enum TrafficLight {</span>
+<span class="fc" id="L159">	public enum TrafficLight {</span>
 		/** Directly implementable as DSL rule */
-<span class="fc" id="L126">		GREEN,</span>
+<span class="fc" id="L161">		GREEN,</span>
 		/** Implementable with DSL extensions */
-<span class="fc" id="L128">		YELLOW,</span>
+<span class="fc" id="L163">		YELLOW,</span>
 		/** Not implementable in current DSL */
-<span class="fc" id="L130">		RED,</span>
+<span class="fc" id="L165">		RED,</span>
 		/** Not applicable / irrelevant commit */
-<span class="fc" id="L132">		NOT_APPLICABLE</span>
+<span class="fc" id="L167">		NOT_APPLICABLE</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

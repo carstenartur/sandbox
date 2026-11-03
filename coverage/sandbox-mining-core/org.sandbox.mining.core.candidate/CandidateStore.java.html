@@ -179,7 +179,7 @@ public class CandidateStore {
 
 	private static boolean sameProposal(MiningCandidate first, MiningCandidate second) {
 <span class="pc bpc" id="L181" title="1 of 2 branches missed.">		return Objects.equals(first.getSourceRepo(), second.getSourceRepo())</span>
-<span class="pc bpc" id="L182" title="1 of 2 branches missed.">				&amp;&amp; Objects.equals(first.getSourceCommit(), second.getSourceCommit())</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">				&amp;&amp; Objects.equals(first.getSourceCommit(), second.getSourceCommit())</span>
 <span class="pc bpc" id="L183" title="1 of 2 branches missed.">				&amp;&amp; Objects.equals(first.getCategory(), second.getCategory())</span>
 <span class="pc bpc" id="L184" title="1 of 2 branches missed.">				&amp;&amp; Objects.equals(first.getTargetHintFile(), second.getTargetHintFile())</span>
 <span class="fc bfc" id="L185" title="All 2 branches covered.">				&amp;&amp; first.getRuleFingerprint().equals(second.getRuleFingerprint())</span>
