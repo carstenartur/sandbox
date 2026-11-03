@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Carsten Hammer. SPDX-License-Identifier: EPL-2.0 */
 import java.lang.classfile.*;
 import java.lang.classfile.attribute.CodeAttribute;
 import java.lang.classfile.instruction.*;

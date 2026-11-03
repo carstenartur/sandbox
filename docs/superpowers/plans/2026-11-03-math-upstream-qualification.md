@@ -46,6 +46,12 @@ upstream failures must remain visible rather than being reclassified as passes.
 - [x] Add meaningful SWT changed-method behavior coverage and verify its headless
       mutations; retain the real native renderer gate for the Linux CI run.
 - [x] Acquire a matching materialized Sandbox product and pristine JDT checkouts.
+- [x] Complete both official SWT Linux/GTK reactors with identical inventories:
+      5,012 tests, 4,550 passed, 462 unchanged skips, zero failures/errors.
+- [x] Apply the native mathematics plugin to all 4,287 JDT production source units;
+      retain the five accepted changes, UI zero-change result and warning delta.
+- [x] Reproduce Tycho's replacement of changed Core bytecode with release bytecode;
+      use the same separately recorded build-only correction in both variants.
 - [ ] Run original upstream builds/tests, ordinary cleanup, and identical rebuilt
       tests wherever dependencies and baseline prerequisites are available.
 - [x] Independently review the additions and run the inventory regressions; add a
@@ -61,3 +67,21 @@ records. A before/after success requires the same scope and test inventory; a
 clean compile alone is not an all-tests claim. No performance claim is accepted
 without representative measurements including the actual call path, guards and
 fallbacks, with the JVM and source identities retained.
+
+## JDT execution extension
+
+Build the native product from the same CI checkout and verify its commit, adapter
+and embedded SDK hashes. Reuse the existing official-reactor wrapper and pinned
+JGit fixture. Run Core and UI independently on native Linux CI with JavaSE
+1.8/17/21/25 toolchains, no compliance/test filters, and a frozen dependency cache
+for the second phase. Preserve raw receipts, command failures and interrupted
+reports outside the disposable checkouts. Stream large Apply JSON rather than
+loading its complete sources and proof trees into the JUnit heap.
+
+The Maven/JUnit gate must reject stale, incomplete and duplicate source receipts,
+unsuccessful Apply, missing/all-skipped test modules, released JARs in place of
+reactor output, mismatched class inventories, and changes to source embedded only
+in a prebuilt jar-in-jar-loader ZIP. A complete zero-change UI scan is valid.
+Regression fixtures must first demonstrate the relevant false-green cases.
+The generated Java is retained exactly; new warnings and source growth are
+reported instead of silently repairing the output before measuring it.

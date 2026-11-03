@@ -15,6 +15,7 @@ on:
       - 'sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/PinnedGitRepository*.java'
       - '.github/workflows/benchmark.yml'
   pull_request:
+    types: [opened, reopened, synchronize, labeled]
     branches:
       - main
     paths:
@@ -28,9 +29,15 @@ on:
       - 'sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/PinnedGitRepository*.java'
       - '.github/workflows/benchmark.yml'
   workflow_dispatch:
+    inputs:
+      jdt_upstream:
+        description: Run complete pinned JDT Core/UI mathematics qualification
+        type: boolean
+        default: false
 
 jobs:
   swt-before-after:
+    if: github.event.action != 'labeled'
     name: Pinned SWT mathematics before and after
     runs-on: ubuntu-24.04
     timeout-minutes: 120
@@ -102,7 +109,141 @@ jobs:
             sandbox/qa/math-optimization/target/surefire-reports/
             upstream/swt/**/target/surefire-reports/
 
+  jdt-product:
+    name: Build mathematics product for upstream JDT
+    concurrency:
+      group: ${{ github.workflow }}-jdt-product-${{ github.ref }}
+      cancel-in-progress: true
+    if: >-
+      inputs.jdt_upstream == true ||
+      (github.event_name == 'pull_request' &&
+       contains(github.event.pull_request.labels.*.name, 'math-upstream-qa'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    env:
+      MAVEN_OPTS: -Declipse.p2.mirrors=false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: sandbox
+      - uses: actions/setup-java@v6
+        with:
+          java-version: '25'
+          distribution: temurin
+          cache: maven
+          cache-dependency-path: sandbox/pom.xml
+      - name: Materialize the product from this checkout
+        working-directory: sandbox
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ../jdt-product
+          git rev-parse HEAD > ../jdt-product/source-commit.txt
+          ./mvnw --batch-mode --no-transfer-progress -Pproduct \
+            -pl sandbox_product -am -Dsandbox.tycho.linux-only=true \
+            -DskipTests -Dspotbugs.skip=true -Dtycho.localArtifacts=ignore \
+            clean package 2>&1 | tee ../jdt-product/build.log
+          git diff --exit-code HEAD
+          mapfile -d '' launchers < <(find sandbox_product/target/products -type f \
+            -path '*/linux/gtk/x86_64/eclipse' -perm -u+x -print0)
+          test "${#launchers[@]}" -eq 1
+          product=$(dirname "${launchers[0]}")
+          shopt -s nullglob
+          adapters=("$product"/plugins/sandbox_math_cleanup_[0-9]*.jar)
+          test "${#adapters[@]}" -eq 1
+          sha256sum "${adapters[0]}" | cut -d ' ' -f 1 > ../jdt-product/adapter-sha256.txt
+          tar -czf ../jdt-product/product.tar.gz -C "$product" .
+          cd ../jdt-product
+          sha256sum product.tar.gz source-commit.txt adapter-sha256.txt > SHA256SUMS
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: jdt-math-product
+          path: jdt-product/
+          if-no-files-found: error
+
+  jdt-before-after:
+    name: Pinned JDT ${{ matrix.family }} mathematics before and after
+    needs: jdt-product
+    concurrency:
+      group: ${{ github.workflow }}-jdt-${{ matrix.family }}-${{ github.ref }}
+      cancel-in-progress: true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        family: [core, ui]
+    permissions:
+      contents: read
+    env:
+      MAVEN_OPTS: -Declipse.p2.mirrors=false
+      SWT_GTK4: '0'
+      GDK_BACKEND: x11
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: sandbox
+      - name: Provide the official JDT Java toolchains
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: |
+            8
+            17
+            21
+            25
+          mvn-toolchain-id: |
+            JavaSE-1.8
+            JavaSE-17
+            JavaSE-21
+            JavaSE-25
+          cache: maven
+          cache-dependency-path: sandbox/qa/math-optimization/pom.xml
+      - name: Install native test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xvfb xauth dbus-daemon libgtk-3-0 libwebkit2gtk-4.1-0 ripgrep
+      - uses: actions/download-artifact@v8
+        with:
+          name: jdt-math-product
+          path: jdt-product
+      - name: Verify and unpack this run's product
+        run: |
+          set -euo pipefail
+          cd jdt-product
+          sha256sum -c SHA256SUMS
+          test "$(cat source-commit.txt)" = "$(git -C ../sandbox rev-parse HEAD)"
+          mkdir eclipse
+          tar -xzf product.tar.gz -C eclipse
+      - name: Verify Apply, complete upstream tests and loaded reactor classes
+        working-directory: sandbox
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./mvnw --batch-mode --no-transfer-progress -f qa/math-optimization/pom.xml \
+            -Dtest=JdtMathQualificationTest#pinnedOfficialReactorsPreserveBehavior \
+            -Dsandbox.math.jdt.family=${{ matrix.family }} \
+            -Dsandbox.math.jdt.product="$GITHUB_WORKSPACE/jdt-product/eclipse" \
+            -Dsandbox.math.jdt.productCommit="$(cat ../jdt-product/source-commit.txt)" \
+            -Dsandbox.math.jdt.adapterSha256="$(cat ../jdt-product/adapter-sha256.txt)" \
+            -Dsandbox.math.jdt.output="$GITHUB_WORKSPACE/jdt-evidence-${{ matrix.family }}" \
+            -Dsandbox.math.jdt.maven="$GITHUB_WORKSPACE/sandbox/mvnw" test
+      - name: Retain all upstream evidence, including failed phases
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: jdt-math-before-after-${{ matrix.family }}
+          include-hidden-files: true
+          path: |
+            jdt-evidence-${{ matrix.family }}/
+            sandbox/qa/math-optimization/target/surefire-reports/
+
   benchmark:
+    if: github.event.action != 'labeled'
     runs-on: ubuntu-latest
     permissions:
       contents: read

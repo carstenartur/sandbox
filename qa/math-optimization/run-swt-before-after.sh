@@ -48,7 +48,7 @@ run_upstream() {
   while IFS= read -r -d '' report; do
     mkdir -p "$destination/$(dirname "$report")"
     cp "$SWT_CHECKOUT/$report" "$destination/$report"
-  done < <(cd "$SWT_CHECKOUT" && rg --files --hidden --no-ignore -0 -g 'TEST-*.xml')
+  done < <(cd "$SWT_CHECKOUT" && rg --files --hidden --no-ignore -0 -g '**/target/surefire-reports/TEST-*.xml')
 }
 
 run_upstream baseline

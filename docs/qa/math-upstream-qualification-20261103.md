@@ -83,6 +83,13 @@ The default `NONTRIVIAL` deliberately omits small, uncomplicated bit identities;
 `ALL` includes explanations for those accepted changes too. Full explanations
 remain in diagnostics/reports independently of the source-comment mode.
 
+This mechanism covers the scalar value-plan path. The actual `MethodInfo`
+runtime-iteration replacement has no generated explanation comment even though
+the exercised profile selects `NONTRIVIAL`: its separate emitter does not call
+`MathExplanation`. The observed output therefore exposes an explanation gap for
+that more complex transformation; the option is not a guarantee that every
+transformation family emits a source comment.
+
 `MathExplanation` records the actual verified numerical contract, premises,
 original/replacement value expressions and independent proof methods. Its work
 estimate explicitly says `not a timing measurement`. This is suitable information
@@ -132,8 +139,7 @@ verifies the live sources, then executes all four changed-method tests under
 Xvfb, then runs the entire official SWT reactor before and after the exact patch.
 The thin `run-swt-before-after.sh` process adapter preserves command exit codes
 and reports. Maven/JUnit compares exact test identities, multiplicities and states
-with no allowed renames/additions/removals. The CI run must finish before these
-upstream tests can be called green.
+with no allowed renames/additions/removals.
 The generated build runs offline against the baseline's resolved cache, so a
 moving P2 composite cannot supply different dependencies for the second build.
 
@@ -141,6 +147,31 @@ An additional JUnit gate requires actual passing tests in both the main SWT test
 module and the separate Linux GTK test module. Equal inventories containing only
 skips, or equal inventories that both omit a module, are insufficient. Regression
 fixtures first reproduced both false-green cases and then verified their rejection.
+
+### Completed Linux/GTK upstream result
+
+[Job 125691314994](https://github.com/carstenartur/sandbox/actions/runs/41567162274/job/125691314994)
+completed successfully on the exact PR tree. Both official 22-module builds
+returned zero, and all test identities, multiplicities and states matched:
+
+| Executed reactor scope | Tests before/after | Passed before/after | Skipped before/after | Failures/errors |
+| --- | ---: | ---: | ---: | ---: |
+| Whole reactor, 175 JUnit XML reports | 5,012 / 5,012 | 4,550 / 4,550 | 462 / 462 | 0 / 0 |
+| Main SWT test module | 4,680 / 4,680 | 4,444 / 4,444 | 236 / 236 | 0 / 0 |
+| GTK test module | 53 / 53 | 43 / 43 | 10 / 10 | 0 / 0 |
+
+The whole reactor additionally executes SVG tests and platform-independent tests
+from the two Windows fragment modules. These do not establish Windows GUI or
+native behavior. The 462 skips were already present before the patch and remain
+the exact same test states afterwards.
+
+The separate changed-method gate also passed all **four tests with no skips** in
+CI, including the real renderer and all four deliberate wrong-result mutations.
+The live source gate passed independently. The retained
+[receipt](../../qa/math-optimization/results/2026-11-03-swt-upstream/receipt.json)
+bind the test tree, source commit, complete evidence archive and patch hashes.
+The archive contains the exact patch; its hash is identical to the separately
+regenerated local Apply output.
 
 ## Oomph scope
 
@@ -157,7 +188,7 @@ qualification. Oomph can provision an IDE/workspace; compilation and running the
 same official tests before/after remain separate checks. Linux GTK results do not
 qualify Windows, Cocoa, GTK4 or Wayland behavior.
 
-## Remaining upstream experiments
+## JDT: actual native Apply and build findings
 
 The official BC `:core:test :prov:test` before/after runs and the JDT Core/UI
 build/test comparisons are being executed separately. No all-tests claim is made
@@ -165,15 +196,61 @@ from an in-progress run. BC scope is the changed bcprov artifact, not the separa
 PKIX, TLS, PGP or mail products. Its ordinary upstream test mode samples some PQC
 vectors; the changed classical digest suites are separate from that sampler.
 
-Native JDT Apply has already completed for all 1,626 Java units in the compiler
-and Core bundles: five changes in four files. Every recorded original was checked
+Native JDT Apply completed for all **4,287 Java units** in the four production
+bundles, using the strict numerical profile and the ordinary proof/Apply gates:
+
+| Bundle | Java units | Accepted replacements |
+| --- | ---: | ---: |
+| `org.eclipse.jdt.core.compiler.batch` | 553 | 4 in 3 files |
+| `org.eclipse.jdt.core` | 1,073 | 1 in 1 file |
+| `org.eclipse.jdt.core.manipulation` | 945 | 0 |
+| `org.eclipse.jdt.ui` | 1,716 | 0 |
+
+Every recorded original was checked
 against the untouched checkout and every replacement against the written file,
-with zero mismatches. The patch contains positional arithmetic in
+with zero mismatches. The compact
+[local receipt](../../qa/math-optimization/results/2026-11-03-jdt-local/receipt.json)
+records product/source identities, patches, warnings and the bounded build scope.
+The patch contains positional arithmetic in
 `AbstractCommentParser`, two hexadecimal-character calculations in `ScannerHelper`,
 constant addition in `CompletionEngine`, and a guarded finite-sum replacement in
 `MethodInfo`. The latter substantially increases source size and introduces a
 BigInteger path for at least 4,096 iterations; it is not yet a demonstrated
 performance or readability improvement.
+
+The transformed Core production bundles compile successfully. Their emitted
+source adds **13 compiler warnings**: MethodInfo has three unnecessary casts and
+eight missing NON-NLS markers; ScannerHelper has two unnecessary casts. These are
+real quality regressions, despite successful compilation. The generated output
+is preserved exactly as Apply wrote it.
+
+The UI/manipulation result is a legitimate zero-change result, not an omitted
+scan. Candidate search and emission gates rejected proposed changes, including
+an unnecessary cast before Apply. Aggregate diagnostic codes combine unresolved
+bindings with unsupported types/nonlocal expressions; they do not prove there
+were zero unresolved bindings. Five UI source units belong to a prebuilt
+jar-in-jar-loader ZIP and are unchanged. The new CI gate rejects a future change
+there unless those sources are actually rebuilt.
+
+### Preventing a false green upstream build
+
+The pinned Core POM contains literal `baselineReplace=common`, overriding the
+command-line property intended to disable Tycho replacement. A concrete after
+build compiled the changed `CompletionEngine.class`, then packaged the original
+release class instead. A passing test of that JAR would not qualify the change.
+Both isolated comparison phases therefore receive the same one-line build-only
+patch, `baselineReplace=none`, retained separately from the mathematics patch.
+After that correction, all 1,456 Core, 811 compiler and 5 Ant adapter classes in
+the generated JARs match their fresh compiler outputs byte-for-byte. This proves
+the packaged artifact identity; full test execution remains a separate gate.
+
+The opt-in JDT jobs build the Sandbox product from the same workflow checkout,
+verify its commit, adapter and embedded SDK hashes, and run Core/UI independently
+with the official Java 8/17/21/25 toolchains. Maven/JUnit requires every expected
+test module to execute passing tests, compares complete inventories, and checks
+the actual reactor paths in the test runtime configuration. The generated phase
+uses the baseline dependency cache offline. Enable these long jobs with the PR
+label `math-upstream-qa` or workflow-dispatch input `jdt_upstream=true`.
 
 The unchanged UI reactor compiled its reachable production bundles and UI test
 sources, then its test harness failed before executing a test because
@@ -181,3 +258,10 @@ sources, then its test harness failed before executing a test because
 A Core test attempt was killed by the shared 8 GiB memory limit; subsequent large
 JVM runs are serialized and test heaps bounded while preserving the official suite.
 Neither attempt is a passing regression comparison.
+
+The Sandbox Maven build in PR 1797 itself passed. Its separate official Oomph
+workspace job failed during Maven import/indexing: JDT reported that its
+`org.eclipse.jdt.core-3.47.0.jar` package root was no longer on `sandbox_common`'s
+build path (Java model error 1006). No mathematics transformation was applied in
+that provisioning test. The overall Maven workflow is therefore not green; this
+observed workspace failure is retained rather than ignored.
