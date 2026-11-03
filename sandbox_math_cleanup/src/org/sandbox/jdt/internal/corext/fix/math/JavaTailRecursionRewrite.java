@@ -187,16 +187,19 @@ public final class JavaTailRecursionRewrite {
         ReturnStatement base = exit.getThenStatement() instanceof ReturnStatement r ? r
                 : (ReturnStatement) ((Block) exit.getThenStatement()).statements().getFirst();
         var code = new StringBuilder("{\n"); //$NON-NLS-1$
-        for (int i = 0; i < states.size(); i++) {
-            var state = model.states().get(i);
-            code.append("    ").append(state.type()).append(' ').append(states.get(i)).append(" = ").append(state.name()).append(";\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-        }
         int counter=-1;
         if(counted) for(int i=0;i<states.size();i++) if(model.states().get(i).bindingKey().equals(model.termination().counterBinding())) counter=i;
+        for (int i = 0; i < states.size(); i++) {
+            var state = model.states().get(i);
+            code.append("    ").append(state.type()).append(' ').append(states.get(i)); //$NON-NLS-1$
+            if(i!=counter) code.append(" = ").append(state.name()); //$NON-NLS-1$
+            code.append(";\n"); //$NON-NLS-1$
+        }
         if(counter<0) code.append("    while (!( ").append(renamed(exit.getExpression(), names, source, work)).append(" )) {\n"); //$NON-NLS-1$ //$NON-NLS-2$
         else {
             String name=states.get(counter);
-            code.append("    for (; ").append(name).append(" > 0; ").append(name).append("--) {\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+            code.append("    for (").append(name).append(" = ").append(model.states().get(counter).name()) //$NON-NLS-1$ //$NON-NLS-2$
+                    .append("; ").append(name).append(" > 0; ").append(name).append("--) {\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
         }
         for (int i = 0; i < next.size(); i++) {
             if(i==counter) continue;
