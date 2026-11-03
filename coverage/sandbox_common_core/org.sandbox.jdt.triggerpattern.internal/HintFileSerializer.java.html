@@ -226,8 +226,8 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 * {@code instanceof} syntax.
 	 */
 	private static String formatFunctionCall(GuardExpression.FunctionCall fc) {
-<span class="pc bpc" id="L229" title="3 of 4 branches missed.">		if (&quot;instanceof&quot;.equals(fc.name()) &amp;&amp; fc.args().size() == 2) { //$NON-NLS-1$</span>
-<span class="nc" id="L230">			return fc.args().get(0) + &quot; instanceof &quot; + fc.args().get(1); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L229" title="1 of 4 branches missed.">		if (&quot;instanceof&quot;.equals(fc.name()) &amp;&amp; fc.args().size() == 2) { //$NON-NLS-1$</span>
+<span class="fc" id="L230">			return fc.args().get(0) + &quot; instanceof &quot; + fc.args().get(1); //$NON-NLS-1$</span>
 		}
 <span class="pc bpc" id="L232" title="1 of 2 branches missed.">		if (fc.args().isEmpty()) {</span>
 <span class="nc" id="L233">			return fc.name() + &quot;()&quot;; //$NON-NLS-1$</span>

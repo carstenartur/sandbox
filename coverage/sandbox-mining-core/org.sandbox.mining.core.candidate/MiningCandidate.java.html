@@ -211,11 +211,11 @@ public class MiningCandidate {
 	 * version instead of relying on the default returned by {@link #getSourceVersion()}.
 	 */
 	public boolean hasDeclaredSourceVersion() {
-<span class="pc bpc" id="L214" title="1 of 4 branches missed.">		return sourceVersion != null &amp;&amp; !sourceVersion.isBlank();</span>
+<span class="fc bfc" id="L214" title="All 4 branches covered.">		return sourceVersion != null &amp;&amp; !sourceVersion.isBlank();</span>
 	}
 
 	public String getSourceVersion() {
-<span class="pc bpc" id="L218" title="1 of 2 branches missed.">		return hasDeclaredSourceVersion() ? sourceVersion : &quot;21&quot;; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">		return hasDeclaredSourceVersion() ? sourceVersion : &quot;21&quot;; //$NON-NLS-1$</span>
 	}
 
 	public void setSourceVersion(String sourceVersion) {

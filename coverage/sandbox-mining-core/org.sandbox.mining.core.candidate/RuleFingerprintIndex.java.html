@@ -51,8 +51,8 @@ public final class RuleFingerprintIndex {
 <span class="fc" id="L51">			return fingerprintRule(parsed.getRules().get(0));</span>
 <span class="nc" id="L52">		} catch (IOException e) {</span>
 <span class="nc" id="L53">			throw e;</span>
-<span class="nc" id="L54">		} catch (Exception e) {</span>
-<span class="nc" id="L55">			throw new IOException(&quot;Could not fingerprint candidate DSL: &quot; + e.getMessage(), e); //$NON-NLS-1$</span>
+<span class="fc" id="L54">		} catch (Exception e) {</span>
+<span class="fc" id="L55">			throw new IOException(&quot;Could not fingerprint candidate DSL: &quot; + e.getMessage(), e); //$NON-NLS-1$</span>
 		}
 	}
 
