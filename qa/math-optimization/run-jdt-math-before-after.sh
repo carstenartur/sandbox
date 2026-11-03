@@ -43,7 +43,7 @@ run_phase() {
   mkdir -p "$destination/reports" "$destination/runtime" "$destination/bundles" "$destination/classes"
   local -a command=(dbus-run-session -- xvfb-run -a -s '-screen 0 1280x1024x24 -noreset'
     "$MAVEN" --batch-mode --no-transfer-progress --no-snapshot-updates
-    -f "$ROOT/reactor.xml" "-Djdt-ui-source=$ROOT/$FAMILY" "-Dmaven.repo.local=$ROOT/m2"
+    -f "$ROOT/reactor.xml" "-Djdt-ui-source=$FAMILY" "-Dmaven.repo.local=$ROOT/m2"
     -Pbuild-individual-bundles -DskipTests=false -DforkCount=1
     -Dtycho.baseline.replace=none -DcompilerBaselineReplace=none
     -Dsurefire.testArgLine=-Xmx2g -Dtycho.surefire.argLine=-Xmx2g

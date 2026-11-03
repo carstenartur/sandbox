@@ -159,6 +159,7 @@ class JdtMathQualificationTest {
                     }
                 }
             }
+            assertEquals(0, exit, "Upstream process failed; inspect retained exit codes and logs: " + output);
             assertEquals(configuredPom, Files.readString(corePom), "The identical build configuration must survive both phases");
             for (String project : projects) verifyReceipt(output.resolve(project + ".json"), project, repository.resolve(project), originals.get(project), sdk, hash(adapter));
             List<String> modules = family.equals("core") ? List.of("org.eclipse.jdt.compiler.tool.tests", "org.eclipse.jdt.core.tests.builder",
@@ -168,7 +169,6 @@ class JdtMathQualificationTest {
             verifyInventories(output.resolve("baseline/reports"), output.resolve("generated/reports"), modules, output.resolve("inventory"));
             verifyInventories(output.resolve("baseline"), output.resolve("generated"), List.of("reports"), output.resolve("inventory/all"));
             for (String phase : List.of("baseline", "generated")) verifyTestBundles(output.resolve(phase), projects, repository);
-            assertEquals(0, exit, "Upstream process failed; inspect retained exit codes and logs: " + output);
         }
     }
 
