@@ -33,7 +33,7 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1862,
+        "files": 1881,
         "matches": 182,
         "rules": 12
       }
@@ -2721,7 +2721,7 @@
       "hintFile": "arrays",
       "rule": "arrays.aslist-contains.review",
       "file": "sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/ui/fix/MathematicalWorkbenchSWTBotTest.java",
-      "line": 447,
+      "line": 450,
       "matchedCode": "Arrays.asList(labels).contains(control.getText().replace(\"&\",\"\"))"
     },
     {

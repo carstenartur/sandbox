@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-11-02
+# Refactoring Mining Report — 2026-11-03
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -9,7 +9,7 @@
 | eclipse.platform | 311 | 71 | 4 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
-| sandbox | 1862 | 182 | 12 |
+| sandbox | 1881 | 182 | 12 |
 
 ## Details
 ### eclipse.jdt.core
@@ -441,7 +441,7 @@
 #### Rule: `arrays` → `arrays.aslist-contains.review`
 - `org/eclipse/jdt/internal/corext/dom/ASTNodes.java:1591` — `Arrays.asList(additionalExpectedOperators).contains(actualOperator)`
 - `org/eclipse/jdt/internal/corext/dom/ASTNodes.java:3301` — `Arrays.asList(fieldNames).contains(node.getName().getIdentifier())`
-- `sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/ui/fix/MathematicalWorkbenchSWTBotTest.java:447` — `Arrays.asList(labels).contains(control.getText().replace("&",""))`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/ui/fix/MathematicalWorkbenchSWTBotTest.java:450` — `Arrays.asList(labels).contains(control.getText().replace("&",""))`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java:42` — `Arrays.asList(filtered).contains("test")`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java:66` — `Arrays.asList(filtered).contains("--source")`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java:139` — `Arrays.asList(values).contains(expected.toFile().getPath())`
