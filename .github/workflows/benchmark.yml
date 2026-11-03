@@ -142,7 +142,7 @@ jobs:
           mkdir -p ../jdt-product
           git rev-parse HEAD > ../jdt-product/source-commit.txt
           ./mvnw --batch-mode --no-transfer-progress -Pproduct \
-            -pl sandbox_product -am -Dsandbox.tycho.linux-only=true \
+            -Dsandbox.tycho.linux-only=true \
             -DskipTests -Dspotbugs.skip=true -Dtycho.localArtifacts=ignore \
             clean package 2>&1 | tee ../jdt-product/build.log
           git diff --exit-code HEAD
