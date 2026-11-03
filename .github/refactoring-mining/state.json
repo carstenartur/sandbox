@@ -5416,9 +5416,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "lastProcessedCommit": "69f058cee904aef61a97c44f3e2825dacfa9a6d4",
-      "lastProcessedDate": "2026-11-02T02:22:27.428702328Z",
-      "totalProcessed": 233,
+      "lastProcessedCommit": "da73b8b3425fa08755b675ee7d31b181e4ac980e",
+      "lastProcessedDate": "2026-11-03T02:35:51.453896007Z",
+      "totalProcessed": 305,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -5519,6 +5519,42 @@
           "deferredAt": "2026-11-02T02:19:58.258092962Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "bca984dc24bc623ddd4f152c5e5b2ba588dbb792",
+          "message": "Bug 578709 - Multiple editor selection dialogs apppear on debugging",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-03T02:29:42.082764401Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a31baf97eda1ae062ead1db1215742e2be6b51e0",
+          "message": "Bug 575275 - faster console",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-03T02:30:01.924191876Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "6326d5709bec624d43270605e5fb2cc0916a78b6",
+          "message": "Add icons to \"Profile as\" launch and context menus #19",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-03T02:31:59.390831212Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "40438885bcd49ed60a3b1369b32671c273d22511",
+          "message": "Remove unnecessary Activators",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-03T02:34:06.439429168Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -5546,10 +5582,25 @@
         "Simplification": 1,
         "Primitive Parsing": 3,
         "Java 8+ Modernization": 1,
-        "String Literal Replacement": 1
+        "String Literal Replacement": 2,
+        "Structural change (control flow)": 1,
+        "New feature introduction / Declarative changes": 1,
+        "Structural change (modifier, control flow)": 1,
+        "Not DSL Expressible": 3,
+        "Not Java Source": 1,
+        "Stream API Modernization": 1,
+        "Logging Improvement": 1,
+        "Logging Best Practice": 1,
+        "Testing/Assertions": 1,
+        "Modernization": 1,
+        "Eclipse Modernization": 1,
+        "API Usage": 1,
+        "Error Handling": 1,
+        "Constructor Replacement": 1,
+        "Null Safety": 1
       },
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 53714
+  "globalTotalProcessed": 53786
 }
