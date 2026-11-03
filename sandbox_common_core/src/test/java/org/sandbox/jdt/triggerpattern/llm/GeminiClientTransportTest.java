@@ -33,11 +33,13 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.function.IntSupplier;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLHandshakeException;
@@ -46,6 +48,7 @@ import javax.net.ssl.SSLSession;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -59,9 +62,12 @@ class GeminiClientTransportTest {
 		ScriptedHttpClient transport = new ScriptedHttpClient(
 				new HttpTimeoutException("request timed out"), SUCCESS);
 		try (GeminiClient client = newClient(transport)) {
+			transport.requestCount = client::getDailyRequestCount;
 			var result = evaluate(client);
 			assertEquals(List.of("hash"), result.stream().map(CommitEvaluation::commitHash).toList());
 			assertEquals(2, transport.requests.size());
+			assertEquals(List.of(1, 2), transport.countsAtSend);
+			assertEquals(2, client.getDailyRequestCount());
 			assertEquals(List.of(5000L), transport.waits);
 			assertEquals(transport.requests.get(0).uri(), transport.requests.get(1).uri());
 			assertFalse(client.isApiUnavailable());
@@ -162,6 +168,44 @@ class GeminiClientTransportTest {
 			IOException failure = assertThrows(IOException.class, () -> evaluate(client));
 			assertTrue(failure.getMessage().contains(Integer.toString(status)));
 			assertEquals(1, transport.requests.size());
+			assertEquals(1, client.getDailyRequestCount());
+		}
+	}
+
+	@Test
+	void successfulSingleEvaluationCountsOnlyItsHttpAttempt() throws IOException {
+		Response success = new Response(200,
+				"{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"{\\\"relevant\\\":false}\"}]}}]}");
+		ScriptedHttpClient transport = new ScriptedHttpClient(success);
+		try (GeminiClient client = newClient(transport)) {
+			assertFalse(client.evaluate("prompt", "hash", "message", "repository").relevant());
+			assertEquals(1, client.getDailyRequestCount());
+			assertEquals(1, transport.requests.size());
+		}
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	@Timeout(5)
+	void lifetimeBudgetStopsRetriesAndSubsequentCallsAtEighteenAttempts(boolean batch) {
+		Object[] outcomes = new Object[19];
+		Arrays.fill(outcomes, new Response(503, "Service overloaded"));
+		outcomes[18] = SUCCESS;
+		ScriptedHttpClient transport = new ScriptedHttpClient(outcomes);
+		try (GeminiClient client = newClient(transport)) {
+			Executable request = batch ? () -> evaluate(client)
+					: () -> client.evaluate("prompt", "hash", "message", "repository");
+			for (int call = 1; call <= 3; call++) {
+				assertThrows(IOException.class, request);
+				assertEquals(call * 5, client.getDailyRequestCount());
+			}
+			IOException exhausted = assertThrows(IOException.class, request);
+			assertTrue(exhausted.getMessage().contains("budget"));
+			assertFalse(client.hasRemainingQuota());
+			assertEquals(18, client.getDailyRequestCount());
+			assertEquals(18, transport.requests.size());
+			assertThrows(IOException.class, request);
+			assertEquals(18, transport.requests.size(), "No nineteenth request may reach the transport");
 		}
 	}
 
@@ -227,6 +271,8 @@ class GeminiClientTransportTest {
 		private final List<Object> outcomes;
 		private final List<HttpRequest> requests = new ArrayList<>();
 		private final List<Long> waits = new ArrayList<>();
+		private final List<Integer> countsAtSend = new ArrayList<>();
+		private IntSupplier requestCount;
 
 		ScriptedHttpClient(Object... outcomes) {
 			this.outcomes = List.of(outcomes);
@@ -237,6 +283,9 @@ class GeminiClientTransportTest {
 		public <T> HttpResponse<T> send(HttpRequest request, HttpResponse.BodyHandler<T> handler)
 				throws IOException, InterruptedException {
 			Object outcome = outcomes.get(requests.size());
+			if (requestCount != null) {
+				countsAtSend.add(requestCount.getAsInt());
+			}
 			requests.add(request);
 			if (outcome instanceof IOException failure) {
 				throw failure;

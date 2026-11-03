@@ -49,7 +49,7 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 public final class CandidateVerifier {
 
 	/** Persisted verifier version for reproducibility. */
-	public static final String VERSION = "7"; //$NON-NLS-1$
+	public static final String VERSION = "8"; //$NON-NLS-1$
 
 	private final DslValidator dslValidator;
 	private final HintFileParser hintFileParser;
@@ -68,6 +68,13 @@ public final class CandidateVerifier {
 		String schemaProblem = validateSchema(candidate);
 		if (schemaProblem != null) {
 			return failure(CandidateVerification.Stage.SCHEMA, schemaProblem, 0, 0);
+		}
+		if (candidate.getSourceEvidence() != null) {
+			var evidence = SourceEvidenceVerifier.verify(candidate.getSourceEvidence(), candidate.getDslRule(),
+					candidate.getSourceEvidence().diffHunk());
+			if (evidence.problem() != null) {
+				return failure(CandidateVerification.Stage.SCHEMA, evidence.problem(), 0, 0);
+			}
 		}
 
 		var dslValidation = dslValidator.validate(candidate.getDslRule());

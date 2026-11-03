@@ -142,6 +142,10 @@ public class PromptBuilder {
 		prompt.append("- changes whose correctness depends on unavailable data-flow, overload, synchronization, or nullability facts;\n"); //$NON-NLS-1$
 		prompt.append("- multiple unrelated transformations in one proposal;\n"); //$NON-NLS-1$
 		prompt.append("- a candidate without complete compiling before, after, and negative examples.\n\n"); //$NON-NLS-1$
+		prompt.append("- commits explicitly applying an existing JDT cleanup, or test diagnostics and intentional behavior changes.\n"); //$NON-NLS-1$
+		prompt.append("Check overload/type, null, repeated-evaluation/side-effect, locale/Unicode, and numeric-range preconditions; encode necessary guards or return noCleanup.\n"); //$NON-NLS-1$
+		prompt.append("Do not invent replacement literals. Cite a Java file path and short verbatim before/after spans from removed/added lines of the same diff hunk (at most 512 characters each).\n"); //$NON-NLS-1$
+		prompt.append("Examples are synthetic: the negative example should expose a semantic near miss (wrong overload, side effect, null or numeric boundary), not merely another method name.\n\n"); //$NON-NLS-1$
 	}
 
 	private static void appendDslRuleChecklist(StringBuilder prompt) {
@@ -171,6 +175,7 @@ public class PromptBuilder {
 		prompt.append(indent).append("\"dslRule\": \"one raw .sandbox-hint rule or null\",\n"); //$NON-NLS-1$
 		prompt.append(indent).append("\"targetHintFile\": \"simple .sandbox-hint filename or null\",\n"); //$NON-NLS-1$
 		prompt.append(indent).append("\"sourceVersion\": \"21\",\n"); //$NON-NLS-1$
+		prompt.append(indent).append("\"sourceEvidence\": {\"path\": \"original Java file path\", \"before\": \"verbatim removed span\", \"after\": \"verbatim added span\"},\n"); //$NON-NLS-1$
 		prompt.append(indent).append("\"beforeExample\": \"minimal self-contained compiling Java class or null\",\n"); //$NON-NLS-1$
 		prompt.append(indent).append("\"afterExample\": \"complete expected Java class or null\",\n"); //$NON-NLS-1$
 		prompt.append(indent).append("\"negativeExample\": \"similar compiling class that must not match or null\",\n"); //$NON-NLS-1$

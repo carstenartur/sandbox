@@ -20,6 +20,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.sandbox.jdt.triggerpattern.llm.SourceEvidence;
+
 /**
  * Authoritative staged representation of one mined cleanup proposal.
  *
@@ -42,6 +44,7 @@ public class MiningCandidate {
 	private String targetHintFile;
 	private String sourceCommit;
 	private String sourceRepo;
+	private SourceEvidence sourceEvidence;
 	private String category;
 	private String summary;
 	private String sourceVersion = "21"; //$NON-NLS-1$
@@ -184,6 +187,15 @@ public class MiningCandidate {
 		return sourceRepo;
 	}
 
+	public SourceEvidence getSourceEvidence() {
+		return sourceEvidence;
+	}
+
+	public void setSourceEvidence(SourceEvidence sourceEvidence) {
+		this.sourceEvidence = sourceEvidence;
+		this.behaviorFingerprint = null;
+	}
+
 	public void setSourceRepo(String sourceRepo) {
 		this.sourceRepo = sourceRepo;
 		this.candidateId = null;
@@ -266,6 +278,9 @@ public class MiningCandidate {
 			String behavior = normalizeSourceForFingerprint(beforeExample) + '\n'
 					+ normalizeSourceForFingerprint(afterExample) + '\n'
 					+ normalizeSourceForFingerprint(negativeExample);
+			if (sourceEvidence != null) {
+				behavior += '\n' + sourceEvidence.toString();
+			}
 			behaviorFingerprint = "sha256:" + sha256(behavior); //$NON-NLS-1$
 		}
 		return behaviorFingerprint;

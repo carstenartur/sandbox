@@ -52,7 +52,7 @@ public record CandidateVerification(
 	public static CandidateVerification success(String verifierVersion, int matches,
 			int replacements) {
 		return new CandidateVerification(true, Stage.SUCCESS,
-				"Candidate behavior verified", Instant.now().toString(), //$NON-NLS-1$
+				"Example rewrite verified; semantic review still required", Instant.now().toString(), //$NON-NLS-1$
 				verifierVersion, matches, replacements);
 	}
 }
