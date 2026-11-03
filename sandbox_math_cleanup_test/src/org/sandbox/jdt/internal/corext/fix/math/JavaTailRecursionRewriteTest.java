@@ -63,6 +63,51 @@ class JavaTailRecursionRewriteTest {
         assertEquals("CANCELLED",JavaTailRecursionRewrite.prepare(ast,before,offset,MathCleanUpOptions.parse(values,17),cancelled).reason());
     }
 
+    @ParameterizedTest @ValueSource(booleans={false,true})
+    void actualCountedTailEmissionEntersTheExistingRuntimeProofAndExecutesBothPaths(boolean counterLast) throws Exception {
+        String before=counterLast?source("public static long step(final long a,final int n) { if(n<=0)return a+n; return step(a+n,n-1); }"):sum();
+        var values=nativeOptions();values.put(MathCleanUpOptions.GOAL,"LOWER_ESTIMATED_RUNTIME");
+        var options=MathCleanUpOptions.parse(values,17);
+        var prepared=JavaTailRecursionRewrite.prepare(bound(before),before,before.indexOf("public static"),options,new NullProgressMonitor());
+        String transferred=prepared.plan().orElseThrow(()->new AssertionError(prepared.reason())).applyTo(before);
+        var ast=bound(transferred);var loops=new java.util.ArrayList<ForStatement>();
+        ast.accept(new ASTVisitor(){@Override public boolean visit(ForStatement loop){loops.add(loop);return true;}});
+        assertEquals(1,loops.size());var loop=loops.getFirst();
+        var result=MathematicalAnalysis.analyzeTailLoops(ast,transferred,options,new NullProgressMonitor(),
+                List.of(new org.eclipse.jdt.core.SourceRange(loop.getStartPosition(),loop.getLength())));
+        var proof=result.evidence().stream().filter(e->e.runtimeIteration()!=null).findFirst()
+                .orElseThrow(()->new AssertionError(result.diagnostics().toString()));
+        var document=new org.eclipse.jface.text.Document(transferred);var undo=result.newEdit().apply(document);
+        String accelerated=document.get();assertTrue(accelerated.contains("$series"),accelerated);
+        assertTrue(java.util.Arrays.stream(bound(accelerated).getProblems()).noneMatch(p->p.isWarning()),accelerated);
+        int above=Math.toIntExact(proof.runtimeIteration().minimumIterations()+1);
+        Class<?>[] parameters=counterLast?new Class<?>[]{long.class,int.class}:new Class<?>[]{int.class,long.class};
+        List<Object[]> inputs=List.of(new Object[]{-1,7L},new Object[]{0,7L},new Object[]{1,Long.MAX_VALUE},
+                new Object[]{30,Long.MIN_VALUE},new Object[]{above,7L});
+        if(counterLast) inputs=inputs.stream().map(input->new Object[]{input[1],input[0]}).toList();
+        compare(before,accelerated,parameters,inputs);
+        String fallback=transferred.substring(loop.getStartPosition(),loop.getStartPosition()+loop.getLength());
+        assertTrue(accelerated.contains(fallback));
+        String probe=accelerated.replace(fallback,"throw new AssertionError(\"fallback\");");
+        compare(before,probe,parameters,List.<Object[]>of(inputs.getLast()));
+        undo.apply(document);assertEquals(transferred,document.get());
+    }
+
+    @Test void mathematicalOptInKeepsTheProtectedTailLoopAndCannotEnterStrictAcceleration() throws Exception {
+        String before=sum();var values=nativeOptions();values.put(MathCleanUpOptions.GOAL,"LOWER_ESTIMATED_RUNTIME");
+        values.put(MathCleanUpOptions.MATHEMATICAL_OPT_IN,"true");var options=MathCleanUpOptions.parse(values,17);
+        var prepared=JavaTailRecursionRewrite.prepare(bound(before),before,before.indexOf("public static"),options,new NullProgressMonitor());
+        var plan=prepared.plan().orElseThrow(()->new AssertionError(prepared.reason()));String transferred=plan.applyTo(before);
+        assertTrue(transferred.contains("while"));assertFalse(transferred.contains("$series"));
+        var body=new org.eclipse.jdt.core.SourceRange(plan.bodyOffset(),plan.bodyLength());
+        var rejected=assertThrows(IllegalArgumentException.class,()->MathematicalAnalysis.analyzeTailLoops(bound(transferred),transferred,options,null,List.of(body)));
+        assertEquals("TAIL_ITERATION_PROFILE_REQUIRED",rejected.getMessage());
+        var ordinary=MathematicalAnalysis.analyze(bound(transferred),transferred,options,null,-1,0,null,List.of(body));
+        var document=new org.eclipse.jface.text.Document(transferred);ordinary.newEdit().apply(document);
+        assertFalse(ordinary.changed(),ordinary.diagnostics().toString());assertEquals(transferred,document.get());
+        compare(before,document.get(),new Class<?>[]{int.class,long.class},List.of(new Object[]{-1,7L},new Object[]{0,7L},new Object[]{30,Long.MAX_VALUE}));
+    }
+
     @ParameterizedTest
     @ValueSource(strings={"/* retain */","// retain   "})
     void nativeBridgeRejectsDetachedCommentsAddedToTheSource(String comment) throws Exception {

@@ -7,6 +7,15 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class JavaNumericStreamTest extends JavaContextTestSupport {
+    @Test void fusionCannotLeaveTheLastCapturedLocalUnused() throws Exception {
+        String source=sample("java.util.stream.LongStream.of(((long)n)<<32).map(x -> x+k).map(y -> y-k).sum()")
+                .replace("return java","long k=Long.MAX_VALUE; return java");
+        var result=analyze(source);
+        assertFalse(result.changed(),result.diagnostics().toString());
+        assertTrue(result.diagnostics().stream().anyMatch(d->d.message().startsWith("GENERATED_DIAGNOSTIC_INTRODUCED")),result.diagnostics().toString());
+        var document=new org.eclipse.jface.text.Document(source);result.newEdit().apply(document);assertEquals(source,document.get());
+        equivalent(source,document.get());
+    }
     @ParameterizedTest @ValueSource(strings={"sum()", "reduce(7, Integer::sum)", "reduce(Integer::sum).orElse(9)", "min().orElse(9)", "max().orElse(9)"})
     void intMapsComposeWithoutChangingTheTerminal(String terminal) throws Exception {
         String source = sample("java.util.stream.IntStream.of(n, n+1).map(x -> x+17).map(y -> y-17)."+terminal);
@@ -17,7 +26,7 @@ class JavaNumericStreamTest extends JavaContextTestSupport {
         equivalent(source, generated);
     }
     @Test void longMapsKeepLongOverflowAndCapturedBindings() throws Exception {
-        String source = sample("java.util.stream.LongStream.of(((long)n)<<32).map(x -> x+k).map(y -> y-k).sum()")
+        String source = sample("java.util.stream.LongStream.of(((long)n)<<32).map(x -> x+k).map(y -> y-k).sum()+k")
                 .replace("return java", "long k=Long.MAX_VALUE; return java");
         String generated = changed(source);
         assertEquals(1, generated.split("\\.map\\(", -1).length-1, generated);
@@ -28,7 +37,7 @@ class JavaNumericStreamTest extends JavaContextTestSupport {
         equivalent(source, changed(source));
     }
     @Test void capturedNameMatchingTheOtherParameterDoesNotBecomeCaptured() throws Exception {
-        String source=sample("java.util.stream.IntStream.of(n).map(x -> x+y).map(z -> z-y).sum()")
+        String source=sample("java.util.stream.IntStream.of(n).map(x -> x+y).map(z -> z-y).sum()+y")
                 .replace("return java", "int y=n; return java");
         equivalent(source, changed(source));
     }

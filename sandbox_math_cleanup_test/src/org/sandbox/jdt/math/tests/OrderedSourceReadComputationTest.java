@@ -126,7 +126,7 @@ class OrderedSourceReadComputationTest {
         assertEquals(1, extraction.regions().size(), extraction.toString());
         // Three occurrences must remain three inputs, even for the same receiver and index.
         assertEquals(4, extraction.regions().getFirst().plan().inputs().size());
-        String generated = rewrite(source);
+        String generated = MathTestSupport.diagnosticDecline(source,options());
         assertEquals(1, occurrences(generated, "first.get(0)"));
         assertEquals(2, occurrences(generated, "second.get(0)"));
         try (var oldCode = compile(source); var newCode = compile(generated)) {

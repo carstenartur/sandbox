@@ -115,9 +115,11 @@ jobs:
       group: ${{ github.workflow }}-jdt-product-${{ github.ref }}
       cancel-in-progress: true
     if: >-
-      inputs.jdt_upstream == true ||
-      (github.event_name == 'pull_request' &&
-       contains(github.event.pull_request.labels.*.name, 'math-upstream-qa'))
+      (github.event.action != 'labeled' ||
+       github.event.label.name == 'math-upstream-qa') &&
+      (inputs.jdt_upstream == true ||
+       (github.event_name == 'pull_request' &&
+        contains(github.event.pull_request.labels.*.name, 'math-upstream-qa')))
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     permissions:
@@ -167,6 +169,12 @@ jobs:
   jdt-before-after:
     name: Pinned JDT ${{ matrix.family }} mathematics before and after
     needs: jdt-product
+    if: >-
+      (github.event.action != 'labeled' ||
+       github.event.label.name == 'math-upstream-qa') &&
+      (inputs.jdt_upstream == true ||
+       (github.event_name == 'pull_request' &&
+        contains(github.event.pull_request.labels.*.name, 'math-upstream-qa')))
     concurrency:
       group: ${{ github.workflow }}-jdt-${{ matrix.family }}-${{ github.ref }}
       cancel-in-progress: true

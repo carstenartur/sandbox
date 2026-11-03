@@ -82,7 +82,7 @@ final class JavaValueCallOptimizer {
                     String original=source.substring(start,start+length);
                     String replacement="(/* Mathematics constant value: fresh source factory; verified components. */ "+guards+" ? "+access.construct(outputs)+" : "+original+")"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
                     String generated=source.substring(0,start)+replacement+source.substring(start+length);work.charge(generated.length());
-                    var after=MathematicalAnalysis.checkGeneratedSource(ast,generated,compiler,options.targetJava(),monitor,environment);work.check();
+                    var after=MathematicalAnalysis.checkGeneratedSource(ast,source,generated,compiler,options.targetJava(),monitor,environment,start,length,replacement.length());work.check();
                     var conditional=(ConditionalExpression)((ParenthesizedExpression)NodeFinder.perform(after,start,replacement.length())).getExpression();
                     verifyGuardBindings(conditional.getExpression(),receiverBinding,constant,summary.staticValues(),work);
                     if(!(conditional.getElseExpression() instanceof MethodInvocation fallback) || fallback.resolveMethodBinding()==null

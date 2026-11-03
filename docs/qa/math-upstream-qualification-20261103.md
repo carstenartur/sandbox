@@ -302,8 +302,12 @@ not repeated. The final
 [receipt](../../qa/math-optimization/results/2026-11-03-bc-upstream/receipt.json)
 explicitly distinguishes the interrupted attempt from the successful aggregate
 qualification. All detailed files referenced by it are in the retained raw
-archive, SHA-256
+archive, available as the exact 2,200,762-byte
+[download](../../qa/math-optimization/results/2026-11-03-bc-upstream/bc-strict-digest-upstream-evidence.tar.gz?raw=true), SHA-256
 `1b4d5d68d04734c43fdc2b112cf36bab21bf319717bb66f80ec7fbfc26cdb3f8`.
+This is the local upstream Gradle qualification evidence, including the retained
+reports, commands and continuation receipts. The workflow's separate
+`bc-math-qualification` artifact records its corpus and opt-in benchmark scope.
 
 The patch consists of nine ordinary digest replacements in five files. Source,
 test-data, JDK and resolved dependency identities are retained; the two trees use
@@ -473,8 +477,12 @@ improvement above. The [compact receipt](../../qa/math-optimization/results/2026
 and [comparison table](../../qa/math-optimization/results/2026-11-03-jdt-method-benchmark/comparison.tsv)
 bind all scores and intervals to the exact code and runtime. The complete source,
 fixture bytes, provenance checks, raw samples and command outcomes are retained
-in the raw analysis archive, SHA-256
+in the exact 119,937-byte
+[raw analysis archive](../../qa/math-optimization/results/2026-11-03-jdt-method-benchmark/jdt-method-benchmark-raw.tar.gz?raw=true), SHA-256
 `bbb4a1caa153c4d66c2141e8a33a321ef2eb7e1458ebdd9864a6d34a44f0e4f1`.
+Download and unpack it to inspect the benchmark harness and recorded experiment.
+The qualified compiler JARs remain separate inputs identified by hash and their
+original local paths in the receipt.
 
 The UI/manipulation result is a legitimate zero-change result, not an omitted
 scan. Candidate search and emission gates rejected proposed changes, including
@@ -505,6 +513,9 @@ test module to execute passing tests, compares complete inventories, and checks
 the actual reactor paths in the test runtime configuration. The generated phase
 uses the baseline dependency cache offline. Enable these long jobs with the PR
 label `math-upstream-qa` or workflow-dispatch input `jdt_upstream=true`.
+Adding that label starts qualification; subsequent source updates on the labeled
+PR qualify the new checkout. Adding an unrelated label skips both JDT jobs and
+does not restart an in-progress comparison.
 
 The earlier local UI reactor compiled its reachable production bundles and UI test
 sources, then its test harness failed before executing a test because

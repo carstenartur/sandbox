@@ -121,7 +121,7 @@ class JavaCallableContextTest extends JavaContextTestSupport {
         assertFalse(analyze(source).changed());
     }
     @Test void statementExpressionLambdaKeepsOverloadSelection() {
-        String source = "class Sample { private static int id(int x){return x;}"
+        String source = "class Sample { private static int id(int x){return x;} static int reference(int x){return id(x);}"
                 + " static int choose(java.util.function.IntUnaryOperator f){return 1;}"
                 + " static int choose(java.util.function.IntConsumer f){return 2;}"
                 + " int run(){return choose((java.util.function.IntUnaryOperator) (x -> id((x+1)-1)));}}";

@@ -5,6 +5,8 @@
 package org.sandbox.jdt.math.tests;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -17,6 +19,14 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 final class MathTestSupport {
 
 	private MathTestSupport() { }
+
+	static String diagnosticDecline(String source, org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions options) throws Exception {
+		var result=org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis.analyze(parse(source),source,options,null,-1,0);
+		assertFalse(result.changed(),result.diagnostics().toString());
+		assertTrue(result.diagnostics().stream().anyMatch(d->d.message().startsWith("GENERATED_DIAGNOSTIC_INTRODUCED")),result.diagnostics().toString());
+		var document=new org.eclipse.jface.text.Document(source);result.newEdit().apply(document);
+		assertEquals(source,document.get());return document.get();
+	}
 
 	static CompilationUnit parse(String source) {
 		return parse(source, new String[0]);

@@ -435,3 +435,19 @@ the existing Javadoc mechanism. Conditional call envelopes remain intact,
 including a generated fallback on repeated cleanup. Search, source discovery,
 emitted replay and rejected scans use the same request work and cancellation
 budget. Guard-inclusive cost estimates are not measured speed claims.
+
+## Runtime presentation and reapplication barriers
+
+`MathExplanation.renderRuntime` presents independently checked runtime transport
+and re-admitted Java context. Initial emission and exact source replay use the
+same explanation mode. It does not manufacture a scalar computation explanation.
+`JavaRuntimeIterationTemplates` discovers conservative edit barriers from resolved
+capture/count/update/guard/fallback structure, including supplier bodies and the
+specific outer distance shortcut. The coordinator shares this core discovery;
+its tail markers and source/binding snapshots remain UI transaction concerns.
+Candidate-name routing shares the required source-match walk, preserving scalar-only
+work allocations. Structural discovery charges the common work/deadline; exhaustion returns no edits. Analysis
+merges discovered and caller-supplied ranges before copying protected text, filters
+scalar regions before slice discovery, and excludes those ranges from runtime
+preflight. Existing overlap checks remain mandatory. Recognition preserves code
+only; it neither certifies it nor authorizes new arithmetic assumptions.

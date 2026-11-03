@@ -42,6 +42,15 @@ class JavaTailRecursionReplayTest {
         assertFalse(JavaTailRecursionReplay.verify(method(BEFORE.replace("n - 1","n - 2")),method(counted),model,()->{}),
             "The emitted decrement must match the actual original argument, not only the supplied model");
     }
+    @Test void relocatedCounterInitializationMustReadItsExactOriginalParameter() {
+        String relocated=canonical().replace("int count = n;","int count;").replace("count = count;","count = n;");
+        assertTrue(verify(relocated));
+        for(String altered:List.of(relocated.replace("count = n;","count = 0;"),
+                relocated.replace("count = n;","count = n + 1;"),
+                relocated.replace("count = n;","count = (int)a;"),
+                relocated.replace("count = n;","count = n, total = a;"),
+                relocated.replace("int count;","int count = 0;"))) assertFalse(verify(altered),altered);
+    }
     private static String canonical() {
         return """
             public class Sample { public static long step(int n, long a) {

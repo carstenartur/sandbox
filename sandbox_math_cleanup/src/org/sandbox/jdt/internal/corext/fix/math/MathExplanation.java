@@ -18,6 +18,50 @@ import org.eclipse.core.runtime.OperationCanceledException;
 record MathExplanation(String detail, String sourceComment, boolean nontrivial) {
     private static final int MAXIMUM_TEXT_LENGTH = 16_384;
 
+    boolean emitted(MathCleanUpOptions.ExplanationMode mode) {
+        return mode == MathCleanUpOptions.ExplanationMode.ALL
+                || mode == MathCleanUpOptions.ExplanationMode.NONTRIVIAL && nontrivial;
+    }
+
+    /** Called only after independent runtime proof/source checking; presentation grants no new premises. */
+    static MathExplanation renderRuntime(JavaRuntimeIterationAnalysis.Context context, RuntimeIterationEvidence evidence,
+            JavaLoopInvariantAnalysis.Work work) {
+        work.tick();
+        var lines = new ArrayList<String>();
+        String family = evidence.partition() != null ? (evidence.partition().period() > 0 ? "periodic polynomial sum" : "piecewise polynomial sum")
+                : evidence.linear() != null ? "linear transition by matrix powering" : evidence.nested() != null ? "nested polynomial sum" : "polynomial sum";
+        lines.add("Verified runtime " + family + ".");
+        int namesLength=0;
+        for(var target:context.targets()) {
+            work.charge(target.getName().length()+2L);namesLength+=target.getName().length()+2;
+            if(namesLength>MAXIMUM_TEXT_LENGTH/2)throw new IllegalArgumentException("EXPLANATION_TEXT_BOUND_EXCEEDED");
+        }
+        String targets = context.stream() ? "stream sum" : String.join(", ", context.targets().stream().map(t -> t.getName()).toList());
+        lines.add(targets + ": " + (context.width().equals("java.math.BigInteger")
+                ? "exact BigInteger values; only value-observing uses are admitted."
+                : "Java arithmetic modulo 2^" + (context.width().equals("int") ? 32 : 64) + "."));
+        if (evidence.strategy() == RuntimeIterationEvidence.EmissionStrategy.PRIMITIVE_UNIT)
+            lines.add("Primitive count and constant updates cover every count; exclusive unit-stride int headers cannot wrap.");
+        else {
+            lines.add("Estimated crossover: " + evidence.minimumIterations() + " iterations; original execution is the fallback below it or when a guard fails.");
+            if (!context.stream()) lines.add("The final counter update must fit " + context.header().counter().getType().getName() + ".");
+            if (context.partition() != null && context.partition().period() > 0) lines.add("Periodic fast path requires a nonnegative start.");
+            if (context.nested() != null) lines.add("Inner counts must be nonnegative and inner counter endpoints representable.");
+            if (context.bindings().stream().anyMatch(b -> b.primitiveType().equals("java.math.BigInteger")))
+                lines.add("BigInteger inputs must be nonnull, exact-class instances with at most " + RuntimeIterationEvidence.MAX_PARAMETER_BITS + " bits.");
+            if (context.width().equals("java.math.BigInteger") && evidence.linear() != null)
+                lines.add("The matrix growth bound must fit " + RuntimeIterationEvidence.MAX_RESULT_BITS + " bits.");
+        }
+        lines.add("Independent numeric proof and Java source replay checked; estimated work is not a timing measurement.");
+        String detail = String.join("\n", lines);
+        work.charge(detail.length());
+        if (detail.length() > MAXIMUM_TEXT_LENGTH) throw new IllegalArgumentException("EXPLANATION_TEXT_BOUND_EXCEEDED");
+        String comments = detail.lines().map(line -> "// " + line.replace("\\u", "\\ u"))
+                .collect(java.util.stream.Collectors.joining("\n", "", "\n"));
+        work.charge(comments.length());
+        return new MathExplanation(detail, comments, true);
+    }
+
     static MathExplanation render(Explanation verified, OptimizationRequest request, Candidate candidate,
             JavaComputationRegion region, JavaComputationEmitter.Emission replacement,
             MathCleanUpOptions options, CancellationToken cancellation) {

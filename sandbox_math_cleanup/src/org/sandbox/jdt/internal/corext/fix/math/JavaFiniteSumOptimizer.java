@@ -82,7 +82,7 @@ final class JavaFiniteSumOptimizer {
                             List.of(new JavaSourceRewritePlan.Change(start,length,hash(original),replacement)));
                     String generated=source.substring(0,start)+replacement+source.substring(start+length);
                     local.charge(generated.length());
-                    var after=MathematicalAnalysis.checkGeneratedSource(ast,generated,compilerOptions,options.targetJava(),monitor,environment);
+                    var after=MathematicalAnalysis.checkGeneratedSource(ast,source,generated,compilerOptions,options.targetJava(),monitor,environment,GeneratedSourceDiagnostics.edits(plan));
                     var receipt=new MathematicalAnalysis.VerifiedRegion(start,length,null,cost,
                             original,replacement,null,plan,null,provisional);
                     var edit=new MathematicalAnalysis.Replacement(start,length,replacement,provisional.description());
