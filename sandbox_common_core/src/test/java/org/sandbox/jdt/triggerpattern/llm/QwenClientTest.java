@@ -55,7 +55,7 @@ String response = """
   "choices": [{
     "message": {
       "role": "assistant",
-      "content": "```json\\n{\\n  \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"category\\": \\"Collections\\",\\n  \\"summary\\": \\"Replace ArrayList\\",\\n  \\"reusability\\": 4,\\n  \\"codeImprovement\\": 3,\\n  \\"implementationEffort\\": 2,\\n  \\"canImplementInCurrentDsl\\": true\\n}\\n```"
+      "content": "```json\\n{\\n  \\"noCleanup\\": false, \\"confidence\\": 0.9, \\"sourceEvidence\\": {\\"path\\": \\"T.java\\", \\"before\\": \\"old()\\", \\"after\\": \\"newCall()\\"}, \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"category\\": \\"Collections\\",\\n  \\"summary\\": \\"Replace ArrayList\\",\\n  \\"reusability\\": 4,\\n  \\"codeImprovement\\": 3,\\n  \\"implementationEffort\\": 2,\\n  \\"canImplementInCurrentDsl\\": true\\n}\\n```"
     }
   }]
 }
@@ -101,7 +101,7 @@ String response = """
     "finish_reason": "length",
     "message": {
       "role": "assistant",
-      "content": "```json\\n{\\n  \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"category\\": \\"Collections\\",\\n  \\"summary\\": \\"test\\",\\n  \\"reusability\\": 4,\\n  \\"codeImprovement\\": 3,\\n  \\"implementationEffort\\": 2,\\n  \\"canImplementInCurrentDsl\\": true\\n}\\n```"
+      "content": "```json\\n{\\n  \\"noCleanup\\": false, \\"confidence\\": 0.9, \\"sourceEvidence\\": {\\"path\\": \\"T.java\\", \\"before\\": \\"old()\\", \\"after\\": \\"newCall()\\"}, \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"category\\": \\"Collections\\",\\n  \\"summary\\": \\"test\\",\\n  \\"reusability\\": 4,\\n  \\"codeImprovement\\": 3,\\n  \\"implementationEffort\\": 2,\\n  \\"canImplementInCurrentDsl\\": true\\n}\\n```"
     }
   }]
 }
@@ -119,7 +119,7 @@ String response = """
     "finish_reason": "content_filter",
     "message": {
       "role": "assistant",
-      "content": "```json\\n{\\n  \\"relevant\\": true\\n}\\n```"
+      "content": "```json\\n{\\n  \\"noCleanup\\": false, \\"confidence\\": 0.9, \\"sourceEvidence\\": {\\"path\\": \\"T.java\\", \\"before\\": \\"old()\\", \\"after\\": \\"newCall()\\"}, \\"relevant\\": true\\n}\\n```"
     }
   }]
 }

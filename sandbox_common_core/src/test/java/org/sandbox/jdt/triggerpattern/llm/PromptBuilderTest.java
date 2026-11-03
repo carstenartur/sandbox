@@ -61,6 +61,7 @@ class PromptBuilderTest {
 		assertTrue(prompt.contains("\"trafficLight\"")); //$NON-NLS-1$
 		assertTrue(prompt.contains("\"dslRule\"")); //$NON-NLS-1$
 		assertTrue(prompt.contains("\"sourceVersion\"")); //$NON-NLS-1$
+		assertTrue(prompt.contains("\"sourceEvidence\"")); //$NON-NLS-1$
 		assertTrue(prompt.contains("\"beforeExample\"")); //$NON-NLS-1$
 		assertTrue(prompt.contains("\"afterExample\"")); //$NON-NLS-1$
 		assertTrue(prompt.contains("\"negativeExample\"")); //$NON-NLS-1$

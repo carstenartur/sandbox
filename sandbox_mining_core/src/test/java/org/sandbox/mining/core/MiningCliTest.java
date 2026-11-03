@@ -32,6 +32,8 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.sandbox.mining.core.candidate.CandidateStatus;
 import org.sandbox.mining.core.candidate.CandidateStore;
 import org.sandbox.mining.core.candidate.MiningCandidate;
@@ -39,6 +41,7 @@ import org.sandbox.mining.core.config.RepoEntry;
 import org.sandbox.jdt.triggerpattern.git.CommitWalker;
 import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation.TrafficLight;
+import org.sandbox.jdt.triggerpattern.llm.SourceEvidence;
 
 /**
  * Tests for {@link MiningCli}.
@@ -325,6 +328,18 @@ class MiningCliTest {
 	// --- saveCandidates tests ---
 
 	@Test
+	void testSaveCandidatesRejectsNewEvaluationWithoutSourceEvidence() throws IOException {
+		var evaluation = new CommitEvaluation("hash", "change", "repo", Instant.now(), null,
+				true, null, false, null, 0, 0, 0, TrafficLight.GREEN, "Strings", false,
+				null, true, "$x.toString() => String.valueOf($x)\n;;", "strings.sandbox-hint",
+				null, null, "change", "VALID", "before", "after", "negative");
+		var store = new CandidateStore(tempDir.resolve("unproven"));
+		assertTrue(MiningCli.saveCandidates(List.of(evaluation), store,
+				new org.sandbox.jdt.triggerpattern.internal.DslValidator(), System.out).isEmpty());
+		assertTrue(store.loadAll().isEmpty());
+	}
+
+	@Test
 	void testSaveCandidatesGreenValidEvaluation() throws IOException {
 		CandidateStore store = new CandidateStore(tempDir.resolve("candidates")); //$NON-NLS-1$
 		String dslRule = "java.util.Collections.emptyList() :: sourceVersionGE(9)\n=> java.util.List.of()\n;;\n"; //$NON-NLS-1$
@@ -336,7 +351,8 @@ class MiningCliTest {
 				"Replace emptyList with List.of", "VALID", //$NON-NLS-1$ //$NON-NLS-2$
 				"class T { void m() { return Collections.emptyList(); } }", //$NON-NLS-1$
 				"class T { void m() { return List.of(); } }", //$NON-NLS-1$
-				"class T { void m() { return Collections.emptySet(); } }"); //$NON-NLS-1$
+				"class T { void m() { return Collections.emptySet(); } }", "17") //$NON-NLS-1$
+				.withSourceEvidence(sourceEvidence("java.util.Collections.emptyList()", "java.util.List.of()"));
 
 		List<MiningCandidate> saved = MiningCli.saveCandidates(
 				List.of(eval), store, new org.sandbox.jdt.triggerpattern.internal.DslValidator(),
@@ -346,6 +362,9 @@ class MiningCliTest {
 		assertEquals(CandidateStatus.DSL_VALID, saved.get(0).getStatus());
 		assertEquals("abc1234567890", saved.get(0).getSourceCommit()); //$NON-NLS-1$
 		assertNotNull(saved.get(0).getBeforeExample());
+		MiningCandidate reloaded = store.loadAll().get(0);
+		assertEquals("17", reloaded.getSourceVersion());
+		assertEquals(eval.sourceEvidence(), reloaded.getSourceEvidence());
 	}
 
 	@Test
@@ -409,12 +428,13 @@ class MiningCliTest {
 				Instant.now(), null, true, null, false, null,
 				8, 7, 3, TrafficLight.GREEN, "Collections",
 				false, null, true, dslRule, null, null, null,
-				"Summary", "VALID", null, null, null); //$NON-NLS-1$ //$NON-NLS-2$
+				"Summary", "VALID", null, null, null) //$NON-NLS-1$ //$NON-NLS-2$
+				.withSourceEvidence(sourceEvidence("java.util.Collections.emptyList()", "java.util.List.of()"));
 
 		// Save once
-		MiningCli.saveCandidates(
+		assertEquals(1, MiningCli.saveCandidates(
 				List.of(eval), store, new org.sandbox.jdt.triggerpattern.internal.DslValidator(),
-				System.out);
+				System.out).size());
 		// Save again - should be skipped (already exists)
 		List<MiningCandidate> secondSave = MiningCli.saveCandidates(
 				List.of(eval), store, new org.sandbox.jdt.triggerpattern.internal.DslValidator(),
@@ -433,18 +453,54 @@ class MiningCliTest {
 				Instant.now(), null, true, null, false, null,
 				8, 7, 3, TrafficLight.GREEN, "Collections",
 				false, null, true, firstDsl, "performance.sandbox-hint", null, null, //$NON-NLS-1$
-				"Summary 1", "VALID", null, null, null); //$NON-NLS-1$ //$NON-NLS-2$
+				"Summary 1", "VALID", null, null, null) //$NON-NLS-1$ //$NON-NLS-2$
+				.withSourceEvidence(sourceEvidence("java.util.Collections.emptyList()", "java.util.List.of()"));
 		CommitEvaluation second = new CommitEvaluation(
 				"abc1234567890", "Remove add zero", "repo", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				Instant.now(), null, true, null, false, null,
 				8, 7, 3, TrafficLight.GREEN, "Math",
 				false, null, true, secondDsl, "math.sandbox-hint", null, null, //$NON-NLS-1$
-				"Summary 2", "VALID", null, null, null); //$NON-NLS-1$ //$NON-NLS-2$
+				"Summary 2", "VALID", null, null, null) //$NON-NLS-1$ //$NON-NLS-2$
+				.withSourceEvidence(sourceEvidence("n + 0", "n"));
 
 		List<MiningCandidate> saved = MiningCli.saveCandidates(
 				List.of(first, second), store, new org.sandbox.jdt.triggerpattern.internal.DslValidator(),
 				System.out);
 
 		assertEquals(2, saved.size(), "Should stage distinct candidates from the same commit"); //$NON-NLS-1$
+	}
+
+	@ParameterizedTest
+	@EnumSource(value = CandidateStatus.class, names = { "APPROVED", "PROMOTED", "REJECTED", "DUPLICATE", "SUPERSEDED" })
+	void newEvidenceMustNotOverwriteAnExistingReviewDecision(CandidateStatus status) throws IOException {
+		var store = new CandidateStore(tempDir.resolve("reviewed"));
+		String rule = "java.util.Collections.emptyList()\n=> java.util.List.of()\n;;";
+		var previous = new MiningCandidate(rule, "before", "after", "negative", "collections.sandbox-hint",
+				"hash", "repo", "Collections", "reviewed", Instant.now().toString());
+		previous.setStatus(status);
+		previous.setRejectionReason("Keep the review rationale");
+		store.save(previous);
+		Path file = store.getStoreDir().resolve(previous.toFileName());
+		String reviewed = Files.readString(file);
+		var rediscovered = new CommitEvaluation("hash", "change", "repo", Instant.now(), null,
+				true, null, false, null, 8, 8, 1, TrafficLight.GREEN, "Collections", false, null,
+				true, rule, "collections.sandbox-hint", null, null, "new summary", "VALID",
+				"before", "after", "negative")
+				.withSourceEvidence(sourceEvidence("java.util.Collections.emptyList()", "java.util.List.of()"));
+		assertTrue(MiningCli.saveCandidates(List.of(rediscovered), store,
+				new org.sandbox.jdt.triggerpattern.internal.DslValidator(), System.out).isEmpty());
+		assertEquals(reviewed, Files.readString(file));
+	}
+
+	private static SourceEvidence sourceEvidence(String before, String after) {
+		String hunk = """
+				diff --git a/Example.java b/Example.java
+				--- a/Example.java
+				+++ b/Example.java
+				@@ -1,1 +1,1 @@
+				-class Example { Object m() { return %s; } }
+				+class Example { Object m() { return %s; } }
+				""".formatted(before, after);
+		return new SourceEvidence("Example.java", before, after, hunk);
 	}
 }
