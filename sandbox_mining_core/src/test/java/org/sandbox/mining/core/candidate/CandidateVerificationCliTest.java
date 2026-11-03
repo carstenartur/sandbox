@@ -134,7 +134,7 @@ class CandidateVerificationCliTest {
 				$x + 0
 				=> $x
 				;;
-				"""); //$NON-NLS-1$
+				""", StandardCharsets.UTF_8); //$NON-NLS-1$
 		CandidateStore store = new CandidateStore(candidateDir);
 		store.save(candidate("commit-new", "2026-03-01T00:00:00Z")); //$NON-NLS-1$ //$NON-NLS-2$
 
@@ -270,14 +270,13 @@ class CandidateVerificationCliTest {
 		writeLegacyCandidate(legacyPath, example.getDslRule(), example.getBeforeExample(),
 				example.getAfterExample(), example.getNegativeExample());
 		// Raw schema-v1 data has neither a canonical filename nor sourceVersion.
-		Files.writeString(legacyPath, Files.readString(legacyPath).replace(
-				"\"status\": \"DSL_VALID\"", """
+		Files.writeString(legacyPath, Files.readString(legacyPath).replace("\"status\": \"DSL_VALID\"", """
 				"status": "REJECTED",
 				"rejectionReason": "Review of the implicit source-21 revision",
 				"verification": { "successful": true, "stage": "SUCCESS",
 				  "message": "Candidate behavior verified", "verifierVersion": "7",
 				  "verifiedAt": "2026-01-01T00:00:00Z", "matches": 1, "replacements": 1 }
-				""")); //$NON-NLS-1$
+				"""), StandardCharsets.UTF_8); //$NON-NLS-1$
 		CandidateStore store = new CandidateStore(candidateDir);
 		MiningCandidate valid = candidate("source-17", "2025-12-31T00:00:00Z"); //$NON-NLS-1$ //$NON-NLS-2$
 		valid.setSourceVersion("17"); //$NON-NLS-1$
