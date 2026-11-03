@@ -45,7 +45,6 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.ProgressMonitorWrapper;
 import org.eclipse.jdt.core.JavaCore;
-import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.ASTMatcher;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
@@ -57,6 +56,7 @@ import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.NodeFinder;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.Document;
@@ -117,13 +117,15 @@ public final class MathematicalAnalysis {
          var result = new Analysis(replacements, diagnostics, digest(source), compiler, evidence);
          if (replacements.size() > 1) {
             var document = new Document(source);
-            try { result.newEdit().apply(document); }
+            var combinedEdit = result.newEdit();
+            var diagnosticEdits = GeneratedSourceDiagnostics.edits(combinedEdit);
+            try { combinedEdit.apply(document); }
             catch (BadLocationException failure) { throw new IllegalArgumentException(failure); }
             long replayPreparation = 4L * source.length() + 4L * document.getLength();
             if (replayPreparation > remaining) throw new IllegalArgumentException("FRESH_SUM_BUDGET_EXCEEDED"); //$NON-NLS-1$
             remaining -= replayPreparation;
             String generated = document.get();
-            var after = checkGeneratedSource(ast, generated, compiler, options.targetJava(), monitor, null);
+            var after = checkGeneratedSource(ast, source, generated, compiler, options.targetJava(), monitor, null, diagnosticEdits);
             for (var receipt : evidence) {
                if (remaining < 1) throw new IllegalArgumentException("FRESH_SUM_BUDGET_EXCEEDED"); //$NON-NLS-1$
                if (receipt.finiteSum() != null) {
@@ -178,10 +180,10 @@ public final class MathematicalAnalysis {
          return new Analysis(result.replacements(), result.diagnostics(), result.sourceDigest(), result.compilerOptions(),
                result.evidence(), result.documentation(), dependencies);
       } catch (JavaValueSourceSummary.DeadlineExceeded expired) {
-         return cancelled(digest(source), ast.getJavaElement() == null ? Map.of() : ast.getJavaElement().getJavaProject().getOptions(true));
+         return cancelled(digest(source), compilerOptions(ast,environment));
       } catch (OperationCanceledException cancelled) {
          if (Thread.currentThread().isInterrupted() || !work.isCancelled()) throw cancelled;
-         return cancelled(digest(source), ast.getJavaElement() == null ? Map.of() : ast.getJavaElement().getJavaProject().getOptions(true));
+         return cancelled(digest(source), compilerOptions(ast,environment));
       }
    }
 
@@ -189,7 +191,7 @@ public final class MathematicalAnalysis {
          IProgressMonitor progress, int selectionOffset, int selectionLength, SourceEnvironment environment, JavaSourceContext sourceContext,
          List<? extends org.eclipse.jdt.core.ISourceRange> protectedRegions, JavaValueSourceSummary.Work valueWork) {
       IProgressMonitor monitor = progress == null ? new NullProgressMonitor() : progress;
-      Map<String, String> compilerOptions = ast.getJavaElement() == null ? Map.of() : ast.getJavaElement().getJavaProject().getOptions(true);
+      Map<String, String> compilerOptions = compilerOptions(ast,environment);
       String sourceDigest = digest(source);
       ArrayList<Replacement> replacements = new ArrayList<>();
       ArrayList<Diagnostic> diagnostics = new ArrayList<>();
@@ -212,8 +214,10 @@ public final class MathematicalAnalysis {
                residueCalls.add(call);
             } : null;
       boolean currentSource;
+      boolean[] runtimeTemplates = {false};
       try {
-         currentSource = matchesAstSource(ast, source, compilerOptions, options.targetJava(), collectResidueCalls);
+         currentSource = matchesAstSource(ast, source, compilerOptions, options.targetJava(), collectResidueCalls,
+               declaration -> { if (declaration.getName().getIdentifier().startsWith("$series")) runtimeTemplates[0] = true; }); //$NON-NLS-1$
       } catch (SourceDiscoveryLimit exhausted) {
          diagnostics.add(new Diagnostic("BUDGET_EXCEEDED", "Source call discovery exceeds the analysis budget", 0, source.length(), Stage.BUDGET)); //$NON-NLS-1$ //$NON-NLS-2$
          return new Analysis(List.of(), diagnostics, sourceDigest, compilerOptions);
@@ -240,12 +244,29 @@ public final class MathematicalAnalysis {
       }
 
       var protectedReservations = new ArrayList<Replacement>();
+      var protectedAll = new ArrayList<org.eclipse.jdt.core.ISourceRange>(protectedRegions);
+      try {
+         if (runtimeTemplates[0]) protectedAll.addAll(JavaRuntimeIterationTemplates.ranges(ast, valueWork::charge));
+      } catch (JavaValueSourceSummary.DeadlineExceeded expired) { throw expired; }
+      catch (IllegalArgumentException exhausted) {
+         diagnostics.add(new Diagnostic("BUDGET_EXCEEDED", "Runtime template discovery exceeds the analysis budget", 0, source.length(), Stage.BUDGET)); //$NON-NLS-1$ //$NON-NLS-2$
+         return new Analysis(List.of(), diagnostics, sourceDigest, compilerOptions);
+      }
+      protectedAll.sort(Comparator.comparingInt(org.eclipse.jdt.core.ISourceRange::getOffset));
+      var mergedProtection = new ArrayList<org.eclipse.jdt.core.ISourceRange>();
       long reservationWork = 0;
-      for (var range : protectedRegions) {
+      for (var range : protectedAll) {
          int start = range.getOffset(), length = range.getLength();
          if (start < 0 || length < 1 || (long) start + length > source.length())
             throw new IllegalArgumentException("INVALID_PROTECTED_SOURCE_RANGE"); //$NON-NLS-1$
-         protectedReservations.add(new Replacement(start, length, source.substring(start, start + length), "Protected source envelope")); //$NON-NLS-1$
+         if (!mergedProtection.isEmpty()) {
+            var previous = mergedProtection.getLast();
+            if (start <= previous.getOffset() + previous.getLength()) {
+               mergedProtection.removeLast();reservationWork -= previous.getLength();
+               length = Math.max(start + length, previous.getOffset() + previous.getLength()) - previous.getOffset();start = previous.getOffset();
+            }
+         }
+         mergedProtection.add(new org.eclipse.jdt.core.SourceRange(start, length));
          reservationWork += length;
       }
       if (reservationWork > valueWork.remaining()) {
@@ -253,6 +274,8 @@ public final class MathematicalAnalysis {
          return new Analysis(List.of(), diagnostics, sourceDigest, compilerOptions);
       }
       valueWork.charge(reservationWork);
+      for (var range : mergedProtection) protectedReservations.add(new Replacement(range.getOffset(), range.getLength(),
+            source.substring(range.getOffset(), range.getOffset()+range.getLength()), "Protected source envelope")); //$NON-NLS-1$
       // Existing specialized passes already reject collisions with this list.
       // Remove reservations before any final source/binding replay or public result.
       replacements.addAll(protectedReservations);
@@ -290,6 +313,7 @@ public final class MathematicalAnalysis {
       var deferredAssignments = new ArrayList<JavaComputationRegion>();
       var primaryRegions = new ArrayList<JavaComputationRegion>();
       for (var region : extraction.regions()) {
+         if (protectedReservations.stream().anyMatch(r -> region.start() < r.offset() + r.length() && r.offset() < region.start() + region.length())) continue;
          if (selectionOffset < 0 && incomingIntegralAssignment(region)) deferredAssignments.add(region);
          else primaryRegions.add(region);
       }
@@ -304,7 +328,7 @@ public final class MathematicalAnalysis {
             node.getStartPosition(), node.getLength(), Stage.SOURCE))));
       diagnostics.addAll(connections.diagnostics());
       long remainingWork = options.workBudget() - connections.work() - sourceContext.takeWork() - valueSpent;
-      var iterationPreflight = JavaRuntimeIterationOptimizer.preflight(ast, options, remainingWork, cancellation);
+      var iterationPreflight = JavaRuntimeIterationOptimizer.preflight(ast, options, remainingWork, cancellation, protectedReservations);
       remainingWork -= iterationPreflight.work();
       long iterationReserve = iterationPreflight.admitted() ? Math.max(0, remainingWork / 3) : 0;
       remainingWork -= iterationReserve;
@@ -619,15 +643,13 @@ public final class MathematicalAnalysis {
                         continue;
                      }
                   }
-                  if (!expressionOnly && (options.explanations() == MathCleanUpOptions.ExplanationMode.ALL
-                        || options.explanations() == MathCleanUpOptions.ExplanationMode.NONTRIVIAL && explanationText.nontrivial())) {
+                  if (!expressionOnly && explanationText.emitted(options.explanations())) {
                      replacement = indentGenerated(explanationText.sourceComment(), source, region.start()) + replacement;
                   }
                   JavaSourceRewritePlan sourcePlan = null;
                   if (slice != null) {
                      String prefix = indentGenerated(plain.statements(), source, region.start());
-                     if (options.explanations() == MathCleanUpOptions.ExplanationMode.ALL
-                           || options.explanations() == MathCleanUpOptions.ExplanationMode.NONTRIVIAL && explanationText.nontrivial())
+                     if (explanationText.emitted(options.explanations()))
                         prefix = indentGenerated(explanationText.sourceComment(), source, region.start()) + prefix;
                      String unitName = ast.getJavaElement() != null ? ast.getJavaElement().getPath().toPortableString()
                            : environment != null ? environment.unitName() : "source@" + sourceDigest; //$NON-NLS-1$
@@ -637,12 +659,14 @@ public final class MathematicalAnalysis {
                         throw new IllegalArgumentException("SOURCE_PLAN_REPLACEMENT_DIFFERS"); //$NON-NLS-1$
                   }
                   CompilationUnit generatedAst = checkGeneratedSource(
-                     ast,
+                     ast, source,
                      source.substring(0, region.start()) + replacement + source.substring(region.start() + region.length()),
                      compilerOptions,
                      options.targetJava(),
                      (IProgressMonitor)monitor,
-                     environment
+                     environment, sourcePlan == null
+                           ? List.of(new GeneratedSourceDiagnostics.Edit(region.start(),region.length(),replacement.length()))
+                           : GeneratedSourceDiagnostics.edits(sourcePlan)
                   );
                   if (contextRegion) JavaExpressionContexts.verifyBoundary(ast, generatedAst, region, replacement.length());
                   if (isCancelled(monitor)) {
@@ -830,8 +854,10 @@ public final class MathematicalAnalysis {
       if (replacements.size() > 1 || !analysis.documentation().isEmpty()) {
          try {
             Document combined = new Document(source);
-            analysis.newEdit().apply(combined);
-            CompilationUnit combinedAst = checkGeneratedSource(ast, combined.get(), compilerOptions, options.targetJava(), (IProgressMonitor)monitor, environment);
+            var combinedEdit = analysis.newEdit();
+            var diagnosticEdits = GeneratedSourceDiagnostics.edits(combinedEdit);
+            combinedEdit.apply(combined);
+            CompilationUnit combinedAst = checkGeneratedSource(ast, source, combined.get(), compilerOptions, options.targetJava(), (IProgressMonitor)monitor, environment, diagnosticEdits);
             if(evidence.stream().anyMatch(region->region.fixedPower()!=null)) {
                valueWork.charge(Math.max(0,valueWork.remaining()-Math.max(0,remainingWork)));
                long beforePowerReplay=valueWork.used;
@@ -1004,19 +1030,19 @@ public final class MathematicalAnalysis {
    }
 
    private static boolean matchesAstSource(CompilationUnit original, String source, Map<String, String> options, int targetJava,
-         Consumer<MethodInvocation> originalCalls) {
-      return matchesAstSource(original, source, options, targetJava, originalCalls, null, null);
+         Consumer<MethodInvocation> originalCalls, Consumer<VariableDeclarationFragment> originalDeclarations) {
+      return matchesAstSource(original, source, options, targetJava, originalCalls, originalDeclarations, null, null);
    }
 
    static boolean matchesAstSource(CompilationUnit original, String source, Map<String,String> options, int targetJava,
          LongConsumer charge, IProgressMonitor monitor) {
-      return matchesAstSource(original, source, options, targetJava, null, charge, monitor);
+      return matchesAstSource(original, source, options, targetJava, null, null, charge, monitor);
    }
 
    private static boolean matchesAstSource(CompilationUnit original, String source, Map<String,String> options, int targetJava,
-         Consumer<MethodInvocation> originalCalls, LongConsumer charge, IProgressMonitor monitor) {
+         Consumer<MethodInvocation> originalCalls, Consumer<VariableDeclarationFragment> originalDeclarations, LongConsumer charge, IProgressMonitor monitor) {
       if (original.getCommentList() == null) return false;
-      var originalPositions = sourcePositions(original, originalCalls, charge);
+      var originalPositions = sourcePositions(original, originalCalls, originalDeclarations, charge);
       // Standalone clients can parse structured Javadoc with either setting.
       // Retry only that parser setting: syntax, documented text and source
       // positions must still match exactly; no stale-source guard is bypassed.
@@ -1031,7 +1057,7 @@ public final class MathematicalAnalysis {
          compilerOptions.put(JavaCore.COMPILER_DOC_COMMENT_SUPPORT, documentation);
          parser.setCompilerOptions(compilerOptions);
          CompilationUnit parsed = (CompilationUnit) parser.createAST(monitor);
-         var parsedPositions = sourcePositions(parsed, null, charge);
+         var parsedPositions = sourcePositions(parsed, null, null, charge);
          if (charge != null) charge.accept(originalPositions.size() + (long)parsedPositions.size());
          if (originalPositions.equals(parsedPositions) && original.subtreeMatch(new ASTMatcher(true), parsed)) return true;
       }
@@ -1043,7 +1069,8 @@ public final class MathematicalAnalysis {
       SourceDiscoveryLimit(IllegalArgumentException cause) { super(cause); }
    }
 
-   private static List<Integer> sourcePositions(CompilationUnit ast, Consumer<MethodInvocation> originalCalls, LongConsumer charge) {
+   private static List<Integer> sourcePositions(CompilationUnit ast, Consumer<MethodInvocation> originalCalls,
+         Consumer<VariableDeclarationFragment> originalDeclarations, LongConsumer charge) {
       final ArrayList<Integer> positions = new ArrayList<>();
       ast.accept(new ASTVisitor() {
          private int depth;
@@ -1059,6 +1086,11 @@ public final class MathematicalAnalysis {
          @Override public boolean visit(MethodInvocation call) {
             // Share only the mandatory bound-original walk; reparsed comparison ASTs never populate this list.
             if (originalCalls != null) originalCalls.accept(call);
+            return true;
+         }
+         @Override public boolean visit(VariableDeclarationFragment declaration) {
+            // Candidate routing shares the mandatory walk; full structural discovery is separately charged.
+            if (originalDeclarations != null) originalDeclarations.accept(declaration);
             return true;
          }
       });
@@ -1121,7 +1153,8 @@ public final class MathematicalAnalysis {
    }
 
    static CompilationUnit checkGeneratedSource(
-      CompilationUnit original, String generated, Map<String, String> compilerOptions, int targetJava, IProgressMonitor monitor, MathematicalAnalysis.SourceEnvironment environment
+      CompilationUnit original, String source, String generated, Map<String, String> compilerOptions, int targetJava, IProgressMonitor monitor, MathematicalAnalysis.SourceEnvironment environment,
+      List<GeneratedSourceDiagnostics.Edit> edits
    ) {
       ASTParser parser = ASTParser.newParser(original.getAST().apiLevel());
       if (original.getJavaElement() != null) {
@@ -1162,12 +1195,19 @@ public final class MathematicalAnalysis {
       parser.setSource(generated.toCharArray());
       CompilationUnit generatedAst = (CompilationUnit)parser.createAST(monitor);
 
-      for (IProblem problem : generatedAst.getProblems()) {
-         if (problem.isError()) {
-            throw new IllegalArgumentException("GENERATED_REGION_INVALID: " + problem.getMessage());
-         }
-      }
+      GeneratedSourceDiagnostics.verify(original, source, generatedAst, generated, edits, monitor);
       return generatedAst;
+   }
+
+   static CompilationUnit checkGeneratedSource(CompilationUnit original, String source, String generated, Map<String,String> compilerOptions,
+         int targetJava, IProgressMonitor monitor, SourceEnvironment environment, int offset, int length, int replacementLength) {
+      return checkGeneratedSource(original, source, generated, compilerOptions, targetJava, monitor, environment,
+            List.of(new GeneratedSourceDiagnostics.Edit(offset,length,replacementLength)));
+   }
+
+   private static Map<String,String> compilerOptions(CompilationUnit ast, SourceEnvironment environment) {
+      return ast.getJavaElement() != null ? Map.copyOf(ast.getJavaElement().getJavaProject().getOptions(true))
+            : environment == null ? Map.of() : environment.compilerOptions();
    }
 
    static String javaType(NumericKind kind) {
@@ -1317,20 +1357,17 @@ public final class MathematicalAnalysis {
    public record Replacement(int offset, int length, String replacement, String description) {
    }
 
-   public record SourceEnvironment(String unitName, List<String> classpath, List<String> sourcepath, List<String> encodings) {
+   public record SourceEnvironment(String unitName, List<String> classpath, List<String> sourcepath, List<String> encodings,
+         Map<String,String> compilerOptions) {
       public SourceEnvironment(String unitName, List<String> classpath, List<String> sourcepath, List<String> encodings) {
+         this(unitName,classpath,sourcepath,encodings,Map.of());
+      }
+      public SourceEnvironment {
          Objects.requireNonNull(unitName);
-         classpath = List.copyOf(classpath);
-         sourcepath = List.copyOf(sourcepath);
-         encodings = List.copyOf(encodings);
-         if (!unitName.isBlank() && (encodings.isEmpty() || encodings.size() == sourcepath.size())) {
-            this.unitName = unitName;
-            this.classpath = classpath;
-            this.sourcepath = sourcepath;
-            this.encodings = encodings;
-         } else {
-            throw new IllegalArgumentException("INVALID_SOURCE_ENVIRONMENT");
-         }
+         classpath = List.copyOf(classpath); sourcepath = List.copyOf(sourcepath); encodings = List.copyOf(encodings);
+         compilerOptions = Map.copyOf(compilerOptions);
+         if (unitName.isBlank() || !encodings.isEmpty() && encodings.size() != sourcepath.size())
+            throw new IllegalArgumentException("INVALID_SOURCE_ENVIRONMENT"); //$NON-NLS-1$
       }
    }
 

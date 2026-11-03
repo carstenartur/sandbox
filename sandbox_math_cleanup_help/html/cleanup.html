@@ -419,6 +419,16 @@ are disabled. Existing nine-argument programmatic option construction remains co
 <p>The CLI key <code>cleanup.mathematics.explanations</code> accepts
 <code>NONE</code>, <code>NONTRIVIAL</code>, or <code>ALL</code> and defaults to
 <code>NONTRIVIAL</code>.</p>
+<p>Runtime iteration changes are nontrivial. Their comments name actual targets,
+Java modulo 2^32/2^64 or exact BigInteger values, the checked sum/transition family,
+and only the guards and fallback present in the generated code. Exclusive unit-stride
+int constant sums use primitive arithmetic for every count without a crossover;
+other templates retain their applicable checks. Crossover estimates are not timings.
+Comments stay inside generated blocks or stream suppliers and are independently
+replayed with the code. Repeated cleanup preserves structurally recognized runtime
+envelopes even with comments off; unrelated nearby calculations remain eligible.
+Matching authored structures may also be preserved, but a name or comment alone
+does not qualify. This protection grants no mathematical assumptions.</p>
 <p>With mathematical mode enabled, explanations retain the verified local domain
 and any changed overflow or BigInteger reference-identity contract. Such contract
 changes are nontrivial even when the original calculation has few operations.</p>

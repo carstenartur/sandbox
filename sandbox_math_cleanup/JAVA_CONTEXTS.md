@@ -175,8 +175,8 @@ infinite series require different proof contracts.
 With `LOWER_ESTIMATED_RUNTIME`, `PRESERVE_JAVA` and mathematical opt-in off, the
 runtime iteration pass can reduce admitted loops whose bounds are invariant
 primitive expressions. It captures start/end in their original Java width before
-performing exact count arithmetic. Empty and short ranges retain original
-execution. For larger ranges, a guard checks the final counter update and every
+performing exact count arithmetic. General templates retain original execution
+for empty and short ranges. For larger ranges, a guard checks the final counter update and every
 additional type/range/growth obligation before entering the optimized path.
 Statically unprofitable or always-wrapping ranges receive no runtime rewrite.
 Readability and lower-allocation goals do not select these allocating templates.
@@ -242,7 +242,20 @@ weight, including polynomial degree or transition dimension/count-bit work.
 Sequential substitution may expand that model, so these are explicit estimates
 rather than literal JVM instruction counts or measured speedups. The original
 loop remains below the estimated crossover and whenever a runtime guard fails.
+Checked constant sums with int captures instead use primitive long count arithmetic.
+Exclusive unit-stride int headers terminate without counter wrap, so this strategy
+handles every count directly, with no crossover or fallback. Inclusive/nonunit/do
+headers retain the estimated crossover and int endpoint guard. Compound assignment
+preserves each accumulator's int/long modular ring.
 Generated Java depends only on JDK APIs, not on the Regelsuche runtime.
+
+Runtime comments use checked runtime evidence with actual targets and guards;
+both NONTRIVIAL and ALL include them, while NONE adds none. They appear inside
+blocks or supplier bodies and participate in exact emission replay. Reapplication
+protects recognized complete runtime structures, including fallback and generated
+scalar work, without relying on comments. A matching authored structure may be
+conservatively preserved; names/comments alone do not qualify. Work/cancellation
+limits apply to discovery and rendering, and unrelated nearby work stays eligible.
 
 Exact rational telescoping belongs to the SDK's exact-rational API. Java
 truncating integer division, floating-point reassociation and BigDecimal

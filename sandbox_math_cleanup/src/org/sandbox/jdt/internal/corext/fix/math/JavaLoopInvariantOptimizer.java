@@ -64,7 +64,7 @@ final class JavaLoopInvariantOptimizer {
                 var plan=JavaSourceRewritePlan.hoist(ast,source,context.envelope(),context.expression(),declaration,name);
                 String replacement=plan.replacement(source);
                 String generated=source.substring(0,start)+replacement+source.substring(start+length);
-                CompilationUnit generatedAst=MathematicalAnalysis.checkGeneratedSource(ast,generated,compilerOptions,options.targetJava(),monitor,environment);
+                CompilationUnit generatedAst=MathematicalAnalysis.checkGeneratedSource(ast,source,generated,compilerOptions,options.targetJava(),monitor,environment,GeneratedSourceDiagnostics.edits(plan));
                 var temporary=temporary(generatedAst,start,declaration,name);
                 var decoded=extractor.extractRuntimeExpression(generatedAst,generated,temporary.getInitializer(),options);
                 if(decoded.regions().size()!=1 || !decoded.diagnostics().isEmpty()) throw new IllegalArgumentException("LOOP_INITIALIZER_NOT_EXTRACTED"); //$NON-NLS-1$

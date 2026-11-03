@@ -172,6 +172,8 @@ public final class JavaComputationEmitter {
 
    private static Map<String, String> source(OptimizationRequest request, JavaComputationEmitter.State state) {
       HashMap<Expr, String> evaluated = new HashMap<>();
+      var consumed = new HashSet<>(request.plan().outputExpressions());
+      for (var occurrence : request.sourceTrace().occurrences()) consumed.addAll(JavaExpressions.operands(occurrence.expression()));
 
       for (Occurrence occurrence : request.sourceTrace().occurrences()) {
          Expr expression = occurrence.expression();
@@ -186,7 +188,12 @@ public final class JavaComputationEmitter {
             operands.add(sourceValue(operand, request.plan().inputs(), evaluated, state));
          }
 
-         evaluated.put(expression, state.value(expression, kind, operands));
+         boolean discardedExact = state.mode == Mode.CHECKED && state.checkRange && kind.integral() && !consumed.contains(expression)
+               && JavaExpressions.operationOf(expression).filter(operation -> switch(operation) {
+                  case ADD, ADD_EXACT, SUBTRACT, SUBTRACT_EXACT, MULTIPLY, MULTIPLY_EXACT, NEGATE, NEGATE_EXACT -> true;
+                  default -> false;
+               }).isPresent();
+         evaluated.put(expression, state.value(expression, kind, operands, false, false, discardedExact));
       }
 
       LinkedHashMap<String, String> outputs = new LinkedHashMap<>();
@@ -255,11 +262,15 @@ public final class JavaComputationEmitter {
             reusable.put(index, outputLocals.get(name));
       });
       int[] uses = new int[nodes.size()];
+      boolean[] castConsumers = new boolean[nodes.size()];
       for (int output : plan.outputBindings().values()) uses[output]++;
       for (int index : required) {
          Node node = nodes.get(index);
          if (!JavaExpressions.isLiteral(node.expression())) {
-            for (int dependency : node.arguments()) uses[dependency]++;
+            for (int dependency : node.arguments()) {
+               uses[dependency]++;
+               if (JavaExpressions.castSourceKind(node.expression()).isPresent()) castConsumers[dependency]=true;
+            }
          }
       }
       // Prelude temporaries execute before the authored declarations. A reused
@@ -300,7 +311,8 @@ public final class JavaComputationEmitter {
 
             boolean inline = state.mode == Mode.PRESERVE && (node.expression() instanceof VariableExpr
                   || reusable.containsKey(index) || uses[index] == 1 || kind != NumericKind.BIG_INTEGER && JavaExpressions.isLiteral(node.expression()));
-            String expression = state.value(node.expression(), kind, arguments, inline);
+            String expression = state.value(node.expression(), kind, arguments, inline,
+                  !castConsumers[index] && !plan.outputBindings().containsValue(index));
             for (var binding : plan.outputBindings().entrySet()) if (binding.getValue() == index)
                outputs.put(binding.getKey(), reusable.containsKey(index) && outputOrder.get(binding.getKey()) > firstConsumer[index]
                      ? reusable.get(index) : expression);
@@ -349,12 +361,17 @@ public final class JavaComputationEmitter {
       }
    }
 
-   private static List<JavaComputationEmitter.Check> integralChecks(NumericOperation operation, NumericKind kind, List<String> operands, boolean checkRange) {
+   private static List<JavaComputationEmitter.Check> integralChecks(Expr expression, NumericOperation operation, NumericKind kind, List<String> operands, boolean checkRange) {
       String left = operands.getFirst();
       String right = operands.size() > 1 ? operands.get(1) : "";
       ArrayList<Check> checks = new ArrayList<>();
+      Object literal = operands.size()>1 && JavaExpressions.isLiteral(JavaExpressions.operands(expression).get(1))
+            ? JavaExpressions.literalValue(JavaExpressions.operands(expression).get(1)) : null;
+      Long divisor = null;
+      if (literal instanceof Number number) divisor = Long.valueOf(number.longValue());
+      else if (literal instanceof Character character) divisor = Long.valueOf(character.charValue());
       if (operation == NumericOperation.DIVIDE || operation == NumericOperation.REMAINDER) {
-         checks.add(new JavaComputationEmitter.Check(right + " != 0", "MATH_DIVIDE_BY_ZERO"));
+         if (divisor == null || divisor == 0) checks.add(new JavaComputationEmitter.Check(right + " != 0", "MATH_DIVIDE_BY_ZERO"));
       }
 
       if (!checkRange) {
@@ -366,7 +383,7 @@ public final class JavaComputationEmitter {
          case SUBTRACT, SUBTRACT_EXACT -> wideRange(kind, left, right, "-", "subtract");
          case MULTIPLY, MULTIPLY_EXACT -> wideRange(kind, left, right, "*", "multiply");
          case NEGATE, NEGATE_EXACT, ABS -> left + " != " + min(kind);
-         case DIVIDE -> "!(" + left + " == " + min(kind) + " && " + right + " == -1)";
+         case DIVIDE -> divisor != null && divisor != -1 ? null : "!(" + left + " == " + min(kind) + " && " + right + " == -1)";
          case SHIFT_LEFT -> kind == NumericKind.INT
             ? inRange("((long) " + left + " << (" + right + " & 31))", kind)
             : "java.math.BigInteger.valueOf(" + left + ").shiftLeft((int) (" + right + " & 63)).bitLength() <= 63";
@@ -494,7 +511,8 @@ public final class JavaComputationEmitter {
                : (
                   integer.equals(BigInteger.ONE)
                      ? "java.math.BigInteger.ONE"
-                     : (integer.equals(BigInteger.TEN) ? "java.math.BigInteger.TEN" : "new java.math.BigInteger(\"" + integer + "\")")
+                     : (integer.equals(BigInteger.TEN) ? "java.math.BigInteger.TEN" : integer.bitLength() <= 63
+                           ? "java.math.BigInteger.valueOf(" + integer + "L)" : "new java.math.BigInteger(\"" + integer + "\")")
                );
          }
          case BYTE -> "(byte) " + value;
@@ -650,6 +668,14 @@ public final class JavaComputationEmitter {
       }
 
       String value(Expr expression, NumericKind kind, List<String> operands, boolean inline) {
+         return value(expression,kind,operands,inline,false);
+      }
+
+      String value(Expr expression, NumericKind kind, List<String> operands, boolean inline, boolean numericOperand) {
+         return value(expression,kind,operands,inline,numericOperand,false);
+      }
+
+      String value(Expr expression, NumericKind kind, List<String> operands, boolean inline, boolean numericOperand, boolean discardedExact) {
          if (kind.floatingPoint() && this.targetJava < 17) {
             throw JavaComputationEmitter.unsupported("MATH_FLOATING_POINT_REQUIRES_JAVA_17");
          }
@@ -683,7 +709,10 @@ public final class JavaComputationEmitter {
                checks.add(new JavaComputationEmitter.Check(JavaComputationEmitter.inRange("(long) " + operands.getFirst(), kind), "MATH_NARROWING"));
             }
 
-            javaExpression = "(" + JavaComputationEmitter.type(kind) + ") " + operands.getFirst();
+            // Numeric operands and materialized temporaries supply promotion; public inline outputs must retain their kind.
+            javaExpression = (!inline || numericOperand) && kind == NumericKind.INT && (sourceKind == NumericKind.BYTE
+                  || sourceKind == NumericKind.SHORT || sourceKind == NumericKind.CHAR)
+                  ? operands.getFirst() : "(" + JavaComputationEmitter.type(kind) + ") " + operands.getFirst();
          } else {
             NumericOperation originalOperation = JavaExpressions.operationOf(expression).orElseThrow(() -> JavaComputationEmitter.unsupported("MATH_UNKNOWN_OPERATION"));
             NumericOperation emittedOperation = this.mode == JavaComputationEmitter.Mode.CHECKED && this.checkRange && kind.integral()
@@ -691,7 +720,7 @@ public final class JavaComputationEmitter {
                : originalOperation;
             javaExpression = JavaComputationEmitter.operation(emittedOperation, kind, operands);
             if (kind.integral() && this.mode != JavaComputationEmitter.Mode.PRESERVE) {
-               checks.addAll(JavaComputationEmitter.integralChecks(originalOperation, kind, operands, this.checkRange || JavaComputationEmitter.exact(originalOperation)));
+               checks.addAll(JavaComputationEmitter.integralChecks(expression, originalOperation, kind, operands, this.checkRange || JavaComputationEmitter.exact(originalOperation)));
             }
          }
 
@@ -702,6 +731,11 @@ public final class JavaComputationEmitter {
             return leaf ? javaExpression : "(" + javaExpression + ")";
          }
 
+         if (discardedExact) {
+            checks.forEach(this::check);
+            this.code.append(javaExpression).append(";\n");
+            return javaExpression;
+         }
          String name = this.fresh();
          if (this.mode == JavaComputationEmitter.Mode.GUARDED) {
             this.code.append(JavaComputationEmitter.type(kind)).append(' ').append(name).append(" = ").append(JavaComputationEmitter.zero(kind)).append(";\n");
