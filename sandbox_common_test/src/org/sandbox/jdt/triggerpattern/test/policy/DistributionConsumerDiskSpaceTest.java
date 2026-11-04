@@ -3,6 +3,7 @@ package org.sandbox.jdt.triggerpattern.test.policy;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -22,7 +23,7 @@ class DistributionConsumerDiskSpaceTest {
     @ParameterizedTest
     @ValueSource(booleans = { true, false })
     void reclaimsOnlyCompletedAggregateScratchBeforeNativeConsumption(boolean scratchExists) throws Exception {
-        String workflow = Files.readString(root().resolve(".github/workflows/distribution-smoke.yml"));
+        String workflow = Files.readString(root().resolve(".github/workflows/distribution-smoke.yml"), StandardCharsets.UTF_8);
         String heading = "      - name: Reclaim completed aggregate installation scratch space\n";
         int cleanup = workflow.indexOf(heading);
         int build = workflow.indexOf("      - name: Maven distribution build and verification\n");
@@ -54,9 +55,9 @@ class DistributionConsumerDiskSpaceTest {
                 .directory(temporary.toFile()).redirectErrorStream(true).redirectOutput(log.toFile()).start();
         try {
             assertTrue(process.waitFor(10, TimeUnit.SECONDS), "Cleanup did not finish");
-            assertEquals(0, process.exitValue(), Files.readString(log));
+            assertEquals(0, process.exitValue(), Files.readString(log, StandardCharsets.UTF_8));
             assertFalse(Files.exists(scratch.getParent().getParent().getParent()), "Completed installation remains on disk");
-            for (Path path : retained) assertEquals("retained\n", Files.readString(path), path.toString());
+            for (Path path : retained) assertEquals("retained\n", Files.readString(path, StandardCharsets.UTF_8), path.toString());
             assertTrue(Files.isSymbolicLink(link), "Do not traverse or delete installation-like symbolic links");
         } finally {
             if (process.isAlive()) process.destroyForcibly();
@@ -66,7 +67,7 @@ class DistributionConsumerDiskSpaceTest {
     private Path file(String relative) throws Exception {
         Path path = temporary.resolve(relative);
         Files.createDirectories(path.getParent());
-        return Files.writeString(path, "retained\n");
+        return Files.writeString(path, "retained\n", StandardCharsets.UTF_8);
     }
 
     private static Path root() {
