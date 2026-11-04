@@ -6,6 +6,8 @@
          where the vocabulary establishes element-only content. -->
     <xsl:output method="xml" indent="no"/>
     <xsl:param name="indent" select="false()"/>
+    <!-- Explicit user choice for the Eclipse 3.4+ schema writer convention. -->
+    <xsl:param name="modernize-appinfo" select="false()"/>
 
     <xsl:template match="/">
         <xsl:for-each select="*|comment()|processing-instruction()">
@@ -30,7 +32,40 @@
             self::plugin[not(parent::*)] or self::fragment[not(parent::*)]
             or self::feature[not(parent::*)]
             or self::extension[parent::plugin[not(parent::*)] or parent::fragment[not(parent::*)]]"/>
+        <!-- Only modernize the PDE metadata vocabulary in its reader context.
+             Unknown appinfo payloads may belong to a different consumer. -->
+        <xsl:variable name="pde-legacy-appinfo" select="
+            /*[self::schema or self::xs:schema]
+            and namespace-uri() = namespace-uri(/*) and local-name() = 'appInfo'
+            and parent::*[local-name() = 'annotation' and namespace-uri() = namespace-uri(/*)]
+            and * and not(text()[normalize-space(.) != ''])
+            and not(*[namespace-uri() != namespace-uri(/*) or * or text()[normalize-space(.) != '']
+                or not((local-name(../../..) = 'schema' and (local-name() = 'meta.schema' or local-name() = 'meta.section'))
+                    or (local-name(../../..) = 'element' and local-name() = 'meta.element')
+                    or (local-name(../../..) = 'attribute' and local-name() = 'meta.attribute'))])"/>
         <xsl:choose>
+            <xsl:when test="$modernize-appinfo and $pde-legacy-appinfo
+                            and not(ancestor-or-self::*[@xml:space][1]/@xml:space = 'preserve')">
+                <xsl:variable name="modern-name">
+                    <xsl:if test="contains(name(), ':')">
+                        <xsl:value-of select="substring-before(name(), ':')"/><xsl:text>:</xsl:text>
+                    </xsl:if>
+                    <xsl:text>appinfo</xsl:text>
+                </xsl:variable>
+                <xsl:choose>
+                    <!-- XSLTC invents a prefix for a dynamic unprefixed QName
+                         with a nonempty namespace. PDE readers compare qName,
+                         so retain the default XSD namespace explicitly. -->
+                    <xsl:when test="namespace-uri() = 'http://www.w3.org/2001/XMLSchema' and not(contains(name(), ':'))">
+                        <appinfo xmlns="http://www.w3.org/2001/XMLSchema"><xsl:copy-of select="namespace::*|@*|node()"/></appinfo>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:element name="{$modern-name}" namespace="{namespace-uri()}">
+                            <xsl:copy-of select="namespace::*|@*|node()"/>
+                        </xsl:element>
+                    </xsl:otherwise>
+                </xsl:choose>
+            </xsl:when>
             <xsl:when test="($schema-container or $descriptor-container)
                             and not(text()[normalize-space(.) != ''])
                             and not(ancestor-or-self::*[@xml:space][1]/@xml:space = 'preserve')">

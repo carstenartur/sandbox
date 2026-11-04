@@ -84,6 +84,32 @@ The implementation materializes the complete document in memory and therefore re
 
 After transformation, `XMLResourceSupport` parses the output with external DTD/schema/entity access disabled. Malformed output is rejected before any workspace write.
 
+### Explicit appinfo target convention
+
+`SchemaTransformationUtils.PdeSchemaTarget.PRESERVE` is the default for existing
+callers. `ECLIPSE_3_4_OR_NEWER` enables the stylesheet's `modernize-appinfo`
+parameter. This follows the PDE schema writer's 3.4 threshold and deliberately
+does not guess a project's target. Only legacy `appInfo` with recognized,
+attribute-only PDE metadata in its reader context is renamed. The payload,
+attributes, and namespace remain intact; unknown payloads are copied as before.
+
+The dedicated standalone command uses `PdeAppinfoModernizationHandler` to
+construct a fresh `XMLCleanupService` with an immutable target. That value
+passes through the resource preparation call for this invocation; no singleton
+or shared mutable profile state stores it. Ordinary commands and marker fixes
+keep `PRESERVE`. Interleaved and concurrent workspace tests verify independent
+command choices through actual file writes.
+
+The new option has no JDT cleanup/profile/save-action registration. JDT's
+`ICleanUpFix` produces a compilation-unit change, and its cleanup refactoring
+rebuilds that change for the Java compilation unit. The standalone command uses
+the guarded XML workspace prepare/write boundary. CDATA sources are validated
+but retained without serialization because XSLT loses their lexical boundaries.
+
+Tests compare full and abbreviated PDE models, the lightweight
+`SchemaAnnotationHandler` result, and generated HTML, as well as exact preserved
+subtrees, explicit/default target behavior, namespace handling, and idempotence.
+
 ## Main components
 
 ### `XMLResourceSupport`
