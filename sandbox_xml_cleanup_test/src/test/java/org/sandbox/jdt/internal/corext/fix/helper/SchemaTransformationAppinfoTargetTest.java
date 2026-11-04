@@ -57,6 +57,39 @@ class SchemaTransformationAppinfoTargetTest {
 	}
 
 	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void formatsRecognizedMetadataOnTheModernizingPass(boolean indent) throws Exception {
+		for (String namespace : new String[] { "", " xmlns=\"http://www.w3.org/2001/XMLSchema\"" }) { //$NON-NLS-1$ //$NON-NLS-2$
+			String source= """
+					<schema%s><annotation><appInfo xmlns:t="urn:tokens" type="t:Name" custom="keep">
+					    <meta.schema name="Items"> \t </meta.schema>
+					    <!-- keep --> <?keep metadata?>
+					    <meta.section type="examples">  </meta.section>
+					</appInfo><documentation>  literal  </documentation></annotation></schema>
+					""".formatted(namespace); //$NON-NLS-1$
+			String expected= indent ? """
+					<schema%s>
+						<annotation>
+							<appinfo xmlns:t="urn:tokens" type="t:Name" custom="keep">
+								<meta.schema name="Items"/>
+								<!-- keep -->
+								<?keep metadata?>
+								<meta.section type="examples"/>
+							</appinfo>
+							<documentation>  literal  </documentation>
+						</annotation>
+					</schema>
+					""".formatted(namespace) //$NON-NLS-1$
+					: ("<schema%s><annotation><appinfo xmlns:t=\"urn:tokens\" type=\"t:Name\" custom=\"keep\">" //$NON-NLS-1$
+							+ "<meta.schema name=\"Items\"/><!-- keep --><?keep metadata?><meta.section type=\"examples\"/>" //$NON-NLS-1$
+							+ "</appinfo><documentation>  literal  </documentation></annotation></schema>").formatted(namespace); //$NON-NLS-1$
+			String result= transform(source, indent, PdeSchemaTarget.ECLIPSE_3_4_OR_NEWER);
+			assertTrue(parse(expected).isEqualNode(parse(result)), result);
+			assertEquals(result, transform(result, indent, PdeSchemaTarget.ECLIPSE_3_4_OR_NEWER));
+		}
+	}
+
+	@ParameterizedTest
 	@ValueSource(strings = { "", "xs:", "pappInfo:", "appInfo:" }) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 	void retainsSchemaNamespaceAndPrefix(String prefix) throws Exception {
 		String ns= prefix.isEmpty() ? "" : " xmlns:%s=\"http://www.w3.org/2001/XMLSchema\"" //$NON-NLS-1$ //$NON-NLS-2$
@@ -113,10 +146,11 @@ class SchemaTransformationAppinfoTargetTest {
 	void modernizesWithCdataMarkersInsideCommentsAndProcessingInstructions(String marker) throws Exception {
 		for (boolean indent : new boolean[] { false, true }) {
 			String source= "<schema>" + marker //$NON-NLS-1$
-					+ "<annotation><appInfo><meta.schema/></appInfo></annotation></schema>"; //$NON-NLS-1$
+					+ "<annotation><appInfo>  <meta.schema name=\"Items\">  </meta.schema>  </appInfo></annotation></schema>"; //$NON-NLS-1$
 			String result= transform(source, indent, PdeSchemaTarget.ECLIPSE_3_4_OR_NEWER);
 			assertEquals(1, parse(result).getElementsByTagName("appinfo").getLength(), result); //$NON-NLS-1$
 			assertEquals(0, parse(result).getElementsByTagName("appInfo").getLength()); //$NON-NLS-1$
+			assertTrue(result.contains("<meta.schema name=\"Items\"/>"), result); //$NON-NLS-1$
 			assertTrue(result.contains(marker), result);
 			assertEquals(result, transform(result, indent, PdeSchemaTarget.ECLIPSE_3_4_OR_NEWER));
 		}
