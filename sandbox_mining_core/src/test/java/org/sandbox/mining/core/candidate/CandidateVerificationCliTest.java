@@ -47,7 +47,7 @@ class CandidateVerificationCliTest {
 		MiningCandidate candidate = readyCandidate("snapshot", "2026-01-01T00:00:00Z");
 		store.save(candidate);
 		Path issues = tempDir.resolve("empty-issues.jsonl");
-		Files.writeString(issues, snapshot);
+		Files.writeString(issues, snapshot, StandardCharsets.UTF_8);
 		assertThrows(IOException.class, () -> CandidateVerificationCli.run(new String[] {
 				"--candidate-dir", candidateDir.toString(), "--report-dir", tempDir.resolve("empty-report").toString(),
 				"--review-issues", issues.toString() }));
@@ -89,9 +89,9 @@ class CandidateVerificationCliTest {
 		try (var files = Files.list(directory)) {
 			file = files.filter(path -> path.toString().endsWith("-candidate.json")).findFirst().orElseThrow();
 		}
-		String original = Files.readString(file);
+		String original = Files.readString(file, StandardCharsets.UTF_8);
 		Path issues = tempDir.resolve("invalid-issues.json");
-		Files.writeString(issues, snapshot);
+		Files.writeString(issues, snapshot, StandardCharsets.UTF_8);
 		Path report = tempDir.resolve("invalid-report");
 		Path index = tempDir.resolve("invalid-index.json");
 		assertThrows(IOException.class, () -> CandidateReviewIssues.reconcile(List.of(candidate), issues));
@@ -99,7 +99,7 @@ class CandidateVerificationCliTest {
 		assertThrows(IOException.class, () -> CandidateVerificationCli.run(new String[] {
 				"--candidate-dir", directory.toString(), "--report-dir", report.toString(), "--review-issues", issues.toString(),
 				"--review-issue-index", index.toString() }));
-		assertEquals(original, Files.readString(file));
+		assertEquals(original, Files.readString(file, StandardCharsets.UTF_8));
 		assertEquals(CandidateStatus.READY_FOR_REVIEW, candidate.getStatus());
 		assertFalse(Files.exists(report));
 		assertFalse(Files.exists(index));
@@ -117,7 +117,7 @@ class CandidateVerificationCliTest {
 		var forged = com.google.gson.JsonParser.parseString(issue(candidate, 11, "closed", "not_planned")).getAsJsonObject();
 		forged.add("user", com.google.gson.JsonParser.parseString(user));
 		Path issues = tempDir.resolve("forged-issues.json");
-		Files.writeString(issues, "[" + forged + "]");
+		Files.writeString(issues, ("[" + forged + "]"), StandardCharsets.UTF_8);
 		CandidateReviewIssues.reconcile(List.of(candidate, equivalent), issues);
 		assertEquals(CandidateStatus.READY_FOR_REVIEW, candidate.getStatus());
 		assertEquals(CandidateStatus.READY_FOR_REVIEW, equivalent.getStatus());
@@ -129,7 +129,7 @@ class CandidateVerificationCliTest {
 		var ordinary = com.google.gson.JsonParser.parseString(issue(candidate, 12, "closed", "not_planned")).getAsJsonObject();
 		ordinary.add("body", com.google.gson.JsonNull.INSTANCE);
 		Path issues = tempDir.resolve("null-body.json");
-		Files.writeString(issues, "[" + ordinary + "]");
+		Files.writeString(issues, ("[" + ordinary + "]"), StandardCharsets.UTF_8);
 		CandidateReviewIssues.reconcile(List.of(candidate), issues);
 		assertEquals(CandidateStatus.READY_FOR_REVIEW, candidate.getStatus());
 	}
@@ -147,14 +147,17 @@ class CandidateVerificationCliTest {
 		pullRequest.add("pull_request", new com.google.gson.JsonObject());
 		Path issues = tempDir.resolve("index-issues.json");
 		Path index = tempDir.resolve("index.json");
-		Files.writeString(issues, "[[" + String.join(",", forged, old, quoted, pullRequest.toString()) + "]]");
+		Files.writeString(issues, ("[[" + String.join(",", forged, old, quoted, pullRequest.toString()) + "]]"),
+				StandardCharsets.UTF_8);
 		String[] args = { "--candidate-dir", tempDir.resolve("index-candidates").toString(), "--report-dir", tempDir.resolve("index-report").toString(),
 				"--review-issues", issues.toString(), "--review-issue-index", index.toString() };
 		assertEquals(0, CandidateVerificationCli.run(args));
-		assertEquals("{}", Files.readString(index).strip());
-		Files.writeString(issues, "[[" + String.join(",", forged, old, quoted, pullRequest.toString(), trusted) + "]]");
+		assertEquals("{}", Files.readString(index, StandardCharsets.UTF_8).strip());
+		Files.writeString(issues,
+				("[[" + String.join(",", forged, old, quoted, pullRequest.toString(), trusted) + "]]"),
+				StandardCharsets.UTF_8);
 		assertEquals(0, CandidateVerificationCli.run(args));
-		var json = com.google.gson.JsonParser.parseString(Files.readString(index)).getAsJsonObject();
+		var json = com.google.gson.JsonParser.parseString(Files.readString(index, StandardCharsets.UTF_8)).getAsJsonObject();
 		assertEquals(1, json.size());
 		assertEquals(21, json.get(candidate.getCandidateId()).getAsInt());
 	}
@@ -163,7 +166,7 @@ class CandidateVerificationCliTest {
 	void closedTrustedReviewRemainsInCreationIndexWithoutInferringPromotion() throws IOException {
 		MiningCandidate candidate = readyCandidate("closed-index", "2026-01-01T00:00:00Z");
 		Path issues = tempDir.resolve("closed-index.json");
-		Files.writeString(issues, "[" + issue(candidate, 1284, "closed", "completed") + "]");
+		Files.writeString(issues, ("[" + issue(candidate, 1284, "closed", "completed") + "]"), StandardCharsets.UTF_8);
 		var reviews = CandidateReviewIssues.reconcile(List.of(candidate), issues);
 		assertEquals(CandidateStatus.SUPERSEDED, candidate.getStatus());
 		assertEquals(java.util.Map.of(candidate.getCandidateId(), 1284), CandidateReviewIssues.index(List.of(candidate), reviews));
@@ -197,9 +200,11 @@ class CandidateVerificationCliTest {
 			store.save(candidate);
 		}
 		Path issues = tempDir.resolve("issues.jsonl");
-		Files.writeString(issues, "[[" + String.join(",", issue(rejected, 1539, "closed", "not_planned"),
-				issue(historical, 1284, "closed", "completed"), issue(open, 2000, "open", null),
-				issue(alreadyRejected, 1781, "closed", "completed")) + "]]");
+		Files.writeString(issues,
+				("[[" + String.join(",", issue(rejected, 1539, "closed", "not_planned"),
+						issue(historical, 1284, "closed", "completed"), issue(open, 2000, "open", null),
+						issue(alreadyRejected, 1781, "closed", "completed")) + "]]"),
+				StandardCharsets.UTF_8);
 		String[] args = { "--candidate-dir", candidateDir.toString(), "--report-dir",
 				tempDir.resolve("closed-report").toString(), "--review-issues", issues.toString() };
 		assertEquals(0, CandidateVerificationCli.run(args));
@@ -211,7 +216,7 @@ class CandidateVerificationCliTest {
 		var transitions = store.findById(rejected.getCandidateId()).orElseThrow().getTransitions();
 		assertEquals(0, CandidateVerificationCli.run(args));
 		assertEquals(transitions, store.findById(rejected.getCandidateId()).orElseThrow().getTransitions());
-		assertTrue(Files.readString(tempDir.resolve("closed-report/candidate-summary.md"))
+		assertTrue(Files.readString(tempDir.resolve("closed-report/candidate-summary.md"), StandardCharsets.UTF_8)
 				.contains("Historical closed reviews: 1"));
 	}
 
@@ -224,11 +229,15 @@ class CandidateVerificationCliTest {
 		candidate.setRevision(revision);
 		store.save(candidate);
 		Path issues = tempDir.resolve("old-issues.jsonl");
-		Files.writeString(issues, "[" + issue(candidate, 111, "closed", "not_planned")
-				.replace("`" + revision + "`", "`" + (revision == 1 ? 2 : 1) + "`") + "," + issue(candidate, 112, "closed", "not_planned")
-				.replace("<!-- mining-candidate-id:", "Quoted: <!-- mining-candidate-id:") + ","
-				+ issue(candidate, 113, "closed", "not_planned").replace("| Revision |", "| Old Revision |") + ","
-				+ issue(candidate, 114, "closed", "not_planned").replace("`" + revision + "`", "`invalid`") + "]");
+		Files.writeString(issues, ("["
+				+ issue(candidate, 111, "closed", "not_planned").replace("`" + revision + "`",
+						"`" + (revision == 1 ? 2 : 1) + "`")
+				+ ","
+				+ issue(candidate, 112, "closed", "not_planned").replace("<!-- mining-candidate-id:",
+						"Quoted: <!-- mining-candidate-id:")
+				+ "," + issue(candidate, 113, "closed", "not_planned").replace("| Revision |", "| Old Revision |") + ","
+				+ issue(candidate, 114, "closed", "not_planned").replace("`" + revision + "`", "`invalid`") + "]"),
+				StandardCharsets.UTF_8);
 		assertEquals(0, CandidateVerificationCli.run(new String[] { "--candidate-dir", candidateDir.toString(),
 				"--report-dir", tempDir.resolve("marker-report").toString(), "--review-issues", issues.toString() }));
 		assertEquals(CandidateStatus.READY_FOR_REVIEW, store.findById(candidate.getCandidateId()).orElseThrow().getStatus());
@@ -337,7 +346,7 @@ class CandidateVerificationCliTest {
 				$x + 0
 				=> $x
 				;;
-				"""); //$NON-NLS-1$
+				""", StandardCharsets.UTF_8); //$NON-NLS-1$
 		CandidateStore store = new CandidateStore(candidateDir);
 		store.save(candidate("commit-new", "2026-03-01T00:00:00Z")); //$NON-NLS-1$ //$NON-NLS-2$
 
@@ -473,14 +482,13 @@ class CandidateVerificationCliTest {
 		writeLegacyCandidate(legacyPath, example.getDslRule(), example.getBeforeExample(),
 				example.getAfterExample(), example.getNegativeExample());
 		// Raw schema-v1 data has neither a canonical filename nor sourceVersion.
-		Files.writeString(legacyPath, Files.readString(legacyPath).replace(
-				"\"status\": \"DSL_VALID\"", """
+		Files.writeString(legacyPath, Files.readString(legacyPath).replace("\"status\": \"DSL_VALID\"", """
 				"status": "REJECTED",
 				"rejectionReason": "Review of the implicit source-21 revision",
 				"verification": { "successful": true, "stage": "SUCCESS",
 				  "message": "Candidate behavior verified", "verifierVersion": "7",
 				  "verifiedAt": "2026-01-01T00:00:00Z", "matches": 1, "replacements": 1 }
-				""")); //$NON-NLS-1$
+				"""), StandardCharsets.UTF_8); //$NON-NLS-1$
 		CandidateStore store = new CandidateStore(candidateDir);
 		MiningCandidate valid = candidate("source-17", "2025-12-31T00:00:00Z"); //$NON-NLS-1$ //$NON-NLS-2$
 		valid.setSourceVersion("17"); //$NON-NLS-1$
