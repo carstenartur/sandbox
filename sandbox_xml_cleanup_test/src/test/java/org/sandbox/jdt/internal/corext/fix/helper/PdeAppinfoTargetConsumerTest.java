@@ -14,10 +14,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
-import java.io.PrintWriter;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
 import java.io.StringWriter;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
@@ -136,7 +139,7 @@ class PdeAppinfoTargetConsumerTest {
 
 	private static String html(Schema schema) {
 		StringWriter output= new StringWriter();
-		new SchemaTransformer().transform(schema, new PrintWriter(output), null, SchemaTransformer.BUILD);
+		new SchemaTransformer().transform(schema, new BufferedWriter(new OutputStreamWriter(new FileOutputStream(output), Charset.defaultCharset())), null, SchemaTransformer.BUILD);
 		return output.toString();
 	}
 }
