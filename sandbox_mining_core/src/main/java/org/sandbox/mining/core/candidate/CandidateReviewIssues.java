@@ -15,6 +15,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.regex.Pattern;
 
 import com.google.gson.JsonObject;
@@ -33,9 +35,12 @@ final class CandidateReviewIssues {
 	private CandidateReviewIssues() {
 	}
 
-	/** Accepts one strict JSON snapshot containing REST objects, an array, or gh --slurp pages. */
-	static void reconcile(List<MiningCandidate> candidates, Path snapshot) throws IOException {
-		List<ClosedIssue> closed = new ArrayList<>();
+	/**
+	 * Accepts one strict JSON snapshot containing REST objects, an array, or gh --slurp pages.
+	 * Creator metadata is required; a body marker alone is not review authority.
+	 */
+	static List<ReviewIssue> reconcile(List<MiningCandidate> candidates, Path snapshot) throws IOException {
+		List<ReviewIssue> reviews = new ArrayList<>();
 		try (var reader = Files.newBufferedReader(snapshot, StandardCharsets.UTF_8)) {
 			List<JsonObject> issues = new ArrayList<>();
 			JsonElement root = GSON.fromJson(reader, JsonElement.class);
@@ -44,13 +49,17 @@ final class CandidateReviewIssues {
 			}
 			collectIssues(root, issues);
 			for (JsonObject issue : issues) {
-				if (!issue.has("number") || !("open".equals(string(issue, "state")) || "closed".equals(string(issue, "state")))) {
-					throw new IOException("Review issue snapshot contains an issue without number/state: " + snapshot);
+				int number = positiveInteger(issue.get("number"));
+				String state = requiredString(issue, "state", false);
+				String body = requiredString(issue, "body", true);
+				String reason = requiredString(issue, "state_reason", true);
+				boolean trusted = trustedCreator(issue);
+				if (!"open".equals(state) && !"closed".equals(state)) {
+					throw new IOException("Review issue snapshot contains an invalid state: " + snapshot);
 				}
-				if (!"closed".equals(string(issue, "state")) || issue.has("pull_request")) {
+				if (!trusted || issue.has("pull_request")) {
 					continue;
 				}
-				String body = string(issue, "body");
 				var marker = MARKER.matcher(body);
 				if (!marker.find()) {
 					continue;
@@ -59,13 +68,13 @@ final class CandidateReviewIssues {
 				if (!revision.find()) {
 					continue;
 				}
-				closed.add(new ClosedIssue(marker.group(1), Integer.parseInt(revision.group(1)),
-						issue.get("number").getAsInt(), string(issue, "state_reason")));
+				reviews.add(new ReviewIssue(marker.group(1), Integer.parseInt(revision.group(1)),
+						number, reason, "closed".equals(state)));
 			}
 		} catch (RuntimeException e) {
 			throw new IOException("Invalid review issue snapshot: " + snapshot, e);
 		}
-		closed.sort(Comparator.comparing((ClosedIssue issue) -> !issue.rejected()).thenComparingInt(ClosedIssue::number));
+		reviews.sort(Comparator.comparing((ReviewIssue issue) -> !issue.rejected()).thenComparingInt(ReviewIssue::number));
 		for (MiningCandidate candidate : candidates) {
 			if (candidate.getStatus() != CandidateStatus.READY_FOR_REVIEW
 					&& candidate.getStatus() != CandidateStatus.BEHAVIOR_VALID
@@ -73,12 +82,26 @@ final class CandidateReviewIssues {
 					&& candidate.getStatus() != CandidateStatus.DISCOVERED) {
 				continue;
 			}
-			closed.stream().filter(issue -> issue.candidateId().equals(candidate.getCandidateId())
+			reviews.stream().filter(issue -> issue.closed() && issue.candidateId().equals(candidate.getCandidateId())
 					&& issue.revision() == candidate.getRevision()).findFirst().ifPresent(issue ->
 				candidate.transitionTo(issue.rejected() ? CandidateStatus.REJECTED : CandidateStatus.SUPERSEDED,
 						"CandidateReviewIssues", "Review issue #" + issue.number() + " closed (" + issue.reason()
 								+ "); " + (issue.rejected() ? "existing rejection retained" : "historical review; promotion not inferred")));
 		}
+		return List.copyOf(reviews);
+	}
+
+	/** Build creation deduplication only after migrations have settled the current revision. */
+	static Map<String, Integer> index(List<MiningCandidate> candidates, List<ReviewIssue> reviews) {
+		Map<String, Integer> index = new TreeMap<>();
+		for (MiningCandidate candidate : candidates) {
+			for (ReviewIssue issue : reviews) {
+				if (issue.candidateId().equals(candidate.getCandidateId()) && issue.revision() == candidate.getRevision()) {
+					index.merge(candidate.getCandidateId(), issue.number(), Math::min);
+				}
+			}
+		}
+		return index;
 	}
 
 	private static void collectIssues(JsonElement value, List<JsonObject> issues) {
@@ -91,11 +114,46 @@ final class CandidateReviewIssues {
 		}
 	}
 
-	private static String string(JsonObject object, String field) {
-		return object.has(field) && !object.get(field).isJsonNull() ? object.get(field).getAsString() : "";
+	private static int positiveInteger(JsonElement value) {
+		if (value == null || !value.isJsonPrimitive() || !value.getAsJsonPrimitive().isNumber()) {
+			throw new IllegalArgumentException("Expected a positive integer");
+		}
+		int number = value.getAsBigDecimal().intValueExact();
+		if (number <= 0) {
+			throw new IllegalArgumentException("Expected a positive integer");
+		}
+		return number;
 	}
 
-	private record ClosedIssue(String candidateId, int revision, int number, String reason) {
+	private static String requiredString(JsonObject object, String field, boolean nullable) {
+		JsonElement value = object.get(field);
+		if (value != null && nullable && value.isJsonNull()) {
+			return "";
+		}
+		if (value == null || !value.isJsonPrimitive() || !value.getAsJsonPrimitive().isString()) {
+			throw new IllegalArgumentException("Expected explicit " + field + " string" + (nullable ? " or null" : ""));
+		}
+		return value.getAsString();
+	}
+
+	private static boolean trustedCreator(JsonObject issue) {
+		JsonElement value = issue.get("user");
+		if (value == null) {
+			throw new IllegalArgumentException("Expected explicit issue creator metadata");
+		}
+		if (value.isJsonNull()) {
+			return false;
+		}
+		JsonObject user = value.getAsJsonObject();
+		int id = positiveInteger(user.get("id"));
+		String login = requiredString(user, "login", false);
+		String type = requiredString(user, "type", false);
+		// Existing review issues are created with this workflow's GITHUB_TOKEN.
+		// Labels and performed_via_github_app are absent on historical reviews.
+		return id == 41898282 && "github-actions[bot]".equals(login) && "Bot".equals(type);
+	}
+
+	record ReviewIssue(String candidateId, int revision, int number, String reason, boolean closed) {
 		boolean rejected() {
 			return "not_planned".equals(reason);
 		}

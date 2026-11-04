@@ -319,7 +319,7 @@ public final class CandidateVerifier {
 
 	private static boolean independentCompileError(IProblem problem) {
 		return (problem.getID() & IProblem.Syntax) != 0 || problem.getID() == IProblem.TypeMismatch
-				|| problem.getID() == IProblem.ReturnTypeMismatch;
+				|| problem.getID() == IProblem.ReturnTypeMismatch || problem.getID() == IProblem.PublicClassMustMatchFileName;
 	}
 
 	/** Infer only the file identity; the subsequent binding parse checks all errors. */

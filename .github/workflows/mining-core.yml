@@ -122,6 +122,7 @@ jobs:
             --report-dir docs/mining-report \
             --curated-hint-dir sandbox_common_core/src/main/resources/org/sandbox/jdt/triggerpattern/internal \
             --review-issues "$RUNNER_TEMP/mining-review-issues.json" \
+            --review-issue-index "$RUNNER_TEMP/mining-review-issue-index.json" \
             --source-version 21
 
       - name: Persist candidate data outside main
@@ -207,15 +208,12 @@ jobs:
                   ready.append((path, candidate))
 
           created_count = 0
+          review_issues = json.loads(pathlib.Path(os.environ['RUNNER_TEMP'], 'mining-review-issue-index.json').read_text(encoding='utf-8'))
           for path, candidate in ready:
               if created_count >= 5:
                   break
               candidate_id = candidate.get('candidateId') or path.name.removesuffix('-candidate.json')
-              search = f'{candidate_id} in:body'
-              existing = subprocess.run(
-                  ['gh', 'issue', 'list', '--state', 'all', '--search', search,
-                   '--json', 'number', '--jq', '.[0].number'],
-                  check=False, capture_output=True, text=True).stdout.strip()
+              existing = review_issues.get(candidate_id)
               if existing:
                   print(f'Candidate {candidate_id} already has issue #{existing}')
                   continue

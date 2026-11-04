@@ -63,6 +63,15 @@ class RecordedCandidateVerificationTest {
 		assertEquals(CandidateVerification.Stage.NEGATIVE_MATCH, new CandidateVerifier().verify(candidate).stage());
 	}
 
+	@Test
+	void multiplePublicTypesTakePriorityOverMissingImport() {
+		MiningCandidate candidate = candidate();
+		candidate.setBeforeExample("import missing.Api; public class Positive { int m() { return 1 + 0; } } public class Other {}");
+		CandidateVerification result = new CandidateVerifier().verify(candidate);
+		assertFalse(result.successful());
+		assertEquals(CandidateVerification.Stage.BEFORE_PARSE, result.stage(), result.message());
+	}
+
 	@ParameterizedTest
 	@ValueSource(strings = { "\"wrong\"", "1 +" })
 	void independentCompileErrorsTakePriorityOverMissingImports(String expression) {

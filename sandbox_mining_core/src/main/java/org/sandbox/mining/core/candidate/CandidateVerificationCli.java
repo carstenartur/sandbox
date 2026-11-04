@@ -53,6 +53,7 @@ public final class CandidateVerificationCli {
 		Path reportDir = Path.of("docs/mining-report"); //$NON-NLS-1$
 		Path curatedHintDir = null;
 		Path reviewIssues = null;
+		Path reviewIssueIndex = null;
 		String defaultSourceVersion = "21"; //$NON-NLS-1$
 
 		for (int i = 0; i < args.length; i++) {
@@ -72,9 +73,15 @@ public final class CandidateVerificationCli {
 			case "--review-issues": //$NON-NLS-1$
 				reviewIssues = Path.of(requireValue(args, ++i, "--review-issues")); //$NON-NLS-1$
 				break;
+			case "--review-issue-index": //$NON-NLS-1$
+				reviewIssueIndex = Path.of(requireValue(args, ++i, "--review-issue-index")); //$NON-NLS-1$
+				break;
 			default:
 				throw new IllegalArgumentException("Unknown option: " + args[i]); //$NON-NLS-1$
 			}
+		}
+		if (reviewIssueIndex != null && reviewIssues == null) {
+			throw new IllegalArgumentException("--review-issue-index requires --review-issues");
 		}
 
 		Map<String, String> curatedRuleIndex = curatedHintDir == null
@@ -86,9 +93,8 @@ public final class CandidateVerificationCli {
 
 		CandidateStore store = new CandidateStore(candidateDir);
 		List<MiningCandidate> candidates = new ArrayList<>(store.loadAll());
-		if (reviewIssues != null) {
-			CandidateReviewIssues.reconcile(candidates, reviewIssues);
-		}
+		List<CandidateReviewIssues.ReviewIssue> reviews = reviewIssues == null
+				? List.of() : CandidateReviewIssues.reconcile(candidates, reviewIssues);
 		migrateLegacyCandidates(candidates, store);
 		for (MiningCandidate candidate : candidates) {
 			if (!candidate.hasDeclaredSourceVersion()) {
@@ -172,6 +178,9 @@ public final class CandidateVerificationCli {
 				.sorted(Comparator.comparing(MiningCandidate::getCandidateId))
 				.toList();
 		writeReport(updated, candidateDir, reportDir);
+		if (reviewIssueIndex != null) {
+			Files.writeString(reviewIssueIndex, GSON.toJson(CandidateReviewIssues.index(updated, reviews)), StandardCharsets.UTF_8);
+		}
 		long ready = updated.stream()
 				.filter(candidate -> candidate.getStatus() == CandidateStatus.READY_FOR_REVIEW)
 				.count();
