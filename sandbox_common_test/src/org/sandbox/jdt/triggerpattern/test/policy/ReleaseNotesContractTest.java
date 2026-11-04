@@ -20,12 +20,64 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /** Executes the actual release-notes workflow block with local Git history. */
 class ReleaseNotesContractTest {
 
 	@TempDir
 	Path repository;
+
+	@ParameterizedTest
+	@ValueSource(booleans = { true, false })
+	void curatedNotesArePreservedAsReviewableReleaseAssets(boolean dryRun) throws Exception {
+		initialize();
+		String curated = "# Sandbox 1.3.8 — release notes\n\n"
+				+ "Reviewed qualification: € costs, `source` identity and remaining limits.\n";
+		Files.writeString(repository.resolve("release_notes.md"), curated, StandardCharsets.UTF_8);
+		Result result = generate("v1.3.2", 0, dryRun);
+		assertEquals(0, result.exitCode(), result.output());
+		assertEquals(curated, notes());
+		assertEquals(curated, Files.readString(repository.resolve("target/release-assets/release-notes.md")));
+		if (!dryRun) {
+			// Publication must use the reviewed asset even if unrelated scratch notes drift.
+			Files.writeString(repository.resolve("release-notes.md"), "unreviewed scratch contents\n");
+			Result publication = publishNotes();
+			assertEquals(0, publication.exitCode(), publication.output());
+			assertEquals(curated, publication.output());
+		}
+	}
+
+	@Test
+	void notesPreparationIsAnUnconditionalPrePublicationArtifactStep() throws Exception {
+		String workflow = workflow();
+		int notes = workflow.indexOf("      - name: Generate release notes\n");
+		int upload = workflow.indexOf("      - name: Upload verified pre-publication evidence\n");
+		int publication = workflow.indexOf("      - name: Deploy versioned p2 repository\n");
+		assertTrue(notes >= 0 && notes < upload && upload < publication,
+				"Reviewable notes must be prepared and uploaded before publication");
+		String step = workflow.substring(notes, workflow.indexOf("\n      - ", notes + 1));
+		assertFalse(step.lines().anyMatch(line -> line.stripLeading().startsWith("if:")),
+				"Notes must also be prepared for the canonical dry-run");
+	}
+
+	@Test
+	void curatedNotesForAnotherVersionFailInsteadOfPublishingStaleNotes() throws Exception {
+		initialize();
+		Files.writeString(repository.resolve("release_notes.md"), "# Sandbox 1.3.7 — release notes\n");
+		Result result = generate("v1.3.2", 0);
+		assertTrue(result.exitCode() != 0, result.output());
+		assertFalse(Files.exists(repository.resolve("target/release-assets/release-notes.md")));
+	}
+
+	@Test
+	void emptyCuratedNotesFailInsteadOfSilentlyReplacingReviewedContents() throws Exception {
+		initialize();
+		Files.writeString(repository.resolve("release_notes.md"), "");
+		assertTrue(generate("v1.3.2", 0).exitCode() != 0);
+		assertFalse(Files.exists(repository.resolve("target/release-assets/release-notes.md")));
+	}
 
 	@Test
 	void publishedSideBranchReleaseExcludesPreviouslyReleasedChanges() throws Exception {
@@ -96,6 +148,10 @@ class ReleaseNotesContractTest {
 	}
 
 	private Result generate(String publishedTag, int apiExitCode) throws Exception {
+		return generate(publishedTag, apiExitCode, true);
+	}
+
+	private Result generate(String publishedTag, int apiExitCode, boolean dryRun) throws Exception {
 		// Only replace the network boundary. Git, Bash, redirections and the
 		// production workflow block execute unchanged. Reject calls that could
 		// select a draft/prerelease or fetch multiple ambiguous baselines.
@@ -115,10 +171,27 @@ class ReleaseNotesContractTest {
 				""";
 		// Keep the script's embedded quotes out of Windows process argv encoding.
 		String script = "release-notes-test.sh";
-		Files.writeString(repository.resolve(script), remote + workflowBlock(), StandardCharsets.UTF_8);
+		Files.writeString(repository.resolve(script), remote + workflowBlock("Generate release notes"), StandardCharsets.UTF_8);
 		return run(List.of(bash(), script), Map.of(
 				"STARTING_SHA", git("rev-parse", "HEAD").trim(),
+				"RELEASE_VERSION", "1.3.8", "DRY_RUN", Boolean.toString(dryRun),
 				"TEST_PUBLISHED_TAG", publishedTag, "TEST_API_EXIT_CODE", Integer.toString(apiExitCode)));
+	}
+
+	private Result publishNotes() throws Exception {
+		String remote = """
+				gh() {
+				  [[ "$1" == release && "$2" == create ]] || return 91
+				  while [[ "$#" -gt 0 ]]; do
+				    if [[ "$1" == --notes-file ]]; then cat "$2"; return; fi
+				    shift
+				  done
+				  return 92
+				}
+				""";
+		Files.writeString(repository.resolve("publish-notes-test.sh"),
+				"set -euo pipefail\n" + remote + workflowBlock("Create draft GitHub Release"));
+		return run(List.of(bash(), "publish-notes-test.sh"), Map.of("RELEASE_VERSION", "1.3.8"));
 	}
 
 	private String bash() throws Exception {
@@ -137,24 +210,28 @@ class ReleaseNotesContractTest {
 		throw new IOException("Cannot find Git for Windows Bash");
 	}
 
-	private static String workflowBlock() throws IOException {
+	private static String workflow() throws IOException {
 		Path directory = Path.of(System.getProperty("user.dir")).toAbsolutePath();
 		while (directory != null) {
 			Path workflow = directory.resolve(".github/workflows/deploy-release.yml");
 			if (Files.isRegularFile(workflow)) {
-				String text = Files.readString(workflow, StandardCharsets.UTF_8).replace("\r\n", "\n");
-				int step = text.indexOf("      - name: Generate release notes\n");
-				assertTrue(step >= 0, "Missing release-notes step");
-				int end = text.indexOf("\n      - ", step + 1);
-				int run = text.indexOf("        run: |\n", step);
-				assertTrue(run > step && end > run, "Missing release-notes run block");
-				return text.substring(run + "        run: |\n".length(), end)
-						.lines().map(line -> line.isBlank() ? "" : line.substring(10))
-						.collect(java.util.stream.Collectors.joining("\n", "", "\n"));
+				return Files.readString(workflow, StandardCharsets.UTF_8).replace("\r\n", "\n");
 			}
 			directory = directory.getParent();
 		}
 		throw new IOException("Cannot locate release workflow");
+	}
+
+	private static String workflowBlock(String name) throws IOException {
+		String text = workflow();
+		int step = text.indexOf("      - name: " + name + "\n");
+		assertTrue(step >= 0, "Missing workflow step: " + name);
+		int end = text.indexOf("\n      - ", step + 1);
+		int run = text.indexOf("        run: |\n", step);
+		assertTrue(run > step && end > run, "Missing run block: " + name);
+		return text.substring(run + "        run: |\n".length(), end)
+				.lines().map(line -> line.isBlank() ? "" : line.substring(10))
+				.collect(java.util.stream.Collectors.joining("\n", "", "\n"));
 	}
 
 	private String notes() throws IOException {

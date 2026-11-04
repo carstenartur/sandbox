@@ -3,11 +3,13 @@
 Status: draft for review; publication remains held pending final qualification and acceptance.
 Baseline: [1.3.7](https://github.com/carstenartur/sandbox/releases/tag/v1.3.7).
 Candidate source: `ef946b6fad6276694f32389311cb7e71cf7f3955` (2026-11-03, after #1797).
-Qualification snapshot: **2026-11-03 at 20:22 UTC**.
+Qualification snapshot: **2026-11-04**; the recorded main identity above retains
+its own completed checks while additional mathematics/mining corrections await
+integration and final-source qualification.
 The source includes #1798, the Linux/Windows native CI scope, mining source-evidence
 admission from #1796 and the reusable upstream qualification infrastructure from
-#1797. Only the release-preparation PR #1779 remains open and draft in this release
-workstream. Release 1.3.8 has not been published.
+#1797. The release-preparation PR #1779 remains open and draft.
+Release 1.3.8 has not been published.
 
 ## Mathematics cleanup
 
@@ -133,6 +135,9 @@ cryptographic constant-time claims.
 
 - Retry temporary Gemini overloads during nightly commit mining.
 - Keep scheduled verification from cancelling active checks.
+- Preserve stable-tree release identity across Maven clean and include the
+  curated release notes in the canonical dry-run evidence. Publication uses the
+  same reviewed notes asset; empty or wrong-version curated notes fail closed.
 - Retain reviewed DSL rejections when mining rediscovers the same evidence,
   through merged [#1795](https://github.com/carstenartur/sandbox/pull/1795).
 - Check source evidence before admitting mined cleanup candidates, within the
@@ -248,16 +253,21 @@ The 33 QA paths merged in #1797 change no runtime source from main `64235a3…`.
 Linux and Windows distribution acceptance completed on that runtime main and
 #1796's identical runtime tree; its atomic Help retry also passed. Push path
 filters therefore schedule no new Maven/Oomph or distribution run for the QA-only
-merge. At the 20:22 UTC snapshot, final main's metrics build, SWT, CodeQL, Core and
-Codacy had succeeded; quality publication was pending and the generic main
-benchmark was still running. The [preparation handoff](docs/releases/1.3.8-preparation.md)
-records these separate execution states.
+merge. Final main's metrics build, SWT, CodeQL, Core and Codacy succeeded.
+Quality publication subsequently succeeded at **2026-11-03 21:05:14 UTC**;
+the generic benchmark succeeded at **20:46:03 UTC** and result storage at
+**21:09:30 UTC**. Successful benchmark execution establishes no general speedup
+claim. The [preparation handoff](docs/releases/1.3.8-preparation.md) links these
+separate execution identities and records the outstanding final integration.
 
 The handoff preserves the historical source boundaries and provisioning failures;
 later successful executions do not establish a permanent Oomph repair. Native
 Eclipse consumer qualification remains Linux-only within the Linux/Windows matrix.
 Release-preparation PR [#1779](https://github.com/carstenartur/sandbox/pull/1779)
-remains draft while the canonical release dry run and stable-version,
-product and release-evidence acceptance are outstanding.
-The existing release workflow generates its own commit-log notes; this curated
-draft must be explicitly incorporated in the publication review.
+must pass independent review and applicable checks, then merge before the
+canonical main-based dry run. Publication remains pending until stable-version,
+product and release-evidence acceptance are complete.
+The existing release workflow now includes this curated draft in the canonical
+dry-run artifact and uses the same notes asset for publication. Inspect it with
+the final stable-tree, product and archive evidence after all candidate changes
+reach main; this preparation does not establish acceptance of those artifacts.

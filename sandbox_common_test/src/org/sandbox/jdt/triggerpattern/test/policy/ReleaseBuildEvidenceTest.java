@@ -24,6 +24,7 @@ class ReleaseBuildEvidenceTest {
     private static final String BEFORE_CLEAN = "Maven stdout before clean\n";
     private static final String MAVEN_OUTPUT = BEFORE_CLEAN + "Maven stderr before clean\n"
             + "Maven stdout after clean\nMaven stderr after clean\n";
+    private static final String TREE_IDENTITY = "{\"version\":\"1.3.8\",\"result\":\"PASS\"}\n";
 
     @TempDir Path temporary;
 
@@ -35,6 +36,9 @@ class ReleaseBuildEvidenceTest {
         Path runnerTemp = Files.createDirectory(temporary.resolve("runner-temp"));
         Path sentinel = Files.createDirectories(checkout.resolve("target")).resolve("clean-sentinel");
         Files.writeString(sentinel, "Maven clean must remove this file");
+        Path identity = Files.createDirectories(checkout.resolve("target/distribution-verification"))
+                .resolve("release-tree-identity.json");
+        Files.writeString(identity, TREE_IDENTITY);
         writeExecutable(bin.resolve("xvfb-run"), "#!/bin/bash\nshift\nexec \"$@\"\n");
         writeExecutable(bin.resolve("mvn"), FAKE_MAVEN);
         writeExecutable(checkout.resolve("mvnw"), FAKE_MAVEN);
@@ -66,6 +70,8 @@ class ReleaseBuildEvidenceTest {
             Path evidence = checkout.resolve("target/distribution-verification/maven-release.log");
             assertTrue(Files.isRegularFile(evidence), "Maven log must survive clean for exit " + mavenExit);
             assertEquals(MAVEN_OUTPUT, Files.readString(evidence));
+            assertTrue(Files.isRegularFile(identity), "Stable tree identity must survive clean for exit " + mavenExit);
+            assertEquals(TREE_IDENTITY, Files.readString(identity));
         } finally {
             if (process.isAlive()) process.destroyForcibly();
         }
