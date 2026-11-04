@@ -109,6 +109,8 @@ final class PdeXmlQuickFixScreenshot {
 			}
 			file.setCharset(StandardCharsets.UTF_8.name(), monitor);
 			String before= read(file);
+			assertTrue(before.contains("<!-- Schema file written by PDE -->"), //$NON-NLS-1$
+					"The pinned schema must exercise generated PDE preamble removal"); //$NON-NLS-1$
 
 			SWTWorkbenchBot bot= new SWTWorkbenchBot();
 			maximizeWorkbench(bot);
@@ -184,8 +186,8 @@ final class PdeXmlQuickFixScreenshot {
 			String after= read(file);
 			assertFalse(before.equals(after), "The real PDE schema must be changed by the quick fix"); //$NON-NLS-1$
 			assertTrue(after.contains("<schema"), "The quick fix must preserve the PDE schema root"); //$NON-NLS-1$ //$NON-NLS-2$
-			assertTrue(after.contains("Schema file written by PDE"), //$NON-NLS-1$
-					"The quick fix must preserve the upstream schema comment"); //$NON-NLS-1$
+			assertFalse(after.contains("<!-- Schema file written by PDE -->"), //$NON-NLS-1$
+					"The quick fix must remove the generated PDE schema preamble"); //$NON-NLS-1$
 			assertTrue(after.contains("This extension point allows to add clean ups"), //$NON-NLS-1$
 					"The quick fix must preserve the upstream schema documentation"); //$NON-NLS-1$
 		} finally {

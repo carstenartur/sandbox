@@ -80,6 +80,7 @@ class PdeDocumentationCleanupIntegrationTest {
 	@Test
 	void interleavedServicesKeepBothPoliciesAndIndentationIndependent() throws Exception {
 		String source= """
+				<!-- Schema file written by PDE -->
 				<schema>
 				  <annotation><appInfo>
 				    <meta.schema plugin="example" id="items" name="Items"> \t </meta.schema>
@@ -108,6 +109,7 @@ class PdeDocumentationCleanupIntegrationTest {
 			assertTrue(current.service().processFile(current.file(), monitor));
 			firstResults[index]= readBytes(current.file());
 			String result= new String(firstResults[index], StandardCharsets.UTF_8);
+			assertFalse(result.contains("<!-- Schema file written by PDE -->"), result); //$NON-NLS-1$
 			assertTrue(result.contains(current.modernize() ? "<appinfo>" : "<appInfo>"), result); //$NON-NLS-1$ //$NON-NLS-2$
 			assertFalse(result.contains(current.modernize() ? "<appInfo>" : "<appinfo>"), result); //$NON-NLS-1$ //$NON-NLS-2$
 			assertTrue(result.contains("<meta.section type=\"apiinfo\"/>"), result); //$NON-NLS-1$

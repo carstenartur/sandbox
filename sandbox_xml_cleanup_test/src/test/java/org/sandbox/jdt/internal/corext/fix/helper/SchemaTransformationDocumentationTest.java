@@ -10,6 +10,7 @@
 package org.sandbox.jdt.internal.corext.fix.helper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -47,6 +48,9 @@ class SchemaTransformationDocumentationTest {
 			"true, true, true" }) //$NON-NLS-1$
 	void combinesIndependentPoliciesOnTheFirstPass(boolean modernize, boolean trim, boolean indent) throws Exception {
 		String source= """
+				<!-- Schema file written by PDE -->
+				<!-- Author comment with <![CDATA[ marker -->
+				<?example literal <![CDATA[ marker?>
 				<schema>
 				  <annotation><appInfo>
 				    <meta.schema plugin="example" id="items" name="Items"> \t </meta.schema>
@@ -60,6 +64,13 @@ class SchemaTransformationDocumentationTest {
 		DocumentationPolicy policy= trim ? DocumentationPolicy.TRIM_PLAIN_SECTION_BOUNDARIES : DocumentationPolicy.PRESERVE;
 		String result= SchemaTransformationUtils.transform(source, StandardCharsets.UTF_8, indent, target, policy);
 		Element root= parse(result);
+		String authorComment= "<!-- Author comment with <![CDATA[ marker -->"; //$NON-NLS-1$
+		String instruction= "<?example literal <![CDATA[ marker?>"; //$NON-NLS-1$
+		assertFalse(result.contains("<!-- Schema file written by PDE -->"), result); //$NON-NLS-1$
+		assertTrue(result.contains(authorComment), result);
+		assertTrue(result.contains(instruction), result);
+		assertTrue(result.indexOf(authorComment) < result.indexOf(instruction), result);
+		assertTrue(result.indexOf(instruction) < result.indexOf("<schema>"), result); //$NON-NLS-1$
 		assertEquals(2, root.getElementsByTagName(modernize ? "appinfo" : "appInfo").getLength(), result); //$NON-NLS-1$ //$NON-NLS-2$
 		assertEquals(0, root.getElementsByTagName(modernize ? "appInfo" : "appinfo").getLength(), result); //$NON-NLS-1$ //$NON-NLS-2$
 		assertEquals("", root.getElementsByTagName("meta.schema").item(0).getTextContent()); //$NON-NLS-1$ //$NON-NLS-2$

@@ -18,11 +18,20 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Properties;
+
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -32,6 +41,9 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.ui.tests.quickfix.XMLTestUtils;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.xml.sax.InputSource;
 
 /** Reuses the exact JDT Core and JDT UI QA checkouts as a real PDE XML corpus. */
 class PinnedJdtXmlCorpusTest {
@@ -108,8 +120,9 @@ class PinnedJdtXmlCorpusTest {
 					changedFiles++;
 				}
 				String after= read(copy);
-				assertTrue(XMLTestUtils.isXmlSemanticallyEqualWithComments(before, after),
-						() -> "PDE XML semantics or comments changed for " + relative); //$NON-NLS-1$
+				String expected= expectedWithoutGeneratedPreamble(before, relative);
+				assertTrue(XMLTestUtils.isXmlSemanticallyEqualWithComments(expected, after),
+						() -> "PDE XML semantics or protected comments changed for " + relative); //$NON-NLS-1$
 				assertFalse(service.processFile(copy, monitor),
 						() -> "PDE XML cleanup is not idempotent for " + relative); //$NON-NLS-1$
 			}
@@ -120,6 +133,61 @@ class PinnedJdtXmlCorpusTest {
 		} finally {
 			project.delete(true, true, monitor);
 		}
+	}
+
+
+	/**
+	 * The selected pinned EXSD fixtures each have one generated pre-root marker.
+	 * Remove that one allowed node from the expected tree; every other comment
+	 * remains part of the existing semantic equality assertion.
+	 */
+	private static String expectedWithoutGeneratedPreamble(String source, String relative) throws Exception {
+		if (!relative.endsWith(".exsd") || source.contains("<![CDATA[")) { //$NON-NLS-1$ //$NON-NLS-2$
+			return source;
+		}
+		DocumentBuilderFactory factory= DocumentBuilderFactory.newInstance();
+		factory.setNamespaceAware(true);
+		factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+		factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true); //$NON-NLS-1$
+		var document= factory.newDocumentBuilder().parse(new InputSource(new StringReader(source)));
+		Element root= document.getDocumentElement();
+		assertEquals("schema", root.getNodeName(), relative); //$NON-NLS-1$
+		assertTrue(root.getNamespaceURI() == null
+				|| XMLConstants.W3C_XML_SCHEMA_NS_URI.equals(root.getNamespaceURI()), relative);
+		var metadata= root.getElementsByTagName("meta.schema"); //$NON-NLS-1$
+		assertEquals(1, metadata.getLength(), relative);
+		Node meta= metadata.item(0);
+		Node appinfo= meta.getParentNode();
+		Node annotation= appinfo.getParentNode();
+		assertTrue("appInfo".equals(appinfo.getNodeName()) || "appinfo".equals(appinfo.getNodeName()), relative); //$NON-NLS-1$ //$NON-NLS-2$
+		assertEquals("annotation", annotation.getNodeName(), relative); //$NON-NLS-1$
+		assertEquals(root, annotation.getParentNode(), relative);
+		for (Node node : List.of(meta, appinfo, annotation)) {
+			assertEquals(root.getNamespaceURI(), node.getNamespaceURI(), relative);
+		}
+		if ("preserve".equals(root.getAttributeNS(XMLConstants.XML_NS_URI, "space"))) { //$NON-NLS-1$ //$NON-NLS-2$
+			return source;
+		}
+		int removed= 0;
+		for (Node node= document.getFirstChild(); node != root;) {
+			Node next= node.getNextSibling();
+			if (node.getNodeType() == Node.COMMENT_NODE
+					&& " Schema file written by PDE ".equals(node.getNodeValue())) { //$NON-NLS-1$
+				document.removeChild(node);
+				removed++;
+			}
+			node= next;
+		}
+		assertEquals(1, removed, relative);
+		TransformerFactory serializers= TransformerFactory.newInstance();
+		serializers.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+		serializers.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, ""); //$NON-NLS-1$
+		serializers.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, ""); //$NON-NLS-1$
+		var serializer= serializers.newTransformer();
+		serializer.setOutputProperty(OutputKeys.INDENT, "no"); //$NON-NLS-1$
+		StringWriter expected= new StringWriter();
+		serializer.transform(new DOMSource(document), new StreamResult(expected));
+		return expected.toString();
 	}
 
 	private static String readPin(String pinKey) throws IOException {
