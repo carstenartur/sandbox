@@ -4,7 +4,7 @@
 
 ## Current status
 
-The PDE XML cleanup is available through both the JDT cleanup registry and the standalone PDE command. It supports compact and indented serialization, secure XSLT processing, deterministic charset/BOM handling, dirty-buffer rejection, optimistic resource-conflict checks, well-formed output validation, and filtering to known PDE metadata.
+The PDE XML cleanup is available through explicit standalone PDE commands and Problems marker resolutions. Java cleanup/profile/save-action integration is retired because its compilation-unit change contract cannot carry XML resource changes safely. Commands use compact formatting; the transformer also supports programmatic indentation. Secure XSLT, charset/BOM handling, dirty-buffer rejection, optimistic resource-conflict checks, well-formed output validation, and filtering to known PDE metadata remain in place.
 
 ## Completed
 
@@ -15,9 +15,9 @@ The PDE XML cleanup is available through both the JDT cleanup registry and the s
 - [x] Preserve elements, attributes, namespaces, comments, processing instructions, and meaningful text.
 - [x] Strip formatting-only whitespace before serialization.
 - [x] Let the XML serializer produce empty-element syntax instead of using element-matching regular expressions.
-- [x] Convert groups of four leading spaces to tabs only on serialized markup lines.
+- [x] Generate indentation only in known structural containers when requested by a programmatic caller.
 - [x] Preserve intentional blank lines and leading spaces inside meaningful text nodes.
-- [x] Apply `XML_CLEANUP_INDENT` directly to the Transformer.
+- [x] Keep the standalone compact policy independent of stored Java cleanup settings.
 - [x] Verify compact/indented layouts, default compact behavior, multiline text, and idempotency.
 - [x] Avoid writing unchanged files and retain Eclipse resource history.
 - [x] Provide an independent PDE command/service for non-Java projects.
@@ -28,13 +28,15 @@ The PDE XML cleanup is available through both the JDT cleanup registry and the s
 - [x] Recheck resource stamp and original bytes immediately before write.
 - [x] Reject malformed transformed XML before changing the workspace.
 - [x] Apply a deterministic 16 MiB input limit.
+- [x] Retire the unsafe Java cleanup and save-action contributions; leave the legacy core inert.
+- [x] Verify that actual JDT change calculation leaves XML bytes and resource stamps unchanged.
 
 ## Remaining priority work in #1240
 
 ### P1 — atomic integration and conflict fixtures
 
-- [ ] Replace direct resource application in the JDT bridge with one multi-file LTK `Change` that supports preview, atomic apply, and undo.
-- [ ] Add workspace integration tests that apply and undo a PDE XML change through both execution paths.
+- [ ] Add a standalone resource-aware LTK refactoring with explicit XML file changes, preview, atomic apply, and undo.
+- [ ] Add workspace integration tests that apply and undo that standalone multi-file refactoring.
 - [ ] Add dirty connected-buffer and modified-after-analysis integration fixtures.
 - [ ] Add linked-resource and non-local-storage fixtures.
 - [ ] Add unavailable-stylesheet and unsupported-charset user-visible status assertions.
@@ -57,9 +59,9 @@ The PDE XML cleanup is available through both the JDT cleanup registry and the s
 
 ## Known limitations
 
-- The JDT cleanup adapter requires a Java compilation-unit context; the PDE command is the independent path.
+- XML formatting is unavailable through Java cleanup profiles and Java save actions; use the standalone PDE commands.
 - The transformer materializes complete documents in memory and rejects files larger than 16 MiB.
-- The current JDT resource application is not yet represented as one atomic multi-file LTK change.
+- Standalone resource application is not yet represented as one atomic multi-file LTK change.
 - Well-formedness is enforced, but PDE/schema-aware validation is not yet automatic.
 - Eligible directories and filenames are fixed.
 
