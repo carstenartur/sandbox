@@ -255,7 +255,7 @@ Identifies opportunities to reuse existing methods instead of duplicating logic.
 
 ### PDE XML Cleanup (`sandbox_xml_cleanup`)
 
-Optimizes Eclipse PDE XML files (plugin.xml, feature.xml, etc.) by reducing whitespace and optionally converting leading spaces to tabs. Uses secure XSLT transformation, normalizes excessive empty lines, and only processes PDE-relevant files in project root, OSGI-INF, or META-INF locations. Idempotent and preserves semantic integrity.
+Formats selected Eclipse PDE XML files or projects through the **Clean Up PDE XML** command. Secure XSLT removes layout whitespace only in known structural containers, preserving documentation, mixed content, and unknown payloads. Supported locations include the project root, OSGI-INF, META-INF, and schema folders. **Find PDE XML Cleanup Problems** offers an analysis-first workflow. Java cleanup profiles and Java save actions do not run XML formatting.
 
 📖 **Full Documentation**: [Plugin README](sandbox_xml_cleanup/README.md) | [Architecture](sandbox_xml_cleanup/ARCHITECTURE.md) | [TODO](sandbox_xml_cleanup/TODO.md)
 

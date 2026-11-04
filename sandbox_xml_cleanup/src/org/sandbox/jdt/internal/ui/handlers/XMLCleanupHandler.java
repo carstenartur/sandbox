@@ -99,7 +99,7 @@ public class XMLCleanupHandler extends AbstractHandler {
 	 * Uses the standalone compact mode, independently of JDT cleanup profiles.
 	 * Both the context-menu and main-menu command use this fixed policy.
 	 */
-	private XMLCleanupService createXMLCleanupService() {
+	protected XMLCleanupService createXMLCleanupService() {
 		return XMLCleanupService.compactFormatting();
 	}
 	

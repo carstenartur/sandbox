@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,6 +38,16 @@ import javax.xml.transform.stream.StreamSource;
  * formatting-only post-processing.
  */
 public class SchemaTransformationUtils {
+
+	/** Explicit compatibility choice; no installed or project target is guessed. */
+	public enum PdeSchemaTarget {
+		PRESERVE, ECLIPSE_3_4_OR_NEWER
+	}
+
+	/** Optional boundary cleanup backed by PDE's description readers. */
+	public enum DocumentationPolicy {
+		PRESERVE, TRIM_PLAIN_SECTION_BOUNDARIES
+	}
 
 	private static final Pattern MARKUP_INDENTATION= Pattern.compile("^( {4})+(?= *<)", Pattern.MULTILINE); //$NON-NLS-1$
 	private static final Pattern PROTECTED_XML_REGION= Pattern.compile(
@@ -91,6 +102,36 @@ public class SchemaTransformationUtils {
 	 */
 	public static String transform(String sourceContent, Charset outputCharset,
 			boolean enableIndent) throws Exception {
+		return transform(sourceContent, outputCharset, enableIndent, PdeSchemaTarget.PRESERVE, DocumentationPolicy.PRESERVE);
+	}
+
+	/**
+	 * Transforms with an explicit PDE target convention. Select
+	 * {@link PdeSchemaTarget#ECLIPSE_3_4_OR_NEWER} only when the schema is intended
+	 * for that target; the default retains legacy spelling. CDATA-containing
+	 * sources are securely validated and retained without serialization.
+	 */
+	public static String transform(String sourceContent, Charset outputCharset,
+			boolean enableIndent, PdeSchemaTarget target) throws Exception {
+		return transform(sourceContent, outputCharset, enableIndent, target, DocumentationPolicy.PRESERVE);
+	}
+
+	/**
+	 * Optionally trims outer XML whitespace in nonblank plain PDE reference sections.
+	 * Schema overviews, element and attribute descriptions, markup, literal examples,
+	 * and blank descriptions retain their text. CDATA sources are securely
+	 * validated and retained without serialization.
+	 */
+	public static String transform(String sourceContent, Charset outputCharset,
+			boolean enableIndent, DocumentationPolicy policy) throws Exception {
+		return transform(sourceContent, outputCharset, enableIndent, PdeSchemaTarget.PRESERVE, policy);
+	}
+
+	/** Applies independently selected compatibility and reference-section policies. */
+	public static String transform(String sourceContent, Charset outputCharset,
+			boolean enableIndent, PdeSchemaTarget target, DocumentationPolicy policy) throws Exception {
+		Objects.requireNonNull(target);
+		Objects.requireNonNull(policy);
 		try (InputStream xslStream= SchemaTransformationUtils.class.getClassLoader()
 				.getResourceAsStream("resources/formatter.xsl")) { //$NON-NLS-1$
 			if (xslStream == null) {
@@ -106,6 +147,8 @@ public class SchemaTransformationUtils {
 			// Only the stylesheet knows which containers may safely receive layout.
 			transformer.setOutputProperty(OutputKeys.INDENT, "no"); //$NON-NLS-1$
 			transformer.setParameter("indent", enableIndent); //$NON-NLS-1$
+			transformer.setParameter("modernize-appinfo", target == PdeSchemaTarget.ECLIPSE_3_4_OR_NEWER); //$NON-NLS-1$
+			transformer.setParameter("trim-documentation", policy == DocumentationPolicy.TRIM_PLAIN_SECTION_BOUNDARIES); //$NON-NLS-1$
 			transformer.setOutputProperty(OutputKeys.ENCODING, outputCharset.name());
 			StringWriter output= new StringWriter(Math.max(1024, sourceContent.length()));
 			transformer.transform(new StreamSource(new StringReader(sourceContent)),

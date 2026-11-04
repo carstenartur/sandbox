@@ -28,6 +28,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.sandbox.jdt.internal.corext.fix.helper.SchemaTransformationUtils.DocumentationPolicy;
+import org.sandbox.jdt.internal.corext.fix.helper.SchemaTransformationUtils.PdeSchemaTarget;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
@@ -57,8 +59,8 @@ class SchemaTransformationPdePreambleTest {
 				+ METADATA + "</" + appinfo + "></annotation>\n  <element name=\"item\"/>\n</schema>"; //$NON-NLS-1$ //$NON-NLS-2$
 		String compact= DECLARATION + "<schema" + namespace + "><annotation><" + appinfo + ">" //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				+ METADATA + "</" + appinfo + "></annotation><element name=\"item\"/></schema>"; //$NON-NLS-1$ //$NON-NLS-2$
-		String indented= DECLARATION + "\n<schema" + namespace + ">\n\t<annotation>\n\t\t<" + appinfo + ">" //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-				+ METADATA + "</" + appinfo + ">\n\t</annotation>\n\t<element name=\"item\"/>\n</schema>\n"; //$NON-NLS-1$ //$NON-NLS-2$
+		String indented= DECLARATION + "\n<schema" + namespace + ">\n\t<annotation>\n\t\t<" + appinfo + ">\n\t\t\t" //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				+ METADATA + "\n\t\t</" + appinfo + ">\n\t</annotation>\n\t<element name=\"item\"/>\n</schema>\n"; //$NON-NLS-1$ //$NON-NLS-2$
 
 		assertEquals(compact, transform(source, false));
 		assertEquals(indented, transform(source, true));
@@ -205,6 +207,11 @@ class SchemaTransformationPdePreambleTest {
 				"""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		assertEquals(source, transform(source, indent));
 		assertEquals(source, transform(transform(source, indent), indent));
+		String combined= SchemaTransformationUtils.transform(source, StandardCharsets.UTF_8, indent,
+				PdeSchemaTarget.ECLIPSE_3_4_OR_NEWER, DocumentationPolicy.TRIM_PLAIN_SECTION_BOUNDARIES);
+		assertEquals(source, combined);
+		assertEquals(source, SchemaTransformationUtils.transform(combined, StandardCharsets.UTF_8, indent,
+				PdeSchemaTarget.ECLIPSE_3_4_OR_NEWER, DocumentationPolicy.TRIM_PLAIN_SECTION_BOUNDARIES));
 	}
 
 	@ParameterizedTest
