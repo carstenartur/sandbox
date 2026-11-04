@@ -1,14 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugin>
-	<extension point="org.eclipse.jdt.ui.cleanUps">
-		<cleanUpConfigurationUI class="org.sandbox.jdt.internal.ui.preferences.cleanup.SandboxCodeTabPage" cleanUpKind="cleanUp" name="XML Cleanup (Sandbox)" icon="icons/full/obj16/sandbox.png" />
-		<cleanUpConfigurationUI class="org.sandbox.jdt.internal.ui.preferences.cleanup.SandboxCodeTabPage" name="XML Cleanup (Sandbox)" cleanUpKind="saveAction" icon="icons/full/obj16/sandbox.png" />
-		<cleanUpOptionsInitializer class="org.sandbox.jdt.internal.ui.preferences.cleanup.DefaultCleanUpOptionsInitializer" cleanUpKind="cleanUp"></cleanUpOptionsInitializer>
-		<cleanUpOptionsInitializer class="org.sandbox.jdt.internal.ui.preferences.cleanup.SaveActionCleanUpOptionsInitializer" cleanUpKind="saveAction"></cleanUpOptionsInitializer>
-		
-		<cleanUp class="org.sandbox.jdt.internal.ui.fix.XMLCleanUp" id="org.eclipse.jdt.ui.cleanup.xmlcleanup" />
-		<!--      runAfter="org.eclipse.jdt.ui.cleanup.unboxing" -->
-	</extension>
  <!-- Definition des Markers -->
     <extension
         id="pdeXmlCleanupProblem"

@@ -521,8 +521,6 @@ public class SandboxHelpScreenshotsSWTBotTest {
                     "functional-converter-cleanup.png"),
             new CleanupTab("Code Patterns (Sandbox)", "sandbox_triggerpattern_help",
                     "code-patterns-cleanup.png"),
-            new CleanupTab("XML Cleanup (Sandbox)", "sandbox_xml_cleanup_help",
-                    "xml-cleanup.png"),
             new CleanupTab("JFace Cleanup (Sandbox)", "sandbox_jface_cleanup_help",
                     "jface-cleanup.png"),
             new CleanupTab("JUnit Migration (Sandbox)", "sandbox_junit_cleanup_help",
