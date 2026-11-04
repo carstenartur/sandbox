@@ -72,7 +72,10 @@ The cleanup processes specific PDE files:
 
 ### Whitespace Reduction
 - Remove whitespace-only text in known structural PDE descriptor and XSD/EXSD containers
-- Preserve complete documentation, application-info, and unknown extension payload subtrees
+- Compact `appinfo` and legacy `appInfo` only when they contain recognized PDE attribute-only metadata (`meta.schema`, `meta.section`, `meta.element`, or `meta.attribute`) in the matching annotation context
+- Remove trailing layout spaces and collapse blank metadata leaves to empty-element syntax; retain names and attribute values
+- Preserve complete documentation and unknown application-info or extension payloads, including whitespace-only documentation required by older PDE readers
+- Leave files containing CDATA unformatted after secure validation, preserving literal sections across repeated cleanup passes
 - Preserve mixed content, blank text values, and inherited `xml:space="preserve"`
 - Consolidate spacing between attributes
 
