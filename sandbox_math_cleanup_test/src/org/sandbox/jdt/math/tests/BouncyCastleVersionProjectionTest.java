@@ -40,7 +40,7 @@ class BouncyCastleVersionProjectionTest {
     private static final String ENTRY = "org/bouncycastle/crypto/hash2curve/impl/SimplifiedShallueVanDeWoestijneMapToCurve.java";
     @TempDir Path temporary;
 
-    @Test void wholeFileBudgetFindsTheSharedResiduesAndPreservesFourCurveProfiles() throws Exception {
+    @Test void wholeFileBudgetKeepsReducedSquaresAndPreservesFourCurveProfiles() throws Exception {
         Path binary = dependency("sandbox.math.bc.jar", "bcprov");
         byte[] bytes;
         try (var jar = new JarFile(dependency("sandbox.math.bc.sourceArchive", "bcprov.source").toFile());
@@ -49,31 +49,41 @@ class BouncyCastleVersionProjectionTest {
                 HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes)));
         String original = new String(bytes, StandardCharsets.UTF_8);
         var result = analyze(original, binary);
-        var region = result.evidence().stream().filter(e -> e.original().contains("BigInteger tv1 = u.modPow")
-                && e.original().contains("tv3 = B.multiply(tv3)")).findFirst().orElseThrow(
-                        () -> new AssertionError(result.diagnostics().toString()));
-        var parser = ASTParser.newParser(AST.getJLSLatest());
-        parser.setKind(ASTParser.K_STATEMENTS); parser.setSource(region.replacement().toCharArray());
-        int[] optimizedCalls = {-1, -1};
-        parser.createAST(null).accept(new ASTVisitor() {
-            @Override public boolean visit(IfStatement branch) {
-                optimizedCalls[0] = 0; optimizedCalls[1] = 0;
-                branch.getThenStatement().accept(new ASTVisitor() {
-                    @Override public boolean visit(MethodInvocation call) {
-                        if (call.getName().getIdentifier().equals("mod")) optimizedCalls[0]++;
-                        if (call.getName().getIdentifier().equals("modPow")) optimizedCalls[1]++;
-                        return true;
-                    }
-                });
-                return false;
-            }
-        });
-        assertArrayEquals(new int[] {3, 0}, optimizedCalls, region.replacement());
-        assertTrue(region.cost().estimatedRuntimeImprovement(), "Receiver checks are included in retained cost");
-        assertFalse(region.proof().checkerRevision().isBlank());
+        var regions = result.evidence();
+        assertEquals(List.of(
+                "BigInteger tv1 = u.modPow(BigInteger.valueOf(2), p);",
+                "BigInteger tv2 = tv1.modPow(BigInteger.valueOf(2), p);",
+                "tv2 = tv3.modPow(BigInteger.valueOf(2), p);",
+                "BigInteger tv6 = tv4.modPow(BigInteger.valueOf(2), p);\n        BigInteger tv5 = A.multiply(tv6).mod(p);"),
+                regions.stream().map(region -> region.original()).toList(), result.diagnostics().toString());
+        int[] expectedModCalls = {1, 1, 1, 2};
+        for (int index = 0; index < regions.size(); index++) {
+            var region = regions.get(index);
+            var parser = ASTParser.newParser(AST.getJLSLatest());
+            parser.setKind(ASTParser.K_STATEMENTS); parser.setSource(region.replacement().toCharArray());
+            int[] optimizedCalls = {-1, -1};
+            parser.createAST(null).accept(new ASTVisitor() {
+                @Override public boolean visit(IfStatement branch) {
+                    optimizedCalls[0] = 0; optimizedCalls[1] = 0;
+                    branch.getThenStatement().accept(new ASTVisitor() {
+                        @Override public boolean visit(MethodInvocation call) {
+                            if (call.getName().getIdentifier().equals("mod")) optimizedCalls[0]++;
+                            if (call.getName().getIdentifier().equals("modPow")) optimizedCalls[1]++;
+                            return true;
+                        }
+                    });
+                    return false;
+                }
+            });
+            assertArrayEquals(new int[] {expectedModCalls[index], 0}, optimizedCalls, region.replacement());
+            assertTrue(region.cost().estimatedRuntimeImprovement(), "Receiver checks are included in retained cost");
+            assertFalse(region.proof().checkerRevision().isBlank());
+        }
         Document document = new Document(original);
         var undo = result.newEdit().apply(document, TextEdit.CREATE_UNDO);
         String generated = document.get(); undo.apply(document); assertEquals(original, document.get());
+        assertTrue(generated.contains("tv1 = this.z.multiply(tv1).mod(p);"), generated);
+        assertTrue(generated.contains("tv2 = tv2.add(tv1).mod(p);"), generated);
         try (var before = new IsolatedBC(compile(original, binary), binary);
                 var after = new IsolatedBC(compile(generated, binary), binary)) {
             for (String profile : List.of("P256_XMD_SHA_256", "P384_XMD_SHA_384", "P521_XMD_SHA_512",
