@@ -10,14 +10,20 @@
 package org.sandbox.jdt.internal.corext.fix.helper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.TransformerException;
 
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.sandbox.jdt.internal.corext.fix.helper.SchemaTransformationUtils.PdeSchemaTarget;
@@ -103,10 +109,33 @@ class SchemaTransformationAppinfoTargetTest {
 	}
 
 	@ParameterizedTest
+	@ValueSource(strings = { "<!-- <![CDATA[ -->", "<?keep <![CDATA[ ?>" }) //$NON-NLS-1$ //$NON-NLS-2$
+	void modernizesWithCdataMarkersInsideCommentsAndProcessingInstructions(String marker) throws Exception {
+		for (boolean indent : new boolean[] { false, true }) {
+			String source= "<schema>" + marker //$NON-NLS-1$
+					+ "<annotation><appInfo><meta.schema/></appInfo></annotation></schema>"; //$NON-NLS-1$
+			String result= transform(source, indent, PdeSchemaTarget.ECLIPSE_3_4_OR_NEWER);
+			assertEquals(1, parse(result).getElementsByTagName("appinfo").getLength(), result); //$NON-NLS-1$
+			assertEquals(0, parse(result).getElementsByTagName("appInfo").getLength()); //$NON-NLS-1$
+			assertTrue(result.contains(marker), result);
+			assertEquals(result, transform(result, indent, PdeSchemaTarget.ECLIPSE_3_4_OR_NEWER));
+		}
+	}
+
+	@ParameterizedTest
 	@ValueSource(booleans = { false, true })
 	void leavesCdataSourceIntact(boolean indent) throws Exception {
 		String source= "<schema><annotation><appInfo><meta.schema/></appInfo><documentation><![CDATA[  literal  ]]></documentation></annotation></schema>"; //$NON-NLS-1$
 		assertEquals(source, transform(source, indent, PdeSchemaTarget.ECLIPSE_3_4_OR_NEWER));
+	}
+
+	@Test
+	void validatesCdataSourceBeforeRetainingIt(@TempDir Path directory) throws Exception {
+		assertThrows(TransformerException.class, () -> transform("<schema><![CDATA[unterminated", //$NON-NLS-1$
+				false, PdeSchemaTarget.ECLIPSE_3_4_OR_NEWER));
+		Path dtd= Files.writeString(directory.resolve("schema.dtd"), "<!ELEMENT schema ANY>"); //$NON-NLS-1$ //$NON-NLS-2$
+		String source= "<!DOCTYPE schema SYSTEM \"" + dtd.toUri() + "\"><schema><![CDATA[literal]]></schema>"; //$NON-NLS-1$ //$NON-NLS-2$
+		assertThrows(TransformerException.class, () -> transform(source, false, PdeSchemaTarget.ECLIPSE_3_4_OR_NEWER));
 	}
 
 	private static String transform(String source, boolean indent, PdeSchemaTarget target) throws Exception {

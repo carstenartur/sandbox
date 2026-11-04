@@ -131,7 +131,7 @@ public class SchemaTransformationUtils {
 			// Canonicalize literal line ends only; references such as &#13; stay intact.
 			// XMLResourceSupport restores the workspace file's original delimiter.
 			// XSLT loses CDATA boundaries; retain validated literal sources instead.
-			String result= sourceContent.contains(CDATA_START) ? sourceContent : output.toString();
+			String result= new ProtectedXmlRegions(sourceContent).hasCdata() ? sourceContent : output.toString();
 			return result.replace("\r\n", "\n").replace('\r', '\n'); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 	}
@@ -177,6 +177,15 @@ public class SchemaTransformationUtils {
 
 		boolean contains(int offset) {
 			return containing(offset) != null;
+		}
+
+		boolean hasCdata() {
+			for (ProtectedXmlRegion region : regions) {
+				if (region.textContent()) {
+					return true;
+				}
+			}
+			return false;
 		}
 
 		ProtectedXmlRegion containing(int offset) {
