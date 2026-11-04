@@ -110,13 +110,18 @@ jobs:
       - name: Verify candidate behavior
         id: verify_candidates
         if: ${{ !cancelled() && (steps.discover.outcome == 'success' || steps.discover.outcome == 'failure') }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+          gh api --paginate --slurp 'repos/${{ github.repository }}/issues?state=all&per_page=100' \
+            > "$RUNNER_TEMP/mining-review-issues.json"
           java -cp sandbox_mining_core/target/sandbox-mining-core.jar \
             org.sandbox.mining.core.candidate.CandidateVerificationCli \
             --candidate-dir mining-candidates \
             --report-dir docs/mining-report \
             --curated-hint-dir sandbox_common_core/src/main/resources/org/sandbox/jdt/triggerpattern/internal \
+            --review-issues "$RUNNER_TEMP/mining-review-issues.json" \
             --source-version 21
 
       - name: Persist candidate data outside main
@@ -305,15 +310,8 @@ jobs:
           else
             echo '- statistics.json was not produced' >> "$GITHUB_STEP_SUMMARY"
           fi
-          if [ -f docs/mining-report/candidates.json ]; then
-            python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
-          import json
-          candidates = json.load(open('docs/mining-report/candidates.json', encoding='utf-8'))
-          ready = sum(c.get('status') == 'READY_FOR_REVIEW' for c in candidates)
-          failed = sum((c.get('verification') or {}).get('successful') is False for c in candidates)
-          print(f'- Candidates ready for review: {ready}')
-          print(f'- Candidates failing deterministic verification: {failed}')
-          PY
+          if [ -f docs/mining-report/candidate-summary.md ]; then
+            cat docs/mining-report/candidate-summary.md >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Exclude legacy proposal registry from published report

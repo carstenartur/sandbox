@@ -26,7 +26,9 @@ import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTMatcher;
 import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Modifier;
 import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor;
 import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.TransformationResult;
 import org.sandbox.jdt.triggerpattern.api.GuardExpression;
@@ -49,7 +51,7 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 public final class CandidateVerifier {
 
 	/** Persisted verifier version for reproducibility. */
-	public static final String VERSION = "8"; //$NON-NLS-1$
+	public static final String VERSION = "9"; //$NON-NLS-1$
 
 	private final DslValidator dslValidator;
 	private final HintFileParser hintFileParser;
@@ -117,12 +119,12 @@ public final class CandidateVerifier {
 	private CandidateVerification verifyExamples(MiningCandidate candidate, HintFile hintFile) {
 		ParseResult beforeParse = parse(candidate.getBeforeExample(), candidate.getSourceVersion());
 		if (!beforeParse.valid()) {
-			return failure(CandidateVerification.Stage.BEFORE_PARSE,
+			return failure(beforeParse.failureStage(CandidateVerification.Stage.BEFORE_PARSE),
 					beforeParse.message(), 0, 0);
 		}
 		ParseResult afterParse = parse(candidate.getAfterExample(), candidate.getSourceVersion());
 		if (!afterParse.valid()) {
-			return failure(CandidateVerification.Stage.AFTER_PARSE,
+			return failure(afterParse.failureStage(CandidateVerification.Stage.AFTER_PARSE),
 					afterParse.message(), 0, 0);
 		}
 
@@ -159,7 +161,7 @@ public final class CandidateVerifier {
 		}
 		ParseResult transformedParse = parse(transformed, candidate.getSourceVersion());
 		if (!transformedParse.valid()) {
-			return failure(CandidateVerification.Stage.AFTER_REWRITE,
+			return failure(transformedParse.failureStage(CandidateVerification.Stage.AFTER_REWRITE),
 					"Transformed source is invalid: " + transformedParse.message(), //$NON-NLS-1$
 					positiveResults.size(), replacements.size());
 		}
@@ -172,7 +174,7 @@ public final class CandidateVerifier {
 
 		ParseResult negativeParse = parse(candidate.getNegativeExample(), candidate.getSourceVersion());
 		if (!negativeParse.valid()) {
-			return failure(CandidateVerification.Stage.NEGATIVE_PARSE,
+			return failure(negativeParse.failureStage(CandidateVerification.Stage.NEGATIVE_PARSE),
 					negativeParse.message(), positiveResults.size(), replacements.size());
 		}
 
@@ -295,20 +297,43 @@ public final class CandidateVerifier {
 			parser.setResolveBindings(true);
 			parser.setBindingsRecovery(false);
 			parser.setStatementsRecovery(false);
-			parser.setUnitName("Candidate.java"); //$NON-NLS-1$
+			parser.setUnitName(unitName(source, sourceVersion));
 			parser.setEnvironment(runtimeClasspath(), null, null, true);
 			CompilationUnit compilationUnit = (CompilationUnit) parser.createAST(null);
-			for (IProblem problem : compilationUnit.getProblems()) {
-				if (problem.isError()) {
-					return new ParseResult(null, false,
-							"Java compile error at line " + problem.getSourceLineNumber() //$NON-NLS-1$
-									+ ": " + problem.getMessage()); //$NON-NLS-1$
-				}
+			List<IProblem> errors = Arrays.stream(compilationUnit.getProblems()).filter(IProblem::isError).toList();
+			if (!errors.isEmpty()) {
+				// Missing imports also cause unresolved-type cascades. Prefer a definite
+				// syntax/type error when present, without mistaking cascades for a verdict.
+				IProblem problem = errors.stream().filter(CandidateVerifier::independentCompileError).findFirst()
+						.orElseGet(() -> errors.stream().filter(error -> error.getID() == IProblem.ImportNotFound)
+								.findFirst().orElse(errors.getFirst()));
+				return new ParseResult(null, false,
+						"Java compile error at line " + problem.getSourceLineNumber() + ": " + problem.getMessage(), //$NON-NLS-1$ //$NON-NLS-2$
+						problem.getID() == IProblem.ImportNotFound);
 			}
 			return new ParseResult(compilationUnit, true, "valid"); //$NON-NLS-1$
 		} catch (RuntimeException e) {
 			return new ParseResult(null, false, "Java parse failed: " + safeMessage(e)); //$NON-NLS-1$
 		}
+	}
+
+	private static boolean independentCompileError(IProblem problem) {
+		return (problem.getID() & IProblem.Syntax) != 0 || problem.getID() == IProblem.TypeMismatch
+				|| problem.getID() == IProblem.ReturnTypeMismatch;
+	}
+
+	/** Infer only the file identity; the subsequent binding parse checks all errors. */
+	private static String unitName(String source, String sourceVersion) {
+		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
+		parser.setSource(source.toCharArray());
+		parser.setCompilerOptions(compilerOptions(sourceVersion));
+		CompilationUnit syntax = (CompilationUnit) parser.createAST(null);
+		for (Object declaration : syntax.types()) {
+			if (declaration instanceof AbstractTypeDeclaration type && Modifier.isPublic(type.getModifiers())) {
+				return type.getName().getIdentifier() + ".java"; //$NON-NLS-1$
+			}
+		}
+		return "Candidate.java"; //$NON-NLS-1$
 	}
 
 	private static String[] runtimeClasspath() {
@@ -364,6 +389,14 @@ public final class CandidateVerifier {
 		return CandidateVerification.failure(stage, message, VERSION, matches, replacements);
 	}
 
-	private record ParseResult(CompilationUnit compilationUnit, boolean valid, String message) {
+	private record ParseResult(CompilationUnit compilationUnit, boolean valid, String message,
+			boolean dependencyUnavailable) {
+		ParseResult(CompilationUnit compilationUnit, boolean valid, String message) {
+			this(compilationUnit, valid, message, false);
+		}
+
+		CandidateVerification.Stage failureStage(CandidateVerification.Stage fallback) {
+			return dependencyUnavailable ? CandidateVerification.Stage.DEPENDENCY_RESOLUTION : fallback;
+		}
 	}
 }
