@@ -175,6 +175,28 @@ class SchemaTransformationPdePreambleTest {
 
 	@ParameterizedTest
 	@ValueSource(booleans = { false, true })
+	void removesPreambleWhenAHumanCommentContainsACdataExample(boolean indent) throws Exception {
+		String comment= "<!-- Example syntax starts with <![CDATA[ -->"; //$NON-NLS-1$
+		String output= transform(PREAMBLE + comment + SCHEMA, indent);
+		assertEquals(List.of("COMMENT: Example syntax starts with <![CDATA[ ", "ELEMENT:schema"), //$NON-NLS-1$ //$NON-NLS-2$
+				documentNodes(parse(output)));
+		assertTrue(output.contains(comment));
+		assertEquals(output, transform(output, indent));
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void removesPreambleWhenAProcessingInstructionContainsACdataExample(boolean indent) throws Exception {
+		String instruction= "<?example syntax starts with <![CDATA[ ?>"; //$NON-NLS-1$
+		String output= transform(PREAMBLE + instruction + SCHEMA, indent);
+		assertEquals(List.of("PI:example:syntax starts with <![CDATA[ ", "ELEMENT:schema"), //$NON-NLS-1$ //$NON-NLS-2$
+				documentNodes(parse(output)));
+		assertTrue(output.contains(instruction));
+		assertEquals(output, transform(output, indent));
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
 	void retainsTheValidatedWholeSourceWhenCdataIsPresent(boolean indent) throws Exception {
 		String source= DECLARATION + "\n" + PREAMBLE + "\n" + SCHEMA.replace("<element name=\"item\"/>", """
 				<element name="item"><annotation><documentation><![CDATA[

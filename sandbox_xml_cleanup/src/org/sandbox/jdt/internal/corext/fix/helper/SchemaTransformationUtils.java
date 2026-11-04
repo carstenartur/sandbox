@@ -116,7 +116,7 @@ public class SchemaTransformationUtils {
 			// XSLT erases CDATA boundaries. A later pass could then mistake a literal
 			// blank for layout. Keep the securely validated original unchanged whenever
 			// CDATA is present; the workspace boundary already knows its encoding.
-			String result= sourceContent.contains(CDATA_START) ? sourceContent : output.toString();
+			String result= new ProtectedXmlRegions(sourceContent).hasCdata() ? sourceContent : output.toString();
 			return result.replace("\r\n", "\n").replace('\r', '\n'); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 	}
@@ -162,6 +162,15 @@ public class SchemaTransformationUtils {
 
 		boolean contains(int offset) {
 			return containing(offset) != null;
+		}
+
+		boolean hasCdata() {
+			for (ProtectedXmlRegion region : regions) {
+				if (region.textContent()) {
+					return true;
+				}
+			}
+			return false;
 		}
 
 		ProtectedXmlRegion containing(int offset) {
