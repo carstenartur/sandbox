@@ -27,12 +27,12 @@
          whitespace, redundant attributes, and verbose
          empty elements over time. The PDE XML Cleanup:
          <br/><br/>
-         • Removes trailing whitespace from element content<br/>
+         • Removes layout whitespace only in known structural containers<br/>
          • Collapses empty elements to self-closing tags
            (e.g. <b>&lt;element&gt;&lt;/element&gt;</b>
            → <b>&lt;element/&gt;</b>)<br/>
-         • Normalizes indentation for consistent formatting<br/>
-         • Preserves all semantic content<br/>
+         • Uses compact formatting for the selected resources<br/>
+         • Preserves documentation, mixed content, and unknown payload text<br/>
          <br/>
          This keeps plugin descriptors clean and reduces
          unnecessary diff noise in version control.
@@ -52,6 +52,10 @@
          The file is reformatted and saved immediately.
          You can also select multiple PDE XML files and run
          the cleanup on all of them at once.
+         <br/><br/>
+         XML formatting is not part of Java cleanup profiles or
+         Java save actions. Existing XML options in stored Java
+         profiles are ignored; invoke the PDE command explicitly.
       </description>
    </item>
 
@@ -59,9 +63,9 @@
       <description>
          The cleanup can also be triggered from the main menu:
          <br/><br/>
-         1. Open a <b>plugin.xml</b> or <b>feature.xml</b> file
-            in the XML editor<br/>
-         2. Choose <b>Source → Clean Up PDE XML</b> from the
+         1. Select supported PDE XML files or a project in
+            <b>Package Explorer</b> or <b>Project Explorer</b><br/>
+         2. Choose <b>XML Cleanup → Clean Up PDE XML Files</b> from the
             main menu bar<br/>
          <br/>
          This is equivalent to using the context menu and
@@ -74,14 +78,16 @@
          After running the cleanup, verify the XML changes:
          <br/><br/>
          • Empty extension elements use self-closing syntax<br/>
-         • Indentation is consistent (no mixed tabs/spaces)<br/>
-         • No trailing whitespace in element text content<br/>
+         • Known structural containers use compact layout<br/>
+         • Documentation and meaningful text retain their whitespace<br/>
          • XML semantics and all extension registrations
            are fully preserved<br/>
          <br/>
          Open a diff in the <b>Git Staging</b> view
          (<b>Window → Show View → Other… → Git → Git Staging</b>)
          to review the formatting-only changes before committing.
+         The command preserves Eclipse resource history but does
+         not provide an atomic multi-file preview or undo operation.
       </description>
    </item>
 
