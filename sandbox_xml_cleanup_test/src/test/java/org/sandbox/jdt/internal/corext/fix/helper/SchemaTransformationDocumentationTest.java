@@ -178,7 +178,7 @@ class SchemaTransformationDocumentationTest {
 
 	@Test
 	void blocksExternalEntitiesBeforeRetainingCdataSource(@TempDir Path directory) throws Exception {
-		Path external= Files.writeString(directory.resolve("external.txt"), "external content"); //$NON-NLS-1$ //$NON-NLS-2$
+		Path external= Files.writeString(directory.resolve("external.txt"), "external content", StandardCharsets.UTF_8); //$NON-NLS-1$ //$NON-NLS-2$
 		String source= "<!DOCTYPE schema [<!ENTITY external SYSTEM \"" + external.toUri() //$NON-NLS-1$
 				+ "\">]><schema><![CDATA[  literal  ]]>&external;</schema>"; //$NON-NLS-1$
 		for (DocumentationPolicy policy : DocumentationPolicy.values()) {
