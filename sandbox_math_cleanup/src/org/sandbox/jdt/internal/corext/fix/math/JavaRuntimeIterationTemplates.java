@@ -42,10 +42,15 @@ public final class JavaRuntimeIterationTemplates {
             String prefix=name.substring(0,name.length()-5);
             var bound=declarations.get(prefix+"bound");var count=declarations.get(prefix+"count");var after=declarations.get(prefix+"after");
             if(!local(start) || !local(bound) || !local(count))continue;
-            boolean primitive=type(start,"int") && type(bound,"int") && type(count,"long");
+            boolean modular=type(start,"int") && type(bound,"int") && type(count,"int");
+            boolean primitive=modular || type(start,"int") && type(bound,"int") && type(count,"long");
             var countFacts=facts(count.getInitializer(),charge);
             if(!countFacts.reads(start,bound))continue;
             if(primitive) {
+                if(modular) {
+                    if(modularCount(count.getInitializer(),start,bound,charge) && updates(block,count,charge))return true;
+                    continue;
+                }
                 if(!countFacts.operators.contains(InfixExpression.Operator.MINUS) || !countFacts.longCast)continue;
                 boolean normalized=false;
                 for(Object child:block.statements()) {
@@ -83,6 +88,20 @@ public final class JavaRuntimeIterationTemplates {
             }
         }
         return false;
+    }
+    private static boolean modularCount(Expression expression,VariableDeclarationFragment start,
+            VariableDeclarationFragment bound,LongConsumer charge) {
+        if(!(unparenthesized(expression,charge) instanceof ConditionalExpression conditional)
+                || !zero(conditional.getElseExpression())
+                || !(unparenthesized(conditional.getExpression(),charge) instanceof InfixExpression comparison)
+                || !comparison.extendedOperands().isEmpty() || !same(comparison.getLeftOperand(),start)
+                || !same(comparison.getRightOperand(),bound)
+                || !(unparenthesized(conditional.getThenExpression(),charge) instanceof InfixExpression distance)
+                || distance.getOperator()!=InfixExpression.Operator.MINUS || !distance.extendedOperands().isEmpty())return false;
+        return comparison.getOperator()==InfixExpression.Operator.LESS
+                && same(distance.getLeftOperand(),bound) && same(distance.getRightOperand(),start)
+                || comparison.getOperator()==InfixExpression.Operator.GREATER
+                && same(distance.getLeftOperand(),start) && same(distance.getRightOperand(),bound);
     }
     private static boolean local(VariableDeclarationFragment declaration) {
         var binding=declaration==null?null:declaration.resolveBinding();

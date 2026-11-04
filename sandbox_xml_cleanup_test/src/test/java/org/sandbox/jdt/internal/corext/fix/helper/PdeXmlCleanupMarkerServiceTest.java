@@ -219,6 +219,56 @@ class PdeXmlCleanupMarkerServiceTest {
 				false, IResource.DEPTH_INFINITE).length);
 	}
 
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void standaloneServiceRemovesOnlyThePreambleAndDoesNotRewriteASecondTime(boolean indent) throws Exception {
+		String source= """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<!-- Schema file written by PDE -->
+				<!-- Human comment remains -->
+				<schema>
+				  <annotation><appInfo><meta.schema plugin="p" id="i" name="Name"/></appInfo></annotation>
+				  <element name="item"><annotation><documentation>  text with  spaces  </documentation></annotation></element>
+				</schema>
+				""".replace("\n", "\r\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		IFile file= createFile("schema/preamble.exsd", source); //$NON-NLS-1$
+		file.setCharset(StandardCharsets.UTF_8.name(), monitor);
+		XMLCleanupService service= XMLCleanupService.compactFormatting();
+		service.setEnableIndent(indent);
+		assertTrue(service.processFile(file, monitor));
+		String after= read(file);
+		assertFalse(after.contains("<!-- Schema file written by PDE -->")); //$NON-NLS-1$
+		assertTrue(after.contains("<!-- Human comment remains -->")); //$NON-NLS-1$
+		assertTrue(after.contains("<documentation>  text with  spaces  </documentation>")); //$NON-NLS-1$
+		assertFalse(after.replace("\r\n", "").contains("\n")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		long stamp= file.getModificationStamp();
+		assertFalse(service.processFile(file, monitor));
+		assertEquals(stamp, file.getModificationStamp());
+		assertEquals(after, read(file));
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void standaloneServiceRetainsTheWholeCdataFileIncludingItsPreamble(boolean indent) throws Exception {
+		String source= """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<!-- Schema file written by PDE -->
+				<schema>
+				  <annotation><appInfo><meta.schema plugin="p" id="i" name="Name"/></appInfo>
+				    <documentation><![CDATA[  preserve literal  text  ]]></documentation>
+				  </annotation>
+				</schema>
+				"""; //$NON-NLS-1$
+		IFile file= createFile("schema/preamble.exsd", source); //$NON-NLS-1$
+		file.setCharset(StandardCharsets.UTF_8.name(), monitor);
+		long stamp= file.getModificationStamp();
+		XMLCleanupService service= XMLCleanupService.compactFormatting();
+		service.setEnableIndent(indent);
+		assertFalse(service.processFile(file, monitor));
+		assertEquals(source, read(file));
+		assertEquals(stamp, file.getModificationStamp());
+	}
+
 	private IFile createFile(String path, String content) throws Exception {
 		IFile file= project.getFile(path);
 		if (file.getParent() instanceof IFolder folder && !folder.exists()) {

@@ -15,13 +15,18 @@ public final class JavaCandidateRanking implements CandidateRanking {
     private final String original;
     private final boolean magnitudeModel;
     private final int originalLocals;
+    private boolean sourceAssessed;
+    private NumericExecutionCost.Estimate sourceEnvelope;
+    private long sourceStructuralWork;
+    private long sourceReductionBoundaries;
     private final java.util.Map<List<Expr>, Assessment> cached = new java.util.HashMap<>();
     public JavaCandidateRanking(OptimizationRequest request, JavaComputationRegion region, MathCleanUpOptions options, String source) {
         this.request = request; this.region = region; this.options = options;
         original = source.substring(region.start(), region.start() + region.length());
         originalLocals = options.goal() == OptimizationGoal.READABILITY ? locals(original) : 0;
         // The generic <4096 receiver safety ceiling is not an operand-size prediction.
-        // Use source-specific tighter bounds; otherwise retain the established structural model.
+        // Tighter source bounds support absolute costs. Otherwise only a source-relative
+        // envelope may raise the structural candidate score; the ceiling is never a typical size.
         magnitudeModel = request.plan().inputs().entrySet().stream().filter(e -> e.getValue().equals(NumericKind.BIG_INTEGER.type()))
                 .allMatch(e -> request.assumptions().stream().anyMatch(a -> a.kind() == SemanticAssumption.Kind.BIG_INTEGER_BIT_LENGTH_BOUND
                         && a.subject().equals(e.getKey()) && Integer.parseInt(a.parameter()) < 4096));
@@ -40,6 +45,9 @@ public final class JavaCandidateRanking implements CandidateRanking {
         boolean bigInteger = prepared.nodes().stream().anyMatch(n -> n.type().equals(NumericKind.BIG_INTEGER.type()));
         var magnitude = !bigInteger || !magnitudeModel || request.goal() == OptimizationGoal.READABILITY ? java.util.Optional.<NumericExecutionCost.Estimate>empty()
                 : source ? NumericExecutionCost.estimateSource(request, prepared) : NumericExecutionCost.estimate(request, prepared);
+        boolean relative = bigInteger && !magnitudeModel && request.goal() == OptimizationGoal.LOWER_ESTIMATED_RUNTIME;
+        var envelope = !relative || source && sourceAssessed ? java.util.Optional.<NumericExecutionCost.Estimate>empty()
+                : source ? NumericExecutionCost.estimateSource(request, prepared) : NumericExecutionCost.estimate(request, prepared);
         long operations = magnitude.map(NumericExecutionCost.Estimate::operationWork).orElse(cost.operationWork());
         long storage = magnitude.map(NumericExecutionCost.Estimate::peakWords).orElse(cost.peakLiveStorage());
         if (source && magnitude.isEmpty()) {
@@ -50,6 +58,21 @@ public final class JavaCandidateRanking implements CandidateRanking {
         }
         long work = resolved.work() + resolved.expandedNodes() + 1L + prepared.nodes().size() * 12L
                 + request.sourceTrace().occurrences().size() + request.assumptions().size() * (long)prepared.nodes().size();
+        work += envelope.map(NumericExecutionCost.Estimate::inspectionWork).orElse(0L);
+        if (relative && source && !sourceAssessed) {
+            sourceAssessed = true;
+            sourceEnvelope = envelope.orElse(null);
+            sourceStructuralWork = operations;
+            for (var occurrence : request.sourceTrace().occurrences()) {
+                work += 2;
+                if (occurrence.evaluatedKind() == NumericKind.BIG_INTEGER && modularBoundary(occurrence.expression()))
+                    sourceReductionBoundaries++;
+            }
+            // CandidateRanking permits clients to inspect a candidate before the source callback.
+            // Those scores did not yet include the reference; never reuse them afterwards.
+            work += cached.size();
+            cached.clear();
+        }
         String code = original;
         long captures = 0, captureWork = 0, addedLocals = 0;
         if (!source) {
@@ -65,6 +88,23 @@ public final class JavaCandidateRanking implements CandidateRanking {
             if (request.goal() == OptimizationGoal.READABILITY)
                 addedLocals = Math.max(0, locals(emission.statements()) + region.arrayReads().size() - originalLocals);
         }
+        if (!source && relative && sourceEnvelope != null && sourceEnvelope.operationWork() > 0 && envelope.isPresent()
+                && envelope.orElseThrow().operationWork() > sourceEnvelope.operationWork()) {
+            long candidateBoundaries = 0;
+            for (var node : prepared.nodes()) {
+                work += 2;
+                if (node.type().equals(NumericKind.BIG_INTEGER.type()) && modularBoundary(node.expression()))
+                    candidateBoundaries++;
+            }
+            // A direct modular-power-to-reduced-square conversion keeps its boundary.
+            // Only add this advisory penalty when the candidate also removes authored
+            // modular boundaries; equal counts do not prove unchanged boundary placement.
+            if (candidateBoundaries < sourceReductionBoundaries) {
+                work += 8; // Bounded arithmetic on at most two signed-long magnitudes.
+                operations = Math.max(operations, relativeOperationWork(sourceStructuralWork,
+                        envelope.orElseThrow().operationWork(), sourceEnvelope.operationWork()));
+            }
+        }
         long runtimeWeight = request.goal() == OptimizationGoal.LOWER_ESTIMATED_RUNTIME ? 10 : 1;
         long storageWeight = request.goal() == OptimizationGoal.READABILITY ? 0 : request.goal() == OptimizationGoal.LOWER_ALLOCATION ? 10 : 1;
         long score = operations * runtimeWeight + storage * storageWeight
@@ -77,6 +117,18 @@ public final class JavaCandidateRanking implements CandidateRanking {
                 operations + captureWork + (source ? 0 : 7L * region.receiverGuards().size()));
         if (!source && cached.size() < 1024) cached.put(resolved.expressions(), result);
         return result;
+    }
+    private static boolean modularBoundary(Expr expression) {
+        var operation = JavaExpressions.operationOf(expression).orElse(null);
+        return operation == NumericOperation.MOD || operation == NumericOperation.REMAINDER
+                || operation == NumericOperation.MOD_POW || operation == NumericOperation.MOD_MULTIPLY
+                || operation == NumericOperation.MOD_INVERSE;
+    }
+    static long relativeOperationWork(long sourceWork, long candidateEnvelope, long originalEnvelope) {
+        var numerator = java.math.BigInteger.valueOf(sourceWork).multiply(java.math.BigInteger.valueOf(candidateEnvelope));
+        var denominator = java.math.BigInteger.valueOf(originalEnvelope);
+        return numerator.add(denominator.subtract(java.math.BigInteger.ONE)).divide(denominator)
+                .min(java.math.BigInteger.valueOf(Long.MAX_VALUE / 160)).longValueExact();
     }
     private static int locals(String statements) {
         var parser = org.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.getJLSLatest());

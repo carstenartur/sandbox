@@ -147,15 +147,25 @@ final class JavaRuntimeIterationEmitter {
         out.append("{\n");explain(out);
         out.append("int ").append(p).append("start=(").append(text(source,h.start())).append("), ")
                 .append(p).append("bound=(").append(text(source,h.bound())).append(");\n");
-        out.append("long ").append(p).append("count=");
-        String distance=h.stride().signum()>0?"(long)"+p+"bound-"+p+"start":"(long)"+p+"start-"+p+"bound";
-        if(evidence.strategy()==EmissionStrategy.PRIMITIVE_UNIT) {
-            out.append(distance).append(";\nif(").append(p).append("count<0L)").append(p).append("count=0L;\n");
+        boolean modular=evidence.strategy()==EmissionStrategy.PRIMITIVE_UNIT && context.width().equals("int") && !h.live();
+        if(modular) {
+            // Compare before subtracting: a positive directed distance can exceed signed int.
+            // Only its residue modulo 2^32 is needed by a dead-counter int accumulator.
+            out.append("int ").append(p).append("count=").append(p).append("start")
+                    .append(h.stride().signum()>0?"<":">").append(p).append("bound?")
+                    .append(p).append(h.stride().signum()>0?"bound-":"start-").append(p)
+                    .append(h.stride().signum()>0?"start":"bound").append(":0;\n");
         } else {
-            out.append(distance).append(h.inclusive()?"":"-1L").append(";\n")
-                    .append(p).append("count=").append(p).append("count<0L?0L:").append(p).append("count/")
-                    .append(h.stride().abs().longValueExact()).append("L+1L;\n");
-            if(h.once())out.append("if(").append(p).append("count==0L)").append(p).append("count=1L;\n");
+            out.append("long ").append(p).append("count=");
+            String distance=h.stride().signum()>0?"(long)"+p+"bound-"+p+"start":"(long)"+p+"start-"+p+"bound";
+            if(evidence.strategy()==EmissionStrategy.PRIMITIVE_UNIT) {
+                out.append(distance).append(";\nif(").append(p).append("count<0L)").append(p).append("count=0L;\n");
+            } else {
+                out.append(distance).append(h.inclusive()?"":"-1L").append(";\n")
+                        .append(p).append("count=").append(p).append("count<0L?0L:").append(p).append("count/")
+                        .append(h.stride().abs().longValueExact()).append("L+1L;\n");
+                if(h.once())out.append("if(").append(p).append("count==0L)").append(p).append("count=1L;\n");
+            }
         }
         boolean guarded=evidence.strategy()==EmissionStrategy.PRIMITIVE_GUARDED;
         if(guarded || h.live())out.append("long ").append(p).append("after=").append(p).append("start+")
@@ -171,7 +181,7 @@ final class JavaRuntimeIterationEmitter {
             // Compound assignment narrows to the source accumulator ring, including long product wrap.
             long value=context.width().equals("int")?coefficient.intValue():coefficient.longValue();
             out.append(context.targets().get(state).getName()).append(" += ");
-            out.append(p).append("count*(").append(value).append("L)");
+            out.append(p).append("count*(").append(value).append(modular?")":"L)");
             out.append(";\n");
         }
         if(h.live())out.append(h.counter().getName()).append("=(int)").append(p).append("after;\n");

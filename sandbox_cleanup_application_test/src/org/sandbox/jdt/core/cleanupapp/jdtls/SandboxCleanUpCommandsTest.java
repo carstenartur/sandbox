@@ -9,7 +9,10 @@ package org.sandbox.jdt.core.cleanupapp.jdtls;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +21,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -142,12 +146,48 @@ class SandboxCleanUpCommandsTest {
     }
 
     @Test
-    void refusesTheXmlCleanupBeforeItsSideEffectingRewriteCanRun() throws Exception {
+    void excludesTheXmlCleanupAndRejectsItsStoredLegacyIdWithoutWritingResources() throws Exception {
+        String bundleId = "sandbox_xml_cleanup";
+        String legacyId = "org.eclipse.jdt.ui.cleanup.xmlcleanup";
+        String commandId = "org.sandbox.jdt.xml.cleanup.command";
+        assertNotNull(Platform.getBundle(bundleId), "The XML plugin must be installed for this regression");
+        var registry = Platform.getExtensionRegistry();
+        assertTrue(Arrays.stream(registry.getConfigurationElementsFor("org.eclipse.ui.commands"))
+                .anyMatch(element -> bundleId.equals(element.getContributor().getName())
+                        && "command".equals(element.getName()) && commandId.equals(element.getAttribute("id"))));
+        assertTrue(Arrays.stream(registry.getConfigurationElementsFor("org.eclipse.ui.handlers"))
+                .anyMatch(element -> bundleId.equals(element.getContributor().getName())
+                        && commandId.equals(element.getAttribute("commandId"))));
         var catalog = new SandboxCleanUpCatalog();
-        var xml = catalog.list().stream().filter(e -> e.bundle().equals("sandbox_xml_cleanup")).findFirst().orElseThrow();
-        assertFalse(xml.available());
-        assertFalse(xml.reason().isBlank());
-        assertThrows(IllegalArgumentException.class, () -> catalog.create(xml.id(), Map.of("cleanup.xmlcleanup", "true")));
+        assertTrue(catalog.list().stream()
+                .noneMatch(entry -> bundleId.equals(entry.bundle()) || legacyId.equals(entry.id())),
+                "XML cleanup must not be offered as a Java cleanup preview");
+
+        var unit = unit("Example", "class Example {}");
+        var before = snapshot(unit);
+        var javaFile = (IFile) unit.getResource();
+        byte[] javaBytes = readBytes(javaFile);
+        long javaStamp = javaFile.getModificationStamp();
+        byte[] xmlBytes = "<plugin>\n    <extension point=\"example\"/>\n</plugin>\n"
+                .getBytes(StandardCharsets.UTF_8);
+        var xmlFile = project.getFile("plugin.xml");
+        xmlFile.create(new ByteArrayInputStream(xmlBytes), true, monitor);
+        long xmlStamp = xmlFile.getModificationStamp();
+        var options = Map.of("cleanup.xmlcleanup", "true", "cleanup.xmlcleanup_indent", "true");
+        var request = new Request(legacyId, options, List.of(before));
+        String rejection = "Unknown or ambiguous Sandbox cleanup: " + legacyId;
+
+        assertAll(
+                () -> assertEquals(rejection, assertThrows(IllegalArgumentException.class,
+                        () -> catalog.create(legacyId, options)).getMessage()),
+                () -> assertEquals(rejection, assertThrows(IllegalArgumentException.class,
+                        () -> new SandboxCleanUpCommands().executeCommand(
+                                SandboxCleanUpCommands.PREVIEW, List.of(request), monitor)).getMessage()),
+                () -> assertEquals(before.source(), unit.getSource()),
+                () -> assertArrayEquals(javaBytes, readBytes(javaFile)),
+                () -> assertEquals(javaStamp, javaFile.getModificationStamp()),
+                () -> assertArrayEquals(xmlBytes, readBytes(xmlFile)),
+                () -> assertEquals(xmlStamp, xmlFile.getModificationStamp()));
     }
 
     @Test
@@ -276,6 +316,12 @@ class SandboxCleanUpCommandsTest {
         assertThrows(IllegalArgumentException.class, () -> commands.executeCommand("unknown", List.of(), monitor));
         assertThrows(IllegalArgumentException.class, () -> commands.executeCommand(SandboxCleanUpCommands.PREVIEW, List.of(), monitor));
         assertThrows(IllegalArgumentException.class, () -> new SandboxCleanUpCatalog().create("not-installed", Map.of()));
+    }
+
+    private static byte[] readBytes(IFile file) throws Exception {
+        try (var contents = file.getContents()) {
+            return contents.readAllBytes();
+        }
     }
 
     private static String apply(String source, List<?> edits) throws Exception {
