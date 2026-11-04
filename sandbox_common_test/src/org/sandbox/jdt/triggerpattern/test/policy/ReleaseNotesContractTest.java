@@ -39,10 +39,11 @@ class ReleaseNotesContractTest {
 		Result result = generate("v1.3.2", 0, dryRun);
 		assertEquals(0, result.exitCode(), result.output());
 		assertEquals(curated, notes());
-		assertEquals(curated, Files.readString(repository.resolve("target/release-assets/release-notes.md")));
+		assertEquals(curated, Files.readString(repository.resolve("target/release-assets/release-notes.md"), StandardCharsets.UTF_8));
 		if (!dryRun) {
 			// Publication must use the reviewed asset even if unrelated scratch notes drift.
-			Files.writeString(repository.resolve("release-notes.md"), "unreviewed scratch contents\n");
+			Files.writeString(repository.resolve("release-notes.md"), "unreviewed scratch contents\n",
+					StandardCharsets.UTF_8);
 			Result publication = publishNotes();
 			assertEquals(0, publication.exitCode(), publication.output());
 			assertEquals(curated, publication.output());
@@ -65,7 +66,8 @@ class ReleaseNotesContractTest {
 	@Test
 	void curatedNotesForAnotherVersionFailInsteadOfPublishingStaleNotes() throws Exception {
 		initialize();
-		Files.writeString(repository.resolve("release_notes.md"), "# Sandbox 1.3.7 — release notes\n");
+		Files.writeString(repository.resolve("release_notes.md"), "# Sandbox 1.3.7 — release notes\n",
+				StandardCharsets.UTF_8);
 		Result result = generate("v1.3.2", 0);
 		assertTrue(result.exitCode() != 0, result.output());
 		assertFalse(Files.exists(repository.resolve("target/release-assets/release-notes.md")));
@@ -74,7 +76,7 @@ class ReleaseNotesContractTest {
 	@Test
 	void emptyCuratedNotesFailInsteadOfSilentlyReplacingReviewedContents() throws Exception {
 		initialize();
-		Files.writeString(repository.resolve("release_notes.md"), "");
+		Files.writeString(repository.resolve("release_notes.md"), "", StandardCharsets.UTF_8);
 		assertTrue(generate("v1.3.2", 0).exitCode() != 0);
 		assertFalse(Files.exists(repository.resolve("target/release-assets/release-notes.md")));
 	}
@@ -190,7 +192,7 @@ class ReleaseNotesContractTest {
 				}
 				""";
 		Files.writeString(repository.resolve("publish-notes-test.sh"),
-				"set -euo pipefail\n" + remote + workflowBlock("Create draft GitHub Release"));
+				("set -euo pipefail\n" + remote + workflowBlock("Create draft GitHub Release")), StandardCharsets.UTF_8);
 		return run(List.of(bash(), "publish-notes-test.sh"), Map.of("RELEASE_VERSION", "1.3.8"));
 	}
 
