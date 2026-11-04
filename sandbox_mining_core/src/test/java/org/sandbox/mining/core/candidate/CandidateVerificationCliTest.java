@@ -47,7 +47,7 @@ class CandidateVerificationCliTest {
 		MiningCandidate candidate = readyCandidate("snapshot", "2026-01-01T00:00:00Z");
 		store.save(candidate);
 		Path issues = tempDir.resolve("empty-issues.jsonl");
-		Files.writeString(issues, snapshot);
+		Files.writeString(issues, snapshot, StandardCharsets.UTF_8);
 		assertThrows(IOException.class, () -> CandidateVerificationCli.run(new String[] {
 				"--candidate-dir", candidateDir.toString(), "--report-dir", tempDir.resolve("empty-report").toString(),
 				"--review-issues", issues.toString() }));
@@ -72,9 +72,11 @@ class CandidateVerificationCliTest {
 			store.save(candidate);
 		}
 		Path issues = tempDir.resolve("issues.jsonl");
-		Files.writeString(issues, "[[" + String.join(",", issue(rejected, 1539, "closed", "not_planned"),
-				issue(historical, 1284, "closed", "completed"), issue(open, 2000, "open", null),
-				issue(alreadyRejected, 1781, "closed", "completed")) + "]]");
+		Files.writeString(issues,
+				("[[" + String.join(",", issue(rejected, 1539, "closed", "not_planned"),
+						issue(historical, 1284, "closed", "completed"), issue(open, 2000, "open", null),
+						issue(alreadyRejected, 1781, "closed", "completed")) + "]]"),
+				StandardCharsets.UTF_8);
 		String[] args = { "--candidate-dir", candidateDir.toString(), "--report-dir",
 				tempDir.resolve("closed-report").toString(), "--review-issues", issues.toString() };
 		assertEquals(0, CandidateVerificationCli.run(args));
@@ -86,7 +88,7 @@ class CandidateVerificationCliTest {
 		var transitions = store.findById(rejected.getCandidateId()).orElseThrow().getTransitions();
 		assertEquals(0, CandidateVerificationCli.run(args));
 		assertEquals(transitions, store.findById(rejected.getCandidateId()).orElseThrow().getTransitions());
-		assertTrue(Files.readString(tempDir.resolve("closed-report/candidate-summary.md"))
+		assertTrue(Files.readString(tempDir.resolve("closed-report/candidate-summary.md"), StandardCharsets.UTF_8)
 				.contains("Historical closed reviews: 1"));
 	}
 
@@ -99,11 +101,15 @@ class CandidateVerificationCliTest {
 		candidate.setRevision(revision);
 		store.save(candidate);
 		Path issues = tempDir.resolve("old-issues.jsonl");
-		Files.writeString(issues, "[" + issue(candidate, 111, "closed", "not_planned")
-				.replace("`" + revision + "`", "`" + (revision == 1 ? 2 : 1) + "`") + "," + issue(candidate, 112, "closed", "not_planned")
-				.replace("<!-- mining-candidate-id:", "Quoted: <!-- mining-candidate-id:") + ","
-				+ issue(candidate, 113, "closed", "not_planned").replace("| Revision |", "| Old Revision |") + ","
-				+ issue(candidate, 114, "closed", "not_planned").replace("`" + revision + "`", "`invalid`") + "]");
+		Files.writeString(issues, ("["
+				+ issue(candidate, 111, "closed", "not_planned").replace("`" + revision + "`",
+						"`" + (revision == 1 ? 2 : 1) + "`")
+				+ ","
+				+ issue(candidate, 112, "closed", "not_planned").replace("<!-- mining-candidate-id:",
+						"Quoted: <!-- mining-candidate-id:")
+				+ "," + issue(candidate, 113, "closed", "not_planned").replace("| Revision |", "| Old Revision |") + ","
+				+ issue(candidate, 114, "closed", "not_planned").replace("`" + revision + "`", "`invalid`") + "]"),
+				StandardCharsets.UTF_8);
 		assertEquals(0, CandidateVerificationCli.run(new String[] { "--candidate-dir", candidateDir.toString(),
 				"--report-dir", tempDir.resolve("marker-report").toString(), "--review-issues", issues.toString() }));
 		assertEquals(CandidateStatus.READY_FOR_REVIEW, store.findById(candidate.getCandidateId()).orElseThrow().getStatus());
@@ -211,7 +217,7 @@ class CandidateVerificationCliTest {
 				$x + 0
 				=> $x
 				;;
-				"""); //$NON-NLS-1$
+				""", StandardCharsets.UTF_8); //$NON-NLS-1$
 		CandidateStore store = new CandidateStore(candidateDir);
 		store.save(candidate("commit-new", "2026-03-01T00:00:00Z")); //$NON-NLS-1$ //$NON-NLS-2$
 
@@ -347,14 +353,13 @@ class CandidateVerificationCliTest {
 		writeLegacyCandidate(legacyPath, example.getDslRule(), example.getBeforeExample(),
 				example.getAfterExample(), example.getNegativeExample());
 		// Raw schema-v1 data has neither a canonical filename nor sourceVersion.
-		Files.writeString(legacyPath, Files.readString(legacyPath).replace(
-				"\"status\": \"DSL_VALID\"", """
+		Files.writeString(legacyPath, Files.readString(legacyPath).replace("\"status\": \"DSL_VALID\"", """
 				"status": "REJECTED",
 				"rejectionReason": "Review of the implicit source-21 revision",
 				"verification": { "successful": true, "stage": "SUCCESS",
 				  "message": "Candidate behavior verified", "verifierVersion": "7",
 				  "verifiedAt": "2026-01-01T00:00:00Z", "matches": 1, "replacements": 1 }
-				""")); //$NON-NLS-1$
+				"""), StandardCharsets.UTF_8); //$NON-NLS-1$
 		CandidateStore store = new CandidateStore(candidateDir);
 		MiningCandidate valid = candidate("source-17", "2025-12-31T00:00:00Z"); //$NON-NLS-1$ //$NON-NLS-2$
 		valid.setSourceVersion("17"); //$NON-NLS-1$
