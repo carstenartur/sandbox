@@ -14,9 +14,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
-import java.io.PrintWriter;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
 import java.io.StringWriter;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -77,12 +80,12 @@ class PdePreambleConsumerTest {
 				  &lt;/pre&gt;  </documentation></annotation>
 				</schema>
 				""".replace(" NAMESPACE", namespace).replace("appInfo", appinfo); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		Path original= Files.writeString(directory.resolve("original.exsd"), source); //$NON-NLS-1$
+		Path original= Files.writeString(directory.resolve("original.exsd"), source, StandardCharsets.UTF_8); //$NON-NLS-1$
 		List<String> lightweight= annotation(source);
 		assertTrue(lightweight.get(1).startsWith("  Raw overview")); //$NON-NLS-1$
 		for (boolean indent : new boolean[] { false, true }) {
 			String transformed= SchemaTransformationUtils.transform(source, StandardCharsets.UTF_8, indent);
-			Path cleaned= Files.writeString(directory.resolve("cleaned-" + indent + ".exsd"), transformed); //$NON-NLS-1$ //$NON-NLS-2$
+			Path cleaned= Files.writeString(directory.resolve("cleaned-" + indent + ".exsd"), transformed, StandardCharsets.UTF_8); //$NON-NLS-1$ //$NON-NLS-2$
 			assertFalse(transformed.contains("<!-- Schema file written by PDE -->")); //$NON-NLS-1$
 			assertTrue(transformed.contains("<!-- Human maintenance note -->")); //$NON-NLS-1$
 			assertTrue(transformed.contains("<?authoring retain?>")); //$NON-NLS-1$
@@ -150,7 +153,7 @@ class PdePreambleConsumerTest {
 
 	private static String html(Schema schema) {
 		StringWriter output= new StringWriter();
-		new SchemaTransformer().transform(schema, new PrintWriter(output), null, SchemaTransformer.BUILD);
+		new SchemaTransformer().transform(schema, new BufferedWriter(new OutputStreamWriter(new FileOutputStream(output), Charset.defaultCharset())), null, SchemaTransformer.BUILD);
 		return output.toString();
 	}
 }
