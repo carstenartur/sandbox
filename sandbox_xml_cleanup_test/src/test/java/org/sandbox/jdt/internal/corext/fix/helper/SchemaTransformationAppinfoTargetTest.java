@@ -133,7 +133,7 @@ class SchemaTransformationAppinfoTargetTest {
 	void validatesCdataSourceBeforeRetainingIt(@TempDir Path directory) throws Exception {
 		assertThrows(TransformerException.class, () -> transform("<schema><![CDATA[unterminated", //$NON-NLS-1$
 				false, PdeSchemaTarget.ECLIPSE_3_4_OR_NEWER));
-		Path dtd= Files.writeString(directory.resolve("schema.dtd"), "<!ELEMENT schema ANY>"); //$NON-NLS-1$ //$NON-NLS-2$
+		Path dtd= Files.writeString(directory.resolve("schema.dtd"), "<!ELEMENT schema ANY>", StandardCharsets.UTF_8); //$NON-NLS-1$ //$NON-NLS-2$
 		String source= "<!DOCTYPE schema SYSTEM \"" + dtd.toUri() + "\"><schema><![CDATA[literal]]></schema>"; //$NON-NLS-1$ //$NON-NLS-2$
 		assertThrows(TransformerException.class, () -> transform(source, false, PdeSchemaTarget.ECLIPSE_3_4_OR_NEWER));
 	}
