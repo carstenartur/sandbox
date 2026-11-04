@@ -17,13 +17,28 @@
 
     <xsl:template match="*">
         <xsl:param name="padding" select="''"/>
+        <xsl:param name="pde-metadata-leaf" select="false()"/>
         <!-- These are the common element-only XSD/EXSD containers. Unknown schema
-             constructs, documentation and appinfo remain untouched subtrees. -->
+             constructs, documentation and arbitrary appinfo remain untouched. -->
         <xsl:variable name="schema-container" select="
             /*[self::schema or self::xs:schema]
             and namespace-uri() = namespace-uri(/*)
             and contains('|schema|annotation|element|attribute|complexType|simpleType|sequence|choice|all|restriction|extension|',
                          concat('|', local-name(), '|'))"/>
+        <!-- PDE reads these four metadata elements only through their attributes.
+             Both spellings are accepted, but appinfo is otherwise arbitrary XML.
+             Require recognized, leaf-only metadata in its consumer's annotation
+             context before treating any whitespace in the container as layout. -->
+        <xsl:variable name="pde-appinfo" select="
+            /*[self::schema or self::xs:schema]
+            and namespace-uri() = namespace-uri(/*)
+            and (local-name() = 'appinfo' or local-name() = 'appInfo')
+            and parent::*[local-name() = 'annotation' and namespace-uri() = namespace-uri(/*)]
+            and *
+            and not(*[namespace-uri() != namespace-uri(/*) or * or text()[normalize-space(.) != '']
+                or not((local-name(../../..) = 'schema' and (local-name() = 'meta.schema' or local-name() = 'meta.section'))
+                    or (local-name(../../..) = 'element' and local-name() = 'meta.element')
+                    or (local-name(../../..) = 'attribute' and local-name() = 'meta.attribute'))])"/>
         <!-- Extension payloads have their own schemas; only their enclosing
              descriptor and extension elements have a known content model here. -->
         <xsl:variable name="descriptor-container" select="
@@ -31,7 +46,7 @@
             or self::feature[not(parent::*)]
             or self::extension[parent::plugin[not(parent::*)] or parent::fragment[not(parent::*)]]"/>
         <xsl:choose>
-            <xsl:when test="($schema-container or $descriptor-container)
+            <xsl:when test="($schema-container or $descriptor-container or $pde-appinfo or $pde-metadata-leaf)
                             and not(text()[normalize-space(.) != ''])
                             and not(ancestor-or-self::*[@xml:space][1]/@xml:space = 'preserve')">
                 <xsl:variable name="children" select="node()[not(self::text()[normalize-space(.) = ''])]"/>
@@ -44,6 +59,7 @@
                         </xsl:if>
                         <xsl:apply-templates select=".">
                             <xsl:with-param name="padding" select="concat($padding, '&#9;')"/>
+                            <xsl:with-param name="pde-metadata-leaf" select="$pde-appinfo"/>
                         </xsl:apply-templates>
                     </xsl:for-each>
                     <xsl:if test="$indent and $children">

@@ -80,6 +80,8 @@ public class SchemaTransformationUtils {
 	 * Transforms XML content without requiring a physical workspace location.
 	 * Serialized line breaks use LF; the workspace boundary restores the file's
 	 * original delimiter. Explicit XML character references retain their values.
+	 * CDATA-containing inputs are validated and retained without serialization,
+	 * including their existing declaration, to preserve literal boundaries.
 	 *
 	 * @param sourceContent decoded XML source
 	 * @param outputCharset charset named in the serialized XML declaration
@@ -111,7 +113,11 @@ public class SchemaTransformationUtils {
 			// JAXP serializers can expand normalized XML newlines to the host delimiter.
 			// Canonicalize literal line ends only; references such as &#13; stay intact.
 			// XMLResourceSupport restores the workspace file's original delimiter.
-			return output.toString().replace("\r\n", "\n").replace('\r', '\n'); //$NON-NLS-1$ //$NON-NLS-2$
+			// XSLT erases CDATA boundaries. A later pass could then mistake a literal
+			// blank for layout. Keep the securely validated original unchanged whenever
+			// CDATA is present; the workspace boundary already knows its encoding.
+			String result= new ProtectedXmlRegions(sourceContent).hasCdata() ? sourceContent : output.toString();
+			return result.replace("\r\n", "\n").replace('\r', '\n'); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 	}
 
@@ -156,6 +162,15 @@ public class SchemaTransformationUtils {
 
 		boolean contains(int offset) {
 			return containing(offset) != null;
+		}
+
+		boolean hasCdata() {
+			for (ProtectedXmlRegion region : regions) {
+				if (region.textContent()) {
+					return true;
+				}
+			}
+			return false;
 		}
 
 		ProtectedXmlRegion containing(int offset) {
