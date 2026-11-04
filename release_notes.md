@@ -1,10 +1,9 @@
 # Sandbox 1.3.8 — release notes
 
 Baseline: [1.3.7](https://github.com/carstenartur/sandbox/releases/tag/v1.3.7).
-This release expands verified mathematics transformations, improves generated
-Java and cleanup coordination, and strengthens mining example verification and
-review lifecycle handling. The supported fragments, separate opt-in contracts
-and measured qualification limits are described below.
+This release expands verified mathematics, generated Java and cleanup coordination,
+with stronger mining verification and review handling. Bounded fragments, separate
+opt-in contracts and measured limits follow. Final integration and publication are pending.
 
 ## Mathematics cleanup
 
@@ -18,18 +17,16 @@ and measured qualification limits are described below.
   and remaining file budgets; retain exact Apply/Undo and generated-source checks.
 - Export typed computation tasks and consume independently verified high/low-word
   relations from the pinned Regelsuche SDK.
-- Add verified finite-series loop and sequential stream reductions: polynomial,
+- Add verified finite-series loop and sequential stream reductions for polynomial,
   affine, geometric/product and bounded coupled, nested, periodic or piecewise
-  fragments. Runtime templates apply under the estimated-runtime goal and strict
-  Preserve Java policy. Guards and original-code fallbacks remain where required;
-  eligible exclusive unit-stride constant sums now use primitive arithmetic directly.
+  fragments under Lower estimated runtime and strict Preserve Java. Keep required
+  guards and original fallbacks; eligible exclusive unit-stride constant sums use primitives.
 - Avoid BigInteger setup before the original short-range path for admitted
   primitive int/unit-stride ranges, while retaining large-range safety guards.
-- Account for increased BigInteger operand sizes when ranking candidates that
-  remove authored modular-reduction boundaries. Preserve immediate reductions
-  in the admitted SWU square rewrites instead of preferring larger unreduced
-  intermediates. Direct immediately reduced squares remain eligible; this
-  conservative ranking adjustment does not replace the independent proof gates.
+- Account for BigInteger operand growth when ranking candidates that remove
+  authored modular boundaries. Preserve immediate reductions in admitted SWU
+  square rewrites; direct immediately reduced squares remain eligible. This
+  conservative ranking change retains the independent proof gates.
 
 See merged [#1767](https://github.com/carstenartur/sandbox/pull/1767),
 [#1769](https://github.com/carstenartur/sandbox/pull/1769),
@@ -41,33 +38,27 @@ See merged [#1767](https://github.com/carstenartur/sandbox/pull/1767),
 ## Generated Java and explanations
 
 - Emit compact primitive calculations for independently proved constant-increment
-  sums where the Java context permits them. Exclusive unit-stride `int` headers
-  need no BigInteger work or retained fallback; other supported headers keep
-  termination guards and the original fallback.
+  sums where Java permits. Exclusive unit-stride `int` headers need no BigInteger
+  or fallback; other supported headers retain termination guards and the original fallback.
 - Keep admitted dead-counter `int` accumulator sums in Java's 32-bit arithmetic:
-  compare signed endpoints before subtracting, then calculate the count residue
-  and constant product as `int`. This preserves overflow even across the full
-  signed-int endpoint domain. Live counters, `long` accumulators and other
-  supported headers retain their existing guarded templates. Reapplication
-  recognizes the emitted conditional form.
-- Reject generated Java errors and new warnings using the project's compiler
-  options. Existing warnings are accepted only on matching, unchanged source
-  ranges; equal warning totals alone are insufficient.
+  compare signed endpoints before subtraction, then calculate the count residue
+  and constant product as `int`, preserving overflow across all signed-int endpoints.
+  Live counters, `long` accumulators and other supported headers keep their guarded
+  templates; reapplication recognizes the emitted conditional.
+- Reject generated errors/new warnings under project compiler options. Existing
+  warnings require matching unchanged source ranges; equal totals are insufficient.
 - Remove redundant casts and unused generated work where evaluation order,
   exceptions and Java expression types remain correct. Use `BigInteger.valueOf`
   for constants that fit a signed `long`.
-- Explain runtime transformations under the existing `NONE`, `NONTRIVIAL` and
-  `ALL` comment modes. Comments name the targets, arithmetic contract and actual
-  guards, and distinguish estimated work from measured timing.
-- Preserve recognized generated calculations and their fallback loops on a
-  second cleanup. Retain counted-tail acceleration with independently replayed
-  parameter binding and initialization.
+- Explain targets, arithmetic contracts and actual guards with existing `NONE`,
+  `NONTRIVIAL` or `ALL` modes, distinguishing estimated work from measured timing.
+- Preserve recognized calculations/fallbacks on a second cleanup and counted-tail
+  acceleration with independently replayed parameter binding and initialization.
 
 Included through [#1798](https://github.com/carstenartur/sandbox/pull/1798) and
 the operand-cost/int-width corrections in
 [#1800](https://github.com/carstenartur/sandbox/pull/1800).
-These output-quality improvements do not establish a general runtime speedup;
-the measured limits below remain part of the release assessment.
+These changes establish no general speedup; measured limits remain below.
 
 ## Functional Converter correctness
 
@@ -84,11 +75,9 @@ Included through merged [#1776](https://github.com/carstenartur/sandbox/pull/177
 - Add an optional whole-file operation that runs mathematics before converting
   remaining eligible loops using the selected Functional Converter profile.
   It is off by default and requires Preserve Java behavior with Mathematical mode off.
-- Present the combined result as one file preview, one selectable change group
-  and one Undo; preparing a preview does not edit the editor buffer.
-- Share work and time budgets across the phases. Cancellation or exhaustion
-  discards the private result; changes to source, project settings or either
-  effective cleanup profile invalidate a prepared proposal.
+- Use one file preview, selectable change group and Undo; preview leaves the buffer intact.
+- Share work and time budgets; cancellation or exhaustion discards private results.
+  Changes to source, project settings or either effective profile invalidate proposals.
 - Keep Quick Assist scoped to its mathematics selection and preserve the ordinary
   Functional Converter's independent operation. The option adds no save action.
 
@@ -97,20 +86,17 @@ including the correction that keeps previews aligned with live profile options.
 
 ## Explicit native tail-recursion cleanup
 
-- Convert the admitted static `int`/`long` countdown fragment only after the
-  separate, default-off tail-recursion consent. The emitted method records
-  `ALLOW_FRAME_ELISION`: removing frames can change stack observation and
-  `StackOverflowError`.
-- Derive bounded state transitions from Java source and independently replay the
-  generated loop. Next-state expressions keep the old state and Java evaluation
-  order; source/AST/comment freshness is checked.
+- Convert only the admitted static `int`/`long` countdown fragment after separate,
+  default-off consent. `ALLOW_FRAME_ELISION` in the emitted method records that
+  frame removal may change stack observation and `StackOverflowError`.
+- Derive bounded transitions from Java and independently replay the loop. Next-state
+  expressions use old state and Java evaluation order; check source/AST/comment freshness.
 - Use ordinary native Preview/Apply/Undo with one private source and shared work
   and time budgets. Protect transferred tail bodies from unrelated mathematics
   and optional Functional Converter edits, including repeated Apply.
-- Keep Select All, selection Quick Assist and save actions from granting consent.
-  Existing finite-series/affine acceleration additionally requires Preserve Java,
-  Mathematical mode off and Lower estimated runtime. Other admitted cases retain
-  the verified ordinary loop.
+- Select All, selection Quick Assist and save actions cannot grant consent.
+  Finite-series/affine acceleration also requires Preserve Java, Mathematical mode
+  off and Lower estimated runtime; other admitted cases keep the verified loop.
 
 This extends the foundation in [#1783](https://github.com/carstenartur/sandbox/pull/1783)
 with [#1784](https://github.com/carstenartur/sandbox/pull/1784) and the native
@@ -136,34 +122,28 @@ Included through [#1784](https://github.com/carstenartur/sandbox/pull/1784),
 [#1788](https://github.com/carstenartur/sandbox/pull/1788),
 [#1789](https://github.com/carstenartur/sandbox/pull/1789) and
 [#1790](https://github.com/carstenartur/sandbox/pull/1790).
-These bounded proofs and lower estimated costs are not measured speedup or
-cryptographic constant-time claims.
+These proofs and lower estimated costs establish no speedup or constant-time claim.
 
 ## Reliability and documentation
 
 - Retry temporary Gemini overloads during nightly commit mining.
 - Keep scheduled verification from cancelling active checks.
-- Preserve stable-tree release identity across Maven clean and include the
-  curated release notes in the canonical dry-run evidence. Publication uses the
-  same reviewed notes asset; empty or wrong-version curated notes fail closed.
-- Keep the CLI's embedded `VERSION` value aligned with its archive version in
-  stable and development builds. Include both ZIP and TAR.GZ distributions in
-  the pre-publication evidence for inspection.
+- Keep stable-tree identity across Maven clean and curated notes in canonical dry-run
+  evidence. Publication uses the reviewed asset; empty/wrong-version notes fail closed.
+- Keep CLI `VERSION` aligned with stable/development archive versions; retain
+  both ZIP and TAR.GZ distributions in pre-publication evidence for inspection.
 - Retain reviewed DSL rejections when mining rediscovers the same evidence,
   through merged [#1795](https://github.com/carstenartur/sandbox/pull/1795).
-- Check source evidence before admitting mined cleanup candidates, within the
-  existing Gemini request budget, through merged
-  [#1796](https://github.com/carstenartur/sandbox/pull/1796).
+- Check mined source evidence before admission within the existing Gemini request
+  budget, through merged [#1796](https://github.com/carstenartur/sandbox/pull/1796).
 - Add reusable native SWT/JDT before-and-after qualification with source-bound
   Apply evidence, exact test inventories and retained raw reports, through merged
   [#1797](https://github.com/carstenartur/sandbox/pull/1797). Historical receipts
   retain their original tested sources and measurement limits.
-- Explain supported Sandbox workflows and refresh mathematics guidance with
-  source-backed examples and explicit fragment boundaries.
-- Refresh the Bouncy Castle Help example from the actual registered-cleanup
-  preview and native capture. It shows four immediately reduced square regions,
-  retains the surrounding modular reductions, and keeps paired source/adapter/
-  screenshot provenance. The visible first result is
+- Explain supported workflows and mathematics with sourced examples and fragment limits.
+- Refresh the Bouncy Castle Help example from the registered-cleanup preview and
+  native capture. Four immediately reduced square regions retain surrounding reductions
+  and paired source/adapter/screenshot provenance, beginning with
   `tv1 = u.multiply(u).mod(p);`.
 - Update the qualified vendored value-arithmetic SDK and native mathematics Help
   provenance through merged [#1782](https://github.com/carstenartur/sandbox/pull/1782).
@@ -171,11 +151,10 @@ cryptographic constant-time claims.
 - Include the Fp12 algebra-proof timeout correction in
   [#1791](https://github.com/carstenartur/sandbox/pull/1791), and current native
   mathematics Help provenance from #1792.
-- Skip unnecessary liveness traversal when a mathematics region has no local
-  outputs. Merged [#1794](https://github.com/carstenartur/sandbox/pull/1794) also
-  limits native distribution CI to Linux and Windows. macOS archives remain
-  assembled without current native macOS qualification. The scope change does
-  not establish that the historical macOS analysis timeouts were repaired.
+- Skip liveness traversal for mathematics regions without local outputs. Merged
+  [#1794](https://github.com/carstenartur/sandbox/pull/1794) limits native distribution CI
+  to Linux/Windows; macOS archives are assembled without native qualification.
+  This scope change does not establish repair of historical macOS analysis timeouts.
 - Qualify complete BLS12-381 G2 and pairing Apply outputs with source-bound JMH,
   and bind preparation measurements and reporting to the same JVM. See the
   [complete-output qualification](https://github.com/carstenartur/sandbox/commit/88c0ba5d4127b208cdc7485dbf330f62cf69c62e)
@@ -210,12 +189,11 @@ A sealed replay of **611 recorded candidates** confirmed the following outcomes:
 | Historical closed review | 1 |
 | Duplicate | 1 |
 
-The 19 ready candidates pass their supplied examples; none is approved or
-promoted, and none is one of the five specifically investigated failures. All
-five remain blocked. The 581 unsuccessful verifications remain failed; the
-170 unresolved-import outcomes establish neither source validity nor semantic
-equivalence. These are recorded replay results, not a count of production rules
-or a claim that a public candidate-data report has been updated.
+All 19 ready entries pass supplied examples only; none is approved or promoted or
+among the five investigated failures, which remain blocked. All 581 unsuccessful
+verifications remain failed, including 170 unresolved imports that establish no
+source validity or equivalence. This replay neither counts production rules nor
+claims publication of a refreshed candidate-data report.
 
 ## Dependencies and qualification limits
 
@@ -227,19 +205,17 @@ development distribution:
 - Receipt version: `0.5.2-issue1657-70c13fb58006`; `publiclyPublished: false`.
 - JGit storage remains the already released **0.11.8**.
 
-The exact artifact and unchanged generated qualification were transferred from
-staging commit `1573e539f14313409ed5e16e1d80ea95b97493b5`.
-The retained external-consumer output is historical qualification of that
-artifact, not a fresh test of the reconstructed Java/native adapter.
-The earlier 302-tests-per-build double-build receipt belongs to SDK source
-`93f0f35abaea58ea492441776be7c9d2a9be1695`, not SDK70. No missing
-SDK70 double-build receipt or test count is inferred.
+The artifact and unchanged qualification came from staging commit
+`1573e539f14313409ed5e16e1d80ea95b97493b5`. Retained external-consumer output
+qualifies the artifact historically; it is not a fresh Java/native adapter test.
+The 302-tests-per-build double-build receipt belongs to source
+`93f0f35abaea58ea492441776be7c9d2a9be1695`, not SDK70; no missing SDK70
+double-build receipt or count is inferred.
 See [the current SDK provenance](sandbox_math_cleanup/lib/README.md).
 
-The SDK is included in the Eclipse bundle. Its numerical proof and reproducibility
-receipts are separate from Java source admission and native product verification.
-Generated Java does not require the SDK at runtime. A newer Regelsuche release is
-not a prerequisite for shipping this exact qualified artifact.
+The SDK is bundled in Eclipse; generated Java needs no SDK runtime. Numerical
+proof/reproducibility receipts remain separate from Java admission/native product
+verification. No newer Regelsuche release is required for this qualified artifact.
 
 ## Measured performance and qualification limits
 
@@ -305,11 +281,10 @@ explicit skips and later bounded successes. Reactor, metrics and upstream case
 counts overlap and must not be added. The recorded 25-module coverage aggregate
 excludes the mathematics plug-in; its percentage is not mathematics coverage.
 
-Current JDT Core qualification covers all 1,626 sources, with five edits in four
-files including the corrected int-width MethodInfo output. Both native phases
-pass 290,650 executions without skips or failures, with verified reactor/compiler
-class identities. This establishes the recorded transformed-output test scope,
-without a MethodInfo timing or per-method coverage claim.
+Current JDT Core qualification spans all 1,626 sources, with five edits in four
+files including corrected int-width MethodInfo. Each native phase has 290,650
+passing executions without skips/failures and verified reactor/compiler class identities.
+This qualifies the recorded output, with no MethodInfo timing or per-method coverage.
 
 Current all-source JDT UI qualification covers 2,661 Java sources with **zero
 accepted edits**: both phases have 9,423 passes and the same 154 skips, and all
@@ -318,9 +293,8 @@ not transformed UI methods or a combined transformed Core/UI installation.
 BC corpus scans retain ten parse-error files. The historical native digest
 receipt applies only to nine edits in five files, not the full changed corpus.
 
-Native distribution qualification targets Linux and Windows. The additional
-native Eclipse-consumer gate is Linux-only; assembled macOS archives do not
-establish native macOS qualification. Pinned upstream tests, numerical proofs,
-source-identity mappings and SDK receipts each retain their own scope. Earlier
-reports apply to changed generated output only when the relevant identities
-match; they are not fresh executions of a newer source or installation.
+Native distribution targets Linux/Windows; additional native Eclipse consumers
+remain Linux-only. Assembled macOS archives do not qualify native macOS execution.
+Pinned upstream tests, numerical proofs, source mappings and SDK receipts retain
+their own scope. Earlier reports require matching changed-output identities and
+are not fresh executions of a newer source or installation.
