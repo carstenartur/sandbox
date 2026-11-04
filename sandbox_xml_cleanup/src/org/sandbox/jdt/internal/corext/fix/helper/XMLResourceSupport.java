@@ -105,12 +105,26 @@ public final class XMLResourceSupport {
 	/** Reads, transforms and validates an XML resource without changing it. */
 	public static Transformation prepare(IFile file, boolean enableIndent,
 			IProgressMonitor monitor) throws CoreException {
-		return prepare(file, enableIndent, SchemaTransformationUtils.PdeSchemaTarget.PRESERVE, monitor);
+		return prepare(file, enableIndent, SchemaTransformationUtils.PdeSchemaTarget.PRESERVE,
+				SchemaTransformationUtils.DocumentationPolicy.PRESERVE, monitor);
 	}
 
 	/** Prepares cleanup with a caller-selected PDE compatibility target. */
 	public static Transformation prepare(IFile file, boolean enableIndent,
 			SchemaTransformationUtils.PdeSchemaTarget target, IProgressMonitor monitor) throws CoreException {
+		return prepare(file, enableIndent, target, SchemaTransformationUtils.DocumentationPolicy.PRESERVE, monitor);
+	}
+
+	/** Prepares cleanup with a caller-selected documentation policy. */
+	public static Transformation prepare(IFile file, boolean enableIndent,
+			SchemaTransformationUtils.DocumentationPolicy policy, IProgressMonitor monitor) throws CoreException {
+		return prepare(file, enableIndent, SchemaTransformationUtils.PdeSchemaTarget.PRESERVE, policy, monitor);
+	}
+
+	/** Prepares cleanup with independent compatibility and documentation options. */
+	public static Transformation prepare(IFile file, boolean enableIndent,
+			SchemaTransformationUtils.PdeSchemaTarget target, SchemaTransformationUtils.DocumentationPolicy policy,
+			IProgressMonitor monitor) throws CoreException {
 		checkCanceled(monitor);
 		ensureNoDirtyBuffer(file);
 		Snapshot snapshot= read(file);
@@ -118,7 +132,7 @@ public final class XMLResourceSupport {
 		String transformed;
 		try {
 			transformed= SchemaTransformationUtils.transform(snapshot.content,
-					snapshot.charset, enableIndent, target);
+					snapshot.charset, enableIndent, target, policy);
 		} catch (Exception e) {
 			throw error("Failed to transform XML resource: " + file.getFullPath(), e); //$NON-NLS-1$
 		}

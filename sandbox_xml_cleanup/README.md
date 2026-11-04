@@ -46,6 +46,21 @@ Recognized metadata whitespace receives the ordinary cleanup formatting in the
 same pass. Unknown or mixed payloads, `xml:space="preserve"`, and CDATA-containing
 files are retained. This is a compatibility choice, not a size optimization.
 
+### Trim plain reference-section boundaries
+
+For standalone PDE use, choose **Trim Plain PDE Reference Sections** in a
+schema/project context menu or the **XML Cleanup** main menu. This explicit
+command applies compact formatting and removes outer XML whitespace only from
+plain, nonblank documentation in the `since`, `apiinfo`,
+`implementation`, and `copyright` reference sections.
+
+The ordinary cleanup command and marker fixes preserve all documentation text.
+Overview, element, and attribute descriptions retain their original boundaries:
+PDE's lazy readers expose those strings verbatim. Examples, markup sections,
+unknown section types, HTML/pre/code text, mixed content, `xml:space="preserve"`,
+blank documentation, and CDATA-containing files remain unchanged. Interior
+spaces, tabs, and line breaks are never normalized by this option.
+
 ### Example Transformations
 
 **Before:**

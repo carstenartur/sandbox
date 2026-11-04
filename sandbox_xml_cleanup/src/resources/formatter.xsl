@@ -8,6 +8,7 @@
     <xsl:param name="indent" select="false()"/>
     <!-- Explicit user choice for the Eclipse 3.4+ schema writer convention. -->
     <xsl:param name="modernize-appinfo" select="false()"/>
+    <xsl:param name="trim-documentation" select="false()"/>
 
     <xsl:template match="/">
         <xsl:for-each select="*|comment()|processing-instruction()">
@@ -51,7 +52,37 @@
              Unknown appinfo payloads may belong to a different consumer. -->
         <xsl:variable name="pde-legacy-appinfo" select="
             $pde-appinfo and local-name() = 'appInfo' and not(text()[normalize-space(.) != ''])"/>
+        <!-- PDE normalizes these reference sections on full loading and omits
+             them in abbreviated/lazy readers. Overview, element and attribute
+             descriptions have raw lazy readers and must retain their boundaries.
+             Require the ordinary unqualified PDE vocabulary and section order. -->
+        <xsl:variable name="pde-schema" select="/schema/annotation/*[self::appinfo or self::appInfo]/meta.schema"/>
+        <xsl:variable name="pde-reference-section" select="self::documentation
+            and parent::annotation[parent::schema[not(parent::*)]]
+            and count(../node()[not(self::text()[normalize-space(.) = ''])]) = 2
+            and preceding-sibling::*[1][self::appinfo or self::appInfo][count(*) = 1 and not(text()[normalize-space(.) != ''])]
+                /meta.section[not(*) and not(text()[normalize-space(.) != ''])
+                    and (@type = 'since' or @type = 'apiinfo' or @type = 'implementation' or @type = 'copyright')]"/>
+        <xsl:variable name="plain-pde-description" select="$trim-documentation and $pde-schema and $pde-reference-section
+            and not(node()[not(self::text())]) and normalize-space(.) != ''
+            and not(contains(., '&lt;'))
+            and not(ancestor-or-self::*[@xml:space][1]/@xml:space = 'preserve')"/>
         <xsl:choose>
+            <xsl:when test="$plain-pde-description">
+                <xsl:copy>
+                    <xsl:copy-of select="@*"/>
+                    <xsl:variable name="without-leading">
+                        <xsl:call-template name="trim-xml-boundary">
+                            <xsl:with-param name="text" select="string(.)"/>
+                            <xsl:with-param name="leading" select="true()"/>
+                        </xsl:call-template>
+                    </xsl:variable>
+                    <xsl:call-template name="trim-xml-boundary">
+                        <xsl:with-param name="text" select="string($without-leading)"/>
+                        <xsl:with-param name="leading" select="false()"/>
+                    </xsl:call-template>
+                </xsl:copy>
+            </xsl:when>
             <xsl:when test="$modernize-appinfo and $pde-legacy-appinfo
                             and not(ancestor-or-self::*[@xml:space][1]/@xml:space = 'preserve')">
                 <xsl:variable name="modern-name">
@@ -128,5 +159,57 @@
 
     <xsl:template match="comment()|processing-instruction()|text()">
         <xsl:copy-of select="."/>
+    </xsl:template>
+    <!-- Binary subdivision bounds recursion depth even for very long whitespace
+         runs. normalize-space is only a predicate; output uses original chunks. -->
+    <xsl:template name="trim-xml-boundary">
+        <xsl:param name="text"/>
+        <xsl:param name="leading"/>
+        <xsl:choose>
+            <xsl:when test="string-length($text) &lt;= 1">
+                <xsl:if test="normalize-space($text) != ''"><xsl:value-of select="$text"/></xsl:if>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:variable name="half" select="floor(string-length($text) div 2)"/>
+                <xsl:variable name="first" select="substring($text, 1, $half)"/>
+                <xsl:variable name="last" select="substring($text, $half + 1)"/>
+                <xsl:choose>
+                    <xsl:when test="$leading">
+                        <xsl:choose>
+                            <xsl:when test="normalize-space($first) = ''">
+                                <xsl:call-template name="trim-xml-boundary">
+                                    <xsl:with-param name="text" select="$last"/>
+                                    <xsl:with-param name="leading" select="true()"/>
+                                </xsl:call-template>
+                            </xsl:when>
+                            <xsl:otherwise>
+                                <xsl:call-template name="trim-xml-boundary">
+                                    <xsl:with-param name="text" select="$first"/>
+                                    <xsl:with-param name="leading" select="true()"/>
+                                </xsl:call-template>
+                                <xsl:value-of select="$last"/>
+                            </xsl:otherwise>
+                        </xsl:choose>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:choose>
+                            <xsl:when test="normalize-space($last) = ''">
+                                <xsl:call-template name="trim-xml-boundary">
+                                    <xsl:with-param name="text" select="$first"/>
+                                    <xsl:with-param name="leading" select="false()"/>
+                                </xsl:call-template>
+                            </xsl:when>
+                            <xsl:otherwise>
+                                <xsl:value-of select="$first"/>
+                                <xsl:call-template name="trim-xml-boundary">
+                                    <xsl:with-param name="text" select="$last"/>
+                                    <xsl:with-param name="leading" select="false()"/>
+                                </xsl:call-template>
+                            </xsl:otherwise>
+                        </xsl:choose>
+                    </xsl:otherwise>
+                </xsl:choose>
+            </xsl:otherwise>
+        </xsl:choose>
     </xsl:template>
 </xsl:stylesheet>

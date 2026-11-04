@@ -39,6 +39,12 @@
             categoryId="org.sandbox.jdt.xml.cleanup.category">
         </command>
         <command
+            id="org.sandbox.jdt.xml.cleanup.trimDocumentation"
+            name="Trim Plain PDE Reference Sections"
+            description="Clean up PDE XML and trim outer whitespace in plain PDE reference sections"
+            categoryId="org.sandbox.jdt.xml.cleanup.category">
+        </command>
+        <command
             id="org.sandbox.jdt.xml.cleanup.command"
             name="Clean Up PDE XML Files"
             description="Optimize whitespace in PDE XML files (plugin.xml, feature.xml, etc.)"
@@ -51,6 +57,10 @@
         <handler
             commandId="org.sandbox.jdt.xml.cleanup.modernizeAppinfo"
             class="org.sandbox.jdt.internal.ui.handlers.PdeAppinfoModernizationHandler">
+        </handler>
+        <handler
+            commandId="org.sandbox.jdt.xml.cleanup.trimDocumentation"
+            class="org.sandbox.jdt.internal.ui.handlers.PdeDocumentationBoundaryHandler">
         </handler>
         <handler
             commandId="org.sandbox.jdt.xml.cleanup.analyze"
@@ -69,6 +79,26 @@
             <command
                 commandId="org.sandbox.jdt.xml.cleanup.modernizeAppinfo"
                 label="Modernize PDE appinfo (Eclipse 3.4+)"
+                style="push">
+                <visibleWhen checkEnabled="false">
+                    <or>
+                        <iterate ifEmpty="false">
+                            <adapt type="org.eclipse.core.resources.IFile">
+                                <or>
+                                    <test property="org.eclipse.core.resources.extension" value="exsd"/>
+                                    <test property="org.eclipse.core.resources.extension" value="xsd"/>
+                                </or>
+                            </adapt>
+                        </iterate>
+                        <iterate ifEmpty="false">
+                            <adapt type="org.eclipse.core.resources.IProject"/>
+                        </iterate>
+                    </or>
+                </visibleWhen>
+            </command>
+            <command
+                commandId="org.sandbox.jdt.xml.cleanup.trimDocumentation"
+                label="Trim Plain PDE Reference Sections"
                 style="push">
                 <visibleWhen checkEnabled="false">
                     <or>
@@ -144,6 +174,11 @@
                 <command
                     commandId="org.sandbox.jdt.xml.cleanup.modernizeAppinfo"
                     label="Modernize PDE appinfo (Eclipse 3.4+)"
+                    style="push">
+                </command>
+                <command
+                    commandId="org.sandbox.jdt.xml.cleanup.trimDocumentation"
+                    label="Trim Plain PDE Reference Sections"
                     style="push">
                 </command>
                 <command

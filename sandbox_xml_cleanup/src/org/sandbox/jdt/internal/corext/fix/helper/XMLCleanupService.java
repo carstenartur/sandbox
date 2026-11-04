@@ -35,15 +35,28 @@ public class XMLCleanupService {
 
 	private boolean enableIndent;
 	private final SchemaTransformationUtils.PdeSchemaTarget pdeSchemaTarget;
+	private final SchemaTransformationUtils.DocumentationPolicy documentationPolicy;
 
 	/** Creates a service preserving existing semantic conventions. */
 	public XMLCleanupService() {
-		this(SchemaTransformationUtils.PdeSchemaTarget.PRESERVE);
+		this(SchemaTransformationUtils.PdeSchemaTarget.PRESERVE, SchemaTransformationUtils.DocumentationPolicy.PRESERVE);
 	}
 
 	/** Captures the explicit option for this service instance. */
 	public XMLCleanupService(SchemaTransformationUtils.PdeSchemaTarget target) {
+		this(target, SchemaTransformationUtils.DocumentationPolicy.PRESERVE);
+	}
+
+	/** Captures the documentation option while retaining the default target. */
+	public XMLCleanupService(SchemaTransformationUtils.DocumentationPolicy policy) {
+		this(SchemaTransformationUtils.PdeSchemaTarget.PRESERVE, policy);
+	}
+
+	/** Captures both explicit options for this independent service instance. */
+	public XMLCleanupService(SchemaTransformationUtils.PdeSchemaTarget target,
+			SchemaTransformationUtils.DocumentationPolicy policy) {
 		pdeSchemaTarget= java.util.Objects.requireNonNull(target);
+		documentationPolicy= java.util.Objects.requireNonNull(policy);
 	}
 
 	/**
@@ -70,6 +83,11 @@ public class XMLCleanupService {
 		return new XMLCleanupService(target);
 	}
 
+	/** Creates a compact service with its explicit documentation option. */
+	public static XMLCleanupService compactFormatting(SchemaTransformationUtils.DocumentationPolicy policy) {
+		return new XMLCleanupService(policy);
+	}
+
 	/**
 	 * Processes one relevant XML resource.
 	 *
@@ -82,7 +100,7 @@ public class XMLCleanupService {
 			return false;
 		}
 		XMLResourceSupport.Transformation transformation=
-				XMLResourceSupport.prepare(file, enableIndent, pdeSchemaTarget, monitor);
+				XMLResourceSupport.prepare(file, enableIndent, pdeSchemaTarget, documentationPolicy, monitor);
 		if (!transformation.changed()) {
 			return false;
 		}
