@@ -66,7 +66,7 @@ class SchemaTransformationAppinfoTargetTest {
 					    <!-- keep --> <?keep metadata?>
 					    <meta.section type="examples">  </meta.section>
 					</appInfo><documentation>  literal  </documentation></annotation></schema>
-					""".formatted(namespace); //$NON-NLS-1$
+					""".replace("%s", namespace); //$NON-NLS-1$ //$NON-NLS-2$
 			String expected= indent ? """
 					<schema%s>
 						<annotation>
@@ -79,7 +79,7 @@ class SchemaTransformationAppinfoTargetTest {
 							<documentation>  literal  </documentation>
 						</annotation>
 					</schema>
-					""".formatted(namespace) //$NON-NLS-1$
+					""".replace("%s", namespace) //$NON-NLS-1$ //$NON-NLS-2$
 					: ("<schema%s><annotation><appinfo xmlns:t=\"urn:tokens\" type=\"t:Name\" custom=\"keep\">" //$NON-NLS-1$
 							+ "<meta.schema name=\"Items\"/><!-- keep --><?keep metadata?><meta.section type=\"examples\"/>" //$NON-NLS-1$
 							+ "</appinfo><documentation>  literal  </documentation></annotation></schema>").formatted(namespace); //$NON-NLS-1$
