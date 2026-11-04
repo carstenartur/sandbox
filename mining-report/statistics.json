@@ -1,12 +1,65 @@
 {
-  "totalProcessed": 960,
-  "relevant": 149,
-  "irrelevant": 811,
+  "totalProcessed": 1023,
+  "relevant": 154,
+  "irrelevant": 869,
   "duplicates": 0,
-  "green": 139,
+  "green": 144,
   "yellow": 0,
   "red": 2,
-  "irrelevantReasons": {},
+  "irrelevantReasons": {
+    "The commit involves the deletion of a configuration file (.api_filters) and does not contain any Java code changes that can be addressed by a local, semantics-preserving cleanup rule.": 1,
+    "Source evidence: Source spans do not occur in the same changed block of the named file": 4,
+    "The transformation involves inlining a local variable that is immediately returned. The DSL primarily supports expression-level or single-statement rewrites, and does not provide mechanisms to match a sequence of statements (variable declaration followed by a return statement) and collapse them into a single return statement while analyzing variable usage. This falls under \u0027statement restructuring\u0027 which is not supported.": 1,
+    "The change is exclusively within a Javadoc comment. The TriggerPattern DSL is designed for transforming Java source code (AST nodes, expressions, statements, declarations, annotations), not for parsing or modifying Javadoc comments.": 1,
+    "The commit modifies an XML configuration file (.api_filters) and not a Java source file. The TriggerPattern DSL is strictly for Java code transformations.": 1,
+    "The transformation involves multiple changes not supported by the DSL: changing a method call to an overloaded version, introducing new hardcoded literal strings not derived from the pattern, and adding new static final field declarations. The DSL cannot introduce new fields or arbitrary complex expressions/literals into the replacement that are not bound by the source pattern. This constitutes \u0027architectural refactorings\u0027 and \u0027statement restructuring\u0027.": 1,
+    "This commit adds a new constant and introduces new functionality by adding a new method override (`createControl`). It is an API addition and feature implementation, not a cleanup or transformation of existing code patterns.": 1,
+    "This commit adds a new public method (`getTreeViewer`) to expose an internal component. This is an API addition and feature enhancement, not a cleanup or transformation of existing code patterns.": 1,
+    "This commit addresses Javadoc formatting issues (fixing `\u003cp\u003e` tag usage). The TriggerPattern DSL is designed for Java code transformations, not for modifying text content within Javadoc comments.": 1,
+    "This commit modifies Maven POM files, not Java source code. It\u0027s a build configuration change.": 2,
+    "This commit modifies a plugin manifest file (META-INF/MANIFEST.MF), not Java source code.": 1,
+    "This commit involves several changes: 1) Refactoring from eager to lazy initialization with a `volatile` field, which is an architectural change not a simple expression rewrite. 2) Adding a null-check `if ($x !\u003d null)` before a method call, which involves adding control flow (`if` statement) not directly supported for expression replacements by the DSL. 3) Changing `new Timer(boolean)` to `new Timer(String, boolean)` is split across two diff hunks (removal from field declaration, addition in method body) and does not provide direct before/after evidence from a single diff hunk as required for a local cleanup rule.": 1,
+    "The Java code change to remove the inner \u0027if (removeEscapeSeq)\u0027 is a consequence of a higher-level refactoring that wraps the entire custom clipboard handling in \u0027if (!removeEscapeSeq)\u0027. Applying this transformation generically without this specific contextual guard would lead to a change in behavior, making it unsafe for a standalone cleanup rule. The other changes are new features or build system adjustments.": 1,
+    "This commit adds a new configuration file (.github/dependabot.yml) for Dependabot. It does not involve any Java code changes or cleanups expressible by the TriggerPattern DSL.": 1,
+    "This commit updates the version of a Maven Tycho plugin in an XML configuration file (.mvn/extensions.xml). It does not involve any Java code changes or cleanups expressible by the TriggerPattern DSL.": 1,
+    "This commit is an architectural refactoring that leverages the \u0027Tycho-pomless\u0027 feature to remove pom.xml files by migrating their configuration into OSGi build.properties/plugin.properties. It does not involve any Java code changes or cleanups expressible by the TriggerPattern DSL.": 1,
+    "The change modifies a version string in a Maven POM file (XML). This is not a Java code cleanup and cannot be expressed with the TriggerPattern DSL.": 1,
+    "The change is purely a stylistic reformatting of an anonymous class declaration. The TriggerPattern DSL is designed for semantic code transformations, not arbitrary formatting, especially for complex structures like anonymous classes where the exact placement of newlines and braces can vary widely.": 1,
+    "This commit includes multiple complex changes that are beyond the scope of a single, local, semantics-preserving cleanup expressible by the TriggerPattern DSL: 1) Changing a collection implementation from `HashSet` to `LinkedHashSet`, which is a specific type replacement. 2) Adding `synchronized` blocks around collection access (`clear`, `add`, `remove`), which involves inserting new control flow statements. 3) Extracting an anonymous class to a local named class and reordering its registration, which is an architectural refactoring and statement restructuring. The DSL does not support inserting new control flow, new methods, or such extensive structural rewrites.": 1,
+    "The change modifies a version string in the bundle\u0027s MANIFEST.MF file. This is not a Java code cleanup and cannot be expressed with the TriggerPattern DSL.": 1,
+    "The commit modifies build configuration files (.properties) and is not a Java code transformation. The TriggerPattern DSL is designed for Java source code cleanups.": 1,
+    "The commit modifies `META-INF/MANIFEST.MF` and `plugin.xml` to register content types and includes a version bump. These are not Java code transformations expressible by the TriggerPattern DSL.": 1,
+    "The commit removes unused `public static String` fields from a Java class. While this is a dead code cleanup, the TriggerPattern DSL is designed for pattern matching and replacement of existing code, not for identifying and removing unused declarations which requires global program analysis. The DSL does not support \u0027delete field\u0027 as a rewrite operation for unused members.": 1,
+    "The commit modifies `META-INF/MANIFEST.MF` to bump the bundle version. This is a build/versioning change, not a Java code transformation expressible by the TriggerPattern DSL.": 1,
+    "This is a highly contextual syntactic correction removing a trailing semicolon after a block. The TriggerPattern DSL is designed for semantic transformations of Java AST nodes, not for fixing arbitrary token-level syntax errors or formatter-driven changes like an unnecessary semicolon after a closing brace which is not part of a statement structure that can be easily patterned.": 1,
+    "The change is in a Jenkinsfile, which is a Groovy script, not a Java source file. The TriggerPattern DSL is specifically for Java code transformations.": 1,
+    "The change is in an XML configuration file (.mvn/extensions.xml), not a Java source file. The TriggerPattern DSL is specifically for Java code transformations.": 1,
+    "The change involves renaming a Markdown file and updating URLs within it. This is not a Java code change, and therefore not applicable to the TriggerPattern DSL.": 1,
+    "This commit changes project configuration files (e.g., .classpath, .prefs, MANIFEST.MF) to update the Java compliance level from 11 to 17. It does not involve any actual Java code changes that can be expressed as a TriggerPattern DSL rule.": 1,
+    "The cleanup involves extracting a repeated method call into a local variable before a conditional block and then modifying multiple subsequent usages within that block. This transformation spans multiple statements and requires inserting a new declaration statement at a specific point relative to existing code, which is beyond the current capabilities of the TriggerPattern DSL.": 1,
+    "The change involves replacing a static utility method call (`DebugUIPlugin.getShell()`) with an instance method call (`getShell()`). This is an architectural refactoring to change how shells are resolved, ensuring nested dialogs use the current shell of the action rather than the workbench window\u0027s shell. It relies on the specific context of the `ExportLaunchConfigurationAction` class having an appropriate `getShell()` instance method and is not a general, universally applicable semantic-preserving cleanup.": 1,
+    "The change updates a version number in a Maven extensions XML file (`.mvn/extensions.xml`). The TriggerPattern DSL is designed for Java code transformations, not XML configuration file updates.": 1,
+    "The change updates a version number in a Maven Project Object Model (POM) XML file (`pom.xml`). The TriggerPattern DSL is designed for Java code transformations, not XML configuration file updates.": 1,
+    "The change involves adding a new constructor, modifying conditional logic, and changing method call sites, which constitutes an architectural modification beyond simple expression replacement or API modernization. The DSL does not support inserting new methods, conditional blocks, or changing method signatures.": 1,
+    "The change modifies an existing `if` condition by adding a new logical clause (`|| configurations.length \u003d\u003d 0`), which alters control flow and is not supported by the DSL\u0027s current capabilities for expression replacement.": 1,
+    "The change introduces internationalization (i18n) strings, adds a new static field, and uses `NLS.bind` for complex string formatting within conditional logic. These are architectural and feature enhancements not supported by the DSL, which focuses on local expression-level transformations.": 1,
+    "The commit involves complex control flow restructuring (changing a for-each loop to an indexed for loop with a preceding call) and refactoring string building logic (moving StringBuilder instantiation and appends before a single setText call). These transformations are beyond the current expression-level or simple statement-level rewrite capabilities of the TriggerPattern DSL, which does not support arbitrary control flow changes or multi-statement refactorings.": 1,
+    "The commit modifies a manifest file (META-INF/MANIFEST.MF), which is not a Java source file. The TriggerPattern DSL is designed exclusively for Java code transformations.": 1,
+    "The commit adds new image files (.png) and modifies plugin.properties and plugin.xml files. These are not Java source files. The TriggerPattern DSL is designed exclusively for Java code transformations.": 1,
+    "The commit introduces a try-catch block around existing code and adds new conditional logic (an if statement) within the catch block, including the creation of a new exception status and throwing a new CoreException. The TriggerPattern DSL does not support inserting try-catch blocks or arbitrary control flow statements like if-else into methods.": 1,
+    "This commit addresses a specific platform-dependent UI rendering bug by changing Z-order logic to explicit visibility calls. It is a behavioral fix, not a general semantics-preserving cleanup or stylistic improvement, and applying it broadly could introduce new bugs or unintended UI behavior.": 1,
+    "This commit introduces a new overloaded utility method with an additional parameter and updates a specific call site to use it for a UI layout bug fix. The decision to pass \u0027true\u0027 for the new \u0027grabHSpace\u0027 parameter is context-dependent and crucial for correct UI behavior, making it unsuitable for a generic, semantics-preserving cleanup rule. The DSL does not support conditional logic based on UI layout requirements.": 1,
+    "This commit involves significant structural and behavioral changes, including adding new statements, refactoring complex conditional logic, modifying a method signature, and updating multiple call sites. The DSL does not support such complex transformations or method signature changes, as it is designed for local expression-level or simple statement-level rewrites.": 1,
+    "The change involves Java 16+ pattern matching for instanceof, which requires generating a new variable name based on the type. The current DSL does not support generating new variable names in a generic, reusable way. Additionally, the second part of the change involves complex statement restructuring and conditional logic insertion, which is beyond the scope of simple expression replacements in the DSL.": 1,
+    "The commit modifies a \u0027.github/dependabot.yml\u0027 file, which is a YAML configuration file, not Java code. The TriggerPattern DSL is designed for Java code transformations.": 2,
+    "The commit modifies a \u0027pom.xml\u0027 file, which is an XML configuration file, not Java code. The TriggerPattern DSL is designed for Java code transformations.": 1,
+    "The commit modifies a .gitignore file, which is not Java source code. The TriggerPattern DSL is for Java code transformations.": 1,
+    "The change involves adding the `volatile` modifier to a field declaration. The current TriggerPattern DSL supports adding annotations to methods and widening types in local variable declarations, but it does not provide a mechanism for adding arbitrary modifiers like `volatile` to field declarations.": 1,
+    "The commit modifies a META-INF/MANIFEST.MF file, which is not Java source code. The TriggerPattern DSL is for Java code transformations.": 1,
+    "The commit replaces the bitwise AND operator `\u0026` with the logical AND operator `\u0026\u0026`. The TriggerPattern DSL explicitly states that bitwise operators (`\u0026`) are NOT supported in patterns or replacements. Therefore, this transformation cannot be expressed with the current DSL capabilities.": 1,
+    "This commit is a version bump in the MANIFEST.MF file, not a Java code cleanup. The TriggerPattern DSL is designed for Java source code transformations.": 2,
+    "This commit removes a redundant \u0027else if\u0027 branch. Detecting and safely removing duplicate conditional logic based on control flow analysis is not directly supported by the current TriggerPattern DSL, which focuses on expression and method declaration transformations.": 1
+  },
   "perRepository": {
     "https://github.com/eclipse-platform/eclipse.platform.text": {
       "totalProcessed": 726,
@@ -16,9 +69,9 @@
       "red": 2
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "totalProcessed": 234,
-      "relevant": 40,
-      "green": 32,
+      "totalProcessed": 297,
+      "relevant": 45,
+      "green": 37,
       "yellow": 0,
       "red": 0
     }
@@ -98,12 +151,17 @@
       "date": "2026-11-03",
       "processed": 67,
       "relevant": 18
+    },
+    {
+      "date": "2026-11-04",
+      "processed": 63,
+      "relevant": 5
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-11-03T02:25:42.424Z",
-    "completedAt": "2026-11-03T02:35:56.440110408Z",
-    "durationSeconds": 614,
+    "startedAt": "2026-11-04T02:11:39.557Z",
+    "completedAt": "2026-11-04T02:23:27.553509298Z",
+    "durationSeconds": 707,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
@@ -114,8 +172,8 @@
   },
   "timeWindow": {
     "earliestEvaluation": "2026-10-20T02:20:11.033616597Z",
-    "latestEvaluation": "2026-11-03T02:35:51.446403163Z",
+    "latestEvaluation": "2026-11-04T02:23:22.348384924Z",
     "earliestCommitDate": "2010-01-04T11:37:57Z",
-    "latestCommitDate": "2022-08-11T05:25:03Z"
+    "latestCommitDate": "2023-06-09T09:08:25Z"
   }
 }

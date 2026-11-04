@@ -21,8 +21,8 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 4: The import org.eclipse.ui cannot be resolved",
-    "verifiedAt": "2026-11-03T02:36:01.691551276Z",
-    "verifierVersion": "7",
+    "verifiedAt": "2026-11-04T02:23:33.241846148Z",
+    "verifierVersion": "8",
     "matches": 0,
     "replacements": 0
   },

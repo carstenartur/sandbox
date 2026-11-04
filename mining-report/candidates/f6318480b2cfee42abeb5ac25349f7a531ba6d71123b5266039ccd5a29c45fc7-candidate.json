@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "f6318480b2cfee42abeb5ac25349f7a531ba6d71123b5266039ccd5a29c45fc7",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.util.HashMap\u003c$K, $V\u003e($args$)\n\u003d\u003e\nnew java.util.HashMap\u003c\u003e($args$)\n;;",
+  "beforeExample": "import java.util.Collections;\nimport java.util.HashMap;\nimport java.util.Map;\n\n// Mock classes for compilation\nclass ImageDescriptor {}\nclass Image {}\nclass Display {}\n\npublic class MyClass {\n    private Map\u003cImageDescriptor, Image\u003e fRegistry \u003d Collections.synchronizedMap(new HashMap\u003cImageDescriptor, Image\u003e(10));\n    private Display fDisplay;\n\n    public void someMethod() {\n        Map\u003cString, Integer\u003e localMap \u003d new HashMap\u003cString, Integer\u003e();\n        System.out.println(fRegistry.size());\n        System.out.println(localMap.isEmpty());\n    }\n}",
+  "afterExample": "import java.util.Collections;\nimport java.util.HashMap;\nimport java.util.Map;\n\n// Mock classes for compilation\nclass ImageDescriptor {}\nclass Image {}\nclass Display {}\n\npublic class MyClass {\n    private Map\u003cImageDescriptor, Image\u003e fRegistry \u003d Collections.synchronizedMap(new HashMap\u003c\u003e(10));\n    private Display fDisplay;\n\n    public void someMethod() {\n        Map\u003cString, Integer\u003e localMap \u003d new HashMap\u003c\u003e();\n        System.out.println(fRegistry.size());\n        System.out.println(localMap.isEmpty());\n    }\n}",
+  "negativeExample": "import java.util.Collections;\nimport java.util.HashMap;\nimport java.util.Map;\n\n// Mock classes for compilation\nclass ImageDescriptor {}\nclass Image {}\nclass Display {}\n\npublic class MyClass {\n    // This will not match because it\u0027s a ConcurrentHashMap constructor, not a HashMap.\n    private Map\u003cImageDescriptor, Image\u003e fRegistry \u003d Collections.synchronizedMap(new java.util.concurrent.ConcurrentHashMap\u003cImageDescriptor, Image\u003e(10));\n    private Display fDisplay;\n\n    public void someMethod() {\n        // This will not match because it\u0027s a ConcurrentHashMap.\n        Map\u003cString, String\u003e concurrentMap \u003d new java.util.concurrent.ConcurrentHashMap\u003cString, String\u003e();\n        System.out.println(fRegistry.size());\n        System.out.println(concurrentMap.isEmpty());\n    }\n}",
+  "targetHintFile": "java-generics.sandbox-hint",
+  "sourceCommit": "cd8fb360d1becd11128b5433ed2bdbfb2d9288ae",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "sourceEvidence": {
+    "path": "org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/ImageDescriptorRegistry.java",
+    "before": "\tprivate Map\u003cImageDescriptor, Image\u003e fRegistry \u003d Collections.synchronizedMap(new HashMap\u003cImageDescriptor, Image\u003e(10));",
+    "after": "\tprivate Map\u003cImageDescriptor, Image\u003e fRegistry \u003d Collections.synchronizedMap(new HashMap\u003c\u003e(10));",
+    "diffHunk": "diff --git a/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/ImageDescriptorRegistry.java b/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/ImageDescriptorRegistry.java\nindex e62b46e..d095432 100644\n--- a/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/ImageDescriptorRegistry.java\n+++ b/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/ImageDescriptorRegistry.java\n@@ -29,7 +29,7 @@\n  */\n public class ImageDescriptorRegistry {\n \n-\tprivate Map\u003cImageDescriptor, Image\u003e fRegistry \u003d Collections.synchronizedMap(new HashMap\u003cImageDescriptor, Image\u003e(10));\n+\tprivate Map\u003cImageDescriptor, Image\u003e fRegistry \u003d Collections.synchronizedMap(new HashMap\u003c\u003e(10));\n \tprivate Display fDisplay;\n \n \t/**\n"
+  },
+  "category": "Java Generics",
+  "summary": "Replace redundant generic type arguments in HashMap constructor calls with the diamond operator.",
+  "sourceVersion": "8",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-04T02:22:26.403224451Z",
+  "ruleFingerprint": "sha256:433c53fe39e626b001a8d00b1e337546d0c2164c250a1698af81a29fb1921df7",
+  "behaviorFingerprint": "sha256:facf76439faf0556f2c7d1e9fb98e7c070222a6abcbff51e7e4e8caaa350274a",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 10: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-11-04T02:23:45.913317875Z",
+    "verifierVersion": "8",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
