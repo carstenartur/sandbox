@@ -117,6 +117,17 @@ jobs:
           mkdir -p target/distribution-verification
           cp "$log" target/distribution-verification/maven.log
           exit "$status"
+      - name: Reclaim completed aggregate installation scratch space
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The completed aggregate gate retains its receipts under distribution-verification.
+          # Its three temporary installations are no longer used; keep fresh-install for mathematics.
+          df -h .
+          find target -mindepth 1 -maxdepth 1 -type d -name 'aggregate-installation-*' \
+            -print -exec rm -rf -- {} +
+          df -h .
       - name: Qualify native Eclipse consumers against the candidate image
         if: runner.os == 'Linux'
         shell: bash
