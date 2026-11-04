@@ -32,7 +32,7 @@ public record CandidateVerification(
 		DSL_VALIDATION,
 		DSL_PARSE,
 		GUARD_RESOLUTION,
-		/** An imported verification dependency is unavailable; no semantic verdict was reached. */
+		/** An import is unresolved: invalid source or an unavailable dependency; validity remains unestablished. */
 		DEPENDENCY_RESOLUTION,
 		BEFORE_PARSE,
 		AFTER_PARSE,

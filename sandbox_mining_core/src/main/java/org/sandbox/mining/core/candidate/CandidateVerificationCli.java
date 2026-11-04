@@ -315,11 +315,11 @@ public final class CandidateVerificationCli {
 		Files.writeString(reportDir.resolve("candidates.html"), buildHtml(candidates), //$NON-NLS-1$
 				StandardCharsets.UTF_8);
 		String summary = "- Candidates ready for review: " + count(candidates, CandidateStatus.READY_FOR_REVIEW)
-				+ "\n- Candidates failing deterministic verification: " + candidates.stream()
+				+ "\n- Other deterministic verification failures: " + candidates.stream()
 						.filter(candidate -> !isDiscarded(candidate.getStatus()) && candidate.getVerification() != null
 								&& !candidate.getVerification().successful()
 								&& candidate.getVerification().stage() != CandidateVerification.Stage.DEPENDENCY_RESOLUTION).count()
-				+ "\n- Candidates blocked by unavailable dependencies: " + candidates.stream()
+				+ "\n- Candidates with unresolved imports (invalid source or unavailable dependencies): " + candidates.stream()
 						.filter(candidate -> !isDiscarded(candidate.getStatus()) && candidate.getVerification() != null
 								&& candidate.getVerification().stage() == CandidateVerification.Stage.DEPENDENCY_RESOLUTION).count()
 				+ "\n- Rejected candidates: " + count(candidates, CandidateStatus.REJECTED)
@@ -343,7 +343,7 @@ public final class CandidateVerificationCli {
 				.append("table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:.55rem;text-align:left;vertical-align:top}") //$NON-NLS-1$
 				.append("th{background:#f4f4f4}code{overflow-wrap:anywhere}.ok{font-weight:600}.fail{font-weight:600}</style></head><body>") //$NON-NLS-1$
 				.append("<h1>Staged mining candidates</h1>") //$NON-NLS-1$
-				.append("<p>Closed not_planned reviews are REJECTED. Other closed reviews are historical SUPERSEDED entries; closure does not prove promotion. Unavailable dependencies block verification without a semantic verdict.</p>")
+				.append("<p>Closed not_planned reviews are REJECTED. Other closed reviews are historical SUPERSEDED entries; closure does not prove promotion. An unresolved import may identify invalid source or an unavailable dependency. These candidates remain unsuccessful; source validity and semantic equivalence have not been established.</p>")
 				.append("<p>Only candidates marked <strong>READY_FOR_REVIEW</strong> passed deterministic DSL, duplicate, and behavior checks.</p>") //$NON-NLS-1$
 				.append("<table><thead><tr><th>Status</th><th>Candidate</th><th>Proposal</th><th>Source</th><th>Verification</th></tr></thead><tbody>"); //$NON-NLS-1$
 		for (MiningCandidate candidate : candidates) {
