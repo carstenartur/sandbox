@@ -311,6 +311,8 @@ jobs:
           path: |
             target/distribution-verification/
             target/release-assets/
+            sandbox_cleanup_cli_dist/target/*-dist.zip
+            sandbox_cleanup_cli_dist/target/*-dist.tar.gz
           retention-days: 90
           if-no-files-found: error
 

@@ -14,6 +14,7 @@
 package org.sandbox.jdt.triggerpattern.test.policy;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -21,15 +22,19 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.zip.ZipFile;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /** Guards explicit version changes for POMs without the central Tycho parent. */
 public class ReleaseVersionContractTest {
@@ -47,6 +52,54 @@ public class ReleaseVersionContractTest {
 			"(?m)^[ \\t]*(git -c core\\.whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol diff --check)[ \\t]*$");
 
 	private record Transition(String step, String variable) {
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "1.3.8", "1.3.9-SNAPSHOT" })
+	public void cliArchivesReportTheirMavenProjectVersion(String version, @TempDir Path temporaryDirectory)
+			throws Exception {
+		Path root = repositoryRoot(WORKFLOW);
+		Path source = root.resolve("sandbox_cleanup_cli_dist");
+		Path project = temporaryDirectory.resolve("cli");
+		// Use the real descriptor and package-bound plugin; no Eclipse product is needed for this metadata contract.
+		for (String name : List.of("pom.xml", "VERSION", "README.md", "src/assembly/cli-dist.xml",
+				"src/main/scripts/sandbox-cleanup", "src/main/scripts/sandbox-cleanup.bat")) {
+			Path destination = project.resolve(name);
+			Files.createDirectories(destination.getParent());
+			Files.copy(source.resolve(name), destination);
+		}
+		Path pom = project.resolve("pom.xml");
+		Files.writeString(pom, Files.readString(pom, StandardCharsets.UTF_8)
+				.replaceFirst("<version>[^<]+</version>", "<version>" + version + "</version>"), StandardCharsets.UTF_8);
+
+		List<String> command = new ArrayList<>();
+		if (System.getProperty("os.name").startsWith("Windows")) {
+			command.addAll(List.of("cmd.exe", "/d", "/c", root.resolve("mvnw.cmd").toString()));
+		} else {
+			command.add(root.resolve("mvnw").toString());
+		}
+		command.addAll(List.of("--batch-mode", "--no-transfer-progress", "-f", pom.toString(), "package"));
+		Path log = temporaryDirectory.resolve("assembly.log");
+		Process process = new ProcessBuilder(command).directory(root.toFile()).redirectErrorStream(true)
+				.redirectOutput(log.toFile()).start();
+		try {
+			assertTrue(process.waitFor(2, TimeUnit.MINUTES), "CLI assembly did not finish: " + log);
+			assertEquals(0, process.exitValue(), Files.readString(log, StandardCharsets.UTF_8));
+		} finally {
+			process.destroyForcibly();
+		}
+		String name = "sandbox-cleanup-cli-" + version;
+		String zipVersion;
+		try (ZipFile zip = new ZipFile(project.resolve("target/" + name + "-dist.zip").toFile())) {
+			try (var stream = zip.getInputStream(zip.getEntry(name + "/VERSION"))) {
+				zipVersion = new String(stream.readAllBytes(), StandardCharsets.UTF_8).strip();
+			}
+		}
+		CommandResult tar = run(project, List.of("tar", "-xOf",
+				project.resolve("target/" + name + "-dist.tar.gz").toString(), name + "/VERSION"));
+		assertEquals(0, tar.exitCode(), tar.output());
+		assertAll(() -> assertEquals(version, zipVersion, "ZIP VERSION"),
+				() -> assertEquals(version, tar.output().strip(), "tar.gz VERSION"));
 	}
 
 	@Test
@@ -307,11 +360,15 @@ public class ReleaseVersionContractTest {
 	}
 
 	private static String workflow(String workflowPath) throws IOException {
+		return Files.readString(repositoryRoot(workflowPath).resolve(workflowPath), StandardCharsets.UTF_8);
+	}
+
+	private static Path repositoryRoot(String workflowPath) throws IOException {
 		Path current = Path.of(System.getProperty("user.dir")).toAbsolutePath().normalize();
 		while (current != null) {
 			if (Files.isRegularFile(current.resolve("pom.xml"))
 					&& Files.isRegularFile(current.resolve(workflowPath))) {
-				return Files.readString(current.resolve(workflowPath), StandardCharsets.UTF_8);
+				return current;
 			}
 			current = current.getParent();
 		}

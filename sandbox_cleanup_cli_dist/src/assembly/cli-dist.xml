@@ -24,12 +24,19 @@
 			<fileMode>0755</fileMode>
 		</fileSet>
 
-		<!-- VERSION file -->
+		<!-- Derive packaged version metadata from the Maven project version. -->
 		<fileSet>
 			<directory>${project.basedir}</directory>
 			<outputDirectory>/</outputDirectory>
 			<includes>
 				<include>VERSION</include>
+			</includes>
+			<filtered>true</filtered>
+		</fileSet>
+		<fileSet>
+			<directory>${project.basedir}</directory>
+			<outputDirectory>/</outputDirectory>
+			<includes>
 				<include>README.md</include>
 			</includes>
 		</fileSet>
