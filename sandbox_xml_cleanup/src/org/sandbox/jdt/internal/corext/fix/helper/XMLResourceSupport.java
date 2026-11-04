@@ -105,6 +105,12 @@ public final class XMLResourceSupport {
 	/** Reads, transforms and validates an XML resource without changing it. */
 	public static Transformation prepare(IFile file, boolean enableIndent,
 			IProgressMonitor monitor) throws CoreException {
+		return prepare(file, enableIndent, SchemaTransformationUtils.DocumentationPolicy.PRESERVE, monitor);
+	}
+
+	/** Prepares cleanup with a caller-selected documentation policy. */
+	public static Transformation prepare(IFile file, boolean enableIndent,
+			SchemaTransformationUtils.DocumentationPolicy policy, IProgressMonitor monitor) throws CoreException {
 		checkCanceled(monitor);
 		ensureNoDirtyBuffer(file);
 		Snapshot snapshot= read(file);
@@ -112,7 +118,7 @@ public final class XMLResourceSupport {
 		String transformed;
 		try {
 			transformed= SchemaTransformationUtils.transform(snapshot.content,
-					snapshot.charset, enableIndent);
+					snapshot.charset, enableIndent, policy);
 		} catch (Exception e) {
 			throw error("Failed to transform XML resource: " + file.getFullPath(), e); //$NON-NLS-1$
 		}

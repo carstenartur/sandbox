@@ -84,6 +84,38 @@ The implementation materializes the complete document in memory and therefore re
 
 After transformation, `XMLResourceSupport` parses the output with external DTD/schema/entity access disabled. Malformed output is rejected before any workspace write.
 
+### Optional reference-section boundaries
+
+`SchemaTransformationUtils.DocumentationPolicy.PRESERVE` is the default for
+existing callers. `TRIM_PLAIN_SECTION_BOUNDARIES` removes only outer XML
+whitespace in plain, nonblank documentation for the known `since`,
+`apiinfo`, `implementation`, and `copyright` sections. The stylesheet
+requires the unqualified PDE vocabulary, a root schema annotation containing
+`meta.schema`, and an ordinary two-child reference annotation: one recognized
+`appInfo`/`appinfo` metadata container followed by its documentation.
+Unknown payloads or ambiguous ordering are excluded.
+
+The full PDE loader already trims those section boundaries before exposing
+`DocumentSection` text or generating HTML. Abbreviated loading omits section
+descriptions, and `SchemaAnnotationHandler` excludes `meta.section` text.
+By contrast, overview, element, and attribute descriptions have raw lightweight
+or lazy readers. They remain untouched. Tests use different real source URLs
+for original and transformed schemas and compare the lazy getters directly;
+they never normalize observed strings or reuse the original URL for both sides.
+
+Literal HTML/pre/code, examples, markup sections, unknown sections, non-text
+children, effective `xml:space="preserve"`, and blank documentation are
+protected. Blank documentation retains a text node for released PDE readers.
+CDATA sources are securely validated but retained without serialization.
+The trim routine uses binary subdivision to bound recursion depth for long
+whitespace runs; `normalize-space` is only a predicate and never supplies
+replacement text, so interior spacing is preserved.
+
+The explicit standalone command configures a new `XMLCleanupService` whose
+policy is immutable. Ordinary commands and marker fixes retain `PRESERVE`.
+Both paths share charset/BOM handling, well-formedness checks, dirty-buffer
+protection, and optimistic resource-conflict detection.
+
 ## Main components
 
 ### `XMLResourceSupport`

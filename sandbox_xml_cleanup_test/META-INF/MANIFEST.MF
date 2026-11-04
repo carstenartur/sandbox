@@ -8,6 +8,7 @@ Bundle-RequiredExecutionEnvironment: JavaSE-25
 Require-Bundle: org.junit,
  org.eclipse.jdt.ui,
  org.eclipse.jdt.core,
+ org.eclipse.pde.core,
  sandbox_test_commons
 Bundle-ActivationPolicy: lazy
 Eclipse-BundleShape: dir

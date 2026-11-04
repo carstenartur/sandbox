@@ -23,6 +23,21 @@ The **XML Cleanup** plugin optimizes Eclipse PDE XML files (plugin.xml, feature.
 3. Enable **Optimize PDE XML files**
 4. Optionally enable **Enable XML indentation (increases file size)**
 
+### Trim plain reference-section boundaries
+
+For standalone PDE use, choose **Trim Plain PDE Reference Sections** in a
+schema/project context menu or the **XML Cleanup** main menu. This explicit
+command applies compact formatting and removes outer XML whitespace only from
+plain, nonblank documentation in the `since`, `apiinfo`,
+`implementation`, and `copyright` reference sections.
+
+The ordinary cleanup command and marker fixes preserve all documentation text.
+Overview, element, and attribute descriptions retain their original boundaries:
+PDE's lazy readers expose those strings verbatim. Examples, markup sections,
+unknown section types, HTML/pre/code text, mixed content, `xml:space="preserve"`,
+blank documentation, and CDATA-containing files remain unchanged. Interior
+spaces, tabs, and line breaks are never normalized by this option.
+
 ### Example Transformations
 
 **Before:**
@@ -81,7 +96,7 @@ The cleanup processes specific PDE files:
 - Retain all text inside unknown elements and text subtrees
 - Never rewrite text using a leading-space substitution after serialization
 
-## Guarantees
+## Default formatting guarantees
 
 ✅ **Semantic Equivalence**: The XML structure and content remain identical
 - Verified using DOM comparisons, including exact whitespace-sensitive regression tests
