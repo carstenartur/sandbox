@@ -62,9 +62,7 @@ final class FocusedCleanupConfigurationScreenshots {
 			new CleanupTab("Platform Status (Sandbox)", "sandbox_platform_helper_help", //$NON-NLS-1$ //$NON-NLS-2$
 					"platform-status-cleanup.png"), //$NON-NLS-1$
 			new CleanupTab("Use General Type (Sandbox)", "sandbox_use_general_type_help", //$NON-NLS-1$ //$NON-NLS-2$
-					"use-general-type-cleanup.png"), //$NON-NLS-1$
-			new CleanupTab("XML Cleanup (Sandbox)", "sandbox_xml_cleanup_help", //$NON-NLS-1$ //$NON-NLS-2$
-					"xml-cleanup.png")); //$NON-NLS-1$
+					"use-general-type-cleanup.png")); //$NON-NLS-1$
 
 	private static final int SCREENSHOT_CLIENT_WIDTH= 1280;
 	private static final int SCREENSHOT_CLIENT_HEIGHT= 900;
