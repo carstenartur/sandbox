@@ -1,0 +1,67 @@
+[
+  {
+    "id": 41888625177,
+    "name": "Java CI with Maven",
+    "event": "push",
+    "head_sha": "39cfdd4f9c4bad4ed1c6d91b55cda1a4d054ed0c",
+    "status": "completed",
+    "conclusion": "success",
+    "run_number": 8812,
+    "run_attempt": 1,
+    "created_at": "2026-11-04T18:35:18Z",
+    "updated_at": "2026-11-04T19:00:18Z",
+    "html_url": "https://github.com/carstenartur/sandbox/actions/runs/41888625177"
+  },
+  {
+    "id": 41888625625,
+    "name": "Core Module Build",
+    "event": "push",
+    "head_sha": "39cfdd4f9c4bad4ed1c6d91b55cda1a4d054ed0c",
+    "status": "completed",
+    "conclusion": "success",
+    "run_number": 2811,
+    "run_attempt": 1,
+    "created_at": "2026-11-04T18:35:18Z",
+    "updated_at": "2026-11-04T18:37:09Z",
+    "html_url": "https://github.com/carstenartur/sandbox/actions/runs/41888625625"
+  },
+  {
+    "id": 41888625480,
+    "name": "CodeQL",
+    "event": "push",
+    "head_sha": "39cfdd4f9c4bad4ed1c6d91b55cda1a4d054ed0c",
+    "status": "completed",
+    "conclusion": "success",
+    "run_number": 8614,
+    "run_attempt": 1,
+    "created_at": "2026-11-04T18:35:18Z",
+    "updated_at": "2026-11-04T18:51:10Z",
+    "html_url": "https://github.com/carstenartur/sandbox/actions/runs/41888625480"
+  },
+  {
+    "id": 41888625409,
+    "name": "Codacy Security Scan",
+    "event": "push",
+    "head_sha": "39cfdd4f9c4bad4ed1c6d91b55cda1a4d054ed0c",
+    "status": "completed",
+    "conclusion": "success",
+    "run_number": 8473,
+    "run_attempt": 1,
+    "created_at": "2026-11-04T18:35:18Z",
+    "updated_at": "2026-11-04T18:45:54Z",
+    "html_url": "https://github.com/carstenartur/sandbox/actions/runs/41888625409"
+  },
+  {
+    "id": 41888625169,
+    "name": "Test Source Inventory",
+    "event": "push",
+    "head_sha": "39cfdd4f9c4bad4ed1c6d91b55cda1a4d054ed0c",
+    "status": "completed",
+    "conclusion": "success",
+    "run_number": 7058,
+    "run_attempt": 1,
+    "created_at": "2026-11-04T18:35:18Z",
+    "updated_at": "2026-11-04T18:35:36Z",
+    "html_url": "https://github.com/carstenartur/sandbox/actions/runs/41888625169"
+  }
+]
