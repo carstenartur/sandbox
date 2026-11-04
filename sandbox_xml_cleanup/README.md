@@ -12,7 +12,7 @@ The **XML Cleanup** plugin optimizes Eclipse PDE XML files (plugin.xml, feature.
 - 🎯 **PDE-Specific** - Focuses on Eclipse plugin descriptor files
 - 📏 **Indentation** - Generate tab indentation in known structural containers (optional)
 - ♻️ **Idempotent** - Running multiple times produces same result
-- ✅ **Semantic Preservation** - XML structure and content unchanged
+- ✅ **Content Preservation** - Preserve PDE behavior, text, attributes, and protected comments
 
 ## Quick Start
 
@@ -81,10 +81,29 @@ The cleanup processes specific PDE files:
 - Retain all text inside unknown elements and text subtrees
 - Never rewrite text using a leading-space substitution after serialization
 
+### Generated PDE Schema Preamble
+
+Ordinary formatting removes only the exact comment `<!-- Schema file written by PDE -->`
+when it occurs before the root of a recognized PDE schema. Recognition requires the
+unprefixed `schema/annotation/(appInfo|appinfo)/meta.schema` path in either the empty
+namespace or the consistent default XSD namespace used by the PDE writer.
+
+Human comments, nonexact text or spacing, processing instructions, and identical
+comments inside or after the root are retained in order. Unknown or prefixed
+vocabularies and a root with `xml:space="preserve"` retain the preamble too.
+CDATA-containing files are securely validated and retained as a whole, including
+their preamble and declaration, because XSLT serialization loses CDATA boundaries.
+Documentation, examples, mixed content, and blank documentation text remain intact.
+
+This is part of normal formatting in both compact and indented modes; no extra
+option is needed. A later PDE schema-editor save can regenerate the marker, and
+the next formatting pass removes it again.
+
 ## Guarantees
 
-✅ **Semantic Equivalence**: The XML structure and content remain identical
-- Verified using DOM comparisons, including exact whitespace-sensitive regression tests
+✅ **PDE Consumer Equivalence**: Schema behavior and protected content remain unchanged
+- Verified using full, raw lazy, lightweight annotation, and generated HTML consumers
+- DOM comparisons retain all comments except the explicitly permitted generated preamble
 - Element hierarchy preserved
 - Attribute values unchanged
 - Text content intact
@@ -101,7 +120,7 @@ The cleanup processes specific PDE files:
 ## Benefits
 
 ### Size Reduction
-- Smaller files load faster
+- Fewer source bytes; loading or startup speed is not established by byte counts alone
 - Reduced storage requirements
 - Faster git operations
 
@@ -162,9 +181,9 @@ See [TODO.md](TODO.md) for planned improvements.
 ## Safety
 
 The cleanup is safe to use:
-- Preserves XML semantics
+- Preserves PDE schema behavior and protected XML content
 - Verified by comprehensive tests
-- Only modifies whitespace
+- Changes structural layout and removes only the exact generated preamble described above
 - No data loss
 
 Always use version control when running automated cleanups!

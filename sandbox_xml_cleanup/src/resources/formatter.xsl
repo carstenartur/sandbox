@@ -8,7 +8,18 @@
     <xsl:param name="indent" select="false()"/>
 
     <xsl:template match="/">
-        <xsl:for-each select="*|comment()|processing-instruction()">
+        <!-- The PDE writer emits this provenance marker before schemas using
+             these unprefixed QName and namespace conventions. Keep all other
+             comments, including identical text inside or after the root. -->
+        <xsl:variable name="pde-schema" select="
+            /*[(self::schema or self::xs:schema) and name() = 'schema'
+                and not(@xml:space = 'preserve')]
+            /*[name() = 'annotation' and namespace-uri() = namespace-uri(/*)]
+            /*[(name() = 'appInfo' or name() = 'appinfo') and namespace-uri() = namespace-uri(/*)]
+            /*[name() = 'meta.schema' and namespace-uri() = namespace-uri(/*)]"/>
+        <xsl:for-each select="*|processing-instruction()|comment()[
+            not($pde-schema and not(preceding-sibling::*)
+                and . = ' Schema file written by PDE ')]">
             <xsl:if test="$indent"><xsl:text>&#10;</xsl:text></xsl:if>
             <xsl:apply-templates select="."/>
         </xsl:for-each>
