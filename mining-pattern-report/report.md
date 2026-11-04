@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-11-03
+# Refactoring Mining Report — 2026-11-04
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -9,7 +9,7 @@
 | eclipse.platform | 311 | 71 | 4 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
-| sandbox | 1881 | 182 | 12 |
+| sandbox | 1897 | 182 | 12 |
 
 ## Details
 ### eclipse.jdt.core
@@ -491,9 +491,9 @@
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/OpenAiCompatibleClient.java:293` — `choices == null || choices.isEmpty()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:301` — `candidates == null || candidates.isEmpty()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:322` — `parts == null || parts.isEmpty()`
-- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:519` — `candidates == null || candidates.isEmpty()`
-- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:542` — `parts == null || parts.isEmpty()`
-- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:601` — `json == null || json.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:526` — `candidates == null || candidates.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:549` — `parts == null || parts.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:608` — `json == null || json.isEmpty()`
 - `sandbox_mining_cli/src/main/java/org/sandbox/mining/scanner/SourceScanner.java:66` — `subPaths == null || subPaths.isEmpty()`
 - `sandbox_common/src/org/sandbox/jdt/cleanup/multifile/JavaProjectCompilationUnits.java:270` — `currentScope == null || currentScope.isEmpty()`
 - `sandbox_common/src/org/sandbox/jdt/cleanup/multifile/RelatedCompilationUnitSearch.java:156` — `projects == null || projects.isEmpty()`

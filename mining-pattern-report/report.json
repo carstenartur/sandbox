@@ -33,7 +33,7 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1881,
+        "files": 1897,
         "matches": 182,
         "rules": 12
       }
@@ -3361,7 +3361,7 @@
       "hintFile": "string-equals",
       "rule": "string-equals.null-or-empty.review",
       "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java",
-      "line": 519,
+      "line": 526,
       "matchedCode": "candidates == null || candidates.isEmpty()"
     },
     {
@@ -3369,7 +3369,7 @@
       "hintFile": "string-equals",
       "rule": "string-equals.null-or-empty.review",
       "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java",
-      "line": 542,
+      "line": 549,
       "matchedCode": "parts == null || parts.isEmpty()"
     },
     {
@@ -3377,7 +3377,7 @@
       "hintFile": "string-equals",
       "rule": "string-equals.null-or-empty.review",
       "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java",
-      "line": 601,
+      "line": 608,
       "matchedCode": "json == null || json.isEmpty()"
     },
     {
