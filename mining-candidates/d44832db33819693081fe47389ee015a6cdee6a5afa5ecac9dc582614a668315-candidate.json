@@ -20,8 +20,8 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 12: The public type CodeMiningManager must be defined in its own file",
-    "verifiedAt": "2026-11-03T02:36:10.469231420Z",
-    "verifierVersion": "7",
+    "verifiedAt": "2026-11-04T02:23:42.560899337Z",
+    "verifierVersion": "8",
     "matches": 0,
     "replacements": 0
   },

@@ -21,8 +21,8 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 2: The import java.util.function.Runnable cannot be resolved",
-    "verifiedAt": "2026-11-03T02:36:13.448014819Z",
-    "verifierVersion": "7",
+    "verifiedAt": "2026-11-04T02:23:45.676454649Z",
+    "verifierVersion": "8",
     "matches": 0,
     "replacements": 0
   },

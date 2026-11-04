@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "19c23ad5cd8402f941e6d8a311b7c57f59e605b9b223c7600c0a958017a72e4b",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: integer.tostring.primitive\u003e\n\u003c!description: Replace Integer.valueOf(i).toString() with Integer.toString(i) to avoid useless wrapper creation.\u003e\n\u003c!severity: HINT\u003e\njava.lang.Integer.valueOf($x).toString()\n\u003d\u003e\njava.lang.Integer.toString($x)\n;;",
+  "beforeExample": "public class MyConverter {\n    public String intToString(int value) {\n        return Integer.valueOf(value).toString();\n    }\n}",
+  "afterExample": "public class MyConverter {\n    public String intToString(int value) {\n        return Integer.toString(value);\n    }\n}",
+  "negativeExample": "public class MyConverter {\n    public String integerToString(Integer value) {\n        // This should not match, as \u0027value\u0027 is already an Integer object.\n        return value.toString();\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "cd62eda9d8d0f524fb9e2d28af89d18ee732cc8f",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "sourceEvidence": {
+    "path": "org.eclipse.debug.core/core/org/eclipse/debug/internal/core/LaunchConfigurationWorkingCopy.java",
+    "before": "\t\t\t\t\ttypes.add(Integer.valueOf(resource.getType()).toString());",
+    "after": "\t\t\t\t\ttypes.add(Integer.toString(resource.getType()));",
+    "diffHunk": "diff --git a/org.eclipse.debug.core/core/org/eclipse/debug/internal/core/LaunchConfigurationWorkingCopy.java b/org.eclipse.debug.core/core/org/eclipse/debug/internal/core/LaunchConfigurationWorkingCopy.java\nindex dbd2c96..74e4377 100644\n--- a/org.eclipse.debug.core/core/org/eclipse/debug/internal/core/LaunchConfigurationWorkingCopy.java\n+++ b/org.eclipse.debug.core/core/org/eclipse/debug/internal/core/LaunchConfigurationWorkingCopy.java\n@@ -672,7 +672,7 @@\n \t\t\tfor (IResource resource : resources) {\n \t\t\t\tif(resource !\u003d null) {\n \t\t\t\t\tpaths.add(resource.getFullPath().toPortableString());\n-\t\t\t\t\ttypes.add(Integer.valueOf(resource.getType()).toString());\n+\t\t\t\t\ttypes.add(Integer.toString(resource.getType()));\n \t\t\t\t}\n \t\t\t}\n \t\t}\n"
+  },
+  "category": "performance",
+  "summary": "Avoids creating unnecessary Integer wrapper objects by directly calling Integer.toString(int).",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-04T02:23:22.395672824Z",
+  "ruleFingerprint": "sha256:a048b9b85afc17d05322c1c47a8cc67d6833af09d15092017702e9240ca56cc0",
+  "behaviorFingerprint": "sha256:fc223f58c09e92d6abd1f1e0f2815cf401287a68ef4106f2fc2b0c75cc1c61c9",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-11-04T02:23:45.935434558Z",
+    "verifierVersion": "8",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -21,8 +21,8 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 6: The public type MyResourceChecker must be defined in its own file",
-    "verifiedAt": "2026-11-03T02:36:03.721315772Z",
-    "verifierVersion": "7",
+    "verifiedAt": "2026-11-04T02:23:35.295102636Z",
+    "verifierVersion": "8",
     "matches": 0,
     "replacements": 0
   },

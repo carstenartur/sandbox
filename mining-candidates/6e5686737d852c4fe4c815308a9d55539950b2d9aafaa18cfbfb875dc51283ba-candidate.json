@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "6e5686737d852c4fe4c815308a9d55539950b2d9aafaa18cfbfb875dc51283ba",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\"org.eclipse.ui.views.ResourceNavigator\"\n\u003d\u003e org.eclipse.ui.IPageLayout.ID_PROJECT_EXPLORER\n;;",
+  "beforeExample": "import org.eclipse.ui.IWorkbenchPage;\nimport org.eclipse.ui.PartInitException;\nimport org.eclipse.ui.IViewPart;\n\npublic class TestClass {\n    public void testMethod(IWorkbenchPage page) throws PartInitException {\n        IViewPart part \u003d page.showView(\"org.eclipse.ui.views.ResourceNavigator\");\n    }\n}",
+  "afterExample": "import org.eclipse.ui.IPageLayout;\nimport org.eclipse.ui.IWorkbenchPage;\nimport org.eclipse.ui.PartInitException;\nimport org.eclipse.ui.IViewPart;\n\npublic class TestClass {\n    public void testMethod(IWorkbenchPage page) throws PartInitException {\n        IViewPart part \u003d page.showView(IPageLayout.ID_PROJECT_EXPLORER);\n    }\n}",
+  "negativeExample": "import org.eclipse.ui.IWorkbenchPage;\nimport org.eclipse.ui.PartInitException;\nimport org.eclipse.ui.IViewPart;\n\npublic class TestClass {\n    public void testMethod(IWorkbenchPage page) throws PartInitException {\n        IViewPart part \u003d page.showView(\"com.example.SomeOtherView\");\n    }\n}",
+  "targetHintFile": "eclipse-platform.sandbox-hint",
+  "sourceCommit": "bfd4497882b1d442db63b6bbf76fec3571183808",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "sourceEvidence": {
+    "path": "org.eclipse.debug.tests/src/org/eclipse/debug/tests/launching/RefreshTabTests.java",
+    "before": "\t\t\tpart \u003d page.showView(\"org.eclipse.ui.views.ResourceNavigator\"); //$NON-NLS-1$",
+    "after": "\t\t\tpart \u003d page.showView(IPageLayout.ID_PROJECT_EXPLORER);",
+    "diffHunk": "diff --git a/org.eclipse.debug.tests/src/org/eclipse/debug/tests/launching/RefreshTabTests.java b/org.eclipse.debug.tests/src/org/eclipse/debug/tests/launching/RefreshTabTests.java\nindex 669bd0a..aa2a1eb 100644\n--- a/org.eclipse.debug.tests/src/org/eclipse/debug/tests/launching/RefreshTabTests.java\n+++ b/org.eclipse.debug.tests/src/org/eclipse/debug/tests/launching/RefreshTabTests.java\n@@ -54,14 +55,14 @@\n \t\tassertNotNull(\"The active workbench page should not be null\", page); //$NON-NLS-1$\n \t\tIViewPart part;\n \t\ttry {\n-\t\t\tpart \u003d page.showView(\"org.eclipse.ui.views.ResourceNavigator\"); //$NON-NLS-1$\n+\t\t\tpart \u003d page.showView(IPageLayout.ID_PROJECT_EXPLORER);\n \t\t\tIWorkbenchPartSite site \u003d part.getSite();\n-\t\t\tassertNotNull(\"The part site for org.eclipse.ui.views.ResourceNavigator should not be null \", site); //$NON-NLS-1$\n+\t\t\tassertNotNull(\"The part site for Project Explorere should not be null \", site); //$NON-NLS-1$\n \t\t\tISelectionProvider provider \u003d site.getSelectionProvider();\n-\t\t\tassertNotNull(\"the selection provider should not be null for org.eclipse.ui.views.ResourceNavigator\", provider); //$NON-NLS-1$\n+\t\t\tassertNotNull(\"the selection provider should not be null for Project Explorer view\", provider); //$NON-NLS-1$\n \t\t\tprovider.setSelection(new StructuredSelection(resource));\n \t\t} catch (PartInitException e) {\n-\t\t\tassertNotNull(\"Failed to open navigator view\", null); //$NON-NLS-1$\n+\t\t\tassertNotNull(\"Failed to open project explorer view\", null); //$NON-NLS-1$\n \t\t}\n \t}\n \n"
+  },
+  "category": "API Modernization",
+  "summary": "Replaces the hardcoded string literal for the Eclipse Resource Navigator view ID with the `IPageLayout.ID_PROJECT_EXPLORER` constant for improved maintainability and future compatibility.",
+  "sourceVersion": "8",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-04T02:21:10.768366653Z",
+  "ruleFingerprint": "sha256:ed7526fbcbf952785ded3b3a6f8e04b3dcfcb32db231c0cbe2d9625a6a3b419c",
+  "behaviorFingerprint": "sha256:fb9cd44ffd81358185dc4d2ce7c4320c5387cfb8aea3f4ca6c263d7a92a6b43d",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The import org.eclipse.ui cannot be resolved",
+    "verifiedAt": "2026-11-04T02:23:45.884183213Z",
+    "verifierVersion": "8",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

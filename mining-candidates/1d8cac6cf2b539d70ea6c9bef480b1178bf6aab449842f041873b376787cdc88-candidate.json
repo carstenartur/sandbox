@@ -21,8 +21,8 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 3: The import org.eclipse.jface.text.source.ICharacterPairMatcher cannot be resolved",
-    "verifiedAt": "2026-11-03T02:36:05.457530640Z",
-    "verifierVersion": "7",
+    "verifiedAt": "2026-11-04T02:23:37.141734347Z",
+    "verifierVersion": "8",
     "matches": 0,
     "replacements": 0
   },
