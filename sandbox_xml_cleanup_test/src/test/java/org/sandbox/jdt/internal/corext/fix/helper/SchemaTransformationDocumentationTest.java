@@ -26,12 +26,67 @@ import javax.xml.transform.TransformerException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.sandbox.jdt.internal.corext.fix.helper.SchemaTransformationUtils.DocumentationPolicy;
+import org.sandbox.jdt.internal.corext.fix.helper.SchemaTransformationUtils.PdeSchemaTarget;
 import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 
 class SchemaTransformationDocumentationTest {
+
+	@ParameterizedTest
+	@CsvSource({
+			"false, false, false", //$NON-NLS-1$
+			"false, false, true", //$NON-NLS-1$
+			"false, true, false", //$NON-NLS-1$
+			"false, true, true", //$NON-NLS-1$
+			"true, false, false", //$NON-NLS-1$
+			"true, false, true", //$NON-NLS-1$
+			"true, true, false", //$NON-NLS-1$
+			"true, true, true" }) //$NON-NLS-1$
+	void combinesIndependentPoliciesOnTheFirstPass(boolean modernize, boolean trim, boolean indent) throws Exception {
+		String source= """
+				<schema>
+				  <annotation><appInfo>
+				    <meta.schema plugin="example" id="items" name="Items"> \t </meta.schema>
+				  </appInfo><documentation>  Overview  stays&#9;raw  </documentation></annotation>
+				  <annotation><appInfo>
+				    <meta.section type="apiinfo"> \t </meta.section>
+				  </appInfo><documentation> &#9;Alpha  beta&#10;  Gamma&#9;delta &#13; </documentation></annotation>
+				</schema>
+				"""; //$NON-NLS-1$
+		PdeSchemaTarget target= modernize ? PdeSchemaTarget.ECLIPSE_3_4_OR_NEWER : PdeSchemaTarget.PRESERVE;
+		DocumentationPolicy policy= trim ? DocumentationPolicy.TRIM_PLAIN_SECTION_BOUNDARIES : DocumentationPolicy.PRESERVE;
+		String result= SchemaTransformationUtils.transform(source, StandardCharsets.UTF_8, indent, target, policy);
+		Element root= parse(result);
+		assertEquals(2, root.getElementsByTagName(modernize ? "appinfo" : "appInfo").getLength(), result); //$NON-NLS-1$ //$NON-NLS-2$
+		assertEquals(0, root.getElementsByTagName(modernize ? "appInfo" : "appinfo").getLength(), result); //$NON-NLS-1$ //$NON-NLS-2$
+		assertEquals("", root.getElementsByTagName("meta.schema").item(0).getTextContent()); //$NON-NLS-1$ //$NON-NLS-2$
+		assertEquals("", root.getElementsByTagName("meta.section").item(0).getTextContent()); //$NON-NLS-1$ //$NON-NLS-2$
+		assertEquals("  Overview  stays\traw  ", root.getElementsByTagName("documentation").item(0).getTextContent()); //$NON-NLS-1$ //$NON-NLS-2$
+		assertEquals(trim ? "Alpha  beta\n  Gamma\tdelta" : " \tAlpha  beta\n  Gamma\tdelta \r ", //$NON-NLS-1$ //$NON-NLS-2$
+				root.getElementsByTagName("documentation").item(1).getTextContent()); //$NON-NLS-1$
+		assertTrue(result.contains(indent ? "\n\t<annotation>" : "<schema><annotation>"), result); //$NON-NLS-1$ //$NON-NLS-2$
+		assertEquals(result, SchemaTransformationUtils.transform(result, StandardCharsets.UTF_8, indent, target, policy));
+		if (!trim) {
+			assertEquals(result, SchemaTransformationUtils.transform(source, StandardCharsets.UTF_8, indent, target));
+		}
+		if (!modernize) {
+			assertEquals(result, transform(source, indent, policy));
+		}
+		if (!modernize && !trim) {
+			assertEquals(result, SchemaTransformationUtils.transform(source, StandardCharsets.UTF_8, indent));
+		}
+	}
+
+	@Test
+	void rejectsNullCombinedPolicySelections() {
+		assertThrows(NullPointerException.class, () -> SchemaTransformationUtils.transform("<schema/>", //$NON-NLS-1$
+				StandardCharsets.UTF_8, false, null, DocumentationPolicy.PRESERVE));
+		assertThrows(NullPointerException.class, () -> SchemaTransformationUtils.transform("<schema/>", //$NON-NLS-1$
+				StandardCharsets.UTF_8, false, PdeSchemaTarget.PRESERVE, null));
+	}
 
 	@ParameterizedTest
 	@ValueSource(booleans = { false, true })
