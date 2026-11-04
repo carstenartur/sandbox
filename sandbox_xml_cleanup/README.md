@@ -26,6 +26,26 @@ To inspect opportunities first, choose **Find PDE XML Cleanup Problems**. Analys
 
 XML formatting is no longer registered in Java **Source** → **Clean Up...** profiles or Java save actions. Existing XML settings in stored Java profiles are ignored. Use the PDE commands for XML resources, including projects without Java source.
 
+### Modernize metadata for a known target
+
+When the schema's minimum target is Eclipse 3.4 or newer, choose **Modernize
+PDE appinfo (Eclipse 3.4+)** in the context menu of a schema/project or in
+**XML Cleanup** on the main menu. This explicit standalone command chooses the
+new convention and applies compact formatting. The cleanup does not infer the
+target from the running IDE or from a project. The ordinary cleanup command
+and formatting marker fixes preserve existing case.
+
+The target option is available through this standalone command. JDT cleanup
+profiles and Java save actions cannot represent changes to unrelated XML files
+with their compilation-unit change API.
+
+This option changes legacy `appInfo` to `appinfo` only for recognized
+`meta.schema`, `meta.element`, `meta.attribute`, and `meta.section` containers in
+their PDE annotation contexts. Attributes and documentation stay unchanged.
+Recognized metadata whitespace receives the ordinary cleanup formatting in the
+same pass. Unknown or mixed payloads, `xml:space="preserve"`, and CDATA-containing
+files are retained. This is a compatibility choice, not a size optimization.
+
 ### Example Transformations
 
 **Before:**
@@ -75,7 +95,7 @@ The cleanup processes specific PDE files:
 - Retain all text inside unknown elements and text subtrees
 - Never rewrite text using a leading-space substitution after serialization
 
-## Guarantees
+## Default formatting guarantees
 
 ✅ **Semantic Equivalence**: The XML structure and content remain identical
 - Verified using DOM comparisons, including exact whitespace-sensitive regression tests

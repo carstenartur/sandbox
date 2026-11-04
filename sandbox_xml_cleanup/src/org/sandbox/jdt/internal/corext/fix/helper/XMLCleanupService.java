@@ -34,6 +34,17 @@ public class XMLCleanupService {
 	private static final Set<String> PDE_DIRECTORIES= Set.of("OSGI-INF", "META-INF"); //$NON-NLS-1$ //$NON-NLS-2$
 
 	private boolean enableIndent;
+	private final SchemaTransformationUtils.PdeSchemaTarget pdeSchemaTarget;
+
+	/** Creates a service preserving existing semantic conventions. */
+	public XMLCleanupService() {
+		this(SchemaTransformationUtils.PdeSchemaTarget.PRESERVE);
+	}
+
+	/** Captures the explicit option for this service instance. */
+	public XMLCleanupService(SchemaTransformationUtils.PdeSchemaTarget target) {
+		pdeSchemaTarget= java.util.Objects.requireNonNull(target);
+	}
 
 	/**
 	 * Creates an independent service for the fixed compact formatting mode used
@@ -54,6 +65,11 @@ public class XMLCleanupService {
 		enableIndent= enable;
 	}
 
+	/** Creates a compact service with its explicit semantic option. */
+	public static XMLCleanupService compactFormatting(SchemaTransformationUtils.PdeSchemaTarget target) {
+		return new XMLCleanupService(target);
+	}
+
 	/**
 	 * Processes one relevant XML resource.
 	 *
@@ -66,7 +82,7 @@ public class XMLCleanupService {
 			return false;
 		}
 		XMLResourceSupport.Transformation transformation=
-				XMLResourceSupport.prepare(file, enableIndent, monitor);
+				XMLResourceSupport.prepare(file, enableIndent, pdeSchemaTarget, monitor);
 		if (!transformation.changed()) {
 			return false;
 		}

@@ -33,6 +33,12 @@
             categoryId="org.sandbox.jdt.xml.cleanup.category">
         </command>
         <command
+            id="org.sandbox.jdt.xml.cleanup.modernizeAppinfo"
+            name="Modernize PDE appinfo (Eclipse 3.4+)"
+            description="Clean up PDE XML and use appinfo for a target of Eclipse 3.4 or newer"
+            categoryId="org.sandbox.jdt.xml.cleanup.category">
+        </command>
+        <command
             id="org.sandbox.jdt.xml.cleanup.command"
             name="Clean Up PDE XML Files"
             description="Optimize whitespace in PDE XML files (plugin.xml, feature.xml, etc.)"
@@ -42,6 +48,10 @@
 
     <!-- PDE Integration: Command handlers -->
     <extension point="org.eclipse.ui.handlers">
+        <handler
+            commandId="org.sandbox.jdt.xml.cleanup.modernizeAppinfo"
+            class="org.sandbox.jdt.internal.ui.handlers.PdeAppinfoModernizationHandler">
+        </handler>
         <handler
             commandId="org.sandbox.jdt.xml.cleanup.analyze"
             class="org.sandbox.jdt.internal.ui.handlers.XMLCleanupMarkerHandler">
@@ -56,6 +66,26 @@
     <extension point="org.eclipse.ui.menus">
         <!-- Context menu on XML files -->
         <menuContribution locationURI="popup:org.eclipse.ui.popup.any?after=additions">
+            <command
+                commandId="org.sandbox.jdt.xml.cleanup.modernizeAppinfo"
+                label="Modernize PDE appinfo (Eclipse 3.4+)"
+                style="push">
+                <visibleWhen checkEnabled="false">
+                    <or>
+                        <iterate ifEmpty="false">
+                            <adapt type="org.eclipse.core.resources.IFile">
+                                <or>
+                                    <test property="org.eclipse.core.resources.extension" value="exsd"/>
+                                    <test property="org.eclipse.core.resources.extension" value="xsd"/>
+                                </or>
+                            </adapt>
+                        </iterate>
+                        <iterate ifEmpty="false">
+                            <adapt type="org.eclipse.core.resources.IProject"/>
+                        </iterate>
+                    </or>
+                </visibleWhen>
+            </command>
             <command
                 commandId="org.sandbox.jdt.xml.cleanup.analyze"
                 label="Find PDE XML Cleanup Problems"
@@ -111,6 +141,11 @@
             <menu
                 id="org.sandbox.jdt.xml.cleanup.menu"
                 label="XML Cleanup">
+                <command
+                    commandId="org.sandbox.jdt.xml.cleanup.modernizeAppinfo"
+                    label="Modernize PDE appinfo (Eclipse 3.4+)"
+                    style="push">
+                </command>
                 <command
                     commandId="org.sandbox.jdt.xml.cleanup.analyze"
                     label="Find PDE XML Cleanup Problems"
