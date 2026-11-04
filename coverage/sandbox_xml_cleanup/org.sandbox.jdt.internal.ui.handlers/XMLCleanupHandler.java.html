@@ -38,7 +38,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.XMLCleanupService;
  * Command handler for XML cleanup that works independently of JDT.
  * This allows XML cleanup to be triggered directly on PDE files or projects.
  */
-<span class="nc" id="L41">public class XMLCleanupHandler extends AbstractHandler {</span>
+<span class="fc" id="L41">public class XMLCleanupHandler extends AbstractHandler {</span>
 	
 	private static final String PLUGIN_ID = &quot;sandbox_xml_cleanup&quot;;
 	
@@ -99,8 +99,8 @@ import org.sandbox.jdt.internal.corext.fix.helper.XMLCleanupService;
 	 * Uses the standalone compact mode, independently of JDT cleanup profiles.
 	 * Both the context-menu and main-menu command use this fixed policy.
 	 */
-	private XMLCleanupService createXMLCleanupService() {
-<span class="nc" id="L103">		return XMLCleanupService.compactFormatting();</span>
+	protected XMLCleanupService createXMLCleanupService() {
+<span class="fc" id="L103">		return XMLCleanupService.compactFormatting();</span>
 	}
 	
 	/**

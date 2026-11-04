@@ -253,7 +253,7 @@ sandbox_coverage/sandbox_cleanup_application,org.sandbox.jdt.core.cleanupapp,Cod
 sandbox_coverage/sandbox_cleanup_application,org.sandbox.jdt.core.cleanupapp.jdtls,SandboxCleanUpCatalog.Contribution,0,12,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox_cleanup_application,org.sandbox.jdt.core.cleanupapp.jdtls,SandboxCleanUpCommands.Snapshot,5,24,4,4,1,4,4,1,0,1
 sandbox_coverage/sandbox_cleanup_application,org.sandbox.jdt.core.cleanupapp.jdtls,SandboxCleanUpCommands.Preview,0,18,0,0,0,4,0,1,0,1
-sandbox_coverage/sandbox_cleanup_application,org.sandbox.jdt.core.cleanupapp.jdtls,SandboxCleanUpCatalog,0,388,1,29,0,70,1,21,0,7
+sandbox_coverage/sandbox_cleanup_application,org.sandbox.jdt.core.cleanupapp.jdtls,SandboxCleanUpCatalog,2,386,2,28,1,69,2,20,0,7
 sandbox_coverage/sandbox_cleanup_application,org.sandbox.jdt.core.cleanupapp.jdtls,SandboxCleanUpCommands,65,493,22,60,6,101,21,30,0,10
 sandbox_coverage/sandbox_cleanup_application,org.sandbox.jdt.core.cleanupapp.jdtls,SandboxCleanUpCommands.Request,5,30,5,5,1,5,5,1,0,1
 sandbox_coverage/sandbox_cleanup_application,org.sandbox.jdt.core.cleanupapp.jdtls,SandboxCleanUpCatalog.Entry,0,21,0,0,0,1,0,1,0,1
@@ -744,31 +744,35 @@ sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helpe
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,RuleTimeoutJUnitPlugin.TimeoutInfo,0,9,0,0,0,4,0,1,0,1
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.ui.preferences.cleanup,CleanUpMessages,7,0,0,0,3,0,2,0,2,0
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.ui.preferences.cleanup,SaveActionCleanUpOptionsInitializer,8,0,0,0,3,0,2,0,2,0
-sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.ui.preferences.cleanup,DefaultCleanUpOptionsInitializer,0,8,0,0,0,3,0,2,0,2
+sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.ui.preferences.cleanup,DefaultCleanUpOptionsInitializer,8,0,0,0,3,0,2,0,2,0
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.ui.preferences.cleanup,SandboxCodeTabPage,73,0,0,0,18,0,4,0,4,0
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix,XMLCleanUpFixCore,71,0,4,0,13,0,8,0,6,0
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix,XMLCleanUpFixCore.new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation() {...},53,0,4,0,12,0,4,0,2,0
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.ui.handlers,XMLCleanupMarkerHandler,93,0,12,0,26,0,11,0,5,0
-sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.ui.handlers,XMLCleanupHandler,231,0,28,0,63,0,19,0,5,0
+sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.ui.handlers,XMLCleanupHandler,226,5,28,0,61,2,17,2,3,2
+sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.ui.handlers,PdeDocumentationBoundaryHandler,0,6,0,0,0,2,0,2,0,2
+sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.ui.handlers,PdeAppinfoModernizationHandler,0,6,0,0,0,2,0,2,0,2
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.ui.handlers,XMLCleanupMarkerHandler.new Job() {...},81,0,6,0,16,0,6,0,3,0
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.ui.handlers,XMLCleanupHandler.new Job() {...},17,0,0,0,2,0,2,0,2,0
-sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.ui.fix,XMLCleanUpCore,115,37,10,2,28,10,11,5,5,5
+sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.ui.fix,XMLCleanUpCore,7,17,0,0,3,6,3,4,3,4
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.ui.fix,MultiFixMessages,7,0,0,0,3,0,2,0,2,0
-sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.ui.fix,XMLCleanUp,0,11,0,0,0,4,0,2,0,2
-sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,XMLCleanupService,71,171,24,20,18,38,19,12,2,7
+sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.ui.fix,XMLCleanUp,4,7,0,0,2,2,1,1,1,1
+sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,XMLCleanupService,71,210,24,20,18,49,19,17,2,12
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,ExsdMarkerResolutionGenerator,14,26,1,1,5,6,1,4,0,4
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,XMLCandidateHit,12,0,0,0,6,0,2,0,2,0
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,XMLResourceSupport.Transformation,0,32,0,2,0,5,0,4,0,3
+sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,SchemaTransformationUtils.DocumentationPolicy,0,24,0,0,0,2,0,1,0,1
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,AbstractTool,16,0,0,0,4,0,4,0,4,0
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,ReplaceSpacesWithTabsQuickFix,21,44,1,1,5,13,1,4,0,4
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,PdeXmlCleanupMarkerService,8,192,8,24,4,44,8,13,0,5
-sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,XMLResourceSupport,103,556,19,51,24,125,17,35,0,17
+sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,SchemaTransformationUtils.PdeSchemaTarget,0,24,0,0,0,2,0,1,0,1
+sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,XMLResourceSupport,117,565,19,51,26,127,19,36,2,18
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,XMLPlugin,270,0,40,0,72,0,31,0,11,0
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,SchemaTransformationUtils.IndentationFinding,0,12,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,XMLResourceSupport.Snapshot,5,34,0,0,1,5,1,2,1,2
-sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,SchemaTransformationUtils,13,251,5,37,5,64,5,24,0,8
+sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,SchemaTransformationUtils,13,308,5,43,5,72,5,30,0,11
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,SchemaTransformationUtils.ProtectedXmlRegion,0,12,0,0,0,1,0,1,0,1
-sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,SchemaTransformationUtils.ProtectedXmlRegions,0,86,0,10,0,20,0,8,0,3
+sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,SchemaTransformationUtils.ProtectedXmlRegions,0,105,0,14,0,24,0,11,0,4
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,XMLResourceSupport.Decoded,0,21,0,0,0,4,0,2,0,2
 sandbox_coverage/sandbox_method_reuse,org.sandbox.jdt.internal.ui.preferences.cleanup,CleanUpMessages,4,0,0,0,2,0,1,0,1,0
 sandbox_coverage/sandbox_method_reuse,org.sandbox.jdt.internal.ui.preferences.cleanup,DefaultCleanUpOptionsInitializer,0,16,0,0,0,6,0,2,0,2

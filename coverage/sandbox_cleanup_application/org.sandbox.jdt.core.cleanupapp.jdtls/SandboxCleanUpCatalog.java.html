@@ -101,8 +101,8 @@ import org.eclipse.jdt.ui.cleanup.ICleanUpOptionsInitializer;
 <span class="fc" id="L101">        String id = element.getAttribute(&quot;id&quot;); //$NON-NLS-1$</span>
 <span class="fc" id="L102">        String implementation = element.getAttribute(&quot;class&quot;); //$NON-NLS-1$</span>
 <span class="fc bfc" id="L103" title="All 2 branches covered.">        if (!READ_ONLY_CLEANUPS.contains(new Contribution(bundle, id, implementation))) {</span>
-<span class="fc bfc" id="L104" title="All 2 branches covered.">            String reason = &quot;sandbox_xml_cleanup&quot;.equals(bundle) //$NON-NLS-1$</span>
-<span class="fc" id="L105">                    ? &quot;XML cleanup writes resources during fix creation and cannot be used as a read-only Java preview.&quot; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">            String reason = &quot;sandbox_xml_cleanup&quot;.equals(bundle) //$NON-NLS-1$</span>
+<span class="nc" id="L105">                    ? &quot;XML cleanup writes resources during fix creation and cannot be used as a read-only Java preview.&quot; //$NON-NLS-1$</span>
 <span class="fc bfc" id="L106" title="All 2 branches covered.">                    : &quot;sandbox_triggerpattern&quot;.equals(bundle) //$NON-NLS-1$</span>
 <span class="fc" id="L107">                            ? &quot;This TriggerPattern contribution is not qualified for a marker-free preview; marker-writing implementations must not run during preview.&quot; //$NON-NLS-1$</span>
 <span class="fc" id="L108">                            : &quot;This contribution identity has not been qualified for read-only Java cleanup previews.&quot;; //$NON-NLS-1$</span>

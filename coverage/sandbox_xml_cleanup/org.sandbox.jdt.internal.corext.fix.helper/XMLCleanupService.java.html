@@ -24,7 +24,7 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 
 /** Standalone service for conflict-safe XML workspace cleanup. */
-<span class="fc" id="L27">public class XMLCleanupService {</span>
+public class XMLCleanupService {
 
 <span class="fc" id="L29">	private static final ILog LOG= Platform.getLog(XMLCleanupService.class);</span>
 	private static final String PLUGIN_ID= &quot;sandbox_xml_cleanup&quot;; //$NON-NLS-1$
@@ -34,6 +34,30 @@ import org.eclipse.core.runtime.Status;
 <span class="fc" id="L34">	private static final Set&lt;String&gt; PDE_DIRECTORIES= Set.of(&quot;OSGI-INF&quot;, &quot;META-INF&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
 
 	private boolean enableIndent;
+	private final SchemaTransformationUtils.PdeSchemaTarget pdeSchemaTarget;
+	private final SchemaTransformationUtils.DocumentationPolicy documentationPolicy;
+
+	/** Creates a service preserving existing semantic conventions. */
+	public XMLCleanupService() {
+<span class="fc" id="L42">		this(SchemaTransformationUtils.PdeSchemaTarget.PRESERVE, SchemaTransformationUtils.DocumentationPolicy.PRESERVE);</span>
+<span class="fc" id="L43">	}</span>
+
+	/** Captures the explicit option for this service instance. */
+	public XMLCleanupService(SchemaTransformationUtils.PdeSchemaTarget target) {
+<span class="fc" id="L47">		this(target, SchemaTransformationUtils.DocumentationPolicy.PRESERVE);</span>
+<span class="fc" id="L48">	}</span>
+
+	/** Captures the documentation option while retaining the default target. */
+	public XMLCleanupService(SchemaTransformationUtils.DocumentationPolicy policy) {
+<span class="fc" id="L52">		this(SchemaTransformationUtils.PdeSchemaTarget.PRESERVE, policy);</span>
+<span class="fc" id="L53">	}</span>
+
+	/** Captures both explicit options for this independent service instance. */
+<span class="fc" id="L56">	public XMLCleanupService(SchemaTransformationUtils.PdeSchemaTarget target,</span>
+			SchemaTransformationUtils.DocumentationPolicy policy) {
+<span class="fc" id="L58">		pdeSchemaTarget= java.util.Objects.requireNonNull(target);</span>
+<span class="fc" id="L59">		documentationPolicy= java.util.Objects.requireNonNull(policy);</span>
+<span class="fc" id="L60">	}</span>
 
 	/**
 	 * Creates an independent service for the fixed compact formatting mode used
@@ -44,15 +68,25 @@ import org.eclipse.core.runtime.Status;
 	 * @since 1.3.5
 	 */
 	public static XMLCleanupService compactFormatting() {
-<span class="fc" id="L47">		XMLCleanupService service= new XMLCleanupService();</span>
-<span class="fc" id="L48">		service.setEnableIndent(false);</span>
-<span class="fc" id="L49">		return service;</span>
+<span class="fc" id="L71">		XMLCleanupService service= new XMLCleanupService();</span>
+<span class="fc" id="L72">		service.setEnableIndent(false);</span>
+<span class="fc" id="L73">		return service;</span>
 	}
 
 	/** Sets whether transformed markup is indented. */
 	public void setEnableIndent(boolean enable) {
-<span class="fc" id="L54">		enableIndent= enable;</span>
-<span class="fc" id="L55">	}</span>
+<span class="fc" id="L78">		enableIndent= enable;</span>
+<span class="fc" id="L79">	}</span>
+
+	/** Creates a compact service with its explicit semantic option. */
+	public static XMLCleanupService compactFormatting(SchemaTransformationUtils.PdeSchemaTarget target) {
+<span class="fc" id="L83">		return new XMLCleanupService(target);</span>
+	}
+
+	/** Creates a compact service with its explicit documentation option. */
+	public static XMLCleanupService compactFormatting(SchemaTransformationUtils.DocumentationPolicy policy) {
+<span class="fc" id="L88">		return new XMLCleanupService(policy);</span>
+	}
 
 	/**
 	 * Processes one relevant XML resource.
@@ -62,76 +96,76 @@ import org.eclipse.core.runtime.Status;
 	 *             too large, ambiguously encoded, malformed, or cannot be written
 	 */
 	public boolean processFile(IFile file, IProgressMonitor monitor) throws CoreException {
-<span class="pc bpc" id="L65" title="2 of 6 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled() || !isPDERelevantFile(file)) {</span>
-<span class="nc" id="L66">			return false;</span>
+<span class="pc bpc" id="L99" title="2 of 6 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled() || !isPDERelevantFile(file)) {</span>
+<span class="nc" id="L100">			return false;</span>
 		}
-<span class="fc" id="L68">		XMLResourceSupport.Transformation transformation=</span>
-<span class="fc" id="L69">				XMLResourceSupport.prepare(file, enableIndent, monitor);</span>
-<span class="fc bfc" id="L70" title="All 2 branches covered.">		if (!transformation.changed()) {</span>
-<span class="fc" id="L71">			return false;</span>
+<span class="fc" id="L102">		XMLResourceSupport.Transformation transformation=</span>
+<span class="fc" id="L103">				XMLResourceSupport.prepare(file, enableIndent, pdeSchemaTarget, documentationPolicy, monitor);</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">		if (!transformation.changed()) {</span>
+<span class="fc" id="L105">			return false;</span>
 		}
-<span class="fc" id="L73">		int originalBytes= transformation.snapshot().originalBytes().length;</span>
-<span class="fc" id="L74">		int newBytes= transformation.transformedBytes().length;</span>
-<span class="fc" id="L75">		XMLResourceSupport.write(file, transformation, monitor);</span>
-<span class="fc" id="L76">		int bytesSaved= originalBytes - newBytes;</span>
-<span class="pc bpc" id="L77" title="1 of 2 branches missed.">		double percentSaved= originalBytes &gt; 0 ? bytesSaved * 100.0 / originalBytes : 0.0;</span>
-<span class="fc" id="L78">		LOG.log(new Status(IStatus.INFO, PLUGIN_ID,</span>
-<span class="fc" id="L79">				&quot;Applied transformation to: &quot; + file.getFullPath() //$NON-NLS-1$</span>
-<span class="fc" id="L80">						+ String.format(&quot; | Size: %d → %d bytes, saved: %d bytes (%.1f%%)&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L81">								originalBytes, newBytes, bytesSaved, percentSaved)));</span>
-<span class="fc" id="L82">		return true;</span>
+<span class="fc" id="L107">		int originalBytes= transformation.snapshot().originalBytes().length;</span>
+<span class="fc" id="L108">		int newBytes= transformation.transformedBytes().length;</span>
+<span class="fc" id="L109">		XMLResourceSupport.write(file, transformation, monitor);</span>
+<span class="fc" id="L110">		int bytesSaved= originalBytes - newBytes;</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">		double percentSaved= originalBytes &gt; 0 ? bytesSaved * 100.0 / originalBytes : 0.0;</span>
+<span class="fc" id="L112">		LOG.log(new Status(IStatus.INFO, PLUGIN_ID,</span>
+<span class="fc" id="L113">				&quot;Applied transformation to: &quot; + file.getFullPath() //$NON-NLS-1$</span>
+<span class="fc" id="L114">						+ String.format(&quot; | Size: %d → %d bytes, saved: %d bytes (%.1f%%)&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L115">								originalBytes, newBytes, bytesSaved, percentSaved)));</span>
+<span class="fc" id="L116">		return true;</span>
 	}
 
 	/** Processes all relevant XML files in a project. */
 	public int processProject(IProject project, IProgressMonitor monitor) throws CoreException {
-<span class="nc" id="L87">		int[] filesProcessed= { 0 };</span>
-<span class="nc" id="L88">		project.accept(resource -&gt; {</span>
-<span class="nc bnc" id="L89" title="All 4 branches missed.">			if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
-<span class="nc" id="L90">				return false;</span>
+<span class="nc" id="L121">		int[] filesProcessed= { 0 };</span>
+<span class="nc" id="L122">		project.accept(resource -&gt; {</span>
+<span class="nc bnc" id="L123" title="All 4 branches missed.">			if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
+<span class="nc" id="L124">				return false;</span>
 			}
-<span class="nc bnc" id="L92" title="All 4 branches missed.">			if (resource instanceof IFile file &amp;&amp; isPDERelevantFile(file)) {</span>
+<span class="nc bnc" id="L126" title="All 4 branches missed.">			if (resource instanceof IFile file &amp;&amp; isPDERelevantFile(file)) {</span>
 				try {
-<span class="nc bnc" id="L94" title="All 2 branches missed.">					if (monitor != null) {</span>
-<span class="nc" id="L95">						monitor.subTask(&quot;Processing: &quot; + file.getFullPath()); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">					if (monitor != null) {</span>
+<span class="nc" id="L129">						monitor.subTask(&quot;Processing: &quot; + file.getFullPath()); //$NON-NLS-1$</span>
 					}
-<span class="nc bnc" id="L97" title="All 2 branches missed.">					if (processFile(file, monitor)) {</span>
-<span class="nc" id="L98">						filesProcessed[0]++;</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">					if (processFile(file, monitor)) {</span>
+<span class="nc" id="L132">						filesProcessed[0]++;</span>
 					}
-<span class="nc" id="L100">				} catch (CoreException e) {</span>
-<span class="nc" id="L101">					LOG.log(e.getStatus());</span>
+<span class="nc" id="L134">				} catch (CoreException e) {</span>
+<span class="nc" id="L135">					LOG.log(e.getStatus());</span>
 				}
-<span class="nc bnc" id="L103" title="All 2 branches missed.">				if (monitor != null) {</span>
-<span class="nc" id="L104">					monitor.worked(1);</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">				if (monitor != null) {</span>
+<span class="nc" id="L138">					monitor.worked(1);</span>
 				}
 			}
-<span class="nc" id="L107">			return true;</span>
+<span class="nc" id="L141">			return true;</span>
 		});
-<span class="nc" id="L109">		return filesProcessed[0];</span>
+<span class="nc" id="L143">		return filesProcessed[0];</span>
 	}
 
 	/** Returns whether the resource belongs to the supported PDE XML scope. */
 	public boolean isPDERelevantFile(IFile file) {
-<span class="fc" id="L114">		String extension= file.getFileExtension();</span>
-<span class="fc bfc" id="L115" title="All 2 branches covered.">		return (PDE_FILE_NAMES.contains(file.getName())</span>
-<span class="pc bpc" id="L116" title="1 of 4 branches missed.">				|| extension != null &amp;&amp; PDE_EXTENSIONS.contains(extension))</span>
-<span class="pc bpc" id="L117" title="1 of 2 branches missed.">				&amp;&amp; isInPDELocation(file);</span>
+<span class="fc" id="L148">		String extension= file.getFileExtension();</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">		return (PDE_FILE_NAMES.contains(file.getName())</span>
+<span class="pc bpc" id="L150" title="1 of 4 branches missed.">				|| extension != null &amp;&amp; PDE_EXTENSIONS.contains(extension))</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">				&amp;&amp; isInPDELocation(file);</span>
 	}
 
 	private static boolean isInPDELocation(IFile file) {
-<span class="fc" id="L121">		IResource current= file.getParent();</span>
-<span class="fc bfc" id="L122" title="All 2 branches covered.">		if (current instanceof IProject) {</span>
-<span class="fc" id="L123">			return true;</span>
+<span class="fc" id="L155">		IResource current= file.getParent();</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">		if (current instanceof IProject) {</span>
+<span class="fc" id="L157">			return true;</span>
 		}
-<span class="pc bpc" id="L125" title="2 of 4 branches missed.">		while (current != null &amp;&amp; !(current instanceof IProject)) {</span>
-<span class="pc bpc" id="L126" title="1 of 2 branches missed.">			if (current instanceof IFolder folder) {</span>
-<span class="fc" id="L127">				String name= folder.getName();</span>
-<span class="pc bpc" id="L128" title="2 of 4 branches missed.">				if (PDE_DIRECTORIES.contains(name) || &quot;schema&quot;.equalsIgnoreCase(name)) { //$NON-NLS-1$</span>
-<span class="fc" id="L129">					return true;</span>
+<span class="pc bpc" id="L159" title="2 of 4 branches missed.">		while (current != null &amp;&amp; !(current instanceof IProject)) {</span>
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">			if (current instanceof IFolder folder) {</span>
+<span class="fc" id="L161">				String name= folder.getName();</span>
+<span class="pc bpc" id="L162" title="2 of 4 branches missed.">				if (PDE_DIRECTORIES.contains(name) || &quot;schema&quot;.equalsIgnoreCase(name)) { //$NON-NLS-1$</span>
+<span class="fc" id="L163">					return true;</span>
 				}
 			}
-<span class="nc" id="L132">			current= current.getParent();</span>
+<span class="nc" id="L166">			current= current.getParent();</span>
 		}
-<span class="nc" id="L134">		return false;</span>
+<span class="nc" id="L168">		return false;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
