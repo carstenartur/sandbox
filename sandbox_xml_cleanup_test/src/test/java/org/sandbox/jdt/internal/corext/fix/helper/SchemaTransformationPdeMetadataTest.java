@@ -35,27 +35,27 @@ class SchemaTransformationPdeMetadataTest {
 	void compactsRecognizedMetadataWithoutChangingItsSpelling(String appinfo) throws Exception {
 		for (String namespace : new String[] { "", " xmlns=\"http://www.w3.org/2001/XMLSchema\"" }) { //$NON-NLS-1$ //$NON-NLS-2$
 			String source= """
-					<schema%s>
+					<schema@NAMESPACE@>
 					    <annotation>
-					        <%s>\s\s
+					        <@APPINFO@>\s\s
 					            <meta.schema plugin="org.example" id="items" name="Items">\s\s
 					            </meta.schema>\s\s
-					        </%s>\s\s
+					        </@APPINFO@>\s\s
 					        <documentation>   </documentation>
 					    </annotation>
 					    <element name="item">
-					        <annotation><%s>
+					        <annotation><@APPINFO@>
 					            <meta.element labelAttribute="name" icon="icons/item.png"> \t </meta.element>
-					        </%s></annotation>
-					        <complexType><attribute name="class"><annotation><%s>
+					        </@APPINFO@></annotation>
+					        <complexType><attribute name="class"><annotation><@APPINFO@>
 					            <meta.attribute kind="java" basedOn=":org.example.Item">  </meta.attribute>
-					        </%s></annotation></attribute></complexType>
+					        </@APPINFO@></annotation></attribute></complexType>
 					    </element>
-					    <annotation><%s>
+					    <annotation><@APPINFO@>
 					        <meta.section type="examples">  </meta.section>
-					    </%s><documentation>&lt;pre&gt;  literal  &lt;/pre&gt;  </documentation></annotation>
+					    </@APPINFO@><documentation>&lt;pre&gt;  literal  &lt;/pre&gt;  </documentation></annotation>
 					</schema>
-					""".formatted(namespace, appinfo, appinfo, appinfo, appinfo, appinfo, appinfo, appinfo, appinfo); //$NON-NLS-1$
+					""".replace("@NAMESPACE@", namespace).replace("@APPINFO@", appinfo); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			String expected= ("<schema%s><annotation><%s>" //$NON-NLS-1$
 					+ "<meta.schema plugin=\"org.example\" id=\"items\" name=\"Items\"/>" //$NON-NLS-1$
 					+ "</%s><documentation>   </documentation></annotation><element name=\"item\">" //$NON-NLS-1$
@@ -82,12 +82,12 @@ class SchemaTransformationPdeMetadataTest {
 				<?xml version="1.0" encoding="UTF-8"?>
 				<schema>
 					<annotation>
-						<%s>
+						<@APPINFO@>
 							<meta.schema name="Items"/>
-						</%s>
+						</@APPINFO@>
 					</annotation>
 				</schema>
-				""".formatted(appinfo, appinfo); //$NON-NLS-1$
+				""".replace("@APPINFO@", appinfo); //$NON-NLS-1$ //$NON-NLS-2$
 		String transformed= transform(source, true);
 		assertEquals(expected, transformed);
 		assertEquals(transformed, transform(transformed, true));
