@@ -37,7 +37,8 @@
              Require the ordinary unqualified PDE vocabulary and section order. -->
         <xsl:variable name="pde-schema" select="/schema/annotation/*[self::appinfo or self::appInfo]/meta.schema"/>
         <xsl:variable name="pde-reference-section" select="self::documentation
-            and parent::annotation[parent::schema[not(parent::*)]] and count(../*) = 2
+            and parent::annotation[parent::schema[not(parent::*)]]
+            and count(../node()[not(self::text()[normalize-space(.) = ''])]) = 2
             and preceding-sibling::*[1][self::appinfo or self::appInfo][count(*) = 1 and not(text()[normalize-space(.) != ''])]
                 /meta.section[not(*) and not(text()[normalize-space(.) != ''])
                     and (@type = 'since' or @type = 'apiinfo' or @type = 'implementation' or @type = 'copyright')]"/>

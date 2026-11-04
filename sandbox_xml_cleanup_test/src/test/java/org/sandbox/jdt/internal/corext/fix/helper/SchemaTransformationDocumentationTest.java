@@ -11,15 +11,20 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.TransformerException;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.sandbox.jdt.internal.corext.fix.helper.SchemaTransformationUtils.DocumentationPolicy;
@@ -107,6 +112,35 @@ class SchemaTransformationDocumentationTest {
 		assertDocumentationUnchanged(schema(ordinary).replace("<schema>", "<schema xmlns=\"http://www.w3.org/2001/XMLSchema\">")); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
+	@ParameterizedTest
+	@ValueSource(strings = { "<!-- unknown payload -->", "<?unknown payload?>" }) //$NON-NLS-1$ //$NON-NLS-2$
+	void preservesReferenceBoundariesWhenAnnotationHasNonElementPayload(String payload) throws Exception {
+		String metadata= "<appInfo><meta.section type=\"apiinfo\"/></appInfo>"; //$NON-NLS-1$
+		String documentation= "<documentation>  untouched  </documentation>"; //$NON-NLS-1$
+		for (String contents : new String[] { payload + metadata + documentation,
+				metadata + payload + documentation, metadata + documentation + payload }) {
+			String source= schema("<annotation>\n  " + contents + "\n</annotation>"); //$NON-NLS-1$ //$NON-NLS-2$
+			for (boolean indent : new boolean[] { false, true }) {
+				String transformed= transform(source, indent, DocumentationPolicy.TRIM_PLAIN_SECTION_BOUNDARIES);
+				assertEquals("  untouched  ", parse(transformed).getElementsByTagName("documentation").item(1).getTextContent()); //$NON-NLS-1$ //$NON-NLS-2$
+				assertTrue(transformed.contains(payload), transformed);
+				assertEquals(transformed, transform(transformed, indent, DocumentationPolicy.TRIM_PLAIN_SECTION_BOUNDARIES));
+			}
+		}
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "<!-- literal <![CDATA[ token -->", "<?keep literal <![CDATA[ token?>" }) //$NON-NLS-1$ //$NON-NLS-2$
+	void trimsReferenceBoundariesWhenCdataMarkerIsOnlyCommentOrInstructionText(String marker) throws Exception {
+		String source= schema(marker + section("apiinfo", "<documentation>  Plain  text  </documentation>")); //$NON-NLS-1$ //$NON-NLS-2$
+		for (boolean indent : new boolean[] { false, true }) {
+			String transformed= transform(source, indent, DocumentationPolicy.TRIM_PLAIN_SECTION_BOUNDARIES);
+			assertEquals("Plain  text", parse(transformed).getElementsByTagName("documentation").item(1).getTextContent()); //$NON-NLS-1$ //$NON-NLS-2$
+			assertTrue(transformed.contains(marker), transformed);
+			assertEquals(transformed, transform(transformed, indent, DocumentationPolicy.TRIM_PLAIN_SECTION_BOUNDARIES));
+		}
+	}
+
 	@Test
 	void keepsNonXmlWhitespaceAndInternalSpacing() throws Exception {
 		String source= schema(section("apiinfo", "<documentation>  &#160;  text&#9;with  spaces  &#160;  </documentation>")); //$NON-NLS-1$ //$NON-NLS-2$
@@ -130,6 +164,28 @@ class SchemaTransformationDocumentationTest {
 	void retainsCdataSourceWithoutSerialization() throws Exception {
 		String source= schema(section("apiinfo", "<documentation><![CDATA[  literal  ]]></documentation>")); //$NON-NLS-1$ //$NON-NLS-2$
 		assertEquals(source, trim(source));
+	}
+
+	@Test
+	void validatesMalformedCdataBeforeRetainingSource() {
+		String source= "<schema><![CDATA[unfinished"; //$NON-NLS-1$
+		for (DocumentationPolicy policy : DocumentationPolicy.values()) {
+			for (boolean indent : new boolean[] { false, true }) {
+				assertThrows(TransformerException.class, () -> transform(source, indent, policy));
+			}
+		}
+	}
+
+	@Test
+	void blocksExternalEntitiesBeforeRetainingCdataSource(@TempDir Path directory) throws Exception {
+		Path external= Files.writeString(directory.resolve("external.txt"), "external content"); //$NON-NLS-1$ //$NON-NLS-2$
+		String source= "<!DOCTYPE schema [<!ENTITY external SYSTEM \"" + external.toUri() //$NON-NLS-1$
+				+ "\">]><schema><![CDATA[  literal  ]]>&external;</schema>"; //$NON-NLS-1$
+		for (DocumentationPolicy policy : DocumentationPolicy.values()) {
+			for (boolean indent : new boolean[] { false, true }) {
+				assertThrows(TransformerException.class, () -> transform(source, indent, policy));
+			}
+		}
 	}
 
 	private static String schema(String body) {
