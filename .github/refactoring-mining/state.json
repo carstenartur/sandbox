@@ -5416,9 +5416,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "lastProcessedCommit": "da73b8b3425fa08755b675ee7d31b181e4ac980e",
-      "lastProcessedDate": "2026-11-03T02:35:51.453896007Z",
-      "totalProcessed": 305,
+      "lastProcessedCommit": "1e4c63de97805788c755ed036d707c8f82f7b486",
+      "lastProcessedDate": "2026-11-04T02:23:22.352768024Z",
+      "totalProcessed": 369,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -5564,7 +5564,7 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "API Misuse": 1,
-        "API Modernization": 7,
+        "API Modernization": 8,
         "API Migration": 3,
         "Collections Modernization": 1,
         "Lambda Conversion": 1,
@@ -5597,10 +5597,14 @@
         "API Usage": 1,
         "Error Handling": 1,
         "Constructor Replacement": 1,
-        "Null Safety": 1
+        "Null Safety": 1,
+        "Modernize API": 1,
+        "Readability": 1,
+        "Java Generics": 1,
+        "performance": 1
       },
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 53786
+  "globalTotalProcessed": 53850
 }
