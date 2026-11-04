@@ -121,6 +121,22 @@ class SchemaTransformationPdeMetadataTest {
 	}
 
 	@ParameterizedTest
+	@ValueSource(strings = { "<!-- <![CDATA[ -->", "<?keep <![CDATA[ ?>" }) //$NON-NLS-1$ //$NON-NLS-2$
+	void formatsMetadataWithCdataMarkersInsideCommentsAndProcessingInstructions(String marker) throws Exception {
+		for (boolean indent : new boolean[] { false, true }) {
+			String source= "<schema>" + marker //$NON-NLS-1$
+					+ "<annotation><appInfo>  <meta.schema name=\"Items\">  </meta.schema>  </appInfo>" //$NON-NLS-1$
+					+ "<documentation>  literal  </documentation></annotation></schema>"; //$NON-NLS-1$
+			String result= transform(source, indent);
+			assertTrue(result.contains("<meta.schema name=\"Items\"/>"), result); //$NON-NLS-1$
+			assertEquals(1, parse(result).getElementsByTagName("appInfo").getLength()); //$NON-NLS-1$
+			assertEquals("  literal  ", parse(result).getElementsByTagName("documentation").item(0).getTextContent()); //$NON-NLS-1$ //$NON-NLS-2$
+			assertTrue(result.contains(marker), result);
+			assertEquals(result, transform(result, indent));
+		}
+	}
+
+	@ParameterizedTest
 	@ValueSource(booleans = { false, true })
 	void preservesWhitespaceOnlyCdataInStructuralContainers(boolean indent) throws Exception {
 		for (String content : new String[] {
