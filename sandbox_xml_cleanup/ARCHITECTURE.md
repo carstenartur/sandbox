@@ -8,15 +8,17 @@ The XML cleanup normalizes Eclipse PDE metadata while preserving XML semantics. 
 
 ## Execution paths
 
-### Eclipse Java cleanup integration
+### Former Eclipse Java cleanup integration
 
-`XMLCleanUpCore` participates in the JDT cleanup registry. `XMLPlugin` discovers eligible files in the owning project and prepares file-local operations. This adapter still requires a Java compilation-unit cleanup context.
+XML cleanup is no longer contributed to the JDT cleanup registry, profile UI, or Java save-action UI. The retained `XMLCleanUpCore` compatibility entry point returns no fix, requests no AST, and performs no XML discovery or preparation, even if old profile options remain enabled.
+
+JDT's `ICleanUpFix` returns a Java `CompilationUnitChange`. `CleanUpRefactoring.calculateChange` takes its text edit and constructs a new change for the current Java compilation unit; it does not retain a custom change's resource application or undo behavior. The former XML bridge wrote files during `rewriteAST`, before preview acceptance, then failed because no Java edit existed. An empty or dummy Java edit cannot provide an XML preview/apply/undo contract.
 
 ### PDE command integration
 
 `XMLCleanupHandler` and `XMLCleanupService` process selected PDE XML files or complete projects without a Java source context.
 
-Both paths use the same resource-safety and transformation pipeline.
+The explicit commands and formatting marker resolutions use the same resource-safety and transformation pipeline. They do not depend on Java cleanup settings.
 
 ## Resource-safety boundary
 
@@ -55,7 +57,7 @@ A candidate retains the original byte array and resource modification stamp. Imm
 - the modification stamp changed; or
 - the current bytes no longer match the analysed bytes.
 
-This prevents both execution paths from silently overwriting editor or external changes. Workspace history is retained.
+This prevents commands and marker resolutions from silently overwriting editor or external changes. Workspace history is retained.
 
 ### Size boundary
 
@@ -96,15 +98,15 @@ Content-based secure XSLT transformation and deterministic layout rendering. The
 
 ### `XMLPlugin`
 
-Adapter for the JDT cleanup lifecycle. It discovers relevant resources, prepares validated transformations, avoids duplicate project resources, and applies only candidates whose original resource state is still current.
+Legacy operation helper retained with the former JDT adapter. The inert `XMLCleanUpCore` no longer invokes it, and there is no JDT extension registration for XML cleanup.
 
 ### `XMLCleanupService`
 
-Standalone PDE command service. It uses the same prepared transformation and write checks as the JDT adapter.
+Standalone PDE command and marker-resolution service. It prepares a transformation in memory, then applies it through the shared guarded workspace boundary after explicit invocation.
 
 ### `XMLCandidateHit` / `XMLCleanUpFixCore`
 
-Bridge objects used by the existing Sandbox cleanup infrastructure. A candidate contains the complete prepared `XMLResourceSupport.Transformation`, not only two unqualified UTF-8 strings.
+Retained legacy bridge objects. They are not used by the retired Java cleanup entry point. The standalone service uses `XMLResourceSupport.Transformation` directly.
 
 ## Validation boundary
 
@@ -125,13 +127,15 @@ The XML test module verifies:
 - BOM/declaration conflict rejection; and
 - malformed transformation-output rejection.
 
+Native regressions exercise the retained legacy core, actual JDT `CleanUpRefactoring.calculateChange`, the installed cleanup/command registry contributions, and the standalone service. Java calculation must return no XML-related fix/change and leave XML bytes, resource stamps, and Java source unchanged. The standalone control must still format the eligible file and be idempotent.
+
 Workspace integration tests for dirty buffers, external modification conflicts, linked resources, multi-file preview/apply/undo, and validation-error baselines remain tracked by #1240.
 
 ## Current limitations
 
-- The JDT cleanup adapter requires a Java compilation-unit context; the PDE command is the independent path.
+- XML formatting is available through explicit PDE commands and marker resolutions, not Java cleanup profiles or Java save actions.
 - The complete document is materialized in memory, bounded at 16 MiB.
-- The current JDT bridge still performs resource application through the existing cleanup operation rather than a dedicated multi-file LTK `Change`; atomic preview/apply/undo remains open.
+- The standalone service applies files individually. Atomic preview/apply/undo needs a separate resource-aware LTK refactoring and remains open.
 - PDE/schema-aware validation is not yet performed.
 - Eligible directories and filenames are fixed.
 

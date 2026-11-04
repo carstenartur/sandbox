@@ -4,24 +4,27 @@
 
 ## Overview
 
-The **XML Cleanup** plugin optimizes Eclipse PDE XML files (plugin.xml, feature.xml, etc.) by reducing whitespace in known element-only containers. Optional indentation uses tabs in those containers. Documentation, mixed content, and unknown extension payloads retain their whitespace.
+The **XML Cleanup** plugin formats selected Eclipse PDE XML files (plugin.xml, feature.xml, etc.) through explicit PDE commands. Compact formatting removes layout whitespace in known element-only containers. Documentation, mixed content, and unknown extension payloads retain their whitespace.
 
 ## Key Features
 
 - 📉 **Size Reduction** - Remove unnecessary whitespace from XML files
 - 🎯 **PDE-Specific** - Focuses on Eclipse plugin descriptor files
-- 📏 **Indentation** - Generate tab indentation in known structural containers (optional)
+- 📏 **Conservative Formatting** - Preserve text outside known structural containers
 - ♻️ **Idempotent** - Running multiple times produces same result
 - ✅ **Semantic Preservation** - XML structure and content unchanged
 
 ## Quick Start
 
-### Enable in Eclipse
+### Run the PDE command
 
-1. Open **Source** → **Clean Up...**
-2. Navigate to the **XML** category
-3. Enable **Optimize PDE XML files**
-4. Optionally enable **Enable XML indentation (increases file size)**
+1. Select supported XML files or a project in **Package Explorer** or **Project Explorer**.
+2. Choose **Clean Up PDE XML** from the context menu, or **XML Cleanup** → **Clean Up PDE XML Files** from the main menu.
+3. Review the resulting changes in version control. The command writes the selected resources directly and preserves Eclipse resource history.
+
+To inspect opportunities first, choose **Find PDE XML Cleanup Problems**. Analysis creates Problems markers without rewriting files; the **Normalize PDE XML formatting** marker resolution applies formatting explicitly.
+
+XML formatting is no longer registered in Java **Source** → **Clean Up...** profiles or Java save actions. Existing XML settings in stored Java profiles are ignored. Use the PDE commands for XML resources, including projects without Java source.
 
 ### Example Transformations
 
@@ -43,17 +46,6 @@ The **XML Cleanup** plugin optimizes Eclipse PDE XML files (plugin.xml, feature.
 <?xml version="1.0" encoding="UTF-8"?><plugin><extension point="org.eclipse.ui.views"><view class="com.example.MyView" id="com.example.myview" name="My View"/></extension></plugin>
 ```
 
-**After (Indentation Enabled):**
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<plugin>
-→ <extension point="org.eclipse.ui.views">
-→ → <view class="com.example.MyView" id="com.example.myview" name="My View"/>
-→ </extension>
-</plugin>
-```
-(where `→` represents a tab character)
-
 ## Supported Files
 
 The cleanup processes specific PDE files:
@@ -66,7 +58,7 @@ The cleanup processes specific PDE files:
 | `*.exsd` | Extension point schema |
 | `*.xsd` | XML schema definitions |
 
-**Locations**: Only in project root, `OSGI-INF/`, or `META-INF/` directories.
+**Locations**: The project root or within `OSGI-INF/`, `META-INF/`, or `schema/` directories.
 
 ## What Gets Optimized
 
@@ -76,8 +68,7 @@ The cleanup processes specific PDE files:
 - Preserve mixed content, blank text values, and inherited `xml:space="preserve"`
 - Consolidate spacing between attributes
 
-### Indentation (Optional)
-- Generate one tab per level in known structural containers
+### Text Preservation
 - Retain all text inside unknown elements and text subtrees
 - Never rewrite text using a leading-space substitution after serialization
 
@@ -93,7 +84,7 @@ The cleanup processes specific PDE files:
 - Consistent formatting
 - Stable output
 
-✅ **Safe Indentation**: Layout changes are limited to known structural containers
+✅ **Conservative Layout**: Layout changes are limited to known structural containers
 - XML attribute values unchanged
 - Text content spacing preserved
 - Only structural indentation modified
@@ -101,9 +92,8 @@ The cleanup processes specific PDE files:
 ## Benefits
 
 ### Size Reduction
-- Smaller files load faster
-- Reduced storage requirements
-- Faster git operations
+- Compact structural layout can reduce file size
+- Size reduction alone does not establish a startup or loading-time improvement
 
 ### Consistency
 - Standardized formatting across team
@@ -117,18 +107,7 @@ The cleanup processes specific PDE files:
 
 ## Configuration
 
-Configure cleanup options:
-1. **Window** → **Preferences** → **Sandbox** → **XML Cleanup**
-2. Enable size optimization
-3. Configure XML indentation (ON/OFF)
-4. Set indentation preferences
-
-## Example Results
-
-Typical size reductions:
-- Small plugin.xml: 10-15% smaller
-- Medium plugin.xml: 15-25% smaller
-- Large feature.xml: 20-30% smaller
+The PDE commands and marker resolutions use compact formatting. They do not read Java cleanup profile settings. The transformer retains an indentation option for programmatic callers; it is not an option in the standalone command UI.
 
 ## Documentation
 
@@ -144,6 +123,8 @@ Comprehensive tests in `sandbox_xml_cleanup_test`:
 - Idempotency tests
 - Tab conversion tests
 - PDE file filtering tests
+- Native JDT calculation tests proving Java cleanup cannot write XML resources
+- Registry checks retaining the standalone command and removing Java cleanup/save-action contributions
 
 Run tests:
 ```bash
@@ -153,21 +134,17 @@ xvfb-run --auto-servernum mvn test -pl sandbox_xml_cleanup_test
 ## Limitations
 
 1. **PDE Files Only** - Only processes plugin.xml, feature.xml, etc.
-2. **Location Restricted** - Files must be in project root, OSGI-INF, or META-INF
+2. **Location Restricted** - Files must be in the project root or within OSGI-INF, META-INF, or schema folders
 3. **Conservative Formatting** - Unknown content models retain their whitespace, so compact output can still contain line breaks and indentation
 4. **No Schema Validation** - Doesn't validate XML against schemas
+5. **Explicit Invocation** - XML formatting is unavailable through Java cleanup profiles and Java save actions
+6. **No Atomic Multi-file Preview/Undo** - The standalone command writes each eligible file directly; a resource-aware LTK refactoring remains future work
 
 See [TODO.md](TODO.md) for planned improvements.
 
 ## Safety
 
-The cleanup is safe to use:
-- Preserves XML semantics
-- Verified by comprehensive tests
-- Only modifies whitespace
-- No data loss
-
-Always use version control when running automated cleanups!
+Before writing, the workspace service checks for dirty editor buffers, changed resource stamps or bytes, encoding conflicts, and malformed output. It retains Eclipse resource history. These checks do not provide schema-aware validation or atomic multi-file undo; review the resulting version-control diff.
 
 ## License
 
