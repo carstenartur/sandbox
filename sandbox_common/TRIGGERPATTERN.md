@@ -679,6 +679,7 @@ They are specified using the `::` operator to separate the pattern from the guar
 | `sourceVersionGE(version)` | version | Checks if source version >= specified version | `$x.isEmpty() :: sourceVersionGE(6)` |
 | `sourceVersionLE(version)` | version | Checks if source version <= specified version | `$x.length() > 0 :: sourceVersionLE(5)` |
 | `sourceVersionBetween(min, max)` | min, max | Checks if source version is in range [min, max] | `$pattern :: sourceVersionBetween(8, 11)` |
+| `stringIndexOfContainsSafe()` | none | Requires a resolved `String.indexOf(String)` comparison and a target-stable argument; declines internal comments and positive bare lambda bodies whose overload resolution could change | `$s.indexOf($part) >= 0 :: stringIndexOfContainsSafe()` |
 | `matchesAny($placeholder, ...literals)` | placeholder, literals | Checks if placeholder matches any literal value | `$str.equals($x) :: matchesAny($x, "true", "false")` |
 | `matchesNone($placeholder, ...literals)` | placeholder, literals | Checks if placeholder matches none of the literal values | `$x.toString() :: matchesNone($x, "null")` |
 | `hasNoSideEffect($placeholder)` | placeholder | Checks if expression has no side effects | `$x + 1 :: hasNoSideEffect($x)` |

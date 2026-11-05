@@ -143,6 +143,9 @@ Included through [#1801](https://github.com/carstenartur/sandbox/pull/1801), [#1
 ## Reliability and documentation
 
 - Retry temporary Gemini overloads during nightly commit mining.
+- Restrict bundled `String.indexOf(String)` rewrites to verified safe contexts
+  and remove the behavior-changing `ThreadLocal.set(null)` replacement. Further
+  `misc` hint safety work is tracked in [#1813](https://github.com/carstenartur/sandbox/issues/1813).
 - Keep scheduled verification from cancelling active checks.
 - Keep stable-tree identity across Maven clean and curated notes in canonical dry-run
   evidence. Publication uses the reviewed asset; empty/wrong-version notes fail closed.

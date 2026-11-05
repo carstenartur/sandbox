@@ -73,6 +73,7 @@ public final class HintLanguageVocabulary {
 			Map.entry("hasNoSideEffect", "No writes, explicit calls/allocation or volatile reads; does not prove safe reordering or exception freedom"), //$NON-NLS-1$ //$NON-NLS-2$
 			Map.entry("stringSubstringSafe", "Resolved String substring/length calls with stable local receiver and passive start index; declines internal comments"), //$NON-NLS-1$ //$NON-NLS-2$
 			Map.entry("stringIsBlankSafe", "Resolved String Unicode strip/emptiness calls eligible for isBlank; declines internal comments"), //$NON-NLS-1$ //$NON-NLS-2$
+			Map.entry("stringIndexOfContainsSafe", "Resolved String.indexOf(String) comparisons with target-stable arguments; declines comments and unsafe lambda bodies"), //$NON-NLS-1$ //$NON-NLS-2$
 			Map.entry("isStableValue", "Literal or resolved final local/parameter read; no field/array access or implicit conversion proof"), //$NON-NLS-1$ //$NON-NLS-2$
 			Map.entry("sourceVersionBetween", "Source version is within the supplied range"), //$NON-NLS-1$ //$NON-NLS-2$
 			Map.entry("genericTypeIs", "Generic type argument at an index matches a type"), //$NON-NLS-1$ //$NON-NLS-2$

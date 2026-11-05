@@ -18,6 +18,7 @@ import org.eclipse.jdt.core.dom.CastExpression;
 import org.eclipse.jdt.core.dom.Comment;
 import org.eclipse.jdt.core.dom.ConditionalExpression;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
@@ -25,14 +26,17 @@ import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.SuperFieldAccess;
+import org.eclipse.jdt.core.dom.TextBlock;
 import org.sandbox.jdt.triggerpattern.api.GuardContext;
 
 /**
- * Binding-dependent safety contracts for the two JDT reference String cleanups.
+ * Binding-dependent safety contracts for String cleanups.
  *
  * <p>These are deliberately narrower than JDT's AST rewrite implementations:
  * text replacements decline internal comments, and substring accepts stable
@@ -47,8 +51,80 @@ final class StringCleanupGuards {
 	private StringCleanupGuards() {
 	}
 
+	static boolean indexOfContainsSafe(GuardContext context, Object... arguments) {
+		if (arguments.length != 0 || hasCommentInRewriteRange(context)
+				|| !(context.getMatchedNode() instanceof InfixExpression comparison)
+				|| comparison.hasExtendedOperands()
+				|| !(unparenthesize(comparison.getLeftOperand()) instanceof MethodInvocation invocation)) {
+			return false;
+		}
+		Object constant= comparison.getRightOperand().resolveConstantExpressionValue();
+		InfixExpression.Operator operator= comparison.getOperator();
+		boolean positive= Integer.valueOf(0).equals(constant) && operator == InfixExpression.Operator.GREATER_EQUALS
+				|| Integer.valueOf(-1).equals(constant) && operator == InfixExpression.Operator.NOT_EQUALS;
+		boolean negative= Integer.valueOf(0).equals(constant) && operator == InfixExpression.Operator.LESS
+				|| Integer.valueOf(-1).equals(constant) && operator == InfixExpression.Operator.EQUALS;
+		if ((!positive && !negative) || (positive && comparison.getParent() instanceof LambdaExpression)) {
+			return false;
+		}
+		return stringMethod(context, "stringIndexOfContainsSafe", invocation, "indexOf", STRING) //$NON-NLS-1$ //$NON-NLS-2$
+				&& targetStableStringArgument(context, (Expression) invocation.arguments().get(0));
+	}
+
+	/** The replacement's CharSequence parameter must not change target-type inference. */
+	private static boolean targetStableStringArgument(GuardContext context, Expression expression) {
+		Expression argument= unparenthesize(expression);
+		if (argument instanceof StringLiteral || argument instanceof TextBlock) {
+			return true;
+		}
+		if (argument instanceof MethodInvocation call) {
+			IMethodBinding binding= call.resolveMethodBinding();
+			if (binding == null || binding.isRecovered()) {
+				context.markUnknown("stringIndexOfContainsSafe", "Cannot resolve argument method signature"); //$NON-NLS-1$ //$NON-NLS-2$
+				return false;
+			}
+			IMethodBinding declaration= binding.getMethodDeclaration();
+			ITypeBinding returnType= declaration.getReturnType();
+			return !declaration.isRecovered() && declaration.getTypeParameters().length == 0
+					&& returnType != null && !returnType.isRecovered()
+					&& STRING.equals(returnType.getQualifiedName());
+		}
+		if (argument instanceof Name name) {
+			return declaredStringVariable(context, name.resolveBinding());
+		}
+		if (argument instanceof FieldAccess field) {
+			return declaredStringVariable(context, field.resolveFieldBinding());
+		}
+		if (argument instanceof SuperFieldAccess field) {
+			return declaredStringVariable(context, field.resolveFieldBinding());
+		}
+		if (!(argument instanceof CastExpression)) {
+			return false;
+		}
+		ITypeBinding type= argument.resolveTypeBinding();
+		if (type == null || type.isRecovered()) {
+			context.markUnknown("stringIndexOfContainsSafe", "Cannot resolve argument type"); //$NON-NLS-1$ //$NON-NLS-2$
+			return false;
+		}
+		return STRING.equals(type.getQualifiedName());
+	}
+
+	private static boolean declaredStringVariable(GuardContext context, IBinding binding) {
+		if (!(binding instanceof IVariableBinding variable) || variable.isRecovered()) {
+			context.markUnknown("stringIndexOfContainsSafe", "Cannot resolve argument variable"); //$NON-NLS-1$ //$NON-NLS-2$
+			return false;
+		}
+		IVariableBinding declaration= variable.getVariableDeclaration();
+		ITypeBinding type= declaration.getType();
+		if (declaration.isRecovered() || type == null || type.isRecovered()) {
+			context.markUnknown("stringIndexOfContainsSafe", "Cannot resolve declared argument type"); //$NON-NLS-1$ //$NON-NLS-2$
+			return false;
+		}
+		return STRING.equals(type.getQualifiedName());
+	}
+
 	static boolean substringSafe(GuardContext context, Object... arguments) {
-		if (arguments.length != 0 || hasInternalComment(context)
+		if (arguments.length != 0 || hasCommentInRewriteRange(context)
 				|| !(context.getMatchedNode() instanceof MethodInvocation substring)
 				|| !stringMethod(context, "stringSubstringSafe", substring, "substring", "int", "int")) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 			return false;
@@ -70,7 +146,7 @@ final class StringCleanupGuards {
 	}
 
 	static boolean isBlankSafe(GuardContext context, Object... arguments) {
-		if (arguments.length != 0 || hasInternalComment(context)) {
+		if (arguments.length != 0 || hasCommentInRewriteRange(context)) {
 			return false;
 		}
 		ASTNode node= context.getMatchedNode();
@@ -211,18 +287,25 @@ final class StringCleanupGuards {
 		return result;
 	}
 
-	/** Text substitution cannot relocate comments inside the replaced AST range. */
-	private static boolean hasInternalComment(GuardContext context) {
+	/** JDT's default rewrite range can extend to adjacent comments. */
+	private static boolean hasCommentInRewriteRange(GuardContext context) {
 		ASTNode node= context.getMatchedNode();
 		if (node == null || context.getCompilationUnit() == null
-				|| context.getCompilationUnit().getCommentList() == null) {
+				|| context.getCompilationUnit().getCommentList() == null
+				|| node.getRoot() != context.getCompilationUnit()) {
 			return true;
 		}
-		int start= node.getStartPosition();
-		int end= start + node.getLength();
+		int start= context.getCompilationUnit().getExtendedStartPosition(node);
+		int length= context.getCompilationUnit().getExtendedLength(node);
+		if (start < 0 || length < 0 || start > node.getStartPosition()
+				|| (long) start + length < (long) node.getStartPosition() + node.getLength()) {
+			return true;
+		}
+		long end= (long) start + length;
 		for (Object value : context.getCompilationUnit().getCommentList()) {
 			Comment comment= (Comment) value;
-			if (comment.getStartPosition() >= start && comment.getStartPosition() < end) {
+			int commentStart= comment.getStartPosition();
+			if (commentStart < end && (long) commentStart + comment.getLength() > start) {
 				return true;
 			}
 		}

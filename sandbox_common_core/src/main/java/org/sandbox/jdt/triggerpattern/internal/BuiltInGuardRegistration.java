@@ -47,6 +47,7 @@ public final class BuiltInGuardRegistration {
 		BuiltInGuards.registerAll(guards);
 		guards.put("stringSubstringSafe", StringCleanupGuards::substringSafe); //$NON-NLS-1$
 		guards.put("stringIsBlankSafe", StringCleanupGuards::isBlankSafe); //$NON-NLS-1$
+		guards.put("stringIndexOfContainsSafe", StringCleanupGuards::indexOfContainsSafe); //$NON-NLS-1$
 		guards.put("instanceof", BuiltInGuardRegistration::evaluateInstanceOf); //$NON-NLS-1$
 		guards.put("subtypeOf", BuiltInGuardRegistration::evaluateSubtypeOf); //$NON-NLS-1$
 		guards.put("genericTypeIs", BuiltInGuardRegistration::evaluateGenericTypeIs); //$NON-NLS-1$

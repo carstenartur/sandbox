@@ -21,8 +21,11 @@ import java.util.Map;
 
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jface.text.Document;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -40,6 +43,7 @@ class JdtStringCleanupContractTest {
 
 	private HintFile substring;
 	private HintFile isBlank;
+	private HintFile misc;
 
 	@BeforeEach
 	void setUp() throws Exception {
@@ -48,6 +52,205 @@ class JdtStringCleanupContractTest {
 		GuardFunctionResolverHolder.setResolver(guards::get);
 		substring= load("string-modernization.sandbox-hint"); //$NON-NLS-1$
 		isBlank= load("string-isblank.sandbox-hint"); //$NON-NLS-1$
+		misc= load("misc.sandbox-hint"); //$NON-NLS-1$
+	}
+
+	@Test
+	void indexOfComparisonsRequireTheStringOverload() {
+		assertIndexOfComparison(">= 0", ""); //$NON-NLS-1$ //$NON-NLS-2$
+		assertIndexOfComparison("!= -1", ""); //$NON-NLS-1$ //$NON-NLS-2$
+		assertIndexOfComparison("== -1", "!"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertIndexOfComparison("< 0", "!"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertCompilesAndNoRewrite(substring,
+				"class Test { boolean m(String text) { return text.indexOf('x') >= 0; } }"); //$NON-NLS-1$
+		assertCompilesAndNoRewrite(substring,
+				"class Test { boolean m(String text, int character) { return text.indexOf(character) >= 0; } }"); //$NON-NLS-1$
+		assertCompilesAndNoRewrite(substring,
+				"class Test { boolean m(StringBuilder text) { return text.indexOf(\"x\") >= 0; } }"); //$NON-NLS-1$
+		assertCompilesAndNoRewrite(substring, """
+				class Test {
+				  static class Lookalike { int indexOf(String s) { return 1; } boolean contains(String s) { return false; } }
+				  boolean m(Lookalike text) { return text.indexOf("x") >= 0; }
+				}
+				"""); //$NON-NLS-1$
+		assertCompilesAndNoRewrite(substring,
+				"class Test { boolean m(String text) { return text.indexOf(\"x\", 1) >= 0; } }"); //$NON-NLS-1$
+		assertCompilesAndNoRewrite(substring,
+				"class Test { boolean m(String text) { return text.indexOf(\"x\") > 0; } }"); //$NON-NLS-1$
+		assertCompilesAndNoRewrite(substring,
+				"class Test { boolean m(String text) { return text./* keep */indexOf(\"x\") >= 0; } }"); //$NON-NLS-1$
+	}
+
+	private void assertIndexOfComparison(String comparison, String negation) {
+		assertRewrite(substring,
+				"class Test { boolean m(String text, String part) { return text.indexOf(part) " + comparison + "; } }", //$NON-NLS-1$ //$NON-NLS-2$
+				"class Test { boolean m(String text, String part) { return " + negation + "text.contains(part); } }"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertCompilesAndNoRewrite(substring,
+				"class Test { boolean m(String text) { return text.indexOf('x') " + comparison + "; } }"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	void indexOfComparisonsRequireBindingsAndPreserveReceiverAndArgumentEvaluation() {
+		String source= "class Test { boolean m(String text, String part) { return text.indexOf(part) >= 0; } }"; //$NON-NLS-1$
+		assertTrue(process(substring, source, "11", false).isEmpty()); //$NON-NLS-1$
+		assertRewrite(substring, """
+				class Test {
+				  String receiver() { return "abc"; }
+				  String part() { return "b"; }
+				  boolean m() { return receiver().indexOf(part()) >= 0; }
+				}
+				""", """
+				class Test {
+				  String receiver() { return "abc"; }
+				  String part() { return "b"; }
+				  boolean m() { return receiver().contains(part()); }
+				}
+				"""); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	void indexOfPositiveComparisonMustNotChangeLambdaOverloadResolution() {
+		String source= """
+				class Test {
+				  void use(java.util.function.Predicate<String> f) {}
+				  void use(java.util.function.Consumer<String> f) {}
+				  void m() { use(text -> text.indexOf("x") >= 0); }
+				}
+				"""; //$NON-NLS-1$
+		assertCompiles(source);
+		assertNoRewrite(substring, source);
+		assertNoRewrite(substring, source.replace(">= 0", "!= -1")); //$NON-NLS-1$ //$NON-NLS-2$
+		assertRewrite(substring, source.replace(">= 0", "< 0"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("text.indexOf(\"x\") >= 0", "!text.contains(\"x\")")); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	void indexOfCleanupDeclinesAdjacentCommentsInJdtRewriteRange() {
+		assertNoRewriteWithAdjacentComments("""
+				class Test { boolean m(String s) { return /*leading*/ s.indexOf("x") >= 0 /*trailing*/; } }
+				"""); //$NON-NLS-1$
+		assertNoRewriteWithAdjacentComments("""
+				class Test { boolean m(String s, boolean b) { return s.indexOf("x") < 0 /*keep*/ && b; } }
+				"""); //$NON-NLS-1$
+		assertNoRewriteWithAdjacentComments("""
+				class Test { boolean m(String s, boolean b) { return s.indexOf("x") < 0 // keep line
+				    || b; } }
+				"""); //$NON-NLS-1$
+	}
+
+	@Test
+	void indexOfCleanupKeepsValidLambdaOverloadsThroughJdtRewrite() throws Exception {
+		String source= """
+				class Test {
+				  void use(java.util.function.Predicate<String> f) {}
+				  void use(java.util.function.Consumer<String> f) {}
+				  void m() { use(text -> text.indexOf("x") < 0); }
+				}
+				"""; //$NON-NLS-1$
+		assertJdtRewriteCompiles(source);
+		assertJdtRewriteCompiles(source.replace("text.indexOf(\"x\") < 0", "(text.indexOf(\"x\") >= 0)")); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	void indexOfCleanupPreservesUnrelatedCommentsThroughJdtRewrite() throws Exception {
+		String source= """
+				class Test {
+				  // This comment belongs to the method.
+				  boolean m(String text) { return text.indexOf("x") >= 0; }
+				}
+				"""; //$NON-NLS-1$
+		CompilationUnit unit= parse(source, "11", true); //$NON-NLS-1$
+		List<TransformationResult> results= new BatchTransformationProcessor(substring).process(unit, options("11")) //$NON-NLS-1$
+				.stream().filter(TransformationResult::hasReplacement).toList();
+		assertEquals(1, results.size());
+		String transformed= applyJdtRewrite(unit, results.getFirst(), source);
+		assertTrue(transformed.contains("// This comment belongs to the method.")); //$NON-NLS-1$
+		assertCompiles(transformed);
+	}
+
+	@Test
+	void indexOfDoesNotChangeTargetTypingOfGenericArgument() {
+		String source= """
+				class Test {
+				  static <T extends CharSequence> T pick(java.util.function.Function<T, T> f) { return null; }
+				  boolean m(String text) { return text.indexOf(pick(x -> x.strip())) >= 0; }
+				}
+				"""; //$NON-NLS-1$
+		assertCompilesAndNoRewrite(substring, source);
+		assertCompilesAndNoRewrite(substring, source.replace("pick(x -> x.strip())", "(pick(x -> x.strip()))")); //$NON-NLS-1$ //$NON-NLS-2$
+		assertCompilesAndNoRewrite(substring, """
+				class Test {
+				  static <T extends CharSequence> T pick(java.util.function.Function<T, T> f) { return f.apply(null); }
+				  static String choose(String x) { return "String"; }
+				  static String choose(CharSequence x) { return "CharSequence"; }
+				  boolean m(String text) { return text.indexOf(pick(x -> choose(x))) >= 0; }
+				}
+				"""); //$NON-NLS-1$
+		assertCompilesAndNoRewrite(substring, """
+				class Test {
+				  boolean m(String text, boolean flag, String a, String b) {
+				    return text.indexOf(flag ? a : b) >= 0;
+				  }
+				}
+				"""); //$NON-NLS-1$
+	}
+
+	@Test
+	void indexOfDoesNotWeakenCastsForGenericFields() {
+		assertCompilesAndNoRewrite(substring, """
+				class Test {
+				  static class Box<T> { T value; }
+				  boolean m(Box<String> box) { return "a".indexOf(box.value) >= 0; }
+				}
+				"""); //$NON-NLS-1$
+		assertCompilesAndNoRewrite(substring, """
+				class Test {
+				  boolean m(String text, String[] parts) { return text.indexOf(parts[0]) >= 0; }
+				}
+				"""); //$NON-NLS-1$
+		assertRewrite(substring, """
+				class Test {
+				  static class Box<T> { T value; }
+				  boolean m(Box<String> box) { return "a".indexOf((String) box.value) >= 0; }
+				}
+				""", """
+				class Test {
+				  static class Box<T> { T value; }
+				  boolean m(Box<String> box) { return "a".contains(((String)box.value)); }
+				}
+				"""); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	void indexOfKeepsTheOriginalFixedReturnTypeFactoryCase() {
+		assertRewrite(substring,
+				"class Test { boolean m(String text, int n) { return text.indexOf(String.valueOf(n)) >= 0; } }", //$NON-NLS-1$
+				"class Test { boolean m(String text, int n) { return text.contains(String.valueOf(n)); } }"); //$NON-NLS-1$
+	}
+
+	@Test
+	void threadLocalNullAssignmentMustNotBecomeRemove() {
+		assertCompilesAndNoRewrite(misc, """
+				class Test {
+				  ThreadLocal<String> local = ThreadLocal.withInitial(() -> "fallback");
+				  void m() { local.set(null); }
+				}
+				"""); //$NON-NLS-1$
+		assertCompilesAndNoRewrite(misc, """
+				class Test {
+				  ThreadLocal<String> local = new InheritableThreadLocal<>();
+				  void m() { local.set(null); }
+				}
+				"""); //$NON-NLS-1$
+		assertCompilesAndNoRewrite(misc, """
+				class Test {
+				  static class Custom extends ThreadLocal<String> {
+				    @Override public void remove() { throw new AssertionError(); }
+				  }
+				  ThreadLocal<String> local = new Custom();
+				  void m() { local.set(null); }
+				}
+				"""); //$NON-NLS-1$
 	}
 
 	@Test
@@ -230,6 +433,10 @@ class JdtStringCleanupContractTest {
 				"class Test { boolean m(String text) { return text./* reason */strip().isEmpty(); } }"); //$NON-NLS-1$
 		assertNoRewrite(substring,
 				"class Test { String m(String text) { return text.substring(0, /* retain */text.length()); } }"); //$NON-NLS-1$
+		assertCompilesAndNoRewrite(substring,
+				"class Test { String m(String text) { return /* keep */ text.substring(0, text.length()); } }"); //$NON-NLS-1$
+		assertCompilesAndNoRewrite(isBlank,
+				"class Test { boolean m(String text) { return text.strip().isEmpty() /* keep */; } }"); //$NON-NLS-1$
 	}
 
 	private void assertRewrite(HintFile hints, String before, String expected) {
@@ -249,6 +456,43 @@ class JdtStringCleanupContractTest {
 
 	private void assertNoRewrite(HintFile hints, String code) {
 		assertTrue(process(hints, code, "11", true).isEmpty(), () -> "Unexpected rewrite for: " + code); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	private void assertCompilesAndNoRewrite(HintFile hints, String code) {
+		assertCompiles(code);
+		assertNoRewrite(hints, code);
+	}
+
+	private void assertNoRewriteWithAdjacentComments(String code) {
+		assertCompiles(code);
+		CompilationUnit unit= parse(code, "11", true); //$NON-NLS-1$
+		List<TransformationResult> results= new BatchTransformationProcessor(substring).process(unit, options("11")) //$NON-NLS-1$
+				.stream().filter(TransformationResult::hasReplacement).toList();
+		assertTrue(results.isEmpty(), "Adjacent comments are inside JDT's default rewrite range"); //$NON-NLS-1$
+	}
+
+	private void assertJdtRewriteCompiles(String code) throws Exception {
+		assertCompiles(code);
+		CompilationUnit unit= parse(code, "11", true); //$NON-NLS-1$
+		List<TransformationResult> results= new BatchTransformationProcessor(substring).process(unit, options("11")) //$NON-NLS-1$
+				.stream().filter(TransformationResult::hasReplacement).toList();
+		assertEquals(1, results.size());
+		String transformed= applyJdtRewrite(unit, results.getFirst(), code);
+		assertTrue(transformed.contains(".contains(")); //$NON-NLS-1$
+		assertCompiles(transformed);
+	}
+
+	private static String applyJdtRewrite(CompilationUnit unit, TransformationResult result, String code) throws Exception {
+		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
+		parser.setKind(ASTParser.K_EXPRESSION);
+		parser.setSource(result.replacement().toCharArray());
+		parser.setCompilerOptions(options("11")); //$NON-NLS-1$
+		ASTNode replacement= parser.createAST(null);
+		ASTRewrite rewrite= ASTRewrite.create(unit.getAST());
+		rewrite.replace(result.match().getMatchedNode(), ASTNode.copySubtree(unit.getAST(), replacement), null);
+		Document document= new Document(code);
+		rewrite.rewriteAST(document, options("11")).apply(document); //$NON-NLS-1$
+		return document.get();
 	}
 
 	private static void assertCompiles(String code) {

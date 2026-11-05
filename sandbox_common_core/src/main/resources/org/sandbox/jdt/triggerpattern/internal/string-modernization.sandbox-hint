@@ -8,19 +8,19 @@
 <!tags: string, modernization>
 
 
-$str.indexOf($sub) != -1
+$str.indexOf($sub) != -1 :: stringIndexOfContainsSafe()
 => $str.contains($sub)
 ;;
 
-$str.indexOf($sub) == -1
+$str.indexOf($sub) == -1 :: stringIndexOfContainsSafe()
 => !$str.contains($sub)
 ;;
 
-$str.indexOf($sub) >= 0
+$str.indexOf($sub) >= 0 :: stringIndexOfContainsSafe()
 => $str.contains($sub)
 ;;
 
-$str.indexOf($sub) < 0
+$str.indexOf($sub) < 0 :: stringIndexOfContainsSafe()
 => !$str.contains($sub)
 ;;
 
