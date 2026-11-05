@@ -19,10 +19,10 @@
   "behaviorFingerprint": "sha256:50c5ff3d7326701a1826c13252d58506c9c2eabfd5efe8c7893969653016a2a7",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
+    "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 2: The import org.eclipse.jface.wizard cannot be resolved",
-    "verifiedAt": "2026-11-04T02:23:36.396254704Z",
-    "verifierVersion": "8",
+    "verifiedAt": "2026-11-05T02:31:56.345396404Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

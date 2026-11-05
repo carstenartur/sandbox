@@ -19,12 +19,12 @@
   "behaviorFingerprint": "sha256:a452b8674ea705b5ae6fb315dc9c01b8d928769910a16a36e01457de51027e75",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 7: The public type MyProcess must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:45.338772515Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "stage": "NEGATIVE_MATCH",
+    "message": "Negative example unexpectedly matched 1 time(s)",
+    "verifiedAt": "2026-11-05T02:32:05.790896335Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
   },
   "transitions": []
 }

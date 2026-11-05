@@ -18,12 +18,12 @@
   "behaviorFingerprint": "sha256:c98913b3531b77298946d1cc23397d0d5879d1b04b2843e26e887631533f3f8f",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 10: The public type JavaDocScanner must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:38.260281116Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example is ambiguous: expected one replacement but got 3",
+    "verifiedAt": "2026-11-05T02:31:58.277716564Z",
+    "verifierVersion": "9",
+    "matches": 3,
+    "replacements": 3
   },
   "transitions": []
 }

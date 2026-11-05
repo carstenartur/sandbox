@@ -13,18 +13,33 @@
   "category": "ThreadLocal Cleanup",
   "summary": "Replaces calls to ThreadLocal.set(null) with ThreadLocal.remove() when clearing a ThreadLocal variable, preventing potential memory leaks and ensuring proper state management.",
   "sourceVersion": "21",
-  "status": "DSL_VALID",
+  "status": "READY_FOR_REVIEW",
   "discoveredAt": "2026-09-17T02:26:30.214288883Z",
   "ruleFingerprint": "sha256:b3715759de996e4edd5d090d2f1f9751220d278787d2ecf18e0d78f6e60b7d18",
   "behaviorFingerprint": "sha256:d3f8b234e10c1bd6298abf3ccf6b6329e60227f43ce1b81798dd4e0497272c2d",
   "verification": {
-    "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 3: The public type MyClass must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:38.948110772Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Example rewrite verified; semantic review still required",
+    "verifiedAt": "2026-11-05T02:31:58.934738471Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
   },
-  "transitions": []
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-11-05T02:31:58.935437913Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-11-05T02:31:58.935466206Z"
+    }
+  ]
 }

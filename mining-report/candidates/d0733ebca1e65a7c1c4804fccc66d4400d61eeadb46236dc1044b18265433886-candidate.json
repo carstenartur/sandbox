@@ -13,18 +13,33 @@
   "category": "Redundant Code",
   "summary": "Removes the redundant second argument `string.length()` from `String.substring()` calls when it\u0027s implied by the single-argument version.",
   "sourceVersion": "21",
-  "status": "DSL_VALID",
+  "status": "READY_FOR_REVIEW",
   "discoveredAt": "2026-09-27T02:31:29.982936144Z",
   "ruleFingerprint": "sha256:a4d3f6e070b2b89f85b6268fbcf3e465ce6dab6ede4743c7e370f34626199e55",
   "behaviorFingerprint": "sha256:e2e03b2b2cc449ee8af4b6f7ca6afafc628fffa483552d8ba608594753ad83df",
   "verification": {
-    "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 1: The public type Example must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:40.332339498Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Example rewrite verified; semantic review still required",
+    "verifiedAt": "2026-11-05T02:32:00.557487450Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
   },
-  "transitions": []
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-11-05T02:32:00.558245410Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-11-05T02:32:00.558280505Z"
+    }
+  ]
 }

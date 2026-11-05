@@ -13,8 +13,9 @@
   "category": "Comparison Operator Refactoring",
   "summary": "Invert less-than comparison by swapping operands and changing operator to greater-than-or-equal.",
   "sourceVersion": "21",
-  "status": "READY_FOR_REVIEW",
+  "status": "REJECTED",
   "discoveredAt": "2026-08-27T03:58:12.456828692Z",
+  "rejectionReason": "Review issue #1539 closed (not_planned); existing rejection retained",
   "ruleFingerprint": "sha256:f9b78e257cb1a7edda8bad9e7b2592fa82585f9b0b997830c8a64e5b45cdde8b",
   "behaviorFingerprint": "sha256:ad0b581d474f5f6ab87174633a8267f46ce4e710f5f033de29875a3377c8834c",
   "verification": {
@@ -40,6 +41,13 @@
       "actor": "CandidateVerificationCli",
       "reason": "All deterministic candidate gates passed",
       "occurredAt": "2026-08-27T03:58:17.512710235Z"
+    },
+    {
+      "from": "READY_FOR_REVIEW",
+      "to": "REJECTED",
+      "actor": "CandidateReviewIssues",
+      "reason": "Review issue #1539 closed (not_planned); existing rejection retained",
+      "occurredAt": "2026-11-05T02:31:48.687558389Z"
     }
   ]
 }

@@ -13,18 +13,33 @@
   "category": "Deprecated API Usage",
   "summary": "Replaces deprecated Integer constructor with static factory method Integer.valueOf().",
   "sourceVersion": "21",
-  "status": "DSL_VALID",
+  "status": "READY_FOR_REVIEW",
   "discoveredAt": "2026-10-09T02:37:30.521463163Z",
   "ruleFingerprint": "sha256:c93578ef60ec2e73f6819bc82ab52d7516cec85191684f87f5955c62d218b24d",
   "behaviorFingerprint": "sha256:b94b180e3e1c4170af38ccdcaa627cf5b5e639aa0e98e0c354ca1504c424c9f0",
   "verification": {
-    "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 3: The public type MyClass must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:41.477567864Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Example rewrite verified; semantic review still required",
+    "verifiedAt": "2026-11-05T02:32:01.836708399Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
   },
-  "transitions": []
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-11-05T02:32:01.837448955Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-11-05T02:32:01.837468482Z"
+    }
+  ]
 }

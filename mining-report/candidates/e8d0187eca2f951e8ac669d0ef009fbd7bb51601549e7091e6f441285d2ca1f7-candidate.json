@@ -19,12 +19,12 @@
   "behaviorFingerprint": "sha256:9298eed3b8d48371b78f5e985daa3e67892a18fb486ba0ff669925fa5659dc74",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 1: The public type MyClass must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:38.971982426Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example is ambiguous: expected one replacement but got 3",
+    "verifiedAt": "2026-11-05T02:31:58.966560077Z",
+    "verifierVersion": "9",
+    "matches": 3,
+    "replacements": 3
   },
   "transitions": []
 }

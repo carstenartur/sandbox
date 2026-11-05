@@ -19,10 +19,10 @@
   "behaviorFingerprint": "sha256:e0d74e3d283387979c6b7dea6bd59108c31121dac68d7f7bb0a39789bbfa3fb8",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
+    "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 3: The import com.ibm cannot be resolved",
-    "verifiedAt": "2026-11-04T02:23:40.037790209Z",
-    "verifierVersion": "8",
+    "verifiedAt": "2026-11-05T02:32:00.247363414Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

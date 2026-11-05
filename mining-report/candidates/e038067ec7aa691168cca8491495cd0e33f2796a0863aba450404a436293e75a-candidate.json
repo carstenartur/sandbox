@@ -19,10 +19,10 @@
   "behaviorFingerprint": "sha256:c02079a88d97494aca002d3ba03acaf634ae1a7024e0c17f2a57e8827ecdf964",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
+    "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 3: The import org.eclipse.jface.preference cannot be resolved",
-    "verifiedAt": "2026-11-04T02:23:41.560360365Z",
-    "verifierVersion": "8",
+    "verifiedAt": "2026-11-05T02:32:01.914758533Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

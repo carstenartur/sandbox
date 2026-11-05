@@ -18,10 +18,10 @@
   "behaviorFingerprint": "sha256:ce63a234c6dba52f1d8dc8beab5ab5d5113dc801a463535292906396a758457a",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
+    "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.ui.text.correction cannot be resolved",
-    "verifiedAt": "2026-11-04T02:23:34.242623514Z",
-    "verifierVersion": "8",
+    "verifiedAt": "2026-11-05T02:31:53.755367638Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

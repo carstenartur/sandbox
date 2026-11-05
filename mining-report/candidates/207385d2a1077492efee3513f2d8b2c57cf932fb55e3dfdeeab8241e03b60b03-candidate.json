@@ -19,12 +19,12 @@
   "behaviorFingerprint": "sha256:41d38bb811a30abfee10231f54f122fff7cb8f5f66681e40bcfb6b6938e4defa",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 3: The public type HTMLPrinter must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:40.505678872Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example is ambiguous: expected one replacement but got 2",
+    "verifiedAt": "2026-11-05T02:32:00.771832466Z",
+    "verifierVersion": "9",
+    "matches": 2,
+    "replacements": 2
   },
   "transitions": []
 }

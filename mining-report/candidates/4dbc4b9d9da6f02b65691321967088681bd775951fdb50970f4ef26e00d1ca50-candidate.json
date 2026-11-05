@@ -18,12 +18,12 @@
   "behaviorFingerprint": "sha256:3e1ab3428d6cd416c32ef1294a3f3fd3e43e14a5172f25dc46a34f3e6ebd9fac",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 6: The public type TestClass must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:32.062280979Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "stage": "AFTER_REWRITE",
+    "message": "Transformed syntax tree does not equal afterExample",
+    "verifiedAt": "2026-11-05T02:31:51.044511811Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
   },
   "transitions": []
 }

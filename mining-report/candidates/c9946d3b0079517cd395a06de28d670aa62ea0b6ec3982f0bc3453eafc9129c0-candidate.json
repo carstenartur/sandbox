@@ -18,10 +18,10 @@
   "behaviorFingerprint": "sha256:234940698fb2904883b31e9a7e8fc7523becfecc2901ba77f9a333eea5806c9f",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 11: The public type Example must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:31.628440828Z",
-    "verifierVersion": "8",
+    "stage": "AFTER_PARSE",
+    "message": "Java compile error at line 16: The constructor Status(int, String, CoreException) is undefined",
+    "verifiedAt": "2026-11-05T02:31:50.363333718Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

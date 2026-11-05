@@ -19,12 +19,12 @@
   "behaviorFingerprint": "sha256:f73adaff67db7735c334960297e34ecdf6346f04d8d0f81366fc21ebc4c87d74",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 22: The public type TypeHierarchyViewPart must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:35.959116022Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "stage": "AFTER_REWRITE",
+    "message": "Transformed syntax tree does not equal afterExample",
+    "verifiedAt": "2026-11-05T02:31:55.779602881Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
   },
   "transitions": []
 }

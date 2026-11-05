@@ -19,10 +19,10 @@
   "behaviorFingerprint": "sha256:a076f3aae7cc0903f5dc6248004cddbd42ddcec05f54cfb51eea1eec5ab03502",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
+    "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 3: The import org.eclipse.jdt.core.CoreException cannot be resolved",
-    "verifiedAt": "2026-11-04T02:23:33.346614241Z",
-    "verifierVersion": "8",
+    "verifiedAt": "2026-11-05T02:31:52.666700599Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

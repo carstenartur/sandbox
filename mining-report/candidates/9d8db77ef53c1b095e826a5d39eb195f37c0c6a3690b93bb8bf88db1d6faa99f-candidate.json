@@ -13,8 +13,9 @@
   "category": "Refactoring",
   "summary": "Replaces a specific chained method call with a local helper method call, assuming the helper method exists in the same class.",
   "sourceVersion": "21",
-  "status": "READY_FOR_REVIEW",
+  "status": "REJECTED",
   "discoveredAt": "2026-08-28T04:57:02.376988359Z",
+  "rejectionReason": "Review issue #1540 closed (not_planned); existing rejection retained",
   "ruleFingerprint": "sha256:cc0c5e1c3800134fa623e9dcdb4e717d847ada9c6fae50a4a84ef61ca5457e66",
   "behaviorFingerprint": "sha256:a5d1e09c59f42342cfea1b4766a0b1e36fe566867663145209de83e870c106a2",
   "verification": {
@@ -40,6 +41,13 @@
       "actor": "CandidateVerificationCli",
       "reason": "All deterministic candidate gates passed",
       "occurredAt": "2026-08-28T04:57:05.859209987Z"
+    },
+    {
+      "from": "READY_FOR_REVIEW",
+      "to": "REJECTED",
+      "actor": "CandidateReviewIssues",
+      "reason": "Review issue #1540 closed (not_planned); existing rejection retained",
+      "occurredAt": "2026-11-05T02:31:48.691584586Z"
     }
   ]
 }

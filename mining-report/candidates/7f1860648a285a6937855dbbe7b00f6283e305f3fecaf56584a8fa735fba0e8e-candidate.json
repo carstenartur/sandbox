@@ -13,18 +13,33 @@
   "category": "String Manipulation",
   "summary": "Appends a semicolon to string concatenations of the form \u0027\u0026\u0027 + symbol within a return statement to correctly form HTML entities.",
   "sourceVersion": "21",
-  "status": "DSL_VALID",
+  "status": "READY_FOR_REVIEW",
   "discoveredAt": "2026-10-30T02:17:30.966781134Z",
   "ruleFingerprint": "sha256:256b8090db78823326b222763774ab855315d1df6b1d17516a109212a5d30320",
   "behaviorFingerprint": "sha256:d24d734bec4a876389ea0b06b5a11503937a18eb50ffc49cf1d8e52586c2948b",
   "verification": {
-    "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 3: The public type HTML2TextReader must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:45.029277468Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Example rewrite verified; semantic review still required",
+    "verifiedAt": "2026-11-05T02:32:05.476839435Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
   },
-  "transitions": []
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-11-05T02:32:05.477444648Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-11-05T02:32:05.477462171Z"
+    }
+  ]
 }

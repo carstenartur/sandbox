@@ -13,18 +13,33 @@
   "category": "String Literal Replacement",
   "summary": "Replace specific GIF image path with PNG path in string literal.",
   "sourceVersion": "21",
-  "status": "DSL_VALID",
+  "status": "READY_FOR_REVIEW",
   "discoveredAt": "2026-10-11T02:39:45.526989805Z",
   "ruleFingerprint": "sha256:6bcc49b8348984578efdc4b7bd656d596835e8e56a0bdeddb8a888215b03f6eb",
   "behaviorFingerprint": "sha256:0e784c5fc51af52e06d6cc24d535e4ddc83a0b6b1e7df74f3f27ab8f7909d4bb",
   "verification": {
-    "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 3: The public type XMLCompletionProcessor must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:41.817658385Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Example rewrite verified; semantic review still required",
+    "verifiedAt": "2026-11-05T02:32:02.208122868Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
   },
-  "transitions": []
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-11-05T02:32:02.208760882Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-11-05T02:32:02.208783114Z"
+    }
+  ]
 }

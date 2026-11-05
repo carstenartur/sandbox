@@ -13,18 +13,33 @@
   "category": "String Literal Replacement",
   "summary": "Replace the string literal \u0027booleanEnabled\u0027 with \u0027ANSI_support_enabled\u0027 within the AnsiConsolePreferenceConstants class.",
   "sourceVersion": "21",
-  "status": "DSL_VALID",
+  "status": "READY_FOR_REVIEW",
   "discoveredAt": "2026-11-03T02:35:31.586496914Z",
   "ruleFingerprint": "sha256:83231b56cfb3b311d914a4b02e12949ac6a3cc8d49e07b41c06fea866fdc6e6e",
   "behaviorFingerprint": "sha256:2162a62c937e234d16bd9c199a09dfdb536c32c905092a0ce08ca84405447ff3",
   "verification": {
-    "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 3: The public type AnsiConsolePreferenceConstants must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:45.734886406Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Example rewrite verified; semantic review still required",
+    "verifiedAt": "2026-11-05T02:32:06.175639159Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
   },
-  "transitions": []
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-11-05T02:32:06.176249432Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-11-05T02:32:06.176265302Z"
+    }
+  ]
 }

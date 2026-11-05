@@ -19,10 +19,10 @@
   "behaviorFingerprint": "sha256:47b8f6d199a2918064a64ffa30631ff3d0a0bfe220ba5f174ddc2ba70516a66c",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
+    "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 4: The import org.eclipse.jdt.ui cannot be resolved",
-    "verifiedAt": "2026-11-04T02:23:35.364865440Z",
-    "verifierVersion": "8",
+    "verifiedAt": "2026-11-05T02:31:55.154330865Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

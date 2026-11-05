@@ -19,10 +19,10 @@
   "behaviorFingerprint": "sha256:85098c9356ac90ec44e3eb2f51f84e1c74cb781845d7a8802ab747c00576c319",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 3: The public type JavaIndenter must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:36.209418830Z",
-    "verifierVersion": "8",
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-11-05T02:31:56.069393068Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

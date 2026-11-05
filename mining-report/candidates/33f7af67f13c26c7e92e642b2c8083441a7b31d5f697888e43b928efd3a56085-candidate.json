@@ -20,9 +20,9 @@
   "verification": {
     "successful": false,
     "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 18: The public type CodeAssistConfigurationBlock must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:36.503973389Z",
-    "verifierVersion": "8",
+    "message": "Java compile error at line 46: The method setLayoutData(GridData) is undefined for the type Text",
+    "verifiedAt": "2026-11-05T02:31:56.495986291Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

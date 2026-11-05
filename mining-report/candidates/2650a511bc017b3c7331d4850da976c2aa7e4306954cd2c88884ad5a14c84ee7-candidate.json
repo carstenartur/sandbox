@@ -21,8 +21,8 @@
     "successful": false,
     "stage": "DSL_PARSE",
     "message": "Candidate DSL must contain exactly one transformation rule, but contains 2",
-    "verifiedAt": "2026-11-04T02:23:45.073290211Z",
-    "verifierVersion": "8",
+    "verifiedAt": "2026-11-05T02:32:05.526059155Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

@@ -18,10 +18,10 @@
   "behaviorFingerprint": "sha256:d0e8600077ab4b916793fb83b42184f78bfe7ec6542f20143a2e4ff2197d28c8",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 5: The public type TestClass must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:32.686029411Z",
-    "verifierVersion": "8",
+    "stage": "AFTER_PARSE",
+    "message": "Java compile error at line 7: CPE_JRT_SYSTEM cannot be resolved or is not a field",
+    "verifiedAt": "2026-11-05T02:31:51.898695811Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

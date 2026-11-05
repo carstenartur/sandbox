@@ -18,10 +18,10 @@
   "behaviorFingerprint": "sha256:4d7414c2cfdf818def0e1de65a97106f9db955a0c98ce426b93e07a7d8cc4db5",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
+    "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 1: The import org.junit cannot be resolved",
-    "verifiedAt": "2026-11-04T02:23:40.815803745Z",
-    "verifierVersion": "8",
+    "verifiedAt": "2026-11-05T02:32:01.148894570Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

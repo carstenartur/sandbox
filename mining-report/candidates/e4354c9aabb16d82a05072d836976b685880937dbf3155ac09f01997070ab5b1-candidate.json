@@ -13,7 +13,7 @@
   "category": "Boolean Simplification",
   "summary": "Simplifies boolean expressions of the form `condition ? true : false` to just `condition`.",
   "sourceVersion": "21",
-  "status": "READY_FOR_REVIEW",
+  "status": "SUPERSEDED",
   "discoveredAt": "2026-07-25T03:14:43.258747339Z",
   "ruleFingerprint": "sha256:d98f6c6b9f02bc298a4d17944a42f4941e162cd22989a13566834d85c218d547",
   "behaviorFingerprint": "sha256:26c38a17eb5d60e46e258a3854e781530d6a3301a601916fc84701f578d16974",
@@ -40,6 +40,13 @@
       "actor": "CandidateVerificationCli",
       "reason": "All deterministic candidate gates passed",
       "occurredAt": "2026-07-25T03:14:44.866121062Z"
+    },
+    {
+      "from": "READY_FOR_REVIEW",
+      "to": "SUPERSEDED",
+      "actor": "CandidateReviewIssues",
+      "reason": "Review issue #1284 closed (completed); historical review; promotion not inferred",
+      "occurredAt": "2026-11-05T02:31:48.692447362Z"
     }
   ]
 }

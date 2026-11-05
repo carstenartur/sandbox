@@ -21,8 +21,8 @@
     "successful": false,
     "stage": "BEFORE_MATCH",
     "message": "Positive example is ambiguous: expected one replacement but got 3",
-    "verifiedAt": "2026-11-04T02:23:41.370386007Z",
-    "verifierVersion": "8",
+    "verifiedAt": "2026-11-05T02:32:01.704755101Z",
+    "verifierVersion": "9",
     "matches": 3,
     "replacements": 3
   },

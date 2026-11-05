@@ -18,10 +18,10 @@
   "behaviorFingerprint": "sha256:0373b2630f0554860f4f75742d899f5ffece4d924b808aef82d5b60021df5d5c",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 5: The public type MarkerSeverityChecker must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:31.132827785Z",
-    "verifierVersion": "8",
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-11-05T02:31:49.899226235Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

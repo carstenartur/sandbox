@@ -19,10 +19,10 @@
   "behaviorFingerprint": "sha256:54ac259d2f73e5de820fc5acfc9cfdc90e1d1586b36acaae547b1c75b4452530",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
+    "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 3: The import org.eclipse.compare cannot be resolved",
-    "verifiedAt": "2026-11-04T02:23:40.689914695Z",
-    "verifierVersion": "8",
+    "verifiedAt": "2026-11-05T02:32:00.991570791Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

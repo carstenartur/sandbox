@@ -19,10 +19,10 @@
   "behaviorFingerprint": "sha256:da1f25c05057a0d1982aead66ff884244eba3ac283a1beff3c389e24f610d35c",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 4: The public type Example must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:44.267910211Z",
-    "verifierVersion": "8",
+    "stage": "DEPENDENCY_RESOLUTION",
+    "message": "Java compile error at line 3: The import org.eclipse.ui cannot be resolved",
+    "verifiedAt": "2026-11-05T02:32:04.710911284Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

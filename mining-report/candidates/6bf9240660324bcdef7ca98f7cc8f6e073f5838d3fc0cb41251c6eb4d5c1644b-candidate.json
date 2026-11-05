@@ -13,18 +13,33 @@
   "category": "Encapsulation",
   "summary": "Replaces direct null check on the \u0027children\u0027 field of `MultiStringMatcher.Node` with a call to the `hasChildren()` accessor method, improving encapsulation.",
   "sourceVersion": "21",
-  "status": "DSL_VALID",
+  "status": "READY_FOR_REVIEW",
   "discoveredAt": "2026-10-22T02:25:35.995600739Z",
   "ruleFingerprint": "sha256:245a8e1cb595d95124c843b86f200dc7dc05b56ff63f692f26e3067b2d649038",
   "behaviorFingerprint": "sha256:686127229bfea05d488c4f16e94047d030d72fe285513666b1379185aff3433b",
   "verification": {
-    "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 6: The public type MultiStringMatcher must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:43.598208421Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Example rewrite verified; semantic review still required",
+    "verifiedAt": "2026-11-05T02:32:04.050540535Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
   },
-  "transitions": []
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-11-05T02:32:04.051463995Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-11-05T02:32:04.051486797Z"
+    }
+  ]
 }

@@ -19,10 +19,10 @@
   "behaviorFingerprint": "sha256:a003898bf8a233525bd5bc4ea03d61ba3d3fd3d9a09b193de936dced4c527673",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
+    "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 4: The import org.eclipse.jdt.internal.ui.text.template cannot be resolved",
-    "verifiedAt": "2026-11-04T02:23:31.187813623Z",
-    "verifierVersion": "8",
+    "verifiedAt": "2026-11-05T02:31:49.933299375Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

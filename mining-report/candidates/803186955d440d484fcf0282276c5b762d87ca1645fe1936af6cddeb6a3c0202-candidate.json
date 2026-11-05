@@ -18,10 +18,10 @@
   "behaviorFingerprint": "sha256:0d20184c1a9133306d835e75e754af79e100b65e341ce3087930b6566d51537f",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
+    "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.ui cannot be resolved",
-    "verifiedAt": "2026-11-04T02:23:35.193529893Z",
-    "verifierVersion": "8",
+    "verifiedAt": "2026-11-05T02:31:54.949794951Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

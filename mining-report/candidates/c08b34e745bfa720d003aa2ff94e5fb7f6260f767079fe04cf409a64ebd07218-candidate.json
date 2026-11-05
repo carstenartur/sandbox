@@ -18,12 +18,12 @@
   "behaviorFingerprint": "sha256:37a4f57fa911d664a1fa80420db90e9e4f9a0d6bd1980145c60fb57ab21bc369",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 7: The public type DefaultPriorityFunction must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:43.929889812Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "stage": "AFTER_REWRITE",
+    "message": "Transformed syntax tree does not equal afterExample",
+    "verifiedAt": "2026-11-05T02:32:04.386725912Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
   },
   "transitions": []
 }

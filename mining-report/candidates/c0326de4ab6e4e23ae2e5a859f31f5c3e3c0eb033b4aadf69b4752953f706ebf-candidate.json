@@ -19,12 +19,12 @@
   "behaviorFingerprint": "sha256:9c3abd96fc54ce7d232ec87562dc2fde3d015d6ea0e41ab7aa397b682a8c0282",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 6: The public type MyResourceChecker must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:35.295102636Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example is ambiguous: expected one replacement but got 2",
+    "verifiedAt": "2026-11-05T02:31:55.085406058Z",
+    "verifierVersion": "9",
+    "matches": 2,
+    "replacements": 2
   },
   "transitions": []
 }

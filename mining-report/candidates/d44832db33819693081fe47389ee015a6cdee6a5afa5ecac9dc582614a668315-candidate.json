@@ -18,10 +18,10 @@
   "behaviorFingerprint": "sha256:2b03a76bab1348b501f8180701c83593df9caf797344959650411605a201568c",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 12: The public type CodeMiningManager must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:42.560899337Z",
-    "verifierVersion": "8",
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-11-05T02:32:03.001110903Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

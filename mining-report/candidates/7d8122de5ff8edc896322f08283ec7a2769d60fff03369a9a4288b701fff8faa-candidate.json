@@ -18,10 +18,10 @@
   "behaviorFingerprint": "sha256:e83b82822b365643244c5ede7a4376a07f66dcaa7b4efe33bfd0cacd2f900b18",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 9: The public type Example must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:39.517282281Z",
-    "verifierVersion": "8",
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-11-05T02:31:59.640902249Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

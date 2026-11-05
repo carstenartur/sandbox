@@ -19,12 +19,12 @@
   "behaviorFingerprint": "sha256:4248004d730e66422ab8c898382b77472414b3a3eb0af29c9aadf159bd7d9359",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 6: The public type Test must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:36.371327135Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "stage": "AFTER_REWRITE",
+    "message": "Transformed source is invalid: Java compile error at line 8: Type mismatch: cannot convert from IScopeContext to DefaultScope",
+    "verifiedAt": "2026-11-05T02:31:56.322261208Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
   },
   "transitions": []
 }

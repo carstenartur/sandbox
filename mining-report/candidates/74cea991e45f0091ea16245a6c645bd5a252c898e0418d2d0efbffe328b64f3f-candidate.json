@@ -19,10 +19,10 @@
   "behaviorFingerprint": "sha256:874ed72b413def9bef12e05bb1a595aef055b0be5a27d430768edadb653c4b3d",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
+    "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
-    "verifiedAt": "2026-11-04T02:23:40.609158934Z",
-    "verifierVersion": "8",
+    "verifiedAt": "2026-11-05T02:32:00.877382453Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

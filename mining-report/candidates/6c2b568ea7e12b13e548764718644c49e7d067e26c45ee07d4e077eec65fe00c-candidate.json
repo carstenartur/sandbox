@@ -19,10 +19,10 @@
   "behaviorFingerprint": "sha256:e8d97c3713edfa1d0a13a998edf63004a547760c8a8825d77dcc607c11356767",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
+    "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 3: The import org.eclipse.jface.viewers cannot be resolved",
-    "verifiedAt": "2026-11-04T02:23:40.100219019Z",
-    "verifierVersion": "8",
+    "verifiedAt": "2026-11-05T02:32:00.307346018Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

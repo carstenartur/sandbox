@@ -1,9 +1,9 @@
 {
-  "totalProcessed": 1023,
-  "relevant": 154,
-  "irrelevant": 869,
+  "totalProcessed": 1078,
+  "relevant": 155,
+  "irrelevant": 923,
   "duplicates": 0,
-  "green": 144,
+  "green": 145,
   "yellow": 0,
   "red": 2,
   "irrelevantReasons": {
@@ -58,7 +58,49 @@
     "The commit modifies a META-INF/MANIFEST.MF file, which is not Java source code. The TriggerPattern DSL is for Java code transformations.": 1,
     "The commit replaces the bitwise AND operator `\u0026` with the logical AND operator `\u0026\u0026`. The TriggerPattern DSL explicitly states that bitwise operators (`\u0026`) are NOT supported in patterns or replacements. Therefore, this transformation cannot be expressed with the current DSL capabilities.": 1,
     "This commit is a version bump in the MANIFEST.MF file, not a Java code cleanup. The TriggerPattern DSL is designed for Java source code transformations.": 2,
-    "This commit removes a redundant \u0027else if\u0027 branch. Detecting and safely removing duplicate conditional logic based on control flow analysis is not directly supported by the current TriggerPattern DSL, which focuses on expression and method declaration transformations.": 1
+    "This commit removes a redundant \u0027else if\u0027 branch. Detecting and safely removing duplicate conditional logic based on control flow analysis is not directly supported by the current TriggerPattern DSL, which focuses on expression and method declaration transformations.": 1,
+    "The transformation requires advanced type inference (actual runtime type of collection elements) that is not available in the DSL for generalizing this transformation. The change relies on a global analysis of how the \u0027fKnownFactories\u0027 list is populated, rather than a local pattern.": 1,
+    "Positive response needs a path and original before/after spans (1..512 characters)": 1,
+    "The transformation involves an Eclipse-specific exception type (org.eclipse.core.runtime.CoreException). Providing JDK-only examples for this specific exception type replacement is not possible, as required by the safety policy. Generalizing to JDK types (e.g., from RuntimeException to Exception) would change the semantic intent of the original commit.": 1,
+    "The transformation involves restructuring control flow by adding a try-with-resources block and removing a finally block, which is not supported by the current TriggerPattern DSL for statement-level rewrites. The DSL focuses on expression and method-level transformations, not arbitrary code insertion or block-level restructuring.": 1,
+    "Source evidence: Source evidence must identify a changed Java expression or statement": 1,
+    "The commit modifies `Bundle-Version` in `MANIFEST.MF` files, which are configuration files and not Java source code. The TriggerPattern DSL is designed for Java code transformations.": 1,
+    "This commit involves a significant architectural change, including altering data structures (ArrayList to LinkedHashMap), changing control flow (replacing a direct loop with an intermediate collection phase and a second loop), and modifying method arguments. These are complex refactorings that cannot be expressed with the current TriggerPattern DSL, which focuses on local expression, declaration, or annotation transformations. The DSL does not support arbitrary statement insertion, deletion, reordering, or complex control flow modifications.": 1,
+    "The cleanup involves replacing an Eclipse-specific API call (`org.eclipse.core.runtime.Platform.getLog`) with another Eclipse-specific API call (`org.eclipse.core.runtime.ILog.of`). The DSL\u0027s requirement for \u0027JDK-only examples\u0027 and to \u0027return noCleanup\u003dtrue when real API bindings are required\u0027 means that a compiling and meaningful example cannot be provided without either creating dependency stubs (which is disallowed) or using non-JDK classes (which is also disallowed for examples). Therefore, this valid transformation cannot be demonstrated within the specified constraints.": 1,
+    "This commit modifies a `README.md` file, which is a markdown document. The TriggerPattern DSL is designed exclusively for Java code transformations (`.sandbox-hint` files) and cannot operate on non-Java file types.": 1,
+    "The cleanup involves replacing a hardcoded string literal command ID with a constant (`org.eclipse.ui.console.IConsoleConstants.COMMAND_ID_CLEAR_CONSOLE`) within an Eclipse API call (`activateHandler`). Similar to Commit 1, the DSL\u0027s requirement for \u0027JDK-only examples\u0027 and to \u0027return noCleanup\u003dtrue when real API bindings are required\u0027 means that a compiling and meaningful example cannot be provided without using non-JDK classes or creating disallowed dependency stubs. Therefore, this valid transformation cannot be demonstrated within the specified constraints.": 1,
+    "The commit only modifies a README.md file and contains no Java code changes that could be transformed into a DSL rule.": 1,
+    "This commit introduces new files (LICENSE, README.md) and does not contain any Java code changes. Therefore, no Java cleanup rule can be derived.": 1,
+    "The change from `new java.util.Hashtable\u003c\u003e()` to `new java.util.HashMap\u003c\u003e()` involves a change in synchronization behavior (`Hashtable` is synchronized, `HashMap` is not) and null value handling (`Hashtable` forbids null keys/values, `HashMap` allows one null key and multiple null values). The modified code is within an Eclipse test class and passes the map to an external Eclipse-specific type (`ProfileManager.CustomProfile`). The correctness of this change depends on unavailable data-flow, synchronization, and nullability facts related to how `ProfileManager.CustomProfile` internally uses the passed map. The DSL rules explicitly forbid proposing changes that rely on such external dependencies or complex architectural analysis, and without reliable guards to ensure thread-safety and null-contract compatibility, this transformation is unsafe for a generic DSL rule.": 1,
+    "The commit modifies a GitHub Actions workflow YAML file, not Java source code. This is not a Java cleanup.": 1,
+    "The commit modifies a GitHub Actions workflow YAML file, changing a Maven goal. This is not a Java cleanup.": 2,
+    "The change is to a shell command in a YAML configuration file, not Java source code. The TriggerPattern DSL is designed for Java code transformations.": 4,
+    "The commit only adds Oomph setup XML files, not Java code. No Java cleanup rule can be derived.": 1,
+    "The commit only introduces a whitespace change (an added blank line between import statements). This is a purely stylistic change, not a semantics-preserving code cleanup that can be expressed as a TriggerPattern DSL rule for code transformation. Such changes are explicitly excluded by the safety policy as \u0027import-only or formatting-only changes\u0027.": 1,
+    "Configuration file changes (XML), not Java source code cleanup.": 1,
+    "Test code refactoring involving local variable and method renames; not a generalizable Java code cleanup pattern.": 1,
+    "Build configuration file changes (XML), not Java source code cleanup.": 1,
+    "New workflow configuration file (YAML), not Java source code cleanup.": 1,
+    "The commit modifies a GitHub Actions workflow configuration file (.yml), not Java source code. Therefore, no Java cleanup rule can be proposed.": 1,
+    "The commit modifies a GitHub Actions workflow configuration file (.yml), changing a Java version string. This is not a Java source code cleanup.": 1,
+    "The commit modifies a Markdown README file, adding an image badge. This is not a Java source code change.": 2,
+    "The commit modifies a GitHub Actions YAML workflow file (.github/workflows/fortify.yml), not Java source code. Therefore, no Java cleanup rule is applicable.": 1,
+    "The commit deletes a GitHub Actions YAML workflow file (.github/workflows/fortify.yml), not Java source code. Therefore, no Java cleanup rule is applicable.": 1,
+    "The commit creates a Markdown file (SECURITY.md), not Java source code. Therefore, no Java cleanup rule is applicable.": 1,
+    "The commit modifies Eclipse product and target definition XML files, not Java source code. The changes involve updating repository URLs and feature IDs, which are infrastructure-level changes.": 1,
+    "The commit introduces a new GitHub Actions workflow configuration file (pmd.yml) which is not Java code. It does not contain any Java cleanups.": 1,
+    "The commit introduces a new Dependabot configuration file (dependabot.yml) which is not Java code. It does not contain any Java cleanups.": 1,
+    "The commit updates a version property in a Maven pom.xml file. This is a build configuration change, not a Java code cleanup.": 1,
+    "The commit updates a plugin version in a Maven pom.xml file. This is a build configuration change, not a Java code cleanup.": 1,
+    "The change updates a Maven plugin version in a \u0027pom.xml\u0027 file, which is an XML configuration file, not Java source code. The TriggerPattern DSL is designed for Java code transformations.": 2,
+    "The change updates a Maven property in a \u0027pom.xml\u0027 file, which is an XML configuration file, not Java source code. The TriggerPattern DSL is designed for Java code transformations.": 1,
+    "The change updates a Maven plugin version in a \u0027pom.xml\u0027 file (a merge commit of a previous version bump), which is an XML configuration file, not Java source code. The TriggerPattern DSL is designed for Java code transformations.": 1,
+    "The commit modifies a Maven POM file (XML), not Java source code. The TriggerPattern DSL is designed for Java code transformations.": 3,
+    "The commit modifies a GitHub Actions workflow file (YAML), not Java source code. The TriggerPattern DSL is designed for Java code transformations.": 1,
+    "The change is in a YAML configuration file (.github/workflows/pmd.yml), not Java source code. The TriggerPattern DSL is for Java code transformations.": 2,
+    "The change is in an XML configuration file (pom.xml), not Java source code. The TriggerPattern DSL is for Java code transformations.": 2,
+    "The commit modifies a Maven pom.xml file to update a plugin version, which is a build configuration change, not a Java code cleanup. The DSL is designed for Java source code transformations.": 3,
+    "The commit modifies a Maven pom.xml file to update a dependency version, which is a build configuration change, not a Java code cleanup. The DSL is designed for Java source code transformations.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-platform/eclipse.platform.text": {
@@ -69,9 +111,16 @@
       "red": 2
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "totalProcessed": 297,
-      "relevant": 45,
-      "green": 37,
+      "totalProcessed": 309,
+      "relevant": 46,
+      "green": 38,
+      "yellow": 0,
+      "red": 0
+    },
+    "https://github.com/carstenartur/sandbox": {
+      "totalProcessed": 43,
+      "relevant": 0,
+      "green": 0,
       "yellow": 0,
       "red": 0
     }
@@ -156,24 +205,29 @@
       "date": "2026-11-04",
       "processed": 63,
       "relevant": 5
+    },
+    {
+      "date": "2026-11-05",
+      "processed": 55,
+      "relevant": 1
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-11-04T02:11:39.557Z",
-    "completedAt": "2026-11-04T02:23:27.553509298Z",
-    "durationSeconds": 707,
+    "startedAt": "2026-11-05T02:21:06.717Z",
+    "completedAt": "2026-11-05T02:31:42.980487361Z",
+    "durationSeconds": 636,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
     "apiCallsMade": 18,
-    "deferredCommits": 551,
+    "deferredCommits": 561,
     "permanentlySkipped": 0
   },
   "timeWindow": {
     "earliestEvaluation": "2026-10-20T02:20:11.033616597Z",
-    "latestEvaluation": "2026-11-04T02:23:22.348384924Z",
+    "latestEvaluation": "2026-11-05T02:31:37.649180219Z",
     "earliestCommitDate": "2010-01-04T11:37:57Z",
-    "latestCommitDate": "2023-06-09T09:08:25Z"
+    "latestCommitDate": "2023-06-30T14:47:04Z"
   }
 }

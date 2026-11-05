@@ -19,10 +19,10 @@
   "behaviorFingerprint": "sha256:60542d871b6e5713599c9f446455d9af5bbfe4f6a94549ca02aeda3c26c90881",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 6: The public type MyOldInterface must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:40.547175376Z",
-    "verifierVersion": "8",
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-11-05T02:32:00.815482332Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

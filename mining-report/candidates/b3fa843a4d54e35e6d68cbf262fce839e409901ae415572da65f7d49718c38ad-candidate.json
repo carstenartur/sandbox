@@ -19,10 +19,10 @@
   "behaviorFingerprint": "sha256:c4af17e12bd0adde01c8be228caf2e43aa544bfca72d3f4627ee25c0fc692997",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
+    "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 3: The import org.eclipse.jface.text.ITextViewer cannot be resolved",
-    "verifiedAt": "2026-11-04T02:23:44.550177143Z",
-    "verifierVersion": "8",
+    "verifiedAt": "2026-11-05T02:32:04.997496856Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },
