@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-11-04
+# Refactoring Mining Report — 2026-11-05
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -9,7 +9,7 @@
 | eclipse.platform | 311 | 71 | 4 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
-| sandbox | 1897 | 182 | 12 |
+| sandbox | 1913 | 181 | 12 |
 
 ## Details
 ### eclipse.jdt.core
@@ -375,8 +375,8 @@
 - `sandbox_xml_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/XMLResourceSupport.java:84` — `bom.clone()`
 - `sandbox_xml_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/XMLResourceSupport.java:92` — `transformedBytes.clone()`
 - `sandbox_xml_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/XMLResourceSupport.java:97` — `transformedBytes.clone()`
-- `sandbox_xml_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/XMLResourceSupport.java:208` — `bom.clone()`
-- `sandbox_xml_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/XMLResourceSupport.java:213` — `bom.clone()`
+- `sandbox_xml_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/XMLResourceSupport.java:228` — `bom.clone()`
+- `sandbox_xml_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/XMLResourceSupport.java:233` — `bom.clone()`
 - `sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapper.java:51` — `arguments.clone()`
 - `sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapper.java:56` — `arguments.clone()`
 - `sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapper.java:66` — `applicationArguments.clone()`
@@ -524,7 +524,6 @@
 - `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/analysis/AnalysisSettings.java:44` — `value == null || value.isEmpty()`
 
 #### Rule: `modernize-java9` → `modernize-java16.stream-collect-tolist.consider-stream-tolist`
-- `sandbox_xml_cleanup/src/org/sandbox/jdt/internal/ui/fix/XMLCleanUpCore.java:94` — `computeFixSet().stream().map(XMLCleanUpFixCore::toString).collect(Collectors....`
 - `sandbox_use_general_type/src/org/sandbox/jdt/internal/ui/fix/UseGeneralTypeCleanUpCore.java:83` — `computeFixSet().stream().map(UseGeneralTypeFixCore::toString).collect(Collect...`
 - `sandbox_platform_helper/src/org/sandbox/jdt/internal/ui/fix/SimplifyPlatformStatusCleanUpCore.java:89` — `computeFixSet().stream().map(SimplifyPlatformStatusFixCore::toString).collect...`
 - `sandbox_int_to_enum/src/org/sandbox/jdt/internal/ui/fix/IntToEnumCleanUpCore.java:213` — `computeFixSet().stream().map(IntToEnumFixCore::toString).collect(Collectors.t...`

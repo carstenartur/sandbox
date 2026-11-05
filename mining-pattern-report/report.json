@@ -1,6 +1,6 @@
 {
   "summary": {
-    "totalMatches": 452,
+    "totalMatches": 451,
     "repositories": {
       "eclipse.jdt.core": {
         "files": 227,
@@ -33,8 +33,8 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1897,
-        "matches": 182,
+        "files": 1913,
+        "matches": 181,
         "rules": 12
       }
     }
@@ -2481,7 +2481,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "sandbox_xml_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/XMLResourceSupport.java",
-      "line": 208,
+      "line": 228,
       "matchedCode": "bom.clone()"
     },
     {
@@ -2489,7 +2489,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "sandbox_xml_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/XMLResourceSupport.java",
-      "line": 213,
+      "line": 233,
       "matchedCode": "bom.clone()"
     },
     {
@@ -3603,14 +3603,6 @@
       "file": "sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/analysis/AnalysisSettings.java",
       "line": 44,
       "matchedCode": "value == null || value.isEmpty()"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "modernize-java9",
-      "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
-      "file": "sandbox_xml_cleanup/src/org/sandbox/jdt/internal/ui/fix/XMLCleanUpCore.java",
-      "line": 94,
-      "matchedCode": "computeFixSet().stream().map(XMLCleanUpFixCore::toString).collect(Collectors.toList())"
     },
     {
       "repository": "sandbox",
