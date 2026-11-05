@@ -20,9 +20,9 @@
   "verification": {
     "successful": false,
     "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 16: The public type TestClass must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:39.385541972Z",
-    "verifierVersion": "8",
+    "message": "Java compile error at line 20: The constructor DataInputStream(SafeFileInputStream) is undefined",
+    "verifiedAt": "2026-11-05T02:31:59.486898176Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

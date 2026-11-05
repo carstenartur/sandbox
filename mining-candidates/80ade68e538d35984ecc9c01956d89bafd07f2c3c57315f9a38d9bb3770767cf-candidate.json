@@ -19,10 +19,10 @@
   "behaviorFingerprint": "sha256:5222e4676dfe96aed3bcf160513a2a759d8703a2ee4f093341c8e95f47f0f93e",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
+    "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 3: The import org.eclipse.jface.text.ITextOperationTarget cannot be resolved",
-    "verifiedAt": "2026-11-04T02:23:42.862465077Z",
-    "verifierVersion": "8",
+    "verifiedAt": "2026-11-05T02:32:03.284306848Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

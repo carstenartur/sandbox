@@ -19,10 +19,10 @@
   "behaviorFingerprint": "sha256:726f8b2e7d527994d314c170e44f695b3a796d4c68eb157ea0f054ccc503c20c",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 7: The public type MyClass must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:39.061255552Z",
-    "verifierVersion": "8",
+    "stage": "AFTER_PARSE",
+    "message": "Java compile error at line 14: The method addPreferenceChangeListener(IEclipsePreferences.IPreferenceChangeListener) in the type IEclipsePreferences is not applicable for the arguments (MyClass)",
+    "verifiedAt": "2026-11-05T02:31:59.061913918Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

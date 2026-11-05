@@ -19,10 +19,10 @@
   "behaviorFingerprint": "sha256:e7ac014e16658f5d2bc7d2e0413a70866635294d16f68ac4f8c1e457a90fa19d",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 41: The public type MyStreamProcessor must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:39.575113246Z",
-    "verifierVersion": "8",
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-11-05T02:31:59.717520386Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

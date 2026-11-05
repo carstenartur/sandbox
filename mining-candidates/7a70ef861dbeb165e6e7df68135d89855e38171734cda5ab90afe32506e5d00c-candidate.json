@@ -20,9 +20,9 @@
   "verification": {
     "successful": false,
     "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 9: The public type Test must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:41.292804813Z",
-    "verifierVersion": "8",
+    "message": "Java compile error at line 16: org.eclipse.search2 cannot be resolved",
+    "verifiedAt": "2026-11-05T02:32:01.630246329Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

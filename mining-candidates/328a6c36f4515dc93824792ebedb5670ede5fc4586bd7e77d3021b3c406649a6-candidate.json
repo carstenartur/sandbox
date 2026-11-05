@@ -13,18 +13,33 @@
   "category": "String Manipulation",
   "summary": "Replaces `string.trim().length() !\u003d 0` with `string.length() !\u003d 0 \u0026\u0026 !string.trim().equals(\"+\")` to refine string content checks.",
   "sourceVersion": "21",
-  "status": "DSL_VALID",
+  "status": "READY_FOR_REVIEW",
   "discoveredAt": "2026-08-31T02:29:26.363347423Z",
   "ruleFingerprint": "sha256:98fb4d637d2120d9376bc566d17717c89b1192d80dd9e40c49d9e22fd2f53813",
   "behaviorFingerprint": "sha256:c3b3c76ce4dfba931392607094022a0820b14fa606bf8ed3cdaeecf7379965ac",
   "verification": {
-    "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 1: The public type Example must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:36.738499442Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Example rewrite verified; semantic review still required",
+    "verifiedAt": "2026-11-05T02:31:56.835867222Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
   },
-  "transitions": []
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-11-05T02:31:56.836871636Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-11-05T02:31:56.836908315Z"
+    }
+  ]
 }

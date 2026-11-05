@@ -19,12 +19,12 @@
   "behaviorFingerprint": "sha256:376ac58c76c3c595659b7d10d37da0bc7a87f947cce59f255da592e667b3507f",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 1: The public type Example must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:32.619319979Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "stage": "NEGATIVE_MATCH",
+    "message": "Negative example unexpectedly matched 1 time(s)",
+    "verifiedAt": "2026-11-05T02:31:51.797515325Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
   },
   "transitions": []
 }

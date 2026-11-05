@@ -13,18 +13,33 @@
   "category": "String API Modernization",
   "summary": "Replaces \u0027String.indexOf(String) \u003e\u003d 0\u0027 with \u0027String.contains(String)\u0027 for improved readability, applicable since Java 1.5.",
   "sourceVersion": "21",
-  "status": "DSL_VALID",
+  "status": "READY_FOR_REVIEW",
   "discoveredAt": "2026-10-21T02:26:58.377962968Z",
   "ruleFingerprint": "sha256:21fdc895a6975fafee6798ee1c41aac13c526b5a80ca9c39c99dd80c0fb24782",
   "behaviorFingerprint": "sha256:26055e2a5e137f9b704d3efe779090f99702f458512e7c1761fee32066a229bc",
   "verification": {
-    "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 1: The public type Example must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:43.260037475Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Example rewrite verified; semantic review still required",
+    "verifiedAt": "2026-11-05T02:32:03.707744723Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
   },
-  "transitions": []
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-11-05T02:32:03.708872194Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-11-05T02:32:03.708893203Z"
+    }
+  ]
 }

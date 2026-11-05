@@ -18,10 +18,10 @@
   "behaviorFingerprint": "sha256:2832d86036fa332951d77344705a6095416dd5b84f4fc54b89942788a176ed24",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 7: The public type TestClass must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:42.621864177Z",
-    "verifierVersion": "8",
+    "stage": "AFTER_PARSE",
+    "message": "Java compile error at line 9: The method getPosition() is undefined for the type Annotation",
+    "verifiedAt": "2026-11-05T02:32:03.062462981Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

@@ -19,10 +19,10 @@
   "behaviorFingerprint": "sha256:60c694649700bf45508629098dfd166eb9b4be3b5fc9d3b03e776748aa039886",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
+    "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 3: The import org.eclipse.jface.text.hyperlink cannot be resolved",
-    "verifiedAt": "2026-11-04T02:23:44.330526295Z",
-    "verifierVersion": "8",
+    "verifiedAt": "2026-11-05T02:32:04.789297697Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

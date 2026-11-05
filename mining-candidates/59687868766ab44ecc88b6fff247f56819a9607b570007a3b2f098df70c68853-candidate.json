@@ -19,12 +19,12 @@
   "behaviorFingerprint": "sha256:ec024130d47f85a6120d2992a46ae04a37df920cb5f917df700313d17e1f27cd",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 7: The public type GenericContentTypeRelatedExtension must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:42.093340077Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "stage": "AFTER_REWRITE",
+    "message": "Transformed source is invalid: Java compile error at line 13: Syntax error, insert \"}\" to complete ClassBody",
+    "verifiedAt": "2026-11-05T02:32:02.510482475Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
   },
   "transitions": []
 }

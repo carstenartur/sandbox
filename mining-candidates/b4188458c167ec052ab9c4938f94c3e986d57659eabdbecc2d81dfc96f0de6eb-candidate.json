@@ -18,10 +18,10 @@
   "behaviorFingerprint": "sha256:9dff7779a238f5aaf58cc6b69726b2358270f3df39b2f79ebe00e9050aa848fd",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
+    "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 1: The import org.eclipse.jface.resource cannot be resolved",
-    "verifiedAt": "2026-11-04T02:23:34.567602261Z",
-    "verifierVersion": "8",
+    "verifiedAt": "2026-11-05T02:31:54.131803244Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

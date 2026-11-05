@@ -13,18 +13,33 @@
   "category": "Modernization",
   "summary": "Replaces local variable declarations initializing StringBuffer with a new StringBuffer() constructor to StringBuilder equivalents.",
   "sourceVersion": "21",
-  "status": "DSL_VALID",
+  "status": "READY_FOR_REVIEW",
   "discoveredAt": "2026-10-13T02:52:04.875504611Z",
   "ruleFingerprint": "sha256:31c4878e060471aa182ee16ed03fbf4bdd591a4478b00e1d50d4e0386977f3c5",
   "behaviorFingerprint": "sha256:5b3decdb5a255e9e0016e3ea797d9e6115b6cb34e6e07eb6ccbb12fe1680af7f",
   "verification": {
-    "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 6: The public type Example must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:41.976337298Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Example rewrite verified; semantic review still required",
+    "verifiedAt": "2026-11-05T02:32:02.388664800Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
   },
-  "transitions": []
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-11-05T02:32:02.389041906Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-11-05T02:32:02.389064639Z"
+    }
+  ]
 }

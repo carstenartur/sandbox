@@ -13,18 +13,33 @@
   "category": "API Modernization",
   "summary": "Adds a check for `!resource.exists()` to `resource !\u003d null` condition when `resource` is an `IResource`.",
   "sourceVersion": "21",
-  "status": "DSL_VALID",
+  "status": "READY_FOR_REVIEW",
   "discoveredAt": "2026-08-22T02:33:24.073179813Z",
   "ruleFingerprint": "sha256:a24d4e5e9e5e21e132443fc543038a29270bb4ef1d4645d7ff9c4ae631d93ea1",
   "behaviorFingerprint": "sha256:6a236fa07ffa71843d2ba20f96b3bf3d29b0afbcdf388ade326f09dc4a4b3ca5",
   "verification": {
-    "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 6: The public type MyContentProvider must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:35.219042778Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Example rewrite verified; semantic review still required",
+    "verifiedAt": "2026-11-05T02:31:54.999773167Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
   },
-  "transitions": []
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-11-05T02:31:55.001101488Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-11-05T02:31:55.001170658Z"
+    }
+  ]
 }

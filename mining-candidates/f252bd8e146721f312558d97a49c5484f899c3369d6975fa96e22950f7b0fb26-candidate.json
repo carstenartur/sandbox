@@ -19,12 +19,12 @@
   "behaviorFingerprint": "sha256:9ede91f25c7e090a0352f2ce166b531311980ead80482cf2b26d3b005a527960",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 9: The public type MyClass must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:39.099677074Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "stage": "AFTER_REWRITE",
+    "message": "Transformed syntax tree does not equal afterExample",
+    "verifiedAt": "2026-11-05T02:31:59.107728130Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
   },
   "transitions": []
 }

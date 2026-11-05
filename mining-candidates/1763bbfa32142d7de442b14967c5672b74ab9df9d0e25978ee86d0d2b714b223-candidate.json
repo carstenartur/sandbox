@@ -19,10 +19,10 @@
   "behaviorFingerprint": "sha256:01663fd33c77b6f48a71c9b25e46834ca1c8b454ba6bf0b6a544d29bb39f9b66",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 7: The public type TestClass must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:37.790006274Z",
-    "verifierVersion": "8",
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-11-05T02:31:57.829927323Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

@@ -19,12 +19,12 @@
   "behaviorFingerprint": "sha256:7f7b541a327884a78536b1825861ef753d4faed00502ed45bec5b0c1eedc4b29",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 9: The public type MyScanner must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:31.887858996Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "stage": "AFTER_REWRITE",
+    "message": "Transformed syntax tree does not equal afterExample",
+    "verifiedAt": "2026-11-05T02:31:50.829344413Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
   },
   "transitions": []
 }

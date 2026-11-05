@@ -19,10 +19,10 @@
   "behaviorFingerprint": "sha256:9240ef5da09befb62c5160743d4e756e08ece07841ef09afa8a5e075c93563ff",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
+    "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 3: The import org.eclipse.ui cannot be resolved",
-    "verifiedAt": "2026-11-04T02:23:32.774838354Z",
-    "verifierVersion": "8",
+    "verifiedAt": "2026-11-05T02:31:52.041098091Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

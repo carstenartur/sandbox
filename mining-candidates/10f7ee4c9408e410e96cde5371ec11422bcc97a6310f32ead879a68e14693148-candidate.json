@@ -19,12 +19,12 @@
   "behaviorFingerprint": "sha256:6a1f478ad0f6d02c1090dd5dd7126b0182299d048f4446ee2c1c6cc01cd1ff6d",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 5: The public type Example must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:36.762205876Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "stage": "AFTER_REWRITE",
+    "message": "Transformed syntax tree does not equal afterExample",
+    "verifiedAt": "2026-11-05T02:31:56.879387778Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
   },
   "transitions": []
 }

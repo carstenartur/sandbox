@@ -18,12 +18,12 @@
   "behaviorFingerprint": "sha256:94ab5fdfd13a0e0961e4a49e2afac9d0c19cd5a392bf1810ed9f668cc1a1cedd",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 6: The public type FatJarPackageWizardPage must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:37.413324598Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example is ambiguous: expected one replacement but got 2",
+    "verifiedAt": "2026-11-05T02:31:57.480692285Z",
+    "verifierVersion": "9",
+    "matches": 2,
+    "replacements": 2
   },
   "transitions": []
 }

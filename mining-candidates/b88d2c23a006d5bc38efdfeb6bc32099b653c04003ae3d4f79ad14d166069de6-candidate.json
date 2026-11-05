@@ -19,10 +19,10 @@
   "behaviorFingerprint": "sha256:c51243650156822cc5be150671a99e49e9309848947fb677d4e6c65cfc25fbe4",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
+    "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 4: The import org.eclipse.jface.text.source.ISourceViewer cannot be resolved",
-    "verifiedAt": "2026-11-04T02:23:42.343018701Z",
-    "verifierVersion": "8",
+    "verifiedAt": "2026-11-05T02:32:02.772440424Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

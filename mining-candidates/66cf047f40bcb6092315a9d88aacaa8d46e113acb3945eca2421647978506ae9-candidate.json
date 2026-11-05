@@ -18,10 +18,10 @@
   "behaviorFingerprint": "sha256:875dfb2cee019916704a0ec3359edff7aabc897642ef10aa484648f4ca31ff36",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 5: The public type FindReplaceDialog must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:41.609604162Z",
-    "verifierVersion": "8",
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-11-05T02:32:01.994641343Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

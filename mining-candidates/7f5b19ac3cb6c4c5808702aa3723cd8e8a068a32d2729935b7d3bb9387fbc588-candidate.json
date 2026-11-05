@@ -18,12 +18,12 @@
   "behaviorFingerprint": "sha256:8742c42330e69305b9206b5d68110d5a0fe12c3b95dbdc3e5a4b44760daba56f",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 12: The public type Example must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:43.758110605Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "stage": "AFTER_REWRITE",
+    "message": "Transformed source is invalid: Java compile error at line 14: $ConstructorType cannot be resolved to a type",
+    "verifiedAt": "2026-11-05T02:32:04.212330689Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
   },
   "transitions": []
 }

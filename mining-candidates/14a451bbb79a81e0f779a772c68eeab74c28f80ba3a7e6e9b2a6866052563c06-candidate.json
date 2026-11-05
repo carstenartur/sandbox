@@ -18,10 +18,10 @@
   "behaviorFingerprint": "sha256:6b186f7ec882e5b8e0b5f7170a29762f4356744623d33fa9ec6417ffcb9ff1ea",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
+    "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 4: The import org.eclipse.jdt.internal.ui.JavaElementLabels cannot be resolved",
-    "verifiedAt": "2026-11-04T02:23:38.662972752Z",
-    "verifierVersion": "8",
+    "verifiedAt": "2026-11-05T02:31:58.699937252Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

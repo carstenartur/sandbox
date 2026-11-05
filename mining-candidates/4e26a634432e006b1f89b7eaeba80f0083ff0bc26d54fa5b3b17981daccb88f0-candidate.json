@@ -19,10 +19,10 @@
   "behaviorFingerprint": "sha256:082edff15926afdefdde580648a65e68ca6d1469db9a87bd96e14b4bf626ba12",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
+    "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 6: The import org.eclipse.jdt.core.dom.SharedASTProvider cannot be resolved",
-    "verifiedAt": "2026-11-04T02:23:36.450016685Z",
-    "verifierVersion": "8",
+    "verifiedAt": "2026-11-05T02:31:56.419278708Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

@@ -21,8 +21,8 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 1: Syntax error on token \"package\", Identifier expected",
-    "verifiedAt": "2026-11-04T02:23:31.540854259Z",
-    "verifierVersion": "8",
+    "verifiedAt": "2026-11-05T02:31:50.262496444Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

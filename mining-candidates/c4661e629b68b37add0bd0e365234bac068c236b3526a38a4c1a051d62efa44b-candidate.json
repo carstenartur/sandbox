@@ -13,18 +13,33 @@
   "category": "API Modernization",
   "summary": "Replaces `File.toURL()` with `File.toURI().toURL()` for robust URL generation, addressing the deprecation of `File.toURL()` since Java 8 and its known issues with URL encoding.",
   "sourceVersion": "21",
-  "status": "DSL_VALID",
+  "status": "READY_FOR_REVIEW",
   "discoveredAt": "2026-09-05T02:27:22.059845875Z",
   "ruleFingerprint": "sha256:71e08924dd3008cc8a2d3d89df9c8d3eec78694bd9884056433893228ced68be",
   "behaviorFingerprint": "sha256:58eb9c05446a9339d5ddbfcaa3beca18114470596a19ffe9f112a887be9c261c",
   "verification": {
-    "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 5: The public type Example must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:37.630991733Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Example rewrite verified; semantic review still required",
+    "verifiedAt": "2026-11-05T02:31:57.682711443Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
   },
-  "transitions": []
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-11-05T02:31:57.683376511Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-11-05T02:31:57.683404252Z"
+    }
+  ]
 }

@@ -19,12 +19,12 @@
   "behaviorFingerprint": "sha256:ef81f9f87a4c072b15c65249d18872721a5b0cd1979fcb40086d65efe3e203e5",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 20: The public type MyClass must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:39.932964587Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "stage": "AFTER_REWRITE",
+    "message": "Transformed source is invalid: Java compile error at line 27: Syntax error on token(s), misplaced construct(s)",
+    "verifiedAt": "2026-11-05T02:32:00.180022303Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
   },
   "transitions": []
 }

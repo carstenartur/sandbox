@@ -19,10 +19,10 @@
   "behaviorFingerprint": "sha256:213c0259736ede24bc2f6c4d2b4521dbd52f878325cc5ac9486b793eb3105973",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 3: The public type Example must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:31.341286414Z",
-    "verifierVersion": "8",
+    "stage": "AFTER_PARSE",
+    "message": "Java compile error at line 8: Syntax error on token \"!\u003d\", invalid AssignmentOperator",
+    "verifiedAt": "2026-11-05T02:31:50.073220910Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

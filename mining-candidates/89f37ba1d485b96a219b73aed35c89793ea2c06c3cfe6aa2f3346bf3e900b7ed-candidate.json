@@ -18,10 +18,10 @@
   "behaviorFingerprint": "sha256:bf96402f81569209010ac500640eaf599a89e47322c05e159db86a2f0180a2b1",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
+    "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.corext cannot be resolved",
-    "verifiedAt": "2026-11-04T02:23:35.041132616Z",
-    "verifierVersion": "8",
+    "verifiedAt": "2026-11-05T02:31:54.806206054Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

@@ -19,10 +19,10 @@
   "behaviorFingerprint": "sha256:a2790aaba5a31f5a1a341427c1e074f8c194f507d614075af6aa52c7cf2eb63b",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
+    "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 4: The import org.eclipse.jdt.internal.ui.JavaPluginImages cannot be resolved",
-    "verifiedAt": "2026-11-04T02:23:38.608595350Z",
-    "verifierVersion": "8",
+    "verifiedAt": "2026-11-05T02:31:58.654850639Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

@@ -19,10 +19,10 @@
   "behaviorFingerprint": "sha256:902a472f9acf8f7512dcfefc343e166ba0765d1ab40da8bb8db04e908364cffe",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
+    "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 3: The import org.eclipse.jface.internal cannot be resolved",
-    "verifiedAt": "2026-11-04T02:23:36.046016258Z",
-    "verifierVersion": "8",
+    "verifiedAt": "2026-11-05T02:31:55.868772637Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

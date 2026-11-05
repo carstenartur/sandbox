@@ -12,18 +12,33 @@
   "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
   "category": "Explicit Unboxing",
   "sourceVersion": "21",
-  "status": "DSL_VALID",
+  "status": "READY_FOR_REVIEW",
   "discoveredAt": "2026-10-09T02:37:30.629944910Z",
   "ruleFingerprint": "sha256:4581e2a071820e97107bde0aced69318813e27ca1e779a87cb9addf0ac128786",
   "behaviorFingerprint": "sha256:c97b28b9121a3ff2fc5e450bb66d974454465d441c6760632ecf7b1c57039be0",
   "verification": {
-    "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 6: The public type TestClass must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:41.584946005Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Example rewrite verified; semantic review still required",
+    "verifiedAt": "2026-11-05T02:32:01.959403282Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
   },
-  "transitions": []
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-11-05T02:32:01.960385641Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-11-05T02:32:01.960410066Z"
+    }
+  ]
 }

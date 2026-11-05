@@ -18,10 +18,10 @@
   "behaviorFingerprint": "sha256:1774211be5f772ed99e54a8b446528f9c6d1e558f7e3d2df45c7a6a9381829b0",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
+    "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 3: The import org.eclipse.jface.dialogs cannot be resolved",
-    "verifiedAt": "2026-11-04T02:23:31.581040200Z",
-    "verifierVersion": "8",
+    "verifiedAt": "2026-11-05T02:31:50.300086269Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

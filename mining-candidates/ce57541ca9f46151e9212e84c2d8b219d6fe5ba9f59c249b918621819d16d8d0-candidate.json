@@ -13,18 +13,33 @@
   "category": "Redundant Code",
   "summary": "Replaces a redundant self-comparison (e.g., `$x \u003d\u003d $x`) with `true` in a boolean expression.",
   "sourceVersion": "21",
-  "status": "DSL_VALID",
+  "status": "READY_FOR_REVIEW",
   "discoveredAt": "2026-10-20T02:20:11.286983298Z",
   "ruleFingerprint": "sha256:4adb0add7292442c7fa3027614b4f1f7f088a143ea5d4738a6f1141b3a6561b9",
   "behaviorFingerprint": "sha256:61874b608bb29819cd7402c098fdf9c4b375fd1b69388f9972b10fe6ac3c51e3",
   "verification": {
-    "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 1: The public type MyClass must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:42.960609778Z",
-    "verifierVersion": "8",
-    "matches": 0,
-    "replacements": 0
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Example rewrite verified; semantic review still required",
+    "verifiedAt": "2026-11-05T02:32:03.389719106Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
   },
-  "transitions": []
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-11-05T02:32:03.390490170Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-11-05T02:32:03.390515697Z"
+    }
+  ]
 }

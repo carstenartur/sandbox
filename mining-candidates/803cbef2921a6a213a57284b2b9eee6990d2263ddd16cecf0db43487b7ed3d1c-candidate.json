@@ -19,10 +19,10 @@
   "behaviorFingerprint": "sha256:30f5072de5cd84f76ad4e8fc5da854578c459d874a31413dee63dbf3a4bdbd9b",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 5: The public type ShowCommandLineDialog must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:45.632988307Z",
-    "verifierVersion": "8",
+    "stage": "AFTER_PARSE",
+    "message": "Java compile error at line 15: org.eclipse.debug.internal.ui.DebugUIPlugin cannot be resolved to a type",
+    "verifiedAt": "2026-11-05T02:32:06.070480908Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

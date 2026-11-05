@@ -20,9 +20,9 @@
   "verification": {
     "successful": false,
     "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 1: The public type MyClass must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:40.426256310Z",
-    "verifierVersion": "8",
+    "message": "Java compile error at line 10: org.eclipse.swt cannot be resolved to a type",
+    "verifiedAt": "2026-11-05T02:32:00.676514390Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

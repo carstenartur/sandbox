@@ -19,10 +19,10 @@
   "behaviorFingerprint": "sha256:34f65eacd11d31b51828b2caa1173028f2ad0f543c74d40cc624c11cdc2959de",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 3: The import org.eclipse.core.runtime.Platform conflicts with a type defined in the same file",
-    "verifiedAt": "2026-11-04T02:23:38.742108617Z",
-    "verifierVersion": "8",
+    "stage": "DEPENDENCY_RESOLUTION",
+    "message": "Java compile error at line 4: The import org.eclipse.jface.util cannot be resolved",
+    "verifiedAt": "2026-11-05T02:31:58.768759830Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

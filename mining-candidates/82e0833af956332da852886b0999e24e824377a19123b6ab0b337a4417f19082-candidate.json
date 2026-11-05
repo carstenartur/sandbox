@@ -19,10 +19,10 @@
   "behaviorFingerprint": "sha256:924ae248ca8b915ce0152c02bdbfa64ccc7c8b8ad8118630c2350e59d44c236d",
   "verification": {
     "successful": false,
-    "stage": "BEFORE_PARSE",
-    "message": "Java compile error at line 5: The public type TestClass must be defined in its own file",
-    "verifiedAt": "2026-11-04T02:23:34.613194021Z",
-    "verifierVersion": "8",
+    "stage": "DEPENDENCY_RESOLUTION",
+    "message": "Java compile error at line 4: The import org.eclipse.jdt.internal.corext cannot be resolved",
+    "verifiedAt": "2026-11-05T02:31:54.200600262Z",
+    "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
   },

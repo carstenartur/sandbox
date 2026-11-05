@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "9cef412da718bddf2cf761380f5ac4de2ef6fef453ef60ae9d2ae97943c64142",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "private final $Type $name \u003d $init; :: isField($name) \u0026\u0026 !isStatic($name) \u0026\u0026 hasNoSideEffect($init)\n\u003d\u003e private static final $Type $name \u003d $init;\n;;",
+  "beforeExample": "public class Example {\n    public static class Inner {\n        private final String SETTINGS_ID \u003d \"com.example.plugin\" + \".DIALOG\";\n        private final int MAX_VALUE \u003d 100;\n    }\n}",
+  "afterExample": "public class Example {\n    public static class Inner {\n        private static final String SETTINGS_ID \u003d \"com.example.plugin\" + \".DIALOG\";\n        private static final int MAX_VALUE \u003d 100;\n    }\n}",
+  "negativeExample": "public class Example {\n    public static class Inner {\n        private final String INSTANCE_ID \u003d java.util.UUID.randomUUID().toString(); // Initializer has side effect, should not match\n        private static final String ALREADY_STATIC \u003d \"constant\"; // Already static, should not match\n        public final String PUBLIC_CONSTANT \u003d \"value\"; // Not private, should not match\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "3416138ef97c58fd70a4685f04a69d348832d248",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "sourceEvidence": {
+    "path": "org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/groups/CommonTabLite.java",
+    "before": "\tprivate final String SETTINGS_ID \u003d IDebugUIConstants.PLUGIN_ID + \".SHARED_LAUNCH_CONFIGURATON_DIALOG\"; //$NON-NLS-1$",
+    "after": "\tprivate static final String SETTINGS_ID \u003d IDebugUIConstants.PLUGIN_ID + \".SHARED_LAUNCH_CONFIGURATON_DIALOG\"; //$NON-NLS-1$",
+    "diffHunk": "diff --git a/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/groups/CommonTabLite.java b/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/groups/CommonTabLite.java\nindex fdcfb1d..bedf1a8 100644\n--- a/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/groups/CommonTabLite.java\n+++ b/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/groups/CommonTabLite.java\n@@ -85,7 +85,7 @@\n  */\n class CommonTabLite extends AbstractLaunchConfigurationTab {\n \n-\tprivate final String SETTINGS_ID \u003d IDebugUIConstants.PLUGIN_ID + \".SHARED_LAUNCH_CONFIGURATON_DIALOG\"; //$NON-NLS-1$\n+\tprivate static final String SETTINGS_ID \u003d IDebugUIConstants.PLUGIN_ID + \".SHARED_LAUNCH_CONFIGURATON_DIALOG\"; //$NON-NLS-1$\n \n \t/**\n \t * This attribute exists solely for the purpose of making sure that invalid shared locations\n"
+  },
+  "category": "Performance",
+  "summary": "Adds the \u0027static\u0027 modifier to private final fields initialized with a compile-time constant expression.",
+  "sourceVersion": "8",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-05T02:24:14.708646696Z",
+  "ruleFingerprint": "sha256:8f18ff98585d859757b9f1cc44d4e1db11ef8a69a7e20199805eacc1d9c59054",
+  "behaviorFingerprint": "sha256:77b6bd33513e75e42f26dd44fd6fe062b308ee99d10f75a0c9c77b1edff9c0a0",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-11-05T02:32:06.467713696Z",
+    "verifierVersion": "9",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
