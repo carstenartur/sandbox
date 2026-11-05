@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -250,7 +251,7 @@ class MiscHintSafetyTest extends HintRuleTestSupport {
 	private static URLClassLoader compile(String source, Path directory) throws Exception {
 		Files.createDirectories(directory);
 		Path file= directory.resolve("Probe.java"); //$NON-NLS-1$
-		Files.writeString(file, source);
+		Files.writeString(file, source, StandardCharsets.UTF_8);
 		int exit= ToolProvider.getSystemJavaCompiler().run(null, null, null, "-d", directory.toString(), file.toString()); //$NON-NLS-1$
 		assertEquals(0, exit, source);
 		return new URLClassLoader(new java.net.URL[] { directory.toUri().toURL() }, null);
