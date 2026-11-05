@@ -144,8 +144,13 @@ Included through [#1801](https://github.com/carstenartur/sandbox/pull/1801), [#1
 
 - Retry temporary Gemini overloads during nightly commit mining.
 - Restrict bundled `String.indexOf(String)` rewrites to verified safe contexts
-  and remove the behavior-changing `ThreadLocal.set(null)` replacement. Further
-  `misc` hint safety work is tracked in [#1813](https://github.com/carstenartur/sandbox/issues/1813).
+  and remove the behavior-changing `ThreadLocal.set(null)` replacement.
+- Preserve null, property and platform-dependent behavior in miscellaneous hints;
+  retain Boolean simplification only for safe primitive conditions. See [#1813](https://github.com/carstenartur/sandbox/issues/1813).
+- Make unavailable Codacy reports visible and provide a minimal Checkstyle configuration.
+  See [#1814](https://github.com/carstenartur/sandbox/issues/1814).
+- The general `isNonNull` and `isNullable` guards remain heuristic and must not alone authorize
+  behavior-preserving rewrites until [#1815](https://github.com/carstenartur/sandbox/issues/1815) is resolved.
 - Keep scheduled verification from cancelling active checks.
 - Keep stable-tree identity across Maven clean and curated notes in canonical dry-run
   evidence. Publication uses the reviewed asset; empty/wrong-version notes fail closed.

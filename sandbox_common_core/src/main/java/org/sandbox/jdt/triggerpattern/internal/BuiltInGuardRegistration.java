@@ -48,6 +48,8 @@ public final class BuiltInGuardRegistration {
 		guards.put("stringSubstringSafe", StringCleanupGuards::substringSafe); //$NON-NLS-1$
 		guards.put("stringIsBlankSafe", StringCleanupGuards::isBlankSafe); //$NON-NLS-1$
 		guards.put("stringIndexOfContainsSafe", StringCleanupGuards::indexOfContainsSafe); //$NON-NLS-1$
+		guards.put("miscNoCommentsOrSwitch", MiscCleanupGuards::noCommentsOrSwitch); //$NON-NLS-1$
+		guards.put("miscPrimitiveBooleanConditionalSafe", MiscCleanupGuards::primitiveBooleanConditional); //$NON-NLS-1$
 		guards.put("instanceof", BuiltInGuardRegistration::evaluateInstanceOf); //$NON-NLS-1$
 		guards.put("subtypeOf", BuiltInGuardRegistration::evaluateSubtypeOf); //$NON-NLS-1$
 		guards.put("genericTypeIs", BuiltInGuardRegistration::evaluateGenericTypeIs); //$NON-NLS-1$
