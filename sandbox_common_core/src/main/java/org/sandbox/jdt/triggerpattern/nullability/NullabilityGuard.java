@@ -388,7 +388,7 @@ public class NullabilityGuard {
 			condition= parenthesized.getExpression();
 		}
 		if (condition instanceof InfixExpression infix) {
-			if (infix.getOperator() == InfixExpression.Operator.NOT_EQUALS) {
+			if (infix.getOperator() == InfixExpression.Operator.NOT_EQUALS && !infix.hasExtendedOperands()) {
 				return isNullComparisonWith(infix, binding);
 			}
 		}

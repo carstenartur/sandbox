@@ -18,9 +18,12 @@ import java.util.Map;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.InfixExpression;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor;
 import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.TransformationResult;
 import org.sandbox.jdt.triggerpattern.api.DryRunReporter;
 import org.sandbox.jdt.triggerpattern.api.GuardContext;
@@ -50,6 +53,26 @@ class NullabilityRewriteSafetyTest extends HintRuleTestSupport {
 		assertNotRewritten("class Test { String f() { Object s = new Object(); s = null; return s.toString(); } }"); //$NON-NLS-1$
 		assertNotRewritten("class Test { String f(Object s) { if (s != null) { s = null; return s.toString(); } return \"\"; } }"); //$NON-NLS-1$
 		assertNotRewritten("class Test { Object s; String f() { if (s != null) { s = null; return s.toString(); } return \"\"; } }"); //$NON-NLS-1$
+	}
+
+	@SuppressWarnings("unchecked")
+	@Test
+	void extendedNullComparisonDoesNotProveTheGuardedValue() {
+		String source= "class Test { String f(Object s) { if (s != null) return s.toString(); return \"\"; } }"; //$NON-NLS-1$
+		CompilationUnit ordinary= parseBound(source);
+		assertTrue(new BatchTransformationProcessor(nonNull).process(ordinary, Map.of(JavaCore.COMPILER_SOURCE, "21")).stream() //$NON-NLS-1$
+				.anyMatch(TransformationResult::hasReplacement));
+		CompilationUnit extended= parseBound(source);
+		extended.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(InfixExpression node) {
+				node.extendedOperands().add(node.getAST().newBooleanLiteral(true));
+				return false;
+			}
+		});
+		assertTrue(new BatchTransformationProcessor(nonNull).process(extended, Map.of(JavaCore.COMPILER_SOURCE, "21")).stream() //$NON-NLS-1$
+				.noneMatch(TransformationResult::hasReplacement));
+		assertNotRewritten("class Test { String f(Object s) { if (s != null != true) return s.toString(); return \"\"; } }"); //$NON-NLS-1$
 	}
 
 	@Test
