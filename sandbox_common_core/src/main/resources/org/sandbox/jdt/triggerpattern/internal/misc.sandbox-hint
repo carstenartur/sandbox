@@ -44,10 +44,6 @@ $condition ? true : false
 => $condition
 ;;
 
-$threadLocalVar.set(null) :: instanceof($threadLocalVar, "java.lang.ThreadLocal")
-=> $threadLocalVar.remove()
-;;
-
 System.getProperty("file.encoding")
 => java.nio.charset.Charset.defaultCharset().displayName()
 ;;
