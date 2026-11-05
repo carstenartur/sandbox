@@ -3,7 +3,7 @@
 Baseline: [1.3.7](https://github.com/carstenartur/sandbox/releases/tag/v1.3.7).
 This release expands verified mathematics, generated Java and cleanup coordination,
 with stronger mining verification and review handling. Bounded fragments, separate
-opt-in contracts and measured limits follow. Final integration and publication are pending.
+opt-in contracts and measured limits follow.
 
 ## Mathematics cleanup
 
@@ -124,6 +124,22 @@ Included through [#1784](https://github.com/carstenartur/sandbox/pull/1784),
 [#1790](https://github.com/carstenartur/sandbox/pull/1790).
 These proofs and lower estimated costs establish no speedup or constant-time claim.
 
+## PDE XML cleanup
+
+- Use explicit PDE resource commands or marker fixes. Java cleanup profiles/save
+  actions ignore legacy XML settings and cannot write XML resources.
+- Compact recognized attribute-only PDE metadata and remove only the exact
+  generated pre-root schema comment. Default formatting preserves documentation
+  and appinfo case, unknown/mixed payloads, `xml:space="preserve"` and actual CDATA.
+- Opt in separately to **Modernize PDE appinfo (Eclipse 3.4+)** for a known target or
+  **Trim Plain PDE Reference Sections** for outer XML whitespace in eligible, plain,
+  nonblank `since`, `apiinfo`, `implementation` and `copyright` sections. No target
+  is inferred; other descriptions, markup and interior whitespace remain unchanged.
+
+Included through [#1801](https://github.com/carstenartur/sandbox/pull/1801), [#1802](https://github.com/carstenartur/sandbox/pull/1802),
+[#1803](https://github.com/carstenartur/sandbox/pull/1803), [#1804](https://github.com/carstenartur/sandbox/pull/1804) and
+[#1805](https://github.com/carstenartur/sandbox/pull/1805).
+
 ## Reliability and documentation
 
 - Retry temporary Gemini overloads during nightly commit mining.
@@ -178,7 +194,7 @@ These proofs and lower estimated costs establish no speedup or constant-time cla
   rejected; other closed reviews remain historical without approval or promotion.
   Preserve terminal decisions and validate the complete snapshot before changes.
 
-A sealed replay of **611 recorded candidates** confirmed the following outcomes:
+A previously recorded sealed replay of **611 candidates** confirmed these outcomes:
 
 | Outcome | Candidates |
 | --- | ---: |
@@ -245,7 +261,7 @@ records **seven inconclusive BC timing pairs and one slower generated case**:
 general speedup. The [preparation handoff](docs/releases/1.3.8-preparation.md)
 retains the exact timings, test scope and historical performance alerts.
 
-The current [#1800 BC execution](https://github.com/carstenartur/sandbox/actions/runs/41777104714/job/126399895785)
+The recorded pre-integration [#1800 BC execution](https://github.com/carstenartur/sandbox/actions/runs/41777104714/job/126399895785)
 measures the ordinary four-region SWU output. Of eight complete-call timing
 pairs, **three have lower generated times and five remain inconclusive**; none
 has a separated higher-time interval. Two inconclusive cases nevertheless have
@@ -281,12 +297,12 @@ explicit skips and later bounded successes. Reactor, metrics and upstream case
 counts overlap and must not be added. The recorded 25-module coverage aggregate
 excludes the mathematics plug-in; its percentage is not mathematics coverage.
 
-Current JDT Core qualification spans all 1,626 sources, with five edits in four
+Recorded #1800 JDT Core qualification spans all 1,626 sources, with five edits in four
 files including corrected int-width MethodInfo. Each native phase has 290,650
 passing executions without skips/failures and verified reactor/compiler class identities.
 This qualifies the recorded output, with no MethodInfo timing or per-method coverage.
 
-Current all-source JDT UI qualification covers 2,661 Java sources with **zero
+Recorded #1800 all-source JDT UI qualification covers 2,661 Java sources with **zero
 accepted edits**: both phases have 9,423 passes and the same 154 skips, and all
 5,233 compiled classes are unchanged. It qualifies the no-edit processing path,
 not transformed UI methods or a combined transformed Core/UI installation.

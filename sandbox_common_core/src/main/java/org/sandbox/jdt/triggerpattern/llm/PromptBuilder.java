@@ -146,18 +146,22 @@ public class PromptBuilder {
 		prompt.append("Check overload/type, null, repeated-evaluation/side-effect, locale/Unicode, and numeric-range preconditions; encode necessary guards or return noCleanup.\n"); //$NON-NLS-1$
 		prompt.append("Do not invent replacement literals. Cite a Java file path and short verbatim before/after spans from removed/added lines of the same diff hunk (at most 512 characters each).\n"); //$NON-NLS-1$
 		prompt.append("Examples are synthetic: the negative example should expose a semantic near miss (wrong overload, side effect, null or numeric boundary), not merely another method name.\n\n"); //$NON-NLS-1$
+		prompt.append("Use JDK-only examples: external Eclipse/SWT/UI dependencies are unavailable to standalone verification. Never create dependency stubs; return noCleanup=true when real API bindings are required.\n"); //$NON-NLS-1$
+		prompt.append("The positive example must contain exactly one matching occurrence, and its complete after example must change only that occurrence.\n"); //$NON-NLS-1$
 	}
 
 	private static void appendDslRuleChecklist(StringBuilder prompt) {
 		prompt.append("### DSL validation rules\n\n"); //$NON-NLS-1$
 		prompt.append("1. Emit plain DSL only; never emit XML tags.\n"); //$NON-NLS-1$
 		prompt.append("2. Use instanceof($var, \"fully.qualified.Type\") for type guards; never use isType().\n"); //$NON-NLS-1$
+		prompt.append("instanceof checks the exact declared type; use subtypeOf($var, \"fully.qualified.Type\") for hierarchy matching. Ensure the positive example satisfies the guard.\n"); //$NON-NLS-1$
 		prompt.append("3. End every rule with `;;` on its own line.\n"); //$NON-NLS-1$
 		prompt.append("4. A quick-fix rule contains exactly one `=>`.\n"); //$NON-NLS-1$
 		prompt.append("5. Every replacement placeholder must be bound by the source pattern.\n"); //$NON-NLS-1$
 		prompt.append("6. Source and replacement must differ.\n"); //$NON-NLS-1$
 		prompt.append("7. Use fully qualified concrete API names and placeholders only for variable parts.\n"); //$NON-NLS-1$
 		prompt.append("8. Do not emit per-rule `/*!...*/` directives.\n"); //$NON-NLS-1$
+		prompt.append("Emit no file metadata (`<!id:...>`, `<!description:...>`, `<!severity:...>`), includes, or embedded Java blocks.\n"); //$NON-NLS-1$
 		prompt.append("9. Drop the proposal rather than returning invalid or context-dependent DSL.\n\n"); //$NON-NLS-1$
 	}
 

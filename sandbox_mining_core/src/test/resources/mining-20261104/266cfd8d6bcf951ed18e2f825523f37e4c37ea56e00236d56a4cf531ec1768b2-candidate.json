@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "266cfd8d6bcf951ed18e2f825523f37e4c37ea56e00236d56a4cf531ec1768b2",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$collection$.size() \u003d\u003d 0 :: instanceof($collection$, \"java.util.Collection\")\n\u003d\u003e\n$collection$.isEmpty()\n;;",
+  "beforeExample": "import java.util.ArrayList;\nimport java.util.Collection;\nimport java.util.List;\n\npublic class MyClass {\n    public void check(List\u003cString\u003e list, ArrayList\u003cInteger\u003e arrayList) {\n        if (list.size() \u003d\u003d 0) {\n            System.out.println(\"List is empty\");\n        }\n        if (arrayList.size() \u003d\u003d 0) {\n            System.out.println(\"ArrayList is empty\");\n        }\n    }\n}",
+  "afterExample": "import java.util.ArrayList;\nimport java.util.Collection;\nimport java.util.List;\n\npublic class MyClass {\n    public void check(List\u003cString\u003e list, ArrayList\u003cInteger\u003e arrayList) {\n        if (list.isEmpty()) {\n            System.out.println(\"List is empty\");\n        }\n        if (arrayList.isEmpty()) {\n            System.out.println(\"ArrayList is empty\");\n        }\n    }\n}",
+  "negativeExample": "import java.util.ArrayList;\nimport java.util.Collection;\nimport java.util.List;\nimport java.util.Map;\nimport java.util.HashMap;\n\npublic class MyClass {\n    public void check(String[] array, Map\u003cString, String\u003e map) {\n        // Should not match: array.length \u003d\u003d 0\n        if (array.length \u003d\u003d 0) {\n            System.out.println(\"Array is empty\");\n        }\n        // Should not match: map.size() \u003d\u003d 0 (Map is not a Collection)\n        if (map.size() \u003d\u003d 0) {\n            System.out.println(\"Map is empty\");\n        }\n    }\n}",
+  "targetHintFile": "collections.sandbox-hint",
+  "sourceCommit": "fd3155ddc26aed9c25c7f24c943857ba24694d74",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "sourceEvidence": {
+    "path": "org.eclipse.debug.tests/src/org/eclipse/debug/tests/breakpoint/BreakpointTests.java",
+    "before": "\t\t\tTestUtil.waitWhile(c -\u003e c.getTestBreakpoints().size() \u003d\u003d 0, this, testTimeout, c -\u003e \"Breakpoint is not created\");",
+    "after": "\t\t\tTestUtil.waitWhile(c -\u003e c.getTestBreakpoints().isEmpty(), this, testTimeout, c -\u003e \"Breakpoint is not created\");",
+    "diffHunk": "diff --git a/org.eclipse.debug.tests/src/org/eclipse/debug/tests/breakpoint/BreakpointTests.java b/org.eclipse.debug.tests/src/org/eclipse/debug/tests/breakpoint/BreakpointTests.java\nindex 39c127b..e4b4666 100644\n--- a/org.eclipse.debug.tests/src/org/eclipse/debug/tests/breakpoint/BreakpointTests.java\n+++ b/org.eclipse.debug.tests/src/org/eclipse/debug/tests/breakpoint/BreakpointTests.java\n@@ -86,20 +85,20 @@\n \t\t\tIUndoContext context \u003d DebugUITools.getBreakpointsUndoContext();\n \n \t\t\tbpm.addBreakpoint(bp);\n-\t\t\tTestUtil.waitWhile(c -\u003e c.getTestBreakpoints().size() \u003d\u003d 0, this, testTimeout, c -\u003e \"Breakpoint is not created\");\n+\t\t\tTestUtil.waitWhile(c -\u003e c.getTestBreakpoints().isEmpty(), this, testTimeout, c -\u003e \"Breakpoint is not created\");\n \t\t\tassertTrue(\"Breakpoint marker missing\", bp.getMarker().exists());\n \t\t\tassertTrue(\"Breakpoint not registered\", bp.isRegistered());\n \n \t\t\tDebugUITools.deleteBreakpoints(new IBreakpoint[] {\n \t\t\t\t\tbp }, null, null);\n \t\t\tassertTrue(operationHistory.canUndo(context));\n-\t\t\tTestUtil.waitWhile(c -\u003e c.getTestBreakpoints().size() \u003e 0, this, testTimeout, c -\u003e \"Breakpoint is not deleted\");\n+\t\t\tTestUtil.waitWhile(c -\u003e !c.getTestBreakpoints().isEmpty(), this, testTimeout, c -\u003e \"Breakpoint is not deleted\");\n \t\t\tassertFalse(\"Breakpoint marker not removed\", bp.getMarker().exists());\n \t\t\tassertFalse(\"Breakpoint still registered\", bp.isRegistered());\n \n \t\t\toperationHistory.undo(context, null, null);\n \t\t\tassertTrue(operationHistory.canRedo(context));\n-\t\t\tTestUtil.waitWhile(c -\u003e c.getTestBreakpoints().size() \u003d\u003d 0, this, testTimeout, c -\u003e \"Breakpoint is not recreated\");\n+\t\t\tTestUtil.waitWhile(c -\u003e c.getTestBreakpoints().isEmpty(), this, testTimeout, c -\u003e \"Breakpoint is not recreated\");\n \t\t\tbp \u003d getTestBreakpoints().get(0);\n \t\t\tassertEquals(\"Breakpoint attributes not correctly restored\", content, bp.getText());\n \t\t\tassertTrue(\"Breakpoint marker missing\", bp.getMarker().exists());\n"
+  },
+  "category": "Readability",
+  "summary": "Replace Collection.size() \u003d\u003d 0 with Collection.isEmpty().",
+  "sourceVersion": "8",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-04T02:20:30.154814544Z",
+  "ruleFingerprint": "sha256:5665dadd9e333c19b09dc2a1f7add6dd71efb24aee6f2136a14b68af86eba2b6",
+  "behaviorFingerprint": "sha256:8a269fce6c8bd679deddfe965d6d2b43fc792e71c76c083caf504a3373a456ae",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 5: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-11-04T02:23:45.859832721Z",
+    "verifierVersion": "8",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

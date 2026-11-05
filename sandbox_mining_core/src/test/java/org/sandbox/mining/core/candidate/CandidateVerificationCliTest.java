@@ -16,6 +16,7 @@ package org.sandbox.mining.core.candidate;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -37,6 +38,208 @@ class CandidateVerificationCliTest {
 
 	@TempDir
 	Path tempDir;
+
+	@ParameterizedTest
+	@ValueSource(strings = { "", " ", "/* comment */", "[{number:1539,state:'closed',body:''}]" })
+	void refusesMalformedIssueSnapshotBeforeMutatingCandidates(String snapshot) throws IOException {
+		Path candidateDir = tempDir.resolve("empty-snapshot");
+		CandidateStore store = new CandidateStore(candidateDir);
+		MiningCandidate candidate = readyCandidate("snapshot", "2026-01-01T00:00:00Z");
+		store.save(candidate);
+		Path issues = tempDir.resolve("empty-issues.jsonl");
+		Files.writeString(issues, snapshot);
+		assertThrows(IOException.class, () -> CandidateVerificationCli.run(new String[] {
+				"--candidate-dir", candidateDir.toString(), "--report-dir", tempDir.resolve("empty-report").toString(),
+				"--review-issues", issues.toString() }));
+		assertEquals(CandidateStatus.READY_FOR_REVIEW, store.findById(candidate.getCandidateId()).orElseThrow().getStatus());
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "null", "0", "-1", "1.9", "2147483648", "\"1\"", "true", "{}", "[]" })
+	void invalidIssueNumbersInvalidateEntireSnapshot(String number) throws IOException {
+		MiningCandidate candidate = readyCandidate("invalid-number", "2026-01-01T00:00:00Z");
+		var invalid = com.google.gson.JsonParser.parseString(issue(candidate, 12, "open", null)).getAsJsonObject();
+		invalid.add("number", com.google.gson.JsonParser.parseString(number));
+		assertSnapshotRejectedWithoutWrites(candidate, "[" + issue(candidate, 11, "closed", "not_planned") + "," + invalid + "]");
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "body", "number", "user", "state_reason" })
+	void omittedRequiredIssueFieldsInvalidateEntireSnapshot(String field) throws IOException {
+		MiningCandidate candidate = readyCandidate("missing-" + field, "2026-01-01T00:00:00Z");
+		var invalid = com.google.gson.JsonParser.parseString(issue(candidate, 12, "open", null)).getAsJsonObject();
+		invalid.remove(field);
+		assertSnapshotRejectedWithoutWrites(candidate, "[" + issue(candidate, 11, "closed", "not_planned") + "," + invalid + "]");
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "123", "true", "{}", "[]" })
+	void invalidBodyTypesInvalidateEntireSnapshot(String body) throws IOException {
+		MiningCandidate candidate = readyCandidate("invalid-body", "2026-01-01T00:00:00Z");
+		var invalid = com.google.gson.JsonParser.parseString(issue(candidate, 12, "open", null)).getAsJsonObject();
+		invalid.add("body", com.google.gson.JsonParser.parseString(body));
+		assertSnapshotRejectedWithoutWrites(candidate, "[" + issue(candidate, 11, "closed", "not_planned") + "," + invalid + "]");
+	}
+
+	private void assertSnapshotRejectedWithoutWrites(MiningCandidate candidate, String snapshot) throws IOException {
+		Path directory = tempDir.resolve("invalid-candidates");
+		CandidateStore store = new CandidateStore(directory);
+		store.save(candidate);
+		Path file;
+		try (var files = Files.list(directory)) {
+			file = files.filter(path -> path.toString().endsWith("-candidate.json")).findFirst().orElseThrow();
+		}
+		String original = Files.readString(file);
+		Path issues = tempDir.resolve("invalid-issues.json");
+		Files.writeString(issues, snapshot);
+		Path report = tempDir.resolve("invalid-report");
+		Path index = tempDir.resolve("invalid-index.json");
+		assertThrows(IOException.class, () -> CandidateReviewIssues.reconcile(List.of(candidate), issues));
+		assertEquals(CandidateStatus.READY_FOR_REVIEW, candidate.getStatus());
+		assertThrows(IOException.class, () -> CandidateVerificationCli.run(new String[] {
+				"--candidate-dir", directory.toString(), "--report-dir", report.toString(), "--review-issues", issues.toString(),
+				"--review-issue-index", index.toString() }));
+		assertEquals(original, Files.readString(file));
+		assertEquals(CandidateStatus.READY_FOR_REVIEW, candidate.getStatus());
+		assertFalse(Files.exists(report));
+		assertFalse(Files.exists(index));
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {
+			"{\"id\":123,\"login\":\"ordinary-author\",\"type\":\"User\"}",
+			"{\"id\":123,\"login\":\"github-actions[bot]\",\"type\":\"Bot\"}",
+			"{\"id\":41898282,\"login\":\"ordinary-author\",\"type\":\"Bot\"}",
+			"{\"id\":41898282,\"login\":\"github-actions[bot]\",\"type\":\"User\"}" })
+	void copiedReviewBodyFromUntrustedCreatorCannotTerminateOrRejectEquivalentRule(String user) throws IOException {
+		MiningCandidate candidate = readyCandidate("forged", "2026-01-01T00:00:00Z");
+		MiningCandidate equivalent = readyCandidate("equivalent", "2026-01-02T00:00:00Z");
+		var forged = com.google.gson.JsonParser.parseString(issue(candidate, 11, "closed", "not_planned")).getAsJsonObject();
+		forged.add("user", com.google.gson.JsonParser.parseString(user));
+		Path issues = tempDir.resolve("forged-issues.json");
+		Files.writeString(issues, "[" + forged + "]");
+		CandidateReviewIssues.reconcile(List.of(candidate, equivalent), issues);
+		assertEquals(CandidateStatus.READY_FOR_REVIEW, candidate.getStatus());
+		assertEquals(CandidateStatus.READY_FOR_REVIEW, equivalent.getStatus());
+	}
+
+	@Test
+	void explicitNullBodyIsAValidOrdinaryIssue() throws IOException {
+		MiningCandidate candidate = readyCandidate("null-body", "2026-01-01T00:00:00Z");
+		var ordinary = com.google.gson.JsonParser.parseString(issue(candidate, 12, "closed", "not_planned")).getAsJsonObject();
+		ordinary.add("body", com.google.gson.JsonNull.INSTANCE);
+		Path issues = tempDir.resolve("null-body.json");
+		Files.writeString(issues, "[" + ordinary + "]");
+		CandidateReviewIssues.reconcile(List.of(candidate), issues);
+		assertEquals(CandidateStatus.READY_FOR_REVIEW, candidate.getStatus());
+	}
+
+	@Test
+	void creationDedupIndexContainsOnlyTrustedCurrentRevisionMarkers() throws IOException {
+		MiningCandidate candidate = readyCandidate("index", "2026-01-01T00:00:00Z");
+		CandidateStore store = new CandidateStore(tempDir.resolve("index-candidates"));
+		store.save(candidate);
+		String trusted = issue(candidate, 21, "open", null);
+		String forged = issue(candidate, 20, "open", null).replace("41898282", "123");
+		String old = issue(candidate, 19, "open", null).replace("`1`", "`2`");
+		String quoted = issue(candidate, 18, "open", null).replace("<!-- mining-candidate-id:", "Quoted: <!-- mining-candidate-id:");
+		var pullRequest = com.google.gson.JsonParser.parseString(issue(candidate, 17, "open", null)).getAsJsonObject();
+		pullRequest.add("pull_request", new com.google.gson.JsonObject());
+		Path issues = tempDir.resolve("index-issues.json");
+		Path index = tempDir.resolve("index.json");
+		Files.writeString(issues, "[[" + String.join(",", forged, old, quoted, pullRequest.toString()) + "]]");
+		String[] args = { "--candidate-dir", tempDir.resolve("index-candidates").toString(), "--report-dir", tempDir.resolve("index-report").toString(),
+				"--review-issues", issues.toString(), "--review-issue-index", index.toString() };
+		assertEquals(0, CandidateVerificationCli.run(args));
+		assertEquals("{}", Files.readString(index).strip());
+		Files.writeString(issues, "[[" + String.join(",", forged, old, quoted, pullRequest.toString(), trusted) + "]]");
+		assertEquals(0, CandidateVerificationCli.run(args));
+		var json = com.google.gson.JsonParser.parseString(Files.readString(index)).getAsJsonObject();
+		assertEquals(1, json.size());
+		assertEquals(21, json.get(candidate.getCandidateId()).getAsInt());
+	}
+
+	@Test
+	void closedTrustedReviewRemainsInCreationIndexWithoutInferringPromotion() throws IOException {
+		MiningCandidate candidate = readyCandidate("closed-index", "2026-01-01T00:00:00Z");
+		Path issues = tempDir.resolve("closed-index.json");
+		Files.writeString(issues, "[" + issue(candidate, 1284, "closed", "completed") + "]");
+		var reviews = CandidateReviewIssues.reconcile(List.of(candidate), issues);
+		assertEquals(CandidateStatus.SUPERSEDED, candidate.getStatus());
+		assertEquals(java.util.Map.of(candidate.getCandidateId(), 1284), CandidateReviewIssues.index(List.of(candidate), reviews));
+	}
+
+	@Test
+	void issueIndexRequiresSnapshotBeforeAnyWrites() {
+		Path output = tempDir.resolve("missing-index.json");
+		assertThrows(IllegalArgumentException.class, () -> CandidateVerificationCli.run(new String[] {
+				"--candidate-dir", tempDir.resolve("absent-candidates").toString(),
+				"--review-issue-index", output.toString() }));
+		assertFalse(Files.exists(output));
+		assertFalse(Files.exists(tempDir.resolve("absent-candidates")));
+	}
+
+	@Test
+	void closedReviewIssuesLeaveReadyQueueWithoutInventingPromotion() throws IOException {
+		Path candidateDir = tempDir.resolve("closed-reviews");
+		CandidateStore store = new CandidateStore(candidateDir);
+		MiningCandidate rejected = readyCandidate("not-planned", "2026-01-01T00:00:00Z");
+		MiningCandidate historical = readyCandidate("completed", "2026-01-02T00:00:00Z");
+		MiningCandidate open = readyCandidate("open", "2026-01-03T00:00:00Z");
+		open.setDslRule("$x * 1\n=> $x\n;;");
+		open.setBeforeExample("class T { int m() { return 1 * 1; } }");
+		open.setAfterExample("class T { int m() { return 1; } }");
+		open.setNegativeExample("class T { int m() { return 1 * 2; } }");
+		open.setVerification(new CandidateVerifier().verify(open));
+		MiningCandidate alreadyRejected = readyCandidate("decision", "2026-01-04T00:00:00Z");
+		alreadyRejected.transitionTo(CandidateStatus.REJECTED, "human", "Keep original decision #1781");
+		for (MiningCandidate candidate : List.of(rejected, historical, open, alreadyRejected)) {
+			store.save(candidate);
+		}
+		Path issues = tempDir.resolve("issues.jsonl");
+		Files.writeString(issues, "[[" + String.join(",", issue(rejected, 1539, "closed", "not_planned"),
+				issue(historical, 1284, "closed", "completed"), issue(open, 2000, "open", null),
+				issue(alreadyRejected, 1781, "closed", "completed")) + "]]");
+		String[] args = { "--candidate-dir", candidateDir.toString(), "--report-dir",
+				tempDir.resolve("closed-report").toString(), "--review-issues", issues.toString() };
+		assertEquals(0, CandidateVerificationCli.run(args));
+		assertEquals(CandidateStatus.REJECTED, store.findById(rejected.getCandidateId()).orElseThrow().getStatus());
+		assertEquals(CandidateStatus.SUPERSEDED, store.findById(historical.getCandidateId()).orElseThrow().getStatus());
+		assertTrue(store.findById(historical.getCandidateId()).orElseThrow().getTransitions().getLast().reason().contains("#1284"));
+		assertEquals(CandidateStatus.READY_FOR_REVIEW, store.findById(open.getCandidateId()).orElseThrow().getStatus());
+		assertEquals(alreadyRejected.getTransitions(), store.findById(alreadyRejected.getCandidateId()).orElseThrow().getTransitions());
+		var transitions = store.findById(rejected.getCandidateId()).orElseThrow().getTransitions();
+		assertEquals(0, CandidateVerificationCli.run(args));
+		assertEquals(transitions, store.findById(rejected.getCandidateId()).orElseThrow().getTransitions());
+		assertTrue(Files.readString(tempDir.resolve("closed-report/candidate-summary.md"))
+				.contains("Historical closed reviews: 1"));
+	}
+
+	@ParameterizedTest
+	@ValueSource(ints = { 1, 2 })
+	void closedIssueMustMatchExactMarkerAndCurrentRevision(int revision) throws IOException {
+		Path candidateDir = tempDir.resolve("marker-revisions");
+		CandidateStore store = new CandidateStore(candidateDir);
+		MiningCandidate candidate = readyCandidate("marker", "2026-01-01T00:00:00Z");
+		candidate.setRevision(revision);
+		store.save(candidate);
+		Path issues = tempDir.resolve("old-issues.jsonl");
+		Files.writeString(issues, "[" + issue(candidate, 111, "closed", "not_planned")
+				.replace("`" + revision + "`", "`" + (revision == 1 ? 2 : 1) + "`") + "," + issue(candidate, 112, "closed", "not_planned")
+				.replace("<!-- mining-candidate-id:", "Quoted: <!-- mining-candidate-id:") + ","
+				+ issue(candidate, 113, "closed", "not_planned").replace("| Revision |", "| Old Revision |") + ","
+				+ issue(candidate, 114, "closed", "not_planned").replace("`" + revision + "`", "`invalid`") + "]");
+		assertEquals(0, CandidateVerificationCli.run(new String[] { "--candidate-dir", candidateDir.toString(),
+				"--report-dir", tempDir.resolve("marker-report").toString(), "--review-issues", issues.toString() }));
+		assertEquals(CandidateStatus.READY_FOR_REVIEW, store.findById(candidate.getCandidateId()).orElseThrow().getStatus());
+	}
+
+	private static String issue(MiningCandidate candidate, int number, String state, String reason) {
+		return new com.google.gson.GsonBuilder().disableHtmlEscaping().create().toJson(java.util.Map.of("body",
+				"<!-- mining-candidate-id: " + candidate.getCandidateId() + " -->\n| Revision | `" + candidate.getRevision() + "` |",
+				"number", number, "state", state, "state_reason", reason == null ? "" : reason,
+				"user", java.util.Map.of("id", 41898282, "login", "github-actions[bot]", "type", "Bot"))) + "\n";
+	}
 
 	@Test
 	void verifiesOneCandidateAndMarksCrossOriginRuleDuplicate() throws IOException {
