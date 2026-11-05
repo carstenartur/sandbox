@@ -187,9 +187,93 @@
       "exhaustedCategories": []
     },
     "https://github.com/carstenartur/sandbox": {
-      "totalProcessed": 0,
+      "lastProcessedCommit": "da5b109d8c5f0164c1666f01287a358629bae9f2",
+      "lastProcessedDate": "2026-11-05T02:31:37.649871803Z",
+      "totalProcessed": 56,
       "status": "CATCHING_UP",
-      "deferredCommits": [],
+      "deferredCommits": [
+        {
+          "hash": "66edc41c40b2af642b5bd7a1dddd3a3da78b648a",
+          "message": "cleanup",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-05T02:26:20.108913013Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "89bb30b0d64b22af2277e9ba0b691131c45ad79b",
+          "message": "first tests running through",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-05T02:27:35.014072774Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "1d5b0f8d08be14b479b85ba63a773019f059bc91",
+          "message": "add another failing test",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-05T02:27:37.873716267Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0322d88534dad6cabf6a705ffeefac4edc65d604",
+          "message": "add visit and endvisit lambda in one call",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-05T02:27:37.880803410Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f5e2bb9c27529411114333974f791dcb2b16b4d3",
+          "message": "Use BiPredicate instead of BiFunction because return is always boolean",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-05T02:27:37.910207004Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "4e4c1459bff88335f0a25199fc6819dfc7d9d534",
+          "message": "add more static visitors",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-05T02:27:37.917786969Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "226edfba977dd6bd81b430737306e123293036ae",
+          "message": "first part to make test work",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-05T02:27:37.983678466Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "76b644c7edfd28e2be3f6f7f31b3a508dc9ea912",
+          "message": "formatting",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-05T02:27:38.001186496Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "4d96e029bddb1158360224bb1c5633c39513c959",
+          "message": "add fluent style ast visitor",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-05T02:27:38.052451091Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        }
+      ],
       "permanentlySkipped": [],
       "learnedMaxDiffLines": -1,
       "lastModelUsed": "gemini-2.5-flash",
@@ -5416,10 +5500,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "lastProcessedCommit": "1e4c63de97805788c755ed036d707c8f82f7b486",
-      "lastProcessedDate": "2026-11-04T02:23:22.352768024Z",
-      "totalProcessed": 369,
-      "status": "CATCHING_UP",
+      "lastProcessedDate": "2026-11-05T02:25:13.769575698Z",
+      "totalProcessed": 384,
+      "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
           "hash": "2f6e2318fa4db3f21adcb458245b8ec7398d8d96",
@@ -5555,13 +5638,24 @@
           "deferredAt": "2026-11-03T02:34:06.439429168Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "c94997e7e26067d34c70a72d3cbd56f25c38b2e5",
+          "message": "One more attempt to delete repo content",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-05T02:25:11.301227322Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
       "learnedMaxDiffLines": -1,
       "lastModelUsed": "gemini-2.5-flash",
-      "currentEpoch": 0,
-      "completedEpochs": [],
+      "currentEpoch": 1,
+      "completedEpochs": [
+        "2020-01-01 to 2026-01-01"
+      ],
       "categoryHitCounts": {
         "API Misuse": 1,
         "API Modernization": 8,
@@ -5601,10 +5695,11 @@
         "Modernize API": 1,
         "Readability": 1,
         "Java Generics": 1,
-        "performance": 1
+        "performance": 1,
+        "Performance": 1
       },
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 53850
+  "globalTotalProcessed": 53921
 }
