@@ -48,114 +48,116 @@ public final class BuiltInGuardRegistration {
 <span class="fc" id="L48">		guards.put(&quot;stringSubstringSafe&quot;, StringCleanupGuards::substringSafe); //$NON-NLS-1$</span>
 <span class="fc" id="L49">		guards.put(&quot;stringIsBlankSafe&quot;, StringCleanupGuards::isBlankSafe); //$NON-NLS-1$</span>
 <span class="fc" id="L50">		guards.put(&quot;stringIndexOfContainsSafe&quot;, StringCleanupGuards::indexOfContainsSafe); //$NON-NLS-1$</span>
-<span class="fc" id="L51">		guards.put(&quot;instanceof&quot;, BuiltInGuardRegistration::evaluateInstanceOf); //$NON-NLS-1$</span>
-<span class="fc" id="L52">		guards.put(&quot;subtypeOf&quot;, BuiltInGuardRegistration::evaluateSubtypeOf); //$NON-NLS-1$</span>
-<span class="fc" id="L53">		guards.put(&quot;genericTypeIs&quot;, BuiltInGuardRegistration::evaluateGenericTypeIs); //$NON-NLS-1$</span>
-<span class="fc" id="L54">		guards.put(&quot;plannedRole&quot;, BuiltInGuardRegistration::evaluatePlannedRole); //$NON-NLS-1$</span>
-<span class="fc" id="L55">		guards.put(&quot;enclosingPlannedRole&quot;, BuiltInGuardRegistration::evaluateEnclosingPlannedRole); //$NON-NLS-1$</span>
-<span class="fc" id="L56">		guards.put(&quot;plannedValue&quot;, BuiltInGuardRegistration::evaluatePlannedValue); //$NON-NLS-1$</span>
-<span class="fc" id="L57">		guards.put(&quot;enclosingPlannedValue&quot;, BuiltInGuardRegistration::evaluateEnclosingPlannedValue); //$NON-NLS-1$</span>
-<span class="fc" id="L58">		guards.put(&quot;plannedNodeValue&quot;, BuiltInGuardRegistration::evaluatePlannedNodeValue); //$NON-NLS-1$</span>
-<span class="fc" id="L59">		guards.put(&quot;plannedListContains&quot;, BuiltInGuardRegistration::evaluatePlannedListContains); //$NON-NLS-1$</span>
-<span class="fc" id="L60">		guards.put(&quot;plannedRelation&quot;, BuiltInGuardRegistration::evaluatePlannedRelation); //$NON-NLS-1$</span>
-<span class="fc" id="L61">		guards.put(&quot;plannedRelationValue&quot;, BuiltInGuardRegistration::evaluatePlannedRelationValue); //$NON-NLS-1$</span>
-<span class="fc" id="L62">		guards.put(&quot;plannedOutgoingRelation&quot;, BuiltInGuardRegistration::evaluatePlannedOutgoingRelation); //$NON-NLS-1$</span>
-<span class="fc" id="L63">		guards.put(&quot;plannedIncomingRelation&quot;, BuiltInGuardRegistration::evaluatePlannedIncomingRelation); //$NON-NLS-1$</span>
-<span class="fc" id="L64">		guards.put(&quot;plannedRelationCount&quot;, BuiltInGuardRegistration::evaluatePlannedRelationCount); //$NON-NLS-1$</span>
-<span class="fc" id="L65">	}</span>
+<span class="fc" id="L51">		guards.put(&quot;miscNoCommentsOrSwitch&quot;, MiscCleanupGuards::noCommentsOrSwitch); //$NON-NLS-1$</span>
+<span class="fc" id="L52">		guards.put(&quot;miscPrimitiveBooleanConditionalSafe&quot;, MiscCleanupGuards::primitiveBooleanConditional); //$NON-NLS-1$</span>
+<span class="fc" id="L53">		guards.put(&quot;instanceof&quot;, BuiltInGuardRegistration::evaluateInstanceOf); //$NON-NLS-1$</span>
+<span class="fc" id="L54">		guards.put(&quot;subtypeOf&quot;, BuiltInGuardRegistration::evaluateSubtypeOf); //$NON-NLS-1$</span>
+<span class="fc" id="L55">		guards.put(&quot;genericTypeIs&quot;, BuiltInGuardRegistration::evaluateGenericTypeIs); //$NON-NLS-1$</span>
+<span class="fc" id="L56">		guards.put(&quot;plannedRole&quot;, BuiltInGuardRegistration::evaluatePlannedRole); //$NON-NLS-1$</span>
+<span class="fc" id="L57">		guards.put(&quot;enclosingPlannedRole&quot;, BuiltInGuardRegistration::evaluateEnclosingPlannedRole); //$NON-NLS-1$</span>
+<span class="fc" id="L58">		guards.put(&quot;plannedValue&quot;, BuiltInGuardRegistration::evaluatePlannedValue); //$NON-NLS-1$</span>
+<span class="fc" id="L59">		guards.put(&quot;enclosingPlannedValue&quot;, BuiltInGuardRegistration::evaluateEnclosingPlannedValue); //$NON-NLS-1$</span>
+<span class="fc" id="L60">		guards.put(&quot;plannedNodeValue&quot;, BuiltInGuardRegistration::evaluatePlannedNodeValue); //$NON-NLS-1$</span>
+<span class="fc" id="L61">		guards.put(&quot;plannedListContains&quot;, BuiltInGuardRegistration::evaluatePlannedListContains); //$NON-NLS-1$</span>
+<span class="fc" id="L62">		guards.put(&quot;plannedRelation&quot;, BuiltInGuardRegistration::evaluatePlannedRelation); //$NON-NLS-1$</span>
+<span class="fc" id="L63">		guards.put(&quot;plannedRelationValue&quot;, BuiltInGuardRegistration::evaluatePlannedRelationValue); //$NON-NLS-1$</span>
+<span class="fc" id="L64">		guards.put(&quot;plannedOutgoingRelation&quot;, BuiltInGuardRegistration::evaluatePlannedOutgoingRelation); //$NON-NLS-1$</span>
+<span class="fc" id="L65">		guards.put(&quot;plannedIncomingRelation&quot;, BuiltInGuardRegistration::evaluatePlannedIncomingRelation); //$NON-NLS-1$</span>
+<span class="fc" id="L66">		guards.put(&quot;plannedRelationCount&quot;, BuiltInGuardRegistration::evaluatePlannedRelationCount); //$NON-NLS-1$</span>
+<span class="fc" id="L67">	}</span>
 
 	private static boolean evaluatePlannedRole(GuardContext context, Object... args) {
-<span class="fc" id="L68">		PlanNodeArguments parsed= planNodeArguments(context, args, 1);</span>
-<span class="pc bpc" id="L69" title="1 of 6 branches missed.">		return parsed != null &amp;&amp; parsed.node() != null &amp;&amp; context.getSemanticPlan().hasRole(parsed.node(),</span>
-<span class="fc" id="L70">				stripQuotes(argument(args, parsed.offset())));</span>
+<span class="fc" id="L70">		PlanNodeArguments parsed= planNodeArguments(context, args, 1);</span>
+<span class="pc bpc" id="L71" title="1 of 6 branches missed.">		return parsed != null &amp;&amp; parsed.node() != null &amp;&amp; context.getSemanticPlan().hasRole(parsed.node(),</span>
+<span class="fc" id="L72">				stripQuotes(argument(args, parsed.offset())));</span>
 	}
 
 	private static boolean evaluateEnclosingPlannedRole(GuardContext context, Object... args) {
-<span class="fc" id="L74">		PlanNodeArguments parsed= planNodeArguments(context, args, 1);</span>
-<span class="pc bpc" id="L75" title="3 of 6 branches missed.">		return parsed != null &amp;&amp; parsed.node() != null &amp;&amp; context.getSemanticPlan().hasEnclosingRole(parsed.node(),</span>
-<span class="fc" id="L76">				stripQuotes(argument(args, parsed.offset())));</span>
+<span class="fc" id="L76">		PlanNodeArguments parsed= planNodeArguments(context, args, 1);</span>
+<span class="pc bpc" id="L77" title="3 of 6 branches missed.">		return parsed != null &amp;&amp; parsed.node() != null &amp;&amp; context.getSemanticPlan().hasEnclosingRole(parsed.node(),</span>
+<span class="fc" id="L78">				stripQuotes(argument(args, parsed.offset())));</span>
 	}
 
 	private static boolean evaluatePlannedValue(GuardContext context, Object... args) {
-<span class="fc" id="L80">		PlanNodeArguments parsed= planNodeArguments(context, args, 2);</span>
-<span class="pc bpc" id="L81" title="1 of 6 branches missed.">		return parsed != null &amp;&amp; parsed.node() != null &amp;&amp; context.getSemanticPlan().hasValue(parsed.node(),</span>
-<span class="fc" id="L82">				stripQuotes(argument(args, parsed.offset())), literal(args, parsed.offset() + 1));</span>
+<span class="fc" id="L82">		PlanNodeArguments parsed= planNodeArguments(context, args, 2);</span>
+<span class="pc bpc" id="L83" title="1 of 6 branches missed.">		return parsed != null &amp;&amp; parsed.node() != null &amp;&amp; context.getSemanticPlan().hasValue(parsed.node(),</span>
+<span class="fc" id="L84">				stripQuotes(argument(args, parsed.offset())), literal(args, parsed.offset() + 1));</span>
 	}
 
 	private static boolean evaluateEnclosingPlannedValue(GuardContext context, Object... args) {
-<span class="nc" id="L86">		PlanNodeArguments parsed= planNodeArguments(context, args, 2);</span>
-<span class="nc bnc" id="L87" title="All 6 branches missed.">		return parsed != null &amp;&amp; parsed.node() != null &amp;&amp; context.getSemanticPlan().hasEnclosingValue(parsed.node(),</span>
-<span class="nc" id="L88">				stripQuotes(argument(args, parsed.offset())), literal(args, parsed.offset() + 1));</span>
+<span class="nc" id="L88">		PlanNodeArguments parsed= planNodeArguments(context, args, 2);</span>
+<span class="nc bnc" id="L89" title="All 6 branches missed.">		return parsed != null &amp;&amp; parsed.node() != null &amp;&amp; context.getSemanticPlan().hasEnclosingValue(parsed.node(),</span>
+<span class="nc" id="L90">				stripQuotes(argument(args, parsed.offset())), literal(args, parsed.offset() + 1));</span>
 	}
 
 	private static boolean evaluatePlannedNodeValue(GuardContext context, Object... args) {
-<span class="fc" id="L92">		PlanNodeArguments parsed= planNodeArguments(context, args, 2);</span>
-<span class="pc bpc" id="L93" title="2 of 4 branches missed.">		if (parsed == null || parsed.node() == null) {</span>
-<span class="nc" id="L94">			return false;</span>
+<span class="fc" id="L94">		PlanNodeArguments parsed= planNodeArguments(context, args, 2);</span>
+<span class="pc bpc" id="L95" title="2 of 4 branches missed.">		if (parsed == null || parsed.node() == null) {</span>
+<span class="nc" id="L96">			return false;</span>
 		}
-<span class="fc" id="L96">		NodeKey expectedKey= NodeKey.from(context.getBinding(argument(args, parsed.offset() + 1)));</span>
-<span class="pc bpc" id="L97" title="1 of 4 branches missed.">		return expectedKey != null &amp;&amp; context.getSemanticPlan().hasValue(parsed.node(),</span>
-<span class="fc" id="L98">				stripQuotes(argument(args, parsed.offset())), SemanticPlanValue.node(expectedKey));</span>
+<span class="fc" id="L98">		NodeKey expectedKey= NodeKey.from(context.getBinding(argument(args, parsed.offset() + 1)));</span>
+<span class="pc bpc" id="L99" title="1 of 4 branches missed.">		return expectedKey != null &amp;&amp; context.getSemanticPlan().hasValue(parsed.node(),</span>
+<span class="fc" id="L100">				stripQuotes(argument(args, parsed.offset())), SemanticPlanValue.node(expectedKey));</span>
 	}
 
 	private static boolean evaluatePlannedListContains(GuardContext context, Object... args) {
-<span class="fc" id="L102">		PlanNodeArguments parsed= planNodeArguments(context, args, 2);</span>
-<span class="pc bpc" id="L103" title="2 of 4 branches missed.">		if (parsed == null || parsed.node() == null) {</span>
-<span class="nc" id="L104">			return false;</span>
+<span class="fc" id="L104">		PlanNodeArguments parsed= planNodeArguments(context, args, 2);</span>
+<span class="pc bpc" id="L105" title="2 of 4 branches missed.">		if (parsed == null || parsed.node() == null) {</span>
+<span class="nc" id="L106">			return false;</span>
 		}
-<span class="fc" id="L106">		String name= stripQuotes(argument(args, parsed.offset()));</span>
-<span class="fc" id="L107">		SemanticPlanValue expected= literal(args, parsed.offset() + 1);</span>
-<span class="fc" id="L108">		return context.getSemanticPlan().value(parsed.node(), name)</span>
-<span class="fc" id="L109">				.filter(ListValue.class::isInstance)</span>
-<span class="fc" id="L110">				.map(ListValue.class::cast)</span>
-<span class="fc" id="L111">				.map(value -&gt; value.values().contains(expected))</span>
-<span class="fc" id="L112">				.orElse(false);</span>
+<span class="fc" id="L108">		String name= stripQuotes(argument(args, parsed.offset()));</span>
+<span class="fc" id="L109">		SemanticPlanValue expected= literal(args, parsed.offset() + 1);</span>
+<span class="fc" id="L110">		return context.getSemanticPlan().value(parsed.node(), name)</span>
+<span class="fc" id="L111">				.filter(ListValue.class::isInstance)</span>
+<span class="fc" id="L112">				.map(ListValue.class::cast)</span>
+<span class="fc" id="L113">				.map(value -&gt; value.values().contains(expected))</span>
+<span class="fc" id="L114">				.orElse(false);</span>
 	}
 
 	private static boolean evaluatePlannedRelation(GuardContext context, Object... args) {
-<span class="fc" id="L116">		PlanNodeArguments parsed= planNodeArguments(context, args, 2);</span>
-<span class="pc bpc" id="L117" title="1 of 4 branches missed.">		if (parsed == null || parsed.node() == null) {</span>
-<span class="fc" id="L118">			return false;</span>
+<span class="fc" id="L118">		PlanNodeArguments parsed= planNodeArguments(context, args, 2);</span>
+<span class="pc bpc" id="L119" title="1 of 4 branches missed.">		if (parsed == null || parsed.node() == null) {</span>
+<span class="fc" id="L120">			return false;</span>
 		}
-<span class="fc" id="L120">		ASTNode target= context.getBinding(argument(args, parsed.offset() + 1));</span>
-<span class="fc bfc" id="L121" title="All 4 branches covered.">		return target != null &amp;&amp; context.getSemanticPlan().hasRelation(parsed.node(),</span>
-<span class="fc" id="L122">				stripQuotes(argument(args, parsed.offset())), target);</span>
+<span class="fc" id="L122">		ASTNode target= context.getBinding(argument(args, parsed.offset() + 1));</span>
+<span class="fc bfc" id="L123" title="All 4 branches covered.">		return target != null &amp;&amp; context.getSemanticPlan().hasRelation(parsed.node(),</span>
+<span class="fc" id="L124">				stripQuotes(argument(args, parsed.offset())), target);</span>
 	}
 
 	private static boolean evaluatePlannedRelationValue(GuardContext context, Object... args) {
-<span class="fc" id="L126">		PlanNodeArguments parsed= planNodeArguments(context, args, 4);</span>
-<span class="pc bpc" id="L127" title="2 of 4 branches missed.">		if (parsed == null || parsed.node() == null) {</span>
-<span class="nc" id="L128">			return false;</span>
+<span class="fc" id="L128">		PlanNodeArguments parsed= planNodeArguments(context, args, 4);</span>
+<span class="pc bpc" id="L129" title="2 of 4 branches missed.">		if (parsed == null || parsed.node() == null) {</span>
+<span class="nc" id="L130">			return false;</span>
 		}
-<span class="fc" id="L130">		ASTNode target= context.getBinding(argument(args, parsed.offset() + 1));</span>
-<span class="pc bpc" id="L131" title="2 of 4 branches missed.">		return target != null &amp;&amp; context.getSemanticPlan().hasRelationValue(parsed.node(),</span>
-<span class="fc" id="L132">				stripQuotes(argument(args, parsed.offset())), target,</span>
-<span class="fc" id="L133">				stripQuotes(argument(args, parsed.offset() + 2)), literal(args, parsed.offset() + 3));</span>
+<span class="fc" id="L132">		ASTNode target= context.getBinding(argument(args, parsed.offset() + 1));</span>
+<span class="pc bpc" id="L133" title="2 of 4 branches missed.">		return target != null &amp;&amp; context.getSemanticPlan().hasRelationValue(parsed.node(),</span>
+<span class="fc" id="L134">				stripQuotes(argument(args, parsed.offset())), target,</span>
+<span class="fc" id="L135">				stripQuotes(argument(args, parsed.offset() + 2)), literal(args, parsed.offset() + 3));</span>
 	}
 
 	private static boolean evaluatePlannedOutgoingRelation(GuardContext context, Object... args) {
-<span class="fc" id="L137">		PlanNodeArguments parsed= planNodeArguments(context, args, 1);</span>
-<span class="pc bpc" id="L138" title="2 of 4 branches missed.">		return parsed != null &amp;&amp; parsed.node() != null &amp;&amp; !context.getSemanticPlan()</span>
-<span class="pc bpc" id="L139" title="1 of 2 branches missed.">				.outgoing(parsed.node(), stripQuotes(argument(args, parsed.offset()))).isEmpty();</span>
+<span class="fc" id="L139">		PlanNodeArguments parsed= planNodeArguments(context, args, 1);</span>
+<span class="pc bpc" id="L140" title="2 of 4 branches missed.">		return parsed != null &amp;&amp; parsed.node() != null &amp;&amp; !context.getSemanticPlan()</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">				.outgoing(parsed.node(), stripQuotes(argument(args, parsed.offset()))).isEmpty();</span>
 	}
 
 	private static boolean evaluatePlannedIncomingRelation(GuardContext context, Object... args) {
-<span class="fc" id="L143">		PlanNodeArguments parsed= planNodeArguments(context, args, 1);</span>
-<span class="pc bpc" id="L144" title="2 of 4 branches missed.">		return parsed != null &amp;&amp; parsed.node() != null &amp;&amp; !context.getSemanticPlan()</span>
-<span class="pc bpc" id="L145" title="1 of 2 branches missed.">				.incoming(parsed.node(), stripQuotes(argument(args, parsed.offset()))).isEmpty();</span>
+<span class="fc" id="L145">		PlanNodeArguments parsed= planNodeArguments(context, args, 1);</span>
+<span class="pc bpc" id="L146" title="2 of 4 branches missed.">		return parsed != null &amp;&amp; parsed.node() != null &amp;&amp; !context.getSemanticPlan()</span>
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">				.incoming(parsed.node(), stripQuotes(argument(args, parsed.offset()))).isEmpty();</span>
 	}
 
 	private static boolean evaluatePlannedRelationCount(GuardContext context, Object... args) {
-<span class="fc" id="L149">		PlanNodeArguments parsed= planNodeArguments(context, args, 2);</span>
-<span class="pc bpc" id="L150" title="2 of 4 branches missed.">		if (parsed == null || parsed.node() == null) {</span>
-<span class="nc" id="L151">			return false;</span>
+<span class="fc" id="L151">		PlanNodeArguments parsed= planNodeArguments(context, args, 2);</span>
+<span class="pc bpc" id="L152" title="2 of 4 branches missed.">		if (parsed == null || parsed.node() == null) {</span>
+<span class="nc" id="L153">			return false;</span>
 		}
 		try {
-<span class="fc" id="L154">			return context.getSemanticPlan()</span>
-<span class="fc" id="L155">					.outgoing(parsed.node(), stripQuotes(argument(args, parsed.offset()))).size()</span>
-<span class="fc bfc" id="L156" title="All 2 branches covered.">					== Integer.parseInt(argument(args, parsed.offset() + 1));</span>
-<span class="nc" id="L157">		} catch (NumberFormatException e) {</span>
-<span class="nc" id="L158">			return false;</span>
+<span class="fc" id="L156">			return context.getSemanticPlan()</span>
+<span class="fc" id="L157">					.outgoing(parsed.node(), stripQuotes(argument(args, parsed.offset()))).size()</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">					== Integer.parseInt(argument(args, parsed.offset() + 1));</span>
+<span class="nc" id="L159">		} catch (NumberFormatException e) {</span>
+<span class="nc" id="L160">			return false;</span>
 		}
 	}
 
@@ -164,200 +166,200 @@ public final class BuiltInGuardRegistration {
 	 * Extra or missing arguments are rejected rather than ignored.
 	 */
 	private static PlanNodeArguments planNodeArguments(GuardContext context, Object[] args, int implicitArity) {
-<span class="pc bpc" id="L167" title="1 of 2 branches missed.">		if (args == null) {</span>
-<span class="nc" id="L168">			return null;</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">		if (args == null) {</span>
+<span class="nc" id="L170">			return null;</span>
 		}
-<span class="fc bfc" id="L170" title="All 2 branches covered.">		if (args.length == implicitArity) {</span>
-<span class="fc" id="L171">			return new PlanNodeArguments(context.getMatchedNode(), 0);</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">		if (args.length == implicitArity) {</span>
+<span class="fc" id="L173">			return new PlanNodeArguments(context.getMatchedNode(), 0);</span>
 		}
-<span class="fc bfc" id="L173" title="All 2 branches covered.">		if (args.length == implicitArity + 1) {</span>
-<span class="fc" id="L174">			return new PlanNodeArguments(context.getBinding(argument(args, 0)), 1);</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">		if (args.length == implicitArity + 1) {</span>
+<span class="fc" id="L176">			return new PlanNodeArguments(context.getBinding(argument(args, 0)), 1);</span>
 		}
-<span class="fc" id="L176">		return null;</span>
+<span class="fc" id="L178">		return null;</span>
 	}
 
 	private static boolean evaluateInstanceOf(GuardContext context, Object... args) {
-<span class="pc bpc" id="L180" title="1 of 2 branches missed.">		if (args.length &lt; 2) {</span>
-<span class="nc" id="L181">			return false;</span>
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">		if (args.length &lt; 2) {</span>
+<span class="nc" id="L183">			return false;</span>
 		}
-<span class="fc" id="L183">		ASTNode node= context.getBinding(argument(args, 0));</span>
-<span class="pc bpc" id="L184" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L185">			return false;</span>
+<span class="fc" id="L185">		ASTNode node= context.getBinding(argument(args, 0));</span>
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L187">			return false;</span>
 		}
-<span class="fc" id="L187">		ITypeBinding binding= resolveTypeBinding(node);</span>
-<span class="fc bfc" id="L188" title="All 2 branches covered.">		if (binding == null) {</span>
-<span class="fc" id="L189">			context.markUnknown(&quot;instanceof&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L190">					&quot;Cannot resolve the type of &quot; + argument(args, 0)); //$NON-NLS-1$</span>
-<span class="fc" id="L191">			return true;</span>
+<span class="fc" id="L189">		ITypeBinding binding= resolveTypeBinding(node);</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">		if (binding == null) {</span>
+<span class="fc" id="L191">			context.markUnknown(&quot;instanceof&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L192">					&quot;Cannot resolve the type of &quot; + argument(args, 0)); //$NON-NLS-1$</span>
+<span class="fc" id="L193">			return true;</span>
 		}
-<span class="fc bfc" id="L193" title="All 2 branches covered.">		if (binding.isRecovered()) {</span>
-<span class="fc" id="L194">			context.markUnknown(&quot;instanceof&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L195">					&quot;The recovered type of &quot; + argument(args, 0) + &quot; is incomplete&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L195" title="All 2 branches covered.">		if (binding.isRecovered()) {</span>
+<span class="fc" id="L196">			context.markUnknown(&quot;instanceof&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L197">					&quot;The recovered type of &quot; + argument(args, 0) + &quot; is incomplete&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
 		}
-<span class="fc" id="L197">		String expectedType= stripQuotes(argument(args, 1));</span>
-<span class="pc bpc" id="L198" title="3 of 4 branches missed.">		if (expectedType.endsWith(&quot;[]&quot;) &amp;&amp; expectedType.length() &gt; 2) { //$NON-NLS-1$</span>
-<span class="nc bnc" id="L199" title="All 4 branches missed.">			return binding.isArray() &amp;&amp; matchesTypeName(binding.getElementType(),</span>
-<span class="nc" id="L200">					expectedType.substring(0, expectedType.length() - 2));</span>
+<span class="fc" id="L199">		String expectedType= stripQuotes(argument(args, 1));</span>
+<span class="pc bpc" id="L200" title="3 of 4 branches missed.">		if (expectedType.endsWith(&quot;[]&quot;) &amp;&amp; expectedType.length() &gt; 2) { //$NON-NLS-1$</span>
+<span class="nc bnc" id="L201" title="All 4 branches missed.">			return binding.isArray() &amp;&amp; matchesTypeName(binding.getElementType(),</span>
+<span class="nc" id="L202">					expectedType.substring(0, expectedType.length() - 2));</span>
 		}
-<span class="fc" id="L202">		return matchesTypeName(binding, expectedType);</span>
+<span class="fc" id="L204">		return matchesTypeName(binding, expectedType);</span>
 	}
 
 	private static boolean evaluateSubtypeOf(GuardContext context, Object... args) {
-<span class="pc bpc" id="L206" title="1 of 2 branches missed.">		if (args.length &lt; 2) {</span>
-<span class="nc" id="L207">			return false;</span>
+<span class="pc bpc" id="L208" title="1 of 2 branches missed.">		if (args.length &lt; 2) {</span>
+<span class="nc" id="L209">			return false;</span>
 		}
-<span class="fc" id="L209">		ASTNode node= context.getBinding(argument(args, 0));</span>
-<span class="pc bpc" id="L210" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L211">			return false;</span>
+<span class="fc" id="L211">		ASTNode node= context.getBinding(argument(args, 0));</span>
+<span class="pc bpc" id="L212" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L213">			return false;</span>
 		}
-<span class="fc" id="L213">		ITypeBinding binding= resolveTypeBinding(node);</span>
-<span class="pc bpc" id="L214" title="1 of 2 branches missed.">		if (binding == null) {</span>
-<span class="nc" id="L215">			context.markUnknown(&quot;subtypeOf&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L216">					&quot;Cannot resolve the type hierarchy of &quot; + argument(args, 0)); //$NON-NLS-1$</span>
-<span class="nc" id="L217">			return true;</span>
+<span class="fc" id="L215">		ITypeBinding binding= resolveTypeBinding(node);</span>
+<span class="pc bpc" id="L216" title="1 of 2 branches missed.">		if (binding == null) {</span>
+<span class="nc" id="L217">			context.markUnknown(&quot;subtypeOf&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L218">					&quot;Cannot resolve the type hierarchy of &quot; + argument(args, 0)); //$NON-NLS-1$</span>
+<span class="nc" id="L219">			return true;</span>
 		}
-<span class="fc" id="L219">		HierarchyMatch match= subtypeMatch(binding, stripQuotes(argument(args, 1)), new HashSet&lt;&gt;());</span>
-<span class="pc bpc" id="L220" title="1 of 2 branches missed.">		if (match == HierarchyMatch.UNKNOWN) {</span>
-<span class="nc" id="L221">			context.markUnknown(&quot;subtypeOf&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L222">					&quot;Cannot resolve the complete type hierarchy of &quot; + argument(args, 0)); //$NON-NLS-1$</span>
-<span class="nc" id="L223">			return true;</span>
+<span class="fc" id="L221">		HierarchyMatch match= subtypeMatch(binding, stripQuotes(argument(args, 1)), new HashSet&lt;&gt;());</span>
+<span class="pc bpc" id="L222" title="1 of 2 branches missed.">		if (match == HierarchyMatch.UNKNOWN) {</span>
+<span class="nc" id="L223">			context.markUnknown(&quot;subtypeOf&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L224">					&quot;Cannot resolve the complete type hierarchy of &quot; + argument(args, 0)); //$NON-NLS-1$</span>
+<span class="nc" id="L225">			return true;</span>
 		}
-<span class="fc bfc" id="L225" title="All 2 branches covered.">		return match == HierarchyMatch.MATCH;</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">		return match == HierarchyMatch.MATCH;</span>
 	}
 
 	static HierarchyMatch subtypeMatch(ITypeBinding binding, String expectedType, Set&lt;String&gt; visited) {
-<span class="fc bfc" id="L229" title="All 2 branches covered.">		if (binding == null) {</span>
-<span class="fc" id="L230">			return HierarchyMatch.NO_MATCH;</span>
+<span class="fc bfc" id="L231" title="All 2 branches covered.">		if (binding == null) {</span>
+<span class="fc" id="L232">			return HierarchyMatch.NO_MATCH;</span>
 		}
-<span class="fc bfc" id="L232" title="All 2 branches covered.">		if (binding.isRecovered()) {</span>
-<span class="fc" id="L233">			return HierarchyMatch.UNKNOWN;</span>
+<span class="fc bfc" id="L234" title="All 2 branches covered.">		if (binding.isRecovered()) {</span>
+<span class="fc" id="L235">			return HierarchyMatch.UNKNOWN;</span>
 		}
-<span class="fc" id="L235">		ITypeBinding declaration= binding.getTypeDeclaration();</span>
-<span class="pc bpc" id="L236" title="2 of 4 branches missed.">		if (declaration == null || declaration.isRecovered()) {</span>
-<span class="nc" id="L237">			return HierarchyMatch.UNKNOWN;</span>
+<span class="fc" id="L237">		ITypeBinding declaration= binding.getTypeDeclaration();</span>
+<span class="pc bpc" id="L238" title="2 of 4 branches missed.">		if (declaration == null || declaration.isRecovered()) {</span>
+<span class="nc" id="L239">			return HierarchyMatch.UNKNOWN;</span>
 		}
-<span class="fc" id="L239">		String key= declaration.getKey();</span>
-<span class="pc bpc" id="L240" title="2 of 4 branches missed.">		String identity= key == null || key.isBlank() ? declaration.getQualifiedName() : key;</span>
-<span class="pc bpc" id="L241" title="2 of 6 branches missed.">		if (identity != null &amp;&amp; !identity.isBlank() &amp;&amp; !visited.add(identity)) {</span>
-<span class="fc" id="L242">			return HierarchyMatch.NO_MATCH;</span>
+<span class="fc" id="L241">		String key= declaration.getKey();</span>
+<span class="pc bpc" id="L242" title="2 of 4 branches missed.">		String identity= key == null || key.isBlank() ? declaration.getQualifiedName() : key;</span>
+<span class="pc bpc" id="L243" title="2 of 6 branches missed.">		if (identity != null &amp;&amp; !identity.isBlank() &amp;&amp; !visited.add(identity)) {</span>
+<span class="fc" id="L244">			return HierarchyMatch.NO_MATCH;</span>
 		}
-<span class="fc bfc" id="L244" title="All 2 branches covered.">		if (matchesTypeName(declaration, expectedType)) {</span>
-<span class="fc" id="L245">			return HierarchyMatch.MATCH;</span>
+<span class="fc bfc" id="L246" title="All 2 branches covered.">		if (matchesTypeName(declaration, expectedType)) {</span>
+<span class="fc" id="L247">			return HierarchyMatch.MATCH;</span>
 		}
-<span class="fc" id="L247">		boolean unknown= false;</span>
-<span class="fc" id="L248">		HierarchyMatch superclassMatch= subtypeMatch(declaration.getSuperclass(), expectedType, visited);</span>
-<span class="fc bfc" id="L249" title="All 2 branches covered.">		if (superclassMatch == HierarchyMatch.MATCH) {</span>
-<span class="fc" id="L250">			return HierarchyMatch.MATCH;</span>
+<span class="fc" id="L249">		boolean unknown= false;</span>
+<span class="fc" id="L250">		HierarchyMatch superclassMatch= subtypeMatch(declaration.getSuperclass(), expectedType, visited);</span>
+<span class="fc bfc" id="L251" title="All 2 branches covered.">		if (superclassMatch == HierarchyMatch.MATCH) {</span>
+<span class="fc" id="L252">			return HierarchyMatch.MATCH;</span>
 		}
-<span class="fc bfc" id="L252" title="All 2 branches covered.">		unknown= superclassMatch == HierarchyMatch.UNKNOWN;</span>
-<span class="fc bfc" id="L253" title="All 2 branches covered.">		for (ITypeBinding iface : declaration.getInterfaces()) {</span>
-<span class="fc" id="L254">			HierarchyMatch interfaceMatch= subtypeMatch(iface, expectedType, visited);</span>
-<span class="fc bfc" id="L255" title="All 2 branches covered.">			if (interfaceMatch == HierarchyMatch.MATCH) {</span>
-<span class="fc" id="L256">				return HierarchyMatch.MATCH;</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">		unknown= superclassMatch == HierarchyMatch.UNKNOWN;</span>
+<span class="fc bfc" id="L255" title="All 2 branches covered.">		for (ITypeBinding iface : declaration.getInterfaces()) {</span>
+<span class="fc" id="L256">			HierarchyMatch interfaceMatch= subtypeMatch(iface, expectedType, visited);</span>
+<span class="fc bfc" id="L257" title="All 2 branches covered.">			if (interfaceMatch == HierarchyMatch.MATCH) {</span>
+<span class="fc" id="L258">				return HierarchyMatch.MATCH;</span>
 			}
-<span class="fc bfc" id="L258" title="All 2 branches covered.">			unknown|= interfaceMatch == HierarchyMatch.UNKNOWN;</span>
+<span class="fc bfc" id="L260" title="All 2 branches covered.">			unknown|= interfaceMatch == HierarchyMatch.UNKNOWN;</span>
 		}
-<span class="fc bfc" id="L260" title="All 2 branches covered.">		return unknown ? HierarchyMatch.UNKNOWN : HierarchyMatch.NO_MATCH;</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">		return unknown ? HierarchyMatch.UNKNOWN : HierarchyMatch.NO_MATCH;</span>
 	}
 
 	private static boolean evaluateGenericTypeIs(GuardContext context, Object... args) {
-<span class="pc bpc" id="L264" title="1 of 2 branches missed.">		if (args.length &lt; 3) {</span>
-<span class="nc" id="L265">			return false;</span>
+<span class="pc bpc" id="L266" title="1 of 2 branches missed.">		if (args.length &lt; 3) {</span>
+<span class="nc" id="L267">			return false;</span>
 		}
-<span class="fc" id="L267">		ASTNode node= context.getBinding(argument(args, 0));</span>
-<span class="pc bpc" id="L268" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L269">			return false;</span>
+<span class="fc" id="L269">		ASTNode node= context.getBinding(argument(args, 0));</span>
+<span class="pc bpc" id="L270" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L271">			return false;</span>
 		}
 		int index;
 		try {
-<span class="fc" id="L273">			index= Integer.parseInt(argument(args, 1));</span>
-<span class="nc" id="L274">		} catch (NumberFormatException e) {</span>
-<span class="nc" id="L275">			return false;</span>
-<span class="fc" id="L276">		}</span>
-<span class="fc" id="L277">		ITypeBinding binding= resolveTypeBinding(node);</span>
-<span class="pc bpc" id="L278" title="1 of 2 branches missed.">		if (binding == null) {</span>
-<span class="nc" id="L279">			context.markUnknown(&quot;genericTypeIs&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L280">					&quot;Cannot resolve generic type arguments for &quot; + argument(args, 0)); //$NON-NLS-1$</span>
-<span class="nc" id="L281">			return true;</span>
+<span class="fc" id="L275">			index= Integer.parseInt(argument(args, 1));</span>
+<span class="nc" id="L276">		} catch (NumberFormatException e) {</span>
+<span class="nc" id="L277">			return false;</span>
+<span class="fc" id="L278">		}</span>
+<span class="fc" id="L279">		ITypeBinding binding= resolveTypeBinding(node);</span>
+<span class="pc bpc" id="L280" title="1 of 2 branches missed.">		if (binding == null) {</span>
+<span class="nc" id="L281">			context.markUnknown(&quot;genericTypeIs&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L282">					&quot;Cannot resolve generic type arguments for &quot; + argument(args, 0)); //$NON-NLS-1$</span>
+<span class="nc" id="L283">			return true;</span>
 		}
-<span class="pc bpc" id="L283" title="1 of 2 branches missed.">		if (binding.isRecovered()) {</span>
-<span class="nc" id="L284">			context.markUnknown(&quot;genericTypeIs&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L285">					&quot;The recovered generic type of &quot; + argument(args, 0) + &quot; is incomplete&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L285" title="1 of 2 branches missed.">		if (binding.isRecovered()) {</span>
+<span class="nc" id="L286">			context.markUnknown(&quot;genericTypeIs&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L287">					&quot;The recovered generic type of &quot; + argument(args, 0) + &quot; is incomplete&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
 		}
-<span class="pc bpc" id="L287" title="1 of 2 branches missed.">		if (index &lt; 0) {</span>
-<span class="nc" id="L288">			return false;</span>
+<span class="pc bpc" id="L289" title="1 of 2 branches missed.">		if (index &lt; 0) {</span>
+<span class="nc" id="L290">			return false;</span>
 		}
-<span class="pc bpc" id="L290" title="1 of 2 branches missed.">		if (binding.isRawType()) {</span>
-<span class="fc" id="L291">			context.markUnknown(&quot;genericTypeIs&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L292">					&quot;Generic type arguments are erased for &quot; + argument(args, 0)); //$NON-NLS-1$</span>
-<span class="fc" id="L293">			return false;</span>
+<span class="pc bpc" id="L292" title="1 of 2 branches missed.">		if (binding.isRawType()) {</span>
+<span class="fc" id="L293">			context.markUnknown(&quot;genericTypeIs&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L294">					&quot;Generic type arguments are erased for &quot; + argument(args, 0)); //$NON-NLS-1$</span>
+<span class="fc" id="L295">			return false;</span>
 		}
-<span class="nc" id="L295">		ITypeBinding[] arguments= binding.getTypeArguments();</span>
-<span class="nc bnc" id="L296" title="All 2 branches missed.">		if (index &gt;= arguments.length) {</span>
-<span class="nc" id="L297">			return false;</span>
+<span class="nc" id="L297">		ITypeBinding[] arguments= binding.getTypeArguments();</span>
+<span class="nc bnc" id="L298" title="All 2 branches missed.">		if (index &gt;= arguments.length) {</span>
+<span class="nc" id="L299">			return false;</span>
 		}
-<span class="nc bnc" id="L299" title="All 2 branches missed.">		if (arguments[index] == null) {</span>
-<span class="nc" id="L300">			context.markUnknown(&quot;genericTypeIs&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L301">					&quot;Cannot resolve generic type argument &quot; + index + &quot; for &quot; + argument(args, 0)); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L302">			return false;</span>
+<span class="nc bnc" id="L301" title="All 2 branches missed.">		if (arguments[index] == null) {</span>
+<span class="nc" id="L302">			context.markUnknown(&quot;genericTypeIs&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L303">					&quot;Cannot resolve generic type argument &quot; + index + &quot; for &quot; + argument(args, 0)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L304">			return false;</span>
 		}
-<span class="nc bnc" id="L304" title="All 2 branches missed.">		if (arguments[index].isRecovered()) {</span>
-<span class="nc" id="L305">			context.markUnknown(&quot;genericTypeIs&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L306">					&quot;Generic type argument &quot; + index + &quot; for &quot; + argument(args, 0) + &quot; is recovered&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="nc bnc" id="L306" title="All 2 branches missed.">		if (arguments[index].isRecovered()) {</span>
+<span class="nc" id="L307">			context.markUnknown(&quot;genericTypeIs&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L308">					&quot;Generic type argument &quot; + index + &quot; for &quot; + argument(args, 0) + &quot; is recovered&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
 		}
-<span class="nc" id="L308">		return matchesTypeName(arguments[index], stripQuotes(argument(args, 2)));</span>
+<span class="nc" id="L310">		return matchesTypeName(arguments[index], stripQuotes(argument(args, 2)));</span>
 	}
 
 	private static SemanticPlanValue literal(Object[] args, int index) {
-<span class="fc" id="L312">		return SemanticPlanValue.fromGuardLiteral(argument(args, index));</span>
+<span class="fc" id="L314">		return SemanticPlanValue.fromGuardLiteral(argument(args, index));</span>
 	}
 
 	private static String argument(Object[] args, int index) {
-<span class="pc bpc" id="L316" title="4 of 8 branches missed.">		if (args == null || index &lt; 0 || index &gt;= args.length || args[index] == null) {</span>
-<span class="nc" id="L317">			return &quot;&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L318" title="4 of 8 branches missed.">		if (args == null || index &lt; 0 || index &gt;= args.length || args[index] == null) {</span>
+<span class="nc" id="L319">			return &quot;&quot;; //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L319">		return args[index].toString();</span>
+<span class="fc" id="L321">		return args[index].toString();</span>
 	}
 
 	private static ITypeBinding resolveTypeBinding(ASTNode node) {
-<span class="fc bfc" id="L323" title="All 2 branches covered.">		if (node instanceof Expression expression) {</span>
-<span class="fc" id="L324">			return expression.resolveTypeBinding();</span>
+<span class="fc bfc" id="L325" title="All 2 branches covered.">		if (node instanceof Expression expression) {</span>
+<span class="fc" id="L326">			return expression.resolveTypeBinding();</span>
 		}
-<span class="pc bpc" id="L326" title="1 of 2 branches missed.">		if (node instanceof Type type) {</span>
-<span class="nc" id="L327">			return type.resolveBinding();</span>
+<span class="pc bpc" id="L328" title="1 of 2 branches missed.">		if (node instanceof Type type) {</span>
+<span class="nc" id="L329">			return type.resolveBinding();</span>
 		}
-<span class="pc bpc" id="L329" title="1 of 2 branches missed.">		if (node instanceof SingleVariableDeclaration declaration) {</span>
-<span class="fc" id="L330">			IVariableBinding binding= declaration.resolveBinding();</span>
-<span class="pc bpc" id="L331" title="1 of 2 branches missed.">			return binding == null ? declaration.getType().resolveBinding() : binding.getType();</span>
+<span class="pc bpc" id="L331" title="1 of 2 branches missed.">		if (node instanceof SingleVariableDeclaration declaration) {</span>
+<span class="fc" id="L332">			IVariableBinding binding= declaration.resolveBinding();</span>
+<span class="pc bpc" id="L333" title="1 of 2 branches missed.">			return binding == null ? declaration.getType().resolveBinding() : binding.getType();</span>
 		}
-<span class="nc bnc" id="L333" title="All 2 branches missed.">		if (node instanceof VariableDeclarationFragment fragment) {</span>
-<span class="nc" id="L334">			IVariableBinding binding= fragment.resolveBinding();</span>
-<span class="nc bnc" id="L335" title="All 2 branches missed.">			return binding == null ? null : binding.getType();</span>
+<span class="nc bnc" id="L335" title="All 2 branches missed.">		if (node instanceof VariableDeclarationFragment fragment) {</span>
+<span class="nc" id="L336">			IVariableBinding binding= fragment.resolveBinding();</span>
+<span class="nc bnc" id="L337" title="All 2 branches missed.">			return binding == null ? null : binding.getType();</span>
 		}
-<span class="nc" id="L337">		return null;</span>
+<span class="nc" id="L339">		return null;</span>
 	}
 
 	private static boolean matchesTypeName(ITypeBinding binding, String expectedType) {
-<span class="pc bpc" id="L341" title="3 of 6 branches missed.">		if (binding == null || expectedType == null || expectedType.isBlank()) {</span>
-<span class="nc" id="L342">			return false;</span>
+<span class="pc bpc" id="L343" title="3 of 6 branches missed.">		if (binding == null || expectedType == null || expectedType.isBlank()) {</span>
+<span class="nc" id="L344">			return false;</span>
 		}
-<span class="fc" id="L344">		ITypeBinding declaration= binding.getTypeDeclaration();</span>
-<span class="pc bpc" id="L345" title="1 of 2 branches missed.">		if (declaration == null) {</span>
-<span class="nc" id="L346">			return false;</span>
+<span class="fc" id="L346">		ITypeBinding declaration= binding.getTypeDeclaration();</span>
+<span class="pc bpc" id="L347" title="1 of 2 branches missed.">		if (declaration == null) {</span>
+<span class="nc" id="L348">			return false;</span>
 		}
-<span class="fc" id="L348">		String qualifiedName= declaration.getQualifiedName();</span>
-<span class="pc bpc" id="L349" title="1 of 4 branches missed.">		return expectedType.equals(qualifiedName) || expectedType.equals(declaration.getName());</span>
+<span class="fc" id="L350">		String qualifiedName= declaration.getQualifiedName();</span>
+<span class="pc bpc" id="L351" title="1 of 4 branches missed.">		return expectedType.equals(qualifiedName) || expectedType.equals(declaration.getName());</span>
 	}
 
 	private static String stripQuotes(String value) {
-<span class="pc bpc" id="L353" title="1 of 2 branches missed.">		String stripped= value == null ? &quot;&quot; : value.trim(); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L354" title="2 of 6 branches missed.">		if (stripped.length() &gt;= 2 &amp;&amp; stripped.startsWith(&quot;\&quot;&quot;) &amp;&amp; stripped.endsWith(&quot;\&quot;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L355">			return stripped.substring(1, stripped.length() - 1);</span>
+<span class="pc bpc" id="L355" title="1 of 2 branches missed.">		String stripped= value == null ? &quot;&quot; : value.trim(); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L356" title="2 of 6 branches missed.">		if (stripped.length() &gt;= 2 &amp;&amp; stripped.startsWith(&quot;\&quot;&quot;) &amp;&amp; stripped.endsWith(&quot;\&quot;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L357">			return stripped.substring(1, stripped.length() - 1);</span>
 		}
-<span class="fc" id="L357">		return stripped;</span>
+<span class="fc" id="L359">		return stripped;</span>
 	}
 
-<span class="fc" id="L360">	private record PlanNodeArguments(ASTNode node, int offset) {</span>
+<span class="fc" id="L362">	private record PlanNodeArguments(ASTNode node, int offset) {</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

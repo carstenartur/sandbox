@@ -15,7 +15,6 @@ import java.util.Set;
 import org.eclipse.jdt.core.dom.ASTMatcher;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CastExpression;
-import org.eclipse.jdt.core.dom.Comment;
 import org.eclipse.jdt.core.dom.ConditionalExpression;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldAccess;
@@ -46,270 +45,246 @@ import org.sandbox.jdt.triggerpattern.api.GuardContext;
 final class StringCleanupGuards {
 
 	private static final String STRING= &quot;java.lang.String&quot;; //$NON-NLS-1$
-<span class="fc" id="L49">	private static final Set&lt;String&gt; STRIP_METHODS= Set.of(&quot;strip&quot;, &quot;stripLeading&quot;, &quot;stripTrailing&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc" id="L48">	private static final Set&lt;String&gt; STRIP_METHODS= Set.of(&quot;strip&quot;, &quot;stripLeading&quot;, &quot;stripTrailing&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
 
 	private StringCleanupGuards() {
 	}
 
 	static boolean indexOfContainsSafe(GuardContext context, Object... arguments) {
-<span class="pc bpc" id="L55" title="1 of 4 branches missed.">		if (arguments.length != 0 || hasCommentInRewriteRange(context)</span>
-<span class="pc bpc" id="L56" title="1 of 2 branches missed.">				|| !(context.getMatchedNode() instanceof InfixExpression comparison)</span>
-<span class="pc bpc" id="L57" title="1 of 2 branches missed.">				|| comparison.hasExtendedOperands()</span>
-<span class="pc bpc" id="L58" title="1 of 2 branches missed.">				|| !(unparenthesize(comparison.getLeftOperand()) instanceof MethodInvocation invocation)) {</span>
-<span class="fc" id="L59">			return false;</span>
+<span class="pc bpc" id="L54" title="1 of 4 branches missed.">		if (arguments.length != 0 || HintRewriteSafety.hasCommentInRewriteRange(context)</span>
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">				|| !(context.getMatchedNode() instanceof InfixExpression comparison)</span>
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">				|| comparison.hasExtendedOperands()</span>
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">				|| !(unparenthesize(comparison.getLeftOperand()) instanceof MethodInvocation invocation)) {</span>
+<span class="fc" id="L58">			return false;</span>
 		}
-<span class="fc" id="L61">		Object constant= comparison.getRightOperand().resolveConstantExpressionValue();</span>
-<span class="fc" id="L62">		InfixExpression.Operator operator= comparison.getOperator();</span>
-<span class="fc bfc" id="L63" title="All 4 branches covered.">		boolean positive= Integer.valueOf(0).equals(constant) &amp;&amp; operator == InfixExpression.Operator.GREATER_EQUALS</span>
-<span class="fc bfc" id="L64" title="All 4 branches covered.">				|| Integer.valueOf(-1).equals(constant) &amp;&amp; operator == InfixExpression.Operator.NOT_EQUALS;</span>
-<span class="fc bfc" id="L65" title="All 4 branches covered.">		boolean negative= Integer.valueOf(0).equals(constant) &amp;&amp; operator == InfixExpression.Operator.LESS</span>
-<span class="fc bfc" id="L66" title="All 4 branches covered.">				|| Integer.valueOf(-1).equals(constant) &amp;&amp; operator == InfixExpression.Operator.EQUALS;</span>
-<span class="fc bfc" id="L67" title="All 8 branches covered.">		if ((!positive &amp;&amp; !negative) || (positive &amp;&amp; comparison.getParent() instanceof LambdaExpression)) {</span>
-<span class="fc" id="L68">			return false;</span>
+<span class="fc" id="L60">		Object constant= comparison.getRightOperand().resolveConstantExpressionValue();</span>
+<span class="fc" id="L61">		InfixExpression.Operator operator= comparison.getOperator();</span>
+<span class="fc bfc" id="L62" title="All 4 branches covered.">		boolean positive= Integer.valueOf(0).equals(constant) &amp;&amp; operator == InfixExpression.Operator.GREATER_EQUALS</span>
+<span class="fc bfc" id="L63" title="All 4 branches covered.">				|| Integer.valueOf(-1).equals(constant) &amp;&amp; operator == InfixExpression.Operator.NOT_EQUALS;</span>
+<span class="fc bfc" id="L64" title="All 4 branches covered.">		boolean negative= Integer.valueOf(0).equals(constant) &amp;&amp; operator == InfixExpression.Operator.LESS</span>
+<span class="fc bfc" id="L65" title="All 4 branches covered.">				|| Integer.valueOf(-1).equals(constant) &amp;&amp; operator == InfixExpression.Operator.EQUALS;</span>
+<span class="fc bfc" id="L66" title="All 8 branches covered.">		if ((!positive &amp;&amp; !negative) || (positive &amp;&amp; comparison.getParent() instanceof LambdaExpression)) {</span>
+<span class="fc" id="L67">			return false;</span>
 		}
-<span class="fc bfc" id="L70" title="All 2 branches covered.">		return stringMethod(context, &quot;stringIndexOfContainsSafe&quot;, invocation, &quot;indexOf&quot;, STRING) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc bfc" id="L71" title="All 2 branches covered.">				&amp;&amp; targetStableStringArgument(context, (Expression) invocation.arguments().get(0));</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">		return stringMethod(context, &quot;stringIndexOfContainsSafe&quot;, invocation, &quot;indexOf&quot;, STRING) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">				&amp;&amp; targetStableStringArgument(context, (Expression) invocation.arguments().get(0));</span>
 	}
 
 	/** The replacement's CharSequence parameter must not change target-type inference. */
 	private static boolean targetStableStringArgument(GuardContext context, Expression expression) {
-<span class="fc" id="L76">		Expression argument= unparenthesize(expression);</span>
-<span class="pc bpc" id="L77" title="1 of 4 branches missed.">		if (argument instanceof StringLiteral || argument instanceof TextBlock) {</span>
-<span class="fc" id="L78">			return true;</span>
+<span class="fc" id="L75">		Expression argument= unparenthesize(expression);</span>
+<span class="pc bpc" id="L76" title="1 of 4 branches missed.">		if (argument instanceof StringLiteral || argument instanceof TextBlock) {</span>
+<span class="fc" id="L77">			return true;</span>
 		}
-<span class="fc bfc" id="L80" title="All 2 branches covered.">		if (argument instanceof MethodInvocation call) {</span>
-<span class="fc" id="L81">			IMethodBinding binding= call.resolveMethodBinding();</span>
-<span class="pc bpc" id="L82" title="2 of 4 branches missed.">			if (binding == null || binding.isRecovered()) {</span>
-<span class="nc" id="L83">				context.markUnknown(&quot;stringIndexOfContainsSafe&quot;, &quot;Cannot resolve argument method signature&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L84">				return false;</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">		if (argument instanceof MethodInvocation call) {</span>
+<span class="fc" id="L80">			IMethodBinding binding= call.resolveMethodBinding();</span>
+<span class="pc bpc" id="L81" title="2 of 4 branches missed.">			if (binding == null || binding.isRecovered()) {</span>
+<span class="nc" id="L82">				context.markUnknown(&quot;stringIndexOfContainsSafe&quot;, &quot;Cannot resolve argument method signature&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L83">				return false;</span>
 			}
-<span class="fc" id="L86">			IMethodBinding declaration= binding.getMethodDeclaration();</span>
-<span class="fc" id="L87">			ITypeBinding returnType= declaration.getReturnType();</span>
-<span class="pc bpc" id="L88" title="2 of 6 branches missed.">			return !declaration.isRecovered() &amp;&amp; declaration.getTypeParameters().length == 0</span>
-<span class="pc bpc" id="L89" title="1 of 2 branches missed.">					&amp;&amp; returnType != null &amp;&amp; !returnType.isRecovered()</span>
-<span class="pc bpc" id="L90" title="1 of 2 branches missed.">					&amp;&amp; STRING.equals(returnType.getQualifiedName());</span>
+<span class="fc" id="L85">			IMethodBinding declaration= binding.getMethodDeclaration();</span>
+<span class="fc" id="L86">			ITypeBinding returnType= declaration.getReturnType();</span>
+<span class="pc bpc" id="L87" title="2 of 6 branches missed.">			return !declaration.isRecovered() &amp;&amp; declaration.getTypeParameters().length == 0</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">					&amp;&amp; returnType != null &amp;&amp; !returnType.isRecovered()</span>
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">					&amp;&amp; STRING.equals(returnType.getQualifiedName());</span>
 		}
-<span class="fc bfc" id="L92" title="All 2 branches covered.">		if (argument instanceof Name name) {</span>
-<span class="fc" id="L93">			return declaredStringVariable(context, name.resolveBinding());</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">		if (argument instanceof Name name) {</span>
+<span class="fc" id="L92">			return declaredStringVariable(context, name.resolveBinding());</span>
 		}
-<span class="pc bpc" id="L95" title="1 of 2 branches missed.">		if (argument instanceof FieldAccess field) {</span>
-<span class="nc" id="L96">			return declaredStringVariable(context, field.resolveFieldBinding());</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">		if (argument instanceof FieldAccess field) {</span>
+<span class="nc" id="L95">			return declaredStringVariable(context, field.resolveFieldBinding());</span>
 		}
-<span class="pc bpc" id="L98" title="1 of 2 branches missed.">		if (argument instanceof SuperFieldAccess field) {</span>
-<span class="nc" id="L99">			return declaredStringVariable(context, field.resolveFieldBinding());</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">		if (argument instanceof SuperFieldAccess field) {</span>
+<span class="nc" id="L98">			return declaredStringVariable(context, field.resolveFieldBinding());</span>
 		}
-<span class="fc bfc" id="L101" title="All 2 branches covered.">		if (!(argument instanceof CastExpression)) {</span>
-<span class="fc" id="L102">			return false;</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">		if (!(argument instanceof CastExpression)) {</span>
+<span class="fc" id="L101">			return false;</span>
 		}
-<span class="fc" id="L104">		ITypeBinding type= argument.resolveTypeBinding();</span>
-<span class="pc bpc" id="L105" title="2 of 4 branches missed.">		if (type == null || type.isRecovered()) {</span>
-<span class="nc" id="L106">			context.markUnknown(&quot;stringIndexOfContainsSafe&quot;, &quot;Cannot resolve argument type&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L107">			return false;</span>
+<span class="fc" id="L103">		ITypeBinding type= argument.resolveTypeBinding();</span>
+<span class="pc bpc" id="L104" title="2 of 4 branches missed.">		if (type == null || type.isRecovered()) {</span>
+<span class="nc" id="L105">			context.markUnknown(&quot;stringIndexOfContainsSafe&quot;, &quot;Cannot resolve argument type&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L106">			return false;</span>
 		}
-<span class="fc" id="L109">		return STRING.equals(type.getQualifiedName());</span>
+<span class="fc" id="L108">		return STRING.equals(type.getQualifiedName());</span>
 	}
 
 	private static boolean declaredStringVariable(GuardContext context, IBinding binding) {
-<span class="pc bpc" id="L113" title="2 of 4 branches missed.">		if (!(binding instanceof IVariableBinding variable) || variable.isRecovered()) {</span>
-<span class="nc" id="L114">			context.markUnknown(&quot;stringIndexOfContainsSafe&quot;, &quot;Cannot resolve argument variable&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L115">			return false;</span>
+<span class="pc bpc" id="L112" title="2 of 4 branches missed.">		if (!(binding instanceof IVariableBinding variable) || variable.isRecovered()) {</span>
+<span class="nc" id="L113">			context.markUnknown(&quot;stringIndexOfContainsSafe&quot;, &quot;Cannot resolve argument variable&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L114">			return false;</span>
 		}
-<span class="fc" id="L117">		IVariableBinding declaration= variable.getVariableDeclaration();</span>
-<span class="fc" id="L118">		ITypeBinding type= declaration.getType();</span>
-<span class="pc bpc" id="L119" title="3 of 6 branches missed.">		if (declaration.isRecovered() || type == null || type.isRecovered()) {</span>
-<span class="nc" id="L120">			context.markUnknown(&quot;stringIndexOfContainsSafe&quot;, &quot;Cannot resolve declared argument type&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L121">			return false;</span>
+<span class="fc" id="L116">		IVariableBinding declaration= variable.getVariableDeclaration();</span>
+<span class="fc" id="L117">		ITypeBinding type= declaration.getType();</span>
+<span class="pc bpc" id="L118" title="3 of 6 branches missed.">		if (declaration.isRecovered() || type == null || type.isRecovered()) {</span>
+<span class="nc" id="L119">			context.markUnknown(&quot;stringIndexOfContainsSafe&quot;, &quot;Cannot resolve declared argument type&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L120">			return false;</span>
 		}
-<span class="fc" id="L123">		return STRING.equals(type.getQualifiedName());</span>
+<span class="fc" id="L122">		return STRING.equals(type.getQualifiedName());</span>
 	}
 
 	static boolean substringSafe(GuardContext context, Object... arguments) {
-<span class="pc bpc" id="L127" title="1 of 4 branches missed.">		if (arguments.length != 0 || hasCommentInRewriteRange(context)</span>
-<span class="pc bpc" id="L128" title="1 of 2 branches missed.">				|| !(context.getMatchedNode() instanceof MethodInvocation substring)</span>
-<span class="fc bfc" id="L129" title="All 2 branches covered.">				|| !stringMethod(context, &quot;stringSubstringSafe&quot;, substring, &quot;substring&quot;, &quot;int&quot;, &quot;int&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
-<span class="fc" id="L130">			return false;</span>
+<span class="pc bpc" id="L126" title="1 of 4 branches missed.">		if (arguments.length != 0 || HintRewriteSafety.hasCommentInRewriteRange(context)</span>
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">				|| !(context.getMatchedNode() instanceof MethodInvocation substring)</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">				|| !stringMethod(context, &quot;stringSubstringSafe&quot;, substring, &quot;substring&quot;, &quot;int&quot;, &quot;int&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="fc" id="L129">			return false;</span>
 		}
-<span class="fc" id="L132">		Expression receiver= unparenthesize(substring.getExpression());</span>
-<span class="fc" id="L133">		Expression start= (Expression) substring.arguments().get(0);</span>
-<span class="fc" id="L134">		Expression end= unparenthesize((Expression) substring.arguments().get(1));</span>
-<span class="pc bpc" id="L135" title="1 of 2 branches missed.">		if (!(end instanceof MethodInvocation length)</span>
-<span class="pc bpc" id="L136" title="1 of 2 branches missed.">				|| !stringMethod(context, &quot;stringSubstringSafe&quot;, length, &quot;length&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc bfc" id="L137" title="All 4 branches covered.">				|| !isStableLocalReceiver(receiver) || !isStableExpression(start)) {</span>
-<span class="fc" id="L138">			return false;</span>
+<span class="fc" id="L131">		Expression receiver= unparenthesize(substring.getExpression());</span>
+<span class="fc" id="L132">		Expression start= (Expression) substring.arguments().get(0);</span>
+<span class="fc" id="L133">		Expression end= unparenthesize((Expression) substring.arguments().get(1));</span>
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">		if (!(end instanceof MethodInvocation length)</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">				|| !stringMethod(context, &quot;stringSubstringSafe&quot;, length, &quot;length&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L136" title="All 4 branches covered.">				|| !isStableLocalReceiver(receiver) || !isStableExpression(start)) {</span>
+<span class="fc" id="L137">			return false;</span>
 		}
-<span class="fc" id="L140">		Expression endReceiver= unparenthesize(length.getExpression());</span>
-<span class="pc bpc" id="L141" title="2 of 4 branches missed.">		if (receiver instanceof SimpleName name &amp;&amp; endReceiver instanceof SimpleName endName) {</span>
-<span class="fc" id="L142">			IBinding binding= name.resolveBinding();</span>
-<span class="pc bpc" id="L143" title="2 of 4 branches missed.">			return binding != null &amp;&amp; binding.isEqualTo(endName.resolveBinding());</span>
+<span class="fc" id="L139">		Expression endReceiver= unparenthesize(length.getExpression());</span>
+<span class="pc bpc" id="L140" title="2 of 4 branches missed.">		if (receiver instanceof SimpleName name &amp;&amp; endReceiver instanceof SimpleName endName) {</span>
+<span class="fc" id="L141">			IBinding binding= name.resolveBinding();</span>
+<span class="pc bpc" id="L142" title="2 of 4 branches missed.">			return binding != null &amp;&amp; binding.isEqualTo(endName.resolveBinding());</span>
 		}
-<span class="nc bnc" id="L145" title="All 4 branches missed.">		return endReceiver != null &amp;&amp; receiver.subtreeMatch(new ASTMatcher(), endReceiver);</span>
+<span class="nc bnc" id="L144" title="All 4 branches missed.">		return endReceiver != null &amp;&amp; receiver.subtreeMatch(new ASTMatcher(), endReceiver);</span>
 	}
 
 	static boolean isBlankSafe(GuardContext context, Object... arguments) {
-<span class="pc bpc" id="L149" title="1 of 4 branches missed.">		if (arguments.length != 0 || hasCommentInRewriteRange(context)) {</span>
-<span class="fc" id="L150">			return false;</span>
+<span class="pc bpc" id="L148" title="1 of 4 branches missed.">		if (arguments.length != 0 || HintRewriteSafety.hasCommentInRewriteRange(context)) {</span>
+<span class="fc" id="L149">			return false;</span>
 		}
-<span class="fc" id="L152">		ASTNode node= context.getMatchedNode();</span>
-<span class="fc bfc" id="L153" title="All 2 branches covered.">		if (node instanceof MethodInvocation invocation) {</span>
-<span class="fc bfc" id="L154" title="All 2 branches covered.">			if (stringMethod(context, &quot;stringIsBlankSafe&quot;, invocation, &quot;isEmpty&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L155">				return stringStrip(context, invocation.getExpression());</span>
+<span class="fc" id="L151">		ASTNode node= context.getMatchedNode();</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">		if (node instanceof MethodInvocation invocation) {</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">			if (stringMethod(context, &quot;stringIsBlankSafe&quot;, invocation, &quot;isEmpty&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L154">				return stringStrip(context, invocation.getExpression());</span>
 			}
-<span class="fc bfc" id="L157" title="All 2 branches covered.">			if (stringMethod(context, &quot;stringIsBlankSafe&quot;, invocation, &quot;equals&quot;, &quot;java.lang.Object&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
-<span class="fc" id="L158">				Expression argument= (Expression) invocation.arguments().get(0);</span>
-<span class="pc bpc" id="L159" title="1 of 4 branches missed.">				return (isEmptyLiteral(invocation.getExpression()) &amp;&amp; stringStrip(context, argument))</span>
-<span class="pc bpc" id="L160" title="2 of 4 branches missed.">						|| (isEmptyLiteral(argument) &amp;&amp; stringStrip(context, invocation.getExpression()));</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">			if (stringMethod(context, &quot;stringIsBlankSafe&quot;, invocation, &quot;equals&quot;, &quot;java.lang.Object&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc" id="L157">				Expression argument= (Expression) invocation.arguments().get(0);</span>
+<span class="pc bpc" id="L158" title="1 of 4 branches missed.">				return (isEmptyLiteral(invocation.getExpression()) &amp;&amp; stringStrip(context, argument))</span>
+<span class="pc bpc" id="L159" title="2 of 4 branches missed.">						|| (isEmptyLiteral(argument) &amp;&amp; stringStrip(context, invocation.getExpression()));</span>
 			}
 		}
-<span class="pc bpc" id="L163" title="1 of 4 branches missed.">		if (node instanceof InfixExpression infix &amp;&amp; !infix.hasExtendedOperands()</span>
-<span class="pc bpc" id="L164" title="1 of 2 branches missed.">				&amp;&amp; isSupportedLengthComparison(infix)</span>
-<span class="pc bpc" id="L165" title="1 of 2 branches missed.">				&amp;&amp; unparenthesize(infix.getLeftOperand()) instanceof MethodInvocation length</span>
-<span class="pc bpc" id="L166" title="1 of 2 branches missed.">				&amp;&amp; stringMethod(context, &quot;stringIsBlankSafe&quot;, length, &quot;length&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc bfc" id="L167" title="All 2 branches covered.">			if (infix.getParent() instanceof LambdaExpression</span>
-<span class="fc bfc" id="L168" title="All 2 branches covered.">					&amp;&amp; (infix.getOperator() == InfixExpression.Operator.EQUALS</span>
-<span class="fc bfc" id="L169" title="All 2 branches covered.">							|| infix.getOperator() == InfixExpression.Operator.LESS_EQUALS</span>
-<span class="pc bpc" id="L170" title="1 of 2 branches missed.">							|| infix.getOperator() == InfixExpression.Operator.LESS)) {</span>
+<span class="pc bpc" id="L162" title="1 of 4 branches missed.">		if (node instanceof InfixExpression infix &amp;&amp; !infix.hasExtendedOperands()</span>
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">				&amp;&amp; isSupportedLengthComparison(infix)</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">				&amp;&amp; unparenthesize(infix.getLeftOperand()) instanceof MethodInvocation length</span>
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">				&amp;&amp; stringMethod(context, &quot;stringIsBlankSafe&quot;, length, &quot;length&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">			if (infix.getParent() instanceof LambdaExpression</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">					&amp;&amp; (infix.getOperator() == InfixExpression.Operator.EQUALS</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">							|| infix.getOperator() == InfixExpression.Operator.LESS_EQUALS</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">							|| infix.getOperator() == InfixExpression.Operator.LESS)) {</span>
 				// A bare isBlank() call would also make the lambda void-compatible.
-<span class="fc" id="L172">				return false;</span>
+<span class="fc" id="L171">				return false;</span>
 			}
-<span class="fc" id="L174">			return stringStrip(context, length.getExpression());</span>
+<span class="fc" id="L173">			return stringStrip(context, length.getExpression());</span>
 		}
-<span class="fc" id="L176">		return false;</span>
+<span class="fc" id="L175">		return false;</span>
 	}
 
 	private static boolean isSupportedLengthComparison(InfixExpression infix) {
-<span class="fc" id="L180">		Object constant= infix.getRightOperand().resolveConstantExpressionValue();</span>
-<span class="fc bfc" id="L181" title="All 2 branches covered.">		if (Integer.valueOf(0).equals(constant)) {</span>
-<span class="fc bfc" id="L182" title="All 2 branches covered.">			return infix.getOperator() == InfixExpression.Operator.EQUALS</span>
-<span class="fc bfc" id="L183" title="All 2 branches covered.">					|| infix.getOperator() == InfixExpression.Operator.LESS_EQUALS</span>
-<span class="fc bfc" id="L184" title="All 2 branches covered.">					|| infix.getOperator() == InfixExpression.Operator.NOT_EQUALS</span>
-<span class="pc bpc" id="L185" title="1 of 2 branches missed.">					|| infix.getOperator() == InfixExpression.Operator.GREATER;</span>
+<span class="fc" id="L179">		Object constant= infix.getRightOperand().resolveConstantExpressionValue();</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">		if (Integer.valueOf(0).equals(constant)) {</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">			return infix.getOperator() == InfixExpression.Operator.EQUALS</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">					|| infix.getOperator() == InfixExpression.Operator.LESS_EQUALS</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">					|| infix.getOperator() == InfixExpression.Operator.NOT_EQUALS</span>
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">					|| infix.getOperator() == InfixExpression.Operator.GREATER;</span>
 		}
-<span class="pc bpc" id="L187" title="1 of 2 branches missed.">		return Integer.valueOf(1).equals(constant)</span>
-<span class="fc bfc" id="L188" title="All 2 branches covered.">				&amp;&amp; (infix.getOperator() == InfixExpression.Operator.LESS</span>
-<span class="pc bpc" id="L189" title="1 of 2 branches missed.">						|| infix.getOperator() == InfixExpression.Operator.GREATER_EQUALS);</span>
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">		return Integer.valueOf(1).equals(constant)</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">				&amp;&amp; (infix.getOperator() == InfixExpression.Operator.LESS</span>
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">						|| infix.getOperator() == InfixExpression.Operator.GREATER_EQUALS);</span>
 	}
 
 	private static boolean stringStrip(GuardContext context, Expression expression) {
-<span class="fc" id="L193">		Expression unwrapped= unparenthesize(expression);</span>
-<span class="fc" id="L194">		return unwrapped instanceof MethodInvocation strip</span>
-<span class="pc bpc" id="L195" title="1 of 2 branches missed.">				&amp;&amp; STRIP_METHODS.contains(strip.getName().getIdentifier())</span>
-<span class="pc bpc" id="L196" title="2 of 4 branches missed.">				&amp;&amp; stringMethod(context, &quot;stringIsBlankSafe&quot;, strip, strip.getName().getIdentifier()); //$NON-NLS-1$</span>
+<span class="fc" id="L192">		Expression unwrapped= unparenthesize(expression);</span>
+<span class="fc" id="L193">		return unwrapped instanceof MethodInvocation strip</span>
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">				&amp;&amp; STRIP_METHODS.contains(strip.getName().getIdentifier())</span>
+<span class="pc bpc" id="L195" title="2 of 4 branches missed.">				&amp;&amp; stringMethod(context, &quot;stringIsBlankSafe&quot;, strip, strip.getName().getIdentifier()); //$NON-NLS-1$</span>
 	}
 
 	private static boolean stringMethod(GuardContext context, String guard,
 			MethodInvocation invocation, String name, String... parameterTypes) {
-<span class="fc bfc" id="L201" title="All 2 branches covered.">		if (!name.equals(invocation.getName().getIdentifier())</span>
-<span class="pc bpc" id="L202" title="1 of 2 branches missed.">				|| invocation.arguments().size() != parameterTypes.length) {</span>
-<span class="fc" id="L203">			return false;</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">		if (!name.equals(invocation.getName().getIdentifier())</span>
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">				|| invocation.arguments().size() != parameterTypes.length) {</span>
+<span class="fc" id="L202">			return false;</span>
 		}
-<span class="fc" id="L205">		IMethodBinding binding= invocation.resolveMethodBinding();</span>
-<span class="pc bpc" id="L206" title="2 of 6 branches missed.">		if (binding == null || binding.isRecovered() || binding.getDeclaringClass() == null</span>
-<span class="pc bpc" id="L207" title="1 of 2 branches missed.">				|| binding.getDeclaringClass().isRecovered()) {</span>
-<span class="fc" id="L208">			context.markUnknown(guard, &quot;Cannot resolve String.&quot; + name + &quot; method signature&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L209">			return false;</span>
+<span class="fc" id="L204">		IMethodBinding binding= invocation.resolveMethodBinding();</span>
+<span class="pc bpc" id="L205" title="2 of 6 branches missed.">		if (binding == null || binding.isRecovered() || binding.getDeclaringClass() == null</span>
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">				|| binding.getDeclaringClass().isRecovered()) {</span>
+<span class="fc" id="L207">			context.markUnknown(guard, &quot;Cannot resolve String.&quot; + name + &quot; method signature&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L208">			return false;</span>
 		}
-<span class="fc bfc" id="L211" title="All 2 branches covered.">		if (!STRING.equals(binding.getDeclaringClass().getErasure().getQualifiedName())</span>
-<span class="pc bpc" id="L212" title="1 of 2 branches missed.">				|| !name.equals(binding.getName())) {</span>
-<span class="fc" id="L213">			return false;</span>
+<span class="fc bfc" id="L210" title="All 2 branches covered.">		if (!STRING.equals(binding.getDeclaringClass().getErasure().getQualifiedName())</span>
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">				|| !name.equals(binding.getName())) {</span>
+<span class="fc" id="L212">			return false;</span>
 		}
-<span class="fc" id="L215">		ITypeBinding[] parameters= binding.getParameterTypes();</span>
-<span class="pc bpc" id="L216" title="1 of 2 branches missed.">		if (parameters.length != parameterTypes.length) {</span>
-<span class="nc" id="L217">			return false;</span>
+<span class="fc" id="L214">		ITypeBinding[] parameters= binding.getParameterTypes();</span>
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">		if (parameters.length != parameterTypes.length) {</span>
+<span class="nc" id="L216">			return false;</span>
 		}
-<span class="fc bfc" id="L219" title="All 2 branches covered.">		for (int i= 0; i &lt; parameters.length; i++) {</span>
-<span class="pc bpc" id="L220" title="1 of 2 branches missed.">			if (parameters[i].isRecovered()) {</span>
-<span class="nc" id="L221">				context.markUnknown(guard, &quot;Cannot resolve String.&quot; + name + &quot; parameter type&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L222">				return false;</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">		for (int i= 0; i &lt; parameters.length; i++) {</span>
+<span class="pc bpc" id="L219" title="1 of 2 branches missed.">			if (parameters[i].isRecovered()) {</span>
+<span class="nc" id="L220">				context.markUnknown(guard, &quot;Cannot resolve String.&quot; + name + &quot; parameter type&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L221">				return false;</span>
 			}
-<span class="fc bfc" id="L224" title="All 2 branches covered.">			if (!parameterTypes[i].equals(parameters[i].getErasure().getQualifiedName())) {</span>
-<span class="fc" id="L225">				return false;</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">			if (!parameterTypes[i].equals(parameters[i].getErasure().getQualifiedName())) {</span>
+<span class="fc" id="L224">				return false;</span>
 			}
 		}
-<span class="fc" id="L228">		return true;</span>
+<span class="fc" id="L227">		return true;</span>
 	}
 
 	private static boolean isEmptyLiteral(Expression expression) {
-<span class="pc bpc" id="L232" title="1 of 4 branches missed.">		return unparenthesize(expression) instanceof StringLiteral literal &amp;&amp; literal.getLiteralValue().isEmpty();</span>
+<span class="pc bpc" id="L231" title="1 of 4 branches missed.">		return unparenthesize(expression) instanceof StringLiteral literal &amp;&amp; literal.getLiteralValue().isEmpty();</span>
 	}
 
 	private static boolean isStableLocalReceiver(Expression expression) {
-<span class="pc bpc" id="L236" title="1 of 6 branches missed.">		return expression instanceof StringLiteral || expression instanceof SimpleName name &amp;&amp; isLocal(name);</span>
+<span class="pc bpc" id="L235" title="1 of 6 branches missed.">		return expression instanceof StringLiteral || expression instanceof SimpleName name &amp;&amp; isLocal(name);</span>
 	}
 
 	/** Declines calls, fields, arrays, allocations and writes across the removed read. */
 	private static boolean isStableExpression(Expression expression) {
-<span class="fc" id="L241">		Expression node= unparenthesize(expression);</span>
-<span class="pc bpc" id="L242" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L243">			return false;</span>
+<span class="fc" id="L240">		Expression node= unparenthesize(expression);</span>
+<span class="pc bpc" id="L241" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L242">			return false;</span>
 		}
-<span class="fc bfc" id="L245" title="All 2 branches covered.">		if (node instanceof SimpleName name) {</span>
-<span class="fc" id="L246">			return isLocal(name);</span>
+<span class="fc bfc" id="L244" title="All 2 branches covered.">		if (node instanceof SimpleName name) {</span>
+<span class="fc" id="L245">			return isLocal(name);</span>
 		}
-<span class="pc bpc" id="L248" title="1 of 4 branches missed.">		if (node.getNodeType() == ASTNode.NUMBER_LITERAL || node.getNodeType() == ASTNode.CHARACTER_LITERAL</span>
-<span class="pc bpc" id="L249" title="1 of 2 branches missed.">				|| node.getNodeType() == ASTNode.BOOLEAN_LITERAL) {</span>
-<span class="fc" id="L250">			return true;</span>
+<span class="pc bpc" id="L247" title="1 of 4 branches missed.">		if (node.getNodeType() == ASTNode.NUMBER_LITERAL || node.getNodeType() == ASTNode.CHARACTER_LITERAL</span>
+<span class="pc bpc" id="L248" title="1 of 2 branches missed.">				|| node.getNodeType() == ASTNode.BOOLEAN_LITERAL) {</span>
+<span class="fc" id="L249">			return true;</span>
 		}
-<span class="fc bfc" id="L252" title="All 2 branches covered.">		if (node instanceof InfixExpression infix) {</span>
-<span class="pc bpc" id="L253" title="2 of 4 branches missed.">			if (!isStableExpression(infix.getLeftOperand()) || !isStableExpression(infix.getRightOperand())) {</span>
-<span class="nc" id="L254">				return false;</span>
+<span class="fc bfc" id="L251" title="All 2 branches covered.">		if (node instanceof InfixExpression infix) {</span>
+<span class="pc bpc" id="L252" title="2 of 4 branches missed.">			if (!isStableExpression(infix.getLeftOperand()) || !isStableExpression(infix.getRightOperand())) {</span>
+<span class="nc" id="L253">				return false;</span>
 			}
-<span class="pc bpc" id="L256" title="1 of 2 branches missed.">			for (Object operand : infix.extendedOperands()) {</span>
-<span class="nc bnc" id="L257" title="All 2 branches missed.">				if (!isStableExpression((Expression) operand)) {</span>
-<span class="nc" id="L258">					return false;</span>
+<span class="pc bpc" id="L255" title="1 of 2 branches missed.">			for (Object operand : infix.extendedOperands()) {</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">				if (!isStableExpression((Expression) operand)) {</span>
+<span class="nc" id="L257">					return false;</span>
 				}
-<span class="nc" id="L260">			}</span>
-<span class="fc" id="L261">			return true;</span>
+<span class="nc" id="L259">			}</span>
+<span class="fc" id="L260">			return true;</span>
 		}
-<span class="pc bpc" id="L263" title="1 of 2 branches missed.">		if (node instanceof PrefixExpression prefix) {</span>
-<span class="nc bnc" id="L264" title="All 2 branches missed.">			return prefix.getOperator() != PrefixExpression.Operator.INCREMENT</span>
-<span class="nc bnc" id="L265" title="All 2 branches missed.">					&amp;&amp; prefix.getOperator() != PrefixExpression.Operator.DECREMENT</span>
-<span class="nc bnc" id="L266" title="All 2 branches missed.">					&amp;&amp; isStableExpression(prefix.getOperand());</span>
+<span class="pc bpc" id="L262" title="1 of 2 branches missed.">		if (node instanceof PrefixExpression prefix) {</span>
+<span class="nc bnc" id="L263" title="All 2 branches missed.">			return prefix.getOperator() != PrefixExpression.Operator.INCREMENT</span>
+<span class="nc bnc" id="L264" title="All 2 branches missed.">					&amp;&amp; prefix.getOperator() != PrefixExpression.Operator.DECREMENT</span>
+<span class="nc bnc" id="L265" title="All 2 branches missed.">					&amp;&amp; isStableExpression(prefix.getOperand());</span>
 		}
-<span class="pc bpc" id="L268" title="1 of 2 branches missed.">		if (node instanceof ConditionalExpression conditional) {</span>
-<span class="nc bnc" id="L269" title="All 2 branches missed.">			return isStableExpression(conditional.getExpression())</span>
-<span class="nc bnc" id="L270" title="All 2 branches missed.">					&amp;&amp; isStableExpression(conditional.getThenExpression())</span>
-<span class="nc bnc" id="L271" title="All 2 branches missed.">					&amp;&amp; isStableExpression(conditional.getElseExpression());</span>
+<span class="pc bpc" id="L267" title="1 of 2 branches missed.">		if (node instanceof ConditionalExpression conditional) {</span>
+<span class="nc bnc" id="L268" title="All 2 branches missed.">			return isStableExpression(conditional.getExpression())</span>
+<span class="nc bnc" id="L269" title="All 2 branches missed.">					&amp;&amp; isStableExpression(conditional.getThenExpression())</span>
+<span class="nc bnc" id="L270" title="All 2 branches missed.">					&amp;&amp; isStableExpression(conditional.getElseExpression());</span>
 		}
-<span class="pc bnc" id="L273" title="All 2 branches missed.">		return node instanceof CastExpression cast &amp;&amp; cast.getType().isPrimitiveType()</span>
-<span class="pc bpc" id="L274" title="3 of 4 branches missed.">				&amp;&amp; isStableExpression(cast.getExpression());</span>
+<span class="pc bnc" id="L272" title="All 2 branches missed.">		return node instanceof CastExpression cast &amp;&amp; cast.getType().isPrimitiveType()</span>
+<span class="pc bpc" id="L273" title="3 of 4 branches missed.">				&amp;&amp; isStableExpression(cast.getExpression());</span>
 	}
 
 	private static boolean isLocal(SimpleName name) {
-<span class="pc bpc" id="L278" title="2 of 4 branches missed.">		return name.resolveBinding() instanceof IVariableBinding variable &amp;&amp; !variable.isRecovered()</span>
-<span class="pc bpc" id="L279" title="1 of 4 branches missed.">				&amp;&amp; !variable.isField() &amp;&amp; !variable.isEnumConstant();</span>
+<span class="pc bpc" id="L277" title="2 of 4 branches missed.">		return name.resolveBinding() instanceof IVariableBinding variable &amp;&amp; !variable.isRecovered()</span>
+<span class="pc bpc" id="L278" title="1 of 4 branches missed.">				&amp;&amp; !variable.isField() &amp;&amp; !variable.isEnumConstant();</span>
 	}
 
 	private static Expression unparenthesize(Expression expression) {
-<span class="fc" id="L283">		Expression result= expression;</span>
-<span class="fc bfc" id="L284" title="All 2 branches covered.">		while (result instanceof ParenthesizedExpression parenthesized) {</span>
-<span class="fc" id="L285">			result= parenthesized.getExpression();</span>
+<span class="fc" id="L282">		Expression result= expression;</span>
+<span class="fc bfc" id="L283" title="All 2 branches covered.">		while (result instanceof ParenthesizedExpression parenthesized) {</span>
+<span class="fc" id="L284">			result= parenthesized.getExpression();</span>
 		}
-<span class="fc" id="L287">		return result;</span>
+<span class="fc" id="L286">		return result;</span>
 	}
 
-	/** JDT's default rewrite range can extend to adjacent comments. */
-	private static boolean hasCommentInRewriteRange(GuardContext context) {
-<span class="fc" id="L292">		ASTNode node= context.getMatchedNode();</span>
-<span class="pc bpc" id="L293" title="2 of 4 branches missed.">		if (node == null || context.getCompilationUnit() == null</span>
-<span class="pc bpc" id="L294" title="1 of 2 branches missed.">				|| context.getCompilationUnit().getCommentList() == null</span>
-<span class="pc bpc" id="L295" title="1 of 2 branches missed.">				|| node.getRoot() != context.getCompilationUnit()) {</span>
-<span class="nc" id="L296">			return true;</span>
-		}
-<span class="fc" id="L298">		int start= context.getCompilationUnit().getExtendedStartPosition(node);</span>
-<span class="fc" id="L299">		int length= context.getCompilationUnit().getExtendedLength(node);</span>
-<span class="pc bpc" id="L300" title="3 of 6 branches missed.">		if (start &lt; 0 || length &lt; 0 || start &gt; node.getStartPosition()</span>
-<span class="pc bpc" id="L301" title="1 of 2 branches missed.">				|| (long) start + length &lt; (long) node.getStartPosition() + node.getLength()) {</span>
-<span class="nc" id="L302">			return true;</span>
-		}
-<span class="fc" id="L304">		long end= (long) start + length;</span>
-<span class="fc bfc" id="L305" title="All 2 branches covered.">		for (Object value : context.getCompilationUnit().getCommentList()) {</span>
-<span class="fc" id="L306">			Comment comment= (Comment) value;</span>
-<span class="fc" id="L307">			int commentStart= comment.getStartPosition();</span>
-<span class="fc bfc" id="L308" title="All 4 branches covered.">			if (commentStart &lt; end &amp;&amp; (long) commentStart + comment.getLength() &gt; start) {</span>
-<span class="fc" id="L309">				return true;</span>
-			}
-<span class="fc" id="L311">		}</span>
-<span class="fc" id="L312">		return false;</span>
-	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
