@@ -221,13 +221,16 @@ jobs:
         run: |
           set -euo pipefail
           release_log="$(mktemp "${RUNNER_TEMP}/maven-release.XXXXXX.log")"
-          preserve_build_log() {
+          release_identity="$(mktemp "${RUNNER_TEMP}/release-tree-identity.XXXXXX.json")"
+          cp target/distribution-verification/release-tree-identity.json "$release_identity"
+          preserve_build_evidence() {
             build_status=$?
             mkdir -p target/distribution-verification
             cp "$release_log" target/distribution-verification/maven-release.log
+            cp "$release_identity" target/distribution-verification/release-tree-identity.json
             exit "$build_status"
           }
-          trap preserve_build_log EXIT
+          trap preserve_build_evidence EXIT
           test_args=()
           if [[ "$SKIP_TESTS" == 'true' ]]; then
             test_args=(-DskipTests)
@@ -255,6 +258,29 @@ jobs:
             --archive "target/release-assets/sandbox-${RELEASE_VERSION}-source.tar.gz" \
             --archive "target/release-assets/sandbox-${RELEASE_VERSION}-source.zip" \
             --output target/distribution-verification/release-source-identity.json
+
+      - name: Generate release notes
+        run: |
+          set -euo pipefail
+          if [[ -f release_notes.md ]]; then
+            IFS= read -r title < release_notes.md
+            if [[ "$title" != "# Sandbox ${RELEASE_VERSION}" && "$title" != "# Sandbox ${RELEASE_VERSION} — "* ]]; then
+              echo "::error::Curated release notes do not name version ${RELEASE_VERSION}."
+              exit 1
+            fi
+            cp release_notes.md release-notes.md
+          else
+            # Stable version commits can live outside main's ancestry.
+            previous_tag=$(gh release list --exclude-drafts --exclude-pre-releases --limit 1 --json tagName --jq '.[0].tagName // empty')
+            if [[ -n "$previous_tag" ]]; then
+              git log --no-merges --pretty='- %s' "refs/tags/${previous_tag}..${STARTING_SHA}" > release-notes.md
+            else
+              echo 'Initial verified release.' > release-notes.md
+            fi
+            [[ -s release-notes.md ]] || echo 'No user-visible changes recorded.' > release-notes.md
+          fi
+          mkdir -p target/release-assets
+          cp release-notes.md target/release-assets/release-notes.md
 
       - name: Record pre-publication evidence
         run: |
@@ -285,6 +311,8 @@ jobs:
           path: |
             target/distribution-verification/
             target/release-assets/
+            sandbox_cleanup_cli_dist/target/*-dist.zip
+            sandbox_cleanup_cli_dist/target/*-dist.tar.gz
           retention-days: 90
           if-no-files-found: error
 
@@ -381,19 +409,6 @@ jobs:
             --expected-child "$RELEASE_VERSION" \
             --output target/distribution-verification/release-composite-verification.json
 
-      - name: Generate release notes
-        if: env.DRY_RUN != 'true'
-        run: |
-          set -euo pipefail
-          # Stable version commits can live outside main's ancestry.
-          previous_tag=$(gh release list --exclude-drafts --exclude-pre-releases --limit 1 --json tagName --jq '.[0].tagName // empty')
-          if [[ -n "$previous_tag" ]]; then
-            git log --no-merges --pretty='- %s' "refs/tags/${previous_tag}..${STARTING_SHA}" > release-notes.md
-          else
-            echo 'Initial verified release.' > release-notes.md
-          fi
-          [[ -s release-notes.md ]] || echo 'No user-visible changes recorded.' > release-notes.md
-
       - name: Create stable tag
         if: env.DRY_RUN != 'true'
         id: create_tag
@@ -416,7 +431,7 @@ jobs:
             --draft \
             --verify-tag \
             --title "Release ${RELEASE_VERSION}" \
-            --notes-file release-notes.md
+            --notes-file target/release-assets/release-notes.md
 
       - name: Verify tag archives and draft release identity
         if: env.DRY_RUN != 'true'
