@@ -1,15 +1,15 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "732515beba1e62a9e25df805e49d23987e399289",
-  "generatedAt": "2026-11-05T01:32:26Z",
+  "sourceCommit": "b36c6e6935479e12007cddc2521903d011228cf3",
+  "generatedAt": "2026-11-05T07:03:56Z",
   "tests": {
-    "total": 7066,
-    "passed": 7054,
+    "total": 7076,
+    "passed": 7064,
     "skipped": 12,
     "failed": 0
   },
   "coverage": {
     "metric": "INSTRUCTION",
-    "percent": 0.7185306253684154
+    "percent": 0.7187281492658153
   }
 }

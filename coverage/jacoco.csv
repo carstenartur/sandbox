@@ -1322,7 +1322,7 @@ sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,LlmInfer
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,LlmProvider,0,76,0,6,0,13,0,5,0,2
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,GeminiClient,174,1172,53,131,49,293,49,79,2,34
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,MistralClient,27,18,4,2,7,6,6,3,3,3
-sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,HintLanguageVocabulary,2,442,2,10,1,60,2,18,0,14
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,HintLanguageVocabulary,2,448,2,10,1,61,2,18,0,14
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,ChangeVariableGeneralizer.new ASTVisitor() {...},0,32,0,4,0,5,0,5,0,3
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,ChangeVariableGeneralizer,44,215,24,36,1,43,18,18,0,6
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,HintPredicatePreprocessor.Result,0,12,0,0,0,3,0,1,0,1
@@ -1352,9 +1352,9 @@ sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,Hin
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,HintFileStore,158,1040,33,77,37,201,30,55,0,30
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,DslValidator.ValidationResult,0,9,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,PatternParser,50,706,33,77,24,178,33,33,0,11
-sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,StringCleanupGuards,103,555,71,113,18,100,60,44,0,12
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,StringCleanupGuards,136,838,94,180,27,147,83,69,0,15
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,GuardExpressionParser.ParseState,0,9,0,0,0,4,0,1,0,1
-sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,BuiltInGuardRegistration,207,795,80,112,52,146,70,49,1,22
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,BuiltInGuardRegistration,207,800,80,112,52,147,70,49,1,22
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,BindingSubstitution.ExpressionRange,0,9,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,StructuredRewriteActionParser,128,618,38,75,30,133,36,43,0,19
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,EmbeddedJavaCompiler,11,458,11,45,4,97,10,32,0,14
