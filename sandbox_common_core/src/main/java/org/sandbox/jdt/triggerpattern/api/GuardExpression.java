@@ -74,6 +74,11 @@ public sealed interface GuardExpression
 	
 	/**
 	 * Evaluates this guard expression against the given context.
+	 *
+	 * <p>This legacy boolean result can use a compatibility fallback when
+	 * semantic information is unavailable. It must not authorize a rewrite.
+	 * For that purpose use {@link #evaluateDetailed(GuardContext)} and require
+	 * {@link TruthValue#MATCH}.</p>
 	 * 
 	 * @param ctx the guard context
 	 * @return {@code true} if the guard condition is satisfied
@@ -94,8 +99,14 @@ public sealed interface GuardExpression
 	}
 
 	private static Evaluation evaluateFunction(FunctionCall call, GuardContext ctx) {
+		Function<String, GuardFunction> resolver= GuardFunctionResolverHolder.getResolver();
+		GuardFunction guard= resolver == null ? null : resolver.apply(call.name());
+		if (guard == null) {
+			ctx.markUnknown(call.name(), "Guard function is not registered"); //$NON-NLS-1$
+			return new Evaluation(TruthValue.UNKNOWN, false);
+		}
 		int unknownBefore= ctx.unknownSemanticRequirementCount();
-		boolean compatibility= call.evaluate(ctx);
+		boolean compatibility= guard.evaluate(ctx, call.args().toArray());
 		if (ctx.unknownSemanticRequirementCount() > unknownBefore) {
 			return new Evaluation(TruthValue.UNKNOWN, compatibility);
 		}

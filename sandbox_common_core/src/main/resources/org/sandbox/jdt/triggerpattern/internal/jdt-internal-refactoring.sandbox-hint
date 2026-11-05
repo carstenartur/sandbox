@@ -2093,7 +2093,7 @@ new org.eclipse.jdt.internal.ui.text.correction.LocalCorrectionsSubProcessor().c
 
 @id: jdt.internal.folding.includelastline.fix
 @severity: info
+"Review folding assignment after resolving the include-last-line variable":
 $collapseCodeVar = $booleanExpr
 :: inClass("org.eclipse.jdt.ui.text.folding.DefaultJavaFoldingStructureProvider")
-=> $collapseCodeVar = $includelastLineVar = $booleanExpr
 ;;

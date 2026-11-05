@@ -31,6 +31,7 @@ import org.sandbox.jdt.triggerpattern.api.DryRunReporter.ReportEntry;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
 import org.sandbox.jdt.triggerpattern.api.RewriteAlternative;
+import org.sandbox.jdt.triggerpattern.api.StructuredRewriteAction;
 import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 
 /**
@@ -91,6 +92,18 @@ public class DryRunReporterTest {
 		assertFalse(entries.isEmpty(), "Should find the toString() call"); //$NON-NLS-1$
 		assertFalse(entries.get(0).hasReplacement(),
 				"Hint-only rule should not have replacement"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testStructuredOnlyAlternativeHasNoTextPreview() {
+		CompilationUnit cu = parseCode("class Test { void m() { int x = 1 + 0; } }"); //$NON-NLS-1$
+		Pattern srcPattern = Pattern.of("$x + 0", PatternKind.EXPRESSION); //$NON-NLS-1$
+		RewriteAlternative alt = RewriteAlternative.structured(
+				List.of(new StructuredRewriteAction("remove", Map.of(), 1)), null); //$NON-NLS-1$
+		TransformationRule rule = TransformationRule.of(srcPattern, List.of(alt));
+		List<ReportEntry> entries = new DryRunReporter().analyze(cu, List.of(rule));
+		assertFalse(entries.isEmpty());
+		assertFalse(entries.get(0).hasReplacement());
 	}
 
 	@Test

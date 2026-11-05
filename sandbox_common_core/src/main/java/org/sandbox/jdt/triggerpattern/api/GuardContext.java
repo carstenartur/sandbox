@@ -26,6 +26,8 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 /** Context for guard evaluation. */
 public final class GuardContext {
 
+	private static final java.util.regex.Pattern SOURCE_VERSION_PATTERN= java.util.regex.Pattern.compile("(?:1\\.[1-8]|[1-9][0-9]*)"); //$NON-NLS-1$
+
 	/** One semantic input a guard could not resolve. */
 	public record UnknownSemanticRequirement(String guardName, String detail) {
 		public UnknownSemanticRequirement {
@@ -95,9 +97,21 @@ public final class GuardContext {
 		return match.getListBinding(name);
 	}
 
+	/**
+	 * Returns the configured source version. The historical Java 8 fallback is
+	 * retained for boolean callers, while detailed guard evaluation records a
+	 * missing or invalid version as unresolved.
+	 */
 	public String getSourceVersion() {
 		String version= compilerOptions.get("org.eclipse.jdt.core.compiler.source"); //$NON-NLS-1$
-		return version != null ? version : "1.8"; //$NON-NLS-1$
+		if (version == null || version.isBlank()) {
+			markUnknown("sourceVersion", "Compiler source version is unavailable"); //$NON-NLS-1$ //$NON-NLS-2$
+			return "1.8"; //$NON-NLS-1$
+		}
+		if (!SOURCE_VERSION_PATTERN.matcher(version).matches()) {
+			markUnknown("sourceVersion", "Compiler source version is invalid: " + version); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+		return version;
 	}
 
 	public ASTNode getMatchedNode() {

@@ -149,8 +149,12 @@ Included through [#1801](https://github.com/carstenartur/sandbox/pull/1801), [#1
   retain Boolean simplification only for safe primitive conditions. See [#1813](https://github.com/carstenartur/sandbox/issues/1813).
 - Make unavailable Codacy reports visible and provide a minimal Checkstyle configuration.
   See [#1814](https://github.com/carstenartur/sandbox/issues/1814).
-- The general `isNonNull` and `isNullable` guards remain heuristic and must not alone authorize
-  behavior-preserving rewrites until [#1815](https://github.com/carstenartur/sandbox/issues/1815) is resolved.
+- Prove non-nullness conservatively for automatic hints; uncertain source versions,
+  negated risk scores and unavailable guards cannot authorize a rewrite or preview.
+  Collection factory and StringBuffer conversions without complete behavior proofs
+  are review hints only. See [#1815](https://github.com/carstenartur/sandbox/issues/1815).
+- Keep two mined JDT candidates with unbound placeholders as review hints instead of
+  emitting incomplete Java replacements.
 - Keep scheduled verification from cancelling active checks.
 - Keep stable-tree identity across Maven clean and curated notes in canonical dry-run
   evidence. Publication uses the reviewed asset; empty/wrong-version notes fail closed.

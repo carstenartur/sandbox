@@ -240,8 +240,8 @@ createUnManaged($type, "newrecord_wiz.png")
 
 @id: jdt.internal.ui.viewsupport.javaelementimageprovider.add-record-static-adornment
 @severity: info
+"Review static and record adornments after resolving the modifiers source":
 org.eclipse.jdt.internal.ui.viewsupport.JdtFlags.isStatic($member) :: sourceVersionGE(16)
-=> org.eclipse.jdt.internal.ui.viewsupport.JdtFlags.isStatic($member) || org.eclipse.jdt.core.Flags.isRecord($modifiers)
 ;;
 
 @id: eclipse.job.priority.decorate-to-interactive

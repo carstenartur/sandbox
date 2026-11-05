@@ -20,21 +20,18 @@
 
 @id: collections.empty-list.to-list-of
 @severity: info
-"Use List.of() for an empty immutable list factory when Java 9+ is available.":
+"Review List.of() only after checking null-query and other observable behavior.":
 java.util.Collections.emptyList() :: sourceVersionGE(9)
-=> java.util.List.of()
 ;;
 
 @id: collections.empty-map.to-map-of
 @severity: info
-"Use Map.of() for an empty immutable map factory when Java 9+ is available.":
+"Review Map.of() only after checking null-query and other observable behavior.":
 java.util.Collections.emptyMap() :: sourceVersionGE(9)
-=> java.util.Map.of()
 ;;
 
 @id: collections.empty-set.to-set-of
 @severity: info
-"Use Set.of() for an empty immutable set factory when Java 9+ is available.":
+"Review Set.of() only after checking null-query and other observable behavior.":
 java.util.Collections.emptySet() :: sourceVersionGE(9)
-=> java.util.Set.of()
 ;;

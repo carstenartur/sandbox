@@ -680,16 +680,19 @@ public final class BuiltInGuards {
 	 */
 	private static boolean evaluateIsNullable(GuardContext ctx, Object... args) {
 		if (args.length < 1) {
+			ctx.markUnknown("isNullable", "Missing expression binding"); //$NON-NLS-1$ //$NON-NLS-2$
 			return false;
 		}
 		String placeholderName = args[0].toString();
 		ASTNode node = ctx.getBinding(placeholderName);
 		if (node == null) {
+			ctx.markUnknown("isNullable", "Missing expression binding: " + placeholderName); //$NON-NLS-1$ //$NON-NLS-2$
 			return false;
 		}
 
 		// Cast to Expression, return false if not
 		if (!(node instanceof Expression expression)) {
+			ctx.markUnknown("isNullable", "Binding is not an expression: " + placeholderName); //$NON-NLS-1$ //$NON-NLS-2$
 			return false;
 		}
 
@@ -707,7 +710,13 @@ public final class BuiltInGuards {
 		// With two arguments: compare score with minScore
 		try {
 			int minScore = Integer.parseInt(args[1].toString());
-			return score >= minScore;
+			boolean matches= score >= minScore;
+			if (!matches && result.status() != NullStatus.NON_NULL) {
+				// A low risk score does not prove non-nullness. Preserve UNKNOWN
+				// under negation when this predicate controls a rewrite.
+				ctx.markUnknown("isNullable", "Risk threshold does not prove non-nullness: " + placeholderName); //$NON-NLS-1$ //$NON-NLS-2$
+			}
+			return matches;
 		} catch (NumberFormatException e) {
 			// Invalid minScore, fall back to single-argument behavior
 			return result.status() != NullStatus.NON_NULL;
@@ -724,16 +733,19 @@ public final class BuiltInGuards {
 	 */
 	private static boolean evaluateIsNonNull(GuardContext ctx, Object... args) {
 		if (args.length < 1) {
+			ctx.markUnknown("isNonNull", "Missing expression binding"); //$NON-NLS-1$ //$NON-NLS-2$
 			return false;
 		}
 		String placeholderName = args[0].toString();
 		ASTNode node = ctx.getBinding(placeholderName);
 		if (node == null) {
+			ctx.markUnknown("isNonNull", "Missing expression binding: " + placeholderName); //$NON-NLS-1$ //$NON-NLS-2$
 			return false;
 		}
 
 		// Cast to Expression, return false if not
 		if (!(node instanceof Expression expression)) {
+			ctx.markUnknown("isNonNull", "Binding is not an expression: " + placeholderName); //$NON-NLS-1$ //$NON-NLS-2$
 			return false;
 		}
 
@@ -747,7 +759,7 @@ public final class BuiltInGuards {
 	 * Maps a NullStatus to a numeric score for comparison.
 	 * 
 	 * @param status the null status
-	 * @return score from 0 (definitely non-null) to 10 (definitely nullable)
+	 * @return advisory score from 0 (proven non-null) to 10 (strong nullable evidence)
 	 */
 	private static int mapNullStatusToScore(NullStatus status) {
 		return switch (status) {

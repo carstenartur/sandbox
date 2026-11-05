@@ -97,23 +97,25 @@ public final class DryRunReporter {
 			for (Match match : matches) {
 				int lineNumber = cu.getLineNumber(match.getOffset());
 				String matchedCode = match.getMatchedNode().toString().trim();
+				GuardContext guardCtx= GuardContext.fromMatch(match, cu, compilerOptions);
+				boolean unresolved= guardCtx.hasUnknownSemanticRequirements();
+				if (rule.sourceGuard() != null) {
+					GuardExpression.Evaluation evaluation= rule.sourceGuard().evaluateDetailed(guardCtx);
+					if (evaluation.truthValue() == GuardExpression.TruthValue.NO_MATCH) {
+						continue;
+					}
+					unresolved|= evaluation.truthValue() == GuardExpression.TruthValue.UNKNOWN;
+				}
 
 				// Determine replacement if available
 				String suggestedReplacement = null;
-				if (!rule.isHintOnly() && !rule.alternatives().isEmpty()) {
-					// Try to find the matching alternative using guards
-					if (compilerOptions != null) {
-						GuardContext guardCtx = GuardContext.fromMatch(match, cu, compilerOptions);
-						Optional<RewriteAlternative> alt = rule.findMatchingAlternative(guardCtx);
-						if (alt.isPresent()) {
-							suggestedReplacement = substitutePlaceholders(
-									alt.get().replacementPattern(), match.getBindings());
+				if (!unresolved && !rule.isHintOnly()) {
+					Optional<RewriteAlternative> alt= rule.findMatchingAlternative(guardCtx);
+					if (alt.isPresent()) {
+						String pattern= alt.get().replacementPattern();
+						if (pattern != null) {
+							suggestedReplacement = substitutePlaceholders(pattern, match.getBindings());
 						}
-					} else {
-						// Without compiler options, use the first alternative
-						suggestedReplacement = substitutePlaceholders(
-								rule.alternatives().get(0).replacementPattern(),
-								match.getBindings());
 					}
 				}
 
@@ -129,7 +131,7 @@ public final class DryRunReporter {
 						description,
 						severity,
 						sourcePattern.getValue(),
-						rule.hasImportDirective() ? rule.getImportDirective() : null));
+						suggestedReplacement != null && rule.hasImportDirective() ? rule.getImportDirective() : null));
 			}
 		}
 

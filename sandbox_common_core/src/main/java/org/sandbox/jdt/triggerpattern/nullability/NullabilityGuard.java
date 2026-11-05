@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
-import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.ArrayCreation;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.ConditionalExpression;
 import org.eclipse.jdt.core.dom.Expression;
@@ -34,22 +34,29 @@ import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.Initializer;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.NullLiteral;
-import org.eclipse.jdt.core.dom.ReturnStatement;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.TextBlock;
 import org.eclipse.jdt.core.dom.ThisExpression;
+import org.eclipse.jdt.core.dom.TypeLiteral;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 
 /**
- * Analyzes the nullability of expressions in Java AST using a four-stage model:
+ * Analyzes the nullability of expressions in Java AST using a four-stage model.
+ * A non-null result is a conservative proof, not an inference from a reference
+ * type or an annotation. Other results may be used as advisory evidence.
  *
  * <ol>
- *   <li><b>Stage 1</b>: Type-based whitelist (fast, cheap)</li>
+ *   <li><b>Stage 1</b>: Expressions whose value is intrinsically non-null</li>
  *   <li><b>Stage 2</b>: Initialization analysis (local data flow)</li>
  *   <li><b>Stage 3</b>: Contextual null-check analysis (SpotBugs-style)</li>
  *   <li><b>Stage 4</b>: Annotation-based checking ({@code @Nullable}/{@code @NonNull})</li>
@@ -70,28 +77,25 @@ public class NullabilityGuard {
 			"java.util.Map", Set.of("of", "copyOf", "ofEntries", "entry"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
 			"java.util.Objects", Set.of("requireNonNull", "requireNonNullElse", "requireNonNullElseGet"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 			"java.util.Collections", Set.of("unmodifiableList", "unmodifiableSet", "unmodifiableMap", "emptyList", "emptySet", "emptyMap", "singletonList", "singleton", "singletonMap"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$ //$NON-NLS-10$
-			"java.lang.String", Set.of("valueOf", "format", "join") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+			"java.lang.String", Set.of("format", "join") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	);
 
 	/** Nullable annotation simple names. */
 	private static final Set<String> NULLABLE_ANNOTATIONS = Set.of(
 			"Nullable", "CheckForNull"); //$NON-NLS-1$ //$NON-NLS-2$
 
-	/** Non-null annotation simple names. */
-	private static final Set<String> NON_NULL_ANNOTATIONS = Set.of(
-			"NonNull", "Nonnull", "NotNull"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-
 	private final Map<String, String> nonNullTypes;
 
 	/**
-	 * Creates a guard using the bundled whitelist.
+	 * Creates a guard with the bundled legacy type information.
 	 */
 	public NullabilityGuard() {
 		this.nonNullTypes = loadWhitelist();
 	}
 
 	/**
-	 * Creates a guard using the given whitelist.
+	 * Creates a guard with legacy type information. A reference type alone is
+	 * never used as proof of a non-null value.
 	 *
 	 * @param nonNullTypes map of fully-qualified type names to reasons
 	 */
@@ -110,8 +114,14 @@ public class NullabilityGuard {
 		if (expression == null) {
 			return new NullabilityResult(NullStatus.UNKNOWN, "null expression", List.of()); //$NON-NLS-1$
 		}
+		if ((expression.getFlags() & (ASTNode.MALFORMED | ASTNode.RECOVERED)) != 0) {
+			return NullabilityResult.UNKNOWN;
+		}
+		if (expression instanceof ParenthesizedExpression parenthesized) {
+			return analyze(parenthesized.getExpression());
+		}
 
-		// Stage 1: Type-based whitelist
+		// Stage 1: Intrinsically non-null values
 		NullabilityResult stage1 = analyzeByType(expression);
 		if (stage1.status() != NullStatus.UNKNOWN) {
 			return stage1;
@@ -139,7 +149,7 @@ public class NullabilityGuard {
 				"nullability could not be determined", List.of()); //$NON-NLS-1$
 	}
 
-	// ---- Stage 1: Type-based whitelist ----
+	// ---- Stage 1: Intrinsically non-null values ----
 
 	NullabilityResult analyzeByType(Expression expression) {
 		// this expression is always non-null
@@ -148,40 +158,16 @@ public class NullabilityGuard {
 					"'this' reference is always non-null", List.of()); //$NON-NLS-1$
 		}
 
+		if (expression instanceof StringLiteral || expression instanceof TextBlock || expression instanceof TypeLiteral) {
+			return new NullabilityResult(NullStatus.NON_NULL, "literal value is non-null", List.of()); //$NON-NLS-1$
+		}
+
 		ITypeBinding typeBinding = expression.resolveTypeBinding();
-		if (typeBinding != null) {
+		if (typeBinding != null && !typeBinding.isRecovered()) {
 			// Primitive types are never null
 			if (typeBinding.isPrimitive()) {
 				return new NullabilityResult(NullStatus.NON_NULL,
 						"primitive type is never null", List.of()); //$NON-NLS-1$
-			}
-
-			// Enum types are never null (when referenced as constants)
-			if (typeBinding.isEnum()) {
-				return new NullabilityResult(NullStatus.NON_NULL,
-						"enum type is never null", List.of()); //$NON-NLS-1$
-			}
-
-			// Check whitelist
-			String qualifiedName = typeBinding.getQualifiedName();
-			String reason = nonNullTypes.get(qualifiedName);
-			if (reason != null) {
-				return new NullabilityResult(NullStatus.NON_NULL,
-						"type '" + qualifiedName + "' is in non-null whitelist (" + reason + ")", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-						List.of());
-			}
-
-			// Check if supertype is in whitelist
-			ITypeBinding superclass = typeBinding.getSuperclass();
-			while (superclass != null) {
-				String superName = superclass.getQualifiedName();
-				String superReason = nonNullTypes.get(superName);
-				if (superReason != null) {
-					return new NullabilityResult(NullStatus.NON_NULL,
-							"supertype '" + superName + "' is in non-null whitelist (" + superReason + ")", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-							List.of());
-				}
-				superclass = superclass.getSuperclass();
 			}
 		}
 
@@ -192,7 +178,7 @@ public class NullabilityGuard {
 
 	NullabilityResult analyzeByInitialization(Expression expression) {
 		// new Constructor() is always non-null
-		if (expression instanceof ClassInstanceCreation) {
+		if (expression instanceof ClassInstanceCreation || expression instanceof ArrayCreation) {
 			return new NullabilityResult(NullStatus.NON_NULL,
 					"'new' expression is always non-null", List.of()); //$NON-NLS-1$
 		}
@@ -212,7 +198,7 @@ public class NullabilityGuard {
 
 	private NullabilityResult analyzeMethodInvocation(MethodInvocation mi) {
 		IMethodBinding methodBinding = mi.resolveMethodBinding();
-		if (methodBinding != null) {
+		if (methodBinding != null && !methodBinding.isRecovered()) {
 			ITypeBinding declaringClass = methodBinding.getDeclaringClass();
 			if (declaringClass != null) {
 				String className = declaringClass.getQualifiedName();
@@ -226,42 +212,24 @@ public class NullabilityGuard {
 			}
 		}
 
-		// AST-Getter on parsed nodes: non-null (structural children)
-		Expression receiver = mi.getExpression();
-		if (receiver != null) {
-			ITypeBinding receiverType = receiver.resolveTypeBinding();
-			if (receiverType != null) {
-				String receiverTypeName = receiverType.getQualifiedName();
-				String reason = nonNullTypes.get(receiverTypeName);
-				if (reason != null && "structural_child".equals(reason)) { //$NON-NLS-1$
-					String methodName = mi.getName().getIdentifier();
-					if (methodName.startsWith("get")) { //$NON-NLS-1$
-						return new NullabilityResult(NullStatus.NON_NULL,
-								"getter on AST node type '" + receiverTypeName + "' returns structural child", //$NON-NLS-1$ //$NON-NLS-2$
-								List.of());
-					}
-				}
-			}
-		}
-
 		return NullabilityResult.UNKNOWN;
 	}
 
 	private NullabilityResult analyzeVariableInitializer(SimpleName name) {
 		IVariableBinding varBinding = resolveVariableBinding(name);
-		if (varBinding == null) {
+		if (!isStableLocal(varBinding)) {
 			return NullabilityResult.UNKNOWN;
 		}
 
-		// Walk up to find the enclosing method/block
-		ASTNode scope = findEnclosingBlock(name);
+		// Search the whole enclosing executable, including outer lexical blocks.
+		ASTNode scope = findDeclarationScope(name);
 		if (scope == null) {
 			return NullabilityResult.UNKNOWN;
 		}
 
 		// Look for variable declaration with initializer
 		String varName = name.getIdentifier();
-		VariableInitializerFinder finder = new VariableInitializerFinder(varName);
+		VariableInitializerFinder finder = new VariableInitializerFinder(varBinding);
 		scope.accept(finder);
 
 		if (finder.initializer != null) {
@@ -327,13 +295,17 @@ public class NullabilityGuard {
 		}
 
 		String varName = name.getIdentifier();
+		IVariableBinding varBinding = resolveVariableBinding(name);
+		if (varBinding == null || varBinding.isRecovered()) {
+			return NullabilityResult.UNKNOWN;
+		}
 		ASTNode enclosingMethod = findEnclosingMethod(expression);
 		if (enclosingMethod == null) {
 			return NullabilityResult.UNKNOWN;
 		}
 
 		int expressionOffset = expression.getStartPosition();
-		NullCheckFinder finder = new NullCheckFinder(varName);
+		NullCheckFinder finder = new NullCheckFinder(varBinding);
 		enclosingMethod.accept(finder);
 
 		if (finder.nullCheckLocations.isEmpty()) {
@@ -350,7 +322,7 @@ public class NullabilityGuard {
 			if (loc.offset < expressionOffset) {
 				hasCheckBefore = true;
 				// Check if we are inside a guarded block (e.g., if (x != null) { ...here... })
-				if (isInsideNullGuard(expression, varName)) {
+				if (isInsideNullGuard(expression, varBinding)) {
 					isInsideGuard = true;
 				}
 			}
@@ -388,24 +360,20 @@ public class NullabilityGuard {
 
 	/**
 	 * Checks if the given expression is inside a block guarded by a null check
-	 * for the given variable name.
+	 * for the same stable local variable or parameter.
 	 */
-	private boolean isInsideNullGuard(Expression expression, String varName) {
+	private boolean isInsideNullGuard(Expression expression, IVariableBinding binding) {
+		if (!isStableLocal(binding)) {
+			return false;
+		}
 		ASTNode current = expression.getParent();
 		while (current != null) {
 			if (current instanceof IfStatement ifStmt) {
 				Expression condition = ifStmt.getExpression();
-				if (isNonNullCheck(condition, varName)) {
+				if (isNonNullCheck(condition, binding)) {
 					// Check if expression is in the then-branch
 					Statement thenBranch = ifStmt.getThenStatement();
 					if (isAncestor(thenBranch, expression)) {
-						return true;
-					}
-				}
-				if (isNullCheck(condition, varName)) {
-					// if (x == null) return; → expression after this is guarded
-					Statement thenBranch = ifStmt.getThenStatement();
-					if (isEarlyReturn(thenBranch) && !isAncestor(thenBranch, expression)) {
 						return true;
 					}
 				}
@@ -415,43 +383,30 @@ public class NullabilityGuard {
 		return false;
 	}
 
-	private boolean isNonNullCheck(Expression condition, String varName) {
+	private boolean isNonNullCheck(Expression condition, IVariableBinding binding) {
+		while (condition instanceof ParenthesizedExpression parenthesized) {
+			condition= parenthesized.getExpression();
+		}
 		if (condition instanceof InfixExpression infix) {
-			if (infix.getOperator() == InfixExpression.Operator.NOT_EQUALS) {
-				return isNullComparisonWith(infix, varName);
+			if (infix.getOperator() == InfixExpression.Operator.NOT_EQUALS && !infix.hasExtendedOperands()) {
+				return isNullComparisonWith(infix, binding);
 			}
 		}
 		return false;
 	}
 
-	private boolean isNullCheck(Expression condition, String varName) {
-		if (condition instanceof InfixExpression infix) {
-			if (infix.getOperator() == InfixExpression.Operator.EQUALS) {
-				return isNullComparisonWith(infix, varName);
-			}
-		}
-		return false;
-	}
-
-	private boolean isNullComparisonWith(InfixExpression infix, String varName) {
+	private boolean isNullComparisonWith(InfixExpression infix, IVariableBinding binding) {
 		Expression left = infix.getLeftOperand();
 		Expression right = infix.getRightOperand();
-		return (isNameMatch(left, varName) && right instanceof NullLiteral)
-				|| (isNameMatch(right, varName) && left instanceof NullLiteral);
+		return (isBindingMatch(left, binding) && right instanceof NullLiteral)
+				|| (isBindingMatch(right, binding) && left instanceof NullLiteral);
 	}
 
-	private boolean isNameMatch(Expression expr, String varName) {
-		return expr instanceof SimpleName sn && sn.getIdentifier().equals(varName);
-	}
-
-	private boolean isEarlyReturn(Statement stmt) {
-		if (stmt instanceof ReturnStatement) {
-			return true;
-		}
-		if (stmt instanceof Block block) {
-			@SuppressWarnings("unchecked")
-			List<Statement> stmts = block.statements();
-			return !stmts.isEmpty() && stmts.get(0) instanceof ReturnStatement;
+	private static boolean isBindingMatch(Expression expr, IVariableBinding binding) {
+		if (expr instanceof SimpleName name) {
+			IVariableBinding candidate= resolveVariableBinding(name);
+			return candidate != null && !candidate.isRecovered()
+					&& candidate.getVariableDeclaration().isEqualTo(binding.getVariableDeclaration());
 		}
 		return false;
 	}
@@ -483,11 +438,6 @@ public class NullabilityGuard {
 						"@" + annotName + " annotation found", //$NON-NLS-1$ //$NON-NLS-2$
 						List.of());
 			}
-			if (NON_NULL_ANNOTATIONS.contains(annotName)) {
-				return new NullabilityResult(NullStatus.NON_NULL,
-						"@" + annotName + " annotation found", //$NON-NLS-1$ //$NON-NLS-2$
-						List.of());
-			}
 		}
 
 		// Check if it's a variable → check variable annotations
@@ -498,11 +448,6 @@ public class NullabilityGuard {
 					String annotName = annotation.getAnnotationType().getName();
 					if (NULLABLE_ANNOTATIONS.contains(annotName)) {
 						return new NullabilityResult(NullStatus.NULLABLE,
-								"@" + annotName + " annotation on variable", //$NON-NLS-1$ //$NON-NLS-2$
-								List.of());
-					}
-					if (NON_NULL_ANNOTATIONS.contains(annotName)) {
-						return new NullabilityResult(NullStatus.NON_NULL,
 								"@" + annotName + " annotation on variable", //$NON-NLS-1$ //$NON-NLS-2$
 								List.of());
 					}
@@ -518,11 +463,6 @@ public class NullabilityGuard {
 					String annotName = annotation.getAnnotationType().getName();
 					if (NULLABLE_ANNOTATIONS.contains(annotName)) {
 						return new NullabilityResult(NullStatus.NULLABLE,
-								"method return annotated @" + annotName, //$NON-NLS-1$
-								List.of());
-					}
-					if (NON_NULL_ANNOTATIONS.contains(annotName)) {
-						return new NullabilityResult(NullStatus.NON_NULL,
 								"method return annotated @" + annotName, //$NON-NLS-1$
 								List.of());
 					}
@@ -542,15 +482,21 @@ public class NullabilityGuard {
 		return null;
 	}
 
-	private static ASTNode findEnclosingBlock(ASTNode node) {
+	private static boolean isStableLocal(IVariableBinding binding) {
+		return binding != null && !binding.isRecovered() && !binding.isField()
+				&& (Modifier.isFinal(binding.getModifiers()) || binding.isEffectivelyFinal());
+	}
+
+	private static ASTNode findDeclarationScope(ASTNode node) {
+		ASTNode result= null;
 		ASTNode current = node.getParent();
 		while (current != null) {
-			if (current instanceof Block || current instanceof MethodDeclaration) {
-				return current;
+			if (current instanceof MethodDeclaration || current instanceof Initializer) {
+				result= current;
 			}
 			current = current.getParent();
 		}
-		return null;
+		return result;
 	}
 
 	private static ASTNode findEnclosingMethod(ASTNode node) {
@@ -581,7 +527,8 @@ public class NullabilityGuard {
 	}
 
 	/**
-	 * Returns the loaded non-null type whitelist.
+	 * Returns the legacy type information loaded from configuration. A reference
+	 * type alone is not proof that a particular value is non-null.
 	 *
 	 * @return unmodifiable view of the whitelist
 	 */
@@ -596,11 +543,13 @@ public class NullabilityGuard {
 	 * Visitor that finds null checks for a specific variable within a method body.
 	 */
 	private static class NullCheckFinder extends ASTVisitor {
+		private final IVariableBinding binding;
 		private final String varName;
 		final List<NullCheckLocation> nullCheckLocations = new ArrayList<>();
 
-		NullCheckFinder(String varName) {
-			this.varName = varName;
+		NullCheckFinder(IVariableBinding binding) {
+			this.binding= binding;
+			this.varName= binding.getName();
 		}
 
 		@Override
@@ -689,7 +638,7 @@ public class NullabilityGuard {
 		}
 
 		private boolean isNameMatch(Expression expr) {
-			return expr instanceof SimpleName sn && sn.getIdentifier().equals(varName);
+			return isBindingMatch(expr, binding);
 		}
 	}
 
@@ -697,11 +646,11 @@ public class NullabilityGuard {
 	 * Visitor that finds variable declarations with initializers.
 	 */
 	private static class VariableInitializerFinder extends ASTVisitor {
-		private final String varName;
+		private final IVariableBinding binding;
 		Expression initializer;
 
-		VariableInitializerFinder(String varName) {
-			this.varName = varName;
+		VariableInitializerFinder(IVariableBinding binding) {
+			this.binding = binding;
 		}
 
 		@Override
@@ -709,7 +658,7 @@ public class NullabilityGuard {
 			@SuppressWarnings("unchecked")
 			List<VariableDeclarationFragment> fragments = node.fragments();
 			for (VariableDeclarationFragment frag : fragments) {
-				if (frag.getName().getIdentifier().equals(varName) && frag.getInitializer() != null) {
+				if (isBindingMatch(frag.getName(), binding) && frag.getInitializer() != null) {
 					this.initializer = frag.getInitializer();
 					return false;
 				}
@@ -719,7 +668,7 @@ public class NullabilityGuard {
 
 		@Override
 		public boolean visit(SingleVariableDeclaration node) {
-			if (node.getName().getIdentifier().equals(varName) && node.getInitializer() != null) {
+			if (isBindingMatch(node.getName(), binding) && node.getInitializer() != null) {
 				this.initializer = node.getInitializer();
 				return false;
 			}

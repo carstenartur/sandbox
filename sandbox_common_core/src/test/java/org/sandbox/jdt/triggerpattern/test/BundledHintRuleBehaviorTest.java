@@ -64,18 +64,12 @@ class BundledHintRuleBehaviorTest extends HintRuleTestSupport {
 	}
 
 	@Test
-	void collectionsKeepsSafeEmptyCollectionFactoryReplacements() throws Exception {
+	void collectionsSuggestsEmptyCollectionFactoriesOnlyForReview() throws Exception {
 		HintFile hintFile = loadBundledHint("collections.sandbox-hint"); //$NON-NLS-1$
 
-		assertFullReplacement(hintFile,
-				"class Test { Object m() { return java.util.Collections.emptyList(); } }", //$NON-NLS-1$
-				"class Test { Object m() { return java.util.List.of(); } }"); //$NON-NLS-1$
-		assertFullReplacement(hintFile,
-				"class Test { Object m() { return java.util.Collections.emptyMap(); } }", //$NON-NLS-1$
-				"class Test { Object m() { return java.util.Map.of(); } }"); //$NON-NLS-1$
-		assertFullReplacement(hintFile,
-				"class Test { Object m() { return java.util.Collections.emptySet(); } }", //$NON-NLS-1$
-				"class Test { Object m() { return java.util.Set.of(); } }"); //$NON-NLS-1$
+		assertHintOnlyMatch(hintFile, "class Test { Object m() { return java.util.Collections.emptyList(); } }"); //$NON-NLS-1$
+		assertHintOnlyMatch(hintFile, "class Test { Object m() { return java.util.Collections.emptyMap(); } }"); //$NON-NLS-1$
+		assertHintOnlyMatch(hintFile, "class Test { Object m() { return java.util.Collections.emptySet(); } }"); //$NON-NLS-1$
 	}
 
 	@Test
@@ -100,10 +94,8 @@ class BundledHintRuleBehaviorTest extends HintRuleTestSupport {
 		assertNoMatch(hintFile,
 				"class Test { Object m() { return java.util.Collections.emptyList(); } }", //$NON-NLS-1$
 				"1.8"); //$NON-NLS-1$
-		assertFullReplacement(hintFile,
-				"class Test { Object m() { return java.util.Collections.emptyList(); } }", //$NON-NLS-1$
-				"class Test { Object m() { return java.util.List.of(); } }", //$NON-NLS-1$
-				"21"); //$NON-NLS-1$
+		assertHintOnlyMatch(hintFile,
+				"class Test { Object m() { return java.util.Collections.emptyList(); } }"); //$NON-NLS-1$
 	}
 
 	@Test

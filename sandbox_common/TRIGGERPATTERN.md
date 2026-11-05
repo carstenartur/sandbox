@@ -569,14 +569,14 @@ The following `.sandbox-hint` files are bundled with the engine:
 | `assume5.sandbox-hint` | 4 | JUnit 4 Assume → JUnit 5 Assumptions |
 | `annotations5.sandbox-hint` | 6 | JUnit 4 → 5 annotation migration |
 | `encoding.sandbox-hint` | 7 | String charset → `StandardCharsets` |
-| `collections.sandbox-hint` | 7 | Collection API modernization (Java 9+) |
+| `collections.sandbox-hint` | 3 | Review empty collection factories and null-query behavior (Java 9+) |
 | `modernize-java9.sandbox-hint` | 7 | Java 9+ API modernization |
 | `modernize-java11.sandbox-hint` | 7 | Java 11+ API modernization |
 | `performance.sandbox-hint` | 9 | Performance optimization patterns |
 | `junit3-migration.sandbox-hint` | 5 | JUnit 3 → 5 migration (add annotations to conventionally-named methods, static/non-static) |
-| `stringbuffer-to-stringbuilder.sandbox-hint` | 3 | Replace `StringBuffer` with `StringBuilder` for local variables |
+| `stringbuffer-to-stringbuilder.sandbox-hint` | 2 | Review `StringBuffer` usage, types, and thread sharing |
 | `platform-logging.sandbox-hint` | 5 | Modernize Eclipse Platform logging API (`ILog.of()`, `Status.error()`, etc.) |
-| `collections-immutable.sandbox-hint` | 8 | Replace verbose immutable collection creation with Java 9+ factory methods |
+| `collections-immutable.sandbox-hint` | 8 | Review immutable collection factory candidates and their uses |
 | `type-inference.sandbox-hint` | 1 | Hints for improving type inference usage with `var` (Java 10+) |
 | `try-with-resources.sandbox-hint` | 1 | Suggest try-with-resources for AutoCloseable resources |
 | `string-modernization.sandbox-hint` | 4 | Modernize String API usage (`contains()`, `isEmpty()`, `strip()`) |
@@ -701,44 +701,39 @@ They are specified using the `::` operator to separate the pattern from the guar
 
 #### Nullability Guards
 
-The `isNullable` and `isNonNull` guards use the `NullabilityGuard` class to perform 4-stage nullability analysis:
+`isNonNull` accepts an expression only when the analysis can conservatively
+prove its value is non-null on normal evaluation. This includes `this`,
+primitive and non-null literal values, allocations, selected JDK factory
+methods, stable local variables with proven initializers, and stable locals
+inside a binding-matched non-null branch. A reference type, a `@NonNull`
+annotation, or an initializer followed by reassignment is not proof. The
+analysis intentionally leaves more complex cases unknown.
 
-**Limitation:** These guards currently use heuristics, not a proof that a reference is non-null at the matched use. Reference types such as `String` can be null, and a variable can be reassigned after initialization or a null check. Do not use `isNonNull` or a negated `isNullable` as the sole authorization for a behavior-preserving rewrite until [#1815](https://github.com/carstenartur/sandbox/issues/1815) is resolved.
+`isNullable($x)` matches values that are not proven non-null. The optional
+score is advisory: 0 denotes a proof of non-nullness, 5 an unknown value, 7
+potential nullability, and 10 stronger nullable evidence. A score below a
+threshold does not prove non-nullness. For rewrite evaluation, an unresolved
+threshold remains unknown even under negation.
 
-1. **Stage 1 - Type whitelist**: Uses primitive types and a configurable reference-type heuristic
-2. **Stage 2 - Initialization**: Checks if expression is `new` or a known non-null factory method
-3. **Stage 3 - Null-check analysis**: Detects null-checks in the same method (SpotBugs-style)
-4. **Stage 4 - Annotations**: Checks for `@Nullable`/`@NonNull` annotations
-
-**Nullability Score Mapping:**
-- `NON_NULL` → 0 (classified as non-null by the current heuristic; not a proof)
-- `UNKNOWN` → 5 (undetermined, no type info available)
-- `POTENTIALLY_NULLABLE` → 7 (there are null-checks nearby)
-- `NULLABLE` → 10 (high risk, SpotBugs-style: null-check found after usage)
-
-**Usage Examples:**
+For example, this rule only flags a possible null receiver for review:
 
 ```
-// Flag a possible null receiver for manual review; do not automatically alter behavior
 "Review possible null receiver":
-$x.toString() :: sourceVersionGE(11) && isNullable($x, 5)
-;;
-
-// Flag an uncertain receiver for manual review
-"Review receiver nullability":
-$x.toString() :: isNullable($x) && !isNonNull($x)
-;;
-
-// Only match high-risk cases (null-check after usage)
-"Potential NPE detected":
-$x.$method() :: isNullable($x, 10)
+$x.toString() :: isNullable($x)
 ;;
 ```
 
-**Common Use Cases:**
-- Surface potentially null receivers for review, subject to the heuristic limitation above
-- Detect potential NPEs when null-checks appear after usage
-- Filter matches based on nullability confidence level
+Changing `x.toString()` into `String.valueOf(x)` can suppress the original
+null exception and can choose a different overload for arrays. Non-nullness
+alone also does not prove purity, evaluation order or any other behavior
+required by a replacement.
+
+API clients authorizing rewrites must use
+`guard.evaluateDetailed(context).truthValue() == MATCH`; the legacy boolean
+`evaluate` result preserves compatibility fallbacks and is not a rewrite proof.
+A matching guard is necessary but does not by itself prove that a rewrite
+preserves behavior. A missing compiler source version is unknown to detailed
+guard evaluation.
 
 ## Testing
 
