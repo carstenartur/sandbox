@@ -15,7 +15,6 @@ import java.util.Set;
 import org.eclipse.jdt.core.dom.ASTMatcher;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CastExpression;
-import org.eclipse.jdt.core.dom.Comment;
 import org.eclipse.jdt.core.dom.ConditionalExpression;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldAccess;
@@ -52,7 +51,7 @@ final class StringCleanupGuards {
 	}
 
 	static boolean indexOfContainsSafe(GuardContext context, Object... arguments) {
-		if (arguments.length != 0 || hasCommentInRewriteRange(context)
+		if (arguments.length != 0 || HintRewriteSafety.hasCommentInRewriteRange(context)
 				|| !(context.getMatchedNode() instanceof InfixExpression comparison)
 				|| comparison.hasExtendedOperands()
 				|| !(unparenthesize(comparison.getLeftOperand()) instanceof MethodInvocation invocation)) {
@@ -124,7 +123,7 @@ final class StringCleanupGuards {
 	}
 
 	static boolean substringSafe(GuardContext context, Object... arguments) {
-		if (arguments.length != 0 || hasCommentInRewriteRange(context)
+		if (arguments.length != 0 || HintRewriteSafety.hasCommentInRewriteRange(context)
 				|| !(context.getMatchedNode() instanceof MethodInvocation substring)
 				|| !stringMethod(context, "stringSubstringSafe", substring, "substring", "int", "int")) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 			return false;
@@ -146,7 +145,7 @@ final class StringCleanupGuards {
 	}
 
 	static boolean isBlankSafe(GuardContext context, Object... arguments) {
-		if (arguments.length != 0 || hasCommentInRewriteRange(context)) {
+		if (arguments.length != 0 || HintRewriteSafety.hasCommentInRewriteRange(context)) {
 			return false;
 		}
 		ASTNode node= context.getMatchedNode();
@@ -287,28 +286,4 @@ final class StringCleanupGuards {
 		return result;
 	}
 
-	/** JDT's default rewrite range can extend to adjacent comments. */
-	private static boolean hasCommentInRewriteRange(GuardContext context) {
-		ASTNode node= context.getMatchedNode();
-		if (node == null || context.getCompilationUnit() == null
-				|| context.getCompilationUnit().getCommentList() == null
-				|| node.getRoot() != context.getCompilationUnit()) {
-			return true;
-		}
-		int start= context.getCompilationUnit().getExtendedStartPosition(node);
-		int length= context.getCompilationUnit().getExtendedLength(node);
-		if (start < 0 || length < 0 || start > node.getStartPosition()
-				|| (long) start + length < (long) node.getStartPosition() + node.getLength()) {
-			return true;
-		}
-		long end= (long) start + length;
-		for (Object value : context.getCompilationUnit().getCommentList()) {
-			Comment comment= (Comment) value;
-			int commentStart= comment.getStartPosition();
-			if (commentStart < end && (long) commentStart + comment.getLength() > start) {
-				return true;
-			}
-		}
-		return false;
-	}
 }

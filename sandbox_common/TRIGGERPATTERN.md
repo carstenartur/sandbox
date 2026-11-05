@@ -680,6 +680,8 @@ They are specified using the `::` operator to separate the pattern from the guar
 | `sourceVersionLE(version)` | version | Checks if source version <= specified version | `$x.length() > 0 :: sourceVersionLE(5)` |
 | `sourceVersionBetween(min, max)` | min, max | Checks if source version is in range [min, max] | `$pattern :: sourceVersionBetween(8, 11)` |
 | `stringIndexOfContainsSafe()` | none | Requires a resolved `String.indexOf(String)` comparison and a target-stable argument; declines internal comments and positive bare lambda bodies whose overload resolution could change | `$s.indexOf($part) >= 0 :: stringIndexOfContainsSafe()` |
+| `miscNoCommentsOrSwitch()` | none | Rejects comments in JDT's extended rewrite range, unavailable ranges, and nested switch constructs that cannot be safely rendered | `!($a || $b) :: miscNoCommentsOrSwitch()` |
+| `miscPrimitiveBooleanConditionalSafe()` | none | Requires a resolved primitive `boolean` condition; rejects target-typed switch/conditional expressions, direct lambda bodies and comments in the rewrite range | `$condition ? true : false :: miscPrimitiveBooleanConditionalSafe()` |
 | `matchesAny($placeholder, ...literals)` | placeholder, literals | Checks if placeholder matches any literal value | `$str.equals($x) :: matchesAny($x, "true", "false")` |
 | `matchesNone($placeholder, ...literals)` | placeholder, literals | Checks if placeholder matches none of the literal values | `$x.toString() :: matchesNone($x, "null")` |
 | `hasNoSideEffect($placeholder)` | placeholder | Checks if expression has no side effects | `$x + 1 :: hasNoSideEffect($x)` |
@@ -701,13 +703,15 @@ They are specified using the `::` operator to separate the pattern from the guar
 
 The `isNullable` and `isNonNull` guards use the `NullabilityGuard` class to perform 4-stage nullability analysis:
 
-1. **Stage 1 - Type whitelist**: Checks if type is known to be non-null (e.g., StringBuilder, String, primitives)
+**Limitation:** These guards currently use heuristics, not a proof that a reference is non-null at the matched use. Reference types such as `String` can be null, and a variable can be reassigned after initialization or a null check. Do not use `isNonNull` or a negated `isNullable` as the sole authorization for a behavior-preserving rewrite until [#1815](https://github.com/carstenartur/sandbox/issues/1815) is resolved.
+
+1. **Stage 1 - Type whitelist**: Uses primitive types and a configurable reference-type heuristic
 2. **Stage 2 - Initialization**: Checks if expression is `new` or a known non-null factory method
 3. **Stage 3 - Null-check analysis**: Detects null-checks in the same method (SpotBugs-style)
 4. **Stage 4 - Annotations**: Checks for `@Nullable`/`@NonNull` annotations
 
 **Nullability Score Mapping:**
-- `NON_NULL` → 0 (definitely safe, no change needed)
+- `NON_NULL` → 0 (classified as non-null by the current heuristic; not a proof)
 - `UNKNOWN` → 5 (undetermined, no type info available)
 - `POTENTIALLY_NULLABLE` → 7 (there are null-checks nearby)
 - `NULLABLE` → 10 (high risk, SpotBugs-style: null-check found after usage)
@@ -715,16 +719,14 @@ The `isNullable` and `isNonNull` guards use the `NullabilityGuard` class to perf
 **Usage Examples:**
 
 ```
-// Only suggest String.valueOf() when null is a realistic possibility
-"Consider using String.valueOf() for null safety":
+// Flag a possible null receiver for manual review; do not automatically alter behavior
+"Review possible null receiver":
 $x.toString() :: sourceVersionGE(11) && isNullable($x, 5)
-=> String.valueOf($x)
 ;;
 
-// Exclude StringBuilder (always non-null after initialization)
-"Use explicit null-check":
+// Flag an uncertain receiver for manual review
+"Review receiver nullability":
 $x.toString() :: isNullable($x) && !isNonNull($x)
-=> ($x != null) ? $x.toString() : "null"
 ;;
 
 // Only match high-risk cases (null-check after usage)
@@ -734,7 +736,7 @@ $x.$method() :: isNullable($x, 10)
 ```
 
 **Common Use Cases:**
-- Reduce false positives in null-safety rules by excluding StringBuilder, String, and other always-non-null types
+- Surface potentially null receivers for review, subject to the heuristic limitation above
 - Detect potential NPEs when null-checks appear after usage
 - Filter matches based on nullability confidence level
 
