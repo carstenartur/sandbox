@@ -13,8 +13,9 @@
   "category": "ThreadLocal Cleanup",
   "summary": "Replaces calls to ThreadLocal.set(null) with ThreadLocal.remove() when clearing a ThreadLocal variable, preventing potential memory leaks and ensuring proper state management.",
   "sourceVersion": "21",
-  "status": "READY_FOR_REVIEW",
+  "status": "REJECTED",
   "discoveredAt": "2026-09-17T02:26:30.214288883Z",
+  "rejectionReason": "set(null) and remove() differ for withInitial, initialValue, inheritable values, and overrides; the existing duplicate is also unsafe and must be removed.",
   "ruleFingerprint": "sha256:b3715759de996e4edd5d090d2f1f9751220d278787d2ecf18e0d78f6e60b7d18",
   "behaviorFingerprint": "sha256:d3f8b234e10c1bd6298abf3ccf6b6329e60227f43ce1b81798dd4e0497272c2d",
   "verification": {
@@ -40,6 +41,13 @@
       "actor": "CandidateVerificationCli",
       "reason": "All deterministic candidate gates passed",
       "occurredAt": "2026-11-05T02:31:58.935466206Z"
+    },
+    {
+      "from": "READY_FOR_REVIEW",
+      "to": "REJECTED",
+      "actor": "ChatGPT for carstenartur",
+      "reason": "set(null) and remove() differ for withInitial, initialValue, inheritable values, and overrides; the existing duplicate is also unsafe and must be removed.",
+      "occurredAt": "2026-11-05T05:08:50.906730386Z"
     }
   ]
 }

@@ -13,8 +13,9 @@
   "category": "String Manipulation",
   "summary": "Replaces `string.trim().length() !\u003d 0` with `string.length() !\u003d 0 \u0026\u0026 !string.trim().equals(\"+\")` to refine string content checks.",
   "sourceVersion": "21",
-  "status": "READY_FOR_REVIEW",
+  "status": "REJECTED",
   "discoveredAt": "2026-08-31T02:29:26.363347423Z",
+  "rejectionReason": "Changes whitespace and plus-sign behavior and can evaluate the receiver twice; the source commit is a context-specific indentation fix.",
   "ruleFingerprint": "sha256:98fb4d637d2120d9376bc566d17717c89b1192d80dd9e40c49d9e22fd2f53813",
   "behaviorFingerprint": "sha256:c3b3c76ce4dfba931392607094022a0820b14fa606bf8ed3cdaeecf7379965ac",
   "verification": {
@@ -40,6 +41,13 @@
       "actor": "CandidateVerificationCli",
       "reason": "All deterministic candidate gates passed",
       "occurredAt": "2026-11-05T02:31:56.836908315Z"
+    },
+    {
+      "from": "READY_FOR_REVIEW",
+      "to": "REJECTED",
+      "actor": "ChatGPT for carstenartur",
+      "reason": "Changes whitespace and plus-sign behavior and can evaluate the receiver twice; the source commit is a context-specific indentation fix.",
+      "occurredAt": "2026-11-05T05:08:51.168633518Z"
     }
   ]
 }

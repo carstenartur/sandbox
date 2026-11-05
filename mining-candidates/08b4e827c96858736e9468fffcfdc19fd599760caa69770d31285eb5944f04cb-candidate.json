@@ -13,8 +13,9 @@
   "category": "String API Modernization",
   "summary": "Replaces \u0027String.indexOf(String) \u003e\u003d 0\u0027 with \u0027String.contains(String)\u0027 for improved readability, applicable since Java 1.5.",
   "sourceVersion": "21",
-  "status": "READY_FOR_REVIEW",
+  "status": "REJECTED",
   "discoveredAt": "2026-10-21T02:26:58.377962968Z",
+  "rejectionReason": "Duplicates existing Sandbox String indexOf comparison hints; the existing variants need resolved String.indexOf(String), comment, and lambda-context safety rather than another rule.",
   "ruleFingerprint": "sha256:21fdc895a6975fafee6798ee1c41aac13c526b5a80ca9c39c99dd80c0fb24782",
   "behaviorFingerprint": "sha256:26055e2a5e137f9b704d3efe779090f99702f458512e7c1761fee32066a229bc",
   "verification": {
@@ -40,6 +41,13 @@
       "actor": "CandidateVerificationCli",
       "reason": "All deterministic candidate gates passed",
       "occurredAt": "2026-11-05T02:32:03.708893203Z"
+    },
+    {
+      "from": "READY_FOR_REVIEW",
+      "to": "REJECTED",
+      "actor": "ChatGPT for carstenartur",
+      "reason": "Duplicates existing Sandbox String indexOf comparison hints; the existing variants need resolved String.indexOf(String), comment, and lambda-context safety rather than another rule.",
+      "occurredAt": "2026-11-05T05:08:50.620485772Z"
     }
   ]
 }

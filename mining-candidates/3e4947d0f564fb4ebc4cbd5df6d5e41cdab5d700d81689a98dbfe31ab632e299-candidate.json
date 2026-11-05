@@ -13,8 +13,9 @@
   "category": "String Literal Replacement",
   "summary": "Replace the string literal \u0027booleanEnabled\u0027 with \u0027ANSI_support_enabled\u0027 within the AnsiConsolePreferenceConstants class.",
   "sourceVersion": "21",
-  "status": "READY_FOR_REVIEW",
+  "status": "REJECTED",
   "discoveredAt": "2026-11-03T02:35:31.586496914Z",
+  "rejectionReason": "Changes persistent preference keys without migration; the source change is a coordinated application-specific key rename, not a generic cleanup.",
   "ruleFingerprint": "sha256:83231b56cfb3b311d914a4b02e12949ac6a3cc8d49e07b41c06fea866fdc6e6e",
   "behaviorFingerprint": "sha256:2162a62c937e234d16bd9c199a09dfdb536c32c905092a0ce08ca84405447ff3",
   "verification": {
@@ -40,6 +41,13 @@
       "actor": "CandidateVerificationCli",
       "reason": "All deterministic candidate gates passed",
       "occurredAt": "2026-11-05T02:32:06.176265302Z"
+    },
+    {
+      "from": "READY_FOR_REVIEW",
+      "to": "REJECTED",
+      "actor": "ChatGPT for carstenartur",
+      "reason": "Changes persistent preference keys without migration; the source change is a coordinated application-specific key rename, not a generic cleanup.",
+      "occurredAt": "2026-11-05T05:08:51.422945155Z"
     }
   ]
 }
