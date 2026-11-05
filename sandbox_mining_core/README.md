@@ -100,6 +100,17 @@ java -cp sandbox_mining_core/target/sandbox-mining-core.jar \
 
 The command writes `candidates.json`, `candidates.html`, and copies individual candidate JSON files into the report directory.
 
+For historical review reconciliation, `--review-issues snapshot.json` accepts a complete
+GitHub REST issue snapshot (including `number`, `state`, `state_reason`, explicit
+string-or-null `body`, and creator `user` metadata). Ordinary issue bodies do not
+establish review authority. Only issues created by `github-actions[bot]` (GitHub
+user ID `41898282`, type `Bot`) with the exact leading candidate marker and current
+revision row can reconcile a closure. Existing terminal decisions remain intact.
+Malformed records fail before candidate, report, or index writes. The optional
+`--review-issue-index path.json` requires that snapshot and writes a temporary
+candidate-ID-to-issue-number map for the creation adapter, including trusted open
+and closed reviews of the current revision. It is separate from public reports.
+
 ## Review evidence and rejection memory
 
 New discovery responses must explicitly set `noCleanup: false`, report numeric

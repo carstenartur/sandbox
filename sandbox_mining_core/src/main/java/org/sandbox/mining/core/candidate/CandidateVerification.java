@@ -32,6 +32,8 @@ public record CandidateVerification(
 		DSL_VALIDATION,
 		DSL_PARSE,
 		GUARD_RESOLUTION,
+		/** An import is unresolved: invalid source or an unavailable dependency; validity remains unestablished. */
+		DEPENDENCY_RESOLUTION,
 		BEFORE_PARSE,
 		AFTER_PARSE,
 		BEFORE_MATCH,

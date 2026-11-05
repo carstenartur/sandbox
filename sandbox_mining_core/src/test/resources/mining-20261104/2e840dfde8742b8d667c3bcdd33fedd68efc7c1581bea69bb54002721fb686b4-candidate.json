@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "2e840dfde8742b8d667c3bcdd33fedd68efc7c1581bea69bb54002721fb686b4",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "java.util.concurrent.CompletableFuture.supplyAsync($supplyMethodRef$).thenAccept($param$ -\u003e org.eclipse.swt.widgets.Display.getDefault().asyncExec(() -\u003e $targetMethod$.setToolTipText($param$)))\n\u003d\u003e\njava.util.concurrent.CompletableFuture.supplyAsync($supplyMethodRef$).thenAcceptAsync($targetMethod$::setToolTipText, org.eclipse.swt.widgets.Display.getDefault())\n;;",
+  "beforeExample": "import java.util.concurrent.CompletableFuture;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Control; // dummy for setToolTipText\n\npublic class MyClass {\n    private Control action;\n\n    public MyClass(Control action) {\n        this.action \u003d action;\n    }\n\n    protected String getToolTip() {\n        return \"Some Tooltip\";\n    }\n\n    protected Control getAction() {\n        return action;\n    }\n\n    protected void updateTooltip() {\n        CompletableFuture.supplyAsync(this::getToolTip)\n            .thenAccept(tooltip -\u003e\n                Display.getDefault().asyncExec(() -\u003e getAction().setToolTipText(tooltip))\n            );\n    }\n}",
+  "afterExample": "import java.util.concurrent.CompletableFuture;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Control;\n\npublic class MyClass {\n    private Control action;\n\n    public MyClass(Control action) {\n        this.action \u003d action;\n    }\n\n    protected String getToolTip() {\n        return \"Some Tooltip\";\n    }\n\n    protected Control getAction() {\n        return action;\n    }\n\n    protected void updateTooltip() {\n        CompletableFuture.supplyAsync(this::getToolTip).thenAcceptAsync(getAction()::setToolTipText,\n            Display.getDefault());\n    }\n}",
+  "negativeExample": "import java.util.concurrent.CompletableFuture;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Control;\n\npublic class MyClass {\n    private Control action;\n\n    public MyClass(Control action) {\n        this.action \u003d action;\n    }\n\n    protected String getToolTip() {\n        return \"Some Tooltip\";\n    }\n\n    protected Control getAction() {\n        return action;\n    }\n\n    protected void updateTooltip() {\n        // Different executor\n        CompletableFuture.supplyAsync(this::getToolTip)\n            .thenAcceptAsync(getAction()::setToolTipText, java.util.concurrent.Executors.newSingleThreadExecutor());\n    }\n\n    protected void updateTooltip2() {\n        // Different action type - not setToolTipText\n        CompletableFuture.supplyAsync(this::getToolTip)\n            .thenAccept(tooltip -\u003e\n                Display.getDefault().asyncExec(() -\u003e System.out.println(tooltip))\n            );\n    }\n}",
+  "targetHintFile": "modernize-java8.sandbox-hint",
+  "sourceCommit": "66deb62c4bcf1440a3b022ca6082583dafbb8a37",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "sourceEvidence": {
+    "path": "org.eclipse.debug.ui/ui/org/eclipse/debug/ui/actions/AbstractLaunchHistoryAction.java",
+    "before": "\t\tCompletableFuture.supplyAsync(this::getToolTip)\n\t\t.thenAccept(tooltip -\u003e\n\t\t\tDisplay.getDefault().asyncExec(() -\u003e getAction().setToolTipText(tooltip))\n\t\t);",
+    "after": "\t\tCompletableFuture.supplyAsync(this::getToolTip).thenAcceptAsync(getAction()::setToolTipText,\n\t\t\t\tDisplay.getDefault());",
+    "diffHunk": "diff --git a/org.eclipse.debug.ui/ui/org/eclipse/debug/ui/actions/AbstractLaunchHistoryAction.java b/org.eclipse.debug.ui/ui/org/eclipse/debug/ui/actions/AbstractLaunchHistoryAction.java\nindex f68a5a1..ec6dde3 100644\n--- a/org.eclipse.debug.ui/ui/org/eclipse/debug/ui/actions/AbstractLaunchHistoryAction.java\n+++ b/org.eclipse.debug.ui/ui/org/eclipse/debug/ui/actions/AbstractLaunchHistoryAction.java\n@@ -199,10 +199,8 @@\n \t * \u003c/p\u003e\n \t */\n \tprotected void updateTooltip() {\n-\t\tCompletableFuture.supplyAsync(this::getToolTip)\n-\t\t.thenAccept(tooltip -\u003e\n-\t\t\tDisplay.getDefault().asyncExec(() -\u003e getAction().setToolTipText(tooltip))\n-\t\t);\n+\t\tCompletableFuture.supplyAsync(this::getToolTip).thenAcceptAsync(getAction()::setToolTipText,\n+\t\t\t\tDisplay.getDefault());\n \t}\n \n \t/**\n"
+  },
+  "category": "Modernize API",
+  "summary": "Replace CompletableFuture.thenAccept with Display.getDefault().asyncExec with thenAcceptAsync using Display as Executor.",
+  "sourceVersion": "11",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-04T02:20:30.040925413Z",
+  "ruleFingerprint": "sha256:b578ec872704d185e68e0889b4fcb27b8ac6ca2f1cfc6a2845c979b9f8ac26f8",
+  "behaviorFingerprint": "sha256:8448334dd81b9d6f97be4f76fd8db017cf8c6e9898a9fb756978f7a2048d2003",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 2: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-11-04T02:23:45.829507242Z",
+    "verifierVersion": "8",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
