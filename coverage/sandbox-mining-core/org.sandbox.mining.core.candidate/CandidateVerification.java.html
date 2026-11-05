@@ -32,27 +32,29 @@ import java.time.Instant;
 <span class="fc" id="L32">		DSL_VALIDATION,</span>
 <span class="fc" id="L33">		DSL_PARSE,</span>
 <span class="fc" id="L34">		GUARD_RESOLUTION,</span>
-<span class="fc" id="L35">		BEFORE_PARSE,</span>
-<span class="fc" id="L36">		AFTER_PARSE,</span>
-<span class="fc" id="L37">		BEFORE_MATCH,</span>
-<span class="fc" id="L38">		AFTER_REWRITE,</span>
-<span class="fc" id="L39">		NEGATIVE_PARSE,</span>
-<span class="fc" id="L40">		NEGATIVE_MATCH,</span>
-<span class="fc" id="L41">		SUCCESS</span>
+		/** An import is unresolved: invalid source or an unavailable dependency; validity remains unestablished. */
+<span class="fc" id="L36">		DEPENDENCY_RESOLUTION,</span>
+<span class="fc" id="L37">		BEFORE_PARSE,</span>
+<span class="fc" id="L38">		AFTER_PARSE,</span>
+<span class="fc" id="L39">		BEFORE_MATCH,</span>
+<span class="fc" id="L40">		AFTER_REWRITE,</span>
+<span class="fc" id="L41">		NEGATIVE_PARSE,</span>
+<span class="fc" id="L42">		NEGATIVE_MATCH,</span>
+<span class="fc" id="L43">		SUCCESS</span>
 	}
 
 	/** Creates a failed verification result. */
 	public static CandidateVerification failure(Stage stage, String message,
 			String verifierVersion, int matches, int replacements) {
-<span class="fc" id="L47">		return new CandidateVerification(false, stage, message, Instant.now().toString(),</span>
+<span class="fc" id="L49">		return new CandidateVerification(false, stage, message, Instant.now().toString(),</span>
 				verifierVersion, matches, replacements);
 	}
 
 	/** Creates a successful verification result. */
 	public static CandidateVerification success(String verifierVersion, int matches,
 			int replacements) {
-<span class="fc" id="L54">		return new CandidateVerification(true, Stage.SUCCESS,</span>
-<span class="fc" id="L55">				&quot;Example rewrite verified; semantic review still required&quot;, Instant.now().toString(), //$NON-NLS-1$</span>
+<span class="fc" id="L56">		return new CandidateVerification(true, Stage.SUCCESS,</span>
+<span class="fc" id="L57">				&quot;Example rewrite verified; semantic review still required&quot;, Instant.now().toString(), //$NON-NLS-1$</span>
 				verifierVersion, matches, replacements);
 	}
 }

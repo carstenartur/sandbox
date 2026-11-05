@@ -1311,7 +1311,7 @@ sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,QwenClie
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,AiRuleInferenceEngine,0,257,1,25,0,54,1,18,0,6
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,CommitEvaluation.TrafficLight,0,27,0,0,0,5,0,1,0,1
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,OpenAiCompatibleClient,248,556,35,45,72,143,27,38,2,23
-sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,PromptBuilder,15,457,6,18,3,101,5,22,0,15
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,PromptBuilder,15,473,6,18,3,105,5,22,0,15
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,CommitEvaluation,2,272,2,2,0,8,2,6,0,6
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,LlmClientFactory,189,0,34,0,34,0,28,0,7,0
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,PromptBuilder.CommitData,0,12,0,0,0,1,0,1,0,1
@@ -1370,7 +1370,7 @@ sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,Pla
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,EmbeddedJavaExecutionLogger,51,123,2,4,4,22,2,11,0,10
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,HintStructuredActionPreprocessor.Result,0,12,0,0,0,3,0,1,0,1
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,HintFileStore.HintFileValidationProblem,9,0,0,0,1,0,1,0,1,0
-sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,FqnAwarePlaceholderAstMatcher,316,884,111,173,56,179,89,83,5,25
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,FqnAwarePlaceholderAstMatcher,275,925,105,179,48,187,86,86,5,25
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,HintLanguageVocabulary.Action,0,15,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,PlaceholderAstMatcher,493,1115,127,167,125,258,93,89,5,27
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,HintFileParser,273,2473,104,365,59,549,86,184,1,25
@@ -1525,11 +1525,12 @@ sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.report,DslEnhanceme
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.report,StatisticsCollector.DailyProgress,6,9,0,0,2,4,2,2,2,2
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.report,DslEnhancementReporter,8,436,19,39,2,79,19,19,0,9
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.candidate,SourceEvidenceVerifier,21,545,18,86,7,83,18,42,0,8
-sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.candidate,CandidateVerifier.ParseResult,0,12,0,0,0,1,0,1,0,1
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.candidate,CandidateVerifier.ParseResult,0,29,0,2,0,4,0,4,0,3
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.candidate,CandidateReviewIssues.ReviewIssue,0,23,0,0,0,2,0,2,0,2
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.candidate,SourceEvidenceVerifier.Token,0,16,0,2,0,4,0,3,0,2
-sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.candidate,CandidateStatus,12,117,12,22,2,19,12,9,0,2
-sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.candidate,CandidateVerificationCli,73,846,23,83,20,204,21,58,1,21
-sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.candidate,CandidateVerifier,157,626,38,78,44,149,37,43,2,19
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.candidate,CandidateStatus,12,117,11,23,2,19,11,10,0,2
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.candidate,CandidateVerificationCli,66,1028,25,113,17,238,24,78,1,27
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.candidate,CandidateVerifier,161,723,38,94,44,163,37,55,2,23
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.candidate,CandidateVerification,0,48,0,0,0,4,0,3,0,3
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.candidate,CandidateTransition,0,18,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.candidate,CandidateReviewCli,98,256,23,35,23,65,21,20,1,8
@@ -1540,9 +1541,10 @@ sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.candidate,SourceEvi
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.candidate,SourceEvidenceVerifier.Result,0,9,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.candidate,CandidatePromotionCli,104,381,26,36,23,87,26,15,1,8
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.candidate,MiningCandidate,80,494,9,39,26,126,17,61,8,46
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.candidate,CandidateReviewIssues,10,412,7,75,2,80,7,44,0,10
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.candidate,CandidateStore,40,444,14,54,11,92,14,41,0,21
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.candidate,RuleFingerprintIndex,39,228,8,14,9,47,7,9,0,5
-sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.candidate,CandidateVerification.Stage,0,75,0,0,0,13,0,1,0,1
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.candidate,CandidateVerification.Stage,0,81,0,0,0,14,0,1,0,1
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.action,PullRequestCreator,90,0,2,0,18,0,3,0,2,0
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.action,AutoCommitter,79,0,2,0,16,0,3,0,2,0
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core,MiningCli.IncompleteBatchException,0,8,0,0,0,3,0,1,0,1

@@ -361,19 +361,19 @@ public final class FqnAwarePlaceholderAstMatcher extends PlaceholderAstMatcher {
 <span class="fc" id="L361">			String raw = typeIdentity(parameterizedType.getType());</span>
 			@SuppressWarnings(&quot;unchecked&quot;)
 <span class="fc" id="L363">			List&lt;Type&gt; args = parameterizedType.typeArguments();</span>
-<span class="pc bpc" id="L364" title="1 of 2 branches missed.">			if (args.isEmpty()) {</span>
+<span class="fc bfc" id="L364" title="All 2 branches covered.">			if (args.isEmpty()) {</span>
 <span class="fc" id="L365">				return raw;</span>
 			}
-<span class="nc bnc" id="L367" title="All 2 branches missed.">			StringBuilder sb = new StringBuilder(raw == null ? &quot;&quot; : raw); //$NON-NLS-1$</span>
-<span class="nc" id="L368">			sb.append('&lt;');</span>
-<span class="nc bnc" id="L369" title="All 2 branches missed.">			for (int i = 0; i &lt; args.size(); i++) {</span>
-<span class="nc bnc" id="L370" title="All 2 branches missed.">				if (i &gt; 0) {</span>
-<span class="nc" id="L371">					sb.append(',');</span>
+<span class="pc bpc" id="L367" title="1 of 2 branches missed.">			StringBuilder sb = new StringBuilder(raw == null ? &quot;&quot; : raw); //$NON-NLS-1$</span>
+<span class="fc" id="L368">			sb.append('&lt;');</span>
+<span class="fc bfc" id="L369" title="All 2 branches covered.">			for (int i = 0; i &lt; args.size(); i++) {</span>
+<span class="fc bfc" id="L370" title="All 2 branches covered.">				if (i &gt; 0) {</span>
+<span class="fc" id="L371">					sb.append(',');</span>
 				}
-<span class="nc" id="L373">				sb.append(typeIdentity(args.get(i)));</span>
+<span class="fc" id="L373">				sb.append(typeIdentity(args.get(i)));</span>
 			}
-<span class="nc" id="L375">			sb.append('&gt;');</span>
-<span class="nc" id="L376">			return sb.toString();</span>
+<span class="fc" id="L375">			sb.append('&gt;');</span>
+<span class="fc" id="L376">			return sb.toString();</span>
 		}
 <span class="nc bnc" id="L378" title="All 2 branches missed.">		if (type instanceof ArrayType arrayType) {</span>
 <span class="nc" id="L379">			return typeIdentity(arrayType.getElementType()) + &quot;[]&quot;.repeat(arrayType.getDimensions()); //$NON-NLS-1$</span>

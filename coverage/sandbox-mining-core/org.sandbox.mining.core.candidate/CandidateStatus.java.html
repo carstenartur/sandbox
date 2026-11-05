@@ -67,7 +67,7 @@ package org.sandbox.mining.core.candidate;
 <span class="pc bpc" id="L67" title="2 of 4 branches missed.">		if (target == null || target == this) {</span>
 <span class="nc" id="L68">			return false;</span>
 		}
-<span class="pc bpc" id="L70" title="1 of 6 branches missed.">		if (target == REJECTED || target == DUPLICATE || target == SUPERSEDED) {</span>
+<span class="fc bfc" id="L70" title="All 6 branches covered.">		if (target == REJECTED || target == DUPLICATE || target == SUPERSEDED) {</span>
 <span class="pc bpc" id="L71" title="4 of 8 branches missed.">			return this != PROMOTED &amp;&amp; this != REJECTED</span>
 					&amp;&amp; this != DUPLICATE &amp;&amp; this != SUPERSEDED;
 		}
