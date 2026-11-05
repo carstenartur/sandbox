@@ -57,14 +57,10 @@ class JdtStringCleanupContractTest {
 
 	@Test
 	void indexOfComparisonsRequireTheStringOverload() {
-		for (String[] comparison : new String[][] {
-				{ ">= 0", "" }, { "!= -1", "" }, { "== -1", "!" }, { "< 0", "!" } }) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$
-			assertRewrite(substring,
-					"class Test { boolean m(String text, String part) { return text.indexOf(part) " + comparison[0] + "; } }", //$NON-NLS-1$ //$NON-NLS-2$
-					"class Test { boolean m(String text, String part) { return " + comparison[1] + "text.contains(part); } }"); //$NON-NLS-1$ //$NON-NLS-2$
-			assertCompilesAndNoRewrite(substring,
-					"class Test { boolean m(String text) { return text.indexOf('x') " + comparison[0] + "; } }"); //$NON-NLS-1$ //$NON-NLS-2$
-		}
+		assertIndexOfComparison(">= 0", ""); //$NON-NLS-1$ //$NON-NLS-2$
+		assertIndexOfComparison("!= -1", ""); //$NON-NLS-1$ //$NON-NLS-2$
+		assertIndexOfComparison("== -1", "!"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertIndexOfComparison("< 0", "!"); //$NON-NLS-1$ //$NON-NLS-2$
 		assertCompilesAndNoRewrite(substring,
 				"class Test { boolean m(String text) { return text.indexOf('x') >= 0; } }"); //$NON-NLS-1$
 		assertCompilesAndNoRewrite(substring,
@@ -83,6 +79,14 @@ class JdtStringCleanupContractTest {
 				"class Test { boolean m(String text) { return text.indexOf(\"x\") > 0; } }"); //$NON-NLS-1$
 		assertCompilesAndNoRewrite(substring,
 				"class Test { boolean m(String text) { return text./* keep */indexOf(\"x\") >= 0; } }"); //$NON-NLS-1$
+	}
+
+	private void assertIndexOfComparison(String comparison, String negation) {
+		assertRewrite(substring,
+				"class Test { boolean m(String text, String part) { return text.indexOf(part) " + comparison + "; } }", //$NON-NLS-1$ //$NON-NLS-2$
+				"class Test { boolean m(String text, String part) { return " + negation + "text.contains(part); } }"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertCompilesAndNoRewrite(substring,
+				"class Test { boolean m(String text) { return text.indexOf('x') " + comparison + "; } }"); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	@Test
