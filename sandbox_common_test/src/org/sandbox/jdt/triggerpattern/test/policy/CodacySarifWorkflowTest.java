@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
@@ -24,29 +25,32 @@ class CodacySarifWorkflowTest {
     @Test
     void emptyAnalyzerOutputWarnsWhileTheOtherReportIsPreserved() throws Exception {
         Files.writeString(temporary.resolve("results-spotbugs.sarif"),
-                "{\"version\":\"2.1.0\",\"runs\":[{\"tool\":{\"driver\":{\"name\":\"SpotBugs\"}},\"results\":[]}]}");
-        Files.writeString(temporary.resolve("results-checkstyle.sarif"), "{\"version\":\"2.1.0\",\"runs\":[]}");
+				"{\"version\":\"2.1.0\",\"runs\":[{\"tool\":{\"driver\":{\"name\":\"SpotBugs\"}},\"results\":[]}]}",
+				StandardCharsets.UTF_8);
+        Files.writeString(temporary.resolve("results-checkstyle.sarif"), "{\"version\":\"2.1.0\",\"runs\":[]}",
+				StandardCharsets.UTF_8);
 
         Result result = runSplitStep();
         assertEquals(0, result.exitCode(), result.output());
         assertTrue(result.output().contains("::warning::Codacy checkstyle produced no usable SARIF runs"), result.output());
-        assertTrue(Files.readString(temporary.resolve("outputs")).contains("spotbugs_run0=true"));
+        assertTrue(Files.readString(temporary.resolve("outputs"), StandardCharsets.UTF_8).contains("spotbugs_run0=true"));
         assertTrue(Files.isRegularFile(temporary.resolve("sarif_split_spotbugs/run-0.sarif")));
-        assertFalse(JsonParser.parseString(Files.readString(temporary.resolve("sarif_split_spotbugs/run-0.sarif")))
+        assertFalse(JsonParser.parseString(Files.readString(temporary.resolve("sarif_split_spotbugs/run-0.sarif"), StandardCharsets.UTF_8))
                 .getAsJsonObject().has("$schema"));
         assertFalse(Files.exists(temporary.resolve("sarif_split_checkstyle/run-0.sarif")));
     }
 
     @Test
     void malformedReportingOutputIsVisibleWithoutBreakingTheMavenGate() throws Exception {
-        Files.writeString(temporary.resolve("results-spotbugs.sarif"), "not-json");
+        Files.writeString(temporary.resolve("results-spotbugs.sarif"), "not-json", StandardCharsets.UTF_8);
         Files.writeString(temporary.resolve("results-checkstyle.sarif"),
-                "{\"version\":\"2.1.0\",\"runs\":[{\"tool\":{\"driver\":{\"name\":\"Checkstyle\"}},\"results\":[]}]}");
+				"{\"version\":\"2.1.0\",\"runs\":[{\"tool\":{\"driver\":{\"name\":\"Checkstyle\"}},\"results\":[]}]}",
+				StandardCharsets.UTF_8);
 
         Result result = runSplitStep();
         assertEquals(0, result.exitCode(), result.output());
         assertTrue(result.output().contains("::warning::Codacy spotbugs produced no usable SARIF runs"), result.output());
-        assertTrue(Files.readString(temporary.resolve("outputs")).contains("checkstyle_run0=true"));
+        assertTrue(Files.readString(temporary.resolve("outputs"), StandardCharsets.UTF_8).contains("checkstyle_run0=true"));
         assertFalse(Files.exists(temporary.resolve("sarif_split_spotbugs/run-0.sarif")));
     }
 
@@ -63,7 +67,8 @@ class CodacySarifWorkflowTest {
     @Test
     void invalidRunResultsAreNotUploaded() throws Exception {
         Files.writeString(temporary.resolve("results-checkstyle.sarif"),
-                "{\"version\":\"2.1.0\",\"runs\":[{\"tool\":{\"driver\":{\"name\":\"Checkstyle\"}},\"results\":\"BROKEN\"}]}");
+				"{\"version\":\"2.1.0\",\"runs\":[{\"tool\":{\"driver\":{\"name\":\"Checkstyle\"}},\"results\":\"BROKEN\"}]}",
+				StandardCharsets.UTF_8);
         Result result = runSplitStep();
         assertEquals(0, result.exitCode(), result.output());
         assertTrue(result.output().contains("::warning::Codacy checkstyle produced no usable SARIF runs"), result.output());
@@ -73,7 +78,8 @@ class CodacySarifWorkflowTest {
     @Test
     void resultWithoutRequiredMessageIsNotUploaded() throws Exception {
         Files.writeString(temporary.resolve("results-checkstyle.sarif"),
-                "{\"version\":\"2.1.0\",\"runs\":[{\"tool\":{\"driver\":{\"name\":\"Checkstyle\"}},\"results\":[{}]}]}");
+				"{\"version\":\"2.1.0\",\"runs\":[{\"tool\":{\"driver\":{\"name\":\"Checkstyle\"}},\"results\":[{}]}]}",
+				StandardCharsets.UTF_8);
         Result result = runSplitStep();
         assertEquals(0, result.exitCode(), result.output());
         assertTrue(result.output().contains("::warning::Codacy checkstyle produced no usable SARIF runs"), result.output());
@@ -83,8 +89,8 @@ class CodacySarifWorkflowTest {
     @Test
     void concatenatedJsonDocumentsAreRejectedAsOneInvalidReport() throws Exception {
         String report = "{\"version\":\"2.1.0\",\"runs\":[{\"tool\":{\"driver\":{\"name\":\"SpotBugs\"}},\"results\":[]}]}";
-        Files.writeString(temporary.resolve("results-spotbugs.sarif"), report + "\n" + report);
-        Files.writeString(temporary.resolve("results-checkstyle.sarif"), report);
+        Files.writeString(temporary.resolve("results-spotbugs.sarif"), (report + "\n" + report), StandardCharsets.UTF_8);
+        Files.writeString(temporary.resolve("results-checkstyle.sarif"), report, StandardCharsets.UTF_8);
         Result result = runSplitStep();
         assertEquals(0, result.exitCode(), result.output());
         assertTrue(result.output().contains("::warning::Codacy spotbugs produced no usable SARIF runs"), result.output());
@@ -95,10 +101,11 @@ class CodacySarifWorkflowTest {
     @Test
     void validSchemaReferenceIsPreserved() throws Exception {
         Files.writeString(temporary.resolve("results-checkstyle.sarif"),
-                "{\"$schema\":\"https://example.invalid/sarif.json\",\"version\":\"2.1.0\",\"runs\":[{\"tool\":{\"driver\":{\"name\":\"Checkstyle\"}},\"results\":[{\"message\":{\"text\":\"Empty statement\"}}]}]}");
+				"{\"$schema\":\"https://example.invalid/sarif.json\",\"version\":\"2.1.0\",\"runs\":[{\"tool\":{\"driver\":{\"name\":\"Checkstyle\"}},\"results\":[{\"message\":{\"text\":\"Empty statement\"}}]}]}",
+				StandardCharsets.UTF_8);
         Result result = runSplitStep();
         assertEquals(0, result.exitCode(), result.output());
-        var split = JsonParser.parseString(Files.readString(temporary.resolve("sarif_split_checkstyle/run-0.sarif"))).getAsJsonObject();
+        var split = JsonParser.parseString(Files.readString(temporary.resolve("sarif_split_checkstyle/run-0.sarif"), StandardCharsets.UTF_8)).getAsJsonObject();
         assertEquals("https://example.invalid/sarif.json", split.get("$schema").getAsString());
         assertEquals("Empty statement", split.getAsJsonArray("runs").asList().getFirst().getAsJsonObject()
                 .getAsJsonArray("results").asList().getFirst().getAsJsonObject().getAsJsonObject("message").get("text").getAsString());
@@ -106,7 +113,7 @@ class CodacySarifWorkflowTest {
 
     @Test
     void reportingUploadFailuresWarnWithoutBlockingTheOtherAnalyzer() throws Exception {
-        String workflow = Files.readString(repositoryRoot().resolve(".github/workflows/codacy.yml"));
+        String workflow = Files.readString(repositoryRoot().resolve(".github/workflows/codacy.yml"), StandardCharsets.UTF_8);
         assertFalse(step(workflow, "Build and run Maven analysis").contains("continue-on-error: true"));
         String warning = step(workflow, "Report SARIF upload failures");
         assertTrue(warning.contains("always()"));
@@ -126,7 +133,7 @@ class CodacySarifWorkflowTest {
         assumeTrue(System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("linux"));
         assumeTrue(Files.isExecutable(Path.of("/usr/bin/bash")) && Files.isExecutable(Path.of("/usr/bin/jq")));
         Path workflow = repositoryRoot().resolve(".github/workflows/codacy.yml");
-        String content = Files.readString(workflow);
+        String content = Files.readString(workflow, StandardCharsets.UTF_8);
         String marker = "      - name: Split SARIF into single-run files\n";
         int start = content.indexOf(marker);
         assertTrue(start >= 0, "Missing SARIF split step");
