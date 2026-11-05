@@ -456,9 +456,8 @@
 	/**
 	 * Enable the {@code collections.sandbox-hint} pattern library.
 	 * &lt;p&gt;
-	 * When enabled, Collection API improvement rules are applied
-	 * (e.g., {@code list.size() == 0} → {@code list.isEmpty()}).
-	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * Kept for compatibility with existing profiles. The bundled rules now
+	 * provide review hints only and do not apply automatic transformations.
 	 * &lt;p&gt;
 	 * Possible values: {TRUE, FALSE}
 	 *
@@ -820,7 +819,8 @@
 	/**
 	 * Enable the {@code stringbuffer-to-stringbuilder.sandbox-hint} pattern library.
 	 * &lt;p&gt;
-	 * When enabled, StringBuffer to StringBuilder replacement rules are applied.
+	 * Kept for compatibility with existing profiles. The bundled rules now
+	 * provide review hints only and do not apply automatic transformations.
 	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
 	 * &lt;p&gt;
 	 * Possible values: {TRUE, FALSE}

@@ -97,43 +97,45 @@ public final class DryRunReporter {
 <span class="fc bfc" id="L97" title="All 2 branches covered.">			for (Match match : matches) {</span>
 <span class="fc" id="L98">				int lineNumber = cu.getLineNumber(match.getOffset());</span>
 <span class="fc" id="L99">				String matchedCode = match.getMatchedNode().toString().trim();</span>
+<span class="fc" id="L100">				GuardContext guardCtx= GuardContext.fromMatch(match, cu, compilerOptions);</span>
+<span class="fc" id="L101">				boolean unresolved= guardCtx.hasUnknownSemanticRequirements();</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">				if (rule.sourceGuard() != null) {</span>
+<span class="fc" id="L103">					GuardExpression.Evaluation evaluation= rule.sourceGuard().evaluateDetailed(guardCtx);</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">					if (evaluation.truthValue() == GuardExpression.TruthValue.NO_MATCH) {</span>
+<span class="fc" id="L105">						continue;</span>
+					}
+<span class="fc bfc" id="L107" title="All 2 branches covered.">					unresolved|= evaluation.truthValue() == GuardExpression.TruthValue.UNKNOWN;</span>
+				}
 
 				// Determine replacement if available
-<span class="fc" id="L102">				String suggestedReplacement = null;</span>
-<span class="pc bpc" id="L103" title="1 of 4 branches missed.">				if (!rule.isHintOnly() &amp;&amp; !rule.alternatives().isEmpty()) {</span>
-					// Try to find the matching alternative using guards
-<span class="pc bpc" id="L105" title="1 of 2 branches missed.">					if (compilerOptions != null) {</span>
-<span class="nc" id="L106">						GuardContext guardCtx = GuardContext.fromMatch(match, cu, compilerOptions);</span>
-<span class="nc" id="L107">						Optional&lt;RewriteAlternative&gt; alt = rule.findMatchingAlternative(guardCtx);</span>
-<span class="nc bnc" id="L108" title="All 2 branches missed.">						if (alt.isPresent()) {</span>
-<span class="nc" id="L109">							suggestedReplacement = substitutePlaceholders(</span>
-<span class="nc" id="L110">									alt.get().replacementPattern(), match.getBindings());</span>
+<span class="fc" id="L111">				String suggestedReplacement = null;</span>
+<span class="fc bfc" id="L112" title="All 4 branches covered.">				if (!unresolved &amp;&amp; !rule.isHintOnly()) {</span>
+<span class="fc" id="L113">					Optional&lt;RewriteAlternative&gt; alt= rule.findMatchingAlternative(guardCtx);</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">					if (alt.isPresent()) {</span>
+<span class="fc" id="L115">						String pattern= alt.get().replacementPattern();</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">						if (pattern != null) {</span>
+<span class="fc" id="L117">							suggestedReplacement = substitutePlaceholders(pattern, match.getBindings());</span>
 						}
-<span class="nc" id="L112">					} else {</span>
-						// Without compiler options, use the first alternative
-<span class="fc" id="L114">						suggestedReplacement = substitutePlaceholders(</span>
-<span class="fc" id="L115">								rule.alternatives().get(0).replacementPattern(),</span>
-<span class="fc" id="L116">								match.getBindings());</span>
 					}
 				}
 
-<span class="fc" id="L120">				String severity = &quot;info&quot;; //$NON-NLS-1$</span>
-<span class="fc" id="L121">				String description = rule.getDescription();</span>
+<span class="fc" id="L122">				String severity = &quot;info&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L123">				String description = rule.getDescription();</span>
 
-<span class="fc" id="L123">				entries.add(new ReportEntry(</span>
+<span class="fc" id="L125">				entries.add(new ReportEntry(</span>
 						lineNumber,
-<span class="fc" id="L125">						match.getOffset(),</span>
-<span class="fc" id="L126">						match.getLength(),</span>
+<span class="fc" id="L127">						match.getOffset(),</span>
+<span class="fc" id="L128">						match.getLength(),</span>
 						matchedCode,
 						suggestedReplacement,
 						description,
 						severity,
-<span class="fc" id="L131">						sourcePattern.getValue(),</span>
-<span class="pc bpc" id="L132" title="1 of 2 branches missed.">						rule.hasImportDirective() ? rule.getImportDirective() : null));</span>
-<span class="fc" id="L133">			}</span>
-<span class="fc" id="L134">		}</span>
+<span class="fc" id="L133">						sourcePattern.getValue(),</span>
+<span class="pc bpc" id="L134" title="1 of 4 branches missed.">						suggestedReplacement != null &amp;&amp; rule.hasImportDirective() ? rule.getImportDirective() : null));</span>
+<span class="fc" id="L135">			}</span>
+<span class="fc" id="L136">		}</span>
 
-<span class="fc" id="L136">		return entries;</span>
+<span class="fc" id="L138">		return entries;</span>
 	}
 
 	/**
@@ -141,33 +143,33 @@ public final class DryRunReporter {
 	 * Replaces {@code $name} placeholders with the text of their bound AST nodes.
 	 */
 	private String substitutePlaceholders(String pattern, Map&lt;String, Object&gt; bindings) {
-<span class="fc" id="L144">		String result = pattern;</span>
+<span class="fc" id="L146">		String result = pattern;</span>
 		// Sort by key length descending to handle $args$ before $a
-<span class="fc" id="L146">		List&lt;Map.Entry&lt;String, Object&gt;&gt; sorted = new ArrayList&lt;&gt;(bindings.entrySet());</span>
-<span class="fc" id="L147">		sorted.sort((a, b) -&gt; Integer.compare(b.getKey().length(), a.getKey().length()));</span>
+<span class="fc" id="L148">		List&lt;Map.Entry&lt;String, Object&gt;&gt; sorted = new ArrayList&lt;&gt;(bindings.entrySet());</span>
+<span class="fc" id="L149">		sorted.sort((a, b) -&gt; Integer.compare(b.getKey().length(), a.getKey().length()));</span>
 
-<span class="fc bfc" id="L149" title="All 2 branches covered.">		for (Map.Entry&lt;String, Object&gt; entry : sorted) {</span>
-<span class="fc" id="L150">			String placeholder = entry.getKey();</span>
-<span class="fc" id="L151">			Object value = entry.getValue();</span>
-<span class="pc bpc" id="L152" title="1 of 2 branches missed.">			if (value instanceof org.eclipse.jdt.core.dom.ASTNode) {</span>
-<span class="fc" id="L153">				result = result.replace(placeholder, value.toString().trim());</span>
-<span class="nc bnc" id="L154" title="All 2 branches missed.">			} else if (value instanceof List&lt;?&gt; list) {</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">		for (Map.Entry&lt;String, Object&gt; entry : sorted) {</span>
+<span class="fc" id="L152">			String placeholder = entry.getKey();</span>
+<span class="fc" id="L153">			Object value = entry.getValue();</span>
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">			if (value instanceof org.eclipse.jdt.core.dom.ASTNode) {</span>
+<span class="fc" id="L155">				result = result.replace(placeholder, value.toString().trim());</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">			} else if (value instanceof List&lt;?&gt; list) {</span>
 				// Support indexed access: $args$[0], $args$[-1]
-<span class="nc" id="L156">				result = substituteIndexedAccess(result, placeholder, list);</span>
+<span class="nc" id="L158">				result = substituteIndexedAccess(result, placeholder, list);</span>
 				// Support $args$.length
-<span class="nc" id="L158">				result = result.replace(placeholder + &quot;.length&quot;, String.valueOf(list.size())); //$NON-NLS-1$</span>
+<span class="nc" id="L160">				result = result.replace(placeholder + &quot;.length&quot;, String.valueOf(list.size())); //$NON-NLS-1$</span>
 				// Variadic placeholder: join with &quot;, &quot;
-<span class="nc" id="L160">				StringBuilder sb = new StringBuilder();</span>
-<span class="nc bnc" id="L161" title="All 2 branches missed.">				for (int i = 0; i &lt; list.size(); i++) {</span>
-<span class="nc bnc" id="L162" title="All 2 branches missed.">					if (i &gt; 0) {</span>
-<span class="nc" id="L163">						sb.append(&quot;, &quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L162">				StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">				for (int i = 0; i &lt; list.size(); i++) {</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">					if (i &gt; 0) {</span>
+<span class="nc" id="L165">						sb.append(&quot;, &quot;); //$NON-NLS-1$</span>
 					}
-<span class="nc" id="L165">					sb.append(list.get(i).toString().trim());</span>
+<span class="nc" id="L167">					sb.append(list.get(i).toString().trim());</span>
 				}
-<span class="nc" id="L167">				result = result.replace(placeholder, sb.toString());</span>
+<span class="nc" id="L169">				result = result.replace(placeholder, sb.toString());</span>
 			}
-<span class="fc" id="L169">		}</span>
-<span class="fc" id="L170">		return result;</span>
+<span class="fc" id="L171">		}</span>
+<span class="fc" id="L172">		return result;</span>
 	}
 
 	/**
@@ -181,21 +183,21 @@ public final class DryRunReporter {
 	 * @since 1.4.2
 	 */
 	private static String substituteIndexedAccess(String text, String placeholder, List&lt;?&gt; list) {
-<span class="nc" id="L184">		java.util.regex.Pattern indexPattern = java.util.regex.Pattern.compile(</span>
-<span class="nc" id="L185">				java.util.regex.Pattern.quote(placeholder) + &quot;\\[(-?\\d+)\\]&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L186">		java.util.regex.Matcher m = indexPattern.matcher(text);</span>
-<span class="nc" id="L187">		StringBuilder sb = new StringBuilder();</span>
-<span class="nc bnc" id="L188" title="All 2 branches missed.">		while (m.find()) {</span>
-<span class="nc" id="L189">			int index = Integer.parseInt(m.group(1));</span>
-<span class="nc bnc" id="L190" title="All 2 branches missed.">			if (index &lt; 0) {</span>
-<span class="nc" id="L191">				index = list.size() + index;</span>
+<span class="nc" id="L186">		java.util.regex.Pattern indexPattern = java.util.regex.Pattern.compile(</span>
+<span class="nc" id="L187">				java.util.regex.Pattern.quote(placeholder) + &quot;\\[(-?\\d+)\\]&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L188">		java.util.regex.Matcher m = indexPattern.matcher(text);</span>
+<span class="nc" id="L189">		StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L190" title="All 2 branches missed.">		while (m.find()) {</span>
+<span class="nc" id="L191">			int index = Integer.parseInt(m.group(1));</span>
+<span class="nc bnc" id="L192" title="All 2 branches missed.">			if (index &lt; 0) {</span>
+<span class="nc" id="L193">				index = list.size() + index;</span>
 			}
-<span class="nc bnc" id="L193" title="All 4 branches missed.">			if (index &gt;= 0 &amp;&amp; index &lt; list.size()) {</span>
-<span class="nc" id="L194">				m.appendReplacement(sb, java.util.regex.Matcher.quoteReplacement(list.get(index).toString().trim()));</span>
+<span class="nc bnc" id="L195" title="All 4 branches missed.">			if (index &gt;= 0 &amp;&amp; index &lt; list.size()) {</span>
+<span class="nc" id="L196">				m.appendReplacement(sb, java.util.regex.Matcher.quoteReplacement(list.get(index).toString().trim()));</span>
 			}
-<span class="nc" id="L196">		}</span>
-<span class="nc" id="L197">		m.appendTail(sb);</span>
-<span class="nc" id="L198">		return sb.toString();</span>
+<span class="nc" id="L198">		}</span>
+<span class="nc" id="L199">		m.appendTail(sb);</span>
+<span class="nc" id="L200">		return sb.toString();</span>
 	}
 
 	/**
@@ -205,37 +207,37 @@ public final class DryRunReporter {
 	 * @return JSON string representation
 	 */
 	public String toJson(List&lt;ReportEntry&gt; entries) {
-<span class="fc" id="L208">		StringBuilder sb = new StringBuilder();</span>
-<span class="fc" id="L209">		sb.append(&quot;[\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L210">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L211">		sb.append(&quot;[\n&quot;); //$NON-NLS-1$</span>
 
-<span class="fc bfc" id="L211" title="All 2 branches covered.">		for (int i = 0; i &lt; entries.size(); i++) {</span>
-<span class="fc" id="L212">			ReportEntry entry = entries.get(i);</span>
-<span class="fc" id="L213">			sb.append(&quot;  {\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L214">			sb.append(&quot;    \&quot;line\&quot;: &quot;).append(entry.lineNumber()).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L215">			sb.append(&quot;    \&quot;offset\&quot;: &quot;).append(entry.offset()).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L216">			sb.append(&quot;    \&quot;length\&quot;: &quot;).append(entry.length()).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L217">			sb.append(&quot;    \&quot;matched\&quot;: &quot;).append(escapeJson(entry.matchedCode())).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L218">			sb.append(&quot;    \&quot;replacement\&quot;: &quot;) //$NON-NLS-1$</span>
-<span class="pc bpc" id="L219" title="1 of 2 branches missed.">					.append(entry.suggestedReplacement() != null</span>
-<span class="fc" id="L220">							? escapeJson(entry.suggestedReplacement())</span>
-<span class="nc" id="L221">							: &quot;null&quot;) //$NON-NLS-1$</span>
-<span class="fc" id="L222">					.append(&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L223">			sb.append(&quot;    \&quot;description\&quot;: &quot;) //$NON-NLS-1$</span>
-<span class="pc bpc" id="L224" title="1 of 2 branches missed.">					.append(entry.description() != null</span>
-<span class="fc" id="L225">							? escapeJson(entry.description())</span>
-<span class="nc" id="L226">							: &quot;null&quot;) //$NON-NLS-1$</span>
-<span class="fc" id="L227">					.append(&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L228">			sb.append(&quot;    \&quot;severity\&quot;: &quot;).append(escapeJson(entry.severity())).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L229">			sb.append(&quot;    \&quot;pattern\&quot;: &quot;).append(escapeJson(entry.sourcePattern())).append(&quot;\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L230">			sb.append(&quot;  }&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L231" title="1 of 2 branches missed.">			if (i &lt; entries.size() - 1) {</span>
-<span class="nc" id="L232">				sb.append(',');</span>
+<span class="fc bfc" id="L213" title="All 2 branches covered.">		for (int i = 0; i &lt; entries.size(); i++) {</span>
+<span class="fc" id="L214">			ReportEntry entry = entries.get(i);</span>
+<span class="fc" id="L215">			sb.append(&quot;  {\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L216">			sb.append(&quot;    \&quot;line\&quot;: &quot;).append(entry.lineNumber()).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L217">			sb.append(&quot;    \&quot;offset\&quot;: &quot;).append(entry.offset()).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L218">			sb.append(&quot;    \&quot;length\&quot;: &quot;).append(entry.length()).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L219">			sb.append(&quot;    \&quot;matched\&quot;: &quot;).append(escapeJson(entry.matchedCode())).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L220">			sb.append(&quot;    \&quot;replacement\&quot;: &quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">					.append(entry.suggestedReplacement() != null</span>
+<span class="fc" id="L222">							? escapeJson(entry.suggestedReplacement())</span>
+<span class="nc" id="L223">							: &quot;null&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L224">					.append(&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L225">			sb.append(&quot;    \&quot;description\&quot;: &quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L226" title="1 of 2 branches missed.">					.append(entry.description() != null</span>
+<span class="fc" id="L227">							? escapeJson(entry.description())</span>
+<span class="nc" id="L228">							: &quot;null&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L229">					.append(&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L230">			sb.append(&quot;    \&quot;severity\&quot;: &quot;).append(escapeJson(entry.severity())).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L231">			sb.append(&quot;    \&quot;pattern\&quot;: &quot;).append(escapeJson(entry.sourcePattern())).append(&quot;\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L232">			sb.append(&quot;  }&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L233" title="1 of 2 branches missed.">			if (i &lt; entries.size() - 1) {</span>
+<span class="nc" id="L234">				sb.append(',');</span>
 			}
-<span class="fc" id="L234">			sb.append('\n');</span>
+<span class="fc" id="L236">			sb.append('\n');</span>
 		}
 
-<span class="fc" id="L237">		sb.append(&quot;]&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L238">		return sb.toString();</span>
+<span class="fc" id="L239">		sb.append(&quot;]&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L240">		return sb.toString();</span>
 	}
 
 	/**
@@ -245,24 +247,24 @@ public final class DryRunReporter {
 	 * @return CSV string with header row
 	 */
 	public String toCsv(List&lt;ReportEntry&gt; entries) {
-<span class="fc" id="L248">		StringBuilder sb = new StringBuilder();</span>
-<span class="fc" id="L249">		sb.append(&quot;line,offset,length,matched,replacement,description,severity,pattern\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L250">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L251">		sb.append(&quot;line,offset,length,matched,replacement,description,severity,pattern\n&quot;); //$NON-NLS-1$</span>
 
-<span class="fc bfc" id="L251" title="All 2 branches covered.">		for (ReportEntry entry : entries) {</span>
-<span class="fc" id="L252">			sb.append(entry.lineNumber()).append(',');</span>
-<span class="fc" id="L253">			sb.append(entry.offset()).append(',');</span>
-<span class="fc" id="L254">			sb.append(entry.length()).append(',');</span>
-<span class="fc" id="L255">			sb.append(escapeCsv(entry.matchedCode())).append(',');</span>
-<span class="pc bpc" id="L256" title="1 of 2 branches missed.">			sb.append(entry.suggestedReplacement() != null</span>
-<span class="pc" id="L257">					? escapeCsv(entry.suggestedReplacement()) : &quot;&quot;).append(','); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L258" title="1 of 2 branches missed.">			sb.append(entry.description() != null</span>
-<span class="pc" id="L259">					? escapeCsv(entry.description()) : &quot;&quot;).append(','); //$NON-NLS-1$</span>
-<span class="fc" id="L260">			sb.append(escapeCsv(entry.severity())).append(',');</span>
-<span class="fc" id="L261">			sb.append(escapeCsv(entry.sourcePattern()));</span>
-<span class="fc" id="L262">			sb.append('\n');</span>
-<span class="fc" id="L263">		}</span>
+<span class="fc bfc" id="L253" title="All 2 branches covered.">		for (ReportEntry entry : entries) {</span>
+<span class="fc" id="L254">			sb.append(entry.lineNumber()).append(',');</span>
+<span class="fc" id="L255">			sb.append(entry.offset()).append(',');</span>
+<span class="fc" id="L256">			sb.append(entry.length()).append(',');</span>
+<span class="fc" id="L257">			sb.append(escapeCsv(entry.matchedCode())).append(',');</span>
+<span class="pc bpc" id="L258" title="1 of 2 branches missed.">			sb.append(entry.suggestedReplacement() != null</span>
+<span class="pc" id="L259">					? escapeCsv(entry.suggestedReplacement()) : &quot;&quot;).append(','); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L260" title="1 of 2 branches missed.">			sb.append(entry.description() != null</span>
+<span class="pc" id="L261">					? escapeCsv(entry.description()) : &quot;&quot;).append(','); //$NON-NLS-1$</span>
+<span class="fc" id="L262">			sb.append(escapeCsv(entry.severity())).append(',');</span>
+<span class="fc" id="L263">			sb.append(escapeCsv(entry.sourcePattern()));</span>
+<span class="fc" id="L264">			sb.append('\n');</span>
+<span class="fc" id="L265">		}</span>
 
-<span class="fc" id="L265">		return sb.toString();</span>
+<span class="fc" id="L267">		return sb.toString();</span>
 	}
 
 	/**
@@ -272,51 +274,51 @@ public final class DryRunReporter {
 	 * compliant JSON output.
 	 */
 	private static String escapeJson(String value) {
-<span class="pc bpc" id="L275" title="1 of 2 branches missed.">		if (value == null) {</span>
-<span class="nc" id="L276">			return &quot;null&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L277" title="1 of 2 branches missed.">		if (value == null) {</span>
+<span class="nc" id="L278">			return &quot;null&quot;; //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L278">		StringBuilder sb = new StringBuilder(&quot;\&quot;&quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L279" title="All 2 branches covered.">		for (char c : value.toCharArray()) {</span>
-<span class="pc bpc" id="L280" title="3 of 6 branches missed.">			switch (c) {</span>
+<span class="fc" id="L280">		StringBuilder sb = new StringBuilder(&quot;\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">		for (char c : value.toCharArray()) {</span>
+<span class="pc bpc" id="L282" title="3 of 6 branches missed.">			switch (c) {</span>
 			case '&quot;':
-<span class="fc" id="L282">				sb.append(&quot;\\\&quot;&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L283">				break;</span>
+<span class="fc" id="L284">				sb.append(&quot;\\\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L285">				break;</span>
 			case '\\':
-<span class="nc" id="L285">				sb.append(&quot;\\\\&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L286">				break;</span>
+<span class="nc" id="L287">				sb.append(&quot;\\\\&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L288">				break;</span>
 			case '\n':
-<span class="fc" id="L288">				sb.append(&quot;\\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L289">				break;</span>
+<span class="fc" id="L290">				sb.append(&quot;\\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L291">				break;</span>
 			case '\r':
-<span class="nc" id="L291">				sb.append(&quot;\\r&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L292">				break;</span>
+<span class="nc" id="L293">				sb.append(&quot;\\r&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L294">				break;</span>
 			case '\t':
-<span class="nc" id="L294">				sb.append(&quot;\\t&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L295">				break;</span>
+<span class="nc" id="L296">				sb.append(&quot;\\t&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L297">				break;</span>
 			default:
-<span class="pc bpc" id="L297" title="1 of 2 branches missed.">				if (c &lt; 0x20) {</span>
-<span class="nc" id="L298">					sb.append(String.format(&quot;\\u%04x&quot;, (int) c)); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L299" title="1 of 2 branches missed.">				if (c &lt; 0x20) {</span>
+<span class="nc" id="L300">					sb.append(String.format(&quot;\\u%04x&quot;, (int) c)); //$NON-NLS-1$</span>
 				} else {
-<span class="fc" id="L300">					sb.append(c);</span>
+<span class="fc" id="L302">					sb.append(c);</span>
 				}
 				break;
 			}
 		}
-<span class="fc" id="L305">		sb.append('&quot;');</span>
-<span class="fc" id="L306">		return sb.toString();</span>
+<span class="fc" id="L307">		sb.append('&quot;');</span>
+<span class="fc" id="L308">		return sb.toString();</span>
 	}
 
 	/**
 	 * Escapes a string for CSV output.
 	 */
 	private static String escapeCsv(String value) {
-<span class="pc bpc" id="L313" title="1 of 2 branches missed.">		if (value == null) {</span>
-<span class="nc" id="L314">			return &quot;&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L315" title="1 of 2 branches missed.">		if (value == null) {</span>
+<span class="nc" id="L316">			return &quot;&quot;; //$NON-NLS-1$</span>
 		}
-<span class="pc bpc" id="L316" title="3 of 6 branches missed.">		if (value.contains(&quot;,&quot;) || value.contains(&quot;\&quot;&quot;) || value.contains(&quot;\n&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
-<span class="nc" id="L317">			return &quot;\&quot;&quot; + value.replace(&quot;\&quot;&quot;, &quot;\&quot;\&quot;&quot;) + &quot;\&quot;&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="pc bpc" id="L318" title="3 of 6 branches missed.">		if (value.contains(&quot;,&quot;) || value.contains(&quot;\&quot;&quot;) || value.contains(&quot;\n&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="nc" id="L319">			return &quot;\&quot;&quot; + value.replace(&quot;\&quot;&quot;, &quot;\&quot;\&quot;&quot;) + &quot;\&quot;&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
 		}
-<span class="fc" id="L319">		return value;</span>
+<span class="fc" id="L321">		return value;</span>
 	}
 
 	/**
@@ -333,7 +335,7 @@ public final class DryRunReporter {
 	 * @param importDirective the import directives if any (may be null)
 	 * @since 1.3.3
 	 */
-<span class="fc" id="L336">	public record ReportEntry(</span>
+<span class="fc" id="L338">	public record ReportEntry(</span>
 			int lineNumber,
 			int offset,
 			int length,
@@ -350,7 +352,7 @@ public final class DryRunReporter {
 		 * @return {@code true} if not hint-only
 		 */
 		public boolean hasReplacement() {
-<span class="fc bfc" id="L353" title="All 2 branches covered.">			return suggestedReplacement != null;</span>
+<span class="fc bfc" id="L355" title="All 2 branches covered.">			return suggestedReplacement != null;</span>
 		}
 	}
 }

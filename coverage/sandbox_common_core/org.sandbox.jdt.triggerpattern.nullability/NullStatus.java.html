@@ -20,8 +20,8 @@ package org.sandbox.jdt.triggerpattern.nullability;
  */
 <span class="fc" id="L21">public enum NullStatus {</span>
 	/**
-	 * The expression is guaranteed to be non-null (e.g., {@code new},
-	 * known non-null type, or guarded by a null check).
+	 * The expression is proven non-null (e.g., {@code new}, a primitive value,
+	 * or a stable local in the non-null branch of a check).
 	 */
 <span class="fc" id="L26">	NON_NULL,</span>
 

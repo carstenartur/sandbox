@@ -26,89 +26,103 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 /** Context for guard evaluation. */
 public final class GuardContext {
 
+<span class="fc" id="L29">	private static final java.util.regex.Pattern SOURCE_VERSION_PATTERN= java.util.regex.Pattern.compile(&quot;(?:1\\.[1-8]|[1-9][0-9]*)&quot;); //$NON-NLS-1$</span>
+
 	/** One semantic input a guard could not resolve. */
 	public record UnknownSemanticRequirement(String guardName, String detail) {
-<span class="fc" id="L31">		public UnknownSemanticRequirement {</span>
-<span class="pc bpc" id="L32" title="2 of 4 branches missed.">			guardName= guardName == null || guardName.isBlank() ? &quot;unknown&quot; : guardName.trim(); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L33" title="2 of 4 branches missed.">			detail= detail == null || detail.isBlank() ? &quot;semantic binding unavailable&quot; : detail.trim(); //$NON-NLS-1$</span>
-<span class="fc" id="L34">		}</span>
+<span class="fc" id="L33">		public UnknownSemanticRequirement {</span>
+<span class="pc bpc" id="L34" title="2 of 4 branches missed.">			guardName= guardName == null || guardName.isBlank() ? &quot;unknown&quot; : guardName.trim(); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L35" title="2 of 4 branches missed.">			detail= detail == null || detail.isBlank() ? &quot;semantic binding unavailable&quot; : detail.trim(); //$NON-NLS-1$</span>
+<span class="fc" id="L36">		}</span>
 	}
 
 	private final Match match;
 	private final CompilationUnit cu;
 	private final Map&lt;String, String&gt; compilerOptions;
 	private final SemanticRewritePlan semanticPlan;
-<span class="fc" id="L41">	private final Set&lt;UnknownSemanticRequirement&gt; unknownSemanticRequirements= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L43">	private final Set&lt;UnknownSemanticRequirement&gt; unknownSemanticRequirements= new LinkedHashSet&lt;&gt;();</span>
 	private int unknownSemanticObservationCount;
 
 	private GuardContext(Match match, CompilationUnit cu, Map&lt;String, String&gt; compilerOptions,
-<span class="fc" id="L45">			SemanticRewritePlan semanticPlan) {</span>
-<span class="fc" id="L46">		this.match= Objects.requireNonNull(match, &quot;Match cannot be null&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L47">		this.cu= cu;</span>
-<span class="pc bpc" id="L48" title="1 of 2 branches missed.">		this.compilerOptions= compilerOptions != null</span>
-<span class="fc" id="L49">				? Collections.unmodifiableMap(compilerOptions)</span>
-<span class="pc" id="L50">				: Collections.emptyMap();</span>
-<span class="pc bpc" id="L51" title="1 of 2 branches missed.">		this.semanticPlan= semanticPlan == null ? SemanticRewritePlan.empty() : semanticPlan;</span>
-<span class="fc bfc" id="L52" title="All 2 branches covered.">		for (UnknownSemanticRequirement requirement : match.getUnknownSemanticRequirements()) {</span>
-<span class="fc" id="L53">			markUnknown(requirement.guardName(), requirement.detail());</span>
-<span class="fc" id="L54">		}</span>
-<span class="fc" id="L55">	}</span>
+<span class="fc" id="L47">			SemanticRewritePlan semanticPlan) {</span>
+<span class="fc" id="L48">		this.match= Objects.requireNonNull(match, &quot;Match cannot be null&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L49">		this.cu= cu;</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">		this.compilerOptions= compilerOptions != null</span>
+<span class="fc" id="L51">				? Collections.unmodifiableMap(compilerOptions)</span>
+<span class="fc" id="L52">				: Collections.emptyMap();</span>
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">		this.semanticPlan= semanticPlan == null ? SemanticRewritePlan.empty() : semanticPlan;</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">		for (UnknownSemanticRequirement requirement : match.getUnknownSemanticRequirements()) {</span>
+<span class="fc" id="L55">			markUnknown(requirement.guardName(), requirement.detail());</span>
+<span class="fc" id="L56">		}</span>
+<span class="fc" id="L57">	}</span>
 
 	/** Creates a context without compiler options or semantic plan. */
 	public static GuardContext fromMatch(Match match, CompilationUnit cu) {
-<span class="fc" id="L59">		return new GuardContext(match, cu, Collections.emptyMap(), SemanticRewritePlan.empty());</span>
+<span class="fc" id="L61">		return new GuardContext(match, cu, Collections.emptyMap(), SemanticRewritePlan.empty());</span>
 	}
 
 	/** Creates a context with compiler options and no semantic plan. */
 	public static GuardContext fromMatch(Match match, CompilationUnit cu, Map&lt;String, String&gt; compilerOptions) {
-<span class="fc" id="L64">		return new GuardContext(match, cu, compilerOptions, SemanticRewritePlan.empty());</span>
+<span class="fc" id="L66">		return new GuardContext(match, cu, compilerOptions, SemanticRewritePlan.empty());</span>
 	}
 
 	/** Creates a context with explicit compiler options and semantic authorization plan. */
 	public static GuardContext fromMatch(Match match, CompilationUnit cu, Map&lt;String, String&gt; compilerOptions,
 			SemanticRewritePlan semanticPlan) {
-<span class="fc" id="L70">		return new GuardContext(match, cu, compilerOptions, semanticPlan);</span>
+<span class="fc" id="L72">		return new GuardContext(match, cu, compilerOptions, semanticPlan);</span>
 	}
 
 	public Match getMatch() {
-<span class="fc" id="L74">		return match;</span>
+<span class="fc" id="L76">		return match;</span>
 	}
 
 	public CompilationUnit getCompilationUnit() {
-<span class="fc" id="L78">		return cu;</span>
+<span class="fc" id="L80">		return cu;</span>
 	}
 
 	public Map&lt;String, String&gt; getCompilerOptions() {
-<span class="fc" id="L82">		return compilerOptions;</span>
+<span class="fc" id="L84">		return compilerOptions;</span>
 	}
 
 	/** Returns the immutable semantic plan; empty for ordinary hint execution. */
 	public SemanticRewritePlan getSemanticPlan() {
-<span class="fc" id="L87">		return semanticPlan;</span>
+<span class="fc" id="L89">		return semanticPlan;</span>
 	}
 
 	public ASTNode getBinding(String name) {
-<span class="fc" id="L91">		return match.getBinding(name);</span>
+<span class="fc" id="L93">		return match.getBinding(name);</span>
 	}
 
 	public List&lt;ASTNode&gt; getListBinding(String name) {
-<span class="fc" id="L95">		return match.getListBinding(name);</span>
+<span class="fc" id="L97">		return match.getListBinding(name);</span>
 	}
 
+	/**
+	 * Returns the configured source version. The historical Java 8 fallback is
+	 * retained for boolean callers, while detailed guard evaluation records a
+	 * missing or invalid version as unresolved.
+	 */
 	public String getSourceVersion() {
-<span class="fc" id="L99">		String version= compilerOptions.get(&quot;org.eclipse.jdt.core.compiler.source&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L100" title="1 of 2 branches missed.">		return version != null ? version : &quot;1.8&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L106">		String version= compilerOptions.get(&quot;org.eclipse.jdt.core.compiler.source&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L107" title="1 of 4 branches missed.">		if (version == null || version.isBlank()) {</span>
+<span class="fc" id="L108">			markUnknown(&quot;sourceVersion&quot;, &quot;Compiler source version is unavailable&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L109">			return &quot;1.8&quot;; //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">		if (!SOURCE_VERSION_PATTERN.matcher(version).matches()) {</span>
+<span class="nc" id="L112">			markUnknown(&quot;sourceVersion&quot;, &quot;Compiler source version is invalid: &quot; + version); //$NON-NLS-1$ //$NON-NLS-2$</span>
+		}
+<span class="fc" id="L114">		return version;</span>
 	}
 
 	public ASTNode getMatchedNode() {
-<span class="fc" id="L104">		return match.getMatchedNode();</span>
+<span class="fc" id="L118">		return match.getMatchedNode();</span>
 	}
 
 	/** Records one binding-dependent guard input whose meaning is unavailable. */
 	public void markUnknown(String guardName, String detail) {
-<span class="fc" id="L109">		unknownSemanticObservationCount++;</span>
-<span class="fc" id="L110">		unknownSemanticRequirements.add(new UnknownSemanticRequirement(guardName, detail));</span>
-<span class="fc" id="L111">	}</span>
+<span class="fc" id="L123">		unknownSemanticObservationCount++;</span>
+<span class="fc" id="L124">		unknownSemanticRequirements.add(new UnknownSemanticRequirement(guardName, detail));</span>
+<span class="fc" id="L125">	}</span>
 
 	/**
 	 * Returns how many unresolved semantic observations guards reported.
@@ -118,17 +132,17 @@ public final class GuardContext {
 	 * every repeated unresolved function call.&lt;/p&gt;
 	 */
 	public int unknownSemanticRequirementCount() {
-<span class="fc" id="L121">		return unknownSemanticObservationCount;</span>
+<span class="fc" id="L135">		return unknownSemanticObservationCount;</span>
 	}
 
 	/** Returns whether any binding-dependent guard reported unknown semantics. */
 	public boolean hasUnknownSemanticRequirements() {
-<span class="fc bfc" id="L126" title="All 2 branches covered.">		return unknownSemanticObservationCount &gt; 0;</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">		return unknownSemanticObservationCount &gt; 0;</span>
 	}
 
 	/** Returns deduplicated unknown semantic requirements in evaluation order. */
 	public List&lt;UnknownSemanticRequirement&gt; getUnknownSemanticRequirements() {
-<span class="fc" id="L131">		return List.copyOf(unknownSemanticRequirements);</span>
+<span class="fc" id="L145">		return List.copyOf(unknownSemanticRequirements);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
