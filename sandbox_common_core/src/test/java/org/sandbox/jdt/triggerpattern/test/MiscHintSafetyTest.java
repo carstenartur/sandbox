@@ -133,6 +133,23 @@ class MiscHintSafetyTest extends HintRuleTestSupport {
 	}
 
 	@Test
+	void preservesPatternVariableFlowScopes(@TempDir Path temporary) throws Exception {
+		String direct= "public class Probe { void m(Object value) { if (value instanceof String text ? true : false) { String text = \"local\"; } } }"; //$NON-NLS-1$
+		String composed= "public class Probe { void m(Object value) { if ((value instanceof String text && text.isEmpty()) ? true : false) { String text = \"local\"; } } }"; //$NON-NLS-1$
+		String negated= "public class Probe { void m(Object value) { if (!(value instanceof String text) ? true : false) {} else { String text = \"local\"; } } }"; //$NON-NLS-1$
+		try (var before= compile(direct, temporary.resolve("direct")); //$NON-NLS-1$
+				var composedBefore= compile(composed, temporary.resolve("composed")); //$NON-NLS-1$
+				var negatedBefore= compile(negated, temporary.resolve("negated"))) { //$NON-NLS-1$
+			assertNoMatch(hints, direct);
+			assertNoMatch(hints, composed);
+			assertNoMatch(hints, negated);
+		}
+		assertFullReplacement(hints,
+				"class Test { boolean m(Object value) { return value instanceof String ? true : false; } }", //$NON-NLS-1$
+				"class Test { boolean m(Object value) { return (value instanceof String); } }"); //$NON-NLS-1$
+	}
+
+	@Test
 	void requiresResolvedPrimitiveBooleanCondition() {
 		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
 		parser.setSource("class Test { boolean m(boolean b) { return b ? true : false; } }".toCharArray()); //$NON-NLS-1$

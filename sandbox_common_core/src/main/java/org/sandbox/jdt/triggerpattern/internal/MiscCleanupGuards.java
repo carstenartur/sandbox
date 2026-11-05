@@ -17,6 +17,7 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.PatternInstanceofExpression;
 import org.eclipse.jdt.core.dom.SwitchExpression;
 import org.eclipse.jdt.core.dom.SwitchStatement;
 import org.sandbox.jdt.triggerpattern.api.GuardContext;
@@ -49,6 +50,13 @@ final class MiscCleanupGuards {
 		if (condition instanceof ConditionalExpression) {
 			return false;
 		}
+		// Removing the conditional can extend a pattern variable's flow scope
+		// into surrounding statements and make previously valid code ambiguous.
+		PatternFinder patterns= new PatternFinder();
+		condition.accept(patterns);
+		if (patterns.found) {
+			return false;
+		}
 		ITypeBinding conditionType= conditional.getExpression().resolveTypeBinding();
 		if (conditionType == null || conditionType.isRecovered()) {
 			context.markUnknown("miscPrimitiveBooleanConditionalSafe", "Cannot resolve condition type"); //$NON-NLS-1$ //$NON-NLS-2$
@@ -75,6 +83,16 @@ final class MiscCleanupGuards {
 
 		@Override
 		public boolean visit(SwitchStatement node) {
+			found= true;
+			return false;
+		}
+	}
+
+	private static final class PatternFinder extends ASTVisitor {
+		boolean found;
+
+		@Override
+		public boolean visit(PatternInstanceofExpression node) {
 			found= true;
 			return false;
 		}
