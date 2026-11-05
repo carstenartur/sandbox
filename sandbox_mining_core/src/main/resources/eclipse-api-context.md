@@ -172,11 +172,12 @@ TestRule → Extension model
 - `Job.create(name, monitor -> { ... })` for background work
 - `IStructuredSelection` for tree/table viewer selections
 
-### Collections Modernization
+### Collection Factory Candidates
 
-- `Collections.unmodifiableList(list)` → `List.copyOf(list)` (Java 10+)
-- `Collections.emptyList()` → `List.of()` (Java 9+)
-- `new ArrayList<>(Arrays.asList(...))` → `new ArrayList<>(List.of(...))`
+Changes involving `List.copyOf`, `List.of` or `Arrays.asList` require use-site
+analysis. They can change null handling, whether updates to the backing list or
+array remain visible, and how queries such as `contains(null)` behave. Report
+them as review candidates unless all observable behavior is proven equivalent.
 
 ### Clean-up Patterns (eclipse.jdt.ui 2025)
 
@@ -192,9 +193,10 @@ The following clean-ups were actively being developed in 2025:
 
 ### Encoding / Charset
 
-- `new FileReader(file)` → `new FileReader(file, StandardCharsets.UTF_8)`
-- `new InputStreamReader(is)` → `new InputStreamReader(is, StandardCharsets.UTF_8)`
-- `String.getBytes()` → `String.getBytes(StandardCharsets.UTF_8)`
+Adding `StandardCharsets.UTF_8` to an operation that used the default charset
+can change its behavior. Such edits need evidence that UTF-8 was intended and
+that the default is equivalent in the supported environments; otherwise they
+are review candidates, not automatic behavior-preserving replacements.
 
 ### NLS Marker Handling
 

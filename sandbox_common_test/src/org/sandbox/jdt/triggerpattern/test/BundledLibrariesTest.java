@@ -203,8 +203,7 @@ public class BundledLibrariesTest {
 		HintFile hintFile = loadBundledLibrary("stringbuffer-to-stringbuilder.sandbox-hint"); //$NON-NLS-1$
 		assertNotNull(hintFile, "stringbuffer-to-stringbuilder library should be loadable"); //$NON-NLS-1$
 		assertEquals("stringbuffer-to-stringbuilder", hintFile.getId()); //$NON-NLS-1$
-		assertTrue(hintFile.getRules().size() >= 3,
-				"stringbuffer-to-stringbuilder library should have at least 3 rules, found: " + hintFile.getRules().size()); //$NON-NLS-1$
+		assertEquals(2, hintFile.getRules().size(), "The constructor hints must not duplicate one-argument matches"); //$NON-NLS-1$
 	}
 
 	@Test

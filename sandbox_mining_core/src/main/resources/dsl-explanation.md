@@ -303,12 +303,13 @@ You can use these functions in `:: guard` expressions:
 | `sourceVersionBetween(11, 17)` | True if source level is between Java 11 and 17 |
 | `hasAnnotation($var, "Type")`| True if the element has the specified annotation |
 | `isDeprecated($var)` | True if the element is marked as deprecated |
-| `hasNoSideEffect($var)` | True if the expression has no side effects |
+| `hasNoSideEffect($var)` | Recursively excludes writes, explicit calls/allocation, volatile reads, potentially initializing static reads or arbitrary object-to-string conversion. Writes and volatile reads fail; unproven purity, unsupported syntax and unresolved bindings remain unknown under negation. Implicit boxing/string concatenation can still allocate. Does not prove exception freedom, stable values or permission to duplicate, discard, reorder or eagerly evaluate the expression. |
+| `isStableValue($var)` | Only literals and resolved final local/parameter reads, with optional parentheses: reading the value itself is stable and non-throwing. Does not prove the referenced object immutable or that a rewrite's new implicit conversions are safe. |
 | `referencedIn($var, $expr)` | True if `$var`'s identifier appears in `$expr`'s AST subtree. Both arguments are placeholder names. |
 | `isLiteral($var)` | True if the expression is a literal value |
 | `isNullLiteral($var)` | True if the expression is a `null` literal |
-| `isNullable($var)` | True if the expression may be null (1-arg form). With `isNullable($var, minScore)`, returns true if the nullability score (0-10) meets the threshold. |
-| `isNonNull($var)` | True if the expression is guaranteed non-null |
+| `isNullable($var)` | True if non-nullness is not proven. With `isNullable($var, minScore)`, compares an advisory score (0-10); a score below the threshold does not prove non-nullness. |
+| `isNonNull($var)` | True only when the conservative analysis proves the expression non-null. A reference type, annotation, or old initializer alone is not proof. |
 | `matchesAny($var, "pattern1", "pattern2")` | True if `$var` matches any of the patterns |
 | `matchesNone($var, "pattern1", "pattern2")` | True if `$var` matches none of the patterns |
 | `isCharsetString($var)` | True if `$var` is a charset name string |
@@ -404,10 +405,13 @@ $obj = new MyClass() :: notContains("$obj.init()")
 ```
 
 **Multi-rewrite (Conditional replacement):**
+
+Both branches below deliberately select the same replacement; the example
+illustrates the syntax without implying that a version guard proves safety.
 ```
-java.util.Arrays.asList($args)
-=> java.util.List.of($args) :: sourceVersionGE(9)
-=> java.util.Collections.unmodifiableList(java.util.Arrays.asList($args)) :: otherwise
+java.lang.Boolean.valueOf(true)
+=> java.lang.Boolean.TRUE :: sourceVersionGE(9)
+=> java.lang.Boolean.TRUE :: otherwise
 ;;
 ```
 
@@ -566,67 +570,47 @@ mark it as `RED` / not yet implementable — these limitations may be addressed 
    expression (e.g., `$x` → `List.of($x)`) has limited support. Simple wrapping works, but
    combining it with arity changes may not.
 
-## Bidirectional Transformations
+## Direction and Null Semantics
 
-Some code transformations are valid in **both directions**. For example:
-- `obj.toString()` → `String.valueOf(obj)` is safer when `obj` may be null
-- `String.valueOf(obj)` → `obj.toString()` is more direct when `obj` is guaranteed non-null
+Do not assume that replacing `obj.toString()` with `String.valueOf(obj)` is
+behavior-preserving: the former throws when the receiver is null, whereas the
+latter can return `"null"`. Array overloads and user-defined `toString()`
+methods create additional differences. The reverse direction requires its own
+proof as well; never infer safety from a risk score alone.
 
-Use nullability guards (`isNullable`, `isNonNull`) to decide the safe direction:
+A hint-only rule can flag a possible null dereference for human review:
 
 ```
-// Safe: String.valueOf handles null
+"Review possible null dereference":
 $obj.toString() :: isNullable($obj)
-=> java.lang.String.valueOf($obj)
-;;
-
-// Direct: when non-null is guaranteed
-java.lang.String.valueOf($obj) :: isNonNull($obj)
-=> $obj.toString()
 ;;
 ```
 
-When proposing a transformation, consider whether the reverse direction is also useful.
-If both directions are valid, propose both as separate rules with appropriate guards.
+`isNullable` and its optional threshold are advisory; their results do not by
+themselves justify changing exception behavior. `isNonNull` proves only the
+value's nullness, not purity, evaluation order, overload selection, identity,
+or other aspects of the replacement.
 
 ## Semantic Safety Rules for Transformations
 
-When generating transformation rules, the DSL rule author MUST consider whether the
-transformation is **semantically safe** in all contexts. A syntactically valid pattern
-match does NOT guarantee semantic equivalence.
+A syntactic pattern and one guard do not establish semantic equivalence. Check
+all observable behavior before supplying a replacement; otherwise use a
+hint-only rule for review.
 
 ### Thread Safety
 
-When replacing a thread-safe class with a non-thread-safe alternative
-(e.g., `StringBuffer` → `StringBuilder`), the replacement is ONLY safe for
-**local variables** (never shared between threads).
+A local variable can escape to another thread, callback, field, or return
+value. `isAssignedToLocalVariable()` is therefore not sufficient to replace
+`StringBuffer` with `StringBuilder`. Require an escape and concurrency proof,
+or emit a diagnostic without an automatic replacement.
 
-✅ CORRECT — use `isAssignedToLocalVariable` guard:
-```
-new java.lang.StringBuffer($arg) :: isAssignedToLocalVariable()
-=> new java.lang.StringBuilder($arg)
-;;
-```
+### Null Semantics for Collection Factory Methods
 
-❌ WRONG — blind replacement without scope check:
-```
-new java.lang.StringBuffer($arg)
-=> new java.lang.StringBuilder($arg)
-;;
-```
-
-### Null-Semantics for Collection Factory Methods
-
-Java 9+ factory methods (`List.of()`, `Set.of()`, `Map.of()`) do NOT accept `null` elements,
-while `Collections.singletonList(null)` is valid. When the matched argument could be null,
-the transformation MUST be guarded with `isNonNull()`:
-
-✅ CORRECT:
-```
-java.util.Collections.singletonList($x) :: sourceVersionGE(9) && isNonNull($x)
-=> java.util.List.of($x)
-;;
-```
+`List.of()` rejects null elements while `Collections.singletonList()` accepts
+them. Even when the element is proven non-null, other behavior may differ:
+for example, `contains(null)` can throw for `List.of()` but return false for a
+singleton list. Do not recommend this as a generally safe automatic rewrite;
+review the complete observable contract and use sites.
 
 ### Scope Restrictions for `var`
 
@@ -666,8 +650,8 @@ by an existing bundled library:
 
 | Library | Scope |
 |---------|-------|
-| `collections.sandbox-hint` | `Collections.singletonList` → `List.of()`, `emptyMap()` → `Map.of()`, etc. |
-| `deprecations.sandbox-hint` | `new Boolean($x)` → `Boolean.parseBoolean($x)`, `Character.isSpace` → `isWhitespace`, etc. |
+| `collections.sandbox-hint` | Review hints for empty collection factories; no automatic replacement. |
+| `deprecations.sandbox-hint` | Wrapper constructor and deprecated API candidates. Check each rule and its safety conditions. |
 | `modernize-java9.sandbox-hint` | Java 9+ API modernization |
 | `performance.sandbox-hint` | Performance patterns |
 

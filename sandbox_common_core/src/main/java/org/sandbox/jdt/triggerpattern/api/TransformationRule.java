@@ -187,7 +187,13 @@ public final class TransformationRule {
 	 * Finds the first matching rewrite alternative for the given context.
 	 * 
 	 * <p>Alternatives are evaluated in order. The first one whose guard evaluates
-	 * to {@code true}, or an unconditional "otherwise" alternative, is returned.</p>
+	 * to {@code true}, or an unconditional "otherwise" alternative, is returned.
+	 * If an earlier guard cannot be resolved, no alternative is authorized, even
+	 * if a later alternative is unconditional.</p>
+	 *
+	 * <p>This method checks alternative guards only. Callers must separately
+	 * require a {@link GuardExpression.TruthValue#MATCH} from detailed evaluation
+	 * of {@link #sourceGuard()} before authorizing a rewrite.</p>
 	 * 
 	 * @param ctx the guard context for evaluation
 	 * @return an {@link Optional} containing the matching alternative, or empty if none matches
@@ -197,8 +203,14 @@ public final class TransformationRule {
 			if (alt.isOtherwise()) {
 				return Optional.of(alt);
 			}
-			if (alt.condition() != null && alt.condition().evaluate(ctx)) {
-				return Optional.of(alt);
+			if (alt.condition() != null) {
+				GuardExpression.Evaluation evaluation= alt.condition().evaluateDetailed(ctx);
+				if (evaluation.truthValue() == GuardExpression.TruthValue.UNKNOWN) {
+					return Optional.empty();
+				}
+				if (evaluation.truthValue() == GuardExpression.TruthValue.MATCH) {
+					return Optional.of(alt);
+				}
 			}
 		}
 		return Optional.empty();

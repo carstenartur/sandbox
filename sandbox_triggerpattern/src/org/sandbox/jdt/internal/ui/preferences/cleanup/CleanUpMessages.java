@@ -26,7 +26,6 @@ public class CleanUpMessages extends NLS {
 	public static String ShiftOutOfRangeTabPage_CheckboxName_ShiftOutOfRange;
 	public static String HintFileTabPage_GroupName;
 	public static String HintFileTabPage_CheckboxName_HintFile;
-	public static String HintFileTabPage_CheckboxName_BundleCollections;
 	public static String HintFileTabPage_CheckboxName_BundlePerformance;
 	public static String HintFileTabPage_CheckboxName_BundleModernizeJava9;
 	public static String HintFileTabPage_CheckboxName_BundleModernizeJava11;
