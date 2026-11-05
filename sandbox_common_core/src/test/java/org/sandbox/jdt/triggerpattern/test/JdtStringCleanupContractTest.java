@@ -163,7 +163,7 @@ class JdtStringCleanupContractTest {
 		List<TransformationResult> results= new BatchTransformationProcessor(substring).process(unit, options("11")) //$NON-NLS-1$
 				.stream().filter(TransformationResult::hasReplacement).toList();
 		assertEquals(1, results.size());
-		String transformed= applyJdtRewrite(unit, results.get(0), source);
+		String transformed= applyJdtRewrite(unit, results.getFirst(), source);
 		assertTrue(transformed.contains("// This comment belongs to the method.")); //$NON-NLS-1$
 		assertCompiles(transformed);
 	}
@@ -477,7 +477,7 @@ class JdtStringCleanupContractTest {
 		List<TransformationResult> results= new BatchTransformationProcessor(substring).process(unit, options("11")) //$NON-NLS-1$
 				.stream().filter(TransformationResult::hasReplacement).toList();
 		assertEquals(1, results.size());
-		String transformed= applyJdtRewrite(unit, results.get(0), code);
+		String transformed= applyJdtRewrite(unit, results.getFirst(), code);
 		assertTrue(transformed.contains(".contains(")); //$NON-NLS-1$
 		assertCompiles(transformed);
 	}
