@@ -5500,8 +5500,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "lastProcessedDate": "2026-11-05T02:25:13.769575698Z",
-      "totalProcessed": 384,
+      "lastProcessedCommit": "eb152262968725de3dc0014287f621169ba5ca5e",
+      "lastProcessedDate": "2026-11-06T02:22:40.403476829Z",
+      "totalProcessed": 452,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -5647,6 +5648,33 @@
           "deferredAt": "2026-11-05T02:25:11.301227322Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "25611f0b960f8297cf41ec2a2ffe7d49c22209aa",
+          "message": "Bug 461219 - Compile warnings in official build",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-06T02:17:23.218785696Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "5a6e5872277f3ba6d89403cea2021548c0ef7b15",
+          "message": "Bug 436062 - Restore order of Run/Debug popupMenus extensions",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-06T02:18:29.905613358Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b0421453567a6e3bbb41f6892c3e52b76f378c9a",
+          "message": "File formatting Change-Id: I520c53f7abf5ecd8dc21a0d5eebae1f9eacec4b4",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-06T02:21:21.174988300Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -5696,10 +5724,11 @@
         "Readability": 1,
         "Java Generics": 1,
         "performance": 1,
-        "Performance": 1
+        "Performance": 1,
+        "Method Signature Modernization": 1
       },
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 53921
+  "globalTotalProcessed": 53989
 }
