@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "d593e452a864d0e680ae35e2d1a3a7b6f7c88264a2f38ccb2f6cbf87fc0abc67",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "public void $name(org.eclipse.jface.viewers.ViewerFilter[] $filters)\n\u003d\u003e\npublic void $name(org.eclipse.jface.viewers.ViewerFilter... $filters)\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.jface.viewers.ViewerFilter;\npublic interface MyInterface {\n    void setFilters(ViewerFilter[] filters);\n    void foo(String[] s);\n}",
+  "afterExample": "package test;\nimport org.eclipse.jface.viewers.ViewerFilter;\npublic interface MyInterface {\n    void setFilters(ViewerFilter... filters);\n    void foo(String[] s);\n}",
+  "negativeExample": "package test;\nimport org.eclipse.jface.viewers.ViewerFilter;\npublic interface MyInterface {\n    void setFilters(ViewerFilter... filters); // Already varargs\n    void setOtherFilters(String[] filters); // Wrong type\n}",
+  "targetHintFile": "modernize-methods.sandbox-hint",
+  "sourceCommit": "94087a9e6ba5bd06d45dcaefba8c45040e78e9f5",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "sourceEvidence": {
+    "path": "org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/viewers/model/provisional/ITreeModelViewer.java",
+    "before": "    public void setFilters(ViewerFilter[] filters);",
+    "after": "\tpublic void setFilters(ViewerFilter... filters);",
+    "diffHunk": "diff --git a/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/viewers/model/provisional/ITreeModelViewer.java b/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/viewers/model/provisional/ITreeModelViewer.java\nindex 270c120..1b1f38a 100644\n--- a/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/viewers/model/provisional/ITreeModelViewer.java\n+++ b/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/viewers/model/provisional/ITreeModelViewer.java\n@@ -274,6 +274,6 @@\n      * \n      * @param filters New filter array to use.\n      */\n-    public void setFilters(ViewerFilter[] filters);\n+\tpublic void setFilters(ViewerFilter... filters);\n \n  }\n"
+  },
+  "category": "Method Signature Modernization",
+  "summary": "Convert method parameter from array to varargs for `org.eclipse.jface.viewers.ViewerFilter`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-06T02:21:55.631634867Z",
+  "ruleFingerprint": "sha256:3fcdf7ee64a958f8091aac8cc7912adcfdcdf186e0e37d3cce939aaf0758da88",
+  "behaviorFingerprint": "sha256:5743a08e68427749f7587a584be6e7b0f15ffaced83f70a6e51ad3244be69a48",
+  "verification": {
+    "successful": false,
+    "stage": "DEPENDENCY_RESOLUTION",
+    "message": "Java compile error at line 2: The import org.eclipse.jface.viewers cannot be resolved",
+    "verifiedAt": "2026-11-06T02:23:06.661905892Z",
+    "verifierVersion": "9",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
