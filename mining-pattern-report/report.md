@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-11-05
+# Refactoring Mining Report — 2026-11-06
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -9,7 +9,7 @@
 | eclipse.platform | 311 | 71 | 4 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
-| sandbox | 1913 | 181 | 12 |
+| sandbox | 1920 | 181 | 12 |
 
 ## Details
 ### eclipse.jdt.core
@@ -486,7 +486,7 @@
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/HintFileParser.java:1325` — `text == null || text.isEmpty()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/HintFileStore.java:518` — `hintFile.getTags() == null || hintFile.getTags().isEmpty()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/EmbeddedJavaCompiler.java:349` — `input == null || input.isEmpty()`
-- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java:1202` — `version == null || version.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java:1214` — `version == null || version.isEmpty()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/OpenAiCompatibleClient.java:256` — `choices == null || choices.isEmpty()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/OpenAiCompatibleClient.java:293` — `choices == null || choices.isEmpty()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:301` — `candidates == null || candidates.isEmpty()`

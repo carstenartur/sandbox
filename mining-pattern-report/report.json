@@ -33,7 +33,7 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1913,
+        "files": 1920,
         "matches": 181,
         "rules": 12
       }
@@ -3321,7 +3321,7 @@
       "hintFile": "string-equals",
       "rule": "string-equals.null-or-empty.review",
       "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java",
-      "line": 1202,
+      "line": 1214,
       "matchedCode": "version == null || version.isEmpty()"
     },
     {
