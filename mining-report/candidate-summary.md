@@ -1,5 +1,5 @@
-- Candidates ready for review: 19
+- Candidates ready for review: 14
 - Other deterministic verification failures: 412
-- Candidates with unresolved imports (invalid source or unavailable dependencies): 170
-- Rejected candidates: 9
+- Candidates with unresolved imports (invalid source or unavailable dependencies): 171
+- Rejected candidates: 14
 - Historical closed reviews: 1

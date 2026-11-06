@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "AFTER_PARSE",
     "message": "Java compile error at line 14: The method getOrignalInput() is undefined for the type AbstractInfoView",
-    "verifiedAt": "2026-11-05T02:31:58.151730137Z",
+    "verifiedAt": "2026-11-06T02:22:59.401054222Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
