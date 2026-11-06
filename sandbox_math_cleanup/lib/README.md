@@ -1,6 +1,26 @@
 # Pinned Regelsuche optimization SDK
 
-## Current SDK70 integration candidate
+## Regelsuche 0.5.2 compatibility candidate
+
+Source revision: `b3627d32bcee31e86bf6372389e49b1652b57343`.
+Standalone JAR SHA-256: `92384cc1ceced4287fd42428b2ca2988e8e53cb69d4d2ab18e7d0ab606bd7379`.
+Receipt version: `0.5.2-issue1657-b3627d32bcee`.
+
+The exact public source passed the existing native Maven/JUnit SDK distribution
+contract in [run 42313310726](https://github.com/carstenartur/sandbox/actions/runs/42313310726).
+The staging commit is `5b65cf1283399d47e23896543c708586d81cd585`.
+The JAR hash and embedded source revision match the unchanged `qualification.json`.
+Its fresh external consumer verifies optimization, selected-path replay, original
+checked overflow, original/candidate domains, telescoping and runtime polynomial
+and affine series.
+
+This is a source-bound compatibility candidate before the Regelsuche release.
+Its receipt retains `publiclyPublished: false`. The Sandbox PR stays a draft
+until the released SDK is copied byte for byte from the public release asset
+and the final consumer/product gates pass. Historical capture fingerprints and
+receipts keep their original source and SDK bindings.
+
+## Preserved SDK70 integration candidate
 
 Published source revision: `70c13fb580062b1fd653f35b81b2fb7ed1903c28`.
 Standalone JAR SHA-256: `ba0293dedb3fde9ca2f3042dcef8ae4d6bb2d576adedff8ba7a2b4d186f1cbe1`.
