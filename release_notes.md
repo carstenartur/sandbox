@@ -174,7 +174,7 @@ Included through [#1801](https://github.com/carstenartur/sandbox/pull/1801), [#1
   `tv1 = u.multiply(u).mod(p);`.
 - Update the qualified vendored value-arithmetic SDK and native mathematics Help
   provenance through merged [#1782](https://github.com/carstenartur/sandbox/pull/1782).
-  Later adapter and SDK70 integration is included through #1784–#1792.
+  The adapter was integrated with the then-current SDK70 through #1784–#1792.
 - Include the Fp12 algebra-proof timeout correction in
   [#1791](https://github.com/carstenartur/sandbox/pull/1791), and current native
   mathematics Help provenance from #1792.
