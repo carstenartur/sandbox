@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "427a1cc0b123c8a84d23e31a2dfbc1974e6e3ec1fb1e29dfe8dc423a67af99ab",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "($Type) $expr :: instanceof($expr, \"$Type\")\n\u003d\u003e $expr\n;;",
+  "beforeExample": "import java.util.Iterator;\nimport java.util.List;\nimport java.util.ArrayList;\n\npublic class MyClass {\n    public void processGroups(List\u003cString\u003e groups) {\n        Iterator\u003cString\u003e iterator \u003d groups.iterator();\n        while (iterator.hasNext()) {\n            String id \u003d (String)iterator.next(); // This cast is redundant\n            System.out.println(id);\n        }\n    }\n}",
+  "afterExample": "import java.util.Iterator;\nimport java.util.List;\nimport java.util.ArrayList;\n\npublic class MyClass {\n    public void processGroups(List\u003cString\u003e groups) {\n        Iterator\u003cString\u003e iterator \u003d groups.iterator();\n        while (iterator.hasNext()) {\n            String id \u003d iterator.next(); // Cast removed\n            System.out.println(id);\n        }\n    }\n}",
+  "negativeExample": "import java.util.Iterator;\nimport java.util.List;\nimport java.util.ArrayList;\n\npublic class MyClass {\n    public void processGroups(List groups) { // Raw type list\n        Iterator iterator \u003d groups.iterator(); // Raw type iterator\n        while (iterator.hasNext()) {\n            // This cast is NOT redundant as iterator.next() returns Object\n            String id \u003d (String)iterator.next();\n            System.out.println(id);\n        }\n    }\n}",
+  "targetHintFile": "generics.sandbox-hint",
+  "sourceCommit": "4c61e269c537cec92f62271e4a2de92435e2a9d7",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "sourceEvidence": {
+    "path": "org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/groups/CommonTabLite.java",
+    "before": "\t\t\t\t\tString id \u003d (String)iterator.next();",
+    "after": "\t\t\t\t\tString id \u003d iterator.next();",
+    "diffHunk": "diff --git a/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/groups/CommonTabLite.java b/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/groups/CommonTabLite.java\nindex 4261844..0c8f2cc 100644\n--- a/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/groups/CommonTabLite.java\n+++ b/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/groups/CommonTabLite.java\n@@ -328,10 +328,10 @@\n \t\t\t\t}\n \t\t\t}\n \t\t\tif (!groups.isEmpty()) {\n-\t\t\t\tList list \u003d new ArrayList();\n-\t\t\t\tIterator iterator \u003d groups.iterator();\n+\t\t\t\tList\u003cLaunchGroupExtension\u003e list \u003d new ArrayList\u003cLaunchGroupExtension\u003e();\n+\t\t\t\tIterator\u003cString\u003e iterator \u003d groups.iterator();\n \t\t\t\twhile (iterator.hasNext()) {\n-\t\t\t\t\tString id \u003d (String)iterator.next();\n+\t\t\t\t\tString id \u003d iterator.next();\n \t\t\t\t\tLaunchGroupExtension extension \u003d getLaunchConfigurationManager().getLaunchGroup(id);\n \t\t\t\t\tif (extension !\u003d null) {\n \t\t\t\t\t\tlist.add(extension);\n"
+  },
+  "category": "Redundant Cast",
+  "summary": "Removes redundant type casts where the expression\u0027s static type already matches the cast target type, often after adding generics to collections/iterators.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-07T02:20:46.485615228Z",
+  "ruleFingerprint": "sha256:3c5bd921da63e49abbd340113475e2cea648ac1ea3610ba7b36d540dd301576f",
+  "behaviorFingerprint": "sha256:75a5ef06a2af26eaf4f9982891b966dfd5c282ee2707698425afca3a1468d793",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-11-07T02:22:19.412945682Z",
+    "verifierVersion": "9",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
