@@ -56,18 +56,18 @@ class SnapshotPagesPollingTest {
         Path published = temporary.resolve("published");
         run(new ProcessBuilder("git", "clone", "--branch", "gh-pages", origin.toString(), published.toString()));
         assertFalse(Files.exists(published.resolve("snapshots/latest/plugins/obsolete.jar")));
-        assertEquals("new snapshot", Files.readString(published.resolve("snapshots/latest/plugins/current.jar")));
-        assertEquals("new content metadata", Files.readString(published.resolve("snapshots/compositeContent.xml")));
-        assertEquals("new artifact metadata", Files.readString(published.resolve("snapshots/compositeArtifacts.xml")));
-        assertEquals("new dashboard", Files.readString(published.resolve("index.html")));
-        assertEquals("stable", Files.readString(published.resolve("releases/1.3.7/plugins/stable.jar")));
-        assertEquals("coverage", Files.readString(published.resolve("coverage/index.html")));
+        assertEquals("new snapshot", Files.readString(published.resolve("snapshots/latest/plugins/current.jar"), StandardCharsets.UTF_8));
+        assertEquals("new content metadata", Files.readString(published.resolve("snapshots/compositeContent.xml"), StandardCharsets.UTF_8));
+        assertEquals("new artifact metadata", Files.readString(published.resolve("snapshots/compositeArtifacts.xml"), StandardCharsets.UTF_8));
+        assertEquals("new dashboard", Files.readString(published.resolve("index.html"), StandardCharsets.UTF_8));
+        assertEquals("stable", Files.readString(published.resolve("releases/1.3.7/plugins/stable.jar"), StandardCharsets.UTF_8));
+        assertEquals("coverage", Files.readString(published.resolve("coverage/index.html"), StandardCharsets.UTF_8));
     }
 
     private static void write(Path root, String relative, String value) throws Exception {
         Path file = root.resolve(relative);
         Files.createDirectories(file.getParent());
-        Files.writeString(file, value);
+        Files.writeString(file, value, StandardCharsets.UTF_8);
     }
 
     private void run(ProcessBuilder command) throws Exception {
@@ -75,7 +75,7 @@ class SnapshotPagesPollingTest {
         Process process = command.redirectErrorStream(true).redirectOutput(output.toFile()).start();
         try {
             assertTrue(process.waitFor(30, TimeUnit.SECONDS), command.command().toString());
-            assertEquals(0, process.exitValue(), command.command() + "\n" + Files.readString(output));
+            assertEquals(0, process.exitValue(), command.command() + "\n" + Files.readString(output, StandardCharsets.UTF_8));
         } finally {
             if (process.isAlive()) process.destroyForcibly();
         }
