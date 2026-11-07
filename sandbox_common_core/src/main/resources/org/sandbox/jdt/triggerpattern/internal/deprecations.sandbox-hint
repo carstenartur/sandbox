@@ -1,5 +1,5 @@
 // deprecations.sandbox-hint — Deprecated API replacements
-// Identifies deprecated API usage and suggests behaviour-preserving alternatives.
+// Identifies deprecated API usage and reports migrations that require review.
 
 <!id: deprecations>
 <!description: Deprecated API replacement suggestions>
@@ -77,6 +77,12 @@ java.lang.Runtime.getRuntime().exec($cmd)
 @severity: warning
 "Class.newInstance() is deprecated — use getDeclaredConstructor().newInstance() instead.":
 java.lang.Class.forName($name).newInstance() :: sourceVersionGE(9)
+;;
+
+@id: deprecations.file-to-url.consider-uri
+@severity: warning
+"File.toURL() is deprecated. Review callers before using File.toURI().toURL() because it changes URL escaping.":
+$file.$method() :: methodNameMatches($method, "toURL") && isDeprecated($method) && instanceof($file, "java.io.File")
 ;;
 
 @id: deprecations.boolean-valueof-booleanvalue.to-parseboolean

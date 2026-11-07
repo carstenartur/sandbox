@@ -64,6 +64,45 @@ class BundledLibraryRewriteSafetyTest extends HintRuleTestSupport {
 		assertDiagnosticOnly(hints, "class Test { Object f() { var b = new StringBuffer(20); return b; } }"); //$NON-NLS-1$
 	}
 
+	@Test
+	void fileToUrlMigrationRequiresReview() throws Exception {
+		HintFile hints= loadBundledHint("deprecations.sandbox-hint"); //$NON-NLS-1$
+		assertDiagnosticOnly(hints, """
+				import java.io.File;
+				import java.net.MalformedURLException;
+				class Test {
+				    Object legacy(File file) throws MalformedURLException { return file.toURL(); }
+				    Object current(File file) throws MalformedURLException { return file.toURI().toURL(); }
+				}
+				"""); //$NON-NLS-1$
+		assertDiagnosticOnly(hints, """
+				import java.io.File;
+				import java.net.MalformedURLException;
+				class Test {
+				    Object legacy() throws MalformedURLException { return new File("a #b").toURL(); }
+				}
+				"""); //$NON-NLS-1$
+	}
+
+	@Test
+	void fileToUrlHintIgnoresOtherAndUnresolvedMethods() throws Exception {
+		HintFile hints= loadBundledHint("deprecations.sandbox-hint"); //$NON-NLS-1$
+		assertNoMatch(hints, """
+				class Test {
+				    static class File {
+				        @Deprecated Object toURL() { return null; }
+				    }
+				    static class CustomFile extends java.io.File {
+				        CustomFile() { super("."); }
+				        @Override @Deprecated public java.net.URL toURL() { return null; }
+				    }
+				    Object custom(File file) { return file.toURL(); }
+				    Object overridden(CustomFile file) { return file.toURL(); }
+				    Object unresolved(MissingFile file) { return file.toURL(); }
+				}
+				"""); //$NON-NLS-1$
+	}
+
 	private void assertDiagnosticOnly(HintFile hints, String source) {
 		var results= process(hints, source);
 		assertEquals(1, results.size(), "Expected one review hint: " + source); //$NON-NLS-1$
