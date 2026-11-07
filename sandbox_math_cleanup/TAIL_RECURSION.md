@@ -58,10 +58,8 @@ option may still convert eligible code elsewhere in an excluded file.
 
 Only **Preserve Java**, mathematical mode off and **Lower estimated runtime**
 permit the transferred loop to enter the existing finite-series/affine iteration
-proofs. Mathematical mode with tail consent retains the verified ordinary loop;
-it does not imply iteration acceleration. SDK70 supplies the existing iteration
-models and proofs. Its new OrderedMatrixChain rules do not introduce a general
-Java consumer in this adapter.
+proofs. Mathematical mode with tail consent retains the verified ordinary loop.
+The bundled Regelsuche SDK supplies the iteration models and proofs.
 
 Tail inspection, reparsing, mathematical searches and optional conversion share
 one work allowance and best-effort total deadline. Reservations, including failed

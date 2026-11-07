@@ -1,6 +1,24 @@
 # Pinned Regelsuche optimization SDK
 
-## Current SDK70 integration candidate
+## Released Regelsuche 0.5.2 optimizer SDK
+
+The mathematics plug-in bundles the standalone JAR and its unchanged
+`qualification.json` from the
+[public optimizer SDK archive](https://github.com/carstenartur/Regelsuche/releases/download/v0.5.2/regelsuche-optimization-sdk-0.5.2.zip).
+
+- Regelsuche release commit: `ca38d64cca3e415e7c7823e39cadbf762b908ef6`.
+- Standalone JAR SHA-256: `d7cdb5944d600dc8d24e251f602adf85ee2ee66a9d54b409018b86f82d91af97`.
+- Receipt version: `0.5.2-issue1657-ca38d64cca3e`.
+
+The receipt records the pre-publication qualification, including
+`publiclyPublished: false`. The [published GitHub Release](https://github.com/carstenartur/Regelsuche/releases/tag/v0.5.2)
+establishes distribution of those bytes. The external Java 25 example verifies
+optimization, selected-path replay, checked overflow, domains, telescoping,
+runtime series and one-pass pair reduction. Sandbox's native adapter and product
+checks exercise the vendored SDK separately. Historical receipts and captures
+retain their original source and SDK bindings.
+
+## Preserved SDK70 integration candidate
 
 Published source revision: `70c13fb580062b1fd653f35b81b2fb7ed1903c28`.
 Standalone JAR SHA-256: `ba0293dedb3fde9ca2f3042dcef8ae4d6bb2d576adedff8ba7a2b4d186f1cbe1`.
