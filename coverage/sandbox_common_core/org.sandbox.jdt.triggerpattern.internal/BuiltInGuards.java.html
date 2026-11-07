@@ -534,22 +534,22 @@ public final class BuiltInGuards {
 	 * Args: [placeholderName]
 	 */
 	private static boolean evaluateIsDeprecated(GuardContext ctx, Object... args) {
-<span class="nc bnc" id="L537" title="All 2 branches missed.">		if (args.length &lt; 1) {</span>
+<span class="pc bpc" id="L537" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
 <span class="nc" id="L538">			return false;</span>
 		}
-<span class="nc" id="L540">		String placeholderName = args[0].toString();</span>
-<span class="nc" id="L541">		ASTNode node = ctx.getBinding(placeholderName);</span>
-<span class="nc bnc" id="L542" title="All 2 branches missed.">		if (node == null) {</span>
+<span class="fc" id="L540">		String placeholderName = args[0].toString();</span>
+<span class="fc" id="L541">		ASTNode node = ctx.getBinding(placeholderName);</span>
+<span class="pc bpc" id="L542" title="1 of 2 branches missed.">		if (node == null) {</span>
 <span class="nc" id="L543">			return false;</span>
 		}
 
 		// Check via binding
-<span class="nc" id="L547">		IBinding binding = resolveBinding(node);</span>
-<span class="nc bnc" id="L548" title="All 2 branches missed.">		if (binding != null) {</span>
-<span class="nc" id="L549">			return binding.isDeprecated();</span>
+<span class="fc" id="L547">		IBinding binding = resolveBinding(node);</span>
+<span class="fc bfc" id="L548" title="All 2 branches covered.">		if (binding != null) {</span>
+<span class="fc" id="L549">			return binding.isDeprecated();</span>
 		}
 
-<span class="nc" id="L552">		return false;</span>
+<span class="fc" id="L552">		return false;</span>
 	}
 
 	/**

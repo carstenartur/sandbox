@@ -1364,7 +1364,7 @@ sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,Emb
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,HintPredicatePreprocessor,56,682,28,100,13,145,27,54,0,16
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,HintTypeDeclarationSourcePreprocessor,14,209,14,40,2,44,13,16,0,2
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,BuiltInGuardRegistration.HierarchyMatch,0,21,0,0,0,4,0,1,0,1
-sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,BuiltInGuards,1322,2241,390,306,369,538,291,148,16,65
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,BuiltInGuards,1297,2266,386,310,361,546,289,150,15,66
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,HintProgramParser.ParsedProgram,14,47,0,0,4,9,1,3,1,3
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,HintStructuredActionPreprocessor,32,286,12,44,3,71,11,19,0,2
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,EmbeddedJavaCompiler.SourceLineMapping,0,9,0,0,0,1,0,1,0,1
@@ -1602,7 +1602,7 @@ sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.history,Sand
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.history,SandboxHistorySearch.AuthorCount,0,12,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.history,SandboxHistoryAnalysisConfigurer,0,23,0,0,0,9,0,2,0,2
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.history,GitHistorySnapshot,7,147,3,17,1,32,3,9,0,2
-sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.analysis,ApplicationVectorIndex,8,360,4,34,0,55,4,27,0,12
+sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.analysis,ApplicationVectorIndex,1,367,3,35,0,55,3,28,0,12
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.analysis,AnalysisGenerationCache,43,619,14,64,4,127,12,44,0,17
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.analysis,ApplicationApiComparison.Change,0,12,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.analysis,ApplicationSourceReports.AuthorTypes,0,12,0,0,0,1,0,1,0,1
