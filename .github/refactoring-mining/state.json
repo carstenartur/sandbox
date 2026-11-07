@@ -5500,9 +5500,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "lastProcessedCommit": "eb152262968725de3dc0014287f621169ba5ca5e",
-      "lastProcessedDate": "2026-11-06T02:22:40.403476829Z",
-      "totalProcessed": 452,
+      "lastProcessedCommit": "0548d360ff223dcd7dcde4ee0650a56c0807a2c3",
+      "lastProcessedDate": "2026-11-07T02:21:54.420149229Z",
+      "totalProcessed": 524,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -5675,6 +5675,51 @@
           "deferredAt": "2026-11-06T02:21:21.174988300Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "8124e2bb15eb3d3793ac8f160e83bddaf1a5c7d8",
+          "message": "Bug 492182 - Add Terminate and Relaunch from Configurations, Relaunch actions and Context based launch",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-07T02:18:05.287255496Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "414d0f61d474b7065cb3734772f39ad5a37d4349",
+          "message": "Bug 488664 - [Breakpoints] Ability to set up Breakpoint dependency",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-07T02:18:55.872429109Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "3fa670f3c24690b6b741ae5a88b57829972ccfd7",
+          "message": "Bug 501245 - Trigger points -- API deficiencies",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-07T02:19:56.810895661Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "55be2b2039f8c5815b319fed1f3f7c62f122130c",
+          "message": "Bug 506182 - Launch is not multi-thread safe",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-07T02:19:56.812728737Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "20e7f1bfc2337343856efea1b092bd951d71b8ea",
+          "message": "Bug 498426 - Breakpoints view: Allow to sort by breakpoints creation time",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-07T02:20:06.528141190Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -5725,10 +5770,11 @@
         "Java Generics": 1,
         "performance": 1,
         "Performance": 1,
-        "Method Signature Modernization": 1
+        "Method Signature Modernization": 1,
+        "Redundant Cast": 1
       },
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 53989
+  "globalTotalProcessed": 54061
 }
