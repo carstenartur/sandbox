@@ -225,25 +225,26 @@ claims publication of a refreshed candidate-data report.
 
 ## Dependencies and qualification limits
 
-The mathematics plug-in bundles the exact source-bound Regelsuche SDK70
-development distribution:
+The Regelsuche 0.5.2 integration candidate bundles this source-bound SDK for
+compatibility qualification before the public release:
 
-- SDK source: `70c13fb580062b1fd653f35b81b2fb7ed1903c28`.
-- Standalone JAR SHA-256: `ba0293dedb3fde9ca2f3042dcef8ae4d6bb2d576adedff8ba7a2b4d186f1cbe1`.
-- Receipt version: `0.5.2-issue1657-70c13fb58006`; `publiclyPublished: false`.
+- SDK source: `b3627d32bcee31e86bf6372389e49b1652b57343`.
+- Standalone JAR SHA-256: `92384cc1ceced4287fd42428b2ca2988e8e53cb69d4d2ab18e7d0ab606bd7379`.
+- Receipt version: `0.5.2-issue1657-b3627d32bcee`; `publiclyPublished: false`.
 - JGit storage remains the already released **0.11.8**.
 
-The artifact and unchanged qualification came from staging commit
-`1573e539f14313409ed5e16e1d80ea95b97493b5`. Retained external-consumer output
-qualifies the artifact historically; it is not a fresh Java/native adapter test.
-The 302-tests-per-build double-build receipt belongs to source
-`93f0f35abaea58ea492441776be7c9d2a9be1695`, not SDK70; no missing SDK70
-double-build receipt or count is inferred.
+The artifact and unchanged qualification came from native SDK qualification
+[run 42313310726](https://github.com/carstenartur/sandbox/actions/runs/42313310726)
+and staging commit `5b65cf1283399d47e23896543c708586d81cd585`.
+The source-bound receipt is separate from the pending Sandbox adapter/product
+qualification. The final release pin must use the exact publicly released SDK
+bytes. Historical receipts retain their original revisions and test counts.
 See [the current SDK provenance](sandbox_math_cleanup/lib/README.md).
 
 The SDK is bundled in Eclipse; generated Java needs no SDK runtime. Numerical
 proof/reproducibility receipts remain separate from Java admission/native product
-verification. No newer Regelsuche release is required for this qualified artifact.
+verification. Sandbox 1.3.8 publication waits for the final Regelsuche 0.5.2
+release artifact and its consumer qualification.
 
 ## Measured performance and qualification limits
 
