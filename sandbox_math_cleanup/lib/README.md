@@ -1,24 +1,22 @@
 # Pinned Regelsuche optimization SDK
 
-## Regelsuche 0.5.2 compatibility candidate
+## Released Regelsuche 0.5.2 optimizer SDK
 
-Source revision: `b3627d32bcee31e86bf6372389e49b1652b57343`.
-Standalone JAR SHA-256: `92384cc1ceced4287fd42428b2ca2988e8e53cb69d4d2ab18e7d0ab606bd7379`.
-Receipt version: `0.5.2-issue1657-b3627d32bcee`.
+The mathematics plug-in bundles the standalone JAR and its unchanged
+`qualification.json` from the
+[public optimizer SDK archive](https://github.com/carstenartur/Regelsuche/releases/download/v0.5.2/regelsuche-optimization-sdk-0.5.2.zip).
 
-The exact public source passed the existing native Maven/JUnit SDK distribution
-contract in [run 42313310726](https://github.com/carstenartur/sandbox/actions/runs/42313310726).
-The staging commit is `5b65cf1283399d47e23896543c708586d81cd585`.
-The JAR hash and embedded source revision match the unchanged `qualification.json`.
-Its fresh external consumer verifies optimization, selected-path replay, original
-checked overflow, original/candidate domains, telescoping and runtime polynomial
-and affine series.
+- Regelsuche release commit: `ca38d64cca3e415e7c7823e39cadbf762b908ef6`.
+- Standalone JAR SHA-256: `d7cdb5944d600dc8d24e251f602adf85ee2ee66a9d54b409018b86f82d91af97`.
+- Receipt version: `0.5.2-issue1657-ca38d64cca3e`.
 
-This is a source-bound compatibility candidate before the Regelsuche release.
-Its receipt retains `publiclyPublished: false`. The Sandbox PR stays a draft
-until the released SDK is copied byte for byte from the public release asset
-and the final consumer/product gates pass. Historical capture fingerprints and
-receipts keep their original source and SDK bindings.
+The receipt records the pre-publication qualification, including
+`publiclyPublished: false`. The [published GitHub Release](https://github.com/carstenartur/Regelsuche/releases/tag/v0.5.2)
+establishes distribution of those bytes. The external Java 25 example verifies
+optimization, selected-path replay, checked overflow, domains, telescoping,
+runtime series and one-pass pair reduction. Sandbox's native adapter and product
+checks exercise the vendored SDK separately. Historical receipts and captures
+retain their original source and SDK bindings.
 
 ## Preserved SDK70 integration candidate
 

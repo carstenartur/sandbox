@@ -102,8 +102,7 @@ This extends the foundation in [#1783](https://github.com/carstenartur/sandbox/p
 with [#1784](https://github.com/carstenartur/sandbox/pull/1784) and the native
 integration in [#1792](https://github.com/carstenartur/sandbox/pull/1792).
 General/mutual recursion, floating-point or value-object recursive state and
-arbitrary control flow remain outside the supported fragment. SDK70's
-OrderedMatrixChain rules have no new general Java consumer in this adapter.
+arbitrary control flow remain outside the supported fragment.
 See [the source contract](sandbox_math_cleanup/TAIL_RECURSION.md).
 
 ## Source-proved value arithmetic and refinements
@@ -225,26 +224,20 @@ claims publication of a refreshed candidate-data report.
 
 ## Dependencies and qualification limits
 
-The Regelsuche 0.5.2 integration candidate bundles this source-bound SDK for
-compatibility qualification before the public release:
+The mathematics plug-in bundles the standalone optimizer SDK from
+[Regelsuche 0.5.2](https://github.com/carstenartur/Regelsuche/releases/tag/v0.5.2).
 
-- SDK source: `b3627d32bcee31e86bf6372389e49b1652b57343`.
-- Standalone JAR SHA-256: `92384cc1ceced4287fd42428b2ca2988e8e53cb69d4d2ab18e7d0ab606bd7379`.
-- Receipt version: `0.5.2-issue1657-b3627d32bcee`; `publiclyPublished: false`.
-- JGit storage remains the already released **0.11.8**.
+- SDK source: `ca38d64cca3e415e7c7823e39cadbf762b908ef6`.
+- Standalone JAR SHA-256: `d7cdb5944d600dc8d24e251f602adf85ee2ee66a9d54b409018b86f82d91af97`.
+- Receipt version: `0.5.2-issue1657-ca38d64cca3e`.
+- JGit storage dependency: **0.11.8**.
 
-The artifact and unchanged qualification came from native SDK qualification
-[run 42313310726](https://github.com/carstenartur/sandbox/actions/runs/42313310726)
-and staging commit `5b65cf1283399d47e23896543c708586d81cd585`.
-The source-bound receipt is separate from the pending Sandbox adapter/product
-qualification. The final release pin must use the exact publicly released SDK
-bytes. Historical receipts retain their original revisions and test counts.
-See [the current SDK provenance](sandbox_math_cleanup/lib/README.md).
-
-The SDK is bundled in Eclipse; generated Java needs no SDK runtime. Numerical
-proof/reproducibility receipts remain separate from Java admission/native product
-verification. Sandbox 1.3.8 publication waits for the final Regelsuche 0.5.2
-release artifact and its consumer qualification.
+The included receipt records the original pre-publication qualification. The
+release asset and the [SDK provenance](sandbox_math_cleanup/lib/README.md)
+identify the exact bundled bytes. Eclipse bundles the SDK for the cleanup.
+Generated Java runs independently of the SDK. Sandbox's native adapter and
+distribution gates exercise the bundled artifact separately from Regelsuche's
+external Java consumer.
 
 ## Measured performance and qualification limits
 
