@@ -194,21 +194,25 @@ jobs:
 
       - name: Deploy snapshot and dashboard
         id: deploy_snapshot
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./gh-pages-content
-          publish_branch: gh-pages
-          keep_files: true
-          user_name: github-actions[bot]
-          user_email: github-actions[bot]@users.noreply.github.com
-          commit_message: Deploy verified snapshot for ${{ env.VALIDATED_SHA }}
+        working-directory: gh-pages-before
+        run: |
+          set -euo pipefail
+          staged_site="$GITHUB_WORKSPACE/gh-pages-content"
+          git rm -r --ignore-unmatch -- snapshots/latest
+          mkdir -p snapshots/latest
+          cp -a "$staged_site/snapshots/latest/." snapshots/latest/
+          cp "$staged_site/snapshots/compositeContent.xml" "$staged_site/snapshots/compositeArtifacts.xml" snapshots/
+          cp "$staged_site/index.html" index.html
+          git add -- snapshots/latest snapshots/compositeContent.xml snapshots/compositeArtifacts.xml index.html
+          if ! git diff --cached --quiet; then
+            git -c user.name='github-actions[bot]' -c user.email='github-actions[bot]@users.noreply.github.com' \
+              commit -m "Deploy verified snapshot for $VALIDATED_SHA"
+            git push origin HEAD:refs/heads/gh-pages
+          fi
 
       - name: Capture deployed gh-pages revision
         id: gh_pages_after
-        run: |
-          git -C gh-pages-before fetch origin gh-pages
-          echo "sha=$(git -C gh-pages-before rev-parse origin/gh-pages)" >> "$GITHUB_OUTPUT"
+        run: echo "sha=$(git -C gh-pages-before rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Wait for the selected GitHub Pages deployment
         id: wait_snapshot_pages

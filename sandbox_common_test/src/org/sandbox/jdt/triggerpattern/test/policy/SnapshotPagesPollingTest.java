@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
 import com.google.gson.JsonObject;
@@ -23,6 +25,61 @@ class SnapshotPagesPollingTest {
     private static final String WORKFLOW = ".github/workflows/deploy-snapshot.yml";
     private static final String SHA = "1".repeat(40);
     @TempDir Path temporary;
+
+    @Test
+    @EnabledOnOs(OS.LINUX)
+    void publishingLatestReplacesObsoleteSnapshotArtifacts() throws Exception {
+        Path origin = temporary.resolve("origin.git");
+        Path checkout = temporary.resolve("gh-pages-before");
+        Path staged = temporary.resolve("gh-pages-content");
+        run(new ProcessBuilder("git", "init", "--bare", origin.toString()));
+        run(new ProcessBuilder("git", "init", "-b", "gh-pages", checkout.toString()));
+        write(checkout, "snapshots/latest/plugins/obsolete.jar", "old snapshot");
+        write(checkout, "releases/1.3.7/plugins/stable.jar", "stable");
+        write(checkout, "coverage/index.html", "coverage");
+        run(new ProcessBuilder("git", "-C", checkout.toString(), "add", "."));
+        run(new ProcessBuilder("git", "-C", checkout.toString(), "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+                "commit", "-m", "Existing Pages content"));
+        run(new ProcessBuilder("git", "-C", checkout.toString(), "remote", "add", "origin", origin.toString()));
+        run(new ProcessBuilder("git", "-C", checkout.toString(), "push", "origin", "gh-pages"));
+
+        write(staged, "snapshots/latest/plugins/current.jar", "new snapshot");
+        write(staged, "snapshots/compositeContent.xml", "new content metadata");
+        write(staged, "snapshots/compositeArtifacts.xml", "new artifact metadata");
+        write(staged, "index.html", "new dashboard");
+        var publish = new ProcessBuilder("bash", "-c", inlineBlock(root(), "Deploy snapshot and dashboard", "run", 8))
+                .directory(checkout.toFile());
+        publish.environment().put("GITHUB_WORKSPACE", temporary.toString());
+        publish.environment().put("VALIDATED_SHA", SHA);
+        run(publish);
+
+        Path published = temporary.resolve("published");
+        run(new ProcessBuilder("git", "clone", "--branch", "gh-pages", origin.toString(), published.toString()));
+        assertFalse(Files.exists(published.resolve("snapshots/latest/plugins/obsolete.jar")));
+        assertEquals("new snapshot", Files.readString(published.resolve("snapshots/latest/plugins/current.jar")));
+        assertEquals("new content metadata", Files.readString(published.resolve("snapshots/compositeContent.xml")));
+        assertEquals("new artifact metadata", Files.readString(published.resolve("snapshots/compositeArtifacts.xml")));
+        assertEquals("new dashboard", Files.readString(published.resolve("index.html")));
+        assertEquals("stable", Files.readString(published.resolve("releases/1.3.7/plugins/stable.jar")));
+        assertEquals("coverage", Files.readString(published.resolve("coverage/index.html")));
+    }
+
+    private static void write(Path root, String relative, String value) throws Exception {
+        Path file = root.resolve(relative);
+        Files.createDirectories(file.getParent());
+        Files.writeString(file, value);
+    }
+
+    private void run(ProcessBuilder command) throws Exception {
+        Path output = Files.createTempFile(temporary, "git-command-", ".log");
+        Process process = command.redirectErrorStream(true).redirectOutput(output.toFile()).start();
+        try {
+            assertTrue(process.waitFor(30, TimeUnit.SECONDS), command.command().toString());
+            assertEquals(0, process.exitValue(), command.command() + "\n" + Files.readString(output));
+        } finally {
+            if (process.isAlive()) process.destroyForcibly();
+        }
+    }
 
     @Test void selectedDeploymentCanSucceedAfterTwelveMinutes() throws Exception {
         JsonObject result = execute("delayed_success");
@@ -84,7 +141,7 @@ class SnapshotPagesPollingTest {
     private JsonObject execute(String scenario) throws Exception {
         Path root = root();
         Path script = Files.createTempFile(temporary, "pages-poller-", ".js");
-        Files.writeString(script, inlineScript(root), StandardCharsets.UTF_8);
+        Files.writeString(script, inlineBlock(root, "Wait for the selected GitHub Pages deployment", "script", 10), StandardCharsets.UTF_8);
         Path output = Files.createTempFile(temporary, "node-", ".log");
         Process process = new ProcessBuilder("node", "-e", DRIVER, script.toString(), scenario, SHA)
                 .directory(root.toFile()).redirectErrorStream(true).redirectOutput(output.toFile()).start();
@@ -107,19 +164,21 @@ class SnapshotPagesPollingTest {
         }
     }
 
-    private static String inlineScript(Path root) throws Exception {
+    private static String inlineBlock(Path root, String stepName, String key, int indent) throws Exception {
         List<String> lines = Files.readAllLines(root.resolve(WORKFLOW), StandardCharsets.UTF_8);
-        String step = "      - name: Wait for the selected GitHub Pages deployment";
-        assertEquals(1, lines.stream().filter(step::equals).count(), "Expected exactly one Pages wait step");
+        String step = "      - name: " + stepName;
+        String marker = " ".repeat(indent) + key + ": |";
+        String body = " ".repeat(indent + 2);
+        assertEquals(1, lines.stream().filter(step::equals).count(), "Expected one step: " + stepName);
         int start = lines.indexOf(step) + 1;
         while (start < lines.size() && !lines.get(start).startsWith("      - ")
-                && !lines.get(start).equals("          script: |")) start++;
-        assertTrue(start < lines.size() && lines.get(start).equals("          script: |"), "Missing inline script");
+                && !lines.get(start).equals(marker)) start++;
+        assertTrue(start < lines.size() && lines.get(start).equals(marker), "Missing inline script for " + stepName);
         StringBuilder script = new StringBuilder();
         for (int index = start + 1; index < lines.size(); index++) {
             String line = lines.get(index);
-            if (!line.isBlank() && !line.startsWith("            ")) break;
-            script.append(line.isBlank() ? "" : line.substring(12)).append('\n');
+            if (!line.isBlank() && !line.startsWith(body)) break;
+            script.append(line.isBlank() ? "" : line.substring(body.length())).append('\n');
         }
         assertFalse(script.toString().isBlank(), "Empty inline script");
         return script.toString();
