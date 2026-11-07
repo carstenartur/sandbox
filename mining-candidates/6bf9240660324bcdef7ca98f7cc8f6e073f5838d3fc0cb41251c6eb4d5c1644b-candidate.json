@@ -13,8 +13,9 @@
   "category": "Encapsulation",
   "summary": "Replaces direct null check on the \u0027children\u0027 field of `MultiStringMatcher.Node` with a call to the `hasChildren()` accessor method, improving encapsulation.",
   "sourceVersion": "21",
-  "status": "READY_FOR_REVIEW",
+  "status": "REJECTED",
   "discoveredAt": "2026-10-22T02:25:35.995600739Z",
+  "rejectionReason": "Review issue #1819. The existing hasChildren() method on the private MultiStringMatcher.Node implements this exact null check. The change in buildLinks() is specific to that implementation.",
   "ruleFingerprint": "sha256:245a8e1cb595d95124c843b86f200dc7dc05b56ff63f692f26e3067b2d649038",
   "behaviorFingerprint": "sha256:686127229bfea05d488c4f16e94047d030d72fe285513666b1379185aff3433b",
   "verification": {
@@ -40,6 +41,13 @@
       "actor": "CandidateVerificationCli",
       "reason": "All deterministic candidate gates passed",
       "occurredAt": "2026-11-05T02:32:04.051486797Z"
+    },
+    {
+      "from": "READY_FOR_REVIEW",
+      "to": "REJECTED",
+      "actor": "Codex",
+      "reason": "Review issue #1819. The existing hasChildren() method on the private MultiStringMatcher.Node implements this exact null check. The change in buildLinks() is specific to that implementation.",
+      "occurredAt": "2026-11-07T19:48:46.814357979Z"
     }
   ]
 }

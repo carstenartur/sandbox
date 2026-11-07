@@ -13,8 +13,9 @@
   "category": "String Manipulation",
   "summary": "Appends a semicolon to string concatenations of the form \u0027\u0026\u0027 + symbol within a return statement to correctly form HTML entities.",
   "sourceVersion": "21",
-  "status": "READY_FOR_REVIEW",
+  "status": "REJECTED",
   "discoveredAt": "2026-10-30T02:17:30.966781134Z",
+  "rejectionReason": "Review issue #1821. The semicolon belongs to the HTML2TextReader.entity2Text fallback for unrecognized HTML entities. The generic return rule would change unrelated string results.",
   "ruleFingerprint": "sha256:256b8090db78823326b222763774ab855315d1df6b1d17516a109212a5d30320",
   "behaviorFingerprint": "sha256:d24d734bec4a876389ea0b06b5a11503937a18eb50ffc49cf1d8e52586c2948b",
   "verification": {
@@ -40,6 +41,13 @@
       "actor": "CandidateVerificationCli",
       "reason": "All deterministic candidate gates passed",
       "occurredAt": "2026-11-05T02:32:05.477462171Z"
+    },
+    {
+      "from": "READY_FOR_REVIEW",
+      "to": "REJECTED",
+      "actor": "Codex",
+      "reason": "Review issue #1821. The semicolon belongs to the HTML2TextReader.entity2Text fallback for unrecognized HTML entities. The generic return rule would change unrelated string results.",
+      "occurredAt": "2026-11-07T19:48:47.391597682Z"
     }
   ]
 }

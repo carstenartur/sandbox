@@ -13,8 +13,9 @@
   "category": "String Literal Refactoring",
   "summary": "Replace deprecated JavadocView background color key with common Javadoc key.",
   "sourceVersion": "21",
-  "status": "READY_FOR_REVIEW",
+  "status": "REJECTED",
   "discoveredAt": "2026-07-26T03:15:43.470074683Z",
+  "rejectionReason": "Review issue #1824. The Javadoc color ID rename was coordinated across plugin.xml, plugin.properties, JavadocView and JavadocHover. Replacing a Java literal alone can break the theme lookup.",
   "ruleFingerprint": "sha256:16e6b83308335b2be64351a03b0fb4c440bfca9b0fe843e3da0ea5deeb370c2c",
   "behaviorFingerprint": "sha256:6e7e4411eed27f89132f21744c30e6c4ce1d6b4f20494801c0ed4df84c0bb1be",
   "verification": {
@@ -40,6 +41,13 @@
       "actor": "CandidateVerificationCli",
       "reason": "All deterministic candidate gates passed",
       "occurredAt": "2026-11-05T02:31:50.550268378Z"
+    },
+    {
+      "from": "READY_FOR_REVIEW",
+      "to": "REJECTED",
+      "actor": "Codex",
+      "reason": "Review issue #1824. The Javadoc color ID rename was coordinated across plugin.xml, plugin.properties, JavadocView and JavadocHover. Replacing a Java literal alone can break the theme lookup.",
+      "occurredAt": "2026-11-07T19:48:48.015486762Z"
     }
   ]
 }

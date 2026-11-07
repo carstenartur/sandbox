@@ -12,8 +12,9 @@
   "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
   "category": "String Manipulation",
   "sourceVersion": "21",
-  "status": "READY_FOR_REVIEW",
+  "status": "REJECTED",
   "discoveredAt": "2026-09-08T02:25:43.386333270Z",
+  "rejectionReason": "Review issue #1827. The Javadoc workaround removes asterisks after the skipLeadingWhitespace block. The proposed DSL puts it inside that condition and would also remove meaningful asterisks from unrelated text.",
   "ruleFingerprint": "sha256:299b5bcee542583b89d40771fc4bf31e34ae0dfe9a524853ae5ce53abd3f7b78",
   "behaviorFingerprint": "sha256:bce57c617c22b22c20f327611f44ad42e60192df684898733b92d59281c8d792",
   "verification": {
@@ -39,6 +40,13 @@
       "actor": "CandidateVerificationCli",
       "reason": "All deterministic candidate gates passed",
       "occurredAt": "2026-11-05T02:31:57.899167947Z"
+    },
+    {
+      "from": "READY_FOR_REVIEW",
+      "to": "REJECTED",
+      "actor": "Codex",
+      "reason": "Review issue #1827. The Javadoc workaround removes asterisks after the skipLeadingWhitespace block. The proposed DSL puts it inside that condition and would also remove meaningful asterisks from unrelated text.",
+      "occurredAt": "2026-11-07T19:48:48.932724125Z"
     }
   ]
 }
