@@ -81,7 +81,8 @@ class MathCleanUpOptionsTest {
  }
  @Test void optionFamiliesAndHistoricalConstructorsRemainIndependent() {
   var defaults=MathCleanUpOptions.defaults(17);
-  assertEquals(14,defaults.toMap().size());
+  assertEquals(15,defaults.toMap().size());
+  assertFalse(defaults.fieldInversions());
   assertEquals(MathCleanUpOptions.ValueRuntime.UNSPECIFIED,defaults.valueRuntime());
   assertEquals(5,defaults.timeoutSeconds());
   assertFalse(defaults.mathematicalOptIn());
