@@ -219,6 +219,28 @@ class JavaFieldInversionTest {
         assertNoEvidence(analyzeParsed(caller, SAMPLE, compiler, true, -1));
     }
 
+    @Test void guardedConstructorCaseCanPublishBeforeReductionIsAssigned() throws Exception {
+        String field = FIELD.replace("case AES:", "case Reduction selected when selected == Reduction.AES && Escape.publish(this):") + """
+                class Escape {
+                    static volatile Octets escaped;
+                    static boolean publish(Octets instance) {
+                        escaped = instance;
+                        return true;
+                    }
+                }
+                """;
+        Files.writeString(temporary.resolve("Octets.java"), field);
+        var compiler = new HashMap<String, String>();
+        JavaCore.setComplianceOptions("25", compiler);
+        assertNoEvidence(analyzeParsed(parse(SAMPLE, compiler), SAMPLE, compiler, true, -1));
+    }
+
+    @Test void serializableTypeDoesNotProveBlankFinalReductionThroughItsConstructor() throws Exception {
+        String field = FIELD.replace("class Octets {", "class Octets implements Restorable {")
+                + "\ninterface Restorable extends java.io.Serializable {}\n";
+        assertNoEvidence(analyze(SAMPLE, field, true));
+    }
+
     private static void assertNoEvidence(MathematicalAnalysis.Analysis analysis) {
         assertFalse(analysis.evidence().stream().anyMatch(e -> e.fieldInversion() != null));
     }
@@ -250,7 +272,8 @@ class JavaFieldInversionTest {
     private MathematicalAnalysis.Analysis analyzeParsed(CompilationUnit ast, String sample,
             Map<String, String> compiler, boolean enabled, int selection) {
         var options = MathCleanUpOptions.parse(Map.of(MathCleanUpOptions.CLEANUP, "true",
-                MathCleanUpOptions.FIELD_INVERSIONS, Boolean.toString(enabled)), 17);
+                MathCleanUpOptions.FIELD_INVERSIONS, Boolean.toString(enabled)),
+                Integer.parseInt(compiler.get(JavaCore.COMPILER_CODEGEN_TARGET_PLATFORM)));
         return MathematicalAnalysis.analyze(ast, sample, options, null, selection, 0,
                 new MathematicalAnalysis.SourceEnvironment("Sample.java", List.of(), List.of(temporary.toString()),
                         List.of(), compiler));
