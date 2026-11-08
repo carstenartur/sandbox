@@ -1,7 +1,6 @@
 name: Verify checked field inversion adapter
 
 on:
-  create:
   push:
     branches: [ codex/verify-checked-field-inversion-adapter ]
 
@@ -10,7 +9,6 @@ permissions:
 
 jobs:
   qualify:
-    if: github.ref == 'refs/heads/codex/verify-checked-field-inversion-adapter'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -22,15 +20,22 @@ jobs:
           distribution: temurin
           java-version: '25'
           cache: maven
-      - name: Compile the native adapter and exercise the pinned upstream Java
-        run: >-
-          ./mvnw --batch-mode --no-transfer-progress -f qa/math-optimization/pom.xml
-          -Dtest=JavaFieldInversionTest,BouncyCastleThresholdInversionTest,MathCleanUpOptionsTest
-          -Dsandbox.math.bc.threshold.upstream=true test
-      - name: Retain test reports
-        if: always()
-        uses: actions/upload-artifact@v7
+      - name: Exercise and retain the compiled Shamir sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/field-test" target/field-acceptance
+          JAVA_TOOL_OPTIONS="-Djava.io.tmpdir=$RUNNER_TEMP/field-test" ./mvnw \
+            --batch-mode --no-transfer-progress -f qa/math-optimization/pom.xml \
+            -Dtest=BouncyCastleThresholdInversionTest \
+            -Djunit.jupiter.tempdir.cleanup.mode.default=NEVER \
+            -Dsandbox.math.bc.threshold.upstream=true test
+          mapfile -t output < <(find "$RUNNER_TEMP/field-test" -path '*/generated/ShamirSplitSecret.java')
+          test "${#output[@]}" = 1
+          output_root=$(dirname "$(dirname "${output[0]}")")
+          cp -a "$output_root/original" "$output_root/generated" target/field-acceptance/
+      - uses: actions/upload-artifact@v7
         with:
-          name: checked-field-inversion-tests
-          path: qa/math-optimization/target/surefire-reports/
-          if-no-files-found: warn
+          name: compiled-shamir-cleanup
+          path: target/field-acceptance/
+          if-no-files-found: error
