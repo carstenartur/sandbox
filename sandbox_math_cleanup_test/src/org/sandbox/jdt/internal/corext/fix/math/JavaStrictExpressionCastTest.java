@@ -183,7 +183,7 @@ class JavaStrictExpressionCastTest extends JavaContextTestSupport {
     @Override protected URLClassLoader compile(String source) throws Exception {
         Path directory = Files.createTempDirectory(temporary, "strict-compiled");
         Path file = directory.resolve("Sample.java");
-        Files.writeString(file, source);
+        Files.writeString(file, source, StandardCharsets.UTF_8);
         var diagnostics = new ByteArrayOutputStream();
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, diagnostics, diagnostics,
                 "--release", "17", "-Xlint:all", "-Werror", "-d", directory.toString(), file.toString()),

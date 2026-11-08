@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
@@ -104,7 +105,7 @@ class FloatingPointRoundTripTest {
 	private Method compile(String source, Class<?> parameter) throws Exception {
 		Path directory= Files.createTempDirectory(temporary, "fp-roundtrip-"); //$NON-NLS-1$
 		Path file= directory.resolve("Calculation.java"); //$NON-NLS-1$
-		Files.writeString(file, source);
+		Files.writeString(file, source, StandardCharsets.UTF_8);
 		var compiler= ToolProvider.getSystemJavaCompiler();
 		assertNotNull(compiler, "Tests require a JDK"); //$NON-NLS-1$
 		assertEquals(0, compiler.run(null, null, null, "--release", "17", "-d", directory.toString(), file.toString()), source); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
