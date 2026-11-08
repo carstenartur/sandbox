@@ -1,7 +1,9 @@
 /* Copyright (c) 2026 Carsten Hammer. SPDX-License-Identifier: EPL-2.0 */
 package org.sandbox.jdt.internal.corext.fix.math;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -111,11 +113,12 @@ final class JavaByteFieldContract {
                 && knownPolynomial(literal.resolveConstantExpressionValue())) return true;
         // A blank final has no usable value on an escaped, partially initialized instance.
         // Admit a complete direct-to-Object constructor with no initializer calls or writes other than this selection.
-        if (!valid(owner.resolveBinding())) return false;
-        ITypeBinding superclass = owner.resolveBinding().getSuperclass();
+        ITypeBinding ownerBinding = owner.resolveBinding();
+        if (!valid(ownerBinding)) return false;
+        ITypeBinding superclass = ownerBinding.getSuperclass();
         if (declaration.getInitializer() != null || Modifier.isStatic(binding.getModifiers()) || !valid(superclass)
                 || !"java.lang.Object".equals(superclass.getQualifiedName()) || owner.getFields().length != 1 //$NON-NLS-1$
-                || owner.getFields()[0].fragments().size() != 1) return false;
+                || owner.getFields()[0].fragments().size() != 1 || !usesOrdinaryConstruction(ownerBinding, work)) return false;
         work.charge(owner.bodyDeclarations().size());
         for (Object member : owner.bodyDeclarations()) if (member instanceof Initializer) return false;
         List<MethodDeclaration> constructors = Arrays.stream(owner.getMethods()).filter(MethodDeclaration::isConstructor).toList();
@@ -128,7 +131,8 @@ final class JavaByteFieldContract {
         if (!valid(parameter) || !parameter.getType().isEnum() || !same(variable(choice.getExpression()), parameter)) return false;
         List<?> statements = choice.statements();
         // Two constant cases and a throwing default: the enum's names carry no mathematical meaning.
-        if (statements.size() != 8 || !constructorCase(statements, 0, binding) || !constructorCase(statements, 3, binding)
+        if (statements.size() != 8 || !constructorCase(statements, 0, binding, parameter.getType(), work)
+                || !constructorCase(statements, 3, binding, parameter.getType(), work)
                 || !(statements.get(6) instanceof SwitchCase last) || !last.isDefault()
                 || !(statements.get(7) instanceof ThrowStatement thrown)
                 || !(thrown.getExpression() instanceof ClassInstanceCreation exception) || exception.getExpression() != null
@@ -139,12 +143,43 @@ final class JavaByteFieldContract {
         return true;
     }
 
-    private static boolean constructorCase(List<?> statements, int offset, IVariableBinding binding) {
-        return statements.get(offset) instanceof SwitchCase branch && !branch.isDefault()
+    private static boolean constructorCase(List<?> statements, int offset, IVariableBinding binding, ITypeBinding selector,
+            JavaValueSourceSummary.Work work) {
+        return statements.get(offset) instanceof SwitchCase branch && !branch.isDefault() && enumLabels(branch, selector, work)
                 && statements.get(offset + 1) instanceof ExpressionStatement line && line.getExpression() instanceof Assignment assigned
                 && assigned.getOperator() == Assignment.Operator.ASSIGN && same(variable(assigned.getLeftHandSide()), binding)
                 && assigned.getRightHandSide() instanceof NumberLiteral literal && knownPolynomial(literal.resolveConstantExpressionValue())
                 && statements.get(offset + 2) instanceof BreakStatement stop && stop.getLabel() == null;
+    }
+
+    @SuppressWarnings("deprecation") // The single-label API is required for pre-JLS14 ASTs.
+    private static boolean enumLabels(SwitchCase branch, ITypeBinding selector, JavaValueSourceSummary.Work work) {
+        if (branch.getAST().apiLevel() < AST.JLS14) return enumConstant(branch.getExpression(), selector);
+        // A guarded pattern can call code and publish this before the reduction assignment.
+        List<?> labels = branch.expressions();
+        work.charge(labels.size());
+        return !labels.isEmpty() && labels.stream().allMatch(label -> enumConstant(label, selector));
+    }
+
+    private static boolean enumConstant(Object label, ITypeBinding selector) {
+        return label instanceof Name name && name.resolveBinding() instanceof IVariableBinding constant
+                && valid(constant) && constant.isEnumConstant() && same(constant.getDeclaringClass(), selector);
+    }
+
+    /** The caller first proves that the class extends Object directly. */
+    static boolean usesOrdinaryConstruction(ITypeBinding owner, JavaValueSourceSummary.Work work) {
+        var types = new ArrayList<ITypeBinding>();
+        var seen = new HashSet<String>();
+        types.add(owner);
+        for (int i = 0; i < types.size(); i++) {
+            work.charge(1);
+            var type = types.get(i);
+            // Deserialization can restore final instance fields without a constructor freeze.
+            if (!valid(type) || "java.io.Serializable".equals(type.getQualifiedName())) return false; //$NON-NLS-1$
+            if (!seen.add(type.getKey())) continue;
+            for (var parent : type.getInterfaces()) types.add(parent);
+        }
+        return true;
     }
 
     private static boolean knownPolynomial(Object value) {
