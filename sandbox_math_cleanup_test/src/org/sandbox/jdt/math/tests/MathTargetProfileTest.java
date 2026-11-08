@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -96,7 +97,7 @@ class MathTargetProfileTest {
         for (Row row : rows) {
             Path file = directory.resolve(packageName(row.kind(), row.safety()).replace('.', '/')).resolve("Calculation.java");
             Files.createDirectories(Objects.requireNonNull(file.getParent(), "Generated source requires a parent directory"));
-            Files.writeString(file, generated ? row.generated() : row.original());
+            Files.writeString(file, (generated ? row.generated() : row.original()), StandardCharsets.UTF_8);
             arguments.add(file.toString());
         }
         var compiler = ToolProvider.getSystemJavaCompiler();
