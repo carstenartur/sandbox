@@ -7,8 +7,8 @@
   "releasePolicy": {
     "required": "non-SNAPSHOT",
     "minimumDocumentedCandidate": "0.1.13",
-    "selectedVersion": "0.11.8",
-    "selectionState": "Published 0.11.8 selected for normal Core/Search/Java Analysis runtime. Earlier immutable compatibility evidence remains historical."
+    "selectedVersion": "0.12.0",
+    "selectionState": "Published 0.12.0 selected for normal Core/Search/Java Analysis runtime. Earlier immutable compatibility evidence remains historical."
   },
   "runtime": {
     "currentDatabase": "MSSQL",
@@ -27,7 +27,7 @@
         "org.eclipse.jgit.server.repository.ExternalHibernateRepositoryService",
         "org.eclipse.jgit.server.config.ExternalServerPersistenceContext"
       ],
-      "currentBackend": "Released Core 0.11.8 through the default application context",
+      "currentBackend": "Released Core 0.12.0 through the default application context",
       "targetOwner": "jgit-storage-hibernate-core",
       "targetApi": [
         "HibernateRepositoryFactory",
@@ -153,7 +153,7 @@
         "org.eclipse.jgit.server.history.ReleasedSandboxHistorySearch",
         "org.eclipse.jgit.server.rest.SearchResource"
       ],
-      "currentBackend": "Released Search 0.11.8 selected by normal startup",
+      "currentBackend": "Released Search 0.12.0 selected by normal startup",
       "targetOwner": "jgit-storage-hibernate-search",
       "targetApi": [
         "GitHistorySearchService",
@@ -182,7 +182,7 @@
         "org.eclipse.jgit.server.history.ReleasedSandboxHistorySearch",
         "org.eclipse.jgit.server.rest.SearchResource"
       ],
-      "currentBackend": "Released Search 0.11.8 first-parent paths selected by normal startup",
+      "currentBackend": "Released Search 0.12.0 first-parent paths selected by normal startup",
       "targetOwner": "jgit-storage-hibernate-search",
       "targetApi": [
         "GitHistorySearchService",
@@ -230,7 +230,7 @@
         "org.eclipse.jgit.server.analysis.ReleasedSandboxSourceSearch",
         "org.eclipse.jgit.server.analysis.HistoricalSourceIndex"
       ],
-      "currentBackend": "Released Java Analysis 0.11.8 whole-project parsing and public file index, with immutable application facets and canonical historical provenance",
+      "currentBackend": "Released Java Analysis 0.12.0 whole-project parsing and public file index, with immutable application facets and canonical historical provenance",
       "targetOwner": "jgit-storage-hibernate-java-analysis",
       "targetApi": [
         "JavaProjectAnalyzer",

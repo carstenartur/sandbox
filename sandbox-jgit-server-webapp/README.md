@@ -6,7 +6,7 @@
 
 `sandbox-jgit-server-webapp` is a Jakarta Servlet-based REST API server that provides web-based access to Git repositories stored through released `jgit-storage-hibernate` modules. It enables semantic and structural search over indexed Java repositories.
 
-Normal startup uses published **0.11.8 Core, Search and Java Analysis** behind application-owned repository/search boundaries. The copied generic implementation is removed. Database adoption is an explicit operator procedure; normal startup validates the released schema and never performs the adoption.
+Normal startup uses published **0.12.0 Core, Search and Java Analysis** behind application-owned repository/search boundaries. The copied generic implementation is removed. Database adoption is an explicit operator procedure; normal startup validates the released schema and never performs the adoption.
 
 ## REST API
 
