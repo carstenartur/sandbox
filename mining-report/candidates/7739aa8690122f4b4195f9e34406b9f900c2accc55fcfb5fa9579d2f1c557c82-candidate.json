@@ -12,8 +12,9 @@
   "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
   "category": "Explicit Unboxing",
   "sourceVersion": "21",
-  "status": "READY_FOR_REVIEW",
+  "status": "REJECTED",
   "discoveredAt": "2026-10-09T02:37:30.629944910Z",
+  "rejectionReason": "Review issue #1820. Explicit Character.charValue() in CompositeContentAssistProcessor.toCharArray() compiles to the same bytecode as assignment unboxing. JDT can remove the explicit call, making the proposal a competing style rule.",
   "ruleFingerprint": "sha256:4581e2a071820e97107bde0aced69318813e27ca1e779a87cb9addf0ac128786",
   "behaviorFingerprint": "sha256:c97b28b9121a3ff2fc5e450bb66d974454465d441c6760632ecf7b1c57039be0",
   "verification": {
@@ -39,6 +40,13 @@
       "actor": "CandidateVerificationCli",
       "reason": "All deterministic candidate gates passed",
       "occurredAt": "2026-11-05T02:32:01.960410066Z"
+    },
+    {
+      "from": "READY_FOR_REVIEW",
+      "to": "REJECTED",
+      "actor": "Codex",
+      "reason": "Review issue #1820. Explicit Character.charValue() in CompositeContentAssistProcessor.toCharArray() compiles to the same bytecode as assignment unboxing. JDT can remove the explicit call, making the proposal a competing style rule.",
+      "occurredAt": "2026-11-07T19:48:47.090821053Z"
     }
   ]
 }

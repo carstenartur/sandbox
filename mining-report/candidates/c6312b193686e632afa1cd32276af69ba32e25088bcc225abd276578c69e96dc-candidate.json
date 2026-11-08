@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "c6312b193686e632afa1cd32276af69ba32e25088bcc225abd276578c69e96dc",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.debug.internal.core.groups.GroupLaunchConfigurationDelegate.getProp($index, $propName) :: inClass(\"org.eclipse.debug.internal.core.groups.GroupLaunchConfigurationDelegate\")\n\u003d\u003e\ngetProp($index, $propName)\n;;",
+  "beforeExample": "package org.eclipse.debug.internal.core.groups;\n\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;\nimport java.util.List;\n\npublic class GroupLaunchConfigurationDelegate {\n    private static final String MULTI_LAUNCH_CONSTANTS_PREFIX \u003d \"test\";\n    private static final String NAME_PROP \u003d \"name\";\n\n    public static String getProp(int index, String string) {\n        return MULTI_LAUNCH_CONSTANTS_PREFIX + \".\" + index + \".\" + string;\n    }\n\n    public void storeLaunchElements(ILaunchConfigurationWorkingCopy configuration, List elements) throws CoreException {\n        int i \u003d 0;\n        String propValue \u003d GroupLaunchConfigurationDelegate.getProp(i, NAME_PROP); // Positive match\n        configuration.setAttribute(propValue, \"someName\");\n    }\n}",
+  "afterExample": "package org.eclipse.debug.internal.core.groups;\n\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;\nimport java.util.List;\n\npublic class GroupLaunchConfigurationDelegate {\n    private static final String MULTI_LAUNCH_CONSTANTS_PREFIX \u003d \"test\";\n    private static final String NAME_PROP \u003d \"name\";\n\n    public static String getProp(int index, String string) {\n        return MULTI_LAUNCH_CONSTANTS_PREFIX + \".\" + index + \".\" + string;\n    }\n\n    public void storeLaunchElements(ILaunchConfigurationWorkingCopy configuration, List elements) throws CoreException {\n        int i \u003d 0;\n        String propValue \u003d getProp(i, NAME_PROP); // Transformed\n        configuration.setAttribute(propValue, \"someName\");\n    }\n}",
+  "negativeExample": "package com.example;\n\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;\nimport java.util.List;\nimport org.eclipse.debug.internal.core.groups.GroupLaunchConfigurationDelegate;\n\npublic class ClientClass {\n    private static final String NAME_PROP \u003d \"name\";\n\n    public void doSomething(ILaunchConfigurationWorkingCopy configuration) throws CoreException {\n        int i \u003d 0;\n        // This FQN call should NOT be changed because it\u0027s not in GroupLaunchConfigurationDelegate class.\n        // The \u0027inClass\u0027 guard prevents transformation here.\n        String propValue \u003d org.eclipse.debug.internal.core.groups.GroupLaunchConfigurationDelegate.getProp(i, NAME_PROP);\n        configuration.setAttribute(propValue, \"someOtherName\");\n\n        // Another static method call from within GroupLaunchConfigurationDelegate (no specific rule for it).\n        // This should not match the pattern for \u0027getProp\u0027.\n        String someOther \u003d GroupLaunchConfigurationDelegate.anotherStaticMethod(0, \"PARAM\");\n    }\n}\n\n// Minimal definition of the target class to make the negative example compile\npackage org.eclipse.debug.internal.core.groups;\n\nclass GroupLaunchConfigurationDelegate {\n    private static final String MULTI_LAUNCH_CONSTANTS_PREFIX \u003d \"test\";\n    private static final String NAME_PROP \u003d \"name\";\n\n    public static String getProp(int index, String string) {\n        return MULTI_LAUNCH_CONSTANTS_PREFIX + \".\" + index + \".\" + string;\n    }\n\n    public static String anotherStaticMethod(int index, String string) {\n        return MULTI_LAUNCH_CONSTANTS_PREFIX + \".\" + index + \".\" + string;\n    }\n}",
+  "targetHintFile": "cleanup.sandbox-hint",
+  "sourceCommit": "fb136251cd02ed0b4812d1c65923b3abe79a1d40",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "sourceEvidence": {
+    "path": "org.eclipse.debug.core/core/org/eclipse/debug/internal/core/groups/GroupLaunchConfigurationDelegate.java",
+    "before": "configuration.setAttribute(GroupLaunchConfigurationDelegate.getProp(i, NAME_PROP), el.name);",
+    "after": "configuration.setAttribute(getProp(i, NAME_PROP), el.name);",
+    "diffHunk": "diff --git a/org.eclipse.debug.core/core/org/eclipse/debug/internal/core/groups/GroupLaunchConfigurationDelegate.java b/org.eclipse.debug.core/core/org/eclipse/debug/internal/core/groups/GroupLaunchConfigurationDelegate.java\nindex 8d9f5a7..fccd5f8 100644\n--- a/org.eclipse.debug.core/core/org/eclipse/debug/internal/core/groups/GroupLaunchConfigurationDelegate.java\n+++ b/org.eclipse.debug.core/core/org/eclipse/debug/internal/core/groups/GroupLaunchConfigurationDelegate.java\n@@ -307,14 +329,15 @@\n \t\t\tif (el \u003d\u003d null) {\n \t\t\t\tcontinue;\n \t\t\t}\n-\t\t\tconfiguration.setAttribute(GroupLaunchConfigurationDelegate.getProp(i, NAME_PROP), el.name);\n-\t\t\tconfiguration.setAttribute(GroupLaunchConfigurationDelegate.getProp(i, ACTION_PROP), el.action.toString());\n+\t\t\tconfiguration.setAttribute(getProp(i, NAME_PROP), el.name);\n+\t\t\tconfiguration.setAttribute(getProp(i, ACTION_PROP), el.action.toString());\n+\t\t\tconfiguration.setAttribute(getProp(i, ADOPT_PROP), el.adoptIfRunning);\n \t\t\t// note: the saving of the action param will need to be enhanced if\n \t\t\t// ever an action type is introduced that uses something that can\u0027t\n \t\t\t// be reconstructed from its toString()\n-\t\t\tconfiguration.setAttribute(GroupLaunchConfigurationDelegate.getProp(i, ACTION_PARAM_PROP), el.actionParam !\u003d null ? el.actionParam.toString() : null);\n-\t\t\tconfiguration.setAttribute(GroupLaunchConfigurationDelegate.getProp(i, MODE_PROP), el.mode);\n-\t\t\tconfiguration.setAttribute(GroupLaunchConfigurationDelegate.getProp(i, ENABLED_PROP), el.enabled);\n+\t\t\tconfiguration.setAttribute(getProp(i, ACTION_PARAM_PROP), el.actionParam !\u003d null ? el.actionParam.toString() : null);\n+\t\t\tconfiguration.setAttribute(getProp(i, MODE_PROP), el.mode);\n+\t\t\tconfiguration.setAttribute(getProp(i, ENABLED_PROP), el.enabled);\n \t\t\ti++;\n \t\t}\n \t}\n"
+  },
+  "category": "Code Style",
+  "summary": "Replaces \u0027ClassName.staticMethod()\u0027 with \u0027staticMethod()\u0027 when the call is made from within \u0027ClassName\u0027.",
+  "sourceVersion": "8",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-08T02:16:17.202506799Z",
+  "ruleFingerprint": "sha256:b8c937fe1b354dd6c0b38035fd58a1343d1b916e3cdb9c4fc769ee329a938d1c",
+  "behaviorFingerprint": "sha256:8100e80c0ebaddd98ec57681270d72898d136f3e0723ad8dd6b1402ff5916acf",
+  "verification": {
+    "successful": false,
+    "stage": "DEPENDENCY_RESOLUTION",
+    "message": "Java compile error at line 4: The import org.eclipse.debug.core cannot be resolved",
+    "verifiedAt": "2026-11-08T02:23:23.636477770Z",
+    "verifierVersion": "9",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

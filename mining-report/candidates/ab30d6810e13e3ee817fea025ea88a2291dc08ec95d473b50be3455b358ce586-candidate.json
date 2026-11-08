@@ -13,8 +13,9 @@
   "category": "Deprecated API Usage",
   "summary": "Replaces deprecated Integer constructor with static factory method Integer.valueOf().",
   "sourceVersion": "21",
-  "status": "READY_FOR_REVIEW",
+  "status": "REJECTED",
   "discoveredAt": "2026-10-09T02:37:30.521463163Z",
+  "rejectionReason": "Review issue #1822. The formatting argument in OverviewRuler duplicates the existing Sandbox and JDT valueOf replacements and #1825. A generic rewrite can also alter observable reference identity.",
   "ruleFingerprint": "sha256:c93578ef60ec2e73f6819bc82ab52d7516cec85191684f87f5955c62d218b24d",
   "behaviorFingerprint": "sha256:b94b180e3e1c4170af38ccdcaa627cf5b5e639aa0e98e0c354ca1504c424c9f0",
   "verification": {
@@ -40,6 +41,13 @@
       "actor": "CandidateVerificationCli",
       "reason": "All deterministic candidate gates passed",
       "occurredAt": "2026-11-05T02:32:01.837468482Z"
+    },
+    {
+      "from": "READY_FOR_REVIEW",
+      "to": "REJECTED",
+      "actor": "Codex",
+      "reason": "Review issue #1822. The formatting argument in OverviewRuler duplicates the existing Sandbox and JDT valueOf replacements and #1825. A generic rewrite can also alter observable reference identity.",
+      "occurredAt": "2026-11-07T19:48:47.715361846Z"
     }
   ]
 }

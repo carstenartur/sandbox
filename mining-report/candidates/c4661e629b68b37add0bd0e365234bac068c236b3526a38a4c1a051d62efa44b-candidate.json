@@ -13,8 +13,9 @@
   "category": "API Modernization",
   "summary": "Replaces `File.toURL()` with `File.toURI().toURL()` for robust URL generation, addressing the deprecation of `File.toURL()` since Java 8 and its known issues with URL encoding.",
   "sourceVersion": "21",
-  "status": "READY_FOR_REVIEW",
+  "status": "REJECTED",
   "discoveredAt": "2026-09-05T02:27:22.059845875Z",
+  "rejectionReason": "Review issue #1828. The proposed automatic rewrite changes URL escaping. The curated follow-up reports resolved java.io.File.toURL() calls for manual migration review. Follow-up pull request #1835.",
   "ruleFingerprint": "sha256:71e08924dd3008cc8a2d3d89df9c8d3eec78694bd9884056433893228ced68be",
   "behaviorFingerprint": "sha256:58eb9c05446a9339d5ddbfcaa3beca18114470596a19ffe9f112a887be9c261c",
   "verification": {
@@ -40,6 +41,13 @@
       "actor": "CandidateVerificationCli",
       "reason": "All deterministic candidate gates passed",
       "occurredAt": "2026-11-05T02:31:57.683404252Z"
+    },
+    {
+      "from": "READY_FOR_REVIEW",
+      "to": "REJECTED",
+      "actor": "Codex",
+      "reason": "Review issue #1828. The proposed automatic rewrite changes URL escaping. The curated follow-up reports resolved java.io.File.toURL() calls for manual migration review. Follow-up pull request #1835.",
+      "occurredAt": "2026-11-07T19:48:49.251613757Z"
     }
   ]
 }

@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "AFTER_PARSE",
     "message": "Java compile error at line 15: org.eclipse.debug.internal.ui.DebugUIPlugin cannot be resolved to a type",
-    "verifiedAt": "2026-11-07T02:22:19.004872069Z",
+    "verifiedAt": "2026-11-08T02:23:23.161385239Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
