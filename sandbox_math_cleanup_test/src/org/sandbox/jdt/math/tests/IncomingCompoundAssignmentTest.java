@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sandbox.jdt.internal.corext.fix.math.JavaComputationExtractor;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
-import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
 
 /** Incoming compound assignments keep the old local value, narrowing and the write boundary. */
 class IncomingCompoundAssignmentTest {
@@ -80,7 +79,7 @@ class IncomingCompoundAssignmentTest {
         String statement = "value ^= (a & mask) ^ (b & mask);";
         String source = "public class Calculation { public static int compute(int value, int a, int b, int mask) { "
                 + statement + " return value; }}";
-        var analysis = MathematicalAnalysis.analyze(MathTestSupport.parse(source), source,
+        var analysis = MathTestSupport.analyze(MathTestSupport.parse(source), source,
                 options(OptimizationGoal.LOWER_ESTIMATED_RUNTIME), new NullProgressMonitor(), -1, 0);
         assertTrue(analysis.changed(), analysis.diagnostics().toString());
         var evidence = analysis.evidence().stream().filter(e -> e.original().equals(statement))
@@ -107,7 +106,7 @@ class IncomingCompoundAssignmentTest {
                 + "public static int compute(int value, int[] left, int[] right, int mask) { words = left; "
                 + "try { value ^= (words[0] & mask) ^ (right[0] & mask); return value; } "
                 + "catch (RuntimeException failure) { return value; } }}";
-        var analysis = MathematicalAnalysis.analyze(MathTestSupport.parse(source), source, options(), new NullProgressMonitor(), -1, 0);
+        var analysis = MathTestSupport.analyze(MathTestSupport.parse(source), source, options(), new NullProgressMonitor(), -1, 0);
         assertTrue(analysis.changed(), analysis.diagnostics().toString());
         assertTrue(analysis.evidence().stream().anyMatch(e -> e.original().contains("value ^=")), analysis.diagnostics().toString());
         assertEquals(analysis.replacements().size(), analysis.evidence().size());

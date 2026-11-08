@@ -205,7 +205,7 @@ class ScalarMethodExpansionTest {
     private static MathematicalAnalysis.Analysis analyzeCaller(String source) {
         var options=options();
         int start=source.indexOf("public static int compute");
-        return MathematicalAnalysis.analyze(MathTestSupport.parse(source),source,options,new NullProgressMonitor(),start,source.length()-start);
+        return MathTestSupport.analyze(MathTestSupport.parse(source),source,options,new NullProgressMonitor(),start,source.length()-start);
     }
     private void qualify(String helpers,String body,boolean improvementRequired)throws Exception {
         String original=source(helpers+"\npublic static int reference(int x,int a,int b){"+body+"}",body);

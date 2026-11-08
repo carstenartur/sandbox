@@ -166,7 +166,8 @@ public final class JavaRuntimeIterationTemplates {
                 || !(unparenthesized(comparison.getRightOperand(),charge) instanceof NumberLiteral limit) || !limit.getToken().endsWith("L"))return false;
         return unparenthesized(comparison.getLeftOperand(),charge) instanceof InfixExpression distance
                 && distance.getOperator()==InfixExpression.Operator.MINUS && distance.extendedOperands().isEmpty()
-                && longCast(distance.getLeftOperand(),charge) && longCast(distance.getRightOperand(),charge);
+                && longCast(distance.getLeftOperand(),charge) && (longCast(distance.getRightOperand(),charge)
+                    || JavaFiniteSumAnalysis.type(distance.getRightOperand().resolveTypeBinding(),"int"));
     }
     private static boolean longCast(Expression expression,LongConsumer charge) {
         return unparenthesized(expression,charge) instanceof CastExpression cast

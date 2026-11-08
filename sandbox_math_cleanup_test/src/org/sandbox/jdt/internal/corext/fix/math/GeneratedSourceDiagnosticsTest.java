@@ -9,16 +9,114 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.*;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.eclipse.jface.text.Document;
 import org.eclipse.text.edits.*;
+import org.sandbox.jdt.math.tests.StrictCompilerOptions;
 
 class GeneratedSourceDiagnosticsTest {
     static Map<String,String> compiler() {
-        var options = new HashMap<String,String>();
-        JavaCore.setComplianceOptions("17", options);
-        options.put(JavaCore.COMPILER_PB_UNNECESSARY_TYPE_CHECK, JavaCore.WARNING);
+        var options = StrictCompilerOptions.options(17);
         options.put(JavaCore.COMPILER_PB_NON_NLS_STRING_LITERAL, JavaCore.WARNING);
         return options;
+    }
+    @Test void strengthenedProfilePreservesErrorsAndDoesNotMutateItsInput() {
+        var supplied = compiler();
+        supplied.put(JavaCore.COMPILER_PB_UNNECESSARY_TYPE_CHECK, JavaCore.ERROR);
+        var snapshot = Map.copyOf(supplied);
+        var strict = StrictCompilerOptions.strengthen(supplied);
+        var ast = parse("class Calculation { int f(int x) { return (int)x; }}", strict);
+        assertTrue(java.util.Arrays.stream(ast.getProblems()).anyMatch(problem ->
+                problem.getID() == IProblem.UnnecessaryCast && problem.isError()));
+        assertEquals(snapshot, supplied);
+    }
+    @Test void usefulCleanupStillAppliesWithEveryOptionalWarningEnabled() throws Exception {
+        String source = "class Calculation { static int f(int x) { return (x+1)-1; }}";
+        var compiler = StrictCompilerOptions.allWarnings(17);
+        var original = parse(source, compiler);
+        // This fixture has no package nullness default; the all-warning profile must report it.
+        assertEquals(1, original.getProblems().length, java.util.Arrays.toString(original.getProblems()));
+        assertEquals(IProblem.MissingNonNullByDefaultAnnotationOnType, original.getProblems()[0].getID());
+        assertTrue(original.getProblems()[0].isWarning());
+        var options = new MathCleanUpOptions(true, java.util.Set.of(de.regelsuche.sdk.optimization.NumericKind.INT),
+                de.regelsuche.sdk.optimization.SafetyProfile.PRESERVE_JAVA,
+                de.regelsuche.sdk.optimization.OptimizationGoal.READABILITY, 200000, 5000, false, 17, List.of());
+        var environment = new MathematicalAnalysis.SourceEnvironment("Calculation.java", List.of(), List.of(), List.of(), compiler);
+        var result = MathematicalAnalysis.analyze(original, source, options, null, -1, 0, environment);
+        assertTrue(result.changed(), result.diagnostics().toString());
+        var document = new Document(source);
+        var undo = result.newEdit().apply(document, TextEdit.CREATE_UNDO);
+        var generated = parse(document.get(), compiler);
+        assertEquals(1, generated.getProblems().length, java.util.Arrays.toString(generated.getProblems()));
+        assertEquals(original.getProblems()[0].getID(), generated.getProblems()[0].getID());
+        assertArrayEquals(original.getProblems()[0].getArguments(), generated.getProblems()[0].getArguments());
+        assertEquals(original.getProblems()[0].getSourceStart(), generated.getProblems()[0].getSourceStart());
+        assertEquals(original.getProblems()[0].getSourceEnd(), generated.getProblems()[0].getSourceEnd());
+        assertTrue(generated.getProblems()[0].isWarning());
+        assertEquals(compiler, result.compilerOptions());
+        undo.apply(document); assertEquals(source, document.get());
+    }
+    @ParameterizedTest @ValueSource(strings={JavaCore.WARNING, JavaCore.ERROR})
+    void receiverGuardKeepsOriginalFallbackWithoutIntroducingNullFlowDiagnostics(String severity) throws Exception {
+        String originalReturn = "return x.add(java.math.BigInteger.ONE).subtract(java.math.BigInteger.ONE);";
+        String source = "class Calculation { java.math.BigInteger f(java.math.BigInteger x) {" + originalReturn + "}}";
+        var compiler = compiler();
+        compiler.put(JavaCore.COMPILER_PB_POTENTIAL_NULL_REFERENCE, severity);
+        compiler.put(JavaCore.COMPILER_PB_REDUNDANT_NULL_CHECK, severity);
+        var original = parse(source, compiler);
+        assertEquals(0, original.getProblems().length, java.util.Arrays.toString(original.getProblems()));
+        var options = new MathCleanUpOptions(true, java.util.Set.of(de.regelsuche.sdk.optimization.NumericKind.BIG_INTEGER),
+                de.regelsuche.sdk.optimization.SafetyProfile.PRESERVE_JAVA,
+                de.regelsuche.sdk.optimization.OptimizationGoal.LOWER_ESTIMATED_RUNTIME, 1000000, 20000, false, 17, List.of(), true);
+        var environment = new MathematicalAnalysis.SourceEnvironment("Calculation.java", List.of(), List.of(), List.of(), compiler);
+        var result = MathematicalAnalysis.analyze(original, source, options, null, -1, 0, environment);
+        assertTrue(result.changed(), result.diagnostics().toString());
+        var document = new Document(source); result.newEdit().apply(document);
+        assertTrue(document.get().contains(originalReturn), document.get());
+        var generated = parse(document.get(), compiler);
+        assertEquals(0, generated.getProblems().length, java.util.Arrays.toString(generated.getProblems()));
+    }
+    @ParameterizedTest @MethodSource("introducedDiagnostics")
+    void strictProfilesRejectActualIntroducedDiagnostics(String source, String oldText, String newText,
+            String option, int problemId, String severity) {
+        var compiler = StrictCompilerOptions.allWarnings(17);
+        compiler.put(option, severity);
+        var original = parse(source, compiler);
+        assertFalse(java.util.Arrays.stream(original.getProblems()).anyMatch(IProblem::isError),
+                java.util.Arrays.toString(original.getProblems()));
+        String generated = source.replace(oldText, newText);
+        var after = parse(generated, compiler);
+        assertTrue(java.util.Arrays.stream(after.getProblems()).anyMatch(problem -> problem.getID() == problemId
+                && (JavaCore.ERROR.equals(severity) ? problem.isError() : problem.isWarning())),
+                java.util.Arrays.toString(after.getProblems()));
+        var rejected = assertThrows(IllegalArgumentException.class, () -> MathematicalAnalysis.checkGeneratedSource(
+                original, source, generated, compiler, 17, null, null,
+                source.indexOf(oldText), oldText.length(), newText.length()));
+        assertTrue(rejected.getMessage().startsWith(JavaCore.ERROR.equals(severity)
+                ? "GENERATED_REGION_INVALID" : "GENERATED_DIAGNOSTIC_INTRODUCED"), rejected.getMessage());
+    }
+    private static java.util.stream.Stream<Arguments> introducedDiagnostics() {
+        Object[][] cases = {
+            {"class Calculation { int f(int x) { return x; }}", "return x", "return (int)x",
+                JavaCore.COMPILER_PB_UNNECESSARY_TYPE_CHECK, IProblem.UnnecessaryCast},
+            {"class Calculation { int f(int x) { int y=x; return y; }}", "return y", "return x",
+                JavaCore.COMPILER_PB_UNUSED_LOCAL, IProblem.LocalVariableIsNeverUsed},
+            {"class Calculation { int f(int x) { return x; }}", "return x", "return 0",
+                JavaCore.COMPILER_PB_UNUSED_PARAMETER, IProblem.ArgumentIsNeverUsed},
+            {"class Calculation { private static int one(){return 1;} int f(){return one();}}", "return one()", "return 1",
+                JavaCore.COMPILER_PB_UNUSED_PRIVATE_MEMBER, IProblem.UnusedPrivateMethod},
+            {"class Calculation { String f(){return null;}}", "return null", "return \"text\"",
+                JavaCore.COMPILER_PB_NON_NLS_STRING_LITERAL, IProblem.NonExternalizedStringLiteral},
+            {"class Calculation { int f(){Object value=new Object(); return value.hashCode();}}", "new Object()", "null",
+                JavaCore.COMPILER_PB_NULL_REFERENCE, IProblem.NullLocalVariableReference},
+            {"class Calculation { void f(java.io.File file) throws java.io.IOException {java.io.InputStream in=new java.io.FileInputStream(file); in.close();}}",
+                "in.close()", "in.read()", JavaCore.COMPILER_PB_UNCLOSED_CLOSEABLE, IProblem.UnclosedCloseable}
+        };
+        return java.util.Arrays.stream(cases).flatMap(values -> java.util.stream.Stream.of(JavaCore.WARNING, JavaCore.ERROR)
+                .map(severity -> Arguments.of(values[0], values[1], values[2], values[3], values[4], severity)));
     }
     static CompilationUnit parse(String source, Map<String,String> options) {
         var parser = ASTParser.newParser(AST.getJLSLatest());

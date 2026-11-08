@@ -160,7 +160,7 @@ final class JavaValueCallOptimizer {
     }
     private static String guards(JavaValueSourceSummary.Summary summary,JavaValueAccess.Access access,String receiver,IVariableBinding constant,String constantProjection,
             JavaValueSourceSummary.Value constantValue,ITypeBinding owner,JavaValueSourceSummary.Work work) {
-        var guards=new LinkedHashSet<String>();guards.add(receiver+" != null"); //$NON-NLS-1$
+        var guards=new LinkedHashSet<String>();guards.add("java.util.Objects.nonNull("+receiver+")"); //$NON-NLS-1$ //$NON-NLS-2$
         for(int i=0;i<access.shape().components().size();i++) {
             String leaf=access.leaf(receiver,i);guards.add(leaf+" != null");guards.add(leaf+".getClass() == java.math.BigInteger.class");guards.add(leaf+".abs().bitLength() <= 4096"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
         }
@@ -195,6 +195,7 @@ final class JavaValueCallOptimizer {
     /** Bind guard reads to admitted source fields and emitted types/constructors to the actual JDK declarations. */
     private static void verifyGuardBindings(Expression guard,IVariableBinding receiver,IVariableBinding constant,
             List<JavaValueSourceSummary.StaticValue> statics,JavaValueSourceSummary.Work work) {
+        JavaValueGuardBindings.verifyNonNullCalls(guard,work);
         var allowed=new HashSet<String>();allowed.add(receiver.getVariableDeclaration().getKey());allowed.add(constant.getVariableDeclaration().getKey());
         for(var value:statics)allowed.add(value.field().getVariableDeclaration().getKey());
         boolean[] constantSeen={false};

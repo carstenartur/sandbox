@@ -9,7 +9,7 @@ import de.regelsuche.sdk.optimization.iteration.*;
 
 /** Runtime finite reductions: SDK proof plus independently reconstructed Java template/binding replay. */
 final class JavaRuntimeIterationOptimizer {
-    private static final Set<String> GENERATED_JDK_TYPES=Set.of("java.math.BigInteger","java.lang.Math","java.util.function.IntSupplier","java.util.function.LongSupplier");
+    private static final Set<String> GENERATED_JDK_TYPES=Set.of("java.math.BigInteger","java.lang.Math","java.util.Objects","java.util.function.IntSupplier","java.util.function.LongSupplier");
     private JavaRuntimeIterationOptimizer() { }
     record Reservation(boolean admitted,long work) { }
     static Reservation preflight(CompilationUnit unit,MathCleanUpOptions options,long available,CancellationToken token) {

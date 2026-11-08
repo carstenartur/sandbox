@@ -204,7 +204,7 @@ final class JavaFiniteSumOptimizer {
         for(int i=0;i<proofs.size();i++) {
             var reduction=context.reductions().get(i);var proof=proofs.get(i);
             if(!context.expression()) text.append(reduction.accumulator().getName()).append(" = "); //$NON-NLS-1$
-            text.append(emit(proof.emitted(),proof.bindings(),proof.source().arithmetic().bits()==32?"int":"long",work,0)); //$NON-NLS-1$ //$NON-NLS-2$
+            text.append(emit(proof.emitted(),proof.bindings(),proof.source().arithmetic().bits()==32?"int":"long",work,0,context.expression())); //$NON-NLS-1$ //$NON-NLS-2$
             if(!context.expression()) text.append(';');
         }
         if(context.counter()!=null) text.append(context.counter().getName()).append(" = ").append(context.finalCounter()).append(context.counter().getType().getName().equals("long")?"L;":";"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
@@ -231,20 +231,27 @@ final class JavaFiniteSumOptimizer {
                 || binding.isParameter()!=result.isParameter()) throw invalid();
         return result;
     }
-    private static String emit(Expr expression,List<FiniteSumEvidence.Binding> bindings,String width,JavaLoopInvariantAnalysis.Work work,int depth) {
+    private static String emit(Expr expression,List<FiniteSumEvidence.Binding> bindings,String width,JavaLoopInvariantAnalysis.Work work,int depth,boolean promoteVariable) {
         work.tick();if(depth>64) throw invalid();
         if(expression instanceof NumberExpr number) {
             if(!number.value().denominator().equals(java.math.BigInteger.ONE)) throw invalid();
             return number.value().numerator().toString()+(width.equals("long")?"L":""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
         }
         if(expression instanceof VariableExpr variable) {
-            var binding=bindings.stream().filter(b->variable.symbol().orElseThrow().equals(b.symbol()))
-                    .findFirst().orElseThrow(JavaFiniteSumOptimizer::invalid);
-            return width.equals("long") && binding.primitiveType().equals("int")?"((long) "+binding.name()+")":binding.name(); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+            var binding=binding(variable,bindings);
+            return promoteVariable && width.equals("long") && binding.primitiveType().equals("int")?"((long) "+binding.name()+")":binding.name(); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
         }
-        if(expression instanceof BinaryExpr binary && (binary.operator()==BinaryOperator.ADD || binary.operator()==BinaryOperator.SUB || binary.operator()==BinaryOperator.MUL))
-            return "("+emit(binary.left(),bindings,width,work,depth+1)+" "+binary.operator().symbol()+" "+emit(binary.right(),bindings,width,work,depth+1)+")"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+        if(expression instanceof BinaryExpr binary && (binary.operator()==BinaryOperator.ADD || binary.operator()==BinaryOperator.SUB || binary.operator()==BinaryOperator.MUL)) {
+            // Constants and nested operations already have the requested width. Only two int
+            // variables need an explicit promotion of the left operand to keep long arithmetic.
+            boolean rightIsInt=binary.right() instanceof VariableExpr right && binding(right,bindings).primitiveType().equals("int"); //$NON-NLS-1$
+            return "("+emit(binary.left(),bindings,width,work,depth+1,rightIsInt)+" "+binary.operator().symbol()+" "+emit(binary.right(),bindings,width,work,depth+1,false)+")"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+        }
         throw invalid();
+    }
+    private static FiniteSumEvidence.Binding binding(VariableExpr variable,List<FiniteSumEvidence.Binding> bindings) {
+        return bindings.stream().filter(b->variable.symbol().orElseThrow().equals(b.symbol()))
+                .findFirst().orElseThrow(JavaFiniteSumOptimizer::invalid);
     }
     static String hash(String source) {
         try {return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(source.getBytes(StandardCharsets.UTF_8)));} //$NON-NLS-1$

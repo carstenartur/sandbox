@@ -19,7 +19,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.jar.JarFile;
 import javax.tools.ToolProvider;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
@@ -65,7 +64,9 @@ class FieldArrayCorpusTest {
                 byte[] bytes;
                 try (var input = jar.getInputStream(item)) { bytes = input.readAllBytes(); }
                 String source = StandardCharsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(bytes)).toString();
-                CompilationUnit ast = parse(source, entry, binary);
+                var environment = new MathematicalAnalysis.SourceEnvironment(entry, List.of(binary.toString()), List.of(), List.of(),
+                        StrictCompilerOptions.options(8));
+                CompilationUnit ast = parse(source, environment);
                 var extraction = new JavaComputationExtractor().extractRuntime(ast, source, options);
                 long fieldReads = extraction.regions().stream().flatMap(r -> r.arrayReads().stream()).filter(read -> {
                     var node = NodeFinder.perform(ast, read.start(), read.length());
@@ -75,8 +76,8 @@ class FieldArrayCorpusTest {
                             ? value : receiver instanceof FieldAccess field ? field.resolveFieldBinding() : null;
                     return binding != null && binding.isField();
                 }).count();
-                var environment = new MathematicalAnalysis.SourceEnvironment(entry, List.of(binary.toString()), List.of(), List.of());
                 var analysis = MathematicalAnalysis.analyze(ast, source, options, new NullProgressMonitor(), -1, 0, environment);
+                assertEquals(environment.compilerOptions(), analysis.compilerOptions());
                 assertFalse(analysis.diagnostics().stream().anyMatch(d -> List.of("CANCELLED", "STALE_AST_SOURCE").contains(d.code())), analysis.diagnostics().toString());
                 var combinedFailures=analysis.diagnostics().stream().filter(d->d.code().equals("COMBINED_EDITS_INVALID")).toList();
                 if(!combinedFailures.isEmpty()) {
@@ -101,7 +102,7 @@ class FieldArrayCorpusTest {
                 if(!combinedFailures.isEmpty()) assertEquals(source,generated,"The known combined warning decline must apply no edits");
                 undo.apply(document);
                 assertEquals(source, document.get(), "Complete source Undo: " + entry);
-                parse(generated, entry, binary);
+                parse(generated, environment);
                 compile(source, entry, binary);
                 if (!source.equals(generated)) compile(generated, entry, binary);
                 var report = new TreeMap<String, Object>();
@@ -137,12 +138,11 @@ class FieldArrayCorpusTest {
         }
     }
 
-    private static CompilationUnit parse(String source, String entry, Path binary) {
+    private static CompilationUnit parse(String source, MathematicalAnalysis.SourceEnvironment environment) {
         var parser = ASTParser.newParser(AST.getJLSLatest());
-        parser.setSource(source.toCharArray()); parser.setUnitName(entry); parser.setResolveBindings(true);
-        parser.setEnvironment(new String[] {binary.toString()}, new String[0], null, true);
-        var settings = new HashMap<String, String>(); JavaCore.setComplianceOptions(JavaCore.VERSION_1_8, settings);
-        parser.setCompilerOptions(settings);
+        parser.setSource(source.toCharArray()); parser.setUnitName(environment.unitName()); parser.setResolveBindings(true);
+        parser.setEnvironment(environment.classpath().toArray(String[]::new), new String[0], null, true);
+        parser.setCompilerOptions(environment.compilerOptions());
         var ast = (CompilationUnit) parser.createAST(null);
         assertFalse(Arrays.stream(ast.getProblems()).anyMatch(p -> p.isError()), Arrays.toString(ast.getProblems()));
         return ast;

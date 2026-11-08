@@ -15,13 +15,17 @@ import java.util.Objects;
 import java.util.regex.Pattern;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CastExpression;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.NodeFinder;
 import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.SimpleName;
@@ -200,6 +204,61 @@ public record JavaSourceRewritePlan(String unitName, String sourceSha256, int so
         plan.resolve(ast, source);
         return plan;
     }
+
+    /** Keep each bound read occurrence in the actual edit; only the surrounding computation is replaced. */
+    static JavaSourceRewritePlan captureReads(CompilationUnit ast, String source, JavaComputationRegion region, String replacement) {
+        var reads = new LinkedHashMap<String, JavaComputationRegion.ArrayRead>();
+        for (var read : region.arrayReads()) if (reads.put(read.javaName(), read) != null)
+            throw new IllegalArgumentException("DUPLICATE_READ_CAPTURE"); //$NON-NLS-1$
+        var parser = ASTParser.newParser(AST.getJLSLatest());
+        parser.setKind(ASTParser.K_STATEMENTS); parser.setSource(replacement.toCharArray());
+        var captures = new LinkedHashMap<String, Expression>();
+        ((Block) parser.createAST(null)).accept(new ASTVisitor() {
+            @Override public boolean visit(VariableDeclarationFragment fragment) {
+                var read = reads.get(fragment.getName().getIdentifier());
+                if (read == null) return true;
+                if (!(fragment.getParent() instanceof VariableDeclarationStatement declaration)
+                        || !Modifier.isFinal(declaration.getModifiers()) || declaration.fragments().size() != 1
+                        || !declaration.getType().toString().equals(MathematicalAnalysis.javaType(read.kind()))
+                        || fragment.getInitializer() == null || captures.put(read.javaName(), fragment.getInitializer()) != null)
+                    throw new IllegalArgumentException("GENERATED_READ_CAPTURE_CHANGED"); //$NON-NLS-1$
+                return false;
+            }
+        });
+        var anchors = new ArrayList<Node>(); var changes = new ArrayList<Change>();
+        int old = region.start(), next = 0;
+        for (var read : reads.values()) {
+            ASTNode original = exact(ast, read.start(), read.length());
+            Expression generated = captures.get(read.javaName());
+            if (!(original instanceof Expression expression) || JavaSourceReadShape.kind(expression).orElse(null) != read.kind())
+                throw new IllegalArgumentException("READ_CAPTURE_PROVENANCE_DIFFERS"); //$NON-NLS-1$
+            if (generated instanceof MethodInvocation call && generated.getLength() > read.length() && expression.resolveUnboxing()
+                    && call.arguments().isEmpty() && call.typeArguments().isEmpty()
+                    && call.getName().getIdentifier().equals(MathematicalAnalysis.javaType(read.kind()) + "Value") //$NON-NLS-1$
+                    && Modifier.isFinal(expression.resolveTypeBinding().getModifiers())
+                    && java.util.Arrays.stream(expression.resolveTypeBinding().getDeclaredMethods()).anyMatch(method -> !method.isRecovered()
+                            && !Modifier.isStatic(method.getModifiers()) && method.getParameterTypes().length == 0
+                            && method.getName().equals(call.getName().getIdentifier())
+                            && JavaOperationRegistry.kind(method.getReturnType()).orElse(null) == read.kind()))
+                generated = call.getExpression();
+            if (generated == null || read.start() < old
+                    || generated.getStartPosition() < next || generated.getLength() != read.length()
+                    || !source.regionMatches(read.start(), replacement, generated.getStartPosition(), read.length()))
+                throw new IllegalArgumentException("READ_CAPTURE_PROVENANCE_DIFFERS"); //$NON-NLS-1$
+            int end = generated.getStartPosition();
+            changes.add(new Change(old, read.start() - old, hash(source.substring(old, read.start())), replacement.substring(next, end)));
+            anchors.add(captureNode(original, source));
+            old = read.start() + read.length(); next = end + read.length();
+        }
+        int end = region.start() + region.length();
+        changes.add(new Change(old, end - old, hash(source.substring(old, end)), replacement.substring(next)));
+        var plan = new JavaSourceRewritePlan(ast.getJavaElement() == null ? "Source.java" : ast.getJavaElement().getElementName(), //$NON-NLS-1$
+                hash(source), source.length(), region.start(), region.length(), anchors, anchors, Map.of(), changes);
+        plan.resolve(ast, source);
+        plan.requireEnvelope(region.start(), region.length(), source.substring(region.start(), end), replacement);
+        return plan;
+    }
+
     private static void flatten(TextEdit edit, String source, List<Change> changes) {
         if (edit.hasChildren()) { for (TextEdit child : edit.getChildren()) flatten(child, source, changes); return; }
         String replacement;

@@ -19,7 +19,6 @@ import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.internal.corext.fix.math.JavaComputationExtractor;
 import org.sandbox.jdt.internal.corext.fix.math.JavaComputationRegion;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
-import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
 import org.sandbox.jdt.internal.corext.fix.math.JavaCandidateRanking;
 
 class ArrayScalarRetryBudgetTest {
@@ -35,13 +34,13 @@ class ArrayScalarRetryBudgetTest {
         long spent = rejected.work();
         assertTrue(spent > 0);
 
-        var result = MathematicalAnalysis.analyze(ast, source, options, new NullProgressMonitor(), -1, 0);
+        var result = MathTestSupport.analyze(ast, source, options, new NullProgressMonitor(), -1, 0);
         assertEquals(1, result.evidence().size(), result.diagnostics().toString());
         assertEquals("return word ^ 0;", result.evidence().getFirst().original());
         assertEquals(options.workBudget() - spent,
                 result.evidence().getFirst().explanation().verified().derivation().orElseThrow().generationBudget());
 
-        var exhausted = MathematicalAnalysis.analyze(ast, source, options(1L), new NullProgressMonitor(), -1, 0);
+        var exhausted = MathTestSupport.analyze(ast, source, options(1L), new NullProgressMonitor(), -1, 0);
         assertFalse(exhausted.changed(), exhausted.diagnostics().toString());
         assertTrue(exhausted.diagnostics().stream().anyMatch(d -> d.code().equals("BUDGETEXCEEDED")));
         assertTrue(exhausted.diagnostics().stream().noneMatch(d -> d.code().equals("ARRAY_SCALAR_RETRY")));
@@ -84,7 +83,7 @@ class ArrayScalarRetryBudgetTest {
         long remaining = budget - bounded.work();
         assertTrue(remaining > 0);
 
-        var result = MathematicalAnalysis.analyze(ast, source, options(budget), new NullProgressMonitor(), -1, 0);
+        var result = MathTestSupport.analyze(ast, source, options(budget), new NullProgressMonitor(), -1, 0);
         assertTrue(result.diagnostics().stream().anyMatch(d -> d.code().equals("BUDGETEXCEEDED") && d.offset() == region.start()));
         var retried = result.evidence().stream().filter(e -> e.original().equals("return word ^ 0;")).findFirst()
                 .orElseThrow(() -> new AssertionError(result.diagnostics()));

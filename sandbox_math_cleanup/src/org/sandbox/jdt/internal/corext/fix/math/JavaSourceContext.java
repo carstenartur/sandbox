@@ -365,7 +365,9 @@ public final class JavaSourceContext implements AutoCloseable {
             if (previous != null && !previous.sha256().equals(digest)) throw new Unavailable();
             if (!projectSource) {
                 parser.setSource(source.toCharArray());
-                var compiler = new HashMap<String,String>(); JavaCore.setComplianceOptions(targetJava == 8 ? "1.8" : Integer.toString(targetJava), compiler); //$NON-NLS-1$
+                var compiler = new HashMap<>(environment.compilerOptions());
+                if (compiler.isEmpty())
+                    JavaCore.setComplianceOptions(targetJava == 8 ? "1.8" : Integer.toString(targetJava), compiler); //$NON-NLS-1$
                 parser.setCompilerOptions(compiler);
             }
             CompilationUnit ast = (CompilationUnit)parser.createAST(monitor);

@@ -8,7 +8,6 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.internal.corext.fix.math.JavaComputationExtractor;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
-import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
 
 import de.regelsuche.sdk.optimization.CancellationToken;
 import de.regelsuche.sdk.optimization.CheckedPolicy;
@@ -43,9 +42,9 @@ class MathematicalRetryBudgetTest {
             // an overshoot-only filter can omit successful later-method cases.
             if (exceeded.work() > ordinaryAllowance) overshoots++;
 
-            var isolated = MathematicalAnalysis.analyze(ast, source, options(budget - exceeded.work()),
+            var isolated = MathTestSupport.analyze(ast, source, options(budget - exceeded.work()),
                     new NullProgressMonitor(), secondOffset, 0);
-            var combined = MathematicalAnalysis.analyze(ast, source, options,
+            var combined = MathTestSupport.analyze(ast, source, options,
                     new NullProgressMonitor(), -1, 0);
             assertTrue(combined.diagnostics().stream().anyMatch(d -> d.code().equals("BUDGETEXCEEDED")
                     && d.offset() == firstOffset), combined.diagnostics().toString());

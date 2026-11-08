@@ -25,7 +25,6 @@ import org.eclipse.text.edits.TextEdit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
-import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
 
 /** Observes state after normal and exceptional execution, not only an exception's class. */
 class FieldArrayStateVisibilityTest {
@@ -39,7 +38,7 @@ class FieldArrayStateVisibilityTest {
                 + "int second = (words[0] & mask) ^ (tail[0] & mask); return first ^ second; }}";
         var options = new MathCleanUpOptions(true, Set.of(NumericKind.INT), SafetyProfile.PRESERVE_JAVA,
                 OptimizationGoal.READABILITY, 1_000_000, 20_000, false, 17, List.of());
-        var analysis = MathematicalAnalysis.analyze(MathTestSupport.parse(source), source, options, new NullProgressMonitor(), -1, 0);
+        var analysis = MathTestSupport.analyze(MathTestSupport.parse(source), source, options, new NullProgressMonitor(), -1, 0);
         assertTrue(analysis.changed(), analysis.diagnostics().toString());
         assertEquals(analysis.replacements().size(), analysis.evidence().size());
         analysis.evidence().forEach(e -> assertNotNull(e.proof()));

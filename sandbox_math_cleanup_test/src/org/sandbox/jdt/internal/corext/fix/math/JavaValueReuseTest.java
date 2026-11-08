@@ -280,8 +280,9 @@ class JavaValueReuseTest {
         String source=JavaValueCallTest.fixture()
             .replace("public static Leaf scale(Leaf x){return x.combine(TWIST);}","public static int calls;public static int scale(Leaf x){Names java=new Names();System.identityHashCode(java);Leaf a=x.square().copy();Leaf b=x.square().copy();a.first();b.first();return calls;}")
             .replace("public Leaf combine(Leaf other)","public Leaf square(){return combine(this);}public Leaf copy(){return new Leaf(amber,blue);}public Leaf combine(Leaf other)")
-            +"class Names {public final MathNamespace math=new MathNamespace();}class MathNamespace {public final ProbeInteger BigInteger=new ProbeInteger();}"
-            +"class ProbeInteger {public java.math.BigInteger valueOf(long n){Calculation.calls++;return java.math.BigInteger.valueOf(n);}}";
+            +"class Names {public final UtilNamespace util=new UtilNamespace();public final MathNamespace math=new MathNamespace();}class MathNamespace {public final ProbeInteger BigInteger=new ProbeInteger();}"
+            +"class ProbeInteger {public java.math.BigInteger valueOf(long n){Calculation.calls++;return java.math.BigInteger.valueOf(n);}}"
+            +"class UtilNamespace {public final ProbeObjects Objects=new ProbeObjects();}class ProbeObjects {public boolean nonNull(Object x){Calculation.calls++;return x!=null;}}";
         var helper=new JavaImmutableValueTest();helper.directory=directory;
         var result=MathematicalAnalysis.analyze(helper.parse(source),source,options(),null,-1,0,helper.environment());
         String generated=helper.apply(source,result);
@@ -295,7 +296,8 @@ class JavaValueReuseTest {
             .replace("public static Leaf scale(Leaf x){", "public static int calls;public static int scale(Leaf x){Names java=new Names();System.identityHashCode(java);")
             .replace("return a.combine(b);", "Leaf answer=a.combine(b);answer.first();return calls;")
             .replace("return weighted.combine(x.reciprocal());", "Leaf answer=weighted.combine(x.reciprocal());answer.first();return calls;")
-            +"class Names {public final MathNamespace math=null;}class MathNamespace {public final java.math.BigInteger BigInteger=null;}";
+            +"class Names {public final UtilNamespace util=new UtilNamespace();public final MathNamespace math=null;}class MathNamespace {public final java.math.BigInteger BigInteger=null;}"
+            +"class UtilNamespace {public final ProbeObjects Objects=new ProbeObjects();}class ProbeObjects {public boolean nonNull(Object x){Calculation.calls++;return x!=null;}}";
         var helper=new JavaImmutableValueTest();helper.directory=directory;
         var result=MathematicalAnalysis.analyze(helper.parse(source),source,options(),null,-1,0,helper.environment());
         String generated=helper.apply(source,result);

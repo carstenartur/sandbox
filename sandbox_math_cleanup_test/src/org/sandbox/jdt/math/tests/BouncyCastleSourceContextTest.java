@@ -8,7 +8,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.jar.JarFile;
@@ -16,7 +15,6 @@ import javax.tools.ToolProvider;
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Platform;
-import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -82,17 +80,20 @@ class BouncyCastleSourceContextTest {
     }
     private MathematicalAnalysis.Analysis analyze(String source, Path binary, boolean mathematical) {
         String root = temporary.resolve("sources").toString();
+        var environment = new MathematicalAnalysis.SourceEnvironment(ENTRY, List.of(binary.toString()), List.of(root), List.of("UTF-8"),
+                StrictCompilerOptions.options(17));
         var parser = ASTParser.newParser(AST.getJLSLatest()); parser.setSource(source.toCharArray()); parser.setUnitName(ENTRY);
         parser.setEnvironment(new String[] {binary.toString()}, new String[] {root}, new String[] {"UTF-8"}, true);
         parser.setResolveBindings(true);
-        var compiler = new HashMap<String,String>(); JavaCore.setComplianceOptions("17", compiler); parser.setCompilerOptions(compiler);
+        parser.setCompilerOptions(environment.compilerOptions());
         var ast = (CompilationUnit) parser.createAST(null);
         for (var problem : ast.getProblems()) assertFalse(problem.isError(), problem.toString());
         var options = new MathCleanUpOptions(true, EnumSet.of(NumericKind.BIG_INTEGER), SafetyProfile.PRESERVE_JAVA,
                 OptimizationGoal.LOWER_ESTIMATED_RUNTIME, 1_000_000, 20_000, false, 17, List.of(), mathematical);
         int offset = source.indexOf("BigInteger ySquared ="), length = source.indexOf(';', offset) + 1 - offset;
-        return MathematicalAnalysis.analyze(ast, source, options, new NullProgressMonitor(), offset, length,
-                new MathematicalAnalysis.SourceEnvironment(ENTRY, List.of(binary.toString()), List.of(root), List.of("UTF-8")));
+        var analysis = MathematicalAnalysis.analyze(ast, source, options, new NullProgressMonitor(), offset, length, environment);
+        assertEquals(environment.compilerOptions(), analysis.compilerOptions());
+        return analysis;
     }
     private static Path dependency(String property, String bundle) throws IOException {
         String configured = System.getProperty(property);

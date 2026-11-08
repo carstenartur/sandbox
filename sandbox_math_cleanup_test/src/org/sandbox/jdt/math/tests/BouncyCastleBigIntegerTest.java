@@ -19,7 +19,6 @@ import javax.tools.ToolProvider;
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Platform;
-import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -48,8 +47,10 @@ class BouncyCastleBigIntegerTest {
         values.put(MathCleanUpOptions.MATHEMATICAL_OPT_IN, "true");
         values.put(MathCleanUpOptions.WORK_BUDGET, "1000000"); values.put(MathCleanUpOptions.MAX_STATES, "20000");
         var options = MathCleanUpOptions.parse(values, 17);
-        var environment = new MathematicalAnalysis.SourceEnvironment(ENTRY, List.of(dependency.toString()), List.of(), List.of());
-        var result = MathematicalAnalysis.analyze(parse(original, dependency), original, options, new NullProgressMonitor(), -1, 0, environment);
+        var environment = new MathematicalAnalysis.SourceEnvironment(ENTRY, List.of(dependency.toString()), List.of(), List.of(),
+                StrictCompilerOptions.options(17));
+        var result = MathematicalAnalysis.analyze(parse(original, environment), original, options, new NullProgressMonitor(), -1, 0, environment);
+        assertEquals(environment.compilerOptions(), result.compilerOptions());
         assertEquals(4, result.replacements().size(), result.diagnostics().toString());
         assertEquals(List.of(
                 "BigInteger tv1 = u.modPow(BigInteger.valueOf(2), p);",
@@ -68,7 +69,7 @@ class BouncyCastleBigIntegerTest {
         assertEquals(original.split("/\\*\\*", -1).length, generated.split("/\\*\\*", -1).length);
         assertTrue(generated.contains("reference identity"));
         int documentedContracts = 0;
-        for (Object comment : parse(generated, dependency).getCommentList()) {
+        for (Object comment : parse(generated, environment).getCommentList()) {
             if (comment instanceof Javadoc documentation) {
                 String documentationSource = generated.substring(documentation.getStartPosition(),
                         documentation.getStartPosition() + documentation.getLength());
@@ -79,7 +80,7 @@ class BouncyCastleBigIntegerTest {
         assertEquals(4, generated.lines().filter(line -> line.stripLeading()
                 .startsWith("// Verified mathematics (MATHEMATICAL).")).count(),
                 "NONTRIVIAL explanations retain each verified region's changed contract");
-        assertFalse(MathematicalAnalysis.analyze(parse(generated, dependency), generated, options,
+        assertFalse(MathematicalAnalysis.analyze(parse(generated, environment), generated, options,
                 new NullProgressMonitor(), -1, 0, environment).changed());
         try (var before = new IsolatedBC(compile(original, dependency), dependency);
                 var after = new IsolatedBC(compile(generated, dependency), dependency)) {
@@ -172,14 +173,16 @@ class BouncyCastleBigIntegerTest {
         values.put(MathCleanUpOptions.CLEANUP, "true"); values.put(MathCleanUpOptions.MATHEMATICAL_OPT_IN, "true");
         values.put(MathCleanUpOptions.WORK_BUDGET, "1000000"); values.put(MathCleanUpOptions.MAX_STATES, "20000");
         var options = MathCleanUpOptions.parse(values, 17);
-        var environment = new MathematicalAnalysis.SourceEnvironment(entry, List.of(dependency.toString()), List.of(), List.of());
-        var result = MathematicalAnalysis.analyze(parse(original, dependency, entry), original, options, new NullProgressMonitor(), -1, 0, environment);
+        var environment = new MathematicalAnalysis.SourceEnvironment(entry, List.of(dependency.toString()), List.of(), List.of(),
+                StrictCompilerOptions.options(17));
+        var result = MathematicalAnalysis.analyze(parse(original, environment), original, options, new NullProgressMonitor(), -1, 0, environment);
+        assertEquals(environment.compilerOptions(), result.compilerOptions());
         assertEquals(changes, result.replacements().size(), result.diagnostics().toString());
         assertEquals(changes, result.evidence().size());
         Document document = new Document(original);
         var undo = result.newEdit().apply(document, org.eclipse.text.edits.TextEdit.CREATE_UNDO);
         String generated = document.get(); undo.apply(document); assertEquals(original, document.get());
-        assertFalse(MathematicalAnalysis.analyze(parse(generated, dependency, entry), generated, options, new NullProgressMonitor(), -1, 0, environment).changed());
+        assertFalse(MathematicalAnalysis.analyze(parse(generated, environment), generated, options, new NullProgressMonitor(), -1, 0, environment).changed());
         return new Pair(new IsolatedBC(compile(original, dependency, entry), dependency), new IsolatedBC(compile(generated, dependency, entry), dependency));
     }
 
@@ -191,13 +194,10 @@ class BouncyCastleBigIntegerTest {
         String configured = System.getProperty(property);
         return configured == null ? FileLocator.getBundleFileLocation(Platform.getBundle(bundle)).orElseThrow().toPath() : Path.of(configured);
     }
-    private static CompilationUnit parse(String source, Path dependency) {
-        return parse(source, dependency, ENTRY);
-    }
-    private static CompilationUnit parse(String source, Path dependency, String entry) {
-        var parser = ASTParser.newParser(AST.getJLSLatest()); parser.setUnitName(entry); parser.setSource(source.toCharArray());
-        parser.setEnvironment(new String[] {dependency.toString()}, new String[0], null, true); parser.setResolveBindings(true);
-        var settings = new HashMap<String, String>(); JavaCore.setComplianceOptions("17", settings); parser.setCompilerOptions(settings);
+    private static CompilationUnit parse(String source, MathematicalAnalysis.SourceEnvironment environment) {
+        var parser = ASTParser.newParser(AST.getJLSLatest()); parser.setUnitName(environment.unitName()); parser.setSource(source.toCharArray());
+        parser.setEnvironment(environment.classpath().toArray(String[]::new), new String[0], null, true); parser.setResolveBindings(true);
+        parser.setCompilerOptions(environment.compilerOptions());
         var ast = (CompilationUnit) parser.createAST(null);
         for (var problem : ast.getProblems()) assertFalse(problem.isError(), problem.toString());
         return ast;

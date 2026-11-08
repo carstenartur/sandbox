@@ -94,7 +94,7 @@ class FloatingPointRoundTripTest {
 
 	private static Rewrite rewrite(String source, NumericKind kind, SafetyProfile safety) throws Exception {
 		var options= JavaComputationExtractorTest.options(Set.of(kind), safety);
-		var analysis= MathematicalAnalysis.analyze(MathTestSupport.parse(source), source, options, new NullProgressMonitor(), -1, 0);
+		var analysis= MathTestSupport.analyze(MathTestSupport.parse(source), source, options, new NullProgressMonitor(), -1, 0);
 		assertTrue(analysis.changed(), analysis.diagnostics().toString());
 		Document document= new Document(source);
 		analysis.newEdit().apply(document);

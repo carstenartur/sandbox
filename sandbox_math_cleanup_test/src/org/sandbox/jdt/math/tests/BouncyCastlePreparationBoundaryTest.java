@@ -11,7 +11,6 @@ import java.util.jar.JarFile;
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Platform;
-import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -32,21 +31,22 @@ class BouncyCastlePreparationBoundaryTest {
         String source = new String(bytes, StandardCharsets.UTF_8);
         String dependency = System.getProperty("sandbox.math.bc.jar");
         if (dependency == null) dependency = FileLocator.getBundleFileLocation(Platform.getBundle("bcprov")).orElseThrow().toString();
+        var environment = new MathematicalAnalysis.SourceEnvironment("org/bouncycastle/math/raw/GF256AES.java",
+                java.util.List.of(dependency), java.util.List.of(), java.util.List.of(), StrictCompilerOptions.options(17));
         ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
         parser.setUnitName("org/bouncycastle/math/raw/GF256AES.java");
         parser.setSource(source.toCharArray());
         parser.setEnvironment(new String[] {dependency}, new String[0], null, true);
         parser.setResolveBindings(true);
-        var compiler = new HashMap<String, String>();
-        JavaCore.setComplianceOptions("17", compiler); parser.setCompilerOptions(compiler);
+        parser.setCompilerOptions(environment.compilerOptions());
         CompilationUnit ast = (CompilationUnit) parser.createAST(null);
         for (var problem : ast.getProblems()) assertFalse(problem.isError(), problem.toString());
         var values = new HashMap<>(MathCleanUpOptions.defaults(17).toMap());
         values.put(MathCleanUpOptions.CLEANUP, "true"); values.put(MathCleanUpOptions.KINDS, "INT,LONG");
         values.put(MathCleanUpOptions.WORK_BUDGET, "1000000"); values.put(MathCleanUpOptions.MAX_STATES, "20000");
         var analysis = MathematicalAnalysis.analyze(ast, source, MathCleanUpOptions.parse(values, 17),
-                new NullProgressMonitor(), -1, 0, new MathematicalAnalysis.SourceEnvironment(
-                        "org/bouncycastle/math/raw/GF256AES.java", java.util.List.of(dependency), java.util.List.of(), java.util.List.of()));
+                new NullProgressMonitor(), -1, 0, environment);
+        assertEquals(environment.compilerOptions(), analysis.compilerOptions());
         int sharedStart = source.indexOf("int d =");
         int sharedEnd = source.indexOf("return c;", sharedStart) + "return c;".length();
         assertTrue(sharedStart >= 0 && sharedEnd > sharedStart);

@@ -324,7 +324,7 @@ class MathVariableRegionsTest {
         return generated;
     }
     private static MathematicalAnalysis.Analysis analyze(String source, MathCleanUpOptions options) {
-        return MathematicalAnalysis.analyze(MathTestSupport.parse(source), source, options, new NullProgressMonitor(), -1, 0);
+        return MathTestSupport.analyze(MathTestSupport.parse(source), source, options, new NullProgressMonitor(), -1, 0);
     }
     private static MathCleanUpOptions options(SafetyProfile safety, OptimizationGoal goal) {
         return new MathCleanUpOptions(true, Set.of(NumericKind.INT, NumericKind.LONG), safety, goal,

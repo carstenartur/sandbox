@@ -23,7 +23,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
-import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
 import de.regelsuche.sdk.optimization.NumericKind;
 import de.regelsuche.sdk.optimization.OptimizationGoal;
 import de.regelsuche.sdk.optimization.SafetyProfile;
@@ -46,7 +45,7 @@ class MathHeldoutQualificationTest {
                 : id.contains("double") ? NumericKind.DOUBLE : NumericKind.INT;
         var options = new MathCleanUpOptions(true, Set.of(kind), SafetyProfile.PRESERVE_JAVA,
                 OptimizationGoal.LOWER_ESTIMATED_RUNTIME, 1_000_000, 20_000, false, 17, List.of());
-        var analysis = MathematicalAnalysis.analyze(MathTestSupport.parse(source, 17), source, options,
+        var analysis = MathTestSupport.analyze(MathTestSupport.parse(source, 17), source, options,
                 new NullProgressMonitor(), -1, 0);
         assertEquals(analysis.replacements().size(), analysis.evidence().size());
         for (var evidence : analysis.evidence()) {
@@ -72,7 +71,7 @@ class MathHeldoutQualificationTest {
             double[] wrongPolynomial = {4.0 * (double) witness[0] * (double) witness[1], 2.0};
             assertThrows(AssertionError.class, () -> same(kind, expected, wrongPolynomial));
         }
-        var second = MathematicalAnalysis.analyze(MathTestSupport.parse(generated, 17), generated, options,
+        var second = MathTestSupport.analyze(MathTestSupport.parse(generated, 17), generated, options,
                 new NullProgressMonitor(), -1, 0);
         assertFalse(second.changed(), "Idempotence: " + second.diagnostics());
         System.out.println("HELDOUT " + id + " changed=" + analysis.changed() + " oracleCases=" + cases.size());

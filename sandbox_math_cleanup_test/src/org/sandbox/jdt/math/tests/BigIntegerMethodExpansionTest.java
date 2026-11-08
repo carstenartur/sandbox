@@ -348,7 +348,7 @@ class BigIntegerMethodExpansionTest {
 
     private static MathematicalAnalysis.Analysis analyzeCaller(String source, MathCleanUpOptions options) {
         int start = source.indexOf(CALLER);
-        return MathematicalAnalysis.analyze(MathTestSupport.parse(source), source, options,
+        return MathTestSupport.analyze(MathTestSupport.parse(source), source, options,
                 new NullProgressMonitor(), start, source.length() - start);
     }
 }

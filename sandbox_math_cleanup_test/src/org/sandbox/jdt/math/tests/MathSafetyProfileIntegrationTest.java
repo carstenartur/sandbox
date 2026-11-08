@@ -19,7 +19,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
-import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
 import de.regelsuche.sdk.optimization.NumericKind;
 import de.regelsuche.sdk.optimization.OptimizationGoal;
 import de.regelsuche.sdk.optimization.SafetyProfile;
@@ -43,7 +42,7 @@ class MathSafetyProfileIntegrationTest {
     void generatedFixtureRetainsAllSafetyCostsAndOriginalOverflow(SafetyProfile safety) throws Exception {
         var options = options(safety, OptimizationGoal.READABILITY);
         long started = System.nanoTime();
-        var analysis = MathematicalAnalysis.analyze(MathTestSupport.parse(SOURCE, 17), SOURCE,
+        var analysis = MathTestSupport.analyze(MathTestSupport.parse(SOURCE, 17), SOURCE,
                 options, new NullProgressMonitor(), -1, 0);
         assertTrue(analysis.changed(), analysis.diagnostics().toString());
         assertEquals(1, analysis.evidence().size());
@@ -56,7 +55,7 @@ class MathSafetyProfileIntegrationTest {
         undo.apply(document);
         assertEquals(SOURCE, document.get());
 
-        var runtime = MathematicalAnalysis.analyze(MathTestSupport.parse(SOURCE, 17), SOURCE,
+        var runtime = MathTestSupport.analyze(MathTestSupport.parse(SOURCE, 17), SOURCE,
                 options(safety, OptimizationGoal.LOWER_ESTIMATED_RUNTIME), new NullProgressMonitor(), -1, 0);
         assertFalse(runtime.changed(), "Safety-check costs cannot be omitted to claim a cheaper plan");
         assertTrue(runtime.diagnostics().stream().anyMatch(d ->

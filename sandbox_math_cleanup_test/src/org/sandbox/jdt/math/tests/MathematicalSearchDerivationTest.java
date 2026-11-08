@@ -20,7 +20,6 @@ import org.eclipse.text.edits.TextEdit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
-import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
 
 /** Unknown Java source supplies the problem; assertions never inject a target into the optimizer. */
 class MathematicalSearchDerivationTest {
@@ -56,7 +55,7 @@ class MathematicalSearchDerivationTest {
         var properties = new HashMap<>(new MathCleanUpOptions(true, Set.of(NumericKind.INT), SafetyProfile.PRESERVE_JAVA,
                 OptimizationGoal.READABILITY, 4_000_000, 20_000, false, 17, List.of()).toMap());
         properties.put(MathCleanUpOptions.EXPLANATIONS, mode);
-        var result = MathematicalAnalysis.analyze(MathTestSupport.parse(source), source,
+        var result = MathTestSupport.analyze(MathTestSupport.parse(source), source,
                 MathCleanUpOptions.parse(properties, 17), new NullProgressMonitor(), -1, 0);
         assertTrue(result.changed(), result.diagnostics().toString());
         for (var replacement : result.replacements()) verifyPathNumbering(replacement.description());

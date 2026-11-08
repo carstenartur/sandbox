@@ -296,7 +296,7 @@ class JavaValueInverseReuseTest {
             @Override public boolean visit(org.eclipse.jdt.core.dom.ConditionalExpression expression) {
                 if(expression.getThenExpression().toString().contains("mathInverseCandidate"))conditions.add(expression.getExpression().toString());return true;
             }});
-        assertEquals(1,conditions.size());assertTrue(conditions.getFirst().contains("cache != null"));
+        assertEquals(1,conditions.size());assertTrue(conditions.getFirst().contains("java.util.Objects.nonNull(cache)"));
         String probe=generated.replace("public static Leaf scale", "public static boolean fastGuard(Leaf x){"+initialization
             +"Leaf mathRetainedInverse=x.square().combine(x).reciprocal();Leaf mathInverseCandidate;return "+conditions.getFirst()+";}public static Leaf scale");
         var identity=new JavaValueReuseTest();identity.directory=directory;

@@ -90,7 +90,7 @@ class MathematicalContractTest {
         String source = "public class Calculation { private static final java.math.BigInteger TWO=java.math.BigInteger.valueOf(2); public static java.math.BigInteger compute(java.math.BigInteger x) { return x.modPow(TWO, java.math.BigInteger.valueOf(101)); }}";
         String generated = rewrite(source);
         assertTrue(generated.contains("x.multiply(x)"), generated);
-        assertTrue(generated.contains("TWO != null"), generated);
+        assertTrue(generated.contains("java.util.Objects.nonNull(TWO)"), generated);
         Method before = compile(source, BigInteger.class), after = compile(generated, BigInteger.class);
         for (int x=-101; x<=101; x++) assertEquals(before.invoke(null, BigInteger.valueOf(x)), after.invoke(null, BigInteger.valueOf(x)));
         assertFalse(analyze(generated, true).changed(), generated);
@@ -203,7 +203,7 @@ class MathematicalContractTest {
         values.put(MathCleanUpOptions.MAX_STATES, "20000");
         values.put(MathCleanUpOptions.GOAL, goal);
         if (mathematical) values.put("cleanup.mathematics.mathematicalOptIn", "true");
-        return MathematicalAnalysis.analyze(MathTestSupport.parse(source), source,
+        return MathTestSupport.analyze(MathTestSupport.parse(source), source,
                 MathCleanUpOptions.parse(values, 17), new NullProgressMonitor(), -1, 0);
     }
 }

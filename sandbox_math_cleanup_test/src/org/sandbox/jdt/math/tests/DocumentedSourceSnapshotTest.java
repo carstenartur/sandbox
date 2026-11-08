@@ -7,7 +7,6 @@ package org.sandbox.jdt.math.tests;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.core.JavaCore;
@@ -37,8 +36,9 @@ class DocumentedSourceSnapshotTest {
 
     @Test void structuredDocumentationIsNotAStaleSourceChange() {
         for (String documentation : List.of(JavaCore.ENABLED, JavaCore.DISABLED)) {
-            var ast = parse(SOURCE, documentation);
-            var analysis = analyze(ast, SOURCE);
+            var environment = environment(documentation);
+            var ast = parse(SOURCE, environment);
+            var analysis = analyze(ast, SOURCE, environment);
             assertTrue(analysis.changed(), documentation + ": " + analysis.diagnostics());
             assertFalse(analysis.diagnostics().stream().anyMatch(d -> d.code().equals("STALE_AST_SOURCE")));
         }
@@ -46,8 +46,9 @@ class DocumentedSourceSnapshotTest {
 
     @Test void sameLengthCodeMutationAndShiftedOffsetsAreStillRejected() {
         for (String documentation : List.of(JavaCore.ENABLED, JavaCore.DISABLED)) {
+            var environment = environment(documentation);
             for (String stale : List.of(SOURCE.replace("x*a+x*b", "x*a-x*b"), " " + SOURCE)) {
-                var analysis = analyze(parse(SOURCE, documentation), stale);
+                var analysis = analyze(parse(SOURCE, environment), stale, environment);
                 assertFalse(analysis.changed());
                 assertTrue(analysis.diagnostics().stream().anyMatch(d -> d.code().equals("STALE_AST_SOURCE")),
                         analysis.diagnostics().toString());
@@ -55,20 +56,25 @@ class DocumentedSourceSnapshotTest {
         }
     }
 
-    private static MathematicalAnalysis.Analysis analyze(CompilationUnit ast, String source) {
-        return MathematicalAnalysis.analyze(ast, source, OPTIONS, new NullProgressMonitor(), -1, 0);
+    private static MathematicalAnalysis.Analysis analyze(CompilationUnit ast, String source,
+            MathematicalAnalysis.SourceEnvironment environment) {
+        var analysis = MathematicalAnalysis.analyze(ast, source, OPTIONS, new NullProgressMonitor(), -1, 0, environment);
+        assertEquals(environment.compilerOptions(), analysis.compilerOptions());
+        return analysis;
     }
-    private static CompilationUnit parse(String source, String documentation) {
+    private static MathematicalAnalysis.SourceEnvironment environment(String documentation) {
+        var options = StrictCompilerOptions.options(8);
+        options.put(JavaCore.COMPILER_DOC_COMMENT_SUPPORT, documentation);
+        return new MathematicalAnalysis.SourceEnvironment("Calculation.java", List.of(), List.of(), List.of(), options);
+    }
+    private static CompilationUnit parse(String source, MathematicalAnalysis.SourceEnvironment environment) {
         ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
         parser.setKind(ASTParser.K_COMPILATION_UNIT);
         parser.setSource(source.toCharArray());
         parser.setUnitName("Calculation.java");
         parser.setEnvironment(new String[0], new String[0], null, true);
         parser.setResolveBindings(true);
-        Map<String, String> options = JavaCore.getOptions();
-        JavaCore.setComplianceOptions(JavaCore.VERSION_1_8, options);
-        options.put(JavaCore.COMPILER_DOC_COMMENT_SUPPORT, documentation);
-        parser.setCompilerOptions(options);
+        parser.setCompilerOptions(environment.compilerOptions());
         CompilationUnit ast = (CompilationUnit) parser.createAST(null);
         for (var problem : ast.getProblems()) assertFalse(problem.isError(), problem.toString());
         return ast;

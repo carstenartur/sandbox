@@ -1,8 +1,11 @@
 /* Copyright (c) 2026 Carsten Hammer. SPDX-License-Identifier: EPL-2.0 */
 package org.sandbox.jdt.internal.corext.fix.math;
 
+import de.regelsuche.sdk.optimization.NumericKind;
+import de.regelsuche.search.program.PreparedJointComputation;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.Assignment;
@@ -111,12 +114,31 @@ final class JavaExpressionContexts {
                 && expressionAnchor(expression);
     }
 
-    static JavaComputationEmitter.Emission typedExpression(JavaComputationEmitter.Emission emission, JavaComputationRegion region) {
+    /** Fixed source targets supply assignment conversion; var initializers and expression boundaries do not. */
+    static Map<String, NumericKind> fixedOutputKinds(CompilationUnit unit, JavaComputationRegion region) {
+        var kinds = new LinkedHashMap<String, NumericKind>();
+        for (var output : region.outputs()) {
+            ASTNode statement = NodeFinder.perform(unit, output.statementStart(), output.statementLength());
+            if (output.declaration() && (!(statement instanceof VariableDeclarationStatement declaration) || declaration.getType().isVar()))
+                continue;
+            if (output.returnValue() && !(statement instanceof ReturnStatement)) continue;
+            kinds.put(output.id(), output.declaredKind());
+        }
+        return kinds;
+    }
+
+    static JavaComputationEmitter.Emission typedExpression(JavaComputationEmitter.Emission emission, JavaComputationRegion region,
+            PreparedJointComputation prepared) {
         if (!emission.statements().isBlank() || !region.arrayReads().isEmpty() || !region.receiverGuards().isEmpty())
             throw new IllegalArgumentException("EXPRESSION_CONTEXT_REQUIRES_STATEMENTS"); //$NON-NLS-1$
         var values = new LinkedHashMap<String, String>();
-        for (var output : region.outputs()) values.put(output.id(), "(" + MathematicalAnalysis.javaType(output.declaredKind()) //$NON-NLS-1$
-                + ") (" + emission.outputValues().get(output.id()) + ")"); //$NON-NLS-1$ //$NON-NLS-2$
+        for (var output : region.outputs()) {
+            var node = prepared.nodes().get(prepared.outputBindings().get(output.id()));
+            String value = emission.outputValues().get(output.id());
+            // Inline outputs retain their scheduled kind; only an actual kind difference needs a boundary cast.
+            values.put(output.id(), NumericKind.fromType(node.type()) == output.declaredKind() ? value
+                    : "(" + MathematicalAnalysis.javaType(output.declaredKind()) + ") (" + value + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+        }
         return new JavaComputationEmitter.Emission(emission.statements(), values);
     }
 

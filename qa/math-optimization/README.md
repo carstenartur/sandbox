@@ -6,6 +6,14 @@ input archives. Qualification tests and benchmarks compile and execute separate
 copies of the original and generated source. These behavioral comparisons
 supplement symbolic proof; finite samples are not the proof.
 
+## Explicit compiler diagnostics
+
+Archive scanners use the [shared strict compiler profile](../../sandbox_math_cleanup_test/ARCHITECTURE.md#compiler-diagnostics).
+`ProjectMathScan` records the complete options in `inputs.json` and original/generated
+warning IDs, arguments, positions and messages in `review.json`. Compare these
+settings alongside source, binary and mathematics profile hashes; historical scans
+using permissive defaults do not qualify the current strict configuration.
+
 `ProjectMathScan` additionally accepts `--tasks` after its six required arguments.
 This writes bounded computation-task summaries and diagnostics to `review.json`,
 including typed inputs/outputs, source bindings and the ordered read/commit/store

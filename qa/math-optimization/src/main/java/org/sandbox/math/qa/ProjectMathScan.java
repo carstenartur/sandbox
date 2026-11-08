@@ -28,6 +28,7 @@ import org.sandbox.jdt.internal.corext.fix.math.JavaComputationTask;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
 import org.sandbox.jdt.internal.corext.fix.math.MathReviewReport;
 import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
+import org.sandbox.jdt.math.tests.StrictCompilerOptions;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.regelsuche.sdk.optimization.ComputationOptimizer;
 
@@ -43,6 +44,7 @@ public final class ProjectMathScan {
         Path binary = Path.of(args[0]).toAbsolutePath(), archive = Path.of(args[1]).toAbsolutePath();
         Path profile = Path.of(args[2]).toAbsolutePath(), output = Path.of(args[3]).toAbsolutePath().normalize();
         var options = profile(profile, Integer.parseInt(args[5]));
+        var compilerOptions = Map.copyOf(StrictCompilerOptions.options(options.targetJava()));
         CorpusFiles.requireHash(archive, args[4]);
         String binaryHash = CorpusFiles.sha256(binary), profileHash = CorpusFiles.sha256(profile);
         var runtime = runtimeInputs();
@@ -75,6 +77,7 @@ public final class ProjectMathScan {
             receipt.put("startedAt", Instant.now().toString());
             receipt.put("sourcesSha256", args[4]); receipt.put("binarySha256", binaryHash); receipt.put("profileSha256", profileHash);
             receipt.put("selectedEntries", selected); receipt.put("options", options.toMap()); receipt.put("targetJava", options.targetJava());
+            receipt.put("compilerOptions", new TreeMap<>(compilerOptions));
             receipt.put("exportComputationTasks", exportTasks);
             receipt.put("javaRuntime", System.getProperty("java.runtime.version")); receipt.put("runtimeInputs", runtime);
             receipt.put("sourceContextFiles", contextHashes.size());
@@ -97,11 +100,12 @@ public final class ProjectMathScan {
                 try (var input = jar.getInputStream(jar.getJarEntry(entry))) { bytes = input.readNBytes(MAX_SOURCE_BYTES + 1); }
                 if (bytes.length > MAX_SOURCE_BYTES) throw new IOException("Source entry exceeds explicit size bound: " + entry);
                 String source = StandardCharsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(bytes)).toString();
-                var ast = parse(source, entry, binary, sourceRoot, options.targetJava());
+                var ast = parse(source, entry, binary, sourceRoot, compilerOptions);
                 var problems = Arrays.stream(ast.getProblems()).filter(p -> p.isError())
                         .map(p -> p.getSourceLineNumber() + ": " + p.getMessage()).toList();
                 Map<String, Object> row = new TreeMap<>();
                 row.put("path", entry); row.put("sourceSha256", hash(bytes)); row.put("parseErrors", problems);
+                row.put("originalWarnings", warnings(ast));
                 if (!problems.isEmpty()) {
                     errors++; row.put("status", "PARSE_ERROR"); rows.add(row); continue;
                 }
@@ -113,7 +117,7 @@ public final class ProjectMathScan {
                     row.put("computationTasks", tasks.tasks().stream().map(ProjectMathScan::taskSummary).toList());
                     row.put("computationTaskDiagnostics", tasks.diagnostics());
                 }
-                var environment = new MathematicalAnalysis.SourceEnvironment(entry, List.of(binary.toString()), List.of(sourceRoot.toString()), List.of("UTF-8"));
+                var environment = new MathematicalAnalysis.SourceEnvironment(entry, List.of(binary.toString()), List.of(sourceRoot.toString()), List.of("UTF-8"), compilerOptions);
                 var analysis = MathematicalAnalysis.analyze(ast, source, options, new NullProgressMonitor(), -1, 0, environment);
                 if (analysis.diagnostics().stream().anyMatch(d -> d.code().equals("CANCELLED"))) throw new InterruptedException("Analysis cancelled");
                 for (var dependency : analysis.sourceDependencies().receipts()) {
@@ -128,15 +132,17 @@ public final class ProjectMathScan {
                     var undo = analysis.newEdit().apply(document, TextEdit.CREATE_UNDO);
                     String generated = document.get(); undo.apply(document);
                     if (!source.equals(document.get())) throw new AssertionError("Exact Undo failed: " + entry);
-                    if (Arrays.stream(parse(generated, entry, binary, sourceRoot, options.targetJava()).getProblems()).anyMatch(p -> p.isError()))
+                    var generatedAst = parse(generated, entry, binary, sourceRoot, compilerOptions);
+                    if (Arrays.stream(generatedAst.getProblems()).anyMatch(p -> p.isError()))
                         throw new AssertionError("Generated Java failed to parse: " + entry);
+                    row.put("generatedWarnings", warnings(generatedAst));
                     row.put("afterSha256", hash(generated.getBytes(StandardCharsets.UTF_8)));
                     row.put("reviewCandidates", MathReviewReport.ranked(analysis.evidence(), options));
                     writeSource(output.resolve("original"), entry, source); writeSource(output.resolve("generated"), entry, generated);
                     benchmark.setProperty("original." + entry, hash(bytes));
                     benchmark.setProperty("generated." + entry, hash(generated.getBytes(StandardCharsets.UTF_8)));
                     String reviewOnly = calculationReviewSource(source, analysis);
-                    if (Arrays.stream(parse(reviewOnly, entry, binary, sourceRoot, options.targetJava()).getProblems()).anyMatch(p -> p.isError()))
+                    if (Arrays.stream(parse(reviewOnly, entry, binary, sourceRoot, compilerOptions).getProblems()).anyMatch(p -> p.isError()))
                         throw new AssertionError("Review Java failed to parse: " + entry);
                     writeSource(output.resolve("review-only"), entry, reviewOnly);
                     row.put("reviewOnlySourceSha256", hash(reviewOnly.getBytes(StandardCharsets.UTF_8)));
@@ -228,11 +234,19 @@ public final class ProjectMathScan {
         return options;
     }
 
-    private static CompilationUnit parse(String source, String entry, Path binary, Path sourceRoot, int java) {
+    private static CompilationUnit parse(String source, String entry, Path binary, Path sourceRoot, Map<String,String> compilerOptions) {
         var parser = ASTParser.newParser(AST.getJLSLatest()); parser.setUnitName(entry); parser.setSource(source.toCharArray());
         parser.setEnvironment(new String[] {binary.toString()}, new String[] {sourceRoot.toString()}, new String[] {"UTF-8"}, true); parser.setResolveBindings(true);
-        var settings = new HashMap<String, String>(); JavaCore.setComplianceOptions(java == 8 ? "1.8" : Integer.toString(java), settings);
-        parser.setCompilerOptions(settings); return (CompilationUnit) parser.createAST(null);
+        parser.setCompilerOptions(compilerOptions); return (CompilationUnit) parser.createAST(null);
+    }
+    private static List<Map<String,Object>> warnings(CompilationUnit ast) {
+        return Arrays.stream(ast.getProblems()).filter(problem -> problem.isWarning()).map(problem -> {
+            Map<String,Object> diagnostic = new TreeMap<>();
+            diagnostic.put("id", problem.getID()); diagnostic.put("arguments", List.of(problem.getArguments()));
+            diagnostic.put("start", problem.getSourceStart()); diagnostic.put("end", problem.getSourceEnd());
+            diagnostic.put("line", problem.getSourceLineNumber()); diagnostic.put("message", problem.getMessage());
+            return diagnostic;
+        }).toList();
     }
     private static void writeSource(Path root, String entry, String source) throws IOException {
         Path file = root.resolve(CorpusFiles.relative(entry)); Files.createDirectories(file.getParent()); Files.writeString(file, source);

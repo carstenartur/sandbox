@@ -18,7 +18,6 @@ import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.jar.JarFile;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -55,11 +54,13 @@ class SwtImageDataRuntimeCorpusTest {
         String entry = "org/eclipse/swt/graphics/ImageData.java";
         byte[] bytes = entry(sources, entry);
         String source = StandardCharsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(bytes)).toString();
-        CompilationUnit ast = parse(source, entry, binary, java);
+        var environment = new MathematicalAnalysis.SourceEnvironment(entry, List.of(binary.toString()), List.of(), List.of(),
+                StrictCompilerOptions.options(java));
+        CompilationUnit ast = parse(source, environment);
         var extraction = new JavaComputationExtractor().extractRuntime(ast, source, options);
         assertFalse(extraction.regions().isEmpty(), "The whole SWT file must reach the actual numeric adapter");
-        var environment = new MathematicalAnalysis.SourceEnvironment(entry, List.of(binary.toString()), List.of(), List.of());
         var analysis = MathematicalAnalysis.analyze(ast, source, options, new NullProgressMonitor(), -1, 0, environment);
+        assertEquals(environment.compilerOptions(), analysis.compilerOptions());
         assertFalse(analysis.diagnostics().stream().anyMatch(d -> d.code().equals("CANCELLED")
                 || d.code().equals("STALE_AST_SOURCE") || d.code().equals("COMBINED_EDITS_INVALID")), analysis.diagnostics().toString());
         assertEquals(analysis.replacements().size(), analysis.evidence().size());
@@ -74,7 +75,7 @@ class SwtImageDataRuntimeCorpusTest {
         Document document = new Document(source);
         var undo = analysis.newEdit().apply(document, TextEdit.CREATE_UNDO);
         String generated = document.get();
-        parse(generated, entry, binary, java);
+        parse(generated, environment);
         undo.apply(document);
         assertEquals(source, document.get(), "Whole-file edits must support byte-exact Undo");
         var counts = new TreeMap<String, Integer>();
@@ -138,7 +139,9 @@ class SwtImageDataRuntimeCorpusTest {
             int offset = source.indexOf(item[3]), java = Integer.parseInt(item[4]);
             assertTrue(offset >= 0, item[2]);
             assertEquals(-1, source.indexOf(item[3], offset + 1), "The original formula must be unique");
-            var ast = parse(source, item[2], binary, java);
+            var environment = new MathematicalAnalysis.SourceEnvironment(item[2], List.of(binary.toString()), List.of(), List.of(),
+                    StrictCompilerOptions.options(java));
+            var ast = parse(source, environment);
             var values = new HashMap<>(MathCleanUpOptions.defaults(java).toMap());
             values.put(MathCleanUpOptions.CLEANUP, "true");
             values.put(MathCleanUpOptions.KINDS, "BYTE,SHORT,CHAR,INT,LONG");
@@ -148,8 +151,8 @@ class SwtImageDataRuntimeCorpusTest {
             var extraction = new JavaComputationExtractor().extractRuntime(ast, source, options);
             assertTrue(extraction.diagnostics().stream().anyMatch(d -> d.code().equals("CONSTANT_EXPRESSION_PRESERVED")
                     && d.offset() == offset && d.length() == item[3].length()), item[2]);
-            var environment = new MathematicalAnalysis.SourceEnvironment(item[2], List.of(binary.toString()), List.of(), List.of());
             var analysis = MathematicalAnalysis.analyze(ast, source, options, new NullProgressMonitor(), offset, item[3].length(), environment);
+            assertEquals(environment.compilerOptions(), analysis.compilerOptions());
             assertFalse(analysis.changed(), "Compiler-folded constant prefixes are not a runtime benefit: " + item[2]);
         }
     }
@@ -169,12 +172,11 @@ class SwtImageDataRuntimeCorpusTest {
             try (var input = jar.getInputStream(entry)) { return input.readAllBytes(); }
         }
     }
-    private static CompilationUnit parse(String source, String name, Path binary, int java) {
+    private static CompilationUnit parse(String source, MathematicalAnalysis.SourceEnvironment environment) {
         var parser = ASTParser.newParser(AST.getJLSLatest());
-        parser.setUnitName(name); parser.setSource(source.toCharArray());
-        parser.setEnvironment(new String[] {binary.toString()}, new String[0], null, true); parser.setResolveBindings(true);
-        var settings = new HashMap<String, String>(); JavaCore.setComplianceOptions(Integer.toString(java), settings);
-        parser.setCompilerOptions(settings);
+        parser.setUnitName(environment.unitName()); parser.setSource(source.toCharArray());
+        parser.setEnvironment(environment.classpath().toArray(String[]::new), new String[0], null, true); parser.setResolveBindings(true);
+        parser.setCompilerOptions(environment.compilerOptions());
         var ast = (CompilationUnit) parser.createAST(null);
         assertFalse(Arrays.stream(ast.getProblems()).anyMatch(p -> p.isError()), Arrays.toString(ast.getProblems()));
         return ast;

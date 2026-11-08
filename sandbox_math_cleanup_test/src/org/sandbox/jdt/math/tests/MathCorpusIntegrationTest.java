@@ -74,7 +74,7 @@ class MathCorpusIntegrationTest {
 
     private Rewrite qualify(String source, boolean requireStable) throws Exception {
         long started = System.nanoTime();
-        var analysis = MathematicalAnalysis.analyze(MathTestSupport.parse(source), source, options(), new NullProgressMonitor(), -1, 0);
+        var analysis = MathTestSupport.analyze(MathTestSupport.parse(source), source, options(), new NullProgressMonitor(), -1, 0);
         long elapsed = System.nanoTime() - started;
         assertTrue(analysis.changed(), analysis.diagnostics().toString());
         assertFalse(analysis.evidence().isEmpty(), "Candidate must carry independently checked evidence");
@@ -92,14 +92,14 @@ class MathCorpusIntegrationTest {
         for (int i = 0; i < random.length; i += 2)
             assertArrayEquals(invoke(before, random[i], random[i + 1]), invoke(after, random[i], random[i + 1]));
         if (requireStable) {
-            var repeated = MathematicalAnalysis.analyze(MathTestSupport.parse(generated), generated, options(), new NullProgressMonitor(), -1, 0);
+            var repeated = MathTestSupport.analyze(MathTestSupport.parse(generated), generated, options(), new NullProgressMonitor(), -1, 0);
             assertFalse(repeated.changed(), repeated.diagnostics().toString());
         }
         return new Rewrite(source, generated, elapsed, analysis);
     }
 
     private static void assertRejected(String source) {
-        var analysis = MathematicalAnalysis.analyze(MathTestSupport.parse(source), source, options(), new NullProgressMonitor(), -1, 0);
+        var analysis = MathTestSupport.analyze(MathTestSupport.parse(source), source, options(), new NullProgressMonitor(), -1, 0);
         assertFalse(analysis.changed(), analysis.diagnostics().toString());
         assertTrue(analysis.evidence().isEmpty());
         assertFalse(analysis.diagnostics().isEmpty(), "Unsupported input must be diagnosed");

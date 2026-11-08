@@ -49,7 +49,7 @@ class MathematicalUnsupportedRetryTest {
         values.put(MathCleanUpOptions.MATHEMATICAL_OPT_IN, "true");
         values.put(MathCleanUpOptions.WORK_BUDGET, Long.toString(budget));
         values.put(MathCleanUpOptions.MAX_STATES, "20000");
-        return MathematicalAnalysis.analyze(MathTestSupport.parse(SOURCE), SOURCE,
+        return MathTestSupport.analyze(MathTestSupport.parse(SOURCE), SOURCE,
                 MathCleanUpOptions.parse(values, 17), new NullProgressMonitor(), -1, 0);
     }
 }

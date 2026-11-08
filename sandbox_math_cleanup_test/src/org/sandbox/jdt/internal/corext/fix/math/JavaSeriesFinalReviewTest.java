@@ -11,7 +11,7 @@ import de.regelsuche.sdk.optimization.CancellationToken;
 import de.regelsuche.sdk.optimization.iteration.*;
 
 class JavaSeriesFinalReviewTest extends JavaContextTestSupport {
-    private static final String CLASSES="public static class J {public M math; public L lang;} public static class M {public java.math.BigInteger BigInteger;} public static class L {public java.lang.Math Math;} ";
+    private static final String CLASSES="public static class J {public M math; public L lang; public U util;} public static class M {public java.math.BigInteger BigInteger;} public static class L {public java.lang.Math Math;} public static class U {public java.util.Objects Objects;} ";
     private static String source(boolean field) {
         return "public class Sample {"+CLASSES+(field?"public static J java;":"")
                 +"public static int run(int n"+(field?"":",J java")+"){int sum=0;for(int i=1;i<=n;i++)sum+=i;return sum;}}";
@@ -64,13 +64,14 @@ class JavaSeriesFinalReviewTest extends JavaContextTestSupport {
     }
     @Test void correctJdkMemberOwnerIsInsufficientForMathAndConstantReceivers() {
         String source="import java.math.BigInteger;public class Sample {"+CLASSES+"public static int run(int n,J java){BigInteger sum=BigInteger.ONE;for(int i=0;i<n;i++)sum=sum.multiply(BigInteger.valueOf(2));return sum.bitLength();}}";
-        int[] staticMethods={0},staticConstants={0},mathMethods={0};
+        int[] staticMethods={0},staticConstants={0},mathMethods={0},nullMethods={0};
         JavaEarlyExitGuardFactsTest.parse(uncheckedTemplate(source)).accept(new ASTVisitor() {
             @Override public boolean visit(MethodInvocation call) {
-                if(call.getExpression() instanceof Name name && Set.of("java.math.BigInteger","java.lang.Math").contains(name.getFullyQualifiedName())) {
+                if(call.getExpression() instanceof Name name && Set.of("java.math.BigInteger","java.lang.Math","java.util.Objects").contains(name.getFullyQualifiedName())) {
                     assertInstanceOf(IVariableBinding.class,name.resolveBinding());
                     assertEquals(name.getFullyQualifiedName(),call.resolveMethodBinding().getDeclaringClass().getQualifiedName());
                     staticMethods[0]++;if(name.getFullyQualifiedName().equals("java.lang.Math"))mathMethods[0]++;
+                    if(name.getFullyQualifiedName().equals("java.util.Objects"))nullMethods[0]++;
                 }
                 return true;
             }
@@ -82,7 +83,7 @@ class JavaSeriesFinalReviewTest extends JavaContextTestSupport {
                 return true;
             }
         });
-        assertTrue(staticMethods[0]>0);assertTrue(staticConstants[0]>0);assertTrue(mathMethods[0]>0);
+        assertTrue(staticMethods[0]>0);assertTrue(staticConstants[0]>0);assertTrue(mathMethods[0]>0);assertTrue(nullMethods[0]>0);
         assertTrue(directRuntime(source).isEmpty(),"Math and BigInteger static receivers may evaluate source fields despite JDK member bindings");
         assertTrue(analyze(source).evidence().stream().noneMatch(e->e.runtimeIteration()!=null));
     }

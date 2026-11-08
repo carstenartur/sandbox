@@ -65,7 +65,7 @@ final class JavaNumericStreamOptimizer {
                 if(!(explained.verification() instanceof Verified) || explained.explanation().isEmpty()
                         || candidate.obligations().guard()!=GuardKind.NONE || !candidate.cost().estimatedRuntimeImprovement()) continue;
                 var emitted=new JavaComputationEmitter().emit(candidate.prepared(),region.inputNames(),region.reservedNames(),options.targetJava());
-                emitted=JavaExpressionContexts.typedExpression(emitted,region);
+                emitted=JavaExpressionContexts.typedExpression(emitted,region,candidate.prepared());
                 remaining-=3*proofShare;
                 JavaEmissionVerifier.verify(request,candidate,emitted,region,options,token);
                 String prefix=source.substring(pair.first().getExpression().getStartPosition(),

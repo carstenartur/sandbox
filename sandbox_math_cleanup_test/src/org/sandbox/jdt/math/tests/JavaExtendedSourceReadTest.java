@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import org.sandbox.jdt.internal.corext.fix.math.JavaComputationExtractor;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
-import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
 
 /** Complete source occurrences execute once; only their resulting primitive values are algebraic. */
 @Timeout(180)
@@ -214,7 +213,7 @@ class JavaExtendedSourceReadTest {
                 SafetyProfile.PRESERVE_JAVA,OptimizationGoal.READABILITY,1_000_000,20_000,false,17,List.of());
     }
     private static String rewrite(String source) throws Exception {
-        var analysis=MathematicalAnalysis.analyze(MathTestSupport.parse(source),source,options(),null,-1,0);
+        var analysis=MathTestSupport.analyze(MathTestSupport.parse(source),source,options(),null,-1,0);
         assertTrue(analysis.changed(),analysis.diagnostics().toString());
         assertEquals(analysis.replacements().size(),analysis.evidence().size());
         analysis.evidence().forEach(e -> assertNotNull(e.proof()));

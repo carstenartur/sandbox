@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import org.sandbox.jdt.internal.corext.fix.math.JavaComputationExtractor;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
-import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
 
 /** Numeric rewrites never authorize moving, combining or omitting a source read. */
 @Timeout(120)
@@ -144,7 +143,7 @@ class OrderedSourceReadComputationTest {
             String source = bufferSource("return (" + expression + ") + 0;")
                     .replace("public class Calculation {", "public class Calculation { static volatile int INDEX;"
                             + " static int next() { return 8; }");
-            var result = MathematicalAnalysis.analyze(MathTestSupport.parse(source), source, options(), new NullProgressMonitor(), -1, 0);
+            var result = MathTestSupport.analyze(MathTestSupport.parse(source), source, options(), new NullProgressMonitor(), -1, 0);
             assertFalse(result.changed(), expression + ": " + result.diagnostics());
         }
     }
@@ -173,7 +172,7 @@ class OrderedSourceReadComputationTest {
                 OptimizationGoal.READABILITY, 1_000_000, 2000, false, 17, List.of());
     }
     private static String rewrite(String source) throws Exception {
-        var result = MathematicalAnalysis.analyze(MathTestSupport.parse(source), source, options(), new NullProgressMonitor(), -1, 0);
+        var result = MathTestSupport.analyze(MathTestSupport.parse(source), source, options(), new NullProgressMonitor(), -1, 0);
         assertTrue(result.changed(), result.diagnostics().toString());
         assertEquals(result.replacements().size(), result.evidence().size());
         result.evidence().forEach(e -> assertNotNull(e.proof()));

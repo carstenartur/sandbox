@@ -8,8 +8,8 @@ final class JavaPartitionedSumEmitter {
     static void capture(JavaRuntimeIterationEmitter.Output out,JavaRuntimeIterationAnalysis.Context context,String source,String p) {
         if(context.split()!=null) {
             var split=context.split();
-            out.append(BIG).append(' ').append(p).append("split = ").append(BIG).append(".valueOf((long)(")
-                    .append(source,split.getStartPosition(),split.getStartPosition()+split.getLength()).append("));\n");
+            out.append(BIG).append(' ').append(p).append("split = ").append(BIG).append(".valueOf(")
+                    .append(source,split.getStartPosition(),split.getStartPosition()+split.getLength()).append(");\n");
         }
     }
     static void prepare(JavaRuntimeIterationEmitter.Output out,RuntimeIterationEvidence.Partition partition,String p,java.util.Set<Integer> starts) {

@@ -113,7 +113,7 @@ class MathematicalExplanationTest {
         String source = source("x*(a+b)-x*a");
         var monitor = new NullProgressMonitor();
         monitor.setCanceled(true);
-        var result = MathematicalAnalysis.analyze(MathTestSupport.parse(source), source,
+        var result = MathTestSupport.analyze(MathTestSupport.parse(source), source,
                 options("ALL", SafetyProfile.PRESERVE_JAVA), monitor, -1, 0);
         assertFalse(result.changed());
         assertTrue(result.evidence().isEmpty());
@@ -142,7 +142,7 @@ class MathematicalExplanationTest {
         return MathCleanUpOptions.parse(values, 17);
     }
     private static MathematicalAnalysis.Analysis analyze(String source, String mode, SafetyProfile safety) {
-        return MathematicalAnalysis.analyze(MathTestSupport.parse(source), source, options(mode, safety),
+        return MathTestSupport.analyze(MathTestSupport.parse(source), source, options(mode, safety),
                 new NullProgressMonitor(), -1, 0);
     }
     private static String applyAndUndo(String source, MathematicalAnalysis.Analysis analysis) throws Exception {

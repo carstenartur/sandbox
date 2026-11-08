@@ -64,7 +64,7 @@ final class JavaValueResidueOptimizer {
                         if(!JavaExpressions.isLiteral(scalar.expression()) || !(JavaExpressions.literalValue(scalar.expression()) instanceof BigInteger value) || value.signum()<=0 || value.bitLength()>4096)
                             throw JavaValueSourceSummary.unavailable("VALUE_RESIDUE_POSITIVE_MODULUS"); //$NON-NLS-1$
                         String raw=fresh("mathResidueRaw"+arguments.size(),usedNames),mod=fresh("mathResidueModulus"+arguments.size(),usedNames); //$NON-NLS-1$ //$NON-NLS-2$
-                        String guard=raw+" != null && "+raw+".getClass() == java.math.BigInteger.class && "+raw+".abs().bitLength() <= 4096 && "+mod+" != null && "+mod+".getClass() == java.math.BigInteger.class && "+mod+".equals(new java.math.BigInteger(\""+value+"\"))"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$
+                        String guard="java.util.Objects.nonNull("+raw+") && "+raw+".getClass() == java.math.BigInteger.class && "+raw+".abs().bitLength() <= 4096 && "+mod+" != null && "+mod+".getClass() == java.math.BigInteger.class && "+mod+".equals(new java.math.BigInteger(\""+value+"\"))"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$
                         arguments.add(new Argument(local,statement,reduction,modulus,value,raw,mod,guard));
                     }
                     independentNormalizations(ast,factory.resolveMethodBinding(),arguments,work);
@@ -171,6 +171,7 @@ final class JavaValueResidueOptimizer {
             || !raw.getIdentifier().equals(argument.rawName()) || !(fallback.getExpression() instanceof SimpleName receiver) || !receiver.resolveBinding().isEqualTo(raw.resolveBinding())
             || !fallback.resolveMethodBinding().isEqualTo(argument.reduction().resolveMethodBinding()) || fallback.arguments().size()!=1
             || !(fallback.arguments().getFirst() instanceof SimpleName mod) || !mod.getIdentifier().equals(argument.modulusName()))throw JavaValueSourceSummary.unavailable("VALUE_RESIDUE_REPLAY_GUARD"); //$NON-NLS-1$
+        JavaValueGuardBindings.verifyNonNullCalls(condition.getExpression(),work);
         var rawDeclaration=(VariableDeclarationFragment)ast.findDeclaringNode(raw.resolveBinding());var modDeclaration=(VariableDeclarationFragment)ast.findDeclaringNode(mod.resolveBinding());
         if(!Modifier.isFinal(((VariableDeclarationStatement)rawDeclaration.getParent()).getModifiers()) || !Modifier.isFinal(((VariableDeclarationStatement)modDeclaration.getParent()).getModifiers())
             || !text(source,argument.reduction().getExpression()).equals(text(generated,rawDeclaration.getInitializer()))

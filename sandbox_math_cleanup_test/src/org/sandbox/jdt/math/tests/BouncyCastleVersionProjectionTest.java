@@ -10,7 +10,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.jar.JarFile;
@@ -18,7 +17,6 @@ import javax.tools.ToolProvider;
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Platform;
-import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
@@ -103,14 +101,17 @@ class BouncyCastleVersionProjectionTest {
         var options = new MathCleanUpOptions(true, EnumSet.allOf(NumericKind.class), SafetyProfile.PRESERVE_JAVA,
                 OptimizationGoal.LOWER_ESTIMATED_RUNTIME, 1_000_000L, 20_000, false, 17, List.of(), true,
                 MathCleanUpOptions.ExplanationMode.NONTRIVIAL);
+        var environment = new MathematicalAnalysis.SourceEnvironment(ENTRY, List.of(binary.toString()), List.of(), List.of(),
+                StrictCompilerOptions.options(17));
         var parser = ASTParser.newParser(AST.getJLSLatest());
         parser.setUnitName(ENTRY); parser.setSource(source.toCharArray()); parser.setResolveBindings(true);
         parser.setEnvironment(new String[] {binary.toString()}, new String[0], null, true);
-        var settings = new HashMap<String, String>(); JavaCore.setComplianceOptions("17", settings); parser.setCompilerOptions(settings);
+        parser.setCompilerOptions(environment.compilerOptions());
         var ast = (CompilationUnit) parser.createAST(null);
         for (var problem : ast.getProblems()) assertFalse(problem.isError(), problem.toString());
-        return MathematicalAnalysis.analyze(ast, source, options, new NullProgressMonitor(), -1, 0,
-                new MathematicalAnalysis.SourceEnvironment(ENTRY, List.of(binary.toString()), List.of(), List.of()));
+        var analysis = MathematicalAnalysis.analyze(ast, source, options, new NullProgressMonitor(), -1, 0, environment);
+        assertEquals(environment.compilerOptions(), analysis.compilerOptions());
+        return analysis;
     }
 
     private Path compile(String source, Path binary) throws IOException {

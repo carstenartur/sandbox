@@ -15,7 +15,6 @@ import java.util.jar.JarFile;
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Platform;
-import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -79,7 +78,9 @@ class BouncyCastleFinalPreparationBudgetTest {
         assertEquals(SOURCE_SHA256, HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes)),
                 "Use the qualified Hawk entry bytes; Maven and OSGi source archives have different packaging");
         String source = new String(bytes, StandardCharsets.UTF_8);
-        CompilationUnit ast = parse(source, binary);
+        var environment = new MathematicalAnalysis.SourceEnvironment(ENTRY, List.of(binary.toString()), List.of(), List.of(),
+                StrictCompilerOptions.options(17));
+        CompilationUnit ast = parse(source, environment);
         int first = fragmentStart(source, ast, HAWK_2471, 2471, 106702, 107006);
         int second = fragmentStart(source, ast, HAWK_2575, 2575, 110134, 110552);
 
@@ -97,8 +98,8 @@ class BouncyCastleFinalPreparationBudgetTest {
         var options = MathCleanUpOptions.parse(values, 17);
         // Full-file selection preserves allocation across connected attempts and scalar retries.
         // Production analysis supplies the same 64-candidate / 5,000-ms request limits.
-        var analysis = MathematicalAnalysis.analyze(ast, source, options, new NullProgressMonitor(), -1, 0,
-                new MathematicalAnalysis.SourceEnvironment(ENTRY, List.of(binary.toString()), List.of(), List.of()));
+        var analysis = MathematicalAnalysis.analyze(ast, source, options, new NullProgressMonitor(), -1, 0, environment);
+        assertEquals(environment.compilerOptions(), analysis.compilerOptions());
         assertAll(mathematical ? "mathematical Hawk coverage" : "strict Hawk coverage",
                 () -> assertAcceptedCoverage(analysis, source, HAWK_2471, first, 2471),
                 () -> assertAcceptedCoverage(analysis, source, HAWK_2575, second, 2575));
@@ -114,7 +115,7 @@ class BouncyCastleFinalPreparationBudgetTest {
         assertNotEquals(source, generated, "Accepted improvements must produce actual source edits");
         undo.apply(document);
         assertEquals(source, document.get(), "The complete accepted edit must support exact Undo");
-        parse(generated, binary);
+        parse(generated, environment);
         System.out.printf("HAWK_FINAL_PREPARATION mode=%s replacements=%d generatedSha256=%s%n",
                 mathematical ? "mathematical" : "strict", analysis.replacements().size(),
                 HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
@@ -158,15 +159,13 @@ class BouncyCastleFinalPreparationBudgetTest {
                 : Path.of(configured);
     }
 
-    private static CompilationUnit parse(String source, Path binary) {
+    private static CompilationUnit parse(String source, MathematicalAnalysis.SourceEnvironment environment) {
         var parser = ASTParser.newParser(AST.getJLSLatest());
         parser.setUnitName(ENTRY);
         parser.setSource(source.toCharArray());
-        parser.setEnvironment(new String[] {binary.toString()}, new String[0], null, true);
+        parser.setEnvironment(environment.classpath().toArray(String[]::new), new String[0], null, true);
         parser.setResolveBindings(true);
-        var compiler = new HashMap<String, String>();
-        JavaCore.setComplianceOptions("17", compiler);
-        parser.setCompilerOptions(compiler);
+        parser.setCompilerOptions(environment.compilerOptions());
         var ast = (CompilationUnit) parser.createAST(null);
         for (var problem : ast.getProblems()) assertFalse(problem.isError(), problem.toString());
         return ast;
