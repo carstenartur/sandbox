@@ -5500,9 +5500,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "lastProcessedCommit": "0548d360ff223dcd7dcde4ee0650a56c0807a2c3",
-      "lastProcessedDate": "2026-11-07T02:21:54.420149229Z",
-      "totalProcessed": 524,
+      "lastProcessedCommit": "8df4ce30969f1cca45747373252de64a5077c840",
+      "lastProcessedDate": "2026-11-08T02:22:58.964945857Z",
+      "totalProcessed": 588,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -5720,6 +5720,24 @@
           "deferredAt": "2026-11-07T02:20:06.528141190Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "1c1d17b82a223fb8fcc69b4883a71b8744899ccb",
+          "message": "Launch Groups: Support to wait for output on child stdout",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-08T02:15:39.898534248Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b880d44d7e2ff505bfed40ca37b130b24e60993d",
+          "message": "Bug 507664 - IOConsoleOutputStream does not handle multi-byte characters at buffer boundaries correctly",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-08T02:17:35.320916796Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -5771,10 +5789,12 @@
         "performance": 1,
         "Performance": 1,
         "Method Signature Modernization": 1,
-        "Redundant Cast": 1
+        "Redundant Cast": 1,
+        "Code Style": 1,
+        "Redundant initialization removal": 1
       },
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 54061
+  "globalTotalProcessed": 54125
 }
