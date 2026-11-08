@@ -309,12 +309,13 @@ even in NONE mode. Recognition requires connected local bindings and template
 structure; a name or comment alone is insufficient. Matching authored structures
 may also remain unchanged. This exclusion never supplies mathematical premises
 or replaces independent source/proof replay. Nearby calculations remain eligible.
+
 ### Reuse byte-field inversions
 
 Enable **Reuse verified byte-field inversions in loops** with **Preserve Java behavior** and **Lower estimated runtime**. The option starts off and is available to whole-file cleanup and the selected Quick Assist. The equivalent profile entry is `cleanup.mathematics.fieldInversions=true`.
 
-Sandbox recognizes source-backed, fixed-round byte-field multiplication and exponentiation over the AES or RSA reduction polynomial. The supported loops are a counted in-place byte-array division with an invariant `int` parameter, and a counted collection of share-coordinate quotients followed immediately by their product in a private scratch array. Helper names alone are not evidence. Regelsuche checks the inversion schedule, including the original fixed-power behavior at zero.
+Sandbox verifies the Java bindings and source bodies for fixed-round byte-field multiplication and exponentiation over the AES or RSA reduction polynomial. The supported loops are a counted in-place byte-array division with an invariant `int` parameter, and a counted collection of share-coordinate quotients followed immediately by their product in a private scratch array. Regelsuche checks the inversion schedule, including the original fixed-power behavior at zero.
 
-The fast path starts at two elements or factors and requires an exact arithmetic receiver class. The original Java runs for smaller inputs, null receivers and subclasses. Scratch array allocation and the order of potentially throwing share reads remain intact. The fast path uses primitive locals and branches only on receiver class and length; the report counts arithmetic operations and does not measure timing.
+The fast path starts at two elements or factors and requires an exact arithmetic receiver class. The original Java runs for smaller inputs, null receivers and subclasses. The rewrite preserves scratch array allocation and the order of potentially throwing share reads. The fast path uses primitive locals and branches only on receiver class and length. The report records arithmetic operation counts.
 
 Run the opt-in upstream comparison with `mvn -f qa/math-optimization/pom.xml -Dtest=BouncyCastleThresholdInversionTest -Dsandbox.math.bc.threshold.upstream=true test`. It checks out one exact Bouncy Castle commit, rewrites both loops through the production adapter, compiles both versions, and compares results and subclass calls.

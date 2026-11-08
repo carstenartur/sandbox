@@ -20,14 +20,14 @@ jobs:
           distribution: temurin
           java-version: '25'
           cache: maven
-      - name: Exercise and retain the compiled Shamir sources
+      - name: Exercise the adapter, pinned Shamir sources and existing Bouncy Castle corpus
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/field-test" target/field-acceptance
           JAVA_TOOL_OPTIONS="-Djava.io.tmpdir=$RUNNER_TEMP/field-test" ./mvnw \
             --batch-mode --no-transfer-progress -f qa/math-optimization/pom.xml \
-            -Dtest=BouncyCastleThresholdInversionTest \
+            -Dtest=JavaFieldInversionTest,MathCleanUpOptionsTest,BouncyCastleThresholdInversionTest,BouncyCastleRuntimeCorpusTest \
             -Djunit.jupiter.tempdir.cleanup.mode.default=NEVER \
             -Dsandbox.math.bc.threshold.upstream=true test
           mapfile -t output < <(find "$RUNNER_TEMP/field-test" -path '*/generated/ShamirSplitSecret.java')
@@ -35,7 +35,10 @@ jobs:
           output_root=$(dirname "$(dirname "${output[0]}")")
           cp -a "$output_root/original" "$output_root/generated" target/field-acceptance/
       - uses: actions/upload-artifact@v7
+        if: always()
         with:
-          name: compiled-shamir-cleanup
-          path: target/field-acceptance/
-          if-no-files-found: error
+          name: final-shamir-adapter-evidence
+          path: |
+            target/field-acceptance/
+            qa/math-optimization/target/surefire-reports/
+          if-no-files-found: warn

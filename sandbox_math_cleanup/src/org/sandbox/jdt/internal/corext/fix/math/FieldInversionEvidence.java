@@ -18,10 +18,9 @@ public record FieldInversionEvidence(FieldInversionReduction source, FieldInvers
     }
 
     public String description() {
-        return "Verified byte-field fast path: for two selected rows, inversions " //$NON-NLS-1$
+        return "For two selected rows the verified byte-field path reduces inversions from " //$NON-NLS-1$
                 + minimumCost.originalInversions() + " to " + minimumCost.plannedInversions() //$NON-NLS-1$
-                + ", field multiplications " + minimumCost.originalMultiplications() + " to " //$NON-NLS-1$ //$NON-NLS-2$
-                + minimumCost.plannedMultiplications() + " outside inversion. Original Java is retained for other receiver classes " //$NON-NLS-1$
-                + "and smaller inputs. Operation counts are not timing measurements."; //$NON-NLS-1$
+                + ". Field multiplications outside inversion change from " + minimumCost.originalMultiplications() + " to " //$NON-NLS-1$ //$NON-NLS-2$
+                + minimumCost.plannedMultiplications() + ". Other receiver classes and shorter inputs take the original path."; //$NON-NLS-1$
     }
 }

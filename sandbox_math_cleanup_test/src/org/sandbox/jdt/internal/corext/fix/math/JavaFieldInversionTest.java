@@ -105,6 +105,7 @@ class JavaFieldInversionTest {
                                 scratch[cursor++] = arithmetic.over(shares[j].coordinate, shares[i].coordinate ^ shares[j].coordinate);
                             }
                         }
+
                         coefficient = 1;
                         for (int p = 0; p != scratch.length; p++) {
                             coefficient = arithmetic.times(coefficient & 255, scratch[p] & 255);
@@ -128,6 +129,7 @@ class JavaFieldInversionTest {
         }
         var document = new Document(SAMPLE);
         analysis.newEdit().apply(document);
+        assertTrue(document.get().lines().allMatch(line -> line.equals(line.stripTrailing())));
         try (var original = compile("before", SAMPLE); var generated = compile("after", document.get())) {
             Class<?> old = original.loadClass("Sample"), optimized = generated.loadClass("Sample");
             byte[] all = new byte[256];

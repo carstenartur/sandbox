@@ -275,7 +275,12 @@ final class JavaFieldInversionOptimizer {
     }
 
     private static String shifted(String text, String base, String unit, String nl) {
-        return base + unit + text.replace("\r\n", "\n").replace('\r', '\n').replace("\n", nl + unit); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+        String[] lines = text.replace("\r\n", "\n").replace('\r', '\n').split("\n", -1); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+        lines[0] = base + unit + lines[0];
+        for (int i = 1; i < lines.length; i++) {
+            lines[i] = lines[i].isBlank() ? "" : unit + lines[i]; //$NON-NLS-1$
+        }
+        return String.join(nl, lines);
     }
 
     private static String delimiter(String source) {
