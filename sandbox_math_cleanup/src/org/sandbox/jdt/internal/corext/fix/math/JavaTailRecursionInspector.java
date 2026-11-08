@@ -2,6 +2,8 @@
 package org.sandbox.jdt.internal.corext.fix.math;
 
 import static org.sandbox.jdt.internal.corext.fix.math.JavaPrimitiveStateExpressions.*;
+
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Objects;
@@ -10,6 +12,11 @@ import java.util.Set;
 import java.util.function.BooleanSupplier;
 import org.eclipse.jdt.core.dom.*;
 import org.sandbox.functional.core.model.StateIteration;
+import org.sandbox.functional.core.model.UlrExpression;
+import org.sandbox.functional.core.model.UlrExpression.Binary;
+import org.sandbox.functional.core.model.UlrExpression.BinaryOperator;
+import org.sandbox.functional.core.model.UlrExpression.Constant;
+import org.sandbox.functional.core.model.UlrExpression.Read;
 
 /**
  * Source-bound direct tail recursion inspection; never authorizes an edit.
@@ -18,6 +25,8 @@ import org.sandbox.functional.core.model.StateIteration;
  * It does not infer stack equivalence, erase comments, or extend stream admission.
  */
 final class JavaTailRecursionInspector {
+    private static final int MAX_METHOD_LENGTH = 65_536;
+
     record Inspection(Optional<StateIteration> iteration, String reason, long work) { }
     private JavaTailRecursionInspector() { }
 
@@ -36,7 +45,7 @@ final class JavaTailRecursionInspector {
     }
 
     private static StateIteration inspectChecked(MethodDeclaration method, String source, Work work) {
-        if (source.length() > 1_000_000 || method.getLength() > StateIteration.MAX_FRAGMENT_LENGTH
+        if (source.length() > 1_000_000 || method.getLength() > MAX_METHOD_LENGTH
                 || method.getBody() == null || method.isConstructor()) return null;
         IMethodBinding binding = method.resolveBinding();
         if (binding == null || binding.isRecovered() || !Modifier.isStatic(binding.getModifiers())
@@ -62,25 +71,30 @@ final class JavaTailRecursionInspector {
             String key = variable.getVariableDeclaration().getKey();
             if (key == null || !parameters.add(key)) return null;
             try {
-                states.add(new StateIteration.State(key, parameter.getName().getIdentifier(), variable.getType().getName()));
+                states.add(new StateIteration.State(key, parameter.getName().getIdentifier(), type(variable.getType())));
             } catch (IllegalArgumentException unsupportedIdentity) {
                 // Legal Java identifiers and binding keys can exceed the model's limits.
                 return null;
             }
         }
-        String counter = counter(exit.getExpression());
-        if (counter == null || !parameters.contains(counter)
-                || !admitted(base.getExpression(), parameters, work::tick)) return null;
+        var stop = lower(exit.getExpression(), parameters, work::tick);
+        String counter = counter(stop);
+        if (counter == null) return null;
+        var result = lower(base.getExpression(), parameters, work::tick);
+        if (result == null) return null;
         var updates = new ArrayList<StateIteration.Update>();
         for (int i = 0; i < count; i++) {
             Expression argument = (Expression) call.arguments().get(i);
-            if (!admitted(argument, parameters, work::tick)) return null;
+            var update = lower(argument, parameters, work::tick);
+            if (update == null) return null;
             String key = states.get(i).bindingKey();
-            if (key.equals(counter) && !decrementsOne(argument, counter)) return null;
-            updates.add(new StateIteration.Update(key, text(argument, source, work)));
+            if (key.equals(counter) && !decrementsOne(update, counter)) return null;
+            requireSourceRange(argument, source, work);
+            updates.add(new StateIteration.Update(key, update));
         }
-        return new StateIteration(states, text(exit.getExpression(), source, work), updates,
-                text(base.getExpression(), source, work), StateIteration.UpdateMode.SIMULTANEOUS,
+        requireSourceRange(exit.getExpression(), source, work);
+        requireSourceRange(base.getExpression(), source, work);
+        return new StateIteration(states, stop, updates, result, type(binding.getReturnType()), StateIteration.UpdateMode.SIMULTANEOUS,
                 StateIteration.EvaluationOrder.LEFT_TO_RIGHT, new StateIteration.CountDown(counter, 1, 0),
                 Set.of(StateIteration.Obligation.SOURCE_REVALIDATION,
                         StateIteration.Obligation.JAVA_EVALUATION_REPLAY,
@@ -103,26 +117,28 @@ final class JavaTailRecursionInspector {
         return null;
     }
 
-    private static String counter(Expression condition) {
-        if (!(unwrap(condition) instanceof InfixExpression test)
-                || test.getOperator() != InfixExpression.Operator.LESS_EQUALS
-                || !test.extendedOperands().isEmpty() || !literal(test.getRightOperand(), 0)) return null;
-        return parameterKey(test.getLeftOperand());
+    private static String counter(UlrExpression condition) {
+        return condition instanceof Binary test && test.operator() == BinaryOperator.LESS_OR_EQUAL
+                && test.left() instanceof Read read && constant(test.right(), BigInteger.ZERO) ? read.binding() : null;
     }
 
-    private static boolean decrementsOne(Expression argument, String key) {
-        return unwrap(argument) instanceof InfixExpression update
-                && update.getOperator() == InfixExpression.Operator.MINUS && update.extendedOperands().isEmpty()
-                && key.equals(parameterKey(update.getLeftOperand())) && literal(update.getRightOperand(), 1);
+    private static boolean decrementsOne(UlrExpression argument, String key) {
+        return argument instanceof Binary update && update.operator() == BinaryOperator.SUBTRACT
+                && update.left() instanceof Read read && key.equals(read.binding()) && constant(update.right(), BigInteger.ONE);
+    }
+
+    private static boolean constant(UlrExpression expression, BigInteger expected) {
+        return expression instanceof Constant constant && expected.equals(constant.value());
     }
 
     private static boolean sourceAvailable(MethodDeclaration method, String source, Work work) {
         if (!(method.getRoot() instanceof CompilationUnit unit)) return false;
-        text(method, source, work);
+        requireSourceRange(method, source, work);
         for (var problem : unit.getProblems()) {
             work.tick();
             if (problem.isError()) return false;
         }
+        if (unit.getCommentList() == null) return false;
         for (Object entry : unit.getCommentList()) {
             work.tick();
             var comment = (Comment) entry;
@@ -143,13 +159,12 @@ final class JavaTailRecursionInspector {
         return true;
     }
 
-    private static String text(ASTNode node, String source, Work work) {
+    private static void requireSourceRange(ASTNode node, String source, Work work) {
         int start = node.getStartPosition(), length = node.getLength();
         if (start < 0 || length < 1 || start > source.length() - length) {
             throw new Stopped("SOURCE_RANGE_MISMATCH"); //$NON-NLS-1$
         }
         work.charge(1L + length / 64L);
-        return source.substring(start, start + length);
     }
 
     private static final class Work {

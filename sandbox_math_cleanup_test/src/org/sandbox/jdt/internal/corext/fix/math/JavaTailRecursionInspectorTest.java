@@ -2,6 +2,11 @@
 package org.sandbox.jdt.internal.corext.fix.math;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.sandbox.functional.core.model.UlrExpression.BinaryOperator.*;
+import static org.sandbox.functional.core.model.UlrExpression.Overflow.*;
+import static org.sandbox.functional.core.model.UlrExpression.Type.*;
+
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -14,6 +19,10 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.junit.jupiter.api.Test;
 import org.sandbox.functional.core.model.StateIteration;
+import org.sandbox.functional.core.model.UlrExpression.Binary;
+import org.sandbox.functional.core.model.UlrExpression.Constant;
+import org.sandbox.functional.core.model.UlrExpression.Read;
+import org.sandbox.functional.core.model.UlrExpression.Type;
 
 class JavaTailRecursionInspectorTest {
     @Test void describesATerminatingPrimitiveSumAsSimultaneousStateUpdates() {
@@ -24,10 +33,13 @@ class JavaTailRecursionInspectorTest {
             }
             """);
         var model = result.iteration().orElseThrow();
-        assertEquals(List.of("int", "long"), model.states().stream().map(StateIteration.State::type).toList());
-        assertEquals(List.of("n - 1", "result + n"), model.updates().stream().map(StateIteration.Update::expression).toList());
-        assertEquals("n <= 0", model.stopCondition());
-        assertEquals("result", model.resultExpression());
+        assertEquals(List.of(INT32, INT64), model.states().stream().map(StateIteration.State::type).toList());
+        Read n = read(model, 0), accumulator = read(model, 1);
+        assertEquals(List.of(new Binary(SUBTRACT, n, constant(1, INT32), INT32, WRAP),
+                new Binary(ADD, accumulator, n, INT64, WRAP)),
+                model.updates().stream().map(StateIteration.Update::expression).toList());
+        assertEquals(new Binary(LESS_OR_EQUAL, n, constant(0, INT32), BOOLEAN, EXACT), model.stopCondition());
+        assertEquals(accumulator, model.resultExpression());
         assertEquals(StateIteration.UpdateMode.SIMULTANEOUS, model.updateMode());
         assertEquals(StateIteration.EvaluationOrder.LEFT_TO_RIGHT, model.evaluationOrder());
         assertTrue(model.obligations().contains(StateIteration.Obligation.STACK_BEHAVIOR_CHANGE));
@@ -44,9 +56,42 @@ class JavaTailRecursionInspectorTest {
             """);
         var model = result.iteration().orElseThrow();
         assertEquals(model.states().get(1).bindingKey(), model.termination().counterBinding());
-        assertEquals(List.of("east", "remaining - 1L", "west + east"),
+        Read west = read(model, 0), remaining = read(model, 1), east = read(model, 2);
+        var sum = new Binary(ADD, west, east, INT64, WRAP);
+        assertEquals(List.of(east, new Binary(SUBTRACT, remaining, constant(1, INT64), INT64, WRAP), sum),
                 model.updates().stream().map(StateIteration.Update::expression).toList());
-        assertEquals("west + east", model.resultExpression());
+        assertEquals(sum, model.resultExpression());
+    }
+
+    @Test void retainsIntArithmeticBeforeAFlattenedInfixChainWidens() {
+        var model = inspect("""
+            static long step(int n, int a, long b) {
+                if (n <= 0L) return a + n;
+                return step(n - 1, a, a + 1 + b + n);
+            }
+            """).iteration().orElseThrow();
+        Read n = read(model, 0), a = read(model, 1), b = read(model, 2);
+        var intSum = new Binary(ADD, a, constant(1, INT32), INT32, WRAP);
+        var wideSum = new Binary(ADD, intSum, b, INT64, WRAP);
+        assertEquals(new Binary(ADD, wideSum, n, INT64, WRAP), model.updates().get(2).expression());
+        assertEquals(new Binary(ADD, a, n, INT32, WRAP), model.resultExpression());
+        assertEquals(INT64, model.resultType());
+        assertEquals(new Binary(LESS_OR_EQUAL, n, constant(0, INT64), BOOLEAN, EXACT), model.stopCondition());
+    }
+
+    @Test void retainsShiftWidthFromTheLeftOperandAndSignedLiteralValues() {
+        var model = inspect("""
+            static long step(int n, int bits, long value, long shifted) {
+                if (n <= 0) return shifted;
+                return step(n - 1, -2147483648, 0x8000_0000_0000_0000L, (bits >>> 33L) ^ (value << n));
+            }
+            """).iteration().orElseThrow();
+        Read n = read(model, 0), bits = read(model, 1), value = read(model, 2);
+        assertEquals(constant(Integer.MIN_VALUE, INT32), model.updates().get(1).expression());
+        assertEquals(constant(Long.MIN_VALUE, INT64), model.updates().get(2).expression());
+        var intShift = new Binary(SHIFT_RIGHT_UNSIGNED_MASKED, bits, constant(33, INT64), INT32, WRAP);
+        var longShift = new Binary(SHIFT_LEFT_MASKED, value, n, INT64, WRAP);
+        assertEquals(new Binary(BIT_XOR, intShift, longShift, INT64, WRAP), model.updates().get(3).expression());
     }
 
     @Test void admitsAnExplicitSameTypeStaticReceiverButNotAnObjectReceiver() {
@@ -179,6 +224,15 @@ class JavaTailRecursionInspectorTest {
 
     private static String method(String expression) {
         return "static long step(int n, long a) { if (n <= 0) return a; return " + expression + "; }";
+    }
+
+    private static Read read(StateIteration model, int position) {
+        var state = model.states().get(position);
+        return new Read(state.bindingKey(), state.type());
+    }
+
+    private static Constant constant(long value, Type type) {
+        return new Constant(BigInteger.valueOf(value), type);
     }
 
     private static JavaTailRecursionInspector.Inspection inspect(String members) {

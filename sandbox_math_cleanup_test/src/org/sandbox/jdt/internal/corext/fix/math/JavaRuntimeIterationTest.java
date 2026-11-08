@@ -76,6 +76,14 @@ class JavaRuntimeIterationTest extends JavaContextTestSupport {
         String subclass="public class Sample {static class Odd extends java.math.BigInteger {Odd(){super(\"1\");}public java.math.BigInteger add(java.math.BigInteger value){return this;}}public static String run(int n){java.math.BigInteger sum=new Odd();for(int i=1;i<=n;i++) sum=sum.add(java.math.BigInteger.valueOf(i));return sum==null?null:sum.toString();}}";
         compare(subclass,transformed(subclass),-1,0,1,5000);
     }
+    @Test void zeroPowerCannotDiscardAnEvaluatedBigIntegerComputation() {
+        String source = "public class Sample { public static long run(int n) { "
+                + "java.math.BigInteger sum=java.math.BigInteger.ZERO; for(int i=0;i<n;i++) "
+                + "sum=sum.add(java.math.BigInteger.valueOf(-9223372036854775808L)" + ".pow(8)".repeat(9)
+                + ".pow(0)); return sum.longValue(); }}";
+        var result = analyze(source);
+        assertTrue(result.evidence().stream().noneMatch(e -> e.runtimeIteration()!=null), result.evidence().toString());
+    }
     @Test void commentsAndCostFallbackRemainVisible() {
         String generated=transformed(sample("for(int i=1;i<=n;i++){/* retain explanation */sum+=i;}"));
         assertTrue(generated.contains("/* retain explanation */"));assertTrue(generated.contains("else"));

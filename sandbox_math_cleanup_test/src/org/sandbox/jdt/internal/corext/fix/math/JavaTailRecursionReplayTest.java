@@ -2,12 +2,15 @@
 package org.sandbox.jdt.internal.corext.fix.math;
 
 import static org.junit.jupiter.api.Assertions.*;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.*;
 import org.junit.jupiter.api.Test;
+import org.sandbox.functional.core.model.StateIteration;
+import org.sandbox.functional.core.model.UlrExpression;
 
 class JavaTailRecursionReplayTest {
     private static final String BEFORE = "public class Sample { public static long step(int n, long a) { if (n <= 0) return a; return step(n - 1, a + n); } }";
@@ -25,6 +28,36 @@ class JavaTailRecursionReplayTest {
 
     @Test void acceptsAnIndependentlyWrittenLoopWithDifferentNames() {
         assertTrue(verify(AFTER));
+    }
+
+    @Test void requiresTheDescriptorToRetainRecursiveArgumentOrder() {
+        MethodDeclaration before = method(BEFORE);
+        var model = JavaTailRecursionInspector.inspect(before, BEFORE, 100_000, () -> false).iteration().orElseThrow();
+        var reversed = new StateIteration(model.states(), model.stopCondition(), model.updates().reversed(),
+                model.resultExpression(), model.resultType(), model.updateMode(), model.evaluationOrder(),
+                model.termination(), model.obligations());
+        assertFalse(JavaTailRecursionReplay.verify(before, method(AFTER), reversed, () -> { }));
+    }
+
+    @Test void rejectsDescriptorExpressionsThatDoNotMatchTheOriginalMethod() {
+        MethodDeclaration before = method(BEFORE), after = method(AFTER);
+        var model = JavaTailRecursionInspector.inspect(before, BEFORE, 100_000, () -> false).iteration().orElseThrow();
+        var zero = new UlrExpression.Constant(BigInteger.ZERO, UlrExpression.Type.INT64);
+        var stop = (UlrExpression.Binary) model.stopCondition();
+        var differentStop = new UlrExpression.Binary(stop.operator(), stop.left(),
+                new UlrExpression.Constant(BigInteger.ONE, stop.right().type()), stop.type(), stop.overflow());
+        var differentUpdates = List.of(model.updates().getFirst(), new StateIteration.Update(model.states().get(1).bindingKey(), zero));
+        for (var forged : List.of(withExpressions(model, differentStop, model.updates(), model.resultExpression()),
+                withExpressions(model, model.stopCondition(), differentUpdates, model.resultExpression()),
+                withExpressions(model, model.stopCondition(), model.updates(), zero))) {
+            assertFalse(JavaTailRecursionReplay.verify(before, after, forged, () -> { }));
+        }
+    }
+
+    private static StateIteration withExpressions(StateIteration model, UlrExpression stop,
+            List<StateIteration.Update> updates, UlrExpression result) {
+        return new StateIteration(model.states(), stop, updates, result, model.resultType(),
+                model.updateMode(), model.evaluationOrder(), model.termination(), model.obligations());
     }
 
     @Test void acceptsCanonicalCountdownWithoutChangingSimultaneousState() {

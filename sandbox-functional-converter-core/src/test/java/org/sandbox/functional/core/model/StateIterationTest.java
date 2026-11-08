@@ -2,6 +2,11 @@
 package org.sandbox.functional.core.model;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.sandbox.functional.core.model.UlrExpression.BinaryOperator.*;
+import static org.sandbox.functional.core.model.UlrExpression.Overflow.*;
+import static org.sandbox.functional.core.model.UlrExpression.Type.*;
+
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -9,10 +14,16 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class StateIterationTest {
-    private static final StateIteration.State N = new StateIteration.State("n-key", "n", "int");
-    private static final StateIteration.State A = new StateIteration.State("a-key", "a", "long");
-    private static final StateIteration.Update NEXT_N = new StateIteration.Update("n-key", "n - 1");
-    private static final StateIteration.Update NEXT_A = new StateIteration.Update("a-key", "a + n");
+    private static final StateIteration.State N = new StateIteration.State("n-key", "n", INT32);
+    private static final StateIteration.State A = new StateIteration.State("a-key", "a", INT64);
+    private static final UlrExpression.Read READ_N = new UlrExpression.Read("n-key", INT32);
+    private static final UlrExpression.Read READ_A = new UlrExpression.Read("a-key", INT64);
+    private static final UlrExpression.Binary STOP = new UlrExpression.Binary(LESS_OR_EQUAL, READ_N,
+            new UlrExpression.Constant(BigInteger.ZERO, INT32), BOOLEAN, EXACT);
+    private static final StateIteration.Update NEXT_N = new StateIteration.Update("n-key",
+            new UlrExpression.Binary(SUBTRACT, READ_N, new UlrExpression.Constant(BigInteger.ONE, INT32), INT32, WRAP));
+    private static final StateIteration.Update NEXT_A = new StateIteration.Update("a-key",
+            new UlrExpression.Binary(ADD, READ_A, READ_N, INT64, WRAP));
 
     @Test void capturesTheStateUpdatesAndObligationsByValue() {
         var states = new ArrayList<>(List.of(N, A));
@@ -29,10 +40,10 @@ class StateIterationTest {
     }
 
     @Test void recordsArgumentEvaluationSeparatelyFromSimultaneousAssignment() {
-        var model = model(List.of(N, A), List.of(NEXT_N, NEXT_A), Set.of());
+        var model = model(List.of(N, A), List.of(NEXT_A, NEXT_N), Set.of());
         assertEquals(StateIteration.UpdateMode.SIMULTANEOUS, model.updateMode());
         assertEquals(StateIteration.EvaluationOrder.LEFT_TO_RIGHT, model.evaluationOrder());
-        assertEquals("a + n", model.updates().get(1).expression());
+        assertEquals(List.of(NEXT_A, NEXT_N), model.updates());
         assertEquals("n-key", model.termination().counterBinding());
     }
 
@@ -44,7 +55,7 @@ class StateIterationTest {
         assertThrows(IllegalArgumentException.class,
                 () -> model(List.of(N, A), List.of(NEXT_N, NEXT_N), Set.of()));
         assertThrows(IllegalArgumentException.class,
-                () -> model(List.of(N, A), List.of(NEXT_N, new StateIteration.Update("unknown", "a")), Set.of()));
+                () -> model(List.of(N, A), List.of(NEXT_N, new StateIteration.Update("unknown", READ_A)), Set.of()));
     }
 
     @Test void rejectsAnUndeclaredCounterAndNondecreasingCountdown() {
@@ -54,16 +65,39 @@ class StateIterationTest {
         assertThrows(IllegalArgumentException.class, () -> assertNotNull(new StateIteration.CountDown("n-key", -1, 0)));
     }
 
-    @Test void rejectsMissingOrOversizedSourceFragments() {
-        assertThrows(IllegalArgumentException.class, () -> assertNotNull(new StateIteration.Update("n-key", " ")));
+    @Test void rejectsReadsOutsideTheDeclaredStateAndIncorrectWidths() {
+        assertThrows(IllegalArgumentException.class, () -> model(List.of(N, A),
+                List.of(NEXT_N, new StateIteration.Update("a-key", new UlrExpression.Read("outside", INT64))), Set.of()));
+        assertThrows(IllegalArgumentException.class, () -> model(List.of(N, A),
+                List.of(NEXT_N, new StateIteration.Update("a-key", new UlrExpression.Read("n-key", INT64))), Set.of()));
+    }
+
+    @Test void permitsWideningButRejectsNarrowingAtStateAndResultBoundaries() {
+        var updates = List.of(NEXT_N, new StateIteration.Update("a-key", READ_N));
+        assertDoesNotThrow(() -> model(List.of(N, A), updates, Set.of()));
+        assertThrows(IllegalArgumentException.class, () -> model(List.of(N, A),
+                List.of(new StateIteration.Update("n-key", READ_A), NEXT_A), Set.of()));
+        assertThrows(IllegalArgumentException.class, () -> assertNotNull(new StateIteration(List.of(N, A), STOP,
+                updates, READ_A, INT32, StateIteration.UpdateMode.SIMULTANEOUS,
+                StateIteration.EvaluationOrder.LEFT_TO_RIGHT, new StateIteration.CountDown("n-key", 1, 0), Set.of())));
+    }
+
+    @Test void requiresABooleanStopCondition() {
+        assertThrows(IllegalArgumentException.class, () -> assertNotNull(new StateIteration(List.of(N, A), READ_N,
+                List.of(NEXT_N, NEXT_A), READ_A, INT64, StateIteration.UpdateMode.SIMULTANEOUS,
+                StateIteration.EvaluationOrder.LEFT_TO_RIGHT, new StateIteration.CountDown("n-key", 1, 0), Set.of())));
+    }
+
+    @Test void rejectsMissingOrOversizedStateIdentities() {
+        assertThrows(IllegalArgumentException.class, () -> assertNotNull(new StateIteration.Update(" ", READ_N)));
         assertThrows(IllegalArgumentException.class,
-                () -> assertNotNull(new StateIteration.Update("n-key", "x".repeat(StateIteration.MAX_FRAGMENT_LENGTH + 1))));
-        assertThrows(IllegalArgumentException.class, () -> assertNotNull(new StateIteration.State("", "n", "int")));
+                () -> assertNotNull(new StateIteration.Update("x".repeat(4_097), READ_N)));
+        assertThrows(IllegalArgumentException.class, () -> assertNotNull(new StateIteration.State("", "n", INT32)));
     }
 
     private static StateIteration model(List<StateIteration.State> states,
             List<StateIteration.Update> updates, Set<StateIteration.Obligation> obligations) {
-        return new StateIteration(states, "n <= 0", updates, "a", StateIteration.UpdateMode.SIMULTANEOUS,
+        return new StateIteration(states, STOP, updates, READ_A, INT64, StateIteration.UpdateMode.SIMULTANEOUS,
                 StateIteration.EvaluationOrder.LEFT_TO_RIGHT,
                 new StateIteration.CountDown("n-key", 1, 0), obligations);
     }
