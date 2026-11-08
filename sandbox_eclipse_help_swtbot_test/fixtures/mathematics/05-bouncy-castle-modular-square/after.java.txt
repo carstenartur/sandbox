@@ -75,7 +75,7 @@ public class SimplifiedShallueVanDeWoestijneMapToCurve implements MapToCurve
         // Independent numeric proof: AFFINE_MODULAR_NORMAL_FORM.
         // Estimated operation work: 36 -> 10; not a timing measurement.
         BigInteger tv1;
-        if ((p != null && p.getClass() == java.math.BigInteger.class && p.bitLength() < 4096 && p.signum() > 0) && (u != null && u.getClass() == java.math.BigInteger.class && u.bitLength() < 4096)) {
+        if ((java.util.Objects.nonNull(p) && p.getClass() == java.math.BigInteger.class && p.bitLength() < 4096 && p.signum() > 0) && (java.util.Objects.nonNull(u) && u.getClass() == java.math.BigInteger.class && u.bitLength() < 4096)) {
         tv1 = u.multiply(u).mod(p);
         } else {
         // Mathematics fallback: unchanged original Java behavior.
@@ -102,7 +102,7 @@ public class SimplifiedShallueVanDeWoestijneMapToCurve implements MapToCurve
         // Independent numeric proof: AFFINE_MODULAR_NORMAL_FORM.
         // Estimated operation work: 36 -> 10; not a timing measurement.
         BigInteger tv2;
-        if ((p != null && p.getClass() == java.math.BigInteger.class && p.bitLength() < 4096 && p.signum() > 0) && (tv1 != null && tv1.getClass() == java.math.BigInteger.class && tv1.bitLength() < 4096)) {
+        if ((java.util.Objects.nonNull(p) && p.getClass() == java.math.BigInteger.class && p.bitLength() < 4096 && p.signum() > 0) && (java.util.Objects.nonNull(tv1) && tv1.getClass() == java.math.BigInteger.class && tv1.bitLength() < 4096)) {
         tv2 = tv1.multiply(tv1).mod(p);
         } else {
         // Mathematics fallback: unchanged original Java behavior.
@@ -132,7 +132,7 @@ public class SimplifiedShallueVanDeWoestijneMapToCurve implements MapToCurve
         // Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order.
         // Independent numeric proof: AFFINE_MODULAR_NORMAL_FORM.
         // Estimated operation work: 36 -> 10; not a timing measurement.
-        if ((p != null && p.getClass() == java.math.BigInteger.class && p.bitLength() < 4096 && p.signum() > 0) && (tv3 != null && tv3.getClass() == java.math.BigInteger.class && tv3.bitLength() < 4096)) {
+        if ((java.util.Objects.nonNull(p) && p.getClass() == java.math.BigInteger.class && p.bitLength() < 4096 && p.signum() > 0) && (java.util.Objects.nonNull(tv3) && tv3.getClass() == java.math.BigInteger.class && tv3.bitLength() < 4096)) {
         tv2 = tv3.multiply(tv3).mod(p);
         } else {
         // Mathematics fallback: unchanged original Java behavior.
@@ -167,7 +167,7 @@ public class SimplifiedShallueVanDeWoestijneMapToCurve implements MapToCurve
         // Estimated operation work: 44 -> 20; not a timing measurement.
         BigInteger tv6;
         BigInteger tv5;
-        if ((A != null && A.getClass() == java.math.BigInteger.class && A.bitLength() < 4096) && (p != null && p.getClass() == java.math.BigInteger.class && p.bitLength() < 4096 && p.signum() > 0) && (tv4 != null && tv4.getClass() == java.math.BigInteger.class && tv4.bitLength() < 4096)) {
+        if ((java.util.Objects.nonNull(A) && A.getClass() == java.math.BigInteger.class && A.bitLength() < 4096) && (java.util.Objects.nonNull(p) && p.getClass() == java.math.BigInteger.class && p.bitLength() < 4096 && p.signum() > 0) && (java.util.Objects.nonNull(tv4) && tv4.getClass() == java.math.BigInteger.class && tv4.bitLength() < 4096)) {
         final java.math.BigInteger _math0 = tv4.multiply(tv4).mod(p);
         tv6 = _math0;
         tv5 = A.multiply(_math0).mod(p);
