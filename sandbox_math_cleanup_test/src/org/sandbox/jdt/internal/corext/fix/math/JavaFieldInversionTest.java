@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -151,7 +152,8 @@ class JavaFieldInversionTest {
             }
         }
         assertFalse(analyze(document.get(), FIELD, true).changed(), "A second cleanup must not wrap its fallback again");
-        Files.writeString(temporary.resolve("Octets.java"), FIELD.replace("a = ((a << 1)", "a = ((a << 2)"));
+        Files.writeString(temporary.resolve("Octets.java"), FIELD.replace("a = ((a << 1)", "a = ((a << 2)"),
+				StandardCharsets.UTF_8);
         assertThrows(IllegalArgumentException.class, analysis::newEdit);
     }
 
@@ -211,11 +213,12 @@ class JavaFieldInversionTest {
     }
 
     @Test void freshExternalHelperModifiersOverrideTheEarlierCallerBinding() throws Exception {
-        Path path = Files.writeString(temporary.resolve("Octets.java"), FIELD);
+        Path path = Files.writeString(temporary.resolve("Octets.java"), FIELD, StandardCharsets.UTF_8);
         var compiler = new HashMap<String, String>();
         JavaCore.setComplianceOptions("17", compiler);
         var caller = parse(SAMPLE, compiler);
-        Files.writeString(path, FIELD.replace("protected byte over", "protected synchronized byte over"));
+        Files.writeString(path, FIELD.replace("protected byte over", "protected synchronized byte over"),
+				StandardCharsets.UTF_8);
         assertNoEvidence(analyzeParsed(caller, SAMPLE, compiler, true, -1));
     }
 
@@ -228,7 +231,7 @@ class JavaFieldInversionTest {
     }
 
     private MathematicalAnalysis.Analysis analyze(String sample, String field, boolean enabled, int selection) throws Exception {
-        Files.writeString(temporary.resolve("Octets.java"), field);
+        Files.writeString(temporary.resolve("Octets.java"), field, StandardCharsets.UTF_8);
         var compiler = new HashMap<String, String>();
         JavaCore.setComplianceOptions("17", compiler);
         return analyzeParsed(parse(sample, compiler), sample, compiler, enabled, selection);
@@ -258,7 +261,7 @@ class JavaFieldInversionTest {
 
     private URLClassLoader compile(String directory, String source) throws Exception {
         Path work = Files.createDirectory(temporary.resolve(directory));
-        Path sample = Files.writeString(work.resolve("Sample.java"), source);
+        Path sample = Files.writeString(work.resolve("Sample.java"), source, StandardCharsets.UTF_8);
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null, "-d", work.toString(),
                 sample.toString(), temporary.resolve("Octets.java").toString()));
         return new URLClassLoader(new URL[] {work.toUri().toURL()}, ClassLoader.getPlatformClassLoader());
