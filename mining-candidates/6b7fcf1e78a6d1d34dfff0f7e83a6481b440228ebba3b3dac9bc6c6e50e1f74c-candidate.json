@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "6b7fcf1e78a6d1d34dfff0f7e83a6481b440228ebba3b3dac9bc6c6e50e1f74c",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "private boolean $var$ \u003d false;\n\u003d\u003e\nprivate boolean $var$;\n;;",
+  "beforeExample": "public class MyClass {\n    private boolean myFlag \u003d false;\n    private int counter \u003d 0;\n    public void doSomething() {}\n}",
+  "afterExample": "public class MyClass {\n    private boolean myFlag;\n    private int counter \u003d 0;\n    public void doSomething() {}\n}",
+  "negativeExample": "public class MyClass {\n    private boolean myFlag \u003d true;\n    private String name \u003d null;\n    public void doSomething() {}\n}",
+  "targetHintFile": "simplification.sandbox-hint",
+  "sourceCommit": "b115fd5bd86cacbffcbaaa7425af7cb14f792c91",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "sourceEvidence": {
+    "path": "org.eclipse.debug.core/core/org/eclipse/debug/core/sourcelookup/containers/ExternalArchiveSourceContainer.java",
+    "before": "\tprivate boolean fDetectRoots \u003d false;",
+    "after": "\tprivate boolean fDetectRoots;",
+    "diffHunk": "diff --git a/org.eclipse.debug.core/core/org/eclipse/debug/core/sourcelookup/containers/ExternalArchiveSourceContainer.java b/org.eclipse.debug.core/core/org/eclipse/debug/core/sourcelookup/containers/ExternalArchiveSourceContainer.java\nindex bd1858a..de702e7 100644\n--- a/org.eclipse.debug.core/core/org/eclipse/debug/core/sourcelookup/containers/ExternalArchiveSourceContainer.java\n+++ b/org.eclipse.debug.core/core/org/eclipse/debug/core/sourcelookup/containers/ExternalArchiveSourceContainer.java\n@@ -42,10 +42,11 @@\n  */\n public class ExternalArchiveSourceContainer extends AbstractSourceContainer {\n \n-\tprivate boolean fDetectRoots \u003d false;\n-\tprivate Set\u003cString\u003e fPotentialRoots \u003d null;\n+\tprivate boolean fDisposed;\n+\tprivate boolean fDetectRoots;\n+\tprivate Set\u003cString\u003e fPotentialRoots;\n \tprivate List\u003cString\u003e fRoots \u003d new ArrayList\u003cString\u003e();\n-\tprivate String fArchivePath \u003d null;\n+\tprivate String fArchivePath;\n \t/**\n \t * Unique identifier for the external archive source container type\n \t * (value \u003ccode\u003eorg.eclipse.debug.core.containerType.externalArchive\u003c/code\u003e).\n"
+  },
+  "category": "Redundant initialization removal",
+  "summary": "Removes redundant explicit \u0027false\u0027 initialization for private boolean fields.",
+  "sourceVersion": "8",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-08T02:20:35.785380895Z",
+  "ruleFingerprint": "sha256:eacf847dad9c9f22c1f2f109acda206ae421d9b81cfdfbd21d7ca14a1b82677d",
+  "behaviorFingerprint": "sha256:784c6d88a4e23423c40cd3e1b850c14a92ea11ff95970f7ccbe0014069f25b70",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-11-08T02:23:23.680807182Z",
+    "verifierVersion": "9",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

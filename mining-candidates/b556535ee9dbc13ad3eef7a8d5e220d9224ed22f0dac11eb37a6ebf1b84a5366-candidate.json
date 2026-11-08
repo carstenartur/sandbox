@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "AFTER_REWRITE",
     "message": "Transformed source is invalid: Java compile error at line 8: Type mismatch: cannot convert from IScopeContext to InstanceScope",
-    "verifiedAt": "2026-11-07T02:22:10.009446405Z",
+    "verifiedAt": "2026-11-08T02:23:14.173558315Z",
     "verifierVersion": "9",
     "matches": 1,
     "replacements": 1
