@@ -2,6 +2,8 @@
 package org.sandbox.jdt.internal.corext.fix.math;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Stream;
@@ -51,7 +53,7 @@ class JavaStrictValueGuardTest {
     }
 
     private CompilationUnit parse(String source,Map<String,String> compiler) throws Exception {
-        Files.writeString(directory.resolve("Calculation.java"),source);
+        Files.writeString(directory.resolve("Calculation.java"), source, StandardCharsets.UTF_8);
         var parser=ASTParser.newParser(AST.getJLSLatest());parser.setSource(source.toCharArray());
         parser.setUnitName(directory.resolve("Calculation.java").toString());parser.setResolveBindings(true);
         parser.setEnvironment(new String[0],new String[]{directory.toString()},new String[]{"UTF-8"},true);
@@ -74,7 +76,8 @@ class JavaStrictValueGuardTest {
 
     @Test void inheritedPackageShadowRejectsCoreReceiverGuardByBinding() throws Exception {
         Files.writeString(directory.resolve("Base.java"),
-            "public class Base {public J java;} class J {public U util;} class U {public java.util.Objects Objects;}");
+				"public class Base {public J java;} class J {public U util;} class U {public java.util.Objects Objects;}",
+				StandardCharsets.UTF_8);
         String source="import java.math.BigInteger; public class Calculation extends Base {"
             +"public BigInteger f(BigInteger x){return x.add(BigInteger.ONE).subtract(BigInteger.ONE);}}";
         var compiler=StrictCompilerOptions.options(17);compiler.put(JavaCore.COMPILER_PB_STATIC_ACCESS_RECEIVER,JavaCore.IGNORE);
