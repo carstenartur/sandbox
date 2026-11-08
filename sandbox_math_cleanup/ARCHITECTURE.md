@@ -121,6 +121,11 @@ types and enclosing overload/SAM checks. `JavaScalarMethodBody` admits exact sou
 instance/reference summaries without inferring purity from names. Pure ULR core
 `NumericIteration` describes numeric sources/elements/terminals separately from
 converter rendering; inspecting a stream never authorizes conversion.
+`UlrPolynomial` in the same core recognizes independent additive updates and
+projects the typed polynomial fragment into the adapter's mathematical model.
+JDT supplies Java binding and evaluation facts. The Roslyn adapter sends a
+typed counted sum to the standalone Regelsuche SDK. Both adapters rely on the
+SDK's polynomial search and independent verification.
 `JavaNumericStreamOptimizer` composes bounded adjacent primitive map graphs by
 resolved bindings and proves the per-element kernel while preserving the terminal.
 

@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Carsten Hammer. SPDX-License-Identifier: EPL-2.0
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Text;
 using System.Text.Json;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -9,7 +10,7 @@ using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.Text;
 
 if (args is not (["extract", _] or ["rewrite", _, _]))
-    return Reject("Usage: RoslynUlr extract <file> | rewrite <file> <proof-classpath>");
+    return Reject("Usage: RoslynUlr extract <file> | rewrite <file> <regelsuche-sdk-all.jar>");
 
 try
 {
@@ -53,13 +54,20 @@ static int Reject(string message)
     return 1;
 }
 
-static async Task<JsonDocument> Prove(JsonElement request, string classpath)
+static async Task<JsonDocument> Prove(JsonElement request, string sdkJar)
 {
+    if (!File.Exists(sdkJar))
+        throw new InvalidDataException("The standalone Regelsuche SDK JAR could not be opened.");
+    var jar = Path.GetFullPath(sdkJar);
+    if (jar.Contains(Path.PathSeparator) || !Path.GetExtension(jar).Equals(".jar", StringComparison.OrdinalIgnoreCase))
+        throw new InvalidDataException("Supply a single Regelsuche SDK JAR path.");
+
     var java = OperatingSystem.IsWindows() ? "java.exe" : "java";
     var javaHome = Environment.GetEnvironmentVariable("JAVA_HOME");
     var start = new ProcessStartInfo(string.IsNullOrEmpty(javaHome) ? java : Path.Combine(javaHome, "bin", java))
     {
-        ArgumentList = { "-cp", classpath, "org.sandbox.math.qa.UlrSumProof" },
+        ArgumentList = { "-cp", jar, "de.regelsuche.sdk.optimization.iteration.PolynomialSumCli" },
+        StandardInputEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
         UseShellExecute = false, RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true
     };
     using var process = Process.Start(start) ?? throw new InvalidDataException("Could not start the Regelsuche verifier.");
