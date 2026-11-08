@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,6 +37,8 @@ import de.regelsuche.sdk.optimization.SafetyProfile;
 /** Whole, unmodified production classes, actual Java cleanup and complete digest execution. */
 class BouncyCastleRuntimeCorpusTest {
     private static final String PACKAGE = "org/bouncycastle/crypto/digests/";
+    private static final String G1_MAP = "BLS12_381G1MapToCurve";
+    private static final String G1_UNIT = "org/bouncycastle/crypto/hash2curve/impl/" + G1_MAP + ".java";
     private static final List<String> FILES = List.of("SHA1Digest", "SHA256Digest", "LongDigest", "MD4Digest", "MD5Digest");
     private static final Map<String, Integer> CHANGES = Map.of("SHA1Digest", 2, "SHA256Digest", 1, "LongDigest", 2, "MD4Digest", 2, "MD5Digest", 2);
     @TempDir Path temporary;
@@ -89,6 +92,33 @@ class BouncyCastleRuntimeCorpusTest {
         if (export != null) for (String name : FILES) {
             write(Path.of(export).resolve("original/" + PACKAGE + name + ".java"), Files.readString(before.resolve(PACKAGE + name + ".java"), StandardCharsets.UTF_8));
             write(Path.of(export).resolve("generated/" + PACKAGE + name + ".java"), Files.readString(after.resolve(PACKAGE + name + ".java"), StandardCharsets.UTF_8));
+        }
+    }
+
+    @Test void batchesTheIndependentG1DenominatorsInThePinnedProductionClass() throws Exception {
+        String original = productionSources().get(G1_MAP);
+        Path dependency = dependency();
+        var options = MathCleanUpOptions.parse(Map.of(MathCleanUpOptions.CLEANUP, "true",
+                MathCleanUpOptions.MATHEMATICAL_OPT_IN, "true", MathCleanUpOptions.FIELD_INVERSIONS, "true",
+                MathCleanUpOptions.EXPLANATIONS, "NONE", MathCleanUpOptions.WORK_BUDGET, "300000"), 17);
+        var analysis = MathematicalAnalysis.analyze(parseUnit(G1_UNIT, original, dependency), original, options,
+                new NullProgressMonitor(), original.indexOf("xDen.modInverse(p)"), 1,
+                new MathematicalAnalysis.SourceEnvironment(G1_UNIT, List.of(dependency.toString()), List.of(), List.of()));
+        assertEquals(1, analysis.replacements().size(), () -> analysis.diagnostics().toString());
+        var batch = analysis.evidence().getFirst().fieldBatchInversion();
+        assertNotNull(batch);
+        assertEquals(2, batch.originalInversions());
+        assertEquals(1, batch.plannedInversions());
+        assertEquals(3, batch.plannedMultiplications());
+        var document = new Document(original);
+        var undo = analysis.newEdit().apply(document, TextEdit.CREATE_UNDO);
+        String generated = document.get();
+        undo.apply(document);
+        assertEquals(original, document.get());
+        Path before = compileG1(temporary.resolve("g1-before"), original, dependency);
+        Path after = compileG1(temporary.resolve("g1-after"), generated, dependency);
+        try (var baseline = new IsolatedBC(before, dependency); var optimized = new IsolatedBC(after, dependency)) {
+            assertEquals(g1PointEncodings(baseline), g1PointEncodings(optimized));
         }
     }
 
@@ -149,6 +179,13 @@ class BouncyCastleRuntimeCorpusTest {
                 assertEquals("6cd8fbd459615e6936bd8eeea7413ea6a85dc91e6dd558de7d6c118c4d523119", digest(bytes));
                 sources.put(name, new String(bytes, java.nio.charset.StandardCharsets.UTF_8));
             }
+            var g1 = jar.getJarEntry(G1_UNIT);
+            assertNotNull(g1, G1_UNIT);
+            try (var input = jar.getInputStream(g1)) {
+                byte[] bytes = input.readAllBytes();
+                assertEquals(provenance.get("files").get(G1_MAP + ".java").asText(), digest(bytes));
+                sources.put(G1_MAP, new String(bytes, StandardCharsets.UTF_8));
+            }
         }
         return Map.copyOf(sources);
     }
@@ -164,8 +201,11 @@ class BouncyCastleRuntimeCorpusTest {
                 new MathematicalAnalysis.SourceEnvironment(PACKAGE + name + ".java", List.of(dependency.toString()), List.of(), List.of()));
     }
     private static CompilationUnit parse(String name, String source, Path dependency) {
+        return parseUnit(PACKAGE + name + ".java", source, dependency);
+    }
+    private static CompilationUnit parseUnit(String unitName, String source, Path dependency) {
         var parser = ASTParser.newParser(AST.getJLSLatest()); parser.setKind(ASTParser.K_COMPILATION_UNIT);
-        parser.setUnitName(PACKAGE + name + ".java"); parser.setSource(source.toCharArray());
+        parser.setUnitName(unitName); parser.setSource(source.toCharArray());
         parser.setEnvironment(new String[]{dependency.toString()}, new String[0], null, true); parser.setResolveBindings(true);
         var options = new HashMap<String, String>(); JavaCore.setComplianceOptions(JavaCore.VERSION_17, options); parser.setCompilerOptions(options);
         var ast = (CompilationUnit) parser.createAST(null);
@@ -190,6 +230,30 @@ class BouncyCastleRuntimeCorpusTest {
         for (String name : FILES) arguments.add(source.resolve(PACKAGE + name + ".java").toString());
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null, arguments.toArray(String[]::new)));
         return classes;
+    }
+    private static Path compileG1(Path source, String text, Path dependency) throws IOException {
+        Path unit = source.resolve(G1_UNIT);
+        write(unit, text);
+        Path classes = Files.createDirectory(source.resolve("classes"));
+        assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null, "--release", "17",
+                "-cp", dependency.toString(), "-d", classes.toString(), unit.toString()));
+        return classes;
+    }
+    private static List<String> g1PointEncodings(ClassLoader loader) throws Exception {
+        Class<?> bls = loader.loadClass("org.bouncycastle.crypto.bls.BLS12_381G1");
+        Class<?> curve = loader.loadClass("org.bouncycastle.math.ec.ECCurve");
+        Class<?> mapper = loader.loadClass("org.bouncycastle.crypto.hash2curve.impl." + G1_MAP);
+        var encode = loader.loadClass("org.bouncycastle.math.ec.ECPoint").getMethod("getEncoded", boolean.class);
+        var map = mapper.getMethod("process", BigInteger.class);
+        Object instance = mapper.getConstructor(curve).newInstance(bls.getMethod("createCurve").invoke(null));
+        BigInteger prime = (BigInteger) bls.getField("Q").get(null);
+        var inputs = new java.util.ArrayList<>(List.of(BigInteger.ZERO, BigInteger.ONE, prime.subtract(BigInteger.ONE)));
+        var random = new java.util.Random(381);
+        for (int i = 0; i < 126; i++) inputs.add(new BigInteger(prime.bitLength(), random).mod(prime));
+        var encodings = new java.util.ArrayList<String>();
+        for (var input : inputs)
+            encodings.add(HexFormat.of().formatHex((byte[]) encode.invoke(map.invoke(instance, input), false)));
+        return encodings;
     }
     private static byte[] digest(ClassLoader loader, String name, byte[] message) throws Exception {
         Class<?> type = loader.loadClass("org.bouncycastle.crypto.digests." + name);

@@ -110,8 +110,8 @@ public record MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, Safety
   if(safety==SafetyProfile.CHECKED_THROW && !checkedOptIn) throw new IllegalArgumentException(CHECKED_WARNING);
   if(mathematicalOptIn && safety!=SafetyProfile.PRESERVE_JAVA)
    throw new IllegalArgumentException("Mathematical mode cannot be combined with checked or fallback safety profiles");
-  if(fieldInversions && (safety!=SafetyProfile.PRESERVE_JAVA || mathematicalOptIn || goal!=OptimizationGoal.LOWER_ESTIMATED_RUNTIME))
-   throw new IllegalArgumentException("Byte-field inversion scheduling requires Preserve Java behavior and Lower estimated runtime"); //$NON-NLS-1$
+  if(fieldInversions && (safety!=SafetyProfile.PRESERVE_JAVA || goal!=OptimizationGoal.LOWER_ESTIMATED_RUNTIME))
+   throw new IllegalArgumentException("Field inversion scheduling requires Preserve Java behavior and Lower estimated runtime"); //$NON-NLS-1$
   exclusions=List.copyOf(exclusions);
   for(String exclusion:exclusions) {
    if(exclusion.isBlank() || exclusion.indexOf(';')>=0 || exclusion.indexOf('\n')>=0 || exclusion.indexOf('\r')>=0)

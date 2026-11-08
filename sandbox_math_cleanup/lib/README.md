@@ -1,8 +1,22 @@
 # Pinned Regelsuche optimization SDK
 
-## Qualified Regelsuche snapshot for field inversion planning
+## Qualified Regelsuche snapshot for inversion batching
 
 The bundled optimizer SDK and `qualification.json` come from the
+[SDK transfer run](https://github.com/carstenartur/sandbox/actions/runs/42455796001)
+for Regelsuche commit `721eec6719714dae5b4219b5af38cd748c9be5ee`.
+
+- Standalone JAR SHA-256 `6ec1ce083b7d5ebec524e3a3bd4a16ea0abe504adf66545b815c265180e8396a`.
+- Receipt version `0.5.3-issue1657-721eec671971`.
+- Staging commit `e994770895dd7aa0f27c4b0e42c60892c54ce2fe`.
+
+The standalone Java 25 consumer derives and replays a checked inversion batch.
+The transfer preserves the source qualification receipt and its
+`publiclyPublished: false` status.
+
+## Previous qualified snapshot for field inversion planning
+
+The previous optimizer SDK and `qualification.json` came from the
 [SDK transfer run](https://github.com/carstenartur/sandbox/actions/runs/42451249155)
 for Regelsuche commit `aed4b76461c2b5131712abf7f2cf451f25cf87a0`.
 

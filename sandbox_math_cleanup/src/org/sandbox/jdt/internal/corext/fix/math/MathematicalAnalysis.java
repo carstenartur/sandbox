@@ -283,6 +283,9 @@ public final class MathematicalAnalysis {
       if (options.fieldInversions()) {
          JavaFieldInversionOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
                compilerOptions, environment, replacements, evidence, diagnostics, valueWork);
+         if (options.mathematicalOptIn() && options.kinds().contains(NumericKind.BIG_INTEGER))
+            JavaFieldBatchInversionOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
+                  compilerOptions, environment, replacements, evidence, diagnostics, valueWork);
          sourceContext.takeWork(); // Source dependencies were charged through valueWork.
       }
       JavaFixedPowerOptimizer.optimize(ast,source,options,monitor,selectionOffset,selectionLength,compilerOptions,environment,replacements,evidence,diagnostics,valueWork);
@@ -863,12 +866,16 @@ public final class MathematicalAnalysis {
             var diagnosticEdits = GeneratedSourceDiagnostics.edits(combinedEdit);
             combinedEdit.apply(combined);
             CompilationUnit combinedAst = checkGeneratedSource(ast, source, combined.get(), compilerOptions, options.targetJava(), (IProgressMonitor)monitor, environment, diagnosticEdits);
-             if (evidence.stream().anyMatch(region -> region.fieldInversion() != null)) {
+             if (evidence.stream().anyMatch(region -> region.fieldInversion() != null || region.fieldBatchInversion() != null)) {
                 valueWork.charge(Math.max(0, valueWork.remaining() - Math.max(0, remainingWork)));
                 long beforeFieldReplay = valueWork.used;
                 var allEdits = new ArrayList<>(replacements); allEdits.addAll(analysis.documentation());
-                for (var region : evidence) if (region.fieldInversion() != null)
-                   JavaFieldInversionOptimizer.verifyCombined(combinedAst, combined.get(), region, allEdits, valueWork);
+                for (var region : evidence) {
+                   if (region.fieldInversion() != null)
+                      JavaFieldInversionOptimizer.verifyCombined(combinedAst, combined.get(), region, allEdits, valueWork);
+                   if (region.fieldBatchInversion() != null)
+                      JavaFieldBatchInversionOptimizer.verifyCombined(combinedAst, combined.get(), region, allEdits, valueWork);
+                }
                 remainingWork -= valueWork.used - beforeFieldReplay;
              }
             if(evidence.stream().anyMatch(region->region.fixedPower()!=null)) {
@@ -1388,12 +1395,20 @@ public final class MathematicalAnalysis {
       String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,
       LoopSchedulingEvidence scheduling, FiniteSumEvidence finiteSum, RuntimeIterationEvidence runtimeIteration,
       SourceNumericBranchEvidence sourceNumericBranch, FixedPowerEvidence fixedPower, ValueInverseEvidence valueInverse,
-      FieldInversionEvidence fieldInversion) {
+      FieldInversionEvidence fieldInversion, FieldBatchInversionEvidence fieldBatchInversion) {
       public VerifiedRegion {
          if (sourcePlan != null) sourcePlan.requireEnvelope(offset, length, original, replacement);
          if (explanation != null && !proof.equals(explanation.verified().proof())) {
             throw new IllegalArgumentException("EXPLANATION_PROOF_BINDING_DIFFERS");
          }
+      }
+      public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
+            String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,
+            LoopSchedulingEvidence scheduling, FiniteSumEvidence finiteSum, RuntimeIterationEvidence runtimeIteration,
+            SourceNumericBranchEvidence sourceNumericBranch, FixedPowerEvidence fixedPower, ValueInverseEvidence valueInverse,
+            FieldInversionEvidence fieldInversion) {
+         this(offset,length,proof,cost,original,replacement,explanation,sourcePlan,scheduling,finiteSum,runtimeIteration,
+               sourceNumericBranch,fixedPower,valueInverse,fieldInversion,null);
       }
       public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
             String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,

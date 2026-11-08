@@ -210,6 +210,20 @@ class JavaFieldInversionTest {
                 .filter(java.util.Objects::nonNull).map(e -> e.plan().kind()).toList(), () -> analysis.diagnostics().toString());
     }
 
+    @Test void mathematicalModeStillAllowsTheJavaPreservingByteFieldProof() throws Exception {
+        Files.writeString(temporary.resolve("Octets.java"), FIELD);
+        var compiler = new HashMap<String, String>();
+        JavaCore.setComplianceOptions("17", compiler);
+        var options = MathCleanUpOptions.parse(Map.of(MathCleanUpOptions.CLEANUP, "true",
+                MathCleanUpOptions.FIELD_INVERSIONS, "true", MathCleanUpOptions.MATHEMATICAL_OPT_IN, "true"), 17);
+        var analysis = MathematicalAnalysis.analyze(parse(SAMPLE, compiler), SAMPLE, options, null, -1, 0,
+                new MathematicalAnalysis.SourceEnvironment("Sample.java", List.of(), List.of(temporary.toString()),
+                        List.of(), compiler));
+        assertEquals(List.of(Kind.PER_ELEMENT, Kind.PRODUCT), analysis.evidence().stream()
+                .map(MathematicalAnalysis.VerifiedRegion::fieldInversion).filter(java.util.Objects::nonNull)
+                .map(e -> e.plan().kind()).toList(), () -> analysis.diagnostics().toString());
+    }
+
     @Test void freshExternalHelperModifiersOverrideTheEarlierCallerBinding() throws Exception {
         Path path = Files.writeString(temporary.resolve("Octets.java"), FIELD);
         var compiler = new HashMap<String, String>();

@@ -170,8 +170,9 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 		ComboPreference goal= createComboPref(group, columns, "Optimization goal:", MathCleanUpOptions.GOAL, //$NON-NLS-1$
 				Arrays.stream(OptimizationGoal.values()).map(Enum::name).toArray(String[]::new),
 				new String[] { "Lower estimated runtime", "Lower allocation", "Readability" }); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		CheckboxPreference fieldInversions= createCheckboxPref(group, columns, "Reuse verified byte-field inversions in loops", //$NON-NLS-1$
+		CheckboxPreference fieldInversions= createCheckboxPref(group, columns, "Reuse verified field inversions", //$NON-NLS-1$
 				MathCleanUpOptions.FIELD_INVERSIONS, FALSE_TRUE);
+		fieldInversions.getControl().setToolTipText("BigInteger batches also require Mathematical mode and BigInteger."); //$NON-NLS-1$
         ComboPreference explanations= createComboPref(group, columns, "Source explanations:", MathCleanUpOptions.EXPLANATIONS, //$NON-NLS-1$
                 Arrays.stream(MathCleanUpOptions.ExplanationMode.values()).map(Enum::name).toArray(String[]::new),
                 new String[] { "No source comments", "Nontrivial changes", "All changes" }); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -218,7 +219,7 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 			((GridData) warning.getLayoutData()).exclude= !checked;
 			setEnabledIfChanged(goal, active);
 			setEnabledIfChanged(fieldInversions, active && safety.hasValue(SafetyProfile.PRESERVE_JAVA.name())
-					&& !mathematical.getChecked() && goal.hasValue(OptimizationGoal.LOWER_ESTIMATED_RUNTIME.name()));
+					&& goal.hasValue(OptimizationGoal.LOWER_ESTIMATED_RUNTIME.name()));
             setEnabledIfChanged(valueRuntime, active && mathematical.getChecked());
             setEnabledIfChanged(explanations, active);
 			setEnabledIfChanged(budget, active);
@@ -238,7 +239,7 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 			// A deliberate safety-mode change disables the incompatible combination.
 			// Loaded invalid active profiles still fail validation; refresh never rewrites them.
 			if (!safety.hasValue(SafetyProfile.PRESERVE_JAVA.name()) || mathematical.getChecked()) combined.setChecked(false);
-			if (!safety.hasValue(SafetyProfile.PRESERVE_JAVA.name()) || mathematical.getChecked()
+			if (!safety.hasValue(SafetyProfile.PRESERVE_JAVA.name())
 					|| !goal.hasValue(OptimizationGoal.LOWER_ESTIMATED_RUNTIME.name())) fieldInversions.setChecked(false);
 			refresh.run();
 		};

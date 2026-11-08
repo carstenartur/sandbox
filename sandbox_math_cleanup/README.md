@@ -310,12 +310,16 @@ structure; a name or comment alone is insufficient. Matching authored structures
 may also remain unchanged. This exclusion never supplies mathematical premises
 or replaces independent source/proof replay. Nearby calculations remain eligible.
 
-### Reuse byte-field inversions
+### Reuse verified field inversions
 
-Enable **Reuse verified byte-field inversions in loops** with **Preserve Java behavior** and **Lower estimated runtime**. The option starts off and is available to whole-file cleanup and the selected Quick Assist. The equivalent profile entry is `cleanup.mathematics.fieldInversions=true`.
+Enable **Reuse verified field inversions** with **Preserve Java behavior** and **Lower estimated runtime**. The option starts off and is available to whole-file cleanup and the selected Quick Assist. The equivalent profile entry is `cleanup.mathematics.fieldInversions=true`.
 
 Sandbox verifies the Java bindings and source bodies for fixed-round byte-field multiplication and exponentiation over the AES or RSA reduction polynomial. The supported loops are a counted in-place byte-array division with an invariant `int` parameter, and a counted collection of share-coordinate quotients followed immediately by their product in a private scratch array. Regelsuche checks the inversion schedule, including the original fixed-power behavior at zero.
 
 The fast path starts at two elements or factors and requires an exact arithmetic receiver class. The original Java runs for smaller inputs, null receivers and subclasses. The rewrite preserves scratch array allocation and the order of potentially throwing share reads. The fast path uses primitive locals and branches only on receiver class and length. The report records arithmetic operation counts.
 
 Run the opt-in upstream comparison with `mvn -f qa/math-optimization/pom.xml -Dtest=BouncyCastleThresholdInversionTest -Dsandbox.math.bc.threshold.upstream=true test`. It checks out one exact Bouncy Castle commit, rewrites both loops through the production adapter, compiles both versions, and compares results and subclass calls.
+
+With **Mathematical mode** and **BigInteger** selected, Sandbox can also batch a pair of independent adjacent local declarations. Each initializer must contain exactly one `java.math.BigInteger.modInverse` call on a stable local or a final field declared in the same class. The calls must use distinct operand bindings and the same modulus binding, and any surrounding arithmetic must use only BigInteger multiplication or reduction by that same modulus. Regelsuche checks the schedule that replaces two inversions with one inversion and three modular multiplications.
+
+The batch path requires exact, non-null BigInteger inputs, a positive modulus of 256 to 4096 bits, and input bit lengths of at most 4096. If a guard fails or the speculative product has no inverse, the original inverse calls still run in source order. The mathematical contract permits different BigInteger reference identities, including when a later method receives the results. The report gives operation counts; it does not verify runtime speed or constant-time behavior.

@@ -1,4 +1,4 @@
-name: Prepare native Java 25 verification runtime
+name: Qualify Sandbox modular inversion batching
 
 on:
   push:
@@ -8,25 +8,26 @@ permissions:
   contents: read
 
 jobs:
-  jdk:
+  qualify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '25'
-          verify-signature: true
-      - name: Verify and retain the installed Java toolchain
-        shell: bash
-        run: |
-          java -version
-          javac -version
-          tar -C "$JAVA_HOME" --exclude=./jmods --exclude=./lib/src.zip -czf "$RUNNER_TEMP/native-jdk25.tar.gz" .
+          cache: maven
+      - name: Run the production adapter against pinned BLS and Shamir sources
+        run: >-
+          ./mvnw --batch-mode --no-transfer-progress -f qa/math-optimization/pom.xml
+          -Dtest=JavaFieldBatchInversionTest,JavaFieldInversionTest,MathCleanUpOptionsTest,BouncyCastleRuntimeCorpusTest,BouncyCastleThresholdInversionTest
+          -Dsandbox.math.bc.threshold.upstream=true test
       - uses: actions/upload-artifact@v7
+        if: always()
         with:
-          name: native-jdk25
-          path: ${{ runner.temp }}/native-jdk25.tar.gz
-          retention-days: 1
-          compression-level: 0
-          if-no-files-found: error
+          name: modular-batch-tests
+          path: qa/math-optimization/target/surefire-reports/
+          if-no-files-found: warn
