@@ -11,6 +11,7 @@ import org.sandbox.functional.core.model.UlrExpression.Binary;
 import org.sandbox.functional.core.model.UlrExpression.BinaryOperator;
 import org.sandbox.functional.core.model.UlrExpression.Overflow;
 import org.sandbox.functional.core.model.UlrExpression.Type;
+import org.sandbox.functional.core.model.UlrPolynomial;
 import de.regelsuche.ast.BinaryExpr;
 import de.regelsuche.ast.Expr;
 import de.regelsuche.ast.NumberExpr;
@@ -75,11 +76,14 @@ final class JavaRuntimeIterationAnalysis {
         states.addAll(targets.keySet());
         rejectHeaderStates(header);
         var initial=new LinkedHashMap<String,UlrExpression>();var stateSymbols=new LinkedHashMap<String,SymbolId>();
+        var stateBindings=new HashSet<String>();
         for(var target:targets.values()) {
             if(!width(target.getType()).equals(width)) throw invalid();
             initial.put(key(target),read(bind(target),width));
             SymbolId symbol=new SymbolId(namespace,Long.MAX_VALUE-stateSymbols.size());stateSymbols.put(key(target),symbol);
-            values.put(key(target),read(symbol,width));
+            var state=read(symbol,width);
+            stateBindings.add(state.binding());
+            values.put(key(target),state);
         }
         var terms=new LinkedHashMap<String,UlrExpression>();for(String key:states) terms.put(key,number(0,width));
         boolean additive=true;int locals=0,updates=0;
@@ -96,22 +100,23 @@ final class JavaRuntimeIterationAnalysis {
             } else if(statement instanceof ExpressionStatement expression && expression.getExpression() instanceof Assignment assignment) {
                 if(++updates>32) throw invalid();var target=variable(assignment.getLeftHandSide());
                 if(target==null || !states.contains(key(target))) throw invalid();
-                UlrExpression rhs=decode(assignment.getRightHandSide(),width,values),old=values.get(key(target)),next;
+                String targetKey=key(target);
+                UlrExpression rhs=decode(assignment.getRightHandSide(),width,values),old=values.get(targetKey),next;
                 bounded(rhs);var operator=assignment.getOperator();
                 if(operator==Assignment.Operator.PLUS_ASSIGN) next=binary(BinaryOperator.ADD,old,rhs,width);
                 else if(operator==Assignment.Operator.MINUS_ASSIGN) next=binary(BinaryOperator.SUBTRACT,old,rhs,width);
-                else if(operator==Assignment.Operator.TIMES_ASSIGN) {next=binary(BinaryOperator.MULTIPLY,old,rhs,width);additive=false;}
-                else if(operator==Assignment.Operator.ASSIGN) {
-                    next=rhs;
-                    // Syntactic additive recognition also admits BigInteger s.add(term), after exact method checks.
-                    if(rhs instanceof Binary binary && binary.left().equals(old) && (binary.operator()==BinaryOperator.ADD || binary.operator()==BinaryOperator.SUBTRACT)) {
-                        rhs=binary.right();operator=binary.operator()==BinaryOperator.ADD?Assignment.Operator.PLUS_ASSIGN:Assignment.Operator.MINUS_ASSIGN;
+                else if(operator==Assignment.Operator.TIMES_ASSIGN) next=binary(BinaryOperator.MULTIPLY,old,rhs,width);
+                else if(operator==Assignment.Operator.ASSIGN) next=rhs;
+                else throw invalid();
+                bounded(next);
+                if(additive) {
+                    var reduction=UlrPolynomial.additiveUpdate(old,next,stateBindings);
+                    if(reduction.isPresent()) {
+                        var update=reduction.get();
+                        terms.put(targetKey,binary(update.operator(),terms.get(targetKey),update.right(),width));
                     } else additive=false;
-                } else throw invalid();
-                bounded(next);if(containsState(rhs,stateSymbols.values())) additive=false;
-                if(operator==Assignment.Operator.PLUS_ASSIGN) terms.put(key(target),binary(BinaryOperator.ADD,terms.get(key(target)),rhs,width));
-                if(operator==Assignment.Operator.MINUS_ASSIGN) terms.put(key(target),binary(BinaryOperator.SUBTRACT,terms.get(key(target)),rhs,width));
-                values.put(key(target),next);
+                }
+                values.put(targetKey,next);
             } else throw invalid();
         }
         Set<SymbolId> parameters=new LinkedHashSet<>(bindings.keySet());parameters.add(startSymbol);
@@ -387,9 +392,6 @@ final class JavaRuntimeIterationAnalysis {
             if(current.value() instanceof Binary binary) {pending.push(new Node(binary.left(),current.depth()+1));pending.push(new Node(binary.right(),current.depth()+1));}
         }
         return count;
-    }
-    private static boolean containsState(UlrExpression expression,Collection<SymbolId> ids) {
-        return ids.stream().anyMatch(id->contains(expression,id.canonicalText()));
     }
     private static boolean contains(UlrExpression expression,String id) {
         if(expression instanceof UlrExpression.Read read) return read.binding().equals(id);

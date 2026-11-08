@@ -3,11 +3,13 @@ package org.sandbox.math.qa;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.jar.JarFile;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.api.io.TempDir;
@@ -20,11 +22,11 @@ class RoslynUlrIntegrationTest {
     @Test
     @EnabledIfSystemProperty(named = "sandbox.math.roslyn", matches = "true")
     void verifiedRewritesPreserveRangeAndOverflowContracts() throws Exception {
+        Path sdkJar = standaloneSdk();
         Path project = Path.of("qa/math-optimization/roslyn/RoslynUlr.csproj").toAbsolutePath();
         Path artifacts = temporary.resolve("adapter");
         assertSuccess(run("build", project.toString(), "--artifacts-path", artifacts.toString(), "--nologo", "-v:q"));
         String adapter = artifacts.resolve("bin/RoslynUlr/debug/RoslynUlr.dll").toString();
-        String classpath = System.getProperty("surefire.test.class.path", System.getProperty("java.class.path"));
         Path target = Files.createDirectory(temporary.resolve("runtime"));
         for (String mode : List.of("unchecked", "checked")) {
             String variant = mode.equals("checked") ? "Checked" : "Wrap";
@@ -37,11 +39,11 @@ class RoslynUlrIntegrationTest {
                     }
                     """.formatted(variant, mode));
             String request = assertSuccess(run(adapter, "extract", original.toString())).strip();
-            String rewritten = assertSuccess(run(adapter, "rewrite", original.toString(), classpath));
+            String rewritten = assertSuccess(run(adapter, "rewrite", original.toString(), sdkJar.toString()));
             assertNotEquals(Files.readString(original), rewritten);
             Files.writeString(target.resolve("After" + variant + ".cs"), rewritten.replace("Before" + variant, "After" + variant));
 
-            Path supplied = temporary.resolve(variant + "-supplied.json");
+            Path supplied = temporary.resolve(variant + "-supplied.jar");
             Files.writeString(supplied, "{\"version\":1,\"request\":" + request + ",\"initial\":0,\"coefficients\":[0,1]}");
             Result rejected = run(adapter, "rewrite", original.toString(), supplied.toString());
             assertNotEquals(0, rejected.exit());
@@ -79,6 +81,18 @@ class RoslynUlrIntegrationTest {
                 "65537:-2147450880:-2147450880:overflow:overflow",
                 "100000:704982704:704982704:overflow:overflow",
                 "max:1073741825"), output.lines().toList());
+    }
+
+    private Path standaloneSdk() throws IOException {
+        String artifact = System.getProperty("sandbox.math.roslyn.regelsucheJar");
+        assertNotNull(artifact, "Set -Dsandbox.math.roslyn.regelsucheJar to the standalone SDK all.jar");
+        Path sdk = Path.of(artifact).toAbsolutePath();
+        try (var jar = new JarFile(sdk.toFile())) {
+            assertNotNull(jar.getEntry("de/regelsuche/sdk/optimization/iteration/PolynomialSumCli.class"));
+            assertTrue(jar.stream().noneMatch(entry -> entry.getName().contains("org/eclipse/")
+                    || entry.getName().contains("org/sandbox/")), "The SDK JAR must be independent of Eclipse and Sandbox");
+        }
+        return Files.copy(sdk, temporary.resolve("Regelsuche SDK.jar"));
     }
 
     private Result run(String... args) throws Exception {
