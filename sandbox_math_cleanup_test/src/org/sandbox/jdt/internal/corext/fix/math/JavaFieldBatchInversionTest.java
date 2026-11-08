@@ -66,6 +66,7 @@ class JavaFieldBatchInversionTest {
         assertTrue(MathReviewReport.ranked(analysis.evidence(), options).stream()
                 .flatMap(e -> e.assessment().cautions().stream()).anyMatch(reason -> reason.contains("reference identity")));
         String rewritten = apply(SAMPLE, analysis);
+        assertTrue(rewritten.contains("Modular inversion batching preserves numerical BigInteger values"));
         assertBatchCount(0, analyze(rewritten, options, -1));
         try (var before = compile("before", SAMPLE); var after = compile("after", rewritten)) {
             for (var p : List.of(PRIME, COMPOSITE, BigInteger.valueOf(17), PRIME.shiftLeft(4096))) {
@@ -166,6 +167,13 @@ class JavaFieldBatchInversionTest {
                     .invoke(null, value(5), value(-7), PRIME);
             assertArrayEquals(new BigInteger[] {value(5).modInverse(PRIME), value(-7).modInverse(PRIME)}, actual);
         }
+    }
+
+    @Test void rejectsAnInstancePublishedBeforeItsFinalModulusIsAssigned() {
+        String source = SAMPLE.replace("private final BigInteger p;",
+                "private static volatile Sample published; private final BigInteger p;")
+                .replace("this.p = p;", "published = this; this.p = p;");
+        assertBatchCount(0, analyze(source, options(true, true, "BIG_INTEGER"), -1));
     }
 
     private static MathematicalAnalysis.Analysis analyze(String source, MathCleanUpOptions options, int selection) {

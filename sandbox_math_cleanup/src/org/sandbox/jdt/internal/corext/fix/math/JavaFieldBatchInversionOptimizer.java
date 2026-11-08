@@ -35,6 +35,8 @@ final class JavaFieldBatchInversionOptimizer {
     private static final int MAXIMUM_INITIALIZER_DEPTH = 8;
     private static final int PREFIX_STATEMENTS = 3;
     private static final int MAXIMUM_SITES = 8;
+    private static final String CONTRACT = "Modular inversion batching preserves numerical BigInteger values. " //$NON-NLS-1$
+            + "Callers observing reference identity can distinguish the mathematical result objects."; //$NON-NLS-1$
 
     private record Read(String source, String key) { }
 
@@ -56,7 +58,8 @@ final class JavaFieldBatchInversionOptimizer {
 
     static void optimize(CompilationUnit ast, String source, MathCleanUpOptions options, IProgressMonitor monitor,
             int selectionOffset, int selectionLength, Map<String, String> compiler, SourceEnvironment environment,
-            List<Replacement> replacements, List<VerifiedRegion> evidence, List<Diagnostic> diagnostics, Work work) {
+            List<Replacement> replacements, List<VerifiedRegion> evidence, List<Diagnostic> diagnostics,
+            MathematicalJavadoc documentation, Work work) {
         var blocks = new ArrayList<Block>();
         var names = new HashSet<String>();
         try {
@@ -104,6 +107,7 @@ final class JavaFieldBatchInversionOptimizer {
                         var sourcePlan = new JavaSourceRewritePlan(environment == null ? "Source.java" : environment.unitName(), //$NON-NLS-1$
                                 JavaComputationTask.hash(source), source.length(), start, length, List.of(), List.of(), Map.of(),
                                 List.of(new JavaSourceRewritePlan.Change(start, length, JavaComputationTask.hash(original), replacement)));
+                        documentation.add(ast, start, length, CONTRACT);
                         replacements.add(new Replacement(start, length, replacement, proof.description()));
                         evidence.add(new VerifiedRegion(start, length, null, null, original, replacement, null, sourcePlan,
                                 null, null, null, null, null, null, null, proof));
@@ -208,10 +212,71 @@ final class JavaFieldBatchInversionOptimizer {
         if (variable.isField()) {
             // Own fields cannot run a different class's initialization or dereference another object.
             if (!Modifier.isFinal(variable.getModifiers()) || owner == null || !owner.isEqualTo(variable.getDeclaringClass())) return null;
+            if (!Modifier.isStatic(variable.getModifiers()) && !constructedWithoutEscape(ast, owner, work)) return null;
         } else if (declaration.getStartPosition() >= start
                 || !(Modifier.isFinal(variable.getModifiers()) || variable.isEffectivelyFinal())) return null;
         // In particular, a second initializer cannot consume the first declaration.
         return new Read(spelling, variable.getKey());
+    }
+
+    /** Final instance fields are stable once construction can complete before publication. */
+    private static boolean constructedWithoutEscape(CompilationUnit ast, ITypeBinding owner, Work work) {
+        if (!jdk(owner.getSuperclass(), OBJECT) || owner.isLocal()
+                || owner.isMember() && !Modifier.isStatic(owner.getModifiers())
+                || !(ast.findDeclaringNode(owner.getTypeDeclaration()) instanceof TypeDeclaration type)) return false;
+        var check = new ASTVisitor() {
+            boolean safe = true;
+
+            @Override public boolean preVisit2(ASTNode node) {
+                work.charge(1);
+                safe &= !(node instanceof LambdaExpression || node instanceof MethodReference
+                        || node instanceof TypeDeclarationStatement || node instanceof AnonymousClassDeclaration
+                        || node instanceof ConstructorInvocation || node instanceof SuperMethodInvocation)
+                        && (node.getFlags() & (ASTNode.MALFORMED | ASTNode.RECOVERED)) == 0;
+                return safe;
+            }
+
+            @Override public boolean visit(ThisExpression node) {
+                safe &= node.getQualifier() == null && node.getParent() instanceof FieldAccess access
+                        && access.getExpression() == node;
+                return safe;
+            }
+
+            @Override public boolean visit(MethodInvocation node) {
+                if (node.getExpression() == null) {
+                    var method = node.resolveMethodBinding();
+                    safe &= valid(method) && Modifier.isStatic(method.getModifiers());
+                }
+                return safe;
+            }
+
+            @Override public boolean visit(SuperConstructorInvocation node) {
+                safe &= node.getExpression() == null && node.arguments().isEmpty();
+                return safe;
+            }
+
+            @Override public boolean visit(ClassInstanceCreation node) {
+                var created = node.resolveTypeBinding();
+                safe &= valid(created) && (!created.isMember() || Modifier.isStatic(created.getModifiers()));
+                return safe;
+            }
+        };
+        for (Object member : type.bodyDeclarations()) {
+            work.charge(1);
+            if (member instanceof MethodDeclaration method && method.isConstructor()) {
+                if (method.getBody() == null) return false;
+                method.getBody().accept(check);
+            } else if (member instanceof Initializer initializer && !Modifier.isStatic(initializer.getModifiers())) {
+                initializer.getBody().accept(check);
+            } else if (member instanceof FieldDeclaration field && !Modifier.isStatic(field.getModifiers())) {
+                for (Object fragment : field.fragments()) {
+                    var initializer = ((VariableDeclarationFragment) fragment).getInitializer();
+                    if (initializer != null) initializer.accept(check);
+                }
+            }
+            if (!check.safe) return false;
+        }
+        return true;
     }
 
     private static ITypeBinding owner(ASTNode node, Work work) {

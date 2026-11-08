@@ -42,7 +42,7 @@ public class ReleaseVersionContractTest {
 	private static final String WORKFLOW = ".github/workflows/deploy-release.yml";
 	private static final String RECOVERY_WORKFLOW = ".github/workflows/recover-release-handoff.yml";
 	private static final List<Transition> RECOVERY_TRANSITIONS = List.of(
-			new Transition("Create protected-main handoff pull requests", "NEXT_SNAPSHOT"));
+			new Transition("Create missing next-development pull request", "NEXT_SNAPSHOT"));
 	private static final List<String> STANDALONE_POMS = List.of(
 			"sandbox_cleanup_cli_dist/pom.xml", "sandbox-maven-plugin/pom.xml", "sandbox_oomph/pom.xml");
 	private static final List<Transition> TRANSITIONS = List.of(
@@ -158,6 +158,17 @@ public class ReleaseVersionContractTest {
 	@Test
 	public void recoveryHandoffUpdatesEveryStandalonePom() throws IOException {
 		assertTransition(workflow(RECOVERY_WORKFLOW), RECOVERY_TRANSITIONS.getFirst());
+	}
+
+	@Test
+	public void recoveryChecksForTheNextDevelopmentPrBeforeCreatingABranch() throws IOException {
+		String step = workflowStep(workflow(RECOVERY_WORKFLOW), RECOVERY_TRANSITIONS.getFirst().step());
+		int existingPr = step.indexOf("gh pr list --state open --base main --head \"$next_branch\"");
+		assertTrue(existingPr >= 0 && existingPr < step.indexOf("git push"),
+				"The existing next-development PR must be checked before any push");
+		assertEquals(1L, step.lines().map(String::stripLeading)
+				.filter(line -> !line.startsWith("#") && line.contains("gh pr create ")).count(),
+				"Recovery must create only the next-development PR");
 	}
 
 	@Test

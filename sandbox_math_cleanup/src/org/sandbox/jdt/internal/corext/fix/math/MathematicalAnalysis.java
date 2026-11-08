@@ -285,7 +285,7 @@ public final class MathematicalAnalysis {
                compilerOptions, environment, replacements, evidence, diagnostics, valueWork);
          if (options.mathematicalOptIn() && options.kinds().contains(NumericKind.BIG_INTEGER))
             JavaFieldBatchInversionOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
-                  compilerOptions, environment, replacements, evidence, diagnostics, valueWork);
+                  compilerOptions, environment, replacements, evidence, diagnostics, documentation, valueWork);
          sourceContext.takeWork(); // Source dependencies were charged through valueWork.
       }
       JavaFixedPowerOptimizer.optimize(ast,source,options,monitor,selectionOffset,selectionLength,compilerOptions,environment,replacements,evidence,diagnostics,valueWork);
