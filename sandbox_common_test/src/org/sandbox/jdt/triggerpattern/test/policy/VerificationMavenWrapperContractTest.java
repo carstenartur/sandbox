@@ -34,7 +34,7 @@ class VerificationMavenWrapperContractTest {
                         "xvfb-run --auto-servernum ./mvnw"),
                 new Invocation("deploy-release.yml", "Prepare next development iteration pull request",
                         "./mvnw org.eclipse.tycho:tycho-versions-plugin:"),
-                new Invocation("recover-release-handoff.yml", "Create protected-main handoff pull requests",
+                new Invocation("recover-release-handoff.yml", "Create missing next-development pull request",
                         "./mvnw org.eclipse.tycho:tycho-versions-plugin:"),
                 new Invocation("distribution-smoke.yml", "Maven distribution build and verification",
                         "command=(./mvnw -Pdistribution,cli-dist,swtbot"),
