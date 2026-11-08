@@ -26,14 +26,22 @@ public record FunctionalExpression(String expression, String parameterName,
         String inputType, String outputType, String functionType,
         boolean requiresInvocation, boolean containsPatternVariable) {
 
-<span class="fc" id="L29">    public FunctionalExpression {</span>
-<span class="fc" id="L30">        Objects.requireNonNull(expression, &quot;expression&quot;);</span>
-<span class="fc" id="L31">        Objects.requireNonNull(inputType, &quot;inputType&quot;);</span>
-<span class="fc" id="L32">        Objects.requireNonNull(outputType, &quot;outputType&quot;);</span>
-<span class="fc" id="L33">        Objects.requireNonNull(functionType, &quot;functionType&quot;);</span>
-<span class="pc bpc" id="L34" title="1 of 4 branches missed.">        if (!requiresInvocation &amp;&amp; parameterName == null) {</span>
-<span class="nc" id="L35">            throw new IllegalArgumentException(&quot;Inlining requires a lambda parameter&quot;);</span>
+    /** A portable expression lambda used by numeric iteration, independent of source spelling. */
+    public record TypedBody(UlrExpression.Read parameter, UlrExpression result) {
+<span class="nc" id="L31">        public TypedBody {</span>
+<span class="nc" id="L32">            Objects.requireNonNull(parameter);</span>
+<span class="nc" id="L33">            Objects.requireNonNull(result);</span>
+<span class="nc" id="L34">        }</span>
+    }
+
+<span class="fc" id="L37">    public FunctionalExpression {</span>
+<span class="fc" id="L38">        Objects.requireNonNull(expression, &quot;expression&quot;);</span>
+<span class="fc" id="L39">        Objects.requireNonNull(inputType, &quot;inputType&quot;);</span>
+<span class="fc" id="L40">        Objects.requireNonNull(outputType, &quot;outputType&quot;);</span>
+<span class="fc" id="L41">        Objects.requireNonNull(functionType, &quot;functionType&quot;);</span>
+<span class="pc bpc" id="L42" title="1 of 4 branches missed.">        if (!requiresInvocation &amp;&amp; parameterName == null) {</span>
+<span class="nc" id="L43">            throw new IllegalArgumentException(&quot;Inlining requires a lambda parameter&quot;);</span>
         }
-<span class="fc" id="L37">    }</span>
+<span class="fc" id="L45">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
