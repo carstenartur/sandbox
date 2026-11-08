@@ -223,7 +223,8 @@ final class JavaFieldBatchInversionOptimizer {
     private static boolean constructedWithoutEscape(CompilationUnit ast, ITypeBinding owner, Work work) {
         if (!jdk(owner.getSuperclass(), OBJECT) || owner.isLocal()
                 || owner.isMember() && !Modifier.isStatic(owner.getModifiers())
-                || !(ast.findDeclaringNode(owner.getTypeDeclaration()) instanceof TypeDeclaration type)) return false;
+                || !(ast.findDeclaringNode(owner.getTypeDeclaration()) instanceof TypeDeclaration type)
+                || !usesOrdinaryConstruction(owner, work)) return false;
         var check = new ASTVisitor() {
             boolean safe = true;
 
@@ -275,6 +276,21 @@ final class JavaFieldBatchInversionOptimizer {
                 }
             }
             if (!check.safe) return false;
+        }
+        return true;
+    }
+
+    private static boolean usesOrdinaryConstruction(ITypeBinding owner, Work work) {
+        var types = new ArrayList<ITypeBinding>();
+        var seen = new HashSet<String>();
+        types.add(owner);
+        for (int i = 0; i < types.size(); i++) {
+            work.charge(1);
+            var type = types.get(i);
+            // Deserialization can restore final instance fields without a constructor freeze.
+            if (!valid(type) || "java.io.Serializable".equals(type.getQualifiedName())) return false; //$NON-NLS-1$
+            if (!seen.add(type.getKey())) continue;
+            for (var parent : type.getInterfaces()) types.add(parent);
         }
         return true;
     }

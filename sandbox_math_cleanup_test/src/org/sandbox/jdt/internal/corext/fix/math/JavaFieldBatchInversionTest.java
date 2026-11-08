@@ -176,6 +176,12 @@ class JavaFieldBatchInversionTest {
         assertBatchCount(0, analyze(source, options(true, true, "BIG_INTEGER"), -1));
     }
 
+    @Test void rejectsFinalInstanceFieldsThatCanBeRestoredByDeserialization() {
+        String source = SAMPLE.replace("public class Sample {",
+                "public class Sample implements java.io.Serializable {");
+        assertBatchCount(0, analyze(source, options(true, true, "BIG_INTEGER"), -1));
+    }
+
     private static MathematicalAnalysis.Analysis analyze(String source, MathCleanUpOptions options, int selection) {
         var compiler = compiler();
         var parser = ASTParser.newParser(AST.getJLSLatest());
