@@ -77,22 +77,22 @@ class StateIterationTest {
         assertDoesNotThrow(() -> model(List.of(N, A), updates, Set.of()));
         assertThrows(IllegalArgumentException.class, () -> model(List.of(N, A),
                 List.of(new StateIteration.Update("n-key", READ_A), NEXT_A), Set.of()));
-        assertThrows(IllegalArgumentException.class, () -> new StateIteration(List.of(N, A), STOP, updates, READ_A,
-                INT32, StateIteration.UpdateMode.SIMULTANEOUS, StateIteration.EvaluationOrder.LEFT_TO_RIGHT,
-                new StateIteration.CountDown("n-key", 1, 0), Set.of()));
+        assertThrows(IllegalArgumentException.class, () -> assertNotNull(new StateIteration(List.of(N, A), STOP,
+                updates, READ_A, INT32, StateIteration.UpdateMode.SIMULTANEOUS,
+                StateIteration.EvaluationOrder.LEFT_TO_RIGHT, new StateIteration.CountDown("n-key", 1, 0), Set.of())));
     }
 
     @Test void requiresABooleanStopCondition() {
-        assertThrows(IllegalArgumentException.class, () -> new StateIteration(List.of(N, A), READ_N,
+        assertThrows(IllegalArgumentException.class, () -> assertNotNull(new StateIteration(List.of(N, A), READ_N,
                 List.of(NEXT_N, NEXT_A), READ_A, INT64, StateIteration.UpdateMode.SIMULTANEOUS,
-                StateIteration.EvaluationOrder.LEFT_TO_RIGHT, new StateIteration.CountDown("n-key", 1, 0), Set.of()));
+                StateIteration.EvaluationOrder.LEFT_TO_RIGHT, new StateIteration.CountDown("n-key", 1, 0), Set.of())));
     }
 
     @Test void rejectsMissingOrOversizedStateIdentities() {
-        assertThrows(IllegalArgumentException.class, () -> new StateIteration.Update(" ", READ_N));
+        assertThrows(IllegalArgumentException.class, () -> assertNotNull(new StateIteration.Update(" ", READ_N)));
         assertThrows(IllegalArgumentException.class,
-                () -> new StateIteration.Update("x".repeat(4_097), READ_N));
-        assertThrows(IllegalArgumentException.class, () -> new StateIteration.State("", "n", INT32));
+                () -> assertNotNull(new StateIteration.Update("x".repeat(4_097), READ_N)));
+        assertThrows(IllegalArgumentException.class, () -> assertNotNull(new StateIteration.State("", "n", INT32)));
     }
 
     private static StateIteration model(List<StateIteration.State> states,
