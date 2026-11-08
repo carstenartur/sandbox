@@ -8,7 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import org.eclipse.jdt.core.dom.*;
+import org.sandbox.functional.core.model.UlrExpression;
 import de.regelsuche.ast.*;
 import de.regelsuche.ast.iteration.*;
 import de.regelsuche.symbol.SymbolId;
@@ -237,6 +239,40 @@ final class JavaFiniteSumAnalysis {
     }
     interface Values { Expr resolve(IVariableBinding binding); }
     static Expr decodeResolved(Expression expression,String width,Values symbols,JavaLoopInvariantAnalysis.Work work,int depth) {
+        return decode(expression, width, new Terms<Expr>() {
+            @Override public Expr literal(long value) { return new NumberExpr(value); }
+            @Override public Expr read(IVariableBinding binding) { return symbols.resolve(binding); }
+            @Override public Expr binary(Expr left, BinaryOperator operator, Expr right) {
+                return new BinaryExpr(left, operator, right);
+            }
+        }, work, depth);
+    }
+    static UlrExpression decodeUlr(Expression expression, String width,
+            Function<IVariableBinding, UlrExpression> symbols, JavaLoopInvariantAnalysis.Work work) {
+        var type = width.equals("int") ? UlrExpression.Type.INT32 : UlrExpression.Type.INT64; //$NON-NLS-1$
+        return decode(expression, width, new Terms<UlrExpression>() {
+            @Override public UlrExpression literal(long value) {
+                return new UlrExpression.Constant(BigInteger.valueOf(value), type);
+            }
+            @Override public UlrExpression read(IVariableBinding binding) { return symbols.apply(binding); }
+            @Override public UlrExpression binary(UlrExpression left, BinaryOperator operator, UlrExpression right) {
+                var operation = switch (operator) {
+                    case ADD -> UlrExpression.BinaryOperator.ADD;
+                    case SUB -> UlrExpression.BinaryOperator.SUBTRACT;
+                    case MUL -> UlrExpression.BinaryOperator.MULTIPLY;
+                    default -> throw invalid();
+                };
+                return new UlrExpression.Binary(operation, left, right, type, UlrExpression.Overflow.WRAP);
+            }
+        }, work, 0);
+    }
+    private interface Terms<T> {
+        T literal(long value);
+        T read(IVariableBinding binding);
+        T binary(T left, BinaryOperator operator, T right);
+    }
+    private static <T> T decode(Expression expression, String width, Terms<T> terms,
+            JavaLoopInvariantAnalysis.Work work, int depth) {
         work.tick();
         if(expression==null || depth>FiniteSumEvidence.MAX_EXPRESSION_DEPTH) throw invalid();
         var primitive=expression.resolveTypeBinding();
@@ -244,22 +280,22 @@ final class JavaFiniteSumAnalysis {
         if(expression instanceof NumberLiteral || expression instanceof PrefixExpression prefix
                 && prefix.getOperand() instanceof NumberLiteral && Set.of(PrefixExpression.Operator.PLUS,PrefixExpression.Operator.MINUS).contains(prefix.getOperator())) {
             Object number=expression.resolveConstantExpressionValue();
-            if(number instanceof Integer integer) return new NumberExpr(integer.longValue());
-            if(number instanceof Long value) return new NumberExpr(value);
+            if(number instanceof Integer integer) return terms.literal(integer.longValue());
+            if(number instanceof Long value) return terms.literal(value);
             throw invalid();
         }
         if(expression instanceof SimpleName) {
             var binding=variable(expression);
             if(binding==null || binding.isField()) throw invalid();
-            return symbols.resolve(binding);
+            return terms.read(binding);
         }
-        if(expression instanceof ParenthesizedExpression parentheses) return decodeResolved(parentheses.getExpression(),width,symbols,work,depth+1);
+        if(expression instanceof ParenthesizedExpression parentheses) return decode(parentheses.getExpression(),width,terms,work,depth+1);
         if(expression instanceof CastExpression cast && type(cast.resolveTypeBinding(),width))
-            return decodeResolved(cast.getExpression(),width,symbols,work,depth+1);
+            return decode(cast.getExpression(),width,terms,work,depth+1);
         if(!type(primitive,width)) throw invalid(); // Every operator, not just the assignment, must use the ring width.
         if(expression instanceof PrefixExpression prefix && Set.of(PrefixExpression.Operator.MINUS,PrefixExpression.Operator.PLUS).contains(prefix.getOperator())) {
-            Expr operand=decodeResolved(prefix.getOperand(),width,symbols,work,depth+1);
-            return prefix.getOperator()==PrefixExpression.Operator.PLUS?operand:new BinaryExpr(new NumberExpr(0),BinaryOperator.SUB,operand);
+            T operand=decode(prefix.getOperand(),width,terms,work,depth+1);
+            return prefix.getOperator()==PrefixExpression.Operator.PLUS?operand:terms.binary(terms.literal(0),BinaryOperator.SUB,operand);
         }
         if(expression instanceof InfixExpression infix) {
             BinaryOperator operator=infix.getOperator()==InfixExpression.Operator.PLUS?BinaryOperator.ADD
@@ -269,8 +305,8 @@ final class JavaFiniteSumAnalysis {
             // JDT's flat extended operands may promote to long only after an earlier int operation.
             if(width.equals("long") && type(infix.getLeftOperand().resolveTypeBinding(),"int")
                     && type(infix.getRightOperand().resolveTypeBinding(),"int")) throw invalid(); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-            Expr result=new BinaryExpr(decodeResolved(infix.getLeftOperand(),width,symbols,work,depth+1),operator,decodeResolved(infix.getRightOperand(),width,symbols,work,depth+1));
-            for(Object value:infix.extendedOperands()) result=new BinaryExpr(result,operator,decodeResolved((Expression)value,width,symbols,work,depth+1));
+            T result=terms.binary(decode(infix.getLeftOperand(),width,terms,work,depth+1),operator,decode(infix.getRightOperand(),width,terms,work,depth+1));
+            for(Object value:infix.extendedOperands()) result=terms.binary(result,operator,decode((Expression)value,width,terms,work,depth+1));
             return result;
         }
         throw invalid();

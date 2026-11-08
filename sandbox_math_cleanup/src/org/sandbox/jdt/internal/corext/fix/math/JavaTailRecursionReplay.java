@@ -1,46 +1,69 @@
 /* Copyright (c) 2026 Carsten Hammer. SPDX-License-Identifier: EPL-2.0 */
 package org.sandbox.jdt.internal.corext.fix.math;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import org.eclipse.jdt.core.dom.*;
 import org.sandbox.functional.core.model.StateIteration;
+import org.sandbox.functional.core.model.UlrExpression;
+import org.sandbox.functional.core.model.UlrExpression.Type;
 
-/** Independent typed structural replay; does not call the source renderer. */
+/** Checks the descriptor against original source, then independently replays emitted Java. */
 final class JavaTailRecursionReplay {
     private JavaTailRecursionReplay() { }
 
     static boolean verify(MethodDeclaration original, MethodDeclaration target, StateIteration model, Runnable checkpoint) {
         checkpoint.run();
-        if (!sameSignature(original, target) || target.getBody() == null || model.updateMode() != StateIteration.UpdateMode.SIMULTANEOUS
+        if (!sameSignature(original, target) || original.getBody() == null || target.getBody() == null
+                || model.resultType() != JavaPrimitiveStateExpressions.type(original.resolveBinding().getReturnType())
+                || model.updateMode() != StateIteration.UpdateMode.SIMULTANEOUS
                 || model.evaluationOrder() != StateIteration.EvaluationOrder.LEFT_TO_RIGHT) return false;
         int count = model.states().size();
         var body = target.getBody().statements();
-        if (body.size() != count + 2 || target.parameters().size() != count) return false;
+        if (body.size() != count + 2 || original.parameters().size() != count || target.parameters().size() != count) return false;
         var bindings = new HashMap<String, String>();
         var stateKeys = new ArrayList<String>(); var nextKeys = new ArrayList<String>();
         boolean headerInitialized=false;
         for (int i = 0; i < count; i++) {
             checkpoint.run();
+            var declared = model.states().get(i);
+            var originalParameter = ((SingleVariableDeclaration) original.parameters().get(i)).resolveBinding();
+            if (!declared.bindingKey().equals(key(originalParameter))
+                    || declared.type() != JavaPrimitiveStateExpressions.type(originalParameter.getType())
+                    || !declared.bindingKey().equals(model.updates().get(i).targetBinding())) return false;
             if (!(body.get(i) instanceof VariableDeclarationStatement declaration)
                     || declaration.getModifiers() != 0) return false;
-            VariableDeclarationFragment fragment = declaration(declaration, model.states().get(i).type());
+            VariableDeclarationFragment fragment = declaration(declaration, declared.type());
             var parameter = ((SingleVariableDeclaration) target.parameters().get(i)).resolveBinding();
             String parameterKey = key(parameter);
             if (fragment == null || parameterKey == null) return false;
             String state = key(fragment.resolveBinding());
             if (state == null || stateKeys.contains(state)) return false;
             if(fragment.getInitializer()==null) {
-                if(!model.states().get(i).bindingKey().equals(model.termination().counterBinding())
+                if(!declared.bindingKey().equals(model.termination().counterBinding())
                         || !(body.get(count) instanceof ForStatement loop) || !parameterInitializer(loop,state,parameterKey)) return false;
                 headerInitialized=true;
             } else if(!parameterKey.equals(key(fragment.getInitializer()))) return false;
-            stateKeys.add(state); bindings.put(model.states().get(i).bindingKey(), state);
+            stateKeys.add(state); bindings.put(declared.bindingKey(), state);
         }
-        var exit = (IfStatement) original.getBody().statements().getFirst();
-        var tail = (ReturnStatement) original.getBody().statements().get(1);
-        var call = (MethodInvocation) JavaPrimitiveStateExpressions.unwrap(tail.getExpression());
+        var sourceBody = original.getBody().statements();
+        if (sourceBody.size() != 2 || !(sourceBody.getFirst() instanceof IfStatement exit) || exit.getElseStatement() != null
+                || !(sourceBody.get(1) instanceof ReturnStatement tail)
+                || !(JavaPrimitiveStateExpressions.unwrap(tail.getExpression()) instanceof MethodInvocation call)
+                || call.arguments().size() != count) return false;
+        Statement then = exit.getThenStatement();
+        if (then instanceof Block block && block.statements().size() == 1) then = (Statement) block.statements().getFirst();
+        Set<String> originalBindings = bindings.keySet();
+        if (!(then instanceof ReturnStatement base)
+                || !matches(model.stopCondition(), exit.getExpression(), originalBindings, checkpoint)
+                || !matches(model.resultExpression(), base.getExpression(), originalBindings, checkpoint)) return false;
+        for (int i = 0; i < count; i++) {
+            if (!matches(model.updates().get(i).expression(), (Expression) call.arguments().get(i), originalBindings, checkpoint)) return false;
+        }
+
         Block block;int counter=-1;
         if (body.get(count) instanceof WhileStatement loop && loop.getBody() instanceof Block loopBody
                 && loop.getExpression() instanceof PrefixExpression condition && condition.getOperator()==PrefixExpression.Operator.NOT) {
@@ -81,10 +104,39 @@ final class JavaTailRecursionReplay {
                     || !stateKeys.get(i).equals(key(assignment.getLeftHandSide()))
                     || !nextKeys.get(slot).equals(key(assignment.getRightHandSide()))) return false;
         }
-        var base = exit.getThenStatement() instanceof ReturnStatement r ? r
-                : (ReturnStatement) ((Block) exit.getThenStatement()).statements().getFirst();
         return body.get(count + 1) instanceof ReturnStatement result
                 && expression(base.getExpression(), result.getExpression(), bindings, checkpoint, 0);
+    }
+
+    private record ExpressionPair(UlrExpression expected, UlrExpression actual) { }
+
+    private static boolean matches(UlrExpression expected, Expression original, Set<String> bindings, Runnable checkpoint) {
+        var actual = JavaPrimitiveStateExpressions.lower(original, bindings, checkpoint);
+        if (actual == null) return false;
+        // Record equality would recurse down arbitrarily long left-associated infix chains.
+        var pending = new ArrayDeque<ExpressionPair>();
+        pending.push(new ExpressionPair(expected, actual));
+        while (!pending.isEmpty()) {
+            checkpoint.run();
+            var pair = pending.pop();
+            var observed = pair.actual();
+            if (pair.expected().type() != observed.type()) return false;
+            switch (pair.expected()) {
+                case UlrExpression.Binary binary -> {
+                    if (!(observed instanceof UlrExpression.Binary found) || binary.operator() != found.operator()
+                            || binary.overflow() != found.overflow()) return false;
+                    pending.push(new ExpressionPair(binary.right(), found.right()));
+                    pending.push(new ExpressionPair(binary.left(), found.left()));
+                }
+                case UlrExpression.Unary unary -> {
+                    if (!(observed instanceof UlrExpression.Unary found) || unary.operator() != found.operator()
+                            || unary.overflow() != found.overflow()) return false;
+                    pending.push(new ExpressionPair(unary.operand(), found.operand()));
+                }
+                default -> { if (!pair.expected().equals(observed)) return false; }
+            }
+        }
+        return true;
     }
 
     private static boolean counterInitializer(ForStatement loop,String counter) {
@@ -129,9 +181,8 @@ final class JavaTailRecursionReplay {
                 && before.getReturnType().isEqualTo(after.getReturnType());
     }
 
-    private static VariableDeclarationFragment declaration(VariableDeclarationStatement node, String type) {
-        ITypeBinding binding = node.getType().resolveBinding();
-        if (binding == null || binding.isRecovered() || !binding.isPrimitive() || !type.equals(binding.getName())
+    private static VariableDeclarationFragment declaration(VariableDeclarationStatement node, Type type) {
+        if (JavaPrimitiveStateExpressions.type(node.getType().resolveBinding()) != type
                 || node.fragments().size() != 1) return null;
         var fragment = (VariableDeclarationFragment) node.fragments().getFirst();
         return fragment.extraDimensions().isEmpty() ? fragment : null;

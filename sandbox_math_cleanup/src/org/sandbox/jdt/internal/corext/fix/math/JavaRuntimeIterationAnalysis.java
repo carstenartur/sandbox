@@ -4,7 +4,17 @@ package org.sandbox.jdt.internal.corext.fix.math;
 import java.math.BigInteger;
 import java.util.*;
 import org.eclipse.jdt.core.dom.*;
-import de.regelsuche.ast.*;
+import org.sandbox.functional.core.model.FunctionalExpression.TypedBody;
+import org.sandbox.functional.core.model.NumericIteration.CountedSum;
+import org.sandbox.functional.core.model.UlrExpression;
+import org.sandbox.functional.core.model.UlrExpression.Binary;
+import org.sandbox.functional.core.model.UlrExpression.BinaryOperator;
+import org.sandbox.functional.core.model.UlrExpression.Overflow;
+import org.sandbox.functional.core.model.UlrExpression.Type;
+import de.regelsuche.ast.BinaryExpr;
+import de.regelsuche.ast.Expr;
+import de.regelsuche.ast.NumberExpr;
+import de.regelsuche.ast.VariableExpr;
 import de.regelsuche.ast.iteration.IntegerArithmetic;
 import de.regelsuche.sdk.optimization.iteration.*;
 import de.regelsuche.symbol.SymbolId;
@@ -33,7 +43,7 @@ final class JavaRuntimeIterationAnalysis {
     private final JavaLoopInvariantAnalysis.Work work;
     private final UUID namespace;
     private final LinkedHashMap<SymbolId,FiniteSumEvidence.Binding> bindings=new LinkedHashMap<>();
-    private final Map<String,Expr> values=new LinkedHashMap<>();
+    private final Map<String,UlrExpression> values=new LinkedHashMap<>();
     private final Set<String> states=new HashSet<>();
     private final SymbolId index,startSymbol,countSymbol;
     private JavaRuntimeIterationAnalysis(CompilationUnit unit,ASTNode node,JavaLoopInvariantAnalysis.Work work) {
@@ -48,7 +58,8 @@ final class JavaRuntimeIterationAnalysis {
         Header header=header(node);
                 // Header values are evaluated in Java's original width and captured as parameters, never lifted algebraically.
         headerValue(header.start(),0);headerValue(header.bound(),0);
-        values.put(key(header.counter()),VariableExpr.scoped(index));
+        String counterWidth=width(header.counter().getType());
+        values.put(key(header.counter()),read(index,counterWidth));
         List<Statement> statements=header.statements();
         if(statements.size()==1 && statements.getFirst() instanceof ForStatement inner) return nested(header,inner);
         if(statements.size()==1 && statements.getFirst() instanceof IfStatement branch) return partition(header,branch);
@@ -63,14 +74,14 @@ final class JavaRuntimeIterationAnalysis {
         String width=width(targets.values().iterator().next().getType());
         states.addAll(targets.keySet());
         rejectHeaderStates(header);
-        var initial=new LinkedHashMap<String,Expr>();var stateSymbols=new LinkedHashMap<String,SymbolId>();
+        var initial=new LinkedHashMap<String,UlrExpression>();var stateSymbols=new LinkedHashMap<String,SymbolId>();
         for(var target:targets.values()) {
             if(!width(target.getType()).equals(width)) throw invalid();
-            initial.put(key(target),VariableExpr.scoped(bind(target)));
+            initial.put(key(target),read(bind(target),width));
             SymbolId symbol=new SymbolId(namespace,Long.MAX_VALUE-stateSymbols.size());stateSymbols.put(key(target),symbol);
-            values.put(key(target),VariableExpr.scoped(symbol));
+            values.put(key(target),read(symbol,width));
         }
-        var terms=new LinkedHashMap<String,Expr>();for(String key:states) terms.put(key,new NumberExpr(0));
+        var terms=new LinkedHashMap<String,UlrExpression>();for(String key:states) terms.put(key,number(0,width));
         boolean additive=true;int locals=0,updates=0;
         for(var statement:statements) {
             work.tick();
@@ -79,39 +90,45 @@ final class JavaRuntimeIterationAnalysis {
                     if(++locals>32) throw invalid();var fragment=(VariableDeclarationFragment)item;
                     var binding=fragment.resolveBinding();
                     if(binding==null || !width(binding.getType()).equals(width) || fragment.getInitializer()==null) throw invalid();
-                    Expr value=decode(fragment.getInitializer(),width,values);bounded(value);
+                    var value=decode(fragment.getInitializer(),width,values);bounded(value);
                     values.put(key(binding),value);
                 }
             } else if(statement instanceof ExpressionStatement expression && expression.getExpression() instanceof Assignment assignment) {
                 if(++updates>32) throw invalid();var target=variable(assignment.getLeftHandSide());
                 if(target==null || !states.contains(key(target))) throw invalid();
-                Expr rhs=decode(assignment.getRightHandSide(),width,values),old=values.get(key(target)),next;
+                UlrExpression rhs=decode(assignment.getRightHandSide(),width,values),old=values.get(key(target)),next;
                 bounded(rhs);var operator=assignment.getOperator();
-                if(operator==Assignment.Operator.PLUS_ASSIGN) next=add(old,rhs);
-                else if(operator==Assignment.Operator.MINUS_ASSIGN) next=sub(old,rhs);
-                else if(operator==Assignment.Operator.TIMES_ASSIGN) {next=mul(old,rhs);additive=false;}
+                if(operator==Assignment.Operator.PLUS_ASSIGN) next=binary(BinaryOperator.ADD,old,rhs,width);
+                else if(operator==Assignment.Operator.MINUS_ASSIGN) next=binary(BinaryOperator.SUBTRACT,old,rhs,width);
+                else if(operator==Assignment.Operator.TIMES_ASSIGN) {next=binary(BinaryOperator.MULTIPLY,old,rhs,width);additive=false;}
                 else if(operator==Assignment.Operator.ASSIGN) {
                     next=rhs;
                     // Syntactic additive recognition also admits BigInteger s.add(term), after exact method checks.
-                    if(rhs instanceof BinaryExpr binary && binary.left().equals(old) && (binary.operator()==BinaryOperator.ADD || binary.operator()==BinaryOperator.SUB)) {
+                    if(rhs instanceof Binary binary && binary.left().equals(old) && (binary.operator()==BinaryOperator.ADD || binary.operator()==BinaryOperator.SUBTRACT)) {
                         rhs=binary.right();operator=binary.operator()==BinaryOperator.ADD?Assignment.Operator.PLUS_ASSIGN:Assignment.Operator.MINUS_ASSIGN;
                     } else additive=false;
                 } else throw invalid();
                 bounded(next);if(containsState(rhs,stateSymbols.values())) additive=false;
-                if(operator==Assignment.Operator.PLUS_ASSIGN) terms.put(key(target),add(terms.get(key(target)),rhs));
-                if(operator==Assignment.Operator.MINUS_ASSIGN) terms.put(key(target),sub(terms.get(key(target)),rhs));
+                if(operator==Assignment.Operator.PLUS_ASSIGN) terms.put(key(target),binary(BinaryOperator.ADD,terms.get(key(target)),rhs,width));
+                if(operator==Assignment.Operator.MINUS_ASSIGN) terms.put(key(target),binary(BinaryOperator.SUBTRACT,terms.get(key(target)),rhs,width));
                 values.put(key(target),next);
             } else throw invalid();
         }
         Set<SymbolId> parameters=new LinkedHashSet<>(bindings.keySet());parameters.add(startSymbol);
         var sums=new ArrayList<PolynomialSum>();LinearIteration linear=null;
         if(additive) {
-            for(String key:targets.keySet()) sums.add(new PolynomialSum(index,parameters,VariableExpr.scoped(startSymbol),header.stride(),terms.get(key),initial.get(key),arithmetic(width)));
+            for(String key:targets.keySet()) {
+                sums.add(project(counterWidth,startSymbol,header.stride(),terms.get(key),initial.get(key),width,parameters));
+            }
         } else {
             parameters.add(countSymbol);
             var linearStates=new ArrayList<LinearIteration.State>();var updatesList=new ArrayList<LinearIteration.Update>();
-            for(String key:targets.keySet()) {linearStates.add(new LinearIteration.State(stateSymbols.get(key),initial.get(key)));updatesList.add(new LinearIteration.Update(stateSymbols.get(key),values.get(key)));}
-            linear=new LinearIteration(index,VariableExpr.scoped(startSymbol),header.stride(),VariableExpr.scoped(countSymbol),linearStates,parameters,updatesList,LinearIteration.UpdateOrder.SIMULTANEOUS,arithmetic(width));
+            for(String key:targets.keySet()) {
+                linearStates.add(new LinearIteration.State(stateSymbols.get(key),math(initial.get(key),width)));
+                updatesList.add(new LinearIteration.Update(stateSymbols.get(key),math(values.get(key),width)));
+            }
+            linear=new LinearIteration(index,VariableExpr.scoped(startSymbol),header.stride(),VariableExpr.scoped(countSymbol),linearStates,parameters,updatesList,
+                    LinearIteration.UpdateOrder.SIMULTANEOUS,UlrSumProjection.arithmetic(kind(width),overflow(width)));
         }
         if(width.equals("java.math.BigInteger")) valueOnlyUses(targets.values());
         return new Context(node,header,width,List.copyOf(targets.values()),List.copyOf(bindings.values()),sums,linear,null,null,0,false,false,startSymbol,countSymbol,null);
@@ -123,7 +140,7 @@ final class JavaRuntimeIterationAnalysis {
         String width=width(target.getType());
         if(!width.equals(header.counter().getType().getName()))throw invalid();
         states.add(key(target));rejectHeaderStates(header);
-        Expr initial=VariableExpr.scoped(bind(target));
+        var initial=read(bind(target),width);
         if(admitted.split()!=null) {
             headerValue(admitted.split(),0);
             admitted.split().accept(new ASTVisitor() {
@@ -133,7 +150,8 @@ final class JavaRuntimeIterationAnalysis {
                 }
             });
         }
-        Expr first=partitionTerm(admitted.first(),width),second=admitted.second()==null?new NumberExpr(0):partitionTerm(admitted.second(),width);
+        var first=partitionTerm(admitted.first(),width);
+        var second=admitted.second()==null?number(0,width):partitionTerm(admitted.second(),width);
         int firstNodes=bounded(first),secondNodes=bounded(second);
         var starts=new ArrayList<SymbolId>();var sums=new ArrayList<PolynomialSum>();
         int size=admitted.period()==0?2:admitted.period();
@@ -144,17 +162,17 @@ final class JavaRuntimeIterationAnalysis {
             // Prepay SDK scope validation, parameter copies/unions and start/initial checks,
             // including failed constructors. Each charge also polls cancellation/deadline.
             work.charge(32L+8L*parameters.size()+4L*(usesFirst?firstNodes:secondNodes));
-            sums.add(new PolynomialSum(index,parameters,VariableExpr.scoped(start),BigInteger.valueOf(Math.max(1,admitted.period())),
-                    usesFirst?first:second,part==0?initial:new NumberExpr(0),arithmetic(width)));
+            sums.add(project(width,start,BigInteger.valueOf(Math.max(1,admitted.period())),
+                    usesFirst?first:second,part==0?initial:number(0,width),width,parameters));
         }
         var split=admitted.split();
         var partition=new RuntimeIterationEvidence.Partition(admitted.period(),admitted.residue(),admitted.inclusive(),admitted.firstOnLow(),
                 split==null?-1:split.getStartPosition(),split==null?0:split.getLength(),starts);
         return new Context(node,header,width,List.of(target),List.copyOf(bindings.values()),sums,null,null,null,0,false,false,startSymbol,countSymbol,null,partition,split);
     }
-    private Expr partitionTerm(Assignment assignment,String width) {
-        Expr term=decode(assignment.getRightHandSide(),width,values);
-        return assignment.getOperator()==Assignment.Operator.MINUS_ASSIGN?sub(new NumberExpr(0),term):term;
+    private UlrExpression partitionTerm(Assignment assignment,String width) {
+        var term=decode(assignment.getRightHandSide(),width,values);
+        return assignment.getOperator()==Assignment.Operator.MINUS_ASSIGN?binary(BinaryOperator.SUBTRACT,number(0,width),term,width):term;
     }
     private Context nested(Header outer,ForStatement innerNode) {
         Header inner=header(innerNode);
@@ -168,17 +186,19 @@ final class JavaRuntimeIterationAnalysis {
         if(target==null || target.isField() || target.isEqualTo(outer.counter()) || target.isEqualTo(inner.counter())
                 || !(unit.findDeclaringNode(target) instanceof VariableDeclaration declaration) || declaration.getStartPosition()>=node.getStartPosition()) throw invalid();
         String width=width(target.getType());states.add(key(target));rejectHeaderStates(outer);rejectHeaderStates(inner);
-        Expr initial=VariableExpr.scoped(bind(target));SymbolId innerIndex=new SymbolId(namespace,4);
-        values.put(key(inner.counter()),VariableExpr.scoped(innerIndex));
-        Expr term=decode(assignment.getRightHandSide(),width,values);bounded(term);
-        if(assignment.getOperator()==Assignment.Operator.MINUS_ASSIGN) term=sub(new NumberExpr(0),term);
+        var initial=bind(target);SymbolId innerIndex=new SymbolId(namespace,4);
+        String innerWidth=width(inner.counter().getType());
+        values.put(key(inner.counter()),read(innerIndex,innerWidth));
+        var term=decode(assignment.getRightHandSide(),width,values);bounded(term);
+        if(assignment.getOperator()==Assignment.Operator.MINUS_ASSIGN) term=binary(BinaryOperator.SUBTRACT,number(0,width),term,width);
         else if(assignment.getOperator()!=Assignment.Operator.PLUS_ASSIGN) throw invalid();
-        if(contains(term,((VariableExpr)initial).symbol().orElseThrow())) throw invalid();
-        Expr innerCount=add(decode(bound,inner.counter().getType().getName(),values),new NumberExpr((inner.inclusive()?1:0)-integer));
+        if(contains(term,initial.canonicalText())) throw invalid();
+        Expr innerCount=new BinaryExpr(math(decode(bound,innerWidth,values),innerWidth),de.regelsuche.ast.BinaryOperator.ADD,
+                new NumberExpr((inner.inclusive()?1:0)-integer));
         var outerParameters=new LinkedHashSet<>(bindings.keySet());outerParameters.add(startSymbol);
         var innerParameters=new LinkedHashSet<>(outerParameters);innerParameters.add(index);
-        var innerSum=new PolynomialSum(innerIndex,innerParameters,new NumberExpr(integer),BigInteger.ONE,term,new NumberExpr(0),IntegerArithmetic.EXACT);
-        var nested=new PolynomialSeries.NestedSum(innerSum,innerCount,index,outerParameters,VariableExpr.scoped(startSymbol),outer.stride(),initial,IntegerArithmetic.EXACT);
+        var innerSum=new PolynomialSum(innerIndex,innerParameters,new NumberExpr(integer),BigInteger.ONE,math(term,width),new NumberExpr(0),IntegerArithmetic.EXACT);
+        var nested=new PolynomialSeries.NestedSum(innerSum,innerCount,index,outerParameters,VariableExpr.scoped(startSymbol),outer.stride(),VariableExpr.scoped(initial),IntegerArithmetic.EXACT);
         if(width.equals("java.math.BigInteger")) valueOnlyUses(List.of(target));
         return new Context(node,outer,width,List.of(target),List.copyOf(bindings.values()),List.of(),null,nested,bound,integer,inner.inclusive(),false,startSymbol,countSymbol,inner.counter().getType().getName());
     }
@@ -197,14 +217,14 @@ final class JavaRuntimeIterationAnalysis {
         boolean inclusive=range.getName().getIdentifier().equals("rangeClosed");if(!inclusive && !range.getName().getIdentifier().equals("range")) throw invalid();
         Expression start=(Expression)range.arguments().get(0),bound=(Expression)range.arguments().get(1);
         headerValue(start,0);headerValue(bound,0);
-        Expr term=VariableExpr.scoped(index);IVariableBinding counter=null;
+        UlrExpression term=read(index,width);IVariableBinding counter=null;
         if(lambda!=null) {
             if(!(lambda.parameters().getFirst() instanceof VariableDeclaration declaration)) throw invalid();counter=declaration.resolveBinding();
             if(counter==null || !width(counter.getType()).equals(width)) throw invalid();values.put(key(counter),term);
             term=decode((Expression)lambda.getBody(),width,values);
         }
         var parameters=new LinkedHashSet<>(bindings.keySet());parameters.add(startSymbol);
-        var model=new PolynomialSum(index,parameters,VariableExpr.scoped(startSymbol),BigInteger.ONE,term,new NumberExpr(0),arithmetic(width));
+        var model=project(width,startSymbol,BigInteger.ONE,term,number(0,width),width,parameters);
         return new Context(node,new Header(counter,start,bound,BigInteger.ONE,inclusive,false,false,null,List.of()),width,List.of(),List.copyOf(bindings.values()),List.of(model),null,null,null,0,false,true,startSymbol,countSymbol,null);
     }
     private static Expression sequential(Expression expression,String owner) {
@@ -295,18 +315,23 @@ final class JavaRuntimeIterationAnalysis {
             headerValue(infix.getLeftOperand(),depth+1);headerValue(infix.getRightOperand(),depth+1);for(Object operand:infix.extendedOperands())headerValue((Expression)operand,depth+1);return;
         }throw invalid();
     }
-    private Expr decode(Expression expression,String width,Map<String,Expr> local) {
-        if(!width.equals("java.math.BigInteger")) return JavaFiniteSumAnalysis.decodeResolved(expression,width,read->resolve(read,local),work,0);
+    private UlrExpression decode(Expression expression,String width,Map<String,UlrExpression> local) {
+        if(kind(width)!=Type.INTEGER) return JavaFiniteSumAnalysis.decodeUlr(expression,width,read->resolve(read,local),work);
         return big(expression,local,0);
     }
-    private Expr big(Expression expression,Map<String,Expr> local,int depth) {
+    private UlrExpression big(Expression expression,Map<String,UlrExpression> local,int depth) {
         work.tick();if(expression==null || depth>64 || !bigType(expression.resolveTypeBinding())) throw invalid();
         if(expression instanceof ParenthesizedExpression p) return big(p.getExpression(),local,depth+1);
         if(expression instanceof SimpleName name && name.resolveBinding() instanceof IVariableBinding variable && !variable.isField()) return resolve(variable,local);
         if(expression instanceof Name name && name.resolveBinding() instanceof IVariableBinding field && field.isField()
                 && field.getDeclaringClass().getQualifiedName().equals("java.math.BigInteger") && java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
             if(name instanceof QualifiedName qualified && !(qualified.getQualifier().resolveBinding() instanceof ITypeBinding)) throw invalid();
-            return switch(field.getName()) {case "ZERO"->new NumberExpr(0);case "ONE"->new NumberExpr(1);case "TEN"->new NumberExpr(10);default->throw invalid();};
+            return switch(field.getName()) {
+                case "ZERO"->number(0,"java.math.BigInteger");
+                case "ONE"->number(1,"java.math.BigInteger");
+                case "TEN"->number(10,"java.math.BigInteger");
+                default->throw invalid();
+            };
         }
         if(!(expression instanceof MethodInvocation call) || !owner(call).equals("java.math.BigInteger")) throw invalid();
         String method=call.getName().getIdentifier();
@@ -316,24 +341,36 @@ final class JavaRuntimeIterationAnalysis {
             if(value instanceof CastExpression cast && JavaFiniteSumAnalysis.type(cast.getType().resolveBinding(),"long")) value=cast.getExpression();
             if(value instanceof SimpleName variable && variable.resolveBinding() instanceof IVariableBinding binding && !binding.isField()) return resolve(binding,local);
             decode(value,value.resolveTypeBinding().getName(),local);Object constant=value.resolveConstantExpressionValue();
-            if(constant instanceof Integer number) return new NumberExpr(number.longValue());if(constant instanceof Long number) return new NumberExpr(number);
+            if(constant instanceof Integer number) return number(number.longValue(),"java.math.BigInteger");
+            if(constant instanceof Long number) return number(number,"java.math.BigInteger");
             throw invalid();
         }
         if(java.lang.reflect.Modifier.isStatic(call.resolveMethodBinding().getModifiers()) || call.getExpression()==null) throw invalid();
-        Expr receiver=big(call.getExpression(),local,depth+1);
-        if(method.equals("negate") && call.arguments().isEmpty()) return sub(new NumberExpr(0),receiver);
+        var receiver=big(call.getExpression(),local,depth+1);
+        String exact="java.math.BigInteger";
+        if(method.equals("negate") && call.arguments().isEmpty()) return binary(BinaryOperator.SUBTRACT,number(0,exact),receiver,exact);
         if(call.arguments().size()!=1) throw invalid();
         if(method.equals("pow")) {
             decode((Expression)call.arguments().getFirst(),"int",local);Object exponent=((Expression)call.arguments().getFirst()).resolveConstantExpressionValue();
             if(!(exponent instanceof Integer number) || number<0 || number>8) throw invalid();
-            Expr result=new NumberExpr(1);for(int i=0;i<number;i++)result=mul(result,receiver);return result;
+            // A zero power still evaluates its receiver, which can fail before the call.
+            if(number==0 && !(receiver instanceof UlrExpression.Constant || receiver instanceof UlrExpression.Read)) throw invalid();
+            UlrExpression result=number(1,exact);
+            for(int i=0;i<number;i++) result=binary(BinaryOperator.MULTIPLY,result,receiver,exact);
+            return result;
         }
-        Expr argument=big((Expression)call.arguments().getFirst(),local,depth+1);
-        return switch(method) {case "add"->add(receiver,argument);case "subtract"->sub(receiver,argument);case "multiply"->mul(receiver,argument);default->throw invalid();};
+        var argument=big((Expression)call.arguments().getFirst(),local,depth+1);
+        var operator=switch(method) {
+            case "add"->BinaryOperator.ADD;
+            case "subtract"->BinaryOperator.SUBTRACT;
+            case "multiply"->BinaryOperator.MULTIPLY;
+            default->throw invalid();
+        };
+        return binary(operator,receiver,argument,exact);
     }
-    private Expr resolve(IVariableBinding read,Map<String,Expr> local) {
-        Expr value=local.get(key(read));if(value!=null) return value;
-        if(states.contains(key(read))) throw invalid();return VariableExpr.scoped(bind(read));
+    private UlrExpression resolve(IVariableBinding read,Map<String,UlrExpression> local) {
+        var value=local.get(key(read));if(value!=null) return value;
+        if(states.contains(key(read))) throw invalid();return read(bind(read),width(read.getType()));
     }
     private SymbolId bind(IVariableBinding binding) {
         work.tick();if(binding.isField() || binding.isRecovered() || !(unit.findDeclaringNode(binding) instanceof VariableDeclaration declaration)
@@ -341,20 +378,22 @@ final class JavaRuntimeIterationAnalysis {
         width(binding.getType());SymbolId symbol=new SymbolId(namespace,declaration.getName().getStartPosition()+10L);
         bindings.putIfAbsent(symbol,new FiniteSumEvidence.Binding(symbol,declaration.getName().getStartPosition(),binding.getName(),width(binding.getType())));return symbol;
     }
-    private int bounded(Expr expression) {
-        record Node(Expr value,int depth) { }
+    private int bounded(UlrExpression expression) {
+        record Node(UlrExpression value,int depth) { }
         var pending=new ArrayDeque<Node>();pending.push(new Node(expression,1));int count=0;
         while(!pending.isEmpty()) {
             work.tick();var current=pending.pop();
             if(++count>2048 || current.depth()>64)throw new IllegalArgumentException("RUNTIME_SOURCE_EXPRESSION_LIMIT");
-            if(current.value() instanceof BinaryExpr binary) {pending.push(new Node(binary.left(),current.depth()+1));pending.push(new Node(binary.right(),current.depth()+1));}
+            if(current.value() instanceof Binary binary) {pending.push(new Node(binary.left(),current.depth()+1));pending.push(new Node(binary.right(),current.depth()+1));}
         }
         return count;
     }
-    private static boolean containsState(Expr expression,Collection<SymbolId> ids) {return ids.stream().anyMatch(id->contains(expression,id));}
-    private static boolean contains(Expr expression,SymbolId id) {
-        if(expression instanceof VariableExpr variable) return variable.symbol().orElseThrow().equals(id);
-        return expression instanceof BinaryExpr binary && (contains(binary.left(),id)||contains(binary.right(),id));
+    private static boolean containsState(UlrExpression expression,Collection<SymbolId> ids) {
+        return ids.stream().anyMatch(id->contains(expression,id.canonicalText()));
+    }
+    private static boolean contains(UlrExpression expression,String id) {
+        if(expression instanceof UlrExpression.Read read) return read.binding().equals(id);
+        return expression instanceof Binary binary && (contains(binary.left(),id)||contains(binary.right(),id));
     }
     private static String owner(MethodInvocation call) {
         var method=call.resolveMethodBinding();if(method==null || method.isRecovered() || method.getDeclaringClass()==null) throw invalid();
@@ -376,9 +415,32 @@ final class JavaRuntimeIterationAnalysis {
     private static String key(IVariableBinding binding) {return JavaFiniteSumAnalysis.key(binding);}
     private static boolean bigType(ITypeBinding type) {return type!=null&&!type.isRecovered()&&type.getQualifiedName().equals("java.math.BigInteger");}
     private static String width(ITypeBinding type) {if(JavaFiniteSumAnalysis.type(type,"int")) return "int";if(JavaFiniteSumAnalysis.type(type,"long")) return "long";if(bigType(type)) return "java.math.BigInteger";throw invalid();}
-    private static IntegerArithmetic arithmetic(String width) {return width.equals("int")?IntegerArithmetic.JAVA_INT:width.equals("long")?IntegerArithmetic.JAVA_LONG:IntegerArithmetic.EXACT;}
-    private static Expr add(Expr a,Expr b) {return new BinaryExpr(a,BinaryOperator.ADD,b);}
-    private static Expr sub(Expr a,Expr b) {return new BinaryExpr(a,BinaryOperator.SUB,b);}
-    private static Expr mul(Expr a,Expr b) {return new BinaryExpr(a,BinaryOperator.MUL,b);}
+    private static Type kind(String width) {
+        return switch(width) {
+            case "int"->Type.INT32;
+            case "long"->Type.INT64;
+            case "java.math.BigInteger"->Type.INTEGER;
+            default->throw invalid();
+        };
+    }
+    private static Overflow overflow(String width) {return kind(width)==Type.INTEGER?Overflow.EXACT:Overflow.WRAP;}
+    private static UlrExpression.Read read(SymbolId symbol,String width) {
+        return new UlrExpression.Read(symbol.canonicalText(),kind(width));
+    }
+    private static UlrExpression.Constant number(long value,String width) {
+        return new UlrExpression.Constant(BigInteger.valueOf(value),kind(width));
+    }
+    private static Binary binary(BinaryOperator operator,UlrExpression left,UlrExpression right,String width) {
+        return new Binary(operator,left,right,kind(width),overflow(width));
+    }
+    private Expr math(UlrExpression expression,String width) {
+        return UlrSumProjection.expression(expression,kind(width),overflow(width),work::tick);
+    }
+    private PolynomialSum project(String counterWidth,SymbolId start,BigInteger step,UlrExpression term,
+            UlrExpression initial,String width,Set<SymbolId> parameters) {
+        var summand=new TypedBody(read(index,counterWidth),term);
+        var sum=new CountedSum(summand,read(start,counterWidth),step,initial,overflow(width));
+        return UlrSumProjection.project(sum,parameters,work::tick);
+    }
     static IllegalArgumentException invalid() {return new IllegalArgumentException("RUNTIME_ITERATION_NOT_ADMITTED");}
 }

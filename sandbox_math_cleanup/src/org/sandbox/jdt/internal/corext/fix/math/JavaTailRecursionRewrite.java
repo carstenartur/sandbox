@@ -16,6 +16,8 @@ import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.*;
 import org.sandbox.functional.core.model.StateIteration;
+import org.sandbox.functional.core.model.UlrExpression.Type;
+import de.regelsuche.sdk.optimization.NumericKind;
 
 /**
  * Bounded tail-loop planning for standalone sources and resolved native project ASTs.
@@ -105,11 +107,9 @@ public final class JavaTailRecursionRewrite {
         var inspected=JavaTailRecursionInspector.inspect(method,source,work.maximum-work.used,work.cancelled);
         work.charge(inspected.work());
         StateIteration model=inspected.iteration().orElseThrow(()->new Stopped(inspected.reason()));
-        if(options!=null) {
-            var kinds=new ArrayList<>(model.states().stream().map(StateIteration.State::type).toList());
-            kinds.add(method.resolveBinding().getReturnType().getName());
-            for(String kind:kinds) if(!options.kinds().contains(de.regelsuche.sdk.optimization.NumericKind.valueOf(kind.toUpperCase(java.util.Locale.ROOT))))
-                throw new Stopped("TAIL_NUMERIC_KIND_NOT_SELECTED"); //$NON-NLS-1$
+        if (options != null && (!options.kinds().contains(kind(model.resultType()))
+                || model.states().stream().anyMatch(state -> !options.kinds().contains(kind(state.type()))))) {
+            throw new Stopped("TAIL_NUMERIC_KIND_NOT_SELECTED"); //$NON-NLS-1$
         }
         boolean counted=options!=null && options.safety()==de.regelsuche.sdk.optimization.SafetyProfile.PRESERVE_JAVA
                 && !options.mathematicalOptIn() && options.goal()==de.regelsuche.sdk.optimization.OptimizationGoal.LOWER_ESTIMATED_RUNTIME;
@@ -181,6 +181,8 @@ public final class JavaTailRecursionRewrite {
         }
         var names = new HashMap<String, String>();
         for (int i = 0; i < states.size(); i++) names.put(model.states().get(i).bindingKey(), states.get(i));
+        // Preserve the Java spelling of expressions already lowered into the typed model.
+        // Only this adapter sees source locations; replay compares the reparsed Java independently.
         var exit = (IfStatement) method.getBody().statements().getFirst();
         var tail = (ReturnStatement) method.getBody().statements().get(1);
         var call = (MethodInvocation) JavaPrimitiveStateExpressions.unwrap(tail.getExpression());
@@ -191,7 +193,7 @@ public final class JavaTailRecursionRewrite {
         if(counted) for(int i=0;i<states.size();i++) if(model.states().get(i).bindingKey().equals(model.termination().counterBinding())) counter=i;
         for (int i = 0; i < states.size(); i++) {
             var state = model.states().get(i);
-            code.append("    ").append(state.type()).append(' ').append(states.get(i)); //$NON-NLS-1$
+            code.append("    ").append(javaType(state.type())).append(' ').append(states.get(i)); //$NON-NLS-1$
             if(i!=counter) code.append(" = ").append(state.name()); //$NON-NLS-1$
             code.append(";\n"); //$NON-NLS-1$
         }
@@ -203,7 +205,7 @@ public final class JavaTailRecursionRewrite {
         }
         for (int i = 0; i < next.size(); i++) {
             if(i==counter) continue;
-            code.append("        final ").append(model.states().get(i).type()).append(' ').append(next.get(i)).append(" = ") //$NON-NLS-1$ //$NON-NLS-2$
+            code.append("        final ").append(javaType(model.states().get(i).type())).append(' ').append(next.get(i)).append(" = ") //$NON-NLS-1$ //$NON-NLS-2$
                 .append(renamed((Expression) call.arguments().get(i), names, source, work)).append(";\n"); //$NON-NLS-1$
         }
         for (int i = 0; i < next.size(); i++) {
@@ -213,6 +215,22 @@ public final class JavaTailRecursionRewrite {
         code.append("    }\n    return ").append(renamed(base.getExpression(), names, source, work)).append(";\n}"); //$NON-NLS-1$ //$NON-NLS-2$
         work.charge(1L + code.length() / 64L);
         return code.toString();
+    }
+
+    private static NumericKind kind(Type type) {
+        return switch (type) {
+            case INT32 -> NumericKind.INT;
+            case INT64 -> NumericKind.LONG;
+            default -> throw new Stopped("UNSUPPORTED_STATE_TYPE"); //$NON-NLS-1$
+        };
+    }
+
+    private static String javaType(Type type) {
+        return switch (kind(type)) {
+            case INT -> "int"; //$NON-NLS-1$
+            case LONG -> "long"; //$NON-NLS-1$
+            default -> throw new Stopped("UNSUPPORTED_STATE_TYPE"); //$NON-NLS-1$
+        };
     }
 
     private static String fresh(String prefix, HashSet<String> reserved) {

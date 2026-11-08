@@ -1,6 +1,7 @@
 /* Copyright (c) 2026 Carsten Hammer. SPDX-License-Identifier: EPL-2.0 */
 package org.sandbox.functional.core.model;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -20,6 +21,22 @@ public record NumericIteration(LoopModel pipeline, String elementType, Execution
         EncounterOrder encounterOrder, Terminal terminal) {
     public enum Execution { SEQUENTIAL, PARALLEL, UNKNOWN }
     public enum EncounterOrder { ORDERED, UNORDERED, UNKNOWN }
+
+    /** Additive counted iteration after source admission. The adapter supplies the count and its guards. */
+    public record CountedSum(FunctionalExpression.TypedBody summand, UlrExpression start, BigInteger stride,
+            UlrExpression initial, UlrExpression.Overflow overflow) {
+        public CountedSum {
+            Objects.requireNonNull(overflow);
+            var index = summand.parameter();
+            if (!index.type().integral() || start.type() != index.type() || stride.signum() == 0
+                    || !summand.result().type().integral() || !initial.type().integral()
+                    || (initial.type() == UlrExpression.Type.INTEGER) != (overflow == UlrExpression.Overflow.EXACT)) {
+                throw new IllegalArgumentException("Invalid ULR counted sum");
+            }
+        }
+        public UlrExpression.Read index() { return summand.parameter(); }
+    }
+
     public NumericIteration {
         pipeline = copyPipeline(Objects.requireNonNull(pipeline));
         Objects.requireNonNull(elementType);

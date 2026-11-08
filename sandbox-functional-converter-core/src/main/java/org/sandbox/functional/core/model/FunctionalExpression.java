@@ -26,6 +26,14 @@ public record FunctionalExpression(String expression, String parameterName,
         String inputType, String outputType, String functionType,
         boolean requiresInvocation, boolean containsPatternVariable) {
 
+    /** A portable expression lambda used by numeric iteration, independent of source spelling. */
+    public record TypedBody(UlrExpression.Read parameter, UlrExpression result) {
+        public TypedBody {
+            Objects.requireNonNull(parameter);
+            Objects.requireNonNull(result);
+        }
+    }
+
     public FunctionalExpression {
         Objects.requireNonNull(expression, "expression");
         Objects.requireNonNull(inputType, "inputType");
