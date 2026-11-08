@@ -74,13 +74,13 @@ class JavaFiniteSumTest extends JavaContextTestSupport {
         String source=sample("for(int i=1;i<=100;i++) sum+=i;");
         var ast=JavaEarlyExitGuardFactsTest.parse(source);
         int start=source.indexOf("for("),end=source.indexOf("return sum");
-        assertFalse(MathematicalAnalysis.analyze(ast,source,options(),null,start,3).changed());
-        assertTrue(MathematicalAnalysis.analyze(ast,source,options(),null,start,end-start).changed());
+        assertFalse(JavaEarlyExitGuardFactsTest.analyze(ast,source,options(),null,start,3).changed());
+        assertTrue(JavaEarlyExitGuardFactsTest.analyze(ast,source,options(),null,start,end-start).changed());
         var low=new MathCleanUpOptions(true,options().kinds(),options().safety(),options().goal(),1,1,false,17,java.util.List.of());
-        assertFalse(MathematicalAnalysis.analyze(ast,source,low,null,-1,0).changed());
+        assertFalse(JavaEarlyExitGuardFactsTest.analyze(ast,source,low,null,-1,0).changed());
         var monitor=new org.eclipse.core.runtime.NullProgressMonitor();monitor.setCanceled(true);
-        assertFalse(MathematicalAnalysis.analyze(ast,source,options(),monitor,-1,0).changed());
-        assertFalse(MathematicalAnalysis.analyze(ast,source.replace("100","101"),options(),null,-1,0).changed());
+        assertFalse(JavaEarlyExitGuardFactsTest.analyze(ast,source,options(),monitor,-1,0).changed());
+        assertFalse(JavaEarlyExitGuardFactsTest.analyze(ast,source.replace("100","101"),options(),null,-1,0).changed());
     }
 
     @Test void longResultWidensFreeIntMultiplicationBeforeOverflow() throws Exception {

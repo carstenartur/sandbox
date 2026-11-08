@@ -14,7 +14,7 @@ class JavaRuntimeExplanationTest extends JavaContextTestSupport {
         var o=options();return new MathCleanUpOptions(o.enabled(),o.kinds(),o.safety(),o.goal(),o.workBudget(),o.maxStates(),false,17,List.of(),false,mode);
     }
     static MathematicalAnalysis.Analysis analyze(String source,MathCleanUpOptions options) {
-        return MathematicalAnalysis.analyze(JavaEarlyExitGuardFactsTest.parse(source),source,options,null,-1,0);
+        return JavaEarlyExitGuardFactsTest.analyze(JavaEarlyExitGuardFactsTest.parse(source),source,options,null,-1,0);
     }
     static String apply(String source,MathematicalAnalysis.Analysis analysis) throws Exception {
         var document=new Document(source);var undo=analysis.newEdit().apply(document,TextEdit.CREATE_UNDO);
@@ -73,7 +73,7 @@ class JavaRuntimeExplanationTest extends JavaContextTestSupport {
         var result=analyze(nearby,options());assertTrue(result.changed(),result.diagnostics().toString());
         var range=JavaRuntimeIterationTemplates.ranges(JavaEarlyExitGuardFactsTest.parse(nearby),n->{}).getFirst();
         assertTrue(result.replacements().stream().noneMatch(r->r.offset()<range.getOffset()+range.getLength() && range.getOffset()<r.offset()+r.length()));
-        assertFalse(MathematicalAnalysis.analyze(JavaEarlyExitGuardFactsTest.parse(generated),generated,options(),null,range.getOffset(),range.getLength()).changed());
+        assertFalse(JavaEarlyExitGuardFactsTest.analyze(JavaEarlyExitGuardFactsTest.parse(generated),generated,options(),null,range.getOffset(),range.getLength()).changed());
         String named="public class Sample {public static int run(int n){/* Verified runtime */int $series_start=(n+1)-(n-1);return $series_start;}}";
         assertTrue(JavaRuntimeIterationTemplates.ranges(JavaEarlyExitGuardFactsTest.parse(named),n->{}).isEmpty());
         assertTrue(analyze(named,options()).changed());

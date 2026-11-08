@@ -105,10 +105,10 @@ class JavaNumericStreamTest extends JavaContextTestSupport {
     @Test void tinyBudgetCancellationAndSelectionDoNotEscapeTheirBoundaries() {
         String source=sample("java.util.stream.IntStream.of(n).map(x -> x+17).map(y -> y-17).sum()");
         var low=new MathCleanUpOptions(true,options().kinds(),options().safety(),options().goal(),1,1,false,17,java.util.List.of());
-        assertFalse(MathematicalAnalysis.analyze(JavaEarlyExitGuardFactsTest.parse(source),source,low,null,-1,0).changed());
+        assertFalse(JavaEarlyExitGuardFactsTest.analyze(JavaEarlyExitGuardFactsTest.parse(source),source,low,null,-1,0).changed());
         var monitor=new org.eclipse.core.runtime.NullProgressMonitor();monitor.setCanceled(true);
-        assertFalse(MathematicalAnalysis.analyze(JavaEarlyExitGuardFactsTest.parse(source),source,options(),monitor,-1,0).changed());
-        assertFalse(MathematicalAnalysis.analyze(JavaEarlyExitGuardFactsTest.parse(source),source,options(),null,source.indexOf("run"),3).changed());
+        assertFalse(JavaEarlyExitGuardFactsTest.analyze(JavaEarlyExitGuardFactsTest.parse(source),source,options(),monitor,-1,0).changed());
+        assertFalse(JavaEarlyExitGuardFactsTest.analyze(JavaEarlyExitGuardFactsTest.parse(source),source,options(),null,source.indexOf("run"),3).changed());
     }
     @Test void arbitrarySourceInspectionDoesNotAssertKnownSequentialEncounterOrder() {
         String source="class Sample { int run(java.util.stream.IntStream custom){return custom.map(x -> x+17).sum();}}";

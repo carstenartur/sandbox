@@ -113,4 +113,11 @@ class JavaEarlyExitGuardFactsTest {
         if (ast.getProperty(ENVIRONMENT) instanceof MathematicalAnalysis.SourceEnvironment environment) return environment;
         throw new IllegalArgumentException("AST must be parsed by JavaEarlyExitGuardFactsTest"); //$NON-NLS-1$
     }
+    static MathematicalAnalysis.Analysis analyze(CompilationUnit ast, String source, MathCleanUpOptions options,
+            org.eclipse.core.runtime.IProgressMonitor monitor, int offset, int length) {
+        var environment = environment(ast);
+        var analysis = MathematicalAnalysis.analyze(ast, source, options, monitor, offset, length, environment);
+        assertEquals(environment.compilerOptions(), analysis.compilerOptions());
+        return analysis;
+    }
 }

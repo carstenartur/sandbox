@@ -19,7 +19,7 @@ class PrimitiveSourceGuardSchedulingTest extends JavaContextTestSupport {
             String source = "public class Sample { public static int calls; static void error() { calls++; "
                     + "throw new IllegalArgumentException(); } public static int run(int x) { if(x<0) error(); " + calculation + " } }";
             int offset = source.indexOf("3-(x%4)");
-            var analysis = MathematicalAnalysis.analyze(JavaEarlyExitGuardFactsTest.parse(source), source, options(), null,
+            var analysis = JavaEarlyExitGuardFactsTest.analyze(JavaEarlyExitGuardFactsTest.parse(source), source, options(), null,
                     selection ? offset : -1, selection ? "3-(x%4)".length() : 0);
             assertTrue(analysis.changed(), analysis.diagnostics().toString());
             assertTrue(analysis.replacements().stream().anyMatch(edit -> edit.description().contains("NON_NEGATIVE")),
