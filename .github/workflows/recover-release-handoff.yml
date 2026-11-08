@@ -1,9 +1,7 @@
 name: Recover Release Handoff
 
-# The release job may finish with a post-publication failure when protected main
-# rejects a direct push. This workflow is deliberately decoupled from that job:
-# it verifies that publication really succeeded, then creates the protected-main
-# promotion PR and the following next-development PR idempotently.
+# Recover the next-development PR if a release was published but its handoff
+# was interrupted. The published tag already identifies the stable release.
 on:
   workflow_run:
     workflows: [ 'Release Workflow' ]
@@ -25,7 +23,7 @@ env:
 
 jobs:
   handoff:
-    name: Create release promotion and next-development PRs
+    name: Recover the next-development PR
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current main
@@ -116,54 +114,10 @@ jobs:
             echo "NEXT_RELEASE=$next_release"
           } >> "$GITHUB_ENV"
 
-      - name: Create protected-main handoff pull requests
+      - name: Create missing next-development pull request
         if: env.RELEASE_VERSION != ''
         run: |
           set -euo pipefail
-          current_version=$(./mvnw -q -DforceStdout help:evaluate \
-            -Dexpression=project.version | tail -n 1)
-
-          promotion_pr=''
-          if [[ "$current_version" != "$RELEASE_VERSION" ]]; then
-            expected_snapshot="${RELEASE_VERSION}-SNAPSHOT"
-            if [[ "$current_version" != "$expected_snapshot" ]]; then
-              echo "::error::main reports '$current_version'; expected '$expected_snapshot' or '$RELEASE_VERSION'."
-              exit 1
-            fi
-
-            promotion_branch="release/promote-${RELEASE_VERSION}"
-            git branch -f "$promotion_branch" "$RELEASE_COMMIT"
-            git push --force-with-lease origin "$promotion_branch"
-            promotion_pr=$(gh pr list --state open --base main --head "$promotion_branch" \
-              --json number --jq '.[0].number // empty')
-            printf -v promotion_body '%s\n' \
-              '## Verified release promotion' \
-              '' \
-              "Release v${RELEASE_VERSION} was published and independently verified before this handoff." \
-              '' \
-              "- source workflow run: ${SOURCE_RUN_ID}" \
-              "- verified release commit: ${RELEASE_COMMIT}" \
-              "- next development version: ${NEXT_SNAPSHOT}" \
-              '' \
-              'This PR replaces the former direct push to protected main. The separate next-development PR must follow this promotion.'
-            if [[ -z "$promotion_pr" ]]; then
-              promotion_url=$(gh pr create \
-                --title "Promote verified release ${RELEASE_VERSION} to main" \
-                --body "$promotion_body" \
-                --base main --head "$promotion_branch")
-              promotion_pr="${promotion_url##*/}"
-            else
-              gh pr edit "$promotion_pr" \
-                --title "Promote verified release ${RELEASE_VERSION} to main" \
-                --body "$promotion_body"
-            fi
-
-            # GITHUB_TOKEN-created pull requests do not recursively start normal
-            # PR workflows. Dispatch the required Maven verification explicitly.
-            gh workflow run maven.yml --ref "$promotion_branch"
-            gh pr merge "$promotion_pr" --auto --rebase
-          fi
-
           next_branch="release/prepare-next-${NEXT_SNAPSHOT}"
           existing_next=$(gh pr list --state open --base main --head "$next_branch" \
             --json number --jq '.[0].number // empty')
@@ -172,7 +126,30 @@ jobs:
             exit 0
           fi
 
-          git checkout -B "$next_branch" "$RELEASE_COMMIT"
+          current_version=$(./mvnw -q -DforceStdout help:evaluate \
+            -Dexpression=project.version | tail -n 1)
+          if [[ "$current_version" == "$NEXT_SNAPSHOT" ]]; then
+            echo "main already reports '$NEXT_SNAPSHOT'."
+            exit 0
+          fi
+          if [[ "$current_version" != "${RELEASE_VERSION}-SNAPSHOT" && "$current_version" != "$RELEASE_VERSION" ]]; then
+            echo "::error::main reports '$current_version'; it cannot recover the transition from '$RELEASE_VERSION'."
+            exit 1
+          fi
+
+          main_commit=$(git rev-parse HEAD)
+          release_base=$(git rev-parse "${RELEASE_COMMIT}^")
+          if ! git merge-base --is-ancestor "$release_base" "$main_commit"; then
+            echo "::error::Current main does not contain the source of the published release."
+            exit 1
+          fi
+
+          # Match the normal handoff if main has not moved. Keep newer main commits otherwise.
+          handoff_base="$main_commit"
+          if [[ "$main_commit" == "$release_base" ]]; then
+            handoff_base="$RELEASE_COMMIT"
+          fi
+          git checkout -B "$next_branch" "$handoff_base"
           tycho_version=$(./mvnw -q -DforceStdout help:evaluate \
             -Dexpression=tycho-version | tail -n 1)
           ./mvnw org.eclipse.tycho:tycho-versions-plugin:"$tycho_version":set-version \
@@ -192,29 +169,37 @@ jobs:
             echo "::error::Prepared tree reports '$actual', expected '$NEXT_SNAPSHOT'."
             exit 1
           fi
+          git -c core.whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol diff --check
+
+          remote_main=$(git ls-remote origin refs/heads/main | cut -f1)
+          if [[ "$remote_main" != "$main_commit" ]]; then
+            echo "::error::main moved while preparing the recovery handoff."
+            exit 1
+          fi
 
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           # Version transitions only modify tracked metadata; publication scratch files stay untracked.
           git add -u -- ':!.github/workflows/'
           git commit -m "Prepare for next development iteration ${NEXT_SNAPSHOT}"
-          git push --force-with-lease origin "$next_branch"
-
-          dependency='The stable release is already present on main.'
-          draft_args=()
-          if [[ -n "$promotion_pr" ]]; then
-            dependency="Depends on #${promotion_pr}; that stable promotion must merge first."
-            draft_args=(--draft)
+          remote_next=$(git ls-remote origin "refs/heads/$next_branch" | cut -f1)
+          if [[ -z "$remote_next" ]]; then
+            git push origin "$next_branch"
+          else
+            git fetch --no-tags origin "refs/heads/$next_branch"
+            if [[ "$(git rev-parse FETCH_HEAD^)" != "$handoff_base" ]] || ! git diff --quiet HEAD FETCH_HEAD; then
+              echo "::error::Existing branch '$next_branch' differs from the recovered transition."
+              exit 1
+            fi
           fi
           printf -v next_body '%s\n' \
             '## Next development iteration' \
             '' \
-            "Advance verified release ${RELEASE_VERSION} to ${NEXT_SNAPSHOT}." \
-            '' \
-            "$dependency" \
+            "Advance to ${NEXT_SNAPSHOT} after publishing [v${RELEASE_VERSION}](https://github.com/${GITHUB_REPOSITORY}/releases/tag/v${RELEASE_VERSION})." \
+            "The verified release commit is ${RELEASE_COMMIT}." \
             '' \
             'This PR contains only the Tycho/Maven/OSGi/product version transition and the corresponding next.release.version update.'
-          gh pr create "${draft_args[@]}" \
+          gh pr create \
             --title "Prepare for next development iteration ${NEXT_SNAPSHOT}" \
             --body "$next_body" \
             --base main --head "$next_branch"
