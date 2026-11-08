@@ -219,8 +219,10 @@ public final class ProjectMathScan {
     static MathCleanUpOptions profile(Path path, int java) throws IOException {
         var properties = new Properties(); try (var input = Files.newInputStream(path)) { properties.load(input); }
         var values = new HashMap<String, String>(); properties.forEach((key, value) -> values.put(key.toString(), value.toString()));
+        // An older pinned profile never grants the new opt-in. Keep its original bytes usable.
+        values.putIfAbsent(MathCleanUpOptions.FIELD_INVERSIONS, "false");
         if (!values.keySet().equals(MathCleanUpOptions.defaults(java).toMap().keySet()))
-            throw new IOException("Profile must explicitly specify every mathematics option, without extra keys");
+            throw new IOException("Profile must explicitly specify every required mathematics option, without extra keys");
         var options = MathCleanUpOptions.parse(values, java);
         if (!options.enabled()) throw new IOException("Mathematics must be explicitly enabled");
         return options;
