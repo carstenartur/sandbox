@@ -1,6 +1,6 @@
 # Released runtime cutover
 
-Normal startup uses published **0.11.8 Core, Search and Java Analysis**. The server
+Normal startup uses published **0.12.0 Core, Search and Java Analysis**. The server
 registers only the released Core and Search entities. Text, path, report, API and
 optional semantic routes use application DTOs through both `/api` and `/api/v1`.
 The copied storage/parser/query implementation is removed; the OSGi bridge consumes
