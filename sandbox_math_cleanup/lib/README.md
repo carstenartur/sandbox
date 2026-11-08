@@ -1,8 +1,24 @@
 # Pinned Regelsuche optimization SDK
 
-## Released Regelsuche 0.5.2 optimizer SDK
+## Qualified Regelsuche snapshot for field inversion planning
 
-The mathematics plug-in bundles the standalone JAR and its unchanged
+The bundled optimizer SDK and `qualification.json` come from the
+[SDK transfer run](https://github.com/carstenartur/sandbox/actions/runs/42451249155)
+for Regelsuche commit `aed4b76461c2b5131712abf7f2cf451f25cf87a0`.
+
+- Standalone JAR SHA-256: `4bf864c8a042e5716458d5e122fed05da46ce4f48a0f6903654773e9367fd4ca`.
+- Receipt version: `0.5.3-issue1657-aed4b76461c2`.
+- Staging commit: `fc008614a1c43cf6481601a6bdc66f543f807401`.
+
+The Java 25 external consumer checks the typed field inversion plan and its
+replay. The receipt identifies this source-qualified snapshot with
+`publiclyPublished: false`. Sandbox uses it in the optional mathematics
+cleanup for verified byte-field operations. Historical screenshots retain
+their original capture metadata.
+
+## Previously bundled Regelsuche 0.5.2 optimizer SDK
+
+The previous mathematics plug-in bundled the standalone JAR and its unchanged
 `qualification.json` from the
 [public optimizer SDK archive](https://github.com/carstenartur/Regelsuche/releases/download/v0.5.2/regelsuche-optimization-sdk-0.5.2.zip).
 

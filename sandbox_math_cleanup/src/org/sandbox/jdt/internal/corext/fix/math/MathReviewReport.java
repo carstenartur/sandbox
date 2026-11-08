@@ -22,6 +22,7 @@ public final class MathReviewReport {
     }
 
     private static MathCandidateReview.Assessment assess(MathematicalAnalysis.VerifiedRegion region, MathCleanUpOptions options) {
+        if (region.fieldInversion() != null) return unassessed(region.fieldInversion().description());
         if (region.fixedPower() != null) {
             try {
                 region.fixedPower().requireCost(region.cost(),options.goal());

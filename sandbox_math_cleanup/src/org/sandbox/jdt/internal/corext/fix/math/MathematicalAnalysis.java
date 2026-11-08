@@ -280,6 +280,11 @@ public final class MathematicalAnalysis {
       // Remove reservations before any final source/binding replay or public result.
       replacements.addAll(protectedReservations);
       MathematicalJavadoc documentation = new MathematicalJavadoc();
+      if (options.fieldInversions()) {
+         JavaFieldInversionOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
+               compilerOptions, environment, replacements, evidence, diagnostics, valueWork);
+         sourceContext.takeWork(); // Source dependencies were charged through valueWork.
+      }
       JavaFixedPowerOptimizer.optimize(ast,source,options,monitor,selectionOffset,selectionLength,compilerOptions,environment,replacements,evidence,diagnostics,valueWork);
       if (selectionOffset >= 0)
          JavaValueResidueOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
@@ -858,6 +863,14 @@ public final class MathematicalAnalysis {
             var diagnosticEdits = GeneratedSourceDiagnostics.edits(combinedEdit);
             combinedEdit.apply(combined);
             CompilationUnit combinedAst = checkGeneratedSource(ast, source, combined.get(), compilerOptions, options.targetJava(), (IProgressMonitor)monitor, environment, diagnosticEdits);
+             if (evidence.stream().anyMatch(region -> region.fieldInversion() != null)) {
+                valueWork.charge(Math.max(0, valueWork.remaining() - Math.max(0, remainingWork)));
+                long beforeFieldReplay = valueWork.used;
+                var allEdits = new ArrayList<>(replacements); allEdits.addAll(analysis.documentation());
+                for (var region : evidence) if (region.fieldInversion() != null)
+                   JavaFieldInversionOptimizer.verifyCombined(combinedAst, combined.get(), region, allEdits, valueWork);
+                remainingWork -= valueWork.used - beforeFieldReplay;
+             }
             if(evidence.stream().anyMatch(region->region.fixedPower()!=null)) {
                valueWork.charge(Math.max(0,valueWork.remaining()-Math.max(0,remainingWork)));
                long beforePowerReplay=valueWork.used;
@@ -1374,12 +1387,19 @@ public final class MathematicalAnalysis {
    public record VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
       String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,
       LoopSchedulingEvidence scheduling, FiniteSumEvidence finiteSum, RuntimeIterationEvidence runtimeIteration,
-      SourceNumericBranchEvidence sourceNumericBranch, FixedPowerEvidence fixedPower, ValueInverseEvidence valueInverse) {
+      SourceNumericBranchEvidence sourceNumericBranch, FixedPowerEvidence fixedPower, ValueInverseEvidence valueInverse,
+      FieldInversionEvidence fieldInversion) {
       public VerifiedRegion {
          if (sourcePlan != null) sourcePlan.requireEnvelope(offset, length, original, replacement);
          if (explanation != null && !proof.equals(explanation.verified().proof())) {
             throw new IllegalArgumentException("EXPLANATION_PROOF_BINDING_DIFFERS");
          }
+      }
+      public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
+            String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,
+            LoopSchedulingEvidence scheduling, FiniteSumEvidence finiteSum, RuntimeIterationEvidence runtimeIteration,
+            SourceNumericBranchEvidence sourceNumericBranch, FixedPowerEvidence fixedPower, ValueInverseEvidence valueInverse) {
+         this(offset,length,proof,cost,original,replacement,explanation,sourcePlan,scheduling,finiteSum,runtimeIteration,sourceNumericBranch,fixedPower,valueInverse,null);
       }
       public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
             String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,
