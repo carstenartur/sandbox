@@ -20,7 +20,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 16: Type mismatch: cannot convert from PositionBasedCompletionProposal to ICompletionProposal",
-    "verifiedAt": "2026-11-08T02:23:14.531373363Z",
+    "verifiedAt": "2026-11-09T02:22:42.712812588Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0

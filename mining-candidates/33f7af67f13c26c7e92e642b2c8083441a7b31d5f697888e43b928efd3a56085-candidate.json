@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 46: The method setLayoutData(GridData) is undefined for the type Text",
-    "verifiedAt": "2026-11-08T02:23:14.357036668Z",
+    "verifiedAt": "2026-11-09T02:22:42.575721511Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0

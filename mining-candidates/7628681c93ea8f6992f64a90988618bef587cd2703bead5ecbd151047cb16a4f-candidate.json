@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "7628681c93ea8f6992f64a90988618bef587cd2703bead5ecbd151047cb16a4f",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.lang.Integer($arg$)\n\u003d\u003e\njava.lang.Integer.valueOf($arg$)\n;;",
+  "beforeExample": "class Example {\n    void foo(int actionSort) {\n        Object property \u003d new Integer(actionSort);\n    }\n}",
+  "afterExample": "class Example {\n    void foo(int actionSort) {\n        Object property \u003d Integer.valueOf(actionSort);\n    }\n}",
+  "negativeExample": "class Example {\n    void foo(float f) {\n        Object property \u003d new Float(f);\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "b8015aa45a3d59160bc1c54f34c47de7f414fc3e",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "sourceEvidence": {
+    "path": "org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/actions/breakpointSortBy/SortBreakpointsAction.java",
+    "before": "\t\tfView.getTreeModelViewer().getPresentationContext().setProperty(IBreakpointUIConstants.PROP_BREAKPOINTS_ELEMENT_COMPARATOR_SORT, new Integer(actionSort));",
+    "after": "\t\tfView.getTreeModelViewer().getPresentationContext().setProperty(IBreakpointUIConstants.PROP_BREAKPOINTS_ELEMENT_COMPARATOR_SORT, Integer.valueOf(actionSort));",
+    "diffHunk": "diff --git a/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/actions/breakpointSortBy/SortBreakpointsAction.java b/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/actions/breakpointSortBy/SortBreakpointsAction.java\nindex e41d523..5fd612c 100644\n--- a/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/actions/breakpointSortBy/SortBreakpointsAction.java\n+++ b/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/actions/breakpointSortBy/SortBreakpointsAction.java\n@@ -56,7 +56,7 @@\n \t\t\tDebugUIPlugin.getDefault().getPreferenceStore().setValue(IInternalDebugUIConstants.PREF_BREAKPOINT_SORTING_ORDER, actionSort);\n \t\t}\n \t\t// update the presentation context element comparator sorting order\n-\t\tfView.getTreeModelViewer().getPresentationContext().setProperty(IBreakpointUIConstants.PROP_BREAKPOINTS_ELEMENT_COMPARATOR_SORT, new Integer(actionSort));\n+\t\tfView.getTreeModelViewer().getPresentationContext().setProperty(IBreakpointUIConstants.PROP_BREAKPOINTS_ELEMENT_COMPARATOR_SORT, Integer.valueOf(actionSort));\n \t}\n \n }\n"
+  },
+  "category": "Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-09T02:18:18.557369502Z",
+  "ruleFingerprint": "sha256:441b6e74a00c26c5df20b327d0a5279ad368d2c166cdcc9f6b64282bd046b6aa",
+  "behaviorFingerprint": "sha256:5e213e4c74b93bf5c6b202ff6150203b22d5f4ae999b6cab476fcf22e6b46516",
+  "verification": {
+    "successful": false,
+    "stage": "AFTER_REWRITE",
+    "message": "Transformed syntax tree does not equal afterExample",
+    "verifiedAt": "2026-11-09T02:22:51.414475090Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": []
+}

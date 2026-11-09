@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 3: The import org.eclipse.jface.action cannot be resolved",
-    "verifiedAt": "2026-11-08T02:23:13.733014927Z",
+    "verifiedAt": "2026-11-09T02:22:42.014817722Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
