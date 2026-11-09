@@ -1,8 +1,22 @@
 # Pinned Regelsuche optimization SDK
 
-## Qualified Regelsuche snapshot for field inversion planning
+## Qualified Regelsuche snapshot for consistent factor placement
 
 The bundled optimizer SDK and `qualification.json` come from the
+[SDK transfer run](https://github.com/carstenartur/sandbox/actions/runs/42583063561)
+for Regelsuche commit `5ae21899f77c8994413204b62832a9e725d324bb`.
+
+- Standalone JAR SHA-256 `d5b078bbd4780278bb443be3610bcdad058c993a5b3b36ebf5902cb85d082b7a`.
+- Receipt version `0.5.3-issue1657-5ae21899f77c`.
+- Staging commit `83a8591800bbe0fca6c75e1c033a62562fcdc586`.
+
+Two clean builds ran 312 SDK tests each and produced ten byte-identical
+distribution files. The SWT corpus test checks that ordinary Apply preserves
+the right-hand factor in both JPEG index expressions.
+
+## Previously bundled snapshot for field inversion planning
+
+The previous optimizer SDK and `qualification.json` came from the
 [SDK transfer run](https://github.com/carstenartur/sandbox/actions/runs/42451249155)
 for Regelsuche commit `aed4b76461c2b5131712abf7f2cf451f25cf87a0`.
 
@@ -10,10 +24,10 @@ for Regelsuche commit `aed4b76461c2b5131712abf7f2cf451f25cf87a0`.
 - Receipt version: `0.5.3-issue1657-aed4b76461c2`.
 - Staging commit: `fc008614a1c43cf6481601a6bdc66f543f807401`.
 
-The Java 25 external consumer checks the typed field inversion plan and its
+The Java 25 external consumer checked the typed field inversion plan and its
 replay. The receipt identifies this source-qualified snapshot with
-`publiclyPublished: false`. Sandbox uses it in the optional mathematics
-cleanup for verified byte-field operations. Historical screenshots retain
+`publiclyPublished: false`. This snapshot enabled verified byte-field operations
+in the optional mathematics cleanup. Historical screenshots retain
 their original capture metadata.
 
 ## Previously bundled Regelsuche 0.5.2 optimizer SDK
