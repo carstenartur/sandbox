@@ -84,6 +84,11 @@ class SwtCurrentSourceRefinementTest {
             scan.add(Map.of("entry",entry.getKey(),"accepted",result.replacements().size(),"evidence",result.evidence(),
                     "sourceSha256",hash(entry.getValue().getBytes(StandardCharsets.UTF_8)),
                     "generatedSha256",hash(generated.get(entry.getKey()).getBytes(StandardCharsets.UTF_8))));
+            if (entry.getKey().endsWith("JPEGFileFormat.java")) {
+                var jpeg = parse(generated.get(entry.getKey()), environment);
+                assertRightFactoredJpegIndex(jpeg, "extractData", "srcIndex");
+                assertRightFactoredJpegIndex(jpeg, "storeData", "destIndex");
+            }
             if(entry.getKey().endsWith("TIFFDirectory.java")) {
                 assertTrue(generated.get(entry.getKey()).contains("int lengthDirectory = 2 + 12 * numberEntries + 4;"));
                 assertFalse(generated.get(entry.getKey()).contains("int startG = _math"),generated.get(entry.getKey()));
@@ -150,6 +155,31 @@ class SwtCurrentSourceRefinementTest {
         assertFalse(selected.matches(original,selected.compilerOptions()));
         assertThrows(IllegalArgumentException.class,selected::newEdit,"Stale SWT.error source must reject Apply");
     }
+
+    private static void assertRightFactoredJpegIndex(CompilationUnit unit, String methodName, String indexName) {
+        var type = assertInstanceOf(TypeDeclaration.class, unit.types().getFirst());
+        var method = Arrays.stream(type.getMethods())
+                .filter(candidate -> candidate.getName().getIdentifier().equals(methodName))
+                .findFirst().orElseThrow();
+        List<?> statements = method.getBody().statements();
+        var index = statements.stream()
+                .filter(VariableDeclarationStatement.class::isInstance)
+                .map(VariableDeclarationStatement.class::cast)
+                .flatMap(declaration -> ((List<?>) declaration.fragments()).stream())
+                .map(VariableDeclarationFragment.class::cast)
+                .filter(fragment -> fragment.getName().getIdentifier().equals(indexName))
+                .findFirst().orElseThrow();
+        Expression initializer = index.getInitializer();
+        while (initializer instanceof ParenthesizedExpression grouping) {
+            initializer = grouping.getExpression();
+        }
+        var product = assertInstanceOf(InfixExpression.class, initializer, methodName);
+        assertEquals(InfixExpression.Operator.TIMES, product.getOperator(), methodName);
+        assertFalse(product.hasExtendedOperands(), methodName);
+        var factor = assertInstanceOf(SimpleName.class, product.getRightOperand(), methodName);
+        assertEquals("DCTSIZE", factor.getIdentifier(), methodName);
+    }
+
     private void pixels(ClassLoader before,ClassLoader after) throws Exception {
         var random=new Random(0x5127);
         for(int depth:new int[]{1,2,4,8,16,24,32}) for(int size:new int[]{0,1,3,64}) {
