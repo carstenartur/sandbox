@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 20: The constructor DataInputStream(SafeFileInputStream) is undefined",
-    "verifiedAt": "2026-11-08T02:23:17.028618028Z",
+    "verifiedAt": "2026-11-09T02:22:45.059987525Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0

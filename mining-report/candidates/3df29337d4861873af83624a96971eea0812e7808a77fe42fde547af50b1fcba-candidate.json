@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "3df29337d4861873af83624a96971eea0812e7808a77fe42fde547af50b1fcba",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$dialog.setInitialSelections($array) :: subtypeOf($dialog, \"org.eclipse.ui.dialogs.ListSelectionDialog\") \u0026\u0026 subtypeOf($array, \"java.lang.Object[]\")\n\u003d\u003e $dialog.setInitialSelections((java.lang.Object[]) $array)\n;;",
+  "beforeExample": "import java.util.List;\nimport java.util.ArrayList;\n\n// Simulate Eclipse UI API\nclass MyListSelectionDialog {\n    public void setInitialSelections(Object[] initialSelections) {\n        System.out.println(\"Set selections: \" + initialSelections.length);\n    }\n}\n\ninterface MyResource {}\nclass ConcreteResource implements MyResource {}\n\npublic class TestClass {\n    public void method() {\n        MyListSelectionDialog lsd \u003d new MyListSelectionDialog();\n        ConcreteResource[] resources \u003d new ConcreteResource[5];\n        lsd.setInitialSelections(resources);\n    }\n}",
+  "afterExample": "import java.util.List;\nimport java.util.ArrayList;\n\n// Simulate Eclipse UI API\nclass MyListSelectionDialog {\n    public void setInitialSelections(Object[] initialSelections) {\n        System.out.println(\"Set selections: \" + initialSelections.length);\n    }\n}\n\ninterface MyResource {}\nclass ConcreteResource implements MyResource {}\n\npublic class TestClass {\n    public void method() {\n        MyListSelectionDialog lsd \u003d new MyListSelectionDialog();\n        ConcreteResource[] resources \u003d new ConcreteResource[5];\n        lsd.setInitialSelections((java.lang.Object[]) resources);\n    }\n}",
+  "negativeExample": "import java.util.List;\nimport java.util.ArrayList;\n\n// Simulate Eclipse UI API\nclass MyListSelectionDialog {\n    public void setInitialSelections(Object[] initialSelections) {\n        System.out.println(\"Set selections: \" + initialSelections.length);\n    }\n    public void setInitialSelections(List\u003cString\u003e initialSelections) {\n        System.out.println(\"Set selections: \" + initialSelections.size());\n    }\n}\n\ninterface MyResource {}\nclass ConcreteResource implements MyResource {}\n\npublic class TestClass {\n    public void method() {\n        MyListSelectionDialog lsd \u003d new MyListSelectionDialog();\n        List\u003cString\u003e names \u003d new ArrayList\u003c\u003e();\n        lsd.setInitialSelections(names); // Argument is List, not an array. Should not match.\n        \n        ConcreteResource[] alreadyCastResources \u003d new ConcreteResource[2];\n        lsd.setInitialSelections((java.lang.Object[]) alreadyCastResources); // Already has the cast. Should not match.\n    }\n}",
+  "targetHintFile": "eclipse-ui-dialogs.sandbox-hint",
+  "sourceCommit": "c0288fb1df23179c5b7f6ce1d184f0c34ba47d20",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "sourceEvidence": {
+    "path": "org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/launchConfigurations/SaveScopeResourcesHandler.java",
+    "before": "\t\t\t\tlsd.setInitialSelections(resources);",
+    "after": "\t\t\t\tlsd.setInitialSelections((Object[]) resources);",
+    "diffHunk": "diff --git a/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/launchConfigurations/SaveScopeResourcesHandler.java b/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/launchConfigurations/SaveScopeResourcesHandler.java\nindex 1ca8590..769205a 100644\n--- a/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/launchConfigurations/SaveScopeResourcesHandler.java\n+++ b/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/launchConfigurations/SaveScopeResourcesHandler.java\n@@ -274,7 +274,7 @@\n \t\t\t\t\t\tnew AdaptableList(resources),\n \t\t\t\t\t\tnew WorkbenchContentProvider(),\n \t\t\t\t\t\tnew WorkbenchLabelProvider());\n-\t\t\t\tlsd.setInitialSelections(resources);\n+\t\t\t\tlsd.setInitialSelections((Object[]) resources);\n \t\t\t\tlsd.setTitle(LaunchConfigurationsMessages.SaveScopeResourcesHandler_3);\n \t\t\t\tif(lsd.open() \u003d\u003d IDialogConstants.CANCEL_ID) {\n \t\t\t\t\treturn IDialogConstants.CANCEL_ID;\n"
+  },
+  "category": "Compiler Warning Fixes",
+  "summary": "Add explicit (Object[]) cast to array arguments of ListSelectionDialog.setInitialSelections() to satisfy stricter compiler warnings.",
+  "sourceVersion": "8",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-09T02:18:51.901841161Z",
+  "ruleFingerprint": "sha256:dbfe30563abd1c9efa46644eefdc3a4a7e2df446c9efea2ecc7856efc1651271",
+  "behaviorFingerprint": "sha256:00af789a5b6fc4b290c906d4b83aee87a3ec8c99e339776dbbc25cb52a129f65",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-11-09T02:22:51.457823682Z",
+    "verifierVersion": "9",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
