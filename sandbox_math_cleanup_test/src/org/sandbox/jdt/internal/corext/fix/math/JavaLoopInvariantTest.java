@@ -108,8 +108,8 @@ class JavaLoopInvariantTest extends JavaContextTestSupport {
         String source=sample("for(int i=0;i<8;i++){sum ^= "+VALUE+";}");
         var ast=JavaEarlyExitGuardFactsTest.parse(source);
         int expression=source.indexOf(VALUE),start=source.indexOf("for("),end=source.indexOf("return sum");
-        assertTrue(MathematicalAnalysis.analyze(ast,source,options(),null,expression,VALUE.length()).evidence().stream().noneMatch(e->e.scheduling()!=null));
-        assertTrue(MathematicalAnalysis.analyze(ast,source,options(),null,start,end-start).evidence().stream().anyMatch(e->e.scheduling()!=null));
+        assertTrue(JavaEarlyExitGuardFactsTest.analyze(ast,source,options(),null,expression,VALUE.length()).evidence().stream().noneMatch(e->e.scheduling()!=null));
+        assertTrue(JavaEarlyExitGuardFactsTest.analyze(ast,source,options(),null,start,end-start).evidence().stream().anyMatch(e->e.scheduling()!=null));
     }
 
     @Test void widthsAndOverflowStayAtTheOriginalPrimitiveEvaluationWidth() throws Exception {
@@ -133,7 +133,7 @@ class JavaLoopInvariantTest extends JavaContextTestSupport {
         assertTrue(analyze(source).evidence().stream().anyMatch(e->e.scheduling()!=null));
         var allocation=new MathCleanUpOptions(true,options().kinds(),options().safety(),
                 de.regelsuche.sdk.optimization.OptimizationGoal.LOWER_ALLOCATION,1_000_000,20_000,false,17,java.util.List.of());
-        assertTrue(MathematicalAnalysis.analyze(JavaEarlyExitGuardFactsTest.parse(source),source,allocation,null,-1,0)
+        assertTrue(JavaEarlyExitGuardFactsTest.analyze(JavaEarlyExitGuardFactsTest.parse(source),source,allocation,null,-1,0)
                 .evidence().stream().noneMatch(e->e.scheduling()!=null));
     }
 
@@ -173,10 +173,10 @@ class JavaLoopInvariantTest extends JavaContextTestSupport {
         String source=sample("for(int i=0;i<8;i++){sum ^= "+VALUE+";}");
         var ast=JavaEarlyExitGuardFactsTest.parse(source);
         var low=new MathCleanUpOptions(true,options().kinds(),options().safety(),options().goal(),1,1,false,17,java.util.List.of());
-        assertFalse(MathematicalAnalysis.analyze(ast,source,low,null,-1,0).changed());
+        assertFalse(JavaEarlyExitGuardFactsTest.analyze(ast,source,low,null,-1,0).changed());
         var monitor=new org.eclipse.core.runtime.NullProgressMonitor(); monitor.setCanceled(true);
-        assertFalse(MathematicalAnalysis.analyze(ast,source,options(),monitor,-1,0).changed());
-        assertFalse(MathematicalAnalysis.analyze(ast,source.replace("i<8","i<9"),options(),null,-1,0).changed());
+        assertFalse(JavaEarlyExitGuardFactsTest.analyze(ast,source,options(),monitor,-1,0).changed());
+        assertFalse(JavaEarlyExitGuardFactsTest.analyze(ast,source.replace("i<8","i<9"),options(),null,-1,0).changed());
         int[] calls={0};
         var discovery=JavaLoopInvariantAnalysis.discover(ast,1000,()->++calls[0]>=5);
         assertTrue(discovery.contexts().isEmpty()); assertTrue(discovery.work()<5);

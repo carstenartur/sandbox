@@ -11,13 +11,14 @@ import org.eclipse.jdt.core.dom.*;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.Document;
 import org.sandbox.jdt.internal.corext.fix.math.*;
+import org.sandbox.jdt.math.tests.StrictCompilerOptions;
 /** Manual corpus diagnostic; production verification and JUnit remain authoritative. */
 public final class BigIntegerCorpusScan {
  public static void main(String[] args) throws Exception {
   if(args.length != 4 || !Set.of("strict", "mathematical").contains(args[3])) throw new IllegalArgumentException("Usage: <binary.jar> <sources.jar> <fresh-output> <strict|mathematical>");
   if(Files.exists(Path.of(args[2]))) throw new IllegalArgumentException("Use a fresh output directory");
   Path binary=Path.of(args[0]), archive=Path.of(args[1]), out=Path.of(args[2]); Files.createDirectories(out);
-  var settings=new HashMap<String,String>(); JavaCore.setComplianceOptions("17",settings);
+  var settings=StrictCompilerOptions.options(17);
   var map=new HashMap<>(MathCleanUpOptions.defaults(17).toMap()); map.put(MathCleanUpOptions.CLEANUP,"true"); map.put(MathCleanUpOptions.MATHEMATICAL_OPT_IN,"true"); map.put(MathCleanUpOptions.WORK_BUDGET,"1000000"); map.put(MathCleanUpOptions.MAX_STATES,"20000");
   map.put(MathCleanUpOptions.KINDS,"BYTE,SHORT,CHAR,INT,LONG,FLOAT,DOUBLE,BIG_INTEGER");
   if(args[3].equals("strict")) map.put(MathCleanUpOptions.MATHEMATICAL_OPT_IN,"false");
@@ -30,7 +31,7 @@ public final class BigIntegerCorpusScan {
     var parser=ASTParser.newParser(AST.getJLSLatest());parser.setUnitName(entry.getName());parser.setSource(source.toCharArray());parser.setEnvironment(new String[]{binary.toString()},new String[0],null,true);parser.setResolveBindings(true);parser.setCompilerOptions(settings);
     CompilationUnit ast=(CompilationUnit)parser.createAST(null); if(Arrays.stream(ast.getProblems()).anyMatch(p->p.isError())){errors++;continue;} files++;
     var ex=new JavaComputationExtractor().extractRuntime(ast,source,options);regions+=ex.regions().size();
-    var env=new MathematicalAnalysis.SourceEnvironment(entry.getName(),List.of(binary.toString()),List.of(),List.of());
+    var env=new MathematicalAnalysis.SourceEnvironment(entry.getName(),List.of(binary.toString()),List.of(),List.of(),settings);
     var result=MathematicalAnalysis.analyze(ast,source,options,new NullProgressMonitor(),-1,0,env);
     changes+=result.replacements().size();
     for(var d:result.diagnostics()){reasons.merge(d.code(),1,Integer::sum);diagnostics.write(entry.getName()+"\t"+ast.getLineNumber(d.offset())+"\t"+d.code()+"\t"+d.message().replace('\n',' ')+"\n");}

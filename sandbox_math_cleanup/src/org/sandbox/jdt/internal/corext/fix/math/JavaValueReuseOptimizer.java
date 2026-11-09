@@ -68,7 +68,7 @@ final class JavaValueReuseOptimizer {
                     var factory=JavaValueDetachment.factory(ast,session,access,summary,work);
                     String name="mathSharedValue"+groups.size();while(!names.add(name))name+="_"; //$NON-NLS-1$ //$NON-NLS-2$
                     // A skipped first occurrence must reach its original fallback before any source static is read.
-                    String guards=name+" != null && "+guard(summary,access,base.getIdentifier())+" && "+JavaValueDetachment.exactStatics(factory.staticValues(),access,work)
+                    String guards="java.util.Objects.nonNull("+name+") && "+guard(summary,access,base.getIdentifier())+" && "+JavaValueDetachment.exactStatics(factory.staticValues(),access,work)
                         +" && "+JavaValueDetachment.guard(access,name,List.of(base.getIdentifier()),factory.staticValues());
                     groups.add(new Group(calls,base,summary,guards,name,access,JavaValueDetachment.factoryCost(ast,access,options,work,4096),factory.staticValues()));
                 } catch(IllegalArgumentException unavailable) {
@@ -229,7 +229,7 @@ final class JavaValueReuseOptimizer {
         for(var child:children)text.replace(child.getStartPosition()-node.getStartPosition(),child.getStartPosition()-node.getStartPosition()+child.getLength(),render(child,source,mappings,null));return text.toString();
     }
     private static String guard(JavaValueSourceSummary.Summary summary,JavaValueAccess.Access access,String receiver) {
-        var guards=new ArrayList<String>();guards.add(receiver+" != null"); //$NON-NLS-1$
+        var guards=new ArrayList<String>();guards.add("java.util.Objects.nonNull("+receiver+")"); //$NON-NLS-1$ //$NON-NLS-2$
         for(int i=0;i<access.shape().components().size();i++){String path=access.leaf(receiver,i);guards.add(path+" != null");guards.add(path+".getClass() == java.math.BigInteger.class");guards.add(path+".abs().bitLength() <= 4096");} //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
         // The original first successful evaluation has already completed every dependency initialization.
         for(var value:summary.staticValues()) {

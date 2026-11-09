@@ -25,7 +25,7 @@ final class JavaRuntimeIterationEmitter {
         names.put(context.startSymbol(),prefix+"start");names.put(context.countSymbol(),prefix+"count");
         if(context.partition()!=null)for(int part=0;part<context.partition().starts().size();part++)
             names.put(context.partition().starts().get(part),prefix+"partStart"+part);
-        for(var binding:context.bindings()) names.put(binding.symbol(),binding.primitiveType().equals(BIG)?binding.name():join(BIG,".valueOf((long)(",binding.name(),"))"));
+        for(var binding:context.bindings()) names.put(binding.symbol(),binding.primitiveType().equals(BIG)?binding.name():join(BIG,".valueOf(",binding.name(),")"));
     }
     static String emit(CompilationUnit unit,String source,JavaRuntimeIterationAnalysis.Context context,RuntimeIterationEvidence evidence,JavaLoopInvariantAnalysis.Work work) {
         return emit(unit,source,context,evidence,work,MathCleanUpOptions.ExplanationMode.NONE);
@@ -84,12 +84,12 @@ final class JavaRuntimeIterationEmitter {
             // widening: every directed int distance fits long, including empty ranges across the extrema.
             // A do loop still executes its original first iteration below this unchanged crossover.
             out.append("if(((long)(").append(text(source,h.stride().signum()>0?h.bound():h.start()))
-                    .append(") - (long)(").append(text(source,h.stride().signum()>0?h.start():h.bound()))
+                    .append(") - (").append(text(source,h.stride().signum()>0?h.start():h.bound()))
                     .append(")) < ").append(evidence.minimumIterations()-(h.inclusive()?1:0)).append("L){\n")
                     .append(fallback(source)).append("\n}else{\n");
         }
-        out.append(BIG).append(' ').append(p).append("start = ").append(BIG).append(".valueOf((long)(").append(text(source,h.start())).append("));\n");
-        out.append(BIG).append(' ').append(p).append("bound = ").append(BIG).append(".valueOf((long)(").append(text(source,h.bound())).append("));\n");
+        out.append(BIG).append(' ').append(p).append("start = ").append(BIG).append(".valueOf(").append(longArgument(source,h.start())).append(");\n");
+        out.append(BIG).append(' ').append(p).append("bound = ").append(BIG).append(".valueOf(").append(longArgument(source,h.bound())).append(");\n");
         if(context.partition()!=null)JavaPartitionedSumEmitter.capture(out,context,source,p);
         String distance=h.stride().signum()>0?p+"bound.subtract("+p+"start)":p+"start.subtract("+p+"bound)";
         String count=distance+(h.inclusive()?"":".subtract("+BIG+".ONE)")+".divide("+number(h.stride().abs())+").add("+BIG+".ONE)";
@@ -103,13 +103,13 @@ final class JavaRuntimeIterationEmitter {
         out.append("if(").append(p).append("count.compareTo(").append(number(BigInteger.valueOf(evidence.minimumIterations()))).append(")>=0");
         if(context.partition()!=null && context.partition().period()>0)out.append(" && ").append(p).append("start.signum()>=0");
         if(!context.stream()) out.append(" && ").append(p).append("after.compareTo(").append(number(min)).append(")>=0 && ").append(p).append("after.compareTo(").append(number(max)).append(")<=0");
-        for(var binding:context.bindings()) if(binding.primitiveType().equals(BIG)) out.append(" && ").append(binding.name()).append("!=null && ").append(binding.name()).append(".getClass()==").append(BIG).append(".class && ").append(binding.name()).append(".bitLength()<=").append(RuntimeIterationEvidence.MAX_PARAMETER_BITS);
+        for(var binding:context.bindings()) if(binding.primitiveType().equals(BIG)) out.append(" && java.util.Objects.nonNull(").append(binding.name()).append(") && ").append(binding.name()).append(".getClass()==").append(BIG).append(".class && ").append(binding.name()).append(".bitLength()<=").append(RuntimeIterationEvidence.MAX_PARAMETER_BITS);
         if(context.nested()!=null) {
             BigInteger innerMaximum=BigInteger.ONE.shiftLeft(context.innerCounterWidth().equals("int")?31:63).subtract(BigInteger.ONE);
             String first,last;
             if(context.innerBound() instanceof SimpleName name && name.resolveBinding().isEqualTo(h.counter())) {
                 first=p+"start";last=p+"after.subtract("+number(h.stride())+")";
-            } else {first=join(BIG,".valueOf((long)(",text(source,context.innerBound()),"))");last=first;}
+            } else {first=join(BIG,".valueOf(",longArgument(source,context.innerBound()),")");last=first;}
             int shift=(context.innerInclusive()?1:0)-context.innerStart();
             String low=first+".min("+last+")",high=first+".max("+last+")";
             out.append(" && ").append(low).append(".add(").append(number(BigInteger.valueOf(shift))).append(").signum()>=0");
@@ -243,6 +243,22 @@ final class JavaRuntimeIterationEmitter {
         Output append(long value) {return append(Long.toString(value));}
         Output append(CharSequence value,int start,int end) {reserve(end-start);text.append(value,start,end);return this;}
         @Override public String toString() {work.charge(text.length());return text.toString();}
+    }
+    private String longArgument(String source,Expression expression) {
+        if(expression instanceof CastExpression cast && cast.getType() instanceof PrimitiveType type
+                && type.getPrimitiveTypeCode()==PrimitiveType.LONG && type.annotations().isEmpty()
+                && (JavaFiniteSumAnalysis.type(cast.getExpression().resolveTypeBinding(),"int")
+                    || JavaFiniteSumAnalysis.type(cast.getExpression().resolveTypeBinding(),"long"))) {
+            // valueOf(long) supplies the same conversion after the operand's original arithmetic.
+            // Preserve a cast carrying authored comments rather than dropping their source.
+            for(Object item:((CompilationUnit)expression.getRoot()).getCommentList()) {
+                work.tick();ASTNode comment=(ASTNode)item;
+                if(comment.getStartPosition()>=expression.getStartPosition()
+                        && comment.getStartPosition()<cast.getExpression().getStartPosition())return text(source,expression);
+            }
+            return text(source,cast.getExpression());
+        }
+        return text(source,expression);
     }
     private static String freshPrefix(String source,int offset,JavaLoopInvariantAnalysis.Work work) {
         for(int attempt=0;attempt<RuntimeIterationEvidence.MAX_NAME_ATTEMPTS;attempt++) {

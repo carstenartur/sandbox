@@ -190,7 +190,7 @@ final class JavaFixedPowerOptimizer {
     private static void domain(CompilationUnit ast,JavaValueSourceSummary.Shape shape,String path,BigInteger modulus,Iterator<BigInteger> exact,
             Guards guards,Map<String,List<IMethodBinding>> projections,JavaValueSourceSummary.Work work) {
         work.charge(1);if(path.length()>4096)throw JavaValueSourceSummary.unavailable("VALUE_POWER_PROJECTION_BOUND"); //$NON-NLS-1$
-        guards.add(path+" != null");String key=shape.type().getKey();var getters=projections.get(key); //$NON-NLS-1$
+        guards.add("java.util.Objects.nonNull("+path+")");String key=shape.type().getKey();var getters=projections.get(key); //$NON-NLS-1$ //$NON-NLS-2$
         if(getters==null) {
             getters=new ArrayList<>();
             for(var component:shape.components()) {
@@ -308,6 +308,8 @@ final class JavaFixedPowerOptimizer {
         guard.accept(new ASTVisitor(){
             private void require(IBinding binding) {
                 String key=bindingKey(binding);work.charge(key.length()+1L);
+                if(binding instanceof ITypeBinding type && JavaValueGuardBindings.objectsType(type)
+                    || binding instanceof IMethodBinding method && JavaValueGuardBindings.nonNull(method))return;
                 if(!allowed.contains(key))throw JavaValueSourceSummary.unavailable("VALUE_POWER_GUARD_BINDING"); //$NON-NLS-1$
             }
             @Override public void preVisit(ASTNode node){work.charge(1);}
@@ -325,7 +327,13 @@ final class JavaFixedPowerOptimizer {
             @Override public boolean visit(FieldAccess field){throw JavaValueSourceSummary.unavailable("VALUE_POWER_GUARD_BINDING");} //$NON-NLS-1$
             @Override public boolean visit(TypeLiteral literal){require(literal.getType().resolveBinding());return true;}
             @Override public boolean visit(ClassInstanceCreation creation){require(creation.resolveConstructorBinding());return true;}
-            @Override public boolean visit(MethodInvocation call){require(call.resolveMethodBinding());return true;}
+            @Override public boolean visit(MethodInvocation call){
+                var method=call.resolveMethodBinding();require(method);
+                if(JavaValueGuardBindings.nonNull(method) && (!(call.getExpression() instanceof Name name)
+                    || !(name.resolveBinding() instanceof ITypeBinding type) || !type.isEqualTo(method.getDeclaringClass())))
+                    throw JavaValueSourceSummary.unavailable("VALUE_POWER_GUARD_BINDING"); //$NON-NLS-1$
+                return true;
+            }
         });
     }
     private static boolean variable(Expression expression,String expected) {

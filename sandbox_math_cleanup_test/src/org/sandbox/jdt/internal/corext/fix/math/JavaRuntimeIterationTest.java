@@ -160,9 +160,9 @@ class JavaRuntimeIterationTest extends JavaContextTestSupport {
     }
     @Test void selectionsCancellationAndAggregateWorkFailClosed() {
         String source=sample("for(int i=1;i<=n;i++)sum+=i;");var ast=JavaEarlyExitGuardFactsTest.parse(source);
-        assertFalse(MathematicalAnalysis.analyze(ast,source,options(),null,source.indexOf("for("),3).changed());
+        assertFalse(JavaEarlyExitGuardFactsTest.analyze(ast,source,options(),null,source.indexOf("for("),3).changed());
         var small=new MathCleanUpOptions(true,options().kinds(),options().safety(),options().goal(),10,1,false,17,java.util.List.of());
-        assertFalse(MathematicalAnalysis.analyze(ast,source,small,null,-1,0).changed());
+        assertFalse(JavaEarlyExitGuardFactsTest.analyze(ast,source,small,null,-1,0).changed());
         int[] calls={0};var monitor=new org.eclipse.core.runtime.NullProgressMonitor(){@Override public boolean isCanceled(){return ++calls[0]>200;}};
         var edits=new java.util.ArrayList<MathematicalAnalysis.Replacement>();
         long remaining=JavaRuntimeIterationOptimizer.optimize(ast,source,options(),monitor,-1,0,java.util.Map.of(),null,edits,new java.util.ArrayList<>(),new java.util.ArrayList<>(),500000);
@@ -206,7 +206,7 @@ class JavaRuntimeIterationTest extends JavaContextTestSupport {
         String source=sample("for(int i=1;i<=n;i++)sum+=i;");
         for(var goal:java.util.List.of(de.regelsuche.sdk.optimization.OptimizationGoal.READABILITY,de.regelsuche.sdk.optimization.OptimizationGoal.LOWER_ALLOCATION)) {
             var options=new MathCleanUpOptions(true,options().kinds(),options().safety(),goal,1000000,20000,false,17,java.util.List.of());
-            var result=MathematicalAnalysis.analyze(JavaEarlyExitGuardFactsTest.parse(source),source,options,null,-1,0);
+            var result=JavaEarlyExitGuardFactsTest.analyze(JavaEarlyExitGuardFactsTest.parse(source),source,options,null,-1,0);
             assertTrue(result.evidence().stream().noneMatch(e->e.runtimeIteration()!=null),goal.toString());
         }
     }

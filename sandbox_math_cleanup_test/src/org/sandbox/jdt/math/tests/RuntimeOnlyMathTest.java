@@ -152,7 +152,7 @@ class RuntimeOnlyMathTest {
     }
 
     private static MathematicalAnalysis.Analysis analyze(String source) {
-        return MathematicalAnalysis.analyze(MathTestSupport.parse(source), source,
+        return MathTestSupport.analyze(MathTestSupport.parse(source), source,
                 new MathCleanUpOptions(true, Set.of(NumericKind.INT, NumericKind.LONG), SafetyProfile.PRESERVE_JAVA,
                         OptimizationGoal.LOWER_ESTIMATED_RUNTIME, 1_000_000L, 20_000, false, 17, List.of()),
                 new NullProgressMonitor(), -1, 0);

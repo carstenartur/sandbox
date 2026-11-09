@@ -11,7 +11,6 @@ import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +22,7 @@ import java.util.jar.JarFile;
 import java.util.regex.Pattern;
 
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.jdt.core.JavaCore;
+import org.sandbox.jdt.math.tests.StrictCompilerOptions;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
@@ -189,7 +188,7 @@ public final class MathCorpusRunner {
                 byte[] before = Files.readAllBytes(file);
                 inputs.put(file, sha256(before));
                 String source = new String(before, StandardCharsets.UTF_8);
-                SourceEnvironment environment = new SourceEnvironment(unitName(file, source), List.of(), roots, List.of());
+                SourceEnvironment environment = new SourceEnvironment(unitName(file, source), List.of(), roots, List.of(), StrictCompilerOptions.options(8));
                 CompilationUnit ast = parse(source, environment);
                 int compilerErrors = (int) Arrays.stream(ast.getProblems()).filter(problem -> problem.isError()).count();
                 long callCount = bigIntegerCalls(ast);
@@ -265,9 +264,7 @@ public final class MathCorpusRunner {
         parser.setUnitName(environment.unitName());
         parser.setEnvironment(environment.classpath().toArray(String[]::new), environment.sourcepath().toArray(String[]::new), null, true);
         parser.setResolveBindings(true);
-        Map<String, String> options = new HashMap<>();
-        JavaCore.setComplianceOptions(JavaCore.VERSION_1_8, options);
-        parser.setCompilerOptions(options);
+        parser.setCompilerOptions(environment.compilerOptions());
         return (CompilationUnit) parser.createAST(null);
     }
 

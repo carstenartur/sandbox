@@ -160,14 +160,22 @@ class BouncyCastleRuntimeCorpusTest {
     private static MathematicalAnalysis.Analysis analyze(String name, String source, Path dependency) {
         var options = new MathCleanUpOptions(true, Set.of(NumericKind.INT, NumericKind.LONG), SafetyProfile.PRESERVE_JAVA,
                 OptimizationGoal.LOWER_ESTIMATED_RUNTIME, 1_000_000L, 20_000, false, 17, List.of());
-        return MathematicalAnalysis.analyze(parse(name, source, dependency), source, options, new NullProgressMonitor(), -1, 0,
-                new MathematicalAnalysis.SourceEnvironment(PACKAGE + name + ".java", List.of(dependency.toString()), List.of(), List.of()));
+        var environment = new MathematicalAnalysis.SourceEnvironment(PACKAGE + name + ".java", List.of(dependency.toString()), List.of(), List.of(),
+                StrictCompilerOptions.options(17));
+        var analysis = MathematicalAnalysis.analyze(parse(name, source, dependency, environment.compilerOptions()),
+                source, options, new NullProgressMonitor(), -1, 0, environment);
+        assertEquals(environment.compilerOptions(), analysis.compilerOptions());
+        return analysis;
     }
     private static CompilationUnit parse(String name, String source, Path dependency) {
+        var options = new HashMap<String, String>(); JavaCore.setComplianceOptions(JavaCore.VERSION_17, options);
+        return parse(name, source, dependency, options);
+    }
+    private static CompilationUnit parse(String name, String source, Path dependency, Map<String, String> compilerOptions) {
         var parser = ASTParser.newParser(AST.getJLSLatest()); parser.setKind(ASTParser.K_COMPILATION_UNIT);
         parser.setUnitName(PACKAGE + name + ".java"); parser.setSource(source.toCharArray());
         parser.setEnvironment(new String[]{dependency.toString()}, new String[0], null, true); parser.setResolveBindings(true);
-        var options = new HashMap<String, String>(); JavaCore.setComplianceOptions(JavaCore.VERSION_17, options); parser.setCompilerOptions(options);
+        parser.setCompilerOptions(compilerOptions);
         var ast = (CompilationUnit) parser.createAST(null);
         for (var problem : ast.getProblems()) assertFalse(problem.isError(), problem.toString());
         return ast;

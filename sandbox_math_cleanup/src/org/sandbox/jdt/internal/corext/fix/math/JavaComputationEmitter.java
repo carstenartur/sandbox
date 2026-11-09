@@ -97,8 +97,13 @@ public final class JavaComputationEmitter {
 
    Emission emit(PreparedJointComputation plan, Map<String, String> inputNames, Set<String> reservedNames, int targetJava,
          Map<String, String> outputLocals) {
+      return emit(plan, inputNames, reservedNames, targetJava, outputLocals, Map.of());
+   }
+
+   Emission emit(PreparedJointComputation plan, Map<String, String> inputNames, Set<String> reservedNames, int targetJava,
+         Map<String, String> outputLocals, Map<String, NumericKind> fixedOutputKinds) {
       JavaComputationEmitter.State state = new JavaComputationEmitter.State(inputNames, reservedNames, targetJava, JavaComputationEmitter.Mode.PRESERVE, false, false);
-      Map<String, String> outputs = schedule(plan, state, outputLocals);
+      Map<String, String> outputs = schedule(plan, state, outputLocals, fixedOutputKinds);
       return new JavaComputationEmitter.Emission(state.code.toString(), outputs);
    }
 
@@ -222,11 +227,11 @@ public final class JavaComputationEmitter {
    }
 
    private static Map<String, String> schedule(PreparedJointComputation plan, JavaComputationEmitter.State state) {
-      return schedule(plan, state, Map.of());
+      return schedule(plan, state, Map.of(), Map.of());
    }
 
    private static Map<String, String> schedule(PreparedJointComputation plan, JavaComputationEmitter.State state,
-         Map<String,String> outputLocals) {
+         Map<String,String> outputLocals, Map<String, NumericKind> fixedOutputKinds) {
       Objects.requireNonNull(plan);
       List<Node> nodes = plan.nodes();
       HashSet<Integer> required = new HashSet<>();
@@ -311,11 +316,16 @@ public final class JavaComputationEmitter {
 
             boolean inline = state.mode == Mode.PRESERVE && (node.expression() instanceof VariableExpr
                   || reusable.containsKey(index) || uses[index] == 1 || kind != NumericKind.BIG_INTEGER && JavaExpressions.isLiteral(node.expression()));
+            if (state.mode == Mode.PRESERVE) implicitInfixPromotions(node, nodes, uses, values, arguments);
             String expression = state.value(node.expression(), kind, arguments, inline,
                   !castConsumers[index] && !plan.outputBindings().containsValue(index));
-            for (var binding : plan.outputBindings().entrySet()) if (binding.getValue() == index)
+            boolean outputWidening = inline && JavaExpressions.castSourceKind(node.expression()).filter(from -> widensTo(from, kind)).isPresent();
+            for (var binding : plan.outputBindings().entrySet()) if (binding.getValue() == index) {
+               // Only this output uses its source target's conversion; DAG consumers retain the scheduled Java kind.
+               String outputValue = outputWidening && fixedOutputKinds.get(binding.getKey()) == kind ? arguments.getFirst() : expression;
                outputs.put(binding.getKey(), reusable.containsKey(index) && outputOrder.get(binding.getKey()) > firstConsumer[index]
-                     ? reusable.get(index) : expression);
+                     ? reusable.get(index) : outputValue);
+            }
             values.put(index, reusable.getOrDefault(index, expression));
          }
       }
@@ -323,6 +333,40 @@ public final class JavaComputationEmitter {
       var ordered = new LinkedHashMap<String,String>();
       plan.outputBindings().forEach((name, index) -> ordered.put(name, outputs.get(name)));
       return ordered;
+   }
+
+   /** Keep an operand that supplies the operation's Java kind; other single-use widening casts are implicit. */
+   private static void implicitInfixPromotions(Node node, List<Node> nodes, int[] uses, Map<Integer, String> values, List<String> arguments) {
+      if (arguments.size() != 2 || JavaExpressions.operationOf(node.expression()).filter(operation -> switch (operation) {
+         case ADD, SUBTRACT, MULTIPLY, DIVIDE, REMAINDER, AND, OR, XOR -> true;
+         default -> false;
+      }).isEmpty()) return;
+      NumericKind kind = NumericKind.fromType(node.type());
+      int[] original = {-1, -1};
+      boolean supplied = kind == NumericKind.INT;
+      for (int index = 0; index < 2; index++) {
+         int dependency = node.arguments().get(index);
+         Node operand = nodes.get(dependency);
+         if (uses[dependency] == 1 && NumericKind.fromType(operand.type()) == kind && operand.arguments().size() == 1
+               && JavaExpressions.castSourceKind(operand.expression()).filter(from -> widensTo(from, kind)).isPresent())
+            original[index] = operand.arguments().getFirst();
+         else if (NumericKind.fromType(operand.type()) == kind) supplied = true;
+      }
+      for (int index = 0; index < 2; index++) if (original[index] >= 0) {
+         if (!supplied) supplied = true;
+         else arguments.set(index, values.get(original[index]));
+      }
+   }
+
+   private static boolean widensTo(NumericKind from, NumericKind to) {
+      return switch (from) {
+         case BYTE -> to == NumericKind.SHORT || to == NumericKind.INT || to == NumericKind.LONG || to == NumericKind.FLOAT || to == NumericKind.DOUBLE;
+         case SHORT, CHAR -> to == NumericKind.INT || to == NumericKind.LONG || to == NumericKind.FLOAT || to == NumericKind.DOUBLE;
+         case INT -> to == NumericKind.LONG || to == NumericKind.FLOAT || to == NumericKind.DOUBLE;
+         case LONG -> to == NumericKind.FLOAT || to == NumericKind.DOUBLE;
+         case FLOAT -> to == NumericKind.DOUBLE;
+         default -> false;
+      };
    }
 
    private static void compareOutputs(
@@ -710,9 +754,14 @@ public final class JavaComputationEmitter {
             }
 
             // Numeric operands and materialized temporaries supply promotion; public inline outputs must retain their kind.
-            javaExpression = (!inline || numericOperand) && kind == NumericKind.INT && (sourceKind == NumericKind.BYTE
-                  || sourceKind == NumericKind.SHORT || sourceKind == NumericKind.CHAR)
-                  ? operands.getFirst() : "(" + JavaComputationEmitter.type(kind) + ") " + operands.getFirst();
+            boolean narrowPromotion = kind == NumericKind.INT && (sourceKind == NumericKind.BYTE
+                  || sourceKind == NumericKind.SHORT || sourceKind == NumericKind.CHAR);
+            if (!inline && JavaComputationEmitter.widensTo(sourceKind, kind) || numericOperand && narrowPromotion)
+               javaExpression = operands.getFirst();
+            else if (narrowPromotion)
+               // Unary promotion retains the proved conversion node without an unnecessary cast inside a later narrowing cast.
+               javaExpression = "+(" + operands.getFirst() + ")"; //$NON-NLS-1$ //$NON-NLS-2$
+            else javaExpression = "(" + JavaComputationEmitter.type(kind) + ") " + operands.getFirst();
          } else {
             NumericOperation originalOperation = JavaExpressions.operationOf(expression).orElseThrow(() -> JavaComputationEmitter.unsupported("MATH_UNKNOWN_OPERATION"));
             NumericOperation emittedOperation = this.mode == JavaComputationEmitter.Mode.CHECKED && this.checkRange && kind.integral()

@@ -120,6 +120,6 @@ class VerifiedComputationExplanationTest {
         var options = new MathCleanUpOptions(true, Set.of(NumericKind.INT, NumericKind.LONG), safety,
                 safety == SafetyProfile.CHECKED_THROW ? OptimizationGoal.READABILITY : OptimizationGoal.LOWER_ESTIMATED_RUNTIME,
                 2_000_000L, 20_000, safety == SafetyProfile.CHECKED_THROW, 17, List.of());
-        return MathematicalAnalysis.analyze(MathTestSupport.parse(source), source, options, monitor, -1, 0);
+        return MathTestSupport.analyze(MathTestSupport.parse(source), source, options, monitor, -1, 0);
     }
 }

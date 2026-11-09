@@ -51,7 +51,7 @@ class MathematicalExplanationIntegrationTest {
         values.put(MathCleanUpOptions.MAX_STATES, "20000");
         values.put(MathCleanUpOptions.MATHEMATICAL_OPT_IN, "true");
         values.put(MathCleanUpOptions.EXPLANATIONS, mode.name());
-        return MathematicalAnalysis.analyze(MathTestSupport.parse(source), source,
+        return MathTestSupport.analyze(MathTestSupport.parse(source), source,
                 MathCleanUpOptions.parse(values, 17), new NullProgressMonitor(), -1, 0);
     }
 

@@ -12,6 +12,8 @@ import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jface.text.Document;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class SourceMethodSummaryTest {
     @TempDir Path directory;
@@ -24,15 +26,33 @@ class SourceMethodSummaryTest {
                 OptimizationGoal.LOWER_ESTIMATED_RUNTIME, 1_000_000, 20_000, false, 17, List.of());
     }
     private MathematicalAnalysis.Analysis analyze(String source) throws Exception {
+        var compiler = new HashMap<String, String>();
+        JavaCore.setComplianceOptions("17", compiler);
+        return analyze(source, compiler);
+    }
+    private MathematicalAnalysis.Analysis analyze(String source, Map<String, String> compiler) throws Exception {
         Files.writeString(directory.resolve("Calculation.java"), source, StandardCharsets.UTF_8);
         var parser = ASTParser.newParser(AST.getJLSLatest()); parser.setSource(source.toCharArray());
         parser.setUnitName(directory.resolve("Calculation.java").toString()); parser.setResolveBindings(true);
         parser.setEnvironment(new String[0], new String[]{directory.toString()}, new String[]{"UTF-8"}, true);
-        var compiler = new HashMap<String, String>(); JavaCore.setComplianceOptions("17", compiler); parser.setCompilerOptions(compiler);
+        parser.setCompilerOptions(compiler);
         var ast = (CompilationUnit)parser.createAST(null);
         for (var problem : ast.getProblems()) assertFalse(problem.isError(), problem.toString());
         return MathematicalAnalysis.analyze(ast, source, options(), null, -1, 0,
-                new MathematicalAnalysis.SourceEnvironment(directory.resolve("Calculation.java").toString(), List.of(), List.of(directory.toString()), List.of("UTF-8")));
+                new MathematicalAnalysis.SourceEnvironment(directory.resolve("Calculation.java").toString(), List.of(), List.of(directory.toString()), List.of("UTF-8"), compiler));
+    }
+    @ParameterizedTest @ValueSource(strings={JavaCore.IGNORE, JavaCore.WARNING, JavaCore.ERROR})
+    void referencedHelperHonorsTheCallersDiagnosticSeverity(String severity) throws Exception {
+        String helper = HELPER.replace("return x+y;", "return (int)(x+y);");
+        Files.writeString(directory.resolve("Helper.java"), helper, StandardCharsets.UTF_8);
+        var compiler = new HashMap<String, String>();
+        JavaCore.setComplianceOptions("17", compiler);
+        compiler.put(JavaCore.COMPILER_PB_UNNECESSARY_TYPE_CHECK, severity);
+        var result = analyze(SOURCE, compiler);
+        assertEquals(!JavaCore.ERROR.equals(severity), result.changed(), result.diagnostics().toString());
+        assertEquals(compiler, result.compilerOptions());
+        var document = new Document(SOURCE); result.newEdit().apply(document);
+        assertTrue(document.get().contains(JavaCore.ERROR.equals(severity) ? "return a-x;" : "return y;"), document.get());
     }
     @Test void sourceSummaryAcrossFilesRetainsInitializationAndCall() throws Exception {
         Files.writeString(directory.resolve("Helper.java"), HELPER, StandardCharsets.UTF_8);

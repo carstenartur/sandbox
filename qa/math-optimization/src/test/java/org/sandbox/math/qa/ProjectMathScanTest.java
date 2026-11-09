@@ -30,6 +30,11 @@ class ProjectMathScanTest {
         Path output = directory.resolve("result");
         ProjectMathScan.main(new String[] {binary.toString(), sources.toString(), profile.toString(), output.toString(), hash, "17", "--tasks", "Sample.java"});
         var json = new ObjectMapper().readTree(output.resolve("review.json").toFile());
+        var inputs = new ObjectMapper().readTree(output.resolve("inputs.json").toFile());
+        assertEquals("warning", inputs.path("compilerOptions")
+                .path(org.eclipse.jdt.core.JavaCore.COMPILER_PB_UNNECESSARY_TYPE_CHECK).asText());
+        assertTrue(json.path("files").get(0).path("originalWarnings").isArray());
+        assertTrue(json.path("files").get(0).path("generatedWarnings").isArray());
         assertEquals("COMPLETED", json.path("status").asText());
         assertEquals(1, json.path("parsedFiles").asInt());
         assertEquals(0, json.path("parseErrorFiles").asInt());

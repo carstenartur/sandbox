@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sandbox.jdt.internal.corext.fix.math.JavaComputationExtractor;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
-import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
 import de.regelsuche.sdk.optimization.NumericKind;
 import de.regelsuche.sdk.optimization.OptimizationGoal;
 import de.regelsuche.sdk.optimization.SafetyProfile;
@@ -148,7 +147,7 @@ class FieldArrayOrderingTest {
                 OptimizationGoal.READABILITY, 1_000_000, 2000, false, 17, List.of());
     }
     private static String rewrite(String source) throws Exception {
-        var result = MathematicalAnalysis.analyze(MathTestSupport.parse(source), source, options(), new NullProgressMonitor(), -1, 0);
+        var result = MathTestSupport.analyze(MathTestSupport.parse(source), source, options(), new NullProgressMonitor(), -1, 0);
         assertTrue(result.changed(), result.diagnostics().toString());
         assertEquals(result.replacements().size(), result.evidence().size());
         for (var evidence : result.evidence()) assertNotNull(evidence.proof());

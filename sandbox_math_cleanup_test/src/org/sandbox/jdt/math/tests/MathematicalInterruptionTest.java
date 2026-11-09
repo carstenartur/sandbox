@@ -13,7 +13,6 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
-import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
 
 class MathematicalInterruptionTest {
     private static final String SOURCE = """
@@ -36,7 +35,7 @@ class MathematicalInterruptionTest {
         var monitor = new NullProgressMonitor() {
             @Override public void worked(int work) { setCanceled(true); }
         };
-        var result = MathematicalAnalysis.analyze(ast, SOURCE, options("ALL"), monitor, -1, 0);
+        var result = MathTestSupport.analyze(ast, SOURCE, options("ALL"), monitor, -1, 0);
         assertFalse(result.changed());
         assertTrue(result.evidence().isEmpty());
         assertTrue(result.diagnostics().stream().anyMatch(d -> d.code().contains("CANCEL")), result.toString());
@@ -46,7 +45,7 @@ class MathematicalInterruptionTest {
         for (String mode : List.of("NONE", "NONTRIVIAL", "ALL")) {
             var ast = MathTestSupport.parse(SOURCE);
             var options = options(mode);
-            var baseline = MathematicalAnalysis.analyze(ast, SOURCE, options, new NullProgressMonitor(), -1, 0);
+            var baseline = MathTestSupport.analyze(ast, SOURCE, options, new NullProgressMonitor(), -1, 0);
             assertEquals(2, baseline.replacements().size(), baseline.diagnostics().toString());
             var monitor = new NullProgressMonitor() {
                 @Override public void worked(int work) {
@@ -58,7 +57,7 @@ class MathematicalInterruptionTest {
             };
             try {
                 assertThrows(OperationCanceledException.class,
-                        () -> MathematicalAnalysis.analyze(ast, SOURCE, options, monitor, -1, 0), mode);
+                        () -> MathTestSupport.analyze(ast, SOURCE, options, monitor, -1, 0), mode);
             } finally {
                 assertTrue(Thread.interrupted(), "Analysis must not consume the interrupt flag");
             }

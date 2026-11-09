@@ -24,7 +24,7 @@ class MathematicalPreparationBudgetTest {
     @Test void preparationFailureWithTwoToFourStatementsCannotSpendItsCapAgainOnRetries() {
         for (int statements = 2; statements <= 4; statements++) {
             var fixture = fixture(statements);
-            var analysis = MathematicalAnalysis.analyze(fixture.ast(), fixture.source(), fixture.options(),
+            var analysis = MathTestSupport.analyze(fixture.ast(), fixture.source(), fixture.options(),
                     new NullProgressMonitor(), -1, 0);
             assertFalse(analysis.diagnostics().stream().anyMatch(d -> d.code().equals("MODULAR_STATEMENT_RETRY")),
                     "The preparation cap exhausts this file budget before statement retries: " + analysis.diagnostics());
@@ -34,7 +34,7 @@ class MathematicalPreparationBudgetTest {
 
     @Test void terminalPreparationFailureStillChargesItsCapBeforeTheNextMethod() {
         var fixture = fixture(1);
-        var analysis = MathematicalAnalysis.analyze(fixture.ast(), fixture.source(), fixture.options(),
+        var analysis = MathTestSupport.analyze(fixture.ast(), fixture.source(), fixture.options(),
                 new NullProgressMonitor(), -1, 0);
         assertBudgetExhaustedBeforeLaterMethod(fixture, analysis);
     }
@@ -59,7 +59,7 @@ class MathematicalPreparationBudgetTest {
         assertTrue(result.diagnostic().contains("plan preparation work bound exceeded"), result.toString());
         assertTrue(result.work() > options.workBudget(), "Prior trace work plus failed preparation exhaust this file: " + result);
         assertTrue(result.work() < request.budget().maximumWork(), "Unused request allowance is not consumed work: " + result);
-        var analysis = MathematicalAnalysis.analyze(ast, source, options, new NullProgressMonitor(), -1, 0);
+        var analysis = MathTestSupport.analyze(ast, source, options, new NullProgressMonitor(), -1, 0);
         int later = source.indexOf("return x + 0;");
         assertTrue(analysis.diagnostics().stream().anyMatch(d -> d.offset() == later && d.code().equals("BUDGET_EXCEEDED")),
                 "Earlier trace work must not be refunded: " + analysis.diagnostics());

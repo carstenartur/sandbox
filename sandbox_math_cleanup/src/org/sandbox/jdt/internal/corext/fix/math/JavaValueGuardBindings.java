@@ -43,6 +43,7 @@ final class JavaValueGuardBindings {
                     if(!(call.getExpression() instanceof Name name) || !(name.resolveBinding() instanceof ITypeBinding owner)
                         || !owner.isEqualTo(method.getDeclaringClass()))throw unavailable("STATIC_METHOD_QUALIFIER");
                 } else if(call.getExpression()==null)throw unavailable("RECEIVER");
+                if(nonNull(method))return true;
                 if(scalarType(method.getDeclaringClass())) {
                     if(!JavaValueUseProof.scalarOriginMethod(method))throw unavailable("SCALAR_METHOD");return true;
                 }
@@ -50,6 +51,30 @@ final class JavaValueGuardBindings {
                     && !Modifier.isStatic(method.getModifiers()) && method.getParameterTypes().length==0
                     && scalarType(call.getExpression().resolveTypeBinding()))return true;
                 if(!methods.contains(method.getKey()))throw unavailable("VALUE_METHOD");return true;
+            }
+        });
+    }
+    // Objects.nonNull preserves null behavior without refining ECJ's facts in the untouched fallback.
+    // Keep its evaluation exact even when a source type shadows a package-looking name.
+    static boolean objectsType(ITypeBinding type) {
+        return type!=null && !type.isRecovered() && !type.isFromSource() && !type.isNested() && "java.util.Objects".equals(type.getBinaryName()); //$NON-NLS-1$
+    }
+    static boolean nonNull(IMethodBinding method) {
+        return method!=null && !method.isRecovered() && objectsType(method.getDeclaringClass())
+            && Modifier.isPublic(method.getModifiers()) && Modifier.isStatic(method.getModifiers()) && "nonNull".equals(method.getName()) //$NON-NLS-1$
+            && method.getParameterTypes().length==1 && "java.lang.Object".equals(method.getParameterTypes()[0].getQualifiedName()) //$NON-NLS-1$
+            && "boolean".equals(method.getReturnType().getName()); //$NON-NLS-1$
+    }
+    static void verifyNonNullCalls(Expression guard,JavaValueSourceSummary.Work work) {
+        guard.accept(new ASTVisitor(){
+            @Override public void preVisit(ASTNode node){work.charge(1);}
+            @Override public boolean visit(MethodInvocation call) {
+                // Other guard calls may be independently admitted source getters named nonNull.
+                if("nonNull".equals(call.getName().getIdentifier()) && call.getExpression() instanceof Name name //$NON-NLS-1$
+                    && "java.util.Objects".equals(name.getFullyQualifiedName()) && (!nonNull(call.resolveMethodBinding()) //$NON-NLS-1$
+                    || !(name.resolveBinding() instanceof ITypeBinding type)
+                    || !type.isEqualTo(call.resolveMethodBinding().getDeclaringClass())))throw unavailable("NON_NULL_METHOD"); //$NON-NLS-1$
+                return true;
             }
         });
     }

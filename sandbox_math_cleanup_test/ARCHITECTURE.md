@@ -5,6 +5,26 @@ report, argument, job and edit-guard contracts also run without a workbench
 against the pinned SDK JAR. Core tests cover binding, proof, Java emission and
 numerical counterexamples.
 
+## Compiler diagnostics
+
+`StrictCompilerOptions` is shared test/QA infrastructure. Its common profile
+explicitly enables type/cast, boxing, unused-code, control-flow, null and resource
+diagnostics, preserving compiler errors. `MathTestSupport` and the callable-context
+test helpers retain the same per-AST `SourceEnvironment` for input parsing and
+generated-source validation; stale AST fixtures are not reparsed into fresh input.
+The source-archive QA runners use this same profile. `ProjectMathScan` records its
+exact compiler options and before/after diagnostics.
+The profile starts from complete ECJ defaults because headless `JavaCore` preferences
+can expose only a partial map. It changes neither workspace preferences nor the
+caller's option map.
+
+Additional contracts enable every severity-valued optional compiler diagnostic,
+including NLS and unused parameters, and exercise warning and error severities.
+They verify real compiler problems, useful successful rewrites, existing-warning
+provenance, and complete generated-source rejection. Native workspace tests retain
+the effective project's options through Preview/Apply/Undo. These test profiles
+do not replace the user's production project settings.
+
 The `swtbot` Maven profile adds real workbench tests for independent numerical
 choices, checked consent and persistence, normal JDT file preview, atomic group
 selection, apply and byte-exact Undo, asynchronous assist, stale source/compiler/

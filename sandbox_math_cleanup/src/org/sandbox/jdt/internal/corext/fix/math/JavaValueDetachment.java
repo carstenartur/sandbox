@@ -54,7 +54,7 @@ final class JavaValueDetachment {
         var origins=new ArrayList<String>();for(String input:inputs)for(int i=0;i<access.shape().leaves();i++)origins.add(access.leaf(input,i));
         for(var field:statics)if(field.value() instanceof JavaValueSourceSummary.Scalar)origins.add(field.path());
         else for(int i=0;i<access.shape().leaves();i++)origins.add(access.leaf(field.path(),i));
-        var guards=new ArrayList<String>();guards.add(value+" != null");
+        var guards=new ArrayList<String>();guards.add("java.util.Objects.nonNull("+value+")");
         for(int i=0;i<access.shape().leaves();i++) {
             String leaf=access.leaf(value,i);guards.add(leaf+" != null");guards.add(leaf+".getClass() == java.math.BigInteger.class");
             guards.add(leaf+".abs().bitLength() <= 4096");guards.add(leaf+".abs().compareTo(java.math.BigInteger.valueOf(16)) > 0");

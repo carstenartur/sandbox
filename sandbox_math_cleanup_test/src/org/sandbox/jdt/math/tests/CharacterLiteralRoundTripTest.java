@@ -20,7 +20,6 @@ import org.eclipse.jface.text.Document;
 import org.eclipse.text.edits.TextEdit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
 import de.regelsuche.sdk.optimization.NumericKind;
 import de.regelsuche.sdk.optimization.SafetyProfile;
 
@@ -57,7 +56,7 @@ class CharacterLiteralRoundTripTest {
                     + expression + "+0; }}";
             var options = JavaComputationExtractorTest.options(Set.of(NumericKind.INT, NumericKind.CHAR,
                     NumericKind.BYTE, NumericKind.SHORT), SafetyProfile.PRESERVE_JAVA);
-            var analysis = MathematicalAnalysis.analyze(MathTestSupport.parse(source), source, options,
+            var analysis = MathTestSupport.analyze(MathTestSupport.parse(source), source, options,
                     new NullProgressMonitor(), -1, 0);
             assertFalse(analysis.changed(), expression + ": " + analysis.diagnostics());
             assertTrue(analysis.diagnostics().stream().anyMatch(d -> d.code().equals("CONSTANT_EXPRESSION_PRESERVED")));
@@ -83,7 +82,7 @@ class CharacterLiteralRoundTripTest {
         String source = "public class Calculation { public static int compute(int x) { " + declarations
                 + "int r=x+" + literal + "+0; return r; }}";
         var options = JavaComputationExtractorTest.options(kinds, SafetyProfile.PRESERVE_JAVA);
-        var analysis = MathematicalAnalysis.analyze(MathTestSupport.parse(source), source, options, new NullProgressMonitor(), -1, 0);
+        var analysis = MathTestSupport.analyze(MathTestSupport.parse(source), source, options, new NullProgressMonitor(), -1, 0);
         assertTrue(analysis.changed(), literal + ": " + analysis.diagnostics());
         assertFalse(analysis.evidence().isEmpty(), "The generated code must pass independent re-extraction");
         Document document = new Document(source);

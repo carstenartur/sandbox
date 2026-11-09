@@ -11,14 +11,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Set;
 import java.util.jar.JarFile;
 import javax.tools.ToolProvider;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -46,17 +44,19 @@ class SwtAssignmentRegionTest {
         try (var jar = new JarFile(sources.toFile()); var input = jar.getInputStream(jar.getJarEntry(ENTRY))) {
             original = new String(input.readAllBytes(), StandardCharsets.UTF_8);
         }
+        var environment = new MathematicalAnalysis.SourceEnvironment(ENTRY, List.of(binary.toString()), List.of(), List.of(),
+                StrictCompilerOptions.options(21));
         var parser = ASTParser.newParser(AST.getJLSLatest());
         parser.setUnitName(ENTRY); parser.setSource(original.toCharArray()); parser.setResolveBindings(true);
         parser.setEnvironment(new String[] {binary.toString()}, new String[0], null, true);
-        var settings = new HashMap<String, String>(); JavaCore.setComplianceOptions("21", settings); parser.setCompilerOptions(settings);
+        parser.setCompilerOptions(environment.compilerOptions());
         var ast = (CompilationUnit) parser.createAST(null);
         for (var problem : ast.getProblems()) assertFalse(problem.isError(), problem.toString());
         var options = new MathCleanUpOptions(true, Set.of(NumericKind.BYTE, NumericKind.SHORT, NumericKind.CHAR,
                 NumericKind.INT, NumericKind.LONG), SafetyProfile.PRESERVE_JAVA, OptimizationGoal.LOWER_ESTIMATED_RUNTIME,
                 1_000_000L, 20_000, false, 21, List.of());
-        var result = MathematicalAnalysis.analyze(ast, original, options, new NullProgressMonitor(), -1, 0,
-                new MathematicalAnalysis.SourceEnvironment(ENTRY, List.of(binary.toString()), List.of(), List.of()));
+        var result = MathematicalAnalysis.analyze(ast, original, options, new NullProgressMonitor(), -1, 0, environment);
+        assertEquals(environment.compilerOptions(), result.compilerOptions());
         var cancellations = result.evidence().stream().filter(e -> e.original().trim().equals(
                 "grow = (j - modifyStart) - (modifyEnd - modifyStart);")).toList();
         assertEquals(2, cancellations.size(), "Both original addMerge overloads must yield a verified cancellation");

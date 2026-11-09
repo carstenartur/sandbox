@@ -9,7 +9,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
-import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Objects;
@@ -19,7 +18,6 @@ import javax.tools.ToolProvider;
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Platform;
-import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -99,13 +97,16 @@ class BouncyCastleModularResidueTest {
     private static MathematicalAnalysis.Analysis analyze(String source, Path dependency, boolean mathematical) {
         var options = new MathCleanUpOptions(true, Set.of(NumericKind.BIG_INTEGER), SafetyProfile.PRESERVE_JAVA,
                 OptimizationGoal.LOWER_ESTIMATED_RUNTIME, 1_000_000L, 20_000, false, 17, List.of(), mathematical);
+        var environment = new MathematicalAnalysis.SourceEnvironment(ENTRY, List.of(dependency.toString()), List.of(), List.of(),
+                StrictCompilerOptions.options(17));
         var parser = ASTParser.newParser(AST.getJLSLatest()); parser.setUnitName(ENTRY); parser.setSource(source.toCharArray());
         parser.setEnvironment(new String[] {dependency.toString()}, new String[0], null, true); parser.setResolveBindings(true);
-        var settings = new HashMap<String, String>(); JavaCore.setComplianceOptions("17", settings); parser.setCompilerOptions(settings);
+        parser.setCompilerOptions(environment.compilerOptions());
         var ast = (CompilationUnit) parser.createAST(null);
         for (var problem : ast.getProblems()) assertFalse(problem.isError(), problem.toString());
-        var environment = new MathematicalAnalysis.SourceEnvironment(ENTRY, List.of(dependency.toString()), List.of(), List.of());
-        return MathematicalAnalysis.analyze(ast, source, options, new NullProgressMonitor(), -1, 0, environment);
+        var analysis = MathematicalAnalysis.analyze(ast, source, options, new NullProgressMonitor(), -1, 0, environment);
+        assertEquals(environment.compilerOptions(), analysis.compilerOptions());
+        return analysis;
     }
     private Path compile(String source, Path dependency) throws IOException {
         Path directory = Files.createTempDirectory(temporary, "compiled-"); Path file = directory.resolve(ENTRY);

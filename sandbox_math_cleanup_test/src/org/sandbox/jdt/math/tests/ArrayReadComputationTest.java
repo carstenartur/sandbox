@@ -55,7 +55,7 @@ class ArrayReadComputationTest {
         assertEquals(1, occurrences(generated, "words[i]"));
         assertEquals(1, occurrences(generated, "other[j]"));
         assertTrue(generated.indexOf("words[i]") < generated.indexOf("other[j]"), generated);
-        var second = MathematicalAnalysis.analyze(MathTestSupport.parse(generated), generated, options(SafetyProfile.PRESERVE_JAVA),
+        var second = MathTestSupport.analyze(MathTestSupport.parse(generated), generated, options(SafetyProfile.PRESERVE_JAVA),
                 new NullProgressMonitor(), -1, 0);
         assertFalse(second.changed(), second.diagnostics().toString());
         try (var before = compile(source); var after = compile(generated)) {
@@ -172,7 +172,7 @@ class ArrayReadComputationTest {
             String source = source("return (" + expression + ") + 0;").replace("public class Calculation {",
                     "public class Calculation { static volatile int INDEX; static volatile int[] FIELD;"
                     + " private static int next(int value) { return value; } private static int[] get(int[] input) { return input; }");
-            var result = MathematicalAnalysis.analyze(MathTestSupport.parse(source), source, options(SafetyProfile.PRESERVE_JAVA),
+            var result = MathTestSupport.analyze(MathTestSupport.parse(source), source, options(SafetyProfile.PRESERVE_JAVA),
                     new NullProgressMonitor(), -1, 0);
             assertFalse(result.changed(), expression + ": " + result.diagnostics());
         }
@@ -340,7 +340,7 @@ class ArrayReadComputationTest {
         var base = options(SafetyProfile.PRESERVE_JAVA);
         var options = new MathCleanUpOptions(base.enabled(), base.kinds(), base.safety(), goal, base.workBudget(),
                 base.maxStates(), base.checkedOptIn(), base.targetJava(), base.exclusions());
-        return MathematicalAnalysis.analyze(MathTestSupport.parse(source), source, options, new NullProgressMonitor(), -1, 0);
+        return MathTestSupport.analyze(MathTestSupport.parse(source), source, options, new NullProgressMonitor(), -1, 0);
     }
 
     private String rewrite(String source) throws Exception {
@@ -348,7 +348,7 @@ class ArrayReadComputationTest {
     }
 
     private String rewrite(String source, MathCleanUpOptions options) throws Exception {
-        var result = MathematicalAnalysis.analyze(MathTestSupport.parse(source), source, options,
+        var result = MathTestSupport.analyze(MathTestSupport.parse(source), source, options,
                 new NullProgressMonitor(), -1, 0);
         assertTrue(result.changed(), result.diagnostics().toString());
         Document document = new Document(source);

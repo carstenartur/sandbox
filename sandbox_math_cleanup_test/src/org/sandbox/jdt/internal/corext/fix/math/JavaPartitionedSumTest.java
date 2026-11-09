@@ -80,9 +80,9 @@ class JavaPartitionedSumTest extends JavaContextTestSupport {
     @Test void selectionCancellationAndTightWorkFailClosed() {
         String source=sample("for(int i=0;i<n;i++)if(i%3==1)sum+=i*i;else sum-=i;");
         var ast=JavaEarlyExitGuardFactsTest.parse(source);
-        assertFalse(MathematicalAnalysis.analyze(ast,source,options(),null,source.indexOf("for("),3).changed());
+        assertFalse(JavaEarlyExitGuardFactsTest.analyze(ast,source,options(),null,source.indexOf("for("),3).changed());
         var small=new MathCleanUpOptions(true,options().kinds(),options().safety(),options().goal(),10,1,false,17,List.of());
-        assertFalse(MathematicalAnalysis.analyze(ast,source,small,null,-1,0).changed());
+        assertFalse(JavaEarlyExitGuardFactsTest.analyze(ast,source,small,null,-1,0).changed());
         var edits=new ArrayList<MathematicalAnalysis.Replacement>();
         var monitor=new org.eclipse.core.runtime.NullProgressMonitor();monitor.setCanceled(true);
         JavaRuntimeIterationOptimizer.optimize(ast,source,options(),monitor,-1,0,Map.of(),null,edits,new ArrayList<>(),new ArrayList<>(),500000);
@@ -96,7 +96,7 @@ class JavaPartitionedSumTest extends JavaContextTestSupport {
         String source=sample("for(int i=0;i<n;i++)if(i%32==17)sum+=i;else sum-=i;");
         var ast=JavaEarlyExitGuardFactsTest.parse(source);
         var large=new MathCleanUpOptions(true,options().kinds(),options().safety(),options().goal(),5000000,20000,false,17,List.of());
-        var result=MathematicalAnalysis.analyze(ast,source,large,null,-1,0);
+        var result=JavaEarlyExitGuardFactsTest.analyze(ast,source,large,null,-1,0);
         var proof=result.evidence().stream().filter(e->e.runtimeIteration()!=null).findFirst()
                 .orElseThrow(()->new AssertionError(result.diagnostics().toString())).runtimeIteration();
         assertEquals(32,proof.sums().size());

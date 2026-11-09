@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Set;
 import javax.tools.ToolProvider;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jface.text.Document;
 import org.eclipse.text.edits.UndoEdit;
 import org.eclipse.text.edits.TextEdit;
@@ -45,7 +46,7 @@ class JavaComputationRoundTripTest {
 						var base= JavaComputationExtractorTest.options(Set.of(NumericKind.INT), safety);
 						var options= new org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions(base.enabled(), base.kinds(), base.safety(),
 								base.goal(), base.workBudget(), base.maxStates(), base.checkedOptIn(), targetJava, base.exclusions());
-						var analysis= MathematicalAnalysis.analyze(MathTestSupport.parse(source), source, options, new NullProgressMonitor(), -1, 0);
+						var analysis= MathTestSupport.analyze(MathTestSupport.parse(source, targetJava), source, options, new NullProgressMonitor(), -1, 0);
 						assertTrue(analysis.changed(), analysis.diagnostics().toString());
 						for (var edit : analysis.replacements()) {
 							String[] lines= edit.replacement().split("\\R", -1); //$NON-NLS-1$
@@ -69,7 +70,7 @@ class JavaComputationRoundTripTest {
    @Test
    void bigintDefaultKeepsPrimitivePrecomputationAndOptimizesBoundValues() throws Exception {
       String var1 = "import java.math.BigInteger;\npublic class Calculation {\n  public static int compute(int x) {\n    BigInteger input = BigInteger.valueOf(x * 2);\n    BigInteger sum = input.add(BigInteger.ONE);\n    BigInteger result = sum.subtract(BigInteger.ONE);\n    return result.intValue();\n  }\n}\n";
-      MathematicalAnalysis.Analysis var2 = MathematicalAnalysis.analyze(
+      MathematicalAnalysis.Analysis var2 = MathTestSupport.analyze(
          MathTestSupport.parse(var1),
          var1,
          JavaComputationExtractorTest.options(Set.of(NumericKind.BIG_INTEGER), SafetyProfile.PRESERVE_JAVA),
@@ -88,7 +89,7 @@ class JavaComputationRoundTripTest {
    void emitsCompilableMultipleOutputsWithCommentsAndExactUndo() throws Exception {
       String var1 = "public class Calculation {\n  public static int compute(int x) {\n    int _math0 = 7;\n    int a = (x + 1) - 1;\n    // This comment belongs to the user's computation.\n    int b = a + 0;\n    return (a ^ b) + _math0;\n  }\n}\n";
       MathCleanUpOptions var2 = JavaComputationExtractorTest.options(Set.of(NumericKind.INT), SafetyProfile.PRESERVE_JAVA);
-      MathematicalAnalysis.Analysis var3 = MathematicalAnalysis.analyze(MathTestSupport.parse(var1), var1, var2, new NullProgressMonitor(), -1, 0);
+      MathematicalAnalysis.Analysis var3 = MathTestSupport.analyze(MathTestSupport.parse(var1), var1, var2, new NullProgressMonitor(), -1, 0);
       Assertions.assertTrue(var3.changed(), var3.diagnostics().toString());
       Document var4 = new Document(var1);
       UndoEdit var5 = var3.newEdit().apply(var4, 1);
@@ -98,14 +99,14 @@ class JavaComputationRoundTripTest {
       Assertions.assertEquals(7, this.invoke(var6, -2147483648));
       var5.apply(var4);
       Assertions.assertEquals(var1, var4.get());
-      MathematicalAnalysis.Analysis var7 = MathematicalAnalysis.analyze(MathTestSupport.parse(var6), var6, var2, new NullProgressMonitor(), -1, 0);
+      MathematicalAnalysis.Analysis var7 = MathTestSupport.analyze(MathTestSupport.parse(var6), var6, var2, new NullProgressMonitor(), -1, 0);
       Assertions.assertFalse(var7.changed(), var7.diagnostics().toString());
    }
 
    @Test
    void doesNotCancelOverflowingMultiplyThenDivideInPreserveProfile() throws Exception {
       String var1 = "public class Calculation { public static int compute(int x) { int result=(x*2)/2; return result; }}";
-      MathematicalAnalysis.Analysis var2 = MathematicalAnalysis.analyze(
+      MathematicalAnalysis.Analysis var2 = MathTestSupport.analyze(
          MathTestSupport.parse(var1),
          var1,
          JavaComputationExtractorTest.options(Set.of(NumericKind.INT), SafetyProfile.PRESERVE_JAVA),
@@ -120,7 +121,7 @@ class JavaComputationRoundTripTest {
    @Test
    void checkedProfileRetainsAnEliminatedOverflowObligation() throws Exception {
       String var1 = "public class Calculation { public static int compute(int x) { int result=(x+1)-1; return result; }}";
-      MathematicalAnalysis.Analysis var2 = MathematicalAnalysis.analyze(
+      MathematicalAnalysis.Analysis var2 = MathTestSupport.analyze(
          MathTestSupport.parse(var1),
          var1,
          JavaComputationExtractorTest.options(Set.of(NumericKind.INT), SafetyProfile.CHECKED_THROW),
@@ -142,7 +143,7 @@ class JavaComputationRoundTripTest {
    @Test
    void compoundAssignmentsBecomeExplicitAssignmentsWithTheSameResult() throws Exception {
       String var1 = "public class Calculation { public static int compute(int x) { int result=x; result += 0; result ^= 0; return result; }}";
-      MathematicalAnalysis.Analysis var2 = MathematicalAnalysis.analyze(
+      MathematicalAnalysis.Analysis var2 = MathTestSupport.analyze(
          MathTestSupport.parse(var1),
          var1,
          JavaComputationExtractorTest.options(Set.of(NumericKind.INT), SafetyProfile.PRESERVE_JAVA),
@@ -160,7 +161,7 @@ class JavaComputationRoundTripTest {
    @Test
    void noOverflowIsNotAnIeeeEquivalenceProof() {
       String var1 = "class Calculation { double compute(double x) { double result=(x+1.0)-x; return result; }}";
-      MathematicalAnalysis.Analysis var2 = MathematicalAnalysis.analyze(
+      MathematicalAnalysis.Analysis var2 = MathTestSupport.analyze(
          MathTestSupport.parse(var1),
          var1,
          JavaComputationExtractorTest.options(Set.of(NumericKind.DOUBLE), SafetyProfile.PRESERVE_JAVA),
@@ -176,7 +177,7 @@ class JavaComputationRoundTripTest {
    void preserveFloatingPointRequiresAProvedCanonicalObservationBoundary() throws Exception {
       String var1 = "public class Calculation { public static long compute(double x) { double result=x*1.0; return Double.doubleToLongBits(result); }}";
       MathCleanUpOptions var2 = JavaComputationExtractorTest.options(Set.of(NumericKind.DOUBLE), SafetyProfile.PRESERVE_JAVA);
-      MathematicalAnalysis.Analysis var3 = MathematicalAnalysis.analyze(MathTestSupport.parse(var1), var1, var2, new NullProgressMonitor(), -1, 0);
+      MathematicalAnalysis.Analysis var3 = MathTestSupport.analyze(MathTestSupport.parse(var1), var1, var2, new NullProgressMonitor(), -1, 0);
       Assertions.assertTrue(var3.changed(), var3.diagnostics().toString());
       Document var4 = new Document(var1);
       var3.newEdit().apply(var4);
@@ -186,14 +187,14 @@ class JavaComputationRoundTripTest {
       }
 
       String var10 = var1.replace("doubleToLongBits", "doubleToRawLongBits");
-      Assertions.assertFalse(MathematicalAnalysis.analyze(MathTestSupport.parse(var10), var10, var2, new NullProgressMonitor(), -1, 0).changed());
+      Assertions.assertFalse(MathTestSupport.analyze(MathTestSupport.parse(var10), var10, var2, new NullProgressMonitor(), -1, 0).changed());
    }
 
    @Test
    void analysisRejectsAnAstForDifferentTextEvenWithTheSameLength() {
       String var1 = "class Calculation { int compute(int x) { int result=(x+1)-1; return result; }}";
       String var2 = var1.replace("(x+1)-1", "(x+2)-1");
-      MathematicalAnalysis.Analysis var3 = MathematicalAnalysis.analyze(
+      MathematicalAnalysis.Analysis var3 = MathTestSupport.analyze(
          MathTestSupport.parse(var1),
          var2,
          JavaComputationExtractorTest.options(Set.of(NumericKind.INT), SafetyProfile.PRESERVE_JAVA),
@@ -208,7 +209,7 @@ class JavaComputationRoundTripTest {
    @Test
    void guardedFinalVarUsesAnExplicitTypeAndRetainsFallback() throws Exception {
       String var1 = "import java.math.BigInteger;\npublic class Calculation {\n  public static int compute(BigInteger x) {\n    final var a=x.add(BigInteger.ONE);\n    final var b=a.subtract(BigInteger.ONE);\n    return b.intValue();\n  }\n}\n";
-      MathematicalAnalysis.Analysis var2 = MathematicalAnalysis.analyze(
+      MathematicalAnalysis.Analysis var2 = MathTestSupport.analyze(
          MathTestSupport.parse(var1),
          var1,
          JavaComputationExtractorTest.options(Set.of(NumericKind.BIG_INTEGER), SafetyProfile.GUARDED_FALLBACK),
@@ -231,7 +232,7 @@ class JavaComputationRoundTripTest {
    @Test
    void receiverGuardCannotBypassIntegralRangeObligationsInMixedRegion() {
       String var1 = "import java.math.BigInteger;\nclass Calculation {\n  int compute(BigInteger x, int y) {\n    BigInteger a=x.add(BigInteger.ONE).subtract(BigInteger.ONE);\n    int b=(y*2)/2;\n    return a.intValue()+b;\n  }\n}\n";
-      MathematicalAnalysis.Analysis var2 = MathematicalAnalysis.analyze(
+      MathematicalAnalysis.Analysis var2 = MathTestSupport.analyze(
          MathTestSupport.parse(var1),
          var1,
          JavaComputationExtractorTest.options(Set.of(NumericKind.BIG_INTEGER, NumericKind.INT), SafetyProfile.GUARDED_FALLBACK),
@@ -246,7 +247,7 @@ class JavaComputationRoundTripTest {
    @Test
    void constantVariableUsedBySwitchIsPreservedBeforeGeneration() {
       String var1 = "class Calculation { int compute(int x) { final int N=1+0; switch(x) { case N: return 5; default: return 7; } }}";
-      MathematicalAnalysis.Analysis var2 = MathematicalAnalysis.analyze(
+      MathematicalAnalysis.Analysis var2 = MathTestSupport.analyze(
          MathTestSupport.parse(var1),
          var1,
          JavaComputationExtractorTest.options(Set.of(NumericKind.INT), SafetyProfile.GUARDED_FALLBACK),
@@ -261,7 +262,7 @@ class JavaComputationRoundTripTest {
    @Test
    void separateRegionsInTheSameBlockUseDisjointTemporaryNames() throws Exception {
       String var1 = "public class Calculation {\n  static int calls;\n  public static int compute(int x) {\n    calls=0;\n    int a=(x+1)-1+x*2;\n    calls++;\n    int b=(x+2)-2+x*3;\n    return a+b+calls;\n  }\n}\n";
-      MathematicalAnalysis.Analysis var2 = MathematicalAnalysis.analyze(
+      MathematicalAnalysis.Analysis var2 = MathTestSupport.analyze(
          MathTestSupport.parse(var1),
          var1,
          JavaComputationExtractorTest.options(Set.of(NumericKind.INT), SafetyProfile.PRESERVE_JAVA),
@@ -278,7 +279,7 @@ class JavaComputationRoundTripTest {
    @Test
    void bigIntegerSupportedMagnitudeExceptionCannotBeEliminated() throws Exception {
       String var1 = "import java.math.BigInteger; public class Calculation { public static int compute(int x) { BigInteger input=BigInteger.valueOf(x); BigInteger result=input.pow(Integer.MAX_VALUE).subtract(input.pow(Integer.MAX_VALUE)); return result.intValue(); }}";
-      MathematicalAnalysis.Analysis var2 = MathematicalAnalysis.analyze(
+      MathematicalAnalysis.Analysis var2 = MathTestSupport.analyze(
          MathTestSupport.parse(var1),
          var1,
          JavaComputationExtractorTest.options(Set.of(NumericKind.BIG_INTEGER), SafetyProfile.PRESERVE_JAVA),
@@ -295,7 +296,7 @@ class JavaComputationRoundTripTest {
    @Test
    void unknownBigIntegerSubclassDispatchUsesTheOriginalFallbackOnce() throws Exception {
       String var1 = "import java.math.BigInteger;\npublic class Calculation {\n  static int calls;\n  static class Child extends BigInteger {\n    Child(int x) { super(Integer.toString(x)); }\n    @Override public BigInteger add(BigInteger other) { calls++; return super.add(other).add(BigInteger.ONE); }\n  }\n  public static int compute(int x) {\n    calls=0;\n    BigInteger input=new Child(x);\n    BigInteger a=input.add(BigInteger.ONE);\n    BigInteger b=a.subtract(BigInteger.ONE);\n    return b.intValue()*10+calls;\n  }\n}\n";
-      MathematicalAnalysis.Analysis var2 = MathematicalAnalysis.analyze(
+      MathematicalAnalysis.Analysis var2 = MathTestSupport.analyze(
          MathTestSupport.parse(var1),
          var1,
          JavaComputationExtractorTest.options(Set.of(NumericKind.BIG_INTEGER), SafetyProfile.GUARDED_FALLBACK),
@@ -330,7 +331,7 @@ class JavaComputationRoundTripTest {
          MathCleanUpOptions var10 = JavaComputationExtractorTest.options(Set.of(var4), SafetyProfile.CHECKED_THROW);
 
          for (int var11 = 0; var11 < 3; var11++) {
-            MathematicalAnalysis.Analysis var12 = MathematicalAnalysis.analyze(MathTestSupport.parse(var9), var9, var10, new NullProgressMonitor(), -1, 0);
+            MathematicalAnalysis.Analysis var12 = MathTestSupport.analyze(MathTestSupport.parse(var9), var9, var10, new NullProgressMonitor(), -1, 0);
             Assertions.assertEquals(var11 == 0, var12.changed(), var4 + " pass " + var11 + ": " + var12.diagnostics());
             Document var13 = new Document(var9);
             var12.newEdit().apply(var13);
@@ -350,13 +351,15 @@ class JavaComputationRoundTripTest {
       MathCleanUpOptions var2 = JavaComputationExtractorTest.options(Set.of(NumericKind.INT), SafetyProfile.PRESERVE_JAVA);
       NullProgressMonitor var3 = new NullProgressMonitor();
       var3.setCanceled(true);
-      Assertions.assertFalse(MathematicalAnalysis.analyze(MathTestSupport.parse(var1), var1, var2, var3, -1, 0).changed());
-      MathematicalAnalysis.Analysis var4 = MathematicalAnalysis.analyze(MathTestSupport.parse(var1), var1, var2, new NullProgressMonitor(), -1, 0);
-      Assertions.assertTrue(var4.matches(var1, Map.of()));
-      Assertions.assertFalse(var4.matches(var1 + " ", Map.of()));
-      Assertions.assertFalse(var4.matches(var1, Map.of("org.eclipse.jdt.core.compiler.source", "8")));
+      Assertions.assertFalse(MathTestSupport.analyze(MathTestSupport.parse(var1), var1, var2, var3, -1, 0).changed());
+      MathematicalAnalysis.Analysis var4 = MathTestSupport.analyze(MathTestSupport.parse(var1), var1, var2, new NullProgressMonitor(), -1, 0);
+      Map<String, String> compiler = StrictCompilerOptions.options(17);
+      Assertions.assertTrue(var4.matches(var1, compiler));
+      Assertions.assertFalse(var4.matches(var1 + " ", compiler));
+      compiler.put(JavaCore.COMPILER_SOURCE, JavaCore.VERSION_1_8);
+      Assertions.assertFalse(var4.matches(var1, compiler));
       MathCleanUpOptions var5 = new MathCleanUpOptions(true, var2.kinds(), var2.safety(), var2.goal(), 1L, 1, false, 17, var2.exclusions());
-      Assertions.assertFalse(MathematicalAnalysis.analyze(MathTestSupport.parse(var1), var1, var5, new NullProgressMonitor(), -1, 0).changed());
+      Assertions.assertFalse(MathTestSupport.analyze(MathTestSupport.parse(var1), var1, var5, new NullProgressMonitor(), -1, 0).changed());
    }
 
    private Object invoke(String var1, int var2) throws Exception {

@@ -87,7 +87,7 @@ class JavaEarlyExitGuardIntegrationTest {
     private static MathematicalAnalysis.Analysis analyze(String source, boolean mathematical) {
         var options = new MathCleanUpOptions(true, EnumSet.of(NumericKind.BIG_INTEGER, NumericKind.INT), SafetyProfile.PRESERVE_JAVA,
                 OptimizationGoal.LOWER_ESTIMATED_RUNTIME, 1_000_000, 20_000, false, 17, List.of(), mathematical);
-        return MathematicalAnalysis.analyze(JavaEarlyExitGuardFactsTest.parse(source), source, options,
+        return JavaEarlyExitGuardFactsTest.analyze(JavaEarlyExitGuardFactsTest.parse(source), source, options,
                 new NullProgressMonitor(), source.lastIndexOf(TARGET), TARGET.length());
     }
     private URLClassLoader compile(String source, String name) throws Exception {

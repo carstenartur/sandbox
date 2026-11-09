@@ -2,18 +2,19 @@
 package org.sandbox.jdt.internal.corext.fix.math;
 
 import static org.junit.jupiter.api.Assertions.*;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.sandbox.jdt.math.tests.StrictCompilerOptions;
 
 class JavaEarlyExitGuardFactsTest {
+    private static final String ENVIRONMENT = JavaEarlyExitGuardFactsTest.class.getName() + ".environment"; //$NON-NLS-1$
     private static final String VALID = "x != null && x.getClass() == BigInteger.class && x.bitLength() < 4096 && x.signum() > 0";
     private static final String INVALID = "x == null || x.getClass() != BigInteger.class || x.bitLength() >= 4096 || x.signum() <= 0";
     private static final String TARGET = "return x.add(x);";
@@ -97,12 +98,26 @@ class JavaEarlyExitGuardFactsTest {
                 + " static BigInteger f(BigInteger x, boolean flag) { " + body + " }}";
     }
     static CompilationUnit parse(String source) {
+        var environment = new MathematicalAnalysis.SourceEnvironment("Sample.java", List.of(), List.of(), List.of(), //$NON-NLS-1$
+                StrictCompilerOptions.options(17));
         var parser = ASTParser.newParser(AST.getJLSLatest());
-        parser.setSource(source.toCharArray()); parser.setUnitName("Sample.java");
+        parser.setSource(source.toCharArray()); parser.setUnitName(environment.unitName());
         parser.setEnvironment(new String[0], new String[0], null, true); parser.setResolveBindings(true);
-        var options = new HashMap<String, String>(); JavaCore.setComplianceOptions("17", options); parser.setCompilerOptions(options);
+        parser.setCompilerOptions(environment.compilerOptions());
         var unit = (CompilationUnit) parser.createAST(null);
         for (var problem : unit.getProblems()) assertFalse(problem.isError(), problem.toString());
+        unit.setProperty(ENVIRONMENT, environment);
         return unit;
+    }
+    static MathematicalAnalysis.SourceEnvironment environment(CompilationUnit ast) {
+        if (ast.getProperty(ENVIRONMENT) instanceof MathematicalAnalysis.SourceEnvironment environment) return environment;
+        throw new IllegalArgumentException("AST must be parsed by JavaEarlyExitGuardFactsTest"); //$NON-NLS-1$
+    }
+    static MathematicalAnalysis.Analysis analyze(CompilationUnit ast, String source, MathCleanUpOptions options,
+            org.eclipse.core.runtime.IProgressMonitor monitor, int offset, int length) {
+        var environment = environment(ast);
+        var analysis = MathematicalAnalysis.analyze(ast, source, options, monitor, offset, length, environment);
+        assertEquals(environment.compilerOptions(), analysis.compilerOptions());
+        return analysis;
     }
 }

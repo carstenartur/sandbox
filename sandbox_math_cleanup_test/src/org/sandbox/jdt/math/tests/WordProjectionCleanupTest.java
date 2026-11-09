@@ -21,7 +21,6 @@ import org.eclipse.text.edits.TextEdit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
-import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
 
 /** The qualified SDK's new generic relation must reach the existing source-edit path. */
 class WordProjectionCleanupTest {
@@ -32,7 +31,7 @@ class WordProjectionCleanupTest {
                 + "long high = value >>> 32; long low = (long)(int)value & 0xffffffffL; return (high << 32) | low; } }";
         var options = new MathCleanUpOptions(true, Set.of(NumericKind.INT, NumericKind.LONG), SafetyProfile.PRESERVE_JAVA,
                 OptimizationGoal.LOWER_ESTIMATED_RUNTIME, 1_000_000, 20_000, false, 17, List.of());
-        var analysis = MathematicalAnalysis.analyze(MathTestSupport.parse(source), source, options, new NullProgressMonitor(), -1, 0);
+        var analysis = MathTestSupport.analyze(MathTestSupport.parse(source), source, options, new NullProgressMonitor(), -1, 0);
         assertTrue(analysis.changed(), analysis.diagnostics().toString());
         assertTrue(analysis.evidence().stream().allMatch(e -> e.cost().estimatedRuntimeImprovement()));
         var document = new Document(source);

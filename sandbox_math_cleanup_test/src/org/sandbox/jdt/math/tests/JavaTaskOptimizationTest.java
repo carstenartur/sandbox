@@ -25,7 +25,7 @@ class JavaTaskOptimizationTest {
     }
     @Test void wholeTaskOptimizesAcrossStoresAndPreservesPartialStateAndUndo() throws Exception {
         String original = source("", "(high<<32)+low");
-        var analysis = MathematicalAnalysis.analyze(MathTestSupport.parse(original), original, options(), null, -1, 0);
+        var analysis = MathTestSupport.analyze(MathTestSupport.parse(original), original, options(), null, -1, 0);
         assertTrue(analysis.diagnostics().stream().anyMatch(d -> d.code().equals("VERIFIED_SOURCE_TASK")), analysis.diagnostics().toString());
         var document = new Document(original);
         var undo = analysis.newEdit().apply(document);
@@ -38,7 +38,7 @@ class JavaTaskOptimizationTest {
     }
     @Test void changedInputsAndAuthoredCommentsCannotBeReplacedByStaleValues() throws Exception {
         for (String original : List.of(source("v=0;", "(high<<32)+low"), source("", "(high<<32) /* carry */ +low"))) {
-            var analysis = MathematicalAnalysis.analyze(MathTestSupport.parse(original), original, options(), null, -1, 0);
+            var analysis = MathTestSupport.analyze(MathTestSupport.parse(original), original, options(), null, -1, 0);
             var document = new Document(original); analysis.newEdit().apply(document);
             if (original.contains("/* carry */")) assertTrue(document.get().contains("/* carry */"));
             compare(original, document.get());
@@ -46,7 +46,7 @@ class JavaTaskOptimizationTest {
     }
     @Test void aliasedReadAfterStoreStillReadsTheUpdatedArray() throws Exception {
         String original = source("long read=x[0];", "((high<<32)+low)^read");
-        var analysis = MathematicalAnalysis.analyze(MathTestSupport.parse(original), original, options(), null, -1, 0);
+        var analysis = MathTestSupport.analyze(MathTestSupport.parse(original), original, options(), null, -1, 0);
         var document = new Document(original); analysis.newEdit().apply(document);
         assertTrue(analysis.diagnostics().stream().anyMatch(d -> d.code().equals("VERIFIED_SOURCE_TASK")), analysis.diagnostics().toString());
         assertTrue(document.get().contains("long read=x[0];"));

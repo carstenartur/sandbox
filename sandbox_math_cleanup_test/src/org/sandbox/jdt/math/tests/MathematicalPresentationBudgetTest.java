@@ -19,7 +19,6 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.internal.corext.fix.math.JavaComputationExtractor;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
-import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
 
 class MathematicalPresentationBudgetTest {
     @Test void presentationWorkReducesBudgetAvailableToFollowingRegions() {
@@ -28,7 +27,7 @@ class MathematicalPresentationBudgetTest {
         var options = new MathCleanUpOptions(true, Set.of(NumericKind.INT), SafetyProfile.PRESERVE_JAVA,
                 OptimizationGoal.LOWER_ESTIMATED_RUNTIME, 100_000L, 20_000, false, 17, List.of());
         var ast = MathTestSupport.parse(source);
-        var result = MathematicalAnalysis.analyze(ast, source, options, new NullProgressMonitor(), -1, 0);
+        var result = MathTestSupport.analyze(ast, source, options, new NullProgressMonitor(), -1, 0);
         assertEquals(2, result.evidence().size(), result.diagnostics().toString());
 
         var first = result.evidence().getFirst().explanation().verified();

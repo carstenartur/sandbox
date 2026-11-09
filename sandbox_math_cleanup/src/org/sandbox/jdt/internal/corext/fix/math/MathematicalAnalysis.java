@@ -354,6 +354,8 @@ public final class MathematicalAnalysis {
       var extendedReadRegions = java.util.Collections.newSetFromMap(
             new java.util.IdentityHashMap<JavaComputationRegion, Boolean>());
       var acceptedContexts = new ArrayList<JavaComputationRegion>();
+      var acceptedReceiverGuards = new ArrayList<ReceiverGuard>();
+      long receiverGuardReplayBudget = 0;
 
       try {
          for (int regionIndex = 0; regionIndex < pending.size() || !deferredAssignments.isEmpty() || !storesScheduled
@@ -591,12 +593,13 @@ public final class MathematicalAnalysis {
                      throw new IllegalArgumentException("ARRAY_STORE_GUARD_UNSUPPORTED"); //$NON-NLS-1$
                   JavaComputationEmitter.Emission plain = emitter.emit(candidate.prepared(), region.inputNames(), reserved, options.targetJava(),
                         options.safety() == SafetyProfile.PRESERVE_JAVA && region.receiverGuards().isEmpty()
-                              ? JavaComputationEmitter.outputLocals(region) : Map.of());
+                              ? JavaComputationEmitter.outputLocals(region) : Map.of(),
+                        expressionOnly ? Map.of() : JavaExpressionContexts.fixedOutputKinds(ast, region));
                   if (mathematicalBigInteger) plain = JavaOriginalExpressions.restore(ast, source, region, plain);
                   if (expressionOnly) {
                      if (candidate.obligations().guard() != GuardKind.NONE)
                         throw new IllegalArgumentException("EXPRESSION_CONTEXT_REQUIRES_GUARD"); //$NON-NLS-1$
-                     plain = JavaExpressionContexts.typedExpression(plain, region);
+                     plain = JavaExpressionContexts.typedExpression(plain, region, candidate.prepared());
                   }
                   failureStage = Stage.PROOF;
                   JavaEmissionVerifier.verify(request, candidate, plain, region, options, cancellation);
@@ -604,6 +607,7 @@ public final class MathematicalAnalysis {
                   MathExplanation explanationText = MathExplanation.render(explained.explanation().orElseThrow(),
                      request, candidate, region, plain, options, contract, cancellation);
                   String replacement;
+                  String receiverGuard = null;
                   if (mathematicalIntegral) {
                      replacement = indentGenerated(plain.statements(), source, region.start()) + rewriteValues(ast, source, region, plain.outputValues(), compilerOptions);
                   } else if (options.safety() == SafetyProfile.CHECKED_THROW) {
@@ -620,10 +624,12 @@ public final class MathematicalAnalysis {
                         throw new IllegalArgumentException("RECEIVER_GUARD_RUNTIME_COST_UNQUALIFIED");
                      }
 
-                     String receiverGuard = region.receiverGuards()
+                     receiverGuard = region.receiverGuards()
                         .stream()
                         .sorted()
-                        .map(receiver -> "(" + receiver + " != null && " + receiver + ".getClass() == java.math.BigInteger.class && " + receiver + ".bitLength() < 4096"
+                        // The original fallback deliberately retains null-receiver behavior.
+                        // A predicate keeps that unchanged path free of flow facts introduced only by this guard.
+                        .map(receiver -> "(java.util.Objects.nonNull(" + receiver + ") && " + receiver + ".getClass() == java.math.BigInteger.class && " + receiver + ".bitLength() < 4096"
                               + (mathematicalBigInteger && region.assumptions().stream().anyMatch(a -> a.kind() == de.regelsuche.sdk.optimization.SemanticAssumption.Kind.POSITIVE
                                     && receiver.equals(region.inputNames().get(a.subject()))) ? " && " + receiver + ".signum() > 0" : "") + ")")
                         .collect(Collectors.joining(" && "));
@@ -662,6 +668,8 @@ public final class MathematicalAnalysis {
                            JavaRegionSourceRewriter.edits(ast, source, region, plain.outputValues(), compilerOptions), prefix);
                      if (!replacement.equals(sourcePlan.replacement(source)))
                         throw new IllegalArgumentException("SOURCE_PLAN_REPLACEMENT_DIFFERS"); //$NON-NLS-1$
+                  } else if (!region.arrayReads().isEmpty()) {
+                     sourcePlan = JavaSourceRewritePlan.captureReads(ast, source, region, replacement);
                   }
                   CompilationUnit generatedAst = checkGeneratedSource(
                      ast, source,
@@ -673,6 +681,20 @@ public final class MathematicalAnalysis {
                            ? List.of(new GeneratedSourceDiagnostics.Edit(region.start(),region.length(),replacement.length()))
                            : GeneratedSourceDiagnostics.edits(sourcePlan)
                   );
+                  ReceiverGuard checkedReceiverGuard = null;
+                  long checkedReceiverGuardWork = 0;
+                  if (receiverGuard != null) {
+                     String emittedGuard = indentGenerated(receiverGuard, source, region.start());
+                     int conditionStart = replacement.indexOf("if (" + emittedGuard + ")"); //$NON-NLS-1$ //$NON-NLS-2$
+                     if (conditionStart < 0) throw new IllegalArgumentException("RECEIVER_GUARD_RANGE"); //$NON-NLS-1$
+                     checkedReceiverGuard = new ReceiverGuard(region.start(), conditionStart + 4, emittedGuard.length());
+                     var guardWork = new JavaValueSourceSummary.Work(Math.max(0, remainingWork), options, cancellation);
+                     try { checkedReceiverGuard.verify(generatedAst, region.start(), guardWork); }
+                     finally {
+                        checkedReceiverGuardWork = guardWork.used;
+                        remainingWork -= checkedReceiverGuardWork;
+                     }
+                  }
                   if (contextRegion) JavaExpressionContexts.verifyBoundary(ast, generatedAst, region, replacement.length());
                   if (isCancelled(monitor)) {
                      return cancelled(sourceDigest, compilerOptions);
@@ -728,6 +750,14 @@ public final class MathematicalAnalysis {
                   }
 
                   failureStage = Stage.EMISSION;
+                  if (checkedReceiverGuard != null) {
+                     // Fund mandatory replay before later search can consume the file's remainder.
+                     long replayWork = checkedReceiverGuardWork + (acceptedReceiverGuards.isEmpty() ? source.length() : 0);
+                     if (replayWork > remainingWork) throw new IllegalArgumentException("VALUE_WORK_LIMIT"); //$NON-NLS-1$
+                     valueWork.charge(replayWork);
+                     remainingWork -= replayWork;
+                     receiverGuardReplayBudget += replayWork;
+                  }
                   ComputationExplanation explanation = ComputationExplanation.from(region, explained.explanation().orElseThrow());
                   String description = "Mathematics "
                      + (contract == null ? options.safety() : "MATHEMATICAL")
@@ -757,6 +787,7 @@ public final class MathematicalAnalysis {
 
                   description += "\n" + explanationText.detail();
                   replacements.add(new MathematicalAnalysis.Replacement(region.start(), region.length(), replacement, description));
+                  if (checkedReceiverGuard != null) acceptedReceiverGuards.add(checkedReceiverGuard);
                   if (contextRegion) acceptedContexts.add(region);
                   ASTParser declarationParser = ASTParser.newParser(ast.getAST().apiLevel());
                   declarationParser.setKind(2);
@@ -863,6 +894,24 @@ public final class MathematicalAnalysis {
             var diagnosticEdits = GeneratedSourceDiagnostics.edits(combinedEdit);
             combinedEdit.apply(combined);
             CompilationUnit combinedAst = checkGeneratedSource(ast, source, combined.get(), compilerOptions, options.targetJava(), (IProgressMonitor)monitor, environment, diagnosticEdits);
+            if (!acceptedReceiverGuards.isEmpty()) {
+               var receiverGuardEdits = new ArrayList<>(replacements); receiverGuardEdits.addAll(analysis.documentation());
+               if (receiverGuardEdits.size() > source.length()) throw new IllegalArgumentException("VALUE_WORK_LIMIT"); //$NON-NLS-1$
+               receiverGuardEdits.sort(Comparator.comparingInt(Replacement::offset).thenComparingInt(Replacement::length));
+               acceptedReceiverGuards.sort(Comparator.comparingInt(ReceiverGuard::originalOffset));
+               var replayWork = new JavaValueSourceSummary.Work(receiverGuardReplayBudget, options, cancellation);
+               int nextEdit = 0, shift = 0;
+               for (var guard : acceptedReceiverGuards) {
+                  while (nextEdit < receiverGuardEdits.size()) {
+                     var edit = receiverGuardEdits.get(nextEdit);
+                     if (edit.offset() > guard.originalOffset() || edit.offset() == guard.originalOffset() && edit.length() != 0) break;
+                     replayWork.charge(1);
+                     shift += edit.replacement().length() - edit.length();
+                     nextEdit++;
+                  }
+                  guard.verify(combinedAst, guard.originalOffset() + shift, replayWork);
+               }
+            }
              if (evidence.stream().anyMatch(region -> region.fieldInversion() != null)) {
                 valueWork.charge(Math.max(0, valueWork.remaining() - Math.max(0, remainingWork)));
                 long beforeFieldReplay = valueWork.used;
@@ -1116,6 +1165,17 @@ public final class MathematicalAnalysis {
          positions.add(comment.getLength());
       }
       return positions;
+   }
+
+   private record ReceiverGuard(int originalOffset, int relativeOffset, int length) {
+      void verify(CompilationUnit ast, int replacementStart, JavaValueSourceSummary.Work work) {
+         work.charge(length);
+         int start = replacementStart + relativeOffset;
+         ASTNode node = NodeFinder.perform(ast, start, length);
+         if (!(node instanceof org.eclipse.jdt.core.dom.Expression guard) || node.getStartPosition() != start || node.getLength() != length)
+            throw new IllegalArgumentException("RECEIVER_GUARD_RANGE"); //$NON-NLS-1$
+         JavaValueGuardBindings.verifyNonNullCalls(guard, work);
+      }
    }
 
    private static String guardedSource(

@@ -77,6 +77,7 @@ final class JavaImmutableValueOptimizer {
                     MethodDeclaration replayMethod=(MethodDeclaration)after.findDeclaringNode(method.resolveBinding().getKey());
                     if(replayMethod==null || replayMethod.getBody().statements().isEmpty() || !(replayMethod.getBody().statements().getFirst() instanceof IfStatement condition)
                         || !(condition.getThenStatement() instanceof Block branch))throw JavaValueSourceSummary.unavailable("VALUE_REPLAY_SHAPE"); //$NON-NLS-1$
+                    JavaValueGuardBindings.verifyNonNullCalls(condition.getExpression(),work);
                     JavaValueSourceSummary.Summary replay;
                     try(var context=JavaSourceContext.open(after,generated,environment,monitor,options,work.remaining())) {
                         replay=new JavaValueSourceSummary.Session(after,options,work).method(replayMethod,branch);
@@ -119,7 +120,7 @@ final class JavaImmutableValueOptimizer {
         var guards=new LinkedHashSet<String>();
         for(var input:summary.inputs()) {
             String path=input.path();int dot=path.indexOf('.');
-            if(dot>0 && !path.startsWith("this."))guards.add(path.substring(0,dot)+" != null"); //$NON-NLS-1$ //$NON-NLS-2$
+            if(dot>0 && !path.startsWith("this."))guards.add("java.util.Objects.nonNull("+path.substring(0,dot)+")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
             String bound=summary.assumptions().stream().filter(a->a.kind()==SemanticAssumption.Kind.BIG_INTEGER_BIT_LENGTH_BOUND && a.subject().equals(input.id())).findFirst().orElseThrow().parameter();
             guards.add(path+" != null");guards.add(path+".getClass() == java.math.BigInteger.class");guards.add(path+".abs().bitLength() <= "+bound); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
         }

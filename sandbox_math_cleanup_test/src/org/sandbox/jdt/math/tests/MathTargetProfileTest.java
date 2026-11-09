@@ -106,7 +106,7 @@ class MathTargetProfileTest {
     }
 
     private static MathematicalAnalysis.Analysis analyze(String source, MathCleanUpOptions options) {
-        return MathematicalAnalysis.analyze(MathTestSupport.parse(source, options.targetJava()), source,
+        return MathTestSupport.analyze(MathTestSupport.parse(source, options.targetJava()), source,
                 options, new NullProgressMonitor(), -1, 0);
     }
 

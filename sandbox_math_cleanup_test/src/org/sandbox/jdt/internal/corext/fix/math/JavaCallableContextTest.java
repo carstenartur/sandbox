@@ -41,7 +41,7 @@ class JavaCallableContextTest extends JavaContextTestSupport {
         var options = new MathCleanUpOptions(true, EnumSet.allOf(NumericKind.class), safety,
                 OptimizationGoal.LOWER_ESTIMATED_RUNTIME, 1_000_000, 20_000, safety == SafetyProfile.CHECKED_THROW, 17, List.of());
         assertEquals(safety == SafetyProfile.PRESERVE_JAVA,
-                MathematicalAnalysis.analyze(JavaEarlyExitGuardFactsTest.parse(source), source, options, null, -1, 0).changed());
+                analyze(source, options).changed());
     }
 
     @Test void blockLambdaReturnUsesItsSamInsteadOfTheEnclosingMethod() throws Exception {
@@ -134,14 +134,18 @@ class JavaCallableContextTest extends JavaContextTestSupport {
                 + " return x -> { return x.modPow(BigInteger.TWO, BigInteger.valueOf(17)); }; }}";
         var options = new MathCleanUpOptions(true, EnumSet.allOf(NumericKind.class), SafetyProfile.PRESERVE_JAVA,
                 OptimizationGoal.LOWER_ESTIMATED_RUNTIME, 1_000_000, 20_000, false, 17, List.of(), true);
-        assertFalse(MathematicalAnalysis.analyze(JavaEarlyExitGuardFactsTest.parse(source), source, options, null, -1, 0).changed());
+        assertFalse(analyze(source, options).changed());
     }
 }
 
 abstract class JavaContextTestSupport {
     @TempDir Path temporary;
     static MathematicalAnalysis.Analysis analyze(String source) {
-        return MathematicalAnalysis.analyze(JavaEarlyExitGuardFactsTest.parse(source), source, options(), null, -1, 0);
+        return analyze(source, options());
+    }
+    static MathematicalAnalysis.Analysis analyze(String source, MathCleanUpOptions options) {
+        var ast = JavaEarlyExitGuardFactsTest.parse(source);
+        return MathematicalAnalysis.analyze(ast, source, options, null, -1, 0, JavaEarlyExitGuardFactsTest.environment(ast));
     }
     static MathCleanUpOptions options() {
         return new MathCleanUpOptions(true, EnumSet.allOf(NumericKind.class), SafetyProfile.PRESERVE_JAVA,

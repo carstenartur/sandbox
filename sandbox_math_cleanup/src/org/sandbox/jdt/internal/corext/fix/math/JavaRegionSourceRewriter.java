@@ -6,7 +6,9 @@ package org.sandbox.jdt.internal.corext.fix.math;
 
 import java.util.Map;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Objects;
+import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.Expression;
@@ -35,8 +37,19 @@ final class JavaRegionSourceRewriter {
                || !JavaSourceReadShape.supported(expression, java.util.Set.of())
                || JavaSourceReadShape.kind(expression).orElse(null) != read.kind())
             throw new IllegalArgumentException("ARRAY_READ_SOURCE_CHANGED"); //$NON-NLS-1$
-         prefix.append("final ").append(MathematicalAnalysis.javaType(read.kind())).append(' ') //$NON-NLS-1$
-               .append(read.javaName()).append(" = ").append(source, read.start(), read.start() + read.length()).append(";\n"); //$NON-NLS-1$ //$NON-NLS-2$
+         String primitive = MathematicalAnalysis.javaType(read.kind());
+         // A primitive capture must not replace an authored promoted-unboxing warning with a different conversion.
+         boolean explicitUnboxing = expression.resolveUnboxing() && (switch (read.kind()) {
+            case BYTE, SHORT, CHAR -> true;
+            default -> false;
+         } || Arrays.stream(ast.getProblems()).anyMatch(problem -> problem.getID() == IProblem.UnboxingConversion
+               && problem.getSourceStart() == read.start() && problem.getSourceEnd() == read.start() + read.length() - 1
+               && problem.getArguments().length == 2 && problem.getArguments()[0].equals(expression.resolveTypeBinding().getQualifiedName())
+               && !problem.getArguments()[1].equals(primitive)));
+         prefix.append("final ").append(primitive).append(' ') //$NON-NLS-1$
+               .append(read.javaName()).append(" = ").append(source, read.start(), read.start() + read.length()); //$NON-NLS-1$
+         if (explicitUnboxing) prefix.append('.').append(primitive).append("Value()"); //$NON-NLS-1$
+         prefix.append(";\n"); //$NON-NLS-1$
       }
       return prefix.toString();
    }

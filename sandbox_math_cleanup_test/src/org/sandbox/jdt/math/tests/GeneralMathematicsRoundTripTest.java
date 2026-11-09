@@ -109,7 +109,7 @@ class GeneralMathematicsRoundTripTest {
                 OptimizationGoal.LOWER_ESTIMATED_RUNTIME,2_000_000L,20_000,false,17,List.of());
     }
     private static MathematicalAnalysis.Analysis analyze(String source) {
-        return MathematicalAnalysis.analyze(MathTestSupport.parse(source),source,options(),new NullProgressMonitor(),-1,0);
+        return MathTestSupport.analyze(MathTestSupport.parse(source),source,options(),new NullProgressMonitor(),-1,0);
     }
     private String rewrite(String source) throws Exception {
         var analysis=analyze(source);

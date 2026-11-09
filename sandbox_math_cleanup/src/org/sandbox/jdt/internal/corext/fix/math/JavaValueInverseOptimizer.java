@@ -59,7 +59,7 @@ final class JavaValueInverseOptimizer {
                     for(var field:proof.statics())detachedStatics.put(field.field().getKey(),field);
                     for(var field:factory.staticValues())detachedStatics.put(field.field().getKey(),field);
                     String detachedGuard=JavaValueDetachment.guard(access,detached,List.of(base),new ArrayList<>(detachedStatics.values()));
-                    guards+=" && ("+detached+" = "+candidate+") != null && "+detachedGuard.substring((detached+" != null && ").length());
+                    guards+=" && ("+detached+" = "+candidate+") != null && "+detachedGuard.substring(("java.util.Objects.nonNull("+detached+") && ").length());
                     var edits=new ArrayList<Edit>();
                     edits.add(new Edit(retained.getFirst().getStartPosition(),retained.getFirst().getLength(),"("+temporary+" = "+text(intermediateSource,retained.getFirst())+")"));
                     for(var call:later)edits.add(new Edit(call.getStartPosition(),call.getLength(),"("+guards+" ? "+JavaValueDetachment.emit(access,detached)+" : "+text(intermediateSource,call)+")"));
@@ -157,7 +157,7 @@ final class JavaValueInverseOptimizer {
         rejectionOrigins(ast,proof.later().rejection(),fields,new HashSet<>(),new HashSet<>(),work);
         var guards=new LinkedHashSet<String>();String modulus="new java.math.BigInteger(\""+proof.algebra().modulus()+"\")";
         for(String object:List.of(base,retained)) {
-            guards.add(object+" != null");for(int i=0;i<access.shape().leaves();i++) {
+            guards.add("java.util.Objects.nonNull("+object+")");for(int i=0;i<access.shape().leaves();i++) {
                 String leaf=access.leaf(object,i);guards.add(leaf+" != null");guards.add(leaf+".getClass() == java.math.BigInteger.class");
                 guards.add(leaf+".signum() >= 0");guards.add(leaf+".compareTo("+modulus+") < 0");
             }
@@ -224,7 +224,7 @@ final class JavaValueInverseOptimizer {
         } finally {active.remove(key);}
     }
     private static String exactValue(JavaValueAccess.Access access,String value) {
-        var guards=new ArrayList<String>();guards.add(value+" != null");
+        var guards=new ArrayList<String>();guards.add("java.util.Objects.nonNull("+value+")");
         for(int i=0;i<access.shape().leaves();i++){String leaf=access.leaf(value,i);guards.add(leaf+" != null");guards.add(leaf+".getClass() == java.math.BigInteger.class");}
         return String.join(" && ",guards);
     }
