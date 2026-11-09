@@ -5500,9 +5500,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "lastProcessedCommit": "8df4ce30969f1cca45747373252de64a5077c840",
-      "lastProcessedDate": "2026-11-08T02:22:58.964945857Z",
-      "totalProcessed": 588,
+      "lastProcessedCommit": "7a86de81d5a962da1995c7641e722f74f458266d",
+      "lastProcessedDate": "2026-11-09T02:22:27.276713513Z",
+      "totalProcessed": 660,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -5738,6 +5738,42 @@
           "deferredAt": "2026-11-08T02:17:35.320916796Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "6eb6173863a9d530b243625374686242b4af9e7d",
+          "message": "Bug 522027 - Remove trailing whitespace from org.eclipse.ui.console",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-09T02:15:45.223364027Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "06126c5243b5c6a38d046927c3707245510e48a7",
+          "message": "Revert \"Bug 522027 - Remove trailing whitespace from org.eclipse.ui.console\"",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-09T02:15:53.984675801Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "d49b76e20affb3c5788294cc2b2d99a283f53dae",
+          "message": "Revert \"Revert \"Bug 522027 - Remove trailing whitespace from org.eclipse.ui.console\"\"",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-09T02:16:42.990122806Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "aa4768fe77615b457e4eb3aca5f0dd22b1ed7da2",
+          "message": "Bug 521958 - Added generic debug hover",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-09T02:16:52.309819494Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -5777,7 +5813,7 @@
         "Logging Improvement": 1,
         "Logging Best Practice": 1,
         "Testing/Assertions": 1,
-        "Modernization": 1,
+        "Modernization": 2,
         "Eclipse Modernization": 1,
         "API Usage": 1,
         "Error Handling": 1,
@@ -5791,10 +5827,11 @@
         "Method Signature Modernization": 1,
         "Redundant Cast": 1,
         "Code Style": 1,
-        "Redundant initialization removal": 1
+        "Redundant initialization removal": 1,
+        "Compiler Warning Fixes": 1
       },
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 54125
+  "globalTotalProcessed": 54197
 }
