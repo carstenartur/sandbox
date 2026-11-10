@@ -159,6 +159,31 @@ public class ReleasedHistorySearchH2Test {
 	}
 
 	@Test
+	public void groupsAuthorsOnlyForTheExactRepositoryOnCaseInsensitiveColumns() throws Exception {
+		String selected = "team/history.git.git";
+		String alias = "Team/History.git.git";
+		commit(selected, "Selected one", "Shared", "shared@example.test", Map.of());
+		commit(selected, "Selected two", "Shared", "shared@example.test", Map.of());
+		commit(alias, "Alias one", "Shared", "shared@example.test", Map.of());
+		commit(alias, "Alias two", "Alias", "alias@example.test", Map.of());
+		try (var session = context.sessionFactory().openSession()) {
+			session.doWork(connection -> {
+				try (var statement = connection.createStatement()) {
+					statement.execute("ALTER TABLE git_commit_index ALTER COLUMN repository_name VARCHAR_IGNORECASE(255)");
+				}
+			});
+			assertEquals("The fixture must reproduce SQL equality matching both case aliases", Long.valueOf(4),
+					session.createQuery("SELECT COUNT(c) FROM GitCommitIndex c WHERE c.repositoryName = :repository", Long.class)
+							.setParameter("repository", "team/history.git").getSingleResult());
+		}
+
+		assertEquals(List.of(new AuthorCount("Shared", "shared@example.test", 2)),
+				history.authors(" /" + selected + " "));
+		assertEquals(List.of(new AuthorCount("Alias", "alias@example.test", 1),
+				new AuthorCount("Shared", "shared@example.test", 1)), history.authors(alias));
+	}
+
+	@Test
 	public void servesReleasedSearchHealthAndAuthorsThroughBothRestPrefixes() throws Exception {
 		String message = "Needle title\n\nBody text";
 		ObjectId id = commit(repo, message, "Author", "author@example.org", Map.of("needle.txt", "content"));
