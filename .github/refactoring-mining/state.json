@@ -5500,9 +5500,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "lastProcessedCommit": "7a86de81d5a962da1995c7641e722f74f458266d",
-      "lastProcessedDate": "2026-11-09T02:22:27.276713513Z",
-      "totalProcessed": 660,
+      "lastProcessedCommit": "90dd90f919f313ff9c30595fc2ecf84ecb689156",
+      "lastProcessedDate": "2026-11-10T02:21:21.987792583Z",
+      "totalProcessed": 728,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -5774,6 +5774,33 @@
           "deferredAt": "2026-11-09T02:16:52.309819494Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "6ac5654db62a138703356d3d9f6074228ac01ae6",
+          "message": "Bug 533053 - Remove redundant type arguments in o.e.ui.console",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-10T02:14:38.007659014Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "42247f46a308c7847a2bdbe58d5a5d51030caadb",
+          "message": "Bug 535318 - Update license to EPL-2.0 for platform.debug in about.html",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-10T02:17:14.067315802Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "c3fa4bb709369ecf9e7b73b32adf7656440eb348",
+          "message": "Bug 534681 - Remove redundant modifiers in org.eclipse.ui.console",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-10T02:18:53.438708784Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -5833,5 +5860,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 54197
+  "globalTotalProcessed": 54265
 }
