@@ -6,7 +6,7 @@ This minimal OSGi bridge exports `org.sandbox.jgit.storage.integration` and uses
 public `jgit-storage-hibernate-core` API. It contains no copied storage, entities,
 parser, query service or model code. Core is its only production dependency.
 
-Both consumer POMs select published **0.12.0** through
+Both consumer POMs select published **0.12.1** through
 `jgit-storage-hibernate.version`. The executable server additionally consumes released
 Search and Java Analysis; those modules, Architecture, benchmarks and DJL remain
 outside this bridge. Candidate verification substitutes the same-run library version
