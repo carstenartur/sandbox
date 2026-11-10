@@ -33,7 +33,7 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1931,
+        "files": 1935,
         "matches": 183,
         "rules": 12
       }
@@ -2433,7 +2433,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java",
-      "line": 158,
+      "line": 188,
       "matchedCode": "data.clone()"
     },
     {
@@ -2441,7 +2441,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java",
-      "line": 158,
+      "line": 188,
       "matchedCode": "data.clone()"
     },
     {
@@ -2449,7 +2449,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java",
-      "line": 174,
+      "line": 204,
       "matchedCode": "first.clone()"
     },
     {
@@ -2457,7 +2457,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java",
-      "line": 185,
+      "line": 215,
       "matchedCode": "first.clone()"
     },
     {
@@ -2465,7 +2465,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java",
-      "line": 185,
+      "line": 215,
       "matchedCode": "previous.clone()"
     },
     {
@@ -2473,7 +2473,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java",
-      "line": 209,
+      "line": 239,
       "matchedCode": "first.clone()"
     },
     {
@@ -3017,7 +3017,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/FieldArrayOrderingTest.java",
-      "line": 172,
+      "line": 171,
       "matchedCode": "left.clone()"
     },
     {
@@ -3025,7 +3025,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/FieldArrayOrderingTest.java",
-      "line": 173,
+      "line": 172,
       "matchedCode": "right.clone()"
     },
     {
@@ -3033,7 +3033,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/FieldArrayStateVisibilityTest.java",
-      "line": 101,
+      "line": 100,
       "matchedCode": "value.clone()"
     },
     {
@@ -3041,7 +3041,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/OrderedSourceReadComputationTest.java",
-      "line": 48,
+      "line": 47,
       "matchedCode": "values.clone()"
     },
     {
@@ -3049,7 +3049,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/PreservedArraySourceTest.java",
-      "line": 173,
+      "line": 172,
       "matchedCode": "left.clone()"
     },
     {
@@ -3057,7 +3057,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/PreservedArraySourceTest.java",
-      "line": 173,
+      "line": 172,
       "matchedCode": "right.clone()"
     },
     {
@@ -3073,7 +3073,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/BouncyCastleModularResidueTest.java",
-      "line": 84,
+      "line": 82,
       "matchedCode": "infinity.clone()"
     },
     {
@@ -3081,7 +3081,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/BouncyCastleModularResidueTest.java",
-      "line": 85,
+      "line": 83,
       "matchedCode": "infinity.clone()"
     },
     {

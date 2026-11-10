@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-11-09
+# Refactoring Mining Report — 2026-11-10
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -9,7 +9,7 @@
 | eclipse.platform | 311 | 71 | 4 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
-| sandbox | 1931 | 183 | 12 |
+| sandbox | 1935 | 183 | 12 |
 
 ## Details
 ### eclipse.jdt.core
@@ -369,12 +369,12 @@
 - `sandbox_common/src/org/sandbox/jdt/cleanup/multifile/GeneratedNameAllocator.java:205` — `group.stream().map(NestedTypeRequest::requestId).filter(candidateId -> !candi...`
 
 #### Rule: `arrays` → `arrays.clone.review`
-- `qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java:158` — `data.clone()`
-- `qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java:158` — `data.clone()`
-- `qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java:174` — `first.clone()`
-- `qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java:185` — `first.clone()`
-- `qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java:185` — `previous.clone()`
-- `qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java:209` — `first.clone()`
+- `qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java:188` — `data.clone()`
+- `qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java:188` — `data.clone()`
+- `qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java:204` — `first.clone()`
+- `qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java:215` — `first.clone()`
+- `qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java:215` — `previous.clone()`
+- `qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java:239` — `first.clone()`
 - `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java:273` — `fixes.clone()`
 - `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java:708` — `fixes.clone()`
 - `sandbox_test_commons/integration-src/org/sandbox/jdt/ui/tests/quickfix/rules/CompilerDiagnosticRegressionTest.java:188` — `source.clone()`
@@ -428,15 +428,15 @@
 - `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/NewUpstreamMathPilotTest.java:87` — `up.clone()`
 - `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/NewUpstreamMathPilotTest.java:157` — `input.clone()`
 - `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/NewUpstreamMathPilotTest.java:157` — `input.clone()`
-- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/FieldArrayOrderingTest.java:172` — `left.clone()`
-- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/FieldArrayOrderingTest.java:173` — `right.clone()`
-- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/FieldArrayStateVisibilityTest.java:101` — `value.clone()`
-- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/OrderedSourceReadComputationTest.java:48` — `values.clone()`
-- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/PreservedArraySourceTest.java:173` — `left.clone()`
-- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/PreservedArraySourceTest.java:173` — `right.clone()`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/FieldArrayOrderingTest.java:171` — `left.clone()`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/FieldArrayOrderingTest.java:172` — `right.clone()`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/FieldArrayStateVisibilityTest.java:100` — `value.clone()`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/OrderedSourceReadComputationTest.java:47` — `values.clone()`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/PreservedArraySourceTest.java:172` — `left.clone()`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/PreservedArraySourceTest.java:172` — `right.clone()`
 - `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/JavaComputationTaskTest.java:195` — `v.clone()`
-- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/BouncyCastleModularResidueTest.java:84` — `infinity.clone()`
-- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/BouncyCastleModularResidueTest.java:85` — `infinity.clone()`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/BouncyCastleModularResidueTest.java:82` — `infinity.clone()`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/BouncyCastleModularResidueTest.java:83` — `infinity.clone()`
 - `.github/probes/patched-jdt-ui/src/org/sandbox/jdt/ui/probe/ScopeExpansionProbeApplication.java:312` — `compilationUnits.clone()`
 - `sandbox_eclipse_help_swtbot_test/src/org/sandbox/jdt/ui/helper/views/CleanupSourceSnapshot.java:29` — `Objects.requireNonNull(bytes).clone()`
 
