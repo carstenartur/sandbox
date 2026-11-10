@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "DSL_PARSE",
     "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-    "verifiedAt": "2026-11-09T02:22:50.147809922Z",
+    "verifiedAt": "2026-11-10T02:21:47.335456093Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0

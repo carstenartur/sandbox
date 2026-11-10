@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 3: The import org.eclipse.jface.text.hyperlink cannot be resolved",
-    "verifiedAt": "2026-11-09T02:22:49.692464229Z",
+    "verifiedAt": "2026-11-10T02:21:46.943201638Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
