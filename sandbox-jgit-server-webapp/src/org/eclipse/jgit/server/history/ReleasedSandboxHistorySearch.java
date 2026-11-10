@@ -12,6 +12,11 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.hibernate.SessionFactory;
+import org.hibernate.dialect.H2Dialect;
+import org.hibernate.dialect.HSQLDialect;
+import org.hibernate.dialect.PostgreSQLDialect;
+import org.hibernate.dialect.SQLServerDialect;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.search.mapper.orm.Search;
 import org.eclipse.jgit.server.repository.SandboxRepositoryNames;
 
@@ -94,7 +99,7 @@ public final class ReleasedSandboxHistorySearch implements SandboxHistorySearch 
 		// transferring every commit summary would scale with history, not authors.
 		try (var session = sessionFactory.openSession()) {
 			var rows = session.createQuery("SELECT c.authorName, c.authorEmail, COUNT(c) FROM "
-					+ GitCommitIndex.class.getName() + " c WHERE c.repositoryName = :repository"
+					+ GitCommitIndex.class.getName() + " c WHERE " + exactRepositoryPredicate()
 					+ " GROUP BY c.authorName, c.authorEmail", Object[].class)
 					.setParameter("repository", SandboxRepositoryNames.normalize(repository)).getResultList();
 			Comparator<String> textOrder = Comparator.nullsFirst(Comparator.naturalOrder());
@@ -102,6 +107,30 @@ public final class ReleasedSandboxHistorySearch implements SandboxHistorySearch 
 					.sorted(Comparator.comparingLong(AuthorCount::commits).reversed()
 							.thenComparing(AuthorCount::name, textOrder).thenComparing(AuthorCount::email, textOrder)).toList();
 		}
+	}
+
+	private String exactRepositoryPredicate() {
+		var dialect = sessionFactory.unwrap(SessionFactoryImplementor.class).getJdbcServices().getDialect();
+		String exact;
+		if (dialect instanceof H2Dialect) {
+			exact = "sql('rawtohex(?)', c.repositoryName) = sql('rawtohex(?)', :repository)";
+		} else if (dialect instanceof HSQLDialect) {
+			// Character position is exact; length excludes prefix matches and padded equality.
+			exact = "locate(:repository, c.repositoryName) = 1 AND length(c.repositoryName) = length(:repository)";
+		} else if (dialect instanceof PostgreSQLDialect) {
+			exact = "sql('convert_to(?, ''UTF8'')', c.repositoryName)"
+					+ " = sql('convert_to(?, ''UTF8'')', :repository)";
+		} else if (dialect instanceof SQLServerDialect) {
+			// BIN2 preserves Unicode identity; byte length also distinguishes trailing spaces.
+			exact = "sql('? collate Latin1_General_100_BIN2', c.repositoryName)"
+					+ " = sql('? collate Latin1_General_100_BIN2', :repository)"
+					+ " AND sql('datalength(?)', c.repositoryName) = sql('datalength(?)', :repository)";
+		} else {
+			throw new IllegalStateException("Exact author reports require a supported database dialect: "
+					+ dialect.getClass().getName());
+		}
+		// Retain an indexable prefilter, then enforce exact identity before aggregation.
+		return "c.repositoryName = :repository AND (" + exact + ")";
 	}
 
 	@Override
