@@ -1,10 +1,23 @@
 # Released runtime cutover
 
-Normal startup uses published **0.12.0 Core, Search and Java Analysis**. The server
+Normal startup uses published **0.12.1 Core, Search and Java Analysis**. The server
 registers only the released Core and Search entities. Text, path, report, API and
 optional semantic routes use application DTOs through both `/api` and `/api/v1`.
 The copied storage/parser/query implementation is removed; the OSGi bridge consumes
 Core only. Existing production databases still require explicit operator adoption.
+
+## Upgrade from 0.12.0
+
+The selected runtime uses JGit `7.8.1.202611041320-r`, Hibernate ORM `7.4.14.Final`
+and Hibernate Search `8.4.1.Final`. The 0.12.1 upgrade adds no schema migration and
+does not require rebuilding an existing default Lucene index when its mapping and
+indexing profile are unchanged. Repository routing remains opt-in; enabling it or
+changing its shard layout requires the library's
+[offline reindex procedure](https://github.com/carstenartur/jgit-storage-hibernate/blob/v0.12.1/docs/operations/search-routing-and-topology.md#switch-an-existing-index-or-change-the-shard-layout).
+
+The author report applies exact repository identity before database aggregation,
+including on case-insensitive columns. It preserves the existing transport-name
+normalization, author grouping and result ordering.
 
 ## Startup and ownership
 

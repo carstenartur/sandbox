@@ -20,7 +20,7 @@
 	<properties>
 		<!-- Disable Tycho for this plain jar module (parent uses tycho-maven-plugin with extensions=true) -->
 		<tycho.mode>maven</tycho.mode>
-		<jgit-storage-hibernate.version>0.12.0</jgit-storage-hibernate.version>
+		<jgit-storage-hibernate.version>0.12.1</jgit-storage-hibernate.version>
 	</properties>
 
 	<repositories>
