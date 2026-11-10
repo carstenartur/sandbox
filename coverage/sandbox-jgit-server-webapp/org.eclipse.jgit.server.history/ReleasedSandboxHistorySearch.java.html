@@ -12,6 +12,11 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.hibernate.SessionFactory;
+import org.hibernate.dialect.H2Dialect;
+import org.hibernate.dialect.HSQLDialect;
+import org.hibernate.dialect.PostgreSQLDialect;
+import org.hibernate.dialect.SQLServerDialect;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.search.mapper.orm.Search;
 import org.eclipse.jgit.server.repository.SandboxRepositoryNames;
 
@@ -25,106 +30,130 @@ public final class ReleasedSandboxHistorySearch implements SandboxHistorySearch 
 	private final SessionFactory sessionFactory;
 	private final GitHistorySearchService queries;
 
-<span class="fc" id="L28">	public ReleasedSandboxHistorySearch(SessionFactory sessionFactory) {</span>
-<span class="fc" id="L29">		this.sessionFactory = Objects.requireNonNull(sessionFactory);</span>
-<span class="fc" id="L30">		queries = new GitHistorySearchService(sessionFactory);</span>
-<span class="fc" id="L31">	}</span>
+<span class="fc" id="L33">	public ReleasedSandboxHistorySearch(SessionFactory sessionFactory) {</span>
+<span class="fc" id="L34">		this.sessionFactory = Objects.requireNonNull(sessionFactory);</span>
+<span class="fc" id="L35">		queries = new GitHistorySearchService(sessionFactory);</span>
+<span class="fc" id="L36">	}</span>
 
 	@Override
 	public List&lt;CommitHit&gt; searchMessages(String repository, String query, int offset, int limit) {
-<span class="fc bfc" id="L35" title="All 4 branches covered.">		if (blank(repository) || blank(query)) {</span>
-<span class="fc" id="L36">			return List.of();</span>
+<span class="fc bfc" id="L40" title="All 4 branches covered.">		if (blank(repository) || blank(query)) {</span>
+<span class="fc" id="L41">			return List.of();</span>
 		}
-<span class="fc" id="L38">		return page(CommitHistoryQuery.forRepository(SandboxRepositoryNames.normalize(repository)).matchingMessages(literal(query)), offset, limit).stream()</span>
-<span class="fc" id="L39">				.map(hit -&gt; new CommitHit(hit.getObjectId(), hit.getFullMessage(), hit.getAuthorName(), hit.getAuthorEmail())).toList();</span>
+<span class="fc" id="L43">		return page(CommitHistoryQuery.forRepository(SandboxRepositoryNames.normalize(repository)).matchingMessages(literal(query)), offset, limit).stream()</span>
+<span class="fc" id="L44">				.map(hit -&gt; new CommitHit(hit.getObjectId(), hit.getFullMessage(), hit.getAuthorName(), hit.getAuthorEmail())).toList();</span>
 	}
 
 	@Override
 	public List&lt;PathHit&gt; searchChangedPaths(String repository, String query, int offset, int limit) {
-<span class="pc bpc" id="L44" title="1 of 4 branches missed.">		if (blank(repository) || blank(query)) {</span>
-<span class="fc" id="L45">			return List.of();</span>
+<span class="pc bpc" id="L49" title="1 of 4 branches missed.">		if (blank(repository) || blank(query)) {</span>
+<span class="fc" id="L50">			return List.of();</span>
 		}
-<span class="fc" id="L47">		return page(CommitHistoryQuery.forRepository(SandboxRepositoryNames.normalize(repository)).touchingPathTerms(literal(query)), offset, limit).stream()</span>
-<span class="fc" id="L48">				.map(hit -&gt; new PathHit(hit.getObjectId(), hit.getFullMessage(), hit.getChangedPaths())).toList();</span>
+<span class="fc" id="L52">		return page(CommitHistoryQuery.forRepository(SandboxRepositoryNames.normalize(repository)).touchingPathTerms(literal(query)), offset, limit).stream()</span>
+<span class="fc" id="L53">				.map(hit -&gt; new PathHit(hit.getObjectId(), hit.getFullMessage(), hit.getChangedPaths())).toList();</span>
 	}
 
 	private List&lt;GitCommitIndex&gt; page(CommitHistoryQuery.Builder builder, int offset, int limit) {
-<span class="pc bpc" id="L52" title="2 of 4 branches missed.">		if (offset &lt; 0 || limit &lt; 0) {</span>
-<span class="nc" id="L53">			throw new IllegalArgumentException(&quot;offset and limit must not be negative&quot;);</span>
+<span class="pc bpc" id="L57" title="2 of 4 branches missed.">		if (offset &lt; 0 || limit &lt; 0) {</span>
+<span class="nc" id="L58">			throw new IllegalArgumentException(&quot;offset and limit must not be negative&quot;);</span>
 		}
-<span class="pc bpc" id="L55" title="1 of 2 branches missed.">		if (limit == 0) {</span>
-<span class="nc" id="L56">			return List.of();</span>
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">		if (limit == 0) {</span>
+<span class="nc" id="L61">			return List.of();</span>
 		}
-<span class="fc" id="L58">		CommitHistoryQuery query = builder.unbounded().build();</span>
-<span class="fc" id="L59">		List&lt;String&gt; ids = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L63">		CommitHistoryQuery query = builder.unbounded().build();</span>
+<span class="fc" id="L64">		List&lt;String&gt; ids = new ArrayList&lt;&gt;();</span>
 		// Use the same stable ordering for shallow and deep pages, without the
 		// library's offset ceiling or materializing all skipped entity payloads.
-<span class="fc" id="L62">		try (var cursor = queries.scrollChangeSummaries(query)) {</span>
-<span class="fc" id="L63">			long remaining = offset;</span>
-<span class="fc bfc" id="L64" title="All 2 branches covered.">			while (ids.size() &lt; limit) {</span>
-<span class="fc" id="L65">				var chunk = cursor.nextChunk();</span>
-<span class="fc bfc" id="L66" title="All 2 branches covered.">				if (chunk.isEmpty()) {</span>
-<span class="fc" id="L67">					break;</span>
+<span class="fc" id="L67">		try (var cursor = queries.scrollChangeSummaries(query)) {</span>
+<span class="fc" id="L68">			long remaining = offset;</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">			while (ids.size() &lt; limit) {</span>
+<span class="fc" id="L70">				var chunk = cursor.nextChunk();</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">				if (chunk.isEmpty()) {</span>
+<span class="fc" id="L72">					break;</span>
 				}
-<span class="fc bfc" id="L69" title="All 2 branches covered.">				for (var hit : chunk) {</span>
-<span class="fc bfc" id="L70" title="All 2 branches covered.">					if (remaining &gt; 0) {</span>
-<span class="fc" id="L71">						remaining--;</span>
-<span class="fc bfc" id="L72" title="All 2 branches covered.">					} else if (ids.size() &lt; limit) {</span>
-<span class="fc" id="L73">						ids.add(hit.objectId());</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">				for (var hit : chunk) {</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">					if (remaining &gt; 0) {</span>
+<span class="fc" id="L76">						remaining--;</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">					} else if (ids.size() &lt; limit) {</span>
+<span class="fc" id="L78">						ids.add(hit.objectId());</span>
 					}
-<span class="fc" id="L75">				}</span>
-<span class="fc" id="L76">			}</span>
+<span class="fc" id="L80">				}</span>
+<span class="fc" id="L81">			}</span>
 		}
-<span class="fc bfc" id="L78" title="All 2 branches covered.">		if (ids.isEmpty()) {</span>
-<span class="fc" id="L79">			return List.of();</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">		if (ids.isEmpty()) {</span>
+<span class="fc" id="L84">			return List.of();</span>
 		}
-<span class="fc" id="L81">		Map&lt;String, GitCommitIndex&gt; entities = new HashMap&lt;&gt;();</span>
-<span class="fc" id="L82">		queries.findChanges(CommitHistoryQuery.forRepository(query.repositoryName())</span>
-<span class="fc" id="L83">				.restrictedToObjectIds(ids).limit(ids.size()).build())</span>
-<span class="fc" id="L84">				.forEach(hit -&gt; entities.put(hit.getObjectId(), hit));</span>
-<span class="fc" id="L85">		return ids.stream().map(entities::get).filter(Objects::nonNull).toList();</span>
+<span class="fc" id="L86">		Map&lt;String, GitCommitIndex&gt; entities = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L87">		queries.findChanges(CommitHistoryQuery.forRepository(query.repositoryName())</span>
+<span class="fc" id="L88">				.restrictedToObjectIds(ids).limit(ids.size()).build())</span>
+<span class="fc" id="L89">				.forEach(hit -&gt; entities.put(hit.getObjectId(), hit));</span>
+<span class="fc" id="L90">		return ids.stream().map(entities::get).filter(Objects::nonNull).toList();</span>
 	}
 
 	@Override
 	public List&lt;AuthorCount&gt; authors(String repository) {
-<span class="fc bfc" id="L90" title="All 2 branches covered.">		if (blank(repository)) {</span>
-<span class="fc" id="L91">			return List.of();</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">		if (blank(repository)) {</span>
+<span class="fc" id="L96">			return List.of();</span>
 		}
 		// This application report groups the released projection in the database:
 		// transferring every commit summary would scale with history, not authors.
-<span class="fc" id="L95">		try (var session = sessionFactory.openSession()) {</span>
-<span class="fc" id="L96">			var rows = session.createQuery(&quot;SELECT c.authorName, c.authorEmail, COUNT(c) FROM &quot;</span>
-<span class="fc" id="L97">					+ GitCommitIndex.class.getName() + &quot; c WHERE c.repositoryName = :repository&quot;</span>
+<span class="fc" id="L100">		try (var session = sessionFactory.openSession()) {</span>
+<span class="fc" id="L101">			var rows = session.createQuery(&quot;SELECT c.authorName, c.authorEmail, COUNT(c) FROM &quot;</span>
+<span class="fc" id="L102">					+ GitCommitIndex.class.getName() + &quot; c WHERE &quot; + exactRepositoryPredicate()</span>
 					+ &quot; GROUP BY c.authorName, c.authorEmail&quot;, Object[].class)
-<span class="fc" id="L99">					.setParameter(&quot;repository&quot;, SandboxRepositoryNames.normalize(repository)).getResultList();</span>
-<span class="fc" id="L100">			Comparator&lt;String&gt; textOrder = Comparator.nullsFirst(Comparator.naturalOrder());</span>
-<span class="fc" id="L101">			return rows.stream().map(row -&gt; new AuthorCount((String) row[0], (String) row[1], ((Number) row[2]).longValue()))</span>
-<span class="fc" id="L102">					.sorted(Comparator.comparingLong(AuthorCount::commits).reversed()</span>
-<span class="fc" id="L103">							.thenComparing(AuthorCount::name, textOrder).thenComparing(AuthorCount::email, textOrder)).toList();</span>
+<span class="fc" id="L104">					.setParameter(&quot;repository&quot;, SandboxRepositoryNames.normalize(repository)).getResultList();</span>
+<span class="fc" id="L105">			Comparator&lt;String&gt; textOrder = Comparator.nullsFirst(Comparator.naturalOrder());</span>
+<span class="fc" id="L106">			return rows.stream().map(row -&gt; new AuthorCount((String) row[0], (String) row[1], ((Number) row[2]).longValue()))</span>
+<span class="fc" id="L107">					.sorted(Comparator.comparingLong(AuthorCount::commits).reversed()</span>
+<span class="fc" id="L108">							.thenComparing(AuthorCount::name, textOrder).thenComparing(AuthorCount::email, textOrder)).toList();</span>
 		}
+	}
+
+	private String exactRepositoryPredicate() {
+<span class="fc" id="L113">		var dialect = sessionFactory.unwrap(SessionFactoryImplementor.class).getJdbcServices().getDialect();</span>
+		String exact;
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">		if (dialect instanceof H2Dialect) {</span>
+<span class="fc" id="L116">			exact = &quot;sql('rawtohex(?)', c.repositoryName) = sql('rawtohex(?)', :repository)&quot;;</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">		} else if (dialect instanceof HSQLDialect) {</span>
+			// Character position is exact; length excludes prefix matches and padded equality.
+<span class="nc" id="L119">			exact = &quot;locate(:repository, c.repositoryName) = 1 AND length(c.repositoryName) = length(:repository)&quot;;</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">		} else if (dialect instanceof PostgreSQLDialect) {</span>
+<span class="nc" id="L121">			exact = &quot;sql('convert_to(?, ''UTF8'')', c.repositoryName)&quot;</span>
+					+ &quot; = sql('convert_to(?, ''UTF8'')', :repository)&quot;;
+<span class="nc bnc" id="L123" title="All 2 branches missed.">		} else if (dialect instanceof SQLServerDialect) {</span>
+			// BIN2 preserves Unicode identity; byte length also distinguishes trailing spaces.
+<span class="nc" id="L125">			exact = &quot;sql('? collate Latin1_General_100_BIN2', c.repositoryName)&quot;</span>
+					+ &quot; = sql('? collate Latin1_General_100_BIN2', :repository)&quot;
+					+ &quot; AND sql('datalength(?)', c.repositoryName) = sql('datalength(?)', :repository)&quot;;
+		} else {
+<span class="nc" id="L129">			throw new IllegalStateException(&quot;Exact author reports require a supported database dialect: &quot;</span>
+<span class="nc" id="L130">					+ dialect.getClass().getName());</span>
+		}
+		// Retain an indexable prefilter, then enforce exact identity before aggregation.
+<span class="fc" id="L133">		return &quot;c.repositoryName = :repository AND (&quot; + exact + &quot;)&quot;;</span>
 	}
 
 	@Override
 	public void checkSearch() {
-<span class="fc" id="L109">		try (var session = sessionFactory.openSession()) {</span>
-<span class="fc" id="L110">			Search.session(session).search(GitCommitIndex.class).where(f -&gt; f.matchAll()).fetch(0, 0);</span>
+<span class="fc" id="L138">		try (var session = sessionFactory.openSession()) {</span>
+<span class="fc" id="L139">			Search.session(session).search(GitCommitIndex.class).where(f -&gt; f.matchAll()).fetch(0, 0);</span>
 		}
-<span class="fc" id="L112">	}</span>
+<span class="fc" id="L141">	}</span>
 
 	private static boolean blank(String value) {
-<span class="pc bpc" id="L115" title="1 of 4 branches missed.">		return value == null || value.isBlank();</span>
+<span class="pc bpc" id="L144" title="1 of 4 branches missed.">		return value == null || value.isBlank();</span>
 	}
 
 	private static String literal(String query) {
-<span class="fc" id="L119">		StringBuilder escaped = new StringBuilder();</span>
-<span class="fc bfc" id="L120" title="All 2 branches covered.">		for (int i = 0; i &lt; query.length(); i++) {</span>
-<span class="fc" id="L121">			char c = query.charAt(i);</span>
-<span class="fc bfc" id="L122" title="All 2 branches covered.">			if (&quot;+-|*\&quot;()\\~&quot;.indexOf(c) &gt;= 0) {</span>
-<span class="fc" id="L123">				escaped.append('\\');</span>
+<span class="fc" id="L148">		StringBuilder escaped = new StringBuilder();</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">		for (int i = 0; i &lt; query.length(); i++) {</span>
+<span class="fc" id="L150">			char c = query.charAt(i);</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">			if (&quot;+-|*\&quot;()\\~&quot;.indexOf(c) &gt;= 0) {</span>
+<span class="fc" id="L152">				escaped.append('\\');</span>
 			}
-<span class="fc" id="L125">			escaped.append(c);</span>
+<span class="fc" id="L154">			escaped.append(c);</span>
 		}
-<span class="fc" id="L127">		return escaped.toString();</span>
+<span class="fc" id="L156">		return escaped.toString();</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
