@@ -54,7 +54,7 @@ public final class ApplicationVectorIndex {
 <span class="fc bfc" id="L54" title="All 2 branches covered.">      for (int i = 0; i &lt; query.length; i++) dot += (double) query[i] * entry.getValue()[i];</span>
 <span class="fc" id="L55">      var hit = new Hit(entry.getKey(), Math.max(-1, Math.min(1, dot)));</span>
 <span class="fc bfc" id="L56" title="All 2 branches covered.">      if (best.size() &lt; limit) best.add(hit);</span>
-<span class="pc bpc" id="L57" title="1 of 2 branches missed.">      else if (BEST_FIRST.compare(hit, best.peek()) &lt; 0) { best.poll(); best.add(hit); }</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">      else if (BEST_FIRST.compare(hit, best.peek()) &lt; 0) { best.poll(); best.add(hit); }</span>
 <span class="fc" id="L58">    }</span>
 <span class="fc" id="L59">    return best.stream().sorted(BEST_FIRST).toList();</span>
   }
