@@ -5500,9 +5500,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "lastProcessedCommit": "90dd90f919f313ff9c30595fc2ecf84ecb689156",
-      "lastProcessedDate": "2026-11-10T02:21:21.987792583Z",
-      "totalProcessed": 728,
+      "lastProcessedCommit": "11b49a9a13e40c02ddea053664cdad25021a6d71",
+      "lastProcessedDate": "2026-11-11T02:20:07.905498872Z",
+      "totalProcessed": 800,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -5801,6 +5801,24 @@
           "deferredAt": "2026-11-10T02:18:53.438708784Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "81520329ffc50539b2668cfbdfa4739974ddd56e",
+          "message": "Bug 538213 - The files in org.eclipse.debug.examples.memory should be converted to Unix line delimiter",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-11T02:17:15.612897207Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "94821aeec18c0ff4103819e6f5323838b8670bc9",
+          "message": "Bug 543933 - Build javadocs with Java 11",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-11T02:18:46.821143485Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -5860,5 +5878,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 54265
+  "globalTotalProcessed": 54337
 }
