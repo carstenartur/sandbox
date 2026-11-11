@@ -20,7 +20,7 @@
     "successful": false,
     "stage": "AFTER_PARSE",
     "message": "Java compile error at line 9: The method getPosition() is undefined for the type Annotation",
-    "verifiedAt": "2026-11-10T02:21:45.493480816Z",
+    "verifiedAt": "2026-11-11T02:20:30.570535366Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
