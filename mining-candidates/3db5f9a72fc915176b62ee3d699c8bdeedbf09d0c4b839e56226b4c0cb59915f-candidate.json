@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "3db5f9a72fc915176b62ee3d699c8bdeedbf09d0c4b839e56226b4c0cb59915f",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$receiver.indexOf($sub) \u003e\u003d 0 :: instanceof($receiver, \"java.lang.String\")\n\u003d\u003e $receiver.contains($sub)\n;;",
+  "beforeExample": "class Example {\n    public void check(String text, String search) {\n        if (text.indexOf(search) \u003e\u003d 0) {\n            System.out.println(\"Found: \" + search);\n        }\n    }\n}",
+  "afterExample": "class Example {\n    public void check(String text, String search) {\n        if (text.contains(search)) {\n            System.out.println(\"Found: \" + search);\n        }\n    }\n}",
+  "negativeExample": "class Example {\n    public void check(String text) {\n        if (text.indexOf(\u0027a\u0027) \u003e\u003d 0) { // $sub should be String, not char\n            System.out.println(\"Found \u0027a\u0027\");\n        }\n    }\n}",
+  "targetHintFile": "modernize.sandbox-hint",
+  "sourceCommit": "ff36325e43f71a96a7927f2a5089af77e28f228b",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "sourceEvidence": {
+    "path": "org.eclipse.debug.examples.ui/src/org/eclipse/debug/examples/ui/pda/breakpoints/PDABreakpointAdapter.java",
+    "before": "if (source.indexOf(\"call \" + label) \u003e\u003d 0) { //$NON-NLS-1$",
+    "after": "if (source.contains(\"call \" + label)) { //$NON-NLS-1$",
+    "diffHunk": "diff --git a/org.eclipse.debug.examples.ui/src/org/eclipse/debug/examples/ui/pda/breakpoints/PDABreakpointAdapter.java b/org.eclipse.debug.examples.ui/src/org/eclipse/debug/examples/ui/pda/breakpoints/PDABreakpointAdapter.java\nindex 1b5deea..fc61762 100644\n--- a/org.eclipse.debug.examples.ui/src/org/eclipse/debug/examples/ui/pda/breakpoints/PDABreakpointAdapter.java\n+++ b/org.eclipse.debug.examples.ui/src/org/eclipse/debug/examples/ui/pda/breakpoints/PDABreakpointAdapter.java\n@@ -191,7 +191,7 @@\n                 String lineText \u003d document.get(information.getOffset(), information.getLength());\n \t\t\t\tif (lineText.startsWith(\":\")) { //$NON-NLS-1$\n                     String label \u003d lineText.substring(1);\n-\t\t\t\t\tif (source.indexOf(\"call \" + label) \u003e\u003d 0) { //$NON-NLS-1$\n+\t\t\t\t\tif (source.contains(\"call \" + label)) { //$NON-NLS-1$\n                         return label;\n                     }\n                 }\n"
+  },
+  "category": "String API modernization",
+  "summary": "Replaces `String.indexOf(String) \u003e\u003d 0` with `String.contains(String)` for improved readability and conciseness, preserving null and search semantics.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-12T02:20:12.870988373Z",
+  "ruleFingerprint": "sha256:4630d091f66fc2ad5a8b4cb94a197583d6b9cea6b96e1d1229fc3b0cf8f0f499",
+  "behaviorFingerprint": "sha256:3c26ea250e77f7d7f56d3303d1adab9c4e909dccb53c0048b155a430d796ff90",
+  "verification": {
+    "successful": false,
+    "stage": "NEGATIVE_MATCH",
+    "message": "Negative example unexpectedly matched 1 time(s)",
+    "verifiedAt": "2026-11-12T02:24:51.436385087Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": []
+}

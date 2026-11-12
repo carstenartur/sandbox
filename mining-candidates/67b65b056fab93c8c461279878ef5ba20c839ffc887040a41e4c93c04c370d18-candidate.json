@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 3: The import org.junit cannot be resolved",
-    "verifiedAt": "2026-11-11T02:20:30.773540396Z",
+    "verifiedAt": "2026-11-12T02:24:48.621951525Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0

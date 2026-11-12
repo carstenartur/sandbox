@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 2: The import java.util.IndexOutOfBoundsException cannot be resolved",
-    "verifiedAt": "2026-11-11T02:20:27.775753397Z",
+    "verifiedAt": "2026-11-12T02:24:46.094436217Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0

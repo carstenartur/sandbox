@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "62d94e5eca13a981419ec4b27368a9dc9fe348f54a7c96b02510d755180e9566",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$x.size() \u003d\u003d 0 :: subtypeOf($x, \"java.util.Collection\") || subtypeOf($x, \"java.util.Map\")\n\u003d\u003e $x.isEmpty()\n;;",
+  "beforeExample": "import java.util.ArrayList;\nimport java.util.List;\n\npublic class MyClass {\n    public void checkList(List\u003cString\u003e list) {\n        if (list.size() \u003d\u003d 0) {\n            System.out.println(\"List is empty.\");\n        }\n    }\n}",
+  "afterExample": "import java.util.ArrayList;\nimport java.util.List;\n\npublic class MyClass {\n    public void checkList(List\u003cString\u003e list) {\n        if (list.isEmpty()) {\n            System.out.println(\"List is empty.\");\n        }\n    }\n}",
+  "negativeExample": "public class CustomSizedObject {\n    private int[] data \u003d new int[0];\n    public int size() {\n        return data.length;\n    }\n\n    public void check() {\n        CustomSizedObject obj \u003d new CustomSizedObject();\n        if (obj.size() \u003d\u003d 0) { // This should NOT match as CustomSizedObject is not a Collection or Map\n            System.out.println(\"Custom object is empty.\");\n        }\n    }\n}",
+  "targetHintFile": "collections.sandbox-hint",
+  "sourceCommit": "b17ecf3fcedde66bb379483f57126e59f0cd0e66",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "sourceEvidence": {
+    "path": "org.eclipse.debug.core/core/org/eclipse/debug/core/sourcelookup/AbstractSourceLookupDirector.java",
+    "before": "\t\tif(sources.size() \u003d\u003d 0) {",
+    "after": "\t\tif(sources.isEmpty()) {",
+    "diffHunk": "diff --git a/org.eclipse.debug.core/core/org/eclipse/debug/core/sourcelookup/AbstractSourceLookupDirector.java b/org.eclipse.debug.core/core/org/eclipse/debug/core/sourcelookup/AbstractSourceLookupDirector.java\nindex 76af4f5..332f6af 100644\n--- a/org.eclipse.debug.core/core/org/eclipse/debug/core/sourcelookup/AbstractSourceLookupDirector.java\n+++ b/org.eclipse.debug.core/core/org/eclipse/debug/core/sourcelookup/AbstractSourceLookupDirector.java\n@@ -534,7 +534,7 @@\n \t * @return true if it is already in the list, false if it is a new object\n \t */\n \tprivate boolean checkDuplicate(Object sourceToAdd, List\u003cObject\u003e sources) {\n-\t\tif(sources.size() \u003d\u003d 0) {\n+\t\tif(sources.isEmpty()) {\n \t\t\treturn false;\n \t\t}\n \t\tfor (Object obj : sources) {\n"
+  },
+  "category": "Idiomatic Collection Usage",
+  "summary": "Replaces `$collection.size() \u003d\u003d 0` with `$collection.isEmpty()` for `java.util.Collection` and `java.util.Map` types, which is more idiomatic and often more performant.",
+  "sourceVersion": "8",
+  "status": "READY_FOR_REVIEW",
+  "discoveredAt": "2026-11-12T02:19:40.282549686Z",
+  "ruleFingerprint": "sha256:6302de33b98ece71367418b54cd881dff5754a1748d3949806e69b6c98ccd2dc",
+  "behaviorFingerprint": "sha256:998353803ec93b52e0bd446b6718354cd739bee514c46b2f682fff148b2d3650",
+  "verification": {
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Example rewrite verified; semantic review still required",
+    "verifiedAt": "2026-11-12T02:24:51.394822607Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-11-12T02:24:51.396008927Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-11-12T02:24:51.396036458Z"
+    }
+  ]
+}
