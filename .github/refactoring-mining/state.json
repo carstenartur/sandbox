@@ -5500,9 +5500,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "lastProcessedCommit": "11b49a9a13e40c02ddea053664cdad25021a6d71",
-      "lastProcessedDate": "2026-11-11T02:20:07.905498872Z",
-      "totalProcessed": 800,
+      "lastProcessedCommit": "9af85f069eb2845cb5e7a7d2cda8f3e32d8ba6a2",
+      "lastProcessedDate": "2026-11-12T02:24:25.617566313Z",
+      "totalProcessed": 852,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -5819,6 +5819,69 @@
           "deferredAt": "2026-11-11T02:18:46.821143485Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "0b0d43d557cc8fb1fefdbca7a949aff7f9b93cc4",
+          "message": "Bug 544970 - [console] Fix ConsoleDocumentAdapter\u0027s TextChangingEvent calculation",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-12T02:16:12.118421680Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "6407443235147c082852c2d93d9fa5b749d9ea39",
+          "message": "Bug 544970 - [console] Tests for ConsoleDocumentAdapter",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-12T02:16:12.121361293Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "194c7e64b3eb37217a6b880827c4def091ffd888",
+          "message": "Bug 547063 - [console] Tests for IOConsole",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-12T02:16:12.123477737Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "32c845cedc17596bbaf5ed0582aaf9b15fd6111d",
+          "message": "Bug 547304 - [cleanup] Fix wrong line delimiters",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-12T02:16:53.842937767Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "4eff8d4b2f99b831a37349bf393acac911e6bea5",
+          "message": "Bug 548344 - Add inline editing support for environment variables table",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-12T02:22:58.763600556Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "1962d9672d5af1a8c4d749a819be3d9784bf9ee0",
+          "message": "Bug 548356 - [console] Fix input handling in IOConsole",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-12T02:23:35.619008636Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "7907da8e73316345d971683cc5671026c313da1e",
+          "message": "Bug 32205 - [console] Add launch option to merge process output",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-12T02:24:00.350169256Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -5830,7 +5893,7 @@
       ],
       "categoryHitCounts": {
         "API Misuse": 1,
-        "API Modernization": 8,
+        "API Modernization": 9,
         "API Migration": 3,
         "Collections Modernization": 1,
         "Lambda Conversion": 1,
@@ -5839,7 +5902,7 @@
         "Constructor to static factory": 1,
         "Logging Cleanup": 1,
         "Static Factory Method": 1,
-        "Lambda to Method Reference": 2,
+        "Lambda to Method Reference": 3,
         "Anonymous Class to Lambda": 1,
         "Code Modernization": 1,
         "Redundant null check removal": 1,
@@ -5873,10 +5936,13 @@
         "Redundant Cast": 1,
         "Code Style": 1,
         "Redundant initialization removal": 1,
-        "Compiler Warning Fixes": 1
+        "Compiler Warning Fixes": 1,
+        "Idiomatic Collection Usage": 1,
+        "String API modernization": 1,
+        "String Optimization": 1
       },
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 54337
+  "globalTotalProcessed": 54389
 }
