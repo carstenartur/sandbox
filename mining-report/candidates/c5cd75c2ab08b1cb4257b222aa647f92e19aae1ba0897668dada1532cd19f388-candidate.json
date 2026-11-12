@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "AFTER_REWRITE",
     "message": "Transformed source is invalid: Java compile error at line 8: Type mismatch: cannot convert from IScopeContext to DefaultScope",
-    "verifiedAt": "2026-11-11T02:20:24.596857696Z",
+    "verifiedAt": "2026-11-12T02:24:43.173839128Z",
     "verifierVersion": "9",
     "matches": 1,
     "replacements": 1

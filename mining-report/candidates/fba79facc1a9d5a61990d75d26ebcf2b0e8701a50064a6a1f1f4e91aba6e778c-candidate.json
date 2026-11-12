@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "fba79facc1a9d5a61990d75d26ebcf2b0e8701a50064a6a1f1f4e91aba6e778c",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.debug.internal.ui.launchConfigurations.LaunchConfigurationsMessages.EnvironmentTab_ContextMenu0\n\u003d\u003e\norg.eclipse.debug.internal.ui.launchConfigurations.LaunchConfigurationsMessages.EnvironmentTab_Add_4\n;;",
+  "beforeExample": "package org.eclipse.debug.ui;\nimport org.eclipse.swt.widgets.MenuItem;\nimport org.eclipse.swt.SWT;\nimport org.eclipse.debug.internal.ui.launchConfigurations.LaunchConfigurationsMessages; \n\nclass EnvironmentTab {\n    void setupMenu(MenuItem miAdd) {\n        // Mock field for compilation\n        LaunchConfigurationsMessages.EnvironmentTab_ContextMenu0 \u003d \"Add\"; \n        miAdd.setText(LaunchConfigurationsMessages.EnvironmentTab_ContextMenu0);\n    }\n}\n// Mock class for compilation\nclass LaunchConfigurationsMessages {\n    public static String EnvironmentTab_ContextMenu0;\n    public static String EnvironmentTab_Add_4;\n}",
+  "afterExample": "package org.eclipse.debug.ui;\nimport org.eclipse.swt.widgets.MenuItem;\nimport org.eclipse.swt.SWT;\nimport org.eclipse.debug.internal.ui.launchConfigurations.LaunchConfigurationsMessages; \n\nclass EnvironmentTab {\n    void setupMenu(MenuItem miAdd) {\n        // Mock field for compilation\n        LaunchConfigurationsMessages.EnvironmentTab_ContextMenu0 \u003d \"Add\"; \n        miAdd.setText(LaunchConfigurationsMessages.EnvironmentTab_Add_4);\n    }\n}\n// Mock class for compilation\nclass LaunchConfigurationsMessages {\n    public static String EnvironmentTab_ContextMenu0;\n    public static String EnvironmentTab_Add_4;\n}",
+  "negativeExample": "package org.eclipse.debug.ui;\nimport org.eclipse.swt.widgets.MenuItem;\nimport org.eclipse.swt.SWT;\nimport org.eclipse.debug.internal.ui.launchConfigurations.LaunchConfigurationsMessages;\n\nclass EnvironmentTab {\n    void setupMenu(MenuItem miEdit) {\n        LaunchConfigurationsMessages.EnvironmentTab_Edit_5 \u003d \"Edit\"; // Mock field\n        miEdit.setText(LaunchConfigurationsMessages.EnvironmentTab_Edit_5); // Should not match\n    }\n}\n// Mock class for compilation\nclass LaunchConfigurationsMessages {\n    public static String EnvironmentTab_ContextMenu0;\n    public static String EnvironmentTab_Add_4;\n    public static String EnvironmentTab_Edit_5;\n}",
+  "targetHintFile": "eclipse-messages.sandbox-hint",
+  "sourceCommit": "2bbc97e134a0eca8598bf25de1ccc8ebc6636b05",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "sourceEvidence": {
+    "path": "org.eclipse.debug.ui/ui/org/eclipse/debug/ui/EnvironmentTab.java",
+    "before": "miAdd.setText(LaunchConfigurationsMessages.EnvironmentTab_ContextMenu0);",
+    "after": "miAdd.setText(LaunchConfigurationsMessages.EnvironmentTab_Add_4);",
+    "diffHunk": "diff --git a/org.eclipse.debug.ui/ui/org/eclipse/debug/ui/EnvironmentTab.java b/org.eclipse.debug.ui/ui/org/eclipse/debug/ui/EnvironmentTab.java\nindex c320462..6feb4da 100644\n--- a/org.eclipse.debug.ui/ui/org/eclipse/debug/ui/EnvironmentTab.java\n+++ b/org.eclipse.debug.ui/ui/org/eclipse/debug/ui/EnvironmentTab.java\n@@ -327,7 +327,7 @@\n \n \t\t// Create add environment variable menu item\n \t\tMenuItem miAdd \u003d new MenuItem(menuTable, SWT.NONE);\n-\t\tmiAdd.setText(LaunchConfigurationsMessages.EnvironmentTab_ContextMenu0);\n+\t\tmiAdd.setText(LaunchConfigurationsMessages.EnvironmentTab_Add_4);\n \n \t\tmiAdd.addSelectionListener(new SelectionAdapter() {\n \t\t\t@Override\n"
+  },
+  "category": "API Modernization",
+  "summary": "Replaces usage of message key `EnvironmentTab_ContextMenu0` with `EnvironmentTab_Add_4`.",
+  "sourceVersion": "8",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-12T02:24:00.306648716Z",
+  "ruleFingerprint": "sha256:d4170a3b37a87c892c1a96ccc1b486958c356e6326dbdff3cf35caabd01b06df",
+  "behaviorFingerprint": "sha256:694afde66a16fce9fa5410f85ad7be8b74213a8e5d3efa8ea7f0c7db67033b68",
+  "verification": {
+    "successful": false,
+    "stage": "DEPENDENCY_RESOLUTION",
+    "message": "Java compile error at line 2: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-11-12T02:24:51.529339108Z",
+    "verifierVersion": "9",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

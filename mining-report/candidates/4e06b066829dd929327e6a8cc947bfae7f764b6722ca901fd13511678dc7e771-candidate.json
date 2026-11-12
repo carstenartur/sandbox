@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "4e06b066829dd929327e6a8cc947bfae7f764b6722ca901fd13511678dc7e771",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$str.lastIndexOf(\"/\") :: instanceof($str, \"java.lang.String\")\n\u003d\u003e\n$str.lastIndexOf(\u0027/\u0027)\n;;",
+  "beforeExample": "class Example {\n    void method() {\n        String path \u003d \"/a/b/c/\";\n        int index \u003d path.lastIndexOf(\"/\");\n        System.out.println(index);\n    }\n}",
+  "afterExample": "class Example {\n    void method() {\n        String path \u003d \"/a/b/c/\";\n        int index \u003d path.lastIndexOf(\u0027/\u0027);\n        System.out.println(index);\n    }\n}",
+  "negativeExample": "class Example {\n    void method() {\n        String path \u003d \"/a/b/c/\";\n        // Does not match: different literal\n        int index1 \u003d path.lastIndexOf(\"abc\");\n        // Does not match: different method\n        boolean contains \u003d path.contains(\"/\");\n        // Does not match: not a String variable calling method\n        java.lang.Object obj \u003d new Object();\n        // obj.lastIndexOf(\"/\"); // This would be a compile error if obj was not a String\n    }\n}",
+  "targetHintFile": "string.sandbox-hint",
+  "sourceCommit": "28eafb0f03d500dd162f2151845d2644cfc5ab5c",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "sourceEvidence": {
+    "path": "org.eclipse.debug.core/core/org/eclipse/debug/core/sourcelookup/containers/ExternalArchiveSourceContainer.java",
+    "before": "\t\t\t\t\t\tint index \u003d entryName.lastIndexOf(\"/\"); //$NON-NLS-1$",
+    "after": "\t\t\t\t\t\tint index \u003d entryName.lastIndexOf(\u0027/\u0027);",
+    "diffHunk": "diff --git a/org.eclipse.debug.core/core/org/eclipse/debug/core/sourcelookup/containers/ExternalArchiveSourceContainer.java b/org.eclipse.debug.core/core/org/eclipse/debug/core/sourcelookup/containers/ExternalArchiveSourceContainer.java\nindex a62866a..368ac4e 100644\n--- a/org.eclipse.debug.core/core/org/eclipse/debug/core/sourcelookup/containers/ExternalArchiveSourceContainer.java\n+++ b/org.eclipse.debug.core/core/org/eclipse/debug/core/sourcelookup/containers/ExternalArchiveSourceContainer.java\n@@ -172,11 +172,11 @@\n \t\t\t\t\t\tfPotentialRoots.add(entry.getName());\n \t\t\t\t\t} else {\n \t\t\t\t\t\tString entryName \u003d entry.getName();\n-\t\t\t\t\t\tint index \u003d entryName.lastIndexOf(\"/\"); //$NON-NLS-1$\n+\t\t\t\t\t\tint index \u003d entryName.lastIndexOf(\u0027/\u0027); \n \t\t\t\t\t\twhile (index \u003e 0) {\n \t\t\t\t\t\t\tif (fPotentialRoots.add(entryName.substring(0, index + 1))) {\n \t\t\t\t\t\t\t\tentryName \u003d entryName.substring(0, index);\n-\t\t\t\t\t\t\t\tindex \u003d entryName.lastIndexOf(\"/\"); //$NON-NLS-1$\n+\t\t\t\t\t\t\t\tindex \u003d entryName.lastIndexOf(\u0027/\u0027); \n \t\t\t\t\t\t\t} else {\n \t\t\t\t\t\t\t\tbreak;\n \t\t\t\t\t\t\t}\n"
+  },
+  "category": "String Optimization",
+  "sourceVersion": "8",
+  "status": "READY_FOR_REVIEW",
+  "discoveredAt": "2026-11-12T02:22:58.704428506Z",
+  "ruleFingerprint": "sha256:d7c9e2a1d6a47573eca6c5e7781a6623ff90a4b3c11f835e08d48810e13a3923",
+  "behaviorFingerprint": "sha256:36c198119503fdf804b6fbd61fe666c84785c81fe79f9c97d125fd3d326da2fa",
+  "verification": {
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Example rewrite verified; semantic review still required",
+    "verifiedAt": "2026-11-12T02:24:51.468526660Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-11-12T02:24:51.469375771Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-11-12T02:24:51.469393784Z"
+    }
+  ]
+}

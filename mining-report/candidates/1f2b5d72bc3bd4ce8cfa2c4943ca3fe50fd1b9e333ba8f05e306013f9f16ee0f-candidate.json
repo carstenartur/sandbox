@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 9: The public type MyClass must be defined in its own file",
-    "verifiedAt": "2026-11-11T02:20:26.716339101Z",
+    "verifiedAt": "2026-11-12T02:24:45.175798037Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0

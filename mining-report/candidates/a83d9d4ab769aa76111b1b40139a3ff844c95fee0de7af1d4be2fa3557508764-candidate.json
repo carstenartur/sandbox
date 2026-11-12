@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "a83d9d4ab769aa76111b1b40139a3ff844c95fee0de7af1d4be2fa3557508764",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$arg -\u003e this.$methodName($arg) :: sourceVersionGE(8)\n\u003d\u003e\nthis::$methodName\n;;",
+  "beforeExample": "import java.util.function.Consumer;\n\nclass MyClass {\n    private String state \u003d \"\";\n\n    public void updateState(String newState) {\n        this.state \u003d newState;\n    }\n\n    public void process(String data) {\n        Consumer\u003cString\u003e processor \u003d s -\u003e this.updateState(s);\n        processor.accept(data);\n        System.out.println(\"State updated to: \" + state);\n    }\n}",
+  "afterExample": "import java.util.function.Consumer;\n\nclass MyClass {\n    private String state \u003d \"\";\n\n    public void updateState(String newState) {\n        this.state \u003d newState;\n    }\n\n    public void process(String data) {\n        Consumer\u003cString\u003e processor \u003d this::updateState;\n        processor.accept(data);\n        System.out.println(\"State updated to: \" + state);\n    }\n}",
+  "negativeExample": "import java.util.function.Consumer;\nimport java.util.function.Function;\n\nclass MyClass {\n    private static String staticState \u003d \"\";\n    private String instanceState \u003d \"\";\n\n    public static void setStaticState(String s) {\n        staticState \u003d s;\n    }\n\n    public void setInstanceState(String s) {\n        this.instanceState \u003d s;\n    }\n\n    public void process(String data) {\n        // Does not match: lambda calls static method\n        Consumer\u003cString\u003e c1 \u003d s -\u003e MyClass.setStaticState(s);\n\n        // Does not match: lambda calls method on another object\n        MyClass another \u003d new MyClass();\n        Consumer\u003cString\u003e c2 \u003d s -\u003e another.setInstanceState(s);\n\n        // Does not match: lambda has no arguments\n        Runnable r \u003d () -\u003e this.setInstanceState(\"fixed\");\n\n        // Does not match: lambda argument is not directly passed or transformed\n        Consumer\u003cString\u003e c3 \u003d s -\u003e this.setInstanceState(s + \"_processed\");\n\n        // Does not match: block lambda\n        Consumer\u003cString\u003e c4 \u003d s -\u003e {\n            System.out.println(\"Processing \" + s);\n            this.setInstanceState(s);\n        };\n\n        // Does not match: lambda argument is the receiver\n        Function\u003cString, Integer\u003e f1 \u003d s -\u003e s.length();\n    }\n}",
+  "targetHintFile": "lambda.sandbox-hint",
+  "sourceCommit": "8b4ed4f66f68932f9c2bd141ea8dfcc3dc1c9cdf",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "sourceEvidence": {
+    "path": "org.eclipse.debug.core/core/org/eclipse/debug/internal/core/WatchExpression.java",
+    "before": "\t\tIWatchExpressionListener listener \u003d result -\u003e setResult(result);",
+    "after": "\t\tIWatchExpressionListener listener \u003d this::setResult;",
+    "diffHunk": "diff --git a/org.eclipse.debug.core/core/org/eclipse/debug/internal/core/WatchExpression.java b/org.eclipse.debug.core/core/org/eclipse/debug/internal/core/WatchExpression.java\nindex 9a942eb..554ca41 100644\n--- a/org.eclipse.debug.core/core/org/eclipse/debug/internal/core/WatchExpression.java\n+++ b/org.eclipse.debug.core/core/org/eclipse/debug/internal/core/WatchExpression.java\n@@ -71,7 +71,7 @@\n \t\t\treturn;\n \t\t}\n \n-\t\tIWatchExpressionListener listener \u003d result -\u003e setResult(result);\n+\t\tIWatchExpressionListener listener \u003d this::setResult;\n \t\tsetPending(true);\n \t\tIWatchExpressionDelegate delegate\u003d DebugPlugin.getDefault().getExpressionManager().newWatchExpressionDelegate(context.getModelIdentifier());\n \t\tif (delegate !\u003d null) {\n"
+  },
+  "category": "Lambda to Method Reference",
+  "sourceVersion": "8",
+  "status": "READY_FOR_REVIEW",
+  "discoveredAt": "2026-11-12T02:22:58.728537373Z",
+  "ruleFingerprint": "sha256:6ee8061ac585a5ca300ab857ad0b1ab1d6dec4350fe56b71c0876826618e1fe4",
+  "behaviorFingerprint": "sha256:df7ad317bb1e52444f0a416224d293d949d0a2b3ac02ee87e549b9060054abd7",
+  "verification": {
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Example rewrite verified; semantic review still required",
+    "verifiedAt": "2026-11-12T02:24:51.508500475Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-11-12T02:24:51.509390858Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-11-12T02:24:51.509403974Z"
+    }
+  ]
+}

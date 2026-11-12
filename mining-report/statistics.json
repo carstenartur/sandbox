@@ -1,14 +1,14 @@
 {
-  "totalProcessed": 1438,
-  "relevant": 161,
-  "irrelevant": 1277,
+  "totalProcessed": 1480,
+  "relevant": 166,
+  "irrelevant": 1314,
   "duplicates": 0,
-  "green": 151,
+  "green": 156,
   "yellow": 0,
   "red": 2,
   "irrelevantReasons": {
     "The commit involves the deletion of a configuration file (.api_filters) and does not contain any Java code changes that can be addressed by a local, semantics-preserving cleanup rule.": 1,
-    "Source evidence: Source spans do not occur in the same changed block of the named file": 11,
+    "Source evidence: Source spans do not occur in the same changed block of the named file": 12,
     "The transformation involves inlining a local variable that is immediately returned. The DSL primarily supports expression-level or single-statement rewrites, and does not provide mechanisms to match a sequence of statements (variable declaration followed by a return statement) and collapse them into a single return statement while analyzing variable usage. This falls under \u0027statement restructuring\u0027 which is not supported.": 1,
     "The change is exclusively within a Javadoc comment. The TriggerPattern DSL is designed for transforming Java source code (AST nodes, expressions, statements, declarations, annotations), not for parsing or modifying Javadoc comments.": 1,
     "The commit modifies an XML configuration file (.api_filters) and not a Java source file. The TriggerPattern DSL is strictly for Java code transformations.": 1,
@@ -434,7 +434,42 @@
     "This commit introduces new features and architectural components (new classes, plugin extensions, manifest updates) rather than performing a local, semantics-preserving cleanup of existing Java code. The DSL is for code transformations, not feature additions.": 1,
     "This commit is a direct revert of the previous commit (an architectural addition). It removes new features and architectural components, which does not constitute a local, semantics-preserving cleanup of existing Java code. The DSL is for code transformations, not feature removals or architectural reversions.": 1,
     "This commit fixes mangled copyright headers, which are comments and not executable Java code. The TriggerPattern DSL is designed for transformations of executable Java code, not for formatting or correcting comments/headers.": 1,
-    "This commit fixes syntax within a Javadoc comment. The TriggerPattern DSL is designed for transformations of executable Java code, not for correcting Javadoc syntax or other non-executable text.": 1
+    "This commit fixes syntax within a Javadoc comment. The TriggerPattern DSL is designed for transformations of executable Java code, not for correcting Javadoc syntax or other non-executable text.": 1,
+    "The commit introduces a significant behavioral change by refactoring the IOConsoleInputStream#available() method. It removes a field and alters the core logic and error handling of available() and how read() methods interact with it. This is a bug fix that changes core stream behavior, not a semantics-preserving cleanup. The change is too deep and functional to be expressed as a simple, safe DSL rule.": 1,
+    "This commit is a direct revert of Commit 0. It reintroduces the original behavior of IOConsoleInputStream#available() and related methods. As Commit 0 was a behavioral change to fix a bug, this revert is also a behavioral change (reintroducing the previous behavior/bug), not a semantics-preserving cleanup. It\u0027s too complex and functional to be expressed as a simple, safe DSL rule.": 1,
+    "The commit adds new control flow (an if-else block) to handle a potential NullPointerException by checking if fActivePart.getSite().getWorkbenchWindow() is null. The DSL explicitly states that \u0027complex multi-line statement blocks in replacements\u0027 and \u0027inserting new statements or control flow\u0027 are NOT supported. This change falls into that unsupported category as it introduces a new if-else structure.": 1,
+    "The commit introduces several structural and control flow changes: overriding the \u0027canceling()\u0027 method with a new \u0027if\u0027 block, changing a \u0027while\u0027 loop condition to include \u0027monitor.isCanceled()\u0027, and modifying a \u0027return\u0027 statement with a ternary operator. The DSL explicitly does not support complex multi-line statement blocks, inserting new statements or control flow, or bitwise/shift operators (the ternary operator is also a complex expression). These changes are too structural and involve unsupported control flow to be expressed as a simple, safe DSL rule.": 1,
+    "The changes in this commit involve moving existing statements and adding new conditional statements to address a race condition. This constitutes a structural change involving control flow modification and statement insertion, which is explicitly outside the scope of the current DSL\u0027s expression-level rewrite capabilities. Additionally, adding the \u0027synchronized\u0027 modifier changes concurrency semantics, which is not considered a semantics-preserving cleanup.": 1,
+    "The change involves adding a \u0027synchronized\u0027 modifier to a method declaration. This is a fundamental change to the method\u0027s concurrency semantics, introduced to fix a race condition. The DSL is designed for semantics-preserving cleanups, and altering synchronization behavior falls outside this definition. While the DSL might support method declaration rewrites, the semantic impact makes it unsuitable for an automatic cleanup.": 1,
+    "This commit addresses an \u0027Unsynchronized lazy initialization\u0027 by changing a field\u0027s initialization from lazy (null) to eager (new ListenerList\u003c\u003e()). While this simplifies code by removing null checks, it fundamentally alters the initialization timing and concurrency behavior of the field, fixing a race condition. This is a semantic correctness fix, not a purely semantics-preserving cleanup. Also, a general rule to replace \u0027null\u0027 with \u0027new $Type\u003c\u003e()\u0027 would be unsafe without guards to ensure \u0027$Type\u0027 is a concrete class with a no-arg constructor, which are not available in the DSL.": 1,
+    "The change involves inserting a new \u0027if\u0027 statement and its corresponding block of code after an existing statement. This includes multiple method calls and conditional logic. The DSL explicitly states that inserting new statements, control flow (like \u0027if\u0027 blocks), or complex multi-line statement blocks in replacements is NOT supported. The change also targets a \u0027Race condition\u0027, indicating a behavioral fix rather than a semantics-preserving cleanup.": 1,
+    "The commit introduces new Java files and functionality rather than performing a semantics-preserving cleanup on existing code. There is no \u0027before\u0027 state of Java code to derive a cleanup rule from.": 1,
+    "The commit modifies configuration files (.prefs), not Java source code. TriggerPattern DSL is designed for Java code transformations.": 1,
+    "The change from `ArrayList` to `LinkedHashSet` is a behavioral change (enforcing uniqueness while preserving order) rather than a simple type widening to a supertype (`List` or `Collection`). Safely implementing this would require static analysis to ensure no `List`-specific API methods are used on the variable, which is beyond the current DSL\u0027s capabilities. The DSL\u0027s `$widestType` is for widening to a common supertype, not for changing between sibling concrete types with different semantics.": 1,
+    "The cleanup involves inserting a new statement (`if (len \u003d\u003d 0) { return 0; }`) at the beginning of an `InputStream.read()` method and refactoring the logic of another interdependent method (`available()`). The DSL explicitly states that \u0027Inserting new statements or control flow\u0027 and \u0027complex multi-line statement blocks in replacements\u0027 are not supported.": 1,
+    "This commit is a major refactoring that introduces a `try-with-resources` block for an `InputStreamReader`, changes the type of a local variable from `byte[]` to `char[]`, and alters the entire reading mechanism from raw byte stream to character stream. These are complex structural changes and control flow additions which are explicitly not supported by the TriggerPattern DSL.": 1,
+    "The Java code changes involve specific Eclipse internal UI classes (`org.eclipse.debug.internal.ui.views.console.ProcessConsole`, `org.eclipse.debug.core.ILaunch`) that cannot be used in JDK-only examples required for DSL verification. Additionally, one of the changes is a multi-statement insertion (`final ILaunch launch \u003d ...; launch.setAttribute(...);`) which is not supported by the current expression-based TriggerPattern DSL.": 1,
+    "This commit only modifies project configuration files (pom.xml) to update version numbers. It does not contain any Java source code changes that could be transformed by the TriggerPattern DSL.": 1,
+    "This commit only modifies project configuration files (META-INF/MANIFEST.MF, pom.xml) to update version numbers. It does not contain any Java source code changes that could be transformed by the TriggerPattern DSL.": 1,
+    "The commit only contains version number updates in manifest and pom files, not Java code changes.": 2,
+    "The commit only contains version number updates in manifest and pom files across multiple bundles, not Java code changes.": 1,
+    "This commit changes version numbers in META-INF/MANIFEST.MF and pom.xml files, which are build configuration files, not Java source code. The TriggerPattern DSL is designed for Java code transformations only.": 1,
+    "This commit refactors a complex chain of if-else if statements into a switch statement. This involves significant structural changes to control flow (introducing switch and case blocks, changing statement order) which are beyond the capabilities of the current expression-level TriggerPattern DSL, which does not support complex multi-line statement blocks or inserting new control flow statements.": 1,
+    "Transformation from try-finally to try-with-resources is a statement-level structural change involving control flow, which is not supported by the current expression-oriented DSL. The DSL does not support matching and rewriting entire try-finally blocks to try-with-resources statements.": 1,
+    "The changes are to non-Java files (MANIFEST.MF and pom.xml) and involve updating version numbers. The TriggerPattern DSL is designed for Java code transformations, not for configuration file modifications.": 1,
+    "Removal of a block statement (curly braces) around local variable declarations and a loop is a structural change that alters the scope of the declared variables. The DSL primarily supports expression-level rewrites or specific declaration/method annotation patterns, but not arbitrary structural transformations involving block statements and their enclosed variable scopes.": 1,
+    "The change from StringBuffer to StringBuilder alters the synchronization behavior. While StringBuilder offers performance benefits in single-threaded contexts, applying this transformation automatically requires complex data-flow and synchronization analysis to guarantee no concurrent access to the buffer, which is beyond the current DSL\u0027s capabilities. Thus, it cannot be considered semantics-preserving without runtime context.": 1,
+    "The change removes a redundant semicolon from resource declarations in a try-with-resources statement (e.g., `try (Resource r \u003d ...;) ` becomes `try (Resource r \u003d ...) `). This is a purely stylistic/formatting change and does not affect the program\u0027s semantics or behavior. The DSL policy explicitly excludes formatting-only changes.": 1,
+    "This commit involves a significant algorithm change, replacing a linear search with a binary search, introducing new private helper methods, a static comparator field, and modifying the internal logic of multiple methods. The DSL is designed for local expression-level or declaration-level rewrites, not for architectural refactorings, algorithm changes, or the introduction of new members and complex control flow within method bodies.": 1,
+    "This commit changes the synchronization strategy of a static factory method by removing the `synchronized` keyword from the method signature and implementing a double-checked locking pattern internally. This involves modifying method modifiers and inserting a `synchronized` block with an internal check. The DSL does not support such complex structural rewrites of method bodies or changes to synchronization primitives.": 1,
+    "The commit modifies configuration files (.gitignore, .pde.prefs, pom.xml) and does not contain any Java code cleanups that can be expressed as a TriggerPattern DSL rule. The changes are related to build system and project settings.": 1,
+    "The commit involves adding new UI components, anonymous inner classes for event listeners, and significant structural changes which are beyond the capabilities of the expression-oriented TriggerPattern DSL. The DSL does not support inserting complex multi-line statement blocks or new control flow.": 1,
+    "The commit introduces changes only to Javadoc comments, which are considered formatting/documentation changes and are not supported by the TriggerPattern DSL for code transformations. The DSL focuses on changes to executable code.": 1,
+    "The transformation involves replacing a bitwise OR expression with a simple constant, which is not supported by the DSL\u0027s current limitations on bitwise operators in patterns or replacements.": 1,
+    "The commit involves a significant structural refactoring, including changing control flow, introducing new variables, and moving multiple statements, which is beyond the capabilities of the current DSL for expression-level rewrites.": 1,
+    "The commit removes an unused static field, which requires static analysis to detect usage. The TriggerPattern DSL is designed for local syntactic transformations, not for detecting or removing unused code elements across a codebase.": 1,
+    "The commit involves restructuring a try-catch block by introducing a finally block and reordering existing statements. The TriggerPattern DSL does not support inserting new control flow structures (like `finally` blocks) or complex statement reordering/movement across different code blocks.": 1,
+    "The commit involves several changes: modification of an XML plugin descriptor, extraction of a code block into a new private method, and adding an override to an existing class. The TriggerPattern DSL does not support XML modifications, method extraction, or the creation of new methods. It focuses on expression-level rewrites or simple annotation changes on existing method declarations.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-platform/eclipse.platform.text": {
@@ -445,9 +480,9 @@
       "red": 2
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "totalProcessed": 669,
-      "relevant": 52,
-      "green": 44,
+      "totalProcessed": 711,
+      "relevant": 57,
+      "green": 49,
       "yellow": 0,
       "red": 0
     },
@@ -574,23 +609,28 @@
       "date": "2026-11-11",
       "processed": 61,
       "relevant": 0
+    },
+    {
+      "date": "2026-11-12",
+      "processed": 42,
+      "relevant": 5
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-11-11T02:10:49.807Z",
-    "completedAt": "2026-11-11T02:20:12.744678597Z",
-    "durationSeconds": 562,
+    "startedAt": "2026-11-12T02:12:08.119Z",
+    "completedAt": "2026-11-12T02:24:33.186375295Z",
+    "durationSeconds": 745,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
     "apiCallsMade": 18,
-    "deferredCommits": 580,
+    "deferredCommits": 587,
     "permanentlySkipped": 0
   },
   "timeWindow": {
     "earliestEvaluation": "2026-10-20T02:20:11.033616597Z",
-    "latestEvaluation": "2026-11-11T02:20:07.905023925Z",
+    "latestEvaluation": "2026-11-12T02:24:25.617036803Z",
     "earliestCommitDate": "2010-01-04T11:37:57Z",
     "latestCommitDate": "2023-06-30T14:47:04Z"
   }
