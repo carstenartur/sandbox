@@ -37,6 +37,7 @@
 
    <h2>Use AI inside the wizard</h2>
    <p>When LLM inference is configured, the rule page offers <strong>Generate with AI</strong>. This uses the same inference engine as commit mining and the editor quick assist; it is not a separate rule language or execution path.</p>
+   <p>For a generated rule, open <strong>Examples...</strong> and supply a complete Java source file before and after the expected change, plus a counterexample that must stay unchanged. Select a Java project as the destination. <strong>Finish</strong> replays every example against the current rule and the destination project's bindings, including edits made after generation. When all examples pass, the wizard writes the rule and its <code>.examples.json</code> file together. A failed or unsupported example keeps the draft open for editing.</p>
    <p>If no LLM is configured, the wizard remains usable for manual rule authoring and offers a link to the shared LLM preferences.</p>
 
    <h2>From rule to executable transformation</h2>

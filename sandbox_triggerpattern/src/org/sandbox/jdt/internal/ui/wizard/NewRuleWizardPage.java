@@ -100,6 +100,7 @@ public class NewRuleWizardPage extends WizardPage {
 	private String initialReplacement = ""; //$NON-NLS-1$
 	private String initialDsl;
 	private boolean autoTriggerAi;
+	private boolean generatedRule;
 	private boolean updatingDocument;
 	private boolean requiresReplacement;
 	private String authoringError;
@@ -324,7 +325,7 @@ public class NewRuleWizardPage extends WizardPage {
 			replacementText.setText(initialReplacement);
 		}
 		if (initialDsl != null) {
-			fillFieldsFromInferredRule(initialDsl);
+			importRule(initialDsl);
 		}
 
 		setControl(container);
@@ -433,7 +434,7 @@ public class NewRuleWizardPage extends WizardPage {
 					generateAiButton.setEnabled(true);
 					if (result.isPresent() && result.get().dslRule() != null
 							&& !result.get().dslRule().isBlank()) {
-						fillFieldsFromInferredRule(result.get().dslRule());
+						acceptGeneratedRule(result.get().dslRule());
 					} else {
 						validationLabel.setText("\u26A0 AI could not generate a rule"); //$NON-NLS-1$
 					}
@@ -461,8 +462,17 @@ public class NewRuleWizardPage extends WizardPage {
 		return diff.toString();
 	}
 
+	void acceptGeneratedRule(String dsl) {
+		generatedRule = true;
+		importRule(dsl);
+	}
+
+	boolean isGeneratedRule() {
+		return generatedRule;
+	}
+
 	/** Imports the complete result, with no extraction of its first rule/alternative. */
-	private void fillFieldsFromInferredRule(String dslRule) {
+	private void importRule(String dslRule) {
 		customContentEntered = true;
 		authoringError = null;
 		// Import is the newest authored document, so earlier form values must not
@@ -624,7 +634,9 @@ public class NewRuleWizardPage extends WizardPage {
 			}
 		}
 		boolean valid = result == null || result.valid();
-		validationLabel.setText(result == null ? "Draft — choose a template or enter Java code" //$NON-NLS-1$
+		validationLabel.setText(generatedRule && valid
+				? "Generated rule: add a positive example and a counterexample under Examples. Finish verifies both." //$NON-NLS-1$
+				: result == null ? "Draft — choose a template or enter Java code" //$NON-NLS-1$
 				: valid ? "Language check passed — behavior and project use have not been verified" //$NON-NLS-1$
 						: "Language check failed: " + result.message()); //$NON-NLS-1$
 		setErrorMessage(valid ? null : result.message());
@@ -678,7 +690,7 @@ public class NewRuleWizardPage extends WizardPage {
 		try {
 			String text = (String) clipboard.getContents(TextTransfer.getInstance());
 			if (text != null && !text.isBlank()) {
-				fillFieldsFromInferredRule(text);
+				importRule(text);
 			} else {
 				validationLabel.setText("\u26A0 Clipboard is empty or contains no text"); //$NON-NLS-1$
 			}
