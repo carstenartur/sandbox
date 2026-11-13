@@ -75,6 +75,8 @@ The implementation re-establishes the closed editable scope, compares source fin
 - public, protected and overridable package-private instance helpers are not promoted;
 - wrappers with additional behavior are not flattened into the direct-wrapper contract.
 
+`JUnitScopeExpansionTest` covers caller-only selection through a binding-resolved method reference to a static assertion helper in an assertion-only cleanup profile with Jupiter Assertions available. The reference-only path accepts fully qualified `Assert.assertTrue` and `Assert.assertFalse` calls using primitive boolean and string parameters or literals in direct wrappers. Scope expansion adds the helper and its other source callers after the existing workspace search proves same-project closure and each newly admitted source unit passes the assertion checks. The tests cover assertion rewriting, compilation, undo and refusal when a helper or an additional caller contains an assertion whose argument evaluation could change.
+
 The detector does not invent a second call-graph implementation. Accepted helper methods are passed to the shared `RelatedCompilationUnitSearch`, which performs the workspace-wide source reference closure used by other coordinated cleanups. The ordinary `AssertJUnitPlugin` / `AssumeJUnitPlugin` then owns the actual JUnit invocation and import rewrite once the helper compilation unit is part of the closed cleanup scope.
 
 ## Roadmap

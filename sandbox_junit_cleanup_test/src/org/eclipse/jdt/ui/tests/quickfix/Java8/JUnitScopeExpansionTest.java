@@ -12,6 +12,7 @@ package org.eclipse.jdt.ui.tests.quickfix.Java8;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Collection;
@@ -31,6 +32,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.junit.JUnitCore;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 
@@ -40,6 +42,7 @@ import org.sandbox.jdt.cleanup.multifile.MultiFileCandidateOutcome;
 import org.sandbox.jdt.internal.ui.fix.JUnitCleanUpCore;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
+import org.sandbox.jdt.ui.tests.quickfix.rules.MultiFileCleanUpLifecycleAssertions;
 
 /** Tests candidate-gated scope expansion for coordinated JUnit migration. */
 public class JUnitScopeExpansionTest {
@@ -111,6 +114,223 @@ public class JUnitScopeExpansionTest {
 		assertTrue(cleanup.expandCleanUpScope(selected.getJavaProject(),
 				List.of(selected, helper, secondCaller), null).isEmpty(),
 				"The second expansion pass must recognize the complete helper closure");
+	}
+
+	@Test
+	public void assertionHelperMethodReferenceAddsItsDeclarationAndOtherCallers() throws CoreException {
+		addJupiter();
+		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
+		ICompilationUnit helper= pack.createCompilationUnit("Checks.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				final class Checks {
+					static void verifyConditionWithMessage(String message, boolean condition) {
+						org.junit.Assert.assertTrue(message, condition);
+					}
+				}
+				""", false, null);
+		ICompilationUnit selected= pack.createCompilationUnit("SelectedTest.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				import java.util.function.BiConsumer;
+
+				public class SelectedTest {
+					BiConsumer<String, Boolean> check = Checks::verifyConditionWithMessage;
+				}
+				""", false, null);
+		ICompilationUnit secondCaller= pack.createCompilationUnit("SecondTest.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				import java.util.function.BiConsumer;
+
+				public class SecondTest {
+					BiConsumer<String, Boolean> check = Checks::verifyConditionWithMessage;
+				}
+				""", false, null);
+		createUnit(pack, "UnrelatedTest.java"); //$NON-NLS-1$
+		JUnitCleanUpCore cleanup= assertionCleanup();
+
+		Collection<ICompilationUnit> expanded= cleanup.expandCleanUpScope(selected.getJavaProject(),
+				List.of(selected), null);
+
+		assertEquals(Set.of(selected, helper, secondCaller), Set.copyOf(expanded));
+		assertTrue(cleanup.expandCleanUpScope(selected.getJavaProject(), expanded, null).isEmpty());
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT);
+		MultiFileCleanUpLifecycleAssertions.assertApplyCompileAndUndo(
+				expanded.toArray(ICompilationUnit[]::new), new ICompilationUnit[] { helper, selected, secondCaller },
+				new String[] {
+						"""
+						package test;
+
+						final class Checks {
+							static void verifyConditionWithMessage(String message, boolean condition) {
+								org.junit.jupiter.api.Assertions.assertTrue(condition, message);
+							}
+						}
+						""", selected.getSource(), secondCaller.getSource() });
+	}
+
+	@Test
+	public void assertionHelperMethodReferenceRejectsUnsafeAdditionalCaller() throws CoreException {
+		addJupiter();
+		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
+		pack.createCompilationUnit("Checks.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				final class Checks {
+					static void verifyClosureFixture(boolean ready) { org.junit.Assert.assertTrue(ready); }
+				}
+				""", false, null);
+		ICompilationUnit selected= pack.createCompilationUnit("SelectedTest.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				import java.util.function.Consumer;
+
+				public class SelectedTest {
+					Consumer<Boolean> verify = Checks::verifyClosureFixture;
+				}
+				""", false, null);
+		pack.createCompilationUnit("SecondTest.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				public class SecondTest {
+					private int calls;
+
+					void verify() {
+						Checks.verifyClosureFixture(true);
+						org.junit.Assert.assertTrue("before " + calls++, calls == 1);
+					}
+				}
+				""", false, null);
+
+		assertTrue(assertionCleanup().expandCleanUpScope(selected.getJavaProject(),
+				List.of(selected), null).isEmpty());
+	}
+
+	@Test
+	public void methodReferenceToNonJUnitOverloadDoesNotAddTheHelper() throws CoreException {
+		addJupiter();
+		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
+		pack.createCompilationUnit("Checks.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				final class Checks {
+					static void verifyExpectedValue(String value) { org.junit.Assert.assertNotNull(value); }
+					static void verifyExpectedValue(int value) { if (value < 0) throw new IllegalArgumentException(); }
+				}
+				""", false, null);
+		ICompilationUnit selected= pack.createCompilationUnit("SelectedTest.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				import java.util.function.IntConsumer;
+
+				public class SelectedTest {
+					IntConsumer check = Checks::verifyExpectedValue;
+				}
+				""", false, null);
+
+		assertTrue(assertionCleanup().expandCleanUpScope(selected.getJavaProject(),
+				List.of(selected), null).isEmpty());
+	}
+
+	@Test
+	public void methodReferenceDoesNotExpandScopeWhenAssumptionMigrationIsEnabled() throws CoreException {
+		addJupiter();
+		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
+		pack.createCompilationUnit("Checks.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				final class Checks {
+					static void requireAvailableFixture(boolean ready) { org.junit.Assume.assumeTrue(ready); }
+					static void verifyAvailableFixture(boolean ready) { org.junit.Assert.assertTrue(ready); }
+				}
+				""", false, null);
+		ICompilationUnit selected= pack.createCompilationUnit("SelectedTest.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				import java.util.function.Consumer;
+				public class SelectedTest {
+					Consumer<Boolean> require = Checks::requireAvailableFixture;
+					Consumer<Boolean> verify = Checks::verifyAvailableFixture;
+				}
+				""", false, null);
+		JUnitCleanUpCore cleanup= new JUnitCleanUpCore(Map.of(
+				MYCleanUpConstants.JUNIT_CLEANUP, CleanUpOptions.TRUE,
+				MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT, CleanUpOptions.TRUE,
+				MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME, CleanUpOptions.TRUE));
+
+		assertTrue(cleanup.expandCleanUpScope(selected.getJavaProject(), List.of(selected), null).isEmpty());
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings= { "nextMessage()", "message", "(String) value", "\"\" + ++calls" })
+	public void methodReferenceDoesNotAddAssertionWithAnUnprovenMessageRead(String expression)
+			throws CoreException {
+		addJupiter();
+		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
+		pack.createCompilationUnit("Checks.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				final class Checks {
+					private static int calls;
+					private static String message = "fixture";
+					private static String nextMessage() { calls++; return message; }
+					static void verifyFixtureWithMessage(Object value, boolean ready) {
+						org.junit.Assert.assertTrue(MESSAGE_EXPRESSION, ready);
+					}
+				}
+				""".replace("MESSAGE_EXPRESSION", expression), false, null); //$NON-NLS-1$
+		ICompilationUnit selected= pack.createCompilationUnit("SelectedTest.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				import java.util.function.BiConsumer;
+				public class SelectedTest {
+					BiConsumer<Object, Boolean> verify = Checks::verifyFixtureWithMessage;
+				}
+				""", false, null);
+
+		assertTrue(assertionCleanup().expandCleanUpScope(selected.getJavaProject(),
+				List.of(selected), null).isEmpty());
+	}
+
+	@Test
+	public void assertionHelperMethodReferenceDoesNotExpandScopeWithoutJupiter() throws CoreException {
+		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
+		pack.createCompilationUnit("Checks.java", //$NON-NLS-1$
+				"""
+			package test;
+
+			final class Checks {
+					static void verifyLegacyFixture(boolean ready) { org.junit.Assert.assertTrue(ready); }
+				}
+				""", false, null);
+		ICompilationUnit selected= pack.createCompilationUnit("SelectedTest.java", //$NON-NLS-1$
+				"""
+			package test;
+
+			import java.util.function.Consumer;
+
+			public class SelectedTest {
+					Consumer<Boolean> verify = Checks::verifyLegacyFixture;
+				}
+				""", false, null);
+
+		assertNull(selected.getJavaProject().findType("org.junit.jupiter.api.Assertions")); //$NON-NLS-1$
+		assertTrue(assertionCleanup().expandCleanUpScope(selected.getJavaProject(),
+				List.of(selected), null).isEmpty());
 	}
 
 	@Test
@@ -251,6 +471,11 @@ public class JUnitScopeExpansionTest {
 		return new JUnitCleanUpCore(Map.of(
 				MYCleanUpConstants.JUNIT_CLEANUP, CleanUpOptions.TRUE,
 				MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT, CleanUpOptions.TRUE));
+	}
+
+	private void addJupiter() throws CoreException {
+		AbstractEclipseJava.addToClasspath(context.getJavaProject(),
+				JavaCore.newContainerEntry(JUnitCore.JUNIT5_CONTAINER_PATH));
 	}
 
 	private static JUnitCleanUpCore externalResourceCleanup() {
