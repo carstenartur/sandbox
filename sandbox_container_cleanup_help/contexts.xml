@@ -11,6 +11,10 @@
 		<description>Convert a proven strictly local append-only array to a mutable list.</description>
 		<topic href="html/cleanup.html#append-array" label="Append-only array to list"/>
 	</context>
+	<context id="listener_snapshot" title="Copy-on-write listener snapshots">
+		<description>Use copy-on-write iteration for registration-only private listener lists.</description>
+		<topic href="html/cleanup.html#listeners" label="Copy-on-write listener snapshots"/>
+	</context>
 	<context id="unique_sequence_to_set" title="Unique sequence to ordered set">
 		<description>Convert a proven manually unique local sequence to an encounter-ordered set.</description>
 		<topic href="html/cleanup.html#unique-sequence" label="Unique sequence to ordered set"/>

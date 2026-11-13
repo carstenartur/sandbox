@@ -16,6 +16,12 @@ import java.util.List;
 /** Central registry for user-visible semantic container migrations. */
 public enum ContainerCleanUpRule {
 
+	LISTENER_SNAPSHOT(
+			"cleanup.container_contracts.listener_snapshot", //$NON-NLS-1$
+			"sandbox_container_cleanup.listener_snapshot", //$NON-NLS-1$
+			ExecutionMode.PROJECT_CLOSED,
+			false),
+
 	APPEND_ARRAY_TO_LIST(
 			"cleanup.container_contracts.append_array_to_list", //$NON-NLS-1$
 			"sandbox_container_cleanup.append_array_to_list", //$NON-NLS-1$
