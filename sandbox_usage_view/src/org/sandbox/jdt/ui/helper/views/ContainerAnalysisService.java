@@ -31,7 +31,6 @@ import org.sandbox.jdt.container.analysis.LocalEnumIndexedMembershipAnalyzer;
 import org.sandbox.jdt.container.analysis.LocalUniqueSequenceAnalyzer;
 import org.sandbox.jdt.container.api.ContainerRecommendation;
 import org.sandbox.jdt.container.api.ContainerRecommendation.ContractAssessment;
-import org.sandbox.jdt.container.api.ContainerRecommendation.Preservation;
 import org.sandbox.jdt.container.api.ContainerUsageProfile;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.AnalysisCompleteness;
 import org.sandbox.jdt.container.api.TargetContainerContract;
@@ -152,14 +151,8 @@ final class ContainerAnalysisService {
 
 	private static String semanticSummary(ContainerRecommendation recommendation) {
 		String assessments= recommendation.assessments().stream()
-				.filter(assessment -> assessment.preservation() != Preservation.PRESERVED)
 				.map(ContainerAnalysisService::assessmentSummary)
 				.collect(Collectors.joining(System.lineSeparator()));
-		if (assessments.isBlank()) {
-			assessments= recommendation.assessments().stream()
-					.map(ContainerAnalysisService::assessmentSummary)
-					.collect(Collectors.joining(System.lineSeparator()));
-		}
 		return recommendation.targetContract().rationale()
 				+ (assessments.isBlank() ? "" : System.lineSeparator() + assessments); //$NON-NLS-1$
 	}

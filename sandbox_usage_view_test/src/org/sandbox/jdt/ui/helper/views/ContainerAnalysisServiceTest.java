@@ -154,7 +154,10 @@ public class ContainerAnalysisServiceTest {
 		assertTrue(rows.stream().allMatch(row -> "REPORT_ONLY".equals(row.status()))); //$NON-NLS-1$
 		assertTrue(rows.stream().anyMatch(row -> "ENUM_CARDINALITY".equals(row.evidenceKind()))); //$NON-NLS-1$
 		assertTrue(rows.stream().anyMatch(row -> "ENUM_MEMBERSHIP_QUERY".equals(row.evidenceKind()))); //$NON-NLS-1$
-		assertTrue(rows.stream().anyMatch(row -> row.semanticSummary().contains("ordinal positions"))); //$NON-NLS-1$
+		String details= rows.get(0).details();
+		assertTrue(details.contains("ordinal positions")); //$NON-NLS-1$
+		assertTrue(details.contains("ORDER: PRESERVED"), details); //$NON-NLS-1$
+		assertTrue(details.contains("NULLS: REQUIRES_PROOF"), details); //$NON-NLS-1$
 	}
 
 	@Test
