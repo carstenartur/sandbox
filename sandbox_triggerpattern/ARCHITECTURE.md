@@ -236,6 +236,14 @@ The string simplification patterns are now fully integrated with Eclipse's clean
 - Batch applies patterns to selected files, packages, or entire projects
 - Provides preview of changes before applying
 
+The String Simplification option also converts one-code-unit string literals in
+resolved `String.lastIndexOf(String)` calls to character literals. The
+`StringLastIndexOfCleanUp` contribution uses a fresh AST after the existing
+simplifications so it can update the corresponding NLS tags. The JDT LS
+single-ID preview runs only the cleanup contribution named in the request, so
+the `org.eclipse.jdt.ui.cleanup.stringsimplification` preview covers the original
+string simplifications.
+
 #### UI Components
 - **`StringSimplificationCleanUp`** - Wrapper cleanup class
 - **`StringSimplificationCleanUpCore`** - Core cleanup implementation
