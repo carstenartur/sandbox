@@ -119,6 +119,7 @@ public record ConcurrencyProtocol(
 		CALLBACK_UNDER_LOCK(true),
 		CALLBACK_OUTSIDE_LOCK(false),
 		SNAPSHOT_PUBLICATION(false),
+		LIVE_WRAPPER_RETURN(false),
 		UNPROTECTED_ACCESS(false),
 		UNRESOLVED_BOUNDARY(false);
 

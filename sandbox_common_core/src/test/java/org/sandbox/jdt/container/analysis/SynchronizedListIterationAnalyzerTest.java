@@ -164,6 +164,40 @@ class SynchronizedListIterationAnalyzerTest {
 		assertTrue(analyzer.analyze(parse(source, false)).isEmpty());
 	}
 
+	@Test
+	void distinguishesLiveReturnsSnapshotsAndDeferredReturns() {
+		String source= """
+				import java.util.*;
+				import java.util.function.Supplier;
+				class Sample {
+				    private final List<String> entries = Collections.synchronizedList(new ArrayList<>());
+				    List<String> live() { return entries; }
+				    List<String> snapshot() { synchronized(entries) { return List.copyOf(this.entries); } }
+				    List<String> backingCopy() { return new ArrayList<>(entries); }
+				    List<String> other(Sample other) { return other.entries; }
+				    Supplier<List<String>> later() { return () -> { return entries; }; }
+				    private List<String> internal() { return entries; }
+				}
+				""";
+		List<DiagnosticOnly> results= analyze(source);
+		assertEquals(2, results.size());
+		var live= results.get(0).protocol();
+		assertEquals("LIVE_WRAPPER_RETURN", live.evidence().getFirst().kind().name()); //$NON-NLS-1$
+		assertTrue(live.evidence().getFirst().summary().contains("monitor")); //$NON-NLS-1$
+		assertEquals("entries", anchor(source, live.evidence().getFirst())); //$NON-NLS-1$
+		var copy= results.get(1).protocol();
+		assertEquals(EvidenceKind.SNAPSHOT_PUBLICATION, copy.evidence().getFirst().kind());
+		assertEquals(IterationSemantics.IMMUTABLE_SNAPSHOT, copy.summary().iteration());
+		assertTrue(copy.hasSingleProtectingLock());
+		assertEquals("List.copyOf(this.entries)", anchor(source, copy.evidence().getFirst())); //$NON-NLS-1$
+		assertFalse(results.get(1).permitsSourceRewrite());
+		assertTrue(analyzer.analyze(parse(source, false)).isEmpty());
+	}
+
+	private static String anchor(String source, ConcurrencyProtocol.Evidence evidence) {
+		return source.substring(evidence.sourceStart(), evidence.sourceStart() + evidence.sourceLength());
+	}
+
 	private List<DiagnosticOnly> analyze(String source) {
 		CompilationUnit unit= parse(source, true);
 		assertTrue(Arrays.stream(unit.getProblems()).noneMatch(IProblem::isError), unit::toString);
