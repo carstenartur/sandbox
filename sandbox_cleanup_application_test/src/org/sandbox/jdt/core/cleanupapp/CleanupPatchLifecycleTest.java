@@ -178,6 +178,60 @@ class CleanupPatchLifecycleTest {
 		}
 	}
 
+	@ParameterizedTest
+	@ValueSource(strings = { "META-INF/MANIFEST.MF", "pom.xml" })
+	void platformSuiteDependencySharesTheJavaCheckAndApplyTransaction(String descriptorPath) throws Exception {
+		IFolder sourceRoot= project.getFolder("src/test/java");
+		createFolder(sourceRoot);
+		var javaProject= JavaCore.create(project);
+		javaProject.setRawClasspath(new IClasspathEntry[] {
+				JavaCore.newSourceEntry(sourceRoot.getFullPath()),
+				JavaCore.newContainerEntry(new org.eclipse.core.runtime.Path("org.eclipse.jdt.launching.JRE_CONTAINER")),
+				JavaCore.newContainerEntry(new org.eclipse.core.runtime.Path("org.eclipse.jdt.junit.JUNIT_CONTAINER/4"))
+		}, project.getFullPath().append("bin"), monitor);
+		IFile source= createSource("src/test/java/probe/AllTests.java", """
+				package probe;
+				import org.junit.runner.RunWith;
+				import org.junit.runners.Suite;
+				@RunWith(Suite.class)
+				@Suite.SuiteClasses({})
+				public class AllTests {}
+				""");
+		boolean maven= "pom.xml".equals(descriptorPath);
+		IFile descriptor= createSource(descriptorPath, maven ? PlatformSuiteDependenciesTest.MODEL
+				: "Manifest-Version: 1.0\r\nBundle-SymbolicName: tests\r\n");
+		String expectedDependency= maven ? "junit-platform-suite" : "org.junit.platform.suite.api";
+		byte[] originalSource= read(source);
+		byte[] originalDescriptor= read(descriptor);
+		Path patch= temporaryDirectory.resolve("suite.patch");
+		Path report= temporaryDirectory.resolve("suite.json");
+		Path config= writeConfig("cleanup.junitcleanup=true\ncleanup.junitcleanup_4_runwith=true\ncleanup.junitcleanup_4_suite=true\n");
+		String[] args= { "--project", project.getName(), "--config", config.toString(), "--report", report.toString(),
+				"--patch", patch.toString(), "--mode", "check" };
+		var app= new ProjectWideCodeCleanupApplication();
+		assertEquals(Integer.valueOf(2), app.start(new TestApplicationContext(args)));
+		assertArrayEquals(originalSource, read(source));
+		assertArrayEquals(originalDescriptor, read(descriptor));
+		String predicted= Files.readString(patch);
+		assertTrue(predicted.contains(expectedDependency), predicted);
+		assertTrue(predicted.contains(descriptorPath), predicted);
+		args[args.length - 1]= "apply";
+		assertEquals(Integer.valueOf(0), app.start(new TestApplicationContext(args)));
+		assertEquals(predicted, Files.readString(patch));
+		assertTrue(new String(read(descriptor), StandardCharsets.UTF_8).contains(expectedDependency));
+		assertTrue(new String(read(source), StandardCharsets.UTF_8).contains("org.junit.platform.suite.api.Suite"));
+		if (maven) {
+			// A fresh apply on an unmanaged POM must roll back the Java change too.
+			source.setContents(new ByteArrayInputStream(originalSource), true, false, monitor);
+			String unmanaged= PlatformSuiteDependenciesTest.MODEL.replace("junit-bom", "other-bom");
+			descriptor.setContents(new ByteArrayInputStream(unmanaged.getBytes(StandardCharsets.UTF_8)), true, false, monitor);
+			assertEquals(Integer.valueOf(1), app.start(new TestApplicationContext(args)));
+			assertArrayEquals(originalSource, read(source));
+			assertEquals(unmanaged, new String(read(descriptor), StandardCharsets.UTF_8));
+			assertTrue(Files.readString(report).contains("Cannot plan the JUnit Platform Suite dependency"));
+		}
+	}
+
 	private Path writeConfig(String content) throws Exception {
 		return Files.writeString(temporaryDirectory.resolve("cleanup.properties"), content, StandardCharsets.ISO_8859_1); //$NON-NLS-1$
 	}

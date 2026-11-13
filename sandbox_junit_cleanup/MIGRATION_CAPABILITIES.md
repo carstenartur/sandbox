@@ -37,6 +37,7 @@ A missing binding, binary-only participant, stale plan, incomplete project scope
 | Parameterized constructor/field injection | Supported for proven closed-source plans | ordered semantic relations plus coordinated `ParameterizedClass` execution | stable binding keys, contiguous field indices and proven argument types; unsupported hooks fail closed |
 | JUnit 3 custom harness | Not generally supported | dedicated framework migration required | must not be flattened into annotations |
 | public/shared helper API or recursive helper chain | Not yet supported | later #1367 Phase-4 slices | requires stronger dispatch/API/signature proof and complete caller/callee closure |
+| project-wide Platform Suite dependency addition | Supported in the headless project-wide check/apply path | a newly imported or fully qualified Platform `@Suite` adds its API package to the PDE manifest, or the `junit-platform-suite` test dependency to a supported standalone Maven module | Maven requires a standard test source path, direct dependencies and an imported JUnit 5.8+ or 6 release BOM for new coordinates. Existing JUnit 4/Vintage dependencies are retained. |
 | automatic JUnit 4/Vintage dependency removal | Not yet supported | planned resource-change phase | allowed only after all source and generated consumers are classified |
 
 ## Stable rejection categories
@@ -81,6 +82,10 @@ The implementation re-establishes the closed editable scope, compares source fin
 The same test class covers selection through several static forwarders, including a private intermediate method and another caller of the terminal assertion wrapper. Both selected calls and method references exercise the compile-and-undo lifecycle. Cycles, unresolved calls, public overloads, and unsafe additional callers leave this scope unexpanded.
 
 Accepted helper methods are passed to the shared `RelatedCompilationUnitSearch`, which performs the workspace-wide source reference closure used by other coordinated cleanups. The ordinary `AssertJUnitPlugin` / `AssumeJUnitPlugin` then owns the actual JUnit invocation and import rewrite once the helper compilation unit is part of the closed cleanup scope.
+
+## Platform Suite resources
+
+`CleanupPatchLifecycleTest` applies the same Java suite migration to a PDE bundle and a standalone Maven test project. Check mode previews both files and restores their bytes. Apply produces the same patch. If a Maven version cannot be derived from the supported BOM, the application rolls back the Java change and reports the reason. `PlatformSuiteDependenciesTest` covers idempotency, CRLF preservation, attributed or inherited Maven model boundaries and annotation detection.
 
 ## Roadmap
 
