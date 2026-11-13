@@ -28,7 +28,7 @@ import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SimpleName;
 
-import org.sandbox.jdt.container.analysis.LocalArrayUsageAnalyzer;
+import org.sandbox.jdt.container.analysis.ContainerConstructorTarget;
 import org.sandbox.jdt.container.api.ContainerLocalRewritePlan;
 import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.ArgumentTransfer;
 
@@ -95,7 +95,7 @@ final class ContainerLocalArgumentTransferVerifier {
 			return invocation.resolveMethodBinding();
 		}
 		if (name.getParent() instanceof ClassInstanceCreation creation && creation.arguments().indexOf(name) == index
-				&& LocalArrayUsageAnalyzer.isClosedConstructorTarget(creation)) {
+				&& ContainerConstructorTarget.isClosed(creation)) {
 			return creation.resolveConstructorBinding();
 		}
 		return null;
