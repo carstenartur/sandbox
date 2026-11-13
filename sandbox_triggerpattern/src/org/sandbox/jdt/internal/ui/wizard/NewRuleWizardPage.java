@@ -298,6 +298,17 @@ public class NewRuleWizardPage extends WizardPage {
 				projectPreviewAction.accept(getFullDslDocument());
 			}
 		});
+		Button buildAction = new Button(documentActions, SWT.PUSH);
+		buildAction.setText("Build action..."); //$NON-NLS-1$
+		buildAction.setToolTipText("Insert a structured action at the cursor or replace the selected text."); //$NON-NLS-1$
+		buildAction.addListener(SWT.Selection, event -> {
+			var dialog = new StructuredActionDialog(ruleViewer.getControl().getShell());
+			if (dialog.open() == Window.OK) {
+				var editor = ruleViewer.getTextWidget();
+				editor.insert(dialog.action());
+				editor.setFocus();
+			}
+		});
 		Button examplesButton = new Button(documentActions, SWT.PUSH);
 		examplesButton.setText("Examples..."); //$NON-NLS-1$
 		examplesButton.addListener(SWT.Selection, event -> openExamples());

@@ -30,6 +30,7 @@ import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
@@ -71,6 +72,80 @@ class NewRuleWizardPageTest {
 		if (failure.get() != null) {
 			fail(failure.get());
 		}
+	}
+
+	@Test
+	void actionBuilderInsertsOnlyTheChosenActionAtTheEditorSelection() {
+		runOnDisplay(() -> {
+			String before = "<!requires-plan: example>\nvoid $method($params$)\n=>! removeModifier(modifier=public)\n;;\n";
+			var page = new NewRuleWizardPage();
+			page.setInitialDsl(before);
+			page.createControl(shell);
+			StyledText editor = descendants(shell, StyledText.class).getFirst();
+			String oldAction = "removeModifier(modifier=public)";
+			int start = before.indexOf(oldAction);
+			editor.setSelection(start, start + oldAction.length());
+			Button action = descendants(shell, Button.class).stream().filter(button -> "Build action...".equals(button.getText()))
+					.findFirst().orElseThrow();
+			AtomicReference<Throwable> dialogFailure = new AtomicReference<>();
+			display.asyncExec(() -> {
+				Shell dialog = display.getActiveShell();
+				try {
+					Combo combo = descendants(dialog, Combo.class).getFirst();
+					combo.select(combo.indexOf("addAnnotation"));
+					combo.notifyListeners(SWT.Selection, new Event());
+					List<Text> fields = descendants(dialog, Text.class);
+					assertFalse(dialog.getDefaultButton().isEnabled());
+					fields.getFirst().setText("org.junit.jupiter.api.Test");
+					assertTrue(dialog.getDefaultButton().isEnabled());
+					dialog.getDefaultButton().notifyListeners(SWT.Selection, new Event());
+				} catch (Throwable failure) {
+					dialogFailure.set(failure);
+					if (dialog != null && !dialog.isDisposed()) {
+						dialog.close();
+					}
+				}
+			});
+			action.notifyListeners(SWT.Selection, new Event());
+			if (dialogFailure.get() != null) {
+				fail(dialogFailure.get());
+			}
+			assertEquals(before.replace(oldAction, "addAnnotation(annotation=\"org.junit.jupiter.api.Test\")"),
+					page.getFullDslDocument());
+			assertTrue(page.isPageComplete(), page.getErrorMessage());
+		});
+	}
+
+	@Test
+	void parameterSelectorsAndExplicitTargetsAreValidatedBeforeInsertion() {
+		runOnDisplay(() -> {
+			var dialog = new StructuredActionDialog(shell);
+			try {
+				dialog.create();
+				Combo actions = descendants(dialog.getShell(), Combo.class).getFirst();
+				actions.select(actions.indexOf("removeParameter"));
+				actions.notifyListeners(SWT.Selection, new Event());
+				var fields = descendants(dialog.getShell(), Text.class);
+				Text index = fields.get(0);
+				Text name = fields.get(1);
+				Text target = fields.get(2);
+				assertNull(dialog.action());
+				name.setText("unused");
+				assertEquals("removeParameter(name=\"unused\")", dialog.action());
+				index.setText("1");
+				assertNull(dialog.action());
+				name.setText("");
+				index.setText("-1");
+				assertNull(dialog.action());
+				index.setText("1");
+				target.setText("missingDollar");
+				assertNull(dialog.action());
+				target.setText("$other");
+				assertEquals("removeParameter(index=1, target=$other)", dialog.action());
+			} finally {
+				dialog.close();
+			}
+		});
 	}
 
 	@Test
