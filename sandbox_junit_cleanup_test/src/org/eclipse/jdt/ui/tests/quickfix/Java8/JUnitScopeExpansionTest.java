@@ -174,8 +174,8 @@ public class JUnitScopeExpansionTest {
 				""", false, null);
 		pack.createCompilationUnit("Bridge.java", """
 				package test;
-				final class Bridge { static void verify(boolean ready) { %s; } }
-				""".formatted(delegate), false, null);
+				final class Bridge { static void verify(boolean ready) { CALL; } }
+				""".replace("CALL", delegate), false, null);
 		ICompilationUnit selected= pack.createCompilationUnit("Selected.java", """
 				package test;
 				final class Selected { void run() { Bridge.verify(true); } }
