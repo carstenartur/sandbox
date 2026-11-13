@@ -5,44 +5,33 @@
 package org.sandbox.jdt.internal.corext.fix.math;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.IntSummaryStatistics;
 import java.util.Map;
 import java.util.Set;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.IVariableBinding;
-import org.eclipse.jdt.core.dom.SimpleName;
 import de.regelsuche.search.program.JointComputationPlan;
 
 /** Projects only value outputs. Dead operations remain in the source trace and must be proved total. */
 final class JavaRegionLiveness {
    private JavaRegionLiveness() {}
 
-   static JavaComputationRegion project(JavaComputationRegion region, CompilationUnit unit) {
-      Set<String> locals = new HashSet<>();
-      for (var output : region.outputs()) {
-         if (!output.returnValue()) locals.add(output.bindingKey());
-      }
+   static JavaComputationRegion project(JavaComputationRegion region, CompilationUnit unit,
+         Map<String, IntSummaryStatistics> uses) {
       Set<String> visible = new HashSet<>();
       var lastVersions = new HashMap<String, JavaComputationRegion.OutputBinding>();
-      for (var output : region.outputs()) {
-         if (!output.returnValue()) lastVersions.put(output.bindingKey(), output);
-      }
       int end = region.start() + region.length();
-      // A return-only region has no local binding whose visibility can change.
-      if (!locals.isEmpty()) unit.accept(new ASTVisitor() {
-         @Override public boolean visit(SimpleName name) {
-            if ((name.getStartPosition() < region.start() || name.getStartPosition() >= end)
-                  && name.resolveBinding() instanceof IVariableBinding binding
-                  && locals.contains(binding.getKey())) {
-               // Even an external write still requires the local declaration to remain in scope.
-               visible.add(binding.getKey());
-            }
-            return true;
+      for (var output : region.outputs()) {
+         if (output.returnValue()) continue;
+         lastVersions.put(output.bindingKey(), output);
+         // A declaration, read or write outside [start, end) requires the binding to remain visible.
+         var positions = uses.get(output.bindingKey());
+         if (positions != null && (positions.getMin() < region.start() || positions.getMax() >= end)) {
+            visible.add(output.bindingKey());
          }
-      });
+      }
       // Never remove a comment embedded in a declaration or assignment. Inter-statement
       // comments are retained by the exact source-range rewrite instead.
       Set<String> commented = new HashSet<>();
