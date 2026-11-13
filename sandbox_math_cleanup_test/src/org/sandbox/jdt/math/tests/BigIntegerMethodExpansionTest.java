@@ -328,7 +328,13 @@ class BigIntegerMethodExpansionTest {
         try {
             return method.invoke(null, x, m);
         } catch (InvocationTargetException failure) {
-            return List.of(failure.getCause().getClass(), String.valueOf(failure.getCause().getMessage()));
+            Throwable cause = failure.getCause();
+            // Helpful VM-generated NPE messages depend on the precise bytecode path and JDK.
+            // A migration must preserve the exception type, not its non-contractual VM wording.
+            if (cause instanceof NullPointerException) {
+                return cause.getClass();
+            }
+            return List.of(cause.getClass(), String.valueOf(cause.getMessage()));
         }
     }
 
