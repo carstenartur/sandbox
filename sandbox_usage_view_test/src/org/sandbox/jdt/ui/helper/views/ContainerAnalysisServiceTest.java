@@ -13,10 +13,13 @@ package org.sandbox.jdt.ui.helper.views;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
@@ -24,12 +27,37 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 
 import org.junit.jupiter.api.Test;
 
+import org.sandbox.jdt.container.analysis.RecordKeyLookupAnalyzer;
 import org.sandbox.jdt.ui.helper.views.ContainerAnalysisService.ContainerAnalysisRow;
 
 /** Verifies the read-only projection used by the Container Analysis view. */
 public class ContainerAnalysisServiceTest {
 
 	private final ContainerAnalysisService service= new ContainerAnalysisService();
+
+	@Test
+	public void canceledReportStopsBeforePublishingAnyRows() {
+		var monitor= new NullProgressMonitor();
+		monitor.setCanceled(true);
+		CompilationUnit unit= parse("class Sample {}"); //$NON-NLS-1$
+		assertThrows(OperationCanceledException.class, () -> service.analyze(unit, "=Sample", monitor)); //$NON-NLS-1$
+	}
+
+	@Test
+	public void recordLookupTraversalCanBeCanceledInsideOneLargeCompilationUnit() {
+		StringBuilder source= new StringBuilder("class Sample {"); //$NON-NLS-1$
+		for (int index= 0; index < 500; index++) {
+			source.append("void method").append(index).append("() { int n = 1; }"); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+		CompilationUnit unit= parse(source.append('}').toString());
+		int[] checks= { 0 };
+		assertThrows(OperationCanceledException.class, () -> RecordKeyLookupAnalyzer.analyze(unit, () -> {
+			if (++checks[0] == 3) {
+				throw new OperationCanceledException();
+			}
+		}));
+		assertEquals(3, checks[0]);
+	}
 
 	@Test
 	public void appendArrayRecommendationRetainsEvidenceSourceAnchors() {

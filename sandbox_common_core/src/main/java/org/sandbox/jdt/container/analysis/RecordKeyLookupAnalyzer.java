@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -70,16 +71,28 @@ public final class RecordKeyLookupAnalyzer {
 	private RecordKeyLookupAnalyzer() {
 	}
 
-	/** Returns one report-only seed for each list and key accessor seen at distinct lookup sites. */
-	public static List<ContainerUsageProfile> analyze(CompilationUnit root) {
+	/** Returns report-only seeds and polls cancellation even in units with few matching loops. */
+	public static List<ContainerUsageProfile> analyze(CompilationUnit root, Runnable checkCanceled) {
+		checkCanceled.run();
 		Map<Lookup, Observations> observations= new LinkedHashMap<>();
 		root.accept(new ASTVisitor() {
+			private int visited;
+
+			@Override
+			public boolean preVisit2(ASTNode node) {
+				if (++visited % 128 == 0) {
+					checkCanceled.run();
+				}
+				return true;
+			}
+
 			@Override
 			public boolean visit(EnhancedForStatement loop) {
 				observe(root, loop, observations);
 				return true;
 			}
 		});
+		checkCanceled.run();
 		return observations.values().stream().filter(value -> value.scans().size() >= 2)
 				.map(RecordKeyLookupAnalyzer::profile).toList();
 	}
