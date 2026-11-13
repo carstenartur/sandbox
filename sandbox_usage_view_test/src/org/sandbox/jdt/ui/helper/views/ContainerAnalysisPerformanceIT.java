@@ -122,7 +122,9 @@ class ContainerAnalysisPerformanceIT {
 				if (path.endsWith(".java")) { //$NON-NLS-1$
 					byte[] source= git.getRepository().open(files.getObjectId(0)).getBytes();
 					Path destination= directory.resolve(path);
-					Files.createDirectories(destination.getParent());
+					Path parent= java.util.Objects.requireNonNull(destination.getParent(),
+							"Imported Java source requires a parent directory: " + path); //$NON-NLS-1$
+					Files.createDirectories(parent);
 					Files.write(destination, source);
 					bytes+= source.length;
 					paths.add(path);
