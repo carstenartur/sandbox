@@ -27,12 +27,17 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.jar.Manifest;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.eclipse.jgit.api.Git;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.io.TempDir;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -104,6 +109,56 @@ public class CiBuildScopeContractTest {
 		assertTrue(strict.contains("run-jdt-ui-before-after.sh")); //$NON-NLS-1$
 		assertTrue(strict.contains("--mode strict")); //$NON-NLS-1$
 		assertTrue(strict.contains("VerifyWhitespaceRegression.java")); //$NON-NLS-1$
+	}
+
+	@Test
+	@EnabledOnOs(OS.LINUX)
+	public void stockHelpGateRejectsProvenanceChangesWithUnchangedPng(@TempDir Path checkout) throws Exception {
+		Path images = Files.createDirectories(checkout.resolve("sandbox_fixture_help/images")); //$NON-NLS-1$
+		Files.copy(repositoryRoot().resolve("sandbox_math_cleanup_help/images/01-bouncy-castle-choice.png"), //$NON-NLS-1$
+				images.resolve("preview.png")); //$NON-NLS-1$
+		Path sidecar = images.resolve("preview.provenance.json"); //$NON-NLS-1$
+		String baseline = "{\"capture\":\"baseline\"}\n"; //$NON-NLS-1$
+		Files.writeString(sidecar, baseline);
+		try (Git git = Git.init().setDirectory(checkout.toFile()).call()) {
+			git.add().addFilepattern(".").call(); //$NON-NLS-1$
+			git.commit().setMessage("Help fixture") //$NON-NLS-1$
+					.setAuthor("Fixture", "fixture@example.invalid").setCommitter("Fixture", "fixture@example.invalid") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+					.call();
+		}
+
+		String workflow = Files.readString(repositoryRoot().resolve(".github/workflows/eclipse-help-screenshots.yml")); //$NON-NLS-1$
+		String step = workflowStep(workflow, "Verify committed screenshots are reproducible"); //$NON-NLS-1$
+		String runMarker = "        run: |\n"; //$NON-NLS-1$
+		int start = step.indexOf(runMarker);
+		assertTrue(start >= 0, "Missing screenshot comparison command"); //$NON-NLS-1$
+		String command = step.substring(start + runMarker.length()).replaceAll("(?m)^ {10}", ""); //$NON-NLS-1$ //$NON-NLS-2$
+		assertHelpComparison(checkout, command, 0, ""); //$NON-NLS-1$
+
+		Files.writeString(sidecar, "{\"capture\":\"regenerated\"}\n"); //$NON-NLS-1$
+		assertHelpComparison(checkout, command, 1, sidecar.getFileName().toString());
+		Files.delete(sidecar);
+		assertHelpComparison(checkout, command, 1, sidecar.getFileName().toString());
+		Files.writeString(sidecar, baseline);
+		Path untracked = Files.writeString(images.resolve("new.provenance.json"), baseline); //$NON-NLS-1$
+		assertHelpComparison(checkout, command, 1, untracked.getFileName().toString());
+	}
+
+	private static void assertHelpComparison(Path checkout, String command, int exitCode, String expectedOutput)
+			throws Exception {
+		Path log = checkout.resolve("comparison.log"); //$NON-NLS-1$
+		Process process = new ProcessBuilder("bash", "--noprofile", "--norc", "-c", command) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+				.directory(checkout.toFile()).redirectErrorStream(true).redirectOutput(log.toFile()).start();
+		try {
+			assertTrue(process.waitFor(20, TimeUnit.SECONDS), "Screenshot comparison did not terminate"); //$NON-NLS-1$
+			String output = Files.readString(log);
+			assertEquals(exitCode, process.exitValue(), output);
+			assertTrue(output.contains(expectedOutput), output);
+		} finally {
+			if (process.isAlive()) {
+				process.destroyForcibly();
+			}
+		}
 	}
 
 	@Test
