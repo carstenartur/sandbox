@@ -15,6 +15,13 @@
 		<dependency>
 			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_common_core</artifactId>
+			<!-- PDE supplies the bundles imported by Common Core. -->
+			<exclusions>
+				<exclusion>
+					<groupId>*</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 	</dependencies>
 	<build>

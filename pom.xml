@@ -866,6 +866,17 @@
 				     configures a workspace project outside that scope. -->
 				<maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
 			</properties>
+			<build>
+				<pluginManagement>
+					<plugins>
+						<plugin>
+							<groupId>org.apache.maven.plugins</groupId>
+							<artifactId>maven-jar-plugin</artifactId>
+							<version>${maven-jar-plugin.version}</version>
+						</plugin>
+					</plugins>
+				</pluginManagement>
+			</build>
 		</profile>
 		<profile>
 			<id>macos-tests</id>
