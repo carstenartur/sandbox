@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "458aa0896c1e40f2635685b9b590c747a4142afb0e4bb10a1da8eba607e46461",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new $InterfaceType() { @java.lang.Override public $ReturnType $methodName($args$) { $receiver.$targetMethod($args$); } } :: sourceVersionGE(8)\n\u003d\u003e $receiver::$targetMethod\n;;",
+  "beforeExample": "import java.util.function.Consumer;\n\npublic class MyService {\n    public void handle(String message) {\n        System.out.println(\"Handling: \" + message);\n    }\n\n    public void setupHandler() {\n        Consumer\u003cString\u003e handler \u003d new Consumer\u003cString\u003e() {\n            @Override\n            public void accept(String s) {\n                MyService.this.handle(s);\n            }\n        };\n        handler.accept(\"Hello\");\n    }\n\n    private void doSomeWork() {\n        System.out.println(\"Doing some work.\");\n    }\n\n    public void runJob() {\n        Runnable runner \u003d new Runnable() {\n            @Override\n            public void run() {\n                this.doSomeWork(); // Implicit \u0027this\u0027 receiver for direct method call\n            }\n        };\n        runner.run();\n    }\n}",
+  "afterExample": "import java.util.function.Consumer;\n\npublic class MyService {\n    public void handle(String message) {\n        System.out.println(\"Handling: \" + message);\n    }\n\n    public void setupHandler() {\n        Consumer\u003cString\u003e handler \u003d MyService.this::handle;\n        handler.accept(\"Hello\");\n    }\n\n    private void doSomeWork() {\n        System.out.println(\"Doing some work.\");\n    }\n\n    public void runJob() {\n        Runnable runner \u003d new Runnable() {\n            @Override\n            public void run() {\n                this.doSomeWork(); // Implicit \u0027this\u0027 receiver for direct method call\n            }\n        };\n        runner.run();\n    }\n}",
+  "negativeExample": "import java.util.function.Consumer;\n\npublic class NegativeService {\n    public void handle(String message) {\n        System.out.println(\"Handling: \" + message);\n    }\n\n    public void setupHandler() {\n        Consumer\u003cString\u003e handler \u003d new Consumer\u003cString\u003e() {\n            @Override\n            public void accept(String s) {\n                // This anonymous class has additional logic and cannot be converted to a simple method reference.\n                if (s !\u003d null \u0026\u0026 !s.isEmpty()) {\n                    NegativeService.this.handle(s.trim());\n                } else {\n                    System.err.println(\"Invalid message\");\n                }\n            }\n        };\n        handler.accept(\"World\");\n    }\n}",
+  "targetHintFile": "modernize-java8.sandbox-hint",
+  "sourceCommit": "53ba660dc2c4542476dc9b816dd27f7c0bd61d34",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "sourceEvidence": {
+    "path": "org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/memory/MemoryRenderingManager.java",
+    "before": "\t\t\t\t\tbindings.addListener(new IMemoryRenderingBindingsListener() {\n\t\t\t\t\t\t@Override\n\t\t\t\t\t\tpublic void memoryRenderingBindingsChanged() {\n\t\t\t\t\t\t\tfireBindingsChanged();\n\t\t\t\t\t\t}\n\t\t\t\t\t});",
+    "after": "\t\t\t\t\tbindings.addListener(this::fireBindingsChanged);",
+    "diffHunk": "diff --git a/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/memory/MemoryRenderingManager.java b/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/memory/MemoryRenderingManager.java\nindex 8b1703d..16989ba 100644\n--- a/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/memory/MemoryRenderingManager.java\n+++ b/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/memory/MemoryRenderingManager.java\n@@ -158,12 +157,7 @@\n \t\t\t\ttry {\n \t\t\t\t\tbindings.validate();\n \t\t\t\t\tfBindings.add(bindings);\n-\t\t\t\t\tbindings.addListener(new IMemoryRenderingBindingsListener() {\n-\t\t\t\t\t\t@Override\n-\t\t\t\t\t\tpublic void memoryRenderingBindingsChanged() {\n-\t\t\t\t\t\t\tfireBindingsChanged();\n-\t\t\t\t\t\t}\n-\t\t\t\t\t});\n+\t\t\t\t\tbindings.addListener(this::fireBindingsChanged);\n \t\t\t\t} catch (CoreException e) {\n \t\t\t\t\tDebugUIPlugin.log(e);\n \t\t\t\t}\n"
+  },
+  "category": "Java Modernization",
+  "summary": "Replaces single-method anonymous inner classes with a method reference if the method body is a direct method call, applicable for Java 8+ projects.",
+  "sourceVersion": "8",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-13T02:17:50.899003650Z",
+  "ruleFingerprint": "sha256:dae6fd3f418321d4ad713ef2ac57e8db973c8908bbae23f701bd57485498198f",
+  "behaviorFingerprint": "sha256:7e1122a5c9ef221221c223ce51c5694ca06eacc357ce44357579f74fcf086fc7",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 26: The method doSomeWork() is undefined for the type new Runnable(){}",
+    "verifiedAt": "2026-11-13T02:22:06.798494226Z",
+    "verifierVersion": "9",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

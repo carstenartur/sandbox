@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "NEGATIVE_PARSE",
     "message": "Java compile error at line 19: Iterator cannot be resolved to a type",
-    "verifiedAt": "2026-11-12T02:24:46.873350621Z",
+    "verifiedAt": "2026-11-13T02:22:01.439618679Z",
     "verifierVersion": "9",
     "matches": 1,
     "replacements": 1

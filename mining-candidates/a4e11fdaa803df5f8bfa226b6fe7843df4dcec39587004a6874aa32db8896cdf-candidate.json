@@ -20,7 +20,7 @@
     "successful": false,
     "stage": "AFTER_REWRITE",
     "message": "Transformed source is invalid: Java compile error at line 8: Type mismatch: cannot convert from StringBuilder to StringBuffer",
-    "verifiedAt": "2026-11-12T02:24:46.370898549Z",
+    "verifiedAt": "2026-11-13T02:22:00.877144696Z",
     "verifierVersion": "9",
     "matches": 1,
     "replacements": 1

@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "ae4088e6d19a1b5a9ec0739068dc69c96dfb5af19117144da1977eaaf87e5e0e",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.debug.ui.IDebugUIConstants.ATTR_MERGE_OUTPUT\n\u003d\u003e\norg.eclipse.debug.core.DebugPlugin.ATTR_MERGE_OUTPUT\n;;",
+  "beforeExample": "package example;\n\n// Assuming these Eclipse APIs are available on the classpath for compilation\n// in the sandbox environment, as stubbing them is disallowed by rules.\ninterface ILaunchConfiguration {\n    boolean getAttribute(String name, boolean defaultValue);\n    void setAttribute(String name, boolean value);\n    void setAttribute(String name, String value);\n}\n\nclass CoreException extends Exception {\n    public CoreException(String message) { super(message); }\n}\n\n// Original constant location\nclass IDebugUIConstants {\n    public static final String ATTR_MERGE_OUTPUT \u003d \"org.eclipse.debug.ui.ATTR_MERGE_OUTPUT\";\n    public static final String ATTR_CAPTURE_IN_FILE \u003d \"org.eclipse.debug.ui.ATTR_CAPTURE_IN_FILE\";\n}\n\npublic class MyLaunchConfigurationTab {\n    public void performApply(ILaunchConfiguration configuration) throws CoreException {\n        boolean mergeOutput;\n        mergeOutput \u003d configuration.getAttribute(IDebugUIConstants.ATTR_MERGE_OUTPUT, false);\n        configuration.setAttribute(IDebugUIConstants.ATTR_MERGE_OUTPUT, true);\n        configuration.setAttribute(IDebugUIConstants.ATTR_MERGE_OUTPUT, (String) null);\n        System.out.println(\"Current merge output setting: \" + mergeOutput);\n    }\n}",
+  "afterExample": "package example;\n\n// Assuming these Eclipse APIs are available on the classpath for compilation\n// in the sandbox environment, as stubbing them is disallowed by rules.\ninterface ILaunchConfiguration {\n    boolean getAttribute(String name, boolean defaultValue);\n    void setAttribute(String name, boolean value);\n    void setAttribute(String name, String value);\n}\n\nclass CoreException extends Exception {\n    public CoreException(String message) { super(message); }\n}\n\n// New constant location\nclass DebugPlugin {\n    public static final String ATTR_MERGE_OUTPUT \u003d \"org.eclipse.debug.core.ATTR_MERGE_OUTPUT\";\n}\n\npublic class MyLaunchConfigurationTab {\n    public void performApply(ILaunchConfiguration configuration) throws CoreException {\n        boolean mergeOutput;\n        mergeOutput \u003d configuration.getAttribute(DebugPlugin.ATTR_MERGE_OUTPUT, false);\n        configuration.setAttribute(DebugPlugin.ATTR_MERGE_OUTPUT, true);\n        configuration.setAttribute(DebugPlugin.ATTR_MERGE_OUTPUT, (String) null);\n        System.out.println(\"Current merge output setting: \" + mergeOutput);\n    }\n}",
+  "negativeExample": "package example;\n\n// Assuming these Eclipse APIs are available on the classpath for compilation\n// in the sandbox environment, as stubbing them is disallowed by rules.\ninterface ILaunchConfiguration {\n    boolean getAttribute(String name, boolean defaultValue);\n    void setAttribute(String name, boolean value);\n    void setAttribute(String name, String value);\n}\n\nclass CoreException extends Exception {\n    public CoreException(String message) { super(message); }\n}\n\n// Original constant location\nclass IDebugUIConstants {\n    public static final String ATTR_MERGE_OUTPUT \u003d \"org.eclipse.debug.ui.ATTR_MERGE_OUTPUT\";\n    public static final String ATTR_CAPTURE_IN_FILE \u003d \"org.eclipse.debug.ui.ATTR_CAPTURE_IN_FILE\";\n}\n\npublic class AnotherConstantUser {\n    public void someMethod(ILaunchConfiguration configuration) throws CoreException {\n        // This constant should not be touched by the rule\n        String captureFileAttr \u003d IDebugUIConstants.ATTR_CAPTURE_IN_FILE;\n        System.out.println(captureFileAttr);\n    }\n}",
+  "targetHintFile": "api-migration.sandbox-hint",
+  "sourceCommit": "c22842de830236a075c1df69c63db21ad4cbc7dc",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "sourceEvidence": {
+    "path": "org.eclipse.debug.ui/ui/org/eclipse/debug/ui/CommonTab.java",
+    "before": "\t\t\tmergeOutput \u003d configuration.getAttribute(IDebugUIConstants.ATTR_MERGE_OUTPUT, false);\n",
+    "after": "\t\t\tmergeOutput \u003d configuration.getAttribute(DebugPlugin.ATTR_MERGE_OUTPUT, false);\n",
+    "diffHunk": "diff --git a/org.eclipse.debug.ui/ui/org/eclipse/debug/ui/CommonTab.java b/org.eclipse.debug.ui/ui/org/eclipse/debug/ui/CommonTab.java\nindex 8f1191a..a908069 100644\n--- a/org.eclipse.debug.ui/ui/org/eclipse/debug/ui/CommonTab.java\n+++ b/org.eclipse.debug.ui/ui/org/eclipse/debug/ui/CommonTab.java\n@@ -727,7 +727,7 @@\n \n             outputFile \u003d configuration.getAttribute(IDebugUIConstants.ATTR_CAPTURE_IN_FILE, (String)null);\n             append \u003d configuration.getAttribute(IDebugUIConstants.ATTR_APPEND_TO_FILE, false);\n-\t\t\tmergeOutput \u003d configuration.getAttribute(IDebugUIConstants.ATTR_MERGE_OUTPUT, false);\n+\t\t\tmergeOutput \u003d configuration.getAttribute(DebugPlugin.ATTR_MERGE_OUTPUT, false);\n \t\t\tsupportsMergeOutput \u003d configuration.getType().supportsOutputMerging();\n         } catch (CoreException e) {\n         }\n"
+  },
+  "category": "API Migration",
+  "summary": "Replaces the usage of the launch configuration constant ATTR_MERGE_OUTPUT from its old location in IDebugUIConstants to its new location in DebugPlugin.",
+  "sourceVersion": "8",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-13T02:14:33.169277322Z",
+  "ruleFingerprint": "sha256:a60120e93b9a5749b8fd911e72ca35c2bd9f1bba6e7f63f815a2b97adea797e5",
+  "behaviorFingerprint": "sha256:7fbfb77d35b495d7522726dca0ee3ece1d8e6389224130ad9fa2d9cec3d77b95",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-11-13T02:22:06.767796507Z",
+    "verifierVersion": "9",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
