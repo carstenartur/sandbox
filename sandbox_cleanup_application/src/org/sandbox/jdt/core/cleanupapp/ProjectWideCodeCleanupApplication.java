@@ -12,6 +12,7 @@ package org.sandbox.jdt.core.cleanupapp;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -75,6 +76,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 	private static final int EXIT_ERROR= 1;
 	private static final int EXIT_CHANGES= 2;
 
+	private static final String MAVEN_POM= "pom.xml"; //$NON-NLS-1$
 	private static final String PDE_MANIFEST= "META-INF/MANIFEST.MF"; //$NON-NLS-1$
 	private static final String JUNIT_ISOLATED_TYPE=
 			"org.junit.jupiter.api.parallel.Isolated"; //$NON-NLS-1$
@@ -122,6 +124,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 
 		List<SourceSnapshot> sources= List.of();
 		List<ResourceSnapshot> resources= List.of();
+		List<ResourceSnapshot> writtenResources= new ArrayList<>();
 		Map<String, String> options= Map.of();
 		try {
 			options= readOptions(arguments.configuration());
@@ -176,13 +179,13 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 				try {
 					change.perform(monitor);
 					preserveOriginalLineDelimiters(sources);
-					updateProjectMetadata(sources, resources);
+					updateProjectMetadata(sources, resources, writtenResources, javaProject.getOptions(true));
 					refresh(sources, resources, monitor);
 					changed= changedFiles(sources, resources);
 					executionCompleted= true;
 				} finally {
 					if (restoreAfterExecution || !executionCompleted) {
-						restore(sources, resources, monitor, errors);
+						restore(sources, writtenResources, monitor, errors);
 					}
 				}
 			}
@@ -354,38 +357,72 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 
 
 	private static List<ResourceSnapshot> resourceSnapshots(IProject project) throws IOException {
-		IFile manifest= project.getFile(PDE_MANIFEST);
-		if (!manifest.exists() || manifest.getLocation() == null) {
+		// Tycho bundle dependencies are supplied by PDE. Standalone Maven projects
+		// instead use the module's own POM.
+		IFile descriptor= project.getFile(PDE_MANIFEST);
+		if (!descriptor.exists()) {
+			descriptor= project.getFile(MAVEN_POM);
+		}
+		if (!descriptor.exists()) {
 			return List.of();
 		}
-		Path path= manifest.getLocation().toFile().toPath().toAbsolutePath().normalize();
-		return List.of(new ResourceSnapshot(manifest, path,
-				manifest.getProjectRelativePath().toPortableString(), Files.readAllBytes(path)));
+		if (descriptor.getLocation() == null) {
+			return List.of();
+		}
+		Path path= descriptor.getLocation().toFile().toPath().toAbsolutePath().normalize();
+		return List.of(new ResourceSnapshot(descriptor, path,
+				descriptor.getProjectRelativePath().toPortableString(), Files.readAllBytes(path)));
 	}
 
-	private static void updateProjectMetadata(List<SourceSnapshot> sources,
-			List<ResourceSnapshot> resources) throws IOException {
+	private static void updateProjectMetadata(List<SourceSnapshot> sources, List<ResourceSnapshot> resources,
+			List<ResourceSnapshot> written, Map<String, String> options) throws IOException, CoreException {
+		if (resources.isEmpty()) {
+			return;
+		}
+		ResourceSnapshot descriptor= resources.getFirst();
+		boolean pde= PDE_MANIFEST.equals(descriptor.relativePath());
 		boolean isolatedIntroduced= false;
+		boolean suiteIntroduced= false;
 		for (SourceSnapshot source : sources) {
 			byte[] after= Files.readAllBytes(source.path());
-			if (!contains(source.before(), JUNIT_ISOLATED_TYPE) && contains(after, JUNIT_ISOLATED_TYPE)) {
-				isolatedIntroduced= true;
-				break;
-			}
-		}
-		if (!isolatedIntroduced) {
-			return;
-		}
-		for (ResourceSnapshot resource : resources) {
-			if (!PDE_MANIFEST.equals(resource.relativePath())) {
+			if (Arrays.equals(source.before(), after)) {
 				continue;
 			}
-			byte[] current= Files.readAllBytes(resource.path());
-			byte[] updated= PdeManifestImportUpdater.addImport(current, JUNIT_PARALLEL_PACKAGE);
-			if (!Arrays.equals(current, updated)) {
-				Files.write(resource.path(), updated);
+			isolatedIntroduced |= pde && !contains(source.before(), JUNIT_ISOLATED_TYPE) && contains(after, JUNIT_ISOLATED_TYPE);
+			Charset charset= Charset.forName(source.file().getCharset());
+			String updated= new String(after, charset);
+			if (PlatformSuiteDependencies.usesSuite(updated, options)
+					&& !PlatformSuiteDependencies.usesSuite(new String(source.before(), charset), options)) {
+				if (!pde && !source.relativePath().startsWith("src/test/java/")) { //$NON-NLS-1$
+					throw new IOException("Cannot add a test-scoped Suite dependency for " + source.relativePath()); //$NON-NLS-1$
+				}
+				suiteIntroduced= true;
 			}
+		}
+		if (!isolatedIntroduced && !suiteIntroduced) {
 			return;
+		}
+		if (descriptor.file().isLinked(IResource.CHECK_ANCESTORS) || Files.isSymbolicLink(descriptor.path())) {
+			throw new IOException("Cannot update a linked project descriptor: " + descriptor.relativePath()); //$NON-NLS-1$
+		}
+		byte[] updated= descriptor.before();
+		if (isolatedIntroduced) {
+			updated= PdeManifestImportUpdater.addImport(updated, JUNIT_PARALLEL_PACKAGE);
+		}
+		if (suiteIntroduced) {
+			if (pde) {
+				updated= PdeManifestImportUpdater.addImport(updated, PlatformSuiteDependencies.API_PACKAGE);
+			} else {
+				String pom= StandardCharsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(updated)).toString();
+				updated= PlatformSuiteDependencies.addToPom(pom).getBytes(StandardCharsets.UTF_8);
+			}
+		}
+		if (!Arrays.equals(descriptor.before(), Files.readAllBytes(descriptor.path()))) {
+			throw new IOException("Project descriptor changed during cleanup: " + descriptor.relativePath()); //$NON-NLS-1$
+		}
+		if (!Arrays.equals(updated, descriptor.before())) {
+			written.add(descriptor);
+			Files.write(descriptor.path(), updated);
 		}
 	}
 
