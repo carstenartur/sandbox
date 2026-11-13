@@ -43,6 +43,7 @@ import org.sandbox.jdt.container.api.ConcurrencyProtocol;
 import org.sandbox.jdt.container.api.ConcurrencyProtocol.Evidence;
 import org.sandbox.jdt.container.api.ConcurrencyProtocol.EvidenceKind;
 import org.sandbox.jdt.container.api.ConcurrencyProtocol.ReentrancyContract;
+import org.sandbox.jdt.container.api.ConcurrencyProtocolAssessment;
 import org.sandbox.jdt.container.api.ConcurrencyProtocolAssessment.DiagnosticOnly;
 import org.sandbox.jdt.container.api.ConcurrencyProtocolAssessment.Severity;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.AnalysisCompleteness;
@@ -58,6 +59,11 @@ import org.sandbox.jdt.container.api.ContainerUsageProfile.WorkloadShape;
 public final class SynchronizedListIterationAnalyzer {
 
 	private static final String LIST= "java.util.List"; //$NON-NLS-1$
+
+	/** Returns whole-field assessments of atomic copy-and-clear drains and their producers. */
+	public List<ConcurrencyProtocolAssessment> assessDrains(CompilationUnit unit) {
+		return SynchronizedListDrainAnalyzer.analyze(unit);
+	}
 
 	/** Returns source-ordered observations for matched loops and non-private method returns. */
 	public List<DiagnosticOnly> analyze(CompilationUnit unit) {
@@ -107,7 +113,7 @@ public final class SynchronizedListIterationAnalyzer {
 						+ "This observation covers the loop's enclosing synchronized blocks. Publication and other accesses remain unverified."))); //$NON-NLS-1$
 	}
 
-	private static VariableDeclarationFragment synchronizedListField(CompilationUnit unit, Expression expression) {
+	static VariableDeclarationFragment synchronizedListField(CompilationUnit unit, Expression expression) {
 		IVariableBinding field= currentInstanceField(expression);
 		if (field == null || !Modifier.isPrivate(field.getModifiers()) || !Modifier.isFinal(field.getModifiers())
 				|| field.getKey() == null || field.getKey().isBlank()
@@ -197,7 +203,7 @@ public final class SynchronizedListIterationAnalyzer {
 				&& isType(constructor.getDeclaringClass(), "java.util.ArrayList"); //$NON-NLS-1$
 	}
 
-	private static boolean isType(ITypeBinding type, String qualifiedName) {
+	static boolean isType(ITypeBinding type, String qualifiedName) {
 		return type != null && !type.isRecovered() && !type.isFromSource()
 				&& qualifiedName.equals(type.getErasure().getQualifiedName());
 	}
@@ -218,7 +224,7 @@ public final class SynchronizedListIterationAnalyzer {
 		return false;
 	}
 
-	private static IVariableBinding currentInstanceField(Expression expression) {
+	static IVariableBinding currentInstanceField(Expression expression) {
 		Expression reference= unwrap(expression);
 		if (!(reference instanceof SimpleName)
 				&& !(reference instanceof FieldAccess access && unwrap(access.getExpression()) instanceof ThisExpression self

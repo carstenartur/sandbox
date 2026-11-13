@@ -31,7 +31,9 @@ import org.sandbox.jdt.container.analysis.LocalEnumIndexedMembershipAnalyzer;
 import org.sandbox.jdt.container.analysis.LocalUniqueSequenceAnalyzer;
 import org.sandbox.jdt.container.analysis.SynchronizedListIterationAnalyzer;
 import org.sandbox.jdt.container.api.ConcurrencyProtocol.Evidence;
+import org.sandbox.jdt.container.api.ConcurrencyProtocolAssessment;
 import org.sandbox.jdt.container.api.ConcurrencyProtocolAssessment.DiagnosticOnly;
+import org.sandbox.jdt.container.api.ConcurrencyProtocolAssessment.RetainExistingLocking;
 import org.sandbox.jdt.container.api.ContainerRecommendation;
 import org.sandbox.jdt.container.api.ContainerRecommendation.AutomationLevel;
 import org.sandbox.jdt.container.api.ContainerRecommendation.ContractAssessment;
@@ -87,9 +89,10 @@ final class ContainerAnalysisService {
 			}
 		}
 		for (DiagnosticOnly observation : synchronizedListAnalyzer.analyze(root)) {
-			for (Evidence evidence : observation.protocol().evidence()) {
-				rows.add(concurrencyRow(compilationUnitHandle, observation, evidence));
-			}
+			appendConcurrencyRows(compilationUnitHandle, rows, observation);
+		}
+		for (var assessment : synchronizedListAnalyzer.assessDrains(root)) {
+			appendConcurrencyRows(compilationUnitHandle, rows, assessment);
 		}
 		rows.sort(Comparator.comparingInt(ContainerAnalysisRow::sourceStart)
 				.thenComparing(ContainerAnalysisRow::candidate)
@@ -98,12 +101,20 @@ final class ContainerAnalysisService {
 	}
 
 	private static ContainerAnalysisRow concurrencyRow(String compilationUnitHandle,
-			DiagnosticOnly observation, Evidence evidence) {
+			ConcurrencyProtocolAssessment observation, Evidence evidence) {
+		boolean retain= observation instanceof RetainExistingLocking;
 		return new ContainerAnalysisRow(compilationUnitHandle, observation.protocol().identity().displayName(),
-				observation.protocol().summary().synchronization().name(), "No proven target", "N/A", //$NON-NLS-1$ //$NON-NLS-2$
-				AutomationLevel.REPORT_ONLY.name(),
+				observation.protocol().summary().synchronization().name(),
+				retain ? "Retain existing locking" : "No proven target", retain ? "HIGH" : "N/A", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+				retain ? "NO_MIGRATION_RECOMMENDED" : AutomationLevel.REPORT_ONLY.name(), //$NON-NLS-1$
 				evidence.kind().name(), evidence.summary(), String.join(System.lineSeparator(), observation.explanations()),
 				evidence.sourceStart(), evidence.sourceLength());
+	}
+
+	private static void appendConcurrencyRows(String handle, List<ContainerAnalysisRow> rows, ConcurrencyProtocolAssessment assessment) {
+		for (Evidence evidence : assessment.protocol().evidence()) {
+			rows.add(concurrencyRow(handle, assessment, evidence));
+		}
 	}
 
 	private static void addProfile(Map<String, ContainerUsageProfile> profiles,
