@@ -931,7 +931,7 @@ sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.quickassist,
 sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.quickassist,DslFromSelectionAssistProcessor,60,0,14,0,15,0,12,0,5,0
 sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.quickassist,DslFromSelectionAssistProcessor.DslRuleProposal,99,0,2,0,31,0,11,0,10,0
 sandbox_coverage/sandbox_usage_view,org.sandbox.jdt.ui.helper.views.preferences,UsageViewPreferencePage,22,0,0,0,10,0,3,0,3,0
-sandbox_coverage/sandbox_usage_view,org.sandbox.jdt.ui.helper.views,ContainerAnalysisService,84,422,24,34,18,87,23,28,2,19
+sandbox_coverage/sandbox_usage_view,org.sandbox.jdt.ui.helper.views,ContainerAnalysisService,84,399,24,30,18,82,23,25,2,18
 sandbox_coverage/sandbox_usage_view,org.sandbox.jdt.ui.helper.views,JavaHelperView.new IPartListener2() {...},46,31,8,4,5,10,10,8,4,8
 sandbox_coverage/sandbox_usage_view,org.sandbox.jdt.ui.helper.views,JavaHelperView.new ASTVisitor() {...},77,0,8,0,9,0,6,0,2,0
 sandbox_coverage/sandbox_usage_view,org.sandbox.jdt.ui.helper.views,JavaHelperView.new Action() {...},21,0,0,0,3,0,2,0,2,0
