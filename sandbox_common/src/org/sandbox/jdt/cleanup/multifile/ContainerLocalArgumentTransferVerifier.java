@@ -22,11 +22,13 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SimpleName;
 
+import org.sandbox.jdt.container.analysis.LocalArrayUsageAnalyzer;
 import org.sandbox.jdt.container.api.ContainerLocalRewritePlan;
 import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.ArgumentTransfer;
 
@@ -66,15 +68,8 @@ final class ContainerLocalArgumentTransferVerifier {
 					return true;
 				}
 				if (!plannedVariable(name, plan.bindingKey())
-						|| !(name.getParent() instanceof MethodInvocation invocation)) {
-					failure[0]= stale(unit,
-							"planned argument transfer no longer contains the local value"); //$NON-NLS-1$
-					return false;
-				}
-				int argumentIndex= invocation.arguments().indexOf(name);
-				if (argumentIndex != transfer.parameterIndex()
 						|| !transfer.methodJavaElementHandle().equals(
-								methodHandle(invocation.resolveMethodBinding()))) {
+								methodHandle(argumentTarget(name, transfer.parameterIndex())))) {
 					failure[0]= stale(unit, "argument-transfer target changed"); //$NON-NLS-1$
 					return false;
 				}
@@ -92,6 +87,18 @@ final class ContainerLocalArgumentTransferVerifier {
 		if (!observed.equals(expected.keySet())) {
 			throw stale(unit, "argument-transfer occurrence set changed"); //$NON-NLS-1$
 		}
+	}
+
+	/** Re-resolves a direct argument at its original formal parameter position. */
+	static IMethodBinding argumentTarget(SimpleName name, int index) {
+		if (name.getParent() instanceof MethodInvocation invocation && invocation.arguments().indexOf(name) == index) {
+			return invocation.resolveMethodBinding();
+		}
+		if (name.getParent() instanceof ClassInstanceCreation creation && creation.arguments().indexOf(name) == index
+				&& LocalArrayUsageAnalyzer.isClosedConstructorTarget(creation)) {
+			return creation.resolveConstructorBinding();
+		}
+		return null;
 	}
 
 	private static boolean plannedVariable(SimpleName name, String bindingKey) {

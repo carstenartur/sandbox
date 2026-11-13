@@ -13,6 +13,7 @@ package org.eclipse.jdt.ui.tests.quickfix;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.CLEANUP;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.CLOSED_SOURCE_PARAMETER_MIGRATION;
@@ -125,6 +126,67 @@ class CoordinatedContainerCleanUpTest {
 		undo.perform(monitor);
 		assertEquals(original, unit.getSource());
 		assertEquals(unrelatedOriginal, unrelated.getSource());
+	}
+
+	@Test
+	void migratesPrivateConstructorArgumentAndRestoresBothDeclarations() throws Exception {
+		String source= """
+			package test;
+			import java.util.Arrays;
+			class Sample {
+				final int size;
+				private Sample(String[] items) {
+					size = items.length;
+				}
+				static Sample collect(String value) {
+					String[] values = new String[0];
+					values = Arrays.copyOf(values, values.length + 1);
+					values[values.length - 1] = value;
+					return new Sample(values);
+				}
+			}
+			""";
+		ICompilationUnit unit= createUnit("Sample.java", source); //$NON-NLS-1$
+		NullProgressMonitor monitor= new NullProgressMonitor();
+		CoordinatedContainerCleanUpCore cleanup= cleanup();
+		cleanup.checkPreConditions(context.getJavaProject(), new ICompilationUnit[] { unit }, monitor);
+		ICleanUpFix fix= cleanup.createFix(new CleanUpContext(unit, parse(unit)));
+		assertNotNull(fix, cleanup.getLastPlanningDiagnosticsJson(context.getJavaProject()));
+		Change undo= fix.createChange(null).perform(monitor);
+		assertNotNull(undo);
+		String transformed= unit.getSource();
+		assertTrue(transformed.contains("private Sample(List<String> items)")); //$NON-NLS-1$
+		assertTrue(transformed.contains("size = items.size()")); //$NON-NLS-1$
+		assertTrue(transformed.contains("values.add(value)")); //$NON-NLS-1$
+		assertTrue(transformed.contains("return new Sample(values)")); //$NON-NLS-1$
+		assertFalse(Arrays.stream(parse(unit).getProblems()).anyMatch(problem -> problem.isError()));
+		cleanup.checkPostConditions(monitor);
+		undo.perform(monitor);
+		assertEquals(source, unit.getSource());
+	}
+
+	@Test
+	void rejectsConstructorWhenAnotherOverloadCouldCaptureTheList() throws Exception {
+		String source= """
+			package test;
+			import java.util.Arrays;
+			import java.util.List;
+			class Sample {
+				private Sample(String[] items) {}
+				private Sample(List<String> items) {}
+				static Sample collect(String value) {
+					String[] values = new String[0];
+					values = Arrays.copyOf(values, values.length + 1);
+					values[values.length - 1] = value;
+					return new Sample(values);
+				}
+			}
+			""";
+		ICompilationUnit unit= createUnit("Sample.java", source); //$NON-NLS-1$
+		CoordinatedContainerCleanUpCore cleanup= cleanup();
+		cleanup.checkPreConditions(context.getJavaProject(), new ICompilationUnit[] { unit }, new NullProgressMonitor());
+		assertNull(cleanup.createFix(new CleanUpContext(unit, parse(unit))));
+		assertEquals(source, unit.getSource());
 	}
 
 	@Test

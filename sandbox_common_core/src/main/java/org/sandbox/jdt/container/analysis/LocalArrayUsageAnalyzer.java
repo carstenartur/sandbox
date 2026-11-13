@@ -25,18 +25,21 @@ import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.ArrayAccess;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.CastExpression;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.InstanceofExpression;
 import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.ReturnStatement;
@@ -150,6 +153,10 @@ public final class LocalArrayUsageAnalyzer {
 			accumulator.encounterIteration(reference);
 		} else if (parent instanceof MethodInvocation invocation) {
 			classifyMethodInvocation(reference, invocation, accumulator);
+		} else if (parent instanceof ClassInstanceCreation creation && creation.arguments().contains(reference)
+				&& isClosedConstructorTarget(creation)) {
+			accumulator.reject(Kind.UNSAFE_ESCAPE,
+					"Array argument requires the exact private constructor and all its source callers", reference); //$NON-NLS-1$
 		} else if (parent instanceof Assignment assignment) {
 			classifyAssignment(reference, assignment, accumulator);
 		} else if (parent instanceof VariableDeclarationFragment fragment
@@ -173,6 +180,26 @@ public final class LocalArrayUsageAnalyzer {
 			accumulator.reject(Kind.UNCLASSIFIED_USAGE,
 					"Array use is not yet classified by local container analysis", reference); //$NON-NLS-1$
 		}
+	}
+
+	/** Whether this constructor can be considered for a coordinated parameter rewrite. */
+	public static boolean isClosedConstructorTarget(ClassInstanceCreation creation) {
+		IMethodBinding target= creation.resolveConstructorBinding();
+		if (target == null || target.isRecovered() || target.isVarargs() || target.isGenericMethod()
+				|| creation.getAnonymousClassDeclaration() != null || !Modifier.isPrivate(target.getModifiers())) {
+			return false;
+		}
+		ITypeBinding type= target.getDeclaringClass();
+		if (type == null || type.isRecovered() || !type.isFromSource() || type.isParameterizedType()
+				|| type.isGenericType() || type.isRawType() || type.isLocal() || type.isAnonymous()) {
+			return false;
+		}
+		for (IMethodBinding other : type.getDeclaredMethods()) {
+			if (other.isConstructor() && !other.getMethodDeclaration().isEqualTo(target.getMethodDeclaration())) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private static boolean crossesExecutableBoundary(
