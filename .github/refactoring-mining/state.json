@@ -5500,9 +5500,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "lastProcessedCommit": "9af85f069eb2845cb5e7a7d2cda8f3e32d8ba6a2",
-      "lastProcessedDate": "2026-11-12T02:24:25.617566313Z",
-      "totalProcessed": 852,
+      "lastProcessedCommit": "31f1148ce0e56d853b31983a63eff358d6d7e01c",
+      "lastProcessedDate": "2026-11-13T02:21:41.215088405Z",
+      "totalProcessed": 916,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -5882,6 +5882,87 @@
           "deferredAt": "2026-11-12T02:24:00.350169256Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "1ddf37c93b738dd018118935b7b762dae28db788",
+          "message": "Bug 550620, 197958 - Fix style range override in TextConsoleViewer",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-13T02:15:29.425134749Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "3c90473857dcadda2fd762c8ee9b735b37f46874",
+          "message": "Bug 551745 - [console] Revise IOConsolePartitioner output appending",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-13T02:18:44.816172110Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "1c373009957b48e17790afe014f1612fe15b9cb2",
+          "message": "[cleanup] Fix wrong space/tab indentation in CommonTab.java",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-13T02:18:44.818118998Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "45c4201d33d4ad7a79a93137e7525874454f6d28",
+          "message": "Revert \"Bug 551745 - [console] Revise IOConsolePartitioner output appending\"",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-13T02:18:44.820037403Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b61668507b32b353ea60da3fbd24bcbf7717afda",
+          "message": "Bug 552014 - [console] Input problem with fixed width console and IME",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-13T02:20:58.247602236Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "2d8961f9216a5f2d26b44ae19f75c652ba5b0f48",
+          "message": "Use jdk 5 for-each loop",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-13T02:21:15.576196099Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b6ba22337a71947b6accd816def6d99beb20a8ca",
+          "message": "Use jdk 5 for-each loop",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-13T02:21:15.584210464Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0fcbf89cc35b852138f2fe7750773bb9eb59457e",
+          "message": "Bug 551745 - [console] Revise IOConsolePartitioner output appending and initialization",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-13T02:21:25.768870479Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "2048c0e37525189f7ae0760944e56d90339758e6",
+          "message": "Bug 76936 - [console] Handle \\b and \\r in console output",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-13T02:21:25.772725118Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -5894,7 +5975,7 @@
       "categoryHitCounts": {
         "API Misuse": 1,
         "API Modernization": 9,
-        "API Migration": 3,
+        "API Migration": 4,
         "Collections Modernization": 1,
         "Lambda Conversion": 1,
         "Control Flow Refactoring": 1,
@@ -5939,10 +6020,11 @@
         "Compiler Warning Fixes": 1,
         "Idiomatic Collection Usage": 1,
         "String API modernization": 1,
-        "String Optimization": 1
+        "String Optimization": 1,
+        "Java Modernization": 1
       },
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 54389
+  "globalTotalProcessed": 54453
 }
