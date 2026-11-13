@@ -3,6 +3,7 @@ package org.sandbox.jdt.internal.corext.fix.math;
 
 import static org.junit.jupiter.api.Assertions.*;
 import java.math.BigInteger;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -10,14 +11,11 @@ import java.util.UUID;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.core.IClasspathEntry;
-import org.eclipse.jdt.core.IJavaElement;
-import org.eclipse.jdt.core.search.IJavaSearchConstants;
-import org.eclipse.jdt.core.search.SearchEngine;
-import org.eclipse.jdt.core.search.SearchPattern;
-import org.eclipse.jdt.core.search.TypeNameRequestor;
+import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ASTRequestor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.launching.JavaRuntime;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -61,13 +59,19 @@ class SharedSourceReceiptTest {
                 }
                 """;
             var caller = pack.createCompilationUnit("Sample.java", source, true, monitor);
-            // Secondary top-level types are resolved through the project index, not by filename.
-            new SearchEngine().searchAllTypeNames("sample".toCharArray(), SearchPattern.R_EXACT_MATCH, null,
-                    SearchPattern.R_EXACT_MATCH, IJavaSearchConstants.TYPE,
-                    SearchEngine.createJavaSearchScope(new IJavaElement[] {java}), new TypeNameRequestor() {},
-                    IJavaSearchConstants.WAIT_UNTIL_READY_TO_SEARCH, monitor);
-            var parser = ASTParser.newParser(AST.getJLSLatest()); parser.setSource(caller); parser.setResolveBindings(true);
-            var ast = (CompilationUnit) parser.createAST(monitor);
+            // Resolve both sources together so the secondary types are available before indexing finishes.
+            var roots = new HashMap<ICompilationUnit, CompilationUnit>();
+            var parser = ASTParser.newParser(AST.getJLSLatest());
+            parser.setProject(java);
+            parser.setResolveBindings(true);
+            parser.createASTs(new ICompilationUnit[] {shared, caller}, new String[0], new ASTRequestor() {
+                @Override
+                public void acceptAST(ICompilationUnit unit, CompilationUnit root) {
+                    roots.put(unit, root);
+                }
+            }, monitor);
+            var ast = roots.get(caller);
+            assertNotNull(ast, "The caller compilation unit must parse");
             for (var problem : ast.getProblems()) assertFalse(problem.isError(), problem.toString());
             var options = new MathCleanUpOptions(true, Set.of(NumericKind.BIG_INTEGER), SafetyProfile.PRESERVE_JAVA,
                     OptimizationGoal.LOWER_ESTIMATED_RUNTIME, 1_000_000, 20_000, false, 17, List.of(), true);
