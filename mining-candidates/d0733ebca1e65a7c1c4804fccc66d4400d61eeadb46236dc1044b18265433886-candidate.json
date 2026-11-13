@@ -13,8 +13,9 @@
   "category": "Redundant Code",
   "summary": "Removes the redundant second argument `string.length()` from `String.substring()` calls when it\u0027s implied by the single-argument version.",
   "sourceVersion": "21",
-  "status": "READY_FOR_REVIEW",
+  "status": "REJECTED",
   "discoveredAt": "2026-09-27T02:31:29.982936144Z",
+  "rejectionReason": "Reject as a duplicate of the existing Sandbox string-modernization.substring-to-end rule and Eclipse JDT\u0027s Substring cleanup (the source commit explicitly credits that cleanup). The raw candidate lacks the existing binding and receiver-evaluation checks, for example for next().substring(0, next().length()).",
   "ruleFingerprint": "sha256:a4d3f6e070b2b89f85b6268fbcf3e465ce6dab6ede4743c7e370f34626199e55",
   "behaviorFingerprint": "sha256:e2e03b2b2cc449ee8af4b6f7ca6afafc628fffa483552d8ba608594753ad83df",
   "verification": {
@@ -40,6 +41,13 @@
       "actor": "CandidateVerificationCli",
       "reason": "All deterministic candidate gates passed",
       "occurredAt": "2026-11-05T02:32:00.558280505Z"
+    },
+    {
+      "from": "READY_FOR_REVIEW",
+      "to": "REJECTED",
+      "actor": "OpenAI Codex (on behalf of carstenartur)",
+      "reason": "Reject as a duplicate of the existing Sandbox string-modernization.substring-to-end rule and Eclipse JDT\u0027s Substring cleanup (the source commit explicitly credits that cleanup). The raw candidate lacks the existing binding and receiver-evaluation checks, for example for next().substring(0, next().length()).",
+      "occurredAt": "2026-11-13T03:51:26.945616586Z"
     }
   ]
 }

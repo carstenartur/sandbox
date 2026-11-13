@@ -18,8 +18,9 @@
   },
   "category": "Lambda to Method Reference",
   "sourceVersion": "8",
-  "status": "READY_FOR_REVIEW",
+  "status": "REJECTED",
   "discoveredAt": "2026-11-12T02:22:58.728537373Z",
+  "rejectionReason": "Reject as a duplicate of Eclipse JDT\u0027s lambda-to-method-reference cleanup. The original WatchExpression lambda invokes setResult without an explicit receiver, while the proposed pattern requires this. The generic rewrite also lacks binding checks: s -\u003e this.staticMethod(s) is legal Java, but this::staticMethod cannot refer to that static method.",
   "ruleFingerprint": "sha256:6ee8061ac585a5ca300ab857ad0b1ab1d6dec4350fe56b71c0876826618e1fe4",
   "behaviorFingerprint": "sha256:df7ad317bb1e52444f0a416224d293d949d0a2b3ac02ee87e549b9060054abd7",
   "verification": {
@@ -45,6 +46,13 @@
       "actor": "CandidateVerificationCli",
       "reason": "All deterministic candidate gates passed",
       "occurredAt": "2026-11-12T02:24:51.509403974Z"
+    },
+    {
+      "from": "READY_FOR_REVIEW",
+      "to": "REJECTED",
+      "actor": "OpenAI Codex (on behalf of carstenartur)",
+      "reason": "Reject as a duplicate of Eclipse JDT\u0027s lambda-to-method-reference cleanup. The original WatchExpression lambda invokes setResult without an explicit receiver, while the proposed pattern requires this. The generic rewrite also lacks binding checks: s -\u003e this.staticMethod(s) is legal Java, but this::staticMethod cannot refer to that static method.",
+      "occurredAt": "2026-11-13T03:51:28.123442224Z"
     }
   ]
 }
