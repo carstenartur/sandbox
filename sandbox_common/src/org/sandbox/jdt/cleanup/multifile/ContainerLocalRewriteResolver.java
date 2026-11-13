@@ -30,6 +30,7 @@ import org.eclipse.jdt.core.dom.ArrayCreation;
 import org.eclipse.jdt.core.dom.ArrayType;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
@@ -242,8 +243,8 @@ final class ContainerLocalRewriteResolver {
 			Set<SourceRange> expected,
 			Set<SourceRange> observed) {
 		ASTNode parent= reference.getParent();
-		if (!(parent instanceof MethodInvocation invocation)
-				|| !invocation.arguments().contains(reference)) {
+		if (!(parent instanceof MethodInvocation call && call.arguments().contains(reference))
+				&& !(parent instanceof ClassInstanceCreation creation && creation.arguments().contains(reference))) {
 			return false;
 		}
 		SourceRange range= new SourceRange(
