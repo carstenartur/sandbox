@@ -119,7 +119,7 @@ public class CiBuildScopeContractTest {
 				images.resolve("preview.png")); //$NON-NLS-1$
 		Path sidecar = images.resolve("preview.provenance.json"); //$NON-NLS-1$
 		String baseline = "{\"capture\":\"baseline\"}\n"; //$NON-NLS-1$
-		Files.writeString(sidecar, baseline);
+		Files.writeString(sidecar, baseline, StandardCharsets.UTF_8);
 		try (Git git = Git.init().setDirectory(checkout.toFile()).call()) {
 			git.add().addFilepattern(".").call(); //$NON-NLS-1$
 			git.commit().setMessage("Help fixture") //$NON-NLS-1$
@@ -127,7 +127,8 @@ public class CiBuildScopeContractTest {
 					.call();
 		}
 
-		String workflow = Files.readString(repositoryRoot().resolve(".github/workflows/eclipse-help-screenshots.yml")); //$NON-NLS-1$
+		String workflow = Files.readString(repositoryRoot().resolve(".github/workflows/eclipse-help-screenshots.yml"),
+				StandardCharsets.UTF_8); //$NON-NLS-1$
 		String step = workflowStep(workflow, "Verify committed screenshots are reproducible"); //$NON-NLS-1$
 		String runMarker = "        run: |\n"; //$NON-NLS-1$
 		int start = step.indexOf(runMarker);
@@ -135,12 +136,12 @@ public class CiBuildScopeContractTest {
 		String command = step.substring(start + runMarker.length()).replaceAll("(?m)^ {10}", ""); //$NON-NLS-1$ //$NON-NLS-2$
 		assertHelpComparison(checkout, command, 0, ""); //$NON-NLS-1$
 
-		Files.writeString(sidecar, "{\"capture\":\"regenerated\"}\n"); //$NON-NLS-1$
+		Files.writeString(sidecar, "{\"capture\":\"regenerated\"}\n", StandardCharsets.UTF_8); //$NON-NLS-1$
 		assertHelpComparison(checkout, command, 1, sidecar.getFileName().toString());
 		Files.delete(sidecar);
 		assertHelpComparison(checkout, command, 1, sidecar.getFileName().toString());
-		Files.writeString(sidecar, baseline);
-		Path untracked = Files.writeString(images.resolve("new.provenance.json"), baseline); //$NON-NLS-1$
+		Files.writeString(sidecar, baseline, StandardCharsets.UTF_8);
+		Path untracked = Files.writeString(images.resolve("new.provenance.json"), baseline, StandardCharsets.UTF_8); //$NON-NLS-1$
 		assertHelpComparison(checkout, command, 1, untracked.getFileName().toString());
 	}
 
@@ -151,7 +152,7 @@ public class CiBuildScopeContractTest {
 				.directory(checkout.toFile()).redirectErrorStream(true).redirectOutput(log.toFile()).start();
 		try {
 			assertTrue(process.waitFor(20, TimeUnit.SECONDS), "Screenshot comparison did not terminate"); //$NON-NLS-1$
-			String output = Files.readString(log);
+			String output = Files.readString(log, StandardCharsets.UTF_8);
 			assertEquals(exitCode, process.exitValue(), output);
 			assertTrue(output.contains(expectedOutput), output);
 		} finally {
