@@ -26,6 +26,7 @@ import org.sandbox.jdt.container.api.ContainerShape;
  */
 public final class ContainerRuleRegistry {
 
+	public static final String CONCURRENT_MEMBERSHIP_SET= "semantic.synchronized.membership.keyset"; //$NON-NLS-1$
 	public static final String ARRAY_APPEND_SEQUENCE= "semantic.array.append.sequence"; //$NON-NLS-1$
 	public static final String UNIQUE_SEQUENCE_SET= "semantic.sequence.unique.set"; //$NON-NLS-1$
 	public static final String UNORDERED_UNIQUE_SEQUENCE_SET= "semantic.sequence.unique.unordered-set"; //$NON-NLS-1$
@@ -33,7 +34,6 @@ public final class ContainerRuleRegistry {
 	public static final String LIFO_SEQUENCE_DEQUE= "semantic.sequence.lifo.deque"; //$NON-NLS-1$
 	public static final String ENUM_INDEXED_MEMBERSHIP_SET=
 			"semantic.array.enum-indexed-membership.set"; //$NON-NLS-1$
-	public static final String CONCURRENT_MEMBERSHIP_SET= "semantic.synchronized.membership.keyset"; //$NON-NLS-1$
 	public static final String COLLECTION_BULK_ADD= "existing.collection.bulk-add"; //$NON-NLS-1$
 	public static final String COLLECTION_COPY_CONSTRUCTOR= "existing.collection.copy-constructor"; //$NON-NLS-1$
 	public static final String ARRAY_FILL= "existing.array.fill"; //$NON-NLS-1$
@@ -116,6 +116,13 @@ public final class ContainerRuleRegistry {
 				"Eclipse Change Type and Sandbox Use General Type", //$NON-NLS-1$
 				"Changing only the declared supertype is already covered by type-generalization tools.")); //$NON-NLS-1$
 		register(rules, new ContainerRuleDescriptor(
+				CONCURRENT_MEMBERSHIP_SET,
+				ContainerShape.SYNCHRONIZED_WRAPPER,
+				ContainerShape.CONCURRENT_CONTAINER,
+				RuleOwnership.NOVEL,
+				"", //$NON-NLS-1$
+				"All Java uses of the private field must be atomic membership operations on non-null String keys. No existing cleanup proves that wrapper-monitor and iteration semantics are unobserved.")); //$NON-NLS-1$
+		register(rules, new ContainerRuleDescriptor(
 				UNIQUE_SEQUENCE_SET,
 				ContainerShape.LIST,
 				ContainerShape.SET,
@@ -150,13 +157,6 @@ public final class ContainerRuleRegistry {
 				RuleOwnership.NOVEL,
 				"", //$NON-NLS-1$
 				"The rule replaces an internal enum-ordinal boolean table with an explicit enum membership contract; automatic primitive-array rewriting remains excluded.")); //$NON-NLS-1$
-		register(rules, new ContainerRuleDescriptor(
-				CONCURRENT_MEMBERSHIP_SET,
-				ContainerShape.SYNCHRONIZED_WRAPPER,
-				ContainerShape.CONCURRENT_CONTAINER,
-				RuleOwnership.NOVEL,
-				"", //$NON-NLS-1$
-				"All Java uses of the private field must be atomic membership operations on non-null String keys. No existing cleanup proves that wrapper-monitor and iteration semantics are unobserved.")); //$NON-NLS-1$
 		register(rules, new ContainerRuleDescriptor(
 				ARRAY_APPEND_SEQUENCE,
 				ContainerShape.ARRAY,
