@@ -27,53 +27,53 @@ class AggregateInstallationVerifierTest {
     @Test
     void acceptsLatestStableAggregateAndComponentsUpgradingToCandidate() throws Exception {
         assertDoesNotThrow(() -> AggregateInstallationVerifier.requireCandidateUpgradeSource(
-                URI.create("https://example.invalid/releases/1.3.6/"),
-                Map.of(AGGREGATE, "1.3.6.202610031300", COMPONENT, "1.3.6.202610031300"),
-                Map.of(AGGREGATE, "1.3.7.qualifier", COMPONENT, "1.3.7.qualifier")));
+                URI.create("https://example.invalid/releases/1.3.8/"),
+                Map.of(AGGREGATE, "1.3.8", COMPONENT, "1.3.8"),
+                Map.of(AGGREGATE, "1.3.9.qualifier", COMPONENT, "1.3.9.qualifier")));
     }
 
     @Test
     void rejectsWrongPublishedAggregateVersionAndStaleCandidateVersion() throws Exception {
         IOException wrongOld = assertThrows(IOException.class, () -> AggregateInstallationVerifier.requireCandidateUpgradeSource(
-                URI.create("https://example.invalid/releases/1.3.6/"),
-                Map.of(AGGREGATE, "1.3.5", COMPONENT, "1.3.6"),
-                Map.of(AGGREGATE, "1.3.7.qualifier", COMPONENT, "1.3.7.qualifier")));
-        assertEquals("Expected published aggregate 1.3.6, found 1.3.5", wrongOld.getMessage());
+                URI.create("https://example.invalid/releases/1.3.8/"),
+                Map.of(AGGREGATE, "1.3.7", COMPONENT, "1.3.8"),
+                Map.of(AGGREGATE, "1.3.9.qualifier", COMPONENT, "1.3.9.qualifier")));
+        assertEquals("Expected published aggregate 1.3.8, found 1.3.7", wrongOld.getMessage());
 
         IOException stale = assertThrows(IOException.class, () -> AggregateInstallationVerifier.requireCandidateUpgradeSource(
-                URI.create("https://example.invalid/releases/1.3.6/"),
-                Map.of(AGGREGATE, "1.3.6", COMPONENT, "1.3.6"),
-                Map.of(AGGREGATE, "1.3.6.qualifier", COMPONENT, "1.3.7.qualifier")));
-        assertEquals("Candidate version is not newer for sandbox_feature.feature.group: old=1.3.6, new=1.3.6.qualifier",
+                URI.create("https://example.invalid/releases/1.3.8/"),
+                Map.of(AGGREGATE, "1.3.8", COMPONENT, "1.3.8"),
+                Map.of(AGGREGATE, "1.3.8.qualifier", COMPONENT, "1.3.9.qualifier")));
+        assertEquals("Candidate version is not newer for sandbox_feature.feature.group: old=1.3.8, new=1.3.8.qualifier",
                 stale.getMessage());
     }
 
     @Test
     void rejectsPublishedComponentFromAnOlderRelease() {
         IOException mixed = assertThrows(IOException.class, () -> AggregateInstallationVerifier.requireCandidateUpgradeSource(
-                URI.create("https://example.invalid/releases/1.3.6/"),
-                Map.of(AGGREGATE, "1.3.6", COMPONENT, "1.3.5"),
-                Map.of(AGGREGATE, "1.3.7.qualifier", COMPONENT, "1.3.7.qualifier")));
-        assertEquals("Expected published 1.3.6 component version for sandbox_tools_feature.feature.group, found 1.3.5",
+                URI.create("https://example.invalid/releases/1.3.8/"),
+                Map.of(AGGREGATE, "1.3.8", COMPONENT, "1.3.7"),
+                Map.of(AGGREGATE, "1.3.9.qualifier", COMPONENT, "1.3.9.qualifier")));
+        assertEquals("Expected published 1.3.8 component version for sandbox_tools_feature.feature.group, found 1.3.7",
                 mixed.getMessage());
     }
 
     @Test
     void rejectsCandidateWithUnchangedComponentDespiteNewAggregate() {
         IOException stale = assertThrows(IOException.class, () -> AggregateInstallationVerifier.requireCandidateUpgradeSource(
-                URI.create("https://example.invalid/releases/1.3.6/"),
-                Map.of(AGGREGATE, "1.3.6", COMPONENT, "1.3.6"),
-                Map.of(AGGREGATE, "1.3.7.qualifier", COMPONENT, "1.3.6.qualifier")));
-        assertEquals("Candidate version is not newer for sandbox_tools_feature.feature.group: old=1.3.6, new=1.3.6.qualifier",
+                URI.create("https://example.invalid/releases/1.3.8/"),
+                Map.of(AGGREGATE, "1.3.8", COMPONENT, "1.3.8"),
+                Map.of(AGGREGATE, "1.3.9.qualifier", COMPONENT, "1.3.8.qualifier")));
+        assertEquals("Candidate version is not newer for sandbox_tools_feature.feature.group: old=1.3.8, new=1.3.8.qualifier",
                 stale.getMessage());
     }
 
     @Test
     void rejectsCandidateMissingPublishedComponent() {
         IOException missing = assertThrows(IOException.class, () -> AggregateInstallationVerifier.requireCandidateUpgradeSource(
-                URI.create("https://example.invalid/releases/1.3.6/"),
-                Map.of(AGGREGATE, "1.3.6", COMPONENT, "1.3.6"),
-                Map.of(AGGREGATE, "1.3.7.qualifier")));
+                URI.create("https://example.invalid/releases/1.3.8/"),
+                Map.of(AGGREGATE, "1.3.8", COMPONENT, "1.3.8"),
+                Map.of(AGGREGATE, "1.3.9.qualifier")));
         assertEquals("Candidate repository misses published component sandbox_tools_feature.feature.group",
                 missing.getMessage());
     }
@@ -204,6 +204,46 @@ class AggregateInstallationVerifierTest {
         IOException failure = assertThrows(IOException.class,
                 () -> AggregateInstallationVerifier.requireRuntimeProbe("runtime", report, Set.of("sandbox_feature")));
         assertTrue(failure.getMessage().startsWith("runtime recorded wrong resolvedBundles ids"), failure.getMessage());
+    }
+
+    @Test
+    void rejectsRuntimeEvidenceWithoutTheLoadedAstApiLocation() {
+        String report = """
+                {
+                  "status": "PASS",
+                  "bundles": 1,
+                  "cleanups": 2,
+                  "helpTocs": 1,
+                  "resolvedBundles": ["org.sandbox.ast.api/1.3.9"]
+                }
+                """;
+        IOException failure = assertThrows(IOException.class,
+                () -> AggregateInstallationVerifier.requireRuntimeProbe("fresh", report, Set.of("org.sandbox.ast.api")));
+        assertEquals("Missing JSON string field astApiJar", failure.getMessage());
+    }
+
+    @Test
+    void verifiesExactInstalledAstApiBytes() throws Exception {
+        Path plugins = Files.createDirectories(temporary.resolve("plugins"));
+        Files.writeString(plugins.resolve("org.sandbox.ast.api_1.3.9.jar"), "candidate bytes");
+        Path installed = Files.writeString(temporary.resolve("loaded.jar"), "candidate bytes");
+        var runtime = new AggregateInstallationVerifier.RuntimeProbe("PASS", 1, 2, 1,
+                List.of("org.sandbox.ast.api/1.3.9"), installed.toString());
+        assertTrue(AggregateInstallationVerifier.verifyAstApi(runtime, temporary, "1.3.9").matches("[0-9a-f]{64}"));
+        Files.writeString(installed, "different bytes");
+        IOException differentArtifact = assertThrows(IOException.class,
+                () -> AggregateInstallationVerifier.verifyAstApi(runtime, temporary, "1.3.9"));
+        assertTrue(differentArtifact.getMessage().startsWith("Installed AST API JAR differs from candidate"));
+    }
+
+    @Test
+    void rejectsThePreviouslyReusedAstApiVersion() throws Exception {
+        var runtime = new AggregateInstallationVerifier.RuntimeProbe("PASS", 1, 2, 1,
+                List.of("org.sandbox.ast.api/1.2.5.qualifier"), temporary.resolve("loaded.jar").toString());
+        IOException stale = assertThrows(IOException.class,
+                () -> AggregateInstallationVerifier.verifyAstApi(runtime, temporary, "1.3.9"));
+        assertEquals("Resolved org.sandbox.ast.api version 1.2.5.qualifier does not match candidate 1.3.9",
+                stale.getMessage());
     }
 
     @Test

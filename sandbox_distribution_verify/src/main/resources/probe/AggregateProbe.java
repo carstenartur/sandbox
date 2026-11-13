@@ -12,12 +12,15 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
 import org.eclipse.jdt.ui.cleanup.ICleanUp;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.namespace.BundleNamespace;
+import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.framework.wiring.FrameworkWiring;
 
 /** Test instrumentation only: never included in either published repository. */
@@ -73,8 +76,18 @@ public final class AggregateProbe implements IApplication {
         String resolvedBundles = bundles.stream()
                 .map(bundle -> '"' + escape(bundle.getSymbolicName() + '/' + bundle.getVersion()) + '"')
                 .collect(Collectors.joining(",", "[", "]"));
+        Bundle astApi = Platform.getBundle("org.sandbox.ast.api");
+        for (String consumerId : List.of("sandbox_tools", "sandbox_use_general_type")) {
+            var wiring = Platform.getBundle(consumerId).adapt(BundleWiring.class);
+            require(wiring.getRequiredWires(BundleNamespace.BUNDLE_NAMESPACE).stream()
+                    .anyMatch(wire -> astApi.equals(wire.getProviderWiring().getBundle())),
+                    consumerId + " uses a different AST API bundle");
+        }
+        String astApiJar = FileLocator.getBundleFileLocation(astApi)
+                .orElseThrow(() -> new IllegalStateException("Missing AST API bundle file")).getAbsolutePath();
         Files.writeString(Path.of(arguments[1]), "{\"status\":\"PASS\",\"bundles\":" + bundles.size()
                 + ",\"cleanups\":" + cleanups + ",\"helpTocs\":" + tocs
+                + ",\"astApiJar\":\"" + escape(astApiJar) + "\""
                 + ",\"resolvedBundles\":" + resolvedBundles + "}\n");
         return EXIT_OK;
     }

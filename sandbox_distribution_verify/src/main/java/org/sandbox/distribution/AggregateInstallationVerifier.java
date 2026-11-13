@@ -76,12 +76,13 @@ import com.sun.source.util.Trees;
 /** Additional end-to-end gate in the existing distribution Maven reactor. */
 public final class AggregateInstallationVerifier {
     private static final String AGGREGATE = "sandbox_feature.feature.group";
+    private static final String AST_API = "org.sandbox.ast.api";
     private static final String CHARSET_MAIN = "probe.charset.Runner";
     private static final String FUNCTIONAL_MAIN = "probe.functional.Runner";
     private static final String DIRECTOR = "org.eclipse.equinox.p2.director";
     private static final String PROBE = "org.sandbox.distribution.aggregate.probe";
     private static final String LEGACY_COMPONENT_REPOSITORY = "https://carstenartur.github.io/sandbox/releases/1.3.4/";
-    private static final String STABLE_AGGREGATE_VERSION = "1.3.6";
+    private static final String STABLE_AGGREGATE_VERSION = "1.3.8";
     private static final String STABLE_AGGREGATE_REPOSITORY = "https://carstenartur.github.io/sandbox/releases/"
             + STABLE_AGGREGATE_VERSION + '/';
     private static final Pattern TRANSIENT_HTTP_STATUS = Pattern.compile("response code[: ]+(429|502|503|504)\\b");
@@ -96,7 +97,8 @@ public final class AggregateInstallationVerifier {
     private Path inventory;
 
     private record CleanupRun(int exitCode, Path reportFile, Path patchFile, String report, Map<Path, String> sources) { }
-    record RuntimeProbe(String status, int bundles, int cleanups, int helpTocs, List<String> resolvedBundles) { }
+    record RuntimeProbe(String status, int bundles, int cleanups, int helpTocs, List<String> resolvedBundles,
+            String astApiJar) { }
     record FieldEvidence(String owner, String name, String type, String modifiers,
             String initializerOwner, String initializerName, String initializerType, String initializerModifiers) { }
     record SourceAnalysis(Map<Path, List<String>> invocations, Map<Path, List<FieldEvidence>> fields, List<String> diagnostics) {
@@ -127,6 +129,7 @@ public final class AggregateInstallationVerifier {
         Files.deleteIfExists(evidence.resolve("verification.properties"));
         Map<String, String> current = featureVersions(repository);
         require(current.containsKey(AGGREGATE), "The built repository has no aggregate IU");
+        String candidateVersion = baseVersion(current.get(AGGREGATE));
         baseRepositories.addAll(provisioningRepositories(root));
         require(!baseRepositories.isEmpty(), "Missing target repositories");
         inventory = inventory();
@@ -135,7 +138,7 @@ public final class AggregateInstallationVerifier {
         provisionStock(fresh, "fresh-stock");
         Map<String, String> stock = hostDigests(fresh);
         provision(fresh, "fresh-aggregate", List.of(repository.toString()), List.of(AGGREGATE + '/' + current.get(AGGREGATE)), List.of());
-        verifyStage(fresh, "fresh", current, stock, Set.of(AGGREGATE));
+        verifyStage(fresh, "fresh", current, stock, Set.of(AGGREGATE), candidateVersion);
         verifyInstalledSandboxFunctionality(home(fresh), "fresh");
 
         String next = nextFixtureVersion(current.get(AGGREGATE));
@@ -144,7 +147,7 @@ public final class AggregateInstallationVerifier {
                 List.of(AGGREGATE + '/' + next), List.of(AGGREGATE + '/' + current.get(AGGREGATE)));
         Map<String, String> updated = new TreeMap<>(current);
         updated.put(AGGREGATE, next);
-        verifyStage(fresh, "updated", updated, stock, Set.of(AGGREGATE));
+        verifyStage(fresh, "updated", updated, stock, Set.of(AGGREGATE), candidateVersion);
 
         URI releasedRepository = URI.create(System.getProperty("sandbox.aggregate.stableRepository", STABLE_AGGREGATE_REPOSITORY));
         Map<String, String> released = featureVersions(releasedRepository);
@@ -157,7 +160,7 @@ public final class AggregateInstallationVerifier {
         verifyInstalledFeatures(upgraded, "released", released, upgradedStock, Set.of(AGGREGATE));
         provision(upgraded, "released-to-candidate", List.of(repository.toString()),
                 List.of(AGGREGATE + '/' + current.get(AGGREGATE)), List.of(AGGREGATE + '/' + released.get(AGGREGATE)));
-        verifyStage(upgraded, "upgraded", current, upgradedStock, Set.of(AGGREGATE));
+        verifyStage(upgraded, "upgraded", current, upgradedStock, Set.of(AGGREGATE), candidateVersion);
         verifyInstalledSandboxFunctionality(home(upgraded), "upgraded");
 
         URI previousRepository = URI.create(System.getProperty("sandbox.aggregate.previousRepository", LEGACY_COMPONENT_REPOSITORY));
@@ -175,7 +178,7 @@ public final class AggregateInstallationVerifier {
                 List.of(AGGREGATE + '/' + current.get(AGGREGATE)), previousRoots);
         Set<String> legacyRoots = new TreeSet<>(previous.keySet());
         legacyRoots.add(AGGREGATE);
-        verifyStage(legacy, "migrated", current, legacyStock, legacyRoots);
+        verifyStage(legacy, "migrated", current, legacyStock, legacyRoots, candidateVersion);
 
         records.put("previousRepository", previousRepository.toString());
         records.put("releasedRepository", releasedRepository.toString());
@@ -231,7 +234,7 @@ public final class AggregateInstallationVerifier {
     }
 
     private void verifyStage(Path installation, String stage, Map<String, String> versions,
-            Map<String, String> stock, Set<String> expectedRoots) throws Exception {
+            Map<String, String> stock, Set<String> expectedRoots, String candidateVersion) throws Exception {
         verifyInstalledFeatures(installation, stage, versions, stock, expectedRoots);
         Path home = home(installation);
         Path result = evidence.resolve(stage + "-runtime.json");
@@ -249,6 +252,7 @@ public final class AggregateInstallationVerifier {
         }
         require(java.util.Arrays.equals(original, Files.readAllBytes(configuration)), "Probe changed installation configuration");
         RuntimeProbe runtime = requireRuntimeProbe(stage, Files.readString(result), expectedBundleIdentities());
+        records.put(stage + ".astApi.sha256", verifyAstApi(runtime, Path.of(repository), candidateVersion));
         records.put(stage + ".runtime.sha256", digest(result));
         records.put(stage + ".runtime.bundleCount", Integer.toString(runtime.bundles()));
         records.put(stage + ".runtime.cleanupCount", Integer.toString(runtime.cleanups()));
@@ -554,7 +558,26 @@ public final class AggregateInstallationVerifier {
         }
         require(actualBundleIds.equals(new TreeSet<>(expectedBundles)),
                 label + " recorded wrong resolvedBundles ids; expected " + new TreeSet<>(expectedBundles) + ", actual " + actualBundleIds + ": " + report);
-        return new RuntimeProbe(status, bundles, cleanups, helpTocs, List.copyOf(actualBundles));
+        return new RuntimeProbe(status, bundles, cleanups, helpTocs, List.copyOf(actualBundles),
+                jsonString(parsed, "astApiJar"));
+    }
+
+    static String verifyAstApi(RuntimeProbe runtime, Path repository, String releaseVersion) throws Exception {
+        List<String> versions = runtime.resolvedBundles().stream()
+                .filter(identity -> identity.startsWith(AST_API + '/'))
+                .map(identity -> identity.substring(AST_API.length() + 1))
+                .toList();
+        require(versions.size() == 1, "Expected one resolved " + AST_API + " bundle, found " + versions);
+        String version = versions.getFirst();
+        require(releaseVersion.equals(baseVersion(version)), "Resolved " + AST_API + " version " + version
+                + " does not match candidate " + releaseVersion);
+        Path packaged = repository.resolve("plugins/" + AST_API + '_' + version + ".jar");
+        Path installed = Path.of(runtime.astApiJar());
+        require(Files.isRegularFile(packaged) && Files.isRegularFile(installed),
+                "Missing packaged or installed AST API JAR: " + packaged + ", " + installed);
+        String sha256 = digest(packaged);
+        require(sha256.equals(digest(installed)), "Installed AST API JAR differs from candidate: " + installed);
+        return sha256;
     }
 
     private static Map<Path, String> captureSources(List<Path> files) throws IOException {
@@ -984,6 +1007,7 @@ public final class AggregateInstallationVerifier {
         }
         // Shared Help navigation is contributed by the mandatory common runtime.
         bundles.add("sandbox_common");
+        bundles.add(AST_API);
         List<String> lines = new ArrayList<>();
         for (String id : bundles) {
             lines.add("bundle\t" + id);
@@ -1025,7 +1049,7 @@ public final class AggregateInstallationVerifier {
         attributes.putValue("Bundle-SymbolicName", PROBE + ";singleton:=true");
         attributes.putValue("Bundle-Version", "1.0.0");
         attributes.putValue("Require-Bundle", "org.eclipse.core.runtime,org.eclipse.equinox.app,org.eclipse.jdt.ui,org.eclipse.help");
-        attributes.putValue("Import-Package", "org.osgi.framework,org.osgi.framework.wiring");
+        attributes.putValue("Import-Package", "org.osgi.framework,org.osgi.framework.namespace,org.osgi.framework.wiring");
         attributes.putValue("Bundle-RequiredExecutionEnvironment", "JavaSE-25");
         Path archive = work.resolve("aggregate-probe.jar");
         try (JarOutputStream output = new JarOutputStream(Files.newOutputStream(archive), manifest)) {
