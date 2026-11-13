@@ -29,6 +29,7 @@ import org.sandbox.jdt.container.analysis.LocalArrayUsageAnalyzer;
 import org.sandbox.jdt.container.analysis.LocalDequeSequenceAnalyzer;
 import org.sandbox.jdt.container.analysis.LocalEnumIndexedMembershipAnalyzer;
 import org.sandbox.jdt.container.analysis.LocalUniqueSequenceAnalyzer;
+import org.sandbox.jdt.container.analysis.RecordKeyLookupAnalyzer;
 import org.sandbox.jdt.container.analysis.SynchronizedListIterationAnalyzer;
 import org.sandbox.jdt.container.api.ConcurrencyProtocol.Evidence;
 import org.sandbox.jdt.container.api.ConcurrencyProtocolAssessment.DiagnosticOnly;
@@ -76,16 +77,9 @@ final class ContainerAnalysisService {
 		enumMembershipAnalyzer.analyze(root).forEach(profile -> addProfile(profiles, profile));
 
 		List<ContainerAnalysisRow> rows= new ArrayList<>();
-		for (ContainerUsageProfile profile : profiles.values()) {
-			Optional<ContainerRecommendation> recommendation= contractInferrer.infer(profile);
-			if (profile.evidence().isEmpty()) {
-				rows.add(row(compilationUnitHandle, profile, recommendation, null));
-				continue;
-			}
-			for (UsageEvidence evidence : profile.evidence()) {
-				rows.add(row(compilationUnitHandle, profile, recommendation, evidence));
-			}
-		}
+		// Distinct accessors on the same list represent independent index candidates.
+		RecordKeyLookupAnalyzer.analyze(root).forEach(profile -> appendRows(compilationUnitHandle, rows, profile));
+		profiles.values().forEach(profile -> appendRows(compilationUnitHandle, rows, profile));
 		for (DiagnosticOnly observation : synchronizedListAnalyzer.analyze(root)) {
 			for (Evidence evidence : observation.protocol().evidence()) {
 				rows.add(concurrencyRow(compilationUnitHandle, observation, evidence));
@@ -95,6 +89,16 @@ final class ContainerAnalysisService {
 				.thenComparing(ContainerAnalysisRow::candidate)
 				.thenComparing(ContainerAnalysisRow::evidenceKind));
 		return List.copyOf(rows);
+	}
+
+	private void appendRows(String handle, List<ContainerAnalysisRow> rows, ContainerUsageProfile profile) {
+		Optional<ContainerRecommendation> recommendation= contractInferrer.infer(profile);
+		if (profile.evidence().isEmpty()) {
+			rows.add(row(handle, profile, recommendation, null));
+		}
+		for (UsageEvidence evidence : profile.evidence()) {
+			rows.add(row(handle, profile, recommendation, evidence));
+		}
 	}
 
 	private static ContainerAnalysisRow concurrencyRow(String compilationUnitHandle,

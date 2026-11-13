@@ -218,6 +218,85 @@ public class ContainerAnalysisServiceTest {
 				.noneMatch(name -> name.startsWith("org.eclipse.jdt.core.dom."))); //$NON-NLS-1$
 	}
 
+	@Test
+	public void repeatedLookupByARecordStringKeyReportsMapSemanticsAtBothLoops() {
+		String source= """
+				import java.util.List;
+				class Sample {
+				    record Entry(String key) {}
+				    private final List<Entry> entries = List.of();
+				    Entry first(String requested) {
+				        for (Entry item : entries) if (requested.equals(item.key())) return item;
+				        return null;
+				    }
+				    Entry second(String other) {
+				        for (Entry row : this.entries) {
+				            if (other.equals(row.key())) { return row; }
+				        }
+				        return null;
+				    }
+				}
+				""";
+		List<ContainerAnalysisRow> rows= service.analyze(parse(source), "=Sample"); //$NON-NLS-1$
+		assertEquals(2, rows.size());
+		assertTrue(rows.stream().allMatch(row -> row.targetContract().startsWith("MAP;") //$NON-NLS-1$
+				&& row.status().equals("REPORT_ONLY") && fragment(source, row).startsWith("for ("))); //$NON-NLS-1$ //$NON-NLS-2$
+		assertTrue(rows.get(0).semanticSummary().contains("first matching")); //$NON-NLS-1$
+		assertTrue(rows.get(0).sourceStart() < rows.get(1).sourceStart());
+
+		String getter= source.replace("Entry second(String other)", //$NON-NLS-1$
+				"private List<Entry> all() { return this.entries; } Entry second(String other)") //$NON-NLS-1$
+				.replace("row : this.entries", "row : all()"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertEquals(2, service.analyze(parse(getter), "=Sample").size()); //$NON-NLS-1$
+		for (String changed : List.of(
+				getter.replace("private List<Entry> all()", "List<Entry> all()"), //$NON-NLS-1$ //$NON-NLS-2$
+				getter.replace("return this.entries;", "return List.copyOf(entries);"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("this.entries", "List.<Entry>of()"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("return row;", "return null;"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("String key) {}", "String key) { public String key() { return key.trim(); } }"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("other.equals(row.key())", "other.equals(row.toString())"))) { //$NON-NLS-1$ //$NON-NLS-2$
+			assertTrue(service.analyze(parse(changed), "=Sample").stream() //$NON-NLS-1$
+					.noneMatch(row -> row.targetContract().startsWith("MAP;"))); //$NON-NLS-1$
+		}
+	}
+
+	@Test
+	public void twoParametersWithTheSameNameInDifferentMethodsRemainDistinct() {
+		String method= """
+				Entry find(List<Entry> entries, String key) {
+				    for (Entry e : entries) if (key.equals(e.id())) return e;
+				    return null;
+				}
+				""";
+		String prefix= "import java.util.List; class Sample { record Entry(String id) {} "; //$NON-NLS-1$
+		String twoDeclarations= prefix + method + method.replace("find(", "findOther(") + "}"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		assertTrue(service.analyze(parse(twoDeclarations), "=Sample").isEmpty()); //$NON-NLS-1$
+		String oneParameter= prefix + method.replace("return null;", //$NON-NLS-1$
+				"for (Entry e : entries) if (e != null) continue; return null;") + "}"; //$NON-NLS-1$ //$NON-NLS-2$
+		assertTrue(service.analyze(parse(oneParameter), "=Sample").isEmpty()); //$NON-NLS-1$
+		String twoQueries= method.replace("String key)", "String key, String fallback)") //$NON-NLS-1$ //$NON-NLS-2$
+				.replace("return null;", "for (Entry e : entries) if (fallback.equals(e.id())) return e; return null;"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertEquals(2, service.analyze(parse(prefix + twoQueries + "}"), "=Sample").size()); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void localSyntaxCleanupsDoNotGenerateCompetingRepresentationProposals() {
+		String source= """
+				import java.util.*;
+				class Sample {
+				    void copy(List<String> original, String[] buffer) {
+				        List<String> copy = new ArrayList<>(original);
+				        ArrayList<String> target = new ArrayList<>();
+				        for (String s : original) target.add(s);
+				        for (int i = 0; i < buffer.length; i++) buffer[i] = "x";
+				        target.addAll(copy);
+				    }
+				}
+				""";
+		assertTrue(service.analyze(parse(source), "=Sample").stream() //$NON-NLS-1$
+				.allMatch(row -> "No proven target".equals(row.targetContract()))); //$NON-NLS-1$
+	}
+
 	private static CompilationUnit parse(String source) {
 		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
 		parser.setKind(ASTParser.K_COMPILATION_UNIT);
