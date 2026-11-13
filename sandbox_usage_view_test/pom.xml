@@ -46,6 +46,27 @@
 	</build>
 	<profiles>
 		<profile>
+			<id>container-performance</id>
+			<properties>
+				<tycho.testArgLine>${tycho.platformArgLine} -Xms96m -Xmx256m -XX:+UseSerialGC -Xss512k -XX:ReservedCodeCacheSize=64m -XX:ActiveProcessorCount=2</tycho.testArgLine>
+			</properties>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.eclipse.tycho</groupId>
+						<artifactId>tycho-surefire-plugin</artifactId>
+						<configuration>
+							<useUIHarness>false</useUIHarness>
+							<excludes combine.self="override" />
+							<includes>
+								<include>**/ContainerAnalysisPerformanceIT.class</include>
+							</includes>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
 			<id>swtbot</id>
 			<build>
 				<plugins>

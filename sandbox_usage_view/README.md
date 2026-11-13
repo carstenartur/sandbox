@@ -162,6 +162,45 @@ See [TODO.md](TODO.md) for planned features:
 - **Export functionality** - CSV/Excel export for reporting
 - **Batch operations** - Apply fixes to multiple variables at once
 
+## Measuring the Container Analysis report
+
+The opt-in native Tycho test imports every Java source in Eclipse JDT UI's
+`org.eclipse.jdt.core.manipulation` project into a disposable Eclipse workspace.
+It reads Git blobs at the repository's [R4_40 corpus pin](../qa/upstream-jdt/pins.env),
+independently of the local checkout's working tree. From the Sandbox root with
+Java 25 and the reactor dependencies installed, run:
+
+```bash
+git clone --depth 1 --branch R4_40 https://github.com/eclipse-jdt/eclipse.jdt.ui.git /tmp/jdt-ui-r4-40
+export SANDBOX_CONTAINER_JDT_UI=/tmp/jdt-ui-r4-40
+mvn -Pcontainer-performance -pl sandbox_usage_view_test -Dtest=ContainerAnalysisPerformanceIT verify
+```
+
+The measured loop calls the same `ContainerAnalysisService.analyze(ICompilationUnit, IProgressMonitor)`
+entry point as the view's background job. It parses each unit with bindings,
+runs the report analyzers and collects the evidence rows in view order. The
+test checks the pin, input size and representative Java/Eclipse types; it prints
+elapsed time, throughput, row count and the result digest. The timer excludes
+source import, project configuration, UI rendering and result hashing. Java 21
+source compliance matches the corpus. The workspace uses the current test
+runtime's Eclipse dependency bundles and JRE, with automatic builds disabled.
+
+| Native measurement on 2026-11-13 | Result |
+| --- | ---: |
+| R4_40 commit | `c922f757b27b7e2b6215db383cec5f8aafd13227` |
+| Compilation units / Java source bytes | 944 / 10,398,833 |
+| Evidence rows | 2,721 |
+| First complete project scan | 23.062 s |
+| Throughput | 40.93 units/s |
+
+The sample used Linux x86-64 on a shared AMD EPYC 9V74, Eclipse JDT Core
+`3.47.0.v20260828-1141` and Eclipse Adoptium `25.0.5+8-LTS`. The profile uses
+two JVM-visible processors, Serial GC and `-Xmx256m` (247 MiB usable heap).
+A second scan in the same process exhausted the heap while JDT constructed AST
+bindings. Other attempts were externally terminated before completing. Only the
+completed pass contributes to the table. It supplies a single-project reference
+point. There is no timing threshold, warm-run estimate or latency distribution.
+
 ## License
 
 Eclipse Public License 2.0 (EPL-2.0)
