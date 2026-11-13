@@ -855,6 +855,19 @@
 	</distributionManagement>
 	<profiles>
 		<profile>
+			<id>m2e-jar-plugin</id>
+			<activation>
+				<property>
+					<name>m2e.version</name>
+				</property>
+			</activation>
+			<properties>
+				<!-- JarMojo in 3.5.x can require a Maven session while m2e
+				     configures a workspace project outside that scope. -->
+				<maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
+			</properties>
+		</profile>
+		<profile>
 			<id>macos-tests</id>
 			<activation><os><family>mac</family></os></activation>
 			<properties><tycho.platformArgLine>-XstartOnFirstThread</tycho.platformArgLine></properties>

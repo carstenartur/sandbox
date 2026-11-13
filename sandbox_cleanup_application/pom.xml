@@ -15,6 +15,14 @@
 		<dependency>
 			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_common_core</artifactId>
+			<!-- PDE supplies Common Core's imported bundles from the Eclipse target.
+			     Keep their Maven copies out of the plug-in's workspace classpath. -->
+			<exclusions>
+				<exclusion>
+					<groupId>*</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 	</dependencies>
 	<build>
