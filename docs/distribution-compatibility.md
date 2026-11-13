@@ -53,7 +53,7 @@ The **Distribution Smoke Test** runs native verification on Linux GTK x86-64 and
 5. starts both the materialized product and the fresh installation;
 6. imports an isolated Java project through the installed cleanup application;
 7. applies a deterministic cleanup, validates the report and source change, and compiles the transformed source with Java 25;
-8. upgrades the published stable 1.3.6 aggregate and its components to the candidate in one p2 transaction, then verifies installed cleanup behavior;
+8. upgrades the published stable 1.3.8 aggregate and its components to the candidate in one p2 transaction, then verifies installed cleanup behavior and the exact AST API JAR used by Sandbox Tools and Use General Type;
 9. executes the native mathematics Workbench scenarios and separately verifies installed mathematics analysis/apply/idempotence without a display.
 
 The independent 1.3.4 legacy-feature migration and aggregate-metadata-only update cases remain part of the gate. Linux additionally qualifies cleanup consumers against a Docker image built from the same candidate. Release acceptance requires successful native results for the exact candidate revision on both Linux and Windows; an older successful matrix is supporting evidence. Native macOS verification can be reproduced locally with the same Maven commands above, but is not an automated release prerequisite.

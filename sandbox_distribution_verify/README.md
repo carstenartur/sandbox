@@ -12,7 +12,8 @@ It checks:
 - normal startup of the Eclipse IDE workbench;
 - installation of the update site into a fresh Eclipse destination;
 - startup of the fresh installation;
-- execution of the cleanup application for formatter, charset-modernization and functional-converter probes, including a published 1.3.6-to-candidate aggregate upgrade, and compilation of the transformed Java sources.
+- execution of the cleanup application for formatter, charset-modernization and functional-converter probes, including a published 1.3.8-to-candidate aggregate upgrade, and compilation of the transformed Java sources.
+- exact runtime AST API version and JAR digest, including the bundle used by Sandbox Tools and Use General Type.
 
 Run the complete build on Windows, Linux or macOS with:
 
