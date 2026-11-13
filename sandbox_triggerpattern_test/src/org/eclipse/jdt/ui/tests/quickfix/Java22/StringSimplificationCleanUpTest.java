@@ -13,12 +13,24 @@
  *******************************************************************************/
 package org.eclipse.jdt.ui.tests.quickfix.Java22;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
+import org.sandbox.jdt.triggerpattern.api.Pattern;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
+import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
+import org.sandbox.jdt.triggerpattern.eclipse.HintContext;
+import org.sandbox.jdt.triggerpattern.string.StringSimplificationHintProvider;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 
@@ -579,6 +591,164 @@ public class StringSimplificationCleanUpTest {
 		ICompilationUnit cu = pack.createCompilationUnit("E1.java", given, false, null);
 		context.enable(MYCleanUpConstants.TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+	}
+
+	@Test
+	public void testMapAndConcreteCollectionSizeChecks() throws CoreException {
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+		String given = """
+			package test1;
+
+			import java.util.ArrayList;
+			import java.util.Map;
+
+			class E1 {
+			    boolean empty(Map<String, Integer> map) {
+			        return map.size() == 0;
+			    }
+
+			    boolean nonEmpty(ArrayList<String> list) {
+			        return list.size() > 0;
+			    }
+			}
+			""";
+		String expected = given.replace("map.size() == 0", "map.isEmpty()")
+				.replace("list.size() > 0", "!list.isEmpty()");
+
+		ICompilationUnit cu = pack.createCompilationUnit("E1.java", given, false, null);
+		context.enable(MYCleanUpConstants.TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP);
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+	}
+
+	@Test
+	public void testCollectionSizeCheckRejectsUnrelatedSizeMethods() throws CoreException {
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+		String given = """
+			package test1;
+
+			class E1 {
+			    static class Dimensions {
+			        int size() { return 0; }
+			    }
+
+			    static class Buffer {
+			        int size() { return 1; }
+			        boolean isEmpty() { return true; }
+			    }
+
+			    boolean empty(Dimensions dimensions) {
+			        return dimensions.size() == 0;
+			    }
+
+			    boolean nonEmpty(Buffer buffer) {
+			        return buffer.size() > 0;
+			    }
+			}
+			""";
+
+		ICompilationUnit cu = pack.createCompilationUnit("E1.java", given, false, null);
+		context.enable(MYCleanUpConstants.TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+	}
+
+	@Test
+	public void testCollectionSizeCheckPreservesLambdaCompatibilityAndComments() throws CoreException {
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+		String given = """
+			package test1;
+
+			import java.util.List;
+			import java.util.function.Consumer;
+			import java.util.function.Predicate;
+
+			class E1 {
+			    void use(Consumer<List<String>> action) {}
+			    void use(Predicate<List<String>> predicate) {}
+
+			    void test() {
+			        use(list -> list.size() == 0);
+			    }
+
+			    boolean empty(List<String> list) {
+			        return list.size() /* count includes pending entries */ == 0;
+			    }
+			}
+			""";
+
+		ICompilationUnit cu = pack.createCompilationUnit("E1.java", given, false, null);
+		context.enable(MYCleanUpConstants.TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+	}
+
+	@Test
+	public void testCollectionSizeCheckPreservesCustomIsEmptyImplementation() throws CoreException {
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+		String given = """
+			package test1;
+
+			import java.util.ArrayList;
+
+			class E1 extends ArrayList<String> {
+			    private static final long serialVersionUID = 1L;
+
+			    @Override
+			    public boolean isEmpty() {
+			        return this.size() == 0;
+			    }
+			}
+
+			class Indirect extends ArrayList<String> {
+			    private static final long serialVersionUID = 1L;
+
+			    @Override
+			    public boolean isEmpty() {
+			        return !hasValues();
+			    }
+
+			    private boolean hasValues() {
+			        ArrayList<String> values = this;
+			        return values.size() > 0;
+			    }
+			}
+			""";
+
+		ICompilationUnit cu = pack.createCompilationUnit("E1.java", given, false, null);
+		context.enable(MYCleanUpConstants.TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+	}
+
+	@Test
+	public void testCollectionQuickAssistChecksBindingsBeforeRewriting() throws CoreException {
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+		String given = """
+			package test1;
+
+			import java.util.Map;
+
+			class E1 {
+			    static class Dimensions {
+			        int size() { return 0; }
+			    }
+
+			    boolean empty(Dimensions dimensions) {
+			        return dimensions.size() == 0;
+			    }
+
+			    boolean empty(Map<?, ?> map) {
+			        return map.size() == 0;
+			    }
+			}
+			""";
+		ICompilationUnit cu = pack.createCompilationUnit("E1.java", given, false, null);
+		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
+		parser.setSource(cu);
+		parser.setResolveBindings(true);
+		CompilationUnit root = (CompilationUnit) parser.createAST(null);
+		var matches = new TriggerPatternEngine().findMatches(root, Pattern.of("$list.size() == 0", PatternKind.EXPRESSION));
+		assertNull(StringSimplificationHintProvider.replaceCollectionSizeCheck(
+				new HintContext(root, cu, matches.getFirst(), ASTRewrite.create(root.getAST()))));
+		assertNotNull(StringSimplificationHintProvider.replaceCollectionSizeCheck(
+				new HintContext(root, cu, matches.getLast(), ASTRewrite.create(root.getAST()))));
 	}
 
 	// ========== StringBuilder/String.format Tests ==========

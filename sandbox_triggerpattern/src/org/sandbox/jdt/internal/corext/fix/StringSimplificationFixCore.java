@@ -17,14 +17,23 @@ import java.util.List;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
+import org.eclipse.jdt.core.dom.Comment;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ConditionalExpression;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.dom.Bindings;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
@@ -115,14 +124,18 @@ public class StringSimplificationFixCore {
 		Pattern collectionSizePattern = Pattern.of("$list.size() == 0", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> collectionSizeMatches = ENGINE.findMatches(compilationUnit, collectionSizePattern);
 		for (Match match : collectionSizeMatches) {
-			operations.add(new CollectionIsEmptyOperation(match, "Collection size check", "$list", false)); //$NON-NLS-1$ //$NON-NLS-2$
+			if (isSafeCollectionSizeCheck(match)) {
+				operations.add(new CollectionIsEmptyOperation(match, "Collection size check", "$list", false)); //$NON-NLS-1$ //$NON-NLS-2$
+			}
 		}
 		
 		// Pattern 10: $list.size() > 0
 		Pattern collectionNotEmptyPattern = Pattern.of("$list.size() > 0", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> collectionNotEmptyMatches = ENGINE.findMatches(compilationUnit, collectionNotEmptyPattern);
 		for (Match match : collectionNotEmptyMatches) {
-			operations.add(new CollectionIsEmptyOperation(match, "Collection non-empty check", "$list", true)); //$NON-NLS-1$ //$NON-NLS-2$
+			if (isSafeCollectionSizeCheck(match)) {
+				operations.add(new CollectionIsEmptyOperation(match, "Collection non-empty check", "$list", true)); //$NON-NLS-1$ //$NON-NLS-2$
+			}
 		}
 		
 		// Pattern 11: new StringBuilder().append($x).toString()
@@ -154,6 +167,60 @@ public class StringSimplificationFixCore {
 		}
 	}
 	
+	/** Checks the binding and source context shared by the cleanup and quick assist. */
+	public static boolean isSafeCollectionSizeCheck(Match match) {
+		if (!(match.getMatchedNode() instanceof InfixExpression comparison)
+				|| comparison.hasExtendedOperands()
+				|| !(ASTNodes.getUnparenthesedExpression(comparison.getLeftOperand()) instanceof MethodInvocation size)
+				|| size.getExpression() == null
+				|| !(comparison.getRoot() instanceof CompilationUnit root)
+				|| root.getCommentList() == null) {
+			return false;
+		}
+		if (comparison.getOperator() == InfixExpression.Operator.EQUALS && comparison.getParent() instanceof LambdaExpression) {
+			// A bare method call would also make the expression lambda void-compatible.
+			return false;
+		}
+		IMethodBinding method= size.resolveMethodBinding();
+		ITypeBinding receiver= size.getExpression().resolveTypeBinding();
+		if (method == null || method.isRecovered() || Modifier.isStatic(method.getModifiers())
+				|| method.getParameterTypes().length != 0 || !"int".equals(method.getReturnType().getQualifiedName()) //$NON-NLS-1$
+				|| !isCollectionOrMap(receiver)) {
+			return false;
+		}
+		// A collection implementation may implement isEmpty() through this check
+		// in an override or a helper, including via an alias of the receiver.
+		for (ASTNode ancestor= comparison.getParent(); ancestor != null; ancestor= ancestor.getParent()) {
+			if ((ancestor instanceof AbstractTypeDeclaration || ancestor instanceof AnonymousClassDeclaration)
+					&& isCollectionOrMap(ASTNodes.getEnclosingType(ancestor))) {
+				return false;
+			}
+		}
+		int start= root.getExtendedStartPosition(comparison);
+		int length= root.getExtendedLength(comparison);
+		if (start < 0 || length < comparison.getLength()) {
+			return false;
+		}
+		int end= start + length;
+		for (Object value : root.getCommentList()) {
+			Comment comment= (Comment) value;
+			int commentStart= comment.getStartPosition();
+			if (commentStart >= end) {
+				break;
+			}
+			if (commentStart + comment.getLength() > start) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private static boolean isCollectionOrMap(ITypeBinding type) {
+		return type != null && !type.isRecovered()
+				&& (Bindings.findTypeInHierarchy(type, "java.util.Collection") != null //$NON-NLS-1$
+						|| Bindings.findTypeInHierarchy(type, "java.util.Map") != null); //$NON-NLS-1$
+	}
+
 	/**
 	 * Rewrite operation for String.valueOf() simplification.
 	 */
