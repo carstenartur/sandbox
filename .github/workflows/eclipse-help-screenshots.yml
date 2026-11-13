@@ -222,7 +222,8 @@ jobs:
           jface_diff='sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-diff-step.png'
           jface_selection='sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-multi-file-selection.png'
           mapfile -t changes < <(git status --porcelain=v1 --untracked-files=all -- \
-            ':(glob)sandbox*_help/images/*.png')
+            ':(glob)sandbox*_help/images/*.png' \
+            ':(glob)sandbox*_help/images/*.provenance.json')
           unexpected=()
           row_permutations=()
           code_patterns_changed=false
@@ -242,7 +243,7 @@ jobs:
           done
 
           if (( ${#unexpected[@]} > 0 )); then
-            echo 'Regenerated Help screenshots differ from the checkout:' >&2
+            echo 'Regenerated Help screenshots or provenance differ from the checkout:' >&2
             printf '%s\n' "${unexpected[@]}" >&2
             exit 1
           fi
