@@ -37,8 +37,8 @@ final class ContainerAstFacts {
 
 	static Expression unwrap(Expression expression) {
 <span class="fc" id="L39">		Expression result= expression;</span>
-<span class="pc bpc" id="L40" title="1 of 2 branches missed.">		while (result instanceof ParenthesizedExpression parenthesized) {</span>
-<span class="nc" id="L41">			result= parenthesized.getExpression();</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">		while (result instanceof ParenthesizedExpression parenthesized) {</span>
+<span class="fc" id="L41">			result= parenthesized.getExpression();</span>
 		}
 <span class="fc" id="L43">		return result;</span>
 	}

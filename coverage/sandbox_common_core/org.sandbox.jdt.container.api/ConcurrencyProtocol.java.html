@@ -62,7 +62,7 @@ public record ConcurrencyProtocol(
 	public Set&lt;String&gt; lockIdentities() {
 <span class="fc" id="L63">		LinkedHashSet&lt;String&gt; result= new LinkedHashSet&lt;&gt;();</span>
 <span class="fc bfc" id="L64" title="All 2 branches covered.">		for (Evidence item : evidence) {</span>
-<span class="pc bpc" id="L65" title="1 of 2 branches missed.">			if (!item.lockIdentity().isBlank()) {</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">			if (!item.lockIdentity().isBlank()) {</span>
 <span class="fc" id="L66">				result.add(item.lockIdentity());</span>
 			}
 <span class="fc" id="L68">		}</span>
@@ -91,7 +91,7 @@ public record ConcurrencyProtocol(
 
 <span class="fc" id="L92">		public Evidence {</span>
 <span class="fc" id="L93">			Objects.requireNonNull(kind, &quot;kind&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L94" title="1 of 2 branches missed.">			lockIdentity= lockIdentity == null ? &quot;&quot; : lockIdentity.strip(); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">			lockIdentity= lockIdentity == null ? &quot;&quot; : lockIdentity.strip(); //$NON-NLS-1$</span>
 <span class="fc" id="L95">			summary= Objects.requireNonNull(summary, &quot;summary&quot;).strip(); //$NON-NLS-1$</span>
 <span class="pc bpc" id="L96" title="1 of 2 branches missed.">			if (summary.isEmpty()) {</span>
 <span class="nc" id="L97">				throw new IllegalArgumentException(&quot;summary must not be empty&quot;); //$NON-NLS-1$</span>

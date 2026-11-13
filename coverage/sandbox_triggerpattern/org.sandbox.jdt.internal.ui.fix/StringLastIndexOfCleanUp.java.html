@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>StringLastIndexOfCleanUp.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_triggerpattern</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.fix</a> &gt; <span class="el_source">StringLastIndexOfCleanUp.java</span></div><h1>StringLastIndexOfCleanUp.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials are made available under the terms
+ * of the Eclipse Public License 2.0 which accompanies this distribution, and is
+ * available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.fix;
+
+import static org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.UNTOUCH_COMMENT_PROPERTY;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP;
+
+import java.util.ArrayList;
+import java.util.HexFormat;
+import java.util.List;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.CharacterLiteral;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
+import org.eclipse.jdt.ui.cleanup.CleanUpContext;
+import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
+import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.triggerpattern.cleanup.EncodingSourceRewrite;
+import org.sandbox.jdt.triggerpattern.cleanup.NlsAwareCleanUpFix;
+
+/** Converts one-code-unit {@link String#lastIndexOf(String)} arguments in the Eclipse cleanup profile. */
+<span class="fc" id="L42">public final class StringLastIndexOfCleanUp extends AbstractCleanUp {</span>
+
+	@Override
+	public CleanUpRequirements getRequirements() {
+<span class="fc" id="L46">		boolean enabled= isEnabled(TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP);</span>
+		// String simplification can rewrite an enclosing expression and change the line's tags.
+<span class="fc" id="L48">		return new CleanUpRequirements(enabled, enabled, false, null);</span>
+	}
+
+	@Override
+	public ICleanUpFix createFix(CleanUpContext context) throws CoreException {
+<span class="fc" id="L53">		CompilationUnit root= context.getAST();</span>
+<span class="pc bpc" id="L54" title="1 of 4 branches missed.">		if (!isEnabled(TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP) || root == null</span>
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">				|| !(root.getJavaElement() instanceof ICompilationUnit unit)) {</span>
+<span class="fc" id="L56">			return null;</span>
+		}
+<span class="fc" id="L58">		List&lt;StringLiteral&gt; candidates= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L59">		root.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(MethodInvocation invocation) {
+<span class="fc bfc" id="L62" title="All 2 branches covered.">				if (&quot;lastIndexOf&quot;.equals(invocation.getName().getIdentifier()) //$NON-NLS-1$</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">						&amp;&amp; invocation.arguments().size() == 1</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">						&amp;&amp; invocation.arguments().getFirst() instanceof StringLiteral literal</span>
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">						&amp;&amp; ((invocation.getFlags() | literal.getFlags()) &amp; (ASTNode.MALFORMED | ASTNode.RECOVERED)) == 0</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">						&amp;&amp; isStringLastIndexOf(invocation.resolveMethodBinding())</span>
+<span class="pc bpc" id="L67" title="1 of 4 branches missed.">						&amp;&amp; literal.resolveConstantExpressionValue() instanceof String value &amp;&amp; value.length() == 1) {</span>
+<span class="fc" id="L68">					candidates.add(literal);</span>
+				}
+<span class="fc" id="L70">				return true;</span>
+			}
+		});
+<span class="fc bfc" id="L73" title="All 2 branches covered.">		if (candidates.isEmpty()) {</span>
+<span class="fc" id="L74">			return null;</span>
+		}
+<span class="fc" id="L76">		List&lt;StringLiteral&gt; literals= EncodingSourceRewrite.literalsWithUnambiguousTags(root, unit, candidates);</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">		if (literals.isEmpty()) {</span>
+<span class="fc" id="L78">			return null;</span>
+		}
+<span class="fc" id="L80">		CompilationUnitRewriteOperation[] operations= literals.stream().map(ReplaceLiteral::new)</span>
+<span class="fc" id="L81">				.toArray(CompilationUnitRewriteOperation[]::new);</span>
+<span class="fc" id="L82">		return new NlsAwareCleanUpFix(MultiFixMessages.StringLastIndexOfCleanUp_description, root, operations);</span>
+	}
+
+	@Override
+	public String[] getStepDescriptions() {
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">		return isEnabled(TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP)</span>
+<span class="pc" id="L88">				? new String[] { MultiFixMessages.StringLastIndexOfCleanUp_description } : new String[0];</span>
+	}
+
+	private static boolean isStringLastIndexOf(IMethodBinding binding) {
+<span class="pc bpc" id="L92" title="2 of 6 branches missed.">		if (binding == null || binding.isRecovered() || !isString(binding.getDeclaringClass())) {</span>
+<span class="fc" id="L93">			return false;</span>
+		}
+<span class="fc" id="L95">		ITypeBinding[] parameters= binding.getParameterTypes();</span>
+<span class="pc bpc" id="L96" title="2 of 4 branches missed.">		return parameters.length == 1 &amp;&amp; isString(parameters[0]);</span>
+	}
+
+	private static boolean isString(ITypeBinding type) {
+<span class="pc bpc" id="L100" title="2 of 6 branches missed.">		return type != null &amp;&amp; !type.isRecovered() &amp;&amp; String.class.getName().equals(type.getQualifiedName());</span>
+	}
+
+	private static final class ReplaceLiteral extends CompilationUnitRewriteOperationWithSourceRange {
+		private final StringLiteral literal;
+
+<span class="fc" id="L106">		ReplaceLiteral(StringLiteral literal) {</span>
+<span class="fc" id="L107">			this.literal= literal;</span>
+<span class="fc" id="L108">		}</span>
+
+		@Override
+		public void rewriteASTInternal(CompilationUnitRewrite rewrite, LinkedProposalModelCore linkedModel) {
+<span class="fc" id="L112">			CharacterLiteral replacement= rewrite.getAST().newCharacterLiteral();</span>
+<span class="fc" id="L113">			char value= ((String) literal.resolveConstantExpressionValue()).charAt(0);</span>
+<span class="fc bfc" id="L114" title="All 6 branches covered.">			if (Character.isSurrogate(value) || (value &gt; 127 &amp;&amp; literal.getEscapedValue().contains(&quot;\\u&quot;))) { //$NON-NLS-1$</span>
+				// Keep escaped characters representable in the original source encoding.
+<span class="fc" id="L116">				replacement.setEscapedValue(&quot;'\\u&quot; + HexFormat.of().toHexDigits(value) + &quot;'&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L117">			} else {</span>
+<span class="fc" id="L118">				replacement.setCharValue(value);</span>
+			}
+<span class="fc" id="L120">			TextEditGroup group= createTextEditGroup(MultiFixMessages.StringLastIndexOfCleanUp_description, rewrite);</span>
+<span class="fc" id="L121">			literal.setProperty(UNTOUCH_COMMENT_PROPERTY, Boolean.TRUE);</span>
+<span class="fc" id="L122">			rewrite.getASTRewrite().replace(literal, replacement, group);</span>
+<span class="fc" id="L123">			EncodingSourceRewrite.record(rewrite, literal);</span>
+<span class="fc" id="L124">		}</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

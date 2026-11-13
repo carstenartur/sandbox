@@ -98,7 +98,7 @@ import org.sandbox.jdt.container.api.UsageEvidence.Kind;
 
 	private static Optional&lt;Candidate&gt; candidate(VariableDeclarationFragment fragment) {
 <span class="fc" id="L100">		IVariableBinding binding= fragment.resolveBinding();</span>
-<span class="pc bpc" id="L101" title="3 of 6 branches missed.">		if (binding == null || binding.isField() || binding.isParameter()</span>
+<span class="pc bpc" id="L101" title="2 of 6 branches missed.">		if (binding == null || binding.isField() || binding.isParameter()</span>
 <span class="pc bpc" id="L102" title="1 of 2 branches missed.">				|| !(fragment.getParent() instanceof VariableDeclarationStatement declaration)</span>
 <span class="pc bpc" id="L103" title="1 of 2 branches missed.">				|| declaration.fragments().size() != 1</span>
 <span class="fc bfc" id="L104" title="All 2 branches covered.">				|| !(fragment.getInitializer() instanceof ArrayCreation creation)</span>

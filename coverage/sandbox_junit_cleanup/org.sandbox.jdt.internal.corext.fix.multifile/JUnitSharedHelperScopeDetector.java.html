@@ -12,6 +12,7 @@ package org.sandbox.jdt.internal.corext.fix.multifile;
 
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_ASSERT;
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_ASSUME;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_JUPITER_API_ASSERTIONS;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 
@@ -28,18 +30,32 @@ import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IMethod;
+import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTRequestor;
 import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.BooleanLiteral;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionMethodReference;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.TypeMethodReference;
 import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
 import org.eclipse.jdt.internal.corext.refactoring.util.RefactoringASTParser;
+
+import org.sandbox.jdt.cleanup.multifile.RelatedCompilationUnitSearch;
 
 /**
  * Discovers narrow source-owned assertion and assumption helper wrappers whose
@@ -54,193 +70,371 @@ import org.eclipse.jdt.internal.corext.refactoring.util.RefactoringASTParser;
  */
 public final class JUnitSharedHelperScopeDetector {
 
+<span class="fc" id="L73">	private static final Set&lt;String&gt; BOOLEAN_ASSERTIONS= Set.of(&quot;assertTrue&quot;, &quot;assertFalse&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+
 	private record HelperCandidate(IMethod method, String bindingKey, ICompilationUnit compilationUnit) {
+	}
+
+	/** Existing helper seeds and method-reference seeds that require a separate closure proof. */
+	public record HelperSearchSeeds(JUnitScopeCandidateDetector.SearchSeeds ordinary,
+			List&lt;IJavaElement&gt; methodReferences) {
+<span class="fc" id="L81">		public HelperSearchSeeds {</span>
+<span class="fc" id="L82">			methodReferences= List.copyOf(methodReferences);</span>
+<span class="fc" id="L83">		}</span>
 	}
 
 	private JUnitSharedHelperScopeDetector() {
 	}
 
 	/**
-	 * Finds direct assertion/assumption wrapper methods reachable from the current
-	 * scope and returns their declarations as reverse-reference search seeds.
+	 * Finds direct assertion and assumption wrapper methods from declarations and
+	 * calls in the current scope.
 	 */
 	public static JUnitScopeCandidateDetector.SearchSeeds findSearchSeeds(IJavaProject project,
 			Collection&lt;ICompilationUnit&gt; currentScope, boolean migrateAssertions,
 			boolean migrateAssumptions, IProgressMonitor monitor) {
-<span class="pc bpc" id="L70" title="3 of 6 branches missed.">		if (project == null || currentScope == null || currentScope.isEmpty()</span>
-<span class="fc bfc" id="L71" title="All 4 branches covered.">				|| !migrateAssertions &amp;&amp; !migrateAssumptions) {</span>
-<span class="fc" id="L72">			return empty();</span>
+<span class="fc" id="L96">		return findSearchSeeds(project, currentScope, migrateAssertions, migrateAssumptions, false, monitor).ordinary();</span>
+	}
+
+	/** Also collects eligible static method-reference targets when the cleanup profile allows it. */
+	public static HelperSearchSeeds findSearchSeeds(IJavaProject project,
+			Collection&lt;ICompilationUnit&gt; currentScope, boolean migrateAssertions,
+			boolean migrateAssumptions, boolean allowMethodReferences, IProgressMonitor monitor) {
+<span class="pc bpc" id="L103" title="3 of 6 branches missed.">		if (project == null || currentScope == null || currentScope.isEmpty()</span>
+<span class="fc bfc" id="L104" title="All 4 branches covered.">				|| !migrateAssertions &amp;&amp; !migrateAssumptions) {</span>
+<span class="fc" id="L105">			return new HelperSearchSeeds(empty(), List.of());</span>
 		}
-<span class="fc" id="L74">		checkCanceled(monitor);</span>
-<span class="fc" id="L75">		List&lt;ICompilationUnit&gt; selected= normalize(project, currentScope);</span>
-<span class="pc bpc" id="L76" title="1 of 2 branches missed.">		if (selected.isEmpty()) {</span>
-<span class="nc" id="L77">			return empty();</span>
+<span class="fc" id="L107">		checkCanceled(monitor);</span>
+<span class="fc" id="L108">		List&lt;ICompilationUnit&gt; selected= normalize(project, currentScope);</span>
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">		if (selected.isEmpty()) {</span>
+<span class="nc" id="L110">			return new HelperSearchSeeds(empty(), List.of());</span>
 		}
 
-<span class="fc" id="L80">		Map&lt;String, HelperCandidate&gt; possible= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L81">		Map&lt;String, HelperCandidate&gt; verified= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L82">		Map&lt;String, CompilationUnit&gt; selectedRoots= parse(project, selected, monitor);</span>
-<span class="fc bfc" id="L83" title="All 2 branches covered.">		for (Map.Entry&lt;String, CompilationUnit&gt; entry : selectedRoots.entrySet()) {</span>
-<span class="fc" id="L84">			collect(entry.getValue(), project, migrateAssertions, migrateAssumptions, possible, verified);</span>
+<span class="fc" id="L113">		Map&lt;String, HelperCandidate&gt; possible= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L114">		Set&lt;String&gt; invocationCandidates= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L115">		Map&lt;String, HelperCandidate&gt; verified= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L116">		List&lt;IJavaElement&gt; methodReferences= new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L117" title="1 of 4 branches missed.">		boolean followMethodReferences= allowMethodReferences &amp;&amp; migrateAssertions</span>
+<span class="pc bpc" id="L118" title="1 of 4 branches missed.">				&amp;&amp; !migrateAssumptions &amp;&amp; hasJupiterAssertions(project);</span>
+<span class="fc" id="L119">		Map&lt;String, CompilationUnit&gt; selectedRoots= parse(project, selected, monitor);</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">		for (Map.Entry&lt;String, CompilationUnit&gt; entry : selectedRoots.entrySet()) {</span>
+<span class="fc" id="L121">			collect(entry.getValue(), project, migrateAssertions, migrateAssumptions,</span>
+<span class="fc" id="L122">					followMethodReferences, possible, invocationCandidates, verified);</span>
 		}
 
-<span class="fc" id="L87">		Set&lt;ICompilationUnit&gt; declarationUnits= new LinkedHashSet&lt;&gt;();</span>
-<span class="fc bfc" id="L88" title="All 2 branches covered.">		for (HelperCandidate candidate : possible.values()) {</span>
-<span class="pc bpc" id="L89" title="1 of 2 branches missed.">			if (!verified.containsKey(candidate.bindingKey())) {</span>
-<span class="fc" id="L90">				declarationUnits.add(candidate.compilationUnit());</span>
+<span class="fc" id="L125">		Set&lt;ICompilationUnit&gt; declarationUnits= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">		for (HelperCandidate candidate : possible.values()) {</span>
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">			if (!verified.containsKey(candidate.bindingKey())) {</span>
+<span class="fc" id="L128">				declarationUnits.add(candidate.compilationUnit());</span>
 			}
 		}
-<span class="fc bfc" id="L93" title="All 2 branches covered.">		if (!declarationUnits.isEmpty()) {</span>
-<span class="fc" id="L94">			Map&lt;String, CompilationUnit&gt; declarationRoots= parse(project, new ArrayList&lt;&gt;(declarationUnits), monitor);</span>
-<span class="fc bfc" id="L95" title="All 2 branches covered.">			for (CompilationUnit root : declarationRoots.values()) {</span>
-<span class="fc" id="L96">				verifyKnownDeclarations(root, project, migrateAssertions, migrateAssumptions, possible, verified);</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">		if (!declarationUnits.isEmpty()) {</span>
+<span class="fc" id="L132">			Map&lt;String, CompilationUnit&gt; declarationRoots= parse(project, new ArrayList&lt;&gt;(declarationUnits), monitor);</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">			for (CompilationUnit root : declarationRoots.values()) {</span>
+<span class="fc" id="L134">				verifyKnownDeclarations(root, project, migrateAssertions, migrateAssumptions,</span>
+<span class="fc" id="L135">						possible, invocationCandidates, verified, methodReferences);</span>
 			}
 		}
-<span class="fc" id="L99">		checkCanceled(monitor);</span>
-<span class="fc bfc" id="L100" title="All 2 branches covered.">		if (verified.isEmpty()) {</span>
-<span class="fc" id="L101">			return empty();</span>
+<span class="fc" id="L138">		checkCanceled(monitor);</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">		if (verified.isEmpty()) {</span>
+<span class="fc" id="L140">			return new HelperSearchSeeds(empty(), methodReferences);</span>
 		}
 
-<span class="fc" id="L104">		List&lt;IJavaElement&gt; elements= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L105">		Set&lt;ICompilationUnit&gt; directUnits= new LinkedHashSet&lt;&gt;();</span>
-<span class="fc bfc" id="L106" title="All 2 branches covered.">		for (HelperCandidate helper : verified.values()) {</span>
-<span class="fc" id="L107">			elements.add(helper.method());</span>
-<span class="fc" id="L108">			directUnits.add(helper.compilationUnit());</span>
+<span class="fc" id="L143">		List&lt;IJavaElement&gt; elements= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L144">		Set&lt;ICompilationUnit&gt; directUnits= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">		for (HelperCandidate helper : verified.values()) {</span>
+<span class="fc" id="L146">			elements.add(helper.method());</span>
+<span class="fc" id="L147">			directUnits.add(helper.compilationUnit());</span>
 		}
-<span class="fc" id="L110">		return new JUnitScopeCandidateDetector.SearchSeeds(true, true, elements,</span>
-<span class="fc" id="L111">				new ArrayList&lt;&gt;(directUnits));</span>
+<span class="fc" id="L149">		return new HelperSearchSeeds(new JUnitScopeCandidateDetector.SearchSeeds(true, true, elements,</span>
+<span class="fc" id="L150">				new ArrayList&lt;&gt;(directUnits)), methodReferences);</span>
+	}
+
+	/** Returns complete source closures whose newly admitted units support the assertion rewrite. */
+	public static List&lt;ICompilationUnit&gt; closeMethodReferences(IJavaProject project, List&lt;IJavaElement&gt; methods,
+			Collection&lt;ICompilationUnit&gt; existingScope, Collection&lt;ICompilationUnit&gt; allowedUnits,
+			IProgressMonitor monitor) throws CoreException {
+<span class="fc" id="L157">		Set&lt;ICompilationUnit&gt; approved= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L158">		Set&lt;ICompilationUnit&gt; existing= new LinkedHashSet&lt;&gt;(normalize(project, existingScope));</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">		for (IJavaElement method : methods) {</span>
+<span class="fc" id="L160">			RelatedCompilationUnitSearch.Result closure= RelatedCompilationUnitSearch.findReferences(</span>
+<span class="fc" id="L161">					project, List.of(method), List.of(), allowedUnits, monitor);</span>
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">			if (!closure.complete()) {</span>
+<span class="nc" id="L163">				continue;</span>
+			}
+<span class="fc" id="L165">			List&lt;ICompilationUnit&gt; added= closure.compilationUnits().stream()</span>
+<span class="pc bpc" id="L166" title="1 of 4 branches missed.">					.filter(unit -&gt; !existing.contains(unit) &amp;&amp; !approved.contains(unit)).toList();</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">			if (added.isEmpty()) {</span>
+<span class="nc" id="L168">				continue;</span>
+			}
+<span class="fc" id="L170">			Map&lt;String, CompilationUnit&gt; roots= parse(project, added, monitor);</span>
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">			if (roots.size() == added.size()</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">					&amp;&amp; roots.values().stream().allMatch(JUnitSharedHelperScopeDetector::hasSafeAssertionRewrites)) {</span>
+<span class="fc" id="L173">				approved.addAll(added);</span>
+			}
+		}
+<span class="fc" id="L176">		checkCanceled(monitor);</span>
+<span class="fc" id="L177">		return List.copyOf(approved);</span>
 	}
 
 	private static void collect(CompilationUnit root, IJavaProject project, boolean migrateAssertions,
-			boolean migrateAssumptions, Map&lt;String, HelperCandidate&gt; possible,
-			Map&lt;String, HelperCandidate&gt; verified) {
-<span class="fc" id="L117">		root.accept(new ASTVisitor() {</span>
+			boolean migrateAssumptions, boolean followMethodReferences, Map&lt;String, HelperCandidate&gt; possible,
+			Set&lt;String&gt; invocationCandidates, Map&lt;String, HelperCandidate&gt; verified) {
+<span class="fc" id="L183">		root.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(MethodDeclaration node) {
-<span class="fc" id="L120">				IMethodBinding binding= declaration(node.resolveBinding());</span>
-<span class="fc" id="L121">				HelperCandidate candidate= candidate(binding, project);</span>
-<span class="fc bfc" id="L122" title="All 4 branches covered.">				if (candidate != null &amp;&amp; isDirectWrapper(node, migrateAssertions, migrateAssumptions)) {</span>
-<span class="fc" id="L123">					verified.putIfAbsent(candidate.bindingKey(), candidate);</span>
+<span class="fc" id="L186">				IMethodBinding binding= declaration(node.resolveBinding());</span>
+<span class="fc" id="L187">				HelperCandidate candidate= candidate(binding, project);</span>
+<span class="fc bfc" id="L188" title="All 4 branches covered.">				if (candidate != null &amp;&amp; isDirectWrapper(node, migrateAssertions, migrateAssumptions)) {</span>
+<span class="fc" id="L189">					verified.putIfAbsent(candidate.bindingKey(), candidate);</span>
 				}
-<span class="fc" id="L125">				return true;</span>
+<span class="fc" id="L191">				return true;</span>
 			}
 
 			@Override
 			public boolean visit(MethodInvocation node) {
-<span class="fc" id="L130">				HelperCandidate candidate= candidate(declaration(node.resolveMethodBinding()), project);</span>
-<span class="fc bfc" id="L131" title="All 2 branches covered.">				if (candidate != null) {</span>
-<span class="fc" id="L132">					possible.putIfAbsent(candidate.bindingKey(), candidate);</span>
-				}
-<span class="fc" id="L134">				return true;</span>
+<span class="fc" id="L196">				collectCandidate(declaration(node.resolveMethodBinding()), false);</span>
+<span class="fc" id="L197">				return true;</span>
 			}
+
+			@Override
+			public boolean visit(ExpressionMethodReference node) {
+<span class="fc bfc" id="L202" title="All 2 branches covered.">				if (followMethodReferences) {</span>
+<span class="fc" id="L203">					collectCandidate(resolvedMethodReference(node.resolveMethodBinding()), true);</span>
+				}
+<span class="fc" id="L205">				return true;</span>
+			}
+
+			@Override
+			public boolean visit(TypeMethodReference node) {
+<span class="nc bnc" id="L210" title="All 2 branches missed.">				if (followMethodReferences) {</span>
+<span class="nc" id="L211">					collectCandidate(resolvedMethodReference(node.resolveMethodBinding()), true);</span>
+				}
+<span class="nc" id="L213">				return true;</span>
+			}
+
+			private void collectCandidate(IMethodBinding method, boolean fromMethodReference) {
+<span class="fc" id="L217">				HelperCandidate candidate= candidate(method, project);</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">				if (candidate != null) {</span>
+<span class="fc" id="L219">					possible.putIfAbsent(candidate.bindingKey(), candidate);</span>
+<span class="fc bfc" id="L220" title="All 2 branches covered.">					if (!fromMethodReference) {</span>
+<span class="fc" id="L221">						invocationCandidates.add(candidate.bindingKey());</span>
+					}
+				}
+<span class="fc" id="L224">			}</span>
 		});
-<span class="fc" id="L137">	}</span>
+<span class="fc" id="L226">	}</span>
 
 	private static void verifyKnownDeclarations(CompilationUnit root, IJavaProject project,
 			boolean migrateAssertions, boolean migrateAssumptions,
-			Map&lt;String, HelperCandidate&gt; possible, Map&lt;String, HelperCandidate&gt; verified) {
-<span class="fc" id="L142">		root.accept(new ASTVisitor() {</span>
+			Map&lt;String, HelperCandidate&gt; possible, Set&lt;String&gt; invocationCandidates,
+			Map&lt;String, HelperCandidate&gt; verified, List&lt;IJavaElement&gt; methodReferences) {
+<span class="fc" id="L232">		List&lt;IJavaElement&gt; referenceOnly= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L233">		root.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(MethodDeclaration node) {
-<span class="fc" id="L145">				IMethodBinding binding= declaration(node.resolveBinding());</span>
-<span class="pc bpc" id="L146" title="2 of 4 branches missed.">				if (binding == null || !possible.containsKey(binding.getKey())) {</span>
-<span class="nc" id="L147">					return true;</span>
+<span class="fc" id="L236">				IMethodBinding binding= declaration(node.resolveBinding());</span>
+<span class="pc bpc" id="L237" title="1 of 4 branches missed.">				if (binding == null || !possible.containsKey(binding.getKey())) {</span>
+<span class="fc" id="L238">					return true;</span>
 				}
-<span class="fc" id="L149">				HelperCandidate candidate= candidate(binding, project);</span>
-<span class="pc bpc" id="L150" title="2 of 4 branches missed.">				if (candidate != null &amp;&amp; isDirectWrapper(node, migrateAssertions, migrateAssumptions)) {</span>
-<span class="fc" id="L151">					verified.putIfAbsent(candidate.bindingKey(), candidate);</span>
+<span class="fc" id="L240">				HelperCandidate candidate= candidate(binding, project);</span>
+<span class="pc bpc" id="L241" title="1 of 4 branches missed.">				if (candidate != null &amp;&amp; isDirectWrapper(node, migrateAssertions, migrateAssumptions)) {</span>
+<span class="fc bfc" id="L242" title="All 2 branches covered.">					if (invocationCandidates.contains(candidate.bindingKey())) {</span>
+<span class="fc" id="L243">						verified.putIfAbsent(candidate.bindingKey(), candidate);</span>
+<span class="pc bpc" id="L244" title="1 of 2 branches missed.">					} else if (!verified.containsKey(candidate.bindingKey())) {</span>
+<span class="fc" id="L245">						referenceOnly.add(candidate.method());</span>
+					}
 				}
-<span class="fc" id="L153">				return true;</span>
+<span class="fc" id="L248">				return true;</span>
 			}
 		});
-<span class="fc" id="L156">	}</span>
+<span class="fc bfc" id="L251" title="All 4 branches covered.">		if (!referenceOnly.isEmpty() &amp;&amp; hasSafeAssertionRewrites(root)) {</span>
+<span class="fc" id="L252">			methodReferences.addAll(referenceOnly);</span>
+		}
+<span class="fc" id="L254">	}</span>
 
 	private static boolean isDirectWrapper(MethodDeclaration method, boolean migrateAssertions,
 			boolean migrateAssumptions) {
-<span class="fc" id="L160">		IMethodBinding helper= declaration(method.resolveBinding());</span>
-<span class="pc bpc" id="L161" title="3 of 6 branches missed.">		if (helper == null || helper.isConstructor() || method.getBody() == null</span>
-<span class="pc bpc" id="L162" title="1 of 2 branches missed.">				|| !&quot;void&quot;.equals(helper.getReturnType().getQualifiedName()) //$NON-NLS-1$</span>
-<span class="fc bfc" id="L163" title="All 2 branches covered.">				|| method.getBody().statements().size() != 1</span>
-<span class="pc bpc" id="L164" title="1 of 2 branches missed.">				|| !(method.getBody().statements().get(0) instanceof ExpressionStatement statement)</span>
-<span class="pc bpc" id="L165" title="1 of 2 branches missed.">				|| !(statement.getExpression() instanceof MethodInvocation invocation)) {</span>
-<span class="fc" id="L166">			return false;</span>
+<span class="fc" id="L258">		MethodInvocation invocation= directInvocation(method);</span>
+<span class="fc bfc" id="L259" title="All 2 branches covered.">		if (invocation == null) {</span>
+<span class="fc" id="L260">			return false;</span>
 		}
-<span class="fc" id="L168">		IMethodBinding invoked= declaration(invocation.resolveMethodBinding());</span>
-<span class="pc bpc" id="L169" title="1 of 2 branches missed.">		ITypeBinding owner= invoked == null ? null : invoked.getDeclaringClass();</span>
-<span class="pc bpc" id="L170" title="1 of 2 branches missed.">		String ownerName= owner == null ? null : owner.getErasure().getQualifiedName();</span>
-<span class="fc bfc" id="L171" title="All 4 branches covered.">		return migrateAssertions &amp;&amp; ORG_JUNIT_ASSERT.equals(ownerName)</span>
-<span class="pc bpc" id="L172" title="1 of 4 branches missed.">				|| migrateAssumptions &amp;&amp; ORG_JUNIT_ASSUME.equals(ownerName);</span>
+<span class="fc" id="L262">		IMethodBinding invoked= declaration(invocation.resolveMethodBinding());</span>
+<span class="pc bpc" id="L263" title="1 of 2 branches missed.">		ITypeBinding owner= invoked == null ? null : invoked.getDeclaringClass();</span>
+<span class="pc bpc" id="L264" title="1 of 2 branches missed.">		String ownerName= owner == null ? null : owner.getErasure().getQualifiedName();</span>
+<span class="fc bfc" id="L265" title="All 4 branches covered.">		return migrateAssertions &amp;&amp; ORG_JUNIT_ASSERT.equals(ownerName)</span>
+<span class="pc bpc" id="L266" title="1 of 4 branches missed.">				|| migrateAssumptions &amp;&amp; ORG_JUNIT_ASSUME.equals(ownerName);</span>
+	}
+
+	private static MethodInvocation directInvocation(MethodDeclaration method) {
+<span class="fc" id="L270">		IMethodBinding helper= declaration(method.resolveBinding());</span>
+<span class="pc bpc" id="L271" title="3 of 6 branches missed.">		if (helper == null || helper.isConstructor() || method.getBody() == null</span>
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">				|| !&quot;void&quot;.equals(helper.getReturnType().getQualifiedName()) //$NON-NLS-1$</span>
+<span class="fc bfc" id="L273" title="All 2 branches covered.">				|| method.getBody().statements().size() != 1</span>
+<span class="fc bfc" id="L274" title="All 2 branches covered.">				|| !(method.getBody().statements().get(0) instanceof ExpressionStatement statement)</span>
+<span class="pc bpc" id="L275" title="1 of 2 branches missed.">				|| !(statement.getExpression() instanceof MethodInvocation invocation)) {</span>
+<span class="fc" id="L276">			return null;</span>
+		}
+<span class="fc" id="L278">		return invocation;</span>
+	}
+
+	private static boolean hasSafeAssertionRewrites(CompilationUnit root) {
+		// The local assertion cleanup rewrites every matching call and import in the
+		// newly admitted unit. Keep this slice on directly qualified boolean assertions.
+<span class="fc bfc" id="L284" title="All 2 branches covered.">		for (Object item : root.imports()) {</span>
+<span class="fc" id="L285">			ImportDeclaration imported= (ImportDeclaration) item;</span>
+<span class="fc" id="L286">			String name= imported.getName().getFullyQualifiedName();</span>
+<span class="pc bpc" id="L287" title="2 of 4 branches missed.">			if (ORG_JUNIT_ASSERT.equals(name) || name.startsWith(ORG_JUNIT_ASSERT + &quot;.&quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L288" title="3 of 4 branches missed.">					|| imported.isOnDemand() &amp;&amp; &quot;org.junit&quot;.equals(name)) { //$NON-NLS-1$</span>
+<span class="nc" id="L289">				return false;</span>
+			}
+		}
+<span class="fc" id="L292">		AssertionRewriteCheck check= new AssertionRewriteCheck();</span>
+<span class="fc" id="L293">		root.accept(check);</span>
+<span class="fc" id="L294">		return check.safe;</span>
+	}
+
+<span class="fc" id="L297">	private static final class AssertionRewriteCheck extends ASTVisitor {</span>
+<span class="fc" id="L298">		private boolean safe= true;</span>
+
+		@Override
+		public boolean preVisit2(ASTNode node) {
+<span class="fc" id="L302">			return safe;</span>
+		}
+
+		@Override
+		public boolean visit(MethodInvocation invocation) {
+<span class="fc" id="L307">			IMethodBinding method= invocation.resolveMethodBinding();</span>
+<span class="pc bpc" id="L308" title="2 of 4 branches missed.">			if (method == null || method.isRecovered()) {</span>
+<span class="nc" id="L309">				safe= false;</span>
+<span class="pc bfc" id="L310" title="All 2 branches covered.">			} else if (isJUnitAssert(method.getDeclaringClass())) {</span>
+<span class="fc" id="L311">				safe= isSafeBooleanAssertion(invocation, method);</span>
+			}
+<span class="fc" id="L313">			return safe;</span>
+		}
+	}
+
+	private static boolean isSafeBooleanAssertion(MethodInvocation invocation, IMethodBinding method) {
+<span class="pc bpc" id="L318" title="1 of 2 branches missed.">		if (!(invocation.getExpression() instanceof Name qualifier)</span>
+<span class="pc bpc" id="L319" title="1 of 2 branches missed.">				|| !ORG_JUNIT_ASSERT.equals(qualifier.getFullyQualifiedName())</span>
+<span class="pc bpc" id="L320" title="2 of 4 branches missed.">				|| !(qualifier.resolveBinding() instanceof ITypeBinding type) || !isJUnitAssert(type)</span>
+<span class="pc bpc" id="L321" title="1 of 2 branches missed.">				|| !Modifier.isStatic(method.getModifiers())</span>
+<span class="pc bpc" id="L322" title="1 of 2 branches missed.">				|| !BOOLEAN_ASSERTIONS.contains(method.getName())</span>
+<span class="pc bpc" id="L323" title="1 of 2 branches missed.">				|| !(invocation.getParent() instanceof ExpressionStatement statement)</span>
+<span class="pc bpc" id="L324" title="1 of 2 branches missed.">				|| !(statement.getParent().getParent() instanceof MethodDeclaration wrapper)</span>
+<span class="fc bfc" id="L325" title="All 2 branches covered.">				|| directInvocation(wrapper) != invocation) {</span>
+<span class="fc" id="L326">			return false;</span>
+		}
+<span class="fc" id="L328">		ITypeBinding[] parameters= method.getParameterTypes();</span>
+<span class="pc bpc" id="L329" title="2 of 4 branches missed.">		if (parameters.length &lt; 1 || parameters.length &gt; 2</span>
+<span class="pc bpc" id="L330" title="1 of 2 branches missed.">				|| parameters.length != invocation.arguments().size()) {</span>
+<span class="nc" id="L331">			return false;</span>
+		}
+<span class="fc" id="L333">		Expression condition= (Expression) invocation.arguments().getLast();</span>
+<span class="pc bpc" id="L334" title="2 of 4 branches missed.">		if (!(condition instanceof BooleanLiteral || isParameterRead(condition, &quot;boolean&quot;))) { //$NON-NLS-1$</span>
+<span class="nc" id="L335">			return false;</span>
+		}
+<span class="fc bfc" id="L337" title="All 2 branches covered.">		if (parameters.length == 1) {</span>
+<span class="fc" id="L338">			return true;</span>
+		}
+<span class="fc" id="L340">		Expression message= (Expression) invocation.arguments().getFirst();</span>
+<span class="pc bpc" id="L341" title="1 of 4 branches missed.">		return message instanceof StringLiteral || isParameterRead(message, &quot;java.lang.String&quot;); //$NON-NLS-1$</span>
+	}
+
+	private static boolean isParameterRead(Expression expression, String typeName) {
+<span class="pc bpc" id="L345" title="1 of 4 branches missed.">		return expression instanceof SimpleName name &amp;&amp; name.resolveBinding() instanceof IVariableBinding variable</span>
+<span class="pc bpc" id="L346" title="2 of 6 branches missed.">				&amp;&amp; !variable.isRecovered() &amp;&amp; variable.isParameter() &amp;&amp; !variable.getType().isRecovered()</span>
+<span class="pc bpc" id="L347" title="1 of 2 branches missed.">				&amp;&amp; typeName.equals(variable.getType().getQualifiedName());</span>
+	}
+
+	private static boolean isJUnitAssert(ITypeBinding type) {
+<span class="pc bpc" id="L351" title="2 of 6 branches missed.">		return type != null &amp;&amp; !type.isRecovered() &amp;&amp; ORG_JUNIT_ASSERT.equals(type.getErasure().getQualifiedName());</span>
+	}
+
+	private static boolean hasJupiterAssertions(IJavaProject project) {
+		try {
+<span class="fc" id="L356">			IType assertions= project.findType(ORG_JUNIT_JUPITER_API_ASSERTIONS);</span>
+<span class="pc bpc" id="L357" title="1 of 4 branches missed.">			return assertions != null &amp;&amp; assertions.exists();</span>
+<span class="nc" id="L358">		} catch (JavaModelException e) {</span>
+<span class="nc" id="L359">			return false;</span>
+		}
 	}
 
 	private static HelperCandidate candidate(IMethodBinding binding, IJavaProject project) {
-<span class="fc bfc" id="L176" title="All 2 branches covered.">		if (!eligible(binding)) {</span>
-<span class="fc" id="L177">			return null;</span>
+<span class="fc bfc" id="L364" title="All 2 branches covered.">		if (!eligible(binding)) {</span>
+<span class="fc" id="L365">			return null;</span>
 		}
-<span class="fc" id="L179">		IJavaElement javaElement= binding.getJavaElement();</span>
-<span class="pc bpc" id="L180" title="2 of 4 branches missed.">		if (!(javaElement instanceof IMethod method) || !method.exists()</span>
-<span class="pc bpc" id="L181" title="1 of 2 branches missed.">				|| !project.equals(method.getJavaProject())) {</span>
-<span class="nc" id="L182">			return null;</span>
+<span class="fc" id="L367">		IJavaElement javaElement= binding.getJavaElement();</span>
+<span class="pc bpc" id="L368" title="2 of 4 branches missed.">		if (!(javaElement instanceof IMethod method) || !method.exists()</span>
+<span class="pc bpc" id="L369" title="1 of 2 branches missed.">				|| !project.equals(method.getJavaProject())) {</span>
+<span class="nc" id="L370">			return null;</span>
 		}
-<span class="fc" id="L184">		IJavaElement ancestor= method.getAncestor(IJavaElement.COMPILATION_UNIT);</span>
-<span class="pc bpc" id="L185" title="2 of 4 branches missed.">		if (!(ancestor instanceof ICompilationUnit unit) || !unit.exists()) {</span>
-<span class="nc" id="L186">			return null;</span>
+<span class="fc" id="L372">		IJavaElement ancestor= method.getAncestor(IJavaElement.COMPILATION_UNIT);</span>
+<span class="pc bpc" id="L373" title="2 of 4 branches missed.">		if (!(ancestor instanceof ICompilationUnit unit) || !unit.exists()) {</span>
+<span class="nc" id="L374">			return null;</span>
 		}
-<span class="fc" id="L188">		return new HelperCandidate(method, binding.getKey(), unit.getPrimary());</span>
+<span class="fc" id="L376">		return new HelperCandidate(method, binding.getKey(), unit.getPrimary());</span>
 	}
 
 	private static boolean eligible(IMethodBinding binding) {
-<span class="pc bpc" id="L192" title="2 of 4 branches missed.">		if (binding == null || binding.isConstructor()) {</span>
-<span class="nc" id="L193">			return false;</span>
+<span class="pc bpc" id="L380" title="2 of 4 branches missed.">		if (binding == null || binding.isConstructor()) {</span>
+<span class="nc" id="L381">			return false;</span>
 		}
-<span class="fc" id="L195">		int modifiers= binding.getModifiers();</span>
-<span class="fc bfc" id="L196" title="All 4 branches covered.">		if (Modifier.isPublic(modifiers) || Modifier.isProtected(modifiers)) {</span>
-<span class="fc" id="L197">			return false;</span>
+<span class="fc" id="L383">		int modifiers= binding.getModifiers();</span>
+<span class="fc bfc" id="L384" title="All 4 branches covered.">		if (Modifier.isPublic(modifiers) || Modifier.isProtected(modifiers)) {</span>
+<span class="fc" id="L385">			return false;</span>
 		}
-<span class="fc bfc" id="L199" title="All 4 branches covered.">		return Modifier.isPrivate(modifiers) || Modifier.isStatic(modifiers);</span>
+<span class="fc bfc" id="L387" title="All 4 branches covered.">		return Modifier.isPrivate(modifiers) || Modifier.isStatic(modifiers);</span>
 	}
 
 	private static IMethodBinding declaration(IMethodBinding binding) {
-<span class="pc bpc" id="L203" title="1 of 2 branches missed.">		return binding == null ? null : binding.getMethodDeclaration();</span>
+<span class="pc bpc" id="L391" title="1 of 2 branches missed.">		return binding == null ? null : binding.getMethodDeclaration();</span>
+	}
+
+	private static IMethodBinding resolvedMethodReference(IMethodBinding binding) {
+<span class="pc bpc" id="L395" title="2 of 4 branches missed.">		IMethodBinding method= binding == null || binding.isRecovered() ? null : binding.getMethodDeclaration();</span>
+<span class="pc bpc" id="L396" title="3 of 6 branches missed.">		return method != null &amp;&amp; !method.isRecovered() &amp;&amp; method.getKey() != null</span>
+<span class="pc bpc" id="L397" title="1 of 2 branches missed.">				&amp;&amp; Modifier.isStatic(method.getModifiers()) ? method : null;</span>
 	}
 
 	private static List&lt;ICompilationUnit&gt; normalize(IJavaProject project,
 			Collection&lt;ICompilationUnit&gt; units) {
-<span class="fc" id="L208">		Map&lt;String, ICompilationUnit&gt; result= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L209" title="All 2 branches covered.">		for (ICompilationUnit unit : units) {</span>
-<span class="pc bpc" id="L210" title="3 of 6 branches missed.">			if (unit != null &amp;&amp; unit.exists() &amp;&amp; project.equals(unit.getJavaProject())) {</span>
-<span class="fc" id="L211">				ICompilationUnit primary= unit.getPrimary();</span>
-<span class="fc" id="L212">				result.put(primary.getHandleIdentifier(), primary);</span>
+<span class="fc" id="L402">		Map&lt;String, ICompilationUnit&gt; result= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L403" title="All 2 branches covered.">		for (ICompilationUnit unit : units) {</span>
+<span class="pc bpc" id="L404" title="3 of 6 branches missed.">			if (unit != null &amp;&amp; unit.exists() &amp;&amp; project.equals(unit.getJavaProject())) {</span>
+<span class="fc" id="L405">				ICompilationUnit primary= unit.getPrimary();</span>
+<span class="fc" id="L406">				result.put(primary.getHandleIdentifier(), primary);</span>
 			}
 		}
-<span class="fc" id="L215">		return new ArrayList&lt;&gt;(result.values());</span>
+<span class="fc" id="L409">		return new ArrayList&lt;&gt;(result.values());</span>
 	}
 
 	private static Map&lt;String, CompilationUnit&gt; parse(IJavaProject project, List&lt;ICompilationUnit&gt; units,
 			IProgressMonitor monitor) {
-<span class="fc" id="L220">		Map&lt;String, CompilationUnit&gt; roots= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L221">		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);</span>
-<span class="fc" id="L222">		parser.setProject(project);</span>
-<span class="fc" id="L223">		parser.setResolveBindings(true);</span>
-<span class="fc" id="L224">		parser.setBindingsRecovery(IASTSharedValues.SHARED_BINDING_RECOVERY);</span>
-<span class="fc" id="L225">		parser.setStatementsRecovery(IASTSharedValues.SHARED_AST_STATEMENT_RECOVERY);</span>
-<span class="fc" id="L226">		parser.setCompilerOptions(RefactoringASTParser.getCompilerOptions(project));</span>
-<span class="fc" id="L227">		parser.createASTs(units.toArray(ICompilationUnit[]::new), new String[0], new ASTRequestor() {</span>
+<span class="fc" id="L414">		Map&lt;String, CompilationUnit&gt; roots= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L415">		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);</span>
+<span class="fc" id="L416">		parser.setProject(project);</span>
+<span class="fc" id="L417">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L418">		parser.setBindingsRecovery(IASTSharedValues.SHARED_BINDING_RECOVERY);</span>
+<span class="fc" id="L419">		parser.setStatementsRecovery(IASTSharedValues.SHARED_AST_STATEMENT_RECOVERY);</span>
+<span class="fc" id="L420">		parser.setCompilerOptions(RefactoringASTParser.getCompilerOptions(project));</span>
+<span class="fc" id="L421">		parser.createASTs(units.toArray(ICompilationUnit[]::new), new String[0], new ASTRequestor() {</span>
 			@Override
 			public void acceptAST(ICompilationUnit source, CompilationUnit ast) {
-<span class="fc" id="L230">				roots.put(source.getPrimary().getHandleIdentifier(), ast);</span>
-<span class="fc" id="L231">			}</span>
-<span class="fc" id="L232">		}, monitor);</span>
-<span class="fc" id="L233">		return roots;</span>
+<span class="fc" id="L424">				roots.put(source.getPrimary().getHandleIdentifier(), ast);</span>
+<span class="fc" id="L425">			}</span>
+<span class="fc" id="L426">		}, monitor);</span>
+<span class="fc" id="L427">		return roots;</span>
 	}
 
 	private static JUnitScopeCandidateDetector.SearchSeeds empty() {
-<span class="fc" id="L237">		return new JUnitScopeCandidateDetector.SearchSeeds(false, true, List.of(), List.of());</span>
+<span class="fc" id="L431">		return new JUnitScopeCandidateDetector.SearchSeeds(false, true, List.of(), List.of());</span>
 	}
 
 	private static void checkCanceled(IProgressMonitor monitor) {
-<span class="pc bpc" id="L241" title="1 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
-<span class="nc" id="L242">			throw new OperationCanceledException();</span>
+<span class="pc bpc" id="L435" title="1 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
+<span class="nc" id="L436">			throw new OperationCanceledException();</span>
 		}
-<span class="fc" id="L244">	}</span>
+<span class="fc" id="L438">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

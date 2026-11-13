@@ -11,17 +11,25 @@ package org.sandbox.jdt.triggerpattern.cleanup;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.compiler.InvalidInputException;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.AnnotationTypeMemberDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.LineComment;
+import org.eclipse.jdt.core.dom.NormalAnnotation;
+import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
+import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.TextBlock;
 import org.eclipse.jdt.core.refactoring.CompilationUnitChange;
 import org.eclipse.jdt.internal.corext.refactoring.nls.NLSElement;
 import org.eclipse.jdt.internal.corext.refactoring.nls.NLSLine;
@@ -29,6 +37,7 @@ import org.eclipse.jdt.internal.corext.refactoring.nls.NLSScanner;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.refactoring.util.TextEditUtil;
 import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.text.Region;
 import org.eclipse.text.edits.ReplaceEdit;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.triggerpattern.cleanup.EncodingSourceEdits.Edit;
@@ -36,7 +45,7 @@ import org.sandbox.jdt.triggerpattern.cleanup.EncodingSourceEdits.Edit;
 /** Adds NLS edits to the completed AST edit tree, including moved source ranges. */
 public final class EncodingSourceRewrite {
 
-<span class="fc" id="L39">	private static final String REPLACEMENTS= EncodingSourceRewrite.class.getName() + &quot;.replacements&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L48">	private static final String REPLACEMENTS= EncodingSourceRewrite.class.getName() + &quot;.replacements&quot;; //$NON-NLS-1$</span>
 
 	private record Replacements(CompilationUnitRewrite rewrite, Set&lt;ASTNode&gt; nodes) {
 	}
@@ -45,96 +54,217 @@ public final class EncodingSourceRewrite {
 	}
 
 	public static void clear(CompilationUnit root) {
-<span class="fc" id="L48">		root.setProperty(REPLACEMENTS, null);</span>
-<span class="fc" id="L49">	}</span>
+<span class="fc" id="L57">		root.setProperty(REPLACEMENTS, null);</span>
+<span class="fc" id="L58">	}</span>
 
 	public static void record(CompilationUnitRewrite cuRewrite, ASTNode argument) {
-<span class="fc" id="L52">		Object stored= cuRewrite.getRoot().getProperty(REPLACEMENTS);</span>
+<span class="fc" id="L61">		Object stored= cuRewrite.getRoot().getProperty(REPLACEMENTS);</span>
 		Replacements replacements;
-<span class="pc bpc" id="L54" title="1 of 4 branches missed.">		if (stored instanceof Replacements previous &amp;&amp; previous.rewrite() == cuRewrite) {</span>
-<span class="fc" id="L55">			replacements= previous;</span>
-<span class="fc" id="L56">		} else {</span>
-<span class="fc" id="L57">			replacements= new Replacements(cuRewrite, Collections.newSetFromMap(new IdentityHashMap&lt;&gt;()));</span>
-<span class="fc" id="L58">			cuRewrite.getRoot().setProperty(REPLACEMENTS, replacements);</span>
+<span class="pc bpc" id="L63" title="1 of 4 branches missed.">		if (stored instanceof Replacements previous &amp;&amp; previous.rewrite() == cuRewrite) {</span>
+<span class="fc" id="L64">			replacements= previous;</span>
+<span class="fc" id="L65">		} else {</span>
+<span class="fc" id="L66">			replacements= new Replacements(cuRewrite, Collections.newSetFromMap(new IdentityHashMap&lt;&gt;()));</span>
+<span class="fc" id="L67">			cuRewrite.getRoot().setProperty(REPLACEMENTS, replacements);</span>
 		}
-<span class="fc" id="L60">		replacements.nodes().add(argument);</span>
-<span class="fc" id="L61">	}</span>
+<span class="fc" id="L69">		replacements.nodes().add(argument);</span>
+<span class="fc" id="L70">	}</span>
+
+	/** Finds candidate literals whose source positions and NLS tags the scanner accounts for. */
+	public static List&lt;StringLiteral&gt; literalsWithUnambiguousTags(CompilationUnit root, ICompilationUnit unit,
+			List&lt;StringLiteral&gt; candidates) throws JavaModelException {
+<span class="fc" id="L75">		String buffer= unit.getBuffer().getContents();</span>
+		NLSLine[] lines;
+		try {
+<span class="fc" id="L78">			lines= scan(unit, buffer);</span>
+<span class="pc" id="L79">		} catch (IllegalArgumentException exception) {</span>
+<span class="nc" id="L80">			return List.of();</span>
+		}
+<span class="fc" id="L82">		Map&lt;Integer, List&lt;LineComment&gt;&gt; comments= new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">		for (Object node : root.getCommentList()) {</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">			if (node instanceof LineComment comment) {</span>
+<span class="fc" id="L85">				int line= root.getLineNumber(comment.getStartPosition());</span>
+<span class="fc" id="L86">				comments.computeIfAbsent(line, key -&gt; new ArrayList&lt;&gt;()).add(comment);</span>
+			}
+		}
+<span class="fc" id="L89">		Map&lt;Integer, List&lt;Region&gt;&gt; literalsByLine= stringLiteralPositions(root);</span>
+<span class="fc" id="L90">		Map&lt;Integer, Integer&gt; literalLengths= new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">		for (NLSLine line : lines) {</span>
+<span class="fc" id="L92">			int lineNumber= line.getLineNumber() + 1;</span>
+<span class="fc" id="L93">			List&lt;LineComment&gt; lineComments= comments.getOrDefault(lineNumber, List.of());</span>
+<span class="fc" id="L94">			NLSElement[] elements= line.getElements();</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">			if (lineComments.size() &lt;= 1 &amp;&amp; hasUnambiguousTags(buffer, elements,</span>
+<span class="fc bfc" id="L96" title="All 4 branches covered.">					lineComments.isEmpty() ? null : lineComments.getFirst(), literalsByLine.getOrDefault(lineNumber, List.of()))) {</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">				for (NLSElement element : elements) {</span>
+<span class="fc" id="L98">					literalLengths.put(element.getPosition().getOffset(), element.getPosition().getLength());</span>
+				}
+			}
+		}
+<span class="fc" id="L102">		return candidates.stream().filter(literal -&gt;</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">				literalLengths.getOrDefault(literal.getStartPosition(), -1) == literal.getLength()).toList();</span>
+	}
+
+	private static Map&lt;Integer, List&lt;Region&gt;&gt; stringLiteralPositions(CompilationUnit root) {
+<span class="fc" id="L107">		Map&lt;Integer, List&lt;Region&gt;&gt; positions= new HashMap&lt;&gt;();</span>
+<span class="fc" id="L108">		root.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(StringLiteral literal) {
+<span class="fc" id="L111">				add(literal, literal.getStartPosition());</span>
+<span class="fc" id="L112">				return false;</span>
+			}
+
+			@Override
+			public boolean visit(TextBlock block) {
+<span class="nc" id="L117">				add(block, block.getStartPosition() + block.getLength() - 1);</span>
+<span class="nc" id="L118">				return false;</span>
+			}
+
+			@Override
+			public boolean visit(NormalAnnotation annotation) {
+<span class="nc" id="L123">				return false;</span>
+			}
+
+			@Override
+			public boolean visit(SingleMemberAnnotation annotation) {
+<span class="nc" id="L128">				return false;</span>
+			}
+
+			@Override
+			public boolean visit(AnnotationTypeMemberDeclaration declaration) {
+<span class="nc" id="L133">				return false;</span>
+			}
+
+			private void add(ASTNode literal, int positionOnLine) {
+<span class="fc" id="L137">				int line= root.getLineNumber(positionOnLine);</span>
+<span class="fc" id="L138">				positions.computeIfAbsent(line, key -&gt; new ArrayList&lt;&gt;())</span>
+<span class="fc" id="L139">						.add(new Region(literal.getStartPosition(), literal.getLength()));</span>
+<span class="fc" id="L140">			}</span>
+		});
+<span class="fc" id="L142">		return positions;</span>
+	}
+
+	private static boolean hasUnambiguousTags(String buffer, NLSElement[] elements, LineComment comment,
+			List&lt;Region&gt; literalPositions) {
+<span class="fc bfc" id="L147" title="All 2 branches covered.">		if (comment == null) {</span>
+<span class="fc" id="L148">			return true;</span>
+		}
+<span class="fc" id="L150">		int commentStart= comment.getStartPosition();</span>
+<span class="fc" id="L151">		int commentEnd= commentStart + comment.getLength();</span>
+<span class="fc" id="L152">		String rawComment= buffer.substring(commentStart, commentEnd);</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">		if (rawComment.contains(&quot;\\u&quot;)) { //$NON-NLS-1$</span>
+			// Unicode escapes can shift the scanner's comment offsets or conceal a tag.
+<span class="fc" id="L155">			return false;</span>
+		}
+<span class="fc bfc" id="L157" title="All 2 branches covered.">		if (!rawComment.contains(NLSElement.TAG_PREFIX)) {</span>
+<span class="fc" id="L158">			return true;</span>
+		}
+		// Removing a tag and its leading space could join a backslash to Unicode escape digits.
+<span class="fc bfc" id="L161" title="All 2 branches covered.">		if (rawComment.indexOf('\\') &gt;= 0) {</span>
+<span class="fc" id="L162">			return false;</span>
+		}
+		// The tooling scanner and compiler can count different literals, for example in arrow-style switch rules.
+<span class="fc bfc" id="L165" title="All 2 branches covered.">		if (literalPositions.size() != elements.length) {</span>
+<span class="fc" id="L166">			return false;</span>
+		}
+<span class="fc" id="L168">		int tagCount= 0;</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">		for (int i= 0; i &lt; elements.length; i++) {</span>
+<span class="fc" id="L170">			NLSElement element= elements[i];</span>
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">			if (!literalPositions.get(i).equals(element.getPosition())) {</span>
+<span class="nc" id="L172">				return false;</span>
+			}
+<span class="fc bfc" id="L174" title="All 2 branches covered.">			if (element.hasTag()) {</span>
+<span class="fc" id="L175">				int start= element.getTagPosition().getOffset();</span>
+<span class="fc" id="L176">				String tag= NLSElement.createTagText(i + 1);</span>
+<span class="pc bpc" id="L177" title="2 of 4 branches missed.">				if (start &lt; commentStart || start + tag.length() &gt; commentEnd</span>
+<span class="pc bpc" id="L178" title="2 of 4 branches missed.">						|| element.getTagPosition().getLength() != tag.length() || !buffer.startsWith(tag, start)) {</span>
+<span class="nc" id="L179">					return false;</span>
+				}
+<span class="fc" id="L181">				tagCount++;</span>
+			}
+		}
+		// The NLS scanner retains one tag per literal and stops at a malformed tag.
+<span class="fc" id="L185">		int sourceTagCount= 0;</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">		for (int offset= rawComment.indexOf(NLSElement.TAG_PREFIX); offset &gt;= 0;</span>
+<span class="fc" id="L187">				offset= rawComment.indexOf(NLSElement.TAG_PREFIX, offset + NLSElement.TAG_PREFIX_LENGTH)) {</span>
+<span class="fc" id="L188">			sourceTagCount++;</span>
+		}
+<span class="fc bfc" id="L190" title="All 2 branches covered.">		return tagCount == sourceTagCount;</span>
+	}
 
 	public static void complete(CompilationUnit root, CompilationUnitChange change) throws JavaModelException {
-<span class="fc bfc" id="L64" title="All 2 branches covered.">		if (!(root.getProperty(REPLACEMENTS) instanceof Replacements replacements)) {</span>
-<span class="fc" id="L65">			return;</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">		if (!(root.getProperty(REPLACEMENTS) instanceof Replacements replacements)) {</span>
+<span class="fc" id="L195">			return;</span>
 		}
-<span class="fc" id="L67">		CompilationUnitRewrite cuRewrite= replacements.rewrite();</span>
-<span class="fc" id="L68">		String buffer= cuRewrite.getCu().getBuffer().getContents();</span>
-<span class="fc" id="L69">		Map&lt;LineComment, List&lt;Edit&gt;&gt; commentEdits= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L70" title="All 2 branches covered.">		for (NLSLine line : scan(cuRewrite, buffer)) {</span>
-<span class="fc" id="L71">			int removed= 0;</span>
-<span class="fc" id="L72">			NLSElement[] elements= line.getElements();</span>
-<span class="fc bfc" id="L73" title="All 2 branches covered.">			for (int index= 0; index &lt; elements.length; index++) {</span>
-<span class="fc" id="L74">				NLSElement element= elements[index];</span>
-<span class="fc" id="L75">				boolean deleted= isRemoved(element.getPosition().getOffset(), element.getPosition().getLength(), replacements.nodes());</span>
-<span class="fc bfc" id="L76" title="All 2 branches covered.">				if (deleted) {</span>
-<span class="fc" id="L77">					removed++;</span>
+<span class="fc" id="L197">		CompilationUnitRewrite cuRewrite= replacements.rewrite();</span>
+<span class="fc" id="L198">		String buffer= cuRewrite.getCu().getBuffer().getContents();</span>
+<span class="fc" id="L199">		Map&lt;LineComment, List&lt;Edit&gt;&gt; commentEdits= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">		for (NLSLine line : scan(cuRewrite.getCu(), buffer)) {</span>
+<span class="fc" id="L201">			int removed= 0;</span>
+<span class="fc" id="L202">			NLSElement[] elements= line.getElements();</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">			for (int index= 0; index &lt; elements.length; index++) {</span>
+<span class="fc" id="L204">				NLSElement element= elements[index];</span>
+<span class="fc" id="L205">				boolean deleted= isRemoved(element.getPosition().getOffset(), element.getPosition().getLength(), replacements.nodes());</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">				if (deleted) {</span>
+<span class="fc" id="L207">					removed++;</span>
 				}
-<span class="fc bfc" id="L79" title="All 6 branches covered.">				if (!element.hasTag() || (!deleted &amp;&amp; removed == 0)) {</span>
-<span class="fc" id="L80">					continue;</span>
+<span class="fc bfc" id="L209" title="All 6 branches covered.">				if (!element.hasTag() || (!deleted &amp;&amp; removed == 0)) {</span>
+<span class="fc" id="L210">					continue;</span>
 				}
-<span class="fc" id="L82">				int tagStart= element.getTagPosition().getOffset();</span>
-<span class="fc" id="L83">				int tagLength= element.getTagPosition().getLength();</span>
-<span class="pc bpc" id="L84" title="1 of 2 branches missed.">				if (isRemoved(tagStart, tagLength, replacements.nodes())) {</span>
-<span class="nc" id="L85">					continue;</span>
+<span class="fc" id="L212">				int tagStart= element.getTagPosition().getOffset();</span>
+<span class="fc" id="L213">				int tagLength= element.getTagPosition().getLength();</span>
+<span class="pc bpc" id="L214" title="1 of 2 branches missed.">				if (isRemoved(tagStart, tagLength, replacements.nodes())) {</span>
+<span class="nc" id="L215">					continue;</span>
 				}
-<span class="fc" id="L87">				LineComment comment= containingComment(root, tagStart, tagLength);</span>
-<span class="fc bfc" id="L88" title="All 2 branches covered.">				String tag= deleted ? &quot;&quot; : NLSElement.createTagText(index + 1 - removed); //$NON-NLS-1$</span>
-<span class="fc" id="L89">				commentEdits.computeIfAbsent(comment, key -&gt; new ArrayList&lt;&gt;())</span>
-<span class="fc" id="L90">						.add(new Edit(tagStart - comment.getStartPosition(), tagLength, tag));</span>
+<span class="fc" id="L217">				LineComment comment= containingComment(root, tagStart, tagLength);</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">				String tag= deleted ? &quot;&quot; : NLSElement.createTagText(index + 1 - removed); //$NON-NLS-1$</span>
+<span class="fc" id="L219">				commentEdits.computeIfAbsent(comment, key -&gt; new ArrayList&lt;&gt;())</span>
+<span class="fc" id="L220">						.add(new Edit(tagStart - comment.getStartPosition(), tagLength, tag));</span>
 			}
 		}
-<span class="fc" id="L93">		commentEdits.forEach((comment, tags) -&gt; {</span>
-<span class="fc" id="L94">			int start= comment.getStartPosition();</span>
-<span class="fc" id="L95">			int end= start + comment.getLength();</span>
-<span class="pc bpc" id="L96" title="3 of 6 branches missed.">			while (end &gt; start &amp;&amp; (buffer.charAt(end - 1) == '\n' || buffer.charAt(end - 1) == '\r')) {</span>
-<span class="nc" id="L97">				end--;</span>
+<span class="fc" id="L223">		commentEdits.forEach((comment, tags) -&gt; {</span>
+<span class="fc" id="L224">			int start= comment.getStartPosition();</span>
+<span class="fc" id="L225">			int end= start + comment.getLength();</span>
+<span class="pc bpc" id="L226" title="3 of 6 branches missed.">			while (end &gt; start &amp;&amp; (buffer.charAt(end - 1) == '\n' || buffer.charAt(end - 1) == '\r')) {</span>
+<span class="nc" id="L227">				end--;</span>
 			}
-<span class="fc" id="L99">			String text= EncodingSourceEdits.rewriteComment(buffer.substring(start, end), tags);</span>
-<span class="fc bfc" id="L100" title="All 2 branches covered.">			if (text.isEmpty()) {</span>
-<span class="pc bpc" id="L101" title="1 of 4 branches missed.">				while (start &gt; 0 &amp;&amp; EncodingSourceEdits.isHorizontalSpace(buffer.charAt(start - 1))) {</span>
-<span class="fc" id="L102">					start--;</span>
+<span class="fc" id="L229">			String text= EncodingSourceEdits.rewriteComment(buffer.substring(start, end), tags);</span>
+<span class="fc bfc" id="L230" title="All 2 branches covered.">			if (text.isEmpty()) {</span>
+<span class="pc bpc" id="L231" title="1 of 4 branches missed.">				while (start &gt; 0 &amp;&amp; EncodingSourceEdits.isHorizontalSpace(buffer.charAt(start - 1))) {</span>
+<span class="fc" id="L232">					start--;</span>
 				}
 			}
-<span class="fc" id="L105">			ReplaceEdit edit= new ReplaceEdit(start, end - start, text);</span>
+<span class="fc" id="L235">			ReplaceEdit edit= new ReplaceEdit(start, end - start, text);</span>
 			// Inserting into the enclosing MoveSourceEdit applies the tag change to
 			// the moved text too. Adding it only at the root would lose that change.
-<span class="fc" id="L108">			TextEditUtil.insert(change.getEdit(), edit);</span>
-<span class="fc" id="L109">			change.addTextEditGroup(new TextEditGroup(change.getName(), edit));</span>
-<span class="fc" id="L110">		});</span>
-<span class="fc" id="L111">	}</span>
+<span class="fc" id="L238">			TextEditUtil.insert(change.getEdit(), edit);</span>
+<span class="fc" id="L239">			change.addTextEditGroup(new TextEditGroup(change.getName(), edit));</span>
+<span class="fc" id="L240">		});</span>
+<span class="fc" id="L241">	}</span>
 
-	private static NLSLine[] scan(CompilationUnitRewrite cuRewrite, String buffer) throws JavaModelException {
+	private static NLSLine[] scan(ICompilationUnit unit, String buffer) throws JavaModelException {
 		try {
-<span class="fc" id="L115">			NLSLine[] lines= NLSScanner.scan(cuRewrite.getCu());</span>
-<span class="pc bpc" id="L116" title="1 of 2 branches missed.">			if (!buffer.equals(cuRewrite.getCu().getBuffer().getContents())) {</span>
-<span class="nc" id="L117">				throw new IllegalArgumentException(&quot;Source changed while scanning encoding NLS tags&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L245">			NLSLine[] lines= NLSScanner.scan(unit);</span>
+<span class="pc bpc" id="L246" title="1 of 2 branches missed.">			if (!buffer.equals(unit.getBuffer().getContents())) {</span>
+<span class="nc" id="L247">				throw new IllegalArgumentException(&quot;Source changed while scanning encoding NLS tags&quot;); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L119">			return lines;</span>
-<span class="nc" id="L120">		} catch (InvalidInputException | BadLocationException exception) {</span>
-<span class="nc" id="L121">			throw new IllegalArgumentException(&quot;Cannot safely determine encoding NLS tag positions&quot;, exception); //$NON-NLS-1$</span>
+<span class="fc" id="L249">			return lines;</span>
+<span class="nc" id="L250">		} catch (InvalidInputException | BadLocationException exception) {</span>
+<span class="nc" id="L251">			throw new IllegalArgumentException(&quot;Cannot safely determine encoding NLS tag positions&quot;, exception); //$NON-NLS-1$</span>
 		}
 	}
 
 	private static boolean isRemoved(int offset, int length, Set&lt;ASTNode&gt; replacements) {
-<span class="fc bfc" id="L126" title="All 2 branches covered.">		return replacements.stream().anyMatch(node -&gt; offset &gt;= node.getStartPosition()</span>
-<span class="fc bfc" id="L127" title="All 2 branches covered.">				&amp;&amp; offset + length &lt;= node.getStartPosition() + node.getLength());</span>
+<span class="fc bfc" id="L256" title="All 2 branches covered.">		return replacements.stream().anyMatch(node -&gt; offset &gt;= node.getStartPosition()</span>
+<span class="fc bfc" id="L257" title="All 2 branches covered.">				&amp;&amp; offset + length &lt;= node.getStartPosition() + node.getLength());</span>
 	}
 
 	private static LineComment containingComment(CompilationUnit root, int offset, int length) {
-<span class="pc bpc" id="L131" title="1 of 2 branches missed.">		for (Object candidate : root.getCommentList()) {</span>
-<span class="pc bpc" id="L132" title="2 of 4 branches missed.">			if (candidate instanceof LineComment comment &amp;&amp; offset &gt;= comment.getStartPosition()</span>
-<span class="fc bfc" id="L133" title="All 2 branches covered.">					&amp;&amp; offset + length &lt;= comment.getStartPosition() + comment.getLength()) {</span>
-<span class="fc" id="L134">				return comment;</span>
+<span class="pc bpc" id="L261" title="1 of 2 branches missed.">		for (Object candidate : root.getCommentList()) {</span>
+<span class="pc bpc" id="L262" title="2 of 4 branches missed.">			if (candidate instanceof LineComment comment &amp;&amp; offset &gt;= comment.getStartPosition()</span>
+<span class="fc bfc" id="L263" title="All 2 branches covered.">					&amp;&amp; offset + length &lt;= comment.getStartPosition() + comment.getLength()) {</span>
+<span class="fc" id="L264">				return comment;</span>
 			}
 		}
-<span class="nc" id="L137">		throw new IllegalArgumentException(&quot;NLS tag is not inside a source line comment&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L267">		throw new IllegalArgumentException(&quot;NLS tag is not inside a source line comment&quot;); //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

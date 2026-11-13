@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SynchronizedListIterationAnalyzer.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.analysis</a> &gt; <span class="el_source">SynchronizedListIterationAnalyzer.java</span></div><h1>SynchronizedListIterationAnalyzer.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.analysis;
+
+import static org.sandbox.jdt.container.analysis.ContainerAstFacts.unwrap;
+import static org.sandbox.jdt.container.analysis.ContainerAstFacts.variableBinding;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.EnhancedForStatement;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldAccess;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.Initializer;
+import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SynchronizedStatement;
+import org.eclipse.jdt.core.dom.ThisExpression;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.sandbox.jdt.container.api.ConcurrencyProtocol;
+import org.sandbox.jdt.container.api.ConcurrencyProtocol.Evidence;
+import org.sandbox.jdt.container.api.ConcurrencyProtocol.EvidenceKind;
+import org.sandbox.jdt.container.api.ConcurrencyProtocol.ReentrancyContract;
+import org.sandbox.jdt.container.api.ConcurrencyProtocolAssessment.DiagnosticOnly;
+import org.sandbox.jdt.container.api.ConcurrencyProtocolAssessment.Severity;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AnalysisCompleteness;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AtomicityRequirement;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ConcurrencyProfile;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ContainerIdentity;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.IterationSemantics;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.SynchronizationKind;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ThreadExposure;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.WorkloadShape;
+
+/** Observes the lexical monitor around a direct iteration over a synchronized list field. */
+<span class="fc" id="L57">public final class SynchronizedListIterationAnalyzer {</span>
+
+	private static final String LIST= &quot;java.util.List&quot;; //$NON-NLS-1$
+
+	/** Returns one report-only observation per matching enhanced-for loop, in source order. */
+	public List&lt;DiagnosticOnly&gt; analyze(CompilationUnit unit) {
+<span class="fc" id="L63">		List&lt;DiagnosticOnly&gt; observations= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L64">		unit.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(EnhancedForStatement loop) {
+<span class="fc" id="L67">				observe(unit, loop).ifPresent(observations::add);</span>
+<span class="fc" id="L68">				return true;</span>
+			}
+		});
+<span class="fc" id="L71">		return List.copyOf(observations);</span>
+	}
+
+	private static Optional&lt;DiagnosticOnly&gt; observe(CompilationUnit unit, EnhancedForStatement loop) {
+<span class="fc" id="L75">		Expression iterable= loop.getExpression();</span>
+<span class="fc" id="L76">		IVariableBinding field= currentInstanceField(iterable);</span>
+<span class="pc bpc" id="L77" title="1 of 4 branches missed.">		if ((loop.getFlags() &amp; (ASTNode.MALFORMED | ASTNode.RECOVERED)) != 0</span>
+<span class="pc bpc" id="L78" title="1 of 4 branches missed.">				|| field == null || !Modifier.isPrivate(field.getModifiers()) || !Modifier.isFinal(field.getModifiers())</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">				|| !(unit.findDeclaringNode(field) instanceof VariableDeclarationFragment declaration)</span>
+<span class="pc bpc" id="L80" title="1 of 4 branches missed.">				|| declaration.getInitializer() == null || !isSynchronizedListInitializer(declaration.getInitializer())) {</span>
+<span class="fc" id="L81">			return Optional.empty();</span>
+		}
+<span class="fc" id="L83">		String fieldKey= field.getKey();</span>
+<span class="pc bpc" id="L84" title="2 of 4 branches missed.">		if (fieldKey == null || fieldKey.isBlank()) {</span>
+<span class="nc" id="L85">			return Optional.empty();</span>
+		}
+<span class="fc" id="L87">		boolean locked= hasMatchingMonitor(loop, field);</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">		Evidence evidence= locked</span>
+<span class="fc" id="L89">				? new Evidence(EvidenceKind.LOCKED_ITERATION, fieldKey,</span>
+						&quot;This loop holds the monitor of the synchronized list field.&quot;, //$NON-NLS-1$
+<span class="fc" id="L91">						iterable.getStartPosition(), iterable.getLength())</span>
+<span class="fc" id="L92">				: new Evidence(EvidenceKind.UNRESOLVED_BOUNDARY, null,</span>
+						&quot;The synchronized list monitor could not be verified for this loop.&quot;, //$NON-NLS-1$
+<span class="fc" id="L94">						iterable.getStartPosition(), iterable.getLength());</span>
+<span class="fc" id="L95">		ContainerIdentity identity= new ContainerIdentity(fieldKey, field.getName(),</span>
+<span class="fc" id="L96">				declaration.getName().getStartPosition(), declaration.getName().getLength());</span>
+<span class="fc" id="L97">		ConcurrencyProfile summary= new ConcurrencyProfile(ThreadExposure.UNKNOWN,</span>
+				SynchronizationKind.SYNCHRONIZED_WRAPPER,
+<span class="fc bfc" id="L99" title="All 2 branches covered.">				locked ? IterationSemantics.EXTERNALLY_LOCKED : IterationSemantics.UNKNOWN,</span>
+				AtomicityRequirement.UNKNOWN, WorkloadShape.UNKNOWN);
+<span class="fc" id="L101">		ConcurrencyProtocol protocol= new ConcurrencyProtocol(identity, summary, ReentrancyContract.UNKNOWN,</span>
+<span class="fc" id="L102">				AnalysisCompleteness.LOCAL_SEED, List.of(evidence));</span>
+<span class="fc" id="L103">		return Optional.of(new DiagnosticOnly(protocol, Severity.INFO, List.of(</span>
+				&quot;Traversal of a synchronized list requires holding the returned list's monitor. &quot; //$NON-NLS-1$
+						+ &quot;This observation covers the loop's enclosing synchronized blocks. Publication and other accesses remain unverified.&quot;))); //$NON-NLS-1$
+	}
+
+	private static boolean isSynchronizedListInitializer(Expression initializer) {
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">		if (!(unwrap(initializer) instanceof MethodInvocation invocation)</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">				|| invocation.arguments().size() != 1</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">				|| !(unwrap((Expression) invocation.arguments().getFirst()) instanceof ClassInstanceCreation backing)</span>
+<span class="pc bpc" id="L112" title="2 of 4 branches missed.">				|| backing.getAnonymousClassDeclaration() != null || !backing.arguments().isEmpty()) {</span>
+<span class="fc" id="L113">			return false;</span>
+		}
+<span class="fc" id="L115">		IMethodBinding method= invocation.resolveMethodBinding();</span>
+<span class="pc bpc" id="L116" title="2 of 4 branches missed.">		if (method == null || method.isRecovered()) {</span>
+<span class="nc" id="L117">			return false;</span>
+		}
+<span class="fc" id="L119">		IMethodBinding declaration= method.getMethodDeclaration();</span>
+<span class="fc" id="L120">		ITypeBinding[] parameters= declaration.getParameterTypes();</span>
+<span class="fc" id="L121">		IMethodBinding constructor= backing.resolveConstructorBinding();</span>
+<span class="pc bpc" id="L122" title="2 of 4 branches missed.">		return parameters.length == 1 &amp;&amp; constructor != null</span>
+<span class="pc bpc" id="L123" title="2 of 4 branches missed.">				&amp;&amp; !declaration.isRecovered() &amp;&amp; Modifier.isStatic(declaration.getModifiers())</span>
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">				&amp;&amp; &quot;synchronizedList&quot;.equals(declaration.getName()) //$NON-NLS-1$</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">				&amp;&amp; isType(declaration.getDeclaringClass(), &quot;java.util.Collections&quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L126" title="2 of 4 branches missed.">				&amp;&amp; isType(parameters[0], LIST) &amp;&amp; isType(declaration.getReturnType(), LIST)</span>
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">				&amp;&amp; !constructor.isRecovered()</span>
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">				&amp;&amp; isType(constructor.getDeclaringClass(), &quot;java.util.ArrayList&quot;); //$NON-NLS-1$</span>
+	}
+
+	private static boolean isType(ITypeBinding type, String qualifiedName) {
+<span class="pc bpc" id="L132" title="2 of 6 branches missed.">		return type != null &amp;&amp; !type.isRecovered() &amp;&amp; !type.isFromSource()</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">				&amp;&amp; qualifiedName.equals(type.getErasure().getQualifiedName());</span>
+	}
+
+	private static boolean hasMatchingMonitor(EnhancedForStatement loop, IVariableBinding field) {
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">		for (ASTNode parent= loop.getParent(); parent != null; parent= parent.getParent()) {</span>
+<span class="pc bpc" id="L138" title="3 of 10 branches missed.">			if (parent instanceof LambdaExpression || parent instanceof MethodDeclaration || parent instanceof Initializer</span>
+					|| parent instanceof AbstractTypeDeclaration || parent instanceof AnonymousClassDeclaration) {
+<span class="nc" id="L140">				break;</span>
+			}
+<span class="fc bfc" id="L142" title="All 2 branches covered.">			if (parent instanceof SynchronizedStatement block) {</span>
+<span class="fc" id="L143">				IVariableBinding monitor= currentInstanceField(block.getExpression());</span>
+<span class="pc bpc" id="L144" title="1 of 4 branches missed.">				if (monitor != null &amp;&amp; field.isEqualTo(monitor)) {</span>
+<span class="fc" id="L145">					return true;</span>
+				}
+			}
+		}
+<span class="fc" id="L149">		return false;</span>
+	}
+
+	private static IVariableBinding currentInstanceField(Expression expression) {
+<span class="fc" id="L153">		Expression reference= unwrap(expression);</span>
+<span class="fc bfc" id="L154" title="All 4 branches covered.">		if (!(reference instanceof SimpleName)</span>
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">				&amp;&amp; !(reference instanceof FieldAccess access &amp;&amp; unwrap(access.getExpression()) instanceof ThisExpression self</span>
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">						&amp;&amp; self.getQualifier() == null)) {</span>
+<span class="fc" id="L157">			return null;</span>
+		}
+<span class="fc" id="L159">		IVariableBinding field= variableBinding(reference).orElse(null);</span>
+<span class="pc bpc" id="L160" title="1 of 8 branches missed.">		if (field == null || field.isRecovered() || !field.isField() || Modifier.isStatic(field.getModifiers())) {</span>
+<span class="fc" id="L161">			return null;</span>
+		}
+<span class="fc" id="L163">		IVariableBinding declaration= field.getVariableDeclaration();</span>
+<span class="fc" id="L164">		ITypeBinding receiver= enclosingType(reference);</span>
+<span class="pc bpc" id="L165" title="3 of 6 branches missed.">		return !declaration.isRecovered() &amp;&amp; receiver != null &amp;&amp; !receiver.isRecovered()</span>
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">				&amp;&amp; receiver.getTypeDeclaration().isEqualTo(declaration.getDeclaringClass()) ? declaration : null;</span>
+	}
+
+	private static ITypeBinding enclosingType(ASTNode reference) {
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">		for (ASTNode parent= reference.getParent(); parent != null; parent= parent.getParent()) {</span>
+<span class="fc bfc" id="L171" title="All 2 branches covered.">			if (parent instanceof AbstractTypeDeclaration type) {</span>
+<span class="fc" id="L172">				return type.resolveBinding();</span>
+			}
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">			if (parent instanceof AnonymousClassDeclaration type) {</span>
+<span class="nc" id="L175">				return type.resolveBinding();</span>
+			}
+		}
+<span class="nc" id="L178">		return null;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
