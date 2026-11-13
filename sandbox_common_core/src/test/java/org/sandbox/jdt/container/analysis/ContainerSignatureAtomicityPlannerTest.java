@@ -137,6 +137,66 @@ class ContainerSignatureAtomicityPlannerTest {
 	}
 
 	@Test
+	void rejectsAutomaticGroupWhenClosedComponentCarriesUnclassifiedDiagnostics() {
+		FlowNode parameter= parameter("parameter:method:0", "method-handle", "Owner.java", 0); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		ContainerFlowComponent invalid= new ContainerFlowComponent(
+				parameter.stableId(),
+				List.of(parameter),
+				List.of(),
+				ClosureStatus.LOCAL_CLOSED,
+				List.of(new ContainerFlowComponent.LocatedFlowDiagnostic(
+						"Owner.java", //$NON-NLS-1$
+						org.sandbox.jdt.container.api.ContainerFlowGraph.DiagnosticKind.UNCLASSIFIED_FLOW,
+						"An expression remains unclassified", 10, 2))); //$NON-NLS-1$
+		ResolvedContainerFlowSearchPlan resolved= new ResolvedContainerFlowSearchPlan(List.of(
+				target(parameter.stableId(), "method-handle", //$NON-NLS-1$
+						SearchKind.METHOD_DECLARATION, 0)));
+
+		ContainerSignatureMigrationPlan plan= planner.planClosedSource(
+				invalid, resolved, recommendation());
+
+		assertEquals(PlanningStatus.REJECTED, plan.status());
+		assertEquals(DiagnosticKind.FLOW_NOT_CLOSED, plan.diagnostics().get(0).kind());
+	}
+
+	@Test
+	void rejectsAutomaticGroupWhenOnlyCallersWereResolved() {
+		FlowNode parameter= parameter("parameter:method:0", "method-handle", "Owner.java", 0); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		ResolvedContainerFlowSearchPlan resolved= new ResolvedContainerFlowSearchPlan(List.of(
+				target(parameter.stableId(), "method-handle", //$NON-NLS-1$
+						SearchKind.METHOD_CALLERS, 0)));
+
+		ContainerSignatureMigrationPlan plan= planner.planClosedSource(
+				component(List.of(parameter), ClosureStatus.LOCAL_CLOSED),
+				resolved,
+				recommendation());
+
+		assertEquals(PlanningStatus.REJECTED, plan.status());
+		assertEquals(DiagnosticKind.UNSUPPORTED_AUTOMATIC_GROUP,
+				plan.diagnostics().get(0).kind());
+	}
+
+	@Test
+	void rejectsAutomaticGroupWithAnUnresolvedNonSignatureFlowNode() {
+		FlowNode parameter= parameter("parameter:method:0", "method-handle", "Owner.java", 0); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		FlowNode missing= new FlowNode(
+				"unknown:missing", NodeKind.UNKNOWN_BOUNDARY, "", "", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				"Owner.java", "", -1, false, 15, 2); //$NON-NLS-1$ //$NON-NLS-2$
+		ResolvedContainerFlowSearchPlan resolved= new ResolvedContainerFlowSearchPlan(List.of(
+				target(parameter.stableId(), "method-handle", //$NON-NLS-1$
+						SearchKind.METHOD_DECLARATION, 0)));
+
+		ContainerSignatureMigrationPlan plan= planner.planClosedSource(
+				component(List.of(parameter, missing), ClosureStatus.LOCAL_CLOSED),
+				resolved,
+				recommendation());
+
+		assertEquals(PlanningStatus.REJECTED, plan.status());
+		assertEquals(DiagnosticKind.UNSUPPORTED_AUTOMATIC_GROUP,
+				plan.diagnostics().get(0).kind());
+	}
+
+	@Test
 	void callerOnlyPlanNeedsNoSignatureGroup() {
 		FlowNode parameter= parameter("parameter:method:0", "method-handle", "Owner.java", 0); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
