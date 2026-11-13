@@ -1032,7 +1032,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
         });
     }
 
-    static String currentDiffText(SWTBotShell shell) {
+    private static String currentDiffText(SWTBotShell shell) {
         return UIThreadRunnable.syncExec(shell.display, new Result<String>() {
             @Override
             public String run() {

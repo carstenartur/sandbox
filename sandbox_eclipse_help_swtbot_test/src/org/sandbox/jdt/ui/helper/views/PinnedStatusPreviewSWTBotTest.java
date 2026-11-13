@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
+import java.util.ArrayDeque;
 import java.util.HexFormat;
 import java.util.Properties;
 import java.util.Set;
@@ -35,6 +36,11 @@ import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.swt.custom.StyledText;
+import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.swt.finder.finders.UIThreadRunnable;
 import org.eclipse.swtbot.swt.finder.results.Result;
@@ -137,16 +143,22 @@ public class PinnedStatusPreviewSWTBotTest {
                 SWTBotShell shell = preview.shell();
                 bot.waitUntil(new DefaultCondition() {
                     @Override public boolean test() {
-                        String comparison = SandboxHelpScreenshotsSWTBotTest.currentDiffText(shell);
-                        return comparison.contains("JavaPlugin.getPluginId(), IStatus.OK, message")
-                                && comparison.contains("JavaPlugin.getPluginId(), message");
+                        return UIThreadRunnable.syncExec(shell.display, (Result<Boolean>) () ->
+                                showDiffFragment(shell.widget, "JavaPlugin.getPluginId(), IStatus.OK, message")
+                                && showDiffFragment(shell.widget, "JavaPlugin.getPluginId(), message"));
                     }
                     @Override public String getFailureMessage() {
                         return "Comparison does not display both Status constructor forms in " + file.getName();
                     }
                 });
-                var area = UIThreadRunnable.syncExec(shell.display, (Result<org.eclipse.swt.graphics.Rectangle>) () ->
-                        shell.display.map(shell.widget, null, shell.widget.getClientArea()));
+                var area = UIThreadRunnable.syncExec(shell.display, (Result<Rectangle>) () -> {
+                    Rectangle bounds = shell.display.map(shell.widget, null, shell.widget.getClientArea());
+                    assertEquals(bounds, bounds.intersection(shell.widget.getMonitor().getClientArea()));
+                    shell.display.setCursorLocation(shell.widget.getMonitor().getClientArea().x,
+                            shell.widget.getMonitor().getClientArea().y);
+                    shell.widget.update();
+                    return bounds;
+                });
                 assertTrue(SWTUtils.captureScreenshot(temp.toString(), area));
                 CleanupWizardDriver.clickButtonAsync(shell, "Finish");
                 driver.waitForShellToClose(shell, "Clean Up wizard");
@@ -158,6 +170,8 @@ public class PinnedStatusPreviewSWTBotTest {
             provenance.addProperty("previewContract", scenario.previewContract().name());
             provenance.addProperty("repository", remote);
             provenance.addProperty("ref", ref);
+            provenance.addProperty("eclipseRelease", pins.getProperty("PIN_ECLIPSE_RELEASE"));
+            provenance.addProperty("eclipsePlatformVersion", pins.getProperty("PIN_ECLIPSE_PLATFORM_VERSION"));
             provenance.addProperty("commit", upstream);
             provenance.addProperty("project", PROJECT);
             provenance.addProperty("sourcePath", SOURCE);
@@ -172,6 +186,38 @@ public class PinnedStatusPreviewSWTBotTest {
         } finally {
             Files.deleteIfExists(temp);
         }
+    }
+
+    /** Scroll the real comparison pane until the complete change is visible in the capture. */
+    private static boolean showDiffFragment(Shell shell, String fragment) {
+        var controls = new ArrayDeque<Control>();
+        controls.add(shell);
+        while (!controls.isEmpty()) {
+            Control control = controls.removeFirst();
+            if (!control.isVisible()) {
+                continue;
+            }
+            if (control instanceof StyledText pane) {
+                int start = pane.getText().indexOf(fragment);
+                if (start >= 0) {
+                    pane.setTopIndex(Math.max(0, pane.getLineAtOffset(start) - 2));
+                    Rectangle text = pane.getTextBounds(start, start + fragment.length() - 1);
+                    Rectangle client = pane.getClientArea();
+                    if (text.x < client.x || text.x + text.width > client.x + client.width) {
+                        pane.setHorizontalPixel(Math.max(0, pane.getHorizontalPixel() + text.x - client.x - 12));
+                        text = pane.getTextBounds(start, start + fragment.length() - 1);
+                    }
+                    pane.update();
+                    if (text.equals(text.intersection(client))) {
+                        return true;
+                    }
+                }
+            }
+            if (control instanceof Composite parent) {
+                java.util.Collections.addAll(controls, parent.getChildren());
+            }
+        }
+        return false;
     }
 
     private static String required(String key) {
