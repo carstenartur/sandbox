@@ -116,6 +116,108 @@ public class JUnitScopeExpansionTest {
 				"The second expansion pass must recognize the complete helper closure");
 	}
 
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	public void selectedCallerReachesBooleanAssertionThroughStaticForwarders(boolean methodReference)
+			throws CoreException {
+		addJupiter();
+		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
+		String leafSource= """
+				package test;
+				final class Leaf {
+					static void assertFlagAtTerminal(boolean ready) { org.junit.Assert.assertTrue("expected", ready); }
+				}
+				""";
+		ICompilationUnit leaf= pack.createCompilationUnit("Leaf.java", leafSource, false, null); //$NON-NLS-1$
+		ICompilationUnit bridge= pack.createCompilationUnit("Bridge.java", """
+				package test;
+				final class Bridge {
+					static void verifyDelegatedFlag(boolean ready) { forwardFlagInternally(ready); }
+					private static void forwardFlagInternally(boolean ready) { Leaf.assertFlagAtTerminal(ready); }
+				}
+				""", false, null);
+		String selectedBody= methodReference ? "java.util.function.Consumer<Boolean> check = Bridge::verifyDelegatedFlag;" //$NON-NLS-1$
+				: "void run() { Bridge.verifyDelegatedFlag(true); }"; //$NON-NLS-1$
+		ICompilationUnit selected= pack.createCompilationUnit("Selected.java", //$NON-NLS-1$
+				"package test; public class Selected { " + selectedBody + " }", false, null); //$NON-NLS-1$ //$NON-NLS-2$
+		ICompilationUnit other= pack.createCompilationUnit("Other.java", """
+				package test;
+				final class Other { void run() { Leaf.assertFlagAtTerminal(false); } }
+				""", false, null);
+		createUnit(pack, "Unrelated.java"); //$NON-NLS-1$
+
+		JUnitCleanUpCore cleanup= assertionCleanup();
+		Collection<ICompilationUnit> expanded= cleanup.expandCleanUpScope(selected.getJavaProject(),
+				List.of(selected), null);
+		assertEquals(Set.of(selected, bridge, leaf, other), Set.copyOf(expanded));
+		assertTrue(cleanup.expandCleanUpScope(selected.getJavaProject(), expanded, null).isEmpty());
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT);
+		MultiFileCleanUpLifecycleAssertions.assertApplyCompileAndUndo(expanded.toArray(ICompilationUnit[]::new),
+				new ICompilationUnit[] { leaf, bridge, selected, other }, new String[] {
+						leafSource.replace("org.junit.Assert.assertTrue(\"expected\", ready)", //$NON-NLS-1$
+								"org.junit.jupiter.api.Assertions.assertTrue(ready, \"expected\")"), //$NON-NLS-1$
+						bridge.getSource(), selected.getSource(), other.getSource() });
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "Bridge.verify(ready)", "Missing.unknown(ready)", "Leaf.check(ready, 1)" })
+	public void unprovenForwarderDoesNotAdmitAnySource(String delegate) throws CoreException {
+		addJupiter();
+		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
+		pack.createCompilationUnit("Leaf.java", """
+				package test;
+				final class Leaf {
+					static void check(boolean ready) { org.junit.Assert.assertTrue(ready); }
+					public static void check(boolean ready, int n) { org.junit.Assert.assertTrue(ready); }
+				}
+				""", false, null);
+		pack.createCompilationUnit("Bridge.java", """
+				package test;
+				final class Bridge { static void verify(boolean ready) { CALL; } }
+				""".replace("CALL", delegate), false, null);
+		ICompilationUnit selected= pack.createCompilationUnit("Selected.java", """
+				package test;
+				final class Selected { void run() { Bridge.verify(true); } }
+				""", false, null);
+
+		assertTrue(assertionCleanup().expandCleanUpScope(selected.getJavaProject(), List.of(selected), null).isEmpty());
+	}
+
+	@Test
+	public void unsafeCallerOfIntermediateForwarderRejectsTheWholePath() throws CoreException {
+		addJupiter();
+		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
+		pack.createCompilationUnit("Leaf.java", """
+				package test;
+				final class Leaf {
+					static void assertFlagAtTerminal(boolean ready) { org.junit.Assert.assertFalse(ready); }
+				}
+				""", false, null);
+		pack.createCompilationUnit("Bridge.java", """
+				package test;
+				final class Bridge {
+					static void verifyDelegatedFlag(boolean ready) { Leaf.assertFlagAtTerminal(ready); }
+				}
+				""", false, null);
+		ICompilationUnit selected= pack.createCompilationUnit("Selected.java", """
+				package test;
+				final class Selected { void run() { Bridge.verifyDelegatedFlag(true); } }
+				""", false, null);
+		pack.createCompilationUnit("Other.java", """
+				package test;
+				final class Other {
+					int count;
+					void run() {
+						Bridge.verifyDelegatedFlag(false);
+						org.junit.Assert.assertTrue("count " + count++, count == 1);
+					}
+				}
+				""", false, null);
+
+		assertTrue(assertionCleanup().expandCleanUpScope(selected.getJavaProject(), List.of(selected), null).isEmpty());
+	}
+
 	@Test
 	public void assertionHelperMethodReferenceAddsItsDeclarationAndOtherCallers() throws CoreException {
 		addJupiter();

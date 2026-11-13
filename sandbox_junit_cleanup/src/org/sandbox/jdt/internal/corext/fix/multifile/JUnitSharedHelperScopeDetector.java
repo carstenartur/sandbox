@@ -65,8 +65,9 @@ import org.sandbox.jdt.cleanup.multifile.RelatedCompilationUnitSearch;
  * helper, or one package-private static helper, with a {@code void} body that
  * consists of exactly one direct JUnit 4 {@code Assert} or {@code Assume}
  * invocation. Public/protected helpers and overridable package-private instance
- * methods remain outside automatic migration. Recursive helper chains and
- * signature changes are later Phase-4 slices.</p>
+ * methods remain outside automatic migration. An assertion-only profile can
+ * also follow static source forwarders to a verified boolean assertion wrapper.
+ * Each method on that path needs a complete caller search.</p>
  */
 public final class JUnitSharedHelperScopeDetector {
 
@@ -75,11 +76,11 @@ public final class JUnitSharedHelperScopeDetector {
 	private record HelperCandidate(IMethod method, String bindingKey, ICompilationUnit compilationUnit) {
 	}
 
-	/** Existing helper seeds and method-reference seeds that require a separate closure proof. */
+	/** Ordinary helper seeds and static helper paths requiring a complete assertion-only closure. */
 	public record HelperSearchSeeds(JUnitScopeCandidateDetector.SearchSeeds ordinary,
-			List<IJavaElement> methodReferences) {
+			List<List<IJavaElement>> assertionPaths) {
 		public HelperSearchSeeds {
-			methodReferences= List.copyOf(methodReferences);
+			assertionPaths= assertionPaths.stream().map(List::copyOf).toList();
 		}
 	}
 
@@ -96,10 +97,10 @@ public final class JUnitSharedHelperScopeDetector {
 		return findSearchSeeds(project, currentScope, migrateAssertions, migrateAssumptions, false, monitor).ordinary();
 	}
 
-	/** Also collects eligible static method-reference targets when the cleanup profile allows it. */
+	/** Also traces eligible static assertion paths when the cleanup profile allows it. */
 	public static HelperSearchSeeds findSearchSeeds(IJavaProject project,
 			Collection<ICompilationUnit> currentScope, boolean migrateAssertions,
-			boolean migrateAssumptions, boolean allowMethodReferences, IProgressMonitor monitor) {
+			boolean migrateAssumptions, boolean allowAssertionPaths, IProgressMonitor monitor) {
 		if (project == null || currentScope == null || currentScope.isEmpty()
 				|| !migrateAssertions && !migrateAssumptions) {
 			return new HelperSearchSeeds(empty(), List.of());
@@ -113,31 +114,44 @@ public final class JUnitSharedHelperScopeDetector {
 		Map<String, HelperCandidate> possible= new LinkedHashMap<>();
 		Set<String> invocationCandidates= new LinkedHashSet<>();
 		Map<String, HelperCandidate> verified= new LinkedHashMap<>();
-		List<IJavaElement> methodReferences= new ArrayList<>();
-		boolean followMethodReferences= allowMethodReferences && migrateAssertions
+		Set<List<IJavaElement>> assertionPaths= new LinkedHashSet<>();
+		boolean followAssertionPaths= allowAssertionPaths && migrateAssertions
 				&& !migrateAssumptions && hasJupiterAssertions(project);
 		Map<String, CompilationUnit> selectedRoots= parse(project, selected, monitor);
-		for (Map.Entry<String, CompilationUnit> entry : selectedRoots.entrySet()) {
-			collect(entry.getValue(), project, migrateAssertions, migrateAssumptions,
-					followMethodReferences, possible, invocationCandidates, verified);
+		for (CompilationUnit root : selectedRoots.values()) {
+			collect(root, project, migrateAssertions, migrateAssumptions,
+					followAssertionPaths, possible, invocationCandidates, verified);
 		}
 
+		Map<String, CompilationUnit> roots= new LinkedHashMap<>(selectedRoots);
 		Set<ICompilationUnit> declarationUnits= new LinkedHashSet<>();
 		for (HelperCandidate candidate : possible.values()) {
-			if (!verified.containsKey(candidate.bindingKey())) {
+			if (!roots.containsKey(candidate.compilationUnit().getHandleIdentifier())) {
 				declarationUnits.add(candidate.compilationUnit());
 			}
 		}
 		if (!declarationUnits.isEmpty()) {
-			Map<String, CompilationUnit> declarationRoots= parse(project, new ArrayList<>(declarationUnits), monitor);
-			for (CompilationUnit root : declarationRoots.values()) {
-				verifyKnownDeclarations(root, project, migrateAssertions, migrateAssumptions,
-						possible, invocationCandidates, verified, methodReferences);
+			roots.putAll(parse(project, new ArrayList<>(declarationUnits), monitor));
+		}
+		for (HelperCandidate candidate : possible.values()) {
+			checkCanceled(monitor);
+			CompilationUnit root= roots.get(candidate.compilationUnit().getHandleIdentifier());
+			if (root == null || !(root.findDeclaringNode(candidate.bindingKey()) instanceof MethodDeclaration method)) {
+				continue;
+			}
+			if (invocationCandidates.contains(candidate.bindingKey())
+					&& isDirectWrapper(method, migrateAssertions, migrateAssumptions)) {
+				verified.putIfAbsent(candidate.bindingKey(), candidate);
+			} else if (followAssertionPaths && !verified.containsKey(candidate.bindingKey())) {
+				List<IJavaElement> path= assertionPath(project, candidate, roots, monitor);
+				if (!path.isEmpty()) {
+					assertionPaths.add(path);
+				}
 			}
 		}
 		checkCanceled(monitor);
 		if (verified.isEmpty()) {
-			return new HelperSearchSeeds(empty(), methodReferences);
+			return new HelperSearchSeeds(empty(), List.copyOf(assertionPaths));
 		}
 
 		List<IJavaElement> elements= new ArrayList<>();
@@ -147,18 +161,18 @@ public final class JUnitSharedHelperScopeDetector {
 			directUnits.add(helper.compilationUnit());
 		}
 		return new HelperSearchSeeds(new JUnitScopeCandidateDetector.SearchSeeds(true, true, elements,
-				new ArrayList<>(directUnits)), methodReferences);
+				new ArrayList<>(directUnits)), List.copyOf(assertionPaths));
 	}
 
 	/** Returns complete source closures whose newly admitted units support the assertion rewrite. */
-	public static List<ICompilationUnit> closeMethodReferences(IJavaProject project, List<IJavaElement> methods,
+	public static List<ICompilationUnit> closeAssertionPaths(IJavaProject project, List<List<IJavaElement>> paths,
 			Collection<ICompilationUnit> existingScope, Collection<ICompilationUnit> allowedUnits,
 			IProgressMonitor monitor) throws CoreException {
 		Set<ICompilationUnit> approved= new LinkedHashSet<>();
 		Set<ICompilationUnit> existing= new LinkedHashSet<>(normalize(project, existingScope));
-		for (IJavaElement method : methods) {
+		for (List<IJavaElement> path : paths) {
 			RelatedCompilationUnitSearch.Result closure= RelatedCompilationUnitSearch.findReferences(
-					project, List.of(method), List.of(), allowedUnits, monitor);
+					project, path, List.of(), allowedUnits, monitor);
 			if (!closure.complete()) {
 				continue;
 			}
@@ -200,7 +214,7 @@ public final class JUnitSharedHelperScopeDetector {
 			@Override
 			public boolean visit(ExpressionMethodReference node) {
 				if (followMethodReferences) {
-					collectCandidate(resolvedMethodReference(node.resolveMethodBinding()), true);
+					collectCandidate(resolvedStaticDeclaration(node.resolveMethodBinding()), true);
 				}
 				return true;
 			}
@@ -208,7 +222,7 @@ public final class JUnitSharedHelperScopeDetector {
 			@Override
 			public boolean visit(TypeMethodReference node) {
 				if (followMethodReferences) {
-					collectCandidate(resolvedMethodReference(node.resolveMethodBinding()), true);
+					collectCandidate(resolvedStaticDeclaration(node.resolveMethodBinding()), true);
 				}
 				return true;
 			}
@@ -225,32 +239,42 @@ public final class JUnitSharedHelperScopeDetector {
 		});
 	}
 
-	private static void verifyKnownDeclarations(CompilationUnit root, IJavaProject project,
-			boolean migrateAssertions, boolean migrateAssumptions,
-			Map<String, HelperCandidate> possible, Set<String> invocationCandidates,
-			Map<String, HelperCandidate> verified, List<IJavaElement> methodReferences) {
-		List<IJavaElement> referenceOnly= new ArrayList<>();
-		root.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(MethodDeclaration node) {
-				IMethodBinding binding= declaration(node.resolveBinding());
-				if (binding == null || !possible.containsKey(binding.getKey())) {
-					return true;
-				}
-				HelperCandidate candidate= candidate(binding, project);
-				if (candidate != null && isDirectWrapper(node, migrateAssertions, migrateAssumptions)) {
-					if (invocationCandidates.contains(candidate.bindingKey())) {
-						verified.putIfAbsent(candidate.bindingKey(), candidate);
-					} else if (!verified.containsKey(candidate.bindingKey())) {
-						referenceOnly.add(candidate.method());
-					}
-				}
-				return true;
+	/**
+	 * Follows exact static declarations until a direct JUnit assertion terminates
+	 * the path. A repeated key is a cycle, and a missing or ineligible edge
+	 * invalidates the entire path.
+	 */
+	private static List<IJavaElement> assertionPath(IJavaProject project, HelperCandidate current,
+			Map<String, CompilationUnit> roots, IProgressMonitor monitor) {
+		Set<String> visited= new LinkedHashSet<>();
+		List<IJavaElement> path= new ArrayList<>();
+		while (current != null && visited.add(current.bindingKey())) {
+			checkCanceled(monitor);
+			ICompilationUnit unit= current.compilationUnit();
+			String handle= unit.getHandleIdentifier();
+			if (!roots.containsKey(handle)) {
+				roots.putAll(parse(project, List.of(unit), monitor));
 			}
-		});
-		if (!referenceOnly.isEmpty() && hasSafeAssertionRewrites(root)) {
-			methodReferences.addAll(referenceOnly);
+			CompilationUnit root= roots.get(handle);
+			if (root == null || !(root.findDeclaringNode(current.bindingKey()) instanceof MethodDeclaration method)
+					|| !Modifier.isStatic(method.getModifiers())) {
+				break;
+			}
+			MethodInvocation invocation= directInvocation(method);
+			if (invocation == null) {
+				break;
+			}
+			IMethodBinding callee= resolvedStaticDeclaration(invocation.resolveMethodBinding());
+			if (callee == null) {
+				break;
+			}
+			path.add(current.method());
+			if (isJUnitAssert(callee.getDeclaringClass())) {
+				return isSafeBooleanAssertion(invocation, callee) ? List.copyOf(path) : List.of();
+			}
+			current= candidate(callee, project);
 		}
+		return List.of();
 	}
 
 	private static boolean isDirectWrapper(MethodDeclaration method, boolean migrateAssertions,
@@ -391,7 +415,7 @@ public final class JUnitSharedHelperScopeDetector {
 		return binding == null ? null : binding.getMethodDeclaration();
 	}
 
-	private static IMethodBinding resolvedMethodReference(IMethodBinding binding) {
+	private static IMethodBinding resolvedStaticDeclaration(IMethodBinding binding) {
 		IMethodBinding method= binding == null || binding.isRecovered() ? null : binding.getMethodDeclaration();
 		return method != null && !method.isRecovered() && method.getKey() != null
 				&& Modifier.isStatic(method.getModifiers()) ? method : null;
