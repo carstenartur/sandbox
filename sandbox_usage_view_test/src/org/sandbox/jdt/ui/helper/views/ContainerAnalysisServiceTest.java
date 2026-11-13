@@ -161,6 +161,40 @@ public class ContainerAnalysisServiceTest {
 	}
 
 	@Test
+	public void synchronizedListIterationsShowSourceEvidenceWithoutMigrationAdvice() {
+		String source= """
+				import java.util.ArrayList;
+				import java.util.Collections;
+				import java.util.List;
+				class Sample {
+					private final List<String> entries = Collections.synchronizedList(new ArrayList<>());
+					void inspect(Object monitor) {
+						synchronized (this.entries) {
+							for (String entry : entries) { }
+						}
+						synchronized (monitor) {
+							for (String entry : this.entries) { }
+						}
+					}
+				}
+				""";
+
+		List<ContainerAnalysisRow> rows= service.analyze(parse(source), "=Test/Handle"); //$NON-NLS-1$
+
+		assertEquals(2, rows.size());
+		ContainerAnalysisRow locked= rows.get(0);
+		assertEquals("LOCKED_ITERATION", locked.evidenceKind()); //$NON-NLS-1$
+		assertEquals("entries", fragment(source, locked)); //$NON-NLS-1$
+		assertEquals(source.indexOf("entries) { }"), locked.sourceStart()); //$NON-NLS-1$
+		ContainerAnalysisRow unverified= rows.get(1);
+		assertEquals("UNRESOLVED_BOUNDARY", unverified.evidenceKind()); //$NON-NLS-1$
+		assertEquals("this.entries", fragment(source, unverified)); //$NON-NLS-1$
+		assertTrue(unverified.details().contains("monitor could not be verified")); //$NON-NLS-1$
+		assertTrue(rows.stream().allMatch(row -> "=Test/Handle".equals(row.compilationUnitHandle()) //$NON-NLS-1$
+				&& "REPORT_ONLY".equals(row.status()) && "No proven target".equals(row.targetContract()))); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
 	public void rowDetailsExposeRecommendationAndEvidenceWithoutHoldingAstNodes() {
 		String source= """
 				import java.util.Arrays;

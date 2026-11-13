@@ -24,11 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IWorkspaceRoot;
-import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragment;
@@ -44,6 +41,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.internal.corext.util.TypeWideningAnalyzer;
 import org.sandbox.jdt.internal.corext.util.TypeWideningAnalyzer.TypeWideningResult;
+import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 
 /**
  * Test class for JavaHelperView and related components.
@@ -61,11 +59,10 @@ public class JavaHelperViewTest {
 
 	@BeforeEach
 	public void setUp() throws Exception {
-		// Create test project
-		@SuppressWarnings("unused")
-		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		testProject = createJavaProject("TestProject", new String[] {"src"});
-		sourceFolder = testProject.getPackageFragmentRoot(testProject.getProject().getFolder("src"));
+		testProject = AbstractEclipseJava.createJavaProject("TestProject", "bin");
+		AbstractEclipseJava.addToClasspath(testProject,
+				JavaCore.newContainerEntry(new Path("org.eclipse.jdt.launching.JRE_CONTAINER")));
+		sourceFolder = AbstractEclipseJava.addSourceContainer(testProject, "src");
 	}
 
 	@AfterEach
@@ -470,32 +467,5 @@ public class JavaHelperViewTest {
 		parser.setEnvironment(null, null, null, true);
 		
 		return (CompilationUnit) parser.createAST(null);
-	}
-
-	private IJavaProject createJavaProject(String projectName, String[] sourceFolderPaths) throws CoreException {
-		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		IProject project = root.getProject(projectName);
-		
-		if (!project.exists()) {
-			project.create(null);
-		}
-		project.open(null);
-		
-		// Set Java nature
-		org.eclipse.core.resources.IProjectDescription description = project.getDescription();
-		description.setNatureIds(new String[] { JavaCore.NATURE_ID });
-		project.setDescription(description, null);
-		
-		IJavaProject javaProject = JavaCore.create(project);
-		
-		// Create source folders
-		for (String path : sourceFolderPaths) {
-			IPackageFragmentRoot fragmentRoot = javaProject.getPackageFragmentRoot(project.getFolder(path));
-			if (!fragmentRoot.exists()) {
-				project.getFolder(path).create(true, true, null);
-			}
-		}
-		
-		return javaProject;
 	}
 }

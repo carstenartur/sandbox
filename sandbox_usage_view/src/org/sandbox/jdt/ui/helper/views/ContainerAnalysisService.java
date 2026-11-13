@@ -29,7 +29,11 @@ import org.sandbox.jdt.container.analysis.LocalArrayUsageAnalyzer;
 import org.sandbox.jdt.container.analysis.LocalDequeSequenceAnalyzer;
 import org.sandbox.jdt.container.analysis.LocalEnumIndexedMembershipAnalyzer;
 import org.sandbox.jdt.container.analysis.LocalUniqueSequenceAnalyzer;
+import org.sandbox.jdt.container.analysis.SynchronizedListIterationAnalyzer;
+import org.sandbox.jdt.container.api.ConcurrencyProtocol.Evidence;
+import org.sandbox.jdt.container.api.ConcurrencyProtocolAssessment.DiagnosticOnly;
 import org.sandbox.jdt.container.api.ContainerRecommendation;
+import org.sandbox.jdt.container.api.ContainerRecommendation.AutomationLevel;
 import org.sandbox.jdt.container.api.ContainerRecommendation.ContractAssessment;
 import org.sandbox.jdt.container.api.ContainerUsageProfile;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.AnalysisCompleteness;
@@ -49,6 +53,7 @@ final class ContainerAnalysisService {
 	private final LocalDequeSequenceAnalyzer dequeSequenceAnalyzer= new LocalDequeSequenceAnalyzer();
 	private final LocalEnumIndexedMembershipAnalyzer enumMembershipAnalyzer=
 			new LocalEnumIndexedMembershipAnalyzer();
+	private final SynchronizedListIterationAnalyzer synchronizedListAnalyzer= new SynchronizedListIterationAnalyzer();
 	private final ContainerContractInferrer contractInferrer= new ContainerContractInferrer();
 
 	List<ContainerAnalysisRow> analyze(ICompilationUnit unit) {
@@ -81,10 +86,24 @@ final class ContainerAnalysisService {
 				rows.add(row(compilationUnitHandle, profile, recommendation, evidence));
 			}
 		}
+		for (DiagnosticOnly observation : synchronizedListAnalyzer.analyze(root)) {
+			for (Evidence evidence : observation.protocol().evidence()) {
+				rows.add(concurrencyRow(compilationUnitHandle, observation, evidence));
+			}
+		}
 		rows.sort(Comparator.comparingInt(ContainerAnalysisRow::sourceStart)
 				.thenComparing(ContainerAnalysisRow::candidate)
 				.thenComparing(ContainerAnalysisRow::evidenceKind));
 		return List.copyOf(rows);
+	}
+
+	private static ContainerAnalysisRow concurrencyRow(String compilationUnitHandle,
+			DiagnosticOnly observation, Evidence evidence) {
+		return new ContainerAnalysisRow(compilationUnitHandle, observation.protocol().identity().displayName(),
+				observation.protocol().summary().synchronization().name(), "No proven target", "N/A", //$NON-NLS-1$ //$NON-NLS-2$
+				AutomationLevel.REPORT_ONLY.name(),
+				evidence.kind().name(), evidence.summary(), String.join(System.lineSeparator(), observation.explanations()),
+				evidence.sourceStart(), evidence.sourceLength());
 	}
 
 	private static void addProfile(Map<String, ContainerUsageProfile> profiles,
