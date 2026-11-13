@@ -18,7 +18,7 @@
   },
   "category": "String Optimization",
   "sourceVersion": "8",
-  "status": "READY_FOR_REVIEW",
+  "status": "SUPERSEDED",
   "discoveredAt": "2026-11-12T02:22:58.704428506Z",
   "ruleFingerprint": "sha256:d7c9e2a1d6a47573eca6c5e7781a6623ff90a4b3c11f835e08d48810e13a3923",
   "behaviorFingerprint": "sha256:36c198119503fdf804b6fbd61fe666c84785c81fe79f9c97d125fd3d326da2fa",
@@ -45,6 +45,13 @@
       "actor": "CandidateVerificationCli",
       "reason": "All deterministic candidate gates passed",
       "occurredAt": "2026-11-12T02:24:51.469393784Z"
+    },
+    {
+      "from": "READY_FOR_REVIEW",
+      "to": "SUPERSEDED",
+      "actor": "OpenAI Codex (on behalf of carstenartur)",
+      "reason": "Replaced by the binding- and NLS-aware String Simplification implementation in PR #1858. The original slash-only DSL cannot preserve the source commit\u0027s NLS semantics.",
+      "occurredAt": "2026-11-13T04:50:09.052864802Z"
     }
   ]
 }

@@ -19,7 +19,7 @@
   "category": "Idiomatic Collection Usage",
   "summary": "Replaces `$collection.size() \u003d\u003d 0` with `$collection.isEmpty()` for `java.util.Collection` and `java.util.Map` types, which is more idiomatic and often more performant.",
   "sourceVersion": "8",
-  "status": "READY_FOR_REVIEW",
+  "status": "SUPERSEDED",
   "discoveredAt": "2026-11-12T02:19:40.282549686Z",
   "ruleFingerprint": "sha256:6302de33b98ece71367418b54cd881dff5754a1748d3949806e69b6c98ccd2dc",
   "behaviorFingerprint": "sha256:998353803ec93b52e0bd446b6718354cd739bee514c46b2f682fff148b2d3650",
@@ -46,6 +46,13 @@
       "actor": "CandidateVerificationCli",
       "reason": "All deterministic candidate gates passed",
       "occurredAt": "2026-11-12T02:24:51.396036458Z"
+    },
+    {
+      "from": "READY_FOR_REVIEW",
+      "to": "SUPERSEDED",
+      "actor": "OpenAI Codex (on behalf of carstenartur)",
+      "reason": "Replaced by the repair to the existing cleanup and quick assist in PR #1855. A second rule would duplicate the existing transformation, and the proposal lacks the lambda, comment, and recursive isEmpty checks.",
+      "occurredAt": "2026-11-13T04:50:09.243639090Z"
     }
   ]
 }
