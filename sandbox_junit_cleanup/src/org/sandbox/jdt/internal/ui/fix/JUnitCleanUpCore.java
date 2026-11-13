@@ -63,6 +63,7 @@ import org.sandbox.jdt.internal.corext.fix.multifile.JUnitMigrationPlan;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnitMultiFilePlanner;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnitScopeCandidateDetector;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnitSharedHelperScopeDetector;
+import org.sandbox.jdt.internal.corext.fix.multifile.JUnitSharedHelperScopeDetector.HelperSearchSeeds;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 
 /** Core cleanup implementation for JUnit 3/4 to Jupiter migration. */
@@ -263,13 +264,17 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 				? JUnitLifecycleScopeDetector.findSearchSeeds(project, currentScope,
 						lifecycleAnnotations, monitor)
 				: new JUnitScopeCandidateDetector.SearchSeeds(false, true, List.of(), List.of());
-		JUnitScopeCandidateDetector.SearchSeeds helperSeeds=
+		// Every newly admitted unit receives the active cleanup options. Limit the
+		// additional method-reference scope to the one rewrite its proof covers.
+		boolean allowMethodReferences= migrateAssertionHelpers && fixes.size() == 1
+				&& !isEnabled(JUnitMigrationOptions.BEST_EFFORT);
+		HelperSearchSeeds helperSeeds=
 				JUnitSharedHelperScopeDetector.findSearchSeeds(project, currentScope,
-						migrateAssertionHelpers, migrateAssumptionHelpers, monitor);
+						migrateAssertionHelpers, migrateAssumptionHelpers, allowMethodReferences, monitor);
 		JUnitScopeCandidateDetector.SearchSeeds seeds= mergeSeeds(
-				mergeSeeds(mergeSeeds(standardSeeds, junit3Seeds), lifecycleSeeds), helperSeeds);
-		trace.seeds(standardSeeds, junit3Seeds, lifecycleSeeds, helperSeeds, seeds);
-		if (!seeds.candidateFound()) {
+				mergeSeeds(mergeSeeds(standardSeeds, junit3Seeds), lifecycleSeeds), helperSeeds.ordinary());
+		trace.seeds(standardSeeds, junit3Seeds, lifecycleSeeds, helperSeeds.ordinary(), seeds);
+		if (!seeds.candidateFound() && helperSeeds.methodReferences().isEmpty()) {
 			clearScopeDecision(project);
 			trace.finish("no-candidate", null, null, null, null, null); //$NON-NLS-1$
 			return List.of();
@@ -303,6 +308,21 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 				required.addAll(related.compilationUnits());
 			}
 			requiredUnits= new ArrayList<>(required);
+		}
+		if (!helperSeeds.methodReferences().isEmpty()) {
+			Set<ICompilationUnit> existingScope= new LinkedHashSet<>(currentScope);
+			existingScope.addAll(requiredUnits);
+			List<ICompilationUnit> additional= JUnitSharedHelperScopeDetector.closeMethodReferences(
+					project, helperSeeds.methodReferences(), existingScope, allowedUnits, monitor);
+			if (!additional.isEmpty()) {
+				existingScope.addAll(additional);
+				requiredUnits= new ArrayList<>(existingScope);
+			} else if (!seeds.candidateFound()) {
+				clearScopeDecision(project);
+				trace.finish("method-reference-rejected", coordinatedProjects, readOnlyProjects, //$NON-NLS-1$
+						allowedUnits, null, null);
+				return List.of();
+			}
 		}
 		Collection<ICompilationUnit> expanded= registerRequiredScope(project, currentHandles, requiredUnits);
 		trace.finish((seeds.complete() ? "search-" : "fallback-") //$NON-NLS-1$ //$NON-NLS-2$
