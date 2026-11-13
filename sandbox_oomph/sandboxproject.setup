@@ -42,6 +42,10 @@
     <requirement name="org.eclipse.jdt.astview.feature.feature.group"/>
     <requirement name="org.eclipse.jdt.jeview.feature.feature.group"/>
     <requirement name="org.eclipse.pde.spies.feature.group"/>
+    <!-- Keep the Eclipse 4.41 Help providers selected when an EGit repository
+         reference also offers older Orbit bundles exporting these packages. -->
+    <requirement name="org.mortbay.jasper.mortbay-apache-el" versionRange="[9.0.119,10.0.0)"/>
+    <requirement name="org.mortbay.jasper.mortbay-apache-jsp" versionRange="[9.0.119,10.0.0)"/>
     <repository url="https://download.eclipse.org/releases/2026-09/"/>
   </setupTask>
   <setupTask xsi:type="setup:PreferenceTask"
