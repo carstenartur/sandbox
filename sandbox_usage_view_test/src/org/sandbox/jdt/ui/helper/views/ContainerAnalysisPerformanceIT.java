@@ -103,7 +103,7 @@ class ContainerAnalysisPerformanceIT {
 
 	private static List<String> importSources(File location, IJavaProject project) throws Exception {
 		var resource= project.getProject();
-		Path directory= resource.getLocation().toFile().toPath();
+		Path directory= java.util.Objects.requireNonNull(resource.getLocation(), "Workspace project location is unavailable").toFile().toPath(); //$NON-NLS-1$
 		List<String> paths= new ArrayList<>();
 		long bytes= 0;
 		try (Git git= Git.open(location);
