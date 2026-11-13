@@ -53,6 +53,7 @@
 							     help-screenshots profile with its complete runtime and fixtures.
 							     Keep the ordinary JUnit dialog and all non-SWTBot tests here. -->
 							<excludes combine.self="override">
+								<exclude>**/PinnedStatusPreviewSWTBotTest.class</exclude>
 								<exclude>**/SandboxHelpScreenshotsSWTBotTest.class</exclude>
 								<exclude>**/SandboxHelpScreenshotsMergeGateSWTBotTest.class</exclude>
 								<exclude>**/MathematicsHelpScreenshotsSWTBotTest.class</exclude>
@@ -132,6 +133,21 @@
 								<dependency><type>eclipse-plugin</type><groupId>org.sandbox</groupId><artifactId>sandbox_use_general_type</artifactId><version>0.0.0</version></dependency>
 								<dependency><type>eclipse-plugin</type><groupId>org.sandbox</groupId><artifactId>sandbox_xml_cleanup</artifactId><version>0.0.0</version></dependency>
 							</dependencies>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>pinned-status-preview</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.eclipse.tycho</groupId>
+						<artifactId>tycho-surefire-plugin</artifactId>
+						<configuration>
+							<osgiDataDirectory>${env.SANDBOX_STATUS_WORKSPACE}</osgiDataDirectory>
+							<deleteOsgiDataDirectory>false</deleteOsgiDataDirectory>
 						</configuration>
 					</plugin>
 				</plugins>
