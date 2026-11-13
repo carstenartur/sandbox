@@ -25,6 +25,7 @@ import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.ArrayAccess;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.CastExpression;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
@@ -150,6 +151,10 @@ public final class LocalArrayUsageAnalyzer {
 			accumulator.encounterIteration(reference);
 		} else if (parent instanceof MethodInvocation invocation) {
 			classifyMethodInvocation(reference, invocation, accumulator);
+		} else if (parent instanceof ClassInstanceCreation creation && creation.arguments().contains(reference)
+				&& ContainerConstructorTarget.isClosed(creation)) {
+			accumulator.reject(Kind.UNSAFE_ESCAPE,
+					"Array argument requires the exact private constructor and all its source callers", reference); //$NON-NLS-1$
 		} else if (parent instanceof Assignment assignment) {
 			classifyAssignment(reference, assignment, accumulator);
 		} else if (parent instanceof VariableDeclarationFragment fragment

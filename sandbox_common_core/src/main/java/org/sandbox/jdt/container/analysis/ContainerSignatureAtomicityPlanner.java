@@ -87,7 +87,8 @@ public final class ContainerSignatureAtomicityPlanner {
 		}
 
 		List<SignatureDiagnostic> diagnostics= new ArrayList<>();
-		if (component.closureStatus() != ClosureStatus.LOCAL_CLOSED) {
+		if (component.closureStatus() != ClosureStatus.LOCAL_CLOSED
+				|| !component.diagnostics().isEmpty()) {
 			diagnostics.add(new SignatureDiagnostic(
 					DiagnosticKind.FLOW_NOT_CLOSED,
 					component.rootNodeId(),
@@ -109,6 +110,21 @@ public final class ContainerSignatureAtomicityPlanner {
 			targetsByGroup.computeIfAbsent(key, ignored -> new ArrayList<>()).add(target);
 		}
 		if (targetsByGroup.isEmpty()) {
+			if (completedStatus == PlanningStatus.CLOSED_SOURCE_AUTOMATIC
+					&& component.nodes().stream().anyMatch(node ->
+							node.kind() == NodeKind.PARAMETER
+									|| node.kind() == NodeKind.EXTERNAL_PARAMETER
+									|| node.kind() == NodeKind.RETURN_POSITION)) {
+				return new ContainerSignatureMigrationPlan(
+						recommendation.targetContract(),
+						List.of(),
+						PlanningStatus.REJECTED,
+						List.of(new SignatureDiagnostic(
+								DiagnosticKind.UNSUPPORTED_AUTOMATIC_GROUP,
+								component.rootNodeId(),
+								"", //$NON-NLS-1$
+								"Automatic signature execution cannot omit an observed parameter or return position when only callers were resolved."))); //$NON-NLS-1$
+			}
 			return new ContainerSignatureMigrationPlan(
 					recommendation.targetContract(),
 					List.of(),
@@ -206,7 +222,10 @@ public final class ContainerSignatureAtomicityPlanner {
 						|| node.kind() == NodeKind.EXTERNAL_PARAMETER
 						|| node.kind() == NodeKind.RETURN_POSITION)
 				.toList();
-		return signatureNodes.size() == memberNodeIds.size()
+		return component.nodes().stream().allMatch(FlowNode::sourceResolved)
+				&& component.nodes().stream().noneMatch(node ->
+						node.kind() == NodeKind.UNKNOWN_BOUNDARY)
+				&& signatureNodes.size() == memberNodeIds.size()
 				&& signatureNodes.stream().allMatch(node ->
 						node.kind() == NodeKind.PARAMETER
 								&& node.sourceResolved()

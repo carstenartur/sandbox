@@ -74,6 +74,20 @@ class NewRuleWizardPageTest {
 	}
 
 	@Test
+	void inferredDocumentsRetainTheReplayRequirementThroughManualEdits() {
+		runOnDisplay(() -> {
+			var page = new NewRuleWizardPage();
+			page.setInitialDsl("1 + 2\n=> 3\n;;\n");
+			page.createControl(shell);
+			assertFalse(page.isGeneratedRule());
+			page.acceptGeneratedRule("2 + 2\n=> 4\n;;\n");
+			assertTrue(page.isGeneratedRule());
+			descendants(shell, StyledText.class).getFirst().setText("3 + 3\n=> 6\n;;\n");
+			assertTrue(page.isGeneratedRule());
+		});
+	}
+
+	@Test
 	void blankSavedCompilationUnitStillOpensAnEditableRuleDraft() {
 		for (String blank : List.of("", " \t")) {
 			assertBlankSeedOpensEditableDraft(blank, "class Example { int value = 1; }");
@@ -181,7 +195,7 @@ class NewRuleWizardPageTest {
 
 	@Test
 	void examplesRequireAnActualProjectForParsingAndDialogReplay() {
-		assertThrows(IllegalArgumentException.class, () -> RuleExamplesDialog.parseSource(null,
+		assertThrows(IllegalArgumentException.class, () -> ProjectRuleExamples.parseSource(null,
 				java.util.Map.of(), "Example.java", "class Example {}", new NullProgressMonitor()));
 		runOnDisplay(() -> {
 			var dialog = new RuleExamplesDialog(shell, "$x.old()\n=> $x.modern()\n;;\n", null, null, null, null);

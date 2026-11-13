@@ -265,16 +265,16 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 						lifecycleAnnotations, monitor)
 				: new JUnitScopeCandidateDetector.SearchSeeds(false, true, List.of(), List.of());
 		// Every newly admitted unit receives the active cleanup options. Limit the
-		// additional method-reference scope to the one rewrite its proof covers.
-		boolean allowMethodReferences= migrateAssertionHelpers && fixes.size() == 1
+		// additional static helper scope to the one rewrite its proof covers.
+		boolean allowAssertionPaths= migrateAssertionHelpers && fixes.size() == 1
 				&& !isEnabled(JUnitMigrationOptions.BEST_EFFORT);
 		HelperSearchSeeds helperSeeds=
 				JUnitSharedHelperScopeDetector.findSearchSeeds(project, currentScope,
-						migrateAssertionHelpers, migrateAssumptionHelpers, allowMethodReferences, monitor);
+						migrateAssertionHelpers, migrateAssumptionHelpers, allowAssertionPaths, monitor);
 		JUnitScopeCandidateDetector.SearchSeeds seeds= mergeSeeds(
 				mergeSeeds(mergeSeeds(standardSeeds, junit3Seeds), lifecycleSeeds), helperSeeds.ordinary());
 		trace.seeds(standardSeeds, junit3Seeds, lifecycleSeeds, helperSeeds.ordinary(), seeds);
-		if (!seeds.candidateFound() && helperSeeds.methodReferences().isEmpty()) {
+		if (!seeds.candidateFound() && helperSeeds.assertionPaths().isEmpty()) {
 			clearScopeDecision(project);
 			trace.finish("no-candidate", null, null, null, null, null); //$NON-NLS-1$
 			return List.of();
@@ -309,17 +309,17 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 			}
 			requiredUnits= new ArrayList<>(required);
 		}
-		if (!helperSeeds.methodReferences().isEmpty()) {
+		if (!helperSeeds.assertionPaths().isEmpty()) {
 			Set<ICompilationUnit> existingScope= new LinkedHashSet<>(currentScope);
 			existingScope.addAll(requiredUnits);
-			List<ICompilationUnit> additional= JUnitSharedHelperScopeDetector.closeMethodReferences(
-					project, helperSeeds.methodReferences(), existingScope, allowedUnits, monitor);
+			List<ICompilationUnit> additional= JUnitSharedHelperScopeDetector.closeAssertionPaths(
+					project, helperSeeds.assertionPaths(), existingScope, allowedUnits, monitor);
 			if (!additional.isEmpty()) {
 				existingScope.addAll(additional);
 				requiredUnits= new ArrayList<>(existingScope);
 			} else if (!seeds.candidateFound()) {
 				clearScopeDecision(project);
-				trace.finish("method-reference-rejected", coordinatedProjects, readOnlyProjects, //$NON-NLS-1$
+				trace.finish("assertion-path-rejected", coordinatedProjects, readOnlyProjects, //$NON-NLS-1$
 						allowedUnits, null, null);
 				return List.of();
 			}

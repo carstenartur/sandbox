@@ -17,7 +17,9 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.jdt.core.JavaCore;
 import org.sandbox.jdt.triggerpattern.api.RuleExampleSuite;
+import org.sandbox.jdt.triggerpattern.api.RuleExampleVerifier;
 
 /** Creates new rule evidence under one workspace rule; never overwrites a resource. */
 final class HintFileCreation {
@@ -27,6 +29,11 @@ final class HintFileCreation {
 
 	static void create(IContainer container, String fileName, String content, RuleExampleSuite suite,
 			IProgressMonitor monitor) throws CoreException {
+		create(container, fileName, content, suite, false, monitor);
+	}
+
+	static void create(IContainer container, String fileName, String content, RuleExampleSuite suite,
+			boolean generated, IProgressMonitor monitor) throws CoreException {
 		String examples = suite == null ? null : suite.toJson();
 		IFile hint = container.getFile(new Path(fileName));
 		IFile sidecar = container.getFile(new Path(fileName + ".examples.json")); //$NON-NLS-1$
@@ -39,6 +46,10 @@ final class HintFileCreation {
 				requireAbsent(hint);
 				if (examples != null) {
 					requireAbsent(sidecar);
+				}
+				if (generated) {
+					verifyGeneratedRule(container, content, suite, progress);
+					checkCanceled(progress);
 				}
 				// A separate child monitor keeps resource-internal progress from completing
 				// this transaction's first step before create() has returned successfully.
@@ -66,6 +77,28 @@ final class HintFileCreation {
 				progress.done();
 			}
 		}, container, IWorkspace.AVOID_UPDATE, monitor);
+	}
+
+	private static void verifyGeneratedRule(IContainer container, String content, RuleExampleSuite suite,
+			IProgressMonitor monitor) throws CoreException {
+		if (suite == null) {
+			throw new CoreException(Status.error(
+					"Add a positive example and a counterexample under Examples before saving this generated rule.")); //$NON-NLS-1$
+		}
+		var project = JavaCore.create(container.getProject());
+		if (project == null || !project.exists() || !project.getProject().isAccessible()) {
+			throw new CoreException(Status.error("Select an accessible Java project to verify this generated rule.")); //$NON-NLS-1$
+		}
+		var report = ProjectRuleExamples.withVerifier(project, monitor, verifier -> verifier.verify(content, suite));
+		if (!report.passed()) {
+			String reason = report.diagnostic();
+			if (reason.isEmpty()) {
+				var failure = report.results().stream()
+						.filter(result -> result.outcome() != RuleExampleVerifier.Outcome.PASS).findFirst().orElseThrow();
+				reason = failure.name() + ": " + failure.message(); //$NON-NLS-1$
+			}
+			throw new CoreException(Status.error("Generated rule verification failed: " + reason)); //$NON-NLS-1$
+		}
 	}
 
 	private static ByteArrayInputStream bytes(String contents) {

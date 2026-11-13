@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
@@ -34,7 +35,7 @@ class RuleExamplesProjectTest {
 		ICompilationUnit unit = createUnit();
 		var project = context.getJavaProject();
 		String relative = unit.getResource().getProjectRelativePath().toPortableString();
-		var ast = RuleExamplesDialog.parseSource(project, project.getOptions(true), relative,
+		var ast = ProjectRuleExamples.parseSource(project, project.getOptions(true), relative,
 				unit.getSource(), new NullProgressMonitor());
 		assertTrue(ast.getAST().hasResolvedBindings());
 		assertFalse(Arrays.stream(ast.getProblems()).anyMatch(problem -> problem.isError()),
@@ -55,10 +56,36 @@ class RuleExamplesProjectTest {
 				new Example("Positive", relative, before, before.replace("1 + 2", "3"), true),
 				new Example("Counterexample", relative, negative, negative, false)));
 		Map<String, String> options = project.getOptions(true);
-		var verifier = new RuleExampleVerifier(options, (name, source) -> RuleExamplesDialog.parseSource(
+		var verifier = new RuleExampleVerifier(options, (name, source) -> ProjectRuleExamples.parseSource(
 				project, options, name, source, new NullProgressMonitor()));
 		var report = verifier.verify("<!binding-policy: required>\n1 + 2\n=> 3\n;;\n", suite);
 		assertTrue(report.passed(), report.toString());
+		assertEquals(before, unit.getSource());
+	}
+
+	@Test
+	void generatedRuleMustPassCurrentExamplesBeforeEitherFileIsWritten() throws Exception {
+		ICompilationUnit unit = createUnit();
+		var destination = context.getJavaProject().getProject();
+		String path = unit.getResource().getProjectRelativePath().toPortableString();
+		String before = unit.getSource();
+		String unchanged = before.replace("1 + 2", "4");
+		Example positive = new Example("Positive", path, before, before.replace("1 + 2", "3"), true);
+		var positives = new RuleExampleSuite(RuleExampleSuite.CURRENT_VERSION, List.of(positive));
+		var both = new RuleExampleSuite(RuleExampleSuite.CURRENT_VERSION, List.of(positive,
+				new Example("Counterexample", path, unchanged, unchanged, false)));
+		String rule = "<!binding-policy: required>\n1 + 2\n=> 3\n;;\n";
+		String file = "generated.sandbox-hint";
+		var monitor = new NullProgressMonitor();
+		assertThrows(CoreException.class, () -> HintFileCreation.create(destination, file, rule, null, true, monitor));
+		assertThrows(CoreException.class, () -> HintFileCreation.create(destination, file, rule, positives, true, monitor));
+		assertThrows(CoreException.class, () -> HintFileCreation.create(destination, file,
+				rule.replace("=> 3", "=> 5"), both, true, monitor));
+		assertFalse(destination.getFile(file).exists());
+		assertFalse(destination.getFile(file + ".examples.json").exists());
+		HintFileCreation.create(destination, file, rule, both, true, monitor);
+		assertTrue(destination.getFile(file).exists());
+		assertTrue(destination.getFile(file + ".examples.json").exists());
 		assertEquals(before, unit.getSource());
 	}
 
@@ -67,7 +94,7 @@ class RuleExamplesProjectTest {
 		var project = context.getJavaProject();
 		for (String invalid : List.of("/Other/src/Sample.java", "../Sample.java", "src/../Sample.java",
 				"src//Sample.java", "src/./Sample.java", "src\\Sample.java", "C:/Sample.java")) {
-			assertThrows(IllegalArgumentException.class, () -> RuleExamplesDialog.parseSource(project,
+			assertThrows(IllegalArgumentException.class, () -> ProjectRuleExamples.parseSource(project,
 					project.getOptions(true), invalid, "class Sample {}", new NullProgressMonitor()), invalid);
 		}
 	}

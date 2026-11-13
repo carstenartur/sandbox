@@ -24,6 +24,7 @@ A missing binding, binary-only participant, stale plan, incomplete project scope
 | JUnit 4 lifecycle annotations | Supported | local cleanup / declarative rewrite | mixed or custom lifecycle semantics may require coordinated planning |
 | JUnit 4 assertions and assumptions | Supported for classified overloads | local cleanup | message/delta overloads require resolved method/type semantics |
 | closed direct assertion/assumption helper | Supported for private and package-private static wrappers | helper declaration plus workspace-wide source caller closure, then ordinary assertion/assumption rewrite | exactly one direct JUnit 4 `Assert`/`Assume` invocation; public/protected, overridable package-instance and compound/recursive wrappers remain outside this slice |
+| static forwarding helpers for boolean assertions | Supported in strict assertion-only cleanup with Jupiter available | follow a selected call or method reference through resolved static declarations and search for callers of every method on the path | each private or package-private forwarder contains one call and terminates at a supported fully qualified boolean assertion |
 | `@Test(expected=...)` | Supported | imperative body rewrite | wraps the proven method body in `assertThrows` |
 | `@Test(timeout=...)` and supported timeout rules | Supported | local structured rewrite | custom timeout wrappers remain unsupported |
 | `TemporaryFolder`, `TestName`, supported `ExternalResource` rules | Supported | local or coordinated rule migration | external/binary resource classes and mixed rule scopes fail closed |
@@ -36,6 +37,7 @@ A missing binding, binary-only participant, stale plan, incomplete project scope
 | Parameterized constructor/field injection | Supported for proven closed-source plans | ordered semantic relations plus coordinated `ParameterizedClass` execution | stable binding keys, contiguous field indices and proven argument types; unsupported hooks fail closed |
 | JUnit 3 custom harness | Not generally supported | dedicated framework migration required | must not be flattened into annotations |
 | public/shared helper API or recursive helper chain | Not yet supported | later #1367 Phase-4 slices | requires stronger dispatch/API/signature proof and complete caller/callee closure |
+| project-wide Platform Suite dependency addition | Supported in the headless project-wide check/apply path | a newly imported or fully qualified Platform `@Suite` adds its API package to the PDE manifest, or the `junit-platform-suite` test dependency to a supported standalone Maven module | Maven requires a standard test source path, direct dependencies and an imported JUnit 5.8+ or 6 release BOM for new coordinates. Existing JUnit 4/Vintage dependencies are retained. |
 | automatic JUnit 4/Vintage dependency removal | Not yet supported | planned resource-change phase | allowed only after all source and generated consumers are classified |
 
 ## Stable rejection categories
@@ -51,7 +53,7 @@ The migration reports actionable reason codes rather than applying a partial rew
 - stale semantic plan or missing planned target;
 - missing required semantic binding.
 
-For closed helper discovery, a helper is deliberately not promoted to a coordinated migration seed when it is public/protected, dynamically dispatchable through a package-private instance method, or contains behavior beyond one direct JUnit 4 assertion/assumption call. Once a helper is accepted, the existing workspace-wide related-source search is authoritative for its caller closure: inaccurate, binary, generated, excluded-root or otherwise non-editable references make the closure incomplete rather than permitting a partial migration.
+For closed helper discovery, a helper is deliberately not promoted to a coordinated migration seed when it is public/protected, dynamically dispatchable through a package-private instance method, or contains multiple statements. An eligible static forwarder contains one call to the next eligible helper. Once a helper is accepted, the existing workspace-wide related-source search is authoritative for its caller closure: inaccurate, binary, generated, excluded-root or otherwise non-editable references make the closure incomplete rather than permitting a partial migration.
 
 ## Documentation rule
 
@@ -77,8 +79,14 @@ The implementation re-establishes the closed editable scope, compares source fin
 
 `JUnitScopeExpansionTest` covers caller-only selection through a binding-resolved method reference to a static assertion helper in an assertion-only cleanup profile with Jupiter Assertions available. The reference-only path accepts fully qualified `Assert.assertTrue` and `Assert.assertFalse` calls using primitive boolean and string parameters or literals in direct wrappers. Scope expansion adds the helper and its other source callers after the existing workspace search proves same-project closure and each newly admitted source unit passes the assertion checks. The tests cover assertion rewriting, compilation, undo and refusal when a helper or an additional caller contains an assertion whose argument evaluation could change.
 
-The detector does not invent a second call-graph implementation. Accepted helper methods are passed to the shared `RelatedCompilationUnitSearch`, which performs the workspace-wide source reference closure used by other coordinated cleanups. The ordinary `AssertJUnitPlugin` / `AssumeJUnitPlugin` then owns the actual JUnit invocation and import rewrite once the helper compilation unit is part of the closed cleanup scope.
+The same test class covers selection through several static forwarders, including a private intermediate method and another caller of the terminal assertion wrapper. Both selected calls and method references exercise the compile-and-undo lifecycle. Cycles, unresolved calls, public overloads, and unsafe additional callers leave this scope unexpanded.
+
+Accepted helper methods are passed to the shared `RelatedCompilationUnitSearch`, which performs the workspace-wide source reference closure used by other coordinated cleanups. The ordinary `AssertJUnitPlugin` / `AssumeJUnitPlugin` then owns the actual JUnit invocation and import rewrite once the helper compilation unit is part of the closed cleanup scope.
+
+## Platform Suite resources
+
+`CleanupPatchLifecycleTest` applies the same Java suite migration to a PDE bundle and a standalone Maven test project. Check mode previews both files and restores their bytes. Apply produces the same patch. If a Maven version cannot be derived from the supported BOM, the application rolls back the Java change and reports the reason. `PlatformSuiteDependenciesTest` covers idempotency, CRLF preservation, attributed or inherited Maven model boundaries and annotation detection.
 
 ## Roadmap
 
-The detailed implementation roadmap is tracked in #1367. Remaining Phase-4 work includes recursive/shared helper chains and API/signature-sensitive wrappers; Phase 5 owns atomic dependency/resource changes. Existing coordinated migration work remains connected to #1217 and #1334.
+The detailed implementation roadmap is tracked in #1367. Remaining Phase-4 work includes cyclic or compound helper chains, assumption forwarders and API/signature-sensitive wrappers; Phase 5 owns atomic dependency/resource changes. Existing coordinated migration work remains connected to #1217 and #1334.

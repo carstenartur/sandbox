@@ -200,10 +200,11 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 		String fileName = filePage.getFileName();
 		String fullContent = getFullDslDocument();
 		RuleExampleSuite examples = rulePage.getExamples();
+		boolean generated = rulePage.isGeneratedRule();
 
 		try {
 			getContainer().run(true, true,
-					monitor -> createFile(containerPath, fileName, fullContent, examples, monitor));
+					monitor -> createFile(containerPath, fileName, fullContent, examples, generated, monitor));
 		} catch (InvocationTargetException e) {
 			if (e.getCause() instanceof OperationCanceledException) {
 				return false;
@@ -268,7 +269,7 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 	}
 
 	private void createFile(String containerPath, String fileName, String content,
-			RuleExampleSuite examples, IProgressMonitor monitor) throws InvocationTargetException {
+			RuleExampleSuite examples, boolean generated, IProgressMonitor monitor) throws InvocationTargetException {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IResource resource = root.findMember(new Path(containerPath));
 		if (!(resource instanceof IContainer container) || !resource.exists()) {
@@ -277,7 +278,7 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 							"Container \"" + containerPath + "\" does not exist."))); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		try {
-			HintFileCreation.create(container, fileName, content, examples, monitor);
+			HintFileCreation.create(container, fileName, content, examples, generated, monitor);
 		} catch (CoreException e) {
 			throw new InvocationTargetException(e);
 		}

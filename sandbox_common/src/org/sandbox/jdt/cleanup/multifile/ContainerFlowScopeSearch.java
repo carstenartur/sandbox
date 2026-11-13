@@ -337,6 +337,9 @@ public final class ContainerFlowScopeSearch {
 		}
 
 		try {
+			if (method.isConstructor()) {
+				return methodFamily(methodsByHandle, reasons);
+			}
 			ITypeHierarchy hierarchy= declaringType.newTypeHierarchy(monitor);
 			for (IType type : hierarchy.getAllTypes()) {
 				checkCanceled(monitor);
