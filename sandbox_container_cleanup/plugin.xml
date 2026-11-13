@@ -15,5 +15,7 @@
 		<cleanUp
 				class="org.sandbox.jdt.container.cleanup.internal.ui.fix.CoordinatedContainerCleanUp"
 				id="org.sandbox.jdt.ui.cleanup.container_contracts.closed_source_parameter_migration"/>
+		<cleanUp class="org.sandbox.jdt.container.cleanup.internal.ui.fix.ConcurrentMembershipCleanUp"
+				id="org.sandbox.jdt.ui.cleanup.container_contracts.concurrent_membership"/>
 	</extension>
 </plugin>

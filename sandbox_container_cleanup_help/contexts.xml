@@ -19,4 +19,8 @@
 		<description>This project-wide rule requires coordinated multi-file preview.</description>
 		<topic href="html/cleanup.html#project-closed" label="Project-closed migration"/>
 	</context>
+	<context id="concurrent_membership" title="Concurrent membership set">
+		<description>Migrate a private synchronized HashSet with a proven membership-only protocol.</description>
+		<topic href="html/cleanup.html#membership" label="Concurrent membership set"/>
+	</context>
 </contexts>
