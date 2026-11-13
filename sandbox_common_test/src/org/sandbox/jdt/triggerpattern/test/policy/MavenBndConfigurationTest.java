@@ -3,7 +3,6 @@ package org.sandbox.jdt.triggerpattern.test.policy;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
@@ -51,7 +50,8 @@ class MavenBndConfigurationTest {
             instructions.load(reader);
         }
         assertEquals(symbolicName, instructions.getProperty("Bundle-SymbolicName"));
-        assertNotNull(instructions.getProperty("Bundle-Version"), "Retain bundle version instructions");
+        assertEquals("${version_cleanup;${project.version}}", instructions.getProperty("Bundle-Version"),
+                "Maven releases must not reuse a p2 bundle version for different artifacts");
         assertFalse(instructions.getProperty("Export-Package", "").isBlank(), "Retain the public packages");
         assertEquals("${project.build.outputDirectory}/META-INF/MANIFEST.MF", xpath.evaluate(
                 "/project/build/plugins/plugin[artifactId='maven-jar-plugin']/configuration/archive/manifestFile", pom));
