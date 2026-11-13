@@ -910,6 +910,16 @@ public class SetupProbe implements IApplication {
                         "Server runtime leaked into " + name + " classpath: " + entry.getPath());
             }
         }
+        var cleanupApplication = JavaCore.create(workspace.getRoot().getProject("sandbox_cleanup_application"));
+        require(cleanupApplication.findType("org.sandbox.jdt.triggerpattern.git.UnifiedDiffFormatter") != null,
+                "Cleanup application cannot resolve Sandbox Common Core");
+        require(cleanupApplication.findType("org.eclipse.jdt.core.IJavaProject") != null,
+                "Cleanup application cannot resolve JDT Core from the Eclipse target");
+        for (var entry : cleanupApplication.getResolvedClasspath(true)) {
+            String jar = entry.getPath().lastSegment();
+            require(jar == null || !(jar.startsWith("org.eclipse.jdt.core-") || jar.startsWith("org.eclipse.jgit-")),
+                    "Maven copies of Eclipse bundles leaked into the cleanup application: " + entry.getPath());
+        }
         // A fragment compiles against a workspace host project, while binary
         // Tycho tests use the host bundle's classpath. Check the IDE model too.
         var mathHost = JavaCore.create(workspace.getRoot().getProject("sandbox_math_cleanup"));

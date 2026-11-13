@@ -98,9 +98,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
-				<!-- Use 3.3.0: versions 3.4.0+ use maven-archiver with session-scoped injection
-				     that conflicts with Tycho extensions in M2E, causing
-				     "Cannot access session scope outside of a scoping block" -->
 				<version>${maven-jar-plugin.version}</version>
 				<configuration>
 					<archive>
