@@ -95,12 +95,67 @@ class LocalArrayUsageAnalyzerTest {
 	}
 
 	@Test
-	void rejectsReturnEscape() {
+	void recognizesFinalPublicationOfFreshExactArray() {
 		ContainerUsageProfile profile= analyze("""
 			import java.util.Arrays;
 			class Sample {
 				String[] collect(String value) {
 					String[] values = new String[0];
+					values = Arrays.copyOf(values, values.length + 1);
+					values[values.length - 1] = value;
+					return values;
+				}
+			}
+			""");
+
+		assertEquals(AnalysisCompleteness.LOCAL_USAGE_COMPLETE, profile.completeness());
+		assertEquals(OrderRequirement.ENCOUNTER, profile.orderRequirement());
+		assertTrue(hasEvidence(profile, Kind.ARRAY_RETURN_PUBLICATION));
+	}
+
+	@Test
+	void rejectsPublicationWhenAnAppendFailureCanExposeTheEmptyTail() {
+		ContainerUsageProfile profile= analyze("""
+			import java.util.Arrays;
+			class Sample {
+				String[] collect(String[] input) {
+					String[] values = new String[0];
+					try {
+						values = Arrays.copyOf(values, values.length + 1);
+						values[values.length - 1] = input[0];
+					} catch (RuntimeException ignored) {}
+					return values;
+				}
+			}
+			""");
+
+		assertEquals(AnalysisCompleteness.REJECTED, profile.completeness());
+	}
+
+	@Test
+	void rejectsPublicationWhenTheNewElementObservesTheGrownArray() {
+		ContainerUsageProfile profile= analyze("""
+			import java.util.Arrays;
+			class Sample {
+				String[] collect() {
+					String[] values = new String[0];
+					values = Arrays.copyOf(values, values.length + 1);
+					values[values.length - 1] = Integer.toString(values.length);
+					return values;
+				}
+			}
+			""");
+
+		assertEquals(AnalysisCompleteness.REJECTED, profile.completeness());
+	}
+
+	@Test
+	void rejectsCovariantArrayPublication() {
+		ContainerUsageProfile profile= analyze("""
+			import java.util.Arrays;
+			class Sample {
+				Object[] collect(Object value) {
+					Object[] values = new String[0];
 					values = Arrays.copyOf(values, values.length + 1);
 					values[values.length - 1] = value;
 					return values;

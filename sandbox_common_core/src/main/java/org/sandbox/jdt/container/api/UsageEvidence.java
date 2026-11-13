@@ -47,6 +47,7 @@ public record UsageEvidence(Kind kind, String summary, int sourceStart, int sour
 		REFERENCE_COMPONENT,
 		HASH_STABLE_COMPONENT,
 		ARRAY_LENGTH_READ,
+		ARRAY_RETURN_PUBLICATION,
 		INDEXED_READ,
 		INDEXED_WRITE,
 		ENCOUNTER_ITERATION,

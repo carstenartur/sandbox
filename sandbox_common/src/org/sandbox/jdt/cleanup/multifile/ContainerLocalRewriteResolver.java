@@ -48,6 +48,7 @@ import org.eclipse.jdt.core.dom.SuperFieldAccess;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 
+import org.sandbox.jdt.container.analysis.LocalArrayUsageAnalyzer;
 import org.sandbox.jdt.container.api.ContainerLocalRewritePlan;
 import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.EditKind;
 
@@ -109,8 +110,15 @@ final class ContainerLocalRewriteResolver {
 		Set<SourceRange> observedTransfers= new HashSet<>(expectedTransfers.size() * 2);
 		Set<Expression> lengthExpressions=
 				java.util.Collections.newSetFromMap(new IdentityHashMap<>());
+		Set<SourceRange> expectedPublications= plannedRanges(plan, EditKind.PUBLISH_RETURN_ARRAY);
+		SimpleName publication= null;
 		for (SimpleName reference : collected.references()) {
 			if (fragment.getName() == reference) {
+				continue;
+			}
+			if (expectedPublications.contains(new SourceRange(reference.getStartPosition(), reference.getLength()))
+					&& LocalArrayUsageAnalyzer.isFinalArrayPublication(reference)) {
+				publication= reference;
 				continue;
 			}
 			Assignment containingAssignment= containingAssignment(reference);
@@ -131,6 +139,12 @@ final class ContainerLocalRewriteResolver {
 			}
 			throw stale(unit, "unexpected use of local array binding at source offset " //$NON-NLS-1$
 					+ reference.getStartPosition());
+		}
+		if (editCount(plan, EditKind.PUBLISH_RETURN_ARRAY) != (publication == null ? 0 : 1)
+				|| publication != null && (editCount(plan, EditKind.VERIFY_ENCOUNTER_ITERATION) > 0
+						|| pairs.stream().anyMatch(pair ->
+								!LocalArrayUsageAnalyzer.isSimplePublishedAppend(pair.appendAssignment())))) {
+			throw stale(unit, "array publication boundary changed"); //$NON-NLS-1$
 		}
 		if (lengthExpressions.size() != editCount(plan, EditKind.REPLACE_LENGTH_WITH_SIZE)) {
 			throw stale(unit, "array length occurrence count changed"); //$NON-NLS-1$
@@ -155,7 +169,8 @@ final class ContainerLocalRewriteResolver {
 				arrayType,
 				initializer,
 				pairs,
-				lengths);
+				lengths,
+				publication);
 	}
 
 	private static CollectedAst collectAst(
@@ -270,7 +285,8 @@ final class ContainerLocalRewriteResolver {
 			ArrayType arrayType,
 			ArrayCreation initializer,
 			List<AppendPair> appendPairs,
-			List<ResolvedLength> lengths) {
+			List<ResolvedLength> lengths,
+			SimpleName publication) {
 
 		ResolvedPlan {
 			appendPairs= List.copyOf(appendPairs);

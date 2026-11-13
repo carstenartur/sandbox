@@ -146,6 +146,7 @@ public record ContainerLocalRewritePlan(
 		REMOVE_ARRAY_GROWTH,
 		REPLACE_TAIL_WRITE_WITH_ADD,
 		REPLACE_LENGTH_WITH_SIZE,
+		PUBLISH_RETURN_ARRAY,
 		/** Verifies an allowed encounter-order traversal requiring no source edit. */
 		VERIFY_ENCOUNTER_ITERATION,
 		/** Verifies an unchanged argument whose target signature migrates atomically. */
