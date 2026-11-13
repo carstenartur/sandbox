@@ -24,6 +24,7 @@ import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.ui.text.java.IJavaCompletionProposal;
 import org.eclipse.jdt.ui.text.java.correction.ASTRewriteCorrectionProposal;
 import org.eclipse.swt.graphics.Image;
+import org.sandbox.jdt.internal.corext.fix.StringSimplificationFixCore;
 import org.sandbox.jdt.triggerpattern.api.Hint;
 import org.sandbox.jdt.triggerpattern.eclipse.HintContext;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
@@ -457,7 +458,7 @@ public class StringSimplificationHintProvider {
 	/**
 	 * Suggests replacing {@code $list.size() == 0} with {@code $list.isEmpty()}.
 	 * 
-	 * <p>This pattern works for any Collection type (List, Set, Map, etc.)</p>
+	 * <p>This pattern works for Collection and Map types.</p>
 	 * <p>Example: {@code myList.size() == 0} becomes {@code myList.isEmpty()}</p>
 	 * 
 	 * @param ctx the hint context containing the match and AST information
@@ -469,7 +470,7 @@ public class StringSimplificationHintProvider {
 	public static IJavaCompletionProposal replaceCollectionSizeCheck(HintContext ctx) {
 		ASTNode matchedNode = ctx.getMatch().getMatchedNode();
 
-		if (!(matchedNode instanceof InfixExpression)) {
+		if (!StringSimplificationFixCore.isSafeCollectionSizeCheck(ctx.getMatch())) {
 			return null;
 		}
 
@@ -520,7 +521,7 @@ public class StringSimplificationHintProvider {
 	public static IJavaCompletionProposal replaceCollectionSizeGreaterThanZero(HintContext ctx) {
 		ASTNode matchedNode = ctx.getMatch().getMatchedNode();
 
-		if (!(matchedNode instanceof InfixExpression)) {
+		if (!StringSimplificationFixCore.isSafeCollectionSizeCheck(ctx.getMatch())) {
 			return null;
 		}
 
