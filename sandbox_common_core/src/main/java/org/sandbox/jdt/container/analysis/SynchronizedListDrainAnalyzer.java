@@ -10,9 +10,9 @@
  *******************************************************************************/
 package org.sandbox.jdt.container.analysis;
 
-import static org.sandbox.jdt.container.analysis.SynchronizedListIterationAnalyzer.currentInstanceField;
-import static org.sandbox.jdt.container.analysis.SynchronizedListIterationAnalyzer.isType;
-import static org.sandbox.jdt.container.analysis.SynchronizedListIterationAnalyzer.synchronizedListField;
+import static org.sandbox.jdt.container.analysis.SynchronizedListFieldFacts.currentInstanceField;
+import static org.sandbox.jdt.container.analysis.SynchronizedListFieldFacts.isType;
+import static org.sandbox.jdt.container.analysis.SynchronizedListFieldFacts.synchronizedListField;
 
 import java.util.ArrayList;
 import java.util.Arrays;
