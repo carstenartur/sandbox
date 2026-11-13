@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
@@ -46,7 +47,7 @@ class MavenBndConfigurationTest {
                 "The Maven manifest generation must not be removed");
         assertTrue(Files.isRegularFile(project.resolve(recipe)), "Configured recipe must exist");
         Properties instructions = new Properties();
-        try (var reader = Files.newBufferedReader(project.resolve(recipe))) {
+        try (var reader = Files.newBufferedReader(project.resolve(recipe), StandardCharsets.UTF_8)) {
             instructions.load(reader);
         }
         assertEquals(symbolicName, instructions.getProperty("Bundle-SymbolicName"));
