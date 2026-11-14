@@ -36,10 +36,13 @@ public class PinnedEncodingPreviewSWTBotTest {
             "core extension/org/eclipse/jdt/internal/corext/util/History.java", "StandardCharsets.UTF_8",
             "ui/org/eclipse/jdt/internal/ui/text/spelling/engine/AbstractSpellDictionary.java", "word.getBytes(UTF_8)");
 
+    @Test
+    public void preservesPlatformDefaultInPinnedFallback() throws Exception {
+        compareFallback(false);
+    }
 
     @Test
-    public void compareFallbackPolicies() throws Exception {
-        compareFallback(false);
+    public void setsUtf8InPinnedFallback() throws Exception {
         compareFallback(true);
     }
 
