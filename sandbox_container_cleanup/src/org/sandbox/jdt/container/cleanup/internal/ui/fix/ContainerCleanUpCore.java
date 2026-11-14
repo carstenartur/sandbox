@@ -13,6 +13,7 @@ package org.sandbox.jdt.container.cleanup.internal.ui.fix;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.APPEND_ARRAY_TO_LIST;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.CLEANUP;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.PARALLEL_ARRAYS_TO_RECORDS;
+import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.RECORD_KEY_MAP;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.UNIQUE_SEQUENCE_TO_SET;
 
 import java.util.ArrayList;
@@ -92,7 +93,7 @@ public final class ContainerCleanUpCore extends AbstractCleanUp {
 	public boolean requireAST() {
 		return isEnabled(CLEANUP)
 				&& (isEnabled(APPEND_ARRAY_TO_LIST)
-						|| isEnabled(UNIQUE_SEQUENCE_TO_SET) || isEnabled(PARALLEL_ARRAYS_TO_RECORDS));
+						|| isEnabled(UNIQUE_SEQUENCE_TO_SET) || isEnabled(PARALLEL_ARRAYS_TO_RECORDS) || isEnabled(RECORD_KEY_MAP));
 	}
 
 	@Override
@@ -149,7 +150,7 @@ public final class ContainerCleanUpCore extends AbstractCleanUp {
 		}
 
 		return ContainerCleanUpFix.create(
-				unit, root, arrayPlans.values(), uniquePlans.values(), isEnabled(PARALLEL_ARRAYS_TO_RECORDS));
+				unit, root, arrayPlans.values(), uniquePlans.values(), isEnabled(PARALLEL_ARRAYS_TO_RECORDS), isEnabled(RECORD_KEY_MAP));
 	}
 
 	@Override
@@ -168,6 +169,9 @@ public final class ContainerCleanUpCore extends AbstractCleanUp {
 		}
 		if (isEnabled(PARALLEL_ARRAYS_TO_RECORDS)) {
 			descriptions.add("Replace closed local parallel arrays with an ordered list of records (Java 16+)"); //$NON-NLS-1$
+		}
+		if (isEnabled(RECORD_KEY_MAP)) {
+			descriptions.add("Index a closed record sequence by its immutable String key"); //$NON-NLS-1$
 		}
 		return descriptions.toArray(String[]::new);
 	}
@@ -194,6 +198,9 @@ public final class ContainerCleanUpCore extends AbstractCleanUp {
 		}
 		if (isEnabled(CLEANUP) && isEnabled(PARALLEL_ARRAYS_TO_RECORDS)) {
 			preview.append("\nrecord Row(String labels, Integer values) {}\nList<Row> rows = new ArrayList<>();\n"); //$NON-NLS-1$
+		}
+		if (isEnabled(CLEANUP) && isEnabled(RECORD_KEY_MAP)) {
+			preview.append("\nMap<String, Entry> entries = new LinkedHashMap<>();\nentries.putIfAbsent(key, new Entry(key));\n"); //$NON-NLS-1$
 		}
 		return preview.toString();
 	}

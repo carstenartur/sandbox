@@ -40,6 +40,12 @@ public enum ContainerCleanUpRule {
 			ExecutionMode.LOCAL_SAFE,
 			true),
 
+	RECORD_KEY_MAP(
+			"cleanup.container_contracts.record_key_map", //$NON-NLS-1$
+			"sandbox_container_cleanup.record_key_map", //$NON-NLS-1$
+			ExecutionMode.LOCAL_SAFE,
+			true),
+
 	CONCURRENT_MEMBERSHIP(
 			"cleanup.container_contracts.concurrent_membership", //$NON-NLS-1$
 			"sandbox_container_cleanup.concurrent_membership", //$NON-NLS-1$

@@ -19,6 +19,7 @@ public final class ContainerCleanUpOptions {
 	public static final String UNIQUE_SEQUENCE_TO_SET=
 			ContainerCleanUpRule.UNIQUE_SEQUENCE_TO_ORDERED_SET.optionId();
 	public static final String PARALLEL_ARRAYS_TO_RECORDS= ContainerCleanUpRule.PARALLEL_ARRAYS_TO_RECORDS.optionId();
+	public static final String RECORD_KEY_MAP= ContainerCleanUpRule.RECORD_KEY_MAP.optionId();
 	public static final String CLOSED_SOURCE_PARAMETER_MIGRATION=
 			ContainerCleanUpRule.CLOSED_SOURCE_PARAMETER_MIGRATION.optionId();
 

@@ -46,11 +46,11 @@ public final class ContainerCleanUpFix {
 			Collection<ContainerLocalRewritePlan> arrayPlans,
 			Collection<UniqueSequenceLocalRewritePlan> uniqueSequencePlans)
 			throws CoreException {
-		return create(unit, root, arrayPlans, uniqueSequencePlans, false);
+		return create(unit, root, arrayPlans, uniqueSequencePlans, false, false);
 	}
 
 	public static ICleanUpFix create(ICompilationUnit unit, CompilationUnit root, Collection<ContainerLocalRewritePlan> arrayPlans,
-			Collection<UniqueSequenceLocalRewritePlan> uniqueSequencePlans, boolean includeRecords) throws CoreException {
+			Collection<UniqueSequenceLocalRewritePlan> uniqueSequencePlans, boolean includeRecords, boolean includeKeyMap) throws CoreException {
 		Objects.requireNonNull(unit, "unit"); //$NON-NLS-1$
 		Objects.requireNonNull(root, "root"); //$NON-NLS-1$
 		Objects.requireNonNull(arrayPlans, "arrayPlans"); //$NON-NLS-1$
@@ -66,6 +66,9 @@ public final class ContainerCleanUpFix {
 		}
 		if (includeRecords) {
 			operations.addAll(ParallelRecordRewrite.find(unit, root));
+		}
+		if (includeKeyMap) {
+			operations.addAll(RecordKeyMapRewrite.find(root));
 		}
 		if (operations.isEmpty()) {
 			return null;

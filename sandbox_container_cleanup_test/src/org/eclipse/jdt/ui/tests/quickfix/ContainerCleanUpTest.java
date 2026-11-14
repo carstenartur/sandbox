@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.APPEND_ARRAY_TO_LIST;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.CLEANUP;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.PARALLEL_ARRAYS_TO_RECORDS;
+import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.RECORD_KEY_MAP;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.UNIQUE_SEQUENCE_TO_SET;
 
 import java.net.URL;
@@ -270,6 +271,73 @@ class ContainerCleanUpTest {
 	}
 
 	@Test
+	void replacesAClosedRecordKeyIndexAndKeepsFirstMatchIdentity(@TempDir Path output) throws Exception {
+		String source= """
+				package test;
+				import java.util.ArrayList;
+				import java.util.List;
+				public final class Sample {
+				    record Entry(String key, int payload) {}
+				    private final List<Entry> entries = new ArrayList<>();
+				    Sample(boolean enabled) {
+				        if (enabled) {
+				            entries.add(new Entry("a", 1));
+				            entries.add(new Entry("b", 7));
+				            entries.add(new Entry("a", 9));
+				        }
+				    }
+				    Entry find(String requested) {
+				        for (Entry entry : entries) if (requested.equals(entry.key())) return entry;
+				        return null;
+				    }
+				    Entry again(String key) {
+				        for (Entry entry : this.entries) if (key.equals(entry.key())) return entry;
+				        return null;
+				    }
+				    public static int exercise() {
+				        Sample data = new Sample(true);
+				        if (data.find("a") != data.again("a") || data.again("missing") != null) return -1;
+				        if (new Sample(false).again(null) != null) return -2;
+				        try { data.find(null); return -3; } catch (NullPointerException expected) {}
+				        return data.find("a").payload() + data.find("b").payload();
+				    }
+				}
+				""";
+		var unit= createUnit(source);
+		var cleanup= new ContainerCleanUpCore(Map.of(CLEANUP, CleanUpOptions.TRUE,
+				RECORD_KEY_MAP, CleanUpOptions.TRUE));
+		var fix= cleanup.createFix(new CleanUpContext(unit, parse(unit)));
+		assertNotNull(fix);
+		var undo= fix.createChange(null).perform(null);
+		assertNotNull(undo);
+		String migrated= unit.getSource();
+		assertTrue(migrated.contains("Map<String, Entry> entries"), migrated); //$NON-NLS-1$
+		assertTrue(migrated.contains("entries.putIfAbsent("), migrated); //$NON-NLS-1$
+		assertTrue(migrated.contains("entries.get("), migrated); //$NON-NLS-1$
+		assertFalse(migrated.contains("for (Entry"), migrated); //$NON-NLS-1$
+		assertFalse(Arrays.stream(parse(unit).getProblems()).anyMatch(problem -> problem.isError()), migrated);
+		assertNull(cleanup.createFix(new CleanUpContext(unit, parse(unit))));
+		Path file= Files.writeString(output.resolve("Sample.java"), migrated); //$NON-NLS-1$
+		assertEquals(0, javax.tools.ToolProvider.getSystemJavaCompiler().run(null, null, null, "-d", output.toString(), file.toString())); //$NON-NLS-1$
+		try (var classes= new URLClassLoader(new URL[] { output.toUri().toURL() }, null)) {
+			assertEquals(8, classes.loadClass("test.Sample").getMethod("exercise").invoke(null)); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+		undo.perform(null);
+		assertEquals(source, unit.getSource());
+		for (String blocked : List.of(source.replace("if (enabled) {", "if (enabled) { entries.clear();"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("entries.add(new Entry(\"a\", 1));", "entries.add(null);"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("private final List", "final List"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("Sample(boolean enabled)", "{ publish(this); } static void publish(Sample s) {} Sample(boolean enabled)"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("if (requested.equals", "/* keep lookup reason */ if (requested.equals"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("int payload) {}", "int payload) { public String key() { return key.toUpperCase(); } }"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("return data.find(\"a\").payload()", "if (data.entries.size() == 99) return -5; return data.find(\"a\").payload()"))) { //$NON-NLS-1$ //$NON-NLS-2$
+			unit.getBuffer().setContents(blocked);
+			unit.save(null, true);
+			assertNull(cleanup.createFix(new CleanUpContext(unit, parse(unit))), blocked);
+		}
+	}
+
+	@Test
 	void disabledMasterProducesNoFix() throws CoreException {
 		ICompilationUnit unit= createUnit("""
 			package test;
@@ -313,7 +381,7 @@ class ContainerCleanUpTest {
 		assertEquals(
 				List.of(
 						ContainerCleanUpRule.APPEND_ARRAY_TO_LIST,
-						ContainerCleanUpRule.UNIQUE_SEQUENCE_TO_ORDERED_SET, ContainerCleanUpRule.PARALLEL_ARRAYS_TO_RECORDS),
+						ContainerCleanUpRule.UNIQUE_SEQUENCE_TO_ORDERED_SET, ContainerCleanUpRule.PARALLEL_ARRAYS_TO_RECORDS, ContainerCleanUpRule.RECORD_KEY_MAP),
 				ContainerCleanUpRule.localCleanUps());
 		assertTrue(Arrays.stream(ContainerCleanUpRule.values())
 				.allMatch(rule -> !rule.helpContextId().isBlank()));
