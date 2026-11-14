@@ -299,44 +299,55 @@ public class NewRuleWizardPage extends WizardPage {
 <span class="fc" id="L299">				projectPreviewAction.accept(getFullDslDocument());</span>
 			}
 <span class="fc" id="L301">		});</span>
-<span class="fc" id="L302">		Button examplesButton = new Button(documentActions, SWT.PUSH);</span>
-<span class="fc" id="L303">		examplesButton.setText(&quot;Examples...&quot;); //$NON-NLS-1$</span>
-<span class="pc" id="L304">		examplesButton.addListener(SWT.Selection, event -&gt; openExamples());</span>
-<span class="fc" id="L305">		Button copyButton = new Button(documentActions, SWT.PUSH);</span>
-<span class="fc" id="L306">		copyButton.setText(&quot;Copy complete rule&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L307">		copyButton.addListener(SWT.Selection, event -&gt; {</span>
-<span class="nc" id="L308">			applyPendingMetadata();</span>
-<span class="nc" id="L309">			Clipboard clipboard = new Clipboard(Display.getCurrent());</span>
-			try {
-<span class="nc" id="L311">				clipboard.setContents(new Object[] { getFullDslDocument() }, new org.eclipse.swt.dnd.Transfer[] { TextTransfer.getInstance() });</span>
-<span class="nc" id="L312">			} finally {</span>
-<span class="nc" id="L313">				clipboard.dispose();</span>
+<span class="fc" id="L302">		Button buildAction = new Button(documentActions, SWT.PUSH);</span>
+<span class="fc" id="L303">		buildAction.setText(&quot;Build action...&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L304">		buildAction.setToolTipText(&quot;Insert a structured action at the cursor or replace the selected text.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L305">		buildAction.addListener(SWT.Selection, event -&gt; {</span>
+<span class="fc" id="L306">			var dialog = new StructuredActionDialog(ruleViewer.getControl().getShell());</span>
+<span class="pc bpc" id="L307" title="1 of 2 branches missed.">			if (dialog.open() == Window.OK) {</span>
+<span class="fc" id="L308">				var editor = ruleViewer.getTextWidget();</span>
+<span class="fc" id="L309">				editor.insert(dialog.action());</span>
+<span class="fc" id="L310">				editor.setFocus();</span>
 			}
-<span class="nc" id="L315">		});</span>
+<span class="fc" id="L312">		});</span>
+<span class="fc" id="L313">		Button examplesButton = new Button(documentActions, SWT.PUSH);</span>
+<span class="fc" id="L314">		examplesButton.setText(&quot;Examples...&quot;); //$NON-NLS-1$</span>
+<span class="pc" id="L315">		examplesButton.addListener(SWT.Selection, event -&gt; openExamples());</span>
+<span class="fc" id="L316">		Button copyButton = new Button(documentActions, SWT.PUSH);</span>
+<span class="fc" id="L317">		copyButton.setText(&quot;Copy complete rule&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L318">		copyButton.addListener(SWT.Selection, event -&gt; {</span>
+<span class="nc" id="L319">			applyPendingMetadata();</span>
+<span class="nc" id="L320">			Clipboard clipboard = new Clipboard(Display.getCurrent());</span>
+			try {
+<span class="nc" id="L322">				clipboard.setContents(new Object[] { getFullDslDocument() }, new org.eclipse.swt.dnd.Transfer[] { TextTransfer.getInstance() });</span>
+<span class="nc" id="L323">			} finally {</span>
+<span class="nc" id="L324">				clipboard.dispose();</span>
+			}
+<span class="nc" id="L326">		});</span>
 
 		// --- Validation label ---
-<span class="fc" id="L318">		validationLabel = new Label(container, SWT.NONE);</span>
-<span class="fc" id="L319">		GridData valData = new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1);</span>
-<span class="fc" id="L320">		validationLabel.setLayoutData(valData);</span>
+<span class="fc" id="L329">		validationLabel = new Label(container, SWT.NONE);</span>
+<span class="fc" id="L330">		GridData valData = new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1);</span>
+<span class="fc" id="L331">		validationLabel.setLayoutData(valData);</span>
 
 		// Pre-fill from code selection if available
-<span class="fc bfc" id="L323" title="All 2 branches covered.">		if (initialSourcePattern != null) {</span>
-<span class="fc" id="L324">			sourcePatternText.setText(initialSourcePattern);</span>
-<span class="fc" id="L325">			replacementText.setText(initialReplacement);</span>
+<span class="fc bfc" id="L334" title="All 2 branches covered.">		if (initialSourcePattern != null) {</span>
+<span class="fc" id="L335">			sourcePatternText.setText(initialSourcePattern);</span>
+<span class="fc" id="L336">			replacementText.setText(initialReplacement);</span>
 		}
-<span class="fc bfc" id="L327" title="All 2 branches covered.">		if (initialDsl != null) {</span>
-<span class="fc" id="L328">			importRule(initialDsl);</span>
+<span class="fc bfc" id="L338" title="All 2 branches covered.">		if (initialDsl != null) {</span>
+<span class="fc" id="L339">			importRule(initialDsl);</span>
 		}
 
-<span class="fc" id="L331">		setControl(container);</span>
-<span class="fc" id="L332">		validateDocument();</span>
+<span class="fc" id="L342">		setControl(container);</span>
+<span class="fc" id="L343">		validateDocument();</span>
 
 		// Auto-trigger AI inference after the page is fully rendered
-<span class="pc bpc" id="L335" title="3 of 4 branches missed.">		if (autoTriggerAi &amp;&amp; EclipseLlmService.getInstance().isAvailable()</span>
-<span class="nc bnc" id="L336" title="All 2 branches missed.">				&amp;&amp; generateAiButton != null) {</span>
-<span class="nc" id="L337">			Display.getCurrent().asyncExec(this::runAiInference);</span>
+<span class="pc bpc" id="L346" title="3 of 4 branches missed.">		if (autoTriggerAi &amp;&amp; EclipseLlmService.getInstance().isAvailable()</span>
+<span class="nc bnc" id="L347" title="All 2 branches missed.">				&amp;&amp; generateAiButton != null) {</span>
+<span class="nc" id="L348">			Display.getCurrent().asyncExec(this::runAiInference);</span>
 		}
-<span class="fc" id="L339">	}</span>
+<span class="fc" id="L350">	}</span>
 
 	/**
 	 * Creates the AI / manual-assist section. Shows different UI depending on
@@ -344,307 +355,307 @@ public class NewRuleWizardPage extends WizardPage {
 	 */
 	private void createAiSection(Composite parent) {
 		// Span 2 columns for the AI/manual section
-<span class="fc" id="L347">		Composite aiComposite = new Composite(parent, SWT.NONE);</span>
-<span class="fc" id="L348">		aiComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));</span>
-<span class="fc" id="L349">		aiComposite.setLayout(new GridLayout(3, false));</span>
+<span class="fc" id="L358">		Composite aiComposite = new Composite(parent, SWT.NONE);</span>
+<span class="fc" id="L359">		aiComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));</span>
+<span class="fc" id="L360">		aiComposite.setLayout(new GridLayout(3, false));</span>
 
-<span class="fc" id="L351">		boolean aiAvailable = EclipseLlmService.getInstance().isAvailable();</span>
+<span class="fc" id="L362">		boolean aiAvailable = EclipseLlmService.getInstance().isAvailable();</span>
 
-<span class="pc bpc" id="L353" title="1 of 2 branches missed.">		if (aiAvailable) {</span>
+<span class="pc bpc" id="L364" title="1 of 2 branches missed.">		if (aiAvailable) {</span>
 			// === AI available: Generate button + provider info ===
-<span class="nc" id="L355">			generateAiButton = new Button(aiComposite, SWT.PUSH);</span>
-<span class="nc" id="L356">			generateAiButton.setText(&quot;\u2728 Generate with AI&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L357">			generateAiButton.addSelectionListener(new SelectionAdapter() {</span>
+<span class="nc" id="L366">			generateAiButton = new Button(aiComposite, SWT.PUSH);</span>
+<span class="nc" id="L367">			generateAiButton.setText(&quot;\u2728 Generate with AI&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L368">			generateAiButton.addSelectionListener(new SelectionAdapter() {</span>
 				@Override
 				public void widgetSelected(SelectionEvent e) {
-<span class="nc" id="L360">					runAiInference();</span>
-<span class="nc" id="L361">				}</span>
+<span class="nc" id="L371">					runAiInference();</span>
+<span class="nc" id="L372">				}</span>
 			});
 
-<span class="nc" id="L364">			Label providerInfo = new Label(aiComposite, SWT.NONE);</span>
-<span class="nc" id="L365">			providerInfo.setText(getConfiguredProviderLabel());</span>
-<span class="nc" id="L366">			providerInfo.setForeground(parent.getDisplay().getSystemColor(SWT.COLOR_DARK_GRAY));</span>
+<span class="nc" id="L375">			Label providerInfo = new Label(aiComposite, SWT.NONE);</span>
+<span class="nc" id="L376">			providerInfo.setText(getConfiguredProviderLabel());</span>
+<span class="nc" id="L377">			providerInfo.setForeground(parent.getDisplay().getSystemColor(SWT.COLOR_DARK_GRAY));</span>
 
-<span class="nc" id="L368">			Button pasteButton = new Button(aiComposite, SWT.PUSH);</span>
-<span class="nc" id="L369">			pasteButton.setText(&quot;\u2398 Paste rule from clipboard&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L370">			pasteButton.addSelectionListener(new SelectionAdapter() {</span>
+<span class="nc" id="L379">			Button pasteButton = new Button(aiComposite, SWT.PUSH);</span>
+<span class="nc" id="L380">			pasteButton.setText(&quot;\u2398 Paste rule from clipboard&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L381">			pasteButton.addSelectionListener(new SelectionAdapter() {</span>
 				@Override
 				public void widgetSelected(SelectionEvent e) {
-<span class="nc" id="L373">					pasteRuleFromClipboard();</span>
-<span class="nc" id="L374">				}</span>
+<span class="nc" id="L384">					pasteRuleFromClipboard();</span>
+<span class="nc" id="L385">				}</span>
 			});
-<span class="nc" id="L376">		} else {</span>
+<span class="nc" id="L387">		} else {</span>
 			// === AI NOT available: helpful guidance ===
-<span class="fc" id="L378">			Label infoIcon = new Label(aiComposite, SWT.NONE);</span>
-<span class="fc" id="L379">			infoIcon.setText(&quot;\uD83D\uDCA1&quot;); // 💡</span>
+<span class="fc" id="L389">			Label infoIcon = new Label(aiComposite, SWT.NONE);</span>
+<span class="fc" id="L390">			infoIcon.setText(&quot;\uD83D\uDCA1&quot;); // 💡</span>
 
-<span class="fc" id="L381">			Label infoLabel = new Label(aiComposite, SWT.WRAP);</span>
-<span class="fc" id="L382">			infoLabel.setText(&quot;AI generation not configured. &quot; //$NON-NLS-1$</span>
+<span class="fc" id="L392">			Label infoLabel = new Label(aiComposite, SWT.WRAP);</span>
+<span class="fc" id="L393">			infoLabel.setText(&quot;AI generation not configured. &quot; //$NON-NLS-1$</span>
 					+ &quot;You can create rules manually below, &quot; //$NON-NLS-1$
 					+ &quot;use a template from page 1, or paste an existing rule.&quot;); //$NON-NLS-1$
-<span class="fc" id="L385">			infoLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));</span>
+<span class="fc" id="L396">			infoLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));</span>
 
-<span class="fc" id="L387">			Composite buttonBar = new Composite(aiComposite, SWT.NONE);</span>
-<span class="fc" id="L388">			buttonBar.setLayout(new RowLayout(SWT.HORIZONTAL));</span>
+<span class="fc" id="L398">			Composite buttonBar = new Composite(aiComposite, SWT.NONE);</span>
+<span class="fc" id="L399">			buttonBar.setLayout(new RowLayout(SWT.HORIZONTAL));</span>
 
-<span class="fc" id="L390">			Button configureButton = new Button(buttonBar, SWT.PUSH);</span>
-<span class="fc" id="L391">			configureButton.setText(&quot;\u2699 Configure LLM...&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L392">			configureButton.addSelectionListener(new SelectionAdapter() {</span>
+<span class="fc" id="L401">			Button configureButton = new Button(buttonBar, SWT.PUSH);</span>
+<span class="fc" id="L402">			configureButton.setText(&quot;\u2699 Configure LLM...&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L403">			configureButton.addSelectionListener(new SelectionAdapter() {</span>
 				@Override
 				public void widgetSelected(SelectionEvent e) {
-<span class="nc" id="L395">					openLlmPreferences();</span>
-<span class="nc" id="L396">				}</span>
+<span class="nc" id="L406">					openLlmPreferences();</span>
+<span class="nc" id="L407">				}</span>
 			});
 
-<span class="fc" id="L399">			Button pasteButton = new Button(buttonBar, SWT.PUSH);</span>
-<span class="fc" id="L400">			pasteButton.setText(&quot;\u2398 Paste rule from clipboard&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L401">			pasteButton.addSelectionListener(new SelectionAdapter() {</span>
+<span class="fc" id="L410">			Button pasteButton = new Button(buttonBar, SWT.PUSH);</span>
+<span class="fc" id="L411">			pasteButton.setText(&quot;\u2398 Paste rule from clipboard&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L412">			pasteButton.addSelectionListener(new SelectionAdapter() {</span>
 				@Override
 				public void widgetSelected(SelectionEvent e) {
-<span class="nc" id="L404">					pasteRuleFromClipboard();</span>
-<span class="nc" id="L405">				}</span>
+<span class="nc" id="L415">					pasteRuleFromClipboard();</span>
+<span class="nc" id="L416">				}</span>
 			});
 		}
-<span class="fc" id="L408">	}</span>
+<span class="fc" id="L419">	}</span>
 
 	/**
 	 * Runs AI inference in a background job to avoid blocking the UI thread.
 	 */
 	private void runAiInference() {
-<span class="nc" id="L414">		String code = sourcePatternText.getText();</span>
-<span class="nc" id="L415">		String replacement = replacementText.getText();</span>
-<span class="nc bnc" id="L416" title="All 2 branches missed.">		if (code.isEmpty()) {</span>
-<span class="nc" id="L417">			return;</span>
+<span class="nc" id="L425">		String code = sourcePatternText.getText();</span>
+<span class="nc" id="L426">		String replacement = replacementText.getText();</span>
+<span class="nc bnc" id="L427" title="All 2 branches missed.">		if (code.isEmpty()) {</span>
+<span class="nc" id="L428">			return;</span>
 		}
 
-<span class="nc" id="L420">		generateAiButton.setEnabled(false);</span>
-<span class="nc" id="L421">		validationLabel.setText(&quot;\u23F3 Generating rule with AI...&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L431">		generateAiButton.setEnabled(false);</span>
+<span class="nc" id="L432">		validationLabel.setText(&quot;\u23F3 Generating rule with AI...&quot;); //$NON-NLS-1$</span>
 
-<span class="nc" id="L423">		Job job = new Job(&quot;Generating DSL rule with AI&quot;) { //$NON-NLS-1$</span>
+<span class="nc" id="L434">		Job job = new Job(&quot;Generating DSL rule with AI&quot;) { //$NON-NLS-1$</span>
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
-<span class="nc" id="L426">				AiRuleInferenceEngine engine = EclipseLlmService.getInstance().getEngine();</span>
-<span class="nc" id="L427">				String pseudoDiff = buildPseudoDiff(code, replacement);</span>
-<span class="nc" id="L428">				Optional&lt;CommitEvaluation&gt; result = engine.inferRuleFromDiff(pseudoDiff);</span>
+<span class="nc" id="L437">				AiRuleInferenceEngine engine = EclipseLlmService.getInstance().getEngine();</span>
+<span class="nc" id="L438">				String pseudoDiff = buildPseudoDiff(code, replacement);</span>
+<span class="nc" id="L439">				Optional&lt;CommitEvaluation&gt; result = engine.inferRuleFromDiff(pseudoDiff);</span>
 
-<span class="nc" id="L430">				Display.getDefault().asyncExec(() -&gt; {</span>
-<span class="nc bnc" id="L431" title="All 2 branches missed.">					if (generateAiButton.isDisposed()) {</span>
-<span class="nc" id="L432">						return;</span>
+<span class="nc" id="L441">				Display.getDefault().asyncExec(() -&gt; {</span>
+<span class="nc bnc" id="L442" title="All 2 branches missed.">					if (generateAiButton.isDisposed()) {</span>
+<span class="nc" id="L443">						return;</span>
 					}
-<span class="nc" id="L434">					generateAiButton.setEnabled(true);</span>
-<span class="nc bnc" id="L435" title="All 4 branches missed.">					if (result.isPresent() &amp;&amp; result.get().dslRule() != null</span>
-<span class="nc bnc" id="L436" title="All 2 branches missed.">							&amp;&amp; !result.get().dslRule().isBlank()) {</span>
-<span class="nc" id="L437">						acceptGeneratedRule(result.get().dslRule());</span>
-<span class="nc" id="L438">					} else {</span>
-<span class="nc" id="L439">						validationLabel.setText(&quot;\u26A0 AI could not generate a rule&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L445">					generateAiButton.setEnabled(true);</span>
+<span class="nc bnc" id="L446" title="All 4 branches missed.">					if (result.isPresent() &amp;&amp; result.get().dslRule() != null</span>
+<span class="nc bnc" id="L447" title="All 2 branches missed.">							&amp;&amp; !result.get().dslRule().isBlank()) {</span>
+<span class="nc" id="L448">						acceptGeneratedRule(result.get().dslRule());</span>
+<span class="nc" id="L449">					} else {</span>
+<span class="nc" id="L450">						validationLabel.setText(&quot;\u26A0 AI could not generate a rule&quot;); //$NON-NLS-1$</span>
 					}
-<span class="nc" id="L441">				});</span>
-<span class="nc" id="L442">				return Status.OK_STATUS;</span>
+<span class="nc" id="L452">				});</span>
+<span class="nc" id="L453">				return Status.OK_STATUS;</span>
 			}
 		};
-<span class="nc" id="L445">		job.setUser(true);</span>
-<span class="nc" id="L446">		job.schedule();</span>
-<span class="nc" id="L447">	}</span>
+<span class="nc" id="L456">		job.setUser(true);</span>
+<span class="nc" id="L457">		job.schedule();</span>
+<span class="nc" id="L458">	}</span>
 
 	/** Builds a real before/after diff when the author supplied a replacement. */
 	private static String buildPseudoDiff(String before, String after) {
-<span class="nc" id="L451">		StringBuilder diff = new StringBuilder(&quot;--- a/snippet.java\n+++ b/snippet.java\n&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L452">		String[] beforeLines = before.split(&quot;\\R&quot;, -1); //$NON-NLS-1$</span>
-<span class="nc" id="L453">		String[] afterLines = after.split(&quot;\\R&quot;, -1); //$NON-NLS-1$</span>
-<span class="nc" id="L454">		diff.append(&quot;@@ -1,&quot;).append(beforeLines.length).append(&quot; +1,&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L455">				.append(afterLines.length).append(&quot; @@\n&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L456" title="All 2 branches missed.">		for (String line : beforeLines) {</span>
-<span class="nc" id="L457">			diff.append('-').append(line).append('\n');</span>
+<span class="nc" id="L462">		StringBuilder diff = new StringBuilder(&quot;--- a/snippet.java\n+++ b/snippet.java\n&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L463">		String[] beforeLines = before.split(&quot;\\R&quot;, -1); //$NON-NLS-1$</span>
+<span class="nc" id="L464">		String[] afterLines = after.split(&quot;\\R&quot;, -1); //$NON-NLS-1$</span>
+<span class="nc" id="L465">		diff.append(&quot;@@ -1,&quot;).append(beforeLines.length).append(&quot; +1,&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L466">				.append(afterLines.length).append(&quot; @@\n&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L467" title="All 2 branches missed.">		for (String line : beforeLines) {</span>
+<span class="nc" id="L468">			diff.append('-').append(line).append('\n');</span>
 		}
-<span class="nc bnc" id="L459" title="All 2 branches missed.">		for (String line : afterLines) {</span>
-<span class="nc" id="L460">			diff.append('+').append(line).append('\n');</span>
+<span class="nc bnc" id="L470" title="All 2 branches missed.">		for (String line : afterLines) {</span>
+<span class="nc" id="L471">			diff.append('+').append(line).append('\n');</span>
 		}
-<span class="nc" id="L462">		return diff.toString();</span>
+<span class="nc" id="L473">		return diff.toString();</span>
 	}
 
 	void acceptGeneratedRule(String dsl) {
-<span class="fc" id="L466">		generatedRule = true;</span>
-<span class="fc" id="L467">		importRule(dsl);</span>
-<span class="fc" id="L468">	}</span>
+<span class="fc" id="L477">		generatedRule = true;</span>
+<span class="fc" id="L478">		importRule(dsl);</span>
+<span class="fc" id="L479">	}</span>
 
 	boolean isGeneratedRule() {
-<span class="fc" id="L471">		return generatedRule;</span>
+<span class="fc" id="L482">		return generatedRule;</span>
 	}
 
 	/** Imports the complete result, with no extraction of its first rule/alternative. */
 	private void importRule(String dslRule) {
-<span class="fc" id="L476">		customContentEntered = true;</span>
-<span class="fc" id="L477">		authoringError = null;</span>
+<span class="fc" id="L487">		customContentEntered = true;</span>
+<span class="fc" id="L488">		authoringError = null;</span>
 		// Import is the newest authored document, so earlier form values must not
 		// silently overwrite its metadata on the next copy or save.
-<span class="fc" id="L480">		appliedMetadata.clear();</span>
-<span class="fc" id="L481">		appliedMetadata.putAll(metadataSupplier.get());</span>
-<span class="fc" id="L482">		updatingDocument = true;</span>
+<span class="fc" id="L491">		appliedMetadata.clear();</span>
+<span class="fc" id="L492">		appliedMetadata.putAll(metadataSupplier.get());</span>
+<span class="fc" id="L493">		updatingDocument = true;</span>
 		try {
-<span class="fc" id="L484">			ruleDocument.set(new RuleAuthoringDocument(dslRule).content());</span>
-<span class="fc" id="L485">		} finally {</span>
-<span class="fc" id="L486">			updatingDocument = false;</span>
+<span class="fc" id="L495">			ruleDocument.set(new RuleAuthoringDocument(dslRule).content());</span>
+<span class="fc" id="L496">		} finally {</span>
+<span class="fc" id="L497">			updatingDocument = false;</span>
 		}
-<span class="fc" id="L488">		lockHelperFields();</span>
-<span class="fc" id="L489">		validateDocument();</span>
-<span class="fc" id="L490">	}</span>
+<span class="fc" id="L499">		lockHelperFields();</span>
+<span class="fc" id="L500">		validateDocument();</span>
+<span class="fc" id="L501">	}</span>
 
 	private void lockHelperFields() {
 		// Rebuilding from three fields would discard metadata or extra alternatives.
-<span class="fc" id="L494">		sourcePatternText.setEnabled(false);</span>
-<span class="fc" id="L495">		guardText.setEnabled(false);</span>
-<span class="fc" id="L496">		replacementText.setEnabled(false);</span>
-<span class="fc" id="L497">		generalizeVariablesButton.setEnabled(false);</span>
-<span class="pc bpc" id="L498" title="1 of 2 branches missed.">		if (generateAiButton != null) {</span>
-<span class="nc" id="L499">			generateAiButton.setEnabled(false);</span>
+<span class="fc" id="L505">		sourcePatternText.setEnabled(false);</span>
+<span class="fc" id="L506">		guardText.setEnabled(false);</span>
+<span class="fc" id="L507">		replacementText.setEnabled(false);</span>
+<span class="fc" id="L508">		generalizeVariablesButton.setEnabled(false);</span>
+<span class="pc bpc" id="L509" title="1 of 2 branches missed.">		if (generateAiButton != null) {</span>
+<span class="nc" id="L510">			generateAiButton.setEnabled(false);</span>
 		}
-<span class="fc" id="L501">	}</span>
+<span class="fc" id="L512">	}</span>
 
 	private void openExamples() {
-<span class="nc" id="L504">		applyPendingMetadata();</span>
-<span class="nc" id="L505">		String original = getFullDslDocument();</span>
-<span class="nc" id="L506">		var factory = exampleDocumentFactory();</span>
-<span class="nc bnc" id="L507" title="All 2 branches missed.">		var seed = factory == null ? null</span>
-<span class="nc" id="L508">				: new RuleAuthoringDocument.ChangeExample(sourcePatternText.getText(), replacementText.getText());</span>
-<span class="nc" id="L509">		RuleExamplesDialog dialog = new RuleExamplesDialog(getShell(), original, examples,</span>
-<span class="nc" id="L510">				exampleProjectSupplier.get(), seed, factory);</span>
-<span class="nc bnc" id="L511" title="All 2 branches missed.">		if (dialog.open() == Window.OK) {</span>
-<span class="nc" id="L512">			examples = dialog.getSuite();</span>
-<span class="nc" id="L513">			var proposal = dialog.getAcceptedProposal();</span>
-<span class="nc bnc" id="L514" title="All 2 branches missed.">			if (proposal != null) {</span>
-<span class="nc bnc" id="L515" title="All 4 branches missed.">				if (original.equals(getFullDslDocument()) &amp;&amp; canRefineExamples()) {</span>
-<span class="nc" id="L516">					applyExampleProposal(proposal.example());</span>
-<span class="nc" id="L517">				} else {</span>
-<span class="nc" id="L518">					MessageDialog.openInformation(getShell(), &quot;Rule changed&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L519">							&quot;The complete rule changed while the examples were open. Your examples are kept; verify a new proposal before using it.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L515">		applyPendingMetadata();</span>
+<span class="nc" id="L516">		String original = getFullDslDocument();</span>
+<span class="nc" id="L517">		var factory = exampleDocumentFactory();</span>
+<span class="nc bnc" id="L518" title="All 2 branches missed.">		var seed = factory == null ? null</span>
+<span class="nc" id="L519">				: new RuleAuthoringDocument.ChangeExample(sourcePatternText.getText(), replacementText.getText());</span>
+<span class="nc" id="L520">		RuleExamplesDialog dialog = new RuleExamplesDialog(getShell(), original, examples,</span>
+<span class="nc" id="L521">				exampleProjectSupplier.get(), seed, factory);</span>
+<span class="nc bnc" id="L522" title="All 2 branches missed.">		if (dialog.open() == Window.OK) {</span>
+<span class="nc" id="L523">			examples = dialog.getSuite();</span>
+<span class="nc" id="L524">			var proposal = dialog.getAcceptedProposal();</span>
+<span class="nc bnc" id="L525" title="All 2 branches missed.">			if (proposal != null) {</span>
+<span class="nc bnc" id="L526" title="All 4 branches missed.">				if (original.equals(getFullDslDocument()) &amp;&amp; canRefineExamples()) {</span>
+<span class="nc" id="L527">					applyExampleProposal(proposal.example());</span>
+<span class="nc" id="L528">				} else {</span>
+<span class="nc" id="L529">					MessageDialog.openInformation(getShell(), &quot;Rule changed&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L530">							&quot;The complete rule changed while the examples were open. Your examples are kept; verify a new proposal before using it.&quot;); //$NON-NLS-1$</span>
 				}
 			}
 		}
-<span class="nc" id="L523">	}</span>
+<span class="nc" id="L534">	}</span>
 
 	boolean canRefineExamples() {
-<span class="fc bfc" id="L526" title="All 2 branches covered.">		return exampleDocumentFactory() != null;</span>
+<span class="fc bfc" id="L537" title="All 2 branches covered.">		return exampleDocumentFactory() != null;</span>
 	}
 
 	private Function&lt;RuleAuthoringDocument.ChangeExample, String&gt; exampleDocumentFactory() {
-<span class="pc bpc" id="L530" title="2 of 6 branches missed.">		if (sourcePatternText == null || sourcePatternText.isDisposed() || !sourcePatternText.isEnabled()</span>
-<span class="pc bpc" id="L531" title="2 of 4 branches missed.">				|| sourcePatternText.getText().isBlank() || replacementText.getText().isBlank()) {</span>
-<span class="fc" id="L532">			return null;</span>
+<span class="pc bpc" id="L541" title="2 of 6 branches missed.">		if (sourcePatternText == null || sourcePatternText.isDisposed() || !sourcePatternText.isEnabled()</span>
+<span class="pc bpc" id="L542" title="2 of 4 branches missed.">				|| sourcePatternText.getText().isBlank() || replacementText.getText().isBlank()) {</span>
+<span class="fc" id="L543">			return null;</span>
 		}
-<span class="fc" id="L534">		String guard = guardText.getText();</span>
-<span class="fc" id="L535">		Map&lt;String, String&gt; metadata = java.util.Collections.unmodifiableMap(new LinkedHashMap&lt;&gt;(appliedMetadata));</span>
-<span class="fc" id="L536">		Function&lt;RuleAuthoringDocument.ChangeExample, String&gt; factory = example -&gt; RuleAuthoringDocument</span>
-<span class="fc" id="L537">				.fromChange(example.before(), example.after(), guard).withMetadata(metadata).content();</span>
+<span class="fc" id="L545">		String guard = guardText.getText();</span>
+<span class="fc" id="L546">		Map&lt;String, String&gt; metadata = java.util.Collections.unmodifiableMap(new LinkedHashMap&lt;&gt;(appliedMetadata));</span>
+<span class="fc" id="L547">		Function&lt;RuleAuthoringDocument.ChangeExample, String&gt; factory = example -&gt; RuleAuthoringDocument</span>
+<span class="fc" id="L548">				.fromChange(example.before(), example.after(), guard).withMetadata(metadata).content();</span>
 		try {
-<span class="fc" id="L539">			String reconstructed = factory.apply(new RuleAuthoringDocument.ChangeExample(</span>
-<span class="fc" id="L540">					sourcePatternText.getText(), replacementText.getText()));</span>
-<span class="pc bpc" id="L541" title="1 of 2 branches missed.">			return reconstructed.equals(getFullDslDocument()) ? factory : null;</span>
-<span class="nc" id="L542">		} catch (IllegalArgumentException exception) {</span>
-<span class="nc" id="L543">			return null;</span>
+<span class="fc" id="L550">			String reconstructed = factory.apply(new RuleAuthoringDocument.ChangeExample(</span>
+<span class="fc" id="L551">					sourcePatternText.getText(), replacementText.getText()));</span>
+<span class="pc bpc" id="L552" title="1 of 2 branches missed.">			return reconstructed.equals(getFullDslDocument()) ? factory : null;</span>
+<span class="nc" id="L553">		} catch (IllegalArgumentException exception) {</span>
+<span class="nc" id="L554">			return null;</span>
 		}
 	}
 
 	void applyExampleProposal(RuleAuthoringDocument.ChangeExample proposal) {
-<span class="fc bfc" id="L548" title="All 2 branches covered.">		if (!canRefineExamples()) {</span>
-<span class="fc" id="L549">			throw new IllegalStateException(&quot;The complete document cannot be rebuilt from helper fields&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L559" title="All 2 branches covered.">		if (!canRefineExamples()) {</span>
+<span class="fc" id="L560">			throw new IllegalStateException(&quot;The complete document cannot be rebuilt from helper fields&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L551">		updatingDocument = true;</span>
+<span class="fc" id="L562">		updatingDocument = true;</span>
 		try {
-<span class="fc" id="L553">			sourcePatternText.setText(proposal.before());</span>
-<span class="fc" id="L554">			replacementText.setText(proposal.after());</span>
-<span class="fc" id="L555">		} finally {</span>
-<span class="fc" id="L556">			updatingDocument = false;</span>
+<span class="fc" id="L564">			sourcePatternText.setText(proposal.before());</span>
+<span class="fc" id="L565">			replacementText.setText(proposal.after());</span>
+<span class="fc" id="L566">		} finally {</span>
+<span class="fc" id="L567">			updatingDocument = false;</span>
 		}
-<span class="fc" id="L558">		customContentEntered = true;</span>
-<span class="fc" id="L559">		updateDocumentFromFields();</span>
-<span class="fc" id="L560">	}</span>
+<span class="fc" id="L569">		customContentEntered = true;</span>
+<span class="fc" id="L570">		updateDocumentFromFields();</span>
+<span class="fc" id="L571">	}</span>
 
 	private void chooseVariables() {
-<span class="nc" id="L563">		var example = new RuleAuthoringDocument.ChangeExample(sourcePatternText.getText(), replacementText.getText());</span>
-<span class="nc" id="L564">		var candidates = ChangeVariableGeneralizer.candidates(example);</span>
-<span class="nc bnc" id="L565" title="All 2 branches missed.">		if (candidates.isEmpty()) {</span>
-<span class="nc" id="L566">			MessageDialog.openInformation(getShell(), &quot;Generalize variables&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L567">					&quot;No shared variable-shaped names were found. Methods, types, members and literals stay fixed.&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L568">			return;</span>
+<span class="nc" id="L574">		var example = new RuleAuthoringDocument.ChangeExample(sourcePatternText.getText(), replacementText.getText());</span>
+<span class="nc" id="L575">		var candidates = ChangeVariableGeneralizer.candidates(example);</span>
+<span class="nc bnc" id="L576" title="All 2 branches missed.">		if (candidates.isEmpty()) {</span>
+<span class="nc" id="L577">			MessageDialog.openInformation(getShell(), &quot;Generalize variables&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L578">					&quot;No shared variable-shaped names were found. Methods, types, members and literals stay fixed.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L579">			return;</span>
 		}
-<span class="nc" id="L570">		ListSelectionDialog dialog = new ListSelectionDialog(getShell(), candidates,</span>
-<span class="nc" id="L571">				ArrayContentProvider.getInstance(), new LabelProvider(),</span>
-<span class="nc" id="L572">				&quot;Choose names to replace by $placeholders on both sides. These are syntactic suggestions; &quot; //$NON-NLS-1$</span>
+<span class="nc" id="L581">		ListSelectionDialog dialog = new ListSelectionDialog(getShell(), candidates,</span>
+<span class="nc" id="L582">				ArrayContentProvider.getInstance(), new LabelProvider(),</span>
+<span class="nc" id="L583">				&quot;Choose names to replace by $placeholders on both sides. These are syntactic suggestions; &quot; //$NON-NLS-1$</span>
 						+ &quot;their bindings and semantic scope have not been proved. Nothing is selected by default.&quot;); //$NON-NLS-1$
-<span class="nc" id="L574">		dialog.setTitle(&quot;Generalize selected variables&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L575">		dialog.setInitialSelections(new Object[0]);</span>
-<span class="nc bnc" id="L576" title="All 2 branches missed.">		if (dialog.open() == Window.OK) {</span>
-<span class="nc" id="L577">			java.util.Set&lt;String&gt; selected = java.util.Arrays.stream(dialog.getResult())</span>
-<span class="nc" id="L578">					.map(String.class::cast).collect(java.util.stream.Collectors.toSet());</span>
-<span class="nc" id="L579">			var generalized = ChangeVariableGeneralizer.generalize(example, selected);</span>
-<span class="nc" id="L580">			sourcePatternText.setText(generalized.before());</span>
-<span class="nc" id="L581">			replacementText.setText(generalized.after());</span>
+<span class="nc" id="L585">		dialog.setTitle(&quot;Generalize selected variables&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L586">		dialog.setInitialSelections(new Object[0]);</span>
+<span class="nc bnc" id="L587" title="All 2 branches missed.">		if (dialog.open() == Window.OK) {</span>
+<span class="nc" id="L588">			java.util.Set&lt;String&gt; selected = java.util.Arrays.stream(dialog.getResult())</span>
+<span class="nc" id="L589">					.map(String.class::cast).collect(java.util.stream.Collectors.toSet());</span>
+<span class="nc" id="L590">			var generalized = ChangeVariableGeneralizer.generalize(example, selected);</span>
+<span class="nc" id="L591">			sourcePatternText.setText(generalized.before());</span>
+<span class="nc" id="L592">			replacementText.setText(generalized.after());</span>
 		}
-<span class="nc" id="L583">	}</span>
+<span class="nc" id="L594">	}</span>
 
 	private void updateDocumentFromFields() {
-<span class="fc" id="L586">		updatingDocument = true;</span>
+<span class="fc" id="L597">		updatingDocument = true;</span>
 		try {
-<span class="fc" id="L588">			authoringError = null;</span>
-<span class="fc bfc" id="L589" title="All 2 branches covered.">			ruleDocument.set(sourcePatternText.getText().isBlank() ? &quot;&quot; //$NON-NLS-1$</span>
-<span class="fc" id="L590">					: RuleAuthoringDocument.fromChange(sourcePatternText.getText(), replacementText.getText(),</span>
-<span class="fc" id="L591">							guardText.getText()).withMetadata(appliedMetadata).content());</span>
-<span class="pc" id="L592">		} catch (IllegalArgumentException exception) {</span>
-<span class="nc" id="L593">			authoringError = exception.getMessage();</span>
-<span class="nc" id="L594">			ruleDocument.set(&quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L599">			authoringError = null;</span>
+<span class="fc bfc" id="L600" title="All 2 branches covered.">			ruleDocument.set(sourcePatternText.getText().isBlank() ? &quot;&quot; //$NON-NLS-1$</span>
+<span class="fc" id="L601">					: RuleAuthoringDocument.fromChange(sourcePatternText.getText(), replacementText.getText(),</span>
+<span class="fc" id="L602">							guardText.getText()).withMetadata(appliedMetadata).content());</span>
+<span class="pc" id="L603">		} catch (IllegalArgumentException exception) {</span>
+<span class="nc" id="L604">			authoringError = exception.getMessage();</span>
+<span class="nc" id="L605">			ruleDocument.set(&quot;&quot;); //$NON-NLS-1$</span>
 		} finally {
-<span class="fc" id="L596">			updatingDocument = false;</span>
+<span class="fc" id="L607">			updatingDocument = false;</span>
 		}
-<span class="fc" id="L598">		validateDocument();</span>
-<span class="fc" id="L599">	}</span>
+<span class="fc" id="L609">		validateDocument();</span>
+<span class="fc" id="L610">	}</span>
 
 	/** A language check is explicitly not presented as a semantic/project proof. */
 	private void validateDocument() {
-<span class="pc bpc" id="L603" title="2 of 4 branches missed.">		if (validationLabel == null || validationLabel.isDisposed()) {</span>
-<span class="nc" id="L604">			return;</span>
+<span class="pc bpc" id="L614" title="2 of 4 branches missed.">		if (validationLabel == null || validationLabel.isDisposed()) {</span>
+<span class="nc" id="L615">			return;</span>
 		}
-<span class="pc bpc" id="L606" title="3 of 4 branches missed.">		if (authoringError != null &amp;&amp; sourcePatternText.isEnabled()) {</span>
-<span class="nc" id="L607">			validationLabel.setText(authoringError);</span>
-<span class="nc" id="L608">			setErrorMessage(authoringError);</span>
-<span class="nc" id="L609">			setPageComplete(false);</span>
-<span class="nc" id="L610">			projectPreviewButton.setEnabled(false);</span>
-<span class="nc" id="L611">			return;</span>
+<span class="pc bpc" id="L617" title="3 of 4 branches missed.">		if (authoringError != null &amp;&amp; sourcePatternText.isEnabled()) {</span>
+<span class="nc" id="L618">			validationLabel.setText(authoringError);</span>
+<span class="nc" id="L619">			setErrorMessage(authoringError);</span>
+<span class="nc" id="L620">			setPageComplete(false);</span>
+<span class="nc" id="L621">			projectPreviewButton.setEnabled(false);</span>
+<span class="nc" id="L622">			return;</span>
 		}
-<span class="fc bfc" id="L613" title="All 4 branches covered.">		if (requiresReplacement &amp;&amp; sourcePatternText.isEnabled()</span>
-<span class="fc bfc" id="L614" title="All 4 branches covered.">				&amp;&amp; (sourcePatternText.getText().isBlank() || replacementText.getText().isBlank())) {</span>
-<span class="fc" id="L615">			String message = &quot;A reusable change needs nonempty Before and After code; expand the example to include surrounding statements&quot;; //$NON-NLS-1$</span>
-<span class="fc" id="L616">			validationLabel.setText(message);</span>
-<span class="fc" id="L617">			setErrorMessage(message);</span>
-<span class="fc" id="L618">			setPageComplete(false);</span>
-<span class="fc" id="L619">			projectPreviewButton.setEnabled(false);</span>
-<span class="fc" id="L620">			return;</span>
+<span class="fc bfc" id="L624" title="All 4 branches covered.">		if (requiresReplacement &amp;&amp; sourcePatternText.isEnabled()</span>
+<span class="fc bfc" id="L625" title="All 4 branches covered.">				&amp;&amp; (sourcePatternText.getText().isBlank() || replacementText.getText().isBlank())) {</span>
+<span class="fc" id="L626">			String message = &quot;A reusable change needs nonempty Before and After code; expand the example to include surrounding statements&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L627">			validationLabel.setText(message);</span>
+<span class="fc" id="L628">			setErrorMessage(message);</span>
+<span class="fc" id="L629">			setPageComplete(false);</span>
+<span class="fc" id="L630">			projectPreviewButton.setEnabled(false);</span>
+<span class="fc" id="L631">			return;</span>
 		}
-<span class="fc" id="L622">		String content = getFullDslDocument();</span>
-<span class="fc" id="L623">		ValidationResult result = null;</span>
-<span class="fc bfc" id="L624" title="All 2 branches covered.">		if (RuleAuthoringDocument.containsJavaTextBlock(content)) {</span>
-<span class="fc" id="L625">			result = new ValidationResult(false, RuleAuthoringDocument.textBlockDiagnostic());</span>
-<span class="fc bfc" id="L626" title="All 2 branches covered.">		} else if (!content.isBlank()) {</span>
+<span class="fc" id="L633">		String content = getFullDslDocument();</span>
+<span class="fc" id="L634">		ValidationResult result = null;</span>
+<span class="fc bfc" id="L635" title="All 2 branches covered.">		if (RuleAuthoringDocument.containsJavaTextBlock(content)) {</span>
+<span class="fc" id="L636">			result = new ValidationResult(false, RuleAuthoringDocument.textBlockDiagnostic());</span>
+<span class="fc bfc" id="L637" title="All 2 branches covered.">		} else if (!content.isBlank()) {</span>
 			try {
-<span class="fc" id="L628">				var hint = validator.parseHintFile(content);</span>
-<span class="fc bfc" id="L629" title="All 2 branches covered.">				result = new PatternIndex(hint.getRules()).size() == hint.getRules().size()</span>
-<span class="fc" id="L630">						? new ValidationResult(true, &quot;Language check passed&quot;) //$NON-NLS-1$</span>
-<span class="fc" id="L631">						: new ValidationResult(false, &quot;A source pattern cannot be parsed by TriggerPattern&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L632">			} catch (HintParseException exception) {</span>
-<span class="fc" id="L633">				result = new ValidationResult(false, &quot;Line &quot; + exception.getLineNumber() + &quot;: &quot; + exception.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L639">				var hint = validator.parseHintFile(content);</span>
+<span class="fc bfc" id="L640" title="All 2 branches covered.">				result = new PatternIndex(hint.getRules()).size() == hint.getRules().size()</span>
+<span class="fc" id="L641">						? new ValidationResult(true, &quot;Language check passed&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L642">						: new ValidationResult(false, &quot;A source pattern cannot be parsed by TriggerPattern&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L643">			} catch (HintParseException exception) {</span>
+<span class="fc" id="L644">				result = new ValidationResult(false, &quot;Line &quot; + exception.getLineNumber() + &quot;: &quot; + exception.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$</span>
 			}
 		}
-<span class="fc bfc" id="L636" title="All 4 branches covered.">		boolean valid = result == null || result.valid();</span>
-<span class="pc bpc" id="L637" title="1 of 4 branches missed.">		validationLabel.setText(generatedRule &amp;&amp; valid</span>
-<span class="fc" id="L638">				? &quot;Generated rule: add a positive example and a counterexample under Examples. Finish verifies both.&quot; //$NON-NLS-1$</span>
-<span class="fc bfc" id="L639" title="All 2 branches covered.">				: result == null ? &quot;Draft — choose a template or enter Java code&quot; //$NON-NLS-1$</span>
-<span class="fc bfc" id="L640" title="All 2 branches covered.">				: valid ? &quot;Language check passed — behavior and project use have not been verified&quot; //$NON-NLS-1$</span>
-<span class="fc" id="L641">						: &quot;Language check failed: &quot; + result.message()); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L642" title="All 2 branches covered.">		setErrorMessage(valid ? null : result.message());</span>
-<span class="fc" id="L643">		setPageComplete(valid);</span>
-<span class="pc bpc" id="L644" title="1 of 6 branches missed.">		projectPreviewButton.setEnabled(projectPreviewAction != null &amp;&amp; result != null &amp;&amp; valid);</span>
-<span class="fc bfc" id="L645" title="All 2 branches covered.">		projectPreviewButton.setToolTipText(projectPreviewAction == null</span>
-<span class="fc" id="L646">				? &quot;Choose a Java project to try the rule on real code&quot; : null); //$NON-NLS-1$</span>
-<span class="fc" id="L647">	}</span>
+<span class="fc bfc" id="L647" title="All 4 branches covered.">		boolean valid = result == null || result.valid();</span>
+<span class="pc bpc" id="L648" title="1 of 4 branches missed.">		validationLabel.setText(generatedRule &amp;&amp; valid</span>
+<span class="fc" id="L649">				? &quot;Generated rule: add a positive example and a counterexample under Examples. Finish verifies both.&quot; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L650" title="All 2 branches covered.">				: result == null ? &quot;Draft — choose a template or enter Java code&quot; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L651" title="All 2 branches covered.">				: valid ? &quot;Language check passed — behavior and project use have not been verified&quot; //$NON-NLS-1$</span>
+<span class="fc" id="L652">						: &quot;Language check failed: &quot; + result.message()); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L653" title="All 2 branches covered.">		setErrorMessage(valid ? null : result.message());</span>
+<span class="fc" id="L654">		setPageComplete(valid);</span>
+<span class="pc bpc" id="L655" title="1 of 6 branches missed.">		projectPreviewButton.setEnabled(projectPreviewAction != null &amp;&amp; result != null &amp;&amp; valid);</span>
+<span class="fc bfc" id="L656" title="All 2 branches covered.">		projectPreviewButton.setToolTipText(projectPreviewAction == null</span>
+<span class="fc" id="L657">				? &quot;Choose a Java project to try the rule on real code&quot; : null); //$NON-NLS-1$</span>
+<span class="fc" id="L658">	}</span>
 
 	// --- Helper methods for AI section ---
 
@@ -652,52 +663,52 @@ public class NewRuleWizardPage extends WizardPage {
 	 * Returns a label like &quot;Gemini &amp;ndash; gemini-2.0-flash&quot; from the current preferences.
 	 */
 	private static String getConfiguredProviderLabel() {
-<span class="nc" id="L655">		IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode(LlmPreferencePage.PLUGIN_ID);</span>
-<span class="nc" id="L656">		String provider = prefs.get(LlmPreferencePage.PREF_PROVIDER, &quot;&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L657">		String model = prefs.get(LlmPreferencePage.PREF_MODEL_NAME, &quot;&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L658" title="All 2 branches missed.">		if (provider.isBlank()) {</span>
-<span class="nc" id="L659">			return &quot;&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L666">		IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode(LlmPreferencePage.PLUGIN_ID);</span>
+<span class="nc" id="L667">		String provider = prefs.get(LlmPreferencePage.PREF_PROVIDER, &quot;&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L668">		String model = prefs.get(LlmPreferencePage.PREF_MODEL_NAME, &quot;&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L669" title="All 2 branches missed.">		if (provider.isBlank()) {</span>
+<span class="nc" id="L670">			return &quot;&quot;; //$NON-NLS-1$</span>
 		}
-<span class="nc bnc" id="L661" title="All 2 branches missed.">		return model.isBlank() ? provider : provider + &quot; \u2013 &quot; + model; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L672" title="All 2 branches missed.">		return model.isBlank() ? provider : provider + &quot; \u2013 &quot; + model; //$NON-NLS-1$</span>
 	}
 
 	/**
 	 * Opens the LLM preference page directly, then re-checks AI availability.
 	 */
 	private void openLlmPreferences() {
-<span class="nc" id="L668">		PreferencesUtil.createPreferenceDialogOn(</span>
-<span class="nc" id="L669">				getShell(),</span>
-<span class="nc" id="L670">				&quot;org.sandbox.jdt.triggerpattern.preferences.LlmPreferencePage&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L671">				null, null).open();</span>
-<span class="nc" id="L672">		refreshAiAvailability();</span>
-<span class="nc" id="L673">	}</span>
+<span class="nc" id="L679">		PreferencesUtil.createPreferenceDialogOn(</span>
+<span class="nc" id="L680">				getShell(),</span>
+<span class="nc" id="L681">				&quot;org.sandbox.jdt.triggerpattern.preferences.LlmPreferencePage&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L682">				null, null).open();</span>
+<span class="nc" id="L683">		refreshAiAvailability();</span>
+<span class="nc" id="L684">	}</span>
 
 	/**
 	 * Re-evaluates AI availability after preferences might have changed.
 	 */
 	private void refreshAiAvailability() {
-<span class="nc" id="L679">		boolean nowAvailable = EclipseLlmService.getInstance().isAvailable();</span>
-<span class="nc bnc" id="L680" title="All 4 branches missed.">		if (nowAvailable &amp;&amp; generateAiButton == null) {</span>
-<span class="nc" id="L681">			validationLabel.setText(&quot;\u2705 AI is now configured \u2014 reopen the wizard to use 'Generate with AI'&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L690">		boolean nowAvailable = EclipseLlmService.getInstance().isAvailable();</span>
+<span class="nc bnc" id="L691" title="All 4 branches missed.">		if (nowAvailable &amp;&amp; generateAiButton == null) {</span>
+<span class="nc" id="L692">			validationLabel.setText(&quot;\u2705 AI is now configured \u2014 reopen the wizard to use 'Generate with AI'&quot;); //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L683">	}</span>
+<span class="nc" id="L694">	}</span>
 
 	/**
 	 * Pastes a DSL rule from the system clipboard and fills the fields.
 	 */
 	private void pasteRuleFromClipboard() {
-<span class="nc" id="L689">		Clipboard clipboard = new Clipboard(Display.getCurrent());</span>
+<span class="nc" id="L700">		Clipboard clipboard = new Clipboard(Display.getCurrent());</span>
 		try {
-<span class="nc" id="L691">			String text = (String) clipboard.getContents(TextTransfer.getInstance());</span>
-<span class="nc bnc" id="L692" title="All 4 branches missed.">			if (text != null &amp;&amp; !text.isBlank()) {</span>
-<span class="nc" id="L693">				importRule(text);</span>
-<span class="nc" id="L694">			} else {</span>
-<span class="nc" id="L695">				validationLabel.setText(&quot;\u26A0 Clipboard is empty or contains no text&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L702">			String text = (String) clipboard.getContents(TextTransfer.getInstance());</span>
+<span class="nc bnc" id="L703" title="All 4 branches missed.">			if (text != null &amp;&amp; !text.isBlank()) {</span>
+<span class="nc" id="L704">				importRule(text);</span>
+<span class="nc" id="L705">			} else {</span>
+<span class="nc" id="L706">				validationLabel.setText(&quot;\u26A0 Clipboard is empty or contains no text&quot;); //$NON-NLS-1$</span>
 			}
-<span class="nc" id="L697">		} finally {</span>
-<span class="nc" id="L698">			clipboard.dispose();</span>
+<span class="nc" id="L708">		} finally {</span>
+<span class="nc" id="L709">			clipboard.dispose();</span>
 		}
-<span class="nc" id="L700">	}</span>
+<span class="nc" id="L711">	}</span>
 
 	// --- Public API for the wizard ---
 
@@ -705,39 +716,39 @@ public class NewRuleWizardPage extends WizardPage {
 	 * Returns {@code true} once the user edits this page, including clearing the document.
 	 */
 	public boolean hasCustomContent() {
-<span class="fc" id="L708">		return customContentEntered;</span>
+<span class="fc" id="L719">		return customContentEntered;</span>
 	}
 
 	/** Returns the very same complete document used for import, editing and preview. */
 	public String getFullDslDocument() {
-<span class="fc" id="L713">		return ruleDocument.get();</span>
+<span class="fc" id="L724">		return ruleDocument.get();</span>
 	}
 
 	/** Applies changed form values once; later edits in the full document win. */
 	public void applyPendingMetadata() {
-<span class="fc" id="L718">		Map&lt;String, String&gt; pending = new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L719">		metadataSupplier.get().forEach((key, value) -&gt; {</span>
-<span class="fc bfc" id="L720" title="All 2 branches covered.">			if (!Objects.equals(appliedMetadata.get(key), value)) {</span>
-<span class="fc" id="L721">				pending.put(key, value);</span>
+<span class="fc" id="L729">		Map&lt;String, String&gt; pending = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L730">		metadataSupplier.get().forEach((key, value) -&gt; {</span>
+<span class="fc bfc" id="L731" title="All 2 branches covered.">			if (!Objects.equals(appliedMetadata.get(key), value)) {</span>
+<span class="fc" id="L732">				pending.put(key, value);</span>
 			}
-<span class="fc" id="L723">		});</span>
-<span class="fc bfc" id="L724" title="All 2 branches covered.">		if (pending.isEmpty()) {</span>
-<span class="fc" id="L725">			return;</span>
+<span class="fc" id="L734">		});</span>
+<span class="fc bfc" id="L735" title="All 2 branches covered.">		if (pending.isEmpty()) {</span>
+<span class="fc" id="L736">			return;</span>
 		}
-<span class="fc" id="L727">		appliedMetadata.putAll(pending);</span>
-<span class="fc" id="L728">		boolean wasUpdating = updatingDocument;</span>
-<span class="fc" id="L729">		updatingDocument = true;</span>
+<span class="fc" id="L738">		appliedMetadata.putAll(pending);</span>
+<span class="fc" id="L739">		boolean wasUpdating = updatingDocument;</span>
+<span class="fc" id="L740">		updatingDocument = true;</span>
 		try {
-<span class="fc" id="L731">			ruleDocument.set(new RuleAuthoringDocument(ruleDocument.get()).withMetadata(pending).content());</span>
-<span class="fc" id="L732">		} finally {</span>
-<span class="fc" id="L733">			updatingDocument = wasUpdating;</span>
+<span class="fc" id="L742">			ruleDocument.set(new RuleAuthoringDocument(ruleDocument.get()).withMetadata(pending).content());</span>
+<span class="fc" id="L743">		} finally {</span>
+<span class="fc" id="L744">			updatingDocument = wasUpdating;</span>
 		}
-<span class="fc" id="L735">	}</span>
+<span class="fc" id="L746">	}</span>
 
 	/** @deprecated Use {@link #getFullDslDocument()} to preserve file-level directives. */
 	@Deprecated
 	public String getFullRuleBlock() {
-<span class="nc" id="L740">		return getFullDslDocument();</span>
+<span class="nc" id="L751">		return getFullDslDocument();</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

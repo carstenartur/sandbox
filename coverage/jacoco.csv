@@ -863,7 +863,8 @@ sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.wizard,NewSa
 sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.wizard,RuleExamplesDialog,477,281,62,4,100,58,52,8,19,8
 sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.wizard,ProjectRuleRefactoring.new CompositeChange() {...},6,55,2,4,1,11,2,4,0,3
 sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.wizard,ProjectRuleRefactoring.new WorkingCopyOwner() {...},0,6,0,0,0,1,0,1,0,1
-sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.wizard,NewRuleWizardPage,498,1068,60,78,119,239,55,59,17,28
+sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.wizard,StructuredActionDialog,4,441,3,35,2,78,3,26,0,10
+sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.wizard,NewRuleWizardPage,498,1106,61,79,119,249,56,60,17,29
 sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.wizard,ProjectRuleExamples,4,153,6,20,1,30,6,13,0,6
 sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.wizard,ProjectRulePreview.1.new UserInputWizardPage() {...},0,59,0,0,0,13,0,2,0,2
 sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.wizard,SandboxHintTemplates,0,81,0,0,0,17,0,3,0,3
@@ -1226,7 +1227,7 @@ sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.api,RuleExam
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.api,RuleMatchDiagnostics.Candidate,7,291,3,25,2,40,3,14,0,3
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.api,ImportDirective,87,560,32,72,19,128,28,45,1,20
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.api,ExecutionTreeComparator.Comparison,2,25,1,1,0,5,1,1,0,1
-sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.api,RewriteActionCatalog,11,163,2,2,1,30,2,10,1,9
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.api,RewriteActionCatalog,2,172,1,3,0,31,1,11,0,10
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.api,PreviewGenerator,2,323,4,12,1,70,4,10,0,6
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.api,PatternMatchSupport,60,307,24,56,14,68,20,28,0,8
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.api,SemanticPlanValue.IntegerValue,0,8,0,0,0,2,0,2,0,2
@@ -1634,7 +1635,7 @@ sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.history,Sand
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.history,SandboxHistorySearch.AuthorCount,0,12,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.history,SandboxHistoryAnalysisConfigurer,0,23,0,0,0,9,0,2,0,2
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.history,GitHistorySnapshot,7,147,3,17,1,32,3,9,0,2
-sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.analysis,ApplicationVectorIndex,1,367,3,35,0,55,3,28,0,12
+sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.analysis,ApplicationVectorIndex,8,360,4,34,0,55,4,27,0,12
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.analysis,AnalysisGenerationCache,43,619,14,64,4,127,12,44,0,17
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.analysis,ApplicationApiComparison.Change,0,12,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.analysis,ApplicationSourceReports.AuthorTypes,0,12,0,0,0,1,0,1,0,1
