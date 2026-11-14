@@ -79,7 +79,7 @@ jobs:
                 ;;
             esac
             case "$path" in
-              sandbox_oomph/*|sandbox_target/*|sandbox_product/*|.project|.classpath|.settings/*|*/.project|*/.classpath|*/.settings/*|\
+              sandbox_oomph/*|sandbox_target/*|sandbox_product/*|.mvn/maven.config|.project|.classpath|.settings/*|*/.project|*/.classpath|*/.settings/*|\
               */pom.xml|*/build.properties|*/META-INF/MANIFEST.MF|pom.xml|.github/workflows/maven.yml)
                 oomph=true ;;
             esac
