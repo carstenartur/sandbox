@@ -8,7 +8,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  *******************************************************************************/
-package org.sandbox.jdt.container.cleanup.internal.ui.fix;
+package org.sandbox.jdt.container.analysis;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -42,21 +42,26 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 
 /** Proves the list's complete private registration and snapshot-notification protocol. */
-final class ListenerSnapshotAnalyzer {
+public final class ListenerSnapshotAnalyzer {
 	private ListenerSnapshotAnalyzer() {
 	}
 
-	record Plan(String key, int initializer, List<Integer> registrationLocks, List<Integer> snapshotLocks, String rejection) {
-		Plan {
+	public record Plan(String key, int initializer, List<Integer> registrationLocks, List<Integer> snapshotLocks, String rejection) {
+		public Plan {
 			registrationLocks= List.copyOf(registrationLocks);
 			snapshotLocks= List.copyOf(snapshotLocks);
 		}
 	}
-	record Notification(VariableDeclarationStatement array, SynchronizedStatement lock, EnhancedForStatement loop) {}
-	record Observed(Plan plan, VariableDeclarationFragment field, List<SynchronizedStatement> registrations,
-			List<Notification> notifications) {}
+	public record Notification(VariableDeclarationStatement array, SynchronizedStatement lock, EnhancedForStatement loop) {}
+	public record Observed(Plan plan, VariableDeclarationFragment field, List<SynchronizedStatement> registrations,
+			List<Notification> notifications) {
+		public Observed {
+			registrations= List.copyOf(registrations);
+			notifications= List.copyOf(notifications);
+		}
+	}
 
-	static Map<String, Observed> analyze(CompilationUnit root) {
+	public static Map<String, Observed> analyze(CompilationUnit root) {
 		Map<String, Observed> result= new LinkedHashMap<>();
 		root.accept(new ASTVisitor() {
 			@Override
@@ -87,6 +92,7 @@ final class ListenerSnapshotAnalyzer {
 		}
 		var owner= binding.getDeclaringClass();
 		return field.getParent().getParent() instanceof TypeDeclaration type && type.isPackageMemberTypeDeclaration()
+				&& java.util.Arrays.stream(type.getMethods()).noneMatch(method -> Modifier.isNative(method.getModifiers()))
 				&& owner != null && !owner.isRecovered() && Modifier.isFinal(owner.getModifiers())
 				&& owner.getAnnotations().length == 0 && owner.getInterfaces().length == 0
 				&& jdkType(owner.getSuperclass(), "java.lang.Object"); //$NON-NLS-1$
