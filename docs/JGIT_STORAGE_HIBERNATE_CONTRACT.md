@@ -70,7 +70,7 @@ JGIT_STORAGE_HIBERNATE_CONTRACT_MODE=baseline \
   bash .github/jgit-storage-hibernate-contract.sh
 ```
 
-The script resolves the version selected by the consumer POM and verifies the current integration.
+The baseline uses Maven Central to resolve the release selected by the two consumer POMs.
 
 ### Candidate
 
