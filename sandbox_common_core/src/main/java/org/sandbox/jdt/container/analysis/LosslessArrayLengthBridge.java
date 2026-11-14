@@ -43,45 +43,74 @@ public final class LosslessArrayLengthBridge {
 		var parameter= migration.parameterPlans().getFirst();
 		if (!parameter.ownedFieldBindingKey().isEmpty() || parameter.parameterIndex() != 0
 				|| !(root.findDeclaringNode(parameter.parameterBindingKey()) instanceof SingleVariableDeclaration declaration)
-				|| !(declaration.getParent() instanceof MethodDeclaration method) || method.parameters().size() != 1
-				|| !(method.getParent() instanceof TypeDeclaration owner) || owner.getParent() != root
-				|| !Modifier.isFinal(owner.getModifiers()) || Modifier.isPublic(owner.getModifiers())
-				|| owner.getSuperclassType() != null || !owner.superInterfaceTypes().isEmpty() || !owner.typeParameters().isEmpty() || owner.isInterface()) {
+				|| !(declaration.getParent() instanceof MethodDeclaration method) || !hasEligibleOwner(root, method)) {
 			return Optional.empty();
 		}
 		var binding= method.resolveBinding();
+		if (!hasEligibleMethod(method, binding) || !hasDirectLengthReturn(method, declaration, binding)
+				|| !hasEligibleArray(declaration) || hasCompetingOverload(binding)) {
+			return Optional.empty();
+		}
+		return Optional.of(new LosslessParameterBridgePlan(migration, binding.getMethodDeclaration().getKey(),
+				source.substring(method.getStartPosition(), method.getStartPosition() + method.getLength())));
+	}
+
+	private static boolean hasEligibleOwner(CompilationUnit root, MethodDeclaration method) {
+		if (method.parameters().size() != 1 || !(method.getParent() instanceof TypeDeclaration owner)) {
+			return false;
+		}
+		return owner.getParent() == root && Modifier.isFinal(owner.getModifiers()) && !Modifier.isPublic(owner.getModifiers())
+				&& owner.getSuperclassType() == null && owner.superInterfaceTypes().isEmpty()
+				&& owner.typeParameters().isEmpty() && !owner.isInterface();
+	}
+
+	private static boolean hasEligibleMethod(MethodDeclaration method, IMethodBinding binding) {
+		if (binding == null || binding.isRecovered()) {
+			return false;
+		}
 		int flags= method.getModifiers();
-		if (binding == null || binding.isRecovered() || !Modifier.isStatic(flags) || Modifier.isPublic(flags)
-				|| Modifier.isProtected(flags) || Modifier.isSynchronized(flags) || method.isConstructor() || binding.isVarargs()
-				|| binding.isGenericMethod() || binding.getAnnotations().length != 0 || binding.getDeclaringClass().getAnnotations().length != 0
-				|| binding.getDeclaringClass().getSuperclass() == null
-				|| !method.thrownExceptionTypes().isEmpty() || declaration.resolveBinding() == null || !declaration.modifiers().isEmpty()
-				|| !method.extraDimensions().isEmpty() || !declaration.extraDimensions().isEmpty()
-				|| !"int".equals(binding.getReturnType().getName()) || method.getBody() == null || method.getBody().statements().size() != 1 //$NON-NLS-1$
+		return Modifier.isStatic(flags) && !Modifier.isPublic(flags) && !Modifier.isProtected(flags)
+				&& !Modifier.isSynchronized(flags) && !method.isConstructor() && !binding.isVarargs()
+				&& !binding.isGenericMethod() && binding.getAnnotations().length == 0
+				&& binding.getDeclaringClass().getAnnotations().length == 0
+				&& binding.getDeclaringClass().getSuperclass() != null;
+	}
+
+	private static boolean hasDirectLengthReturn(MethodDeclaration method, SingleVariableDeclaration declaration,
+			IMethodBinding binding) {
+		if (!method.thrownExceptionTypes().isEmpty() || declaration.resolveBinding() == null
+				|| !declaration.modifiers().isEmpty() || !method.extraDimensions().isEmpty()
+				|| !declaration.extraDimensions().isEmpty() || !"int".equals(binding.getReturnType().getName()) //$NON-NLS-1$
+				|| method.getBody() == null || method.getBody().statements().size() != 1
 				|| !(method.getBody().statements().getFirst() instanceof ReturnStatement ret)
 				|| !(ret.getExpression() instanceof QualifiedName length) || !"length".equals(length.getName().getIdentifier()) //$NON-NLS-1$
-				|| !(length.getQualifier() instanceof SimpleName local) || !declaration.resolveBinding().isEqualTo(local.resolveBinding())) {
-			return Optional.empty();
+				|| !(length.getQualifier() instanceof SimpleName local)) {
+			return false;
 		}
+		return declaration.resolveBinding().isEqualTo(local.resolveBinding());
+	}
+
+	private static boolean hasEligibleArray(SingleVariableDeclaration declaration) {
 		var array= declaration.resolveBinding().getType();
-		if (!array.isArray() || array.getDimensions() != 1 || array.getTypeAnnotations().length != 0
-				|| array.getElementType().getTypeAnnotations().length != 0 || array.getElementType().isParameterizedType()
-				|| array.getElementType().isTypeVariable() || array.getElementType().isPrimitive()) {
-			return Optional.empty();
-		}
+		return array.isArray() && array.getDimensions() == 1 && array.getTypeAnnotations().length == 0
+				&& array.getElementType().getTypeAnnotations().length == 0
+				&& !array.getElementType().isParameterizedType() && !array.getElementType().isTypeVariable()
+				&& !array.getElementType().isPrimitive();
+	}
+
+	private static boolean hasCompetingOverload(IMethodBinding binding) {
 		// Excluding every other same-name member rejects erasure collisions and competing overloads.
 		for (IMethodBinding other : binding.getDeclaringClass().getDeclaredMethods()) {
 			if (other.getName().equals(binding.getName()) && !other.getMethodDeclaration().isEqualTo(binding.getMethodDeclaration())) {
-				return Optional.empty();
+				return true;
 			}
 		}
 		for (IMethodBinding inherited : binding.getDeclaringClass().getSuperclass().getDeclaredMethods()) {
 			if (inherited.getName().equals(binding.getName())) {
-				return Optional.empty();
+				return true;
 			}
 		}
-		return Optional.of(new LosslessParameterBridgePlan(migration, binding.getMethodDeclaration().getKey(),
-				source.substring(method.getStartPosition(), method.getStartPosition() + method.getLength())));
+		return false;
 	}
 
 	/** Any existing untyped null call or reflective/native consumer prevents retaining the extra overload. */
