@@ -232,6 +232,80 @@ class CleanupPatchLifecycleTest {
 		}
 	}
 
+	@ParameterizedTest
+	@ValueSource(strings = { "closed", "generated", "custom-engine", "pde-consumer", "resource", "legacy-test", "reflection", "stale-binary", "mixed-suite" })
+	void retiresVintageOnlyForAClosedStandaloneTestDeployment(String scope) throws Exception {
+		IFolder root= project.getFolder("src/test/java");
+		createFolder(root);
+		JavaCore.create(project).setRawClasspath(new IClasspathEntry[] {
+				JavaCore.newSourceEntry(root.getFullPath()),
+				JavaCore.newContainerEntry(new org.eclipse.core.runtime.Path("org.eclipse.jdt.launching.JRE_CONTAINER")),
+				JavaCore.newContainerEntry(new org.eclipse.core.runtime.Path("org.eclipse.jdt.junit.JUNIT_CONTAINER/5"))
+		}, project.getFullPath().append("bin"), monitor);
+		IFile suite= createSource("src/test/java/probe/AllTests.java", """
+				package probe;
+				import org.junit.runner.RunWith;
+				import org.junit.runners.Suite;
+				@RunWith(Suite.class)
+				@Suite.SuiteClasses({ ExampleTest.class })
+				public class AllTests {}
+				""");
+		String member= """
+				package probe;
+				import org.junit.Test;
+				public class ExampleTest {
+					@Test public void adds() { org.junit.jupiter.api.Assertions.assertEquals(4, 4); }
+				}
+				""";
+		createSource("src/test/java/probe/ExampleTest.java",
+				"mixed-suite".equals(scope) ? member.replace("org.junit.Test", "org.junit.jupiter.api.Test") : member);
+		String model= PlatformSuiteDependenciesTest.MODEL.replace(
+				"<artifactId>junit-vintage-engine</artifactId></dependency>",
+				"<artifactId>junit-vintage-engine</artifactId><scope>test</scope></dependency>")
+				.replace("    <!-- Retain", """
+					    <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><scope>test</scope></dependency>
+					    <dependency><groupId>junit</groupId><artifactId>junit</artifactId><version>4.13.2</version><scope>test</scope></dependency>
+					""" + "    <!-- Retain");
+		switch (scope) {
+		case "legacy-test" -> createSource("src/test/java/probe/LegacyTest.java",
+				"package probe; public class LegacyTest extends junit.framework.TestCase { public void testOld() {} }");
+		case "reflection" -> createSource("src/test/java/probe/ReflectiveTest.java",
+				"package probe; public class ReflectiveTest { @org.junit.jupiter.api.Test void run() throws Exception { Class.forName(\"junit.framework.TestCase\"); } }");
+		case "stale-binary" -> createSource("bin/probe/OldTest.class", "stale output");
+		case "generated" -> createSource("target/generated-test-sources/probe/GeneratedTest.java",
+				"package probe; public class GeneratedTest extends junit.framework.TestCase {}");
+		case "custom-engine" -> model= model.replace("  </dependencies>", """
+				      <dependency><groupId>example</groupId><artifactId>external-tests</artifactId><scope>test</scope></dependency>
+				    </dependencies>""");
+		case "pde-consumer" -> createSource("feature.xml", "<feature><plugin id=\"legacy.tests\"/></feature>");
+		case "resource" -> createSource("src/test/resources/junit-platform.properties", "junit.platform.discovery.includeEngines=vintage");
+		default -> { }
+		}
+		IFile pom= createSource("pom.xml", model);
+		byte[] beforePom= read(pom);
+		byte[] beforeSuite= read(suite);
+		Path config= writeConfig("cleanup.junitcleanup=true\ncleanup.junitcleanup_4_runwith=true\ncleanup.junitcleanup_4_suite=true\ncleanup.junitcleanup_4_test=true\n");
+		Path patch= temporaryDirectory.resolve("retire.patch");
+		Path report= temporaryDirectory.resolve("retire.json");
+		String[] args= { "--project", project.getName(), "--config", config.toString(), "--report", report.toString(),
+				"--patch", patch.toString(), "--mode", "check" };
+		var app= new ProjectWideCodeCleanupApplication();
+		assertEquals(2, app.start(new TestApplicationContext(args)));
+		assertArrayEquals(beforePom, read(pom));
+		assertArrayEquals(beforeSuite, read(suite));
+		String predicted= Files.readString(patch);
+		args[args.length - 1]= "apply";
+		assertEquals(0, app.start(new TestApplicationContext(args)));
+		assertEquals(predicted, Files.readString(patch));
+		String after= Files.readString(pom.getLocation().toFile().toPath());
+		assertTrue(after.contains("junit-platform-suite"));
+		assertEquals(!scope.equals("closed"), after.contains("<artifactId>junit-vintage-engine</artifactId>"), after);
+		assertEquals(!scope.equals("closed"), after.contains("<artifactId>junit</artifactId>"), after);
+		args[args.length - 1]= "check";
+		assertEquals(0, app.start(new TestApplicationContext(args)));
+		assertArrayEquals(new byte[0], Files.readAllBytes(patch));
+	}
+
 	private Path writeConfig(String content) throws Exception {
 		return Files.writeString(temporaryDirectory.resolve("cleanup.properties"), content, StandardCharsets.ISO_8859_1); //$NON-NLS-1$
 	}

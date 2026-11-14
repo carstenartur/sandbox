@@ -38,7 +38,7 @@ A missing binding, binary-only participant, stale plan, incomplete project scope
 | JUnit 3 custom harness | Not generally supported | dedicated framework migration required | must not be flattened into annotations |
 | public/shared helper API or recursive helper chain | Not yet supported | later #1367 Phase-4 slices | requires stronger dispatch/API/signature proof and complete caller/callee closure |
 | project-wide Platform Suite dependency addition | Supported in the headless project-wide check/apply path | a newly imported or fully qualified Platform `@Suite` adds its API package to the PDE manifest, or the `junit-platform-suite` test dependency to a supported standalone Maven module | Maven requires a standard test source path, direct dependencies and an imported JUnit 5.8+ or 6 release BOM for new coordinates. Existing JUnit 4/Vintage dependencies are retained. |
-| automatic JUnit 4/Vintage dependency removal | Not yet supported | planned resource-change phase | allowed only after all source and generated consumers are classified |
+| retirement of standalone Maven test-scoped JUnit 4 and Vintage | Supported after migration of a Platform suite selecting source-local Jupiter tests | source and POM share the project-wide check/apply transaction | Only standalone BOM-managed projects with a closed file/dependency inventory and modeled suite members qualify. Additional resource files, generated sources, stale binaries, project references, custom engines, and unknown Java behavior retain the legacy dependencies. |
 
 ## Stable rejection categories
 

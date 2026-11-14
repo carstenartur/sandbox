@@ -414,7 +414,15 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 				updated= PdeManifestImportUpdater.addImport(updated, PlatformSuiteDependencies.API_PACKAGE);
 			} else {
 				String pom= StandardCharsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(updated)).toString();
-				updated= PlatformSuiteDependencies.addToPom(pom).getBytes(StandardCharsets.UTF_8);
+				String withSuite= PlatformSuiteDependencies.addToPom(pom);
+				Map<Path, VintageDeploymentPlan.SourceTransition> participants= new LinkedHashMap<>();
+				for (SourceSnapshot source : sources) {
+					Charset encoding= Charset.forName(source.file().getCharset());
+					participants.put(source.path(), new VintageDeploymentPlan.SourceTransition(
+							new String(source.before(), encoding), Files.readString(source.path(), encoding)));
+				}
+				String deployment= VintageDeploymentPlan.afterSuiteMigration(withSuite, descriptor.file(), participants);
+				updated= deployment.getBytes(StandardCharsets.UTF_8);
 			}
 		}
 		if (!Arrays.equals(descriptor.before(), Files.readAllBytes(descriptor.path()))) {
