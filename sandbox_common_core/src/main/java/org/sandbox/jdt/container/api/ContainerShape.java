@@ -18,6 +18,7 @@ package org.sandbox.jdt.container.api;
  */
 public enum ContainerShape {
 	ARRAY,
+	RECORD_SEQUENCE,
 	LIST,
 	SET,
 	MAP,

@@ -31,6 +31,7 @@ import org.sandbox.jdt.container.analysis.LocalArrayUsageAnalyzer;
 import org.sandbox.jdt.container.analysis.LocalDequeSequenceAnalyzer;
 import org.sandbox.jdt.container.analysis.LocalEnumIndexedMembershipAnalyzer;
 import org.sandbox.jdt.container.analysis.LocalUniqueSequenceAnalyzer;
+import org.sandbox.jdt.container.analysis.ParallelArrayRecordAnalyzer;
 import org.sandbox.jdt.container.analysis.RecordKeyLookupAnalyzer;
 import org.sandbox.jdt.container.analysis.SynchronizedListIterationAnalyzer;
 import org.sandbox.jdt.container.api.ConcurrencyProtocol.Evidence;
@@ -93,6 +94,8 @@ final class ContainerAnalysisService {
 		List<ContainerAnalysisRow> rows= new ArrayList<>();
 		// Distinct accessors on the same list represent independent index candidates.
 		RecordKeyLookupAnalyzer.analyze(root, () -> checkCanceled(monitor)).forEach(profile -> appendRows(compilationUnitHandle, rows, profile));
+		ParallelArrayRecordAnalyzer.analyze(root, () -> checkCanceled(monitor))
+					.forEach(profile -> appendRows(compilationUnitHandle, rows, profile));
 		profiles.values().forEach(profile -> appendRows(compilationUnitHandle, rows, profile));
 		checkCanceled(monitor);
 		for (DiagnosticOnly observation : synchronizedListAnalyzer.analyze(root)) {
