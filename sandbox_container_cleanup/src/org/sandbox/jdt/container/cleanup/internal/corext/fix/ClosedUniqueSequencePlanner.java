@@ -132,9 +132,8 @@ public final class ClosedUniqueSequencePlanner {
 			while (node != null && !(node instanceof VariableDeclarationFragment)) {
 				node= node.getParent();
 			}
-			if (!(node instanceof VariableDeclarationFragment field)
-					|| ContainerSignatureBoundaries.observesRegistryField(project, roots, producer.getDeclaringType().getFullyQualifiedName(),
-							field.getName().getIdentifier(), monitor)) {
+			if (node == null || ContainerSignatureBoundaries.observesRegistryField(project, roots, producer.getDeclaringType().getFullyQualifiedName(),
+					((VariableDeclarationFragment) node).getName().getIdentifier(), monitor)) {
 				return new Result(null, List.copyOf(required), "Reflection or a method-handle lookup can observe the registry's field type independently of its source callers."); //$NON-NLS-1$
 			}
 		}
