@@ -71,7 +71,7 @@ public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 
 	@Override
 	public ICleanUpFix createFix(CleanUpContext context) throws CoreException {
-<span class="pc bpc" id="L74" title="1 of 4 branches missed.">		if (context.getAST() == null || !requireAST()) {</span>
+<span class="fc bfc" id="L74" title="All 4 branches covered.">		if (context.getAST() == null || !requireAST()) {</span>
 <span class="fc" id="L75">			return null;</span>
 		}
 		// Both explicit profile flags delegate this transaction to the optional host.

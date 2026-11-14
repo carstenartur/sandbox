@@ -34,7 +34,7 @@ public final class PdeManifestImportUpdater {
 <span class="fc" id="L34">		Objects.requireNonNull(original);</span>
 <span class="fc" id="L35">		String content= new String(original, StandardCharsets.UTF_8);</span>
 <span class="fc" id="L36">		String updated= addImport(content, packageName);</span>
-<span class="pc bpc" id="L37" title="1 of 2 branches missed.">		return content.equals(updated) ? original : updated.getBytes(StandardCharsets.UTF_8);</span>
+<span class="fc bfc" id="L37" title="All 2 branches covered.">		return content.equals(updated) ? original : updated.getBytes(StandardCharsets.UTF_8);</span>
 	}
 
 	public static String addImport(String manifest, String packageName) {

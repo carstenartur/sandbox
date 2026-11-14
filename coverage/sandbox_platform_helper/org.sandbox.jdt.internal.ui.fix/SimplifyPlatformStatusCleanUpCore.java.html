@@ -63,7 +63,7 @@ public class SimplifyPlatformStatusCleanUpCore extends AbstractCleanUp {
 <span class="fc" id="L63">			return null;</span>
 		}
 <span class="fc" id="L65">		EnumSet&lt;SimplifyPlatformStatusFixCore&gt; computeFixSet= computeFixSet();</span>
-<span class="pc bpc" id="L66" title="2 of 4 branches missed.">		if (!isEnabled(SIMPLIFY_STATUS_CLEANUP) || computeFixSet.isEmpty()</span>
+<span class="pc bpc" id="L66" title="1 of 4 branches missed.">		if (!isEnabled(SIMPLIFY_STATUS_CLEANUP) || computeFixSet.isEmpty()</span>
 <span class="fc bfc" id="L67" title="All 2 branches covered.">				|| !JavaModelUtil.is9OrHigher(compilationUnit.getJavaElement().getJavaProject())) {</span>
 <span class="fc" id="L68">			return null;</span>
 		}
@@ -102,10 +102,10 @@ public class SimplifyPlatformStatusCleanUpCore extends AbstractCleanUp {
 	}
 
 	private EnumSet&lt;SimplifyPlatformStatusFixCore&gt; computeFixSet() {
-<span class="pc bpc" id="L105" title="1 of 2 branches missed.">		if (isEnabled(SIMPLIFY_STATUS_CLEANUP)) {</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">		if (isEnabled(SIMPLIFY_STATUS_CLEANUP)) {</span>
 <span class="fc" id="L106">			return EnumSet.allOf(SimplifyPlatformStatusFixCore.class);</span>
 		}
-<span class="nc" id="L108">		return EnumSet.noneOf(SimplifyPlatformStatusFixCore.class);</span>
+<span class="fc" id="L108">		return EnumSet.noneOf(SimplifyPlatformStatusFixCore.class);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

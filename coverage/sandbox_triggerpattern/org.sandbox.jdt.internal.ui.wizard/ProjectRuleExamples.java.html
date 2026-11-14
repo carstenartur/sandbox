@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ProjectRuleExamples.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_triggerpattern</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.wizard</a> &gt; <span class="el_source">ProjectRuleExamples.java</span></div><h1>ProjectRuleExamples.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.wizard;
+
+import java.util.Arrays;
+import java.util.Map;
+import java.util.function.Function;
+
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.Path;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.sandbox.jdt.triggerpattern.api.RuleExampleVerifier;
+import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlan;
+import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlanContext;
+
+/** Replays authoring examples with the current destination project's bindings and compiler options. */
+final class ProjectRuleExamples {
+
+	private ProjectRuleExamples() {
+	}
+
+	static &lt;T&gt; T withVerifier(IJavaProject project, IProgressMonitor monitor, Function&lt;RuleExampleVerifier, T&gt; action) {
+<span class="fc" id="L29">		checkCanceled(monitor);</span>
+<span class="fc" id="L30">		Map&lt;String, String&gt; options = Map.copyOf(project.getOptions(true));</span>
+<span class="fc" id="L31">		try (var context = SemanticRewritePlanContext.install(SemanticRewritePlan.empty(), options,</span>
+<span class="fc" id="L32">				() -&gt; checkCanceled(monitor))) {</span>
+<span class="fc" id="L33">			var verifier = new RuleExampleVerifier(options,</span>
+<span class="fc" id="L34">					(unitName, source) -&gt; parseSource(project, options, unitName, source, monitor));</span>
+<span class="fc" id="L35">			T result = action.apply(verifier);</span>
+<span class="fc" id="L36">			checkCanceled(monitor);</span>
+<span class="fc" id="L37">			return result;</span>
+		}
+	}
+
+	static CompilationUnit parseSource(IJavaProject project, Map&lt;String, String&gt; options,
+			String unitName, String source, IProgressMonitor monitor) {
+<span class="fc" id="L43">		checkCanceled(monitor);</span>
+<span class="pc bpc" id="L44" title="2 of 6 branches missed.">		if (project == null || !project.exists() || !project.getProject().isAccessible()) {</span>
+<span class="fc" id="L45">			throw new IllegalArgumentException(&quot;An accessible Java project is required for example bindings&quot;); //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L47" title="2 of 6 branches missed.">		if (unitName == null || !unitName.endsWith(&quot;.java&quot;) || unitName.indexOf('\\') &gt;= 0 //$NON-NLS-1$</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">				|| unitName.indexOf(':') &gt;= 0 || Arrays.stream(unitName.split(&quot;/&quot;, -1)) //$NON-NLS-1$</span>
+<span class="fc bfc" id="L49" title="All 8 branches covered.">						.anyMatch(segment -&gt; segment.isEmpty() || segment.equals(&quot;.&quot;) || segment.equals(&quot;..&quot;))) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L50">			throw new IllegalArgumentException(&quot;unitName must be a project-relative Java source path, such as src/p/Example.java&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L52">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L53">		parser.setProject(project);</span>
+<span class="fc" id="L54">		parser.setCompilerOptions(options);</span>
+<span class="fc" id="L55">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
+<span class="fc" id="L56">		parser.setSource(source.toCharArray());</span>
+		// JDT needs the workspace path when setProject() is used; the sidecar stays
+		// project-relative so its evidence can be reopened in a renamed project.
+<span class="fc" id="L59">		parser.setUnitName(project.getPath().append(new Path(unitName)).toPortableString());</span>
+<span class="fc" id="L60">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L61">		parser.setBindingsRecovery(false);</span>
+<span class="fc" id="L62">		parser.setStatementsRecovery(false);</span>
+<span class="fc" id="L63">		CompilationUnit result = (CompilationUnit) parser.createAST(monitor);</span>
+<span class="fc" id="L64">		checkCanceled(monitor);</span>
+<span class="fc" id="L65">		return result;</span>
+	}
+
+	static void checkCanceled(IProgressMonitor monitor) {
+<span class="pc bpc" id="L69" title="2 of 4 branches missed.">		if (monitor.isCanceled() || Thread.currentThread().isInterrupted()) {</span>
+<span class="nc" id="L70">			throw new OperationCanceledException();</span>
+		}
+<span class="fc" id="L72">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

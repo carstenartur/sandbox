@@ -265,16 +265,16 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp&lt;JUnitMi
 <span class="fc" id="L265">						lifecycleAnnotations, monitor)</span>
 <span class="fc" id="L266">				: new JUnitScopeCandidateDetector.SearchSeeds(false, true, List.of(), List.of());</span>
 		// Every newly admitted unit receives the active cleanup options. Limit the
-		// additional method-reference scope to the one rewrite its proof covers.
-<span class="fc bfc" id="L269" title="All 4 branches covered.">		boolean allowMethodReferences= migrateAssertionHelpers &amp;&amp; fixes.size() == 1</span>
+		// additional static helper scope to the one rewrite its proof covers.
+<span class="fc bfc" id="L269" title="All 4 branches covered.">		boolean allowAssertionPaths= migrateAssertionHelpers &amp;&amp; fixes.size() == 1</span>
 <span class="pc bpc" id="L270" title="1 of 2 branches missed.">				&amp;&amp; !isEnabled(JUnitMigrationOptions.BEST_EFFORT);</span>
 <span class="fc" id="L271">		HelperSearchSeeds helperSeeds=</span>
 <span class="fc" id="L272">				JUnitSharedHelperScopeDetector.findSearchSeeds(project, currentScope,</span>
-<span class="fc" id="L273">						migrateAssertionHelpers, migrateAssumptionHelpers, allowMethodReferences, monitor);</span>
+<span class="fc" id="L273">						migrateAssertionHelpers, migrateAssumptionHelpers, allowAssertionPaths, monitor);</span>
 <span class="fc" id="L274">		JUnitScopeCandidateDetector.SearchSeeds seeds= mergeSeeds(</span>
 <span class="fc" id="L275">				mergeSeeds(mergeSeeds(standardSeeds, junit3Seeds), lifecycleSeeds), helperSeeds.ordinary());</span>
 <span class="fc" id="L276">		trace.seeds(standardSeeds, junit3Seeds, lifecycleSeeds, helperSeeds.ordinary(), seeds);</span>
-<span class="fc bfc" id="L277" title="All 4 branches covered.">		if (!seeds.candidateFound() &amp;&amp; helperSeeds.methodReferences().isEmpty()) {</span>
+<span class="fc bfc" id="L277" title="All 4 branches covered.">		if (!seeds.candidateFound() &amp;&amp; helperSeeds.assertionPaths().isEmpty()) {</span>
 <span class="fc" id="L278">			clearScopeDecision(project);</span>
 <span class="fc" id="L279">			trace.finish(&quot;no-candidate&quot;, null, null, null, null, null); //$NON-NLS-1$</span>
 <span class="fc" id="L280">			return List.of();</span>
@@ -309,17 +309,17 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp&lt;JUnitMi
 			}
 <span class="fc" id="L310">			requiredUnits= new ArrayList&lt;&gt;(required);</span>
 		}
-<span class="fc bfc" id="L312" title="All 2 branches covered.">		if (!helperSeeds.methodReferences().isEmpty()) {</span>
+<span class="fc bfc" id="L312" title="All 2 branches covered.">		if (!helperSeeds.assertionPaths().isEmpty()) {</span>
 <span class="fc" id="L313">			Set&lt;ICompilationUnit&gt; existingScope= new LinkedHashSet&lt;&gt;(currentScope);</span>
 <span class="fc" id="L314">			existingScope.addAll(requiredUnits);</span>
-<span class="fc" id="L315">			List&lt;ICompilationUnit&gt; additional= JUnitSharedHelperScopeDetector.closeMethodReferences(</span>
-<span class="fc" id="L316">					project, helperSeeds.methodReferences(), existingScope, allowedUnits, monitor);</span>
+<span class="fc" id="L315">			List&lt;ICompilationUnit&gt; additional= JUnitSharedHelperScopeDetector.closeAssertionPaths(</span>
+<span class="fc" id="L316">					project, helperSeeds.assertionPaths(), existingScope, allowedUnits, monitor);</span>
 <span class="fc bfc" id="L317" title="All 2 branches covered.">			if (!additional.isEmpty()) {</span>
 <span class="fc" id="L318">				existingScope.addAll(additional);</span>
 <span class="fc" id="L319">				requiredUnits= new ArrayList&lt;&gt;(existingScope);</span>
 <span class="pc bpc" id="L320" title="1 of 2 branches missed.">			} else if (!seeds.candidateFound()) {</span>
 <span class="fc" id="L321">				clearScopeDecision(project);</span>
-<span class="fc" id="L322">				trace.finish(&quot;method-reference-rejected&quot;, coordinatedProjects, readOnlyProjects, //$NON-NLS-1$</span>
+<span class="fc" id="L322">				trace.finish(&quot;assertion-path-rejected&quot;, coordinatedProjects, readOnlyProjects, //$NON-NLS-1$</span>
 <span class="fc" id="L323">						allowedUnits, null, null);</span>
 <span class="fc" id="L324">				return List.of();</span>
 			}

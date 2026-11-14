@@ -62,10 +62,10 @@ public class JFaceCleanUpCore extends AbstractCleanUp {
 <span class="fc" id="L62">			return null;</span>
 		}
 <span class="fc" id="L64">		EnumSet&lt;JfaceCleanUpFixCore&gt; computeFixSet= computeFixSet();</span>
-<span class="pc bpc" id="L65" title="2 of 4 branches missed.">		if (!isEnabled(JFACE_CLEANUP) || computeFixSet.isEmpty()</span>
+<span class="pc bpc" id="L65" title="1 of 4 branches missed.">		if (!isEnabled(JFACE_CLEANUP) || computeFixSet.isEmpty()</span>
 //				|| !JavaModelUtil.is1d8OrHigher(compilationUnit.getJavaElement().getJavaProject())
 				) {
-<span class="nc" id="L68">			return null;</span>
+<span class="fc" id="L68">			return null;</span>
 		}
 <span class="fc" id="L70">		Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations= new LinkedHashSet&lt;&gt;();</span>
 <span class="fc" id="L71">		Set&lt;ASTNode&gt; nodesprocessed= new HashSet&lt;&gt;();</span>

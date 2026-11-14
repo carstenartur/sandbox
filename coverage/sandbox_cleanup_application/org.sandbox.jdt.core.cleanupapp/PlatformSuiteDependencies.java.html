@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>PlatformSuiteDependencies.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_cleanup_application</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.core.cleanupapp</a> &gt; <span class="el_source">PlatformSuiteDependencies.java</span></div><h1>PlatformSuiteDependencies.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.core.cleanupapp;
+
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
+import org.eclipse.jdt.core.dom.MarkerAnnotation;
+import org.eclipse.jdt.core.dom.NormalAnnotation;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.helpers.DefaultHandler;
+
+/** Dependency additions for newly introduced JUnit Platform Suite annotations. */
+final class PlatformSuiteDependencies {
+	static final String API_PACKAGE= &quot;org.junit.platform.suite.api&quot;; //$NON-NLS-1$
+	private static final String SUITE_TYPE= API_PACKAGE + &quot;.Suite&quot;; //$NON-NLS-1$
+	private static final String MAVEN_NAMESPACE= &quot;http://maven.apache.org/POM/4.0.0&quot;; //$NON-NLS-1$
+
+	private PlatformSuiteDependencies() {
+	}
+
+	static boolean usesSuite(String source, Map&lt;String, String&gt; options) {
+<span class="fc bfc" id="L47" title="All 2 branches covered.">		if (!source.contains(API_PACKAGE)) {</span>
+<span class="fc" id="L48">			return false;</span>
+		}
+<span class="fc" id="L50">		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L51">		parser.setSource(source.toCharArray());</span>
+<span class="fc" id="L52">		parser.setCompilerOptions(options);</span>
+<span class="fc" id="L53">		CompilationUnit root= (CompilationUnit) parser.createAST(null);</span>
+<span class="fc" id="L54">		boolean imported= false;</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">		for (Object item : root.imports()) {</span>
+<span class="fc" id="L56">			ImportDeclaration declaration= (ImportDeclaration) item;</span>
+<span class="fc" id="L57">			String name= declaration.getName().getFullyQualifiedName();</span>
+<span class="pc bpc" id="L58" title="1 of 4 branches missed.">			if (!declaration.isStatic() &amp;&amp; SUITE_TYPE.equals(name)) {</span>
+<span class="fc" id="L59">				imported= true;</span>
+<span class="fc" id="L60">				break;</span>
+			}
+		}
+<span class="fc" id="L63">		final boolean simpleNameAllowed= imported;</span>
+<span class="fc" id="L64">		class SuiteVisitor extends ASTVisitor {</span>
+			boolean found;
+
+			private boolean annotation(Annotation node) {
+<span class="fc" id="L68">				String name= node.getTypeName().getFullyQualifiedName();</span>
+<span class="pc bpc" id="L69" title="2 of 6 branches missed.">				found |= SUITE_TYPE.equals(name) || simpleNameAllowed &amp;&amp; &quot;Suite&quot;.equals(name); //$NON-NLS-1$</span>
+<span class="fc" id="L70">				return false;</span>
+			}
+
+			@Override
+			public boolean visit(MarkerAnnotation node) {
+<span class="fc" id="L75">				return annotation(node);</span>
+			}
+
+			@Override
+			public boolean visit(NormalAnnotation node) {
+<span class="nc" id="L80">				return annotation(node);</span>
+			}
+		}
+<span class="fc" id="L83">		SuiteVisitor visitor= new SuiteVisitor();</span>
+<span class="fc" id="L84">		root.accept(visitor);</span>
+<span class="fc" id="L85">		return visitor.found;</span>
+	}
+
+	static String addToPom(String source) throws IOException {
+<span class="fc" id="L89">		Element project= parse(source);</span>
+<span class="pc bpc" id="L90" title="2 of 4 branches missed.">		if (!&quot;project&quot;.equals(project.getTagName()) || !MAVEN_NAMESPACE.equals(project.getNamespaceURI())) { //$NON-NLS-1$</span>
+<span class="nc" id="L91">			throw unsupported(&quot;expected an unprefixed Maven 4.0.0 project&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L93">		Element dependencies= child(project, &quot;dependencies&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L94" title="1 of 6 branches missed.">		if (dependencies == null || dependencies.hasAttributes() || child(project, &quot;profiles&quot;) != null //$NON-NLS-1$</span>
+<span class="pc bpc" id="L95" title="1 of 4 branches missed.">				|| child(project, &quot;parent&quot;) != null || child(project, &quot;modules&quot;) != null) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L96">			throw unsupported(&quot;expected standalone dependencies without inheritance, profiles or modules&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L98">		String packaging= value(project, &quot;packaging&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L99" title="3 of 4 branches missed.">		if (!packaging.isEmpty() &amp;&amp; !&quot;jar&quot;.equals(packaging)) { //$NON-NLS-1$</span>
+<span class="nc" id="L100">			throw unsupported(&quot;expected jar packaging&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc bfc" id="L102" title="All 2 branches covered.">		for (Element dep : children(dependencies, &quot;dependency&quot;)) { //$NON-NLS-1$</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">			if (coordinate(dep, &quot;org.junit.platform&quot;, &quot;junit-platform-suite&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L104">				String scope= value(dep, &quot;scope&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L105">				String type= value(dep, &quot;type&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L106" title="4 of 6 branches missed.">				if ((type.isEmpty() || &quot;jar&quot;.equals(type)) &amp;&amp; value(dep, &quot;classifier&quot;).isEmpty() //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L107" title="2 of 6 branches missed.">						&amp;&amp; child(dep, &quot;exclusions&quot;) == null &amp;&amp; (scope.isEmpty() || &quot;test&quot;.equals(scope) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">								|| &quot;compile&quot;.equals(scope))) { //$NON-NLS-1$</span>
+<span class="fc" id="L109">					return source;</span>
+				}
+<span class="nc" id="L111">				throw unsupported(&quot;the existing Suite dependency has a nonstandard type, scope, classifier or exclusions&quot;); //$NON-NLS-1$</span>
+			}
+		}
+<span class="fc" id="L114">		Element management= child(project, &quot;dependencyManagement&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">		Element managed= management == null ? null : child(management, &quot;dependencies&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">		List&lt;Element&gt; managedEntries= managed == null ? List.of() : children(managed, &quot;dependency&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L117" title="1 of 4 branches missed.">		if (managedEntries.size() != 1 || !supportedBom(managedEntries.getFirst())) {</span>
+<span class="fc" id="L118">			throw unsupported(&quot;expected a single imported JUnit 5.8+ or 6 BOM with a fixed release version&quot;); //$NON-NLS-1$</span>
+		}
+		// Reparse the candidate insertion and verify that it added exactly the intended
+		// direct dependency. Literal tag text in a comment or CDATA cannot authorize it.
+<span class="fc" id="L122">		String closing= &quot;&lt;/dependencies&gt;&quot;; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">		String newline= source.contains(&quot;\r\n&quot;) ? &quot;\r\n&quot; : &quot;\n&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">		for (int offset= source.indexOf(closing); offset &gt;= 0; offset= source.indexOf(closing, offset + closing.length())) {</span>
+<span class="fc" id="L125">			int line= source.lastIndexOf('\n', offset) + 1;</span>
+<span class="fc" id="L126">			String indent= source.substring(line, offset);</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">			if (!indent.isBlank()) {</span>
+<span class="fc" id="L128">				continue;</span>
+			}
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">			String unit= indent.contains(&quot;\t&quot;) ? &quot;\t&quot; : &quot;  &quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc" id="L131">			String dependencyIndent= indent + unit;</span>
+<span class="fc" id="L132">			String fieldIndent= dependencyIndent + unit;</span>
+<span class="fc" id="L133">			String added= String.join(newline, dependencyIndent + &quot;&lt;dependency&gt;&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L134">					fieldIndent + &quot;&lt;groupId&gt;org.junit.platform&lt;/groupId&gt;&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L135">					fieldIndent + &quot;&lt;artifactId&gt;junit-platform-suite&lt;/artifactId&gt;&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L136">					fieldIndent + &quot;&lt;scope&gt;test&lt;/scope&gt;&quot;, dependencyIndent + &quot;&lt;/dependency&gt;&quot;, &quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc" id="L137">			String candidate= source.substring(0, line) + added + source.substring(line);</span>
+<span class="fc" id="L138">			Element modified= child(parse(candidate), &quot;dependencies&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L139">			if (children(modified, &quot;dependency&quot;).stream().anyMatch(dep -&gt; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">					coordinate(dep, &quot;org.junit.platform&quot;, &quot;junit-platform-suite&quot;))) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L141">				return candidate;</span>
+			}
+		}
+<span class="nc" id="L144">		throw unsupported(&quot;could not locate the direct dependencies closing tag on its own line&quot;); //$NON-NLS-1$</span>
+	}
+
+	private static boolean supportedBom(Element dependency) {
+<span class="pc bpc" id="L148" title="1 of 4 branches missed.">		return coordinate(dependency, &quot;org.junit&quot;, &quot;junit-bom&quot;) &amp;&amp; &quot;pom&quot;.equals(value(dependency, &quot;type&quot;)) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="pc bpc" id="L149" title="2 of 4 branches missed.">				&amp;&amp; &quot;import&quot;.equals(value(dependency, &quot;scope&quot;)) &amp;&amp; child(dependency, &quot;exclusions&quot;) == null //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">				&amp;&amp; value(dependency, &quot;version&quot;).matches(&quot;(?:5\\.(?:[89]|[1-9][0-9]+)|6\\.[0-9]+)\\.[0-9]+&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+	}
+
+	private static Element parse(String source) throws IOException {
+		try {
+<span class="fc" id="L155">			DocumentBuilderFactory factory= DocumentBuilderFactory.newDefaultNSInstance();</span>
+<span class="fc" id="L156">			factory.setFeature(&quot;http://apache.org/xml/features/disallow-doctype-decl&quot;, true); //$NON-NLS-1$</span>
+<span class="fc" id="L157">			factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, &quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L158">			factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, &quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L159">			var builder= factory.newDocumentBuilder();</span>
+<span class="fc" id="L160">			builder.setErrorHandler(new DefaultHandler());</span>
+<span class="fc" id="L161">			return builder.parse(new InputSource(new StringReader(source))).getDocumentElement();</span>
+<span class="fc" id="L162">		} catch (ParserConfigurationException | SAXException e) {</span>
+<span class="fc" id="L163">			throw new IOException(&quot;Cannot read the project's Maven dependency model&quot;, e); //$NON-NLS-1$</span>
+		}
+	}
+
+	private static List&lt;Element&gt; children(Element parent, String name) {
+<span class="fc" id="L168">		List&lt;Element&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">		for (Node node= parent.getFirstChild(); node != null; node= node.getNextSibling()) {</span>
+<span class="pc bpc" id="L170" title="1 of 4 branches missed.">			if (node instanceof Element element &amp;&amp; MAVEN_NAMESPACE.equals(element.getNamespaceURI())</span>
+<span class="fc bfc" id="L171" title="All 2 branches covered.">					&amp;&amp; name.equals(element.getTagName())) {</span>
+<span class="fc" id="L172">				result.add(element);</span>
+			}
+		}
+<span class="fc" id="L175">		return result;</span>
+	}
+
+	private static Element child(Element parent, String name) {
+<span class="fc" id="L179">		List&lt;Element&gt; found= children(parent, name);</span>
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">		if (found.size() &gt; 1) {</span>
+<span class="nc" id="L181">			throw new IllegalArgumentException(&quot;Ambiguous Maven element: &quot; + name); //$NON-NLS-1$</span>
+		}
+<span class="fc bfc" id="L183" title="All 2 branches covered.">		return found.isEmpty() ? null : found.getFirst();</span>
+	}
+
+	private static String value(Element parent, String name) {
+<span class="fc" id="L187">		Element element= child(parent, name);</span>
+<span class="fc bfc" id="L188" title="All 2 branches covered.">		return element == null ? &quot;&quot; : element.getTextContent().strip(); //$NON-NLS-1$</span>
+	}
+
+	private static boolean coordinate(Element dependency, String group, String artifact) {
+<span class="fc bfc" id="L192" title="All 4 branches covered.">		return group.equals(value(dependency, &quot;groupId&quot;)) &amp;&amp; artifact.equals(value(dependency, &quot;artifactId&quot;)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+	}
+
+	private static IOException unsupported(String detail) {
+<span class="fc" id="L196">		return new IOException(&quot;Cannot plan the JUnit Platform Suite dependency: &quot; + detail); //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -337,69 +337,72 @@ public final class ContainerFlowScopeSearch {
 		}
 
 		try {
-<span class="nc" id="L340">			ITypeHierarchy hierarchy= declaringType.newTypeHierarchy(monitor);</span>
-<span class="nc bnc" id="L341" title="All 2 branches missed.">			for (IType type : hierarchy.getAllTypes()) {</span>
-<span class="nc" id="L342">				checkCanceled(monitor);</span>
-<span class="nc" id="L343">				IMethod[] corresponding= type.findMethods(method);</span>
-<span class="nc bnc" id="L344" title="All 2 branches missed.">				if (corresponding == null) {</span>
-<span class="nc" id="L345">					continue;</span>
+<span class="nc bnc" id="L340" title="All 2 branches missed.">			if (method.isConstructor()) {</span>
+<span class="nc" id="L341">				return methodFamily(methodsByHandle, reasons);</span>
+			}
+<span class="nc" id="L343">			ITypeHierarchy hierarchy= declaringType.newTypeHierarchy(monitor);</span>
+<span class="nc bnc" id="L344" title="All 2 branches missed.">			for (IType type : hierarchy.getAllTypes()) {</span>
+<span class="nc" id="L345">				checkCanceled(monitor);</span>
+<span class="nc" id="L346">				IMethod[] corresponding= type.findMethods(method);</span>
+<span class="nc bnc" id="L347" title="All 2 branches missed.">				if (corresponding == null) {</span>
+<span class="nc" id="L348">					continue;</span>
 				}
-<span class="nc bnc" id="L347" title="All 2 branches missed.">				for (IMethod candidate : corresponding) {</span>
-<span class="nc" id="L348">					addMethod(methodsByHandle, candidate);</span>
+<span class="nc bnc" id="L350" title="All 2 branches missed.">				for (IMethod candidate : corresponding) {</span>
+<span class="nc" id="L351">					addMethod(methodsByHandle, candidate);</span>
 				}
 			}
-<span class="nc" id="L351">		} catch (JavaModelException exception) {</span>
-<span class="nc" id="L352">			reasons.add(&quot;JDT could not resolve the complete method override family: &quot; //$NON-NLS-1$</span>
-<span class="nc" id="L353">					+ exception.getMessage());</span>
+<span class="nc" id="L354">		} catch (JavaModelException exception) {</span>
+<span class="nc" id="L355">			reasons.add(&quot;JDT could not resolve the complete method override family: &quot; //$NON-NLS-1$</span>
+<span class="nc" id="L356">					+ exception.getMessage());</span>
 		}
-<span class="nc" id="L355">		return methodFamily(methodsByHandle, reasons);</span>
+<span class="nc" id="L358">		return methodFamily(methodsByHandle, reasons);</span>
 	}
 
 	private static MethodFamily methodFamily(
 			Map&lt;String, IMethod&gt; methodsByHandle,
 			Set&lt;String&gt; reasons) {
-<span class="nc" id="L361">		List&lt;IMethod&gt; methods= new ArrayList&lt;&gt;(methodsByHandle.values());</span>
-<span class="nc" id="L362">		methods.sort(Comparator.comparing(IJavaElement::getHandleIdentifier));</span>
-<span class="nc" id="L363">		return new MethodFamily(methods, reasons.isEmpty(), new ArrayList&lt;&gt;(reasons));</span>
+<span class="nc" id="L364">		List&lt;IMethod&gt; methods= new ArrayList&lt;&gt;(methodsByHandle.values());</span>
+<span class="nc" id="L365">		methods.sort(Comparator.comparing(IJavaElement::getHandleIdentifier));</span>
+<span class="nc" id="L366">		return new MethodFamily(methods, reasons.isEmpty(), new ArrayList&lt;&gt;(reasons));</span>
 	}
 
 	private static void addMethod(Map&lt;String, IMethod&gt; methodsByHandle, IMethod method) {
-<span class="nc bnc" id="L367" title="All 4 branches missed.">		if (method == null || !method.exists()) {</span>
-<span class="nc" id="L368">			return;</span>
+<span class="nc bnc" id="L370" title="All 4 branches missed.">		if (method == null || !method.exists()) {</span>
+<span class="nc" id="L371">			return;</span>
 		}
-<span class="nc" id="L370">		String handle= method.getHandleIdentifier();</span>
-<span class="nc bnc" id="L371" title="All 4 branches missed.">		if (handle != null &amp;&amp; !handle.isBlank()) {</span>
-<span class="nc" id="L372">			methodsByHandle.putIfAbsent(handle, method);</span>
+<span class="nc" id="L373">		String handle= method.getHandleIdentifier();</span>
+<span class="nc bnc" id="L374" title="All 4 branches missed.">		if (handle != null &amp;&amp; !handle.isBlank()) {</span>
+<span class="nc" id="L375">			methodsByHandle.putIfAbsent(handle, method);</span>
 		}
-<span class="nc" id="L374">	}</span>
+<span class="nc" id="L377">	}</span>
 
 	private static RelatedCompilationUnitSearch.Result validateCurrentScope(
 			IJavaProject project,
 			Collection&lt;ICompilationUnit&gt; currentScope,
 			Collection&lt;ICompilationUnit&gt; allowedUnits) {
-<span class="fc" id="L380">		RelatedCompilationUnitSearch.MatchAccumulator accumulator=</span>
-<span class="fc" id="L381">				new RelatedCompilationUnitSearch.MatchAccumulator(</span>
-<span class="fc" id="L382">						project, currentScope, allowedUnits);</span>
-<span class="fc" id="L383">		return accumulator.finish();</span>
+<span class="fc" id="L383">		RelatedCompilationUnitSearch.MatchAccumulator accumulator=</span>
+<span class="fc" id="L384">				new RelatedCompilationUnitSearch.MatchAccumulator(</span>
+<span class="fc" id="L385">						project, currentScope, allowedUnits);</span>
+<span class="fc" id="L386">		return accumulator.finish();</span>
 	}
 
 	private static Result result(
 			RelatedCompilationUnitSearch.Result searchResult,
 			ResolvedContainerFlowSearchPlan resolvedPlan,
 			Collection&lt;String&gt; additionalReasons) {
-<span class="fc" id="L390">		Set&lt;String&gt; reasons= new LinkedHashSet&lt;&gt;(searchResult.rejectionReasons());</span>
-<span class="fc" id="L391">		reasons.addAll(additionalReasons);</span>
-<span class="fc" id="L392">		return new Result(</span>
-<span class="fc" id="L393">				searchResult.compilationUnits(),</span>
-<span class="fc" id="L394">				resolvedPlan,</span>
-<span class="pc bpc" id="L395" title="1 of 4 branches missed.">				searchResult.complete() &amp;&amp; reasons.isEmpty(),</span>
-<span class="fc" id="L396">				new ArrayList&lt;&gt;(reasons));</span>
+<span class="fc" id="L393">		Set&lt;String&gt; reasons= new LinkedHashSet&lt;&gt;(searchResult.rejectionReasons());</span>
+<span class="fc" id="L394">		reasons.addAll(additionalReasons);</span>
+<span class="fc" id="L395">		return new Result(</span>
+<span class="fc" id="L396">				searchResult.compilationUnits(),</span>
+<span class="fc" id="L397">				resolvedPlan,</span>
+<span class="pc bpc" id="L398" title="1 of 4 branches missed.">				searchResult.complete() &amp;&amp; reasons.isEmpty(),</span>
+<span class="fc" id="L399">				new ArrayList&lt;&gt;(reasons));</span>
 	}
 
 	private static void checkCanceled(IProgressMonitor monitor) {
-<span class="pc bpc" id="L400" title="3 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
-<span class="nc" id="L401">			throw new OperationCanceledException();</span>
+<span class="pc bpc" id="L403" title="3 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
+<span class="nc" id="L404">			throw new OperationCanceledException();</span>
 		}
-<span class="fc" id="L403">	}</span>
+<span class="fc" id="L406">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

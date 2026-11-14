@@ -73,7 +73,7 @@ public class MethodReuseCleanUpCore extends AbstractCleanUp {
 	@Override
 	public ICleanUpFix createFix(final CleanUpContext context) throws CoreException {
 <span class="fc" id="L75">		CompilationUnit compilationUnit= context.getAST();</span>
-<span class="pc bpc" id="L76" title="2 of 6 branches missed.">		if (compilationUnit == null || context.getCompilationUnit() == null || !requireAST()) {</span>
+<span class="pc bpc" id="L76" title="1 of 6 branches missed.">		if (compilationUnit == null || context.getCompilationUnit() == null || !requireAST()) {</span>
 <span class="fc" id="L77">			return null;</span>
 		}
 
