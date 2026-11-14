@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.IStatus;
@@ -73,6 +74,7 @@ public final class ContainerAnalysisView extends ViewPart implements IShowInTarg
 	public static final String VIEW_ID= "org.sandbox.jdt.ui.helper.views.ContainerAnalysisView"; //$NON-NLS-1$
 
 	private final ContainerAnalysisService analysisService= new ContainerAnalysisService();
+	private boolean includeRelatedSource;
 	private final AtomicLong analysisGeneration= new AtomicLong();
 	private TableViewer viewer;
 	private Text details;
@@ -138,6 +140,14 @@ public final class ContainerAnalysisView extends ViewPart implements IShowInTarg
 		refresh.setToolTipText("Re-run read-only container contract analysis for the current Java selection"); //$NON-NLS-1$
 		IToolBarManager toolbar= getViewSite().getActionBars().getToolBarManager();
 		toolbar.add(refresh);
+		Action flow= new Action("Follow array flow across source files", Action.AS_CHECK_BOX) { //$NON-NLS-1$
+			@Override
+			public void run() {
+				includeRelatedSource= isChecked();
+				refresh();
+			}
+		};
+		getViewSite().getActionBars().getMenuManager().add(flow);
 	}
 
 	private void installSelectionListener() {
@@ -255,6 +265,7 @@ public final class ContainerAnalysisView extends ViewPart implements IShowInTarg
 			previous.cancel();
 		}
 		List<ICompilationUnit> units= currentUnits;
+		boolean followSource= includeRelatedSource;
 		if (units.isEmpty()) {
 			analysisJob= null;
 			applyAnalysisResult(generation, List.of(), null);
@@ -266,17 +277,20 @@ public final class ContainerAnalysisView extends ViewPart implements IShowInTarg
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
 				List<ContainerAnalysisRow> rows= new ArrayList<>();
-				RuntimeException failure= null;
+				Exception failure= null;
 				try {
 					for (ICompilationUnit unit : units) {
 						if (monitor.isCanceled() || generation != analysisGeneration.get()) {
 							return Status.CANCEL_STATUS;
 						}
 						rows.addAll(analysisService.analyze(unit, monitor));
+						if (followSource) {
+							rows.addAll(new ContainerSourceFlowReport().analyze(unit, monitor));
+						}
 					}
 				} catch (OperationCanceledException canceled) {
 					return Status.CANCEL_STATUS;
-				} catch (RuntimeException e) {
+				} catch (CoreException | RuntimeException e) {
 					failure= e;
 					logAnalysisFailure(e);
 				}
@@ -284,7 +298,7 @@ public final class ContainerAnalysisView extends ViewPart implements IShowInTarg
 					return Status.CANCEL_STATUS;
 				}
 				List<ContainerAnalysisRow> result= List.copyOf(rows);
-				RuntimeException resultFailure= failure;
+				Exception resultFailure= failure;
 				Display uiDisplay= display;
 				if (uiDisplay != null && !uiDisplay.isDisposed()) {
 					uiDisplay.asyncExec(() -> applyAnalysisResult(generation, result, resultFailure));
@@ -298,7 +312,7 @@ public final class ContainerAnalysisView extends ViewPart implements IShowInTarg
 	}
 
 	private void applyAnalysisResult(long generation, List<ContainerAnalysisRow> rows,
-			RuntimeException failure) {
+			Exception failure) {
 		if (generation != analysisGeneration.get()
 				|| viewer == null || viewer.getControl().isDisposed()
 				|| details == null || details.isDisposed()) {
@@ -320,13 +334,13 @@ public final class ContainerAnalysisView extends ViewPart implements IShowInTarg
 		}
 	}
 
-	private static String failureSummary(RuntimeException failure) {
+	private static String failureSummary(Exception failure) {
 		String message= failure.getMessage();
 		String type= failure.getClass().getSimpleName();
 		return message == null || message.isBlank() ? type : type + ": " + message; //$NON-NLS-1$
 	}
 
-	private static void logAnalysisFailure(RuntimeException failure) {
+	private static void logAnalysisFailure(Exception failure) {
 		UsageViewPlugin plugin= UsageViewPlugin.getDefault();
 		if (plugin != null) {
 			plugin.getLog().log(new Status(IStatus.ERROR,

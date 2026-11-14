@@ -16,6 +16,7 @@ package org.sandbox.jdt.ui.helper.views;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Collections;
@@ -26,6 +27,8 @@ import java.util.Set;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragment;
@@ -70,6 +73,68 @@ public class JavaHelperViewTest {
 		if (testProject != null && testProject.getProject().exists()) {
 			testProject.getProject().delete(true, true, null);
 		}
+	}
+
+	@Test
+	void followsArrayThroughConstructorFieldReturnAndACallerInOtherFiles() throws Exception {
+		var pack= sourceFolder.createPackageFragment("flow", false, null); //$NON-NLS-1$
+		String ownerSource= """
+				package flow;
+				import java.util.Arrays;
+				final class Build {
+				    static Box build(String item) {
+				        String[] entries = new String[0];
+				        entries = Arrays.copyOf(entries, entries.length + 1);
+				        entries[entries.length - 1] = item;
+				        String[] alias = entries;
+				        return new Box(alias);
+				    }
+				}
+				""";
+		String holderSource= """
+				package flow;
+				final class Box {
+				    private final String[] stored;
+				    Box(String[] incoming) { stored = incoming; }
+				    String[] items() { return stored; }
+				}
+				""";
+		String readerSource= """
+				package flow;
+				final class Reader {
+				    int read(Box box) { String[] received = box.items(); return received.length; }
+				    String[] unrelated() { return new String[0]; }
+				}
+				""";
+		var holder= pack.createCompilationUnit("Box.java", holderSource, false, null); //$NON-NLS-1$
+		var reader= pack.createCompilationUnit("Reader.java", readerSource, false, null); //$NON-NLS-1$
+		var owner= pack.createCompilationUnit("Build.java", ownerSource, false, null); //$NON-NLS-1$
+		var rows= new ContainerSourceFlowReport().analyze(owner, null);
+		for (var expected : Map.of("PARAMETER_DECLARATION", "incoming", "FIELD", "stored", "RETURN_EXPRESSION", "stored").entrySet()) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$
+			assertTrue(rows.stream().anyMatch(r -> r.compilationUnitHandle().equals(holder.getHandleIdentifier())
+					&& r.evidenceKind().equals(expected.getKey()) && holderSource.substring(r.sourceStart(), r.sourceStart() + r.sourceLength()).equals(expected.getValue())), rows::toString);
+		}
+		assertTrue(rows.stream().anyMatch(r -> r.compilationUnitHandle().equals(reader.getHandleIdentifier())
+				&& r.evidenceKind().equals("RETURN_CONSUMER") && readerSource.substring(r.sourceStart(), r.sourceStart() + r.sourceLength()).equals("received")), rows::toString); //$NON-NLS-1$ //$NON-NLS-2$
+		assertTrue(rows.stream().allMatch(r -> r.status().equals("REPORT_ONLY"))); //$NON-NLS-1$
+		assertEquals(ownerSource, owner.getSource());
+		assertEquals(holderSource, holder.getSource());
+		assertEquals(readerSource, reader.getSource());
+		assertEquals(rows, new ContainerSourceFlowReport().analyze(owner, null));
+		var canceled= new NullProgressMonitor();
+		canceled.setCanceled(true);
+		assertThrows(OperationCanceledException.class,
+				() -> new ContainerSourceFlowReport().analyze(owner, canceled));
+
+		String unsupported= readerSource.replace("String[] received = box.items(); return received.length;", "return box.items().length;"); //$NON-NLS-1$ //$NON-NLS-2$
+		reader.getBuffer().setContents(unsupported);
+		reader.save(null, true);
+		var boundaries= new ContainerSourceFlowReport().analyze(owner, null);
+		assertTrue(boundaries.stream().anyMatch(r -> r.compilationUnitHandle().equals(reader.getHandleIdentifier())
+				&& r.evidenceKind().equals("UNSUPPORTED_RETURN_CONSUMER") //$NON-NLS-1$
+				&& unsupported.substring(r.sourceStart(), r.sourceStart() + r.sourceLength()).equals("box.items()")), boundaries::toString); //$NON-NLS-1$
+		assertTrue(boundaries.stream().noneMatch(r -> r.evidenceKind().equals("RETURN_CONSUMER"))); //$NON-NLS-1$
+		assertEquals(unsupported, reader.getSource());
 	}
 
 	/**
