@@ -41,6 +41,7 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.internal.corext.fix.CleanUpConstants;
@@ -59,6 +60,7 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.pde.core.target.ITargetPlatformService;
 import org.eclipse.pde.core.target.LoadTargetDefinitionJob;
+import org.eclipse.pde.internal.core.ClasspathComputer;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Composite;
@@ -288,6 +290,8 @@ public class PinnedStatusPreviewSWTBotTest {
             load.schedule();
             load.join();
             assertTrue(load.getResult().isOK(), () -> load.getResult().toString());
+            // PDE updates Java project's dependency containers in a separate job after target activation.
+            Job.getJobManager().join(ClasspathComputer.class, new NullProgressMonitor());
         } finally {
             context.ungetService(reference);
         }
