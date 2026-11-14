@@ -17,6 +17,14 @@ the original method signature. For example, a local builder initialized from
 <code>return values.toArray(new String[0]);</code>. The check requires a fresh
 array with the exact declared element type and simple append values.</p>
 
+<h2 id="listeners">Copy-on-write listener snapshots</h2>
+<p>An opt-in migration for read-mostly listener lists. Registration originally
+appends under the private list's lock. Notification takes a typed array snapshot
+under that lock and then calls each <code>Runnable</code> outside the lock.
+The replacement takes a <code>CopyOnWriteArrayList</code> iterator snapshot and
+copies the backing array on each registration. Choose this option for infrequent
+registration. It preserves duplicate callbacks, their order, and the next
+notification's visibility of registrations made during a callback.</p>
 <h2 id="unique-sequence">Manually unique list to ordered set</h2>
 <pre>if (!values.contains(value)) {
     values.add(value);

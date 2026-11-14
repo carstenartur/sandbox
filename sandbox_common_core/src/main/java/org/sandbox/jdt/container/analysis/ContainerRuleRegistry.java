@@ -38,6 +38,7 @@ public final class ContainerRuleRegistry {
 	public static final String COLLECTION_BULK_ADD= "existing.collection.bulk-add"; //$NON-NLS-1$
 	public static final String COLLECTION_COPY_CONSTRUCTOR= "existing.collection.copy-constructor"; //$NON-NLS-1$
 	public static final String ARRAY_FILL= "existing.array.fill"; //$NON-NLS-1$
+	public static final String COPY_ON_WRITE_LISTENERS= "semantic.list.listener.copy-on-write"; //$NON-NLS-1$
 	public static final String TYPE_GENERALIZATION= "existing.type.generalization"; //$NON-NLS-1$
 
 	private static final Map<String, ContainerRuleDescriptor> RULES= createRules();
@@ -144,6 +145,13 @@ public final class ContainerRuleRegistry {
 				RuleOwnership.NOVEL,
 				"", //$NON-NLS-1$
 				"The rule replaces numeric head removal with an explicit FIFO container contract.")); //$NON-NLS-1$
+		register(rules, new ContainerRuleDescriptor(
+				COPY_ON_WRITE_LISTENERS,
+				ContainerShape.LIST,
+				ContainerShape.CONCURRENT_CONTAINER,
+				RuleOwnership.NOVEL,
+				"", //$NON-NLS-1$
+				"No existing cleanup proves a closed locked registration and snapshot protocol with callback dispatch outside the lock.")); //$NON-NLS-1$
 		register(rules, new ContainerRuleDescriptor(
 				LIFO_SEQUENCE_DEQUE,
 				ContainerShape.LIST,

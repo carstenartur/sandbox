@@ -2,6 +2,8 @@
 <?eclipse version="3.4"?>
 <plugin>
 	<extension point="org.eclipse.jdt.ui.cleanUps">
+		<cleanUp class="org.sandbox.jdt.container.cleanup.internal.ui.fix.ListenerSnapshotCleanUp"
+				id="org.sandbox.jdt.ui.cleanup.container_contracts.listener_snapshot"/>
 		<cleanUpConfigurationUI
 				class="org.sandbox.jdt.container.cleanup.internal.ui.preferences.cleanup.SandboxCodeTabPage"
 				cleanUpKind="cleanUp"

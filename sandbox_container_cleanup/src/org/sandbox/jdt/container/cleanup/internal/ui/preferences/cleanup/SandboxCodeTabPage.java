@@ -27,6 +27,7 @@ import org.eclipse.ui.PlatformUI;
 import org.sandbox.jdt.container.cleanup.internal.ui.fix.ConcurrentMembershipCleanUp;
 import org.sandbox.jdt.container.cleanup.internal.ui.fix.ContainerCleanUp;
 import org.sandbox.jdt.container.cleanup.internal.ui.fix.CoordinatedContainerCleanUp;
+import org.sandbox.jdt.container.cleanup.internal.ui.fix.ListenerSnapshotCleanUp;
 
 /** Preference page for local and explicitly project-closed semantic container migrations. */
 public final class SandboxCodeTabPage extends AbstractCleanUpTabPage {
@@ -42,6 +43,7 @@ public final class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 	@Override
 	protected AbstractCleanUp[] createPreviewCleanUps(Map<String, String> values) {
 		return new AbstractCleanUp[] {
+				new ListenerSnapshotCleanUp(values),
 				new ContainerCleanUp(values),
 				new ConcurrentMembershipCleanUp(values),
 				new CoordinatedContainerCleanUp(values)
@@ -64,6 +66,9 @@ public final class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				FALSE_TRUE);
 
 		intent(group);
+		CheckboxPreference listenerSnapshot= createCheckboxPref(group, numColumns - 1,
+				ContainerCleanUpMessages.ContainerTabPage_ListenerSnapshot, ListenerSnapshotCleanUp.OPTION, FALSE_TRUE);
+		registerSlavePreference(master, new CheckboxPreference[] { listenerSnapshot }, null);
 		CheckboxPreference arrayToList= createCheckboxPref(
 				group,
 				numColumns - 1,
