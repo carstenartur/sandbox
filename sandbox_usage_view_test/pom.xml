@@ -16,6 +16,11 @@
 			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_usage_view</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_use_general_type</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 	<build>
 		<testSourceDirectory>src</testSourceDirectory>
