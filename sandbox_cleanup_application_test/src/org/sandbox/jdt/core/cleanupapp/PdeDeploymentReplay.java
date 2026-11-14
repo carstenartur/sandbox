@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Objects;
 
 import org.eclipse.core.resources.IFile;
 
@@ -35,7 +36,7 @@ final class PdeDeploymentReplay {
 				String relative= file.getProjectRelativePath().toPortableString();
 				Path output= relative.startsWith("deployment/") //$NON-NLS-1$
 						? project.resolve("feature").resolve(file.getName()) : project.resolve("bundle").resolve(relative); //$NON-NLS-1$ //$NON-NLS-2$
-				Files.createDirectories(output.getParent());
+				Files.createDirectories(Objects.requireNonNull(output.getParent()));
 				Files.write(output, "before".equals(phase) ? entry.getValue() //$NON-NLS-1$
 						: Files.readAllBytes(file.getLocation().toFile().toPath()));
 			}
