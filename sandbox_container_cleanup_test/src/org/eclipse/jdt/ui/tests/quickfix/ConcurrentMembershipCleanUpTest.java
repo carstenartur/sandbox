@@ -20,6 +20,7 @@ import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCle
 
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -77,7 +78,7 @@ class ConcurrentMembershipCleanUpTest {
 		assertNotNull(undo);
 		assertTrue(unit.getSource().contains("ConcurrentHashMap.newKeySet()")); //$NON-NLS-1$
 		assertFalse(Arrays.stream(parse(unit).getProblems()).anyMatch(problem -> problem.isError()));
-		var file= Files.writeString(output.resolve("Sample.java"), unit.getSource()); //$NON-NLS-1$
+		var file= Files.writeString(output.resolve("Sample.java"), unit.getSource(), StandardCharsets.UTF_8); //$NON-NLS-1$
 		assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null,
 				"-d", output.toString(), file.toString())); //$NON-NLS-1$
 		try (var classes= new URLClassLoader(new URL[] { output.toUri().toURL() }, null)) {
