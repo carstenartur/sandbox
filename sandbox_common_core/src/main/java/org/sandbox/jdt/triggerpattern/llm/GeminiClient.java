@@ -390,8 +390,7 @@ public class GeminiClient implements LlmClient {
 	private void reserveRequest() throws IOException {
 		int previousCount = dailyRequestCount.getAndUpdate(count -> Math.min(count + 1, MAX_DAILY_REQUESTS));
 		if (previousCount >= MAX_DAILY_REQUESTS) {
-			throw new IOException("Gemini client request budget exhausted after " //$NON-NLS-1$
-					+ previousCount + " HTTP attempts"); //$NON-NLS-1$
+			throw new RequestBudgetExhaustedException(previousCount);
 		}
 	}
 

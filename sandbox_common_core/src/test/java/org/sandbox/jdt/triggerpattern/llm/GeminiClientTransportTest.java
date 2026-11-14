@@ -199,12 +199,12 @@ class GeminiClientTransportTest {
 				assertThrows(IOException.class, request);
 				assertEquals(call * 5, client.getDailyRequestCount());
 			}
-			IOException exhausted = assertThrows(IOException.class, request);
+			var exhausted = assertThrows(RequestBudgetExhaustedException.class, request);
 			assertTrue(exhausted.getMessage().contains("budget"));
 			assertFalse(client.hasRemainingQuota());
 			assertEquals(18, client.getDailyRequestCount());
 			assertEquals(18, transport.requests.size());
-			assertThrows(IOException.class, request);
+			assertThrows(RequestBudgetExhaustedException.class, request);
 			assertEquals(18, transport.requests.size(), "No nineteenth request may reach the transport");
 		}
 	}

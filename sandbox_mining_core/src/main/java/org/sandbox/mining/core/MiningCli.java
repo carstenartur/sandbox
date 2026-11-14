@@ -54,6 +54,7 @@ import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 import org.sandbox.jdt.triggerpattern.llm.DslContextCollector;
 import org.sandbox.jdt.triggerpattern.llm.LlmClient;
 import org.sandbox.jdt.triggerpattern.llm.LlmClientFactory;
+import org.sandbox.jdt.triggerpattern.llm.RequestBudgetExhaustedException;
 import org.sandbox.jdt.triggerpattern.llm.PromptBuilder;
 import org.sandbox.jdt.triggerpattern.llm.PromptBuilder.CommitData;
 import org.sandbox.jdt.triggerpattern.git.CommitWalker;
@@ -323,6 +324,7 @@ miningLog.println("Commit list loaded: " + commitListHashes.size() + " commits t
 }
 
 Exception miningFailure = null;
+RequestBudgetExhaustedException budgetStop = null;
 Path workDir = Files.createTempDirectory("mining-core-"); //$NON-NLS-1$
 try (LlmClient llmClient = llmClientFactory.apply(llmProvider)) {
 llmClient.setMaxFailureDuration(Duration.ofSeconds(maxFailureDurationSeconds));
@@ -345,10 +347,14 @@ dc.setRetryCount(0);
 repoState.setLastModelUsed(currentModel);
 }
 try {
+try {
 processRepositories(config, state, statePath, workDir, batchSize, commitsPerRequest,
 llmClient, promptBuilder, dslContext, categoryManager, validator, stats, aggregator,
 startTimeMs, maxDurationMinutes, typeEnricher, keywordFilter, commitListHashes,
 outputDir, sandboxRoot);
+} catch (RequestBudgetExhaustedException exhausted) {
+budgetStop = exhausted;
+}
 // Always process deferred commits at end of each run
 retryDeferredCommits(state, statePath, workDir, llmClient, promptBuilder,
 dslContext, categoryManager, validator, stats, aggregator, config, retryDeferred);
@@ -448,7 +454,12 @@ throw ioFailure;
 throw (GitAPIException) miningFailure;
 }
 
+if (budgetStop != null) {
+miningLog.println("=== Mining paused ==="); //$NON-NLS-1$
+miningLog.println(budgetStop.getMessage() + ". The next run will resume at the saved checkpoint."); //$NON-NLS-1$
+} else {
 miningLog.println("=== Mining complete ==="); //$NON-NLS-1$
+}
 miningLog.println("Processed: " + stats.getTotalProcessed() + " commits"); //$NON-NLS-1$ //$NON-NLS-2$
 miningLog.println("Relevant:  " + stats.getRelevant()); //$NON-NLS-1$
 miningLog.println("Candidates: " + stagedCandidateCount + " staged in mining-candidates/"); //$NON-NLS-1$ //$NON-NLS-2$
@@ -475,9 +486,7 @@ miningLog.println("Max duration reached (" + maxDurationMinutes //$NON-NLS-1$
 return;
 }
 if (!llmClient.hasRemainingQuota()) {
-miningLog.println("Daily API quota exhausted (" + llmClient.getDailyRequestCount() //$NON-NLS-1$
-+ " requests used). Stopping. Will resume from current position on next run."); //$NON-NLS-1$
-return;
+throw new RequestBudgetExhaustedException(llmClient.getDailyRequestCount());
 }
 if (llmClient.isApiUnavailable()) {
 logApiUnavailable(llmClient);
@@ -542,10 +551,7 @@ miningLog.println("Max duration reached. Stopping batch processing."); //$NON-NL
 return;
 }
 if (!llmClient.hasRemainingQuota()) {
-miningLog.println("Daily API quota exhausted (" //$NON-NLS-1$
-+ llmClient.getDailyRequestCount()
-+ " requests used). Stopping. Will resume from current position on next run."); //$NON-NLS-1$
-return;
+throw new RequestBudgetExhaustedException(llmClient.getDailyRequestCount());
 }
 if (llmClient.isApiUnavailable()) {
 logApiUnavailable(llmClient);
@@ -694,6 +700,9 @@ String prompt = promptBuilder.buildBatchPrompt(dslContext,
 categoryManager.getCategoriesJson(), commitDataList, previousResults);
 try {
 evaluations = llmClient.evaluateBatch(prompt, hashes, messages, repo.getUrl());
+} catch (RequestBudgetExhaustedException exhausted) {
+// No evaluation was returned. Resume this batch from the previous durable checkpoint.
+throw exhausted;
 } catch (IOException e) {
 evaluationFailure = e;
 }
