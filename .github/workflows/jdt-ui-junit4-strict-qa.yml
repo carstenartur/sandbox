@@ -308,8 +308,12 @@ jobs:
           if-no-files-found: error
 
 
+  patched-preview-host:
+    uses: ./.github/workflows/patched-jdt-ui-atomic-help-screenshot.yml
+
   pinned-native-junit:
-    needs: strict-real-jdt-ui
+    needs: [strict-real-jdt-ui, patched-preview-host]
     uses: ./.github/workflows/pinned-platform-status-preview.yml
     with:
       junit-artifact: jdt-ui-junit4-strict-evidence-${{ github.run_number }}
+      patched-host-artifact: patched-jdt-ui-atomic-preview-${{ github.run_number }}

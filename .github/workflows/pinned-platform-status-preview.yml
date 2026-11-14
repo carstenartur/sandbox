@@ -30,6 +30,9 @@ on:
       junit-artifact:
         required: true
         type: string
+      patched-host-artifact:
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -186,6 +189,37 @@ jobs:
             -Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.PinnedJUnitPreviewSWTBotTest \
             -DfailIfNoTests=false -Dsandbox.tycho.linux-only=true -Dspotbugs.skip=true verify
           test -s "$dir/junit-strings-pinned.png"
+
+      - name: Download the patched JDT UI and LTK used in the same workflow
+        if: inputs.patched-host-artifact != ''
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ inputs.patched-host-artifact }}
+          path: ${{ runner.temp }}/atomic-host
+
+      - name: Replay the coordinated strict corpus candidate
+        if: inputs.patched-host-artifact != ''
+        run: |
+          export SANDBOX_JUNIT_CORPUS_EVIDENCE="$RUNNER_TEMP/strict-artifact/jdt-ui-strict-evidence"
+          mapfile -t jdt_repo < <(find "$RUNNER_TEMP/atomic-host" -type d -path '*/patched-jdt-ui-p2/repository')
+          mapfile -t ltk_repo < <(find "$RUNNER_TEMP/atomic-host" -type d -path '*/patched-ltk/repository')
+          test "${#jdt_repo[@]}" -eq 1
+          test "${#ltk_repo[@]}" -eq 1
+          target=sandbox_target/eclipse.target
+          awk -v jdt="file:${jdt_repo[0]}" -v ltk="file:${ltk_repo[0]}" '
+            function patch(id, repo) {
+              print "<location includeAllPlatforms=\"false\" includeConfigurePhase=\"true\" includeMode=\"planner\" includeSource=\"true\" type=\"InstallableUnit\">"
+              print "<unit id=\"" id ".feature.group\" version=\"0.0.0\"/><repository location=\"" repo "\"/></location>"
+            }
+            /<\/locations>/ { patch("sandbox_patched_jdt_ui_feature", jdt); patch("sandbox_patched_ltk_feature", ltk) }
+            {print}
+          ' "$target" > "$RUNNER_TEMP/pinned-atomic.target"
+          cp "$RUNNER_TEMP/pinned-atomic.target" "$target"
+          xvfb-run -a --server-args='-screen 0 1920x1200x24' ./mvnw --batch-mode --no-transfer-progress \
+            -f sandbox_help_build/pom.xml -Phelp-screenshots,pinned-status-preview \
+            -Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.PinnedCoordinatedJUnitPreviewSWTBotTest \
+            -DfailIfNoTests=false -Dsandbox.tycho.linux-only=true -Dspotbugs.skip=true verify
+          test -s "$SANDBOX_STATUS_EVIDENCE/junit-atomic/junit-workspace-setup-pinned.png"
 
       - name: Retain the native evidence and Eclipse test reports
         if: always()

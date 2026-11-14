@@ -64,6 +64,7 @@ public class EclipseHelpTestModuleBoundaryTest {
 			"PdeXmlQuickFixScreenshot.java", //$NON-NLS-1$
 			"PinnedEncodingPreviewSWTBotTest.java", //$NON-NLS-1$
 			"PinnedFilePreviewDriver.java", //$NON-NLS-1$
+			"PinnedCoordinatedJUnitPreviewSWTBotTest.java", //$NON-NLS-1$
 			"PinnedJUnitPreviewSWTBotTest.java", //$NON-NLS-1$
 			"PinnedStatusPreviewSWTBotTest.java", //$NON-NLS-1$
 			"PreviewContract.java", //$NON-NLS-1$
@@ -130,6 +131,7 @@ public class EclipseHelpTestModuleBoundaryTest {
 		Node configuration= configuration(profile("swtbot")); //$NON-NLS-1$
 		assertEquals(Set.of(
 				"**/PinnedEncodingPreviewSWTBotTest.class", //$NON-NLS-1$
+				"**/PinnedCoordinatedJUnitPreviewSWTBotTest.class", //$NON-NLS-1$
 				"**/PinnedJUnitPreviewSWTBotTest.class", //$NON-NLS-1$
 				"**/PinnedStatusPreviewSWTBotTest.class", //$NON-NLS-1$
 				"**/SandboxHelpScreenshotsSWTBotTest.class", //$NON-NLS-1$

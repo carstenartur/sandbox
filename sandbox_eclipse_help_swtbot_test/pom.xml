@@ -54,6 +54,7 @@
 							     Keep the ordinary JUnit dialog and all non-SWTBot tests here. -->
 							<excludes combine.self="override">
 								<exclude>**/PinnedEncodingPreviewSWTBotTest.class</exclude>
+								<exclude>**/PinnedCoordinatedJUnitPreviewSWTBotTest.class</exclude>
 								<exclude>**/PinnedJUnitPreviewSWTBotTest.class</exclude>
 								<exclude>**/PinnedStatusPreviewSWTBotTest.class</exclude>
 								<exclude>**/SandboxHelpScreenshotsSWTBotTest.class</exclude>

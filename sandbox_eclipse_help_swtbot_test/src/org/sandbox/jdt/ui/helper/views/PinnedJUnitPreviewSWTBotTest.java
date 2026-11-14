@@ -81,7 +81,7 @@ public class PinnedJUnitPreviewSWTBotTest {
         assertEquals("PASS", comparison.get("result").getAsString());
         assertEquals(comparison.get("baseline"), comparison.get("migrated"));
         for (String phase : List.of("baseline", "migrated")) {
-            assertEquals(List.of(TEST), passedSelectedTests(corpus.resolve(phase)), phase);
+            assertEquals(List.of(TEST), passedSelectedTests(corpus.resolve(phase), CLASS), phase);
         }
 
         var scenario = new CleanupScreenshotScenario("pinned-junit-strings", PreviewContract.FILE_COMBINED_DIFF,
@@ -97,7 +97,7 @@ public class PinnedJUnitPreviewSWTBotTest {
                 java.nio.file.StandardCopyOption.REPLACE_EXISTING);
     }
 
-    private static List<String> passedSelectedTests(Path phase) throws Exception {
+    static List<String> passedSelectedTests(Path phase, String className) throws Exception {
         var factory = DocumentBuilderFactory.newInstance();
         factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
         var builder = factory.newDocumentBuilder();
@@ -109,7 +109,7 @@ public class PinnedJUnitPreviewSWTBotTest {
                 var cases = builder.parse(file.toFile()).getElementsByTagName("testcase");
                 for (int i = 0; i < cases.getLength(); i++) {
                     Element test = (Element) cases.item(i);
-                    if (CLASS.equals(test.getAttribute("classname"))) {
+                    if (className.equals(test.getAttribute("classname"))) {
                         for (String status : List.of("failure", "error", "skipped")) {
                             assertEquals(0, test.getElementsByTagName(status).getLength(), file.toString());
                         }
@@ -118,6 +118,7 @@ public class PinnedJUnitPreviewSWTBotTest {
                 }
             }
         }
+        passed.sort(String::compareTo);
         return passed;
     }
 

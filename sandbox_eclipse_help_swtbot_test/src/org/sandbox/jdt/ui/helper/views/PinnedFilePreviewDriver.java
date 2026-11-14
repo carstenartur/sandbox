@@ -182,28 +182,7 @@ final class PinnedFilePreviewDriver {
                         return "Comparison does not display both expected source fragments in " + file.getName();
                     }
                 });
-                var area = UIThreadRunnable.syncExec(shell.display, (Result<Rectangle>) () -> {
-                    Rectangle bounds = shell.display.map(shell.widget, null, shell.widget.getClientArea());
-                    assertEquals(bounds, bounds.intersection(shell.widget.getMonitor().getClientArea()));
-                    shell.display.setCursorLocation(shell.widget.getMonitor().getClientArea().x,
-                            shell.widget.getMonitor().getClientArea().y);
-                    // Remapping the native shell exposes the whole dialog, including GTK button shadows
-                    // outside their widgets' allocation and both scrolled comparison panes.
-                    shell.widget.setVisible(false);
-                    return bounds;
-                });
-                UIThreadRunnable.syncExec(shell.display, () -> {
-                    shell.widget.setVisible(true);
-                    shell.widget.forceActive();
-                    shell.display.update();
-                });
-                bot.sleep(650);
-                UIThreadRunnable.syncExec(shell.display, () -> {
-                    shell.widget.redraw(0, 0, area.width, area.height, true);
-                    shell.display.update();
-                });
-                bot.sleep(650);
-                assertTrue(SWTUtils.captureScreenshot(temp.toString(), area));
+                capture(shell, bot, temp);
                 CleanupWizardDriver.clickButtonAsync(shell, "Finish");
                 driver.waitForShellToClose(shell, "Clean Up wizard");
                 assertArrayEquals(expected.getBytes(UTF_8), Files.readAllBytes(source));
@@ -248,8 +227,33 @@ final class PinnedFilePreviewDriver {
         }
     }
 
+    static void capture(SWTBotShell shell, SWTWorkbenchBot bot, Path temp) {
+        var area = UIThreadRunnable.syncExec(shell.display, (Result<Rectangle>) () -> {
+            Rectangle bounds = shell.display.map(shell.widget, null, shell.widget.getClientArea());
+            assertEquals(bounds, bounds.intersection(shell.widget.getMonitor().getClientArea()));
+            shell.display.setCursorLocation(shell.widget.getMonitor().getClientArea().x,
+                    shell.widget.getMonitor().getClientArea().y);
+            // Remapping the native shell exposes the whole dialog, including GTK button shadows
+            // outside their widgets' allocation and both scrolled comparison panes.
+            shell.widget.setVisible(false);
+            return bounds;
+        });
+        UIThreadRunnable.syncExec(shell.display, () -> {
+            shell.widget.setVisible(true);
+            shell.widget.forceActive();
+            shell.display.update();
+        });
+        bot.sleep(650);
+        UIThreadRunnable.syncExec(shell.display, () -> {
+            shell.widget.redraw(0, 0, area.width, area.height, true);
+            shell.display.update();
+        });
+        bot.sleep(650);
+        assertTrue(SWTUtils.captureScreenshot(temp.toString(), area));
+    }
+
     // Compare multiplicities. Source positions can shift when a cleanup introduces an import.
-    private static List<String> compilerDiagnostics(ICompilationUnit unit) {
+    static List<String> compilerDiagnostics(ICompilationUnit unit) {
         var parser = ASTParser.newParser(AST.getJLSLatest());
         parser.setSource(unit);
         parser.setResolveBindings(true);
@@ -260,7 +264,7 @@ final class PinnedFilePreviewDriver {
                 .sorted().toList();
     }
 
-    private static SWTBotTreeItem selectPinnedFile(SWTWorkbenchBot bot, IFile file) {
+    static SWTBotTreeItem selectPinnedFile(SWTWorkbenchBot bot, IFile file) {
         CleanupWizardDriver.workbenchShell().activate();
         var display = PlatformUI.getWorkbench().getDisplay();
         var viewer = UIThreadRunnable.syncExec(display, (Result<TreeViewer>) () -> {
@@ -305,7 +309,7 @@ final class PinnedFilePreviewDriver {
         return row;
     }
 
-    private static void resolvePinnedTarget() throws Exception {
+    static void resolvePinnedTarget() throws Exception {
         if (targetActivated) {
             return;
         }
@@ -331,7 +335,7 @@ final class PinnedFilePreviewDriver {
         }
     }
 
-    private static void selectProfile(Properties profileSettings, String name) throws CoreException {
+    static void selectProfile(Properties profileSettings, String name) throws CoreException {
         var defaults = JavaPlugin.getDefault().getCleanUpRegistry().getDefaultOptions(CleanUpConstants.DEFAULT_CLEAN_UP_OPTIONS);
         var settings = new HashMap<String, String>();
         for (String key : defaults.getKeys()) {
@@ -356,7 +360,7 @@ final class PinnedFilePreviewDriver {
      * in different visible source panes at the instant of capture. Finding both
      * strings somewhere in the dialog (or scrolling one pane twice) is not proof.
      */
-    private static boolean showVisibleDiff(Shell shell, String before, String after) {
+    static boolean showVisibleDiff(Shell shell, String before, String after) {
         var panes = new java.util.ArrayList<StyledText>();
         var controls = new ArrayDeque<Control>();
         controls.add(shell);
