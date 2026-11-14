@@ -57,7 +57,8 @@ public class PinnedEncodingPreviewSWTBotTest {
         assertEquals(0, Files.size(evidence.resolve("controls.patch")));
         var project = ResourcesPlugin.getWorkspace().getRoot().getProject("org.eclipse.jdt.ui");
         Path root = project.getLocation().toFile().toPath().toRealPath();
-        try (Git git = Git.open(root.getParent().toFile()); RevWalk walk = new RevWalk(git.getRepository())) {
+        Path checkout = java.util.Objects.requireNonNull(root.getParent(), "Missing retained checkout");
+        try (Git git = Git.open(checkout.toFile()); RevWalk walk = new RevWalk(git.getRepository())) {
             var baseline = walk.parseCommit(git.getRepository().resolve("HEAD"));
             for (var control : CONTROLS.entrySet()) {
                 Path path = root.resolve(control.getKey());

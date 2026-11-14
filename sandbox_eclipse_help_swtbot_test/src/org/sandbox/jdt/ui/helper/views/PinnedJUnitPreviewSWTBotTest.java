@@ -103,8 +103,9 @@ public class PinnedJUnitPreviewSWTBotTest {
         var builder = factory.newDocumentBuilder();
         var passed = new ArrayList<String>();
         try (var paths = Files.walk(phase)) {
-            for (Path file : paths.filter(p -> p.getFileName().toString().startsWith("TEST-"))
-                    .filter(p -> p.getFileName().toString().endsWith(".xml")).toList()) {
+            var reports = phase.getFileSystem().getPathMatcher("glob:TEST-*.xml");
+            for (Path file : paths.filter(Files::isRegularFile)
+                    .filter(path -> reports.matches(phase.relativize(path).getFileName())).toList()) {
                 var cases = builder.parse(file.toFile()).getElementsByTagName("testcase");
                 for (int i = 0; i < cases.getLength(); i++) {
                     Element test = (Element) cases.item(i);
