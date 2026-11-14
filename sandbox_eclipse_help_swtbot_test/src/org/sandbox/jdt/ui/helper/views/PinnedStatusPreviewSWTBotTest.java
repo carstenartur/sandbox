@@ -17,6 +17,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -84,12 +86,12 @@ public class PinnedStatusPreviewSWTBotTest {
             assertEquals(upstream, repo.resolve("refs/tags/" + ref + "^{commit}").name());
             try (TreeWalk tree = TreeWalk.forPath(repo, PROJECT + "/" + SOURCE, walk.parseCommit(repo.resolve("HEAD")).getTree())) {
                 assertNotNull(tree);
-                assertArrayEquals(repo.open(tree.getObjectId(0)).getBytes(), before);
+                assertArrayEquals(repo.open(tree.getObjectId(0)).getBytes(Charset.defaultCharset()), before);
             }
         }
 
         Path evidence = Path.of(required("SANDBOX_STATUS_EVIDENCE")).toRealPath();
-        var report = JsonParser.parseString(Files.readString(evidence.resolve("cleanup-check-report.json"))).getAsJsonObject();
+        var report = JsonParser.parseString(Files.readString(evidence.resolve("cleanup-check-report.json"), StandardCharsets.UTF_8)).getAsJsonObject();
         assertEquals(0, report.getAsJsonArray("errors").size());
         assertEquals("sandbox-cleanup", report.get("tool").getAsString());
         assertEquals("check", report.get("mode").getAsString());
@@ -183,7 +185,7 @@ public class PinnedStatusPreviewSWTBotTest {
             provenance.addProperty("screenshotSha256", digest(Files.readAllBytes(temp)));
             Files.move(temp, evidence.resolve("platform-status-pinned.png"), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
             Files.writeString(evidence.resolve("platform-status-pinned.provenance.json"),
-                    new GsonBuilder().setPrettyPrinting().create().toJson(provenance) + "\n");
+					(new GsonBuilder().setPrettyPrinting().create().toJson(provenance) + "\n"), StandardCharsets.UTF_8);
         } finally {
             Files.deleteIfExists(temp);
         }
