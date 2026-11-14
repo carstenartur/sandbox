@@ -72,6 +72,7 @@ public class EclipseHelpTestModuleBoundaryTest {
 			"ContainerAnalysisPerformanceIT.java", //$NON-NLS-1$
 			"ContainerAnalysisServiceTest.java", //$NON-NLS-1$
 			"ContainerAnalysisViewSWTBotTest.java", //$NON-NLS-1$
+			"ContainerCleanupOverlapTest.java", //$NON-NLS-1$
 			"JavaHelperViewSWTBotTest.java", //$NON-NLS-1$
 			"JavaHelperViewTest.java"); //$NON-NLS-1$
 
