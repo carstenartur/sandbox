@@ -204,6 +204,8 @@
       <repositoryList
           name="Eclipse 2026-06">
         <repository
+            url="https://download.eclipse.org/eclipse/updates/4.40/R-4.40-202606010713/"/>
+        <repository
             url="https://download.eclipse.org/releases/${sandbox.qa.eclipse.release}/"/>
         <repository
             url="https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/${sandbox.qa.eclipse.release}/"/>
