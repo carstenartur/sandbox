@@ -10,6 +10,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.cleanup.multifile;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -70,8 +72,8 @@ class UniqueSequenceRewritePreservationIntegrationTest {
 		assertEquals(AnalysisCompleteness.LOCAL_USAGE_COMPLETE, profile.completeness());
 		assertEquals(ContainerShape.SET, recommendation.targetContract().shape());
 
-		UniqueSequenceLocalRewriteFix.create(unit, root, plan)
-				.createChange(null).perform(null);
+		var change= UniqueSequenceLocalRewriteFix.create(unit, root, plan).createChange(null);
+		performAndCheck(change, null, unit);
 
 		String source= unit.getSource();
 		assertTrue(source.contains("Set<Mode> values")); //$NON-NLS-1$

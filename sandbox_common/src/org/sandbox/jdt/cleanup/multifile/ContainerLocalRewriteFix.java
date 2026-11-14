@@ -13,6 +13,7 @@ package org.sandbox.jdt.cleanup.multifile;
 import java.util.Objects;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.Status;
 
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.dom.AST;
@@ -67,6 +68,16 @@ public final class ContainerLocalRewriteFix {
 			ICompilationUnit unit,
 			org.eclipse.jdt.core.dom.CompilationUnit root,
 			ContainerLocalRewritePlan plan) throws CoreException {
+		ResolvedPlan resolved= resolve(unit, root, plan);
+		if (!plan.argumentTransfers().isEmpty()) {
+			throw new CoreException(Status.error("An argument transfer requires the coordinated caller and parameter migration")); //$NON-NLS-1$
+		}
+		return new RewriteOperation(resolved, true);
+	}
+
+	/** Revalidates the caller for an atomic plan that also updates its receiving declarations. */
+	static CompilationUnitRewriteOperationWithSourceRange coordinatedCallerOperation(
+			ICompilationUnit unit, org.eclipse.jdt.core.dom.CompilationUnit root, ContainerLocalRewritePlan plan) throws CoreException {
 		return new RewriteOperation(resolve(unit, root, plan), true);
 	}
 

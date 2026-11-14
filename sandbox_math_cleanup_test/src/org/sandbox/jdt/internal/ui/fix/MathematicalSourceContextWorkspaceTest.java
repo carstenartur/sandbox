@@ -2,6 +2,7 @@
 package org.sandbox.jdt.internal.ui.fix;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
 import java.util.HashMap;
 import java.util.UUID;
 import org.eclipse.core.resources.IProject;
@@ -41,7 +42,7 @@ class MathematicalSourceContextWorkspaceTest {
                 import java.math.BigInteger;
                 class Constants { static final BigInteger Q = new BigInteger("1fffffff", 16); }
                 """, true, monitor);
-            pack.createCompilationUnit("Bridge.java", """
+            var bridge = pack.createCompilationUnit("Bridge.java", """
                 package sample;
                 import java.math.BigInteger;
                 class Bridge { static final BigInteger P = Constants.Q; }
@@ -81,7 +82,7 @@ class MathematicalSourceContextWorkspaceTest {
             String preview = change.getPreviewContent(monitor);
             assertTrue(preview.contains("x.compareTo(P)"));
             var copied = change.getEdit().copy();
-            var undo = change.perform(monitor); assertEquals(preview, unit.getSource());
+            var undo = performAndCheck(change, monitor, unit, bridge, definition); assertEquals(preview, unit.getSource());
             assertNotNull(undo); undo.perform(monitor); assertEquals(source, unit.getSource());
             definition.getBuffer().setContents(definition.getSource().replace("1fffffff", "1ffffffd"));
             definition.save(monitor, true);

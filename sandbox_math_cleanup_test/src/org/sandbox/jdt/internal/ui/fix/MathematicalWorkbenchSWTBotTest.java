@@ -5,6 +5,7 @@
 package org.sandbox.jdt.internal.ui.fix;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
 
 import java.io.ByteArrayOutputStream;
 import java.io.StringWriter;
@@ -115,6 +116,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.extension.TestWatcher;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
 import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
+import org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /** Nine actual workbench contracts. Assertions always execute on the JUnit thread. */
@@ -211,6 +213,7 @@ public class MathematicalWorkbenchSWTBotTest {
  @Test @Order(2) void standardFilePreviewAppliesTwoFilesAndUndoesByteExactly() throws Exception {
   ICompilationUnit first=unit("Calculation.java",source("Calculation")),second=unit("Other.java",source("Other"));
   String beforeFirst=first.getSource(),beforeSecond=second.getSource();
+  var diagnostics=CompilerDiagnosticAssertions.capture(first, second);
   RefactoringCore.getUndoManager().flush();CleanUpRefactoring refactoring=refactoring(first,second);
   AtomicReference<CleanUpRefactoringWizard> model=new AtomicReference<>();
   Display.getDefault().asyncExec(()->{
@@ -224,9 +227,11 @@ public class MathematicalWorkbenchSWTBotTest {
   capture(dialog.widget,"mathematics-file-preview.png");button(dialog.widget,"OK").click();
   await(()->!dialog.isOpen(),"Cleanup wizard closes after application");
   assertNotEquals(beforeFirst,first.getSource());assertNotEquals(beforeSecond,second.getSource());
+  diagnostics.assertNoNewDiagnostics();
   assertEquals("17",project.getOption(JavaCore.COMPILER_CODEGEN_TARGET_PLATFORM,true));
   assertTrue(RefactoringCore.getUndoManager().anythingToUndo());RefactoringCore.getUndoManager().performUndo(null,MONITOR);
   assertEquals(beforeFirst,first.getSource());assertEquals(beforeSecond,second.getSource());
+  diagnostics.assertRestored();
  }
 
  @Test @Order(3) void sharedCleanupInstancesKeepDistinctProjectProfiles() throws Exception {
@@ -238,7 +243,7 @@ public class MathematicalWorkbenchSWTBotTest {
   assertNotEquals(CleanUpPreferenceUtil.loadOptions(new ProjectScope(project.getProject())).get(MathCleanUpOptions.WORK_BUDGET),
     CleanUpPreferenceUtil.loadOptions(new ProjectScope(secondProject.getProject())).get(MathCleanUpOptions.WORK_BUDGET));
   String beforeFirst=first.getSource(),beforeSecond=second.getSource();Change change=calculate(refactoring(first,second));
-  change.initializeValidationData(MONITOR);assertFalse(change.isValid(MONITOR).hasFatalError());Change undo=change.perform(MONITOR);
+  change.initializeValidationData(MONITOR);assertFalse(change.isValid(MONITOR).hasFatalError());Change undo=performAndCheck(change, MONITOR, first, second);
   assertNotEquals(beforeFirst,first.getSource());assertNotEquals(beforeSecond,second.getSource());
   undo.perform(MONITOR);assertEquals(beforeFirst,first.getSource());assertEquals(beforeSecond,second.getSource());
  }

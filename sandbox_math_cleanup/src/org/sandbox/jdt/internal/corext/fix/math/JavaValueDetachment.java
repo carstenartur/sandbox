@@ -48,7 +48,18 @@ final class JavaValueDetachment {
     }
     private static void exact(List<String> guards,String path,JavaValueSourceSummary.Scalar scalar,JavaValueSourceSummary.Work work) {
         guards.add(path+" != null");guards.add(path+".getClass() == java.math.BigInteger.class");
-        guards.add(path+".equals(new java.math.BigInteger(\""+JavaFixedPowerConstant.scalar(scalar.expression(),work)+"\"))");
+        var constant=JavaFixedPowerConstant.scalar(scalar.expression(),work);
+        String expression;
+        if (constant.bitLength() <= 63) {
+            expression="java.math.BigInteger.valueOf("+constant+"L)"; //$NON-NLS-1$ //$NON-NLS-2$
+        } else {
+            var bytes=new StringJoiner(", ", "new java.math.BigInteger(new byte[] {", "})"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+            for (byte value : constant.toByteArray()) {
+                bytes.add(Byte.toString(value));
+            }
+            expression=bytes.toString();
+        }
+        guards.add(path+".equals("+expression+")"); //$NON-NLS-1$ //$NON-NLS-2$
     }
     static String guard(JavaValueAccess.Access access,String value,List<String> inputs,List<JavaValueSourceSummary.StaticValue> statics) {
         var origins=new ArrayList<String>();for(String input:inputs)for(int i=0;i<access.shape().leaves();i++)origins.add(access.leaf(input,i));

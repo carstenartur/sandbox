@@ -91,6 +91,7 @@ public final class UniqueSequenceLocalRewriteFix {
 			ParameterizedType setType= ast.newParameterizedType(
 					ast.newSimpleType(ast.newName(interfaceName)));
 			setType.typeArguments().add(ASTNode.copySubtree(ast, elementType));
+			cuRewrite.getImportRemover().registerRemovedNode(resolved.declarationType().getType());
 			rewrite.replace(resolved.declaration().getType(), setType, group);
 
 			String implementationName= imports.addImport(
@@ -99,6 +100,7 @@ public final class UniqueSequenceLocalRewriteFix {
 			ParameterizedType implementationType= ast.newParameterizedType(
 					ast.newSimpleType(ast.newName(implementationName)));
 			creation.setType(implementationType);
+			cuRewrite.getImportRemover().registerRemovedNode(resolved.initializer().getType());
 			rewrite.replace(resolved.initializer(), creation, group);
 
 			for (GuardedAdd guard : resolved.guards()) {
