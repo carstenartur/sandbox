@@ -164,7 +164,7 @@ class RuleExamplesProjectTest {
 			}
 		}
 		assertEquals(0, javax.tools.ToolProvider.getSystemJavaCompiler().run(null, null, null,
-				"-proc:none", "-cp", String.join(java.io.File.pathSeparator, classpath), "-d", file.getParent().toString(), file.toString()));
+				"-proc:none", "-Xlint:all,-path", "-Werror", "-cp", String.join(java.io.File.pathSeparator, classpath), "-d", file.getParent().toString(), file.toString()));
 	}
 
 	private ICompilationUnit createUnit() throws Exception {
