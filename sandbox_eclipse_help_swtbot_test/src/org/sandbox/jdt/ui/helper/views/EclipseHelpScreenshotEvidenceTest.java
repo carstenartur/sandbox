@@ -114,6 +114,26 @@ public class EclipseHelpScreenshotEvidenceTest {
     }
 
     @Test
+    public void pinnedStatusPreviewMatchesPublishedImageAndJdtPin() throws Exception {
+        Path repository = SandboxCheckout.locate(null);
+        String bundle = "sandbox_platform_helper_help";
+        String imageName = "platform-status-pinned.png";
+        String sidecarName = "platform-status-pinned.provenance.json";
+        requireReferenced(repository, bundle, imageName);
+        requireReferenced(repository, bundle, sidecarName);
+        Path images = repository.resolve(bundle).resolve("images");
+        String provenance = Files.readString(images.resolve(sidecarName));
+        assertEquals(sha256(Files.readAllBytes(images.resolve(imageName))), jsonString(provenance, "screenshotSha256"));
+        assertEquals(readPin(repository, "PIN_JDT_UI_REPOSITORY"), jsonString(provenance, "repository"));
+        assertEquals(readPin(repository, "PIN_JDT_UI_REF"), jsonString(provenance, "ref"));
+        assertEquals(readPin(repository, "PIN_JDT_UI_COMMIT"), jsonString(provenance, "commit"));
+        assertEquals(readPin(repository, "PIN_ECLIPSE_RELEASE"), jsonString(provenance, "eclipseRelease"));
+        assertEquals(readPin(repository, "PIN_ECLIPSE_PLATFORM_VERSION"), jsonString(provenance, "eclipsePlatformVersion"));
+        assertEquals("FILE_COMBINED_DIFF", jsonString(provenance, "previewContract"));
+        assertEquals("cleanup.simplify_status_creation", jsonString(provenance, "enabledOption"));
+    }
+
+    @Test
     public void coordinatedPreviewEvidenceIsInstalledAndReferenced() throws Exception {
         Path repository = SandboxCheckout.locate(null);
         requireReferenced(repository, "sandbox_int_to_enum_help", //$NON-NLS-1$

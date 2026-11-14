@@ -1,0 +1,16 @@
+{
+  "scenario": "pinned-platform-status",
+  "previewContract": "FILE_COMBINED_DIFF",
+  "repository": "https://github.com/eclipse-jdt/eclipse.jdt.ui.git",
+  "ref": "R4_40",
+  "eclipseRelease": "2026-06",
+  "eclipsePlatformVersion": "4.40",
+  "commit": "c922f757b27b7e2b6215db383cec5f8aafd13227",
+  "project": "org.eclipse.jdt.ui",
+  "sourcePath": "ui/org/eclipse/jdt/internal/ui/text/java/ProposalSorterHandle.java",
+  "enabledOption": "cleanup.simplify_status_creation",
+  "headlessPatchSha256": "ff5dfff3f3380324955b1eb221cfd4256237533c6fe5ab52f1830cd86962845a",
+  "beforeSha256": "3e86f05134f0de977771ef7c1c4d7c0101535c4d120137229a00361f54d3e6ab",
+  "afterSha256": "d3e4e9df441d4d3ec40297b5961b5139789bffbfeb47c30e9dc82d581706ee37",
+  "screenshotSha256": "e025e3a272db7d2fbe2b421ceffe5049d0f7aa214dc7f92979d6a7e2ab3a1de7"
+}

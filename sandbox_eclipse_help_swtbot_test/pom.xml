@@ -53,6 +53,7 @@
 							     help-screenshots profile with its complete runtime and fixtures.
 							     Keep the ordinary JUnit dialog and all non-SWTBot tests here. -->
 							<excludes combine.self="override">
+								<exclude>**/PinnedStatusPreviewSWTBotTest.class</exclude>
 								<exclude>**/SandboxHelpScreenshotsSWTBotTest.class</exclude>
 								<exclude>**/SandboxHelpScreenshotsMergeGateSWTBotTest.class</exclude>
 								<exclude>**/MathematicsHelpScreenshotsSWTBotTest.class</exclude>
@@ -132,6 +133,43 @@
 								<dependency><type>eclipse-plugin</type><groupId>org.sandbox</groupId><artifactId>sandbox_use_general_type</artifactId><version>0.0.0</version></dependency>
 								<dependency><type>eclipse-plugin</type><groupId>org.sandbox</groupId><artifactId>sandbox_xml_cleanup</artifactId><version>0.0.0</version></dependency>
 							</dependencies>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>pinned-status-preview</id>
+			<repositories>
+				<repository>
+					<id>pinned-status-oomph</id>
+					<layout>p2</layout>
+					<url>https://download.eclipse.org/releases/2026-09/</url>
+				</repository>
+			</repositories>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.eclipse.tycho</groupId>
+						<artifactId>tycho-surefire-plugin</artifactId>
+						<configuration>
+							<dependencies combine.children="append">
+								<dependency>
+									<type>eclipse-plugin</type>
+									<artifactId>org.eclipse.oomph.targlets.core</artifactId>
+								</dependency>
+								<dependency>
+									<type>eclipse-plugin</type>
+									<artifactId>org.eclipse.osgi.compatibility.state</artifactId>
+								</dependency>
+							</dependencies>
+							<appArgLine>-nl en -clearPersistedState</appArgLine>
+							<environmentVariables>
+								<GTK_OVERLAY_SCROLLING>0</GTK_OVERLAY_SCROLLING>
+								<FONTCONFIG_FILE>${project.basedir}/../qa/upstream-jdt/pinned-status-fonts.conf</FONTCONFIG_FILE>
+							</environmentVariables>
+							<osgiDataDirectory>${env.SANDBOX_STATUS_WORKSPACE}</osgiDataDirectory>
+							<deleteOsgiDataDirectory>false</deleteOsgiDataDirectory>
 						</configuration>
 					</plugin>
 				</plugins>

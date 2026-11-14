@@ -302,3 +302,75 @@ scenario. Two boundaries tracked by #1469 and #1497 remain:
 Until both boundaries pass on the integrated commit, Sandbox must not claim
 that the overall JUnit migration or its documentation-driven real-corpus QA is
 complete.
+
+### Replay the Platform Status preview in the retained JDT workspace
+
+The **Pinned Platform Status preview** CI job builds the candidate Linux
+product and provisions the release SDK through the existing Maven Oomph test
+project. To create the same retained workspace locally, pass an unused runtime
+path and a complete JDK 21 to Maven running on JDK 25:
+
+```sh
+xvfb-run -a --server-args="-screen 0 1920x1200x24" ./mvnw -f sandbox_oomph/pom.xml \
+  '-Dtest=OomphSetupTest#provisionPinnedJdtWorkspace' -Dsandbox.oomph.pinned=true \
+  -Dsandbox.oomph.pinned.runtime="$PINNED_RUNTIME" -Dsandbox.oomph.jdk21="$JDK21" verify
+```
+
+Oomph creates `$PINNED_RUNTIME/workspace` and the four upstream checkouts
+beneath `$PINNED_RUNTIME`. The CI job retains the headless report, patch, native
+capture, sidecar and JUnit reports for inspection.
+
+Use a disposable copy of the Oomph workspace and its clean JDT UI checkout.
+The project must already be open, indexed and on the recorded release tag.
+Close Eclipse before running either command. Set `SANDBOX_STATUS_WORKSPACE`
+to the workspace, `SANDBOX_STATUS_EVIDENCE` to a new output directory,
+`JDT_UI` to its JDT UI checkout and `SANDBOX_ECLIPSE` to the installed
+Sandbox Eclipse executable. Install the matching Oomph Targlet support in the
+Sandbox product if needed. The 1.3.10 product runs on Eclipse 2026-09, while
+the workspace target and JDT source remain pinned to 2026-06. For this product:
+
+```sh
+"$SANDBOX_ECLIPSE" --launcher.suppressErrors -nosplash -application org.eclipse.equinox.p2.director \
+  -repository https://download.eclipse.org/releases/2026-09/ \
+  -installIU org.eclipse.oomph.targlets.feature.group
+```
+
+Confirm **Sandbox upstream JDT migration QA target** is active and resolved
+in **Preferences > Plug-in Development > Target Platform**, then close Eclipse.
+The headless and Workbench processes must both be able to load that target
+and the provisioned JDK 21. From the Sandbox checkout run:
+
+```sh
+mkdir -p "$SANDBOX_STATUS_EVIDENCE"
+source_file="$JDT_UI/org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/ProposalSorterHandle.java"
+"$SANDBOX_ECLIPSE" --launcher.suppressErrors -nosplash -data "$SANDBOX_STATUS_WORKSPACE" \
+  -application org.sandbox.jdt.core.JavaCleanup --mode check \
+  --config "$PWD/qa/upstream-jdt/platform-status.properties" \
+  --report "$SANDBOX_STATUS_EVIDENCE/cleanup-check-report.json" \
+  --patch "$SANDBOX_STATUS_EVIDENCE/cleanup-check.patch" "$source_file"
+```
+
+A successful check of this pin returns 2 and restores the source.
+Use the same exported workspace and evidence variables for the Workbench replay:
+
+```sh
+xvfb-run -a --server-args="-screen 0 1920x1200x24" ./mvnw \
+  -f sandbox_help_build/pom.xml -Phelp-screenshots,pinned-status-preview \
+  -Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.PinnedStatusPreviewSWTBotTest \
+  -DfailIfNoTests=false verify
+```
+
+The test verifies the workspace pins, Git identity, original source bytes, headless
+file selection and complete expected patch before opening the JDT wizard. It checks
+the applied source and byte-exact Undo and writes the native window capture and
+its provenance in the evidence directory. It compares both files byte-for-byte
+with the published Help baseline. The reference rendering comes from the
+`debian:trixie` container in the **Pinned Platform Status preview** workflow,
+with GTK 3, static scrollbars and the workflow's `fonts-dejavu-core` package
+and its `fonts-dejavu-mono` dependency. A desktop with supplementary DejaVu
+fonts can resolve the native dialog's fallback font differently. To reproduce
+the published PNG locally, use the same container and package set. For a
+visual change, inspect the generated PNG and its provenance together before
+updating the Help files.
+The six affected constructors retain
+their plug-in identity expression and remove the redundant zero status code.

@@ -62,6 +62,7 @@ public class EclipseHelpTestModuleBoundaryTest {
 			"MathematicsHelpScreenshots.java", //$NON-NLS-1$
 			"MathematicsHelpScreenshotsSWTBotTest.java", //$NON-NLS-1$
 			"PdeXmlQuickFixScreenshot.java", //$NON-NLS-1$
+			"PinnedStatusPreviewSWTBotTest.java", //$NON-NLS-1$
 			"PreviewContract.java", //$NON-NLS-1$
 			"SandboxAtomicPreviewPatchedJdtSWTBotTest.java", //$NON-NLS-1$
 			"SandboxCheckout.java", //$NON-NLS-1$
@@ -125,6 +126,7 @@ public class EclipseHelpTestModuleBoundaryTest {
 	public void generalSwtbotDoesNotStartSpecializedScreenshotPipelines() throws Exception {
 		Node configuration= configuration(profile("swtbot")); //$NON-NLS-1$
 		assertEquals(Set.of(
+				"**/PinnedStatusPreviewSWTBotTest.class", //$NON-NLS-1$
 				"**/SandboxHelpScreenshotsSWTBotTest.class", //$NON-NLS-1$
 				"**/SandboxHelpScreenshotsMergeGateSWTBotTest.class", //$NON-NLS-1$
 				"**/MathematicsHelpScreenshotsSWTBotTest.class", //$NON-NLS-1$

@@ -8,7 +8,9 @@ Bundle-RequiredExecutionEnvironment: JavaSE-25
 Bundle-ActivationPolicy: lazy
 Eclipse-BundleShape: dir
 Eclipse-BuddyPolicy: global
-Import-Package: org.junit.jupiter.api;version="5.7.1",
+Import-Package: com.google.gson,
+ org.sandbox.jdt.triggerpattern.git,
+ org.junit.jupiter.api;version="5.7.1",
  org.junit.jupiter.api.extension;version="5.7.1",
  org.junit.jupiter.api.io;version="5.7.1",
  org.slf4j
@@ -23,6 +25,7 @@ Require-Bundle: sandbox_test_commons,
  org.eclipse.jgit,
  org.eclipse.ltk.core.refactoring,
  org.eclipse.ltk.ui.refactoring,
+ org.eclipse.pde.core,
  org.eclipse.platform,
  org.eclipse.swt,
  org.eclipse.swtbot.eclipse.finder;resolution:=optional,
