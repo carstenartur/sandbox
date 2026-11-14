@@ -87,12 +87,6 @@ public final class ClosedReturnArrayUses {
 					return true;
 				}
 				var method= resolved.getMethodDeclaration();
-				String owner= method.getDeclaringClass().getErasure().getQualifiedName();
-				if ("java.lang.Class".equals(owner) || owner.startsWith("java.lang.reflect.") //$NON-NLS-1$ //$NON-NLS-2$
-						|| owner.startsWith("java.lang.invoke.")) { //$NON-NLS-1$
-					valid[0]= false;
-					return false;
-				}
 				if (!methodKey.equals(method.getKey()) || name.getParent() instanceof MethodDeclaration) {
 					return true;
 				}

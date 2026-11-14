@@ -197,6 +197,10 @@ final class ClosedSourceContainerMigrationCoordinator {
 		}
 
 		ResolvedContainerFlowSearchPlan resolved= discovery.resolvedPlan();
+		var rejection= ContainerSignatureBoundaries.check(project, resolved, roots, monitor);
+		if (rejection != null) {
+			return Planning.rejected(candidate.candidateId(), candidate.unitHandle(), rejection.name(), rejection.explanation, discovery.requiredHandles());
+		}
 		List<ContinuationRoot> continuationRoots= new ArrayList<>();
 		List<ContinuationDiagnostic> continuationDiagnostics= new ArrayList<>();
 		List<ContainerFlowGraph> fragments= new ArrayList<>();
@@ -450,7 +454,7 @@ final class ClosedSourceContainerMigrationCoordinator {
 				.orElse("The coordinated source closure could not be proven."); //$NON-NLS-1$
 	}
 
-	private static Map<String, CompilationUnit> parse(IJavaProject project,
+	static Map<String, CompilationUnit> parse(IJavaProject project,
 			List<ICompilationUnit> units, IProgressMonitor monitor) {
 		Map<String, CompilationUnit> roots= new LinkedHashMap<>();
 		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);
