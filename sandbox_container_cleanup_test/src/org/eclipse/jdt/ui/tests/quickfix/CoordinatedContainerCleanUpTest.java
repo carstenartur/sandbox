@@ -347,14 +347,14 @@ class CoordinatedContainerCleanUpTest {
 					String[] values = new String[0];
 					values = Arrays.copyOf(values, values.length + 1);
 					values[values.length - 1] = value;
-					%s
+					CALL_SITE
 				}
 				private <T> void consume(T[] items) {
 					System.out.println(items.length);
 					for (T item : items) System.out.println(item);
 				}
 			}
-			""".formatted(call);
+			""".replace("CALL_SITE", call); //$NON-NLS-1$
 	}
 
 	private static String source() {
