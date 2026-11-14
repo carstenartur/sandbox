@@ -1,0 +1,19 @@
+{
+  "scenario": "pinned-encoding-utf8",
+  "previewContract": "FILE_COMBINED_DIFF",
+  "repository": "https://github.com/eclipse-jdt/eclipse.jdt.ui.git",
+  "ref": "R4_40",
+  "eclipseRelease": "2026-06",
+  "eclipsePlatformVersion": "4.40",
+  "commit": "c922f757b27b7e2b6215db383cec5f8aafd13227",
+  "project": "org.eclipse.jdt.ui",
+  "sourcePath": "ui/org/eclipse/jdt/internal/ui/compare/JavaCompareUtilities.java",
+  "enabledOptions": [
+    "cleanup.explicit_encoding",
+    "cleanup.explicit_encoding_insert_utf8"
+  ],
+  "headlessPatchSha256": "c28c7050a79bf9313a69418ed87fa78bd5bcafcda447f85c78d07fc9845a5356",
+  "beforeSha256": "36388e89f8af05b8502d123cc3d22f790ad352c0f4ae07c4c118f391f9f25969",
+  "afterSha256": "64d4b6faefe8c652795546947efd9e21afc58b31685f695ca1504cb01e7ba0ae",
+  "screenshotSha256": "6e1b289622104f291784ed47f61be7d103dbaff1813ec3f95bb5bd4d0ca88587"
+}

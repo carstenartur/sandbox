@@ -151,5 +151,12 @@ public class MyTest {
    <p>The screenshot builds are integration tests: they must load the cleanup extension, open the real profile or
       preview dialog, exercise the documented selection behavior, and package the Help bundle in the product reactor.</p>
    <p><a href="index.html">Back to overview</a></p>
+   <h2>A tested JDT UI source</h2>
+   <p><code>org.eclipse.jdt.ui.tests.core.StringsTest</code> at the JDT UI R4_40 pin
+      uses an ordinary JUnit 4 test and assertion. Its file-level Clean Up preview shows both
+      imports moving to Jupiter. The pinned gate matches the applied file to the full strict
+      migration patch, checks that <code>removeTrailingCharacters</code> passed before and
+      after migration, and verifies byte-exact Undo.</p>
+   <p><img src="../images/junit-strings-pinned.png" alt="The JDT UI StringsTest source with its JUnit assertions migrating to Jupiter" /></p>
 </body>
 </html>
