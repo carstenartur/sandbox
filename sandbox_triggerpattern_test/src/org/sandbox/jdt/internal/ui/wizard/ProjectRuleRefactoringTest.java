@@ -4,6 +4,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.wizard;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -45,7 +46,7 @@ public class ProjectRuleRefactoringTest {
 		String preview= ((CompilationUnitChange) change.getChildren()[0]).getPreviewContent(null);
 		assertTrue(preview.contains("return 3;"), preview);
 		change.initializeValidationData(null);
-		Change undo= change.perform(new NullProgressMonitor());
+		Change undo= performAndCheck(change, new NullProgressMonitor(), unit);
 		assertEquals(preview, unit.getSource());
 		ProjectRuleRefactoring second= new ProjectRuleRefactoring(context.getJavaProject(), RULE);
 		assertFalse(second.checkInitialConditions(null).hasFatalError());
@@ -181,7 +182,7 @@ public class ProjectRuleRefactoringTest {
 		assertEquals(before, target.getSource());
 		assertEquals(callerBefore, caller.getSource());
 		change.initializeValidationData(null);
-		Change undo= change.perform(new NullProgressMonitor());
+		Change undo= performAndCheck(change, new NullProgressMonitor(), target, caller);
 		assertFalse(target.getSource().contains("throws"), target.getSource());
 		assertFalse(caller.getSource().contains("catch"), caller.getSource());
 		undo.initializeValidationData(null);

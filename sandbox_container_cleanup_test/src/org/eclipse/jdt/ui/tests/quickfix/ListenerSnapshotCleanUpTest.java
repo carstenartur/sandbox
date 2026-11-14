@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.eclipse.jdt.ui.tests.quickfix;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -64,7 +65,7 @@ class ListenerSnapshotCleanUpTest {
 		cleanup.checkPreConditions(context.getJavaProject(), new ICompilationUnit[] { unit }, null);
 		var fix= cleanup.createFix(new CleanUpContext(unit, parse(unit)));
 		assertNotNull(fix);
-		var undo= fix.createChange(null).perform(null);
+		var undo= performAndCheck(fix.createChange(null), null, unit);
 		assertNotNull(undo);
 		String transformed= unit.getSource();
 		assertTrue(transformed.contains("new CopyOnWriteArrayList<>()")); //$NON-NLS-1$

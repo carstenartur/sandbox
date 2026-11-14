@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.container.cleanup.internal.ui.refactoring;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -150,7 +151,7 @@ class ReturnPublicationWizardTest {
 			change.getChildren()[0].setEnabled(false);
 			assertTrue(change.isValid(monitor).hasFatalError());
 			change.getChildren()[0].setEnabled(true);
-			var undo= change.perform(monitor);
+			var undo= performAndCheck(change, monitor, rows, display);
 			assertNotNull(undo);
 			assertTrue(display.getSource().contains("items.size()")); //$NON-NLS-1$
 			var f1= java.nio.file.Files.writeString(output.resolve("Rows.java"), rows.getSource()); //$NON-NLS-1$

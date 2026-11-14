@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.eclipse.jdt.ui.tests.quickfix;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -73,7 +74,7 @@ class ConcurrentMembershipCleanUpTest {
 		cleanup.checkPreConditions(context.getJavaProject(), new ICompilationUnit[] { unit }, null);
 		ICleanUpFix fix= cleanup.createFix(new CleanUpContext(unit, parse(unit)));
 		assertNotNull(fix);
-		var undo= fix.createChange(null).perform(null);
+		var undo= performAndCheck(fix.createChange(null), null, unit);
 		assertNotNull(undo);
 		assertTrue(unit.getSource().contains("ConcurrentHashMap.newKeySet()")); //$NON-NLS-1$
 		assertFalse(Arrays.stream(parse(unit).getProblems()).anyMatch(problem -> problem.isError()));

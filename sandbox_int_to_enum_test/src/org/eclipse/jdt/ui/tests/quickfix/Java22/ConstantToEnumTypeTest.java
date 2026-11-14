@@ -7,6 +7,7 @@
  *******************************************************************************/
 package org.eclipse.jdt.ui.tests.quickfix.Java22;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -164,7 +165,7 @@ public class ConstantToEnumTypeTest {
 			}
 			changes.initializeValidationData(null);
 			assertFalse(changes.isValid(null).hasFatalError());
-			Change undo= changes.perform(new NullProgressMonitor());
+			Change undo= performAndCheck(changes, new NullProgressMonitor(), units.toArray(ICompilationUnit[]::new));
 			assertNotNull(undo);
 			try {
 				for (ICompilationUnit unit : units) context.verify(unit);

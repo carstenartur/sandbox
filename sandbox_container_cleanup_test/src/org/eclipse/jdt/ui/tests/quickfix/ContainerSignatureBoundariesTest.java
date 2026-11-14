@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.eclipse.jdt.ui.tests.quickfix;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -165,7 +166,7 @@ class ContainerSignatureBoundariesTest {
 		for (var unit : new ICompilationUnit[] {rows, viewer}) {
 			edits.add(cleanup.createFix(context(unit)).createChange(monitor));
 		}
-		var undo= edits.perform(monitor);
+		var undo= performAndCheck(edits, monitor, rows, viewer, inspection);
 		assertTrue(rows.getSource().contains("List<String> collectRows")); //$NON-NLS-1$
 		assertTrue(viewer.getSource().contains("rows.size()")); //$NON-NLS-1$
 		undo.perform(monitor);

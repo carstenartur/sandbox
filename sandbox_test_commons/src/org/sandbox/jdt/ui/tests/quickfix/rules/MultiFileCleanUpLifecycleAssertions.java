@@ -90,7 +90,7 @@ public final class MultiFileCleanUpLifecycleAssertions {
 				.allMatch(verifiedHandles::contains),
 				"Each selected compilation unit must be included in verifiedUnits"); //$NON-NLS-1$
 		String[] originals= contents(verifiedUnits);
-		var baselineProblems= CompilerDiagnosticAssertions.captureCompilerDiagnostics(verifiedUnits);
+		var baselineProblems= CompilerDiagnosticAssertions.capture(verifiedUnits);
 
 		CleanUpRefactoring refactoring= new CleanUpRefactoring();
 		refactoring.setUseOptionsFromProfile(true);
@@ -118,14 +118,13 @@ public final class MultiFileCleanUpLifecycleAssertions {
 		assertNotNull(undo, "The coordinated cleanup did not create an undo change"); //$NON-NLS-1$
 
 		assertPostApplyContents(verifiedUnits, expectedAfterApply);
-		CompilerDiagnosticAssertions.assertNoNewCompilerDiagnostics(verifiedUnits, baselineProblems);
+		baselineProblems.assertNoNewDiagnostics();
 
 		PerformChangeOperation performUndo= new PerformChangeOperation(undo);
 		workspace.run(performUndo, new NullProgressMonitor());
 		assertTrue(performUndo.changeExecuted(), "The coordinated cleanup undo change was not executed"); //$NON-NLS-1$
 		assertRestoredContents(verifiedUnits, originals);
-		assertEquals(baselineProblems, CompilerDiagnosticAssertions.captureCompilerDiagnostics(verifiedUnits),
-				"Undo must restore the original Java warning and error set"); //$NON-NLS-1$
+		baselineProblems.assertRestored();
 		return status;
 	}
 

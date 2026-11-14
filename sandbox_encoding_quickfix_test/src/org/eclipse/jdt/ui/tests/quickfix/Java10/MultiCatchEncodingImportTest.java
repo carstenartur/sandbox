@@ -8,6 +8,7 @@
  *******************************************************************************/
 package org.eclipse.jdt.ui.tests.quickfix.Java10;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -93,7 +94,7 @@ class MultiCatchEncodingImportTest {
 			assertEquals(retained, preview.contains("import java.io.UnsupportedEncodingException;"), preview); //$NON-NLS-1$
 			assertTrue(preview.contains("import java.io.FileNotFoundException;"), preview); //$NON-NLS-1$
 			change.initializeValidationData(null);
-			var undo= change.perform(null);
+			var undo= performAndCheck(change, null, unit);
 			assertNotNull(undo);
 			try {
 				assertEquals(preview, unit.getSource());

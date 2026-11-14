@@ -129,6 +129,26 @@ class CompilerDiagnosticRegressionTest {
 	}
 
 	@Test
+	void existingStaticSuggestionSurvivesAChangeOfParameterType() throws Exception {
+		String before= "package test; class Sample { int run(int input) { return input; } }"; //$NON-NLS-1$
+		String after= before.replace("int run(int", "long run(long"); //$NON-NLS-1$ //$NON-NLS-2$
+		ICompilationUnit unit= createUnit(before);
+		context.output(after);
+		assertDoesNotThrow(() -> context.performRefactoring(new ICompilationUnit[] { unit }, null));
+	}
+
+	@Test
+	void movingAStaticSuggestionBetweenOverloadsIsARegression() throws Exception {
+		String before= "package test; class Sample { int value; int run(int x) { return x; } long run(long x) { return value + x; } }"; //$NON-NLS-1$
+		String after= before.replace("return x;", "return value + x;").replace("long x) { return value + x;", "long x) { return x;"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+		ICompilationUnit unit= createUnit(before);
+		context.output(after);
+		AssertionError failure= assertThrows(AssertionError.class,
+				() -> context.performRefactoring(new ICompilationUnit[] { unit }, null));
+		assertTrue(failure.getMessage().contains("WARNING"), failure.getMessage()); //$NON-NLS-1$
+	}
+
+	@Test
 	void lineMovementOfTheSameExistingErrorIsAllowed() throws Exception {
 		String before= """
 				package test;

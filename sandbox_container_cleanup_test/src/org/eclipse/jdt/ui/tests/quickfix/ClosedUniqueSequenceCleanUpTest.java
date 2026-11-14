@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.eclipse.jdt.ui.tests.quickfix;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -154,7 +155,7 @@ class ClosedUniqueSequenceCleanUpTest {
 		assertEquals(planned, diagnostics.getLastPlanningDiagnosticsJson(java.getJavaProject()),
 				"The headless application reads diagnostics after Eclipse checks all conditions.");
 		assertTrue(cleanup.getCoordinatedCleanUpPreview(java.getJavaProject()).isEmpty());
-		var undo= combined.perform(monitor);
+		var undo= performAndCheck(combined, monitor, units.toArray(ICompilationUnit[]::new));
 		assertTrue(producer.getSource().contains("Set<String> unique"));
 		assertTrue(producer.getSource().contains("new LinkedHashSet<>()"));
 		assertFalse(producer.getSource().contains("!names.contains"));

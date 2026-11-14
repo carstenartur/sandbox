@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.eclipse.jdt.ui.tests.quickfix;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -88,7 +89,7 @@ class ContainerCleanUpTest {
 
 		ICleanUpFix fix= cleanup.createFix(new CleanUpContext(unit, parse(unit)));
 		assertNotNull(fix);
-		fix.createChange(null).perform(null);
+		performAndCheck(fix.createChange(null), null, unit);
 
 		String transformed= unit.getSource();
 		assertTrue(transformed.contains("List<String> appended")); //$NON-NLS-1$
@@ -122,7 +123,7 @@ class ContainerCleanUpTest {
 
 		ICleanUpFix fix= cleanup.createFix(new CleanUpContext(unit, parse(unit)));
 		assertNotNull(fix);
-		var undo= fix.createChange(null).perform(null);
+		var undo= performAndCheck(fix.createChange(null), null, unit);
 		String transformed= unit.getSource();
 		assertTrue(transformed.contains("String[] collect(String... input)")); //$NON-NLS-1$
 		assertTrue(transformed.contains("values.add(value)")); //$NON-NLS-1$
@@ -221,7 +222,7 @@ class ContainerCleanUpTest {
 				PARALLEL_ARRAYS_TO_RECORDS, CleanUpOptions.TRUE));
 		var fix= cleanup.createFix(new CleanUpContext(unit, parse(unit)));
 		assertNotNull(fix);
-		var undo= fix.createChange(null).perform(null);
+		var undo= performAndCheck(fix.createChange(null), null, unit);
 		assertNotNull(undo);
 		String migrated= unit.getSource();
 		assertTrue(migrated.contains("record Row("), migrated); //$NON-NLS-1$
@@ -252,7 +253,7 @@ class ContainerCleanUpTest {
 		unit.save(null, true);
 		var renamed= cleanup.createFix(new CleanUpContext(unit, parse(unit)));
 		assertNotNull(renamed);
-		renamed.createChange(null).perform(null);
+		performAndCheck(renamed.createChange(null), null, unit);
 		assertTrue(unit.getSource().contains("record Row2("), unit.getSource()); //$NON-NLS-1$
 		assertTrue(unit.getSource().contains("rows2.add("), unit.getSource()); //$NON-NLS-1$
 		assertFalse(Arrays.stream(parse(unit).getProblems()).anyMatch(problem -> problem.isError()));
@@ -308,7 +309,7 @@ class ContainerCleanUpTest {
 				RECORD_KEY_MAP, CleanUpOptions.TRUE));
 		var fix= cleanup.createFix(new CleanUpContext(unit, parse(unit)));
 		assertNotNull(fix);
-		var undo= fix.createChange(null).perform(null);
+		var undo= performAndCheck(fix.createChange(null), null, unit);
 		assertNotNull(undo);
 		String migrated= unit.getSource();
 		assertTrue(migrated.contains("Map<String, Entry> entries"), migrated); //$NON-NLS-1$

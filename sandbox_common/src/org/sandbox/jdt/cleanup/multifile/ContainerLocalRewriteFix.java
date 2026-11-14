@@ -123,6 +123,7 @@ public final class ContainerLocalRewriteFix {
 			rewrite.replace(resolved.initializer(), creation, group);
 
 			for (AppendPair pair : resolved.appendPairs()) {
+				cuRewrite.getImportRemover().registerRemovedNode(pair.growthStatement());
 				rewrite.remove(pair.growthStatement(), group);
 				MethodInvocation add= ast.newMethodInvocation();
 				add.setExpression((Expression) ASTNode.copySubtree(

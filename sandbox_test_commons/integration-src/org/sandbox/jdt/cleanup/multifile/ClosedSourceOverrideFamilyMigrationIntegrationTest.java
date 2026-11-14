@@ -10,6 +10,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.cleanup.multifile;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -110,7 +112,7 @@ class ClosedSourceOverrideFamilyMigrationIntegrationTest {
 			assertNotNull(fix);
 			change.add(fix.createChange(null));
 		}
-		Change undo= change.perform(new NullProgressMonitor());
+		Change undo= performAndCheck(change, new NullProgressMonitor(), caller, contract, first, second);
 		assertNotNull(undo);
 
 		assertTrue(caller.getSource().contains("List<String> values")); //$NON-NLS-1$

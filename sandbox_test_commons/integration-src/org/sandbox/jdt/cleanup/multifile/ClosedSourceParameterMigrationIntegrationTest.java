@@ -10,6 +10,9 @@
  *******************************************************************************/
 package org.sandbox.jdt.cleanup.multifile;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -69,7 +72,16 @@ class ClosedSourceParameterMigrationIntegrationTest {
 
 	@Test
 	void appliesAndUndoesCallerAndParameterAtomically() throws Exception {
-		ICompilationUnit caller= createUnit("Caller.java", callerSource()); //$NON-NLS-1$
+		verifyCallerAndParameterMigration(false);
+	}
+
+	@Test
+	void retainsAnImportSharedByAnUnrelatedMethod() throws Exception {
+		verifyCallerAndParameterMigration(true);
+	}
+
+	private void verifyCallerAndParameterMigration(boolean hasOtherArraysUse) throws Exception {
+		ICompilationUnit caller= createUnit("Caller.java", callerSource(hasOtherArraysUse)); //$NON-NLS-1$
 		ICompilationUnit receiver= createUnit("Receiver.java", receiverSource()); //$NON-NLS-1$
 		String originalCaller= caller.getSource();
 		String originalReceiver= receiver.getSource();
@@ -91,11 +103,12 @@ class ClosedSourceParameterMigrationIntegrationTest {
 				"Migrate caller and parameter container contract"); //$NON-NLS-1$
 		change.add(callerFix.createChange(null));
 		change.add(receiverFix.createChange(null));
-		Change undo= change.perform(new NullProgressMonitor());
+		Change undo= performAndCheck(change, new NullProgressMonitor(), caller, receiver);
 		assertNotNull(undo);
 
 		String migratedCaller= caller.getSource();
 		String migratedReceiver= receiver.getSource();
+		assertEquals(hasOtherArraysUse, migratedCaller.contains("import java.util.Arrays;")); //$NON-NLS-1$
 		assertTrue(migratedCaller.contains("List<String> values")); //$NON-NLS-1$
 		assertTrue(migratedCaller.contains("new ArrayList<>()")); //$NON-NLS-1$
 		assertTrue(migratedCaller.contains("values.add(value)")); //$NON-NLS-1$
@@ -287,11 +300,12 @@ class ClosedSourceParameterMigrationIntegrationTest {
 				"Use one mutable dynamic sequence contract."); //$NON-NLS-1$
 	}
 
-	private static String callerSource() {
-		return """
+	private static String callerSource(boolean hasOtherArraysUse) {
+		String source= """
 			package test;
 			import java.util.Arrays;
 			class Caller {
+				OTHER_METHOD
 				void collect(Receiver receiver, String value) {
 					String[] values = new String[0];
 					values = Arrays.copyOf(values, values.length + 1);
@@ -300,6 +314,8 @@ class ClosedSourceParameterMigrationIntegrationTest {
 				}
 			}
 			""";
+		return source.replace("OTHER_METHOD", hasOtherArraysUse //$NON-NLS-1$
+				? "String display(int[] values) { return Arrays.toString(values); }" : ""); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	private static String receiverSource() {

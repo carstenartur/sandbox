@@ -9,6 +9,8 @@
  *******************************************************************************/
 package org.eclipse.jdt.ui.tests.quickfix.Java8;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.File;
@@ -91,7 +93,7 @@ public class ExternalResourceFieldTypeTest {
             String preview = change.getPreviewContent(null);
             assertEquals(preview, change.getPreviewContent(null));
             assertEquals(before, unit.getSource());
-            var undo = change.perform(new org.eclipse.core.runtime.NullProgressMonitor());
+            var undo = performAndCheck(change, new org.eclipse.core.runtime.NullProgressMonitor(), unit);
             assertNotNull(undo);
             try {
                 after = unit.getSource();
@@ -172,7 +174,7 @@ public class ExternalResourceFieldTypeTest {
         String after;
         String resourceAfter;
         try {
-            var undo = composite.perform(new org.eclipse.core.runtime.NullProgressMonitor());
+            var undo = performAndCheck(composite, new org.eclipse.core.runtime.NullProgressMonitor(), units);
             assertNotNull(undo);
             try {
                 after = subject.getSource();
@@ -220,7 +222,7 @@ public class ExternalResourceFieldTypeTest {
             String preview = change.getPreviewContent(null);
             assertEquals(preview, change.getPreviewContent(null));
             assertEquals(fixture.given, unit.getSource());
-            var undo = change.perform(new org.eclipse.core.runtime.NullProgressMonitor());
+            var undo = performAndCheck(change, new org.eclipse.core.runtime.NullProgressMonitor(), unit);
             assertNotNull(undo);
             try {
                 assertEquals(fixture.expected.replaceAll("\\s+", ""), unit.getSource().replaceAll("\\s+", ""));

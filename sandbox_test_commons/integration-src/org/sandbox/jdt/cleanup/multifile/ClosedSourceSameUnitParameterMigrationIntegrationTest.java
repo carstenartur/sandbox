@@ -10,6 +10,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.cleanup.multifile;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -99,7 +101,7 @@ class ClosedSourceSameUnitParameterMigrationIntegrationTest {
 				"Migrate two parameters in one compilation unit"); //$NON-NLS-1$
 		change.add(callerFix.createChange(null));
 		change.add(contractFix.createChange(null));
-		Change undo= change.perform(new NullProgressMonitor());
+		Change undo= performAndCheck(change, new NullProgressMonitor(), caller, contract);
 		assertNotNull(undo);
 
 		assertTrue(caller.getSource().contains("List<String> values")); //$NON-NLS-1$

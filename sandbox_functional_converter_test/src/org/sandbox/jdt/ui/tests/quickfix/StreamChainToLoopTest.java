@@ -649,6 +649,18 @@ class StreamChainToLoopTest {
 		return Stream.of(
 				"""
 				public static String run() {
+					List<String> values = new ArrayList<>();
+					List<? extends Character> letters = Arrays.asList('a', 'b');
+					for (int code : letters) { values.add(Integer.toString(code)); }
+					for (boolean flag : Arrays.asList(true, false)) { values.add(Boolean.toString(flag)); }
+					try {
+						for (double number : Arrays.asList(1L, null)) { values.add(Double.toString(number)); }
+					} catch (NullPointerException expected) { values.add("null"); }
+					return values.toString();
+				}
+				""",
+				"""
+				public static String run() {
 					List<String> result = new ArrayList<>();
 					for (long value : Arrays.asList(1, 2, 3)) { result.add(select(value)); }
 					return result.toString();
