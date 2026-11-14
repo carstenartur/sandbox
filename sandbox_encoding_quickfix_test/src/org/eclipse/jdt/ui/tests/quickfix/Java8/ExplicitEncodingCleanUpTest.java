@@ -193,10 +193,12 @@ public class ExplicitEncodingCleanUpTest {
 
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
+
 	@Test
 	void preservesConcreteFileReaderContexts() throws Exception {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
-		ICompilationUnit unit= pack.createCompilationUnit("Concrete.java", """ //$NON-NLS-1$
+		ICompilationUnit unit= pack.createCompilationUnit("Concrete.java", //$NON-NLS-1$
+				"""
 				package test1;
 				import java.io.FileReader;
 				import java.io.IOException;
@@ -212,7 +214,7 @@ public class ExplicitEncodingCleanUpTest {
 				""", false, null);
 		context.enable(MYCleanUpConstants.EXPLICITENCODING_CLEANUP);
 		context.enable(MYCleanUpConstants.EXPLICITENCODING_KEEP_BEHAVIOR);
-		context.assertRefactoringHasNoChange(new ICompilationUnit[] {unit});
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { unit });
 	}
 
 }
