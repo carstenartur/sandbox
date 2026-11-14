@@ -169,6 +169,30 @@ class ReturnPublicationWizardTest {
 		assertEquals(oldConsumer, display.getSource());
 	}
 
+	@Test
+	void rejectsPublicationFactoryHiddenByAParameterBeforeApplyingEdits() throws Exception {
+		String source= """
+				package test;
+				import java.util.Arrays;
+				final class Shadowed {
+				    static String[] rows(String Collections) {
+				        String[] rows= new String[0];
+				        rows= Arrays.copyOf(rows, rows.length + 1);
+				        rows[rows.length - 1]= Collections;
+				        return rows;
+				    }
+				    int read(String x) { String[] items=rows(x); return items.length; }
+				}
+				""";
+		var unit= createUnit("Shadowed.java", source); //$NON-NLS-1$
+		var monitor= new NullProgressMonitor();
+		var refactoring= new ReturnPublicationRefactoring(unit);
+		assertFalse(refactoring.checkInitialConditions(monitor).hasError());
+		refactoring.select(ReturnPublicationPolicy.PRESERVE_NULLS);
+		assertThrows(CoreException.class, () -> refactoring.createChange(monitor));
+		assertEquals(source, unit.getSource());
+	}
+
 	private ICompilationUnit createUnit(String name, String source) throws CoreException {
 		var fragment= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		return fragment.createCompilationUnit(name, source, true, null);

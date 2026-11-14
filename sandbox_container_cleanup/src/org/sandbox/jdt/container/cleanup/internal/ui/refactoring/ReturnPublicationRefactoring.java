@@ -24,6 +24,8 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.core.WorkingCopyOwner;
+import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -144,6 +146,7 @@ public final class ReturnPublicationRefactoring extends Refactoring {
 				}
 				children.add(fix.createChange(monitor));
 			}
+			requireValid(validatePreview(children, monitor));
 			return new CompositeChange(getName(), children.toArray(Change[]::new)) {
 				@Override
 				public RefactoringStatus isValid(IProgressMonitor progress) throws CoreException {
@@ -157,7 +160,8 @@ public final class ReturnPublicationRefactoring extends Refactoring {
 							!change.isEnabled() || Arrays.stream(change.getTextEditChangeGroups()).anyMatch(group -> !group.isEnabled()))) {
 						return RefactoringStatus.createFatalErrorStatus("All return and caller edits must be applied together."); //$NON-NLS-1$
 					}
-					return checkFinalConditions(progress);
+					var status= checkFinalConditions(progress);
+					return status.hasError() ? status : validatePreview(children, progress);
 				}
 
 				@Override
@@ -169,6 +173,49 @@ public final class ReturnPublicationRefactoring extends Refactoring {
 		} catch (CoreException | RuntimeException exception) {
 			children.forEach(Change::dispose);
 			throw exception;
+		}
+	}
+
+	/** Rebind the complete preview together, including generated factory calls and caller types. */
+	private static RefactoringStatus validatePreview(List<CompilationUnitChange> changes, IProgressMonitor monitor) throws CoreException {
+		var owner= new WorkingCopyOwner() {};
+		List<ICompilationUnit> copies= new ArrayList<>();
+		try {
+			for (var change : changes) {
+				var copy= change.getCompilationUnit().getWorkingCopy(owner, monitor);
+				copies.add(copy);
+				copy.getBuffer().setContents(change.getPreviewContent(monitor));
+			}
+			for (var copy : copies) {
+				var parser= ASTParser.newParser(AST.getJLSLatest());
+				parser.setSource(copy);
+				parser.setWorkingCopyOwner(owner);
+				parser.setResolveBindings(true);
+				var unit= (CompilationUnit) parser.createAST(monitor);
+				for (IProblem problem : unit.getProblems()) {
+					if (problem.isError()) {
+						return RefactoringStatus.createFatalErrorStatus("The proposed publication changes do not compile in " //$NON-NLS-1$
+								+ copy.getElementName() + " at line " + problem.getSourceLineNumber() + ": " + problem.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$
+					}
+				}
+			}
+			return new RefactoringStatus();
+		} finally {
+			JavaModelException first= null;
+			for (var copy : copies) {
+				try {
+					copy.discardWorkingCopy();
+				} catch (JavaModelException failure) {
+					if (first == null) {
+						first= failure;
+					} else {
+						first.addSuppressed(failure);
+					}
+				}
+			}
+			if (first != null) {
+				throw first;
+			}
 		}
 	}
 
