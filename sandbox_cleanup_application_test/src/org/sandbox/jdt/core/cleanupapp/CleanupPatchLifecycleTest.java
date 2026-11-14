@@ -271,7 +271,15 @@ class CleanupPatchLifecycleTest {
 				"package probe; public class LegacyTest extends junit.framework.TestCase { public void testOld() {} }");
 		case "reflection" -> createSource("src/test/java/probe/ReflectiveTest.java",
 				"package probe; public class ReflectiveTest { @org.junit.jupiter.api.Test void run() throws Exception { Class.forName(\"junit.framework.TestCase\"); } }");
-		case "stale-binary" -> createSource("bin/probe/OldTest.class", "stale output");
+		case "stale-binary" -> {
+			// This fixture deliberately leaves an orphan in JDT's output. A concurrent
+			// auto-build may delete it before the deployment check observes it.
+			var description= project.getDescription();
+			description.setBuildSpec(new org.eclipse.core.resources.ICommand[0]);
+			project.setDescription(description, monitor);
+			org.eclipse.core.runtime.jobs.Job.getJobManager().join(ResourcesPlugin.FAMILY_AUTO_BUILD, monitor);
+			createSource("bin/probe/OldTest.class", "stale output");
+		}
 		case "generated" -> createSource("target/generated-test-sources/probe/GeneratedTest.java",
 				"package probe; public class GeneratedTest extends junit.framework.TestCase {}");
 		case "custom-engine" -> model= model.replace("  </dependencies>", """
