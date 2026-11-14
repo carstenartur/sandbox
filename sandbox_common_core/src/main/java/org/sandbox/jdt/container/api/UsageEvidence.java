@@ -63,6 +63,8 @@ public record UsageEvidence(Kind kind, String summary, int sourceStart, int sour
 		HEAD_REMOVAL,
 		TAIL_REMOVAL,
 		RECORD_KEY_LOOKUP,
+		PAIRED_ARRAY_READ,
+		PAIRED_ARRAY_WRITE,
 		ENUM_CARDINALITY,
 		ENUM_ORDINAL_INDEX,
 		ENUM_MEMBERSHIP_QUERY,

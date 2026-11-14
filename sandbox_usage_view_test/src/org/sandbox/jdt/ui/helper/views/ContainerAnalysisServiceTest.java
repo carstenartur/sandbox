@@ -388,6 +388,51 @@ public class ContainerAnalysisServiceTest {
 				.allMatch(row -> "No proven target".equals(row.targetContract()))); //$NON-NLS-1$
 	}
 
+	@Test
+	public void parallelArraysReportARecordSequenceWithNavigablePairedEvidence() {
+		String source= """
+				import java.util.Arrays;
+				class Sample {
+				    static void consume(String label, Integer value) {}
+				    void run(String[] input) {
+				        String[] labels = new String[0];
+				        Integer[] values = new Integer[0];
+				        int count = 0;
+				        for (String label : input) {
+				            labels = Arrays.copyOf(labels, count + 1);
+				            values = Arrays.copyOf(values, count + 1);
+				            labels[count] = label;
+				            values[count] = label.length();
+				            count++;
+				        }
+				        for (int i = 0; i < count; i++) consume(labels[i], values[i]);
+				    }
+				}
+				""";
+		List<ContainerAnalysisRow> rows= service.analyze(parse(source), "=Sample"); //$NON-NLS-1$
+		var records= rows.stream().filter(row -> row.targetContract().startsWith("RECORD_SEQUENCE;")).toList(); //$NON-NLS-1$
+		assertEquals(List.of("PAIRED_ARRAY_WRITE", "PAIRED_ARRAY_WRITE", "PAIRED_ARRAY_READ", "PAIRED_ARRAY_READ"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+				records.stream().map(ContainerAnalysisRow::evidenceKind).toList());
+		assertEquals(List.of("labels[count]", "values[count]", "labels[i]", "values[i]"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+				records.stream().map(row -> fragment(source, row)).toList());
+		assertTrue(records.stream().allMatch(row -> "REPORT_ONLY".equals(row.status()) //$NON-NLS-1$
+				&& row.semanticSummary().contains("CHANGED") && row.semanticSummary().contains("PRESERVED"))); //$NON-NLS-1$ //$NON-NLS-2$
+		for (String changed : List.of(
+				source.replace("values[count]", "values[0]"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("copyOf(values, count + 1)", "copyOf(values, count + 2)"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("values[i]", "values[count - i - 1]"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("count++;", "count++; consume(labels[0], values[count - 1]);"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("int count = 0;", "Object alias = labels; int count = 0;"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("count++;", "count++; java.util.Arrays.sort(values);"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("count++;", "count++; count = 0;"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("label.length()", "missingValue()"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("new String[0]", "new String[1]"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("Integer[] values = new Integer", "int[] values = new int"))) { //$NON-NLS-1$ //$NON-NLS-2$
+			assertTrue(service.analyze(parse(changed), "=Sample").stream() //$NON-NLS-1$
+					.noneMatch(row -> row.targetContract().startsWith("RECORD_SEQUENCE;")), changed); //$NON-NLS-1$
+		}
+	}
+
 	private static CompilationUnit parse(String source) {
 		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
 		parser.setKind(ASTParser.K_COMPILATION_UNIT);

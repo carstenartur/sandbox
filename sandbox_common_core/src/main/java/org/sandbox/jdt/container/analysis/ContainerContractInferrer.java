@@ -64,7 +64,9 @@ public final class ContainerContractInferrer {
 		if (enumMembership.isPresent()) {
 			return enumMembership;
 		}
-		return RecordKeyLookupAnalyzer.recommendation(profile).or(() -> inferAppendArray(profile));
+		return RecordKeyLookupAnalyzer.recommendation(profile)
+				.or(() -> ParallelArrayRecordAnalyzer.recommendation(profile))
+				.or(() -> inferAppendArray(profile));
 	}
 
 	private static Optional<ContainerRecommendation> inferAppendArray(
