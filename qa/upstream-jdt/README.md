@@ -310,7 +310,20 @@ The project must already be open, indexed and on the recorded release tag.
 Close Eclipse before running either command. Set `SANDBOX_STATUS_WORKSPACE`
 to the workspace, `SANDBOX_STATUS_EVIDENCE` to a new output directory,
 `JDT_UI` to its JDT UI checkout and `SANDBOX_ECLIPSE` to the installed
-Sandbox Eclipse executable. From the Sandbox checkout run:
+Sandbox Eclipse executable. Install the matching Oomph Targlet support in the
+Sandbox product if needed. The 1.3.10 product runs on Eclipse 2026-09, while
+the workspace target and JDT source remain pinned to 2026-06. For this product:
+
+```sh
+"$SANDBOX_ECLIPSE" -nosplash -application org.eclipse.equinox.p2.director \
+  -repository https://download.eclipse.org/releases/2026-09/ \
+  -installIU org.eclipse.oomph.targlets.feature.group
+```
+
+Confirm **Sandbox upstream JDT migration QA target** is active and resolved
+in **Preferences > Plug-in Development > Target Platform**, then close Eclipse.
+The headless and Workbench processes must both be able to load that target
+and the provisioned JDK 21. From the Sandbox checkout run:
 
 ```sh
 mkdir -p "$SANDBOX_STATUS_EVIDENCE"
@@ -326,7 +339,7 @@ A successful check of this pin returns 2 and restores the source.
 Use the same exported workspace and evidence variables for the Workbench replay:
 
 ```sh
-xvfb-run -a --server-args="-screen 0 1600x1200x24" ./mvnw \
+xvfb-run -a --server-args="-screen 0 1920x1200x24" ./mvnw \
   -f sandbox_help_build/pom.xml -Phelp-screenshots,pinned-status-preview \
   -Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.PinnedStatusPreviewSWTBotTest \
   -DfailIfNoTests=false verify

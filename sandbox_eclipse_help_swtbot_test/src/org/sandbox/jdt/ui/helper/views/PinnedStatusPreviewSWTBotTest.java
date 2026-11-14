@@ -173,6 +173,11 @@ public class PinnedStatusPreviewSWTBotTest {
                 assertTrue(change.isChecked());
                 change.select();
                 SWTBotShell shell = preview.shell();
+                UIThreadRunnable.syncExec(shell.display, () -> {
+                    Rectangle screen = shell.widget.getMonitor().getClientArea();
+                    shell.widget.setBounds(screen.x, screen.y, Math.min(screen.width, 1900), Math.min(screen.height, 1000));
+                    shell.widget.layout(true, true);
+                });
                 bot.waitUntil(new DefaultCondition() {
                     @Override public boolean test() {
                         return UIThreadRunnable.syncExec(shell.display, (Result<Boolean>) () ->
@@ -188,9 +193,11 @@ public class PinnedStatusPreviewSWTBotTest {
                     assertEquals(bounds, bounds.intersection(shell.widget.getMonitor().getClientArea()));
                     shell.display.setCursorLocation(shell.widget.getMonitor().getClientArea().x,
                             shell.widget.getMonitor().getClientArea().y);
-                    shell.widget.update();
+                    shell.widget.redraw(0, 0, bounds.width, bounds.height, true);
+                    shell.display.update();
                     return bounds;
                 });
+                bot.sleep(650);
                 assertTrue(SWTUtils.captureScreenshot(temp.toString(), area));
                 CleanupWizardDriver.clickButtonAsync(shell, "Finish");
                 driver.waitForShellToClose(shell, "Clean Up wizard");
@@ -241,9 +248,12 @@ public class PinnedStatusPreviewSWTBotTest {
     }
 
     private static void selectStatusProfile() throws CoreException {
+        var defaults = JavaPlugin.getDefault().getCleanUpRegistry().getDefaultOptions(CleanUpConstants.DEFAULT_CLEAN_UP_OPTIONS);
         var settings = new HashMap<String, String>();
-        JavaPlugin.getDefault().getCleanUpRegistry().getDefaultOptions(CleanUpConstants.DEFAULT_CLEAN_UP_OPTIONS)
-                .getKeys().forEach(key -> settings.put(key, CleanUpOptions.FALSE));
+        for (String key : defaults.getKeys()) {
+            String value = defaults.getValue(key);
+            settings.put(key, CleanUpOptions.TRUE.equals(value) ? CleanUpOptions.FALSE : value);
+        }
         settings.put(PROFILE, CleanUpOptions.TRUE);
         var profile = new CustomProfile("Sandbox pinned Platform Status", settings,
                 CleanUpProfileVersioner.CURRENT_VERSION, CleanUpProfileVersioner.PROFILE_KIND);
@@ -297,13 +307,20 @@ public class PinnedStatusPreviewSWTBotTest {
         if (start < 0) {
             return false;
         }
-        pane.setTopIndex(Math.max(0, pane.getLineAtOffset(start) - 2));
-        Rectangle text = pane.getTextBounds(start, start + fragment.length() - 1);
+        int line = pane.getLineAtOffset(start);
+        String content = pane.getLine(line);
+        int lineOffset = pane.getOffsetAtLine(line);
+        int codeStart = lineOffset + content.length() - content.stripLeading().length();
+        int codeEnd = lineOffset + content.stripTrailing().length() - 1;
+        pane.setTopIndex(Math.max(0, line - 2));
+        Rectangle text = pane.getTextBounds(codeStart, codeEnd);
         Rectangle client = pane.getClientArea();
-        if (text.x < client.x || text.x + text.width > client.x + client.width) {
-            pane.setHorizontalPixel(Math.max(0, pane.getHorizontalPixel() + text.x - client.x - 12));
-            text = pane.getTextBounds(start, start + fragment.length() - 1);
+        int desired = Math.max(0, pane.getHorizontalPixel() + text.x - client.x - 8);
+        if (desired != pane.getHorizontalPixel()) {
+            pane.setHorizontalPixel(desired);
         }
+        text = pane.getTextBounds(codeStart, codeEnd);
+        pane.redraw();
         pane.update();
         return text.equals(text.intersection(client));
     }
