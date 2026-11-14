@@ -305,6 +305,21 @@ complete.
 
 ### Replay the Platform Status preview in the retained JDT workspace
 
+The **Pinned Platform Status preview** CI job builds the candidate Linux
+product and provisions the release SDK through the existing Maven Oomph test
+project. To create the same retained workspace locally, pass an unused runtime
+path and a complete JDK 21 to Maven running on JDK 25:
+
+```sh
+xvfb-run -a --server-args="-screen 0 1920x1200x24" ./mvnw -f sandbox_oomph/pom.xml \
+  '-Dtest=OomphSetupTest#provisionPinnedJdtWorkspace' -Dsandbox.oomph.pinned=true \
+  -Dsandbox.oomph.pinned.runtime="$PINNED_RUNTIME" -Dsandbox.oomph.jdk21="$JDK21" verify
+```
+
+Oomph creates `$PINNED_RUNTIME/workspace` and the four upstream checkouts
+beneath `$PINNED_RUNTIME`. The CI job retains the headless report, patch, native
+capture, sidecar and JUnit reports for inspection.
+
 Use a disposable copy of the Oomph workspace and its clean JDT UI checkout.
 The project must already be open, indexed and on the recorded release tag.
 Close Eclipse before running either command. Set `SANDBOX_STATUS_WORKSPACE`
@@ -351,6 +366,7 @@ the applied source and byte-exact Undo and writes the native window capture and
 its provenance in the evidence directory. It compares both files byte-for-byte
 with the published Help baseline. For an intentional visual change, inspect the
 new capture and sidecar together before updating the Help files. The opt-in
-profile uses static GTK scrollbars to keep the native rendering reproducible.
+profile uses GTK 3, static scrollbars and the Debian DejaVu fonts listed in
+`pinned-status-fonts.conf` to keep native rendering independent of user fonts.
 The six affected constructors retain
 their plug-in identity expression and remove the redundant zero status code.

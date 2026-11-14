@@ -166,6 +166,7 @@
 							<appArgLine>-nl en -clearPersistedState</appArgLine>
 							<environmentVariables>
 								<GTK_OVERLAY_SCROLLING>0</GTK_OVERLAY_SCROLLING>
+								<FONTCONFIG_FILE>${project.basedir}/../qa/upstream-jdt/pinned-status-fonts.conf</FONTCONFIG_FILE>
 							</environmentVariables>
 							<osgiDataDirectory>${env.SANDBOX_STATUS_WORKSPACE}</osgiDataDirectory>
 							<deleteOsgiDataDirectory>false</deleteOsgiDataDirectory>

@@ -1,0 +1,137 @@
+name: Pinned Platform Status preview
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/pinned-platform-status-preview.yml'
+      - '.mvn/**'
+      - 'mvnw'
+      - 'pom.xml'
+      - 'qa/upstream-jdt/pins.env'
+      - 'qa/upstream-jdt/platform-status.properties'
+      - 'qa/upstream-jdt/pinned-status-fonts.conf'
+      - 'sandbox_oomph/**'
+      - 'sandbox_common/**'
+      - 'sandbox_common_core/**'
+      - 'sandbox_target/**'
+      - 'sandbox_product/**'
+      - 'sandbox_cleanup_application/**'
+      - 'sandbox_platform_helper/**'
+      - 'sandbox_platform_helper_help/**'
+      - 'sandbox_eclipse_help_swtbot_test/**'
+      - 'sandbox_help_build/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  replay:
+    name: Reproduce the pinned JDT UI Status preview
+    runs-on: ubuntu-24.04
+    container: debian:trixie
+    timeout-minutes: 240
+    defaults:
+      run:
+        shell: bash
+    env:
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
+      GDK_BACKEND: x11
+      GTK_THEME: Adwaita
+      GTK_IM_MODULE: xim
+      GTK_OVERLAY_SCROLLING: '0'
+      GTK_A11Y: none
+      NO_AT_BRIDGE: '1'
+    steps:
+      - name: Install the Debian 13 Eclipse and Xvfb runtime
+        run: |
+          apt-get update
+          apt-get install --yes --no-install-recommends \
+            ca-certificates curl git unzip xz-utils zstd xvfb xauth \
+            libgtk-3-0t64 libwebkit2gtk-4.1-0 libasound2t64 \
+            adwaita-icon-theme fonts-dejavu-core fonts-liberation
+
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Install the upstream project's JDK 21
+        id: upstream-java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install the Sandbox build JDK 25
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Materialize the Linux Sandbox product from the checkout
+        run: >-
+          ./mvnw --batch-mode --no-transfer-progress -Pproduct
+          -Dsandbox.tycho.linux-only=true -Dtycho.localArtifacts=ignore
+          -DskipTests -Dspotbugs.skip=true package
+
+      - name: Provision and activate the pinned Eclipse 4.40 workspace
+        env:
+          UPSTREAM_JDK: ${{ steps.upstream-java.outputs.path }}
+        run: |
+          runtime="$RUNNER_TEMP/pinned-status"
+          echo "SANDBOX_STATUS_WORKSPACE=$runtime/workspace" >> "$GITHUB_ENV"
+          echo "SANDBOX_STATUS_EVIDENCE=$GITHUB_WORKSPACE/target/pinned-status-evidence" >> "$GITHUB_ENV"
+          echo "FONTCONFIG_FILE=$GITHUB_WORKSPACE/qa/upstream-jdt/pinned-status-fonts.conf" >> "$GITHUB_ENV"
+          xvfb-run -a --server-args='-screen 0 1920x1200x24' ./mvnw --batch-mode --no-transfer-progress \
+            -f sandbox_oomph/pom.xml '-Dtest=OomphSetupTest#provisionPinnedJdtWorkspace' \
+            -Dsandbox.oomph.pinned=true -Dsandbox.oomph.pinned.runtime="$runtime" \
+            -Dsandbox.oomph.jdk21="$UPSTREAM_JDK" verify
+
+      - name: Run the installed cleanup against the retained JDT UI project
+        run: |
+          mkdir -p "$SANDBOX_STATUS_EVIDENCE"
+          product="$GITHUB_WORKSPACE/sandbox_product/target/products/sandbox.bundle.producteclipse/linux/gtk/x86_64/eclipse"
+          xvfb-run -a "$product" -nosplash -consoleLog -application org.eclipse.equinox.p2.director \
+            -repository https://download.eclipse.org/releases/2026-09/ \
+            -installIU org.eclipse.oomph.targlets.feature.group
+          source_file="$RUNNER_TEMP/pinned-status/eclipse.jdt.ui/org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/ProposalSorterHandle.java"
+          result=0
+          xvfb-run -a "$product" -nosplash -consoleLog -data "$SANDBOX_STATUS_WORKSPACE" \
+            -application org.sandbox.jdt.core.JavaCleanup --mode check \
+            --config "$GITHUB_WORKSPACE/qa/upstream-jdt/platform-status.properties" \
+            --report "$SANDBOX_STATUS_EVIDENCE/cleanup-check-report.json" \
+            --patch "$SANDBOX_STATUS_EVIDENCE/cleanup-check.patch" "$source_file" || result=$?
+          if [[ $result != 2 ]]; then
+            echo "::error::The pinned check expected changes (exit 2), got $result"
+            exit 1
+          fi
+
+      - name: Compare the native preview, apply, undo and Help provenance
+        run: |
+          xvfb-run -a --server-args='-screen 0 1920x1200x24' ./mvnw --batch-mode --no-transfer-progress \
+          -f sandbox_help_build/pom.xml -Phelp-screenshots,pinned-status-preview \
+          -Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.PinnedStatusPreviewSWTBotTest \
+          -DfailIfNoTests=false -Dsandbox.tycho.linux-only=true -Dspotbugs.skip=true verify
+          test -s "$SANDBOX_STATUS_EVIDENCE/platform-status-pinned.png"
+
+      - name: Retain the native evidence and Eclipse test reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: pinned-platform-status-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            target/pinned-status-evidence/
+            sandbox_oomph/target/surefire-reports/
+            sandbox_eclipse_help_swtbot_test/target/surefire-reports/
+            ${{ runner.temp }}/pinned-status/*.log
+            ${{ runner.temp }}/pinned-status/workspace/.metadata/.log
+          include-hidden-files: true
+          retention-days: 7

@@ -97,6 +97,79 @@ class OomphSetupTest {
     }
 
     @Test
+    @EnabledIfSystemProperty(named = "sandbox.oomph.pinned", matches = "true")
+    void provisionPinnedJdtWorkspace() throws Exception {
+        Path run = createFreshRuntime(Path.of(System.getProperty("sandbox.oomph.pinned.runtime")).toAbsolutePath());
+        Path jdk21 = Path.of(System.getProperty("sandbox.oomph.jdk21")).toRealPath();
+        assertTrue(Files.isRegularFile(jdk21.resolve("lib/ct.sym")), "A complete workspace JDK 21 is required");
+        String sdk = "eclipse-SDK-4.40-linux-gtk-x86_64.tar.gz";
+        String release = "https://download.eclipse.org/eclipse/downloads/drops4/R-4.40-202606010713/";
+        Path archive = run.resolve(sdk);
+        Path sums = run.resolve("sdk-checksums.txt");
+        download(release + sdk, archive);
+        download(release + "eclipse-4.40-checksums", sums);
+        String expected = "f8c6853fef69d4feed988bb5a36b7d6479768daee0e9ca6732fdd0d1e9ec07fbcd03471b5c007d693ccabbef151d5a1f3908f60c02cfecac7645e4c8671750b3";
+        assertTrue(Files.readAllLines(sums).contains(expected + " *" + sdk), "Publisher SDK checksum");
+        var digest = java.security.MessageDigest.getInstance("SHA-512");
+        try (var input = new java.security.DigestInputStream(Files.newInputStream(archive), digest)) {
+            input.transferTo(java.io.OutputStream.nullOutputStream());
+        }
+        assertEquals(expected, java.util.HexFormat.of().formatHex(digest.digest()), "Downloaded R4_40 SDK");
+        process(run.resolve("extract.log"), run, List.of("tar", "--no-same-owner", "-xzf", archive.toString()));
+        Path eclipse = run.resolve("eclipse");
+        var director = eclipseCommand(eclipse);
+        director.addAll(List.of("-nosplash", "-application", "org.eclipse.equinox.p2.director", "-repository",
+                "https://download.eclipse.org/releases/2026-06/", "-installIU", "org.eclipse.oomph.setup.sdk.feature.group"));
+        process(run.resolve("provision.log"), run, director);
+        installPinnedProbe(eclipse, run);
+        var command = eclipseCommand(eclipse);
+        command.addAll(List.of("-nosplash", "-consoleLog", "-clean", "-application", "org.sandbox.oomph.pinned.run",
+                "-data", run.resolve("workspace").toString(), "-vmargs", "-Doomph.setup.skip=true",
+                "-Doomph.setup.questionnaire.skip=true", "-Doomph.p2.additional.pools=false",
+                "-Dsandbox.oomph.root=" + root, "-Dsandbox.oomph.run=" + run, "-Dsandbox.oomph.jdk21=" + jdk21));
+        Path restart = run.resolve("pinned-workspace.restart");
+        for (int attempt = 0; attempt < 3; attempt++) {
+            Files.deleteIfExists(restart);
+            process(run.resolve("pinned-workspace-" + attempt + ".log"), run, command);
+            if (!Files.exists(restart)) {
+                break;
+            }
+        }
+        assertFalse(Files.exists(restart), "The pinned Oomph setup still requires a restart");
+        Properties actual = new Properties();
+        Properties expectedPins = new Properties();
+        try (var reader = Files.newBufferedReader(run.resolve("workspace/.sandbox-jdt-migration-qa-pins.env"))) {
+            actual.load(reader);
+        }
+        try (var reader = Files.newBufferedReader(root.resolve("qa/upstream-jdt/pins.env"))) {
+            expectedPins.load(reader);
+        }
+        assertEquals(expectedPins, actual);
+    }
+
+    private void installPinnedProbe(Path eclipse, Path run) throws Exception {
+        Path classes = Files.createDirectories(run.resolve("pinned-probe-classes"));
+        compileProbe(eclipse, classes, "PinnedWorkspaceProbe.java");
+        Manifest manifest = new Manifest();
+        Attributes attributes = manifest.getMainAttributes();
+        attributes.putValue("Manifest-Version", "1.0");
+        attributes.putValue("Bundle-ManifestVersion", "2");
+        attributes.putValue("Bundle-SymbolicName", "org.sandbox.oomph.pinned;singleton:=true");
+        attributes.putValue("Bundle-Version", "1.0.0");
+        attributes.putValue("Bundle-RequiredExecutionEnvironment", "JavaSE-25");
+        attributes.putValue("Require-Bundle", String.join(",", List.of("org.eclipse.core.runtime",
+                "org.eclipse.core.resources", "org.eclipse.ui", "org.eclipse.equinox.app",
+                "org.eclipse.equinox.p2.metadata", "org.eclipse.emf.common", "org.eclipse.emf.ecore",
+                "org.eclipse.oomph.base", "org.eclipse.oomph.util", "org.eclipse.oomph.ui", "org.eclipse.oomph.setup",
+                "org.eclipse.oomph.setup.core", "org.eclipse.oomph.setup.git", "org.eclipse.oomph.setup.projects", "org.eclipse.pde.core")));
+        Path dropins = Files.createDirectories(eclipse.resolve("dropins"));
+        try (var jar = new JarOutputStream(Files.newOutputStream(dropins.resolve("org.sandbox.oomph.pinned.jar")), manifest)) {
+            writeProbeBundle(jar, classes, "<plugin><extension point=\"org.eclipse.core.runtime.applications\" id=\"run\">"
+                    + "<application><run class=\"org.sandbox.oomph.probe.PinnedWorkspaceProbe\"/></application></extension></plugin>");
+        }
+    }
+
+    @Test
     @EnabledIfSystemProperty(named = "oomph.integration", matches = "true")
     void officialCatalogFreshWorkspaceAndManualUpdate() throws Exception {
         Path run = createFreshRuntime(module.resolve("target/oomph-runtime"));
@@ -460,8 +533,7 @@ class OomphSetupTest {
         return Files.createDirectory(run);
     }
 
-    private void installProbe(Path eclipse, Path run) throws Exception {
-        Path classes = Files.createDirectories(run.resolve("probe-classes"));
+    private void compileProbe(Path eclipse, Path classes, String source) throws Exception {
         String classpath;
         try (var files = Files.list(eclipse.resolve("plugins"))) {
             classpath = files.filter(p -> p.toString().endsWith(".jar"))
@@ -470,7 +542,12 @@ class OomphSetupTest {
         }
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null,
                 "--release", "25", "-sourcepath", "", "-classpath", classpath, "-d", classes.toString(),
-                module.resolve("src/test/resources/probe/SetupProbe.java").toString()));
+                module.resolve("src/test/resources/probe").resolve(source).toString()));
+    }
+
+    private void installProbe(Path eclipse, Path run) throws Exception {
+        Path classes = Files.createDirectories(run.resolve("probe-classes"));
+        compileProbe(eclipse, classes, "SetupProbe.java");
         Manifest manifest = new Manifest();
         Attributes a = manifest.getMainAttributes();
         a.putValue("Manifest-Version", "1.0");
@@ -490,19 +567,23 @@ class OomphSetupTest {
                 "org.eclipse.debug.core", "org.eclipse.jgit")));
         Path dropins = Files.createDirectories(eclipse.resolve("dropins"));
         try (var jar = new JarOutputStream(Files.newOutputStream(dropins.resolve("org.sandbox.oomph.probe.jar")), manifest)) {
-            jar.putNextEntry(new JarEntry("plugin.xml"));
-            jar.write(("<plugin><extension point=\"org.eclipse.core.runtime.applications\" id=\"run\">"
+            writeProbeBundle(jar, classes, "<plugin><extension point=\"org.eclipse.core.runtime.applications\" id=\"run\">"
                     + "<application><run class=\"org.sandbox.oomph.probe.SetupProbe\"/></application>"
                     + "</extension><extension point=\"org.eclipse.oomph.ui.deferredEarlyStart\">"
                     + "<startup class=\"org.sandbox.oomph.probe.SetupProbe$DeferredStartupProbe\"/>"
-                    + "</extension></plugin>").getBytes(java.nio.charset.StandardCharsets.UTF_8));
-            jar.closeEntry();
-            try (var files = Files.walk(classes)) {
-                for (Path file : files.filter(Files::isRegularFile).toList()) {
-                    jar.putNextEntry(new JarEntry(classes.relativize(file).toString().replace(File.separatorChar, '/')));
-                    Files.copy(file, jar);
-                    jar.closeEntry();
-                }
+                    + "</extension></plugin>");
+        }
+    }
+
+    private static void writeProbeBundle(JarOutputStream jar, Path classes, String plugin) throws Exception {
+        jar.putNextEntry(new JarEntry("plugin.xml"));
+        jar.write(plugin.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        jar.closeEntry();
+        try (var files = Files.walk(classes)) {
+            for (Path file : files.filter(Files::isRegularFile).toList()) {
+                jar.putNextEntry(new JarEntry(classes.relativize(file).toString().replace(File.separatorChar, '/')));
+                Files.copy(file, jar);
+                jar.closeEntry();
             }
         }
     }
