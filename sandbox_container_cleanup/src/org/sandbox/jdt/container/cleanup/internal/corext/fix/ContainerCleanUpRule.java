@@ -34,6 +34,18 @@ public enum ContainerCleanUpRule {
 			ExecutionMode.LOCAL_SAFE,
 			true),
 
+	PARALLEL_ARRAYS_TO_RECORDS(
+			"cleanup.container_contracts.parallel_arrays_to_records", //$NON-NLS-1$
+			"sandbox_container_cleanup.parallel_arrays_to_records", //$NON-NLS-1$
+			ExecutionMode.LOCAL_SAFE,
+			true),
+
+	RECORD_KEY_MAP(
+			"cleanup.container_contracts.record_key_map", //$NON-NLS-1$
+			"sandbox_container_cleanup.record_key_map", //$NON-NLS-1$
+			ExecutionMode.LOCAL_SAFE,
+			true),
+
 	CONCURRENT_MEMBERSHIP(
 			"cleanup.container_contracts.concurrent_membership", //$NON-NLS-1$
 			"sandbox_container_cleanup.concurrent_membership", //$NON-NLS-1$

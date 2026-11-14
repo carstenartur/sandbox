@@ -12,6 +12,8 @@ package org.sandbox.jdt.container.cleanup.internal.ui.preferences.cleanup;
 
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.APPEND_ARRAY_TO_LIST;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.CLEANUP;
+import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.PARALLEL_ARRAYS_TO_RECORDS;
+import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.RECORD_KEY_MAP;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.CLOSED_SOURCE_PARAMETER_MIGRATION;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.UNIQUE_SEQUENCE_TO_SET;
 
@@ -81,6 +83,10 @@ public final class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				ContainerCleanUpMessages.ContainerTabPage_UniqueSequenceToSet,
 				UNIQUE_SEQUENCE_TO_SET,
 				FALSE_TRUE);
+		CheckboxPreference records= createCheckboxPref(group, numColumns - 1, ContainerCleanUpMessages.ContainerTabPage_ParallelArraysToRecords,
+				PARALLEL_ARRAYS_TO_RECORDS, FALSE_TRUE);
+		CheckboxPreference keyMap= createCheckboxPref(group, numColumns - 1, ContainerCleanUpMessages.ContainerTabPage_RecordKeyMap,
+				RECORD_KEY_MAP, FALSE_TRUE);
 		CheckboxPreference closedSourceParameter= createCheckboxPref(
 				group,
 				numColumns - 1,
@@ -91,7 +97,7 @@ public final class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				ContainerCleanUpMessages.ContainerTabPage_ConcurrentMembership, ConcurrentMembershipCleanUp.OPTION, FALSE_TRUE);
 		registerSlavePreference(
 				master,
-				new CheckboxPreference[] { arrayToList, sequenceToSet, closedSourceParameter, membership });
+				new CheckboxPreference[] { arrayToList, sequenceToSet, records, keyMap, closedSourceParameter, membership });
 		registerPreference(master);
 	}
 }

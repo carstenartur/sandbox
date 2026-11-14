@@ -23,6 +23,8 @@ public final class ContainerCleanUpMessages extends NLS {
 	public static String ContainerTabPage_ListenerSnapshot;
 	public static String ContainerTabPage_AppendArrayToList;
 	public static String ContainerTabPage_UniqueSequenceToSet;
+	public static String ContainerTabPage_ParallelArraysToRecords;
+	public static String ContainerTabPage_RecordKeyMap;
 	public static String ContainerTabPage_ConcurrentMembership;
 	public static String ContainerTabPage_ClosedSourceParameterMigration;
 
