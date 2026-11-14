@@ -68,6 +68,7 @@ public class EclipseHelpTestModuleBoundaryTest {
 			"SandboxHelpScreenshotsSWTBotTest.java"); //$NON-NLS-1$
 
 	private static final Set<String> USAGE_VIEW_TEST_SOURCES= Set.of(
+			"ContainerAnalysisPerformanceIT.java", //$NON-NLS-1$
 			"ContainerAnalysisServiceTest.java", //$NON-NLS-1$
 			"ContainerAnalysisViewSWTBotTest.java", //$NON-NLS-1$
 			"JavaHelperViewSWTBotTest.java", //$NON-NLS-1$

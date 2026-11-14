@@ -61,6 +61,7 @@ public record UsageEvidence(Kind kind, String summary, int sourceStart, int sour
 		REJECTION_BOUNDARY,
 		HEAD_REMOVAL,
 		TAIL_REMOVAL,
+		RECORD_KEY_LOOKUP,
 		ENUM_CARDINALITY,
 		ENUM_ORDINAL_INDEX,
 		ENUM_MEMBERSHIP_QUERY,

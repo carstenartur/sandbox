@@ -20,6 +20,7 @@ import java.util.function.Function;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
@@ -271,8 +272,10 @@ public final class ContainerAnalysisView extends ViewPart implements IShowInTarg
 						if (monitor.isCanceled() || generation != analysisGeneration.get()) {
 							return Status.CANCEL_STATUS;
 						}
-						rows.addAll(analysisService.analyze(unit));
+						rows.addAll(analysisService.analyze(unit, monitor));
 					}
+				} catch (OperationCanceledException canceled) {
+					return Status.CANCEL_STATUS;
 				} catch (RuntimeException e) {
 					failure= e;
 					logAnalysisFailure(e);

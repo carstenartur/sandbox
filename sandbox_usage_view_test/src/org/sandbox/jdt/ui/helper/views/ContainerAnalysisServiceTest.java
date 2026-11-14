@@ -13,10 +13,13 @@ package org.sandbox.jdt.ui.helper.views;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
@@ -24,12 +27,37 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 
 import org.junit.jupiter.api.Test;
 
+import org.sandbox.jdt.container.analysis.RecordKeyLookupAnalyzer;
 import org.sandbox.jdt.ui.helper.views.ContainerAnalysisService.ContainerAnalysisRow;
 
 /** Verifies the read-only projection used by the Container Analysis view. */
 public class ContainerAnalysisServiceTest {
 
 	private final ContainerAnalysisService service= new ContainerAnalysisService();
+
+	@Test
+	public void canceledReportStopsBeforePublishingAnyRows() {
+		var monitor= new NullProgressMonitor();
+		monitor.setCanceled(true);
+		CompilationUnit unit= parse("class Sample {}"); //$NON-NLS-1$
+		assertThrows(OperationCanceledException.class, () -> service.analyze(unit, "=Sample", monitor)); //$NON-NLS-1$
+	}
+
+	@Test
+	public void recordLookupTraversalCanBeCanceledInsideOneLargeCompilationUnit() {
+		StringBuilder source= new StringBuilder("class Sample {"); //$NON-NLS-1$
+		for (int index= 0; index < 500; index++) {
+			source.append("void method").append(index).append("() { int n = 1; }"); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+		CompilationUnit unit= parse(source.append('}').toString());
+		int[] checks= { 0 };
+		assertThrows(OperationCanceledException.class, () -> RecordKeyLookupAnalyzer.analyze(unit, () -> {
+			if (++checks[0] == 3) {
+				throw new OperationCanceledException();
+			}
+		}));
+		assertEquals(3, checks[0]);
+	}
 
 	@Test
 	public void appendArrayRecommendationRetainsEvidenceSourceAnchors() {
@@ -216,6 +244,85 @@ public class ContainerAnalysisServiceTest {
 		assertTrue(java.util.Arrays.stream(row.getClass().getRecordComponents())
 				.map(component -> component.getType().getName())
 				.noneMatch(name -> name.startsWith("org.eclipse.jdt.core.dom."))); //$NON-NLS-1$
+	}
+
+	@Test
+	public void repeatedLookupByARecordStringKeyReportsMapSemanticsAtBothLoops() {
+		String source= """
+				import java.util.List;
+				class Sample {
+				    record Entry(String key) {}
+				    private final List<Entry> entries = List.of();
+				    Entry first(String requested) {
+				        for (Entry item : entries) if (requested.equals(item.key())) return item;
+				        return null;
+				    }
+				    Entry second(String other) {
+				        for (Entry row : this.entries) {
+				            if (other.equals(row.key())) { return row; }
+				        }
+				        return null;
+				    }
+				}
+				""";
+		List<ContainerAnalysisRow> rows= service.analyze(parse(source), "=Sample"); //$NON-NLS-1$
+		assertEquals(2, rows.size());
+		assertTrue(rows.stream().allMatch(row -> row.targetContract().startsWith("MAP;") //$NON-NLS-1$
+				&& row.status().equals("REPORT_ONLY") && fragment(source, row).startsWith("for ("))); //$NON-NLS-1$ //$NON-NLS-2$
+		assertTrue(rows.get(0).semanticSummary().contains("first matching")); //$NON-NLS-1$
+		assertTrue(rows.get(0).sourceStart() < rows.get(1).sourceStart());
+
+		String getter= source.replace("Entry second(String other)", //$NON-NLS-1$
+				"private List<Entry> all() { return this.entries; } Entry second(String other)") //$NON-NLS-1$
+				.replace("row : this.entries", "row : all()"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertEquals(2, service.analyze(parse(getter), "=Sample").size()); //$NON-NLS-1$
+		for (String changed : List.of(
+				getter.replace("private List<Entry> all()", "List<Entry> all()"), //$NON-NLS-1$ //$NON-NLS-2$
+				getter.replace("return this.entries;", "return List.copyOf(entries);"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("this.entries", "List.<Entry>of()"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("return row;", "return null;"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("String key) {}", "String key) { public String key() { return key.trim(); } }"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("other.equals(row.key())", "other.equals(row.toString())"))) { //$NON-NLS-1$ //$NON-NLS-2$
+			assertTrue(service.analyze(parse(changed), "=Sample").stream() //$NON-NLS-1$
+					.noneMatch(row -> row.targetContract().startsWith("MAP;"))); //$NON-NLS-1$
+		}
+	}
+
+	@Test
+	public void twoParametersWithTheSameNameInDifferentMethodsRemainDistinct() {
+		String method= """
+				Entry find(List<Entry> entries, String key) {
+				    for (Entry e : entries) if (key.equals(e.id())) return e;
+				    return null;
+				}
+				""";
+		String prefix= "import java.util.List; class Sample { record Entry(String id) {} "; //$NON-NLS-1$
+		String twoDeclarations= prefix + method + method.replace("find(", "findOther(") + "}"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		assertTrue(service.analyze(parse(twoDeclarations), "=Sample").isEmpty()); //$NON-NLS-1$
+		String oneParameter= prefix + method.replace("return null;", //$NON-NLS-1$
+				"for (Entry e : entries) if (e != null) continue; return null;") + "}"; //$NON-NLS-1$ //$NON-NLS-2$
+		assertTrue(service.analyze(parse(oneParameter), "=Sample").isEmpty()); //$NON-NLS-1$
+		String twoQueries= method.replace("String key)", "String key, String fallback)") //$NON-NLS-1$ //$NON-NLS-2$
+				.replace("return null;", "for (Entry e : entries) if (fallback.equals(e.id())) return e; return null;"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertEquals(2, service.analyze(parse(prefix + twoQueries + "}"), "=Sample").size()); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void localSyntaxCleanupsDoNotGenerateCompetingRepresentationProposals() {
+		String source= """
+				import java.util.*;
+				class Sample {
+				    void copy(List<String> original, String[] buffer) {
+				        List<String> copy = new ArrayList<>(original);
+				        ArrayList<String> target = new ArrayList<>();
+				        for (String s : original) target.add(s);
+				        for (int i = 0; i < buffer.length; i++) buffer[i] = "x";
+				        target.addAll(copy);
+				    }
+				}
+				""";
+		assertTrue(service.analyze(parse(source), "=Sample").stream() //$NON-NLS-1$
+				.allMatch(row -> "No proven target".equals(row.targetContract()))); //$NON-NLS-1$
 	}
 
 	private static CompilationUnit parse(String source) {

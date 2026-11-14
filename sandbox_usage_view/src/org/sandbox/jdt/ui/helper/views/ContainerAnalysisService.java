@@ -18,6 +18,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
@@ -29,6 +31,7 @@ import org.sandbox.jdt.container.analysis.LocalArrayUsageAnalyzer;
 import org.sandbox.jdt.container.analysis.LocalDequeSequenceAnalyzer;
 import org.sandbox.jdt.container.analysis.LocalEnumIndexedMembershipAnalyzer;
 import org.sandbox.jdt.container.analysis.LocalUniqueSequenceAnalyzer;
+import org.sandbox.jdt.container.analysis.RecordKeyLookupAnalyzer;
 import org.sandbox.jdt.container.analysis.SynchronizedListIterationAnalyzer;
 import org.sandbox.jdt.container.api.ConcurrencyProtocol.Evidence;
 import org.sandbox.jdt.container.api.ConcurrencyProtocolAssessment.DiagnosticOnly;
@@ -56,45 +59,60 @@ final class ContainerAnalysisService {
 	private final SynchronizedListIterationAnalyzer synchronizedListAnalyzer= new SynchronizedListIterationAnalyzer();
 	private final ContainerContractInferrer contractInferrer= new ContainerContractInferrer();
 
-	List<ContainerAnalysisRow> analyze(ICompilationUnit unit) {
+	List<ContainerAnalysisRow> analyze(ICompilationUnit unit, IProgressMonitor monitor) {
+		checkCanceled(monitor);
 		if (unit == null || !unit.exists()) {
 			return List.of();
 		}
-		return analyze(parse(unit), unit.getPrimary().getHandleIdentifier());
+		return analyze(parse(unit, monitor), unit.getPrimary().getHandleIdentifier(), monitor);
 	}
 
 	List<ContainerAnalysisRow> analyze(CompilationUnit root, String compilationUnitHandle) {
+		return analyze(root, compilationUnitHandle, null);
+	}
+
+	List<ContainerAnalysisRow> analyze(CompilationUnit root, String compilationUnitHandle, IProgressMonitor monitor) {
+		checkCanceled(monitor);
 		if (root == null || compilationUnitHandle == null || compilationUnitHandle.isBlank()) {
 			return List.of();
 		}
 		Map<String, ContainerUsageProfile> profiles= new LinkedHashMap<>();
 		for (ContainerUsageProfile seed : arraySeedDetector.findSeeds(root)) {
+			checkCanceled(monitor);
 			addProfile(profiles, arrayUsageAnalyzer.analyze(root, seed));
 		}
+		checkCanceled(monitor);
 		uniqueSequenceAnalyzer.analyze(root).forEach(profile -> addProfile(profiles, profile));
+		checkCanceled(monitor);
 		dequeSequenceAnalyzer.analyze(root).forEach(profile -> addProfile(profiles, profile));
+		checkCanceled(monitor);
 		enumMembershipAnalyzer.analyze(root).forEach(profile -> addProfile(profiles, profile));
 
 		List<ContainerAnalysisRow> rows= new ArrayList<>();
-		for (ContainerUsageProfile profile : profiles.values()) {
-			Optional<ContainerRecommendation> recommendation= contractInferrer.infer(profile);
-			if (profile.evidence().isEmpty()) {
-				rows.add(row(compilationUnitHandle, profile, recommendation, null));
-				continue;
-			}
-			for (UsageEvidence evidence : profile.evidence()) {
-				rows.add(row(compilationUnitHandle, profile, recommendation, evidence));
-			}
-		}
+		// Distinct accessors on the same list represent independent index candidates.
+		RecordKeyLookupAnalyzer.analyze(root, () -> checkCanceled(monitor)).forEach(profile -> appendRows(compilationUnitHandle, rows, profile));
+		profiles.values().forEach(profile -> appendRows(compilationUnitHandle, rows, profile));
+		checkCanceled(monitor);
 		for (DiagnosticOnly observation : synchronizedListAnalyzer.analyze(root)) {
 			for (Evidence evidence : observation.protocol().evidence()) {
 				rows.add(concurrencyRow(compilationUnitHandle, observation, evidence));
 			}
 		}
+		checkCanceled(monitor);
 		rows.sort(Comparator.comparingInt(ContainerAnalysisRow::sourceStart)
 				.thenComparing(ContainerAnalysisRow::candidate)
 				.thenComparing(ContainerAnalysisRow::evidenceKind));
 		return List.copyOf(rows);
+	}
+
+	private void appendRows(String handle, List<ContainerAnalysisRow> rows, ContainerUsageProfile profile) {
+		Optional<ContainerRecommendation> recommendation= contractInferrer.infer(profile);
+		if (profile.evidence().isEmpty()) {
+			rows.add(row(handle, profile, recommendation, null));
+		}
+		for (UsageEvidence evidence : profile.evidence()) {
+			rows.add(row(handle, profile, recommendation, evidence));
+		}
 	}
 
 	private static ContainerAnalysisRow concurrencyRow(String compilationUnitHandle,
@@ -196,7 +214,13 @@ final class ContainerAnalysisService {
 				.collect(Collectors.joining(System.lineSeparator()));
 	}
 
-	private static CompilationUnit parse(ICompilationUnit unit) {
+	private static void checkCanceled(IProgressMonitor monitor) {
+		if (monitor != null && monitor.isCanceled()) {
+			throw new OperationCanceledException();
+		}
+	}
+
+	private static CompilationUnit parse(ICompilationUnit unit, IProgressMonitor monitor) {
 		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
 		parser.setKind(ASTParser.K_COMPILATION_UNIT);
 		parser.setSource(unit);
@@ -204,7 +228,7 @@ final class ContainerAnalysisService {
 		parser.setBindingsRecovery(true);
 		parser.setStatementsRecovery(true);
 		parser.setCompilerOptions(unit.getJavaProject().getOptions(true));
-		return (CompilationUnit) parser.createAST(null);
+		return (CompilationUnit) parser.createAST(monitor);
 	}
 
 	record ContainerAnalysisRow(

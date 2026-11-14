@@ -33,6 +33,7 @@ public final class ContainerRuleRegistry {
 	public static final String LIFO_SEQUENCE_DEQUE= "semantic.sequence.lifo.deque"; //$NON-NLS-1$
 	public static final String ENUM_INDEXED_MEMBERSHIP_SET=
 			"semantic.array.enum-indexed-membership.set"; //$NON-NLS-1$
+	public static final String RECORD_KEY_LOOKUP_MAP= "semantic.list.record-key-lookup.map"; //$NON-NLS-1$
 	public static final String COLLECTION_BULK_ADD= "existing.collection.bulk-add"; //$NON-NLS-1$
 	public static final String COLLECTION_COPY_CONSTRUCTOR= "existing.collection.copy-constructor"; //$NON-NLS-1$
 	public static final String ARRAY_FILL= "existing.array.fill"; //$NON-NLS-1$
@@ -149,6 +150,9 @@ public final class ContainerRuleRegistry {
 				RuleOwnership.NOVEL,
 				"", //$NON-NLS-1$
 				"The rule replaces an internal enum-ordinal boolean table with an explicit enum membership contract; automatic primitive-array rewriting remains excluded.")); //$NON-NLS-1$
+		register(rules, new ContainerRuleDescriptor(
+				RECORD_KEY_LOOKUP_MAP, ContainerShape.LIST, ContainerShape.MAP, RuleOwnership.NOVEL,
+				"", "Repeated first-match scans over an immutable record key can share an index.")); //$NON-NLS-1$ //$NON-NLS-2$
 		register(rules, new ContainerRuleDescriptor(
 				ARRAY_APPEND_SEQUENCE,
 				ContainerShape.ARRAY,
