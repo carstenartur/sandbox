@@ -28,8 +28,8 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ParameterizedType;
 import org.eclipse.jdt.core.dom.Statement;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
@@ -43,9 +43,10 @@ import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
 import org.sandbox.jdt.cleanup.multifile.MultiFilePlanningMetrics;
 import org.sandbox.jdt.cleanup.multifile.MultiFileScopeDiagnostic;
 import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpDiagnosticsProvider;
+import org.sandbox.jdt.container.analysis.ListenerSnapshotAnalyzer.Plan;
+import org.sandbox.jdt.container.analysis.ListenerSnapshotAnalyzer;
 import org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions;
 import org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpRule;
-import org.sandbox.jdt.container.cleanup.internal.ui.fix.ListenerSnapshotAnalyzer.Plan;
 
 /** Opt-in, previewable migration of listener-only fields whose complete Java source is in their declaring unit. */
 public final class ListenerSnapshotCleanUp extends AbstractPlannedMultiFileCleanUp<Map<String, List<Plan>>>
@@ -127,6 +128,7 @@ public final class ListenerSnapshotCleanUp extends AbstractPlannedMultiFileClean
 					var creation= syntax.newClassInstanceCreation();
 					ParameterizedType type= syntax.newParameterizedType(syntax.newSimpleType(syntax.newName(owner)));
 					creation.setType(type);
+					rewrite.getImportRemover().registerRemovedNode(protocol.field().getInitializer());
 					edits.replace(protocol.field().getInitializer(), creation, group);
 					for (var lock : protocol.registrations()) {
 						Statement add= (Statement) lock.getBody().statements().getFirst();

@@ -27,8 +27,8 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
@@ -42,9 +42,10 @@ import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
 import org.sandbox.jdt.cleanup.multifile.MultiFilePlanningMetrics;
 import org.sandbox.jdt.cleanup.multifile.MultiFileScopeDiagnostic;
 import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpDiagnosticsProvider;
+import org.sandbox.jdt.container.analysis.ConcurrentMembershipAnalyzer.Field;
+import org.sandbox.jdt.container.analysis.ConcurrentMembershipAnalyzer;
 import org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions;
 import org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpRule;
-import org.sandbox.jdt.container.cleanup.internal.ui.fix.ConcurrentMembershipAnalyzer.Field;
 
 /** Opt-in, previewable migration of membership-only fields whose complete Java source is in their declaring unit. */
 public final class ConcurrentMembershipCleanUp extends AbstractPlannedMultiFileCleanUp<Map<String, List<Field>>>
@@ -122,6 +123,7 @@ public final class ConcurrentMembershipCleanUp extends AbstractPlannedMultiFileC
 					String owner= rewrite.getImportRewrite().addImport("java.util.concurrent.ConcurrentHashMap"); //$NON-NLS-1$
 					factory.setExpression(ast.getAST().newName(owner));
 					factory.setName(ast.getAST().newSimpleName("newKeySet")); //$NON-NLS-1$
+					rewrite.getImportRemover().registerRemovedNode(declaration.getInitializer());
 					rewrite.getASTRewrite().replace(declaration.getInitializer(), factory, createTextEditGroup(DESCRIPTION, rewrite));
 				}
 			});

@@ -54,6 +54,8 @@ final class ContainerSignatureBoundaries {
 	private static final Set<String> METHOD_LOOKUPS= Set.of("getDeclaredMethod", "getMethod"); //$NON-NLS-1$ //$NON-NLS-2$
 	private static final Set<String> METHOD_LISTS= Set.of("getDeclaredMethods", "getMethods"); //$NON-NLS-1$ //$NON-NLS-2$
 	private static final Set<String> CONSTRUCTOR_LOOKUPS= Set.of("getDeclaredConstructor", "getConstructor", "getDeclaredConstructors", "getConstructors"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+	private static final Set<String> FIELD_LOOKUPS= Set.of("getDeclaredField", "getDeclaredFields"); //$NON-NLS-1$ //$NON-NLS-2$
+	private static final Set<String> FIELD_HANDLES= Set.of("findStaticGetter", "findStaticSetter", "findStaticVarHandle"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	private static final Set<String> HANDLE_LOOKUPS= Set.of("findStatic", "findVirtual", "findSpecial", "findConstructor"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 
 	enum Rejection {
@@ -90,7 +92,7 @@ final class ContainerSignatureBoundaries {
 		}
 		List<Signature> signatures= new ArrayList<>();
 		for (IMethod method : methods) {
-			signatures.add(new Signature(method.getDeclaringType().getFullyQualifiedName(), method.getElementName(), method.isConstructor()));
+			signatures.add(new Signature(method.getDeclaringType().getFullyQualifiedName(), method.getElementName(), method.isConstructor(), false));
 		}
 		return observesProject(project, roots, signatures, monitor) ? Rejection.REFLECTIVE_SIGNATURE_BOUNDARY : null;
 	}
@@ -196,12 +198,16 @@ final class ContainerSignatureBoundaries {
 		return false;
 	}
 
-	private static boolean possibleLookup(String source) {
-		return source.contains("\\u") || source.contains("getDeclared") || source.contains("getMethod") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-				|| source.contains("getConstructor") || HANDLE_LOOKUPS.stream().anyMatch(source::contains); //$NON-NLS-1$
+	static boolean observesRegistryField(IJavaProject project, Map<String, CompilationUnit> roots, String owner, String field, IProgressMonitor monitor) throws CoreException {
+		return observesProject(project, roots, List.of(new Signature(owner, field, false, true)), monitor);
 	}
 
-	private record Signature(String owner, String method, boolean constructor) {
+	private static boolean possibleLookup(String source) {
+		return source.contains("\\u") || source.contains("getDeclared") || source.contains("getMethod") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				|| source.contains("getConstructor") || HANDLE_LOOKUPS.stream().anyMatch(source::contains) || FIELD_HANDLES.stream().anyMatch(source::contains); //$NON-NLS-1$
+	}
+
+	private record Signature(String owner, String method, boolean constructor, boolean field) {
 	}
 
 	private static boolean observes(CompilationUnit root, Collection<Signature> signatures) {
@@ -217,15 +223,16 @@ final class ContainerSignatureBoundaries {
 				String op= name.getIdentifier();
 				boolean method= METHOD_LOOKUPS.contains(op) || METHOD_LISTS.contains(op);
 				boolean constructor= CONSTRUCTOR_LOOKUPS.contains(op);
-				boolean handle= HANDLE_LOOKUPS.contains(op);
-				if (!method && !constructor && !handle) {
+				boolean field= FIELD_LOOKUPS.contains(op) || FIELD_HANDLES.contains(op);
+				boolean handle= HANDLE_LOOKUPS.contains(op) || FIELD_HANDLES.contains(op);
+				if (!method && !constructor && !handle && !field) {
 					return true;
 				}
 				ASTNode parent= name.getParent();
 				if (parent instanceof MethodReference) {
 					if (name.resolveBinding() instanceof IMethodBinding target && isReflectionAPI(target, handle)) {
 						Expression owner= !handle && parent instanceof ExpressionMethodReference ref ? ref.getExpression() : null;
-						observed[0]= signatures.stream().anyMatch(signature -> signature.constructor() == (constructor || "findConstructor".equals(op)) //$NON-NLS-1$
+						observed[0]= signatures.stream().anyMatch(signature -> signature.field() == field && signature.constructor() == (constructor || "findConstructor".equals(op)) //$NON-NLS-1$
 								&& possibleOwner(owner, signature.owner()));
 					}
 					return !observed[0];
@@ -238,11 +245,11 @@ final class ContainerSignatureBoundaries {
 					return true;
 				}
 				Expression target= handle ? argument(call, 0) : call.getExpression();
-				Expression lookup= METHOD_LOOKUPS.contains(op) ? argument(call, 0) : handle ? argument(call, 1) : null;
+				Expression lookup= METHOD_LOOKUPS.contains(op) || "getDeclaredField".equals(op) ? argument(call, 0) : handle ? argument(call, 1) : null; //$NON-NLS-1$
 				String member= lookup != null && lookup.resolveConstantExpressionValue() instanceof String stable ? stable : null;
 				boolean needsConstructor= constructor || "findConstructor".equals(op); //$NON-NLS-1$
 				for (Signature signature : signatures) {
-					if (signature.constructor() == needsConstructor && (needsConstructor || member == null || signature.method().equals(member))
+					if (signature.field() == field && signature.constructor() == needsConstructor && (needsConstructor || member == null || signature.method().equals(member))
 							&& possibleOwner(target, signature.owner())) {
 						observed[0]= true;
 						return false;
