@@ -103,10 +103,11 @@ public final class ParallelArrayRecordAnalyzer {
 		var method= copy.resolveMethodBinding();
 		IVariableBinding array= local(name);
 		IVariableBinding count= local(size.getLeftOperand());
-		if (method == null || method.isRecovered() || method.getDeclaringClass() == null
-				|| !"java.util.Arrays".equals(method.getDeclaringClass().getQualifiedName()) //$NON-NLS-1$
-				|| array == null || !array.isEqualTo(local(source)) || array.getType().getDimensions() != 1
-				|| array.getType().getElementType().isPrimitive() || count == null || !"int".equals(count.getType().getName())) { //$NON-NLS-1$
+		if (array == null || count == null || method == null || method.isRecovered()
+				|| method.getDeclaringClass() == null || array.getType().getDimensions() != 1
+				|| array.getType().getElementType().isPrimitive() || !"int".equals(count.getType().getName()) //$NON-NLS-1$
+				|| !array.isEqualTo(local(source))
+				|| !"java.util.Arrays".equals(method.getDeclaringClass().getQualifiedName())) { //$NON-NLS-1$
 			return null;
 		}
 		return new Growth(name, source, array, count);
