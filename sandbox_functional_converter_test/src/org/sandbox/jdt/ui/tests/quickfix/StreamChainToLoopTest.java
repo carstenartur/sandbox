@@ -96,7 +96,7 @@ class StreamChainToLoopTest {
 		}
 
 		@Override
-		protected RefactoringStatus performRefactoring(CleanUpRefactoring ref, ICompilationUnit[] units,
+		protected RefactoringStatus runRefactoring(CleanUpRefactoring ref, ICompilationUnit[] units,
 				ICleanUp[] cleanups, Set<String> expectedGroups) throws CoreException {
 			cleanupAst = null;
 			cleanupStatus = null;
@@ -136,7 +136,7 @@ class StreamChainToLoopTest {
 					traced[index] = new AbstractCleanUpCoreWrapper<UseFunctionalCallCleanUpCore>(Map.of(), core) { };
 				}
 			}
-			cleanupStatus = super.performRefactoring(ref, units, traced, expectedGroups);
+			cleanupStatus = super.runRefactoring(ref, units, traced, expectedGroups);
 			return cleanupStatus;
 		}
 

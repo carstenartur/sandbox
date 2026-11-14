@@ -694,7 +694,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 */
 	public RefactoringStatus assertRefactoringResultAsExpected(final ICompilationUnit[] cus, final String[] expected,
 			final Set<String> setOfExpectedGroupCategories) throws CoreException {
-		final RefactoringStatus status = performRefactoringCheckingDiagnostics(cus, setOfExpectedGroupCategories);
+		final RefactoringStatus status = performRefactoring(cus, setOfExpectedGroupCategories);
 		final String[] previews = new String[cus.length];
 		for (int i = 0; i < cus.length; i++) {
 			final ICompilationUnit cu = cus[i];
@@ -785,57 +785,6 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 			expected[i] = cus[i].getBuffer().getContents();
 		}
 		return assertRefactoringResultAsExpected(cus, expected, null);
-	}
-
-	private record CompilerProblemKey(boolean error, int id, String arguments) {
-		static CompilerProblemKey of(IProblem problem) {
-			return new CompilerProblemKey(problem.isError(), problem.getID(),
-					Arrays.toString(problem.getArguments()));
-		}
-
-		String severity() {
-			return error ? "ERROR" : "WARNING"; //$NON-NLS-1$ //$NON-NLS-2$
-		}
-	}
-
-	private RefactoringStatus performRefactoringCheckingDiagnostics(ICompilationUnit[] units,
-			Set<String> expectedGroups) throws CoreException {
-		Map<ICompilationUnit, Map<CompilerProblemKey, Long>> before= captureCompilerDiagnostics(units);
-		RefactoringStatus status= performRefactoring(units, expectedGroups);
-		assertNoNewCompilerDiagnostics(units, before);
-		return status;
-	}
-
-	private static Map<ICompilationUnit, Map<CompilerProblemKey, Long>> captureCompilerDiagnostics(
-			ICompilationUnit[] units) {
-		Map<ICompilationUnit, Map<CompilerProblemKey, Long>> result= new LinkedHashMap<>();
-		for (ICompilationUnit unit : units) {
-			result.put(unit, compilerDiagnostics(unit));
-		}
-		return result;
-	}
-
-	private static Map<CompilerProblemKey, Long> compilerDiagnostics(ICompilationUnit unit) {
-		CompilationUnit root= parseCompilationUnit(unit);
-		return Arrays.stream(root.getProblems())
-				.filter(problem -> problem.isError() || problem.isWarning())
-				.collect(Collectors.groupingBy(CompilerProblemKey::of, LinkedHashMap::new, Collectors.counting()));
-	}
-
-	private static void assertNoNewCompilerDiagnostics(ICompilationUnit[] units,
-			Map<ICompilationUnit, Map<CompilerProblemKey, Long>> before) {
-		for (ICompilationUnit unit : units) {
-			Map<CompilerProblemKey, Long> baseline= before.getOrDefault(unit, Map.of());
-			for (Map.Entry<CompilerProblemKey, Long> entry : compilerDiagnostics(unit).entrySet()) {
-				long previous= baseline.getOrDefault(entry.getKey(), 0L);
-				if (entry.getValue() > previous) {
-					CompilerProblemKey problem= entry.getKey();
-					fail(unit.getElementName() + " gained compiler diagnostic: " + problem.severity() //$NON-NLS-1$
-							+ " id=" + problem.id() + " arguments=" + problem.arguments() //$NON-NLS-1$ //$NON-NLS-2$
-							+ " before=" + previous + " after=" + entry.getValue()); //$NON-NLS-1$ //$NON-NLS-2$
-				}
-			}
-		}
 	}
 
 	private static CompilationUnit parseCompilationUnit(ICompilationUnit unit) {
@@ -1066,7 +1015,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 */
 	public RefactoringStatus assertRefactoringResultAsExpectedNormalizingWhitespace(final ICompilationUnit[] cus,
 			final String[] expected, final Set<String> setOfExpectedGroupCategories) throws CoreException {
-		final RefactoringStatus status = performRefactoringCheckingDiagnostics(cus, setOfExpectedGroupCategories);
+		final RefactoringStatus status = performRefactoring(cus, setOfExpectedGroupCategories);
 		final String[] previews = new String[cus.length];
 		for (int i = 0; i < cus.length; i++) {
 			final ICompilationUnit cu = cus[i];
@@ -1105,7 +1054,15 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @return the refactoring status
 	 * @throws CoreException if the refactoring fails
 	 */
-	protected RefactoringStatus performRefactoring(final CleanUpRefactoring ref, final ICompilationUnit[] cus,
+	protected final RefactoringStatus performRefactoring(final CleanUpRefactoring ref, final ICompilationUnit[] cus,
+			final ICleanUp[] cleanUps, final Set<String> setOfExpectedGroupCategories) throws CoreException {
+		var before= CompilerDiagnosticAssertions.captureCompilerDiagnostics(cus);
+		var status= runRefactoring(ref, cus, cleanUps, setOfExpectedGroupCategories);
+		CompilerDiagnosticAssertions.assertNoNewCompilerDiagnostics(cus, before);
+		return status;
+	}
+
+	protected RefactoringStatus runRefactoring(final CleanUpRefactoring ref, final ICompilationUnit[] cus,
 			final ICleanUp[] cleanUps, final Set<String> setOfExpectedGroupCategories) throws CoreException {
 		// A canonical connection must survive the temporary cleanup working copy.
 		// Otherwise an opener that loaded earlier can publish stale contents after

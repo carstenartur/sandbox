@@ -10,6 +10,7 @@
 package org.sandbox.jdt.ui.tests.quickfix.rules;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -63,6 +64,16 @@ class CompilerDiagnosticRegressionTest {
 	}
 
 	@Test
+	void directExecutionChecksUnusedLocalsEvenWithLenientProjectOptions() throws Exception {
+		context.getJavaProject().setOption(JavaCore.COMPILER_PB_UNUSED_LOCAL, JavaCore.IGNORE);
+		ICompilationUnit unit= createUnit(source("int value= 1; System.out.println(value);"));
+		context.output(source("int value= 1;"));
+		var failure= assertThrows(AssertionError.class, () -> context.performRefactoring(new ICompilationUnit[] { unit }, null));
+		assertTrue(failure.getMessage().contains("WARNING"), failure.getMessage());
+		assertEquals(JavaCore.IGNORE, context.getJavaProject().getOption(JavaCore.COMPILER_PB_UNUSED_LOCAL, true));
+	}
+
+	@Test
 	void rejectsANewCompilerError() throws Exception {
 		String before= source("int value= 1; System.out.println(value);"); //$NON-NLS-1$
 		String after= source("int value= missing; System.out.println(value);"); //$NON-NLS-1$
@@ -106,11 +117,13 @@ class CompilerDiagnosticRegressionTest {
 		String clean= source("Second", "System.out.println(1);"); //$NON-NLS-1$ //$NON-NLS-2$
 		ICompilationUnit first= createUnit("First.java", broken); //$NON-NLS-1$
 		ICompilationUnit second= createUnit("Second.java", clean); //$NON-NLS-1$
-		context.output(clean, broken);
+		String fixedFirst= source("First", "System.out.println(1);");
+		String brokenSecond= source("Second", "missing();");
+		context.output(fixedFirst, brokenSecond);
 
 		AssertionError failure= assertThrows(AssertionError.class, () ->
 				context.assertRefactoringResultAsExpected(
-						new ICompilationUnit[] { first, second }, new String[] { clean, broken }, null));
+						new ICompilationUnit[] { first, second }, new String[] { fixedFirst, brokenSecond }, null));
 
 		assertTrue(failure.getMessage().contains("Second.java"), failure.getMessage()); //$NON-NLS-1$
 	}
@@ -189,7 +202,7 @@ class CompilerDiagnosticRegressionTest {
 		}
 
 		@Override
-		protected RefactoringStatus performRefactoring(CleanUpRefactoring ref, ICompilationUnit[] units,
+		protected RefactoringStatus runRefactoring(CleanUpRefactoring ref, ICompilationUnit[] units,
 				ICleanUp[] cleanUps, Set<String> expectedGroups) throws CoreException {
 			if (units.length != output.length) {
 				throw new CoreException(org.eclipse.core.runtime.Status.error("Missing simulated refactoring output")); //$NON-NLS-1$
