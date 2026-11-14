@@ -150,6 +150,80 @@ class LocalArrayUsageAnalyzerTest {
 	}
 
 	@Test
+	void rejectsCovariantStoresWithoutAnArrayReturn() {
+		ContainerUsageProfile profile= analyze("""
+			import java.util.Arrays;
+			class Sample {
+				int collect(Object value) {
+					Object[] values = new String[0];
+					values = Arrays.copyOf(values, values.length + 1);
+					values[values.length - 1] = value;
+					return values.length;
+				}
+			}
+			""");
+		assertEquals(AnalysisCompleteness.REJECTED, profile.completeness());
+		assertTrue(hasEvidence(profile, Kind.REJECTION_BOUNDARY));
+	}
+
+	@Test
+	void rejectsLengthObservedAfterAnAppendExpressionThrows() {
+		ContainerUsageProfile profile= analyze("""
+			import java.util.Arrays;
+			class Sample {
+				int collect(String[] input) {
+					String[] values = new String[0];
+					try {
+						values = Arrays.copyOf(values, values.length + 1);
+						values[values.length - 1] = input[0];
+					} catch (RuntimeException e) { return values.length; }
+					return -1;
+				}
+			}
+			""");
+		assertEquals(AnalysisCompleteness.REJECTED, profile.completeness());
+		assertTrue(hasEvidence(profile, Kind.REJECTION_BOUNDARY));
+	}
+
+	@Test
+	void rejectsAppendValueReadingTheAlreadyGrownArray() {
+		ContainerUsageProfile profile= analyze("""
+			import java.util.Arrays;
+			class Sample {
+				int collect() {
+					String[] values = new String[0];
+					values = Arrays.copyOf(values, values.length + 1);
+					values[values.length - 1] = Integer.toString(values.length);
+					return values.length;
+				}
+			}
+			""");
+		assertEquals(AnalysisCompleteness.REJECTED, profile.completeness());
+		assertTrue(hasEvidence(profile, Kind.REJECTION_BOUNDARY));
+	}
+
+	@Test
+	void rejectsGrowthDuringIterationOverTheOldArray() {
+		ContainerUsageProfile profile= analyze("""
+			import java.util.Arrays;
+			class Sample {
+				int collect(String input) {
+					String[] values = new String[0];
+					values = Arrays.copyOf(values, values.length + 1);
+					values[values.length - 1] = input;
+					for (String current : values) {
+						values = Arrays.copyOf(values, values.length + 1);
+						values[values.length - 1] = current;
+					}
+					return values.length;
+				}
+			}
+			""");
+		assertEquals(AnalysisCompleteness.REJECTED, profile.completeness());
+		assertTrue(hasEvidence(profile, Kind.REJECTION_BOUNDARY));
+	}
+
+	@Test
 	void rejectsCovariantArrayPublication() {
 		ContainerUsageProfile profile= analyze("""
 			import java.util.Arrays;
