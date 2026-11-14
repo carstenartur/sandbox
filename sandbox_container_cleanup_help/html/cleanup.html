@@ -33,5 +33,12 @@ this becomes a <code>LinkedHashSet</code>.</p>
   <li>Unsupported aliasing, positional access, capture, publication or external
       signatures cause the cleanup to make no change.</li>
 </ul>
+<h2 id="membership">Concurrent membership set</h2>
+<p>This opt-in rule replaces <code>Collections.synchronizedSet(new HashSet&lt;&gt;())</code>
+with <code>ConcurrentHashMap.newKeySet()</code> when the private final field
+belongs to a final top-level class and all Java uses are individually atomic
+<code>add</code>, <code>remove</code>, or <code>contains</code> calls on
+non-null String keys. The preview reports escapes, iteration, explicit
+monitor use and unproven null handling.</p>
 </body>
 </html>

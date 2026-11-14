@@ -28,6 +28,12 @@ public enum ContainerCleanUpRule {
 			ExecutionMode.LOCAL_SAFE,
 			true),
 
+	CONCURRENT_MEMBERSHIP(
+			"cleanup.container_contracts.concurrent_membership", //$NON-NLS-1$
+			"sandbox_container_cleanup.concurrent_membership", //$NON-NLS-1$
+			ExecutionMode.PROJECT_CLOSED,
+			false),
+
 	CLOSED_SOURCE_PARAMETER_MIGRATION(
 			"cleanup.container_contracts.closed_source_parameter_migration", //$NON-NLS-1$
 			"sandbox_container_cleanup.closed_source_parameter_migration", //$NON-NLS-1$
