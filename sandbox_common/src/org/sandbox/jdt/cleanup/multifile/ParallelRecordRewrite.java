@@ -258,6 +258,8 @@ final class ParallelRecordRewrite extends CompilationUnitRewriteOperationWithSou
 		var list= ast.newParameterizedType(ast.newSimpleType(ast.newName(listType)));
 		list.typeArguments().add(ast.newSimpleType(ast.newSimpleName(rowName)));
 		rows.setType(list);
+		cu.getImportRemover().registerAddedImports(list);
+		cu.getImportRemover().registerAddedImports(initializer.getType());
 		rewrite.replace(left, rows, group);
 		rewrite.remove(right, group);
 		var row= ast.newClassInstanceCreation();

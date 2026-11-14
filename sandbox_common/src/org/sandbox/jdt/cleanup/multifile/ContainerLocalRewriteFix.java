@@ -122,6 +122,7 @@ public final class ContainerLocalRewriteFix {
 			SimpleType listRawType= ast.newSimpleType(ast.newName(listName));
 			ParameterizedType listType= ast.newParameterizedType(listRawType);
 			listType.typeArguments().add(ASTNode.copySubtree(ast, componentType));
+			cuRewrite.getImportRemover().registerAddedImports(listType);
 			rewrite.replace(resolved.declaration().getType(), listType, group);
 
 			String implementationName=
@@ -131,6 +132,7 @@ public final class ContainerLocalRewriteFix {
 			ParameterizedType implementationType= ast.newParameterizedType(
 					ast.newSimpleType(ast.newName(implementationName)));
 			creation.setType(implementationType);
+			cuRewrite.getImportRemover().registerAddedImports(implementationType);
 			rewrite.replace(resolved.initializer(), creation, group);
 
 			for (AppendPair pair : resolved.appendPairs()) {
