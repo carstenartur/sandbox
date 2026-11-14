@@ -140,12 +140,30 @@
 		</profile>
 		<profile>
 			<id>pinned-status-preview</id>
+			<repositories>
+				<repository>
+					<id>pinned-status-oomph</id>
+					<layout>p2</layout>
+					<url>https://download.eclipse.org/releases/2026-09/</url>
+				</repository>
+			</repositories>
 			<build>
 				<plugins>
 					<plugin>
 						<groupId>org.eclipse.tycho</groupId>
 						<artifactId>tycho-surefire-plugin</artifactId>
 						<configuration>
+							<dependencies combine.children="append">
+								<dependency>
+									<type>eclipse-plugin</type>
+									<artifactId>org.eclipse.oomph.targlets.core</artifactId>
+								</dependency>
+								<dependency>
+									<type>eclipse-plugin</type>
+									<artifactId>org.eclipse.osgi.compatibility.state</artifactId>
+								</dependency>
+							</dependencies>
+							<appArgLine>-nl en -clearPersistedState</appArgLine>
 							<osgiDataDirectory>${env.SANDBOX_STATUS_WORKSPACE}</osgiDataDirectory>
 							<deleteOsgiDataDirectory>false</deleteOsgiDataDirectory>
 						</configuration>

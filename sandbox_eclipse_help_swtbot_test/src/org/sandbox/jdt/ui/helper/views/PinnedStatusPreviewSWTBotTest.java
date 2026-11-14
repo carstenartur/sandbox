@@ -22,21 +22,41 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HexFormat;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.ProjectScope;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.internal.corext.fix.CleanUpConstants;
+import org.eclipse.jdt.internal.corext.fix.CleanUpPreferenceUtil;
+import org.eclipse.jdt.internal.ui.JavaPlugin;
+import org.eclipse.jdt.internal.ui.preferences.cleanup.CleanUpProfileVersioner;
+import org.eclipse.jdt.internal.ui.preferences.formatter.ProfileManager.CustomProfile;
+import org.eclipse.jdt.internal.ui.preferences.formatter.ProfileManager.Profile;
+import org.eclipse.jdt.internal.ui.preferences.formatter.ProfileStore;
+import org.eclipse.jdt.ui.JavaUI;
+import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.pde.core.target.ITargetPlatformService;
+import org.eclipse.pde.core.target.LoadTargetDefinitionJob;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Composite;
@@ -50,13 +70,13 @@ import org.eclipse.swtbot.swt.finder.waits.DefaultCondition;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.ui.PlatformUI;
 import org.junit.jupiter.api.Test;
+import org.osgi.framework.FrameworkUtil;
 
 /** Replays the installed headless Status cleanup against the same pinned Workbench source. */
 public class PinnedStatusPreviewSWTBotTest {
     private static final String PROJECT = "org.eclipse.jdt.ui";
     private static final String SOURCE = "ui/org/eclipse/jdt/internal/ui/text/java/ProposalSorterHandle.java";
     private static final String PROFILE = "cleanup.simplify_status_creation";
-    private static final String LABEL = "Simplify Platform Status (e.g., new Status(...) → Status.error(...))";
     private static final String EXPLORER = "org.eclipse.ui.navigator.ProjectExplorer";
 
     @Test
@@ -68,6 +88,7 @@ public class PinnedStatusPreviewSWTBotTest {
         assertEquals(configuredWorkspace, data.toRealPath());
         Properties pins = properties(sandbox.resolve("qa/upstream-jdt/pins.env"));
         assertEquals(pins, properties(data.resolve(".sandbox-jdt-migration-qa-pins.env")));
+        resolvePinnedTarget();
         var project = workspace.getRoot().getProject(PROJECT);
         IFile file = project.getFile(SOURCE);
         assertTrue(project.isOpen() && file.isAccessible(), "Open the Oomph-provisioned JDT workspace");
@@ -110,11 +131,15 @@ public class PinnedStatusPreviewSWTBotTest {
                 PROJECT, Set.of(SOURCE), Set.of(SOURCE));
         var bot = new SWTWorkbenchBot();
         var driver = new CleanupWizardDriver(bot);
-        driver.configureProfile("Sandbox pinned Platform Status", "Platform Status (Sandbox)", profile -> {
-            CleanupWizardDriver.clickButton(profile, "Deselect All");
-            profile.bot().tabItem("Platform Status (Sandbox)").activate();
-            CleanupWizardDriver.ensureChecked(profile, LABEL, true);
-        });
+        selectStatusProfile();
+        var effective = CleanUpPreferenceUtil.loadOptions(new ProjectScope(project));
+        assertEquals(Set.of(PROFILE), effective.entrySet().stream()
+                .filter(entry -> CleanUpOptions.TRUE.equals(entry.getValue())).map(Map.Entry::getKey)
+                .collect(Collectors.toSet()), "Effective cleanup profile for the pinned JDT project");
+        var javaProject = JavaCore.create(project);
+        assertNotNull(javaProject.findType("org.eclipse.core.runtime.Status"), "Missing Status from pinned PDE target");
+        assertNotNull(javaProject.findType("java.lang.String"), "Missing Java system library");
+
         Path temp = Files.createTempFile(evidence, "platform-status-", ".png");
         try {
             CleanupWorkbenchDriver.run(scenario, PreviewContract.FILE_COMBINED_DIFF, () -> {
@@ -137,7 +162,12 @@ public class PinnedStatusPreviewSWTBotTest {
                 var sourceItem = UIThreadRunnable.syncExec(explorer.display,
                         (Result<org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem>) () ->
                                 new org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem(explorer.widget.getSelection()[0]));
-                var preview = driver.openCleanUpPreview(driver.openCleanUpWizard(sourceItem), file.getName());
+                var wizard = driver.openCleanUpWizard(sourceItem);
+                var configured = wizard.bot().radio("Use configured profiles");
+                if (!configured.isSelected()) {
+                    configured.click();
+                }
+                var preview = driver.openCleanUpPreview(wizard, file.getName());
                 var change = CleanupWizardDriver.findTreeItemContaining(preview.tree(), file.getName());
                 assertNotNull(change);
                 assertTrue(change.isChecked());
@@ -190,7 +220,44 @@ public class PinnedStatusPreviewSWTBotTest {
         }
     }
 
-    /** Scroll the real com    /**
+    private static void resolvePinnedTarget() throws Exception {
+        var context = FrameworkUtil.getBundle(ITargetPlatformService.class).getBundleContext();
+        var reference = context.getServiceReference(ITargetPlatformService.class);
+        assertNotNull(reference, "The pinned workspace requires PDE target support");
+        try {
+            var target = context.getService(reference).getWorkspaceTargetDefinition();
+            assertEquals("Sandbox upstream JDT migration QA target", target.getName());
+            assertNotNull(Platform.getBundle("org.eclipse.oomph.targlets.core"), "Missing Oomph Targlet provider");
+            var status = target.resolve(new NullProgressMonitor());
+            assertTrue(status.isOK(), status::toString);
+            assertTrue(target.getBundles().length > 0, "Pinned target contains no bundles");
+            var load = new LoadTargetDefinitionJob(target);
+            load.schedule();
+            load.join();
+            assertTrue(load.getResult().isOK(), () -> load.getResult().toString());
+        } finally {
+            context.ungetService(reference);
+        }
+    }
+
+    private static void selectStatusProfile() throws CoreException {
+        var settings = new HashMap<String, String>();
+        JavaPlugin.getDefault().getCleanUpRegistry().getDefaultOptions(CleanUpConstants.DEFAULT_CLEAN_UP_OPTIONS)
+                .getKeys().forEach(key -> settings.put(key, CleanUpOptions.FALSE));
+        settings.put(PROFILE, CleanUpOptions.TRUE);
+        var profile = new CustomProfile("Sandbox pinned Platform Status", settings,
+                CleanUpProfileVersioner.CURRENT_VERSION, CleanUpProfileVersioner.PROFILE_KIND);
+        var store = new ProfileStore(CleanUpConstants.CLEANUP_PROFILES, new CleanUpProfileVersioner());
+        var scope = InstanceScope.INSTANCE;
+        var existing = store.readProfiles(scope);
+        var profiles = existing == null ? new ArrayList<Profile>() : new ArrayList<>(existing);
+        profiles.removeIf(previous -> previous.getID().equals(profile.getID()));
+        profiles.add(profile);
+        store.writeProfiles(profiles, scope);
+        scope.getNode(JavaUI.ID_PLUGIN).put(CleanUpConstants.CLEANUP_PROFILE, profile.getID());
+    }
+
+    /**
      * A real two-sided LTK comparison must show the removed and added fragments
      * in different visible source panes at the instant of capture. Finding both
      * strings somewhere in the dialog (or scrolling one pane twice) is not proof.
