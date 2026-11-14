@@ -51,6 +51,7 @@ jobs:
     steps:
       - name: Install the Debian 13 Eclipse and Xvfb runtime
         run: |
+          echo "SANDBOX_STATUS_RUNTIME=$RUNNER_TEMP/pinned-status" >> "$GITHUB_ENV"
           apt-get update
           apt-get install --yes --no-install-recommends \
             ca-certificates curl git unzip xz-utils zstd xvfb xauth \
@@ -86,7 +87,7 @@ jobs:
         env:
           UPSTREAM_JDK: ${{ steps.upstream-java.outputs.path }}
         run: |
-          runtime="$RUNNER_TEMP/pinned-status"
+          runtime="$SANDBOX_STATUS_RUNTIME"
           echo "SANDBOX_STATUS_WORKSPACE=$runtime/workspace" >> "$GITHUB_ENV"
           echo "SANDBOX_STATUS_EVIDENCE=$GITHUB_WORKSPACE/target/pinned-status-evidence" >> "$GITHUB_ENV"
           echo "FONTCONFIG_FILE=$GITHUB_WORKSPACE/qa/upstream-jdt/pinned-status-fonts.conf" >> "$GITHUB_ENV"
@@ -102,7 +103,7 @@ jobs:
           xvfb-run -a "$product" --launcher.suppressErrors -nosplash -consoleLog -application org.eclipse.equinox.p2.director \
             -repository https://download.eclipse.org/releases/2026-09/ \
             -installIU org.eclipse.oomph.targlets.feature.group
-          source_file="$RUNNER_TEMP/pinned-status/eclipse.jdt.ui/org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/ProposalSorterHandle.java"
+          source_file="$SANDBOX_STATUS_RUNTIME/eclipse.jdt.ui/org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/ProposalSorterHandle.java"
           result=0
           xvfb-run -a "$product" --launcher.suppressErrors -nosplash -consoleLog -data "$SANDBOX_STATUS_WORKSPACE" \
             -application org.sandbox.jdt.core.JavaCleanup --mode check \
@@ -131,7 +132,7 @@ jobs:
             target/pinned-status-evidence/
             sandbox_oomph/target/surefire-reports/
             sandbox_eclipse_help_swtbot_test/target/surefire-reports/
-            ${{ runner.temp }}/pinned-status/*.log
-            ${{ runner.temp }}/pinned-status/workspace/.metadata/.log
+            ${{ env.SANDBOX_STATUS_RUNTIME }}/*.log
+            ${{ env.SANDBOX_STATUS_RUNTIME }}/workspace/.metadata/.log
           include-hidden-files: true
           retention-days: 7

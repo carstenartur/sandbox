@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.Map;
@@ -52,6 +53,7 @@ import org.eclipse.jdt.internal.ui.preferences.formatter.ProfileStore;
 import org.eclipse.jdt.ui.JavaUI;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.jface.viewers.StructuredSelection;
+import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -68,6 +70,7 @@ import org.eclipse.swtbot.swt.finder.results.Result;
 import org.eclipse.swtbot.swt.finder.utils.SWTUtils;
 import org.eclipse.swtbot.swt.finder.waits.DefaultCondition;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
+import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.ui.PlatformUI;
 import org.junit.jupiter.api.Test;
 import org.osgi.framework.FrameworkUtil;
@@ -143,26 +146,7 @@ public class PinnedStatusPreviewSWTBotTest {
         Path temp = Files.createTempFile(evidence, "platform-status-", ".png");
         try {
             CleanupWorkbenchDriver.run(scenario, PreviewContract.FILE_COMBINED_DIFF, () -> {
-                var element = JavaCore.create(file);
-                PlatformUI.getWorkbench().getDisplay().syncExec(() -> {
-                    try {
-                        var page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
-                        var view = page.showView(EXPLORER);
-                        var selectionProvider = view.getSite().getSelectionProvider();
-                        assertNotNull(selectionProvider, "Project Explorer must expose a selection provider");
-                        selectionProvider.setSelection(new StructuredSelection(element));
-                    } catch (org.eclipse.ui.PartInitException error) {
-                        throw new IllegalStateException(error);
-                    }
-                });
-                var explorer = bot.viewById(EXPLORER).bot().tree();
-                var selected = explorer.selection();
-                assertEquals(1, selected.rowCount());
-                assertEquals(file.getName(), selected.get(0, 0));
-                var sourceItem = UIThreadRunnable.syncExec(explorer.display,
-                        (Result<org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem>) () ->
-                                new org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem(explorer.widget.getSelection()[0]));
-                var wizard = driver.openCleanUpWizard(sourceItem);
+                var wizard = driver.openCleanUpWizard(selectPinnedFile(bot, file));
                 var configured = wizard.bot().radio("Use configured profiles");
                 if (!configured.isSelected()) {
                     configured.click();
@@ -204,6 +188,11 @@ public class PinnedStatusPreviewSWTBotTest {
                     shell.display.update();
                 });
                 bot.sleep(650);
+                UIThreadRunnable.syncExec(shell.display, () -> {
+                    shell.widget.redraw(0, 0, area.width, area.height, true);
+                    shell.display.update();
+                });
+                bot.sleep(650);
                 assertTrue(SWTUtils.captureScreenshot(temp.toString(), area));
                 CleanupWizardDriver.clickButtonAsync(shell, "Finish");
                 driver.waitForShellToClose(shell, "Clean Up wizard");
@@ -237,6 +226,51 @@ public class PinnedStatusPreviewSWTBotTest {
         } finally {
             Files.deleteIfExists(temp);
         }
+    }
+
+    private static SWTBotTreeItem selectPinnedFile(SWTWorkbenchBot bot, IFile file) {
+        CleanupWizardDriver.workbenchShell().activate();
+        var display = PlatformUI.getWorkbench().getDisplay();
+        var viewer = UIThreadRunnable.syncExec(display, (Result<TreeViewer>) () -> {
+            try {
+                var page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
+                var view = page.showView(EXPLORER);
+                var tree = (TreeViewer) view.getSite().getSelectionProvider();
+                // Scope Project Explorer to the pinned project even when Oomph has configured working sets.
+                tree.setInput(file.getProject());
+                view.setFocus();
+                return tree;
+            } catch (org.eclipse.ui.PartInitException error) {
+                throw new IllegalStateException(error);
+            }
+        });
+        var element = JavaCore.create(file);
+        bot.waitUntil(new DefaultCondition() {
+            @Override public boolean test() {
+                return UIThreadRunnable.syncExec(display, (Result<Boolean>) () -> {
+                    // The navigator may still be populating the source folder and package asynchronously.
+                    for (Object target : new Object[] {element, file}) {
+                        viewer.setSelection(new StructuredSelection(target), true);
+                        var rows = viewer.getTree().getSelection();
+                        if (rows.length == 1 && (element.equals(rows[0].getData()) || file.equals(rows[0].getData()))) {
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+            }
+            @Override public String getFailureMessage() {
+                return "Project Explorer did not reveal " + file.getFullPath() + ". Visible roots: "
+                        + UIThreadRunnable.syncExec(display, (Result<String>) () -> Arrays.stream(viewer.getTree().getItems())
+                                .map(row -> row.getText()).collect(Collectors.joining(", ")));
+            }
+        });
+        var row = UIThreadRunnable.syncExec(display, (Result<SWTBotTreeItem>) () ->
+                new SWTBotTreeItem(viewer.getTree().getSelection()[0]));
+        row.select();
+        assertTrue(row.isSelected());
+        assertEquals(file.getName(), row.getText());
+        return row;
     }
 
     private static void resolvePinnedTarget() throws Exception {
