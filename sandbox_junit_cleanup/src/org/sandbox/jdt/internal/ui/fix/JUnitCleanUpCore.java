@@ -265,8 +265,8 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 						lifecycleAnnotations, monitor)
 				: new JUnitScopeCandidateDetector.SearchSeeds(false, true, List.of(), List.of());
 		// Every newly admitted unit receives the active cleanup options. Limit the
-		// additional static helper scope to the one rewrite its proof covers.
-		boolean allowAssertionPaths= migrateAssertionHelpers && fixes.size() == 1
+		// additional helper scope to the one rewrite its proof covers.
+		boolean allowAssertionPaths= (migrateAssertionHelpers || migrateAssumptionHelpers) && fixes.size() == 1
 				&& !isEnabled(JUnitMigrationOptions.BEST_EFFORT);
 		HelperSearchSeeds helperSeeds=
 				JUnitSharedHelperScopeDetector.findSearchSeeds(project, currentScope,
@@ -313,7 +313,7 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 			Set<ICompilationUnit> existingScope= new LinkedHashSet<>(currentScope);
 			existingScope.addAll(requiredUnits);
 			List<ICompilationUnit> additional= JUnitSharedHelperScopeDetector.closeAssertionPaths(
-					project, helperSeeds.assertionPaths(), existingScope, allowedUnits, monitor);
+					project, helperSeeds.assertionPaths(), existingScope, allowedUnits, migrateAssertionHelpers, monitor);
 			if (!additional.isEmpty()) {
 				existingScope.addAll(additional);
 				requiredUnits= new ArrayList<>(existingScope);

@@ -315,6 +315,12 @@ public class NewRuleWizardPage extends WizardPage {
 				editor.setFocus();
 			}
 		});
+		Button inspectPlan = new Button(documentActions, SWT.PUSH);
+		inspectPlan.setText("Browse semantic plan..."); //$NON-NLS-1$
+		inspectPlan.addListener(SWT.Selection, event -> {
+			applyPendingMetadata();
+			PlanInspectionDialog.open(getShell(), getFullDslDocument(), exampleProjectSupplier.get());
+		});
 		Button examplesButton = new Button(documentActions, SWT.PUSH);
 		examplesButton.setText("Examples..."); //$NON-NLS-1$
 		examplesButton.addListener(SWT.Selection, event -> openExamples());

@@ -200,6 +200,59 @@ public class JUnitScopeExpansionTest {
 	}
 
 	@ParameterizedTest
+	@org.junit.jupiter.params.provider.CsvSource({ "false,false", "false,true", "true,false", "true,true" })
+	public void closesCompoundRecursiveHelpersOnlyWhenEveryBranchIsProven(boolean unresolved, boolean assumptions) throws CoreException {
+		addJupiter();
+		IPackageFragment pack= root.createPackageFragment("test", true, null);
+		String source= """
+				package test;
+				final class RecursiveChecks {
+					static void verifyClosedRecursiveFixture(boolean recurse, boolean value) {
+						if (recurse) {
+							verifyClosedRecursiveFixture(false, value);
+						} else {
+							org.junit.Assert.assertTrue("first", value);
+							org.junit.Assert.assertFalse(false);
+						}
+					}
+				}
+				""";
+		if (assumptions) {
+			source= source.replace("org.junit.Assert.assert", "org.junit.Assume.assume");
+		}
+		if (unresolved) {
+			source= source.replace("verifyClosedRecursiveFixture(false, value);", "Unknown.verifyClosedRecursiveFixture(value);");
+		}
+		var helper= pack.createCompilationUnit("RecursiveChecks.java", source, false, null);
+		var selected= pack.createCompilationUnit("Selected.java", """
+				package test;
+				public class Selected { void run() { RecursiveChecks.verifyClosedRecursiveFixture(true, true); } }
+				""", false, null);
+		var other= pack.createCompilationUnit("Other.java", """
+				package test;
+				final class Other { void run() { RecursiveChecks.verifyClosedRecursiveFixture(false, true); } }
+				""", false, null);
+		String option= assumptions ? MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME : MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT;
+		var cleanup= new JUnitCleanUpCore(Map.of(MYCleanUpConstants.JUNIT_CLEANUP, CleanUpOptions.TRUE, option, CleanUpOptions.TRUE));
+		var expanded= cleanup.expandCleanUpScope(selected.getJavaProject(), List.of(selected), null);
+		if (unresolved) {
+			assertTrue(expanded.isEmpty());
+			assertEquals(source, helper.getSource());
+			return;
+		}
+		assertEquals(Set.of(selected, helper, other), Set.copyOf(expanded));
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(option);
+		MultiFileCleanUpLifecycleAssertions.assertApplyCompileAndUndo(expanded.toArray(ICompilationUnit[]::new),
+				new ICompilationUnit[] { helper, selected, other }, new String[] {
+						source.replace("org.junit.Assert", "org.junit.jupiter.api.Assertions")
+								.replace("org.junit.Assume", "org.junit.jupiter.api.Assumptions")
+								.replace("assumeTrue(\"first\", value)", "assumeTrue(value, \"first\")")
+								.replace("assertTrue(\"first\", value)", "assertTrue(value, \"first\")"),
+						selected.getSource(), other.getSource() });
+	}
+
+	@ParameterizedTest
 	@ValueSource(strings = { "Bridge.verify(ready)", "Missing.unknown(ready)", "Leaf.check(ready, 1)" })
 	public void unprovenForwarderDoesNotAdmitAnySource(String delegate) throws CoreException {
 		addJupiter();

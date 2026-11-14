@@ -94,6 +94,20 @@ public class JUnit4ParameterizedPlannerTest {
 	}
 
 	@Test
+	public void inspectsRegisteredPlannerOnTheActualProjectWithoutEditingOrExecuting() throws CoreException {
+		ICompilationUnit unit= sample(CONSTRUCTOR + PROVIDER);
+		Map<String, String> before= sources(unit);
+		var report= org.sandbox.jdt.triggerpattern.eclipse.ProjectPlanInspector.inspect(
+				CONTRACT, unit.getJavaProject(), null);
+		assertEquals(1, report.components().size(), report.diagnostics().toString());
+		assertEquals(prepared(unit).semanticPlan().rolesByNode(),
+				report.components().getFirst().plan().rolesByNode());
+		assertEquals(prepared(unit).semanticPlan().relations(),
+				report.components().getFirst().plan().relations());
+		assertEquals(before, sources(unit));
+	}
+
+	@Test
 	public void discoversInheritedProviderAndEditableExternalDelegateDeterministically() throws CoreException {
 		ICompilationUnit data= unit("Data", """
 				public class Data {
