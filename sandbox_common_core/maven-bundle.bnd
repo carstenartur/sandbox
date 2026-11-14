@@ -17,4 +17,8 @@ Export-Package: org.sandbox.jdt.cleanup.multifile.api,\
 # org.eclipse.jdt.core, IProblem/InvalidInputException in compiler.batch.
 # Require-Bundle uses JDT Core's reexport of compiler.batch to see both parts.
 Require-Bundle: org.eclipse.jdt.core
-Import-Package: !org.eclipse.jdt.core.compiler,*
+# Compile against the Maven Gson release while retaining our supported runtime API.
+# Eclipse 4.41 supplies Gson 2.14 from Orbit.
+Import-Package: !org.eclipse.jdt.core.compiler,\
+ com.google.gson;version="[2.13.2,3)",\
+ *
