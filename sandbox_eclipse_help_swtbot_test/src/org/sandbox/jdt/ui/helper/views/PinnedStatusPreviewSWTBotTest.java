@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -85,7 +86,7 @@ public class PinnedStatusPreviewSWTBotTest {
             assertEquals(upstream, repo.resolve("refs/tags/" + ref + "^{commit}").name());
             try (TreeWalk tree = TreeWalk.forPath(repo, PROJECT + "/" + SOURCE, walk.parseCommit(repo.resolve("HEAD")).getTree())) {
                 assertNotNull(tree);
-                assertArrayEquals(repo.open(tree.getObjectId(0)).getBytes(), before);
+                assertArrayEquals(repo.open(tree.getObjectId(0)).getBytes(Charset.defaultCharset()), before);
             }
         }
 
