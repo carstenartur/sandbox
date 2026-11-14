@@ -364,9 +364,13 @@ The test verifies the workspace pins, Git identity, original source bytes, headl
 file selection and complete expected patch before opening the JDT wizard. It checks
 the applied source and byte-exact Undo and writes the native window capture and
 its provenance in the evidence directory. It compares both files byte-for-byte
-with the published Help baseline. For an intentional visual change, inspect the
-new capture and sidecar together before updating the Help files. The opt-in
-profile uses GTK 3, static scrollbars and the Debian DejaVu fonts listed in
-`pinned-status-fonts.conf` to keep native rendering independent of user fonts.
+with the published Help baseline. The reference rendering comes from the
+`debian:trixie` container in the **Pinned Platform Status preview** workflow,
+with GTK 3, static scrollbars and the workflow's `fonts-dejavu-core` package
+and its `fonts-dejavu-mono` dependency. A desktop with supplementary DejaVu
+fonts can resolve the native dialog's fallback font differently. To reproduce
+the published PNG locally, use the same container and package set. For a
+visual change, inspect the generated PNG and its provenance together before
+updating the Help files.
 The six affected constructors retain
 their plug-in identity expression and remove the redundant zero status code.
