@@ -71,12 +71,12 @@ public final class ClosedUniqueSequenceFlow {
 	}
 
 	public enum Kind {
-		SET_TYPE, CALLER_SET_TYPE, ORDERED_SET_TYPE, GUARDED_ADD
+		SET_TYPE, CALLER_SET_TYPE, ORDERED_SET_TYPE, GUARDED_ADD, SYNCHRONIZED_SET_FACTORY
 	}
 
 	/** Exact edit range in the parsed source. Type ranges name the raw type under its type arguments. */
 	public record Edit(Kind kind, int start, int length) {
-		private Edit(Kind kind, ASTNode node) {
+		Edit(Kind kind, ASTNode node) {
 			this(kind, node.getStartPosition(), node.getLength());
 		}
 	}
@@ -147,6 +147,10 @@ public final class ClosedUniqueSequenceFlow {
 	}
 
 	private static Optional<List<Edit>> producerEdits(MethodDeclaration method) {
+		var registry= LockedRegistrySnapshot.edits(method);
+		if (registry.isPresent()) {
+			return registry;
+		}
 		if (!(method.getReturnType2() instanceof ParameterizedType type) || !list(type)
 				|| !eligibleMethod(method.resolveBinding()) || method.getBody() == null || method.getBody().statements().isEmpty()
 				|| !(method.getBody().statements().getLast() instanceof ReturnStatement published)
@@ -203,7 +207,7 @@ public final class ClosedUniqueSequenceFlow {
 		return Optional.of(List.copyOf(edits));
 	}
 
-	private static boolean losesGuardComment(IfStatement guard) {
+	static boolean losesGuardComment(IfStatement guard) {
 		int start= guard.getStartPosition();
 		int end= start + guard.getLength();
 		var kept= guard.getThenStatement();
@@ -373,7 +377,7 @@ public final class ClosedUniqueSequenceFlow {
 		return false;
 	}
 
-	private static boolean eligibleMethod(IMethodBinding method) {
+	static boolean eligibleMethod(IMethodBinding method) {
 		IMethod source= model(method);
 		if (source == null || method.isConstructor() || method.isGenericMethod() || method.isVarargs()
 				|| !Modifier.isStatic(method.getModifiers()) || Modifier.isPublic(method.getModifiers()) || Modifier.isProtected(method.getModifiers())
@@ -404,7 +408,7 @@ public final class ClosedUniqueSequenceFlow {
 				&& !source.isBinary() ? source : null;
 	}
 
-	private static boolean list(ParameterizedType type) {
+	static boolean list(ParameterizedType type) {
 		ITypeBinding binding= type.resolveBinding();
 		if (!plain(type) || !exact(binding, LIST) || binding.getTypeArguments().length != 1) {
 			return false;
@@ -413,13 +417,13 @@ public final class ClosedUniqueSequenceFlow {
 		return value != null && !value.isRecovered() && (value.isEnum() || exact(value, STRING));
 	}
 
-	private static boolean plain(ParameterizedType type) {
+	static boolean plain(ParameterizedType type) {
 		return type.getType() instanceof AnnotatableType raw && raw.annotations().isEmpty() && raw.resolveBinding() != null
 				&& raw.resolveBinding().getTypeAnnotations().length == 0 && type.resolveBinding() != null
 				&& type.resolveBinding().getTypeAnnotations().length == 0;
 	}
 
-	private static boolean exact(ITypeBinding type, String qualified) {
+	static boolean exact(ITypeBinding type, String qualified) {
 		return type != null && !type.isRecovered() && qualified.equals(type.getErasure().getQualifiedName());
 	}
 

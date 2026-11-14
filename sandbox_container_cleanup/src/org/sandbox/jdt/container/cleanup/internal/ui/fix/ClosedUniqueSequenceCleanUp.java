@@ -32,6 +32,7 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.NodeFinder;
+import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.internal.corext.codemanipulation.ContextSensitiveImportRewriteContext;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
@@ -202,12 +203,17 @@ public final class ClosedUniqueSequenceCleanUp extends AbstractPlannedMultiFileC
 			ASTNode found= NodeFinder.perform(root, edit.start(), edit.length());
 			// A SimpleName and its enclosing SimpleType have identical source ranges.
 			while (found != null && found.getStartPosition() == edit.start() && found.getLength() == edit.length()
-					&& !(found instanceof IfStatement) && !(found instanceof Type)) {
+					&& !(found instanceof IfStatement) && !(found instanceof Type)
+					&& !(edit.kind() == Kind.SYNCHRONIZED_SET_FACTORY && found instanceof SimpleName)) {
 				found= found.getParent();
 			}
 			ASTNode node= found;
 			if (node == null || node.getStartPosition() != edit.start() || node.getLength() != edit.length()
-					|| !(edit.kind() == Kind.GUARDED_ADD ? node instanceof IfStatement : node instanceof Type)) {
+					|| !switch (edit.kind()) {
+					case GUARDED_ADD -> node instanceof IfStatement;
+					case SYNCHRONIZED_SET_FACTORY -> node instanceof SimpleName;
+					default -> node instanceof Type;
+					}) {
 				throw new CoreException(Status.error("A planned ordered-set syntax change could not be resolved.")); //$NON-NLS-1$
 			}
 			operations.add(new CompilationUnitRewriteOperationWithSourceRange() {
@@ -217,6 +223,8 @@ public final class ClosedUniqueSequenceCleanUp extends AbstractPlannedMultiFileC
 					var group= createTextEditGroup(DESCRIPTION, change);
 					if (node instanceof IfStatement guard) {
 						rewrite.replace(guard, rewrite.createMoveTarget(guard.getThenStatement()), group);
+					} else if (edit.kind() == Kind.SYNCHRONIZED_SET_FACTORY) {
+						rewrite.replace(node, root.getAST().newSimpleName("synchronizedSet"), group); //$NON-NLS-1$
 					} else {
 						var imports= change.getImportRewrite();
 						String target= edit.kind() == Kind.ORDERED_SET_TYPE ? "java.util.LinkedHashSet" : "java.util.Set"; //$NON-NLS-1$ //$NON-NLS-2$

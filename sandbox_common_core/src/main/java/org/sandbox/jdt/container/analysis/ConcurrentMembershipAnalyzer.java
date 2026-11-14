@@ -8,7 +8,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  *******************************************************************************/
-package org.sandbox.jdt.container.cleanup.internal.ui.fix;
+package org.sandbox.jdt.container.analysis;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -18,35 +18,39 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 
 /** Binding proof for the individual add, remove and contains operations on a private JDK set. */
-final class ConcurrentMembershipAnalyzer {
+public final class ConcurrentMembershipAnalyzer {
 	private ConcurrentMembershipAnalyzer() {
 	}
 
-	record Use(String operation, int offset) {}
-	record Field(String key, int initializerOffset, List<Use> uses, String rejection) {
-		Field {
+	public record Use(String operation, int offset) {}
+	public record Field(String key, int initializerOffset, List<Use> uses, String rejection) {
+		public Field {
 			uses= List.copyOf(uses);
 		}
 	}
 
 	private static final Set<String> OPERATIONS= Set.of("add", "remove", "contains"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-	static Map<String, Field> analyze(CompilationUnit unit) {
+	public static Map<String, Field> analyze(CompilationUnit unit) {
 		Map<String, VariableDeclarationFragment> seeds= new LinkedHashMap<>();
 		unit.accept(new ASTVisitor() {
 			@Override
@@ -65,6 +69,7 @@ final class ConcurrentMembershipAnalyzer {
 			ITypeBinding owner= seed.resolveBinding().getDeclaringClass();
 			if (!(seed.getParent().getParent() instanceof TypeDeclaration type)
 					|| !type.isPackageMemberTypeDeclaration() || !Modifier.isFinal(owner.getModifiers())
+					|| java.util.Arrays.stream(type.getMethods()).anyMatch(method -> Modifier.isNative(method.getModifiers()))
 					|| owner.getAnnotations().length != 0 || owner.getInterfaces().length != 0 || !binaryType(owner.getSuperclass(), "java.lang.Object")) { //$NON-NLS-1$
 				rejection[0]= "The owner must be a final top-level class without serialization or inherited protocols."; //$NON-NLS-1$
 			}
@@ -81,8 +86,8 @@ final class ConcurrentMembershipAnalyzer {
 						if (!name.isDeclaration() && name.resolveBinding() instanceof IVariableBinding binding
 								&& entry.getKey().equals(binding.getVariableDeclaration().getKey())) {
 							MethodInvocation operation= membershipOperation(name);
-							if (operation == null) {
-								rejection[0]= "A field access escapes, observes iteration or locking, or lacks a non-null String key."; //$NON-NLS-1$
+							if (operation == null || !individualOperation(operation, owner)) {
+								rejection[0]= "A field access escapes, observes iteration or locking, participates in a compound operation, or lacks a non-null String key."; //$NON-NLS-1$
 							} else {
 								uses.add(new Use(operation.getName().getIdentifier(), name.getStartPosition()));
 							}
@@ -135,6 +140,16 @@ final class ConcurrentMembershipAnalyzer {
 			return operation;
 		}
 		return null;
+	}
+
+	private static boolean individualOperation(MethodInvocation operation, ITypeBinding owner) {
+		var site= operation.getParent();
+		if (!(site instanceof ReturnStatement || site instanceof ExpressionStatement)
+				|| !(site.getParent() instanceof Block body) || body.statements().size() != 1
+				|| !(body.getParent() instanceof MethodDeclaration method) || method.resolveBinding() == null) {
+			return false;
+		}
+		return !Modifier.isSynchronized(method.getModifiers()) && owner.isEqualTo(method.resolveBinding().getDeclaringClass());
 	}
 
 	private static boolean jdkMethod(MethodInvocation call, String owner, String name) {

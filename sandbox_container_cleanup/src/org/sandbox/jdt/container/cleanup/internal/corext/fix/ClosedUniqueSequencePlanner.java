@@ -24,13 +24,15 @@ import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IMethod;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.NodeFinder;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.sandbox.jdt.cleanup.multifile.ContainerFlowScopeSearch;
 import org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits;
 import org.sandbox.jdt.cleanup.multifile.SourceRootPolicy;
 import org.sandbox.jdt.container.api.ContainerCompatibilityDecision;
-import org.sandbox.jdt.container.api.ContainerFlowSearchPlan;
 import org.sandbox.jdt.container.api.ContainerFlowSearchPlan.SearchKind;
 import org.sandbox.jdt.container.api.ContainerFlowSearchPlan.SearchSeed;
+import org.sandbox.jdt.container.api.ContainerFlowSearchPlan;
 import org.sandbox.jdt.container.cleanup.internal.corext.fix.ClosedUniqueSequenceFlow.Edit;
 
 /** Closes the source references to one producer and to every reader receiving its distinct, ordered values. */
@@ -120,10 +122,28 @@ public final class ClosedUniqueSequencePlanner {
 		if (!hasCaller) {
 			return new Result(null, List.copyOf(required), "The producer has no proven direct source consumer."); //$NON-NLS-1$
 		}
+		boolean lockedSnapshot= edits.values().stream().flatMap(List::stream)
+				.anyMatch(edit -> edit.kind() == ClosedUniqueSequenceFlow.Kind.SYNCHRONIZED_SET_FACTORY);
+		if (lockedSnapshot) {
+			String handle= producer.getCompilationUnit().getPrimary().getHandleIdentifier();
+			var root= roots.get(handle);
+			var factory= edits.get(handle).stream().filter(edit -> edit.kind() == ClosedUniqueSequenceFlow.Kind.SYNCHRONIZED_SET_FACTORY).findFirst().orElseThrow();
+			var node= NodeFinder.perform(root, factory.start(), factory.length());
+			while (node != null && !(node instanceof VariableDeclarationFragment)) {
+				node= node.getParent();
+			}
+			if (!(node instanceof VariableDeclarationFragment field)
+					|| ContainerSignatureBoundaries.observesRegistryField(project, roots, producer.getDeclaringType().getFullyQualifiedName(),
+							field.getName().getIdentifier(), monitor)) {
+				return new Result(null, List.copyOf(required), "Reflection or a method-handle lookup can observe the registry's field type independently of its source callers."); //$NON-NLS-1$
+			}
+		}
+		String proof= lockedSnapshot
+				? "The private registry admits only guarded insertions. Registration and snapshot copying keep the same monitor. Each caller receives a separate encounter-ordered set preserving null and first registration; a return-only bridge is impossible." //$NON-NLS-1$
+				: "The internal producer returns a fresh ordered set. Every source caller uses the first encounter order, accepts null, and observes only distinct values. A same-name return-only bridge is impossible."; //$NON-NLS-1$
 		var plan= new Plan(producer.getHandleIdentifier(), readers.stream().map(IMethod::getHandleIdentifier).sorted().toList(), edits,
 				new ContainerCompatibilityDecision(ContainerCompatibilityDecision.Mode.CLOSED_SOURCE_AUTOMATIC,
-						ContainerCompatibilityDecision.BridgeFeasibility.IMPOSSIBLE_RETURN_TYPE_ONLY,
-						"The internal producer returns a fresh ordered set. Every source caller uses the first encounter order, accepts null, and observes only distinct values. A same-name return-only bridge is impossible.")); //$NON-NLS-1$
+						ContainerCompatibilityDecision.BridgeFeasibility.IMPOSSIBLE_RETURN_TYPE_ONLY, proof));
 		return new Result(plan, List.copyOf(required), ""); //$NON-NLS-1$
 	}
 

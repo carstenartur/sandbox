@@ -143,7 +143,8 @@ class ConcurrentMembershipCleanUpTest {
 		ICompilationUnit unit= createUnit(source);
 		for (String extra : List.of("void lock() { synchronized (seen) {} }",
 				"Set<String> expose() { return seen; }", "boolean has(String key) { return seen.contains(key); }",
-				"void scan() { for (String key : seen) {} }")) {
+				"void scan() { for (String key : seen) {} }",
+				"boolean checked() { if (seen.contains(\"a\")) return false; return seen.add(\"a\"); }")) {
 			unit.getBuffer().setContents(source);
 			unit.save(null, true);
 			var cleanup= membershipCleanup();

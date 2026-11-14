@@ -45,6 +45,12 @@ in one coordinated change. A <code>LinkedHashSet</code> retains the first encoun
 order, accepts null and ignores subsequent equal insertions. Positional access,
 unknown readers, other callers of the original reader contract, and reflective
 signature lookups prevent the migration.</p>
+<p>A private synchronized string registry can also publish a detached snapshot.
+When every insertion suppresses duplicates under the wrapper monitor and every
+snapshot copies under that same monitor, the rule converts the registry, snapshot
+return and source consumers together. The registration order, null policy, monitor
+and independence of snapshots are preserved. A live return, additional access or
+different monitor keeps the complete group out of the change.</p>
 
 <h2 id="parallel-records">Parallel arrays to a local record sequence</h2>
 <p>On Java 16 and later, the opt-in rule can replace two local reference arrays

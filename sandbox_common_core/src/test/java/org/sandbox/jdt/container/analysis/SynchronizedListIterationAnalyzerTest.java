@@ -24,10 +24,11 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.junit.jupiter.api.Test;
-import org.sandbox.jdt.container.api.ConcurrencyProtocol;
 import org.sandbox.jdt.container.api.ConcurrencyProtocol.EvidenceKind;
 import org.sandbox.jdt.container.api.ConcurrencyProtocol.ReentrancyContract;
+import org.sandbox.jdt.container.api.ConcurrencyProtocol;
 import org.sandbox.jdt.container.api.ConcurrencyProtocolAssessment.DiagnosticOnly;
+import org.sandbox.jdt.container.api.ConcurrencyProtocolAssessment.RecommendedMigration;
 import org.sandbox.jdt.container.api.ConcurrencyProtocolAssessment.RetainExistingLocking;
 import org.sandbox.jdt.container.api.ConcurrencyProtocolAssessment.Severity;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.AnalysisCompleteness;
@@ -261,6 +262,95 @@ class SynchronizedListIterationAnalyzerTest {
 			assertFalse(open.permitsSourceRewrite());
 		}
 		assertTrue(analyzer.analyze(parse(source, false)).isEmpty());
+	}
+
+	@Test
+	void closesFifoAndOrderedPendingWorkOnlyWithTheActualProducerAndMonitor() {
+		String source= """
+				import java.util.*;
+				final class Sample {
+					private final List<String> queue = Collections.synchronizedList(new ArrayList<>());
+					private final Set<String> pending = Collections.synchronizedSet(new LinkedHashSet<>());
+					void offer(String value) { queue.add(Objects.requireNonNull(value)); }
+					String take() { synchronized (queue) { return queue.isEmpty() ? null : queue.remove(0); } }
+					void schedule(String value) { pending.add(value); }
+					Set<String> drain() { synchronized (pending) {
+						var batch = new LinkedHashSet<>(pending);
+						pending.clear();
+						return batch;
+					} }
+				}
+				""";
+		var reports= ContainerConcurrencyAnalyzer.analyze(parse(source, true), () -> {});
+		assertEquals(List.of("CONCURRENT_QUEUE", "PURPOSE_SPECIFIC_ABSTRACTION"), reports.stream()
+				.map(report -> ((RecommendedMigration) report).strategy().name()).toList());
+		assertTrue(reports.stream().noneMatch(report -> report.permitsSourceRewrite()));
+		for (String changed : List.of(source.replace("synchronized (queue)", "synchronized (this)"),
+				source.replace("Objects.requireNonNull(value)", "value"),
+				source.replace("String take()", "int size() { return queue.size(); } String take()"),
+				source.replace("return batch;", "schedule(null); return batch;"),
+				source.replace("new LinkedHashSet<>(pending)", "new LinkedHashSet<String>()"))) {
+			var rejected= ContainerConcurrencyAnalyzer.analyze(parse(changed, true), () -> {});
+			assertTrue(rejected.stream().anyMatch(DiagnosticOnly.class::isInstance), changed);
+		}
+	}
+
+	@Test
+	void locatesPublishedReferencesCallbackBoundariesAndExplicitLocksWithoutClaimingSafety() {
+		String source= """
+				import java.util.*;
+				import java.util.concurrent.atomic.*;
+				import java.util.concurrent.locks.*;
+				final class Sample {
+					private final List<Runnable> jobs = new ArrayList<>();
+					private final Lock guard = new ReentrantLock();
+					private volatile Runnable[] listeners = {};
+					private final AtomicReference<List<String>> snapshot = new AtomicReference<>(List.of());
+					void work(Runnable callback) {
+						guard.lock();
+						try { for (Runnable job : jobs) job.run(); } finally { guard.unlock(); }
+						for (Runnable r : listeners) r.run();
+						snapshot.set(List.of("value"));
+					}
+					List<Runnable> leak() { return jobs; }
+				}
+				""";
+		var observations= ContainerConcurrencyAnalyzer.analyze(parse(source, true), () -> {});
+		var jobs= observations.stream().filter(report -> report.protocol().identity().displayName().equals("jobs")).findFirst().orElseThrow();
+		assertEquals(SynchronizationKind.EXPLICIT_LOCK, jobs.protocol().summary().synchronization());
+		assertTrue(jobs.protocol().evidence().stream().anyMatch(e -> e.kind() == EvidenceKind.CALLBACK_UNDER_LOCK && anchor(source, e).equals("job.run()")));
+		assertTrue(jobs.protocol().evidence().stream().anyMatch(e -> e.kind() == EvidenceKind.LIVE_WRAPPER_RETURN));
+		assertTrue(observations.stream().anyMatch(r -> r.protocol().summary().synchronization() == SynchronizationKind.VOLATILE_SNAPSHOT));
+		assertTrue(observations.stream().anyMatch(r -> r.protocol().summary().synchronization() == SynchronizationKind.ATOMIC_REFERENCE));
+		assertTrue(observations.stream().allMatch(DiagnosticOnly.class::isInstance));
+		var changed= source.replace("guard.unlock()", "new ReentrantLock().unlock()");
+		assertTrue(ContainerConcurrencyAnalyzer.analyze(parse(changed, true), () -> {}).stream()
+				.noneMatch(r -> r.protocol().summary().synchronization() == SynchronizationKind.EXPLICIT_LOCK));
+	}
+
+	@Test
+	void sharesTheExactMembershipAndCallbackProofsWithTheRewrites() {
+		String source= """
+				import java.util.*;
+				final class Sample {
+					private final Set<String> seen = Collections.synchronizedSet(new HashSet<>());
+					private final List<Runnable> jobs = new ArrayList<>();
+					boolean mark(String key) { return seen.add(Objects.requireNonNull(key)); }
+					void register(Runnable value) { synchronized (jobs) { jobs.add(value); } }
+					void notifyAllJobs() {
+						Runnable[] snapshot;
+						synchronized (jobs) { snapshot = jobs.toArray(new Runnable[0]); }
+						for (Runnable action : snapshot) action.run();
+					}
+				}
+				""";
+		var reports= ContainerConcurrencyAnalyzer.analyze(parse(source, true), () -> {});
+		assertEquals(List.of("CONCURRENT_MEMBERSHIP_SET", "COPY_ON_WRITE_SEQUENCE"), reports.stream()
+				.map(report -> ((RecommendedMigration) report).strategy().name()).toList());
+		for (String changed : List.of(source.replace("return seen.add", "if (seen.contains(\"x\")) return false; return seen.add"),
+				source.replace("action.run();", "if (action != null) action.run();"))) {
+			assertTrue(ContainerConcurrencyAnalyzer.analyze(parse(changed, true), () -> {}).stream().anyMatch(DiagnosticOnly.class::isInstance));
+		}
 	}
 
 	private static String anchor(String source, ConcurrencyProtocol.Evidence evidence) {

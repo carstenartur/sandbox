@@ -252,6 +252,46 @@ public class ContainerAnalysisServiceTest {
 	}
 
 	@Test
+	public void wholeFieldEvidenceRetainsAProvenWrapperTraversalAndExplainsMismatchedMonitors() {
+		String source= """
+				import java.util.*;
+				final class Sample {
+					private final List<String> items = Collections.synchronizedList(new ArrayList<>());
+					void offer(String s) { items.add(s); }
+					int count() {
+						int n = 0;
+						synchronized (items) { for (String item : items) { n++; } }
+						return n;
+					}
+				}
+				""";
+		var rows= service.analyze(parse(source), "=Sample"); //$NON-NLS-1$
+		assertEquals(2, rows.size());
+		assertTrue(rows.stream().allMatch(row -> "NO_MIGRATION_RECOMMENDED".equals(row.status()))); //$NON-NLS-1$
+		assertEquals(List.of("items.add(s)", "items"), rows.stream().map(row -> fragment(source, row)).toList()); //$NON-NLS-1$ //$NON-NLS-2$
+		var changed= service.analyze(parse(source.replace("synchronized (items)", "synchronized (this)")), "=Sample"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		assertTrue(changed.stream().allMatch(row -> "REPORT_ONLY".equals(row.status()))); //$NON-NLS-1$
+		assertTrue(changed.stream().anyMatch(row -> row.evidenceKind().equals("UNRESOLVED_BOUNDARY"))); //$NON-NLS-1$
+	}
+
+	@Test
+	public void queueRecommendationKeepsTheOrderedProtocolAndNavigatesToItsSource() {
+		String source= """
+				import java.util.*;
+				final class Sample {
+					private final List<String> queue = Collections.synchronizedList(new ArrayList<>());
+					void offer(String value) { queue.add(Objects.requireNonNull(value)); }
+					String take() { synchronized(queue) { return queue.isEmpty() ? null : queue.remove(0); } }
+				}
+				""";
+		var rows= service.analyze(parse(source), "=Sample"); //$NON-NLS-1$
+		assertTrue(rows.stream().allMatch(row -> "REPORT_ONLY".equals(row.status()) && "CONCURRENT_QUEUE".equals(row.targetContract()))); //$NON-NLS-1$ //$NON-NLS-2$
+		var remove= rows.stream().filter(row -> "queue.remove(0)".equals(fragment(source, row))).findFirst().orElseThrow(); //$NON-NLS-1$
+		assertTrue(remove.semanticSummary().contains("CHECK_THEN_ACT")); //$NON-NLS-1$
+		assertTrue(remove.semanticSummary().contains("PRODUCER_CONSUMER")); //$NON-NLS-1$
+	}
+
+	@Test
 	public void synchronizedListIterationsShowSourceEvidenceWithoutMigrationAdvice() {
 		String source= """
 				import java.util.ArrayList;
