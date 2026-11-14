@@ -48,7 +48,6 @@ import org.eclipse.swtbot.swt.finder.utils.SWTUtils;
 import org.eclipse.swtbot.swt.finder.waits.DefaultCondition;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.navigator.CommonNavigator;
 import org.junit.jupiter.api.Test;
 
 /** Replays the installed headless Status cleanup against the same pinned Workbench source. */
@@ -122,8 +121,10 @@ public class PinnedStatusPreviewSWTBotTest {
                 PlatformUI.getWorkbench().getDisplay().syncExec(() -> {
                     try {
                         var page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
-                        var navigator = (CommonNavigator) page.showView(EXPLORER);
-                        navigator.selectReveal(new StructuredSelection(element));
+                        var view = page.showView(EXPLORER);
+                        var selectionProvider = view.getSite().getSelectionProvider();
+                        assertNotNull(selectionProvider, "Project Explorer must expose a selection provider");
+                        selectionProvider.setSelection(new StructuredSelection(element));
                     } catch (org.eclipse.ui.PartInitException error) {
                         throw new IllegalStateException(error);
                     }
