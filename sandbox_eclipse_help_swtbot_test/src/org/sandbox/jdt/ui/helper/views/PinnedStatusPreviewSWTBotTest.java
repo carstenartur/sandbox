@@ -146,8 +146,8 @@ public class PinnedStatusPreviewSWTBotTest {
                 bot.waitUntil(new DefaultCondition() {
                     @Override public boolean test() {
                         return UIThreadRunnable.syncExec(shell.display, (Result<Boolean>) () ->
-                                showDiffFragment(shell.widget, "JavaPlugin.getPluginId(), IStatus.OK, message")
-                                && showDiffFragment(shell.widget, "JavaPlugin.getPluginId(), message"));
+                                showVisibleDiff(shell.widget, "JavaPlugin.getPluginId(), IStatus.OK, message",
+                                        "JavaPlugin.getPluginId(), message"));
                     }
                     @Override public String getFailureMessage() {
                         return "Comparison does not display both Status constructor forms in " + file.getName();
@@ -190,8 +190,13 @@ public class PinnedStatusPreviewSWTBotTest {
         }
     }
 
-    /** Scroll the real comparison pane until the complete change is visible in the capture. */
-    private static boolean showDiffFragment(Shell shell, String fragment) {
+    /** Scroll the real com    /**
+     * A real two-sided LTK comparison must show the removed and added fragments
+     * in different visible source panes at the instant of capture. Finding both
+     * strings somewhere in the dialog (or scrolling one pane twice) is not proof.
+     */
+    private static boolean showVisibleDiff(Shell shell, String before, String after) {
+        var panes = new java.util.ArrayList<StyledText>();
         var controls = new ArrayDeque<Control>();
         controls.add(shell);
         while (!controls.isEmpty()) {
@@ -200,26 +205,40 @@ public class PinnedStatusPreviewSWTBotTest {
                 continue;
             }
             if (control instanceof StyledText pane) {
-                int start = pane.getText().indexOf(fragment);
-                if (start >= 0) {
-                    pane.setTopIndex(Math.max(0, pane.getLineAtOffset(start) - 2));
-                    Rectangle text = pane.getTextBounds(start, start + fragment.length() - 1);
-                    Rectangle client = pane.getClientArea();
-                    if (text.x < client.x || text.x + text.width > client.x + client.width) {
-                        pane.setHorizontalPixel(Math.max(0, pane.getHorizontalPixel() + text.x - client.x - 12));
-                        text = pane.getTextBounds(start, start + fragment.length() - 1);
-                    }
-                    pane.update();
-                    if (text.equals(text.intersection(client))) {
-                        return true;
-                    }
-                }
+                panes.add(pane);
             }
             if (control instanceof Composite parent) {
                 java.util.Collections.addAll(controls, parent.getChildren());
             }
         }
+        for (StyledText original : panes) {
+            if (!showDiffFragment(original, before)) {
+                continue;
+            }
+            for (StyledText modified : panes) {
+                if (modified != original && showDiffFragment(modified, after)
+                        && showDiffFragment(original, before)) {
+                    return true;
+                }
+            }
+        }
         return false;
+    }
+
+    private static boolean showDiffFragment(StyledText pane, String fragment) {
+        int start = pane.getText().indexOf(fragment);
+        if (start < 0) {
+            return false;
+        }
+        pane.setTopIndex(Math.max(0, pane.getLineAtOffset(start) - 2));
+        Rectangle text = pane.getTextBounds(start, start + fragment.length() - 1);
+        Rectangle client = pane.getClientArea();
+        if (text.x < client.x || text.x + text.width > client.x + client.width) {
+            pane.setHorizontalPixel(Math.max(0, pane.getHorizontalPixel() + text.x - client.x - 12));
+            text = pane.getTextBounds(start, start + fragment.length() - 1);
+        }
+        pane.update();
+        return text.equals(text.intersection(client));
     }
 
     private static String required(String key) {
