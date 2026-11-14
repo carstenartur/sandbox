@@ -60,6 +60,15 @@ jobs:
           fetch-depth: 0
           lfs: true
           path: upstream/swt
+      - name: Check out the matching Eclipse platform build inputs
+        uses: actions/checkout@v7
+        with:
+          repository: eclipse-platform/eclipse.platform.releng.aggregator
+          ref: dd305292a3ee34b4f592bbb0fa7c36fb8646bb71
+          path: upstream/releng
+          sparse-checkout: |
+            eclipse-platform-parent
+            eclipse.platform.releng.prereqs.sdk
       - name: Set up Java 25
         uses: actions/setup-java@v6
         with:
