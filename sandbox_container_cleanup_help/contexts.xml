@@ -19,7 +19,7 @@
 		<description>Convert a proven manually unique local sequence to an encounter-ordered set.</description>
 		<topic href="html/cleanup.html#unique-sequence" label="Unique sequence to ordered set"/>
 	</context>
-	<context id="closed_source_parameter_migration" title="Closed-source parameter migration">
+	<context id="closed_source_parameter_migration" title="Closed-source signature migration">
 		<description>This project-wide rule requires coordinated multi-file preview.</description>
 		<topic href="html/cleanup.html#project-closed" label="Project-closed migration"/>
 	</context>

@@ -308,6 +308,211 @@ class CoordinatedContainerCleanUpTest {
 						&& "saveAction".equals(element.getAttribute("cleanUpKind")))); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
+	@Test
+	void migratesPackageReturnAndItsSourceCallersAtomically() throws Exception {
+		String producer= """
+				package test;
+				import java.util.Arrays;
+				final class Rows {
+				    static String[] collect(String value) {
+				        String[] rows = new String[0];
+				        rows = Arrays.copyOf(rows, rows.length + 1);
+				        rows[rows.length - 1] = value;
+				        return rows;
+				    }
+				}
+				""";
+		String consumer= """
+				package test;
+				final class Display {
+				    int count(String value) {
+				        String[] received = Rows.collect(value);
+				        return received.length;
+				    }
+				}
+				""";
+		ICompilationUnit rows= createUnit("Rows.java", producer); //$NON-NLS-1$
+		ICompilationUnit display= createUnit("Display.java", consumer); //$NON-NLS-1$
+		String otherSource= consumer.replace("class Display", "class Other"); //$NON-NLS-1$ //$NON-NLS-2$
+		ICompilationUnit other= createUnit("Other.java", otherSource); //$NON-NLS-1$
+		var scope= new ICompilationUnit[] { rows, display, other };
+		var monitor= new NullProgressMonitor();
+		var cleanup= cleanup();
+		var expanded= cleanup.expandCleanUpScope(context.getJavaProject(), List.of(rows), monitor);
+		assertTrue(expanded.containsAll(List.of(display, other)));
+		cleanup.checkPreConditions(context.getJavaProject(), new ICompilationUnit[] { rows, display }, monitor);
+		assertNull(cleanup.createFix(new CleanUpContext(rows, parse(rows))));
+		cleanup.checkPostConditions(monitor);
+		cleanup.checkPreConditions(context.getJavaProject(), scope, monitor);
+		ICleanUpFix producerFix= cleanup.createFix(new CleanUpContext(rows, parse(rows)));
+		assertNotNull(producerFix, cleanup.getLastPlanningDiagnosticsJson(context.getJavaProject()));
+		ICleanUpFix callerFix= cleanup.createFix(new CleanUpContext(display, parse(display)));
+		assertNotNull(callerFix);
+		var change= new org.eclipse.ltk.core.refactoring.CompositeChange("Migrate return and callers"); //$NON-NLS-1$
+		change.add(producerFix.createChange(null));
+		change.add(callerFix.createChange(null));
+		var otherFix= cleanup.createFix(new CleanUpContext(other, parse(other)));
+		assertNotNull(otherFix);
+		change.add(otherFix.createChange(null));
+		change.initializeValidationData(monitor);
+		Change undo= change.perform(monitor);
+		assertNotNull(undo);
+		assertTrue(rows.getSource().contains("static List<String> collect("), rows.getSource()); //$NON-NLS-1$
+		assertTrue(rows.getSource().contains("rows.add(value)")); //$NON-NLS-1$
+		assertTrue(rows.getSource().contains("return rows;")); //$NON-NLS-1$
+		assertTrue(display.getSource().contains("List<String> received = Rows.collect(value)")); //$NON-NLS-1$
+		assertTrue(display.getSource().contains("return received.size();")); //$NON-NLS-1$
+		assertFalse(Arrays.stream(parse(rows).getProblems()).anyMatch(problem -> problem.isError()));
+		assertFalse(Arrays.stream(parse(display).getProblems()).anyMatch(problem -> problem.isError()));
+		assertTrue(other.getSource().contains("return received.size();")); //$NON-NLS-1$
+		assertFalse(Arrays.stream(parse(other).getProblems()).anyMatch(problem -> problem.isError()));
+		cleanup.checkPostConditions(monitor);
+		var secondPass= cleanup();
+		secondPass.checkPreConditions(context.getJavaProject(), scope, monitor);
+		for (ICompilationUnit migrated : scope) {
+			assertNull(secondPass.createFix(new CleanUpContext(migrated, parse(migrated))));
+		}
+		secondPass.checkPostConditions(monitor);
+		undo.perform(monitor);
+		assertEquals(producer, rows.getSource());
+		assertEquals(consumer, display.getSource());
+		assertEquals(otherSource, other.getSource());
+
+		// The return has no Java overload that could retain this signature for external callers.
+		String exposed= producer.replace("final class Rows", "public final class Rows") //$NON-NLS-1$ //$NON-NLS-2$
+				.replace("static String[] collect", "public static String[] collect"); //$NON-NLS-1$ //$NON-NLS-2$
+		rows.getBuffer().setContents(exposed);
+		rows.save(monitor, true);
+		var external= cleanup();
+		external.checkPreConditions(context.getJavaProject(), scope, monitor);
+		assertNull(external.createFix(new CleanUpContext(rows, parse(rows))));
+		assertEquals(exposed, rows.getSource());
+		external.checkPostConditions(monitor);
+		// An early return with a separate array has no producer-flow edge.
+		String alternative= producer.replace("String[] rows =", //$NON-NLS-1$
+				"if (value == null) return new String[0]; String[] rows ="); //$NON-NLS-1$
+		rows.getBuffer().setContents(alternative);
+		rows.save(monitor, true);
+		var multipleReturns= cleanup();
+		multipleReturns.checkPreConditions(context.getJavaProject(), scope, monitor);
+		assertNull(multipleReturns.createFix(new CleanUpContext(rows, parse(rows))));
+		assertEquals(alternative, rows.getSource());
+		multipleReturns.checkPostConditions(monitor);
+		rows.getBuffer().setContents(producer);
+		rows.save(monitor, true);
+
+		// A new observation in another file invalidates even the producer's unperformed edit.
+		var planned= cleanup();
+		planned.checkPreConditions(context.getJavaProject(), scope, monitor);
+		String stale= consumer.replace("return received.length;", "return System.identityHashCode(received);"); //$NON-NLS-1$ //$NON-NLS-2$
+		display.getBuffer().setContents(stale);
+		display.save(monitor, true);
+		try {
+			planned.createFix(new CleanUpContext(rows, parse(rows)));
+			org.junit.jupiter.api.Assertions.fail("A stale return consumer must invalidate the producer"); //$NON-NLS-1$
+		} catch (CoreException expected) {
+			assertTrue(expected.getMessage().contains("return"), expected::getMessage); //$NON-NLS-1$
+		}
+		assertEquals(producer, rows.getSource());
+		assertEquals(stale, display.getSource());
+		planned.checkPostConditions(monitor);
+
+		for (String unsupported : List.of(
+				consumer.replace("return received.length;", "return System.identityHashCode(received);"), //$NON-NLS-1$ //$NON-NLS-2$
+				consumer.replace("String[] received", "Object[] received"), //$NON-NLS-1$ //$NON-NLS-2$
+				consumer.replace("return received.length;", "received[0] = value; return received.length;"), //$NON-NLS-1$ //$NON-NLS-2$
+				consumer.replace("String[] received = Rows.collect(value);", "java.util.function.Function<String, String[]> f = Rows::collect; String[] received = f.apply(value); System.identityHashCode(f);"))) { //$NON-NLS-1$ //$NON-NLS-2$
+			display.getBuffer().setContents(unsupported);
+			display.save(monitor, true);
+			var rejected= cleanup();
+			rejected.checkPreConditions(context.getJavaProject(), scope, monitor);
+			assertNull(rejected.createFix(new CleanUpContext(rows, parse(rows))), unsupported);
+			assertEquals(producer, rows.getSource());
+			assertEquals(otherSource, other.getSource());
+			rejected.checkPostConditions(monitor);
+		}
+	}
+
+	@Test
+	void migratesLocalMethodReferenceAndForwardingLambdaReturnTargets() throws Exception {
+		String factorySource= """
+				package test;
+				import java.util.Arrays;
+				final class Factory {
+				    static String[] rows(String value) {
+				        String[] items = new String[0];
+				        items = Arrays.copyOf(items, items.length + 1);
+				        items[items.length - 1] = value;
+				        return items;
+				    }
+				}
+				""";
+		String source= """
+				package test;
+				import java.util.function.Function;
+				class Readers {
+				    int count(String value) {
+				        Function<String, String[]> reference = Factory::rows;
+				        Function<String, String[]> forward = v -> Factory.rows(v);
+				        String[] first = reference.apply(value);
+				        String[] second = forward.apply(value);
+				        String[] third = reference.apply(null);
+				        return first.length + second.length + third.length;
+				    }
+				}
+				""";
+		var factory= createUnit("Factory.java", factorySource); //$NON-NLS-1$
+		var readers= createUnit("Readers.java", source); //$NON-NLS-1$
+		var scope= new ICompilationUnit[] { factory, readers };
+		var monitor= new NullProgressMonitor();
+		var clean= cleanup();
+		assertTrue(clean.expandCleanUpScope(context.getJavaProject(), List.of(factory), monitor).contains(readers));
+		clean.checkPreConditions(context.getJavaProject(), scope, monitor);
+		var diagnostic= clean.getLastPlanningDiagnosticsJson(context.getJavaProject());
+		var change= new org.eclipse.ltk.core.refactoring.CompositeChange("Migrate function targets"); //$NON-NLS-1$
+		for (var unit : scope) {
+			var fix= clean.createFix(new CleanUpContext(unit, parse(unit)));
+			assertNotNull(fix, diagnostic);
+			change.add(fix.createChange(monitor));
+		}
+		change.initializeValidationData(monitor);
+		Change undo= change.perform(monitor);
+		assertNotNull(undo);
+		assertTrue(readers.getSource().contains("Function<String, List<String>> reference = Factory::rows;"), readers.getSource()); //$NON-NLS-1$
+		assertTrue(readers.getSource().contains("Function<String, List<String>> forward = v -> Factory.rows(v);")); //$NON-NLS-1$
+		assertTrue(readers.getSource().contains("first.size() + second.size() + third.size()")); //$NON-NLS-1$
+		for (var unit : scope) {
+			assertFalse(Arrays.stream(parse(unit).getProblems()).anyMatch(problem -> problem.isError()));
+		}
+		clean.checkPostConditions(monitor);
+		undo.perform(monitor);
+		assertEquals(factorySource, factory.getSource());
+		assertEquals(source, readers.getSource());
+
+		String overload= factorySource.replace("static String[] rows(String value)", //$NON-NLS-1$
+				"static Object rows(Object value) { return null; } static String[] rows(String value)"); //$NON-NLS-1$
+		factory.getBuffer().setContents(overload);
+		factory.save(monitor, true);
+		var ambiguous= cleanup();
+		ambiguous.checkPreConditions(context.getJavaProject(), scope, monitor);
+		assertNull(ambiguous.createFix(new CleanUpContext(factory, parse(factory))));
+		ambiguous.checkPostConditions(monitor);
+		factory.getBuffer().setContents(factorySource);
+		factory.save(monitor, true);
+
+		for (String extra : List.of("System.identityHashCode(reference);", "reference = forward;", //$NON-NLS-1$ //$NON-NLS-2$
+				"Function<String, String[]> stolen = forward;", "reference.andThen(x -> x.length);")) { //$NON-NLS-1$ //$NON-NLS-2$
+			var exposed= source.replace("return first.length", extra + " return first.length"); //$NON-NLS-1$ //$NON-NLS-2$
+			readers.getBuffer().setContents(exposed);
+			readers.save(monitor, true);
+			var rejected= cleanup();
+			rejected.checkPreConditions(context.getJavaProject(), scope, monitor);
+			assertNull(rejected.createFix(new CleanUpContext(factory, parse(factory))), extra);
+			rejected.checkPostConditions(monitor);
+			assertEquals(factorySource, factory.getSource());
+		}
+	}
+
 	private CoordinatedContainerCleanUpCore cleanup() {
 		return new CoordinatedContainerCleanUpCore(Map.of(
 				CLEANUP, CleanUpOptions.TRUE,

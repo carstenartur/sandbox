@@ -37,6 +37,8 @@ import org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits;
 import org.sandbox.jdt.cleanup.multifile.SourceRootPolicy;
 import org.sandbox.jdt.container.analysis.AppendOnlyArraySeedDetector;
 import org.sandbox.jdt.container.analysis.ClosedFlowArrayUsageRefiner;
+import org.sandbox.jdt.container.analysis.ClosedReturnArrayUses;
+import org.sandbox.jdt.container.analysis.ContainerLocalRewritePlanner;
 import org.sandbox.jdt.container.analysis.ClosedSourceParameterMigrationPlanner;
 import org.sandbox.jdt.container.analysis.ConstructorOwnedArrayField;
 import org.sandbox.jdt.container.analysis.ContainerBridgePolicyPlanner;
@@ -50,6 +52,14 @@ import org.sandbox.jdt.container.analysis.ContainerSignatureAtomicityPlanner;
 import org.sandbox.jdt.container.analysis.LocalArrayUsageAnalyzer;
 import org.sandbox.jdt.container.analysis.LocalContainerFlowGraphBuilder;
 import org.sandbox.jdt.container.api.ClosedSourceParameterMigrationPlan;
+import org.sandbox.jdt.container.api.ClosedSourceContainerPlan;
+import org.sandbox.jdt.container.api.ClosedSourceReturnMigrationPlan;
+import org.sandbox.jdt.container.api.ClosedSourceReturnMigrationPlan.Consumer;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.EdgeKind;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.FlowNode;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.NodeKind;
+import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.PositionKind;
+import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.PlanningStatus;
 import org.sandbox.jdt.container.api.ContainerBridgePolicyPlan;
 import org.sandbox.jdt.container.api.ContainerFlowComponent;
 import org.sandbox.jdt.container.api.ContainerFlowContinuationPlan;
@@ -232,6 +242,14 @@ final class ClosedSourceContainerMigrationCoordinator {
 							+ component.closureStatus(), discovery.requiredHandles());
 		}
 
+		if (component.nodes().stream().anyMatch(node -> node.kind() == NodeKind.RETURN_POSITION)) {
+			var returnPlan= planReturn(candidate, component, resolved, roots);
+			return returnPlan.isPresent()
+					? Planning.accepted(candidate.candidateId(), candidate.unitHandle(), returnPlan.get(), discovery.requiredHandles())
+					: Planning.rejected(candidate.candidateId(), candidate.unitHandle(), "RETURN_CLOSURE_NOT_PROVEN", //$NON-NLS-1$
+							"The return declaration or a caller observes an unsupported array operation.", discovery.requiredHandles()); //$NON-NLS-1$
+		}
+
 		List<ContainerUsageProfile> parameterProfiles= List.copyOf(parameterProfilesByKey.values());
 		Optional<OwnedStorage> storage= ownedStorage(candidate, component, parameterProfiles);
 		if (storage.isPresent()) {
@@ -327,6 +345,64 @@ final class ClosedSourceContainerMigrationCoordinator {
 					parameter.targetContract(), edits, storage.bindingKey());
 			return new ClosedSourceParameterMigrationPlan(plan.targetContract(), plan.callerPlan(), withStorage);
 		}
+	}
+
+	private Optional<ClosedSourceReturnMigrationPlan> planReturn(Candidate candidate, ContainerFlowComponent component,
+			ResolvedContainerFlowSearchPlan resolved, Map<String, CompilationUnit> roots) {
+		var returns= component.nodes().stream().filter(node -> node.kind() == NodeKind.RETURN_POSITION).toList();
+		if (returns.size() != 1 || !component.diagnostics().isEmpty()) {
+			return Optional.empty();
+		}
+		FlowNode signature= returns.getFirst();
+		var type= ClosedReturnArrayUses.producer(candidate.root(), signature.ownerKey(), candidate.localProfile().identity().bindingKey());
+		var recommendation= contractInferrer.infer(candidate.localProfile());
+		if (type.isEmpty() || recommendation.isEmpty()) {
+			return Optional.empty();
+		}
+		var groups= signaturePlanner.plan(component, resolved, recommendation.get());
+		if (groups.status() != PlanningStatus.REPORT_ONLY || groups.groups().size() != 1 || !groups.diagnostics().isEmpty()
+				|| groups.groups().getFirst().positionKind() != PositionKind.RETURN || groups.groups().getFirst().members().size() != 1
+				|| !groups.groups().getFirst().members().getFirst().flowNodeId().equals(signature.stableId())) {
+			return Optional.empty();
+		}
+		List<Consumer> consumers= new ArrayList<>();
+		for (var entry : roots.entrySet()) {
+			var callers= ClosedReturnArrayUses.consumers(entry.getValue(), entry.getKey(), signature.ownerKey());
+			if (callers.isEmpty()) {
+				return Optional.empty();
+			}
+			consumers.addAll(callers.get());
+		}
+		consumers.sort(Comparator.comparing(Consumer::unitHandle).thenComparingInt(c -> c.call().start()));
+		Set<String> consumerKeys= new LinkedHashSet<>();
+		consumers.forEach(consumer -> consumerKeys.add(consumer.localBindingKey()));
+		var producers= component.nodes().stream().filter(node -> node.bindingKey().equals(candidate.seed().identity().bindingKey())).toList();
+		if (consumers.isEmpty() || producers.size() != 1 || consumers.size() != consumerKeys.size()
+				|| component.nodes().size() != consumers.size() + 2 || component.edges().size() != consumers.size() + 1) {
+			return Optional.empty();
+		}
+		FlowNode producer= producers.getFirst();
+		for (var edge : component.edges()) {
+			FlowNode target= component.node(edge.targetNodeId()).orElseThrow();
+			if (edge.kind() == EdgeKind.RETURN_TO_METHOD && edge.sourceNodeId().equals(producer.stableId())
+					&& edge.targetNodeId().equals(signature.stableId())) {
+				continue;
+			}
+			if (edge.kind() != EdgeKind.INITIALIZER || !edge.sourceNodeId().equals(signature.stableId())
+					|| target.kind() != NodeKind.LOCAL_VARIABLE || !consumerKeys.remove(target.bindingKey())) {
+				return Optional.empty();
+			}
+		}
+		if (!consumerKeys.isEmpty()) {
+			return Optional.empty();
+		}
+		// Direct source-closed signature change; Java cannot preserve a same-name return-only overload.
+		var direct= new ContainerSignatureMigrationPlan(groups.targetContract(), groups.groups(), PlanningStatus.CLOSED_SOURCE_AUTOMATIC, List.of());
+		var bridges= bridgePlanner.plan(direct, recommendation.get());
+		var readiness= readinessPlanner.plan(component, recommendation.get(), direct, bridges);
+		var local= new ContainerFlowComponent(producer.stableId(), List.of(producer), List.of(), ClosureStatus.LOCAL_CLOSED, List.of());
+		return new ContainerLocalRewritePlanner().plan(local, recommendation.get(), readiness).plan()
+				.map(plan -> new ClosedSourceReturnMigrationPlan(plan, signature.javaElementHandle(), signature.ownerKey(), type.get(), consumers));
 	}
 
 	private CandidateSelection selectCandidate(List<ICompilationUnit> scope,
@@ -471,7 +547,7 @@ final class ClosedSourceContainerMigrationCoordinator {
 		}
 	}
 
-	record Planning(Optional<ClosedSourceParameterMigrationPlan> plan,
+	record Planning(Optional<ClosedSourceContainerPlan> plan,
 			boolean candidateFound, boolean complete, String candidateId,
 			String ownerHandle, String reasonCode, String message,
 			List<String> requiredHandles) {
@@ -492,10 +568,12 @@ final class ClosedSourceContainerMigrationCoordinator {
 		}
 
 		static Planning accepted(String candidateId, String ownerHandle,
-				ClosedSourceParameterMigrationPlan plan, List<String> requiredHandles) {
+				ClosedSourceContainerPlan plan, List<String> requiredHandles) {
 			return new Planning(Optional.of(plan), true, true, candidateId, ownerHandle,
 					"TRANSFORMED", //$NON-NLS-1$
-					"Migrate the closed append-array caller and complete parameter override family atomically.", //$NON-NLS-1$
+					plan instanceof ClosedSourceReturnMigrationPlan
+							? "Migrate the internal return declaration and all source callers directly. A return-only compatibility overload is impossible." //$NON-NLS-1$
+							: "Migrate the closed append-array caller and complete parameter override family atomically.", //$NON-NLS-1$
 					requiredHandles);
 		}
 	}

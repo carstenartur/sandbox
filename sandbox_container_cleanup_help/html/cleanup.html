@@ -36,8 +36,13 @@ this becomes a <code>LinkedHashSet</code>.</p>
 <ul>
   <li><strong>LOCAL_SAFE</strong> rules are ordinary explicit cleanups.</li>
   <li><strong>PROJECT_CLOSED</strong> rules require coordinated multi-file preview.</li>
-  <li>The closed-source caller-to-parameter migration is registered as
-      <strong>PROJECT_CLOSED</strong>; it is not exposed as a local cleanup or save action.</li>
+  <li>The coordinated rule migrates a closed append-array producer together with its parameter
+      family or its return type and callers. It can follow a constructor into a private final field.</li>
+  <li>For an internal static method that returns a fresh array, the preview includes its
+      direct callers and their length reads. It can also update a local
+      <code>Function&lt;String, String[]&gt;</code> to <code>Function&lt;String, List&lt;String&gt;&gt;</code>
+      when the method reference or forwarding lambda and every call are proven in source.
+      Callers that observe array identity or expose the function to other code block the migration.</li>
   <li>Unsupported aliasing, positional access, capture, publication or external
       signatures cause the cleanup to make no change.</li>
 </ul>

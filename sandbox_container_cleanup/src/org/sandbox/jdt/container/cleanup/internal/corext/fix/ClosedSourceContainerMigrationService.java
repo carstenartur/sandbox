@@ -25,7 +25,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaProject;
 
-import org.sandbox.jdt.container.api.ClosedSourceParameterMigrationPlan;
+import org.sandbox.jdt.container.api.ClosedSourceContainerPlan;
 
 /**
  * Narrow facade between the coordinator implementation and the UI cleanup lifecycle.
@@ -71,7 +71,7 @@ public final class ClosedSourceContainerMigrationService {
 	}
 
 	/** AST-free planning result consumed by the planned-cleanup lifecycle. */
-	public record Planning(Optional<ClosedSourceParameterMigrationPlan> plan,
+	public record Planning(Optional<ClosedSourceContainerPlan> plan,
 			boolean candidateFound, boolean complete, String candidateId,
 			String ownerHandle, String reasonCode, String message,
 			List<String> requiredHandles) {

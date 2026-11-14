@@ -67,7 +67,13 @@ public final class ContainerLocalRewriteFix {
 			ICompilationUnit unit,
 			org.eclipse.jdt.core.dom.CompilationUnit root,
 			ContainerLocalRewritePlan plan) throws CoreException {
-		return new RewriteOperation(resolve(unit, root, plan));
+		return new RewriteOperation(resolve(unit, root, plan), true);
+	}
+
+	/** Used only after the project-closed return and all result consumers have been revalidated. */
+	static CompilationUnitRewriteOperationWithSourceRange directReturnOperation(ICompilationUnit unit,
+			org.eclipse.jdt.core.dom.CompilationUnit root, ContainerLocalRewritePlan plan) throws CoreException {
+		return new RewriteOperation(resolve(unit, root, plan), false);
 	}
 
 	/** Package-visible semantic resolution used by the cleanup adapter. */
@@ -85,7 +91,10 @@ public final class ContainerLocalRewriteFix {
 
 		private final ResolvedPlan resolved;
 
-		RewriteOperation(ResolvedPlan resolved) {
+		private final boolean retainArrayBoundary;
+
+		RewriteOperation(ResolvedPlan resolved, boolean retainArrayBoundary) {
+			this.retainArrayBoundary= retainArrayBoundary;
 			this.resolved= Objects.requireNonNull(resolved, "resolved"); //$NON-NLS-1$
 		}
 
@@ -124,7 +133,7 @@ public final class ContainerLocalRewriteFix {
 				rewrite.replace(pair.appendAssignment(), add, group);
 			}
 
-			if (resolved.publication() != null) {
+			if (retainArrayBoundary && resolved.publication() != null) {
 				MethodInvocation toArray= ast.newMethodInvocation();
 				toArray.setExpression((Expression) ASTNode.copySubtree(ast, resolved.publication()));
 				toArray.setName(ast.newSimpleName("toArray")); //$NON-NLS-1$
