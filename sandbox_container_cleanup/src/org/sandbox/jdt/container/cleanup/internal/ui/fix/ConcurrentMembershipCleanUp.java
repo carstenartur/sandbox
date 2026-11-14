@@ -132,7 +132,8 @@ public final class ConcurrentMembershipCleanUp extends AbstractPlannedMultiFileC
 
 	@Override
 	public String getLastPlanningDiagnosticsJson(IJavaProject project) {
-		return getPlanningDiagnostics(project).toJson();
+		var diagnostics= getPlanningDiagnostics(project);
+		return OPTION.equals(diagnostics.cleanupId()) ? diagnostics.toJson() : ""; //$NON-NLS-1$
 	}
 
 	@Override

@@ -192,15 +192,13 @@ public final class ContainerFlowScopeSearch {
 			Set<String> rejectionReasons,
 			IProgressMonitor monitor) {
 		if (!seed.hasJavaElementHandle()) {
-			rejectionReasons.add("A container flow search seed has no Java-model handle: " //$NON-NLS-1$
-					+ seed.sourceNodeId());
+			rejectionReasons.add("A container flow search seed has no Java-model handle."); //$NON-NLS-1$
 			return;
 		}
 
 		IJavaElement element= elementResolver.resolve(seed.javaElementHandle());
 		if (element == null || !element.exists()) {
-			rejectionReasons.add("A container flow Java-model handle cannot be resolved: " //$NON-NLS-1$
-					+ seed.javaElementHandle());
+			rejectionReasons.add("A container flow Java-model handle cannot be resolved."); //$NON-NLS-1$
 			return;
 		}
 
@@ -226,8 +224,7 @@ public final class ContainerFlowScopeSearch {
 			Map<String, ResolvedSearchTarget> resolvedByKey,
 			Set<String> rejectionReasons) {
 		if (!(element instanceof IField field)) {
-			rejectionReasons.add("A field-reference seed does not resolve to an IField: " //$NON-NLS-1$
-					+ seed.javaElementHandle());
+			rejectionReasons.add("A field-reference seed does not resolve to an IField."); //$NON-NLS-1$
 			return;
 		}
 		addTarget(field, targetsByHandle);
@@ -241,8 +238,7 @@ public final class ContainerFlowScopeSearch {
 			Map<String, ResolvedSearchTarget> resolvedByKey,
 			Set<String> rejectionReasons) {
 		if (!(element instanceof IMethod method)) {
-			rejectionReasons.add("A method search seed does not resolve to an IMethod: " //$NON-NLS-1$
-					+ seed.javaElementHandle());
+			rejectionReasons.add("A method search seed does not resolve to an IMethod."); //$NON-NLS-1$
 			return;
 		}
 		addTarget(method, targetsByHandle);
@@ -257,8 +253,7 @@ public final class ContainerFlowScopeSearch {
 			Set<String> rejectionReasons,
 			IProgressMonitor monitor) {
 		if (!(element instanceof IMethod method)) {
-			rejectionReasons.add("An override-family seed does not resolve to an IMethod: " //$NON-NLS-1$
-					+ seed.javaElementHandle());
+			rejectionReasons.add("An override-family seed does not resolve to an IMethod."); //$NON-NLS-1$
 			return;
 		}
 
@@ -352,8 +347,7 @@ public final class ContainerFlowScopeSearch {
 				}
 			}
 		} catch (JavaModelException exception) {
-			reasons.add("JDT could not resolve the complete method override family: " //$NON-NLS-1$
-					+ exception.getMessage());
+			reasons.add("JDT could not resolve the complete method override family."); //$NON-NLS-1$
 		}
 		return methodFamily(methodsByHandle, reasons);
 	}

@@ -15,6 +15,10 @@
 		<description>Use copy-on-write iteration for registration-only private listener lists.</description>
 		<topic href="html/cleanup.html#listeners" label="Copy-on-write listener snapshots"/>
 	</context>
+	<context id="closed_unique_sequence" title="Project-wide unique list to ordered set">
+		<description>Change a closed unique list return, its source callers and read-only parameters together.</description>
+		<topic href="html/cleanup.html#closed-unique" label="Project-wide unique list to ordered set"/>
+	</context>
 	<context id="unique_sequence_to_set" title="Unique sequence to ordered set">
 		<description>Convert a proven manually unique local sequence to an encounter-ordered set.</description>
 		<topic href="html/cleanup.html#unique-sequence" label="Unique sequence to ordered set"/>

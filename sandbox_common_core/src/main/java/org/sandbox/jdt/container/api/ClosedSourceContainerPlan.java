@@ -14,5 +14,7 @@ import java.util.List;
 
 /** Source-closed signature change submitted to the coordinated Cleanup lifecycle. */
 public sealed interface ClosedSourceContainerPlan permits ClosedSourceParameterMigrationPlan, ClosedSourceReturnMigrationPlan, LosslessParameterBridgePlan {
+	ContainerCompatibilityDecision compatibility();
+
 	List<String> affectedCompilationUnitHandles();
 }

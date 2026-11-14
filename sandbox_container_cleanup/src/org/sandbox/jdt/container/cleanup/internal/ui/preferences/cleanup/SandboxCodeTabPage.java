@@ -27,6 +27,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.ui.PlatformUI;
 
+import org.sandbox.jdt.container.cleanup.internal.ui.fix.ClosedUniqueSequenceCleanUp;
 import org.sandbox.jdt.container.cleanup.internal.ui.fix.ConcurrentMembershipCleanUp;
 import org.sandbox.jdt.container.cleanup.internal.ui.fix.ContainerCleanUp;
 import org.sandbox.jdt.container.cleanup.internal.ui.fix.CoordinatedContainerCleanUp;
@@ -49,6 +50,7 @@ public final class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				new ListenerSnapshotCleanUp(values),
 				new ContainerCleanUp(values),
 				new ConcurrentMembershipCleanUp(values),
+				new ClosedUniqueSequenceCleanUp(values),
 				new CoordinatedContainerCleanUp(values)
 		};
 	}
@@ -84,6 +86,8 @@ public final class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				ContainerCleanUpMessages.ContainerTabPage_UniqueSequenceToSet,
 				UNIQUE_SEQUENCE_TO_SET,
 				FALSE_TRUE);
+		CheckboxPreference closedSet= createCheckboxPref(group, numColumns - 1, ContainerCleanUpMessages.ContainerTabPage_ClosedUniqueSequence,
+				ClosedUniqueSequenceCleanUp.OPTION, FALSE_TRUE);
 		CheckboxPreference records= createCheckboxPref(group, numColumns - 1, ContainerCleanUpMessages.ContainerTabPage_ParallelArraysToRecords,
 				PARALLEL_ARRAYS_TO_RECORDS, FALSE_TRUE);
 		CheckboxPreference keyMap= createCheckboxPref(group, numColumns - 1, ContainerCleanUpMessages.ContainerTabPage_RecordKeyMap,
@@ -101,7 +105,7 @@ public final class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				ContainerCleanUpMessages.ContainerTabPage_ConcurrentMembership, ConcurrentMembershipCleanUp.OPTION, FALSE_TRUE);
 		registerSlavePreference(
 				master,
-				new CheckboxPreference[] { arrayToList, sequenceToSet, records, keyMap, closedSourceParameter, membership });
+				new CheckboxPreference[] { arrayToList, sequenceToSet, closedSet, records, keyMap, closedSourceParameter, membership });
 		registerPreference(master);
 	}
 }

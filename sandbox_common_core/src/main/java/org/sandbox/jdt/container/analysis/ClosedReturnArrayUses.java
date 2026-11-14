@@ -49,7 +49,7 @@ public final class ClosedReturnArrayUses {
 				|| !(root.findDeclaringNode(methodKey) instanceof MethodDeclaration method)
 				|| !(method.getParent() instanceof TypeDeclaration owner) || owner.getParent() != root
 				|| !Modifier.isFinal(owner.getModifiers()) || !Modifier.isStatic(method.getModifiers())
-				|| Modifier.isPublic(owner.getModifiers()) || Modifier.isPublic(method.getModifiers()) || Modifier.isProtected(method.getModifiers())
+				|| Modifier.isPublic(owner.getModifiers()) && (Modifier.isPublic(method.getModifiers()) || Modifier.isProtected(method.getModifiers()))
 				|| !owner.superInterfaceTypes().isEmpty() || owner.getSuperclassType() != null
 				|| owner.resolveBinding() == null || owner.resolveBinding().getAnnotations().length != 0
 				|| !(method.getReturnType2() instanceof ArrayType array) || !method.extraDimensions().isEmpty()

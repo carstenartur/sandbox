@@ -142,6 +142,10 @@ public record MultiFileCleanUpDiagnostics(String cleanupId, MultiFileScopeDiagno
 			property(json, "outcome", candidate.outcome().name()).append(','); //$NON-NLS-1$
 			property(json, "reasonCode", candidate.reasonCode()).append(','); //$NON-NLS-1$
 			property(json, "message", candidate.message()).append(','); //$NON-NLS-1$
+			candidate.compatibility().ifPresent(decision -> {
+				property(json, "migrationMode", decision.migrationMode()).append(','); //$NON-NLS-1$
+				property(json, "bridgeFeasibility", decision.bridgeFeasibility()).append(','); //$NON-NLS-1$
+			});
 			arrayProperty(json, "relatedCompilationUnits", externalUnitIds(candidate.relatedCompilationUnitHandles())); //$NON-NLS-1$
 			json.append('}');
 		}

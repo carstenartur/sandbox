@@ -52,6 +52,12 @@ public enum ContainerCleanUpRule {
 			ExecutionMode.PROJECT_CLOSED,
 			false),
 
+	CLOSED_UNIQUE_SEQUENCE(
+			"cleanup.container_contracts.closed_unique_sequence", //$NON-NLS-1$
+			"sandbox_container_cleanup.closed_unique_sequence", //$NON-NLS-1$
+			ExecutionMode.PROJECT_CLOSED,
+			false),
+
 	CLOSED_SOURCE_PARAMETER_MIGRATION(
 			"cleanup.container_contracts.closed_source_parameter_migration", //$NON-NLS-1$
 			"sandbox_container_cleanup.closed_source_parameter_migration", //$NON-NLS-1$

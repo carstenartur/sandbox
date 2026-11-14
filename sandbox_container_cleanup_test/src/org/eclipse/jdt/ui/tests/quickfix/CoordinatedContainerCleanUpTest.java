@@ -196,6 +196,9 @@ class CoordinatedContainerCleanUpTest {
 		var monitor= new NullProgressMonitor();
 		var cleanup= cleanup();
 		cleanup.checkPreConditions(context.getJavaProject(), new ICompilationUnit[] { unit }, monitor);
+		String preview= cleanup.getCoordinatedCleanUpPreview(context.getJavaProject()).iterator().next().get("details").toString(); //$NON-NLS-1$
+		assertTrue(preview.contains("test.Sample.entries"), preview); //$NON-NLS-1$
+		assertTrue(preview.contains("test.Sample.rowCount"), preview); //$NON-NLS-1$
 		ICleanUpFix fix= cleanup.createFix(new CleanUpContext(unit, parse(unit)));
 		assertNotNull(fix, cleanup.getLastPlanningDiagnosticsJson(context.getJavaProject()));
 		Change undo= fix.createChange(null).perform(monitor);
@@ -544,6 +547,11 @@ class CoordinatedContainerCleanUpTest {
 				RETAIN_PROVEN_PARAMETER_BRIDGE, CleanUpOptions.TRUE);
 		var clean= new CoordinatedContainerCleanUpCore(options);
 		clean.checkPreConditions(context.getJavaProject(), scope, monitor);
+		String preview= clean.getCoordinatedCleanUpPreview(context.getJavaProject()).iterator().next().get("details").toString(); //$NON-NLS-1$
+		for (String expected : List.of("LOSSLESS_BRIDGE", "LOSSLESS_WITH_PROOF", "Deprecated overload: test.Sizes.size(String[])", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				"test.Sizes.size(List<String>)", "test.Sizes.count(String)", "Arrays.asList")) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			assertTrue(preview.contains(expected), preview);
+		}
 		var fix= clean.createFix(new CleanUpContext(unit, parse(unit)));
 		assertNotNull(fix, clean.getLastPlanningDiagnosticsJson(context.getJavaProject()));
 		var undo= fix.createChange(null).perform(monitor);

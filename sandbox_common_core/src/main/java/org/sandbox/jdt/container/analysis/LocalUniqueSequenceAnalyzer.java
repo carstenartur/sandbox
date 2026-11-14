@@ -84,6 +84,11 @@ public final class LocalUniqueSequenceAnalyzer {
 		return List.copyOf(result);
 	}
 
+	/** Profiles one candidate selected by a coordinated declaration/return analysis. */
+	public Optional<ContainerUsageProfile> analyze(VariableDeclarationFragment fragment) {
+		return candidate(fragment).map(LocalUniqueSequenceAnalyzer::analyzeCandidate);
+	}
+
 	private static Optional<Candidate> candidate(VariableDeclarationFragment fragment) {
 		IVariableBinding binding= fragment.resolveBinding();
 		if (binding == null || binding.isField() || binding.isParameter()
