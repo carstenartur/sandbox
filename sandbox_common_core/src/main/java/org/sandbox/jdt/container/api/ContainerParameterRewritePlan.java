@@ -30,7 +30,15 @@ public record ContainerParameterRewritePlan(
 		int parameterIndex,
 		String targetInterfaceType,
 		TargetContainerContract targetContract,
-		List<ParameterEdit> edits) {
+		List<ParameterEdit> edits,
+		String ownedFieldBindingKey) {
+
+	public ContainerParameterRewritePlan(String compilationUnitHandle, String methodJavaElementHandle,
+			String parameterBindingKey, int parameterIndex, String targetInterfaceType,
+			TargetContainerContract targetContract, List<ParameterEdit> edits) {
+		this(compilationUnitHandle, methodJavaElementHandle, parameterBindingKey, parameterIndex,
+				targetInterfaceType, targetContract, edits, ""); //$NON-NLS-1$
+	}
 
 	public ContainerParameterRewritePlan {
 		compilationUnitHandle= requiredText(
@@ -45,7 +53,12 @@ public record ContainerParameterRewritePlan(
 		targetInterfaceType= requiredText(targetInterfaceType, "targetInterfaceType"); //$NON-NLS-1$
 		Objects.requireNonNull(targetContract, "targetContract"); //$NON-NLS-1$
 		edits= List.copyOf(Objects.requireNonNull(edits, "edits")); //$NON-NLS-1$
+		Objects.requireNonNull(ownedFieldBindingKey);
 		validateEdits(edits);
+		boolean hasStorage= edits.stream().anyMatch(edit -> edit.kind() == EditKind.CHANGE_OWNED_FIELD);
+		if (hasStorage != !ownedFieldBindingKey.isEmpty()) {
+			throw new IllegalArgumentException("Field rewrite requires an exact field binding"); //$NON-NLS-1$
+		}
 	}
 
 	/** One parameter rewrite or verification anchored to immutable source evidence. */
@@ -102,7 +115,11 @@ public record ContainerParameterRewritePlan(
 	public enum EditKind {
 		CHANGE_PARAMETER_DECLARATION,
 		REPLACE_LENGTH_WITH_SIZE,
-		VERIFY_ENCOUNTER_ITERATION
+		VERIFY_ENCOUNTER_ITERATION,
+		CHANGE_OWNED_FIELD,
+		VERIFY_CONSTRUCTOR_STORE,
+		VERIFY_TERMINAL_ARGUMENT,
+		REPLACE_FIELD_LENGTH
 	}
 
 	public enum DiagnosticKind {

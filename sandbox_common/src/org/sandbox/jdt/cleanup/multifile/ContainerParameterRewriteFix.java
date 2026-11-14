@@ -91,13 +91,10 @@ public final class ContainerParameterRewriteFix {
 			ImportRewrite imports= cuRewrite.getImportRewrite();
 			TextEditGroup group= createTextEditGroup(DESCRIPTION, cuRewrite);
 
-			Type componentType= resolved.arrayType().getElementType();
 			String interfaceName= imports.addImport(
 					resolved.plan().targetInterfaceType());
-			ParameterizedType listType= ast.newParameterizedType(
-					ast.newSimpleType(ast.newName(interfaceName)));
-			listType.typeArguments().add(ASTNode.copySubtree(ast, componentType));
-			rewrite.replace(resolved.parameter().getType(), listType, group);
+			rewrite.replace(resolved.parameter().getType(), listType(ast, interfaceName, resolved.arrayType().getElementType()), group);
+			resolved.fieldType().ifPresent(field -> rewrite.replace(field, listType(ast, interfaceName, field.getElementType()), group));
 
 			for (ResolvedLength length : resolved.lengths()) {
 				MethodInvocation size= ast.newMethodInvocation();
@@ -106,6 +103,12 @@ public final class ContainerParameterRewriteFix {
 				size.setName(ast.newSimpleName("size")); //$NON-NLS-1$
 				rewrite.replace(length.expression(), size, group);
 			}
+		}
+
+		private static ParameterizedType listType(AST ast, String interfaceName, Type elementType) {
+			ParameterizedType list= ast.newParameterizedType(ast.newSimpleType(ast.newName(interfaceName)));
+			list.typeArguments().add(ASTNode.copySubtree(ast, elementType));
+			return list;
 		}
 
 		@Override

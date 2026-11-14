@@ -166,6 +166,75 @@ class CoordinatedContainerCleanUpTest {
 	}
 
 	@Test
+	void migratesConstructorOwnedFieldWithItsCallerAndRejectsEscapesAndStaleReaders() throws Exception {
+		String source= """
+				package test;
+				import java.util.Arrays;
+				final class Sample {
+				    private final String[] entries;
+				    private Sample(String[] items) { this.entries = items; }
+				    int rowCount() { return entries.length; }
+				    static Sample collect(String item) {
+				        String[] values = new String[0];
+				        values = Arrays.copyOf(values, values.length + 1);
+				        values[values.length - 1] = item;
+				        return new Sample(values);
+				    }
+				}
+				""";
+		ICompilationUnit unit= createUnit("Sample.java", source); //$NON-NLS-1$
+		var monitor= new NullProgressMonitor();
+		var cleanup= cleanup();
+		cleanup.checkPreConditions(context.getJavaProject(), new ICompilationUnit[] { unit }, monitor);
+		ICleanUpFix fix= cleanup.createFix(new CleanUpContext(unit, parse(unit)));
+		assertNotNull(fix, cleanup.getLastPlanningDiagnosticsJson(context.getJavaProject()));
+		Change undo= fix.createChange(null).perform(monitor);
+		assertNotNull(undo);
+		String transformed= unit.getSource();
+		assertTrue(transformed.contains("private final List<String> entries;"), transformed); //$NON-NLS-1$
+		assertTrue(transformed.contains("private Sample(List<String> items)"), transformed); //$NON-NLS-1$
+		assertTrue(transformed.contains("this.entries = items"), transformed); //$NON-NLS-1$
+		assertTrue(transformed.contains("return entries.size()"), transformed); //$NON-NLS-1$
+		assertTrue(transformed.contains("values.add(item)"), transformed); //$NON-NLS-1$
+		assertFalse(Arrays.stream(parse(unit).getProblems()).anyMatch(problem -> problem.isError()));
+		cleanup.checkPostConditions(monitor);
+		undo.perform(monitor);
+		assertEquals(source, unit.getSource());
+		var planned= cleanup();
+		planned.checkPreConditions(context.getJavaProject(), new ICompilationUnit[] { unit }, monitor);
+		// Append an identity observation after the original argument so every recorded source range stays valid.
+		String stale= source.stripTrailing().substring(0, source.stripTrailing().length() - 1)
+				+ "int observed() {return System.identityHashCode(entries);}}"; //$NON-NLS-1$
+		unit.getBuffer().setContents(stale);
+		unit.save(monitor, true);
+		try {
+			planned.createFix(new CleanUpContext(unit, parse(unit)));
+			org.junit.jupiter.api.Assertions.fail("Stale field observation must reject the whole fix"); //$NON-NLS-1$
+		} catch (CoreException expected) {
+			assertTrue(expected.getMessage().contains("owned field or its readers changed"), expected::getMessage); //$NON-NLS-1$
+		}
+		assertEquals(stale, unit.getSource());
+		planned.checkPostConditions(monitor);
+		for (String unsafe : List.of(
+				source.replace("return entries.length;", "return System.identityHashCode(entries);"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("String[] entries", "Object[] entries").replace("String[] items", "Object[] items"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+				source.replace("private final String[]", "final String[]"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("return entries.length;", "entries[0] = null; return entries.length;"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("final class Sample {", "final class Sample implements java.io.Serializable {"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("return new Sample(values);", "try { return new Sample(values); } finally { values[0] = null; }"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("return entries.length;", "return this.getClass().getDeclaredFields().length;"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("return new Sample(values);", "Sample result = new Sample(values); values[0] = null; return result;"))) { //$NON-NLS-1$ //$NON-NLS-2$
+			unit.getBuffer().setContents(unsafe);
+			unit.save(monitor, true);
+			cleanup= cleanup();
+			cleanup.checkPreConditions(context.getJavaProject(), new ICompilationUnit[] { unit }, monitor);
+			assertNull(cleanup.createFix(new CleanUpContext(unit, parse(unit))), unsafe);
+			assertEquals(unsafe, unit.getSource());
+			cleanup.checkPostConditions(monitor);
+		}
+	}
+
+	@Test
 	void rejectsConstructorWhenAnotherOverloadCouldCaptureTheList() throws Exception {
 		String source= """
 			package test;
