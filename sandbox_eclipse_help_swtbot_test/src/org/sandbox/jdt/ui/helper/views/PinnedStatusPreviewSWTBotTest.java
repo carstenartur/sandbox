@@ -193,9 +193,15 @@ public class PinnedStatusPreviewSWTBotTest {
                     assertEquals(bounds, bounds.intersection(shell.widget.getMonitor().getClientArea()));
                     shell.display.setCursorLocation(shell.widget.getMonitor().getClientArea().x,
                             shell.widget.getMonitor().getClientArea().y);
-                    shell.widget.redraw(0, 0, bounds.width, bounds.height, true);
-                    shell.display.update();
+                    // Remapping the native shell exposes the whole dialog, including GTK button shadows
+                    // outside their widgets' allocation and both scrolled comparison panes.
+                    shell.widget.setVisible(false);
                     return bounds;
+                });
+                UIThreadRunnable.syncExec(shell.display, () -> {
+                    shell.widget.setVisible(true);
+                    shell.widget.forceActive();
+                    shell.display.update();
                 });
                 bot.sleep(650);
                 assertTrue(SWTUtils.captureScreenshot(temp.toString(), area));
