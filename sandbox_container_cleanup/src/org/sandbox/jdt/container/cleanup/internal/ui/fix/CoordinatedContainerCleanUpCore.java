@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
@@ -37,6 +38,7 @@ import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 import org.sandbox.jdt.cleanup.multifile.AbstractPlannedMultiFileCleanUp;
 import org.sandbox.jdt.cleanup.multifile.ClosedSourceParameterMigrationFix;
 import org.sandbox.jdt.cleanup.multifile.MultiFileCandidateDiagnostic;
+import org.sandbox.jdt.cleanup.multifile.MultiFileCandidateOutcome;
 import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpDiagnostics;
 import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
 import org.sandbox.jdt.cleanup.multifile.MultiFilePlanningMetrics;
@@ -106,18 +108,17 @@ public final class CoordinatedContainerCleanUpCore
 				? new ArrayList<>(planning.plan().orElseThrow().affectedCompilationUnitHandles())
 				: new ArrayList<>(planning.requiredHandles());
 		relatedHandles.remove(planning.ownerHandle());
-		MultiFileCandidateDiagnostic candidate= planning.complete()
-				? MultiFileCandidateDiagnostic.transformed(
-						planning.candidateId(), planning.ownerHandle(), planning.message(), relatedHandles)
-				: MultiFileCandidateDiagnostic.rejected(
-						planning.candidateId(), planning.ownerHandle(), planning.reasonCode(),
-						planning.message(), relatedHandles);
+		var decision= planning.compatibility().orElseThrow();
+		var compatibility= new MultiFileCandidateDiagnostic.Compatibility(decision.mode().name(), decision.bridge().name());
+		var candidate= new MultiFileCandidateDiagnostic(planning.candidateId(), planning.ownerHandle(),
+				planning.complete() ? MultiFileCandidateOutcome.TRANSFORMED : MultiFileCandidateOutcome.REJECTED,
+				planning.reasonCode(), decision.explanation(), relatedHandles, Optional.of(compatibility));
 		MultiFileCleanUpDiagnostics diagnostics= new MultiFileCleanUpDiagnostics(
 				CLEANUP_ID, MultiFileScopeDiagnostic.empty(), List.of(candidate));
 		RefactoringStatus status= new RefactoringStatus();
 		if (!planning.complete()) {
 			status.addInfo("Coordinated container migration was not applied: " //$NON-NLS-1$
-					+ planning.reasonCode() + ": " + planning.message()); //$NON-NLS-1$
+					+ planning.reasonCode() + ": " + decision.summary()); //$NON-NLS-1$
 			return new MultiFileCleanUpPlanResult<>(
 					null, status, MultiFilePlanningMetrics.empty(), diagnostics);
 		}
@@ -169,6 +170,11 @@ public final class CoordinatedContainerCleanUpCore
 			throw new CoreException(Status.error("A parameter declaration, its callers or their observed uses changed.")); //$NON-NLS-1$
 		}
 		return fix;
+	}
+
+	@Override
+	protected List<String> getCandidatePreviewDetails(ClosedSourceContainerPlan plan, MultiFileCandidateDiagnostic candidate) throws CoreException {
+		return ContainerSignaturePreview.describe(plan);
 	}
 
 	/** Returns the most recent privacy-preserving planning diagnostics for the project. */

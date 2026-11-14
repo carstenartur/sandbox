@@ -17,11 +17,22 @@ import java.util.Optional;
 
 /** An atomic return signature, local producer and all bounded source callers. */
 public record ClosedSourceReturnMigrationPlan(ContainerLocalRewritePlan producer, String methodHandle,
-		String methodBindingKey, Range returnType, List<Consumer> consumers) implements ClosedSourceContainerPlan {
+		String methodBindingKey, Range returnType, List<Consumer> consumers, Optional<ReturnPublicationPolicy> publication) implements ClosedSourceContainerPlan {
+
+	public ClosedSourceReturnMigrationPlan(ContainerLocalRewritePlan producer, String methodHandle, String methodBindingKey,
+			Range returnType, List<Consumer> consumers) {
+		this(producer, methodHandle, methodBindingKey, returnType, consumers, Optional.empty());
+	}
+
+	/** Freezes the explicitly selected publication boundary together with every source edit. */
+	public ClosedSourceReturnMigrationPlan withPublication(ReturnPublicationPolicy policy) {
+		return new ClosedSourceReturnMigrationPlan(producer, methodHandle, methodBindingKey, returnType, consumers, Optional.of(policy));
+	}
 
 	public ClosedSourceReturnMigrationPlan {
 		Objects.requireNonNull(producer);
 		Objects.requireNonNull(returnType);
+		Objects.requireNonNull(publication);
 		if (methodHandle.isBlank() || methodBindingKey.isBlank() || consumers.isEmpty()) {
 			throw new IllegalArgumentException("A return migration requires its producer method and callers"); //$NON-NLS-1$
 		}
@@ -61,6 +72,11 @@ public record ClosedSourceReturnMigrationPlan(ContainerLocalRewritePlan producer
 			}
 			lengths= List.copyOf(lengths);
 		}
+	}
+
+	@Override
+	public ContainerCompatibilityDecision compatibility() {
+		return publication.map(ReturnPublicationPolicy::compatibility).orElseGet(ContainerCompatibilityDecision::closedReturn);
 	}
 
 	@Override

@@ -88,6 +88,11 @@ class ReturnPublicationWizardTest {
 					buttons.get(0).setSelection(true);
 					buttons.get(0).notifyListeners(SWT.Selection, new Event());
 					assertTrue(page.isPageComplete());
+					var preview= Arrays.stream(((Composite) page.getControl()).getChildren())
+							.filter(org.eclipse.swt.widgets.Text.class::isInstance).map(org.eclipse.swt.widgets.Text.class::cast)
+							.map(org.eclipse.swt.widgets.Text::getText).findFirst().orElse(""); //$NON-NLS-1$
+					assertTrue(preview.contains("POLICY_ADAPTER") && preview.contains("Example.rows") && preview.contains("Collections.unmodifiableList"), preview); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+
 				} finally {
 					dialog.close();
 					shell.dispose();
@@ -129,10 +134,19 @@ class ReturnPublicationWizardTest {
 			assertFalse(refactoring.checkInitialConditions(monitor).hasError());
 			assertTrue(refactoring.checkFinalConditions(monitor).hasFatalError());
 			refactoring.select(policy);
+			String details= String.join("\n", refactoring.previewDetails()); //$NON-NLS-1$
+			assertTrue(details.contains("test.Rows.rows(String)") && details.contains("test.Display.count(String)"), details); //$NON-NLS-1$ //$NON-NLS-2$
+			assertTrue(details.contains(policy == ReturnPublicationPolicy.PRESERVE_NULLS ? "POLICY_ADAPTER" : "BREAKING_SOURCE_MIGRATION"), details); //$NON-NLS-1$ //$NON-NLS-2$
+			if (policy == ReturnPublicationPolicy.REJECT_NULLS) {
+				assertTrue(details.contains("NullPointerException at publication"), details); //$NON-NLS-1$
+			}
 			assertFalse(refactoring.checkFinalConditions(monitor).hasError());
 			var change= (org.eclipse.ltk.core.refactoring.CompositeChange) refactoring.createChange(monitor);
 			assertEquals(2, change.getChildren().length);
 			change.initializeValidationData(monitor);
+			refactoring.select(policy == ReturnPublicationPolicy.REJECT_NULLS ? ReturnPublicationPolicy.PRESERVE_NULLS : ReturnPublicationPolicy.REJECT_NULLS);
+			assertTrue(change.isValid(monitor).hasFatalError());
+			refactoring.select(policy);
 			change.getChildren()[0].setEnabled(false);
 			assertTrue(change.isValid(monitor).hasFatalError());
 			change.getChildren()[0].setEnabled(true);

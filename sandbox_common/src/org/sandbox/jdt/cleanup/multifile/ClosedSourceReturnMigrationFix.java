@@ -46,13 +46,14 @@ public final class ClosedSourceReturnMigrationFix {
 	private ClosedSourceReturnMigrationFix() {
 	}
 
-	public static ICleanUpFix create(ICompilationUnit unit, CompilationUnit root, ClosedSourceReturnMigrationPlan plan) throws CoreException {
-		return create(unit, root, plan, null);
-	}
-
-	/** Applies the selected publication contract only when an interactive refactoring supplied it. */
+	/** Compatibility overload for callers supplying the interactive selection separately. */
 	public static ICleanUpFix create(ICompilationUnit unit, CompilationUnit root, ClosedSourceReturnMigrationPlan plan,
 			ReturnPublicationPolicy policy) throws CoreException {
+		return create(unit, root, policy == null ? plan : plan.withPublication(policy));
+	}
+
+	public static ICleanUpFix create(ICompilationUnit unit, CompilationUnit root, ClosedSourceReturnMigrationPlan plan) throws CoreException {
+		var policy= plan.publication().orElse(null);
 		String handle= unit.getPrimary().getHandleIdentifier();
 		var expected= plan.consumers().stream().filter(consumer -> consumer.unitHandle().equals(handle)).toList();
 		var actual= ClosedReturnArrayUses.consumers(root, handle, plan.methodBindingKey());

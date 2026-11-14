@@ -39,6 +39,7 @@ import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 import org.sandbox.jdt.cleanup.multifile.ClosedSourceReturnMigrationFix;
 import org.sandbox.jdt.container.api.ClosedSourceReturnMigrationPlan;
 import org.sandbox.jdt.container.api.ReturnPublicationPolicy;
+import org.sandbox.jdt.container.cleanup.internal.ui.fix.ContainerSignaturePreview;
 import org.sandbox.jdt.container.cleanup.internal.corext.fix.ClosedSourceContainerMigrationService;
 
 /** Offers an explicit publication policy for a source-closed return and its length-only callers. */
@@ -55,6 +56,14 @@ public final class ReturnPublicationRefactoring extends Refactoring {
 
 	public void select(ReturnPublicationPolicy policy) {
 		selected= Objects.requireNonNull(policy);
+	}
+
+	private ClosedSourceReturnMigrationPlan selectedPlan() {
+		return originalPlan.withPublication(selected);
+	}
+
+	List<String> previewDetails() throws CoreException {
+		return originalPlan == null || selected == null ? List.of() : ContainerSignaturePreview.describe(selectedPlan());
 	}
 
 	public boolean supportsCopy() {
@@ -131,16 +140,16 @@ public final class ReturnPublicationRefactoring extends Refactoring {
 	@Override
 	public Change createChange(IProgressMonitor monitor) throws CoreException {
 		requireValid(checkFinalConditions(monitor));
-		var policy= selected;
+		var plan= selectedPlan();
 		List<CompilationUnitChange> children= new ArrayList<>();
 		try {
-			for (String handle : originalPlan.affectedCompilationUnitHandles()) {
+			for (String handle : plan.affectedCompilationUnitHandles()) {
 				var unit= (ICompilationUnit) JavaCore.create(handle);
 				var parser= ASTParser.newParser(AST.getJLSLatest());
 				parser.setSource(unit);
 				parser.setResolveBindings(true);
 				var root= (CompilationUnit) parser.createAST(monitor);
-				var fix= ClosedSourceReturnMigrationFix.create(unit, root, originalPlan, policy);
+				var fix= ClosedSourceReturnMigrationFix.create(unit, root, plan);
 				if (fix == null) {
 					throw new CoreException(Status.error("A required return or consumer edit is missing.")); //$NON-NLS-1$
 				}
@@ -156,7 +165,7 @@ public final class ReturnPublicationRefactoring extends Refactoring {
 				}
 
 				private RefactoringStatus validateAll(IProgressMonitor progress) throws CoreException {
-					if (selected != policy || getChildren().length != children.size() || children.stream().anyMatch(change ->
+					if (!plan.equals(selectedPlan()) || getChildren().length != children.size() || children.stream().anyMatch(change ->
 							!change.isEnabled() || Arrays.stream(change.getTextEditChangeGroups()).anyMatch(group -> !group.isEnabled()))) {
 						return RefactoringStatus.createFatalErrorStatus("All return and caller edits must be applied together."); //$NON-NLS-1$
 					}

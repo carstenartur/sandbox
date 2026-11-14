@@ -26,6 +26,7 @@ import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaProject;
 
 import org.sandbox.jdt.container.api.ClosedSourceContainerPlan;
+import org.sandbox.jdt.container.api.ContainerCompatibilityDecision;
 
 /**
  * Narrow facade between the coordinator implementation and the UI cleanup lifecycle.
@@ -79,6 +80,14 @@ public final class ClosedSourceContainerMigrationService {
 			boolean candidateFound, boolean complete, String candidateId,
 			String ownerHandle, String reasonCode, String message,
 			List<String> requiredHandles) {
+
+		/** The proven execution decision or the compatibility reason that requires manual refactoring. */
+		public Optional<ContainerCompatibilityDecision> compatibility() {
+			if (plan.isPresent()) {
+				return plan.map(ClosedSourceContainerPlan::compatibility);
+			}
+			return candidateFound ? Optional.of(ContainerCompatibilityDecision.manual(reasonCode, message)) : Optional.empty();
+		}
 
 		public Planning {
 			plan= Objects.requireNonNull(plan);
