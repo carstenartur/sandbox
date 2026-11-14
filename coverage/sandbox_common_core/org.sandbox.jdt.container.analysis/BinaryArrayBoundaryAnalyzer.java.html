@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>BinaryArrayBoundaryAnalyzer.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.analysis</a> &gt; <span class="el_source">BinaryArrayBoundaryAnalyzer.java</span></div><h1>BinaryArrayBoundaryAnalyzer.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.analysis;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+
+import org.sandbox.jdt.container.api.UsageEvidence;
+
+/** Identifies direct byte-array boundaries of resolved JDK binary I/O contracts. */
+public final class BinaryArrayBoundaryAnalyzer {
+	private BinaryArrayBoundaryAnalyzer() {
+	}
+
+<span class="fc" id="L29">	public record Boundary(String candidate, UsageEvidence evidence) {}</span>
+
+	public static List&lt;Boundary&gt; analyze(CompilationUnit root, Runnable checkCanceled) {
+<span class="fc" id="L32">		List&lt;Boundary&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L33">		root.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(MethodInvocation call) {
+<span class="fc" id="L36">				checkCanceled.run();</span>
+<span class="fc bfc" id="L37" title="All 2 branches covered.">				if (call.arguments().isEmpty()) {</span>
+<span class="fc" id="L38">					return true;</span>
+				}
+<span class="fc" id="L40">				var argument= (Expression) call.arguments().getFirst();</span>
+<span class="fc" id="L41">				var variable= ContainerAstFacts.variableBinding(argument);</span>
+<span class="fc bfc" id="L42" title="All 4 branches covered.">				if (variable.isEmpty() || !variable.get().getType().isArray()</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">						|| !&quot;byte&quot;.equals(variable.get().getType().getComponentType().getName())) { //$NON-NLS-1$</span>
+<span class="fc" id="L44">					return true;</span>
+				}
+<span class="fc" id="L46">				var method= call.resolveMethodBinding();</span>
+<span class="pc bpc" id="L47" title="2 of 6 branches missed.">				if (method == null || method.isRecovered() || !isBinaryApi(method.getMethodDeclaration())) {</span>
+<span class="fc" id="L48">					return true;</span>
+				}
+<span class="fc" id="L50">				result.add(new Boundary(variable.get().getName(), new UsageEvidence(UsageEvidence.Kind.REJECTION_BOUNDARY,</span>
+						&quot;Retain the byte array at this binary I/O boundary. The API reads or writes its bytes and may observe the specified offsets and lengths.&quot;, //$NON-NLS-1$
+<span class="fc" id="L52">						argument.getStartPosition(), argument.getLength())));</span>
+<span class="fc" id="L53">				return true;</span>
+			}
+		});
+<span class="fc" id="L56">		return List.copyOf(result);</span>
+	}
+
+	private static boolean isBinaryApi(IMethodBinding method) {
+<span class="fc" id="L60">		var parameters= method.getParameterTypes();</span>
+<span class="pc bpc" id="L61" title="2 of 6 branches missed.">		if ((parameters.length != 1 &amp;&amp; parameters.length != 3) || !parameters[0].isArray()</span>
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">				|| !&quot;byte&quot;.equals(parameters[0].getComponentType().getName())) { //$NON-NLS-1$</span>
+<span class="nc" id="L63">			return false;</span>
+		}
+<span class="pc bpc" id="L65" title="2 of 6 branches missed.">		if (parameters.length == 3 &amp;&amp; (!&quot;int&quot;.equals(parameters[1].getName()) || !&quot;int&quot;.equals(parameters[2].getName()))) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L66">			return false;</span>
+		}
+<span class="fc" id="L68">		String owner= method.getDeclaringClass().getErasure().getQualifiedName();</span>
+<span class="pc bpc" id="L69" title="3 of 4 branches missed.">		return switch (method.getName()) {</span>
+<span class="pc bpc" id="L70" title="1 of 4 branches missed.">			case &quot;write&quot; -&gt; &quot;java.io.DataOutput&quot;.equals(owner) || &quot;java.io.OutputStream&quot;.equals(owner); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="nc" id="L71">			case &quot;read&quot; -&gt; &quot;java.io.InputStream&quot;.equals(owner); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L72">			case &quot;readFully&quot; -&gt; &quot;java.io.DataInput&quot;.equals(owner); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L73">			default -&gt; false;</span>
+		};
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

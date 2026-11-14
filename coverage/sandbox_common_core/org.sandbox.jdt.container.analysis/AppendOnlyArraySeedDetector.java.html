@@ -71,192 +71,204 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 
 	/** Finds deterministic, source-ordered append-only array seeds. */
 	public List&lt;ContainerUsageProfile&gt; findSeeds(CompilationUnit compilationUnit) {
-<span class="fc" id="L74">		Objects.requireNonNull(compilationUnit, &quot;compilationUnit&quot;); //$NON-NLS-1$</span>
-
-<span class="fc" id="L76">		List&lt;ContainerUsageProfile&gt; profiles= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L77">		ReferenceHolder&lt;Integer, GrowthSeed&gt; state= ReferenceHolder.createIndexed();</span>
-
-<span class="fc" id="L79">		AstProcessing.scoped(state)</span>
-<span class="fc" id="L80">				.find(MethodInvocation.class,</span>
-<span class="fc" id="L81">						(copyOf, holder) -&gt; growthSeed(copyOf).isPresent(),</span>
-<span class="fc" id="L82">						(copyOf, holder) -&gt; holder.put(</span>
-<span class="fc" id="L83">								CURRENT_GROWTH, growthSeed(copyOf).orElseThrow()),</span>
-						AppendOnlyArraySeedDetector::followingStatementScope)
-<span class="fc" id="L85">				.then(ArrayAccess.class,</span>
-						AppendOnlyArraySeedDetector::isTailWrite,
-<span class="fc" id="L87">						(arrayAccess, holder) -&gt; collectTailWrite(arrayAccess, holder, profiles))</span>
-<span class="fc" id="L88">				.build(compilationUnit);</span>
-
-<span class="fc" id="L90">		return List.copyOf(profiles);</span>
+<span class="fc" id="L74">		return findSeeds(compilationUnit, false);</span>
 	}
 
-	private static Optional&lt;GrowthSeed&gt; growthSeed(MethodInvocation copyOf) {
-<span class="pc bpc" id="L94" title="1 of 4 branches missed.">		if (!isArraysCopyOf(copyOf) || copyOf.arguments().size() != 2) {</span>
-<span class="fc" id="L95">			return Optional.empty();</span>
+	/** Includes rejected primitive append patterns for read-only reports. */
+	public List&lt;ContainerUsageProfile&gt; findReportSeeds(CompilationUnit compilationUnit) {
+<span class="fc" id="L79">		return findSeeds(compilationUnit, true);</span>
+	}
+
+	private static List&lt;ContainerUsageProfile&gt; findSeeds(CompilationUnit compilationUnit, boolean includePrimitive) {
+<span class="fc" id="L83">		Objects.requireNonNull(compilationUnit, &quot;compilationUnit&quot;); //$NON-NLS-1$</span>
+
+<span class="fc" id="L85">		List&lt;ContainerUsageProfile&gt; profiles= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L86">		ReferenceHolder&lt;Integer, GrowthSeed&gt; state= ReferenceHolder.createIndexed();</span>
+
+<span class="fc" id="L88">		AstProcessing.scoped(state)</span>
+<span class="fc" id="L89">				.find(MethodInvocation.class,</span>
+<span class="fc" id="L90">						(copyOf, holder) -&gt; growthSeed(copyOf, includePrimitive).isPresent(),</span>
+<span class="fc" id="L91">						(copyOf, holder) -&gt; holder.put(</span>
+<span class="fc" id="L92">								CURRENT_GROWTH, growthSeed(copyOf, includePrimitive).orElseThrow()),</span>
+						AppendOnlyArraySeedDetector::followingStatementScope)
+<span class="fc" id="L94">				.then(ArrayAccess.class,</span>
+						AppendOnlyArraySeedDetector::isTailWrite,
+<span class="fc" id="L96">						(arrayAccess, holder) -&gt; collectTailWrite(arrayAccess, holder, profiles))</span>
+<span class="fc" id="L97">				.build(compilationUnit);</span>
+
+<span class="fc" id="L99">		return List.copyOf(profiles);</span>
+	}
+
+	private static Optional&lt;GrowthSeed&gt; growthSeed(MethodInvocation copyOf, boolean includePrimitive) {
+<span class="pc bpc" id="L103" title="1 of 4 branches missed.">		if (!isArraysCopyOf(copyOf) || copyOf.arguments().size() != 2) {</span>
+<span class="fc" id="L104">			return Optional.empty();</span>
 		}
 
-<span class="fc" id="L98">		Assignment growthAssignment= enclosingAssignment(copyOf);</span>
-<span class="pc bpc" id="L99" title="1 of 2 branches missed.">		if (growthAssignment == null</span>
-<span class="pc bpc" id="L100" title="1 of 2 branches missed.">				|| growthAssignment.getOperator() != Assignment.Operator.ASSIGN</span>
-<span class="pc bpc" id="L101" title="1 of 2 branches missed.">				|| unwrap(growthAssignment.getRightHandSide()) != copyOf) {</span>
-<span class="nc" id="L102">			return Optional.empty();</span>
+<span class="fc" id="L107">		Assignment growthAssignment= enclosingAssignment(copyOf);</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">		if (growthAssignment == null</span>
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">				|| growthAssignment.getOperator() != Assignment.Operator.ASSIGN</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">				|| unwrap(growthAssignment.getRightHandSide()) != copyOf) {</span>
+<span class="nc" id="L111">			return Optional.empty();</span>
 		}
 
-<span class="fc" id="L105">		Expression array= unwrap(growthAssignment.getLeftHandSide());</span>
-<span class="fc" id="L106">		Expression sourceArray= (Expression) copyOf.arguments().get(0);</span>
-<span class="fc" id="L107">		Expression requestedLength= (Expression) copyOf.arguments().get(1);</span>
-<span class="pc bpc" id="L108" title="1 of 4 branches missed.">		if (!sameVariable(array, sourceArray) || !isLengthPlusOne(requestedLength, array)) {</span>
-<span class="fc" id="L109">			return Optional.empty();</span>
+<span class="fc" id="L114">		Expression array= unwrap(growthAssignment.getLeftHandSide());</span>
+<span class="fc" id="L115">		Expression sourceArray= (Expression) copyOf.arguments().get(0);</span>
+<span class="fc" id="L116">		Expression requestedLength= (Expression) copyOf.arguments().get(1);</span>
+<span class="pc bpc" id="L117" title="1 of 4 branches missed.">		if (!sameVariable(array, sourceArray) || !isLengthPlusOne(requestedLength, array)) {</span>
+<span class="fc" id="L118">			return Optional.empty();</span>
 		}
 
-<span class="fc" id="L112">		Optional&lt;IVariableBinding&gt; binding= variableBinding(array);</span>
-<span class="fc" id="L113">		ITypeBinding arrayType= binding.map(IVariableBinding::getType)</span>
-<span class="fc" id="L114">				.orElseGet(array::resolveTypeBinding);</span>
-<span class="fc" id="L115">		ElementDomain elementDomain= elementDomain(arrayType);</span>
-<span class="fc bfc" id="L116" title="All 2 branches covered.">		if (elementDomain == ElementDomain.PRIMITIVE) {</span>
-<span class="fc" id="L117">			return Optional.empty();</span>
+<span class="fc" id="L121">		Optional&lt;IVariableBinding&gt; binding= variableBinding(array);</span>
+<span class="fc" id="L122">		ITypeBinding arrayType= binding.map(IVariableBinding::getType)</span>
+<span class="fc" id="L123">				.orElseGet(array::resolveTypeBinding);</span>
+<span class="fc" id="L124">		ElementDomain elementDomain= elementDomain(arrayType);</span>
+<span class="fc bfc" id="L125" title="All 4 branches covered.">		if (!includePrimitive &amp;&amp; elementDomain == ElementDomain.PRIMITIVE) {</span>
+<span class="fc" id="L126">			return Optional.empty();</span>
 		}
 
-<span class="fc" id="L120">		return Optional.of(new GrowthSeed(array, growthAssignment, binding, elementDomain));</span>
+<span class="fc" id="L129">		return Optional.of(new GrowthSeed(array, growthAssignment, binding, elementDomain));</span>
 	}
 
 	private static boolean isArraysCopyOf(MethodInvocation invocation) {
-<span class="fc bfc" id="L124" title="All 2 branches covered.">		if (!&quot;copyOf&quot;.equals(invocation.getName().getIdentifier())) { //$NON-NLS-1$</span>
-<span class="fc" id="L125">			return false;</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">		if (!&quot;copyOf&quot;.equals(invocation.getName().getIdentifier())) { //$NON-NLS-1$</span>
+<span class="fc" id="L134">			return false;</span>
 		}
-<span class="fc" id="L127">		IMethodBinding binding= invocation.resolveMethodBinding();</span>
-<span class="pc bpc" id="L128" title="2 of 4 branches missed.">		if (binding != null &amp;&amp; binding.getDeclaringClass() != null) {</span>
-<span class="fc" id="L129">			return &quot;java.util.Arrays&quot;.equals( //$NON-NLS-1$</span>
-<span class="fc" id="L130">					binding.getDeclaringClass().getErasure().getQualifiedName());</span>
+<span class="fc" id="L136">		IMethodBinding binding= invocation.resolveMethodBinding();</span>
+<span class="pc bpc" id="L137" title="2 of 4 branches missed.">		if (binding != null &amp;&amp; binding.getDeclaringClass() != null) {</span>
+<span class="fc" id="L138">			return &quot;java.util.Arrays&quot;.equals( //$NON-NLS-1$</span>
+<span class="fc" id="L139">					binding.getDeclaringClass().getErasure().getQualifiedName());</span>
 		}
-<span class="nc" id="L132">		Expression owner= invocation.getExpression();</span>
-<span class="nc bnc" id="L133" title="All 4 branches missed.">		return owner != null &amp;&amp; (&quot;Arrays&quot;.equals(owner.toString()) //$NON-NLS-1$</span>
-<span class="nc bnc" id="L134" title="All 2 branches missed.">				|| &quot;java.util.Arrays&quot;.equals(owner.toString())); //$NON-NLS-1$</span>
+<span class="nc" id="L141">		Expression owner= invocation.getExpression();</span>
+<span class="nc bnc" id="L142" title="All 4 branches missed.">		return owner != null &amp;&amp; (&quot;Arrays&quot;.equals(owner.toString()) //$NON-NLS-1$</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">				|| &quot;java.util.Arrays&quot;.equals(owner.toString())); //$NON-NLS-1$</span>
 	}
 
 	private static ASTNode followingStatementScope(MethodInvocation copyOf) {
-<span class="fc" id="L138">		Assignment assignment= enclosingAssignment(copyOf);</span>
-<span class="pc bpc" id="L139" title="1 of 2 branches missed.">		ExpressionStatement statement= assignment == null ? null : expressionStatement(assignment);</span>
-<span class="pc bpc" id="L140" title="1 of 2 branches missed.">		return statement == null ? null : nextStatement(statement);</span>
+<span class="fc" id="L147">		Assignment assignment= enclosingAssignment(copyOf);</span>
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">		ExpressionStatement statement= assignment == null ? null : expressionStatement(assignment);</span>
+<span class="pc bpc" id="L149" title="1 of 2 branches missed.">		return statement == null ? null : nextStatement(statement);</span>
 	}
 
 	private static boolean isTailWrite(
 			ArrayAccess arrayAccess,
 			ReferenceHolder&lt;Integer, GrowthSeed&gt; state) {
-<span class="fc" id="L146">		GrowthSeed seed= state.get(CURRENT_GROWTH);</span>
-<span class="fc bfc" id="L147" title="All 2 branches covered.">		if (seed == null) {</span>
-<span class="fc" id="L148">			return false;</span>
+<span class="fc" id="L155">		GrowthSeed seed= state.get(CURRENT_GROWTH);</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">		if (seed == null) {</span>
+<span class="fc" id="L157">			return false;</span>
 		}
-<span class="fc" id="L150">		Assignment appendAssignment= enclosingAssignment(arrayAccess);</span>
-<span class="pc bpc" id="L151" title="1 of 2 branches missed.">		return appendAssignment != null</span>
-<span class="pc bpc" id="L152" title="1 of 2 branches missed.">				&amp;&amp; unwrap(appendAssignment.getLeftHandSide()) == arrayAccess</span>
-<span class="fc bfc" id="L153" title="All 2 branches covered.">				&amp;&amp; sameVariable(seed.array(), arrayAccess.getArray())</span>
-<span class="fc bfc" id="L154" title="All 2 branches covered.">				&amp;&amp; isLengthMinusOne(arrayAccess.getIndex(), seed.array());</span>
+<span class="fc" id="L159">		Assignment appendAssignment= enclosingAssignment(arrayAccess);</span>
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">		return appendAssignment != null</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">				&amp;&amp; unwrap(appendAssignment.getLeftHandSide()) == arrayAccess</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">				&amp;&amp; sameVariable(seed.array(), arrayAccess.getArray())</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">				&amp;&amp; isLengthMinusOne(arrayAccess.getIndex(), seed.array());</span>
 	}
 
 	private static void collectTailWrite(
 			ArrayAccess arrayAccess,
 			ReferenceHolder&lt;Integer, GrowthSeed&gt; state,
 			List&lt;ContainerUsageProfile&gt; profiles) {
-<span class="fc" id="L161">		GrowthSeed seed= state.remove(CURRENT_GROWTH);</span>
-<span class="fc" id="L162">		Assignment appendAssignment= enclosingAssignment(arrayAccess);</span>
-<span class="pc bpc" id="L163" title="2 of 4 branches missed.">		if (seed != null &amp;&amp; appendAssignment != null) {</span>
-<span class="fc" id="L164">			profiles.add(createProfile(seed, appendAssignment));</span>
+<span class="fc" id="L170">		GrowthSeed seed= state.remove(CURRENT_GROWTH);</span>
+<span class="fc" id="L171">		Assignment appendAssignment= enclosingAssignment(arrayAccess);</span>
+<span class="pc bpc" id="L172" title="2 of 4 branches missed.">		if (seed != null &amp;&amp; appendAssignment != null) {</span>
+<span class="fc" id="L173">			profiles.add(createProfile(seed, appendAssignment));</span>
 		}
-<span class="fc" id="L166">	}</span>
+<span class="fc" id="L175">	}</span>
 
 	private static ContainerUsageProfile createProfile(
 			GrowthSeed seed,
 			Assignment appendAssignment) {
-<span class="fc" id="L171">		List&lt;UsageEvidence&gt; evidence= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L172">		evidence.add(evidence(</span>
+<span class="fc" id="L180">		List&lt;UsageEvidence&gt; evidence= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L181">		evidence.add(evidence(</span>
 				Kind.ARRAY_GROWTH,
 				&quot;Array capacity is increased by one element&quot;, //$NON-NLS-1$
-<span class="fc" id="L175">				seed.growthAssignment()));</span>
-<span class="fc" id="L176">		evidence.add(evidence(</span>
+<span class="fc" id="L184">				seed.growthAssignment()));</span>
+<span class="fc" id="L185">		evidence.add(evidence(</span>
 				Kind.APPEND_WRITE,
 				&quot;The immediately following write targets the new tail slot&quot;, //$NON-NLS-1$
 				appendAssignment));
-<span class="pc bpc" id="L180" title="1 of 2 branches missed.">		if (seed.elementDomain() == ElementDomain.REFERENCE</span>
-<span class="nc bnc" id="L181" title="All 2 branches missed.">				|| seed.elementDomain() == ElementDomain.ENUM) {</span>
-<span class="fc" id="L182">			evidence.add(evidence(</span>
+<span class="fc bfc" id="L189" title="All 2 branches covered.">		if (seed.elementDomain() == ElementDomain.REFERENCE</span>
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">				|| seed.elementDomain() == ElementDomain.ENUM) {</span>
+<span class="fc" id="L191">			evidence.add(evidence(</span>
 					Kind.REFERENCE_COMPONENT,
 					&quot;The resolved array component is a reference type&quot;, //$NON-NLS-1$
-<span class="fc" id="L185">					seed.array()));</span>
+<span class="fc" id="L194">					seed.array()));</span>
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">		} else if (seed.elementDomain() == ElementDomain.PRIMITIVE) {</span>
+<span class="fc" id="L196">			evidence.add(evidence(Kind.REJECTION_BOUNDARY,</span>
+<span class="fc" id="L197">					&quot;Retain the primitive array. A boxed collection changes element storage and requires a separate performance and representation proof.&quot;, seed.array())); //$NON-NLS-1$</span>
 		} else {
-<span class="nc" id="L187">			evidence.add(evidence(</span>
+<span class="nc" id="L199">			evidence.add(evidence(</span>
 					Kind.UNRESOLVED_BINDING,
 					&quot;The array component type still requires binding validation&quot;, //$NON-NLS-1$
-<span class="nc" id="L190">					seed.array()));</span>
+<span class="nc" id="L202">					seed.array()));</span>
 		}
 
-<span class="fc" id="L193">		ContainerIdentity identity= new ContainerIdentity(</span>
-<span class="fc" id="L194">				seed.binding().map(value -&gt; value.getVariableDeclaration().getKey()).orElse(&quot;&quot;), //$NON-NLS-1$</span>
-<span class="fc" id="L195">				seed.array().toString(),</span>
-<span class="fc" id="L196">				seed.array().getStartPosition(),</span>
-<span class="fc" id="L197">				seed.array().getLength());</span>
+<span class="fc" id="L205">		ContainerIdentity identity= new ContainerIdentity(</span>
+<span class="fc" id="L206">				seed.binding().map(value -&gt; value.getVariableDeclaration().getKey()).orElse(&quot;&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L207">				seed.array().toString(),</span>
+<span class="fc" id="L208">				seed.array().getStartPosition(),</span>
+<span class="fc" id="L209">				seed.array().getLength());</span>
 
-<span class="fc" id="L199">		return new ContainerUsageProfile(</span>
+<span class="fc" id="L211">		return new ContainerUsageProfile(</span>
 				identity,
 				ContainerShape.ARRAY,
-<span class="fc" id="L202">				seed.elementDomain(),</span>
-<span class="fc" id="L203">				ContainerUsageProfile.AccessProfile.appendOnlyArraySeed(),</span>
+<span class="fc" id="L214">				seed.elementDomain(),</span>
+<span class="fc" id="L215">				ContainerUsageProfile.AccessProfile.appendOnlyArraySeed(),</span>
 				OrderRequirement.UNKNOWN,
 				UniquenessRequirement.UNKNOWN,
 				MutationLifecycle.UNKNOWN,
 				NullContract.UNKNOWN,
 				AliasingContract.UNKNOWN,
 				EscapeLevel.UNKNOWN,
-<span class="fc" id="L210">				ConcurrencyProfile.unknown(),</span>
-				AnalysisCompleteness.LOCAL_SEED,
+<span class="fc" id="L222">				ConcurrencyProfile.unknown(),</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">				seed.elementDomain() == ElementDomain.PRIMITIVE ? AnalysisCompleteness.REJECTED : AnalysisCompleteness.LOCAL_SEED,</span>
 				evidence);
 	}
 
 	private static Assignment enclosingAssignment(ASTNode node) {
-<span class="fc" id="L216">		ASTNode current= node;</span>
-<span class="pc bpc" id="L217" title="1 of 2 branches missed.">		while (current.getParent() instanceof ParenthesizedExpression) {</span>
-<span class="nc" id="L218">			current= current.getParent();</span>
+<span class="fc" id="L228">		ASTNode current= node;</span>
+<span class="pc bpc" id="L229" title="1 of 2 branches missed.">		while (current.getParent() instanceof ParenthesizedExpression) {</span>
+<span class="nc" id="L230">			current= current.getParent();</span>
 		}
-<span class="pc bpc" id="L220" title="1 of 2 branches missed.">		return current.getParent() instanceof Assignment assignment ? assignment : null;</span>
+<span class="pc bpc" id="L232" title="1 of 2 branches missed.">		return current.getParent() instanceof Assignment assignment ? assignment : null;</span>
 	}
 
 	private static UsageEvidence evidence(Kind kind, String summary, ASTNode node) {
-<span class="fc" id="L224">		return new UsageEvidence(kind, summary, node.getStartPosition(), node.getLength());</span>
+<span class="fc" id="L236">		return new UsageEvidence(kind, summary, node.getStartPosition(), node.getLength());</span>
 	}
 
 	private static ElementDomain elementDomain(ITypeBinding arrayType) {
-<span class="pc bpc" id="L228" title="2 of 4 branches missed.">		if (arrayType == null || !arrayType.isArray()) {</span>
-<span class="nc" id="L229">			return ElementDomain.UNKNOWN;</span>
+<span class="pc bpc" id="L240" title="2 of 4 branches missed.">		if (arrayType == null || !arrayType.isArray()) {</span>
+<span class="nc" id="L241">			return ElementDomain.UNKNOWN;</span>
 		}
-<span class="fc" id="L231">		ITypeBinding componentType= arrayType.getComponentType();</span>
-<span class="pc bpc" id="L232" title="1 of 2 branches missed.">		if (componentType == null) {</span>
-<span class="nc" id="L233">			return ElementDomain.UNKNOWN;</span>
+<span class="fc" id="L243">		ITypeBinding componentType= arrayType.getComponentType();</span>
+<span class="pc bpc" id="L244" title="1 of 2 branches missed.">		if (componentType == null) {</span>
+<span class="nc" id="L245">			return ElementDomain.UNKNOWN;</span>
 		}
-<span class="fc bfc" id="L235" title="All 2 branches covered.">		if (componentType.isPrimitive()) {</span>
-<span class="fc" id="L236">			return ElementDomain.PRIMITIVE;</span>
+<span class="fc bfc" id="L247" title="All 2 branches covered.">		if (componentType.isPrimitive()) {</span>
+<span class="fc" id="L248">			return ElementDomain.PRIMITIVE;</span>
 		}
-<span class="pc bpc" id="L238" title="1 of 2 branches missed.">		return componentType.isEnum() ? ElementDomain.ENUM : ElementDomain.REFERENCE;</span>
+<span class="pc bpc" id="L250" title="1 of 2 branches missed.">		return componentType.isEnum() ? ElementDomain.ENUM : ElementDomain.REFERENCE;</span>
 	}
 
 	private static boolean isLengthPlusOne(Expression expression, Expression array) {
-<span class="fc" id="L242">		Expression unwrapped= unwrap(expression);</span>
-<span class="pc bpc" id="L243" title="1 of 2 branches missed.">		if (!(unwrapped instanceof InfixExpression infix)</span>
-<span class="pc bpc" id="L244" title="1 of 2 branches missed.">				|| infix.getOperator() != InfixExpression.Operator.PLUS</span>
-<span class="pc bpc" id="L245" title="1 of 2 branches missed.">				|| !infix.extendedOperands().isEmpty()) {</span>
-<span class="nc" id="L246">			return false;</span>
+<span class="fc" id="L254">		Expression unwrapped= unwrap(expression);</span>
+<span class="pc bpc" id="L255" title="1 of 2 branches missed.">		if (!(unwrapped instanceof InfixExpression infix)</span>
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">				|| infix.getOperator() != InfixExpression.Operator.PLUS</span>
+<span class="pc bpc" id="L257" title="1 of 2 branches missed.">				|| !infix.extendedOperands().isEmpty()) {</span>
+<span class="nc" id="L258">			return false;</span>
 		}
-<span class="pc bpc" id="L248" title="1 of 4 branches missed.">		return isArrayLength(infix.getLeftOperand(), array) &amp;&amp; isOne(infix.getRightOperand())</span>
-<span class="pc bpc" id="L249" title="1 of 4 branches missed.">				|| isOne(infix.getLeftOperand()) &amp;&amp; isArrayLength(infix.getRightOperand(), array);</span>
+<span class="pc bpc" id="L260" title="1 of 4 branches missed.">		return isArrayLength(infix.getLeftOperand(), array) &amp;&amp; isOne(infix.getRightOperand())</span>
+<span class="pc bpc" id="L261" title="1 of 4 branches missed.">				|| isOne(infix.getLeftOperand()) &amp;&amp; isArrayLength(infix.getRightOperand(), array);</span>
 	}
 
 	private static boolean isLengthMinusOne(Expression expression, Expression array) {
-<span class="fc" id="L253">		Expression unwrapped= unwrap(expression);</span>
-<span class="fc bfc" id="L254" title="All 2 branches covered.">		if (!(unwrapped instanceof InfixExpression infix)</span>
-<span class="pc bpc" id="L255" title="1 of 2 branches missed.">				|| infix.getOperator() != InfixExpression.Operator.MINUS</span>
-<span class="pc bpc" id="L256" title="1 of 2 branches missed.">				|| !infix.extendedOperands().isEmpty()) {</span>
-<span class="fc" id="L257">			return false;</span>
+<span class="fc" id="L265">		Expression unwrapped= unwrap(expression);</span>
+<span class="fc bfc" id="L266" title="All 2 branches covered.">		if (!(unwrapped instanceof InfixExpression infix)</span>
+<span class="pc bpc" id="L267" title="1 of 2 branches missed.">				|| infix.getOperator() != InfixExpression.Operator.MINUS</span>
+<span class="pc bpc" id="L268" title="1 of 2 branches missed.">				|| !infix.extendedOperands().isEmpty()) {</span>
+<span class="fc" id="L269">			return false;</span>
 		}
-<span class="pc bpc" id="L259" title="2 of 4 branches missed.">		return isArrayLength(infix.getLeftOperand(), array) &amp;&amp; isOne(infix.getRightOperand());</span>
+<span class="pc bpc" id="L271" title="2 of 4 branches missed.">		return isArrayLength(infix.getLeftOperand(), array) &amp;&amp; isOne(infix.getRightOperand());</span>
 	}
 
 	private record GrowthSeed(
@@ -265,12 +277,12 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 			Optional&lt;IVariableBinding&gt; binding,
 			ElementDomain elementDomain) {
 
-<span class="fc" id="L268">		private GrowthSeed {</span>
-<span class="fc" id="L269">			Objects.requireNonNull(array, &quot;array&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L270">			Objects.requireNonNull(growthAssignment, &quot;growthAssignment&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L271">			Objects.requireNonNull(binding, &quot;binding&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L272">			Objects.requireNonNull(elementDomain, &quot;elementDomain&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L273">		}</span>
+<span class="fc" id="L280">		private GrowthSeed {</span>
+<span class="fc" id="L281">			Objects.requireNonNull(array, &quot;array&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L282">			Objects.requireNonNull(growthAssignment, &quot;growthAssignment&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L283">			Objects.requireNonNull(binding, &quot;binding&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L284">			Objects.requireNonNull(elementDomain, &quot;elementDomain&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L285">		}</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

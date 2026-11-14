@@ -11,8 +11,8 @@
 package org.sandbox.jdt.cleanup.multifile;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
@@ -30,11 +30,13 @@ import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCo
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 
 import org.sandbox.jdt.container.analysis.ClosedReturnArrayUses;
 import org.sandbox.jdt.container.api.ClosedSourceReturnMigrationPlan;
 import org.sandbox.jdt.container.api.ClosedSourceReturnMigrationPlan.Range;
+import org.sandbox.jdt.container.api.ReturnPublicationPolicy;
 
 /** Applies one unit of a validated, project-closed return and callers change. */
 public final class ClosedSourceReturnMigrationFix {
@@ -44,64 +46,91 @@ public final class ClosedSourceReturnMigrationFix {
 	private ClosedSourceReturnMigrationFix() {
 	}
 
+	/** Compatibility overload for callers supplying the interactive selection separately. */
+	public static ICleanUpFix create(ICompilationUnit unit, CompilationUnit root, ClosedSourceReturnMigrationPlan plan,
+			ReturnPublicationPolicy policy) throws CoreException {
+<span class="nc bnc" id="L52" title="All 2 branches missed.">		return create(unit, root, policy == null ? plan : plan.withPublication(policy));</span>
+	}
+
 	public static ICleanUpFix create(ICompilationUnit unit, CompilationUnit root, ClosedSourceReturnMigrationPlan plan) throws CoreException {
-<span class="nc" id="L48">		String handle= unit.getPrimary().getHandleIdentifier();</span>
-<span class="nc" id="L49">		var expected= plan.consumers().stream().filter(consumer -&gt; consumer.unitHandle().equals(handle)).toList();</span>
-<span class="nc" id="L50">		var actual= ClosedReturnArrayUses.consumers(root, handle, plan.methodBindingKey());</span>
-<span class="nc bnc" id="L51" title="All 4 branches missed.">		if (actual.isEmpty() || !actual.get().equals(expected)) {</span>
-<span class="nc" id="L52">			throw new CoreException(Status.error(&quot;The return consumers differ in the supplied working-copy AST.&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L56">		var policy= plan.publication().orElse(null);</span>
+<span class="nc" id="L57">		String handle= unit.getPrimary().getHandleIdentifier();</span>
+<span class="nc" id="L58">		var expected= plan.consumers().stream().filter(consumer -&gt; consumer.unitHandle().equals(handle)).toList();</span>
+<span class="nc" id="L59">		var actual= ClosedReturnArrayUses.consumers(root, handle, plan.methodBindingKey());</span>
+<span class="nc bnc" id="L60" title="All 4 branches missed.">		if (actual.isEmpty() || !actual.get().equals(expected)) {</span>
+<span class="nc" id="L61">			throw new CoreException(Status.error(&quot;The return consumers differ in the supplied working-copy AST.&quot;)); //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L54">		List&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations= new ArrayList&lt;&gt;();</span>
-<span class="nc" id="L55">		Set&lt;ArrayType&gt; types= new LinkedHashSet&lt;&gt;();</span>
-<span class="nc" id="L56">		List&lt;QualifiedName&gt; lengths= new ArrayList&lt;&gt;();</span>
-<span class="nc bnc" id="L57" title="All 2 branches missed.">		if (plan.producer().compilationUnitHandle().equals(handle)) {</span>
-<span class="nc" id="L58">			if (ClosedReturnArrayUses.producer(root, plan.methodBindingKey(), plan.producer().bindingKey())</span>
-<span class="nc bnc" id="L59" title="All 2 branches missed.">					.filter(plan.returnType()::equals).isEmpty()) {</span>
-<span class="nc" id="L60">				throw new CoreException(Status.error(&quot;The return signature in the supplied working-copy AST changed.&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L63">		List&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations= new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L64">		Set&lt;ArrayType&gt; types= new LinkedHashSet&lt;&gt;();</span>
+<span class="nc" id="L65">		List&lt;QualifiedName&gt; lengths= new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">		if (plan.producer().compilationUnitHandle().equals(handle)) {</span>
+<span class="nc" id="L67">			if (ClosedReturnArrayUses.producer(root, plan.methodBindingKey(), plan.producer().bindingKey())</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">					.filter(plan.returnType()::equals).isEmpty()) {</span>
+<span class="nc" id="L69">				throw new CoreException(Status.error(&quot;The return signature in the supplied working-copy AST changed.&quot;)); //$NON-NLS-1$</span>
 			}
-<span class="nc" id="L62">			operations.add(ContainerLocalRewriteFix.directReturnOperation(unit.getPrimary(), root, plan.producer()));</span>
-<span class="nc" id="L63">			types.add((ArrayType) node(root, plan.returnType()));</span>
+<span class="nc" id="L71">			var resolved= ContainerLocalRewriteFix.resolve(unit.getPrimary(), root, plan.producer());</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">			if (policy != null) {</span>
+<span class="nc bnc" id="L73" title="All 4 branches missed.">				if (resolved.publication() == null || (policy == ReturnPublicationPolicy.REJECT_NULLS</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">						&amp;&amp; !JavaModelUtil.is10OrHigher(unit.getJavaProject()))) {</span>
+<span class="nc" id="L75">					throw new CoreException(Status.error(&quot;The return boundary or the Java 10 API requirement is unavailable.&quot;)); //$NON-NLS-1$</span>
+				}
+<span class="nc" id="L77">				operations.add(new CompilationUnitRewriteOperationWithSourceRange() {</span>
+					@Override
+					public void rewriteASTInternal(CompilationUnitRewrite cu, LinkedProposalModelCore linked) {
+<span class="nc" id="L80">						var ast= cu.getRoot().getAST();</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">						boolean copy= policy == ReturnPublicationPolicy.REJECT_NULLS;</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">						String owner= cu.getImportRewrite().addImport(copy ? &quot;java.util.List&quot; : &quot;java.util.Collections&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L83">						var publication= ast.newMethodInvocation();</span>
+<span class="nc" id="L84">						publication.setExpression(ast.newName(owner));</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">						publication.setName(ast.newSimpleName(copy ? &quot;copyOf&quot; : &quot;unmodifiableList&quot;)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L86">						publication.arguments().add(ASTNode.copySubtree(ast, resolved.publication()));</span>
+<span class="nc" id="L87">						cu.getASTRewrite().replace(resolved.publication(), publication, createTextEditGroup(DESCRIPTION, cu));</span>
+<span class="nc" id="L88">					}</span>
+				});
+			}
+<span class="nc" id="L91">			operations.add(ContainerLocalRewriteFix.directReturnOperation(resolved));</span>
+<span class="nc" id="L92">			types.add((ArrayType) node(root, plan.returnType()));</span>
 		}
-<span class="nc bnc" id="L65" title="All 2 branches missed.">		for (var consumer : expected) {</span>
-<span class="nc" id="L66">			types.add((ArrayType) node(root, consumer.localType()));</span>
-<span class="nc" id="L67">			consumer.functionTarget().ifPresent(function -&gt; types.add((ArrayType) node(root, function.returnArgument())));</span>
-<span class="nc bnc" id="L68" title="All 2 branches missed.">			for (Range read : consumer.lengths()) {</span>
-<span class="nc" id="L69">				lengths.add((QualifiedName) node(root, read));</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">		for (var consumer : expected) {</span>
+<span class="nc" id="L95">			types.add((ArrayType) node(root, consumer.localType()));</span>
+<span class="nc" id="L96">			consumer.functionTarget().ifPresent(function -&gt; types.add((ArrayType) node(root, function.returnArgument())));</span>
+<span class="nc bnc" id="L97" title="All 2 branches missed.">			for (Range read : consumer.lengths()) {</span>
+<span class="nc" id="L98">				lengths.add((QualifiedName) node(root, read));</span>
 			}
 		}
-<span class="nc bnc" id="L72" title="All 2 branches missed.">		if (types.isEmpty()) {</span>
-<span class="nc" id="L73">			return null;</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">		if (types.isEmpty()) {</span>
+<span class="nc" id="L102">			return null;</span>
 		}
-<span class="nc" id="L75">		operations.add(new CompilationUnitRewriteOperationWithSourceRange() {</span>
+<span class="nc" id="L104">		operations.add(new CompilationUnitRewriteOperationWithSourceRange() {</span>
 			@Override
 			public void rewriteASTInternal(CompilationUnitRewrite cu, LinkedProposalModelCore linked) {
-<span class="nc" id="L78">				var ast= cu.getRoot().getAST();</span>
-<span class="nc" id="L79">				var group= createTextEditGroup(DESCRIPTION, cu);</span>
-<span class="nc" id="L80">				String list= cu.getImportRewrite().addImport(plan.producer().targetInterfaceType());</span>
-<span class="nc bnc" id="L81" title="All 2 branches missed.">				for (ArrayType type : types) {</span>
-<span class="nc" id="L82">					ParameterizedType replacement= ast.newParameterizedType(ast.newSimpleType(ast.newName(list)));</span>
-<span class="nc" id="L83">					replacement.typeArguments().add(ASTNode.copySubtree(ast, type.getElementType()));</span>
-<span class="nc" id="L84">					cu.getASTRewrite().replace(type, replacement, group);</span>
+<span class="nc" id="L107">				var ast= cu.getRoot().getAST();</span>
+<span class="nc" id="L108">				var group= createTextEditGroup(DESCRIPTION, cu);</span>
+<span class="nc" id="L109">				String list= cu.getImportRewrite().addImport(plan.producer().targetInterfaceType());</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">				for (ArrayType type : types) {</span>
+<span class="nc" id="L111">					ParameterizedType replacement= ast.newParameterizedType(ast.newSimpleType(ast.newName(list)));</span>
+<span class="nc" id="L112">					replacement.typeArguments().add(ASTNode.copySubtree(ast, type.getElementType()));</span>
+<span class="nc" id="L113">					cu.getASTRewrite().replace(type, replacement, group);</span>
 				}
-<span class="nc bnc" id="L86" title="All 2 branches missed.">				for (QualifiedName length : lengths) {</span>
-<span class="nc" id="L87">					var size= ast.newMethodInvocation();</span>
-<span class="nc" id="L88">					size.setExpression((Expression) ASTNode.copySubtree(ast, length.getQualifier()));</span>
-<span class="nc" id="L89">					size.setName(ast.newSimpleName(&quot;size&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L90">					cu.getASTRewrite().replace(length, size, group);</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">				for (QualifiedName length : lengths) {</span>
+<span class="nc" id="L116">					var size= ast.newMethodInvocation();</span>
+<span class="nc" id="L117">					size.setExpression((Expression) ASTNode.copySubtree(ast, length.getQualifier()));</span>
+<span class="nc" id="L118">					size.setName(ast.newSimpleName(&quot;size&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L119">					cu.getASTRewrite().replace(length, size, group);</span>
 				}
-<span class="nc" id="L92">			}</span>
+<span class="nc" id="L121">			}</span>
 
 			@Override
 			public String getAdditionalInfo() {
-<span class="nc" id="L96">				return DESCRIPTION;</span>
+<span class="nc" id="L125">				return DESCRIPTION;</span>
 			}
 		});
-<span class="nc" id="L99">		return new CompilationUnitRewriteOperationsFixCore(DESCRIPTION, root,</span>
-<span class="nc" id="L100">				operations.toArray(CompilationUnitRewriteOperationWithSourceRange[]::new));</span>
+<span class="nc" id="L128">		return new CompilationUnitRewriteOperationsFixCore(DESCRIPTION, root,</span>
+<span class="nc" id="L129">				operations.toArray(CompilationUnitRewriteOperationWithSourceRange[]::new));</span>
 	}
 
 	private static ASTNode node(CompilationUnit root, Range range) {
-<span class="nc" id="L104">		return NodeFinder.perform(root, range.start(), range.length());</span>
+<span class="nc" id="L133">		return NodeFinder.perform(root, range.start(), range.length());</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>LosslessArrayLengthBridge.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.analysis</a> &gt; <span class="el_source">LosslessArrayLengthBridge.java</span></div><h1>LosslessArrayLengthBridge.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.analysis;
+
+import java.util.Arrays;
+import java.util.Optional;
+
+import org.eclipse.jdt.core.compiler.IProblem;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.ReturnStatement;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+
+import org.sandbox.jdt.container.api.ClosedSourceParameterMigrationPlan;
+import org.sandbox.jdt.container.api.LosslessParameterBridgePlan;
+
+/** Java overload resolution, signature and behavioral proof for an array-length bridge. */
+public final class LosslessArrayLengthBridge {
+	private LosslessArrayLengthBridge() {
+	}
+
+	public static Optional&lt;LosslessParameterBridgePlan&gt; prove(CompilationUnit root, String source,
+			ClosedSourceParameterMigrationPlan migration) {
+<span class="nc bnc" id="L40" title="All 4 branches missed.">		if (migration.parameterPlans().size() != 1 || Arrays.stream(root.getProblems()).anyMatch(IProblem::isError)) {</span>
+<span class="nc" id="L41">			return Optional.empty();</span>
+		}
+<span class="nc" id="L43">		var parameter= migration.parameterPlans().getFirst();</span>
+<span class="nc bnc" id="L44" title="All 4 branches missed.">		if (!parameter.ownedFieldBindingKey().isEmpty() || parameter.parameterIndex() != 0</span>
+<span class="nc bnc" id="L45" title="All 2 branches missed.">				|| !(root.findDeclaringNode(parameter.parameterBindingKey()) instanceof SingleVariableDeclaration declaration)</span>
+<span class="nc bnc" id="L46" title="All 4 branches missed.">				|| !(declaration.getParent() instanceof MethodDeclaration method) || !hasEligibleOwner(root, method)) {</span>
+<span class="nc" id="L47">			return Optional.empty();</span>
+		}
+<span class="nc" id="L49">		var binding= method.resolveBinding();</span>
+<span class="nc bnc" id="L50" title="All 4 branches missed.">		if (!hasEligibleMethod(method, binding) || !hasDirectLengthReturn(method, declaration, binding)</span>
+<span class="nc bnc" id="L51" title="All 4 branches missed.">				|| !hasEligibleArray(declaration) || hasCompetingOverload(binding)) {</span>
+<span class="nc" id="L52">			return Optional.empty();</span>
+		}
+<span class="nc" id="L54">		return Optional.of(new LosslessParameterBridgePlan(migration, binding.getMethodDeclaration().getKey(),</span>
+<span class="nc" id="L55">				source.substring(method.getStartPosition(), method.getStartPosition() + method.getLength())));</span>
+	}
+
+	private static boolean hasEligibleOwner(CompilationUnit root, MethodDeclaration method) {
+<span class="nc bnc" id="L59" title="All 4 branches missed.">		if (method.parameters().size() != 1 || !(method.getParent() instanceof TypeDeclaration owner)) {</span>
+<span class="nc" id="L60">			return false;</span>
+		}
+<span class="nc bnc" id="L62" title="All 6 branches missed.">		return owner.getParent() == root &amp;&amp; Modifier.isFinal(owner.getModifiers()) &amp;&amp; !Modifier.isPublic(owner.getModifiers())</span>
+<span class="nc bnc" id="L63" title="All 4 branches missed.">				&amp;&amp; owner.getSuperclassType() == null &amp;&amp; owner.superInterfaceTypes().isEmpty()</span>
+<span class="nc bnc" id="L64" title="All 4 branches missed.">				&amp;&amp; owner.typeParameters().isEmpty() &amp;&amp; !owner.isInterface();</span>
+	}
+
+	private static boolean hasEligibleMethod(MethodDeclaration method, IMethodBinding binding) {
+<span class="nc bnc" id="L68" title="All 4 branches missed.">		if (binding == null || binding.isRecovered()) {</span>
+<span class="nc" id="L69">			return false;</span>
+		}
+<span class="nc" id="L71">		int flags= method.getModifiers();</span>
+<span class="nc bnc" id="L72" title="All 6 branches missed.">		return Modifier.isStatic(flags) &amp;&amp; !Modifier.isPublic(flags) &amp;&amp; !Modifier.isProtected(flags)</span>
+<span class="nc bnc" id="L73" title="All 6 branches missed.">				&amp;&amp; !Modifier.isSynchronized(flags) &amp;&amp; !method.isConstructor() &amp;&amp; !binding.isVarargs()</span>
+<span class="nc bnc" id="L74" title="All 4 branches missed.">				&amp;&amp; !binding.isGenericMethod() &amp;&amp; binding.getAnnotations().length == 0</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">				&amp;&amp; binding.getDeclaringClass().getAnnotations().length == 0</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">				&amp;&amp; binding.getDeclaringClass().getSuperclass() != null;</span>
+	}
+
+	private static boolean hasDirectLengthReturn(MethodDeclaration method, SingleVariableDeclaration declaration,
+			IMethodBinding binding) {
+<span class="nc bnc" id="L81" title="All 4 branches missed.">		if (!method.thrownExceptionTypes().isEmpty() || declaration.resolveBinding() == null</span>
+<span class="nc bnc" id="L82" title="All 4 branches missed.">				|| !declaration.modifiers().isEmpty() || !method.extraDimensions().isEmpty()</span>
+<span class="nc bnc" id="L83" title="All 4 branches missed.">				|| !declaration.extraDimensions().isEmpty() || !&quot;int&quot;.equals(binding.getReturnType().getName()) //$NON-NLS-1$</span>
+<span class="nc bnc" id="L84" title="All 4 branches missed.">				|| method.getBody() == null || method.getBody().statements().size() != 1</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">				|| !(method.getBody().statements().getFirst() instanceof ReturnStatement ret)</span>
+<span class="nc bnc" id="L86" title="All 4 branches missed.">				|| !(ret.getExpression() instanceof QualifiedName length) || !&quot;length&quot;.equals(length.getName().getIdentifier()) //$NON-NLS-1$</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">				|| !(length.getQualifier() instanceof SimpleName local)) {</span>
+<span class="nc" id="L88">			return false;</span>
+		}
+<span class="nc" id="L90">		return declaration.resolveBinding().isEqualTo(local.resolveBinding());</span>
+	}
+
+	private static boolean hasEligibleArray(SingleVariableDeclaration declaration) {
+<span class="nc" id="L94">		var array= declaration.resolveBinding().getType();</span>
+<span class="nc bnc" id="L95" title="All 6 branches missed.">		return array.isArray() &amp;&amp; array.getDimensions() == 1 &amp;&amp; array.getTypeAnnotations().length == 0</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">				&amp;&amp; array.getElementType().getTypeAnnotations().length == 0</span>
+<span class="nc bnc" id="L97" title="All 4 branches missed.">				&amp;&amp; !array.getElementType().isParameterizedType() &amp;&amp; !array.getElementType().isTypeVariable()</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">				&amp;&amp; !array.getElementType().isPrimitive();</span>
+	}
+
+	private static boolean hasCompetingOverload(IMethodBinding binding) {
+		// Excluding every other same-name member rejects erasure collisions and competing overloads.
+<span class="nc bnc" id="L103" title="All 2 branches missed.">		for (IMethodBinding other : binding.getDeclaringClass().getDeclaredMethods()) {</span>
+<span class="nc bnc" id="L104" title="All 4 branches missed.">			if (other.getName().equals(binding.getName()) &amp;&amp; !other.getMethodDeclaration().isEqualTo(binding.getMethodDeclaration())) {</span>
+<span class="nc" id="L105">				return true;</span>
+			}
+		}
+<span class="nc bnc" id="L108" title="All 2 branches missed.">		for (IMethodBinding inherited : binding.getDeclaringClass().getSuperclass().getDeclaredMethods()) {</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">			if (inherited.getName().equals(binding.getName())) {</span>
+<span class="nc" id="L110">				return true;</span>
+			}
+		}
+<span class="nc" id="L113">		return false;</span>
+	}
+
+	/** Any existing untyped null call or reflective/native consumer prevents retaining the extra overload. */
+	public static boolean hasSafeCallers(CompilationUnit root, String methodKey) {
+<span class="nc bnc" id="L118" title="All 2 branches missed.">		if (Arrays.stream(root.getProblems()).anyMatch(IProblem::isError)) {</span>
+<span class="nc" id="L119">			return false;</span>
+		}
+<span class="nc" id="L121">		boolean[] valid= { true };</span>
+<span class="nc" id="L122">		root.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(MethodDeclaration declaration) {
+<span class="nc bnc" id="L125" title="All 2 branches missed.">				if (Modifier.isNative(declaration.getModifiers())) {</span>
+<span class="nc" id="L126">					valid[0]= false;</span>
+				}
+<span class="nc" id="L128">				return valid[0];</span>
+			}
+
+			@Override
+			public boolean visit(SimpleName name) {
+<span class="nc bnc" id="L133" title="All 4 branches missed.">				if (!(name.resolveBinding() instanceof IMethodBinding resolved) || resolved.isRecovered()) {</span>
+<span class="nc" id="L134">					return true;</span>
+				}
+<span class="nc" id="L136">				var called= resolved.getMethodDeclaration();</span>
+<span class="nc" id="L137">				String owner= called.getDeclaringClass().getErasure().getQualifiedName();</span>
+<span class="nc bnc" id="L138" title="All 6 branches missed.">				if (&quot;java.lang.Class&quot;.equals(owner) || owner.startsWith(&quot;java.lang.reflect.&quot;) || owner.startsWith(&quot;java.lang.invoke.&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="nc" id="L139">					valid[0]= false;</span>
+<span class="nc bnc" id="L140" title="All 4 branches missed.">				} else if (methodKey.equals(called.getKey()) &amp;&amp; !(name.getParent() instanceof MethodDeclaration)) {</span>
+					// The shared closed-source component already proves the exact array transfer.
+<span class="nc bnc" id="L142" title="All 4 branches missed.">					if (!(name.getParent() instanceof MethodInvocation call) || call.getName() != name</span>
+<span class="nc bnc" id="L143" title="All 4 branches missed.">							|| call.arguments().size() != 1 || !(call.arguments().getFirst() instanceof SimpleName argument)</span>
+<span class="nc bnc" id="L144" title="All 4 branches missed.">							|| !(argument.resolveBinding() instanceof IVariableBinding value) || !value.getType().isArray()) {</span>
+<span class="nc" id="L145">						valid[0]= false;</span>
+					}
+				}
+<span class="nc" id="L148">				return valid[0];</span>
+			}
+		});
+<span class="nc" id="L151">		return valid[0];</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

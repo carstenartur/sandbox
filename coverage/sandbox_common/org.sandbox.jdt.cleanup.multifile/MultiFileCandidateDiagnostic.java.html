@@ -12,36 +12,51 @@ package org.sandbox.jdt.cleanup.multifile;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /** Immutable machine-readable diagnostic for one coordinated-cleanup candidate. */
 public record MultiFileCandidateDiagnostic(String candidateId, String ownerCompilationUnitHandle,
 		MultiFileCandidateOutcome outcome, String reasonCode, String message,
-		List&lt;String&gt; relatedCompilationUnitHandles) {
+		List&lt;String&gt; relatedCompilationUnitHandles, Optional&lt;Compatibility&gt; compatibility) {
+
+	/** Stable, source-anonymous compatibility classifications supplied by a planner. */
+	public record Compatibility(String migrationMode, String bridgeFeasibility) {
+<span class="nc" id="L24">		public Compatibility {</span>
+<span class="nc" id="L25">			Objects.requireNonNull(migrationMode);</span>
+<span class="nc" id="L26">			Objects.requireNonNull(bridgeFeasibility);</span>
+<span class="nc" id="L27">		}</span>
+	}
+
+	public MultiFileCandidateDiagnostic(String candidateId, String ownerCompilationUnitHandle,
+			MultiFileCandidateOutcome outcome, String reasonCode, String message, List&lt;String&gt; relatedCompilationUnitHandles) {
+<span class="fc" id="L32">		this(candidateId, ownerCompilationUnitHandle, outcome, reasonCode, message, relatedCompilationUnitHandles, Optional.empty());</span>
+<span class="fc" id="L33">	}</span>
 
 	/** Validates and normalizes candidate diagnostics. */
-<span class="fc" id="L22">	public MultiFileCandidateDiagnostic {</span>
-<span class="fc" id="L23">		candidateId= Objects.requireNonNull(candidateId);</span>
-<span class="fc" id="L24">		ownerCompilationUnitHandle= Objects.requireNonNull(ownerCompilationUnitHandle);</span>
-<span class="fc" id="L25">		outcome= Objects.requireNonNull(outcome);</span>
-<span class="fc" id="L26">		reasonCode= Objects.requireNonNull(reasonCode);</span>
-<span class="fc" id="L27">		message= Objects.requireNonNull(message);</span>
-<span class="pc bpc" id="L28" title="1 of 2 branches missed.">		relatedCompilationUnitHandles= relatedCompilationUnitHandles == null</span>
-<span class="nc" id="L29">				? List.of()</span>
-<span class="fc" id="L30">				: relatedCompilationUnitHandles.stream().filter(Objects::nonNull).distinct().sorted().toList();</span>
-<span class="fc" id="L31">	}</span>
+<span class="fc" id="L36">	public MultiFileCandidateDiagnostic {</span>
+<span class="fc" id="L37">		candidateId= Objects.requireNonNull(candidateId);</span>
+<span class="fc" id="L38">		ownerCompilationUnitHandle= Objects.requireNonNull(ownerCompilationUnitHandle);</span>
+<span class="fc" id="L39">		outcome= Objects.requireNonNull(outcome);</span>
+<span class="fc" id="L40">		reasonCode= Objects.requireNonNull(reasonCode);</span>
+<span class="fc" id="L41">		message= Objects.requireNonNull(message);</span>
+<span class="fc" id="L42">		Objects.requireNonNull(compatibility);</span>
+<span class="pc bpc" id="L43" title="1 of 2 branches missed.">		relatedCompilationUnitHandles= relatedCompilationUnitHandles == null</span>
+<span class="nc" id="L44">				? List.of()</span>
+<span class="fc" id="L45">				: relatedCompilationUnitHandles.stream().filter(Objects::nonNull).distinct().sorted().toList();</span>
+<span class="fc" id="L46">	}</span>
 
 	/** Creates a successful transformed-candidate diagnostic. */
 	public static MultiFileCandidateDiagnostic transformed(String candidateId, String ownerHandle,
 			String message, List&lt;String&gt; relatedHandles) {
-<span class="fc" id="L36">		return new MultiFileCandidateDiagnostic(candidateId, ownerHandle, MultiFileCandidateOutcome.TRANSFORMED,</span>
-<span class="fc" id="L37">				&quot;TRANSFORMED&quot;, message, relatedHandles); //$NON-NLS-1$</span>
+<span class="fc" id="L51">		return new MultiFileCandidateDiagnostic(candidateId, ownerHandle, MultiFileCandidateOutcome.TRANSFORMED,</span>
+<span class="fc" id="L52">				&quot;TRANSFORMED&quot;, message, relatedHandles); //$NON-NLS-1$</span>
 	}
 
 	/** Creates a refused-candidate diagnostic with a stable reason code. */
 	public static MultiFileCandidateDiagnostic rejected(String candidateId, String ownerHandle,
 			String reasonCode, String message, List&lt;String&gt; relatedHandles) {
-<span class="fc" id="L43">		return new MultiFileCandidateDiagnostic(candidateId, ownerHandle, MultiFileCandidateOutcome.REJECTED,</span>
-<span class="fc" id="L44">				reasonCode, message, relatedHandles);</span>
+<span class="fc" id="L58">		return new MultiFileCandidateDiagnostic(candidateId, ownerHandle, MultiFileCandidateOutcome.REJECTED,</span>
+<span class="fc" id="L59">				reasonCode, message, relatedHandles);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

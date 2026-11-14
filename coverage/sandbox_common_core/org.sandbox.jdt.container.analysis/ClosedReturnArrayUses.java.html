@@ -49,7 +49,7 @@ public final class ClosedReturnArrayUses {
 <span class="nc bnc" id="L49" title="All 2 branches missed.">				|| !(root.findDeclaringNode(methodKey) instanceof MethodDeclaration method)</span>
 <span class="nc bnc" id="L50" title="All 4 branches missed.">				|| !(method.getParent() instanceof TypeDeclaration owner) || owner.getParent() != root</span>
 <span class="nc bnc" id="L51" title="All 4 branches missed.">				|| !Modifier.isFinal(owner.getModifiers()) || !Modifier.isStatic(method.getModifiers())</span>
-<span class="nc bnc" id="L52" title="All 6 branches missed.">				|| Modifier.isPublic(owner.getModifiers()) || Modifier.isPublic(method.getModifiers()) || Modifier.isProtected(method.getModifiers())</span>
+<span class="nc bnc" id="L52" title="All 6 branches missed.">				|| Modifier.isPublic(owner.getModifiers()) &amp;&amp; (Modifier.isPublic(method.getModifiers()) || Modifier.isProtected(method.getModifiers()))</span>
 <span class="nc bnc" id="L53" title="All 4 branches missed.">				|| !owner.superInterfaceTypes().isEmpty() || owner.getSuperclassType() != null</span>
 <span class="nc bnc" id="L54" title="All 4 branches missed.">				|| owner.resolveBinding() == null || owner.resolveBinding().getAnnotations().length != 0</span>
 <span class="nc bnc" id="L55" title="All 4 branches missed.">				|| !(method.getReturnType2() instanceof ArrayType array) || !method.extraDimensions().isEmpty()</span>
@@ -87,79 +87,73 @@ public final class ClosedReturnArrayUses {
 <span class="nc" id="L87">					return true;</span>
 				}
 <span class="nc" id="L89">				var method= resolved.getMethodDeclaration();</span>
-<span class="nc" id="L90">				String owner= method.getDeclaringClass().getErasure().getQualifiedName();</span>
-<span class="nc bnc" id="L91" title="All 4 branches missed.">				if (&quot;java.lang.Class&quot;.equals(owner) || owner.startsWith(&quot;java.lang.reflect.&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc bnc" id="L92" title="All 2 branches missed.">						|| owner.startsWith(&quot;java.lang.invoke.&quot;)) { //$NON-NLS-1$</span>
-<span class="nc" id="L93">					valid[0]= false;</span>
-<span class="nc" id="L94">					return false;</span>
+<span class="nc bnc" id="L90" title="All 4 branches missed.">				if (!methodKey.equals(method.getKey()) || name.getParent() instanceof MethodDeclaration) {</span>
+<span class="nc" id="L91">					return true;</span>
 				}
-<span class="nc bnc" id="L96" title="All 4 branches missed.">				if (!methodKey.equals(method.getKey()) || name.getParent() instanceof MethodDeclaration) {</span>
-<span class="nc" id="L97">					return true;</span>
-				}
-<span class="nc bnc" id="L99" title="All 2 branches missed.">				if (name.getParent() instanceof Expression expression) {</span>
-<span class="nc" id="L100">					var function= ClosedReturnFunctionUses.find(expression, method);</span>
-<span class="nc bnc" id="L101" title="All 2 branches missed.">					if (function.isPresent()) {</span>
-<span class="nc bnc" id="L102" title="All 2 branches missed.">						for (var application : function.get().calls()) {</span>
-<span class="nc" id="L103">							var consumer= consumer(unitHandle, application, method.getReturnType(), Optional.of(function.get().target()));</span>
-<span class="nc bnc" id="L104" title="All 2 branches missed.">							if (consumer.isEmpty()) {</span>
-<span class="nc" id="L105">								valid[0]= false;</span>
-<span class="nc" id="L106">								return false;</span>
+<span class="nc bnc" id="L93" title="All 2 branches missed.">				if (name.getParent() instanceof Expression expression) {</span>
+<span class="nc" id="L94">					var function= ClosedReturnFunctionUses.find(expression, method);</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">					if (function.isPresent()) {</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">						for (var application : function.get().calls()) {</span>
+<span class="nc" id="L97">							var consumer= consumer(unitHandle, application, method.getReturnType(), Optional.of(function.get().target()));</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">							if (consumer.isEmpty()) {</span>
+<span class="nc" id="L99">								valid[0]= false;</span>
+<span class="nc" id="L100">								return false;</span>
 							}
-<span class="nc" id="L108">							result.add(consumer.get());</span>
-<span class="nc" id="L109">						}</span>
-<span class="nc" id="L110">						return true;</span>
+<span class="nc" id="L102">							result.add(consumer.get());</span>
+<span class="nc" id="L103">						}</span>
+<span class="nc" id="L104">						return true;</span>
 					}
 				}
-<span class="nc bnc" id="L113" title="All 4 branches missed.">				if (!(name.getParent() instanceof MethodInvocation call) || call.getName() != name) {</span>
-<span class="nc" id="L114">					valid[0]= false;</span>
-<span class="nc" id="L115">					return false;</span>
+<span class="nc bnc" id="L107" title="All 4 branches missed.">				if (!(name.getParent() instanceof MethodInvocation call) || call.getName() != name) {</span>
+<span class="nc" id="L108">					valid[0]= false;</span>
+<span class="nc" id="L109">					return false;</span>
 				}
-<span class="nc" id="L117">				var consumer= consumer(unitHandle, call, method.getReturnType(), Optional.empty());</span>
-<span class="nc bnc" id="L118" title="All 2 branches missed.">				if (consumer.isEmpty()) {</span>
-<span class="nc" id="L119">					valid[0]= false;</span>
-<span class="nc" id="L120">					return false;</span>
+<span class="nc" id="L111">				var consumer= consumer(unitHandle, call, method.getReturnType(), Optional.empty());</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">				if (consumer.isEmpty()) {</span>
+<span class="nc" id="L113">					valid[0]= false;</span>
+<span class="nc" id="L114">					return false;</span>
 				}
-<span class="nc" id="L122">				result.add(consumer.get());</span>
-<span class="nc" id="L123">				return true;</span>
+<span class="nc" id="L116">				result.add(consumer.get());</span>
+<span class="nc" id="L117">				return true;</span>
 			}
 		});
-<span class="nc" id="L126">		result.sort(Comparator.comparingInt(consumer -&gt; consumer.call().start()));</span>
-<span class="nc bnc" id="L127" title="All 2 branches missed.">		return valid[0] ? Optional.of(List.copyOf(result)) : Optional.empty();</span>
+<span class="nc" id="L120">		result.sort(Comparator.comparingInt(consumer -&gt; consumer.call().start()));</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">		return valid[0] ? Optional.of(List.copyOf(result)) : Optional.empty();</span>
 	}
 
 	private static Optional&lt;Consumer&gt; consumer(String unitHandle, MethodInvocation call, ITypeBinding returned,
 			Optional&lt;FunctionTarget&gt; function) {
-<span class="nc bnc" id="L132" title="All 4 branches missed.">		if (!(call.getParent() instanceof VariableDeclarationFragment fragment) || fragment.getInitializer() != call</span>
-<span class="nc bnc" id="L133" title="All 4 branches missed.">				|| !(fragment.getParent() instanceof VariableDeclarationStatement declaration) || declaration.fragments().size() != 1</span>
-<span class="nc bnc" id="L134" title="All 4 branches missed.">				|| !fragment.extraDimensions().isEmpty() || !(declaration.getType() instanceof ArrayType type)</span>
-<span class="nc bnc" id="L135" title="All 4 branches missed.">				|| fragment.resolveBinding() == null || !returned.isEqualTo(fragment.resolveBinding().getType())</span>
-<span class="nc bnc" id="L136" title="All 4 branches missed.">				|| type.resolveBinding().getTypeAnnotations().length != 0 || type.resolveBinding().getElementType().getTypeAnnotations().length != 0) {</span>
-<span class="nc" id="L137">			return Optional.empty();</span>
+<span class="nc bnc" id="L126" title="All 4 branches missed.">		if (!(call.getParent() instanceof VariableDeclarationFragment fragment) || fragment.getInitializer() != call</span>
+<span class="nc bnc" id="L127" title="All 4 branches missed.">				|| !(fragment.getParent() instanceof VariableDeclarationStatement declaration) || declaration.fragments().size() != 1</span>
+<span class="nc bnc" id="L128" title="All 4 branches missed.">				|| !fragment.extraDimensions().isEmpty() || !(declaration.getType() instanceof ArrayType type)</span>
+<span class="nc bnc" id="L129" title="All 4 branches missed.">				|| fragment.resolveBinding() == null || !returned.isEqualTo(fragment.resolveBinding().getType())</span>
+<span class="nc bnc" id="L130" title="All 4 branches missed.">				|| type.resolveBinding().getTypeAnnotations().length != 0 || type.resolveBinding().getElementType().getTypeAnnotations().length != 0) {</span>
+<span class="nc" id="L131">			return Optional.empty();</span>
 		}
-<span class="nc" id="L139">		List&lt;Range&gt; lengths= new ArrayList&lt;&gt;();</span>
-<span class="nc" id="L140">		boolean[] valid= { true };</span>
-<span class="nc" id="L141">		String key= fragment.resolveBinding().getVariableDeclaration().getKey();</span>
-<span class="nc" id="L142">		declaration.getParent().accept(new ASTVisitor() {</span>
+<span class="nc" id="L133">		List&lt;Range&gt; lengths= new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L134">		boolean[] valid= { true };</span>
+<span class="nc" id="L135">		String key= fragment.resolveBinding().getVariableDeclaration().getKey();</span>
+<span class="nc" id="L136">		declaration.getParent().accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(SimpleName reference) {
-<span class="nc bnc" id="L145" title="All 4 branches missed.">				if (reference == fragment.getName() || !(reference.resolveBinding() instanceof IVariableBinding used)</span>
-<span class="nc bnc" id="L146" title="All 2 branches missed.">						|| !key.equals(used.getVariableDeclaration().getKey())) {</span>
-<span class="nc" id="L147">					return true;</span>
+<span class="nc bnc" id="L139" title="All 4 branches missed.">				if (reference == fragment.getName() || !(reference.resolveBinding() instanceof IVariableBinding used)</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">						|| !key.equals(used.getVariableDeclaration().getKey())) {</span>
+<span class="nc" id="L141">					return true;</span>
 				}
-<span class="nc bnc" id="L149" title="All 4 branches missed.">				if (reference.getParent() instanceof QualifiedName length &amp;&amp; length.getQualifier() == reference</span>
-<span class="nc bnc" id="L150" title="All 2 branches missed.">						&amp;&amp; &quot;length&quot;.equals(length.getName().getIdentifier())) { //$NON-NLS-1$</span>
-<span class="nc" id="L151">					lengths.add(range(length));</span>
+<span class="nc bnc" id="L143" title="All 4 branches missed.">				if (reference.getParent() instanceof QualifiedName length &amp;&amp; length.getQualifier() == reference</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">						&amp;&amp; &quot;length&quot;.equals(length.getName().getIdentifier())) { //$NON-NLS-1$</span>
+<span class="nc" id="L145">					lengths.add(range(length));</span>
 				} else {
-<span class="nc" id="L153">					valid[0]= false;</span>
+<span class="nc" id="L147">					valid[0]= false;</span>
 				}
-<span class="nc" id="L155">				return true;</span>
+<span class="nc" id="L149">				return true;</span>
 			}
 		});
-<span class="nc bnc" id="L158" title="All 2 branches missed.">		return valid[0] ? Optional.of(new Consumer(unitHandle, key, range(type), range(call), lengths, function)) : Optional.empty();</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">		return valid[0] ? Optional.of(new Consumer(unitHandle, key, range(type), range(call), lengths, function)) : Optional.empty();</span>
 	}
 
 	private static Range range(ASTNode node) {
-<span class="nc" id="L162">		return new Range(node.getStartPosition(), node.getLength());</span>
+<span class="nc" id="L156">		return new Range(node.getStartPosition(), node.getLength());</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

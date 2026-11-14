@@ -17,58 +17,74 @@ import java.util.Optional;
 
 /** An atomic return signature, local producer and all bounded source callers. */
 public record ClosedSourceReturnMigrationPlan(ContainerLocalRewritePlan producer, String methodHandle,
-		String methodBindingKey, Range returnType, List&lt;Consumer&gt; consumers) implements ClosedSourceContainerPlan {
+		String methodBindingKey, Range returnType, List&lt;Consumer&gt; consumers, Optional&lt;ReturnPublicationPolicy&gt; publication) implements ClosedSourceContainerPlan {
 
-<span class="nc" id="L22">	public ClosedSourceReturnMigrationPlan {</span>
-<span class="nc" id="L23">		Objects.requireNonNull(producer);</span>
-<span class="nc" id="L24">		Objects.requireNonNull(returnType);</span>
-<span class="nc bnc" id="L25" title="All 6 branches missed.">		if (methodHandle.isBlank() || methodBindingKey.isBlank() || consumers.isEmpty()) {</span>
-<span class="nc" id="L26">			throw new IllegalArgumentException(&quot;A return migration requires its producer method and callers&quot;); //$NON-NLS-1$</span>
+	public ClosedSourceReturnMigrationPlan(ContainerLocalRewritePlan producer, String methodHandle, String methodBindingKey,
+			Range returnType, List&lt;Consumer&gt; consumers) {
+<span class="nc" id="L24">		this(producer, methodHandle, methodBindingKey, returnType, consumers, Optional.empty());</span>
+<span class="nc" id="L25">	}</span>
+
+	/** Freezes the explicitly selected publication boundary together with every source edit. */
+	public ClosedSourceReturnMigrationPlan withPublication(ReturnPublicationPolicy policy) {
+<span class="nc" id="L29">		return new ClosedSourceReturnMigrationPlan(producer, methodHandle, methodBindingKey, returnType, consumers, Optional.of(policy));</span>
+	}
+
+<span class="nc" id="L32">	public ClosedSourceReturnMigrationPlan {</span>
+<span class="nc" id="L33">		Objects.requireNonNull(producer);</span>
+<span class="nc" id="L34">		Objects.requireNonNull(returnType);</span>
+<span class="nc" id="L35">		Objects.requireNonNull(publication);</span>
+<span class="nc bnc" id="L36" title="All 6 branches missed.">		if (methodHandle.isBlank() || methodBindingKey.isBlank() || consumers.isEmpty()) {</span>
+<span class="nc" id="L37">			throw new IllegalArgumentException(&quot;A return migration requires its producer method and callers&quot;); //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L28">		consumers= List.copyOf(consumers);</span>
-<span class="nc" id="L29">	}</span>
+<span class="nc" id="L39">		consumers= List.copyOf(consumers);</span>
+<span class="nc" id="L40">	}</span>
 
 	public record Range(int start, int length) {
-<span class="nc" id="L32">		public Range {</span>
-<span class="nc bnc" id="L33" title="All 4 branches missed.">			if (start &lt; 0 || length &lt;= 0) {</span>
-<span class="nc" id="L34">				throw new IllegalArgumentException(&quot;Invalid return migration range&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L43">		public Range {</span>
+<span class="nc bnc" id="L44" title="All 4 branches missed.">			if (start &lt; 0 || length &lt;= 0) {</span>
+<span class="nc" id="L45">				throw new IllegalArgumentException(&quot;Invalid return migration range&quot;); //$NON-NLS-1$</span>
 			}
-<span class="nc" id="L36">		}</span>
+<span class="nc" id="L47">		}</span>
 	}
 
 	public record FunctionTarget(String bindingKey, Range returnArgument, Range initializer) {
-<span class="nc" id="L40">		public FunctionTarget {</span>
-<span class="nc bnc" id="L41" title="All 2 branches missed.">			if (bindingKey.isBlank()) {</span>
-<span class="nc" id="L42">				throw new IllegalArgumentException(&quot;A local function requires a source binding&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L51">		public FunctionTarget {</span>
+<span class="nc bnc" id="L52" title="All 2 branches missed.">			if (bindingKey.isBlank()) {</span>
+<span class="nc" id="L53">				throw new IllegalArgumentException(&quot;A local function requires a source binding&quot;); //$NON-NLS-1$</span>
 			}
-<span class="nc" id="L44">			Objects.requireNonNull(returnArgument);</span>
-<span class="nc" id="L45">			Objects.requireNonNull(initializer);</span>
-<span class="nc" id="L46">		}</span>
+<span class="nc" id="L55">			Objects.requireNonNull(returnArgument);</span>
+<span class="nc" id="L56">			Objects.requireNonNull(initializer);</span>
+<span class="nc" id="L57">		}</span>
 	}
 
 	public record Consumer(String unitHandle, String localBindingKey, Range localType, Range call, List&lt;Range&gt; lengths,
 			Optional&lt;FunctionTarget&gt; functionTarget) {
 		public Consumer(String unitHandle, String localBindingKey, Range localType, Range call, List&lt;Range&gt; lengths) {
-<span class="nc" id="L52">			this(unitHandle, localBindingKey, localType, call, lengths, Optional.empty());</span>
-<span class="nc" id="L53">		}</span>
+<span class="nc" id="L63">			this(unitHandle, localBindingKey, localType, call, lengths, Optional.empty());</span>
+<span class="nc" id="L64">		}</span>
 
-<span class="nc" id="L55">		public Consumer {</span>
-<span class="nc" id="L56">			Objects.requireNonNull(localType);</span>
-<span class="nc" id="L57">			Objects.requireNonNull(functionTarget);</span>
-<span class="nc" id="L58">			Objects.requireNonNull(call);</span>
-<span class="nc bnc" id="L59" title="All 4 branches missed.">			if (unitHandle.isBlank() || localBindingKey.isBlank()) {</span>
-<span class="nc" id="L60">				throw new IllegalArgumentException(&quot;A return consumer requires source bindings&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L66">		public Consumer {</span>
+<span class="nc" id="L67">			Objects.requireNonNull(localType);</span>
+<span class="nc" id="L68">			Objects.requireNonNull(functionTarget);</span>
+<span class="nc" id="L69">			Objects.requireNonNull(call);</span>
+<span class="nc bnc" id="L70" title="All 4 branches missed.">			if (unitHandle.isBlank() || localBindingKey.isBlank()) {</span>
+<span class="nc" id="L71">				throw new IllegalArgumentException(&quot;A return consumer requires source bindings&quot;); //$NON-NLS-1$</span>
 			}
-<span class="nc" id="L62">			lengths= List.copyOf(lengths);</span>
-<span class="nc" id="L63">		}</span>
+<span class="nc" id="L73">			lengths= List.copyOf(lengths);</span>
+<span class="nc" id="L74">		}</span>
+	}
+
+	@Override
+	public ContainerCompatibilityDecision compatibility() {
+<span class="nc" id="L79">		return publication.map(ReturnPublicationPolicy::compatibility).orElseGet(ContainerCompatibilityDecision::closedReturn);</span>
 	}
 
 	@Override
 	public List&lt;String&gt; affectedCompilationUnitHandles() {
-<span class="nc" id="L68">		var result= new LinkedHashSet&lt;String&gt;();</span>
-<span class="nc" id="L69">		result.add(producer.compilationUnitHandle());</span>
-<span class="nc" id="L70">		consumers.forEach(consumer -&gt; result.add(consumer.unitHandle()));</span>
-<span class="nc" id="L71">		return List.copyOf(result);</span>
+<span class="nc" id="L84">		var result= new LinkedHashSet&lt;String&gt;();</span>
+<span class="nc" id="L85">		result.add(producer.compilationUnitHandle());</span>
+<span class="nc" id="L86">		consumers.forEach(consumer -&gt; result.add(consumer.unitHandle()));</span>
+<span class="nc" id="L87">		return List.copyOf(result);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
