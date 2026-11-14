@@ -20,6 +20,7 @@ import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCle
 
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -107,7 +108,7 @@ class ClosedUniqueSequenceCleanUpTest {
 		Files.createDirectories(target);
 		List<String> args= new ArrayList<>(List.of("-d", target.toString()));
 		for (var unit : units) {
-			args.add(Files.writeString(target.resolve(unit.getElementName()), unit.getSource()).toString());
+			args.add(Files.writeString(target.resolve(unit.getElementName()), unit.getSource(), StandardCharsets.UTF_8).toString());
 		}
 		assertEquals(0, javax.tools.ToolProvider.getSystemJavaCompiler().run(null, null, null, args.toArray(String[]::new)));
 		try (var loader= new URLClassLoader(new URL[] {target.toUri().toURL()}, null)) {
