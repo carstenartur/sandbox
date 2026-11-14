@@ -133,6 +133,47 @@ class ContainerCleanUpTest {
 		assertEquals(source, unit.getSource());
 	}
 
+	@Test
+	void preservesObservableArrayStoreAndIterationBehavior(@TempDir Path directory) throws Exception {
+		String source= """
+			package test;
+			import java.util.Arrays;
+			public class Sample {
+				public static int collected(Object item) {
+					Object[] values = new String[0];
+					try {
+						values = Arrays.copyOf(values, values.length + 1);
+						values[values.length - 1] = item;
+					} catch (ArrayStoreException expected) { return values.length; }
+					return -1;
+				}
+				public static int traversed(String item) {
+					String[] values = new String[0];
+					values = Arrays.copyOf(values, values.length + 1);
+					values[values.length - 1] = item;
+					for (String old : values) {
+						values = Arrays.copyOf(values, values.length + 1);
+						values[values.length - 1] = old;
+					}
+					return values.length;
+				}
+			}
+			""";
+		ICompilationUnit unit= createUnit(source);
+		ContainerCleanUpCore cleanup= new ContainerCleanUpCore(Map.of(
+				CLEANUP, CleanUpOptions.TRUE, APPEND_ARRAY_TO_LIST, CleanUpOptions.TRUE));
+		assertNull(cleanup.createFix(new CleanUpContext(unit, parse(unit))));
+		assertEquals(source, unit.getSource());
+		Path file= Files.writeString(directory.resolve("Sample.java"), unit.getSource()); //$NON-NLS-1$
+		assertEquals(0, javax.tools.ToolProvider.getSystemJavaCompiler().run(null, null, null,
+				"-d", directory.toString(), file.toString())); //$NON-NLS-1$
+		try (var classes= new URLClassLoader(new URL[] { directory.toUri().toURL() }, null)) {
+			Class<?> sample= classes.loadClass("test.Sample"); //$NON-NLS-1$
+			assertEquals(1, sample.getMethod("collected", Object.class).invoke(null, new Object())); //$NON-NLS-1$
+			assertEquals(2, sample.getMethod("traversed", String.class).invoke(null, "value")); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+	}
+
 	private static void verifyPublishedArrays(String source, Path directory) throws Exception {
 		Path file= Files.writeString(directory.resolve("Sample.java"), source); //$NON-NLS-1$
 		int exit= javax.tools.ToolProvider.getSystemJavaCompiler().run(null, null, null,

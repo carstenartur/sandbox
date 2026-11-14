@@ -18,8 +18,10 @@ import static org.sandbox.jdt.container.analysis.ContainerAstFacts.unwrap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.ArrayAccess;
@@ -141,6 +143,13 @@ public final class LocalArrayUsageAnalyzer {
 		IVariableBinding declaration= variable.getVariableDeclaration();
 		accumulator.observeBinding(declaration);
 		if (isDeclarationName(name)) {
+			if (name.getParent() instanceof VariableDeclarationFragment fragment
+					&& fragment.getParent() instanceof VariableDeclarationStatement
+					&& fragment.getInitializer() instanceof ArrayCreation initial
+					&& !hasExactArrayType(fragment, initial)) {
+				accumulator.reject(Kind.REJECTION_BOUNDARY,
+						"The allocated array can enforce a narrower runtime component type than the declaration.", initial); //$NON-NLS-1$
+			}
 			return;
 		}
 		if (crossesExecutableBoundary(name, declaration)) {
@@ -224,15 +233,49 @@ public final class LocalArrayUsageAnalyzer {
 				&& type.isEqualTo(signature.getReturnType());
 	}
 
+	/** The array store check must agree with the declared list element type. */
+	public static boolean hasExactArrayType(VariableDeclarationFragment fragment, ArrayCreation initial) {
+		IVariableBinding local= fragment.resolveBinding();
+		ITypeBinding allocated= initial.resolveTypeBinding();
+		return local != null && !local.isRecovered() && local.getType() != null && !local.getType().isRecovered()
+				&& allocated != null && !allocated.isRecovered() && local.getType().isEqualTo(allocated);
+	}
+
+	/** Classifies observable differences between growing an array first and adding an evaluated element. */
+	public static Optional<String> appendRisk(Assignment append, IVariableBinding array) {
+		Expression value= append.getRightHandSide();
+		class ArrayRead extends ASTVisitor {
+			boolean found;
+			@Override
+			public boolean visit(SimpleName name) {
+				if (name.resolveBinding() instanceof IVariableBinding variable
+						&& variable.getVariableDeclaration().isEqualTo(array.getVariableDeclaration())) {
+					found= true;
+				}
+				return !found;
+			}
+		}
+		ArrayRead read= new ArrayRead();
+		value.accept(read);
+		if (read.found) {
+			return Optional.of("The element expression observes the array after it has grown."); //$NON-NLS-1$
+		}
+		Expression target= ((ArrayAccess) unwrap(append.getLeftHandSide())).getArray();
+		for (ASTNode parent= append.getParent(); parent != null && !(parent instanceof MethodDeclaration);
+				parent= parent.getParent()) {
+			if (parent instanceof EnhancedForStatement loop && sameVariable(loop.getExpression(), target)) {
+				return Optional.of("The loop iterates the old array while new elements are appended."); //$NON-NLS-1$
+			}
+			if (parent instanceof TryStatement && !isSimpleAppendValue(append)) {
+				return Optional.of("An exception handler can observe the new array slot before the element is stored."); //$NON-NLS-1$
+			}
+		}
+		return Optional.empty();
+	}
+
 	/** Checks that removing the temporary empty tail cannot change evaluation of the new element. */
 	public static boolean isSimplePublishedAppend(Assignment append) {
-		Expression value= unwrap(append.getRightHandSide());
-		if (!(value instanceof StringLiteral || value instanceof NullLiteral
-				|| value instanceof SimpleName name && name.resolveBinding() instanceof IVariableBinding local
-						&& !local.isRecovered() && !local.isField() && local.getType() != null
-						&& !local.getType().isRecovered() && !local.getType().isPrimitive()
-						&& append.getLeftHandSide() instanceof ArrayAccess slot
-						&& !sameVariable(slot.getArray(), name))) {
+		if (!isSimpleAppendValue(append)) {
 			return false;
 		}
 		for (ASTNode parent= append.getParent(); parent != null && !(parent instanceof MethodDeclaration);
@@ -242,6 +285,16 @@ public final class LocalArrayUsageAnalyzer {
 			}
 		}
 		return true;
+	}
+
+	private static boolean isSimpleAppendValue(Assignment append) {
+		Expression value= unwrap(append.getRightHandSide());
+		return value instanceof StringLiteral || value instanceof NullLiteral
+				|| value instanceof SimpleName name && name.resolveBinding() instanceof IVariableBinding local
+						&& !local.isRecovered() && !local.isField() && local.getType() != null
+						&& !local.getType().isRecovered() && !local.getType().isPrimitive()
+						&& append.getLeftHandSide() instanceof ArrayAccess slot
+						&& !sameVariable(slot.getArray(), name);
 	}
 
 	private static boolean crossesExecutableBoundary(
@@ -283,6 +336,8 @@ public final class LocalArrayUsageAnalyzer {
 		if (assignment != null && unwrap(assignment.getLeftHandSide()) == access) {
 			if (isTailAppend(access, reference)) {
 				accumulator.appendObserved(assignment);
+				ContainerAstFacts.variableBinding(reference).flatMap(binding -> appendRisk(assignment, binding))
+						.ifPresent(reason -> accumulator.reject(Kind.REJECTION_BOUNDARY, reason, assignment));
 			} else {
 				accumulator.indexedWrite(access);
 			}

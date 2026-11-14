@@ -80,7 +80,8 @@ final class ContainerLocalRewriteResolver {
 				|| !(statement.getType() instanceof ArrayType arrayType)
 				|| arrayType.dimensions().size() != 1
 				|| !(fragment.getInitializer() instanceof ArrayCreation initializer)
-				|| !isEmptyOneDimensionalArray(initializer)) {
+				|| !isEmptyOneDimensionalArray(initializer)
+				|| !LocalArrayUsageAnalyzer.hasExactArrayType(fragment, initializer)) {
 			throw stale(unit, "local array declaration or empty initializer changed"); //$NON-NLS-1$
 		}
 
@@ -98,6 +99,10 @@ final class ContainerLocalRewriteResolver {
 		Set<Assignment> recognisedAssignments=
 				java.util.Collections.newSetFromMap(new IdentityHashMap<>());
 		for (AppendPair pair : pairs) {
+			var risk= LocalArrayUsageAnalyzer.appendRisk(pair.appendAssignment(), fragment.resolveBinding());
+			if (risk.isPresent()) {
+				throw stale(unit, risk.get());
+			}
 			recognisedAssignments.add(pair.growthAssignment());
 			recognisedAssignments.add(pair.appendAssignment());
 		}
