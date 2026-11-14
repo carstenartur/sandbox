@@ -163,8 +163,11 @@ class RuleExamplesProjectTest {
 				classpath.add(location.get().getAbsolutePath());
 			}
 		}
-		assertEquals(0, javax.tools.ToolProvider.getSystemJavaCompiler().run(null, null, null,
-				"-proc:none", "-Xlint:all,-path", "-Werror", "-cp", String.join(java.io.File.pathSeparator, classpath), "-d", file.getParent().toString(), file.toString()));
+		var compiler = java.util.Objects.requireNonNull(javax.tools.ToolProvider.getSystemJavaCompiler(),
+				"Scaffold compilation needs a full JDK");
+		Path output = java.util.Objects.requireNonNull(file.getParent(), "Generated source needs an output directory");
+		assertEquals(0, compiler.run(null, null, null,
+				"-proc:none", "-Xlint:all,-path", "-Werror", "-cp", String.join(java.io.File.pathSeparator, classpath), "-d", output.toString(), file.toString()));
 	}
 
 	private ICompilationUnit createUnit() throws Exception {
