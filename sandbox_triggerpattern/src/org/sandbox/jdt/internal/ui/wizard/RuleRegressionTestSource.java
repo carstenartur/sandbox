@@ -40,7 +40,7 @@ final class RuleRegressionTestSource {
 				    @Test
 				    void replaysSavedExamples() throws Exception {
 				        var root = ResourcesPlugin.getWorkspace().getRoot();
-				        var path = new Path(%s);
+				        var path = new Path(HINT_PATH);
 				        IFile hint = root.getFile(path);
 				        String rule = utf8(hint);
 				        IFile sidecar = root.getFile(path.addFileExtension("examples.json"));
@@ -56,6 +56,6 @@ final class RuleRegressionTestSource {
 				        }
 				    }
 				}
-				""".formatted(literal.getEscapedValue()); //$NON-NLS-1$
+				""".replace("HINT_PATH", literal.getEscapedValue()); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 }
