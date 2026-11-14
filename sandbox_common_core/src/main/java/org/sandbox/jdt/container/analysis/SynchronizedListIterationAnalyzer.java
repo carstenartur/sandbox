@@ -20,9 +20,12 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
+import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
@@ -31,8 +34,10 @@ import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.SynchronizedStatement;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.sandbox.jdt.container.api.ConcurrencyProtocol;
@@ -51,7 +56,7 @@ import org.sandbox.jdt.container.api.ContainerUsageProfile.SynchronizationKind;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.ThreadExposure;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.WorkloadShape;
 
-/** Reports traversal and method-return boundaries for synchronized list fields. */
+/** Reports compound membership checks, traversal and method-return boundaries for synchronized list fields. */
 public final class SynchronizedListIterationAnalyzer {
 
 	private static final String LIST= "java.util.List"; //$NON-NLS-1$
@@ -61,10 +66,16 @@ public final class SynchronizedListIterationAnalyzer {
 		return SynchronizedListDrainAnalyzer.analyze(unit);
 	}
 
-	/** Returns source-ordered observations for matched loops and non-private method returns. */
+	/** Returns source-ordered observations for matched conditional insertions, loops and non-private method returns. */
 	public List<DiagnosticOnly> analyze(CompilationUnit unit) {
 		List<DiagnosticOnly> observations= new ArrayList<>();
 		unit.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(IfStatement branch) {
+				observeConditionalAdd(unit, branch).ifPresent(observations::add);
+				return true;
+			}
+
 			@Override
 			public boolean visit(EnhancedForStatement loop) {
 				observe(unit, loop).ifPresent(observations::add);
@@ -78,6 +89,55 @@ public final class SynchronizedListIterationAnalyzer {
 			}
 		});
 		return List.copyOf(observations);
+	}
+
+	/** Match the check and write separately; the wrapper synchronizes each method call. */
+	private static Optional<DiagnosticOnly> observeConditionalAdd(CompilationUnit unit, IfStatement branch) {
+		if (!(unwrap(branch.getExpression()) instanceof PrefixExpression negated)
+				|| negated.getOperator() != PrefixExpression.Operator.NOT
+				|| !(unwrap(negated.getOperand()) instanceof MethodInvocation contains)
+				|| !isListOperation(contains, "contains")) { //$NON-NLS-1$
+			return Optional.empty();
+		}
+		Statement then= branch.getThenStatement();
+		if (then instanceof Block block && block.statements().size() == 1) {
+			then= (Statement) block.statements().getFirst();
+		}
+		if (!(then instanceof ExpressionStatement statement)
+				|| !(statement.getExpression() instanceof MethodInvocation add) || !isListOperation(add, "add") //$NON-NLS-1$
+				|| !(unwrap((Expression) contains.arguments().getFirst()) instanceof SimpleName element)
+				|| !(element.resolveBinding() instanceof IVariableBinding variable) || variable.isField() || variable.isRecovered()
+				|| !(unwrap((Expression) add.arguments().getFirst()) instanceof SimpleName added)
+				|| !variable.isEqualTo(added.resolveBinding())) {
+			return Optional.empty();
+		}
+		VariableDeclarationFragment field= synchronizedListField(unit, contains.getExpression());
+		if (field == null || !field.resolveBinding().isEqualTo(currentInstanceField(add.getExpression()))) {
+			return Optional.empty();
+		}
+		IVariableBinding binding= field.resolveBinding().getVariableDeclaration();
+		boolean locked= hasMatchingMonitor(branch, binding);
+		String lock= locked ? binding.getKey() : null;
+		String reason= locked
+				? "The same wrapper monitor covers contains and add. A replacement must preserve that compound operation." //$NON-NLS-1$
+				: "No enclosing monitor on this wrapper was verified across contains and add. Check whether callers serialize the operation."; //$NON-NLS-1$
+		ContainerIdentity identity= new ContainerIdentity(binding.getKey(), binding.getName(),
+				field.getName().getStartPosition(), field.getName().getLength());
+		ConcurrencyProfile summary= new ConcurrencyProfile(ThreadExposure.UNKNOWN, SynchronizationKind.SYNCHRONIZED_WRAPPER,
+				IterationSemantics.UNKNOWN, AtomicityRequirement.CHECK_THEN_ACT, WorkloadShape.UNKNOWN);
+		List<Evidence> evidence= List.of(
+				new Evidence(locked ? EvidenceKind.CHECK_THEN_ACT : EvidenceKind.UNRESOLVED_BOUNDARY, lock,
+						"Tests membership before inserting the element.", contains.getStartPosition(), contains.getLength()), //$NON-NLS-1$
+				new Evidence(locked ? EvidenceKind.LOCKED_WRITE : EvidenceKind.UNRESOLVED_BOUNDARY, lock,
+						"Adds the same element when absent.", add.getStartPosition(), add.getLength())); //$NON-NLS-1$
+		var protocol= new ConcurrencyProtocol(identity, summary, ReentrancyContract.UNKNOWN, AnalysisCompleteness.LOCAL_SEED, evidence);
+		return Optional.of(new DiagnosticOnly(protocol, Severity.INFO, List.of(reason)));
+	}
+
+	private static boolean isListOperation(MethodInvocation invocation, String name) {
+		IMethodBinding method= invocation.resolveMethodBinding();
+		return method != null && !method.isRecovered() && isType(method.getMethodDeclaration().getDeclaringClass(), LIST)
+				&& name.equals(method.getName()) && invocation.arguments().size() == 1 && invocation.getExpression() != null;
 	}
 
 	private static Optional<DiagnosticOnly> observe(CompilationUnit unit, EnhancedForStatement loop) {
