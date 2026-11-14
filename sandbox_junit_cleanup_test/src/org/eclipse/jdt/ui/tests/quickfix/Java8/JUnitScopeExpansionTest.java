@@ -161,6 +161,45 @@ public class JUnitScopeExpansionTest {
 	}
 
 	@ParameterizedTest
+	@ValueSource(strings = { "private", "" })
+	public void onlyPrivateInstanceDispatchCanExtendAnAssertionChain(String access) throws CoreException {
+		addJupiter();
+		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
+		String leafSource= """
+				package test;
+				final class Leaf {
+					static void checkPrivateForwarderResult(boolean ready) { org.junit.Assert.assertFalse(ready); }
+				}
+				""";
+		ICompilationUnit leaf= pack.createCompilationUnit("Leaf.java", leafSource, false, null); //$NON-NLS-1$
+		ICompilationUnit bridge= pack.createCompilationUnit("Bridge.java", """
+				package test;
+				class Bridge {
+					static void verifyViaBoundReceiver(Bridge receiver, boolean ready) { receiver.delegatePrivateFixtureFlag(ready); }
+					ACCESS void delegatePrivateFixtureFlag(boolean ready) { Leaf.checkPrivateForwarderResult(ready); }
+				}
+				""".replace("ACCESS", access), false, null); //$NON-NLS-1$
+		ICompilationUnit selected= pack.createCompilationUnit("Selected.java", """
+				package test;
+				final class Selected { void run() { Bridge.verifyViaBoundReceiver(new Bridge(), false); } }
+				""", false, null);
+
+		Collection<ICompilationUnit> expanded= assertionCleanup().expandCleanUpScope(selected.getJavaProject(),
+				List.of(selected), null);
+		if (access.isEmpty()) {
+			assertTrue(expanded.isEmpty(), "A package-private instance method can dispatch to an override");
+			return;
+		}
+		assertEquals(Set.of(selected, bridge, leaf), Set.copyOf(expanded));
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT);
+		MultiFileCleanUpLifecycleAssertions.assertApplyCompileAndUndo(expanded.toArray(ICompilationUnit[]::new),
+				new ICompilationUnit[] { leaf, bridge, selected }, new String[] {
+						leafSource.replace("org.junit.Assert", "org.junit.jupiter.api.Assertions"), //$NON-NLS-1$ //$NON-NLS-2$
+						bridge.getSource(), selected.getSource() });
+	}
+
+	@ParameterizedTest
 	@ValueSource(strings = { "Bridge.verify(ready)", "Missing.unknown(ready)", "Leaf.check(ready, 1)" })
 	public void unprovenForwarderDoesNotAdmitAnySource(String delegate) throws CoreException {
 		addJupiter();
