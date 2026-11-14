@@ -17,6 +17,12 @@ the original method signature. For example, a local builder initialized from
 <code>return values.toArray(new String[0]);</code>. The check requires a fresh
 array with the exact declared element type and simple append values.</p>
 
+<p>The Container Analysis view also links to rejected source uses. A primitive
+append retains its unboxed storage. A narrower runtime component type keeps its
+array-store checks, and a volatile field keeps its publication semantics. A byte
+array passed to a supported JDK binary input or output method stays at that
+boundary, including reads and writes with offsets and lengths.</p>
+
 <h2 id="listeners">Copy-on-write listener snapshots</h2>
 <p>An opt-in migration for read-mostly listener lists. Registration originally
 appends under the private list's lock. Notification takes a typed array snapshot

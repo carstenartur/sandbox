@@ -44,6 +44,7 @@ import org.eclipse.jdt.core.dom.InstanceofExpression;
 import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.NullLiteral;
 import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
@@ -143,6 +144,10 @@ public final class LocalArrayUsageAnalyzer {
 		IVariableBinding declaration= variable.getVariableDeclaration();
 		accumulator.observeBinding(declaration);
 		if (isDeclarationName(name)) {
+			if (declaration.isField() && Modifier.isVolatile(declaration.getModifiers())) {
+				accumulator.reject(Kind.REJECTION_BOUNDARY,
+						"Retain the volatile array publication. A mutable collection changes publication and the visibility of element updates.", name); //$NON-NLS-1$
+			}
 			if (name.getParent() instanceof VariableDeclarationFragment fragment
 					&& fragment.getParent() instanceof VariableDeclarationStatement
 					&& fragment.getInitializer() instanceof ArrayCreation initial
