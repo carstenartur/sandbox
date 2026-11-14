@@ -348,5 +348,9 @@ xvfb-run -a --server-args="-screen 0 1920x1200x24" ./mvnw \
 The test verifies the workspace pins, Git identity, original source bytes, headless
 file selection and complete expected patch before opening the JDT wizard. It checks
 the applied source and byte-exact Undo and writes the native window capture and
-its provenance in the evidence directory. The six affected constructors retain
+its provenance in the evidence directory. It compares both files byte-for-byte
+with the published Help baseline. For an intentional visual change, inspect the
+new capture and sidecar together before updating the Help files. The opt-in
+profile uses static GTK scrollbars to keep the native rendering reproducible.
+The six affected constructors retain
 their plug-in identity expression and remove the redundant zero status code.

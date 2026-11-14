@@ -219,9 +219,15 @@ public class PinnedStatusPreviewSWTBotTest {
             provenance.addProperty("beforeSha256", digest(before));
             provenance.addProperty("afterSha256", digest(expected.getBytes(UTF_8)));
             provenance.addProperty("screenshotSha256", digest(Files.readAllBytes(temp)));
-            Files.move(temp, evidence.resolve("platform-status-pinned.png"), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-            Files.writeString(evidence.resolve("platform-status-pinned.provenance.json"),
-                    new GsonBuilder().setPrettyPrinting().create().toJson(provenance) + "\n", StandardCharsets.UTF_8);
+            Path capture = evidence.resolve("platform-status-pinned.png");
+            Path sidecar = evidence.resolve("platform-status-pinned.provenance.json");
+            Files.move(temp, capture, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            Files.writeString(sidecar, new GsonBuilder().setPrettyPrinting().create().toJson(provenance) + "\n", UTF_8);
+            Path published = sandbox.resolve("sandbox_platform_helper_help/images");
+            assertEquals(-1L, Files.mismatch(published.resolve(capture.getFileName()), capture),
+                    "The regenerated pinned preview differs from the published Help image: " + capture);
+            assertEquals(-1L, Files.mismatch(published.resolve(sidecar.getFileName()), sidecar),
+                    "The regenerated pinned preview provenance differs from Help: " + sidecar);
         } finally {
             Files.deleteIfExists(temp);
         }
