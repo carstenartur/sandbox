@@ -209,6 +209,47 @@ public final class ContainerConcurrencyAnalyzer {
 	private static ConcurrencyProtocolAssessment assess(CompilationUnit root, Field field, ConcurrentMembershipAnalyzer.Field membership,
 			ListenerSnapshotAnalyzer.Observed listener) {
 		var evidence= new ArrayList<Evidence>();
+		var uses= observeFieldUses(field, evidence);
+
+		if (evidence.isEmpty() || field.kind() == SynchronizationKind.NONE && !uses.hasLock()) {
+			return null;
+		}
+		var kind= field.kind() == SynchronizationKind.NONE ? (uses.explicit() ? SynchronizationKind.EXPLICIT_LOCK : SynchronizationKind.INTRINSIC_LOCK) : field.kind();
+		var identity= new ContainerIdentity(field.binding().getKey(), field.binding().getName(), field.declaration().getName().getStartPosition(),
+				field.declaration().getName().getLength());
+		if (field.kind() == SynchronizationKind.SYNCHRONIZED_WRAPPER && uses.onlyLockedTraversal()
+				&& closedTraversal(root, field)) {
+			var profile= new ConcurrencyProfile(ThreadExposure.UNKNOWN, kind, IterationSemantics.EXTERNALLY_LOCKED, AtomicityRequirement.TRANSACTION, WorkloadShape.UNKNOWN);
+			return new RetainExistingLocking(new ConcurrencyProtocol(identity, profile, ReentrancyContract.NO_CALLBACKS_OBSERVED, AnalysisCompleteness.LOCAL_USAGE_COMPLETE, evidence),
+					List.of(uses.offered() ? "All traversals hold the wrapper's own monitor. Individual appends acquire that monitor; no alias escapes and traversal invokes no callbacks." //$NON-NLS-1$
+							: "All traversals hold the wrapper's own monitor; the private backing collection has no escaping reference, mutation or callback.")); //$NON-NLS-1$
+		}
+		var callbacks= evidence.stream().anyMatch(e -> e.kind() == EvidenceKind.CALLBACK_UNDER_LOCK) ? ReentrancyContract.CALLBACKS_UNDER_LOCK
+				: evidence.stream().anyMatch(e -> e.kind() == EvidenceKind.CALLBACK_OUTSIDE_LOCK) ? ReentrancyContract.CALLBACKS_OUTSIDE_LOCK : ReentrancyContract.UNKNOWN;
+		var strategy= uses.strategy();
+		if (strategy != null && closedProtocol(root, field, strategy)) {
+			return producerConsumerRecommendation(identity, kind, evidence, strategy);
+		}
+		if ((membership != null && membership.rejection().isEmpty()) || (listener != null && listener.plan().rejection().isEmpty())) {
+			return closedMigrationRecommendation(identity, kind, evidence, listener);
+		}
+
+		String reason= "Inspect lock identities across all accesses, snapshot ownership, callback reentrancy and external aliases. Preserve observable order, duplicate handling and null behavior. Frequency and external thread boundaries are unknown."; //$NON-NLS-1$
+		if (strategy != null) {
+			reason= "Verify the common monitor across check/remove or copy/clear, nonblocking behavior, producer arguments and all escapes before choosing a concurrent target."; //$NON-NLS-1$
+			evidence.add(at(EvidenceKind.UNRESOLVED_BOUNDARY, "", reason, field.declaration().getName())); //$NON-NLS-1$
+		}
+		evidence.sort(Comparator.comparingInt(Evidence::sourceStart));
+		var profile= new ConcurrencyProfile(ThreadExposure.UNKNOWN, kind, IterationSemantics.UNKNOWN,
+				strategy == null ? AtomicityRequirement.UNKNOWN : strategy == Strategy.CONCURRENT_QUEUE ? AtomicityRequirement.CHECK_THEN_ACT : AtomicityRequirement.DRAIN,
+				WorkloadShape.UNKNOWN);
+		return new DiagnosticOnly(new ConcurrencyProtocol(identity, profile, callbacks, AnalysisCompleteness.LOCAL_SEED, evidence),
+				Severity.INFO, List.of(reason));
+	}
+
+	private record FieldUses(boolean hasLock, boolean explicit, boolean onlyLockedTraversal, boolean offered, Strategy strategy) {}
+
+	private static FieldUses observeFieldUses(Field field, List<Evidence> evidence) {
 		boolean hasLock= false;
 		boolean explicit= false;
 		boolean fifo= false;
@@ -240,41 +281,8 @@ public final class ContainerConcurrencyAnalyzer {
 			}
 			observeAccess(field, ref, lock, evidence);
 		}
-
-		if (evidence.isEmpty() || field.kind() == SynchronizationKind.NONE && !hasLock) {
-			return null;
-		}
-		var kind= field.kind() == SynchronizationKind.NONE ? (explicit ? SynchronizationKind.EXPLICIT_LOCK : SynchronizationKind.INTRINSIC_LOCK) : field.kind();
-		var identity= new ContainerIdentity(field.binding().getKey(), field.binding().getName(), field.declaration().getName().getStartPosition(),
-				field.declaration().getName().getLength());
-		if (field.kind() == SynchronizationKind.SYNCHRONIZED_WRAPPER && traversed && onlyLockedTraversal
-				&& closedTraversal(root, field)) {
-			var profile= new ConcurrencyProfile(ThreadExposure.UNKNOWN, kind, IterationSemantics.EXTERNALLY_LOCKED, AtomicityRequirement.TRANSACTION, WorkloadShape.UNKNOWN);
-			return new RetainExistingLocking(new ConcurrencyProtocol(identity, profile, ReentrancyContract.NO_CALLBACKS_OBSERVED, AnalysisCompleteness.LOCAL_USAGE_COMPLETE, evidence),
-					List.of(offered ? "All traversals hold the wrapper's own monitor. Individual appends acquire that monitor; no alias escapes and traversal invokes no callbacks." //$NON-NLS-1$
-							: "All traversals hold the wrapper's own monitor; the private backing collection has no escaping reference, mutation or callback.")); //$NON-NLS-1$
-		}
-		var callbacks= evidence.stream().anyMatch(e -> e.kind() == EvidenceKind.CALLBACK_UNDER_LOCK) ? ReentrancyContract.CALLBACKS_UNDER_LOCK
-				: evidence.stream().anyMatch(e -> e.kind() == EvidenceKind.CALLBACK_OUTSIDE_LOCK) ? ReentrancyContract.CALLBACKS_OUTSIDE_LOCK : ReentrancyContract.UNKNOWN;
 		var strategy= fifo ? Strategy.CONCURRENT_QUEUE : batch && hasClear ? Strategy.PURPOSE_SPECIFIC_ABSTRACTION : null;
-		if (strategy != null && closedProtocol(root, field, strategy)) {
-			return producerConsumerRecommendation(identity, kind, evidence, strategy);
-		}
-		if ((membership != null && membership.rejection().isEmpty()) || (listener != null && listener.plan().rejection().isEmpty())) {
-			return closedMigrationRecommendation(identity, kind, evidence, listener);
-		}
-
-		String reason= "Inspect lock identities across all accesses, snapshot ownership, callback reentrancy and external aliases. Preserve observable order, duplicate handling and null behavior. Frequency and external thread boundaries are unknown."; //$NON-NLS-1$
-		if (strategy != null) {
-			reason= "Verify the common monitor across check/remove or copy/clear, nonblocking behavior, producer arguments and all escapes before choosing a concurrent target."; //$NON-NLS-1$
-			evidence.add(at(EvidenceKind.UNRESOLVED_BOUNDARY, "", reason, field.declaration().getName())); //$NON-NLS-1$
-		}
-		evidence.sort(Comparator.comparingInt(Evidence::sourceStart));
-		var profile= new ConcurrencyProfile(ThreadExposure.UNKNOWN, kind, IterationSemantics.UNKNOWN,
-				strategy == null ? AtomicityRequirement.UNKNOWN : fifo ? AtomicityRequirement.CHECK_THEN_ACT : AtomicityRequirement.DRAIN,
-				WorkloadShape.UNKNOWN);
-		return new DiagnosticOnly(new ConcurrencyProtocol(identity, profile, callbacks, AnalysisCompleteness.LOCAL_SEED, evidence),
-				Severity.INFO, List.of(reason));
+		return new FieldUses(hasLock, explicit, traversed && onlyLockedTraversal, offered, strategy);
 	}
 
 	private static RecommendedMigration producerConsumerRecommendation(ContainerIdentity identity, SynchronizationKind kind,
