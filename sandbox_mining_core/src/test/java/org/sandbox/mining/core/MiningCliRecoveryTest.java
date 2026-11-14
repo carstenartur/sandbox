@@ -47,6 +47,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation.TrafficLight;
 import org.sandbox.jdt.triggerpattern.llm.LlmClient;
+import org.sandbox.jdt.triggerpattern.llm.RequestBudgetExhaustedException;
 import org.sandbox.jdt.triggerpattern.llm.SourceEvidence;
 import org.sandbox.mining.core.candidate.CandidateStatus;
 import org.sandbox.mining.core.candidate.CandidateStore;
@@ -99,6 +100,37 @@ class MiningCliRecoveryTest {
 		assertEquals(fixture.hashes(), fixture.evaluatedCommits());
 		assertEquals(Set.copyOf(fixture.hashes()), fixture.candidateCommits());
 		assertEquals(5, fixture.loadState().getGlobalTotalProcessed());
+	}
+
+	@Test
+	void budgetSpentDuringRetryPausesAfterTheLastDurableBatch() throws Exception {
+		Fixture fixture = createRepository(4);
+		AtomicInteger batches = new AtomicInteger();
+		StubLlmClient client = new StubLlmClient((hashes, messages, repo) -> {
+			if (batches.incrementAndGet() == 2) {
+				throw new RequestBudgetExhaustedException(18);
+			}
+			return evaluations(hashes, messages, repo);
+		});
+		ByteArrayOutputStream log = new ByteArrayOutputStream();
+		PrintStream originalOut = System.out;
+		try (PrintStream captured = new PrintStream(log)) {
+			System.setOut(captured);
+			new MiningCli(provider -> client).run(fixture.arguments(2));
+		} finally {
+			System.setOut(originalOut);
+		}
+		assertTrue(log.toString().contains("Mining paused"));
+		assertFalse(log.toString().contains("=== Mining complete ==="));
+		assertEquals(fixture.hashes().subList(0, 2), fixture.evaluatedCommits());
+		assertEquals(Set.copyOf(fixture.hashes().subList(0, 2)), fixture.candidateCommits());
+		assertEquals(fixture.hashes().get(1), fixture.loadState().getLastProcessedCommit(fixture.repoUrl()));
+
+		StubLlmClient resumed = new StubLlmClient(MiningCliRecoveryTest::evaluations);
+		new MiningCli(provider -> resumed).run(fixture.arguments(2));
+		assertEquals(fixture.hashes().subList(2, 4), resumed.requestedCommits());
+		assertEquals(fixture.hashes(), fixture.evaluatedCommits());
+		assertEquals(4, fixture.loadState().getGlobalTotalProcessed());
 	}
 
 	@Test
