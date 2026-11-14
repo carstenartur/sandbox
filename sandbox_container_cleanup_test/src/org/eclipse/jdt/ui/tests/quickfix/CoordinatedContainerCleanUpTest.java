@@ -420,7 +420,7 @@ class CoordinatedContainerCleanUpTest {
 				consumer.replace("return received.length;", "return System.identityHashCode(received);"), //$NON-NLS-1$ //$NON-NLS-2$
 				consumer.replace("String[] received", "Object[] received"), //$NON-NLS-1$ //$NON-NLS-2$
 				consumer.replace("return received.length;", "received[0] = value; return received.length;"), //$NON-NLS-1$ //$NON-NLS-2$
-				consumer.replace("String[] received = Rows.collect(value);", "java.util.function.Function<String, String[]> f = Rows::collect; String[] received = f.apply(value);"))) { //$NON-NLS-1$ //$NON-NLS-2$
+				consumer.replace("String[] received = Rows.collect(value);", "java.util.function.Function<String, String[]> f = Rows::collect; String[] received = f.apply(value); System.identityHashCode(f);"))) { //$NON-NLS-1$ //$NON-NLS-2$
 			display.getBuffer().setContents(unsupported);
 			display.save(monitor, true);
 			var rejected= cleanup();
@@ -429,6 +429,86 @@ class CoordinatedContainerCleanUpTest {
 			assertEquals(producer, rows.getSource());
 			assertEquals(otherSource, other.getSource());
 			rejected.checkPostConditions(monitor);
+		}
+	}
+
+	@Test
+	void migratesLocalMethodReferenceAndForwardingLambdaReturnTargets() throws Exception {
+		String factorySource= """
+				package test;
+				import java.util.Arrays;
+				final class Factory {
+				    static String[] rows(String value) {
+				        String[] items = new String[0];
+				        items = Arrays.copyOf(items, items.length + 1);
+				        items[items.length - 1] = value;
+				        return items;
+				    }
+				}
+				""";
+		String source= """
+				package test;
+				import java.util.function.Function;
+				class Readers {
+				    int count(String value) {
+				        Function<String, String[]> reference = Factory::rows;
+				        Function<String, String[]> forward = v -> Factory.rows(v);
+				        String[] first = reference.apply(value);
+				        String[] second = forward.apply(value);
+				        String[] third = reference.apply(null);
+				        return first.length + second.length + third.length;
+				    }
+				}
+				""";
+		var factory= createUnit("Factory.java", factorySource); //$NON-NLS-1$
+		var readers= createUnit("Readers.java", source); //$NON-NLS-1$
+		var scope= new ICompilationUnit[] { factory, readers };
+		var monitor= new NullProgressMonitor();
+		var clean= cleanup();
+		assertTrue(clean.expandCleanUpScope(context.getJavaProject(), List.of(factory), monitor).contains(readers));
+		clean.checkPreConditions(context.getJavaProject(), scope, monitor);
+		var diagnostic= clean.getLastPlanningDiagnosticsJson(context.getJavaProject());
+		var change= new org.eclipse.ltk.core.refactoring.CompositeChange("Migrate function targets"); //$NON-NLS-1$
+		for (var unit : scope) {
+			var fix= clean.createFix(new CleanUpContext(unit, parse(unit)));
+			assertNotNull(fix, diagnostic);
+			change.add(fix.createChange(monitor));
+		}
+		change.initializeValidationData(monitor);
+		Change undo= change.perform(monitor);
+		assertNotNull(undo);
+		assertTrue(readers.getSource().contains("Function<String, List<String>> reference = Factory::rows;"), readers.getSource()); //$NON-NLS-1$
+		assertTrue(readers.getSource().contains("Function<String, List<String>> forward = v -> Factory.rows(v);")); //$NON-NLS-1$
+		assertTrue(readers.getSource().contains("first.size() + second.size() + third.size()")); //$NON-NLS-1$
+		for (var unit : scope) {
+			assertFalse(Arrays.stream(parse(unit).getProblems()).anyMatch(problem -> problem.isError()));
+		}
+		clean.checkPostConditions(monitor);
+		undo.perform(monitor);
+		assertEquals(factorySource, factory.getSource());
+		assertEquals(source, readers.getSource());
+
+		String overload= factorySource.replace("static String[] rows(String value)", //$NON-NLS-1$
+				"static Object rows(Object value) { return null; } static String[] rows(String value)"); //$NON-NLS-1$
+		factory.getBuffer().setContents(overload);
+		factory.save(monitor, true);
+		var ambiguous= cleanup();
+		ambiguous.checkPreConditions(context.getJavaProject(), scope, monitor);
+		assertNull(ambiguous.createFix(new CleanUpContext(factory, parse(factory))));
+		ambiguous.checkPostConditions(monitor);
+		factory.getBuffer().setContents(factorySource);
+		factory.save(monitor, true);
+
+		for (String extra : List.of("System.identityHashCode(reference);", "reference = forward;", //$NON-NLS-1$ //$NON-NLS-2$
+				"Function<String, String[]> stolen = forward;", "reference.andThen(x -> x.length);")) { //$NON-NLS-1$ //$NON-NLS-2$
+			var exposed= source.replace("return first.length", extra + " return first.length"); //$NON-NLS-1$ //$NON-NLS-2$
+			readers.getBuffer().setContents(exposed);
+			readers.save(monitor, true);
+			var rejected= cleanup();
+			rejected.checkPreConditions(context.getJavaProject(), scope, monitor);
+			assertNull(rejected.createFix(new CleanUpContext(factory, parse(factory))), extra);
+			rejected.checkPostConditions(monitor);
+			assertEquals(factorySource, factory.getSource());
 		}
 	}
 

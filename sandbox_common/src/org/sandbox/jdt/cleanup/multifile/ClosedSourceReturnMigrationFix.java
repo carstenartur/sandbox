@@ -12,6 +12,8 @@ package org.sandbox.jdt.cleanup.multifile;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Status;
@@ -50,7 +52,7 @@ public final class ClosedSourceReturnMigrationFix {
 			throw new CoreException(Status.error("The return consumers differ in the supplied working-copy AST.")); //$NON-NLS-1$
 		}
 		List<CompilationUnitRewriteOperationWithSourceRange> operations= new ArrayList<>();
-		List<ArrayType> types= new ArrayList<>();
+		Set<ArrayType> types= new LinkedHashSet<>();
 		List<QualifiedName> lengths= new ArrayList<>();
 		if (plan.producer().compilationUnitHandle().equals(handle)) {
 			if (ClosedReturnArrayUses.producer(root, plan.methodBindingKey(), plan.producer().bindingKey())
@@ -62,6 +64,7 @@ public final class ClosedSourceReturnMigrationFix {
 		}
 		for (var consumer : expected) {
 			types.add((ArrayType) node(root, consumer.localType()));
+			consumer.functionTarget().ifPresent(function -> types.add((ArrayType) node(root, function.returnArgument())));
 			for (Range read : consumer.lengths()) {
 				lengths.add((QualifiedName) node(root, read));
 			}

@@ -13,6 +13,7 @@ package org.sandbox.jdt.container.api;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /** An atomic return signature, local producer and all bounded source callers. */
 public record ClosedSourceReturnMigrationPlan(ContainerLocalRewritePlan producer, String methodHandle,
@@ -35,9 +36,25 @@ public record ClosedSourceReturnMigrationPlan(ContainerLocalRewritePlan producer
 		}
 	}
 
-	public record Consumer(String unitHandle, String localBindingKey, Range localType, Range call, List<Range> lengths) {
+	public record FunctionTarget(String bindingKey, Range returnArgument, Range initializer) {
+		public FunctionTarget {
+			if (bindingKey.isBlank()) {
+				throw new IllegalArgumentException("A local function requires a source binding"); //$NON-NLS-1$
+			}
+			Objects.requireNonNull(returnArgument);
+			Objects.requireNonNull(initializer);
+		}
+	}
+
+	public record Consumer(String unitHandle, String localBindingKey, Range localType, Range call, List<Range> lengths,
+			Optional<FunctionTarget> functionTarget) {
+		public Consumer(String unitHandle, String localBindingKey, Range localType, Range call, List<Range> lengths) {
+			this(unitHandle, localBindingKey, localType, call, lengths, Optional.empty());
+		}
+
 		public Consumer {
 			Objects.requireNonNull(localType);
+			Objects.requireNonNull(functionTarget);
 			Objects.requireNonNull(call);
 			if (unitHandle.isBlank() || localBindingKey.isBlank()) {
 				throw new IllegalArgumentException("A return consumer requires source bindings"); //$NON-NLS-1$

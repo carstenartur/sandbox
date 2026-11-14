@@ -159,7 +159,7 @@ public final class CoordinatedContainerCleanUpCore
 	public String[] getStepDescriptions() {
 		return isActive()
 				? new String[] {
-						"Migrate one proven closed append-array flow and its complete parameter override family atomically" //$NON-NLS-1$
+						"Migrate a closed append-array flow with its parameter family or return type and all source callers" //$NON-NLS-1$
 				}
 				: new String[0];
 	}
@@ -169,7 +169,7 @@ public final class CoordinatedContainerCleanUpCore
 		return isActive()
 				? "// Project-closed migration: preview and selection are atomic across every required source file.\n" //$NON-NLS-1$
 						+ "// Unsupported, stale, binary or incomplete flows remain unchanged with diagnostics.\n" //$NON-NLS-1$
-				: "// Closed-source parameter migration is disabled.\n"; //$NON-NLS-1$
+				: "// Closed-source signature migration is disabled.\n"; //$NON-NLS-1$
 	}
 
 	private static boolean containsAll(Collection<ICompilationUnit> currentScope,

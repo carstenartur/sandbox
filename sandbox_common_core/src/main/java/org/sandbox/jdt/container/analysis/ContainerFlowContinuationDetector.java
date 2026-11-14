@@ -36,6 +36,7 @@ import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.MethodReference;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
@@ -272,7 +273,7 @@ public final class ContainerFlowContinuationDetector {
 			if (target.signatureIndex() >= 0) {
 				inspectArguments(invocation, binding, arguments, target, result);
 			} else {
-				inspectReturnConsumer(invocation, target, result);
+				inspectResultOrFunction(invocation, binding, target, result);
 			}
 		}
 	}
@@ -370,12 +371,33 @@ public final class ContainerFlowContinuationDetector {
 				"The method result is consumed by an unsupported expression shape."); //$NON-NLS-1$
 	}
 
+	private static void inspectResultOrFunction(Expression invocation, IMethodBinding binding, ResolvedSearchTarget target,
+			Accumulator result) {
+		if (invocation.getParent() instanceof LambdaExpression) {
+			var function= ClosedReturnFunctionUses.find(invocation, binding);
+			if (function.isPresent()) {
+				function.get().calls().forEach(call -> inspectReturnConsumer(call, target, result));
+				return;
+			}
+		}
+		inspectReturnConsumer(invocation, target, result);
+	}
+
 	private static void inspectMethodReference(
 			ASTNode reference,
 			IMethodBinding binding,
 			TargetIndex targets,
 			Accumulator result) {
 		for (ResolvedSearchTarget target : targets.methods(javaElementHandle(binding))) {
+			if (target.signatureIndex() < 0 && reference instanceof MethodReference methodReference) {
+				var function= ClosedReturnFunctionUses.find(methodReference, binding);
+				if (function.isPresent()) {
+					if (target.searchKind() == SearchKind.METHOD_CALLERS) {
+						function.get().calls().forEach(call -> inspectReturnConsumer(call, target, result));
+					}
+					continue;
+				}
+			}
 			result.addDiagnostic(DiagnosticKind.METHOD_REFERENCE, target, reference,
 					"A method reference participates in the migrated signature and " //$NON-NLS-1$
 							+ "requires dedicated target-type analysis."); //$NON-NLS-1$
