@@ -103,7 +103,7 @@ public class EclipseHelpScreenshotEvidenceTest {
             assertEquals(900, preview.getHeight());
             String digest= sha256(Files.readAllBytes(png));
             assertTrue(digests.add(digest), "Mathematics examples must show distinct actual changes"); //$NON-NLS-1$
-            String provenance= Files.readString(images.resolve(id + ".provenance.json")); //$NON-NLS-1$
+            String provenance= Files.readString(images.resolve(id + ".provenance.json"), StandardCharsets.UTF_8); //$NON-NLS-1$
             assertTrue(provenance.contains("\"screenshotSha256\": \"" + digest + "\"")); //$NON-NLS-1$ //$NON-NLS-2$
             Path fixture= repository.resolve("sandbox_eclipse_help_swtbot_test/fixtures/mathematics").resolve(id); //$NON-NLS-1$
             String beforeHash= sha256(Files.readAllBytes(fixture.resolve("before.java.txt"))); //$NON-NLS-1$
@@ -122,7 +122,7 @@ public class EclipseHelpScreenshotEvidenceTest {
         requireReferenced(repository, bundle, imageName);
         requireReferenced(repository, bundle, sidecarName);
         Path images = repository.resolve(bundle).resolve("images");
-        String provenance = Files.readString(images.resolve(sidecarName));
+        String provenance = Files.readString(images.resolve(sidecarName), StandardCharsets.UTF_8);
         assertEquals(sha256(Files.readAllBytes(images.resolve(imageName))), jsonString(provenance, "screenshotSha256"));
         assertEquals(readPin(repository, "PIN_JDT_UI_REPOSITORY"), jsonString(provenance, "repository"));
         assertEquals(readPin(repository, "PIN_JDT_UI_REF"), jsonString(provenance, "ref"));
