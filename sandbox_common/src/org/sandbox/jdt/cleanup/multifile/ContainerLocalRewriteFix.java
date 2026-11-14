@@ -124,6 +124,14 @@ public final class ContainerLocalRewriteFix {
 				rewrite.replace(pair.appendAssignment(), add, group);
 			}
 
+			if (resolved.publication() != null) {
+				MethodInvocation toArray= ast.newMethodInvocation();
+				toArray.setExpression((Expression) ASTNode.copySubtree(ast, resolved.publication()));
+				toArray.setName(ast.newSimpleName("toArray")); //$NON-NLS-1$
+				toArray.arguments().add(ASTNode.copySubtree(ast, resolved.initializer()));
+				rewrite.replace(resolved.publication(), toArray, group);
+			}
+
 			for (ResolvedLength length : resolved.lengths()) {
 				MethodInvocation size= ast.newMethodInvocation();
 				size.setExpression((Expression) ASTNode.copySubtree(

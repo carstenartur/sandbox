@@ -49,6 +49,36 @@ java -jar sandbox-benchmarks/target/benchmarks.jar ASTParsingBenchmark
 java -jar sandbox-benchmarks/target/benchmarks.jar ASTParsingBenchmark.parseASTWithoutBindings
 ```
 
+### Retained array publication
+
+`ArrayAppendPublicationBenchmark` compares repeated `Arrays.copyOf` with the
+cleanup's `ArrayList` builder and final `toArray(new String[0])`. It checks
+the published values before timing and includes empty inputs, duplicates and
+null elements. To reproduce the short allocation run from #1381:
+
+```bash
+java -jar sandbox-benchmarks/target/benchmarks.jar ArrayAppendPublicationBenchmark \
+  -f 2 -wi 2 -w 250ms -i 3 -r 250ms -t 1 -jvmArgs '-Xms64m -Xmx128m' \
+  -prof gc -foe true -rf json -rff array-append.json
+```
+
+On OpenJDK 25.0.5 with JMH 1.37, the normalized allocated bytes per
+operation (rounded) were:
+
+| Input elements | Repeated array copy | List with array return |
+| ---: | ---: | ---: |
+| 0 | 16 | 16 |
+| 1 | 40 | 96 |
+| 16 | 848 | 336 |
+| 256 | 136,209 | 5,576 |
+| 1,024 | 2,117,723 | 19,128 |
+
+For `n` appended elements, repeated growth copies `n * (n - 1) / 2` existing
+references before the tail writes. The list grows its backing array as needed
+and copies the final `n` elements to the returned array. A one-element run
+allocated more with the builder on this JVM. The benchmark has no elapsed-time
+or allocation threshold.
+
 ### Generate JSON Output
 
 ```bash

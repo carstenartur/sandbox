@@ -11,7 +11,11 @@ binding, usage, ordering, aliasing and thread-confinement checks succeed.</p>
 values = Arrays.copyOf(values, values.length + 1);
 values[values.length - 1] = value;</pre>
 <p>For a strictly local, append-only reference array this becomes a mutable
-<code>List</code> backed by <code>ArrayList</code>.</p>
+<code>List</code> backed by <code>ArrayList</code>. A final return can preserve
+the original method signature. For example, a local builder initialized from
+<code>new String[0]</code> publishes its elements with
+<code>return values.toArray(new String[0]);</code>. The check requires a fresh
+array with the exact declared element type and simple append values.</p>
 
 <h2 id="unique-sequence">Manually unique list to ordered set</h2>
 <pre>if (!values.contains(value)) {

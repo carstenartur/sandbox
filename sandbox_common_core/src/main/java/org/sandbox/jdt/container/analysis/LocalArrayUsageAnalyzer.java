@@ -23,7 +23,10 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.ArrayAccess;
+import org.eclipse.jdt.core.dom.ArrayCreation;
+import org.eclipse.jdt.core.dom.ArrayType;
 import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CastExpression;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -32,20 +35,26 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.InstanceofExpression;
 import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.NullLiteral;
+import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.SuperFieldAccess;
 import org.eclipse.jdt.core.dom.SynchronizedStatement;
+import org.eclipse.jdt.core.dom.TryStatement;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.sandbox.jdt.container.api.ContainerShape;
 import org.sandbox.jdt.container.api.ContainerUsageProfile;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.AccessProfile;
@@ -161,6 +170,8 @@ public final class LocalArrayUsageAnalyzer {
 				&& fragment.getInitializer() == reference) {
 			accumulator.reject(Kind.UNSAFE_ESCAPE,
 					"Array value is assigned to another local variable", reference); //$NON-NLS-1$
+		} else if (parent instanceof ReturnStatement && isFinalArrayPublication(reference)) {
+			accumulator.publishArray(reference);
 		} else if (parent instanceof ReturnStatement) {
 			accumulator.reject(Kind.UNSAFE_ESCAPE,
 					"Array value escapes through a return statement", reference); //$NON-NLS-1$
@@ -178,6 +189,59 @@ public final class LocalArrayUsageAnalyzer {
 			accumulator.reject(Kind.UNCLASSIFIED_USAGE,
 					"Array use is not yet classified by local container analysis", reference); //$NON-NLS-1$
 		}
+	}
+
+	/**
+	 * Checks the retained array return at both planning time and stale-plan resolution.
+	 * Only a fresh, exactly typed, one-dimensional local may be published by the
+	 * final, direct return in its declaring method.
+	 */
+	public static boolean isFinalArrayPublication(Expression reference) {
+		if (!(reference instanceof SimpleName name)
+				|| !(name.resolveBinding() instanceof IVariableBinding binding)
+				|| binding.isRecovered() || binding.isField() || binding.isParameter()
+				|| !(name.getParent() instanceof ReturnStatement publication)
+				|| !(publication.getParent() instanceof Block body)
+				|| !(body.getParent() instanceof MethodDeclaration method) || method.getBody() != body
+				|| body.statements().getLast() != publication
+				|| !(name.getRoot() instanceof CompilationUnit unit)
+				|| !(unit.findDeclaringNode(binding.getVariableDeclaration()) instanceof VariableDeclarationFragment local)
+				|| !(local.getParent() instanceof VariableDeclarationStatement declaration)
+				|| declaration.getParent() != body || declaration.fragments().size() != 1
+				|| !(declaration.getType() instanceof ArrayType declaredArray) || declaredArray.getDimensions() != 1
+				|| !(local.getInitializer() instanceof ArrayCreation initial)
+				|| initial.getInitializer() != null || initial.dimensions().size() != 1
+				|| !(initial.dimensions().getFirst() instanceof NumberLiteral length) || !"0".equals(length.getToken())) { //$NON-NLS-1$
+			return false;
+		}
+		ITypeBinding type= binding.getType();
+		IMethodBinding signature= method.resolveBinding();
+		return type != null && !type.isRecovered() && type.isArray() && type.getDimensions() == 1
+				&& !type.getElementType().isRecovered()
+				&& !type.getElementType().isPrimitive() && !type.getElementType().isParameterizedType()
+				&& !type.getElementType().isTypeVariable() && !type.getElementType().isRawType()
+				&& type.isEqualTo(initial.resolveTypeBinding()) && signature != null && !signature.isRecovered()
+				&& type.isEqualTo(signature.getReturnType());
+	}
+
+	/** Checks that removing the temporary empty tail cannot change evaluation of the new element. */
+	public static boolean isSimplePublishedAppend(Assignment append) {
+		Expression value= unwrap(append.getRightHandSide());
+		if (!(value instanceof StringLiteral || value instanceof NullLiteral
+				|| value instanceof SimpleName name && name.resolveBinding() instanceof IVariableBinding local
+						&& !local.isRecovered() && !local.isField() && local.getType() != null
+						&& !local.getType().isRecovered() && !local.getType().isPrimitive()
+						&& append.getLeftHandSide() instanceof ArrayAccess slot
+						&& !sameVariable(slot.getArray(), name))) {
+			return false;
+		}
+		for (ASTNode parent= append.getParent(); parent != null && !(parent instanceof MethodDeclaration);
+				parent= parent.getParent()) {
+			if (parent instanceof TryStatement) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private static boolean crossesExecutableBoundary(
@@ -218,7 +282,7 @@ public final class LocalArrayUsageAnalyzer {
 		Assignment assignment= enclosingAssignment(access);
 		if (assignment != null && unwrap(assignment.getLeftHandSide()) == access) {
 			if (isTailAppend(access, reference)) {
-				accumulator.appendObserved();
+				accumulator.appendObserved(assignment);
 			} else {
 				accumulator.indexedWrite(access);
 			}
@@ -397,6 +461,8 @@ public final class LocalArrayUsageAnalyzer {
 		private boolean positionalWrite;
 		private boolean append;
 		private boolean encounterIteration;
+		private boolean complexAppend;
+		private boolean publication;
 		private boolean rejected;
 
 		Accumulator(ContainerUsageProfile seed) {
@@ -435,8 +501,15 @@ public final class LocalArrayUsageAnalyzer {
 					"Existing array position is written by index", node)); //$NON-NLS-1$
 		}
 
-		void appendObserved() {
+		void appendObserved(Assignment assignment) {
 			append= true;
+			complexAppend|= !isSimplePublishedAppend(assignment);
+		}
+
+		void publishArray(ASTNode node) {
+			publication= true;
+			evidence.add(LocalArrayUsageAnalyzer.evidence(Kind.ARRAY_RETURN_PUBLICATION,
+					"Publish a fresh array of the original component type in insertion order", node)); //$NON-NLS-1$
 		}
 
 		void encounterIteration(ASTNode node) {
@@ -455,6 +528,11 @@ public final class LocalArrayUsageAnalyzer {
 		}
 
 		ContainerUsageProfile toProfile() {
+			if (publication && (complexAppend || encounterIteration)) {
+				reject(Kind.REJECTION_BOUNDARY,
+						"The builder must append simple values and cannot traverse the array before publication", //$NON-NLS-1$
+						seed.identity().sourceStart(), seed.identity().sourceLength());
+			}
 			AnalysisCompleteness completeness= rejected
 					? AnalysisCompleteness.REJECTED
 					: AnalysisCompleteness.LOCAL_USAGE_COMPLETE;
@@ -466,7 +544,7 @@ public final class LocalArrayUsageAnalyzer {
 
 			OrderRequirement order= indexedRead || positionalWrite
 					? OrderRequirement.POSITIONAL
-					: encounterIteration ? OrderRequirement.ENCOUNTER : seed.orderRequirement();
+					: encounterIteration || publication ? OrderRequirement.ENCOUNTER : seed.orderRequirement();
 			EscapeLevel escape= field
 					? EscapeLevel.FIELD
 					: parameter ? EscapeLevel.METHOD_BOUNDARY : EscapeLevel.LOCAL;

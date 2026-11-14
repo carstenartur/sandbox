@@ -52,6 +52,7 @@ public final class ContainerLocalRewritePlanner {
 			Kind.APPEND_WRITE,
 			Kind.REFERENCE_COMPONENT,
 			Kind.ARRAY_LENGTH_READ,
+			Kind.ARRAY_RETURN_PUBLICATION,
 			Kind.ENCOUNTER_ITERATION,
 			Kind.FLOW_CONTINUATION_ROOT,
 			Kind.LOCAL_USAGE_COMPLETE);
@@ -240,6 +241,7 @@ public final class ContainerLocalRewritePlanner {
 				case ENCOUNTER_ITERATION -> verifyEncounterIterations
 						? EditKind.VERIFY_ENCOUNTER_ITERATION
 						: null;
+				case ARRAY_RETURN_PUBLICATION -> EditKind.PUBLISH_RETURN_ARRAY;
 				case FLOW_CONTINUATION_ROOT -> EditKind.VERIFY_ARGUMENT_TRANSFER;
 				default -> null;
 			};

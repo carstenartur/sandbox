@@ -10,21 +10,28 @@
  *******************************************************************************/
 package org.eclipse.jdt.ui.tests.quickfix;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.APPEND_ARRAY_TO_LIST;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.CLEANUP;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.UNIQUE_SEQUENCE_TO_SET;
 
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Platform;
@@ -89,6 +96,57 @@ class ContainerCleanUpTest {
 		assertTrue(transformed.contains("Set<String> unique")); //$NON-NLS-1$
 		assertTrue(transformed.contains("new LinkedHashSet<>()")); //$NON-NLS-1$
 		assertFalse(transformed.contains("unique.contains(value)")); //$NON-NLS-1$
+	}
+
+	@Test
+	void preservesPublishedArrayTypeAndUndoesLocalBuilderMigration(@TempDir Path classesDirectory) throws Exception {
+		String source= """
+			package test;
+			import java.util.Arrays;
+			public class Sample {
+				public static String[] collect(String... input) {
+					String[] values = new String[0];
+					for (String value : input) {
+						values = Arrays.copyOf(values, values.length + 1);
+						values[values.length - 1] = value;
+					}
+					return values;
+				}
+			}
+			""";
+		ICompilationUnit unit= createUnit(source);
+		ContainerCleanUpCore cleanup= new ContainerCleanUpCore(Map.of(
+				CLEANUP, CleanUpOptions.TRUE, APPEND_ARRAY_TO_LIST, CleanUpOptions.TRUE));
+
+		ICleanUpFix fix= cleanup.createFix(new CleanUpContext(unit, parse(unit)));
+		assertNotNull(fix);
+		var undo= fix.createChange(null).perform(null);
+		String transformed= unit.getSource();
+		assertTrue(transformed.contains("String[] collect(String... input)")); //$NON-NLS-1$
+		assertTrue(transformed.contains("values.add(value)")); //$NON-NLS-1$
+		assertTrue(transformed.contains("return values.toArray(new String[0]);")); //$NON-NLS-1$
+		assertFalse(Arrays.stream(parse(unit).getProblems()).anyMatch(problem -> problem.isError()));
+		verifyPublishedArrays(transformed, classesDirectory);
+		assertNull(cleanup.createFix(new CleanUpContext(unit, parse(unit))));
+		assertNotNull(undo);
+		undo.perform(null);
+		assertEquals(source, unit.getSource());
+	}
+
+	private static void verifyPublishedArrays(String source, Path directory) throws Exception {
+		Path file= Files.writeString(directory.resolve("Sample.java"), source); //$NON-NLS-1$
+		int exit= javax.tools.ToolProvider.getSystemJavaCompiler().run(null, null, null,
+				"-d", directory.toString(), file.toString()); //$NON-NLS-1$
+		assertEquals(0, exit);
+		try (var classes= new URLClassLoader(new URL[] { directory.toUri().toURL() }, null)) {
+			var collect= classes.loadClass("test.Sample").getMethod("collect", String[].class); //$NON-NLS-1$ //$NON-NLS-2$
+			String[] input= { "repeat", null, "repeat" }; //$NON-NLS-1$ //$NON-NLS-2$
+			String[] result= (String[]) collect.invoke(null, (Object) input);
+			assertArrayEquals(input, result);
+			assertNotSame(input, result);
+			assertEquals(String[].class, result.getClass());
+			assertEquals(0, ((String[]) collect.invoke(null, (Object) new String[0])).length);
+		}
 	}
 
 	@Test

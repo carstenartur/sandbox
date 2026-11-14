@@ -114,7 +114,7 @@ class ContainerContractInferrerTest {
 		CompilationUnit unit= parse("""
 			import java.util.Arrays;
 			class Sample {
-				String[] collect(String value) {
+				Object collect(String value) {
 					String[] values = new String[0];
 					values = Arrays.copyOf(values, values.length + 1);
 					values[values.length - 1] = value;

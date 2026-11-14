@@ -89,11 +89,38 @@ public class ContainerAnalysisServiceTest {
 	}
 
 	@Test
-	public void rejectedArrayProfileShowsBoundaryInsteadOfInventingTarget() {
+	public void typedArrayReturnShowsListBuilderAndRetainedPublication() {
 		String source= """
 				import java.util.Arrays;
 				class Sample {
 					String[] collect(String value) {
+						String[] values = new String[0];
+						values = Arrays.copyOf(values, values.length + 1);
+						values[values.length - 1] = value;
+						return values;
+					}
+				}
+				""";
+
+		List<ContainerAnalysisRow> rows= service.analyze(parse(source), "=Test/Handle"); //$NON-NLS-1$
+
+		assertFalse(rows.isEmpty());
+		assertTrue(rows.stream().allMatch(row -> "ARRAY".equals(row.currentShape()) //$NON-NLS-1$
+				&& row.targetContract().startsWith("LIST;") && "REPORT_ONLY".equals(row.status()))); //$NON-NLS-1$ //$NON-NLS-2$
+		ContainerAnalysisRow publication= rows.stream()
+				.filter(row -> "ARRAY_RETURN_PUBLICATION".equals(row.evidenceKind())) //$NON-NLS-1$
+				.findFirst().orElseThrow();
+		assertEquals(source.lastIndexOf("return values") + "return ".length(), publication.sourceStart()); //$NON-NLS-1$ //$NON-NLS-2$
+		assertEquals("values", fragment(source, publication)); //$NON-NLS-1$
+		assertTrue(publication.evidenceSummary().contains("original component type")); //$NON-NLS-1$
+	}
+
+	@Test
+	public void rejectedArrayProfileShowsBoundaryInsteadOfInventingTarget() {
+		String source= """
+				import java.util.Arrays;
+				class Sample {
+					Object collect(String value) {
 						String[] values = new String[0];
 						values = Arrays.copyOf(values, values.length + 1);
 						values[values.length - 1] = value;

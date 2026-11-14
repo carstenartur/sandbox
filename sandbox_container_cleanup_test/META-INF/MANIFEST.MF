@@ -12,5 +12,6 @@ Eclipse-BundleShape: dir
 Eclipse-BuddyPolicy: global
 Import-Package: org.junit.jupiter.api,
  org.junit.jupiter.api.extension,
+ org.junit.jupiter.api.io,
  org.sandbox.jdt.ui.tests.quickfix.rules
 Automatic-Module-Name: sandbox.container.cleanup.test
