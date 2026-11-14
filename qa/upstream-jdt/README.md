@@ -311,7 +311,14 @@ entry in the complete migration patch, and reads both raw Surefire reports to ch
 `StringsTest.removeTrailingCharacters` was executed and passed twice. The test also checks
 the artifact digests, exact pin and profile, visible comparison, Apply and byte-exact Undo.
 `SANDBOX_JUNIT_CORPUS_EVIDENCE` points to the extracted `jdt-ui-strict-evidence` directory.
-This file-level scenario does not assert interactive selection of an atomic project-wide candidate.
+The separate `PinnedCoordinatedJUnitPreviewSWTBotTest` selects the genuine
+`JUnitWorkspaceTestSetup` resource in that same retained project. The strict workflow
+supplies its verified patched JDT UI and LTK repositories to the Tycho target. The
+test checks the three compilation-unit identities from the headless candidate,
+its two consumers' twelve upstream tests, the individual native file diffs, and the
+bytes produced by applying the tested Git patch. Its capture and sidecar live in
+`$SANDBOX_STATUS_EVIDENCE/junit-atomic/`. For acceptance, inspect the fresh patched
+job's JUnit report together with these artifacts.
 
 On the same JDT UI pin, the two encoding profiles target `JavaCompareUtilities.java`.
 The fallback after a caller-specified, unsupported encoding selects either the platform
