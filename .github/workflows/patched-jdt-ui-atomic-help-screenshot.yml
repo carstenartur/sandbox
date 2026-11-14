@@ -225,6 +225,8 @@ jobs:
             sandbox_int_to_enum_help/images/int-to-enum-coordinated-preview.png
             sandbox_junit_cleanup_help/images/junit-coordinated-preview.png
             ${{ runner.temp }}/patched-jdt-ui/provenance.json
+            ${{ runner.temp }}/patched-jdt-ui-source/eclipse.jdt.ui/org.eclipse.jdt.ui/core extension/org/eclipse/jdt/internal/corext/fix/CoordinatedCleanUpChange.java
+            ${{ runner.temp }}/patched-jdt-ui-source/eclipse.jdt.ui/org.eclipse.jdt.ui/core extension/org/eclipse/jdt/internal/corext/fix/CleanUpRefactoring.java
             ${{ runner.temp }}/patched-jdt-ui-compatibility/compatibility.json
             ${{ runner.temp }}/patched-jdt-ui-p2/evidence/repository-provenance.json
             ${{ runner.temp }}/patched-jdt-ui-p2/repository/**

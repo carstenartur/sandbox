@@ -165,6 +165,7 @@ jobs:
           -DfailIfNoTests=false -Dsandbox.tycho.linux-only=true -Dspotbugs.skip=true verify
 
       - name: Download the paired strict evidence from this workflow run
+        id: strict-evidence
         if: inputs.junit-artifact != ''
         uses: actions/download-artifact@v8
         with:
@@ -191,14 +192,15 @@ jobs:
           test -s "$dir/junit-strings-pinned.png"
 
       - name: Download the patched JDT UI and LTK used in the same workflow
-        if: inputs.patched-host-artifact != ''
+        id: patched-host
+        if: ${{ !cancelled() && inputs.patched-host-artifact != '' && steps.strict-evidence.outcome == 'success' }}
         uses: actions/download-artifact@v8
         with:
           name: ${{ inputs.patched-host-artifact }}
           path: ${{ runner.temp }}/atomic-host
 
       - name: Replay the coordinated strict corpus candidate
-        if: inputs.patched-host-artifact != ''
+        if: ${{ !cancelled() && steps.patched-host.outcome == 'success' }}
         run: |
           export SANDBOX_JUNIT_CORPUS_EVIDENCE="$RUNNER_TEMP/strict-artifact/jdt-ui-strict-evidence"
           mapfile -t jdt_repo < <(find "$RUNNER_TEMP/atomic-host" -type d -path '*/patched-jdt-ui-p2/repository')

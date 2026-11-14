@@ -149,6 +149,11 @@ public class PinnedCoordinatedJUnitPreviewSWTBotTest {
             row.uncheck();
             assertFalse(row.isChecked());
             row.check();
+            for (var sibling : preview.tree().getAllItems()) {
+                if (!sibling.widget.equals(row.widget) && sibling.isChecked()) {
+                    sibling.uncheck();
+                }
+            }
             row.select();
             waitForFiles(bot, preview.shell());
             var table = preview.shell().bot().table();
