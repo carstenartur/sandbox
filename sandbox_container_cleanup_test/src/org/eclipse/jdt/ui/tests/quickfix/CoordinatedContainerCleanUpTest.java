@@ -23,6 +23,7 @@ import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCle
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -564,12 +565,12 @@ class CoordinatedContainerCleanUpTest {
 		assertTrue(migrated.contains("items == null ? null :"), migrated); //$NON-NLS-1$
 		assertFalse(Arrays.stream(parse(unit).getProblems()).anyMatch(problem -> problem.isError()));
 		// This client is compiled against the old JVM descriptor and never recompiled.
-		Path sizes= Files.writeString(output.resolve("Sizes.java"), source); //$NON-NLS-1$
+		Path sizes= Files.writeString(output.resolve("Sizes.java"), source, StandardCharsets.UTF_8); //$NON-NLS-1$
 		Path client= Files.writeString(output.resolve("PreviousClient.java"), //$NON-NLS-1$
-				"package test; public class PreviousClient { public static int read(String[] xs) { return Sizes.size(xs); } }"); //$NON-NLS-1$
+				"package test; public class PreviousClient { public static int read(String[] xs) { return Sizes.size(xs); } }", StandardCharsets.UTF_8); //$NON-NLS-1$
 		var compiler= ToolProvider.getSystemJavaCompiler();
 		assertEquals(0, compiler.run(null, null, null, "-d", output.toString(), sizes.toString(), client.toString())); //$NON-NLS-1$
-		Files.writeString(sizes, migrated);
+		Files.writeString(sizes, migrated, StandardCharsets.UTF_8);
 		assertEquals(0, compiler.run(null, null, null, "-d", output.toString(), sizes.toString())); //$NON-NLS-1$
 		try (var classes= new URLClassLoader(new URL[] { output.toUri().toURL() }, null)) {
 			var read= classes.loadClass("test.PreviousClient").getMethod("read", String[].class); //$NON-NLS-1$ //$NON-NLS-2$
