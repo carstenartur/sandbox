@@ -25,6 +25,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
@@ -35,6 +36,8 @@ import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
+import org.eclipse.jdt.core.dom.ParameterizedType;
+import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -171,6 +174,29 @@ final class JUnitMultiFileRewriteOperation extends CompilationUnitRewriteOperati
 		var replacement= imports.addImport(resource, field.getAST(), context);
 		cuRewrite.getASTRewrite().replace(field.getType(), replacement, group);
 		cuRewrite.getImportRemover().registerRemovedNode(field.getType());
+		// For a zero-argument constructor the new field supplies the exact inferred
+		// arguments. Retain explicit constructor arguments and type-use annotations.
+		if (JavaCore.compareJavaVersions(cuRewrite.getCu().getJavaProject().getOption(JavaCore.COMPILER_SOURCE, true),
+				JavaCore.VERSION_1_8) >= 0 && creation.arguments().isEmpty() && creation.typeArguments().isEmpty()
+				&& creation.getType() instanceof ParameterizedType parameterized
+				&& !parameterized.typeArguments().isEmpty()) {
+			boolean[] annotated= { false };
+			parameterized.accept(new ASTVisitor() {
+				@Override
+				public boolean preVisit2(ASTNode node) {
+					if (node instanceof Annotation) {
+						annotated[0]= true;
+					}
+					return !annotated[0];
+				}
+			});
+			if (!annotated[0]) {
+				ListRewrite arguments= cuRewrite.getASTRewrite().getListRewrite(parameterized, ParameterizedType.TYPE_ARGUMENTS_PROPERTY);
+				for (Object argument : parameterized.typeArguments()) {
+					arguments.remove((Type) argument, group);
+				}
+			}
+		}
 	}
 
 	private void rewriteRuleField(FieldDeclaration field, FieldEdit edit, ASTRewrite rewrite, AST ast,

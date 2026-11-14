@@ -149,6 +149,19 @@ class CompilerDiagnosticRegressionTest {
 	}
 
 	@Test
+	void undoMustRestoreTheOriginalWarningInEachUnit() throws Exception {
+		String warning= source("int result= 1;"); //$NON-NLS-1$
+		String clean= source("int result= 1; System.out.println(result);"); //$NON-NLS-1$
+		ICompilationUnit unit= createUnit(warning);
+		var before= CompilerDiagnosticAssertions.capture(unit);
+		unit.getBuffer().setContents(clean);
+		before.assertNoNewDiagnostics();
+		assertThrows(AssertionError.class, before::assertRestored);
+		unit.getBuffer().setContents(warning);
+		before.assertRestored();
+	}
+
+	@Test
 	void lineMovementOfTheSameExistingErrorIsAllowed() throws Exception {
 		String before= """
 				package test;

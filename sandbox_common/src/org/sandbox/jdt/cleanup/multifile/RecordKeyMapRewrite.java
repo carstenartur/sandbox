@@ -15,6 +15,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.text.edits.TextEditGroup;
+
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Block;
@@ -184,7 +186,11 @@ final class RecordKeyMapRewrite extends CompilationUnitRewriteOperationWithSourc
 			}
 		}
 		admitted.add(name);
-		insertions.add(new Insertion(add, (Expression) row.arguments().get(keyIndex), accessor));
+		Expression key= (Expression) row.arguments().get(keyIndex);
+		if (key.getNodeType() == ASTNode.STRING_LITERAL && includesComments((CompilationUnit) add.getRoot(), statement)) {
+			return false;
+		}
+		insertions.add(new Insertion(add, key, accessor));
 		return true;
 	}
 
@@ -277,31 +283,7 @@ final class RecordKeyMapRewrite extends CompilationUnitRewriteOperationWithSourc
 		for (var insertion : insertions) {
 			var call= insertion.add();
 			if (insertion.key().getNodeType() == ASTNode.STRING_LITERAL) {
-				// Keep the literal (and any NLS tag) at its original single occurrence.
-				var row= (ClassInstanceCreation) call.arguments().getFirst();
-				var entry= ast.newVariableDeclarationFragment();
-				var used= ASTNavigationUtils.getUsedVariableNames(call);
-				String name= "entry"; //$NON-NLS-1$
-				for (int n= 2; used.contains(name) || name.equals(fragment.getName().getIdentifier()); n++) {
-					name= "entry" + n; //$NON-NLS-1$
-				}
-				entry.setName(ast.newSimpleName(name));
-				entry.setInitializer((Expression) rewrite.createMoveTarget(row));
-				var declaration= ast.newVariableDeclarationStatement(entry);
-				declaration.setType((Type) ASTNode.copySubtree(ast, row.getType()));
-				declaration.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.FINAL_KEYWORD));
-				var key= ast.newMethodInvocation();
-				key.setExpression(ast.newSimpleName(name));
-				key.setName(ast.newSimpleName(insertion.accessor()));
-				var put= ast.newMethodInvocation();
-				put.setExpression((Expression) ASTNode.copySubtree(ast, call.getExpression()));
-				put.setName(ast.newSimpleName("putIfAbsent")); //$NON-NLS-1$
-				put.arguments().add(key);
-				put.arguments().add(ast.newSimpleName(name));
-				var block= ast.newBlock();
-				block.statements().add(declaration);
-				block.statements().add(ast.newExpressionStatement(put));
-				rewrite.replace(call.getParent(), block, group);
+				insertRecordWithLiteralKey(cu, insertion, group);
 				continue;
 			}
 			rewrite.set(call, MethodInvocation.NAME_PROPERTY, ast.newSimpleName("putIfAbsent"), group); //$NON-NLS-1$
@@ -332,6 +314,37 @@ final class RecordKeyMapRewrite extends CompilationUnitRewriteOperationWithSourc
 			var body= (Block) scan.loop().getParent();
 			rewrite.replace(((ReturnStatement) body.statements().getLast()).getExpression(), lookup, group);
 		}
+	}
+
+	/** Evaluates the record once and uses its generated accessor, retaining the single key literal. */
+	private void insertRecordWithLiteralKey(CompilationUnitRewrite cu, Insertion insertion, TextEditGroup group) {
+		var ast= cu.getRoot().getAST();
+		var rewrite= cu.getASTRewrite();
+		var call= insertion.add();
+		var row= (ClassInstanceCreation) call.arguments().getFirst();
+		var entry= ast.newVariableDeclarationFragment();
+		var used= ASTNavigationUtils.getUsedVariableNames(call);
+		String name= "entry"; //$NON-NLS-1$
+		for (int n= 2; used.contains(name) || name.equals(fragment.getName().getIdentifier()); n++) {
+			name= "entry" + n; //$NON-NLS-1$
+		}
+		entry.setName(ast.newSimpleName(name));
+		entry.setInitializer((Expression) rewrite.createMoveTarget(row));
+		var declaration= ast.newVariableDeclarationStatement(entry);
+		declaration.setType((Type) ASTNode.copySubtree(ast, row.getType()));
+		declaration.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.FINAL_KEYWORD));
+		var key= ast.newMethodInvocation();
+		key.setExpression(ast.newSimpleName(name));
+		key.setName(ast.newSimpleName(insertion.accessor()));
+		var put= ast.newMethodInvocation();
+		put.setExpression((Expression) ASTNode.copySubtree(ast, call.getExpression()));
+		put.setName(ast.newSimpleName("putIfAbsent")); //$NON-NLS-1$
+		put.arguments().add(key);
+		put.arguments().add(ast.newSimpleName(name));
+		var block= ast.newBlock();
+		block.statements().add(declaration);
+		block.statements().add(ast.newExpressionStatement(put));
+		rewrite.replace(call.getParent(), block, group);
 	}
 
 	@Override

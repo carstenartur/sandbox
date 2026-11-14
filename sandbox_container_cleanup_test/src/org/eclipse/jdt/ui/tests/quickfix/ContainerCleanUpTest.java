@@ -280,8 +280,8 @@ class ContainerCleanUpTest {
 				public final class Sample {
 				    record Entry(String key, int payload) {}
 				    private final List<Entry> entries = new ArrayList<>();
-				    Sample(boolean enabled) {
-				        if (enabled) {
+				    Sample(boolean entry) {
+				        if (entry) {
 				            entries.add(new Entry("a", 1));
 				            entries.add(new Entry("b", 7));
 				            entries.add(new Entry("a", 9));
@@ -325,10 +325,11 @@ class ContainerCleanUpTest {
 		}
 		undo.perform(null);
 		assertEquals(source, unit.getSource());
-		for (String blocked : List.of(source.replace("if (enabled) {", "if (enabled) { entries.clear();"), //$NON-NLS-1$ //$NON-NLS-2$
+		for (String blocked : List.of(source.replace("if (entry) {", "if (entry) { entries.clear();"), //$NON-NLS-1$ //$NON-NLS-2$
 				source.replace("entries.add(new Entry(\"a\", 1));", "entries.add(null);"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("entries.add(new Entry(\"a\", 1));", "entries.add(new Entry(\"a\", 1)); //$NON-NLS-1$"), //$NON-NLS-1$ //$NON-NLS-2$
 				source.replace("private final List", "final List"), //$NON-NLS-1$ //$NON-NLS-2$
-				source.replace("Sample(boolean enabled)", "{ publish(this); } static void publish(Sample s) {} Sample(boolean enabled)"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("Sample(boolean entry)", "{ publish(this); } static void publish(Sample s) {} Sample(boolean entry)"), //$NON-NLS-1$ //$NON-NLS-2$
 				source.replace("if (requested.equals", "/* keep lookup reason */ if (requested.equals"), //$NON-NLS-1$ //$NON-NLS-2$
 				source.replace("int payload) {}", "int payload) { public String key() { return key.toUpperCase(); } }"), //$NON-NLS-1$ //$NON-NLS-2$
 				source.replace("return data.find(\"a\").payload()", "if (data.entries.size() == 99) return -5; return data.find(\"a\").payload()"))) { //$NON-NLS-1$ //$NON-NLS-2$

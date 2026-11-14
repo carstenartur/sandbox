@@ -586,6 +586,24 @@ class CoordinatedContainerCleanUpTest {
 		clean.checkPostConditions(monitor);
 		undo.perform(monitor);
 		assertEquals(source, unit.getSource());
+		// A nested type shadows the simple name in both the producer and the generated overload.
+		String shadowed= source.replace("import java.util.Arrays;", "") //$NON-NLS-1$ //$NON-NLS-2$
+				.replace("final class Sizes {", "final class Sizes { static class Arrays {}") //$NON-NLS-1$ //$NON-NLS-2$
+				.replace("Arrays.copyOf", "java.util.Arrays.copyOf"); //$NON-NLS-1$ //$NON-NLS-2$
+		unit.getBuffer().setContents(shadowed);
+		unit.save(monitor, true);
+		var shadowedCleanup= new CoordinatedContainerCleanUpCore(options);
+		shadowedCleanup.checkPreConditions(context.getJavaProject(), scope, monitor);
+		var shadowedFix= shadowedCleanup.createFix(new CleanUpContext(unit, parse(unit)));
+		assertNotNull(shadowedFix);
+		var shadowedUndo= performAndCheck(shadowedFix.createChange(null), monitor, scope);
+		assertTrue(unit.getSource().contains("java.util.Arrays.asList(items)"), unit.getSource()); //$NON-NLS-1$
+		shadowedUndo.perform(monitor);
+		assertEquals(shadowed, unit.getSource());
+		shadowedCleanup.checkPostConditions(monitor);
+		unit.getBuffer().setContents(source);
+		unit.save(monitor, true);
+
 		// A caller added after preview invalidates the entire candidate, including the original producer.
 		var stale= new CoordinatedContainerCleanUpCore(options);
 		stale.checkPreConditions(context.getJavaProject(), scope, monitor);
