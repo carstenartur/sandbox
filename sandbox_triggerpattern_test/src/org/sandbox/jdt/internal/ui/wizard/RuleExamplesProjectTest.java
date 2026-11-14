@@ -167,7 +167,7 @@ class RuleExamplesProjectTest {
 				"Scaffold compilation needs a full JDK");
 		Path output = java.util.Objects.requireNonNull(file.getParent(), "Generated source needs an output directory");
 		assertEquals(0, compiler.run(null, null, null,
-				"-proc:none", "-Xlint:all,-path", "-Werror", "-cp", String.join(java.io.File.pathSeparator, classpath), "-d", output.toString(), file.toString()));
+				"-proc:none", "-sourcepath", output.toString(), "-Xlint:all,-path", "-Werror", "-cp", String.join(java.io.File.pathSeparator, classpath), "-d", output.toString(), file.toString()));
 	}
 
 	private ICompilationUnit createUnit() throws Exception {
