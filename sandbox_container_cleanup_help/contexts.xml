@@ -19,14 +19,6 @@
 		<description>Convert a proven manually unique local sequence to an encounter-ordered set.</description>
 		<topic href="html/cleanup.html#unique-sequence" label="Unique sequence to ordered set"/>
 	</context>
-	<context id="parallel_arrays_to_records" title="Parallel arrays to a local record sequence">
-		<description>Replace private local parallel reference arrays with a list of local records on Java 16 or later.</description>
-		<topic href="html/cleanup.html#parallel-records" label="Parallel arrays to records"/>
-	</context>
-	<context id="record_key_map" title="Closed record key index">
-		<description>Index repeated lookups of a constructor-owned record sequence by its immutable String key.</description>
-		<topic href="html/cleanup.html#record-key-map" label="Closed record key index"/>
-	</context>
 	<context id="closed_source_parameter_migration" title="Closed-source parameter migration">
 		<description>This project-wide rule requires coordinated multi-file preview.</description>
 		<topic href="html/cleanup.html#project-closed" label="Project-closed migration"/>
@@ -34,5 +26,13 @@
 	<context id="concurrent_membership" title="Concurrent membership set">
 		<description>Migrate a private synchronized HashSet with a proven membership-only protocol.</description>
 		<topic href="html/cleanup.html#membership" label="Concurrent membership set"/>
+	</context>
+	<context id="parallel_arrays_to_records" title="Parallel arrays to a local record sequence">
+		<description>Replace private local parallel reference arrays with a list of local records on Java 16 or later.</description>
+		<topic href="html/cleanup.html#parallel-records" label="Parallel arrays to records"/>
+	</context>
+	<context id="record_key_map" title="Closed record key index">
+		<description>Index repeated lookups of a constructor-owned record sequence by its immutable String key.</description>
+		<topic href="html/cleanup.html#record-key-map" label="Closed record key index"/>
 	</context>
 </contexts>
