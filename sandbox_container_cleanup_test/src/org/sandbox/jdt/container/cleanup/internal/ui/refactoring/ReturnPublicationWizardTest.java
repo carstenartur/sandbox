@@ -45,9 +45,6 @@ class ReturnPublicationWizardTest {
 		String example= """
 				package test;
 				import java.util.Arrays;
-import java.util.List;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.NullProgressMonitor;
 				final class Example {
 				    static String[] rows(String entry) {
 				        String[] parts = new String[0];
@@ -62,6 +59,9 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 		context.getJavaProject().setOption(JavaCore.COMPILER_SOURCE, JavaCore.VERSION_1_8);
 		context.getJavaProject().setOption(JavaCore.COMPILER_COMPLIANCE, JavaCore.VERSION_1_8);
 		context.getJavaProject().setOption(JavaCore.COMPILER_CODEGEN_TARGET_PLATFORM, JavaCore.VERSION_1_8);
+		var refactoring= new ReturnPublicationRefactoring(producer);
+		var initial= refactoring.checkInitialConditions(new NullProgressMonitor());
+		assertFalse(initial.hasError(), initial.toString());
 		var command= PlatformUI.getWorkbench().getService(org.eclipse.ui.commands.ICommandService.class)
 				.getCommand("org.sandbox.jdt.container.selectReturnPublication"); //$NON-NLS-1$
 		assertTrue(command.isDefined());
@@ -72,12 +72,12 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 				var workspace= org.eclipse.core.resources.ResourcesPlugin.getWorkspace().getRoot();
 				manager.beginRule(workspace, null);
 				var shell= new Shell(PlatformUI.getWorkbench().getDisplay());
-				var wizard= ReturnPublicationAction.createWizard(new ReturnPublicationRefactoring(producer));
+				var wizard= ReturnPublicationAction.createWizard(refactoring);
 				var dialog= new org.eclipse.jface.wizard.WizardDialog(shell, wizard);
 				try {
 					dialog.create();
 					IWizardPage page= wizard.getPage("returnPublication"); //$NON-NLS-1$
-					assertNotNull(page);
+					assertNotNull(page, () -> Arrays.toString(wizard.getPages()));
 					assertNotNull(page.getControl());
 					assertFalse(page.isPageComplete());
 					var buttons= Arrays.stream(((Composite) page.getControl()).getChildren()).filter(Button.class::isInstance)
