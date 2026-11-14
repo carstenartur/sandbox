@@ -62,8 +62,16 @@ run_upstream() {
     -Dtycho.baseline.replace=none --fail-at-end clean verify
   )
   # Maven's no-snapshot-updates flag does not freeze the upstream P2 composite.
-  # Use only the baseline's resolved artifacts for the generated build.
-  if [[ "$phase" == generated ]]; then command+=(--offline); fi
+  if [[ "$phase" == generated ]]; then
+    # Use only the baseline's resolved artifacts for the generated build.
+    command+=(--offline)
+  else
+    # The platform parent checks these plugin repositories before Maven Central.
+    local repo_id
+    for repo_id in tycho-snapshots eclipse-snapshots eclipse-cbi; do
+      command+=("-Daether.connector.http.retryHandler.intervalMax.$repo_id=5000")
+    done
+  fi
   printf '%q ' "${command[@]}" > "$OUTPUT/$phase-command.txt"
   printf '\n' >> "$OUTPUT/$phase-command.txt"
   local status=0
