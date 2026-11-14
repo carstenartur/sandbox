@@ -38,6 +38,7 @@ import org.sandbox.jdt.cleanup.multifile.SourceRootPolicy;
 import org.sandbox.jdt.container.analysis.AppendOnlyArraySeedDetector;
 import org.sandbox.jdt.container.analysis.ClosedFlowArrayUsageRefiner;
 import org.sandbox.jdt.container.analysis.ClosedSourceParameterMigrationPlanner;
+import org.sandbox.jdt.container.analysis.ConstructorOwnedArrayField;
 import org.sandbox.jdt.container.analysis.ContainerBridgePolicyPlanner;
 import org.sandbox.jdt.container.analysis.ContainerContractInferrer;
 import org.sandbox.jdt.container.analysis.ContainerFlowComponentAssembler;
@@ -57,6 +58,12 @@ import org.sandbox.jdt.container.api.ContainerFlowContinuationPlan.ContinuationK
 import org.sandbox.jdt.container.api.ContainerFlowContinuationPlan.ContinuationRoot;
 import org.sandbox.jdt.container.api.ContainerFlowGraph;
 import org.sandbox.jdt.container.api.ContainerFlowGraph.ClosureStatus;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.EdgeKind;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.NodeKind;
+import org.sandbox.jdt.container.api.ContainerParameterRewritePlan;
+import org.sandbox.jdt.container.api.ContainerParameterRewritePlan.EditKind;
+import org.sandbox.jdt.container.api.ContainerParameterRewritePlan.ParameterEdit;
+import org.sandbox.jdt.container.api.UsageEvidence;
 import org.sandbox.jdt.container.api.ContainerFlowSearchPlan;
 import org.sandbox.jdt.container.api.ContainerMigrationReadiness;
 import org.sandbox.jdt.container.api.ContainerRecommendation;
@@ -226,6 +233,11 @@ final class ClosedSourceContainerMigrationCoordinator {
 		}
 
 		List<ContainerUsageProfile> parameterProfiles= List.copyOf(parameterProfilesByKey.values());
+		Optional<OwnedStorage> storage= ownedStorage(candidate, component, parameterProfiles);
+		if (storage.isPresent()) {
+			component= storage.get().parameterComponent();
+			parameterProfiles= List.of(storage.get().parameterProfile());
+		}
 		ContainerUsageProfile refined= usageRefiner.refine(candidate.unitHandle(),
 				candidate.localProfile(), component, parameterProfiles);
 		Optional<ContainerRecommendation> recommendation= contractInferrer.infer(refined);
@@ -256,7 +268,65 @@ final class ClosedSourceContainerMigrationCoordinator {
 					reason, message, discovery.requiredHandles());
 		}
 		return Planning.accepted(candidate.candidateId(), candidate.unitHandle(),
-				aggregate.plan().orElseThrow(), discovery.requiredHandles());
+				storage.map(proof -> proof.complete(aggregate.plan().orElseThrow()))
+						.orElseGet(() -> aggregate.plan().orElseThrow()), discovery.requiredHandles());
+	}
+
+	/** Discharges only the constructor-to-field edge, after proving every use of that field. */
+	private static Optional<OwnedStorage> ownedStorage(Candidate candidate, ContainerFlowComponent component,
+			List<ContainerUsageProfile> parameters) {
+		if (parameters.size() != 1 || component.nodes().size() != 3 || component.edges().size() != 2
+				|| !component.diagnostics().isEmpty() || component.nodes().stream().anyMatch(node ->
+						!node.sourceResolved() || !candidate.unitHandle().equals(node.compilationUnitHandle()))) {
+			return Optional.empty();
+		}
+		var transfers= component.edges().stream().filter(edge -> edge.kind() == EdgeKind.ARGUMENT_TO_PARAMETER).toList();
+		var stores= component.edges().stream().filter(edge -> edge.kind() == EdgeKind.ASSIGNMENT).toList();
+		if (transfers.size() != 1 || stores.size() != 1) {
+			return Optional.empty();
+		}
+		var transfer= transfers.getFirst();
+		var store= stores.getFirst();
+		var parameter= parameters.getFirst();
+		var parameterNode= component.node(transfer.targetNodeId()).orElseThrow();
+		var local= component.node(transfer.sourceNodeId()).orElseThrow();
+		var field= component.node(store.targetNodeId()).orElseThrow();
+		if (local.kind() != NodeKind.LOCAL_VARIABLE || !local.bindingKey().equals(candidate.localProfile().identity().bindingKey())
+				|| !transfer.targetNodeId().equals(store.sourceNodeId()) || field.kind() != NodeKind.FIELD
+				|| parameterNode.kind() != NodeKind.PARAMETER || !parameterNode.bindingKey().equals(parameter.identity().bindingKey())) {
+			return Optional.empty();
+		}
+		var storage= ConstructorOwnedArrayField.analyze(candidate.root(), parameterNode.bindingKey(),
+				transfer.sourceStart(), transfer.sourceLength());
+		if (storage.isEmpty() || !field.bindingKey().equals(storage.get().bindingKey()) || !storage.get().edits().contains(
+				new ParameterEdit(EditKind.VERIFY_CONSTRUCTOR_STORE, store.sourceStart(), store.sourceLength()))) {
+			return Optional.empty();
+		}
+		// The constructor body consists solely of the proven store. Its parameter has no other use.
+		var boundary= new UsageEvidence(UsageEvidence.Kind.FLOW_CONTINUATION_ROOT,
+				"Terminal constructor argument stored in a private final field with verified readers", //$NON-NLS-1$
+				store.sourceStart(), store.sourceLength());
+		var verified= new ContainerUsageProfile(parameter.identity(), parameter.currentShape(), parameter.elementDomain(),
+				parameter.access(), parameter.orderRequirement(), parameter.uniquenessRequirement(), parameter.mutationLifecycle(),
+				parameter.nullContract(), ContainerUsageProfile.AliasingContract.NO_OBSERVED_ALIAS,
+				ContainerUsageProfile.EscapeLevel.METHOD_BOUNDARY, parameter.concurrency(),
+				ContainerUsageProfile.AnalysisCompleteness.FLOW_COMPLETE, List.of(boundary));
+		var signatureComponent= new ContainerFlowComponent(local.stableId(), List.of(local, parameterNode),
+				List.of(transfer), ClosureStatus.LOCAL_CLOSED, List.of());
+		return Optional.of(new OwnedStorage(storage.get(), signatureComponent, verified));
+	}
+
+	private record OwnedStorage(ConstructorOwnedArrayField storage, ContainerFlowComponent parameterComponent,
+			ContainerUsageProfile parameterProfile) {
+		ClosedSourceParameterMigrationPlan complete(ClosedSourceParameterMigrationPlan plan) {
+			var parameter= plan.parameterPlans().getFirst();
+			List<ParameterEdit> edits= new ArrayList<>(parameter.edits());
+			edits.addAll(storage.edits());
+			var withStorage= new ContainerParameterRewritePlan(parameter.compilationUnitHandle(), parameter.methodJavaElementHandle(),
+					parameter.parameterBindingKey(), parameter.parameterIndex(), parameter.targetInterfaceType(),
+					parameter.targetContract(), edits, storage.bindingKey());
+			return new ClosedSourceParameterMigrationPlan(plan.targetContract(), plan.callerPlan(), withStorage);
+		}
 	}
 
 	private CandidateSelection selectCandidate(List<ICompilationUnit> scope,

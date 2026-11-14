@@ -15,6 +15,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
@@ -38,9 +39,11 @@ import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.NodeFinder;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 
+import org.sandbox.jdt.container.analysis.ConstructorOwnedArrayField;
 import org.sandbox.jdt.container.api.ContainerParameterRewritePlan;
 import org.sandbox.jdt.container.api.ContainerParameterRewritePlan.EditKind;
 import org.sandbox.jdt.container.api.ContainerShape;
@@ -92,6 +95,9 @@ final class ContainerParameterRewriteResolver {
 			throw stale(unit, "parameter binding changed"); //$NON-NLS-1$
 		}
 
+		if (!plan.ownedFieldBindingKey().isEmpty()) {
+			return resolveOwnedField(unit, root, plan, method, parameter, arrayType);
+		}
 		List<SimpleName> references= matchingReferences(method, plan.parameterBindingKey());
 		List<ResolvedLength> lengths= new ArrayList<>();
 		List<Expression> encounterIterations= new ArrayList<>();
@@ -129,7 +135,36 @@ final class ContainerParameterRewriteResolver {
 				encounterIterations,
 				"encounter iteration occurrence count or source ranges changed"); //$NON-NLS-1$
 		lengths.sort(Comparator.comparingInt(length -> length.expression().getStartPosition()));
-		return new ResolvedPlan(plan, method, parameter, arrayType, lengths);
+		return new ResolvedPlan(plan, method, parameter, arrayType, Optional.empty(), lengths);
+	}
+
+	private static ResolvedPlan resolveOwnedField(ICompilationUnit unit, org.eclipse.jdt.core.dom.CompilationUnit root,
+			ContainerParameterRewritePlan plan, MethodDeclaration method, SingleVariableDeclaration parameter,
+			ArrayType arrayType) throws CoreException {
+		var anchors= plan.edits().stream().filter(edit -> edit.kind() == EditKind.VERIFY_TERMINAL_ARGUMENT).toList();
+		if (anchors.size() != 1) {
+			throw stale(unit, "owned field requires one terminal argument"); //$NON-NLS-1$
+		}
+		var argument= anchors.getFirst();
+		var storage= ConstructorOwnedArrayField.analyze(root, plan.parameterBindingKey(),
+				argument.sourceStart(), argument.sourceLength());
+		var fieldEdits= plan.edits().stream().filter(edit -> edit.kind() != EditKind.CHANGE_PARAMETER_DECLARATION).toList();
+		if (storage.isEmpty() || !storage.get().bindingKey().equals(plan.ownedFieldBindingKey())
+				|| !storage.get().edits().equals(fieldEdits)) {
+			throw stale(unit, "owned field or its readers changed"); //$NON-NLS-1$
+		}
+		Optional<ArrayType> field= Optional.empty();
+		List<ResolvedLength> lengths= new ArrayList<>();
+		for (var edit : fieldEdits) {
+			ASTNode node= NodeFinder.perform(root, edit.sourceStart(), edit.sourceLength());
+			if (edit.kind() == EditKind.CHANGE_OWNED_FIELD) {
+				field= Optional.of((ArrayType) node);
+			} else if (edit.kind() == EditKind.REPLACE_FIELD_LENGTH) {
+				Expression receiver= node instanceof QualifiedName name ? name.getQualifier() : ((FieldAccess) node).getExpression();
+				lengths.add(new ResolvedLength((Expression) node, receiver));
+			}
+		}
+		return new ResolvedPlan(plan, method, parameter, arrayType, field, lengths);
 	}
 
 	private static MethodDeclaration findMethod(
@@ -263,6 +298,7 @@ final class ContainerParameterRewriteResolver {
 			MethodDeclaration method,
 			SingleVariableDeclaration parameter,
 			ArrayType arrayType,
+			Optional<ArrayType> fieldType,
 			List<ResolvedLength> lengths) {
 
 		ResolvedPlan {
