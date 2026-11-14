@@ -128,6 +128,7 @@ public final class ListenerSnapshotCleanUp extends AbstractPlannedMultiFileClean
 					var creation= syntax.newClassInstanceCreation();
 					ParameterizedType type= syntax.newParameterizedType(syntax.newSimpleType(syntax.newName(owner)));
 					creation.setType(type);
+					rewrite.getImportRemover().registerRemovedNode(protocol.field().getInitializer());
 					edits.replace(protocol.field().getInitializer(), creation, group);
 					for (var lock : protocol.registrations()) {
 						Statement add= (Statement) lock.getBody().statements().getFirst();

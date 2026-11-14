@@ -104,8 +104,12 @@ class ClosedUniqueSequenceCleanUpTest {
 		return new CleanUpContext(unit, (CompilationUnit) parser.createAST(monitor));
 	}
 	private String execute(List<ICompilationUnit> units, Path target) throws Exception {
+		for (var unit : units) {
+			var problems= Arrays.stream(context(unit).getAST().getProblems()).filter(p -> p.isError() || p.isWarning()).toList();
+			assertTrue(problems.isEmpty(), () -> unit.getElementName() + problems);
+		}
 		Files.createDirectories(target);
-		List<String> args= new ArrayList<>(List.of("-d", target.toString()));
+		List<String> args= new ArrayList<>(List.of("-Xlint:all", "-Werror", "-d", target.toString()));
 		for (var unit : units) {
 			args.add(Files.writeString(target.resolve(unit.getElementName()), unit.getSource()).toString());
 		}

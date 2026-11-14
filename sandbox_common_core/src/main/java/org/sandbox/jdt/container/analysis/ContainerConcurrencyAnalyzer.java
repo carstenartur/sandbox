@@ -235,9 +235,10 @@ public final class ContainerConcurrencyAnalyzer {
 				String method= op.getName().getIdentifier();
 				fifo |= frontRemove(op);
 				hasClear |= "clear".equals(method); //$NON-NLS-1$
-				var kind= Set.of("add", "remove", "clear", "set", "put", "offer", "getAndSet", "compareAndSet").contains(method) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$
-						? EvidenceKind.LOCKED_WRITE : EvidenceKind.LOCKED_READ;
-				if (lock == null && field.kind() == SynchronizationKind.SYNCHRONIZED_WRAPPER) {
+				var kind= classifyCall(op);
+				if (kind == EvidenceKind.UNRESOLVED_BOUNDARY) {
+					evidence.add(at(kind, lock == null ? "" : lock.key(), "Iterator, stream, callback or unclassified operation needs a separate lifetime and locking proof.", op)); //$NON-NLS-1$ //$NON-NLS-2$
+				} else if (lock == null && field.kind() == SynchronizationKind.SYNCHRONIZED_WRAPPER) {
 					evidence.add(at(kind, field.binding().getKey(), "The wrapper synchronizes the individual call to " + method + ".", op)); //$NON-NLS-1$ //$NON-NLS-2$
 				} else {
 					addAccess(evidence, lock, kind, "Call to " + method, op); //$NON-NLS-1$
@@ -346,6 +347,18 @@ public final class ContainerConcurrencyAnalyzer {
 			}
 		});
 		return simple[0];
+	}
+
+	private static EvidenceKind classifyCall(MethodInvocation call) {
+		var method= call.resolveMethodBinding();
+		if (method == null || method.isRecovered() || method.getMethodDeclaration().getDeclaringClass().isFromSource()) {
+			return EvidenceKind.UNRESOLVED_BOUNDARY;
+		}
+		return switch (method.getName()) {
+			case "add", "addAll", "remove", "removeAll", "retainAll", "clear", "set", "put", "offer", "getAndSet", "compareAndSet" -> EvidenceKind.LOCKED_WRITE; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$ //$NON-NLS-10$ //$NON-NLS-11$
+			case "contains", "containsAll", "get", "indexOf", "lastIndexOf", "isEmpty", "size", "toArray" -> EvidenceKind.LOCKED_READ; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$
+			default -> EvidenceKind.UNRESOLVED_BOUNDARY;
+		};
 	}
 
 	private static boolean frontRemove(MethodInvocation op) {

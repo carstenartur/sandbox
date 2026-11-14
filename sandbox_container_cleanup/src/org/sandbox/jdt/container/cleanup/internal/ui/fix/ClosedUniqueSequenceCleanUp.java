@@ -226,6 +226,7 @@ public final class ClosedUniqueSequenceCleanUp extends AbstractPlannedMultiFileC
 					} else if (edit.kind() == Kind.SYNCHRONIZED_SET_FACTORY) {
 						rewrite.replace(node, root.getAST().newSimpleName("synchronizedSet"), group); //$NON-NLS-1$
 					} else {
+						change.getImportRemover().registerRemovedNode(node);
 						var imports= change.getImportRewrite();
 						String target= edit.kind() == Kind.ORDERED_SET_TYPE ? "java.util.LinkedHashSet" : "java.util.Set"; //$NON-NLS-1$ //$NON-NLS-2$
 						String imported= imports.addImport(target, new ContextSensitiveImportRewriteContext(node, imports));

@@ -123,6 +123,7 @@ public final class ConcurrentMembershipCleanUp extends AbstractPlannedMultiFileC
 					String owner= rewrite.getImportRewrite().addImport("java.util.concurrent.ConcurrentHashMap"); //$NON-NLS-1$
 					factory.setExpression(ast.getAST().newName(owner));
 					factory.setName(ast.getAST().newSimpleName("newKeySet")); //$NON-NLS-1$
+					rewrite.getImportRemover().registerRemovedNode(declaration.getInitializer());
 					rewrite.getASTRewrite().replace(declaration.getInitializer(), factory, createTextEditGroup(DESCRIPTION, rewrite));
 				}
 			});

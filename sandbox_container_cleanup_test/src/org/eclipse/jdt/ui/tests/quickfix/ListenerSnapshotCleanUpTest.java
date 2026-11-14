@@ -60,6 +60,7 @@ class ListenerSnapshotCleanUpTest {
 		String source= listenerSource();
 		ICompilationUnit unit= createUnit(source);
 		assertFalse(Arrays.stream(parse(unit).getProblems()).anyMatch(problem -> problem.isError()));
+		compileWithoutDiagnostics(unit, output);
 		var cleanup= listenerCleanup();
 		cleanup.checkPreConditions(context.getJavaProject(), new ICompilationUnit[] { unit }, null);
 		var fix= cleanup.createFix(new CleanUpContext(unit, parse(unit)));
@@ -70,10 +71,7 @@ class ListenerSnapshotCleanUpTest {
 		assertTrue(transformed.contains("new CopyOnWriteArrayList<>()")); //$NON-NLS-1$
 		assertFalse(transformed.contains("toArray(")); //$NON-NLS-1$
 		assertFalse(transformed.contains("synchronized (listeners)")); //$NON-NLS-1$
-		assertFalse(Arrays.stream(parse(unit).getProblems()).anyMatch(problem -> problem.isError()));
-		Path file= Files.writeString(output.resolve("Sample.java"), transformed); //$NON-NLS-1$
-		assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null,
-				"-d", output.toString(), file.toString())); //$NON-NLS-1$
+		compileWithoutDiagnostics(unit, output);
 		try (var classes= new URLClassLoader(new URL[] { output.toUri().toURL() }, null)) {
 			Class<?> type= classes.loadClass("test.Sample"); //$NON-NLS-1$
 			Object instance= type.getConstructor().newInstance();
@@ -172,6 +170,14 @@ class ListenerSnapshotCleanUpTest {
 		options.setOption("cleanup.container_contracts.listener_snapshot", CleanUpOptions.TRUE); //$NON-NLS-1$
 		cleanup.setOptions(options);
 		return cleanup;
+	}
+
+	private void compileWithoutDiagnostics(ICompilationUnit unit, Path target) throws Exception {
+		var problems= Arrays.stream(parse(unit).getProblems()).filter(p -> p.isError() || p.isWarning()).toList();
+		assertTrue(problems.isEmpty(), () -> unit.getElementName() + problems);
+		var file= Files.writeString(target.resolve("Sample.java"), unit.getSource()); //$NON-NLS-1$
+		assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null,
+				"-Xlint:all", "-Werror", "-d", target.toString(), file.toString())); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	}
 
 	private ICompilationUnit createUnit(String source) throws CoreException {

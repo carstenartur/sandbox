@@ -353,6 +353,73 @@ class SynchronizedListIterationAnalyzerTest {
 		}
 	}
 
+	@Test
+	void groupsBindingResolvedOperationsAndLockedIterationWithoutClaimingClosure() {
+		String source= """
+				import java.util.*;
+				class Sample {
+				    private final List<String> entries = Collections.synchronizedList(new ArrayList<>());
+				    void add(String text) { entries.add(text); }
+				    boolean contains(String text) { return entries.contains(text); }
+				    void inspect() { synchronized (entries) { for (String item : this.entries) { } } }
+				    List<String> live() { return entries; }
+				}
+				""";
+		var reports= ContainerConcurrencyAnalyzer.analyze(parse(source, true), () -> {});
+		assertEquals(1, reports.size());
+		var report= reports.getFirst();
+		assertFalse(report.permitsSourceRewrite());
+		assertEquals(AnalysisCompleteness.LOCAL_SEED, report.protocol().completeness());
+		assertEquals(List.of(EvidenceKind.LOCKED_WRITE, EvidenceKind.LOCKED_READ,
+				EvidenceKind.LOCKED_ITERATION, EvidenceKind.LIVE_WRAPPER_RETURN),
+				report.protocol().evidence().stream().map(e -> e.kind()).toList());
+		assertEquals(1, report.protocol().lockIdentities().size());
+		for (var evidence : report.protocol().evidence()) {
+			String snippet= source.substring(evidence.sourceStart(), evidence.sourceStart() + evidence.sourceLength());
+			assertFalse(snippet.isBlank());
+		}
+	}
+
+	@Test
+	void detectsUnprotectedIterationAndUnclassifiedMethodsWithoutRewriting() {
+		String source= """
+				import java.util.*;
+				class Sample {
+				    private final List<String> entries = Collections.synchronizedList(new ArrayList<>());
+				    void inspect() { for (String item : entries) { } }
+				    void stream() { entries.stream().count(); }
+				}
+				""";
+		var reports= ContainerConcurrencyAnalyzer.analyze(parse(source, true), () -> {});
+		assertEquals(1, reports.size());
+		assertTrue(reports.getFirst().protocol().hasUnresolvedBoundary());
+		assertEquals(List.of(EvidenceKind.UNRESOLVED_BOUNDARY, EvidenceKind.UNRESOLVED_BOUNDARY),
+				reports.getFirst().protocol().evidence().stream().map(e -> e.kind()).toList());
+		assertFalse(reports.getFirst().permitsSourceRewrite());
+		assertTrue(ContainerConcurrencyAnalyzer.analyze(parse(source, false), () -> {}).isEmpty());
+	}
+
+	@Test
+	void keepsDistinctPrivateFieldsApartAndRejectsFactoryLookalikes() {
+		String source= """
+				import java.util.*;
+				class Sample {
+				    static class Collections {
+				        static <T> List<T> synchronizedList(List<T> list) { return list; }
+				    }
+				    private final List<String> first = java.util.Collections.synchronizedList(new ArrayList<>());
+				    private final List<String> second = java.util.Collections.synchronizedList(new ArrayList<>());
+				    private final List<String> fake = Collections.synchronizedList(new ArrayList<>());
+				    void add(String text) { first.add(text); second.add(text); fake.add(text); }
+				}
+				""";
+		var reports= ContainerConcurrencyAnalyzer.analyze(parse(source, true), () -> {});
+		assertEquals(2, reports.size());
+		assertEquals(List.of("first", "second"),
+				reports.stream().map(r -> r.protocol().identity().displayName()).toList()); //$NON-NLS-1$ //$NON-NLS-2$
+		assertTrue(reports.stream().allMatch(r -> r.protocol().evidence().size() == 1));
+	}
+
 	private static String anchor(String source, ConcurrencyProtocol.Evidence evidence) {
 		return source.substring(evidence.sourceStart(), evidence.sourceStart() + evidence.sourceLength());
 	}
