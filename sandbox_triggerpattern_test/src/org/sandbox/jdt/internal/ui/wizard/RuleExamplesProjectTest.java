@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.InvocationTargetException;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -122,7 +123,7 @@ class RuleExamplesProjectTest {
 		HintFileCreation.create(project, name, rule, suite, new NullProgressMonitor());
 		var hint = project.getFile(name);
 		Path file = Files.writeString(classes.resolve("RuleRegressionTest.java"),
-				RuleRegressionTestSource.forHint(hint.getFullPath().toPortableString()));
+				RuleRegressionTestSource.forHint(hint.getFullPath().toPortableString()), StandardCharsets.UTF_8);
 		var classpath = new java.util.ArrayList<String>();
 		for (var bundle : Platform.getBundle("sandbox_triggerpattern").getBundleContext().getBundles()) {
 			var location = FileLocator.getBundleFileLocation(bundle);
