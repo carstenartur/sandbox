@@ -182,7 +182,11 @@ final class ParallelRecordRewrite extends CompilationUnitRewriteOperationWithSou
 			}
 			node= node.getParent();
 		}
-		if (!(node instanceof ForStatement loop) || loop.getParent() != scope || scope.statements().indexOf(loop) <= populatedAt
+		if (node == null) {
+			return false;
+		}
+		ForStatement loop= (ForStatement) node;
+		if (loop.getParent() != scope || scope.statements().indexOf(loop) <= populatedAt
 				|| loop.initializers().size() != 1 || !(loop.initializers().getFirst() instanceof VariableDeclarationExpression declaration)
 				|| declaration.fragments().size() != 1 || !(declaration.fragments().getFirst() instanceof VariableDeclarationFragment index)
 				|| index.getInitializer() == null || !Integer.valueOf(0).equals(index.getInitializer().resolveConstantExpressionValue())
