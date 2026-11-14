@@ -234,7 +234,7 @@ final class ContainerAnalysisService {
 		}
 	}
 
-	private static CompilationUnit parse(ICompilationUnit unit, IProgressMonitor monitor) {
+	static CompilationUnit parse(ICompilationUnit unit, IProgressMonitor monitor) {
 		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
 		parser.setKind(ASTParser.K_COMPILATION_UNIT);
 		parser.setSource(unit);

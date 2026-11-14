@@ -79,10 +79,10 @@ final class ContainerFlowGraphAccumulator {
 	}
 
 	FlowNode ensureReturnNode(
-			String methodKey,
-			String methodElementHandle,
+			IMethodBinding method,
 			String unitHandle,
 			ASTNode anchor) {
+		String methodKey= method.getMethodDeclaration().getKey();
 		String stableId= "return:" + methodKey; //$NON-NLS-1$
 		return nodes.computeIfAbsent(stableId, ignored -> new FlowNode(
 				stableId,
@@ -90,15 +90,11 @@ final class ContainerFlowGraphAccumulator {
 				"", //$NON-NLS-1$
 				methodKey,
 				unitHandle,
-				methodElementHandle,
+				javaElementHandle(method),
 				-1,
 				true,
 				anchor.getStartPosition(),
 				anchor.getLength()));
-	}
-
-	FlowNode ensureReturnNode(String methodKey, String unitHandle, ASTNode anchor) {
-		return ensureReturnNode(methodKey, "", unitHandle, anchor); //$NON-NLS-1$
 	}
 
 	void addParameterBoundary(

@@ -162,6 +162,10 @@ See [TODO.md](TODO.md) for planned features:
 - **Export functionality** - CSV/Excel export for reporting
 - **Batch operations** - Apply fixes to multiple variables at once
 
+## Following array flow across source files
+
+In the Container Analysis view menu, select **Follow array flow across source files** to inspect callers and declarations connected to an append-array candidate. The report follows local aliases, constructor and method arguments, fields, and directly assigned return values. Double-click a row to open its source. Unsupported expressions and external references appear as boundaries. The project search runs only when this option is selected.
+
 ## Measuring the Container Analysis report
 
 The opt-in native Tycho test imports every Java source in Eclipse JDT UI's

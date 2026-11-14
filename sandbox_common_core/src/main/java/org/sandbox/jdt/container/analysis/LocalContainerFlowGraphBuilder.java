@@ -294,7 +294,7 @@ public final class LocalContainerFlowGraphBuilder {
 			return;
 		}
 		FlowNode returnNode= graph.ensureReturnNode(
-				methodKey,
+				methodBinding,
 				index.compilationUnitHandle(),
 				reference);
 		graph.addEdge(sourceNode, returnNode, EdgeKind.RETURN_TO_METHOD, reference);
