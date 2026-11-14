@@ -433,6 +433,55 @@ public class ContainerAnalysisServiceTest {
 		}
 	}
 
+	@Test
+	public void excludedArraysHaveBindingBackedDiagnosticAnchors() {
+		String source= """
+				import java.util.Arrays;
+				import java.io.DataOutput;
+				class Sample {
+				    volatile String[] shared = new String[0];
+				    void append(String value) {
+				        shared = Arrays.copyOf(shared, shared.length + 1);
+				        shared[shared.length - 1] = value;
+				    }
+				    void primitive(int value) {
+				        int[] counts = new int[0];
+				        counts = Arrays.copyOf(counts, counts.length + 1);
+				        counts[counts.length - 1] = value;
+				    }
+				    void covariant(Object value) {
+				        Object[] objects = new String[0];
+				        objects = Arrays.copyOf(objects, objects.length + 1);
+				        objects[objects.length - 1] = value;
+				    }
+				    void packet(DataOutput wire) throws Exception {
+				        byte[] frame = new byte[8];
+				        wire.write(frame);
+				        wire.write(frame, 0, 8);
+				    }
+				    void lookalike(Sample actions) {
+				        byte[] plain = new byte[8];
+				        actions.write(plain);
+				    }
+				    void write(byte[] value) {}
+				}
+				""";
+		List<ContainerAnalysisRow> rows= service.analyze(parse(source), "=Sample"); //$NON-NLS-1$
+		for (var item : Map.of("shared", "volatile", "counts", "primitive", "objects", "runtime component", "frame", "binary").entrySet()) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$
+			var reason= rows.stream().filter(row -> item.getKey().equals(row.candidate())
+					&& row.evidenceSummary().toLowerCase(java.util.Locale.ROOT).contains(item.getValue())).findFirst();
+			assertTrue(reason.isPresent(), item.getKey() + rows);
+			assertEquals("REJECTED", reason.get().status()); //$NON-NLS-1$
+			assertEquals("No proven target", reason.get().targetContract()); //$NON-NLS-1$
+			assertEquals(switch (item.getKey()) {
+				case "objects" -> "new String[0]"; //$NON-NLS-1$ //$NON-NLS-2$
+				default -> item.getKey();
+			}, fragment(source, reason.get()));
+		}
+		assertEquals(2, rows.stream().filter(row -> "frame".equals(row.candidate())).count()); //$NON-NLS-1$
+		assertFalse(rows.stream().anyMatch(row -> "plain".equals(row.candidate()))); //$NON-NLS-1$
+	}
+
 	private static CompilationUnit parse(String source) {
 		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
 		parser.setKind(ASTParser.K_COMPILATION_UNIT);

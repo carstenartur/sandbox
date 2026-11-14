@@ -183,6 +183,26 @@ class AppendOnlyArraySeedDetectorTest {
 		assertTrue(profiles.get(0).identity().sourceStart() < profiles.get(1).identity().sourceStart());
 	}
 
+	@Test
+	void primitiveStorageIsReportedWithoutCreatingAnExecutableSeed() {
+		var root= parse("""
+				import java.util.Arrays;
+				class Sample {
+				    void add(int value) {
+				        int[] parts = new int[0];
+				        parts = Arrays.copyOf(parts, parts.length + 1);
+				        parts[parts.length - 1] = value;
+				    }
+				}
+				""");
+		assertTrue(detector.findSeeds(root).isEmpty());
+		var report= detector.findReportSeeds(root);
+		assertEquals(1, report.size());
+		assertEquals(ElementDomain.PRIMITIVE, report.getFirst().elementDomain());
+		assertEquals(AnalysisCompleteness.REJECTED, report.getFirst().completeness());
+		assertTrue(new ContainerContractInferrer().infer(report.getFirst()).isEmpty());
+	}
+
 	private static CompilationUnit parse(String source) {
 		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
 		parser.setSource(source.toCharArray());

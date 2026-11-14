@@ -71,6 +71,15 @@ public final class AppendOnlyArraySeedDetector {
 
 	/** Finds deterministic, source-ordered append-only array seeds. */
 	public List<ContainerUsageProfile> findSeeds(CompilationUnit compilationUnit) {
+		return findSeeds(compilationUnit, false);
+	}
+
+	/** Includes rejected primitive append patterns for read-only reports. */
+	public List<ContainerUsageProfile> findReportSeeds(CompilationUnit compilationUnit) {
+		return findSeeds(compilationUnit, true);
+	}
+
+	private static List<ContainerUsageProfile> findSeeds(CompilationUnit compilationUnit, boolean includePrimitive) {
 		Objects.requireNonNull(compilationUnit, "compilationUnit"); //$NON-NLS-1$
 
 		List<ContainerUsageProfile> profiles= new ArrayList<>();
@@ -78,9 +87,9 @@ public final class AppendOnlyArraySeedDetector {
 
 		AstProcessing.scoped(state)
 				.find(MethodInvocation.class,
-						(copyOf, holder) -> growthSeed(copyOf).isPresent(),
+						(copyOf, holder) -> growthSeed(copyOf, includePrimitive).isPresent(),
 						(copyOf, holder) -> holder.put(
-								CURRENT_GROWTH, growthSeed(copyOf).orElseThrow()),
+								CURRENT_GROWTH, growthSeed(copyOf, includePrimitive).orElseThrow()),
 						AppendOnlyArraySeedDetector::followingStatementScope)
 				.then(ArrayAccess.class,
 						AppendOnlyArraySeedDetector::isTailWrite,
@@ -90,7 +99,7 @@ public final class AppendOnlyArraySeedDetector {
 		return List.copyOf(profiles);
 	}
 
-	private static Optional<GrowthSeed> growthSeed(MethodInvocation copyOf) {
+	private static Optional<GrowthSeed> growthSeed(MethodInvocation copyOf, boolean includePrimitive) {
 		if (!isArraysCopyOf(copyOf) || copyOf.arguments().size() != 2) {
 			return Optional.empty();
 		}
@@ -113,7 +122,7 @@ public final class AppendOnlyArraySeedDetector {
 		ITypeBinding arrayType= binding.map(IVariableBinding::getType)
 				.orElseGet(array::resolveTypeBinding);
 		ElementDomain elementDomain= elementDomain(arrayType);
-		if (elementDomain == ElementDomain.PRIMITIVE) {
+		if (!includePrimitive && elementDomain == ElementDomain.PRIMITIVE) {
 			return Optional.empty();
 		}
 
@@ -183,6 +192,9 @@ public final class AppendOnlyArraySeedDetector {
 					Kind.REFERENCE_COMPONENT,
 					"The resolved array component is a reference type", //$NON-NLS-1$
 					seed.array()));
+		} else if (seed.elementDomain() == ElementDomain.PRIMITIVE) {
+			evidence.add(evidence(Kind.REJECTION_BOUNDARY,
+					"Retain the primitive array. A boxed collection changes element storage and requires a separate performance and representation proof.", seed.array())); //$NON-NLS-1$
 		} else {
 			evidence.add(evidence(
 					Kind.UNRESOLVED_BINDING,
@@ -208,7 +220,7 @@ public final class AppendOnlyArraySeedDetector {
 				AliasingContract.UNKNOWN,
 				EscapeLevel.UNKNOWN,
 				ConcurrencyProfile.unknown(),
-				AnalysisCompleteness.LOCAL_SEED,
+				seed.elementDomain() == ElementDomain.PRIMITIVE ? AnalysisCompleteness.REJECTED : AnalysisCompleteness.LOCAL_SEED,
 				evidence);
 	}
 

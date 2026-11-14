@@ -26,6 +26,7 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 
 import org.sandbox.jdt.container.analysis.AppendOnlyArraySeedDetector;
+import org.sandbox.jdt.container.analysis.BinaryArrayBoundaryAnalyzer;
 import org.sandbox.jdt.container.analysis.ContainerContractInferrer;
 import org.sandbox.jdt.container.analysis.LocalArrayUsageAnalyzer;
 import org.sandbox.jdt.container.analysis.LocalDequeSequenceAnalyzer;
@@ -80,9 +81,9 @@ final class ContainerAnalysisService {
 			return List.of();
 		}
 		Map<String, ContainerUsageProfile> profiles= new LinkedHashMap<>();
-		for (ContainerUsageProfile seed : arraySeedDetector.findSeeds(root)) {
+		for (ContainerUsageProfile seed : arraySeedDetector.findReportSeeds(root)) {
 			checkCanceled(monitor);
-			addProfile(profiles, arrayUsageAnalyzer.analyze(root, seed));
+			addProfile(profiles, seed.completeness() == AnalysisCompleteness.REJECTED ? seed : arrayUsageAnalyzer.analyze(root, seed));
 		}
 		checkCanceled(monitor);
 		uniqueSequenceAnalyzer.analyze(root).forEach(profile -> addProfile(profiles, profile));
@@ -92,6 +93,12 @@ final class ContainerAnalysisService {
 		enumMembershipAnalyzer.analyze(root).forEach(profile -> addProfile(profiles, profile));
 
 		List<ContainerAnalysisRow> rows= new ArrayList<>();
+		for (var boundary : BinaryArrayBoundaryAnalyzer.analyze(root, () -> checkCanceled(monitor))) {
+			var evidence= boundary.evidence();
+			rows.add(new ContainerAnalysisRow(compilationUnitHandle, boundary.candidate(), "ARRAY", "No proven target", "N/A", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+					AnalysisCompleteness.REJECTED.name(), evidence.kind().name(), evidence.summary(), evidence.summary(),
+					evidence.sourceStart(), evidence.sourceLength()));
+		}
 		// Distinct accessors on the same list represent independent index candidates.
 		RecordKeyLookupAnalyzer.analyze(root, () -> checkCanceled(monitor)).forEach(profile -> appendRows(compilationUnitHandle, rows, profile));
 		ParallelArrayRecordAnalyzer.analyze(root, () -> checkCanceled(monitor))
