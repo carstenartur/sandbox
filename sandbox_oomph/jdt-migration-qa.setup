@@ -218,9 +218,11 @@
   <setupTask
       xsi:type="projects:ProjectsImportTask">
     <sourceLocator
+        rootFolder="${github.clone.jdt.ui.qa.location}/org.eclipse.jdt.ui"/>
+    <sourceLocator
         rootFolder="${github.clone.sandbox.qa.location}"
         locateNestedProjects="true"/>
-    <description>Import Sandbox source projects next to the pinned upstream corpus.</description>
+    <description>Open the pinned JDT UI source project and import Sandbox projects next to the upstream corpus.</description>
   </setupTask>
 
   <setupTask
