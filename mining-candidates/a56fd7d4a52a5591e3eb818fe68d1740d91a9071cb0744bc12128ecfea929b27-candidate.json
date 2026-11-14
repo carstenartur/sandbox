@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 19: The method acceptString(String) in the type TestClass is not applicable for the arguments (StringBuffer)",
-    "verifiedAt": "2026-11-13T02:22:04.407069475Z",
+    "verifiedAt": "2026-11-14T02:19:12.833417698Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0

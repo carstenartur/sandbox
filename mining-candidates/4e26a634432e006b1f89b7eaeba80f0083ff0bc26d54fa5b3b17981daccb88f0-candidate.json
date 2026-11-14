@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 6: The import org.eclipse.jdt.core.dom.SharedASTProvider cannot be resolved",
-    "verifiedAt": "2026-11-13T02:21:57.500278052Z",
+    "verifiedAt": "2026-11-14T02:19:07.913216760Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0

@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 10: AUTOMATIC_MODULE cannot be resolved or is not a field",
-    "verifiedAt": "2026-11-13T02:21:52.783727377Z",
+    "verifiedAt": "2026-11-14T02:19:04.915416382Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
