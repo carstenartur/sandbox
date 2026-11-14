@@ -27,6 +27,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.IntSummaryStatistics;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -235,7 +236,7 @@ public final class JavaComputationExtractor {
          java.util.function.LongConsumer charge) {
       var regions = new ArrayList<JavaComputationRegion>();
       var diagnostics = new ArrayList<Diagnostic>();
-      var bindings = sourceBindings(unit, charge);
+      var bindings = sourceBindings(unit, charge, false);
       charge.accept(expression.getLength());
       // Numerical equality cannot authorize deleting an authored constant formula.
       if (expression.getParent() instanceof Assignment assignment && assignment.getRightHandSide() == expression
@@ -246,7 +247,7 @@ public final class JavaComputationExtractor {
       try {
          Builder builder = new Builder(unit, options, bindings.declarations(), bindings.reserved(), expression, true, false, false);
          builder.expressionOutput(expression);
-         finish(builder, regions, diagnostics);
+         finish(builder, regions, diagnostics, bindings.uses());
       } catch (Rejected rejected) { diagnostics.add(diagnostic(rejected)); }
       return new Extraction(regions, diagnostics);
    }
@@ -262,12 +263,12 @@ public final class JavaComputationExtractor {
          throw new IllegalArgumentException("STALE_EXPRESSION_CONTEXT"); //$NON-NLS-1$
       Block block = JavaExpressionContexts.enclosingBlock(expression);
       if (!JavaExpressionContexts.executable(expression)) return new Extraction(regions, diagnostics);
-      var bindings = sourceBindings(unit);
+      var bindings = sourceBindings(unit, false);
       if (RuntimeCalculationPolicy.containsComputedConstant(expression, bindings.declarations())) return new Extraction(regions, diagnostics);
       try {
          Builder builder = new Builder(unit, options, bindings.declarations(), bindings.reserved(), block == null ? expression : block, false, true, true);
          builder.expressionOutput(expression);
-         finish(builder, regions, diagnostics);
+         finish(builder, regions, diagnostics, bindings.uses());
       } catch (Rejected rejected) {
          diagnostics.add(diagnostic(rejected));
       }
@@ -287,7 +288,7 @@ public final class JavaComputationExtractor {
          return new JavaComputationExtractor.Extraction(regions, diagnostics);
       }
 
-      var bindings = sourceBindings(unit);
+      var bindings = sourceBindings(unit, !includeValues);
       var reserved = bindings.reserved();
       var declarations = bindings.declarations();
       unit.accept(new ASTVisitor() {
@@ -307,48 +308,48 @@ public final class JavaComputationExtractor {
                Statement statement = (Statement)child;
                if (JavaSourceReadShape.requiresBoundary(statement, builder.values.keySet(),
                      JavaArrayReadInputs.totalPrefix(builder.trace, builder.outputs), extendedReads)) {
-                  finish(builder, regions, diagnostics);
+                  finish(builder, regions, diagnostics, bindings.uses());
                   builder = new Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs, false, extendedReads);
                }
                if (builder.outputs.size() >= maximumOutputs) {
-                  JavaComputationExtractor.finish(builder, regions, diagnostics);
+                  JavaComputationExtractor.finish(builder, regions, diagnostics, bindings.uses());
                   builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs, false, extendedReads);
                }
                boolean incomingAssignment = externalValueAssignment(statement, options)
                      && !builder.values.containsKey(((IVariableBinding) ((SimpleName) ((Assignment)
                            ((ExpressionStatement) statement).getExpression()).getLeftHandSide()).resolveBinding()).getKey());
                if (incomingAssignment) {
-                  finish(builder, regions, diagnostics);
+                  finish(builder, regions, diagnostics, bindings.uses());
                   builder = new Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs, false, extendedReads);
                }
                if (runtimeOnly && RuntimeCalculationPolicy.preserve(statement, declarations)) {
-                  JavaComputationExtractor.finish(builder, regions, diagnostics);
+                  JavaComputationExtractor.finish(builder, regions, diagnostics, bindings.uses());
                   diagnostics.add(new Diagnostic("CONSTANT_EXPRESSION_PRESERVED", "Intentional constant source is outside runtime cleanup", statement.getStartPosition(), statement.getLength()));
                   builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs, false, extendedReads);
                } else if (!arrayStores && statement instanceof ExpressionStatement expression
                      && expression.getExpression() instanceof Assignment assignment && assignment.getLeftHandSide() instanceof ArrayAccess) {
-                  finish(builder, regions, diagnostics);
+                  finish(builder, regions, diagnostics, bindings.uses());
                   builder = new Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs, false, extendedReads);
                } else if (!(statement instanceof VariableDeclarationStatement) && !(statement instanceof ExpressionStatement)
                      && !(statement instanceof ReturnStatement)) {
-                  JavaComputationExtractor.finish(builder, regions, diagnostics);
+                  JavaComputationExtractor.finish(builder, regions, diagnostics, bindings.uses());
                   builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs, false, extendedReads);
                } else {
                   try {
                      builder.statement(statement);
                      if (incomingAssignment || builder.outputs.stream().anyMatch(JavaComputationRegion.OutputBinding::arrayStore)) {
-                        finish(builder, regions, diagnostics);
+                        finish(builder, regions, diagnostics, bindings.uses());
                         builder = new Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs, false, extendedReads);
                      }
                   } catch (JavaComputationExtractor.Rejected rejected) {
-                     JavaComputationExtractor.finish(builder.prior, regions, diagnostics);
+                     JavaComputationExtractor.finish(builder.prior, regions, diagnostics, bindings.uses());
                      diagnostics.add(JavaComputationExtractor.diagnostic(rejected));
                      builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs, false, extendedReads);
                   }
                }
             }
 
-            JavaComputationExtractor.finish(builder, regions, diagnostics);
+            JavaComputationExtractor.finish(builder, regions, diagnostics, bindings.uses());
             return true;
          }
 
@@ -361,7 +362,7 @@ public final class JavaComputationExtractor {
             Builder builder = new Builder(unit, options, declarations, reserved, block == null ? expression : block, false, true, true);
             try {
                builder.expressionOutput(expression);
-               finish(builder, regions, diagnostics);
+               finish(builder, regions, diagnostics, bindings.uses());
             } catch (Rejected rejected) {
                diagnostics.add(diagnostic(rejected));
             }
@@ -370,20 +371,31 @@ public final class JavaComputationExtractor {
       return new JavaComputationExtractor.Extraction(regions, diagnostics);
    }
 
-   private record SourceBindings(Set<String> reserved, Map<String, VariableDeclarationFragment> declarations) { }
+   private record SourceBindings(Set<String> reserved, Map<String, VariableDeclarationFragment> declarations,
+         Map<String, IntSummaryStatistics> uses) { }
 
-   private static SourceBindings sourceBindings(CompilationUnit unit) {
-      return sourceBindings(unit, amount -> { });
+   private static SourceBindings sourceBindings(CompilationUnit unit, boolean trackOutputUses) {
+      return sourceBindings(unit, amount -> { }, trackOutputUses);
    }
 
-   private static SourceBindings sourceBindings(CompilationUnit unit, java.util.function.LongConsumer charge) {
+   private static SourceBindings sourceBindings(CompilationUnit unit, java.util.function.LongConsumer charge,
+         boolean trackOutputUses) {
+      var uses = new HashMap<String, IntSummaryStatistics>();
       var reserved = new HashSet<String>();
       var declarations = new HashMap<String, VariableDeclarationFragment>();
       unit.accept(new ASTVisitor() {
          @Override public boolean preVisit2(ASTNode node) { charge.accept(1); return true; }
          @Override public boolean visit(SimpleName name) {
-            if (name.isDeclaration() || name.resolveBinding() instanceof IVariableBinding
-                  || name.getIdentifier().equals("java") && name.resolveBinding() instanceof ITypeBinding) //$NON-NLS-1$
+            if (name.isDeclaration() && !trackOutputUses) {
+               reserved.add(name.getIdentifier());
+               return true;
+            }
+            var binding = name.resolveBinding();
+            if (trackOutputUses && binding instanceof IVariableBinding variable) {
+               uses.computeIfAbsent(variable.getKey(), key -> new IntSummaryStatistics()).accept(name.getStartPosition());
+            }
+            if (name.isDeclaration() || binding instanceof IVariableBinding
+                  || name.getIdentifier().equals("java") && binding instanceof ITypeBinding) //$NON-NLS-1$
                reserved.add(name.getIdentifier());
             return true;
          }
@@ -392,7 +404,7 @@ public final class JavaComputationExtractor {
             return true;
          }
       });
-      return new SourceBindings(reserved, declarations);
+      return new SourceBindings(reserved, declarations, uses);
    }
 
    /** Each incoming assignment stays isolated so prior writes and the incoming value keep their order. */
@@ -441,11 +453,12 @@ public final class JavaComputationExtractor {
       return new JavaComputationExtractor.Diagnostic(rejected.getMessage(), rejected.getMessage(), rejected.node.getStartPosition(), rejected.node.getLength());
    }
 
-   private static void finish(JavaComputationExtractor.Builder builder, List<JavaComputationRegion> regions, List<JavaComputationExtractor.Diagnostic> diagnostics) {
+   private static void finish(JavaComputationExtractor.Builder builder, List<JavaComputationRegion> regions,
+         List<JavaComputationExtractor.Diagnostic> diagnostics, Map<String, IntSummaryStatistics> uses) {
       if (builder != null && !builder.outputs.isEmpty() && (builder.includeValues || !builder.trace.isEmpty())) {
          try {
             JavaComputationRegion region = builder.finish();
-            if (!builder.includeValues) region = JavaRegionLiveness.project(region, builder.unit);
+            if (!builder.includeValues) region = JavaRegionLiveness.project(region, builder.unit, uses);
             if (region != null) regions.add(region);
          } catch (JavaComputationExtractor.Rejected rejected) {
             diagnostics.add(diagnostic(rejected));
