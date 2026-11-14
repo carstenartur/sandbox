@@ -29,6 +29,7 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SimpleName;
 
 import org.sandbox.jdt.container.analysis.ContainerConstructorTarget;
+import org.sandbox.jdt.container.analysis.LocalArrayUsageAnalyzer;
 import org.sandbox.jdt.container.api.ContainerLocalRewritePlan;
 import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.ArgumentTransfer;
 
@@ -67,9 +68,10 @@ final class ContainerLocalArgumentTransferVerifier {
 				if (transfer == null) {
 					return true;
 				}
+				IMethodBinding target= argumentTarget(name, transfer.parameterIndex());
 				if (!plannedVariable(name, plan.bindingKey())
-						|| !transfer.methodJavaElementHandle().equals(
-								methodHandle(argumentTarget(name, transfer.parameterIndex())))) {
+						|| !transfer.methodJavaElementHandle().equals(methodHandle(target))
+						|| !LocalArrayUsageAnalyzer.hasExactArrayParameter(name, target, transfer.parameterIndex())) {
 					failure[0]= stale(unit, "argument-transfer target changed"); //$NON-NLS-1$
 					return false;
 				}
