@@ -185,6 +185,34 @@ to restore those snapshots.
 Exit codes are `0` for success, `2` for changes required in check mode and
 `1` for errors, with errors taking precedence.
 
+For a JUnit Platform suite migration in a PDE test bundle, pass
+`--pde-deployment /FeatureProject/feature.xml` and
+`--pde-deployment /TargetProject/tests.target` to include the deployment
+descriptors in the same transaction. Both paths identify workspace files.
+The feature must directly package the selected bundle. The target must identify
+one planner location with an unfiltered Vintage unit, one repository and a fixed
+JUnit Platform launcher release (1.x or 6.x). The new target units use the same
+version as that launcher. The
+feature and target use the existing unpinned Vintage entry as the source for
+additional Suite API and engine entries. Existing Vintage units remain available
+to other tests. A bundle's existing `additional.bundles` entry in
+`build.properties` is augmented when it already lists Vintage.
+
+To verify the deployed suite independently, run the normal Tycho
+`CleanupPatchLifecycleTest` with `SANDBOX_PDE_SUITE_REPLAY` pointing to a new
+empty directory. Then run `python3 qa/pde-suite/verify.py /path/to/capture` with
+the same Java 21+ and Maven/Tycho 5.0.4 environment. Extra Maven settings such
+as `-s /path/to/settings.xml` and `-Dmaven.repo.local=/path/to/cache` can
+follow the capture path. An optional `--repository file:///path/to/p2` selects
+a local p2 mirror for the exported target. The two reactors compile the actual
+source and manifest, package the declared feature, execute `AllTests` on the
+old and new engines, and check the ordered successful test identities.
+
+A patch spanning sibling projects uses paths relative to the common containing
+directory. Apply that patch from this directory. A single-project patch remains
+relative to the selected bundle. If a selected descriptor cannot be interpreted,
+the application restores every changed participant.
+
 Review the complete patch, planning diagnostics and the project's normal tests.
 The runner can also add the required Jupiter parallel-package import to an
 existing PDE manifest when a migration introduces `@Isolated`. Its project
