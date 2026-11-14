@@ -16,6 +16,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
 import org.eclipse.core.runtime.CoreException;
@@ -139,8 +141,8 @@ class ReturnPublicationWizardTest {
 			var undo= change.perform(monitor);
 			assertNotNull(undo);
 			assertTrue(display.getSource().contains("items.size()")); //$NON-NLS-1$
-			var f1= java.nio.file.Files.writeString(output.resolve("Rows.java"), rows.getSource()); //$NON-NLS-1$
-			var f2= java.nio.file.Files.writeString(output.resolve("Display.java"), display.getSource()); //$NON-NLS-1$
+			var f1= Files.writeString(output.resolve("Rows.java"), rows.getSource(), StandardCharsets.UTF_8); //$NON-NLS-1$
+			var f2= Files.writeString(output.resolve("Display.java"), display.getSource(), StandardCharsets.UTF_8); //$NON-NLS-1$
 			assertEquals(0, javax.tools.ToolProvider.getSystemJavaCompiler().run(null, null, null, "-d", output.toString(), f1.toString(), f2.toString())); //$NON-NLS-1$
 			try (var loader= new java.net.URLClassLoader(new java.net.URL[] {output.toUri().toURL()}, null)) {
 				var method= loader.loadClass("test.Rows").getDeclaredMethod("rows", String.class); //$NON-NLS-1$ //$NON-NLS-2$
