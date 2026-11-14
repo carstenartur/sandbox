@@ -71,9 +71,8 @@ public final class ContainerLocalRewriteFix {
 	}
 
 	/** Used only after the project-closed return and all result consumers have been revalidated. */
-	static CompilationUnitRewriteOperationWithSourceRange directReturnOperation(ICompilationUnit unit,
-			org.eclipse.jdt.core.dom.CompilationUnit root, ContainerLocalRewritePlan plan) throws CoreException {
-		return new RewriteOperation(resolve(unit, root, plan), false);
+	static CompilationUnitRewriteOperationWithSourceRange directReturnOperation(ResolvedPlan plan) {
+		return new RewriteOperation(plan, false);
 	}
 
 	/** Package-visible semantic resolution used by the cleanup adapter. */

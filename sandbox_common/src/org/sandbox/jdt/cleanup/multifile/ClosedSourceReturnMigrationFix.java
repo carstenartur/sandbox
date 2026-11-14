@@ -11,8 +11,8 @@
 package org.sandbox.jdt.cleanup.multifile;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
@@ -30,11 +30,13 @@ import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCo
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 
 import org.sandbox.jdt.container.analysis.ClosedReturnArrayUses;
 import org.sandbox.jdt.container.api.ClosedSourceReturnMigrationPlan;
 import org.sandbox.jdt.container.api.ClosedSourceReturnMigrationPlan.Range;
+import org.sandbox.jdt.container.api.ReturnPublicationPolicy;
 
 /** Applies one unit of a validated, project-closed return and callers change. */
 public final class ClosedSourceReturnMigrationFix {
@@ -45,6 +47,12 @@ public final class ClosedSourceReturnMigrationFix {
 	}
 
 	public static ICleanUpFix create(ICompilationUnit unit, CompilationUnit root, ClosedSourceReturnMigrationPlan plan) throws CoreException {
+		return create(unit, root, plan, null);
+	}
+
+	/** Applies the selected publication contract only when an interactive refactoring supplied it. */
+	public static ICleanUpFix create(ICompilationUnit unit, CompilationUnit root, ClosedSourceReturnMigrationPlan plan,
+			ReturnPublicationPolicy policy) throws CoreException {
 		String handle= unit.getPrimary().getHandleIdentifier();
 		var expected= plan.consumers().stream().filter(consumer -> consumer.unitHandle().equals(handle)).toList();
 		var actual= ClosedReturnArrayUses.consumers(root, handle, plan.methodBindingKey());
@@ -59,7 +67,27 @@ public final class ClosedSourceReturnMigrationFix {
 					.filter(plan.returnType()::equals).isEmpty()) {
 				throw new CoreException(Status.error("The return signature in the supplied working-copy AST changed.")); //$NON-NLS-1$
 			}
-			operations.add(ContainerLocalRewriteFix.directReturnOperation(unit.getPrimary(), root, plan.producer()));
+			var resolved= ContainerLocalRewriteFix.resolve(unit.getPrimary(), root, plan.producer());
+			if (policy != null) {
+				if (resolved.publication() == null || (policy == ReturnPublicationPolicy.REJECT_NULLS
+						&& !JavaModelUtil.is10OrHigher(unit.getJavaProject()))) {
+					throw new CoreException(Status.error("The return boundary or the Java 10 API requirement is unavailable.")); //$NON-NLS-1$
+				}
+				operations.add(new CompilationUnitRewriteOperationWithSourceRange() {
+					@Override
+					public void rewriteASTInternal(CompilationUnitRewrite cu, LinkedProposalModelCore linked) {
+						var ast= cu.getRoot().getAST();
+						boolean copy= policy == ReturnPublicationPolicy.REJECT_NULLS;
+						String owner= cu.getImportRewrite().addImport(copy ? "java.util.List" : "java.util.Collections"); //$NON-NLS-1$ //$NON-NLS-2$
+						var publication= ast.newMethodInvocation();
+						publication.setExpression(ast.newName(owner));
+						publication.setName(ast.newSimpleName(copy ? "copyOf" : "unmodifiableList")); //$NON-NLS-1$ //$NON-NLS-2$
+						publication.arguments().add(ASTNode.copySubtree(ast, resolved.publication()));
+						cu.getASTRewrite().replace(resolved.publication(), publication, createTextEditGroup(DESCRIPTION, cu));
+					}
+				});
+			}
+			operations.add(ContainerLocalRewriteFix.directReturnOperation(resolved));
 			types.add((ArrayType) node(root, plan.returnType()));
 		}
 		for (var consumer : expected) {

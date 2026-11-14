@@ -20,4 +20,21 @@
 		<cleanUp class="org.sandbox.jdt.container.cleanup.internal.ui.fix.ConcurrentMembershipCleanUp"
 				id="org.sandbox.jdt.ui.cleanup.container_contracts.concurrent_membership"/>
 	</extension>
+	<extension point="org.eclipse.ui.commands">
+		<command id="org.sandbox.jdt.container.selectReturnPublication"
+				name="Refactor array return publication..."
+				defaultHandler="org.sandbox.jdt.container.cleanup.internal.ui.refactoring.ReturnPublicationAction"/>
+	</extension>
+	<extension point="org.eclipse.ui.menus">
+		<menuContribution locationURI="popup:org.eclipse.ui.popup.any?after=additions">
+			<command commandId="org.sandbox.jdt.container.selectReturnPublication" style="push">
+				<visibleWhen checkEnabled="false">
+					<and>
+						<count value="1"/>
+						<iterate ifEmpty="false"><instanceof value="org.eclipse.jdt.core.ICompilationUnit"/></iterate>
+					</and>
+				</visibleWhen>
+			</command>
+		</menuContribution>
+	</extension>
 </plugin>
