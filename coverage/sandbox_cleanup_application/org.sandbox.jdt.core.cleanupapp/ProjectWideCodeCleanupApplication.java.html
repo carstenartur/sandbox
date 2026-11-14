@@ -528,8 +528,8 @@ import org.sandbox.jdt.triggerpattern.git.UnifiedDiffFormatter;
 <span class="fc" id="L528">		array(json, &quot;refactoringStatus&quot;, statusMessages, 1).append(&quot;,\n&quot;); //$NON-NLS-1$</span>
 <span class="fc" id="L529">		json.append(&quot;  \&quot;planningDiagnostics\&quot;: [&quot;); //$NON-NLS-1$</span>
 <span class="fc bfc" id="L530" title="All 2 branches covered.">		for (int index= 0; index &lt; planningDiagnostics.size(); index++) {</span>
-<span class="pc bpc" id="L531" title="1 of 2 branches missed.">			if (index &gt; 0) {</span>
-<span class="nc" id="L532">				json.append(',');</span>
+<span class="fc bfc" id="L531" title="All 2 branches covered.">			if (index &gt; 0) {</span>
+<span class="fc" id="L532">				json.append(',');</span>
 			}
 <span class="fc" id="L534">			json.append('\n').append(&quot;    &quot;).append(planningDiagnostics.get(index)); //$NON-NLS-1$</span>
 		}

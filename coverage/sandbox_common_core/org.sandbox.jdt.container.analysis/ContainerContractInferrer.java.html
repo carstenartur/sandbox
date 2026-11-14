@@ -64,7 +64,7 @@ import org.sandbox.jdt.container.api.TargetContainerContract.Mutability;
 <span class="fc bfc" id="L64" title="All 2 branches covered.">		if (enumMembership.isPresent()) {</span>
 <span class="fc" id="L65">			return enumMembership;</span>
 		}
-<span class="fc" id="L67">		return inferAppendArray(profile);</span>
+<span class="fc" id="L67">		return RecordKeyLookupAnalyzer.recommendation(profile).or(() -&gt; inferAppendArray(profile));</span>
 	}
 
 	private static Optional&lt;ContainerRecommendation&gt; inferAppendArray(

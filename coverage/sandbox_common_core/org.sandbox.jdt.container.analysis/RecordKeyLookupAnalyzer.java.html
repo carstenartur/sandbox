@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>RecordKeyLookupAnalyzer.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.analysis</a> &gt; <span class="el_source">RecordKeyLookupAnalyzer.java</span></div><h1>RecordKeyLookupAnalyzer.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.analysis;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.EnhancedForStatement;
+import org.eclipse.jdt.core.dom.FieldAccess;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.IfStatement;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.ReturnStatement;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.ThisExpression;
+
+import org.sandbox.jdt.container.api.ContainerRecommendation;
+import org.sandbox.jdt.container.api.ContainerRecommendation.AutomationLevel;
+import org.sandbox.jdt.container.api.ContainerRecommendation.Confidence;
+import org.sandbox.jdt.container.api.ContainerRecommendation.ContractAssessment;
+import org.sandbox.jdt.container.api.ContainerRecommendation.ContractProperty;
+import org.sandbox.jdt.container.api.ContainerRecommendation.Preservation;
+import org.sandbox.jdt.container.api.ContainerShape;
+import org.sandbox.jdt.container.api.ContainerUsageProfile;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AccessProfile;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AliasingContract;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AnalysisCompleteness;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ConcurrencyProfile;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ContainerIdentity;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ElementDomain;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.EscapeLevel;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.MutationLifecycle;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.NullContract;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.OrderRequirement;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.UniquenessRequirement;
+import org.sandbox.jdt.container.api.TargetContainerContract;
+import org.sandbox.jdt.container.api.TargetContainerContract.Mutability;
+import org.sandbox.jdt.container.api.UsageEvidence;
+import org.sandbox.jdt.container.api.UsageEvidence.Kind;
+
+/** Finds repeated first-match scans over the same list declaration and generated String record accessor. */
+public final class RecordKeyLookupAnalyzer {
+
+<span class="fc" id="L66">	private record Lookup(String container, String accessor) {</span>
+	}
+<span class="fc" id="L68">	private record Observations(ContainerIdentity identity, EscapeLevel escape, List&lt;UsageEvidence&gt; scans) {</span>
+	}
+
+	private RecordKeyLookupAnalyzer() {
+	}
+
+	/** Returns report-only seeds and polls cancellation even in units with few matching loops. */
+	public static List&lt;ContainerUsageProfile&gt; analyze(CompilationUnit root, Runnable checkCanceled) {
+<span class="fc" id="L76">		checkCanceled.run();</span>
+<span class="fc" id="L77">		Map&lt;Lookup, Observations&gt; observations= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L78">		root.accept(new ASTVisitor() {</span>
+			private int visited;
+
+			@Override
+			public boolean preVisit2(ASTNode node) {
+<span class="fc bfc" id="L83" title="All 2 branches covered.">				if (++visited % 128 == 0) {</span>
+<span class="fc" id="L84">					checkCanceled.run();</span>
+				}
+<span class="fc" id="L86">				return true;</span>
+			}
+
+			@Override
+			public boolean visit(EnhancedForStatement loop) {
+<span class="fc" id="L91">				observe(root, loop, observations);</span>
+<span class="fc" id="L92">				return true;</span>
+			}
+		});
+<span class="fc" id="L95">		checkCanceled.run();</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">		return observations.values().stream().filter(value -&gt; value.scans().size() &gt;= 2)</span>
+<span class="fc" id="L97">				.map(RecordKeyLookupAnalyzer::profile).toList();</span>
+	}
+
+	private static void observe(CompilationUnit root, EnhancedForStatement loop, Map&lt;Lookup, Observations&gt; observations) {
+<span class="fc" id="L101">		IVariableBinding container= listBinding(root, loop.getExpression());</span>
+<span class="fc" id="L102">		IVariableBinding element= loop.getParameter().resolveBinding();</span>
+<span class="pc bpc" id="L103" title="2 of 6 branches missed.">		if (!resolved(container) || !resolved(element) || !resolved(container.getType())</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">				|| !&quot;java.util.List&quot;.equals(container.getType().getErasure().getQualifiedName()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">				|| container.getType().getTypeArguments().length != 1</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">				|| !container.getType().getTypeArguments()[0].isEqualTo(element.getType())) {</span>
+<span class="fc" id="L107">			return;</span>
+		}
+<span class="pc bpc" id="L109" title="1 of 4 branches missed.">		if (!(onlyStatement(loop.getBody()) instanceof IfStatement branch) || branch.getElseStatement() != null</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">				|| !(onlyStatement(branch.getThenStatement()) instanceof ReturnStatement result)</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">				|| !references(result.getExpression(), element)</span>
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">				|| !(ContainerAstFacts.unwrap(branch.getExpression()) instanceof MethodInvocation equals)</span>
+<span class="pc bpc" id="L113" title="2 of 4 branches missed.">				|| !isStringEquals(equals) || equals.arguments().size() != 1</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">				|| !(ContainerAstFacts.unwrap((Expression) equals.arguments().get(0)) instanceof MethodInvocation key)</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">				|| !references(key.getExpression(), element)) {</span>
+<span class="fc" id="L116">			return;</span>
+		}
+<span class="fc" id="L118">		IMethodBinding accessor= key.resolveMethodBinding();</span>
+<span class="pc bpc" id="L119" title="2 of 6 branches missed.">		if (!resolved(accessor) || !accessor.isSyntheticRecordMethod() || !accessor.getDeclaringClass().isRecord()</span>
+<span class="pc bpc" id="L120" title="2 of 4 branches missed.">				|| !key.arguments().isEmpty() || !isString(accessor.getReturnType())</span>
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">				|| ContainerAstFacts.variableBinding(equals.getExpression()).filter(IVariableBinding::isParameter).isEmpty()</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">				|| !isRecordComponent(accessor)) {</span>
+<span class="fc" id="L123">			return;</span>
+		}
+<span class="fc" id="L125">		Expression source= loop.getExpression();</span>
+<span class="fc" id="L126">		String bindingKey= container.getVariableDeclaration().getKey();</span>
+<span class="fc" id="L127">		Lookup lookup= new Lookup(bindingKey, accessor.getMethodDeclaration().getKey());</span>
+<span class="fc" id="L128">		Observations group= observations.computeIfAbsent(lookup, unused -&gt; new Observations(</span>
+<span class="fc" id="L129">				new ContainerIdentity(bindingKey, container.getName(), source.getStartPosition(), source.getLength()),</span>
+<span class="fc" id="L130">				escapeLevel(container),</span>
+				new ArrayList&lt;&gt;()));
+<span class="fc" id="L132">		group.scans().add(new UsageEvidence(Kind.RECORD_KEY_LOOKUP,</span>
+<span class="fc" id="L133">				&quot;Return the first list element whose %s() matches the requested String.&quot;.formatted(accessor.getName()), //$NON-NLS-1$</span>
+<span class="fc" id="L134">				loop.getStartPosition(), loop.getLength()));</span>
+<span class="fc" id="L135">	}</span>
+
+	private static EscapeLevel escapeLevel(IVariableBinding variable) {
+<span class="fc bfc" id="L138" title="All 2 branches covered.">		if (variable.isField()) {</span>
+<span class="fc" id="L139">			return EscapeLevel.FIELD;</span>
+		}
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">		return variable.isParameter() ? EscapeLevel.METHOD_BOUNDARY : EscapeLevel.UNKNOWN;</span>
+	}
+
+	private static IVariableBinding directVariable(Expression source) {
+<span class="fc" id="L145">		Expression expression= ContainerAstFacts.unwrap(source);</span>
+<span class="pc bpc" id="L146" title="1 of 6 branches missed.">		if (expression instanceof SimpleName || expression instanceof FieldAccess field &amp;&amp; currentInstance(field.getExpression())) {</span>
+<span class="fc" id="L147">			return ContainerAstFacts.variableBinding(expression).orElse(null);</span>
+		}
+<span class="fc" id="L149">		return null;</span>
+	}
+
+	private static boolean currentInstance(Expression expression) {
+<span class="pc bpc" id="L153" title="1 of 6 branches missed.">		return expression == null || expression instanceof ThisExpression self &amp;&amp; self.getQualifier() == null;</span>
+	}
+
+	private static IVariableBinding listBinding(CompilationUnit root, Expression source) {
+<span class="fc" id="L157">		Expression expression= ContainerAstFacts.unwrap(source);</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">		if (!(expression instanceof MethodInvocation getter)) {</span>
+<span class="fc" id="L159">			return directVariable(expression);</span>
+		}
+<span class="fc" id="L161">		IMethodBinding method= getter.resolveMethodBinding();</span>
+<span class="pc bpc" id="L162" title="2 of 6 branches missed.">		if (!resolved(method) || !currentInstance(getter.getExpression()) || !getter.arguments().isEmpty()</span>
+<span class="pc bpc" id="L163" title="2 of 4 branches missed.">				|| !(Modifier.isFinal(method.getDeclaringClass().getModifiers()) || Modifier.isFinal(method.getModifiers())</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">						|| Modifier.isPrivate(method.getModifiers()))</span>
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">				|| !(root.findDeclaringNode(method.getMethodDeclaration()) instanceof MethodDeclaration declaration)</span>
+<span class="pc bpc" id="L166" title="2 of 4 branches missed.">				|| declaration.getBody() == null || !(onlyStatement(declaration.getBody()) instanceof ReturnStatement result)</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">				|| result.getExpression() == null) {</span>
+<span class="fc" id="L168">			return null;</span>
+		}
+<span class="fc" id="L170">		IVariableBinding field= directVariable(result.getExpression());</span>
+<span class="pc bpc" id="L171" title="2 of 6 branches missed.">		return resolved(field) &amp;&amp; field.isField() &amp;&amp; Modifier.isFinal(field.getModifiers()) ? field : null;</span>
+	}
+
+	private static Statement onlyStatement(Statement statement) {
+<span class="fc bfc" id="L175" title="All 4 branches covered.">		if (statement instanceof Block block &amp;&amp; block.statements().size() == 1) {</span>
+<span class="fc" id="L176">			return (Statement) block.statements().get(0);</span>
+		}
+<span class="fc" id="L178">		return statement;</span>
+	}
+
+	private static boolean resolved(IBinding binding) {
+<span class="pc bpc" id="L182" title="2 of 6 branches missed.">		return binding != null &amp;&amp; !binding.isRecovered() &amp;&amp; binding.getKey() != null;</span>
+	}
+
+	private static boolean references(Expression expression, IVariableBinding expected) {
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">		return expression != null &amp;&amp; ContainerAstFacts.variableBinding(expression)</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">				.filter(binding -&gt; binding.getVariableDeclaration().isEqualTo(expected.getVariableDeclaration())).isPresent();</span>
+	}
+
+	private static boolean isString(ITypeBinding type) {
+<span class="pc bpc" id="L191" title="2 of 4 branches missed.">		return type != null &amp;&amp; &quot;java.lang.String&quot;.equals(type.getQualifiedName()); //$NON-NLS-1$</span>
+	}
+
+	private static boolean isStringEquals(MethodInvocation invocation) {
+<span class="fc" id="L195">		IMethodBinding method= invocation.resolveMethodBinding();</span>
+<span class="pc bpc" id="L196" title="3 of 6 branches missed.">		return resolved(method) &amp;&amp; &quot;equals&quot;.equals(method.getName()) &amp;&amp; isString(method.getDeclaringClass()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">				&amp;&amp; invocation.getExpression() != null;</span>
+	}
+
+	private static boolean isRecordComponent(IMethodBinding accessor) {
+<span class="fc bfc" id="L201" title="All 2 branches covered.">		for (IVariableBinding field : accessor.getDeclaringClass().getDeclaredFields()) {</span>
+<span class="pc bpc" id="L202" title="1 of 4 branches missed.">			if (field.getName().equals(accessor.getName()) &amp;&amp; !Modifier.isStatic(field.getModifiers())) {</span>
+<span class="fc" id="L203">				return true;</span>
+			}
+		}
+<span class="fc" id="L206">		return false;</span>
+	}
+
+	private static ContainerUsageProfile profile(Observations observations) {
+<span class="fc" id="L210">		return new ContainerUsageProfile(observations.identity(), ContainerShape.LIST, ElementDomain.REFERENCE,</span>
+				new AccessProfile(false, false, false, false, false, false, true),
+				OrderRequirement.ENCOUNTER, UniquenessRequirement.UNKNOWN, MutationLifecycle.UNKNOWN, NullContract.UNKNOWN,
+<span class="fc" id="L213">				AliasingContract.UNKNOWN, observations.escape(), ConcurrencyProfile.unknown(), AnalysisCompleteness.LOCAL_SEED,</span>
+<span class="fc" id="L214">				observations.scans());</span>
+	}
+
+	static Optional&lt;ContainerRecommendation&gt; recommendation(ContainerUsageProfile profile) {
+<span class="fc bfc" id="L218" title="All 4 branches covered.">		if (profile.currentShape() != ContainerShape.LIST || !profile.access().keyLookup()</span>
+<span class="pc bpc" id="L219" title="1 of 2 branches missed.">				|| profile.completeness() != AnalysisCompleteness.LOCAL_SEED</span>
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">				|| profile.evidence().stream().filter(item -&gt; item.kind() == Kind.RECORD_KEY_LOOKUP)</span>
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">						.map(UsageEvidence::sourceStart).distinct().limit(2).count() != 2) {</span>
+<span class="fc" id="L222">			return Optional.empty();</span>
+		}
+<span class="fc" id="L224">		TargetContainerContract target= new TargetContainerContract(ContainerShape.MAP, OrderRequirement.UNKNOWN,</span>
+				UniquenessRequirement.REQUIRED, Mutability.UNKNOWN, NullContract.UNKNOWN,
+				&quot;Consider a key index for repeated first-match scans; the list may still be needed by other callers.&quot;); //$NON-NLS-1$
+<span class="fc" id="L227">		return Optional.of(new ContainerRecommendation(profile, target,</span>
+<span class="fc" id="L228">				ContainerRuleRegistry.find(ContainerRuleRegistry.RECORD_KEY_LOOKUP_MAP).orElseThrow(),</span>
+<span class="fc" id="L229">				Confidence.MEDIUM, AutomationLevel.REPORT_ONLY, List.of(</span>
+						new ContractAssessment(ContractProperty.SIGNATURES, Preservation.PRESERVED,
+								&quot;A supplementary index can retain existing list parameters, accessors and return types.&quot;), //$NON-NLS-1$
+						new ContractAssessment(ContractProperty.ALIASING, Preservation.REQUIRES_PROOF,
+								&quot;Each match returns the original record instance, including to callers outside the compilation unit.&quot;), //$NON-NLS-1$
+						new ContractAssessment(ContractProperty.ORDER, Preservation.REQUIRES_PROOF,
+								&quot;With duplicate keys the first matching entry in list order must remain the result.&quot;), //$NON-NLS-1$
+						new ContractAssessment(ContractProperty.UNIQUENESS, Preservation.CHANGED,
+								&quot;A single-value index has one entry per key; the list permits duplicates.&quot;), //$NON-NLS-1$
+						new ContractAssessment(ContractProperty.MUTABILITY, Preservation.REQUIRES_PROOF,
+								&quot;Any index must track insertion, removal, replacement and reordering through every alias.&quot;), //$NON-NLS-1$
+						new ContractAssessment(ContractProperty.NULLS, Preservation.REQUIRES_PROOF,
+								&quot;Preserve null element and null query exceptions, including queries on an empty list.&quot;), //$NON-NLS-1$
+						new ContractAssessment(ContractProperty.CONCURRENCY, Preservation.REQUIRES_PROOF,
+								&quot;Publication and concurrent reads or writes require separate analysis.&quot;)))); //$NON-NLS-1$
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

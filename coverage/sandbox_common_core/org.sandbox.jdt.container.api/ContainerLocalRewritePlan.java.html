@@ -146,78 +146,79 @@ public record ContainerLocalRewritePlan(
 <span class="fc" id="L146">		REMOVE_ARRAY_GROWTH,</span>
 <span class="fc" id="L147">		REPLACE_TAIL_WRITE_WITH_ADD,</span>
 <span class="fc" id="L148">		REPLACE_LENGTH_WITH_SIZE,</span>
+<span class="fc" id="L149">		PUBLISH_RETURN_ARRAY,</span>
 		/** Verifies an allowed encounter-order traversal requiring no source edit. */
-<span class="fc" id="L150">		VERIFY_ENCOUNTER_ITERATION,</span>
+<span class="fc" id="L151">		VERIFY_ENCOUNTER_ITERATION,</span>
 		/** Verifies an unchanged argument whose target signature migrates atomically. */
-<span class="fc" id="L152">		VERIFY_ARGUMENT_TRANSFER</span>
+<span class="fc" id="L153">		VERIFY_ARGUMENT_TRANSFER</span>
 	}
 
-<span class="fc" id="L155">	public enum DiagnosticKind {</span>
-<span class="fc" id="L156">		NOT_AUTOMATIC,</span>
-<span class="fc" id="L157">		FLOW_NOT_STRICTLY_LOCAL,</span>
-<span class="fc" id="L158">		SOURCE_BINDING_MISMATCH,</span>
-<span class="fc" id="L159">		UNSUPPORTED_TARGET,</span>
-<span class="fc" id="L160">		UNSUPPORTED_ELEMENT_DOMAIN,</span>
-<span class="fc" id="L161">		POSITIONAL_SEMANTICS,</span>
-<span class="fc" id="L162">		MISSING_APPEND_PATTERN,</span>
-<span class="fc" id="L163">		UNBALANCED_APPEND_PATTERN,</span>
-<span class="fc" id="L164">		ARGUMENT_TRANSFER_MISMATCH,</span>
-<span class="fc" id="L165">		UNSUPPORTED_EVIDENCE</span>
+<span class="fc" id="L156">	public enum DiagnosticKind {</span>
+<span class="fc" id="L157">		NOT_AUTOMATIC,</span>
+<span class="fc" id="L158">		FLOW_NOT_STRICTLY_LOCAL,</span>
+<span class="fc" id="L159">		SOURCE_BINDING_MISMATCH,</span>
+<span class="fc" id="L160">		UNSUPPORTED_TARGET,</span>
+<span class="fc" id="L161">		UNSUPPORTED_ELEMENT_DOMAIN,</span>
+<span class="fc" id="L162">		POSITIONAL_SEMANTICS,</span>
+<span class="fc" id="L163">		MISSING_APPEND_PATTERN,</span>
+<span class="fc" id="L164">		UNBALANCED_APPEND_PATTERN,</span>
+<span class="fc" id="L165">		ARGUMENT_TRANSFER_MISMATCH,</span>
+<span class="fc" id="L166">		UNSUPPORTED_EVIDENCE</span>
 	}
 
 	private static void validateEdits(
 			List&lt;LocalEdit&gt; edits,
 			List&lt;ArgumentTransfer&gt; argumentTransfers) {
-<span class="pc bpc" id="L171" title="1 of 2 branches missed.">		if (edits.isEmpty()) {</span>
-<span class="nc" id="L172">			throw new IllegalArgumentException(&quot;A local rewrite plan requires edits&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">		if (edits.isEmpty()) {</span>
+<span class="nc" id="L173">			throw new IllegalArgumentException(&quot;A local rewrite plan requires edits&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L174">		Set&lt;EditKind&gt; kinds= EnumSet.noneOf(EditKind.class);</span>
-<span class="fc" id="L175">		Set&lt;SourceRange&gt; expectedTransfers= HashSet.newHashSet(edits.size());</span>
-<span class="fc bfc" id="L176" title="All 2 branches covered.">		for (LocalEdit edit : edits) {</span>
-<span class="fc" id="L177">			kinds.add(edit.kind());</span>
-<span class="fc bfc" id="L178" title="All 2 branches covered.">			if (edit.kind() == EditKind.VERIFY_ARGUMENT_TRANSFER) {</span>
-<span class="fc" id="L179">				expectedTransfers.add(new SourceRange(</span>
-<span class="fc" id="L180">						edit.sourceStart(), edit.sourceLength()));</span>
+<span class="fc" id="L175">		Set&lt;EditKind&gt; kinds= EnumSet.noneOf(EditKind.class);</span>
+<span class="fc" id="L176">		Set&lt;SourceRange&gt; expectedTransfers= HashSet.newHashSet(edits.size());</span>
+<span class="fc bfc" id="L177" title="All 2 branches covered.">		for (LocalEdit edit : edits) {</span>
+<span class="fc" id="L178">			kinds.add(edit.kind());</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">			if (edit.kind() == EditKind.VERIFY_ARGUMENT_TRANSFER) {</span>
+<span class="fc" id="L180">				expectedTransfers.add(new SourceRange(</span>
+<span class="fc" id="L181">						edit.sourceStart(), edit.sourceLength()));</span>
 			}
-<span class="fc" id="L182">		}</span>
-<span class="pc bpc" id="L183" title="1 of 2 branches missed.">		if (!kinds.contains(EditKind.CHANGE_LOCAL_DECLARATION)</span>
-<span class="fc bfc" id="L184" title="All 2 branches covered.">				|| !kinds.contains(EditKind.REPLACE_EMPTY_ARRAY_INITIALIZER)</span>
-<span class="pc bpc" id="L185" title="1 of 2 branches missed.">				|| !kinds.contains(EditKind.REMOVE_ARRAY_GROWTH)</span>
-<span class="pc bpc" id="L186" title="1 of 2 branches missed.">				|| !kinds.contains(EditKind.REPLACE_TAIL_WRITE_WITH_ADD)) {</span>
-<span class="fc" id="L187">			throw new IllegalArgumentException(</span>
+<span class="fc" id="L183">		}</span>
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">		if (!kinds.contains(EditKind.CHANGE_LOCAL_DECLARATION)</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">				|| !kinds.contains(EditKind.REPLACE_EMPTY_ARRAY_INITIALIZER)</span>
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">				|| !kinds.contains(EditKind.REMOVE_ARRAY_GROWTH)</span>
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">				|| !kinds.contains(EditKind.REPLACE_TAIL_WRITE_WITH_ADD)) {</span>
+<span class="fc" id="L188">			throw new IllegalArgumentException(</span>
 					&quot;A local append-array rewrite requires declaration, initializer, growth and append edits&quot;); //$NON-NLS-1$
 		}
 
-<span class="fc" id="L191">		Set&lt;SourceRange&gt; describedTransfers=</span>
-<span class="fc" id="L192">				HashSet.newHashSet(argumentTransfers.size());</span>
-<span class="fc bfc" id="L193" title="All 2 branches covered.">		for (ArgumentTransfer transfer : argumentTransfers) {</span>
-<span class="pc bpc" id="L194" title="1 of 2 branches missed.">			if (!describedTransfers.add(new SourceRange(</span>
-<span class="fc" id="L195">					transfer.sourceStart(), transfer.sourceLength()))) {</span>
-<span class="nc" id="L196">				throw new IllegalArgumentException(</span>
+<span class="fc" id="L192">		Set&lt;SourceRange&gt; describedTransfers=</span>
+<span class="fc" id="L193">				HashSet.newHashSet(argumentTransfers.size());</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">		for (ArgumentTransfer transfer : argumentTransfers) {</span>
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">			if (!describedTransfers.add(new SourceRange(</span>
+<span class="fc" id="L196">					transfer.sourceStart(), transfer.sourceLength()))) {</span>
+<span class="nc" id="L197">				throw new IllegalArgumentException(</span>
 						&quot;Argument transfer source ranges must be unique&quot;); //$NON-NLS-1$
 			}
-<span class="fc" id="L199">		}</span>
-<span class="pc bpc" id="L200" title="1 of 2 branches missed.">		if (!expectedTransfers.equals(describedTransfers)) {</span>
-<span class="nc" id="L201">			throw new IllegalArgumentException(</span>
+<span class="fc" id="L200">		}</span>
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">		if (!expectedTransfers.equals(describedTransfers)) {</span>
+<span class="nc" id="L202">			throw new IllegalArgumentException(</span>
 					&quot;Every argument verification edit requires one exact target description&quot;); //$NON-NLS-1$
 		}
-<span class="fc" id="L204">	}</span>
+<span class="fc" id="L205">	}</span>
 
 	private static void validateSourceRange(int sourceStart, int sourceLength) {
-<span class="pc bpc" id="L207" title="2 of 4 branches missed.">		if (sourceStart &lt; 0 || sourceLength &lt; 0) {</span>
-<span class="nc" id="L208">			throw new IllegalArgumentException(&quot;Source range must not be negative&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L208" title="2 of 4 branches missed.">		if (sourceStart &lt; 0 || sourceLength &lt; 0) {</span>
+<span class="nc" id="L209">			throw new IllegalArgumentException(&quot;Source range must not be negative&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L210">	}</span>
+<span class="fc" id="L211">	}</span>
 
 	private static String requiredText(String value, String fieldName) {
-<span class="fc" id="L213">		String text= Objects.requireNonNull(value, fieldName).strip();</span>
-<span class="pc bpc" id="L214" title="1 of 2 branches missed.">		if (text.isEmpty()) {</span>
-<span class="nc" id="L215">			throw new IllegalArgumentException(fieldName + &quot; must not be empty&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L214">		String text= Objects.requireNonNull(value, fieldName).strip();</span>
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">		if (text.isEmpty()) {</span>
+<span class="nc" id="L216">			throw new IllegalArgumentException(fieldName + &quot; must not be empty&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L217">		return text;</span>
+<span class="fc" id="L218">		return text;</span>
 	}
 
-<span class="fc" id="L220">	private record SourceRange(int start, int length) {</span>
+<span class="fc" id="L221">	private record SourceRange(int start, int length) {</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -124,18 +124,26 @@ public final class ContainerLocalRewriteFix {
 <span class="fc" id="L124">				rewrite.replace(pair.appendAssignment(), add, group);</span>
 			}
 
-<span class="fc bfc" id="L127" title="All 2 branches covered.">			for (ResolvedLength length : resolved.lengths()) {</span>
-<span class="fc" id="L128">				MethodInvocation size= ast.newMethodInvocation();</span>
-<span class="fc" id="L129">				size.setExpression((Expression) ASTNode.copySubtree(</span>
-<span class="fc" id="L130">						ast, length.arrayExpression()));</span>
-<span class="fc" id="L131">				size.setName(ast.newSimpleName(&quot;size&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L132">				rewrite.replace(length.expression(), size, group);</span>
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">			if (resolved.publication() != null) {</span>
+<span class="nc" id="L128">				MethodInvocation toArray= ast.newMethodInvocation();</span>
+<span class="nc" id="L129">				toArray.setExpression((Expression) ASTNode.copySubtree(ast, resolved.publication()));</span>
+<span class="nc" id="L130">				toArray.setName(ast.newSimpleName(&quot;toArray&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L131">				toArray.arguments().add(ASTNode.copySubtree(ast, resolved.initializer()));</span>
+<span class="nc" id="L132">				rewrite.replace(resolved.publication(), toArray, group);</span>
 			}
-<span class="fc" id="L134">		}</span>
+
+<span class="fc bfc" id="L135" title="All 2 branches covered.">			for (ResolvedLength length : resolved.lengths()) {</span>
+<span class="fc" id="L136">				MethodInvocation size= ast.newMethodInvocation();</span>
+<span class="fc" id="L137">				size.setExpression((Expression) ASTNode.copySubtree(</span>
+<span class="fc" id="L138">						ast, length.arrayExpression()));</span>
+<span class="fc" id="L139">				size.setName(ast.newSimpleName(&quot;size&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L140">				rewrite.replace(length.expression(), size, group);</span>
+			}
+<span class="fc" id="L142">		}</span>
 
 		@Override
 		public String getAdditionalInfo() {
-<span class="nc" id="L138">			return DESCRIPTION;</span>
+<span class="nc" id="L146">			return DESCRIPTION;</span>
 		}
 	}
 }

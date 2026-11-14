@@ -87,10 +87,10 @@ import org.sandbox.jdt.container.api.UsageEvidence.Kind;
 	private static Optional&lt;Candidate&gt; candidate(VariableDeclarationFragment fragment) {
 <span class="fc" id="L88">		IVariableBinding binding= fragment.resolveBinding();</span>
 <span class="pc bpc" id="L89" title="2 of 6 branches missed.">		if (binding == null || binding.isField() || binding.isParameter()</span>
-<span class="pc bpc" id="L90" title="1 of 2 branches missed.">				|| !(fragment.getParent() instanceof VariableDeclarationStatement declaration)</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">				|| !(fragment.getParent() instanceof VariableDeclarationStatement declaration)</span>
 <span class="pc bpc" id="L91" title="1 of 2 branches missed.">				|| declaration.fragments().size() != 1</span>
 <span class="fc bfc" id="L92" title="All 2 branches covered.">				|| !(fragment.getInitializer() instanceof ClassInstanceCreation creation)</span>
-<span class="pc bpc" id="L93" title="1 of 2 branches missed.">				|| !isEmptyArrayList(creation)) {</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">				|| !isEmptyArrayList(creation)) {</span>
 <span class="fc" id="L94">			return Optional.empty();</span>
 		}
 <span class="fc" id="L96">		ITypeBinding declaredType= declaration.getType().resolveBinding();</span>
@@ -196,7 +196,7 @@ import org.sandbox.jdt.container.api.UsageEvidence.Kind;
 	private static boolean isEmptyArrayList(ClassInstanceCreation creation) {
 <span class="fc" id="L197">		ITypeBinding type= creation.resolveTypeBinding();</span>
 <span class="pc bpc" id="L198" title="2 of 4 branches missed.">		return type != null &amp;&amp; ARRAY_LIST.equals(type.getErasure().getQualifiedName())</span>
-<span class="pc bpc" id="L199" title="1 of 2 branches missed.">				&amp;&amp; creation.arguments().isEmpty()</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">				&amp;&amp; creation.arguments().isEmpty()</span>
 <span class="pc bpc" id="L200" title="1 of 2 branches missed.">				&amp;&amp; creation.getAnonymousClassDeclaration() == null;</span>
 	}
 
@@ -205,7 +205,7 @@ import org.sandbox.jdt.container.api.UsageEvidence.Kind;
 <span class="nc" id="L205">			return false;</span>
 		}
 <span class="fc" id="L207">		String name= type.getErasure().getQualifiedName();</span>
-<span class="pc bpc" id="L208" title="3 of 4 branches missed.">		return LIST.equals(name) || ARRAY_LIST.equals(name);</span>
+<span class="pc bpc" id="L208" title="1 of 4 branches missed.">		return LIST.equals(name) || ARRAY_LIST.equals(name);</span>
 	}
 
 	private static ITypeBinding elementType(ITypeBinding listType) {

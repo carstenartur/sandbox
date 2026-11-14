@@ -47,25 +47,27 @@ public record UsageEvidence(Kind kind, String summary, int sourceStart, int sour
 <span class="fc" id="L47">		REFERENCE_COMPONENT,</span>
 <span class="fc" id="L48">		HASH_STABLE_COMPONENT,</span>
 <span class="fc" id="L49">		ARRAY_LENGTH_READ,</span>
-<span class="fc" id="L50">		INDEXED_READ,</span>
-<span class="fc" id="L51">		INDEXED_WRITE,</span>
-<span class="fc" id="L52">		ENCOUNTER_ITERATION,</span>
-<span class="fc" id="L53">		LOCAL_USAGE_COMPLETE,</span>
-<span class="fc" id="L54">		FLOW_CONTINUATION_ROOT,</span>
-<span class="fc" id="L55">		UNSUPPORTED_CONTINUATION,</span>
-<span class="fc" id="L56">		CAPTURED_USAGE,</span>
-<span class="fc" id="L57">		UNSAFE_ESCAPE,</span>
-<span class="fc" id="L58">		ARRAY_IDENTITY,</span>
-<span class="fc" id="L59">		UNCLASSIFIED_USAGE,</span>
-<span class="fc" id="L60">		UNRESOLVED_BINDING,</span>
-<span class="fc" id="L61">		REJECTION_BOUNDARY,</span>
-<span class="fc" id="L62">		HEAD_REMOVAL,</span>
-<span class="fc" id="L63">		TAIL_REMOVAL,</span>
-<span class="fc" id="L64">		ENUM_CARDINALITY,</span>
-<span class="fc" id="L65">		ENUM_ORDINAL_INDEX,</span>
-<span class="fc" id="L66">		ENUM_MEMBERSHIP_QUERY,</span>
-<span class="fc" id="L67">		ENUM_MEMBERSHIP_ENABLE,</span>
-<span class="fc" id="L68">		ENUM_MEMBERSHIP_DISABLE</span>
+<span class="fc" id="L50">		ARRAY_RETURN_PUBLICATION,</span>
+<span class="fc" id="L51">		INDEXED_READ,</span>
+<span class="fc" id="L52">		INDEXED_WRITE,</span>
+<span class="fc" id="L53">		ENCOUNTER_ITERATION,</span>
+<span class="fc" id="L54">		LOCAL_USAGE_COMPLETE,</span>
+<span class="fc" id="L55">		FLOW_CONTINUATION_ROOT,</span>
+<span class="fc" id="L56">		UNSUPPORTED_CONTINUATION,</span>
+<span class="fc" id="L57">		CAPTURED_USAGE,</span>
+<span class="fc" id="L58">		UNSAFE_ESCAPE,</span>
+<span class="fc" id="L59">		ARRAY_IDENTITY,</span>
+<span class="fc" id="L60">		UNCLASSIFIED_USAGE,</span>
+<span class="fc" id="L61">		UNRESOLVED_BINDING,</span>
+<span class="fc" id="L62">		REJECTION_BOUNDARY,</span>
+<span class="fc" id="L63">		HEAD_REMOVAL,</span>
+<span class="fc" id="L64">		TAIL_REMOVAL,</span>
+<span class="fc" id="L65">		RECORD_KEY_LOOKUP,</span>
+<span class="fc" id="L66">		ENUM_CARDINALITY,</span>
+<span class="fc" id="L67">		ENUM_ORDINAL_INDEX,</span>
+<span class="fc" id="L68">		ENUM_MEMBERSHIP_QUERY,</span>
+<span class="fc" id="L69">		ENUM_MEMBERSHIP_ENABLE,</span>
+<span class="fc" id="L70">		ENUM_MEMBERSHIP_DISABLE</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

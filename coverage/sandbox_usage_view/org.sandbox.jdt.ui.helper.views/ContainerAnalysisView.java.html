@@ -20,6 +20,7 @@ import java.util.function.Function;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
@@ -67,372 +68,374 @@ import org.sandbox.jdt.ui.helper.views.ContainerAnalysisService.ContainerAnalysi
  * is source-backed evidence, so navigation leads to the observation that supports
  * or blocks the recommendation rather than to a synthetic UI-only diagnostic.
  */
-<span class="nc" id="L70">public final class ContainerAnalysisView extends ViewPart implements IShowInTarget {</span>
+<span class="nc" id="L71">public final class ContainerAnalysisView extends ViewPart implements IShowInTarget {</span>
 
 	public static final String VIEW_ID= &quot;org.sandbox.jdt.ui.helper.views.ContainerAnalysisView&quot;; //$NON-NLS-1$
 
-<span class="nc" id="L74">	private final ContainerAnalysisService analysisService= new ContainerAnalysisService();</span>
-<span class="nc" id="L75">	private final AtomicLong analysisGeneration= new AtomicLong();</span>
+<span class="nc" id="L75">	private final ContainerAnalysisService analysisService= new ContainerAnalysisService();</span>
+<span class="nc" id="L76">	private final AtomicLong analysisGeneration= new AtomicLong();</span>
 	private TableViewer viewer;
 	private Text details;
 	private Display display;
-<span class="nc" id="L79">	private List&lt;ICompilationUnit&gt; currentUnits= List.of();</span>
+<span class="nc" id="L80">	private List&lt;ICompilationUnit&gt; currentUnits= List.of();</span>
 	private ISelectionListener workbenchSelectionListener;
 	private IPartListener2 editorPartListener;
 	private volatile Job analysisJob;
 
 	@Override
 	public void createPartControl(Composite parent) {
-<span class="nc" id="L86">		display= parent.getDisplay();</span>
-<span class="nc" id="L87">		parent.setLayout(new GridLayout(1, false));</span>
-<span class="nc" id="L88">		SashForm sash= new SashForm(parent, SWT.VERTICAL);</span>
-<span class="nc" id="L89">		sash.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));</span>
+<span class="nc" id="L87">		display= parent.getDisplay();</span>
+<span class="nc" id="L88">		parent.setLayout(new GridLayout(1, false));</span>
+<span class="nc" id="L89">		SashForm sash= new SashForm(parent, SWT.VERTICAL);</span>
+<span class="nc" id="L90">		sash.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));</span>
 
-<span class="nc" id="L91">		viewer= new TableViewer(sash, SWT.BORDER | SWT.FULL_SELECTION | SWT.H_SCROLL | SWT.V_SCROLL);</span>
-<span class="nc" id="L92">		viewer.setContentProvider(ArrayContentProvider.getInstance());</span>
-<span class="nc" id="L93">		Table table= viewer.getTable();</span>
-<span class="nc" id="L94">		table.setHeaderVisible(true);</span>
-<span class="nc" id="L95">		table.setLinesVisible(true);</span>
-<span class="nc" id="L96">		addColumn(&quot;Candidate&quot;, 130, ContainerAnalysisRow::candidate); //$NON-NLS-1$</span>
-<span class="nc" id="L97">		addColumn(&quot;Current&quot;, 90, ContainerAnalysisRow::currentShape); //$NON-NLS-1$</span>
-<span class="nc" id="L98">		addColumn(&quot;Target contract&quot;, 310, ContainerAnalysisRow::targetContract); //$NON-NLS-1$</span>
-<span class="nc" id="L99">		addColumn(&quot;Confidence&quot;, 90, ContainerAnalysisRow::confidence); //$NON-NLS-1$</span>
-<span class="nc" id="L100">		addColumn(&quot;Status&quot;, 110, ContainerAnalysisRow::status); //$NON-NLS-1$</span>
-<span class="nc" id="L101">		addColumn(&quot;Evidence&quot;, 420, row -&gt; row.evidenceKind() + &quot;: &quot; + row.evidenceSummary()); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L92">		viewer= new TableViewer(sash, SWT.BORDER | SWT.FULL_SELECTION | SWT.H_SCROLL | SWT.V_SCROLL);</span>
+<span class="nc" id="L93">		viewer.setContentProvider(ArrayContentProvider.getInstance());</span>
+<span class="nc" id="L94">		Table table= viewer.getTable();</span>
+<span class="nc" id="L95">		table.setHeaderVisible(true);</span>
+<span class="nc" id="L96">		table.setLinesVisible(true);</span>
+<span class="nc" id="L97">		addColumn(&quot;Candidate&quot;, 130, ContainerAnalysisRow::candidate); //$NON-NLS-1$</span>
+<span class="nc" id="L98">		addColumn(&quot;Current&quot;, 90, ContainerAnalysisRow::currentShape); //$NON-NLS-1$</span>
+<span class="nc" id="L99">		addColumn(&quot;Target contract&quot;, 310, ContainerAnalysisRow::targetContract); //$NON-NLS-1$</span>
+<span class="nc" id="L100">		addColumn(&quot;Confidence&quot;, 90, ContainerAnalysisRow::confidence); //$NON-NLS-1$</span>
+<span class="nc" id="L101">		addColumn(&quot;Status&quot;, 110, ContainerAnalysisRow::status); //$NON-NLS-1$</span>
+<span class="nc" id="L102">		addColumn(&quot;Evidence&quot;, 420, row -&gt; row.evidenceKind() + &quot;: &quot; + row.evidenceSummary()); //$NON-NLS-1$ //$NON-NLS-2$</span>
 
-<span class="nc" id="L103">		details= new Text(sash, SWT.MULTI | SWT.READ_ONLY | SWT.WRAP | SWT.V_SCROLL);</span>
-<span class="nc" id="L104">		details.setText(&quot;Select an evidence row to inspect its semantic explanation.&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L105">		sash.setWeights(72, 28);</span>
+<span class="nc" id="L104">		details= new Text(sash, SWT.MULTI | SWT.READ_ONLY | SWT.WRAP | SWT.V_SCROLL);</span>
+<span class="nc" id="L105">		details.setText(&quot;Select an evidence row to inspect its semantic explanation.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L106">		sash.setWeights(72, 28);</span>
 
-<span class="nc" id="L107">		viewer.addSelectionChangedListener(event -&gt; updateDetails());</span>
-<span class="nc" id="L108">		viewer.addDoubleClickListener(this::navigate);</span>
-<span class="nc" id="L109">		getSite().setSelectionProvider(viewer);</span>
-<span class="nc" id="L110">		contributeActions();</span>
-<span class="nc" id="L111">		installSelectionListener();</span>
-<span class="nc" id="L112">		installEditorPartListener();</span>
-<span class="nc" id="L113">		updateFromActiveEditor();</span>
-<span class="nc" id="L114">	}</span>
+<span class="nc" id="L108">		viewer.addSelectionChangedListener(event -&gt; updateDetails());</span>
+<span class="nc" id="L109">		viewer.addDoubleClickListener(this::navigate);</span>
+<span class="nc" id="L110">		getSite().setSelectionProvider(viewer);</span>
+<span class="nc" id="L111">		contributeActions();</span>
+<span class="nc" id="L112">		installSelectionListener();</span>
+<span class="nc" id="L113">		installEditorPartListener();</span>
+<span class="nc" id="L114">		updateFromActiveEditor();</span>
+<span class="nc" id="L115">	}</span>
 
 	private void addColumn(String title, int width, Function&lt;ContainerAnalysisRow, String&gt; text) {
-<span class="nc" id="L117">		TableViewerColumn viewerColumn= new TableViewerColumn(viewer, SWT.NONE);</span>
-<span class="nc" id="L118">		TableColumn column= viewerColumn.getColumn();</span>
-<span class="nc" id="L119">		column.setText(title);</span>
-<span class="nc" id="L120">		column.setWidth(width);</span>
-<span class="nc" id="L121">		column.setResizable(true);</span>
-<span class="nc" id="L122">		viewerColumn.setLabelProvider(new ColumnLabelProvider() {</span>
+<span class="nc" id="L118">		TableViewerColumn viewerColumn= new TableViewerColumn(viewer, SWT.NONE);</span>
+<span class="nc" id="L119">		TableColumn column= viewerColumn.getColumn();</span>
+<span class="nc" id="L120">		column.setText(title);</span>
+<span class="nc" id="L121">		column.setWidth(width);</span>
+<span class="nc" id="L122">		column.setResizable(true);</span>
+<span class="nc" id="L123">		viewerColumn.setLabelProvider(new ColumnLabelProvider() {</span>
 			@Override
 			public String getText(Object element) {
-<span class="nc bnc" id="L125" title="All 2 branches missed.">				return element instanceof ContainerAnalysisRow row ? text.apply(row) : &quot;&quot;; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">				return element instanceof ContainerAnalysisRow row ? text.apply(row) : &quot;&quot;; //$NON-NLS-1$</span>
 			}
 		});
-<span class="nc" id="L128">	}</span>
+<span class="nc" id="L129">	}</span>
 
 	private void contributeActions() {
-<span class="nc" id="L131">		Action refresh= new Action(&quot;Refresh container analysis&quot;) { //$NON-NLS-1$</span>
+<span class="nc" id="L132">		Action refresh= new Action(&quot;Refresh container analysis&quot;) { //$NON-NLS-1$</span>
 			@Override
 			public void run() {
-<span class="nc" id="L134">				refresh();</span>
-<span class="nc" id="L135">			}</span>
+<span class="nc" id="L135">				refresh();</span>
+<span class="nc" id="L136">			}</span>
 		};
-<span class="nc" id="L137">		refresh.setToolTipText(&quot;Re-run read-only container contract analysis for the current Java selection&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L138">		IToolBarManager toolbar= getViewSite().getActionBars().getToolBarManager();</span>
-<span class="nc" id="L139">		toolbar.add(refresh);</span>
-<span class="nc" id="L140">	}</span>
+<span class="nc" id="L138">		refresh.setToolTipText(&quot;Re-run read-only container contract analysis for the current Java selection&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L139">		IToolBarManager toolbar= getViewSite().getActionBars().getToolBarManager();</span>
+<span class="nc" id="L140">		toolbar.add(refresh);</span>
+<span class="nc" id="L141">	}</span>
 
 	private void installSelectionListener() {
-<span class="nc" id="L143">		workbenchSelectionListener= (IWorkbenchPart part, org.eclipse.jface.viewers.ISelection selection) -&gt; {</span>
-<span class="nc bnc" id="L144" title="All 2 branches missed.">			if (part == this) {</span>
-<span class="nc" id="L145">				return;</span>
+<span class="nc" id="L144">		workbenchSelectionListener= (IWorkbenchPart part, org.eclipse.jface.viewers.ISelection selection) -&gt; {</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">			if (part == this) {</span>
+<span class="nc" id="L146">				return;</span>
 			}
-<span class="nc" id="L147">			List&lt;ICompilationUnit&gt; units= compilationUnits(selection);</span>
-<span class="nc bnc" id="L148" title="All 2 branches missed.">			if (!units.isEmpty()) {</span>
-<span class="nc" id="L149">				setInput(units);</span>
+<span class="nc" id="L148">			List&lt;ICompilationUnit&gt; units= compilationUnits(selection);</span>
+<span class="nc bnc" id="L149" title="All 2 branches missed.">			if (!units.isEmpty()) {</span>
+<span class="nc" id="L150">				setInput(units);</span>
 			}
-<span class="nc" id="L151">		};</span>
-<span class="nc" id="L152">		getSite().getWorkbenchWindow().getSelectionService().addSelectionListener(workbenchSelectionListener);</span>
-<span class="nc" id="L153">	}</span>
+<span class="nc" id="L152">		};</span>
+<span class="nc" id="L153">		getSite().getWorkbenchWindow().getSelectionService().addSelectionListener(workbenchSelectionListener);</span>
+<span class="nc" id="L154">	}</span>
 
 	private void installEditorPartListener() {
-<span class="nc" id="L156">		editorPartListener= new IPartListener2() {</span>
+<span class="nc" id="L157">		editorPartListener= new IPartListener2() {</span>
 			@Override
 			public void partActivated(IWorkbenchPartReference partRef) {
-<span class="nc" id="L159">				updateFromEditorPart(partRef);</span>
-<span class="nc" id="L160">			}</span>
+<span class="nc" id="L160">				updateFromEditorPart(partRef);</span>
+<span class="nc" id="L161">			}</span>
 
 			@Override
 			public void partBroughtToTop(IWorkbenchPartReference partRef) {
-<span class="nc" id="L164">				updateFromEditorPart(partRef);</span>
-<span class="nc" id="L165">			}</span>
+<span class="nc" id="L165">				updateFromEditorPart(partRef);</span>
+<span class="nc" id="L166">			}</span>
 
 			@Override
 			public void partOpened(IWorkbenchPartReference partRef) {
-<span class="nc" id="L169">				updateFromEditorPart(partRef);</span>
-<span class="nc" id="L170">			}</span>
+<span class="nc" id="L170">				updateFromEditorPart(partRef);</span>
+<span class="nc" id="L171">			}</span>
 
 			@Override
 			public void partInputChanged(IWorkbenchPartReference partRef) {
-<span class="nc" id="L174">				updateFromEditorPart(partRef);</span>
-<span class="nc" id="L175">			}</span>
+<span class="nc" id="L175">				updateFromEditorPart(partRef);</span>
+<span class="nc" id="L176">			}</span>
 
 			@Override
 			public void partClosed(IWorkbenchPartReference partRef) {
 				// Nothing to do; another activated editor will provide the next input.
-<span class="nc" id="L180">			}</span>
+<span class="nc" id="L181">			}</span>
 
 			@Override
 			public void partDeactivated(IWorkbenchPartReference partRef) {
 				// Activation of the next editor is the useful lifecycle event.
-<span class="nc" id="L185">			}</span>
+<span class="nc" id="L186">			}</span>
 
 			@Override
 			public void partHidden(IWorkbenchPartReference partRef) {
 				// View input remains useful while an editor is hidden.
-<span class="nc" id="L190">			}</span>
+<span class="nc" id="L191">			}</span>
 
 			@Override
 			public void partVisible(IWorkbenchPartReference partRef) {
 				// Visibility alone does not change the active source input.
-<span class="nc" id="L195">			}</span>
+<span class="nc" id="L196">			}</span>
 		};
-<span class="nc" id="L197">		getSite().getPage().addPartListener(editorPartListener);</span>
-<span class="nc" id="L198">	}</span>
+<span class="nc" id="L198">		getSite().getPage().addPartListener(editorPartListener);</span>
+<span class="nc" id="L199">	}</span>
 
 	private void updateFromEditorPart(IWorkbenchPartReference partRef) {
-<span class="nc bnc" id="L201" title="All 2 branches missed.">		if (partRef.getPart(false) instanceof IEditorPart) {</span>
-<span class="nc" id="L202">			updateFromActiveEditor();</span>
+<span class="nc bnc" id="L202" title="All 2 branches missed.">		if (partRef.getPart(false) instanceof IEditorPart) {</span>
+<span class="nc" id="L203">			updateFromActiveEditor();</span>
 		}
-<span class="nc" id="L204">	}</span>
+<span class="nc" id="L205">	}</span>
 
 	private void updateFromActiveEditor() {
-<span class="nc" id="L207">		IEditorPart editor= getSite().getPage().getActiveEditor();</span>
-<span class="nc bnc" id="L208" title="All 2 branches missed.">		if (editor == null) {</span>
-<span class="nc" id="L209">			return;</span>
+<span class="nc" id="L208">		IEditorPart editor= getSite().getPage().getActiveEditor();</span>
+<span class="nc bnc" id="L209" title="All 2 branches missed.">		if (editor == null) {</span>
+<span class="nc" id="L210">			return;</span>
 		}
-<span class="nc" id="L211">		ICompilationUnit unit= compilationUnit(editor.getEditorInput());</span>
-<span class="nc bnc" id="L212" title="All 2 branches missed.">		if (unit != null) {</span>
-<span class="nc" id="L213">			setInput(List.of(unit));</span>
+<span class="nc" id="L212">		ICompilationUnit unit= compilationUnit(editor.getEditorInput());</span>
+<span class="nc bnc" id="L213" title="All 2 branches missed.">		if (unit != null) {</span>
+<span class="nc" id="L214">			setInput(List.of(unit));</span>
 		}
-<span class="nc" id="L215">	}</span>
+<span class="nc" id="L216">	}</span>
 
 	private void setInput(List&lt;ICompilationUnit&gt; units) {
-<span class="nc" id="L218">		Map&lt;String, ICompilationUnit&gt; unique= new LinkedHashMap&lt;&gt;();</span>
-<span class="nc bnc" id="L219" title="All 2 branches missed.">		for (ICompilationUnit unit : units) {</span>
-<span class="nc bnc" id="L220" title="All 4 branches missed.">			if (unit != null &amp;&amp; unit.exists()) {</span>
-<span class="nc" id="L221">				ICompilationUnit primary= unit.getPrimary();</span>
-<span class="nc" id="L222">				unique.put(primary.getHandleIdentifier(), primary);</span>
+<span class="nc" id="L219">		Map&lt;String, ICompilationUnit&gt; unique= new LinkedHashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L220" title="All 2 branches missed.">		for (ICompilationUnit unit : units) {</span>
+<span class="nc bnc" id="L221" title="All 4 branches missed.">			if (unit != null &amp;&amp; unit.exists()) {</span>
+<span class="nc" id="L222">				ICompilationUnit primary= unit.getPrimary();</span>
+<span class="nc" id="L223">				unique.put(primary.getHandleIdentifier(), primary);</span>
 			}
 		}
-<span class="nc" id="L225">		List&lt;ICompilationUnit&gt; normalized= unique.values().stream()</span>
-<span class="nc" id="L226">				.sorted(Comparator.comparing(ICompilationUnit::getHandleIdentifier))</span>
-<span class="nc" id="L227">				.toList();</span>
-<span class="nc bnc" id="L228" title="All 2 branches missed.">		if (sameInput(currentUnits, normalized)) {</span>
-<span class="nc" id="L229">			return;</span>
+<span class="nc" id="L226">		List&lt;ICompilationUnit&gt; normalized= unique.values().stream()</span>
+<span class="nc" id="L227">				.sorted(Comparator.comparing(ICompilationUnit::getHandleIdentifier))</span>
+<span class="nc" id="L228">				.toList();</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">		if (sameInput(currentUnits, normalized)) {</span>
+<span class="nc" id="L230">			return;</span>
 		}
-<span class="nc" id="L231">		currentUnits= normalized;</span>
-<span class="nc" id="L232">		refresh();</span>
-<span class="nc" id="L233">	}</span>
+<span class="nc" id="L232">		currentUnits= normalized;</span>
+<span class="nc" id="L233">		refresh();</span>
+<span class="nc" id="L234">	}</span>
 
 	private static boolean sameInput(List&lt;ICompilationUnit&gt; left, List&lt;ICompilationUnit&gt; right) {
-<span class="nc bnc" id="L236" title="All 2 branches missed.">		if (left.size() != right.size()) {</span>
-<span class="nc" id="L237">			return false;</span>
+<span class="nc bnc" id="L237" title="All 2 branches missed.">		if (left.size() != right.size()) {</span>
+<span class="nc" id="L238">			return false;</span>
 		}
-<span class="nc bnc" id="L239" title="All 2 branches missed.">		for (int index= 0; index &lt; left.size(); index++) {</span>
-<span class="nc bnc" id="L240" title="All 2 branches missed.">			if (!left.get(index).getHandleIdentifier().equals(right.get(index).getHandleIdentifier())) {</span>
-<span class="nc" id="L241">				return false;</span>
+<span class="nc bnc" id="L240" title="All 2 branches missed.">		for (int index= 0; index &lt; left.size(); index++) {</span>
+<span class="nc bnc" id="L241" title="All 2 branches missed.">			if (!left.get(index).getHandleIdentifier().equals(right.get(index).getHandleIdentifier())) {</span>
+<span class="nc" id="L242">				return false;</span>
 			}
 		}
-<span class="nc" id="L244">		return true;</span>
+<span class="nc" id="L245">		return true;</span>
 	}
 
 	private void refresh() {
-<span class="nc bnc" id="L248" title="All 4 branches missed.">		if (viewer == null || viewer.getControl().isDisposed()) {</span>
-<span class="nc" id="L249">			return;</span>
+<span class="nc bnc" id="L249" title="All 4 branches missed.">		if (viewer == null || viewer.getControl().isDisposed()) {</span>
+<span class="nc" id="L250">			return;</span>
 		}
-<span class="nc" id="L251">		long generation= analysisGeneration.incrementAndGet();</span>
-<span class="nc" id="L252">		Job previous= analysisJob;</span>
-<span class="nc bnc" id="L253" title="All 2 branches missed.">		if (previous != null) {</span>
-<span class="nc" id="L254">			previous.cancel();</span>
+<span class="nc" id="L252">		long generation= analysisGeneration.incrementAndGet();</span>
+<span class="nc" id="L253">		Job previous= analysisJob;</span>
+<span class="nc bnc" id="L254" title="All 2 branches missed.">		if (previous != null) {</span>
+<span class="nc" id="L255">			previous.cancel();</span>
 		}
-<span class="nc" id="L256">		List&lt;ICompilationUnit&gt; units= currentUnits;</span>
-<span class="nc bnc" id="L257" title="All 2 branches missed.">		if (units.isEmpty()) {</span>
-<span class="nc" id="L258">			analysisJob= null;</span>
-<span class="nc" id="L259">			applyAnalysisResult(generation, List.of(), null);</span>
-<span class="nc" id="L260">			return;</span>
+<span class="nc" id="L257">		List&lt;ICompilationUnit&gt; units= currentUnits;</span>
+<span class="nc bnc" id="L258" title="All 2 branches missed.">		if (units.isEmpty()) {</span>
+<span class="nc" id="L259">			analysisJob= null;</span>
+<span class="nc" id="L260">			applyAnalysisResult(generation, List.of(), null);</span>
+<span class="nc" id="L261">			return;</span>
 		}
 
-<span class="nc" id="L263">		details.setText(&quot;Analyzing container usage...&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L264">		Job job= new Job(&quot;Analyze semantic container contracts&quot;) { //$NON-NLS-1$</span>
+<span class="nc" id="L264">		details.setText(&quot;Analyzing container usage...&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L265">		Job job= new Job(&quot;Analyze semantic container contracts&quot;) { //$NON-NLS-1$</span>
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
-<span class="nc" id="L267">				List&lt;ContainerAnalysisRow&gt; rows= new ArrayList&lt;&gt;();</span>
-<span class="nc" id="L268">				RuntimeException failure= null;</span>
+<span class="nc" id="L268">				List&lt;ContainerAnalysisRow&gt; rows= new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L269">				RuntimeException failure= null;</span>
 				try {
-<span class="nc bnc" id="L270" title="All 2 branches missed.">					for (ICompilationUnit unit : units) {</span>
-<span class="nc bnc" id="L271" title="All 4 branches missed.">						if (monitor.isCanceled() || generation != analysisGeneration.get()) {</span>
-<span class="nc" id="L272">							return Status.CANCEL_STATUS;</span>
+<span class="nc bnc" id="L271" title="All 2 branches missed.">					for (ICompilationUnit unit : units) {</span>
+<span class="nc bnc" id="L272" title="All 4 branches missed.">						if (monitor.isCanceled() || generation != analysisGeneration.get()) {</span>
+<span class="nc" id="L273">							return Status.CANCEL_STATUS;</span>
 						}
-<span class="nc" id="L274">						rows.addAll(analysisService.analyze(unit));</span>
+<span class="nc" id="L275">						rows.addAll(analysisService.analyze(unit, monitor));</span>
 					}
-<span class="nc" id="L276">				} catch (RuntimeException e) {</span>
-<span class="nc" id="L277">					failure= e;</span>
-<span class="nc" id="L278">					logAnalysisFailure(e);</span>
+<span class="nc" id="L277">				} catch (OperationCanceledException canceled) {</span>
+<span class="nc" id="L278">					return Status.CANCEL_STATUS;</span>
+<span class="nc" id="L279">				} catch (RuntimeException e) {</span>
+<span class="nc" id="L280">					failure= e;</span>
+<span class="nc" id="L281">					logAnalysisFailure(e);</span>
 				}
-<span class="nc bnc" id="L280" title="All 4 branches missed.">				if (monitor.isCanceled() || generation != analysisGeneration.get()) {</span>
-<span class="nc" id="L281">					return Status.CANCEL_STATUS;</span>
+<span class="nc bnc" id="L283" title="All 4 branches missed.">				if (monitor.isCanceled() || generation != analysisGeneration.get()) {</span>
+<span class="nc" id="L284">					return Status.CANCEL_STATUS;</span>
 				}
-<span class="nc" id="L283">				List&lt;ContainerAnalysisRow&gt; result= List.copyOf(rows);</span>
-<span class="nc" id="L284">				RuntimeException resultFailure= failure;</span>
-<span class="nc" id="L285">				Display uiDisplay= display;</span>
-<span class="nc bnc" id="L286" title="All 4 branches missed.">				if (uiDisplay != null &amp;&amp; !uiDisplay.isDisposed()) {</span>
-<span class="nc" id="L287">					uiDisplay.asyncExec(() -&gt; applyAnalysisResult(generation, result, resultFailure));</span>
+<span class="nc" id="L286">				List&lt;ContainerAnalysisRow&gt; result= List.copyOf(rows);</span>
+<span class="nc" id="L287">				RuntimeException resultFailure= failure;</span>
+<span class="nc" id="L288">				Display uiDisplay= display;</span>
+<span class="nc bnc" id="L289" title="All 4 branches missed.">				if (uiDisplay != null &amp;&amp; !uiDisplay.isDisposed()) {</span>
+<span class="nc" id="L290">					uiDisplay.asyncExec(() -&gt; applyAnalysisResult(generation, result, resultFailure));</span>
 				}
-<span class="nc" id="L289">				return Status.OK_STATUS;</span>
+<span class="nc" id="L292">				return Status.OK_STATUS;</span>
 			}
 		};
-<span class="nc" id="L292">		job.setSystem(true);</span>
-<span class="nc" id="L293">		analysisJob= job;</span>
-<span class="nc" id="L294">		job.schedule();</span>
-<span class="nc" id="L295">	}</span>
+<span class="nc" id="L295">		job.setSystem(true);</span>
+<span class="nc" id="L296">		analysisJob= job;</span>
+<span class="nc" id="L297">		job.schedule();</span>
+<span class="nc" id="L298">	}</span>
 
 	private void applyAnalysisResult(long generation, List&lt;ContainerAnalysisRow&gt; rows,
 			RuntimeException failure) {
-<span class="nc bnc" id="L299" title="All 2 branches missed.">		if (generation != analysisGeneration.get()</span>
-<span class="nc bnc" id="L300" title="All 4 branches missed.">				|| viewer == null || viewer.getControl().isDisposed()</span>
-<span class="nc bnc" id="L301" title="All 4 branches missed.">				|| details == null || details.isDisposed()) {</span>
-<span class="nc" id="L302">			return;</span>
+<span class="nc bnc" id="L302" title="All 2 branches missed.">		if (generation != analysisGeneration.get()</span>
+<span class="nc bnc" id="L303" title="All 4 branches missed.">				|| viewer == null || viewer.getControl().isDisposed()</span>
+<span class="nc bnc" id="L304" title="All 4 branches missed.">				|| details == null || details.isDisposed()) {</span>
+<span class="nc" id="L305">			return;</span>
 		}
-<span class="nc bnc" id="L304" title="All 2 branches missed.">		if (failure != null) {</span>
-<span class="nc" id="L305">			viewer.setInput(List.of());</span>
-<span class="nc" id="L306">			details.setText(&quot;Container analysis failed: &quot; + failureSummary(failure)); //$NON-NLS-1$</span>
-<span class="nc" id="L307">			return;</span>
+<span class="nc bnc" id="L307" title="All 2 branches missed.">		if (failure != null) {</span>
+<span class="nc" id="L308">			viewer.setInput(List.of());</span>
+<span class="nc" id="L309">			details.setText(&quot;Container analysis failed: &quot; + failureSummary(failure)); //$NON-NLS-1$</span>
+<span class="nc" id="L310">			return;</span>
 		}
-<span class="nc" id="L309">		viewer.setInput(rows);</span>
-<span class="nc bnc" id="L310" title="All 2 branches missed.">		if (rows.isEmpty()) {</span>
-<span class="nc bnc" id="L311" title="All 2 branches missed.">			details.setText(currentUnits.isEmpty()</span>
-<span class="nc" id="L312">					? &quot;Select a Java source element to analyze container usage.&quot; //$NON-NLS-1$</span>
-<span class="nc" id="L313">					: &quot;No supported or rejected semantic container candidates were found in the selected source.&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L314">		} else {</span>
-<span class="nc" id="L315">			viewer.setSelection(new org.eclipse.jface.viewers.StructuredSelection(rows.get(0)), true);</span>
-<span class="nc" id="L316">			updateDetails();</span>
+<span class="nc" id="L312">		viewer.setInput(rows);</span>
+<span class="nc bnc" id="L313" title="All 2 branches missed.">		if (rows.isEmpty()) {</span>
+<span class="nc bnc" id="L314" title="All 2 branches missed.">			details.setText(currentUnits.isEmpty()</span>
+<span class="nc" id="L315">					? &quot;Select a Java source element to analyze container usage.&quot; //$NON-NLS-1$</span>
+<span class="nc" id="L316">					: &quot;No supported or rejected semantic container candidates were found in the selected source.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L317">		} else {</span>
+<span class="nc" id="L318">			viewer.setSelection(new org.eclipse.jface.viewers.StructuredSelection(rows.get(0)), true);</span>
+<span class="nc" id="L319">			updateDetails();</span>
 		}
-<span class="nc" id="L318">	}</span>
+<span class="nc" id="L321">	}</span>
 
 	private static String failureSummary(RuntimeException failure) {
-<span class="nc" id="L321">		String message= failure.getMessage();</span>
-<span class="nc" id="L322">		String type= failure.getClass().getSimpleName();</span>
-<span class="nc bnc" id="L323" title="All 4 branches missed.">		return message == null || message.isBlank() ? type : type + &quot;: &quot; + message; //$NON-NLS-1$</span>
+<span class="nc" id="L324">		String message= failure.getMessage();</span>
+<span class="nc" id="L325">		String type= failure.getClass().getSimpleName();</span>
+<span class="nc bnc" id="L326" title="All 4 branches missed.">		return message == null || message.isBlank() ? type : type + &quot;: &quot; + message; //$NON-NLS-1$</span>
 	}
 
 	private static void logAnalysisFailure(RuntimeException failure) {
-<span class="nc" id="L327">		UsageViewPlugin plugin= UsageViewPlugin.getDefault();</span>
-<span class="nc bnc" id="L328" title="All 2 branches missed.">		if (plugin != null) {</span>
-<span class="nc" id="L329">			plugin.getLog().log(new Status(IStatus.ERROR,</span>
-<span class="nc" id="L330">					UsageViewPlugin.PLUGIN_ID, &quot;Container analysis failed&quot;, failure)); //$NON-NLS-1$</span>
+<span class="nc" id="L330">		UsageViewPlugin plugin= UsageViewPlugin.getDefault();</span>
+<span class="nc bnc" id="L331" title="All 2 branches missed.">		if (plugin != null) {</span>
+<span class="nc" id="L332">			plugin.getLog().log(new Status(IStatus.ERROR,</span>
+<span class="nc" id="L333">					UsageViewPlugin.PLUGIN_ID, &quot;Container analysis failed&quot;, failure)); //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L332">	}</span>
+<span class="nc" id="L335">	}</span>
 
 	private void updateDetails() {
-<span class="nc bnc" id="L335" title="All 4 branches missed.">		if (details == null || details.isDisposed()) {</span>
-<span class="nc" id="L336">			return;</span>
+<span class="nc bnc" id="L338" title="All 4 branches missed.">		if (details == null || details.isDisposed()) {</span>
+<span class="nc" id="L339">			return;</span>
 		}
-<span class="nc" id="L338">		Object selected= viewer.getStructuredSelection().getFirstElement();</span>
-<span class="nc bnc" id="L339" title="All 2 branches missed.">		details.setText(selected instanceof ContainerAnalysisRow row</span>
-<span class="nc" id="L340">				? row.details()</span>
-<span class="nc" id="L341">				: &quot;Select an evidence row to inspect its semantic explanation.&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L342">	}</span>
+<span class="nc" id="L341">		Object selected= viewer.getStructuredSelection().getFirstElement();</span>
+<span class="nc bnc" id="L342" title="All 2 branches missed.">		details.setText(selected instanceof ContainerAnalysisRow row</span>
+<span class="nc" id="L343">				? row.details()</span>
+<span class="nc" id="L344">				: &quot;Select an evidence row to inspect its semantic explanation.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L345">	}</span>
 
 	private void navigate(DoubleClickEvent event) {
-<span class="nc" id="L345">		Object selected= ((IStructuredSelection) event.getSelection()).getFirstElement();</span>
-<span class="nc bnc" id="L346" title="All 2 branches missed.">		if (!(selected instanceof ContainerAnalysisRow row)) {</span>
-<span class="nc" id="L347">			return;</span>
+<span class="nc" id="L348">		Object selected= ((IStructuredSelection) event.getSelection()).getFirstElement();</span>
+<span class="nc bnc" id="L349" title="All 2 branches missed.">		if (!(selected instanceof ContainerAnalysisRow row)) {</span>
+<span class="nc" id="L350">			return;</span>
 		}
-<span class="nc" id="L349">		IJavaElement element= JavaCore.create(row.compilationUnitHandle());</span>
-<span class="nc bnc" id="L350" title="All 4 branches missed.">		if (!(element instanceof ICompilationUnit unit) || !unit.exists()) {</span>
-<span class="nc" id="L351">			return;</span>
+<span class="nc" id="L352">		IJavaElement element= JavaCore.create(row.compilationUnitHandle());</span>
+<span class="nc bnc" id="L353" title="All 4 branches missed.">		if (!(element instanceof ICompilationUnit unit) || !unit.exists()) {</span>
+<span class="nc" id="L354">			return;</span>
 		}
 		try {
-<span class="nc" id="L354">			IEditorPart editor= JavaUI.openInEditor(unit, true, true);</span>
-<span class="nc bnc" id="L355" title="All 2 branches missed.">			if (editor instanceof ITextEditor textEditor) {</span>
-<span class="nc" id="L356">				textEditor.selectAndReveal(row.sourceStart(), row.sourceLength());</span>
+<span class="nc" id="L357">			IEditorPart editor= JavaUI.openInEditor(unit, true, true);</span>
+<span class="nc bnc" id="L358" title="All 2 branches missed.">			if (editor instanceof ITextEditor textEditor) {</span>
+<span class="nc" id="L359">				textEditor.selectAndReveal(row.sourceStart(), row.sourceLength());</span>
 			}
-<span class="nc" id="L358">		} catch (org.eclipse.ui.PartInitException | org.eclipse.jdt.core.JavaModelException e) {</span>
-<span class="nc" id="L359">			UsageViewPlugin plugin= UsageViewPlugin.getDefault();</span>
-<span class="nc bnc" id="L360" title="All 2 branches missed.">			if (plugin != null) {</span>
-<span class="nc" id="L361">				plugin.getLog().log(new Status(IStatus.ERROR,</span>
-<span class="nc" id="L362">						UsageViewPlugin.PLUGIN_ID, &quot;Could not navigate to container evidence&quot;, e)); //$NON-NLS-1$</span>
+<span class="nc" id="L361">		} catch (org.eclipse.ui.PartInitException | org.eclipse.jdt.core.JavaModelException e) {</span>
+<span class="nc" id="L362">			UsageViewPlugin plugin= UsageViewPlugin.getDefault();</span>
+<span class="nc bnc" id="L363" title="All 2 branches missed.">			if (plugin != null) {</span>
+<span class="nc" id="L364">				plugin.getLog().log(new Status(IStatus.ERROR,</span>
+<span class="nc" id="L365">						UsageViewPlugin.PLUGIN_ID, &quot;Could not navigate to container evidence&quot;, e)); //$NON-NLS-1$</span>
 			}
 		}
-<span class="nc" id="L365">	}</span>
+<span class="nc" id="L368">	}</span>
 
 	@Override
 	public boolean show(ShowInContext context) {
-<span class="nc bnc" id="L369" title="All 2 branches missed.">		List&lt;ICompilationUnit&gt; units= compilationUnits(context == null ? null : context.getSelection());</span>
-<span class="nc bnc" id="L370" title="All 2 branches missed.">		if (units.isEmpty()) {</span>
-<span class="nc" id="L371">			return false;</span>
+<span class="nc bnc" id="L372" title="All 2 branches missed.">		List&lt;ICompilationUnit&gt; units= compilationUnits(context == null ? null : context.getSelection());</span>
+<span class="nc bnc" id="L373" title="All 2 branches missed.">		if (units.isEmpty()) {</span>
+<span class="nc" id="L374">			return false;</span>
 		}
-<span class="nc" id="L373">		setInput(units);</span>
-<span class="nc" id="L374">		return true;</span>
+<span class="nc" id="L376">		setInput(units);</span>
+<span class="nc" id="L377">		return true;</span>
 	}
 
 	private static List&lt;ICompilationUnit&gt; compilationUnits(org.eclipse.jface.viewers.ISelection selection) {
-<span class="nc bnc" id="L378" title="All 2 branches missed.">		if (!(selection instanceof IStructuredSelection structured)) {</span>
-<span class="nc" id="L379">			return List.of();</span>
+<span class="nc bnc" id="L381" title="All 2 branches missed.">		if (!(selection instanceof IStructuredSelection structured)) {</span>
+<span class="nc" id="L382">			return List.of();</span>
 		}
-<span class="nc" id="L381">		List&lt;ICompilationUnit&gt; result= new ArrayList&lt;&gt;();</span>
-<span class="nc bnc" id="L382" title="All 2 branches missed.">		for (Object element : structured.toList()) {</span>
-<span class="nc" id="L383">			ICompilationUnit unit= compilationUnit(element);</span>
-<span class="nc bnc" id="L384" title="All 2 branches missed.">			if (unit != null) {</span>
-<span class="nc" id="L385">				result.add(unit);</span>
+<span class="nc" id="L384">		List&lt;ICompilationUnit&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L385" title="All 2 branches missed.">		for (Object element : structured.toList()) {</span>
+<span class="nc" id="L386">			ICompilationUnit unit= compilationUnit(element);</span>
+<span class="nc bnc" id="L387" title="All 2 branches missed.">			if (unit != null) {</span>
+<span class="nc" id="L388">				result.add(unit);</span>
 			}
 		}
-<span class="nc" id="L388">		return result;</span>
+<span class="nc" id="L391">		return result;</span>
 	}
 
 	private static ICompilationUnit compilationUnit(Object element) {
-<span class="nc bnc" id="L392" title="All 2 branches missed.">		if (element instanceof ICompilationUnit unit) {</span>
-<span class="nc" id="L393">			return unit;</span>
+<span class="nc bnc" id="L395" title="All 2 branches missed.">		if (element instanceof ICompilationUnit unit) {</span>
+<span class="nc" id="L396">			return unit;</span>
 		}
-<span class="nc bnc" id="L395" title="All 2 branches missed.">		if (element instanceof IJavaElement javaElement) {</span>
-<span class="nc" id="L396">			IJavaElement ancestor= javaElement.getAncestor(IJavaElement.COMPILATION_UNIT);</span>
-<span class="nc bnc" id="L397" title="All 2 branches missed.">			return ancestor instanceof ICompilationUnit unit ? unit : null;</span>
+<span class="nc bnc" id="L398" title="All 2 branches missed.">		if (element instanceof IJavaElement javaElement) {</span>
+<span class="nc" id="L399">			IJavaElement ancestor= javaElement.getAncestor(IJavaElement.COMPILATION_UNIT);</span>
+<span class="nc bnc" id="L400" title="All 2 branches missed.">			return ancestor instanceof ICompilationUnit unit ? unit : null;</span>
 		}
-<span class="nc bnc" id="L399" title="All 2 branches missed.">		if (element instanceof IFile file) {</span>
-<span class="nc" id="L400">			IJavaElement javaElement= JavaCore.create(file);</span>
-<span class="nc bnc" id="L401" title="All 2 branches missed.">			return javaElement instanceof ICompilationUnit unit ? unit : null;</span>
+<span class="nc bnc" id="L402" title="All 2 branches missed.">		if (element instanceof IFile file) {</span>
+<span class="nc" id="L403">			IJavaElement javaElement= JavaCore.create(file);</span>
+<span class="nc bnc" id="L404" title="All 2 branches missed.">			return javaElement instanceof ICompilationUnit unit ? unit : null;</span>
 		}
-<span class="nc" id="L403">		return null;</span>
+<span class="nc" id="L406">		return null;</span>
 	}
 
 	private static ICompilationUnit compilationUnit(IEditorInput input) {
-<span class="nc bnc" id="L407" title="All 2 branches missed.">		if (input instanceof IFileEditorInput fileInput) {</span>
-<span class="nc" id="L408">			return compilationUnit(fileInput.getFile());</span>
+<span class="nc bnc" id="L410" title="All 2 branches missed.">		if (input instanceof IFileEditorInput fileInput) {</span>
+<span class="nc" id="L411">			return compilationUnit(fileInput.getFile());</span>
 		}
-<span class="nc bnc" id="L410" title="All 2 branches missed.">		IJavaElement javaElement= input == null ? null : input.getAdapter(IJavaElement.class);</span>
-<span class="nc" id="L411">		return compilationUnit(javaElement);</span>
+<span class="nc bnc" id="L413" title="All 2 branches missed.">		IJavaElement javaElement= input == null ? null : input.getAdapter(IJavaElement.class);</span>
+<span class="nc" id="L414">		return compilationUnit(javaElement);</span>
 	}
 
 	@Override
 	public void setFocus() {
-<span class="nc bnc" id="L416" title="All 4 branches missed.">		if (viewer != null &amp;&amp; !viewer.getControl().isDisposed()) {</span>
-<span class="nc" id="L417">			viewer.getControl().setFocus();</span>
+<span class="nc bnc" id="L419" title="All 4 branches missed.">		if (viewer != null &amp;&amp; !viewer.getControl().isDisposed()) {</span>
+<span class="nc" id="L420">			viewer.getControl().setFocus();</span>
 		}
-<span class="nc" id="L419">	}</span>
+<span class="nc" id="L422">	}</span>
 
 	@Override
 	public void dispose() {
-<span class="nc" id="L423">		analysisGeneration.incrementAndGet();</span>
-<span class="nc" id="L424">		Job job= analysisJob;</span>
-<span class="nc bnc" id="L425" title="All 2 branches missed.">		if (job != null) {</span>
-<span class="nc" id="L426">			job.cancel();</span>
+<span class="nc" id="L426">		analysisGeneration.incrementAndGet();</span>
+<span class="nc" id="L427">		Job job= analysisJob;</span>
+<span class="nc bnc" id="L428" title="All 2 branches missed.">		if (job != null) {</span>
+<span class="nc" id="L429">			job.cancel();</span>
 		}
-<span class="nc bnc" id="L428" title="All 4 branches missed.">		if (workbenchSelectionListener != null &amp;&amp; getSite() != null) {</span>
-<span class="nc" id="L429">			getSite().getWorkbenchWindow().getSelectionService().removeSelectionListener(workbenchSelectionListener);</span>
+<span class="nc bnc" id="L431" title="All 4 branches missed.">		if (workbenchSelectionListener != null &amp;&amp; getSite() != null) {</span>
+<span class="nc" id="L432">			getSite().getWorkbenchWindow().getSelectionService().removeSelectionListener(workbenchSelectionListener);</span>
 		}
-<span class="nc bnc" id="L431" title="All 4 branches missed.">		if (editorPartListener != null &amp;&amp; getSite() != null) {</span>
-<span class="nc" id="L432">			getSite().getPage().removePartListener(editorPartListener);</span>
+<span class="nc bnc" id="L434" title="All 4 branches missed.">		if (editorPartListener != null &amp;&amp; getSite() != null) {</span>
+<span class="nc" id="L435">			getSite().getPage().removePartListener(editorPartListener);</span>
 		}
-<span class="nc" id="L434">		display= null;</span>
-<span class="nc" id="L435">		super.dispose();</span>
-<span class="nc" id="L436">	}</span>
+<span class="nc" id="L437">		display= null;</span>
+<span class="nc" id="L438">		super.dispose();</span>
+<span class="nc" id="L439">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

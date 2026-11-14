@@ -144,8 +144,8 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 			ArrayAccess arrayAccess,
 			ReferenceHolder&lt;Integer, GrowthSeed&gt; state) {
 <span class="fc" id="L146">		GrowthSeed seed= state.get(CURRENT_GROWTH);</span>
-<span class="pc bpc" id="L147" title="1 of 2 branches missed.">		if (seed == null) {</span>
-<span class="nc" id="L148">			return false;</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">		if (seed == null) {</span>
+<span class="fc" id="L148">			return false;</span>
 		}
 <span class="fc" id="L150">		Assignment appendAssignment= enclosingAssignment(arrayAccess);</span>
 <span class="pc bpc" id="L151" title="1 of 2 branches missed.">		return appendAssignment != null</span>

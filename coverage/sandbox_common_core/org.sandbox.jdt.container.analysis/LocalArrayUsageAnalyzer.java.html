@@ -23,7 +23,10 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.ArrayAccess;
+import org.eclipse.jdt.core.dom.ArrayCreation;
+import org.eclipse.jdt.core.dom.ArrayType;
 import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CastExpression;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -32,20 +35,26 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.InstanceofExpression;
 import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.NullLiteral;
+import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.SuperFieldAccess;
 import org.eclipse.jdt.core.dom.SynchronizedStatement;
+import org.eclipse.jdt.core.dom.TryStatement;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.sandbox.jdt.container.api.ContainerShape;
 import org.sandbox.jdt.container.api.ContainerUsageProfile;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.AccessProfile;
@@ -75,314 +84,369 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
  * rejection evidence. This fail-closed boundary prevents a local seed from becoming
  * an executable migration candidate merely because most uses looked familiar.&lt;/p&gt;
  */
-<span class="fc" id="L78">public final class LocalArrayUsageAnalyzer {</span>
+<span class="fc" id="L87">public final class LocalArrayUsageAnalyzer {</span>
 
 	/** Analyzes one seed profile in the supplied compilation unit. */
 	public ContainerUsageProfile analyze(
 			CompilationUnit compilationUnit,
 			ContainerUsageProfile seed) {
-<span class="fc" id="L84">		Objects.requireNonNull(compilationUnit, &quot;compilationUnit&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L85">		Objects.requireNonNull(seed, &quot;seed&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L86" title="1 of 2 branches missed.">		if (seed.currentShape() != ContainerShape.ARRAY) {</span>
-<span class="nc" id="L87">			throw new IllegalArgumentException(&quot;LocalArrayUsageAnalyzer requires an array profile&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L93">		Objects.requireNonNull(compilationUnit, &quot;compilationUnit&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L94">		Objects.requireNonNull(seed, &quot;seed&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">		if (seed.currentShape() != ContainerShape.ARRAY) {</span>
+<span class="nc" id="L96">			throw new IllegalArgumentException(&quot;LocalArrayUsageAnalyzer requires an array profile&quot;); //$NON-NLS-1$</span>
 		}
 
-<span class="fc" id="L90">		Accumulator accumulator= new Accumulator(seed);</span>
-<span class="pc bpc" id="L91" title="1 of 2 branches missed.">		if (!seed.identity().hasResolvedBinding()) {</span>
-<span class="nc" id="L92">			accumulator.reject(Kind.UNRESOLVED_BINDING,</span>
+<span class="fc" id="L99">		Accumulator accumulator= new Accumulator(seed);</span>
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">		if (!seed.identity().hasResolvedBinding()) {</span>
+<span class="nc" id="L101">			accumulator.reject(Kind.UNRESOLVED_BINDING,</span>
 					&quot;Local usage analysis requires a resolved variable binding&quot;, //$NON-NLS-1$
-<span class="nc" id="L94">					seed.identity().sourceStart(), seed.identity().sourceLength());</span>
-<span class="nc" id="L95">			return accumulator.toProfile();</span>
+<span class="nc" id="L103">					seed.identity().sourceStart(), seed.identity().sourceLength());</span>
+<span class="nc" id="L104">			return accumulator.toProfile();</span>
 		}
 
-<span class="fc" id="L98">		ReferenceHolder&lt;String, Object&gt; traversalState= ReferenceHolder.create();</span>
-<span class="fc" id="L99">		AstProcessing.independent(traversalState)</span>
-<span class="fc" id="L100">				.on(SimpleName.class, (name, holder) -&gt; {</span>
-<span class="fc" id="L101">					classifyMatchingReference(name, seed.identity().bindingKey(), accumulator);</span>
-<span class="fc" id="L102">					return true;</span>
+<span class="fc" id="L107">		ReferenceHolder&lt;String, Object&gt; traversalState= ReferenceHolder.create();</span>
+<span class="fc" id="L108">		AstProcessing.independent(traversalState)</span>
+<span class="fc" id="L109">				.on(SimpleName.class, (name, holder) -&gt; {</span>
+<span class="fc" id="L110">					classifyMatchingReference(name, seed.identity().bindingKey(), accumulator);</span>
+<span class="fc" id="L111">					return true;</span>
 				})
-<span class="fc" id="L104">				.build(compilationUnit);</span>
+<span class="fc" id="L113">				.build(compilationUnit);</span>
 
-<span class="pc bpc" id="L106" title="1 of 2 branches missed.">		if (!accumulator.bindingSeen()) {</span>
-<span class="nc" id="L107">			accumulator.reject(Kind.UNRESOLVED_BINDING,</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">		if (!accumulator.bindingSeen()) {</span>
+<span class="nc" id="L116">			accumulator.reject(Kind.UNRESOLVED_BINDING,</span>
 					&quot;The candidate binding was not found in the analyzed compilation unit&quot;, //$NON-NLS-1$
-<span class="nc" id="L109">					seed.identity().sourceStart(), seed.identity().sourceLength());</span>
+<span class="nc" id="L118">					seed.identity().sourceStart(), seed.identity().sourceLength());</span>
 		}
-<span class="fc" id="L111">		return accumulator.toProfile();</span>
+<span class="fc" id="L120">		return accumulator.toProfile();</span>
 	}
 
 	/** Analyzes profiles in deterministic input order. */
 	public List&lt;ContainerUsageProfile&gt; analyzeAll(
 			CompilationUnit compilationUnit,
 			List&lt;ContainerUsageProfile&gt; seeds) {
-<span class="nc" id="L118">		Objects.requireNonNull(seeds, &quot;seeds&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L119">		return seeds.stream().map(seed -&gt; analyze(compilationUnit, seed)).toList();</span>
+<span class="nc" id="L127">		Objects.requireNonNull(seeds, &quot;seeds&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L128">		return seeds.stream().map(seed -&gt; analyze(compilationUnit, seed)).toList();</span>
 	}
 
 	private static void classifyMatchingReference(
 			SimpleName name,
 			String targetBindingKey,
 			Accumulator accumulator) {
-<span class="fc" id="L126">		IBinding resolved= name.resolveBinding();</span>
-<span class="fc bfc" id="L127" title="All 2 branches covered.">		if (!(resolved instanceof IVariableBinding variable)</span>
-<span class="fc bfc" id="L128" title="All 2 branches covered.">				|| !targetBindingKey.equals(variable.getVariableDeclaration().getKey())) {</span>
-<span class="fc" id="L129">			return;</span>
+<span class="fc" id="L135">		IBinding resolved= name.resolveBinding();</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">		if (!(resolved instanceof IVariableBinding variable)</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">				|| !targetBindingKey.equals(variable.getVariableDeclaration().getKey())) {</span>
+<span class="fc" id="L138">			return;</span>
 		}
 
-<span class="fc" id="L132">		IVariableBinding declaration= variable.getVariableDeclaration();</span>
-<span class="fc" id="L133">		accumulator.observeBinding(declaration);</span>
-<span class="fc bfc" id="L134" title="All 2 branches covered.">		if (isDeclarationName(name)) {</span>
-<span class="fc" id="L135">			return;</span>
+<span class="fc" id="L141">		IVariableBinding declaration= variable.getVariableDeclaration();</span>
+<span class="fc" id="L142">		accumulator.observeBinding(declaration);</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">		if (isDeclarationName(name)) {</span>
+<span class="fc" id="L144">			return;</span>
 		}
-<span class="fc bfc" id="L137" title="All 2 branches covered.">		if (crossesExecutableBoundary(name, declaration)) {</span>
-<span class="fc" id="L138">			accumulator.reject(Kind.CAPTURED_USAGE,</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">		if (crossesExecutableBoundary(name, declaration)) {</span>
+<span class="fc" id="L147">			accumulator.reject(Kind.CAPTURED_USAGE,</span>
 					&quot;Array value is captured by a lambda, nested type, or different method body&quot;, name); //$NON-NLS-1$
-<span class="fc" id="L140">			return;</span>
+<span class="fc" id="L149">			return;</span>
 		}
 
-<span class="fc" id="L143">		Expression reference= completeReferenceExpression(name, targetBindingKey);</span>
-<span class="fc" id="L144">		ASTNode parent= reference.getParent();</span>
-<span class="fc bfc" id="L145" title="All 2 branches covered.">		if (isLengthRead(reference, parent)) {</span>
-<span class="fc" id="L146">			accumulator.lengthRead(parent);</span>
-<span class="pc bpc" id="L147" title="1 of 4 branches missed.">		} else if (parent instanceof ArrayAccess access &amp;&amp; access.getArray() == reference) {</span>
-<span class="fc" id="L148">			classifyArrayAccess(access, reference, accumulator);</span>
-<span class="fc bfc" id="L149" title="All 2 branches covered.">		} else if (parent instanceof EnhancedForStatement enhancedFor</span>
-<span class="pc bpc" id="L150" title="1 of 2 branches missed.">				&amp;&amp; enhancedFor.getExpression() == reference) {</span>
-<span class="fc" id="L151">			accumulator.encounterIteration(reference);</span>
-<span class="fc bfc" id="L152" title="All 2 branches covered.">		} else if (parent instanceof MethodInvocation invocation) {</span>
-<span class="fc" id="L153">			classifyMethodInvocation(reference, invocation, accumulator);</span>
-<span class="pc bpc" id="L154" title="3 of 4 branches missed.">		} else if (parent instanceof ClassInstanceCreation creation &amp;&amp; creation.arguments().contains(reference)</span>
-<span class="nc bnc" id="L155" title="All 2 branches missed.">				&amp;&amp; ContainerConstructorTarget.isClosed(creation)) {</span>
-<span class="nc" id="L156">			accumulator.reject(Kind.UNSAFE_ESCAPE,</span>
+<span class="fc" id="L152">		Expression reference= completeReferenceExpression(name, targetBindingKey);</span>
+<span class="fc" id="L153">		ASTNode parent= reference.getParent();</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">		if (isLengthRead(reference, parent)) {</span>
+<span class="fc" id="L155">			accumulator.lengthRead(parent);</span>
+<span class="pc bpc" id="L156" title="1 of 4 branches missed.">		} else if (parent instanceof ArrayAccess access &amp;&amp; access.getArray() == reference) {</span>
+<span class="fc" id="L157">			classifyArrayAccess(access, reference, accumulator);</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">		} else if (parent instanceof EnhancedForStatement enhancedFor</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">				&amp;&amp; enhancedFor.getExpression() == reference) {</span>
+<span class="fc" id="L160">			accumulator.encounterIteration(reference);</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">		} else if (parent instanceof MethodInvocation invocation) {</span>
+<span class="fc" id="L162">			classifyMethodInvocation(reference, invocation, accumulator);</span>
+<span class="pc bpc" id="L163" title="3 of 4 branches missed.">		} else if (parent instanceof ClassInstanceCreation creation &amp;&amp; creation.arguments().contains(reference)</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">				&amp;&amp; ContainerConstructorTarget.isClosed(creation)) {</span>
+<span class="nc" id="L165">			accumulator.reject(Kind.UNSAFE_ESCAPE,</span>
 					&quot;Array argument requires the exact private constructor and all its source callers&quot;, reference); //$NON-NLS-1$
-<span class="fc bfc" id="L158" title="All 2 branches covered.">		} else if (parent instanceof Assignment assignment) {</span>
-<span class="fc" id="L159">			classifyAssignment(reference, assignment, accumulator);</span>
-<span class="fc bfc" id="L160" title="All 2 branches covered.">		} else if (parent instanceof VariableDeclarationFragment fragment</span>
-<span class="pc bpc" id="L161" title="1 of 2 branches missed.">				&amp;&amp; fragment.getInitializer() == reference) {</span>
-<span class="fc" id="L162">			accumulator.reject(Kind.UNSAFE_ESCAPE,</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">		} else if (parent instanceof Assignment assignment) {</span>
+<span class="fc" id="L168">			classifyAssignment(reference, assignment, accumulator);</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">		} else if (parent instanceof VariableDeclarationFragment fragment</span>
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">				&amp;&amp; fragment.getInitializer() == reference) {</span>
+<span class="fc" id="L171">			accumulator.reject(Kind.UNSAFE_ESCAPE,</span>
 					&quot;Array value is assigned to another local variable&quot;, reference); //$NON-NLS-1$
-<span class="fc bfc" id="L164" title="All 2 branches covered.">		} else if (parent instanceof ReturnStatement) {</span>
-<span class="fc" id="L165">			accumulator.reject(Kind.UNSAFE_ESCAPE,</span>
+<span class="fc bfc" id="L173" title="All 4 branches covered.">		} else if (parent instanceof ReturnStatement &amp;&amp; isFinalArrayPublication(reference)) {</span>
+<span class="fc" id="L174">			accumulator.publishArray(reference);</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">		} else if (parent instanceof ReturnStatement) {</span>
+<span class="fc" id="L176">			accumulator.reject(Kind.UNSAFE_ESCAPE,</span>
 					&quot;Array value escapes through a return statement&quot;, reference); //$NON-NLS-1$
-<span class="pc bpc" id="L167" title="2 of 4 branches missed.">		} else if (parent instanceof InfixExpression infix &amp;&amp; isIdentityComparison(infix)) {</span>
-<span class="fc" id="L168">			accumulator.reject(Kind.ARRAY_IDENTITY,</span>
+<span class="pc bpc" id="L178" title="2 of 4 branches missed.">		} else if (parent instanceof InfixExpression infix &amp;&amp; isIdentityComparison(infix)) {</span>
+<span class="fc" id="L179">			accumulator.reject(Kind.ARRAY_IDENTITY,</span>
 					&quot;Array identity is observed by a reference comparison&quot;, reference); //$NON-NLS-1$
-<span class="nc bnc" id="L170" title="All 2 branches missed.">		} else if (parent instanceof SynchronizedStatement synchronizedStatement</span>
-<span class="nc bnc" id="L171" title="All 2 branches missed.">				&amp;&amp; synchronizedStatement.getExpression() == reference) {</span>
-<span class="nc" id="L172">			accumulator.reject(Kind.ARRAY_IDENTITY,</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">		} else if (parent instanceof SynchronizedStatement synchronizedStatement</span>
+<span class="nc bnc" id="L182" title="All 2 branches missed.">				&amp;&amp; synchronizedStatement.getExpression() == reference) {</span>
+<span class="nc" id="L183">			accumulator.reject(Kind.ARRAY_IDENTITY,</span>
 					&quot;Array identity is used as a synchronization monitor&quot;, reference); //$NON-NLS-1$
-<span class="nc bnc" id="L174" title="All 4 branches missed.">		} else if (parent instanceof CastExpression || parent instanceof InstanceofExpression) {</span>
-<span class="nc" id="L175">			accumulator.reject(Kind.ARRAY_IDENTITY,</span>
+<span class="nc bnc" id="L185" title="All 4 branches missed.">		} else if (parent instanceof CastExpression || parent instanceof InstanceofExpression) {</span>
+<span class="nc" id="L186">			accumulator.reject(Kind.ARRAY_IDENTITY,</span>
 					&quot;Runtime array representation is observed by a type operation&quot;, reference); //$NON-NLS-1$
 		} else {
-<span class="nc" id="L178">			accumulator.reject(Kind.UNCLASSIFIED_USAGE,</span>
+<span class="nc" id="L189">			accumulator.reject(Kind.UNCLASSIFIED_USAGE,</span>
 					&quot;Array use is not yet classified by local container analysis&quot;, reference); //$NON-NLS-1$
 		}
-<span class="fc" id="L181">	}</span>
+<span class="fc" id="L192">	}</span>
+
+	/**
+	 * Checks the retained array return at both planning time and stale-plan resolution.
+	 * Only a fresh, exactly typed, one-dimensional local may be published by the
+	 * final, direct return in its declaring method.
+	 */
+	public static boolean isFinalArrayPublication(Expression reference) {
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">		if (!(reference instanceof SimpleName name)</span>
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">				|| !(name.resolveBinding() instanceof IVariableBinding binding)</span>
+<span class="pc bpc" id="L202" title="3 of 6 branches missed.">				|| binding.isRecovered() || binding.isField() || binding.isParameter()</span>
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">				|| !(name.getParent() instanceof ReturnStatement publication)</span>
+<span class="pc bpc" id="L204" title="1 of 2 branches missed.">				|| !(publication.getParent() instanceof Block body)</span>
+<span class="pc bpc" id="L205" title="2 of 4 branches missed.">				|| !(body.getParent() instanceof MethodDeclaration method) || method.getBody() != body</span>
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">				|| body.statements().getLast() != publication</span>
+<span class="pc bpc" id="L207" title="1 of 2 branches missed.">				|| !(name.getRoot() instanceof CompilationUnit unit)</span>
+<span class="pc bpc" id="L208" title="1 of 2 branches missed.">				|| !(unit.findDeclaringNode(binding.getVariableDeclaration()) instanceof VariableDeclarationFragment local)</span>
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">				|| !(local.getParent() instanceof VariableDeclarationStatement declaration)</span>
+<span class="pc bpc" id="L210" title="2 of 4 branches missed.">				|| declaration.getParent() != body || declaration.fragments().size() != 1</span>
+<span class="pc bpc" id="L211" title="2 of 4 branches missed.">				|| !(declaration.getType() instanceof ArrayType declaredArray) || declaredArray.getDimensions() != 1</span>
+<span class="pc bpc" id="L212" title="1 of 2 branches missed.">				|| !(local.getInitializer() instanceof ArrayCreation initial)</span>
+<span class="pc bpc" id="L213" title="2 of 4 branches missed.">				|| initial.getInitializer() != null || initial.dimensions().size() != 1</span>
+<span class="pc bpc" id="L214" title="2 of 4 branches missed.">				|| !(initial.dimensions().getFirst() instanceof NumberLiteral length) || !&quot;0&quot;.equals(length.getToken())) { //$NON-NLS-1$</span>
+<span class="nc" id="L215">			return false;</span>
+		}
+<span class="fc" id="L217">		ITypeBinding type= binding.getType();</span>
+<span class="fc" id="L218">		IMethodBinding signature= method.resolveBinding();</span>
+<span class="pc bpc" id="L219" title="4 of 8 branches missed.">		return type != null &amp;&amp; !type.isRecovered() &amp;&amp; type.isArray() &amp;&amp; type.getDimensions() == 1</span>
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">				&amp;&amp; !type.getElementType().isRecovered()</span>
+<span class="pc bpc" id="L221" title="2 of 4 branches missed.">				&amp;&amp; !type.getElementType().isPrimitive() &amp;&amp; !type.getElementType().isParameterizedType()</span>
+<span class="pc bpc" id="L222" title="2 of 4 branches missed.">				&amp;&amp; !type.getElementType().isTypeVariable() &amp;&amp; !type.getElementType().isRawType()</span>
+<span class="pc bpc" id="L223" title="2 of 6 branches missed.">				&amp;&amp; type.isEqualTo(initial.resolveTypeBinding()) &amp;&amp; signature != null &amp;&amp; !signature.isRecovered()</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">				&amp;&amp; type.isEqualTo(signature.getReturnType());</span>
+	}
+
+	/** Checks that removing the temporary empty tail cannot change evaluation of the new element. */
+	public static boolean isSimplePublishedAppend(Assignment append) {
+<span class="fc" id="L229">		Expression value= unwrap(append.getRightHandSide());</span>
+<span class="pc bpc" id="L230" title="2 of 6 branches missed.">		if (!(value instanceof StringLiteral || value instanceof NullLiteral</span>
+<span class="pc bpc" id="L231" title="1 of 2 branches missed.">				|| value instanceof SimpleName name &amp;&amp; name.resolveBinding() instanceof IVariableBinding local</span>
+<span class="pc bpc" id="L232" title="3 of 6 branches missed.">						&amp;&amp; !local.isRecovered() &amp;&amp; !local.isField() &amp;&amp; local.getType() != null</span>
+<span class="pc bpc" id="L233" title="2 of 4 branches missed.">						&amp;&amp; !local.getType().isRecovered() &amp;&amp; !local.getType().isPrimitive()</span>
+<span class="pc bpc" id="L234" title="1 of 2 branches missed.">						&amp;&amp; append.getLeftHandSide() instanceof ArrayAccess slot</span>
+<span class="pc bpc" id="L235" title="1 of 2 branches missed.">						&amp;&amp; !sameVariable(slot.getArray(), name))) {</span>
+<span class="fc" id="L236">			return false;</span>
+		}
+<span class="pc bpc" id="L238" title="1 of 4 branches missed.">		for (ASTNode parent= append.getParent(); parent != null &amp;&amp; !(parent instanceof MethodDeclaration);</span>
+<span class="fc" id="L239">				parent= parent.getParent()) {</span>
+<span class="pc bpc" id="L240" title="1 of 2 branches missed.">			if (parent instanceof TryStatement) {</span>
+<span class="nc" id="L241">				return false;</span>
+			}
+		}
+<span class="fc" id="L244">		return true;</span>
+	}
 
 	private static boolean crossesExecutableBoundary(
 			ASTNode reference,
 			IVariableBinding declaration) {
-<span class="fc" id="L186">		IMethodBinding declaringMethod= declaration.getDeclaringMethod();</span>
-<span class="pc bpc" id="L187" title="1 of 4 branches missed.">		if (declaringMethod == null || declaration.isField()) {</span>
-<span class="fc" id="L188">			return false;</span>
+<span class="fc" id="L250">		IMethodBinding declaringMethod= declaration.getDeclaringMethod();</span>
+<span class="pc bpc" id="L251" title="1 of 4 branches missed.">		if (declaringMethod == null || declaration.isField()) {</span>
+<span class="fc" id="L252">			return false;</span>
 		}
-<span class="fc" id="L190">		String declaringKey= methodKey(declaringMethod);</span>
-<span class="fc" id="L191">		ASTNode current= reference.getParent();</span>
-<span class="pc bpc" id="L192" title="1 of 2 branches missed.">		while (current != null) {</span>
-<span class="pc bpc" id="L193" title="2 of 6 branches missed.">			if (current instanceof LambdaExpression</span>
+<span class="fc" id="L254">		String declaringKey= methodKey(declaringMethod);</span>
+<span class="fc" id="L255">		ASTNode current= reference.getParent();</span>
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">		while (current != null) {</span>
+<span class="pc bpc" id="L257" title="2 of 6 branches missed.">			if (current instanceof LambdaExpression</span>
 					|| current instanceof AnonymousClassDeclaration
 					|| current instanceof AbstractTypeDeclaration) {
-<span class="fc" id="L196">				return true;</span>
+<span class="fc" id="L260">				return true;</span>
 			}
-<span class="fc bfc" id="L198" title="All 2 branches covered.">			if (current instanceof MethodDeclaration method) {</span>
-<span class="fc" id="L199">				IMethodBinding currentBinding= method.resolveBinding();</span>
-<span class="pc bpc" id="L200" title="1 of 2 branches missed.">				return currentBinding == null</span>
-<span class="fc bfc" id="L201" title="All 2 branches covered.">						|| !declaringKey.equals(methodKey(currentBinding));</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">			if (current instanceof MethodDeclaration method) {</span>
+<span class="fc" id="L263">				IMethodBinding currentBinding= method.resolveBinding();</span>
+<span class="pc bpc" id="L264" title="1 of 2 branches missed.">				return currentBinding == null</span>
+<span class="fc bfc" id="L265" title="All 2 branches covered.">						|| !declaringKey.equals(methodKey(currentBinding));</span>
 			}
-<span class="fc" id="L203">			current= current.getParent();</span>
+<span class="fc" id="L267">			current= current.getParent();</span>
 		}
-<span class="nc" id="L205">		return true;</span>
+<span class="nc" id="L269">		return true;</span>
 	}
 
 	private static String methodKey(IMethodBinding method) {
-<span class="fc" id="L209">		IMethodBinding declaration= method.getMethodDeclaration();</span>
-<span class="fc" id="L210">		String key= declaration.getKey();</span>
-<span class="pc bpc" id="L211" title="1 of 2 branches missed.">		return key == null ? &quot;&quot; : key; //$NON-NLS-1$</span>
+<span class="fc" id="L273">		IMethodBinding declaration= method.getMethodDeclaration();</span>
+<span class="fc" id="L274">		String key= declaration.getKey();</span>
+<span class="pc bpc" id="L275" title="1 of 2 branches missed.">		return key == null ? &quot;&quot; : key; //$NON-NLS-1$</span>
 	}
 
 	private static void classifyArrayAccess(
 			ArrayAccess access,
 			Expression reference,
 			Accumulator accumulator) {
-<span class="fc" id="L218">		Assignment assignment= enclosingAssignment(access);</span>
-<span class="pc bpc" id="L219" title="1 of 4 branches missed.">		if (assignment != null &amp;&amp; unwrap(assignment.getLeftHandSide()) == access) {</span>
-<span class="pc bpc" id="L220" title="1 of 2 branches missed.">			if (isTailAppend(access, reference)) {</span>
-<span class="fc" id="L221">				accumulator.appendObserved();</span>
+<span class="fc" id="L282">		Assignment assignment= enclosingAssignment(access);</span>
+<span class="pc bpc" id="L283" title="1 of 4 branches missed.">		if (assignment != null &amp;&amp; unwrap(assignment.getLeftHandSide()) == access) {</span>
+<span class="pc bpc" id="L284" title="1 of 2 branches missed.">			if (isTailAppend(access, reference)) {</span>
+<span class="fc" id="L285">				accumulator.appendObserved(assignment);</span>
 			} else {
-<span class="nc" id="L223">				accumulator.indexedWrite(access);</span>
+<span class="nc" id="L287">				accumulator.indexedWrite(access);</span>
 			}
 		} else {
-<span class="fc" id="L226">			accumulator.indexedRead(access);</span>
+<span class="fc" id="L290">			accumulator.indexedRead(access);</span>
 		}
-<span class="fc" id="L228">	}</span>
+<span class="fc" id="L292">	}</span>
 
 	private static void classifyMethodInvocation(
 			Expression reference,
 			MethodInvocation invocation,
 			Accumulator accumulator) {
-<span class="pc bpc" id="L234" title="1 of 2 branches missed.">		if (invocation.arguments().contains(reference)</span>
-<span class="fc bfc" id="L235" title="All 2 branches covered.">				&amp;&amp; isRecognizedCopySource(invocation, reference)) {</span>
-<span class="fc" id="L236">			return;</span>
+<span class="pc bpc" id="L298" title="1 of 2 branches missed.">		if (invocation.arguments().contains(reference)</span>
+<span class="fc bfc" id="L299" title="All 2 branches covered.">				&amp;&amp; isRecognizedCopySource(invocation, reference)) {</span>
+<span class="fc" id="L300">			return;</span>
 		}
-<span class="pc bpc" id="L238" title="1 of 2 branches missed.">		if (invocation.arguments().contains(reference)) {</span>
-<span class="fc" id="L239">			accumulator.reject(Kind.UNSAFE_ESCAPE,</span>
+<span class="pc bpc" id="L302" title="1 of 2 branches missed.">		if (invocation.arguments().contains(reference)) {</span>
+<span class="fc" id="L303">			accumulator.reject(Kind.UNSAFE_ESCAPE,</span>
 					&quot;Array value is passed to another method&quot;, reference); //$NON-NLS-1$
 		} else {
-<span class="nc" id="L242">			accumulator.reject(Kind.UNCLASSIFIED_USAGE,</span>
+<span class="nc" id="L306">			accumulator.reject(Kind.UNCLASSIFIED_USAGE,</span>
 					&quot;Method invocation observes array-specific behavior&quot;, reference); //$NON-NLS-1$
 		}
-<span class="fc" id="L245">	}</span>
+<span class="fc" id="L309">	}</span>
 
 	private static void classifyAssignment(
 			Expression reference,
 			Assignment assignment,
 			Accumulator accumulator) {
-<span class="pc bpc" id="L251" title="1 of 2 branches missed.">		if (assignment.getLeftHandSide() == reference</span>
-<span class="pc bpc" id="L252" title="1 of 2 branches missed.">				&amp;&amp; isRecognizedGrowthAssignment(assignment, reference)) {</span>
-<span class="fc" id="L253">			return;</span>
+<span class="pc bpc" id="L315" title="1 of 2 branches missed.">		if (assignment.getLeftHandSide() == reference</span>
+<span class="pc bpc" id="L316" title="1 of 2 branches missed.">				&amp;&amp; isRecognizedGrowthAssignment(assignment, reference)) {</span>
+<span class="fc" id="L317">			return;</span>
 		}
-<span class="nc bnc" id="L255" title="All 2 branches missed.">		if (assignment.getRightHandSide() == reference) {</span>
-<span class="nc" id="L256">			accumulator.reject(Kind.UNSAFE_ESCAPE,</span>
+<span class="nc bnc" id="L319" title="All 2 branches missed.">		if (assignment.getRightHandSide() == reference) {</span>
+<span class="nc" id="L320">			accumulator.reject(Kind.UNSAFE_ESCAPE,</span>
 					&quot;Array value is assigned to another variable or field&quot;, reference); //$NON-NLS-1$
 		} else {
-<span class="nc" id="L259">			accumulator.reject(Kind.UNCLASSIFIED_USAGE,</span>
+<span class="nc" id="L323">			accumulator.reject(Kind.UNCLASSIFIED_USAGE,</span>
 					&quot;Array reference is reassigned outside the recognised growth pattern&quot;, reference); //$NON-NLS-1$
 		}
-<span class="nc" id="L262">	}</span>
+<span class="nc" id="L326">	}</span>
 
 	private static boolean isDeclarationName(SimpleName name) {
-<span class="fc" id="L265">		ASTNode parent= name.getParent();</span>
-<span class="fc bfc" id="L266" title="All 4 branches covered.">		return parent instanceof VariableDeclarationFragment fragment &amp;&amp; fragment.getName() == name</span>
-<span class="fc bfc" id="L267" title="All 2 branches covered.">				|| parent instanceof SingleVariableDeclaration declaration</span>
-<span class="pc bpc" id="L268" title="1 of 2 branches missed.">						&amp;&amp; declaration.getName() == name;</span>
+<span class="fc" id="L329">		ASTNode parent= name.getParent();</span>
+<span class="fc bfc" id="L330" title="All 4 branches covered.">		return parent instanceof VariableDeclarationFragment fragment &amp;&amp; fragment.getName() == name</span>
+<span class="fc bfc" id="L331" title="All 2 branches covered.">				|| parent instanceof SingleVariableDeclaration declaration</span>
+<span class="pc bpc" id="L332" title="1 of 2 branches missed.">						&amp;&amp; declaration.getName() == name;</span>
 	}
 
 	private static Expression completeReferenceExpression(SimpleName name, String bindingKey) {
-<span class="fc" id="L272">		Expression reference= name;</span>
-<span class="fc" id="L273">		ASTNode parent= reference.getParent();</span>
-<span class="fc bfc" id="L274" title="All 2 branches covered.">		if (parent instanceof QualifiedName qualified</span>
-<span class="pc bpc" id="L275" title="1 of 2 branches missed.">				&amp;&amp; qualified.getName() == reference</span>
-<span class="nc bnc" id="L276" title="All 2 branches missed.">				&amp;&amp; hasBindingKey(qualified.resolveBinding(), bindingKey)) {</span>
-<span class="nc" id="L277">			reference= qualified;</span>
-<span class="fc bfc" id="L278" title="All 2 branches covered.">		} else if (parent instanceof FieldAccess fieldAccess</span>
-<span class="pc bpc" id="L279" title="1 of 2 branches missed.">				&amp;&amp; fieldAccess.getName() == reference</span>
-<span class="pc bpc" id="L280" title="1 of 2 branches missed.">				&amp;&amp; hasBindingKey(fieldAccess.resolveFieldBinding(), bindingKey)) {</span>
-<span class="fc" id="L281">			reference= fieldAccess;</span>
-<span class="pc bpc" id="L282" title="1 of 2 branches missed.">		} else if (parent instanceof SuperFieldAccess superFieldAccess</span>
-<span class="nc bnc" id="L283" title="All 2 branches missed.">				&amp;&amp; superFieldAccess.getName() == reference</span>
-<span class="nc bnc" id="L284" title="All 2 branches missed.">				&amp;&amp; hasBindingKey(superFieldAccess.resolveFieldBinding(), bindingKey)) {</span>
-<span class="nc" id="L285">			reference= superFieldAccess;</span>
+<span class="fc" id="L336">		Expression reference= name;</span>
+<span class="fc" id="L337">		ASTNode parent= reference.getParent();</span>
+<span class="fc bfc" id="L338" title="All 2 branches covered.">		if (parent instanceof QualifiedName qualified</span>
+<span class="pc bpc" id="L339" title="1 of 2 branches missed.">				&amp;&amp; qualified.getName() == reference</span>
+<span class="nc bnc" id="L340" title="All 2 branches missed.">				&amp;&amp; hasBindingKey(qualified.resolveBinding(), bindingKey)) {</span>
+<span class="nc" id="L341">			reference= qualified;</span>
+<span class="fc bfc" id="L342" title="All 2 branches covered.">		} else if (parent instanceof FieldAccess fieldAccess</span>
+<span class="pc bpc" id="L343" title="1 of 2 branches missed.">				&amp;&amp; fieldAccess.getName() == reference</span>
+<span class="pc bpc" id="L344" title="1 of 2 branches missed.">				&amp;&amp; hasBindingKey(fieldAccess.resolveFieldBinding(), bindingKey)) {</span>
+<span class="fc" id="L345">			reference= fieldAccess;</span>
+<span class="pc bpc" id="L346" title="1 of 2 branches missed.">		} else if (parent instanceof SuperFieldAccess superFieldAccess</span>
+<span class="nc bnc" id="L347" title="All 2 branches missed.">				&amp;&amp; superFieldAccess.getName() == reference</span>
+<span class="nc bnc" id="L348" title="All 2 branches missed.">				&amp;&amp; hasBindingKey(superFieldAccess.resolveFieldBinding(), bindingKey)) {</span>
+<span class="nc" id="L349">			reference= superFieldAccess;</span>
 		}
-<span class="pc bpc" id="L287" title="1 of 2 branches missed.">		while (reference.getParent() instanceof ParenthesizedExpression parenthesized) {</span>
-<span class="nc" id="L288">			reference= parenthesized;</span>
+<span class="pc bpc" id="L351" title="1 of 2 branches missed.">		while (reference.getParent() instanceof ParenthesizedExpression parenthesized) {</span>
+<span class="nc" id="L352">			reference= parenthesized;</span>
 		}
-<span class="fc" id="L290">		return reference;</span>
+<span class="fc" id="L354">		return reference;</span>
 	}
 
 	private static boolean hasBindingKey(IBinding binding, String bindingKey) {
-<span class="fc" id="L294">		return binding instanceof IVariableBinding variable</span>
-<span class="pc bpc" id="L295" title="2 of 4 branches missed.">				&amp;&amp; bindingKey.equals(variable.getVariableDeclaration().getKey());</span>
+<span class="fc" id="L358">		return binding instanceof IVariableBinding variable</span>
+<span class="pc bpc" id="L359" title="2 of 4 branches missed.">				&amp;&amp; bindingKey.equals(variable.getVariableDeclaration().getKey());</span>
 	}
 
 	private static boolean isLengthRead(Expression reference, ASTNode parent) {
-<span class="fc bfc" id="L299" title="All 2 branches covered.">		if (parent instanceof QualifiedName qualifiedName) {</span>
-<span class="pc bpc" id="L300" title="1 of 2 branches missed.">			return qualifiedName.getQualifier() == reference</span>
-<span class="pc bpc" id="L301" title="1 of 2 branches missed.">					&amp;&amp; &quot;length&quot;.equals(qualifiedName.getName().getIdentifier()); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L363" title="All 2 branches covered.">		if (parent instanceof QualifiedName qualifiedName) {</span>
+<span class="pc bpc" id="L364" title="1 of 2 branches missed.">			return qualifiedName.getQualifier() == reference</span>
+<span class="pc bpc" id="L365" title="1 of 2 branches missed.">					&amp;&amp; &quot;length&quot;.equals(qualifiedName.getName().getIdentifier()); //$NON-NLS-1$</span>
 		}
-<span class="fc bfc" id="L303" title="All 2 branches covered.">		if (parent instanceof FieldAccess fieldAccess) {</span>
-<span class="pc bpc" id="L304" title="1 of 2 branches missed.">			return fieldAccess.getExpression() == reference</span>
-<span class="pc bpc" id="L305" title="1 of 2 branches missed.">					&amp;&amp; &quot;length&quot;.equals(fieldAccess.getName().getIdentifier()); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L367" title="All 2 branches covered.">		if (parent instanceof FieldAccess fieldAccess) {</span>
+<span class="pc bpc" id="L368" title="1 of 2 branches missed.">			return fieldAccess.getExpression() == reference</span>
+<span class="pc bpc" id="L369" title="1 of 2 branches missed.">					&amp;&amp; &quot;length&quot;.equals(fieldAccess.getName().getIdentifier()); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L307">		return false;</span>
+<span class="fc" id="L371">		return false;</span>
 	}
 
 	private static boolean isRecognizedCopySource(
 			MethodInvocation invocation,
 			Expression reference) {
-<span class="fc bfc" id="L313" title="All 2 branches covered.">		return isArraysCopyOf(invocation)</span>
-<span class="pc bpc" id="L314" title="1 of 2 branches missed.">				&amp;&amp; !invocation.arguments().isEmpty()</span>
-<span class="pc bpc" id="L315" title="1 of 2 branches missed.">				&amp;&amp; invocation.arguments().get(0) == reference;</span>
+<span class="fc bfc" id="L377" title="All 2 branches covered.">		return isArraysCopyOf(invocation)</span>
+<span class="pc bpc" id="L378" title="1 of 2 branches missed.">				&amp;&amp; !invocation.arguments().isEmpty()</span>
+<span class="pc bpc" id="L379" title="1 of 2 branches missed.">				&amp;&amp; invocation.arguments().get(0) == reference;</span>
 	}
 
 	private static boolean isRecognizedGrowthAssignment(
 			Assignment assignment,
 			Expression reference) {
-<span class="fc" id="L321">		Expression right= unwrap(assignment.getRightHandSide());</span>
-<span class="pc bpc" id="L322" title="1 of 2 branches missed.">		if (!(right instanceof MethodInvocation copyOf)</span>
-<span class="pc bpc" id="L323" title="1 of 2 branches missed.">				|| !isArraysCopyOf(copyOf)</span>
-<span class="pc bpc" id="L324" title="1 of 2 branches missed.">				|| copyOf.arguments().size() != 2) {</span>
-<span class="nc" id="L325">			return false;</span>
+<span class="fc" id="L385">		Expression right= unwrap(assignment.getRightHandSide());</span>
+<span class="pc bpc" id="L386" title="1 of 2 branches missed.">		if (!(right instanceof MethodInvocation copyOf)</span>
+<span class="pc bpc" id="L387" title="1 of 2 branches missed.">				|| !isArraysCopyOf(copyOf)</span>
+<span class="pc bpc" id="L388" title="1 of 2 branches missed.">				|| copyOf.arguments().size() != 2) {</span>
+<span class="nc" id="L389">			return false;</span>
 		}
-<span class="fc" id="L327">		Expression source= (Expression) copyOf.arguments().get(0);</span>
-<span class="fc" id="L328">		Expression length= (Expression) copyOf.arguments().get(1);</span>
-<span class="pc bpc" id="L329" title="2 of 4 branches missed.">		return sameVariable(reference, source) &amp;&amp; isLengthPlusOne(length, reference);</span>
+<span class="fc" id="L391">		Expression source= (Expression) copyOf.arguments().get(0);</span>
+<span class="fc" id="L392">		Expression length= (Expression) copyOf.arguments().get(1);</span>
+<span class="pc bpc" id="L393" title="2 of 4 branches missed.">		return sameVariable(reference, source) &amp;&amp; isLengthPlusOne(length, reference);</span>
 	}
 
 	private static boolean isArraysCopyOf(MethodInvocation invocation) {
-<span class="fc bfc" id="L333" title="All 2 branches covered.">		if (!&quot;copyOf&quot;.equals(invocation.getName().getIdentifier())) { //$NON-NLS-1$</span>
-<span class="fc" id="L334">			return false;</span>
+<span class="fc bfc" id="L397" title="All 2 branches covered.">		if (!&quot;copyOf&quot;.equals(invocation.getName().getIdentifier())) { //$NON-NLS-1$</span>
+<span class="fc" id="L398">			return false;</span>
 		}
-<span class="fc" id="L336">		IMethodBinding binding= invocation.resolveMethodBinding();</span>
-<span class="pc bpc" id="L337" title="2 of 4 branches missed.">		if (binding != null &amp;&amp; binding.getDeclaringClass() != null) {</span>
-<span class="fc" id="L338">			return &quot;java.util.Arrays&quot;.equals( //$NON-NLS-1$</span>
-<span class="fc" id="L339">					binding.getDeclaringClass().getErasure().getQualifiedName());</span>
+<span class="fc" id="L400">		IMethodBinding binding= invocation.resolveMethodBinding();</span>
+<span class="pc bpc" id="L401" title="2 of 4 branches missed.">		if (binding != null &amp;&amp; binding.getDeclaringClass() != null) {</span>
+<span class="fc" id="L402">			return &quot;java.util.Arrays&quot;.equals( //$NON-NLS-1$</span>
+<span class="fc" id="L403">					binding.getDeclaringClass().getErasure().getQualifiedName());</span>
 		}
-<span class="nc" id="L341">		Expression owner= invocation.getExpression();</span>
-<span class="nc bnc" id="L342" title="All 4 branches missed.">		return owner != null &amp;&amp; (&quot;Arrays&quot;.equals(owner.toString()) //$NON-NLS-1$</span>
-<span class="nc bnc" id="L343" title="All 2 branches missed.">				|| &quot;java.util.Arrays&quot;.equals(owner.toString())); //$NON-NLS-1$</span>
+<span class="nc" id="L405">		Expression owner= invocation.getExpression();</span>
+<span class="nc bnc" id="L406" title="All 4 branches missed.">		return owner != null &amp;&amp; (&quot;Arrays&quot;.equals(owner.toString()) //$NON-NLS-1$</span>
+<span class="nc bnc" id="L407" title="All 2 branches missed.">				|| &quot;java.util.Arrays&quot;.equals(owner.toString())); //$NON-NLS-1$</span>
 	}
 
 	private static boolean isTailAppend(ArrayAccess access, Expression array) {
-<span class="fc" id="L347">		return isLengthMinusOne(access.getIndex(), array);</span>
+<span class="fc" id="L411">		return isLengthMinusOne(access.getIndex(), array);</span>
 	}
 
 	private static boolean isLengthPlusOne(Expression expression, Expression array) {
-<span class="fc" id="L351">		Expression unwrapped= unwrap(expression);</span>
-<span class="pc bpc" id="L352" title="1 of 2 branches missed.">		if (!(unwrapped instanceof InfixExpression infix)</span>
-<span class="pc bpc" id="L353" title="1 of 2 branches missed.">				|| infix.getOperator() != InfixExpression.Operator.PLUS</span>
-<span class="pc bpc" id="L354" title="1 of 2 branches missed.">				|| !infix.extendedOperands().isEmpty()) {</span>
-<span class="nc" id="L355">			return false;</span>
+<span class="fc" id="L415">		Expression unwrapped= unwrap(expression);</span>
+<span class="pc bpc" id="L416" title="1 of 2 branches missed.">		if (!(unwrapped instanceof InfixExpression infix)</span>
+<span class="pc bpc" id="L417" title="1 of 2 branches missed.">				|| infix.getOperator() != InfixExpression.Operator.PLUS</span>
+<span class="pc bpc" id="L418" title="1 of 2 branches missed.">				|| !infix.extendedOperands().isEmpty()) {</span>
+<span class="nc" id="L419">			return false;</span>
 		}
-<span class="pc bpc" id="L357" title="2 of 4 branches missed.">		return isArrayLength(infix.getLeftOperand(), array) &amp;&amp; isOne(infix.getRightOperand())</span>
-<span class="pc bnc" id="L358" title="All 4 branches missed.">				|| isOne(infix.getLeftOperand()) &amp;&amp; isArrayLength(infix.getRightOperand(), array);</span>
+<span class="pc bpc" id="L421" title="2 of 4 branches missed.">		return isArrayLength(infix.getLeftOperand(), array) &amp;&amp; isOne(infix.getRightOperand())</span>
+<span class="pc bnc" id="L422" title="All 4 branches missed.">				|| isOne(infix.getLeftOperand()) &amp;&amp; isArrayLength(infix.getRightOperand(), array);</span>
 	}
 
 	private static boolean isLengthMinusOne(Expression expression, Expression array) {
-<span class="fc" id="L362">		Expression unwrapped= unwrap(expression);</span>
-<span class="pc bpc" id="L363" title="1 of 2 branches missed.">		if (!(unwrapped instanceof InfixExpression infix)</span>
-<span class="pc bpc" id="L364" title="1 of 2 branches missed.">				|| infix.getOperator() != InfixExpression.Operator.MINUS</span>
-<span class="pc bpc" id="L365" title="1 of 2 branches missed.">				|| !infix.extendedOperands().isEmpty()) {</span>
-<span class="nc" id="L366">			return false;</span>
+<span class="fc" id="L426">		Expression unwrapped= unwrap(expression);</span>
+<span class="pc bpc" id="L427" title="1 of 2 branches missed.">		if (!(unwrapped instanceof InfixExpression infix)</span>
+<span class="pc bpc" id="L428" title="1 of 2 branches missed.">				|| infix.getOperator() != InfixExpression.Operator.MINUS</span>
+<span class="pc bpc" id="L429" title="1 of 2 branches missed.">				|| !infix.extendedOperands().isEmpty()) {</span>
+<span class="nc" id="L430">			return false;</span>
 		}
-<span class="pc bpc" id="L368" title="2 of 4 branches missed.">		return isArrayLength(infix.getLeftOperand(), array) &amp;&amp; isOne(infix.getRightOperand());</span>
+<span class="pc bpc" id="L432" title="2 of 4 branches missed.">		return isArrayLength(infix.getLeftOperand(), array) &amp;&amp; isOne(infix.getRightOperand());</span>
 	}
 
 	private static Assignment enclosingAssignment(ASTNode node) {
-<span class="fc" id="L372">		ASTNode current= node;</span>
-<span class="pc bpc" id="L373" title="1 of 2 branches missed.">		while (current.getParent() instanceof ParenthesizedExpression) {</span>
-<span class="nc" id="L374">			current= current.getParent();</span>
+<span class="fc" id="L436">		ASTNode current= node;</span>
+<span class="pc bpc" id="L437" title="1 of 2 branches missed.">		while (current.getParent() instanceof ParenthesizedExpression) {</span>
+<span class="nc" id="L438">			current= current.getParent();</span>
 		}
-<span class="fc bfc" id="L376" title="All 2 branches covered.">		return current.getParent() instanceof Assignment assignment ? assignment : null;</span>
+<span class="fc bfc" id="L440" title="All 2 branches covered.">		return current.getParent() instanceof Assignment assignment ? assignment : null;</span>
 	}
 
 	private static boolean isIdentityComparison(InfixExpression expression) {
-<span class="pc bpc" id="L380" title="1 of 2 branches missed.">		return expression.getOperator() == InfixExpression.Operator.EQUALS</span>
-<span class="pc bnc" id="L381" title="All 2 branches missed.">				|| expression.getOperator() == InfixExpression.Operator.NOT_EQUALS;</span>
+<span class="pc bpc" id="L444" title="1 of 2 branches missed.">		return expression.getOperator() == InfixExpression.Operator.EQUALS</span>
+<span class="pc bnc" id="L445" title="All 2 branches missed.">				|| expression.getOperator() == InfixExpression.Operator.NOT_EQUALS;</span>
 	}
 
 	private static UsageEvidence evidence(Kind kind, String summary, ASTNode node) {
-<span class="fc" id="L385">		return new UsageEvidence(kind, summary, node.getStartPosition(), node.getLength());</span>
+<span class="fc" id="L449">		return new UsageEvidence(kind, summary, node.getStartPosition(), node.getLength());</span>
 	}
 
 	private static final class Accumulator {
@@ -397,107 +461,121 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 		private boolean positionalWrite;
 		private boolean append;
 		private boolean encounterIteration;
+		private boolean complexAppend;
+		private boolean publication;
 		private boolean rejected;
 
-<span class="fc" id="L402">		Accumulator(ContainerUsageProfile seed) {</span>
-<span class="fc" id="L403">			this.seed= seed;</span>
-<span class="fc" id="L404">			evidence= new ArrayList&lt;&gt;(seed.evidence());</span>
-<span class="fc" id="L405">			indexedRead= seed.access().indexedRead();</span>
-<span class="fc" id="L406">			indexedWrite= seed.access().indexedWrite();</span>
-<span class="fc" id="L407">			append= seed.access().append();</span>
-<span class="fc" id="L408">		}</span>
+<span class="fc" id="L468">		Accumulator(ContainerUsageProfile seed) {</span>
+<span class="fc" id="L469">			this.seed= seed;</span>
+<span class="fc" id="L470">			evidence= new ArrayList&lt;&gt;(seed.evidence());</span>
+<span class="fc" id="L471">			indexedRead= seed.access().indexedRead();</span>
+<span class="fc" id="L472">			indexedWrite= seed.access().indexedWrite();</span>
+<span class="fc" id="L473">			append= seed.access().append();</span>
+<span class="fc" id="L474">		}</span>
 
 		void observeBinding(IVariableBinding binding) {
-<span class="fc" id="L411">			bindingSeen= true;</span>
-<span class="fc" id="L412">			field|= binding.isField();</span>
-<span class="fc" id="L413">			parameter|= binding.isParameter();</span>
-<span class="fc" id="L414">		}</span>
+<span class="fc" id="L477">			bindingSeen= true;</span>
+<span class="fc" id="L478">			field|= binding.isField();</span>
+<span class="fc" id="L479">			parameter|= binding.isParameter();</span>
+<span class="fc" id="L480">		}</span>
 
 		boolean bindingSeen() {
-<span class="fc" id="L417">			return bindingSeen;</span>
+<span class="fc" id="L483">			return bindingSeen;</span>
 		}
 
 		void lengthRead(ASTNode node) {
-<span class="fc" id="L421">			evidence.add(LocalArrayUsageAnalyzer.evidence(Kind.ARRAY_LENGTH_READ,</span>
+<span class="fc" id="L487">			evidence.add(LocalArrayUsageAnalyzer.evidence(Kind.ARRAY_LENGTH_READ,</span>
 					&quot;Array length is observed&quot;, node)); //$NON-NLS-1$
-<span class="fc" id="L423">		}</span>
+<span class="fc" id="L489">		}</span>
 
 		void indexedRead(ASTNode node) {
-<span class="fc" id="L426">			indexedRead= true;</span>
-<span class="fc" id="L427">			evidence.add(LocalArrayUsageAnalyzer.evidence(Kind.INDEXED_READ,</span>
+<span class="fc" id="L492">			indexedRead= true;</span>
+<span class="fc" id="L493">			evidence.add(LocalArrayUsageAnalyzer.evidence(Kind.INDEXED_READ,</span>
 					&quot;Array element is read by index&quot;, node)); //$NON-NLS-1$
-<span class="fc" id="L429">		}</span>
+<span class="fc" id="L495">		}</span>
 
 		void indexedWrite(ASTNode node) {
-<span class="nc" id="L432">			indexedWrite= true;</span>
-<span class="nc" id="L433">			positionalWrite= true;</span>
-<span class="nc" id="L434">			evidence.add(LocalArrayUsageAnalyzer.evidence(Kind.INDEXED_WRITE,</span>
+<span class="nc" id="L498">			indexedWrite= true;</span>
+<span class="nc" id="L499">			positionalWrite= true;</span>
+<span class="nc" id="L500">			evidence.add(LocalArrayUsageAnalyzer.evidence(Kind.INDEXED_WRITE,</span>
 					&quot;Existing array position is written by index&quot;, node)); //$NON-NLS-1$
-<span class="nc" id="L436">		}</span>
+<span class="nc" id="L502">		}</span>
 
-		void appendObserved() {
-<span class="fc" id="L439">			append= true;</span>
-<span class="fc" id="L440">		}</span>
+		void appendObserved(Assignment assignment) {
+<span class="fc" id="L505">			append= true;</span>
+<span class="fc bfc" id="L506" title="All 2 branches covered.">			complexAppend|= !isSimplePublishedAppend(assignment);</span>
+<span class="fc" id="L507">		}</span>
+
+		void publishArray(ASTNode node) {
+<span class="fc" id="L510">			publication= true;</span>
+<span class="fc" id="L511">			evidence.add(LocalArrayUsageAnalyzer.evidence(Kind.ARRAY_RETURN_PUBLICATION,</span>
+					&quot;Publish a fresh array of the original component type in insertion order&quot;, node)); //$NON-NLS-1$
+<span class="fc" id="L513">		}</span>
 
 		void encounterIteration(ASTNode node) {
-<span class="fc" id="L443">			encounterIteration= true;</span>
-<span class="fc" id="L444">			evidence.add(LocalArrayUsageAnalyzer.evidence(Kind.ENCOUNTER_ITERATION,</span>
+<span class="fc" id="L516">			encounterIteration= true;</span>
+<span class="fc" id="L517">			evidence.add(LocalArrayUsageAnalyzer.evidence(Kind.ENCOUNTER_ITERATION,</span>
 					&quot;Array is traversed in encounter order&quot;, node)); //$NON-NLS-1$
-<span class="fc" id="L446">		}</span>
+<span class="fc" id="L519">		}</span>
 
 		void reject(Kind kind, String summary, ASTNode node) {
-<span class="fc" id="L449">			reject(kind, summary, node.getStartPosition(), node.getLength());</span>
-<span class="fc" id="L450">		}</span>
+<span class="fc" id="L522">			reject(kind, summary, node.getStartPosition(), node.getLength());</span>
+<span class="fc" id="L523">		}</span>
 
 		void reject(Kind kind, String summary, int start, int length) {
-<span class="fc" id="L453">			rejected= true;</span>
-<span class="fc" id="L454">			evidence.add(new UsageEvidence(kind, summary, start, length));</span>
-<span class="fc" id="L455">		}</span>
+<span class="fc" id="L526">			rejected= true;</span>
+<span class="fc" id="L527">			evidence.add(new UsageEvidence(kind, summary, start, length));</span>
+<span class="fc" id="L528">		}</span>
 
 		ContainerUsageProfile toProfile() {
-<span class="fc bfc" id="L458" title="All 2 branches covered.">			AnalysisCompleteness completeness= rejected</span>
-<span class="fc" id="L459">					? AnalysisCompleteness.REJECTED</span>
-<span class="fc" id="L460">					: AnalysisCompleteness.LOCAL_USAGE_COMPLETE;</span>
-<span class="fc bfc" id="L461" title="All 2 branches covered.">			if (!rejected) {</span>
-<span class="fc" id="L462">				evidence.add(new UsageEvidence(Kind.LOCAL_USAGE_COMPLETE,</span>
+<span class="pc bpc" id="L531" title="1 of 6 branches missed.">			if (publication &amp;&amp; (complexAppend || encounterIteration)) {</span>
+<span class="fc" id="L532">				reject(Kind.REJECTION_BOUNDARY,</span>
+						&quot;The builder must append simple values and cannot traverse the array before publication&quot;, //$NON-NLS-1$
+<span class="fc" id="L534">						seed.identity().sourceStart(), seed.identity().sourceLength());</span>
+			}
+<span class="fc bfc" id="L536" title="All 2 branches covered.">			AnalysisCompleteness completeness= rejected</span>
+<span class="fc" id="L537">					? AnalysisCompleteness.REJECTED</span>
+<span class="fc" id="L538">					: AnalysisCompleteness.LOCAL_USAGE_COMPLETE;</span>
+<span class="fc bfc" id="L539" title="All 2 branches covered.">			if (!rejected) {</span>
+<span class="fc" id="L540">				evidence.add(new UsageEvidence(Kind.LOCAL_USAGE_COMPLETE,</span>
 						&quot;Every local use of the array binding was classified&quot;, //$NON-NLS-1$
-<span class="fc" id="L464">						seed.identity().sourceStart(), seed.identity().sourceLength()));</span>
+<span class="fc" id="L542">						seed.identity().sourceStart(), seed.identity().sourceLength()));</span>
 			}
 
-<span class="pc bpc" id="L467" title="1 of 4 branches missed.">			OrderRequirement order= indexedRead || positionalWrite</span>
-<span class="fc" id="L468">					? OrderRequirement.POSITIONAL</span>
-<span class="fc bfc" id="L469" title="All 2 branches covered.">					: encounterIteration ? OrderRequirement.ENCOUNTER : seed.orderRequirement();</span>
-<span class="fc bfc" id="L470" title="All 2 branches covered.">			EscapeLevel escape= field</span>
-<span class="fc" id="L471">					? EscapeLevel.FIELD</span>
-<span class="fc bfc" id="L472" title="All 2 branches covered.">					: parameter ? EscapeLevel.METHOD_BOUNDARY : EscapeLevel.LOCAL;</span>
-<span class="fc bfc" id="L473" title="All 2 branches covered.">			AliasingContract aliasing= rejected</span>
-<span class="fc" id="L474">					? AliasingContract.UNKNOWN</span>
-<span class="fc" id="L475">					: AliasingContract.NO_OBSERVED_ALIAS;</span>
-<span class="fc bfc" id="L476" title="All 4 branches covered.">			ConcurrencyProfile concurrency= !rejected &amp;&amp; escape == EscapeLevel.LOCAL</span>
-<span class="fc" id="L477">					? new ConcurrencyProfile(</span>
+<span class="pc bpc" id="L545" title="1 of 4 branches missed.">			OrderRequirement order= indexedRead || positionalWrite</span>
+<span class="fc" id="L546">					? OrderRequirement.POSITIONAL</span>
+<span class="fc bfc" id="L547" title="All 4 branches covered.">					: encounterIteration || publication ? OrderRequirement.ENCOUNTER : seed.orderRequirement();</span>
+<span class="fc bfc" id="L548" title="All 2 branches covered.">			EscapeLevel escape= field</span>
+<span class="fc" id="L549">					? EscapeLevel.FIELD</span>
+<span class="fc bfc" id="L550" title="All 2 branches covered.">					: parameter ? EscapeLevel.METHOD_BOUNDARY : EscapeLevel.LOCAL;</span>
+<span class="fc bfc" id="L551" title="All 2 branches covered.">			AliasingContract aliasing= rejected</span>
+<span class="fc" id="L552">					? AliasingContract.UNKNOWN</span>
+<span class="fc" id="L553">					: AliasingContract.NO_OBSERVED_ALIAS;</span>
+<span class="fc bfc" id="L554" title="All 4 branches covered.">			ConcurrencyProfile concurrency= !rejected &amp;&amp; escape == EscapeLevel.LOCAL</span>
+<span class="fc" id="L555">					? new ConcurrencyProfile(</span>
 							ThreadExposure.THREAD_CONFINED,
 							SynchronizationKind.NONE,
 							IterationSemantics.LIVE,
 							AtomicityRequirement.INDIVIDUAL_OPERATIONS,
 							WorkloadShape.UNKNOWN)
-<span class="fc" id="L483">					: seed.concurrency();</span>
+<span class="fc" id="L561">					: seed.concurrency();</span>
 
-<span class="fc" id="L485">			return new ContainerUsageProfile(</span>
-<span class="fc" id="L486">					seed.identity(),</span>
-<span class="fc" id="L487">					seed.currentShape(),</span>
-<span class="fc" id="L488">					seed.elementDomain(),</span>
+<span class="fc" id="L563">			return new ContainerUsageProfile(</span>
+<span class="fc" id="L564">					seed.identity(),</span>
+<span class="fc" id="L565">					seed.currentShape(),</span>
+<span class="fc" id="L566">					seed.elementDomain(),</span>
 					new AccessProfile(
 							indexedRead,
 							indexedWrite,
 							append,
 							false,
 							false,
-<span class="fc" id="L495">							seed.access().membershipQuery(),</span>
-<span class="fc" id="L496">							seed.access().keyLookup()),</span>
+<span class="fc" id="L573">							seed.access().membershipQuery(),</span>
+<span class="fc" id="L574">							seed.access().keyLookup()),</span>
 					order,
-<span class="fc" id="L498">					seed.uniquenessRequirement(),</span>
+<span class="fc" id="L576">					seed.uniquenessRequirement(),</span>
 					MutationLifecycle.CONTINUOUSLY_MUTABLE,
-<span class="fc" id="L500">					seed.nullContract(),</span>
+<span class="fc" id="L578">					seed.nullContract(),</span>
 					aliasing,
 					escape,
 					concurrency,

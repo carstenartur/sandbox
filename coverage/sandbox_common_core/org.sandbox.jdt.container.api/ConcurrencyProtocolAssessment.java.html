@@ -143,7 +143,7 @@ public sealed interface ConcurrencyProtocolAssessment
 	}
 
 	private static boolean isLockBased(SynchronizationKind synchronization) {
-<span class="pc bpc" id="L146" title="2 of 6 branches missed.">		return synchronization == SynchronizationKind.INTRINSIC_LOCK</span>
+<span class="pc bpc" id="L146" title="1 of 6 branches missed.">		return synchronization == SynchronizationKind.INTRINSIC_LOCK</span>
 				|| synchronization == SynchronizationKind.EXPLICIT_LOCK
 				|| synchronization == SynchronizationKind.SYNCHRONIZED_WRAPPER;
 	}
