@@ -25,6 +25,7 @@ import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCle
 
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -166,7 +167,7 @@ class ContainerCleanUpTest {
 				CLEANUP, CleanUpOptions.TRUE, APPEND_ARRAY_TO_LIST, CleanUpOptions.TRUE));
 		assertNull(cleanup.createFix(new CleanUpContext(unit, parse(unit))));
 		assertEquals(source, unit.getSource());
-		Path file= Files.writeString(directory.resolve("Sample.java"), unit.getSource()); //$NON-NLS-1$
+		Path file= Files.writeString(directory.resolve("Sample.java"), unit.getSource(), StandardCharsets.UTF_8); //$NON-NLS-1$
 		assertEquals(0, javax.tools.ToolProvider.getSystemJavaCompiler().run(null, null, null,
 				"-d", directory.toString(), file.toString())); //$NON-NLS-1$
 		try (var classes= new URLClassLoader(new URL[] { directory.toUri().toURL() }, null)) {
@@ -177,7 +178,7 @@ class ContainerCleanUpTest {
 	}
 
 	private static void verifyPublishedArrays(String source, Path directory) throws Exception {
-		Path file= Files.writeString(directory.resolve("Sample.java"), source); //$NON-NLS-1$
+		Path file= Files.writeString(directory.resolve("Sample.java"), source, StandardCharsets.UTF_8); //$NON-NLS-1$
 		int exit= javax.tools.ToolProvider.getSystemJavaCompiler().run(null, null, null,
 				"-d", directory.toString(), file.toString()); //$NON-NLS-1$
 		assertEquals(0, exit);
@@ -230,7 +231,7 @@ class ContainerCleanUpTest {
 		assertFalse(Arrays.stream(parse(unit).getProblems()).anyMatch(problem -> problem.isError()), migrated);
 		assertNull(cleanup.createFix(new CleanUpContext(unit, parse(unit))));
 		Path output= Files.createDirectories(temp.resolve("classes")); //$NON-NLS-1$
-		Path java= Files.writeString(temp.resolve("Sample.java"), migrated); //$NON-NLS-1$
+		Path java= Files.writeString(temp.resolve("Sample.java"), migrated, StandardCharsets.UTF_8); //$NON-NLS-1$
 		assertEquals(0, javax.tools.ToolProvider.getSystemJavaCompiler().run(null, null, null, "--release", "16", "-d", output.toString(), java.toString())); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		try (var classes= new URLClassLoader(new URL[] { output.toUri().toURL() }, null)) {
 			var collect= classes.loadClass("test.Sample").getMethod("collect", String[].class); //$NON-NLS-1$ //$NON-NLS-2$
@@ -317,7 +318,7 @@ class ContainerCleanUpTest {
 		assertFalse(migrated.contains("for (Entry"), migrated); //$NON-NLS-1$
 		assertFalse(Arrays.stream(parse(unit).getProblems()).anyMatch(problem -> problem.isError()), migrated);
 		assertNull(cleanup.createFix(new CleanUpContext(unit, parse(unit))));
-		Path file= Files.writeString(output.resolve("Sample.java"), migrated); //$NON-NLS-1$
+		Path file= Files.writeString(output.resolve("Sample.java"), migrated, StandardCharsets.UTF_8); //$NON-NLS-1$
 		assertEquals(0, javax.tools.ToolProvider.getSystemJavaCompiler().run(null, null, null, "-d", output.toString(), file.toString())); //$NON-NLS-1$
 		try (var classes= new URLClassLoader(new URL[] { output.toUri().toURL() }, null)) {
 			assertEquals(8, classes.loadClass("test.Sample").getMethod("exercise").invoke(null)); //$NON-NLS-1$ //$NON-NLS-2$
