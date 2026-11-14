@@ -161,7 +161,7 @@ class OomphSetupTest {
                 "org.eclipse.core.resources", "org.eclipse.ui", "org.eclipse.equinox.app",
                 "org.eclipse.equinox.p2.metadata", "org.eclipse.emf.common", "org.eclipse.emf.ecore",
                 "org.eclipse.oomph.base", "org.eclipse.oomph.util", "org.eclipse.oomph.ui", "org.eclipse.oomph.setup",
-                "org.eclipse.oomph.setup.core", "org.eclipse.oomph.setup.git", "org.eclipse.oomph.setup.projects", "org.eclipse.pde.core")));
+                "org.eclipse.oomph.setup.core", "org.eclipse.oomph.setup.git", "org.eclipse.oomph.setup.projects", "org.eclipse.pde.core", "org.eclipse.jdt.core")));
         Path dropins = Files.createDirectories(eclipse.resolve("dropins"));
         try (var jar = new JarOutputStream(Files.newOutputStream(dropins.resolve("org.sandbox.oomph.pinned.jar")), manifest)) {
             writeProbeBundle(jar, classes, "<plugin><extension point=\"org.eclipse.core.runtime.applications\" id=\"run\">"

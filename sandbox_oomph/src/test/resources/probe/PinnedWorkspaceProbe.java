@@ -17,6 +17,7 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
 import org.eclipse.equinox.p2.metadata.ILicense;
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.oomph.internal.setup.SetupPrompter;
 import org.eclipse.oomph.setup.Configuration;
 import org.eclipse.oomph.setup.SetupFactory;
@@ -35,9 +36,13 @@ import org.eclipse.oomph.ui.UIUtil;
 import org.eclipse.oomph.util.Confirmer;
 import org.eclipse.oomph.util.OS;
 import org.eclipse.oomph.util.UserCallback;
+import org.eclipse.pde.core.target.ITargetPlatformService;
+import org.eclipse.pde.core.target.LoadTargetDefinitionJob;
+import org.eclipse.pde.internal.core.ClasspathComputer;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.application.WorkbenchAdvisor;
+import org.osgi.framework.FrameworkUtil;
 
 /** Applies the checked-in R4_40 Oomph configuration to a fresh retained workspace. */
 public class PinnedWorkspaceProbe implements IApplication {
@@ -168,6 +173,23 @@ public class PinnedWorkspaceProbe implements IApplication {
         }
         var root = workspace.getRoot();
         var jobs = Job.getJobManager();
+        var bundleContext = FrameworkUtil.getBundle(ITargetPlatformService.class).getBundleContext();
+        var reference = bundleContext.getServiceReference(ITargetPlatformService.class);
+        try {
+            var target = bundleContext.getService(reference).getWorkspaceTargetDefinition();
+            if (!"Sandbox upstream JDT migration QA target".equals(target.getName())) {
+                throw new IllegalStateException("Unexpected active target " + target.getName());
+            }
+            var load = new LoadTargetDefinitionJob(target);
+            load.schedule();
+            load.join();
+            if (!load.getResult().isOK() || target.getBundles() == null || target.getBundles().length == 0) {
+                throw new IllegalStateException("Could not activate the pinned target: " + load.getResult());
+            }
+            jobs.join(ClasspathComputer.class, monitor);
+        } finally {
+            bundleContext.ungetService(reference);
+        }
         jobs.beginRule(root, monitor);
         try {
             var project = root.getProject("org.eclipse.jdt.ui");
@@ -182,6 +204,11 @@ public class PinnedWorkspaceProbe implements IApplication {
             if (!source.isAccessible() || !Files.isSameFile(project.getLocation().toFile().toPath(),
                     run.resolve("eclipse.jdt.ui/org.eclipse.jdt.ui"))) {
                 throw new IllegalStateException("Missing retained JDT UI source at " + source.getFullPath());
+            }
+            var javaProject = JavaCore.create(project);
+            var status = javaProject.findType("org.eclipse.core.runtime.Status");
+            if (status == null || !status.isBinary() || javaProject.findType("java.lang.String") == null) {
+                throw new IllegalStateException("The imported JDT project must resolve the target Status and Java system library");
             }
             workspace.save(true, monitor);
         } finally {
