@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.APPEND_ARRAY_TO_LIST;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.CLEANUP;
+import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.PARALLEL_ARRAYS_TO_RECORDS;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.UNIQUE_SEQUENCE_TO_SET;
 
 import java.net.URL;
@@ -191,6 +192,84 @@ class ContainerCleanUpTest {
 	}
 
 	@Test
+	void migratesClosedParallelArraysOnlyAtRecordSourceLevels(@TempDir Path temp) throws Exception {
+		String source= """
+				package test;
+				import java.util.Arrays;
+				public class Sample {
+				    static String pair(String label, Integer value) { return label + "=" + value + ";"; }
+				    public static String collect(String[] input) {
+				        String[] labels = new String[0];
+				        Integer[] values = new Integer[0];
+				        int count = 0;
+				        for (String label : input) {
+				            labels = Arrays.copyOf(labels, count + 1);
+				            values = Arrays.copyOf(values, count + 1);
+				            labels[count] = label;
+				            values[count] = label == null ? null : label.length();
+				            count++;
+				        }
+				        StringBuilder text = new StringBuilder();
+				        for (int i = 0; i < count; i++) text.append(pair(labels[i], values[i]));
+				        return text.toString();
+				    }
+				}
+				""";
+		var unit= createUnit(source);
+		var cleanup= new ContainerCleanUpCore(Map.of(CLEANUP, CleanUpOptions.TRUE,
+				PARALLEL_ARRAYS_TO_RECORDS, CleanUpOptions.TRUE));
+		var fix= cleanup.createFix(new CleanUpContext(unit, parse(unit)));
+		assertNotNull(fix);
+		var undo= fix.createChange(null).perform(null);
+		assertNotNull(undo);
+		String migrated= unit.getSource();
+		assertTrue(migrated.contains("record Row("), migrated); //$NON-NLS-1$
+		assertTrue(migrated.contains("new Row("), migrated); //$NON-NLS-1$
+		assertFalse(migrated.contains("Arrays.copyOf("), migrated); //$NON-NLS-1$
+		assertFalse(Arrays.stream(parse(unit).getProblems()).anyMatch(problem -> problem.isError()), migrated);
+		assertNull(cleanup.createFix(new CleanUpContext(unit, parse(unit))));
+		Path output= Files.createDirectories(temp.resolve("classes")); //$NON-NLS-1$
+		Path java= Files.writeString(temp.resolve("Sample.java"), migrated); //$NON-NLS-1$
+		assertEquals(0, javax.tools.ToolProvider.getSystemJavaCompiler().run(null, null, null, "--release", "16", "-d", output.toString(), java.toString())); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		try (var classes= new URLClassLoader(new URL[] { output.toUri().toURL() }, null)) {
+			var collect= classes.loadClass("test.Sample").getMethod("collect", String[].class); //$NON-NLS-1$ //$NON-NLS-2$
+			assertEquals("ab=2;null=null;ab=2;", collect.invoke(null, (Object) new String[] { "ab", null, "ab" })); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			assertEquals("", collect.invoke(null, (Object) new String[0])); //$NON-NLS-1$
+		}
+		undo.perform(null);
+		assertEquals(source, unit.getSource());
+		var project= unit.getJavaProject();
+		var before= project.getOptions(false);
+		try {
+			project.setOption(org.eclipse.jdt.core.JavaCore.COMPILER_SOURCE, "15"); //$NON-NLS-1$
+			assertNull(cleanup.createFix(new CleanUpContext(unit, parse(unit))));
+		} finally {
+			project.setOptions(before);
+		}
+		String conflict= source.replace("String[] labels =", "class Row {} int rows = 0; String[] labels ="); //$NON-NLS-1$ //$NON-NLS-2$
+		unit.getBuffer().setContents(conflict);
+		unit.save(null, true);
+		var renamed= cleanup.createFix(new CleanUpContext(unit, parse(unit)));
+		assertNotNull(renamed);
+		renamed.createChange(null).perform(null);
+		assertTrue(unit.getSource().contains("record Row2("), unit.getSource()); //$NON-NLS-1$
+		assertTrue(unit.getSource().contains("rows2.add("), unit.getSource()); //$NON-NLS-1$
+		assertFalse(Arrays.stream(parse(unit).getProblems()).anyMatch(problem -> problem.isError()));
+
+		for (String blocked : List.of(source.replace("i < count", "i <= count"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("for (String label : input)", "try { for (String label : input)") //$NON-NLS-1$ //$NON-NLS-2$
+						.replace("StringBuilder text =", "} catch (RuntimeException ex) {} StringBuilder text ="), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("Integer[] values", "Number[] values"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("values[count] = label", "/* keep component origin */ values[count] = label"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("values[count] = label", "values[0] = label"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("StringBuilder text =", "Object alias = values; StringBuilder text ="))) { //$NON-NLS-1$ //$NON-NLS-2$
+			unit.getBuffer().setContents(blocked);
+			unit.save(null, true);
+			assertNull(cleanup.createFix(new CleanUpContext(unit, parse(unit))), blocked);
+		}
+	}
+
+	@Test
 	void disabledMasterProducesNoFix() throws CoreException {
 		ICompilationUnit unit= createUnit("""
 			package test;
@@ -234,7 +313,7 @@ class ContainerCleanUpTest {
 		assertEquals(
 				List.of(
 						ContainerCleanUpRule.APPEND_ARRAY_TO_LIST,
-						ContainerCleanUpRule.UNIQUE_SEQUENCE_TO_ORDERED_SET),
+						ContainerCleanUpRule.UNIQUE_SEQUENCE_TO_ORDERED_SET, ContainerCleanUpRule.PARALLEL_ARRAYS_TO_RECORDS),
 				ContainerCleanUpRule.localCleanUps());
 		assertTrue(Arrays.stream(ContainerCleanUpRule.values())
 				.allMatch(rule -> !rule.helpContextId().isBlank()));

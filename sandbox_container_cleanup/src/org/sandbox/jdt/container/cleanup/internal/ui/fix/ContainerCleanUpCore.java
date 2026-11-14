@@ -12,6 +12,7 @@ package org.sandbox.jdt.container.cleanup.internal.ui.fix;
 
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.APPEND_ARRAY_TO_LIST;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.CLEANUP;
+import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.PARALLEL_ARRAYS_TO_RECORDS;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.UNIQUE_SEQUENCE_TO_SET;
 
 import java.util.ArrayList;
@@ -91,7 +92,7 @@ public final class ContainerCleanUpCore extends AbstractCleanUp {
 	public boolean requireAST() {
 		return isEnabled(CLEANUP)
 				&& (isEnabled(APPEND_ARRAY_TO_LIST)
-						|| isEnabled(UNIQUE_SEQUENCE_TO_SET));
+						|| isEnabled(UNIQUE_SEQUENCE_TO_SET) || isEnabled(PARALLEL_ARRAYS_TO_RECORDS));
 	}
 
 	@Override
@@ -148,7 +149,7 @@ public final class ContainerCleanUpCore extends AbstractCleanUp {
 		}
 
 		return ContainerCleanUpFix.create(
-				unit, root, arrayPlans.values(), uniquePlans.values());
+				unit, root, arrayPlans.values(), uniquePlans.values(), isEnabled(PARALLEL_ARRAYS_TO_RECORDS));
 	}
 
 	@Override
@@ -164,6 +165,9 @@ public final class ContainerCleanUpCore extends AbstractCleanUp {
 		if (isEnabled(UNIQUE_SEQUENCE_TO_SET)) {
 			descriptions.add(
 					"Replace strictly local manually unique lists with ordered sets"); //$NON-NLS-1$
+		}
+		if (isEnabled(PARALLEL_ARRAYS_TO_RECORDS)) {
+			descriptions.add("Replace closed local parallel arrays with an ordered list of records (Java 16+)"); //$NON-NLS-1$
 		}
 		return descriptions.toArray(String[]::new);
 	}
@@ -187,6 +191,9 @@ public final class ContainerCleanUpCore extends AbstractCleanUp {
 			preview.append("List<String> names = new ArrayList<>();\n"); //$NON-NLS-1$
 			preview.append(
 					"if (!names.contains(name)) names.add(name);\n"); //$NON-NLS-1$
+		}
+		if (isEnabled(CLEANUP) && isEnabled(PARALLEL_ARRAYS_TO_RECORDS)) {
+			preview.append("\nrecord Row(String labels, Integer values) {}\nList<Row> rows = new ArrayList<>();\n"); //$NON-NLS-1$
 		}
 		return preview.toString();
 	}

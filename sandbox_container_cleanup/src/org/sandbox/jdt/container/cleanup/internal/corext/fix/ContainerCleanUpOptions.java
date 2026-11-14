@@ -18,6 +18,7 @@ public final class ContainerCleanUpOptions {
 			ContainerCleanUpRule.APPEND_ARRAY_TO_LIST.optionId();
 	public static final String UNIQUE_SEQUENCE_TO_SET=
 			ContainerCleanUpRule.UNIQUE_SEQUENCE_TO_ORDERED_SET.optionId();
+	public static final String PARALLEL_ARRAYS_TO_RECORDS= ContainerCleanUpRule.PARALLEL_ARRAYS_TO_RECORDS.optionId();
 	public static final String CLOSED_SOURCE_PARAMETER_MIGRATION=
 			ContainerCleanUpRule.CLOSED_SOURCE_PARAMETER_MIGRATION.optionId();
 

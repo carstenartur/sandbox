@@ -19,6 +19,10 @@
 		<description>Convert a proven manually unique local sequence to an encounter-ordered set.</description>
 		<topic href="html/cleanup.html#unique-sequence" label="Unique sequence to ordered set"/>
 	</context>
+	<context id="parallel_arrays_to_records" title="Parallel arrays to a local record sequence">
+		<description>Replace private local parallel reference arrays with a list of local records on Java 16 or later.</description>
+		<topic href="html/cleanup.html#parallel-records" label="Parallel arrays to records"/>
+	</context>
 	<context id="closed_source_parameter_migration" title="Closed-source parameter migration">
 		<description>This project-wide rule requires coordinated multi-file preview.</description>
 		<topic href="html/cleanup.html#project-closed" label="Project-closed migration"/>

@@ -32,6 +32,15 @@ notification's visibility of registrations made during a callback.</p>
 <p>For a strictly local list with stable equality and encounter-order iteration,
 this becomes a <code>LinkedHashSet</code>.</p>
 
+<h2 id="parallel-records">Parallel arrays to a local record sequence</h2>
+<p>On Java 16 and later, the opt-in rule can replace two local reference arrays
+with a list of records. Both columns must start empty, grow in lockstep in an
+enhanced for loop and use the same count when appending a row. The cleanup
+follows all reads and proves that each paired observation uses an in-bounds
+index. It keeps row order, duplicates, null components and each component object's
+identity. Generated records stay inside the method. Earlier source levels,
+independently exposed columns and unproven index bounds produce no rewrite.</p>
+
 <h2 id="project-closed">Execution boundaries</h2>
 <ul>
   <li><strong>LOCAL_SAFE</strong> rules are ordinary explicit cleanups.</li>
