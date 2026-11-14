@@ -226,6 +226,7 @@ jobs:
             ${{ runner.temp }}/patched-jdt-ui/provenance.json
             ${{ runner.temp }}/patched-jdt-ui-compatibility/compatibility.json
             ${{ runner.temp }}/patched-jdt-ui-p2/evidence/repository-provenance.json
+            ${{ runner.temp }}/patched-jdt-ui-p2/repository/**
             ${{ runner.temp }}/patched-ltk/provenance.json
             ${{ runner.temp }}/patched-ltk/runtime.properties
             ${{ runner.temp }}/patched-ltk/*.log
