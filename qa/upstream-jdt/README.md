@@ -315,8 +315,10 @@ The separate `PinnedCoordinatedJUnitPreviewSWTBotTest` selects the genuine
 `JUnitWorkspaceTestSetup` resource in that same retained project. The strict workflow
 supplies its verified patched JDT UI and LTK repositories to the Tycho target. The
 test checks the three compilation-unit identities from the headless candidate,
-its two consumers' twelve upstream tests, the individual native file diffs, and the
-bytes produced by applying the tested Git patch. Its capture and sidecar live in
+its two consumers' twelve upstream tests, the individual native file diffs and the
+PDE `Import-Package` change needed for `@Isolated`. Deselecting the separate proposed
+superclass change preserves it. The transaction applies the four selected paths, verifies
+compiler errors and warnings for every affected Java source and restores their original bytes on Undo. Its capture and sidecar live in
 `$SANDBOX_STATUS_EVIDENCE/junit-atomic/`. For acceptance, inspect the fresh patched
 job's JUnit report together with these artifacts.
 

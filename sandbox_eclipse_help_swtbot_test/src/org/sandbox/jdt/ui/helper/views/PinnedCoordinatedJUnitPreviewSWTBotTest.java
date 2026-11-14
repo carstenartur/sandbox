@@ -36,6 +36,9 @@ import com.google.gson.JsonParser;
 
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.pde.internal.core.ClasspathComputer;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -53,6 +56,8 @@ public class PinnedCoordinatedJUnitPreviewSWTBotTest {
     private static final String CONSUMER = "ui/org/eclipse/jdt/junit/tests/TestRunSessionSerializationTests";
     private static final String NAME = "org.eclipse.jdt.ui.tests.core.rules.JUnitWorkspaceTestSetup";
     private static final String CANDIDATE = "external-resource:" + NAME;
+    private static final String OTHER = "ui/org/eclipse/jdt/junit/tests/AbstractTestRunSessionSerializationTests.java";
+    private static final String MANIFEST = "META-INF/MANIFEST.MF";
     private static final Set<String> FILES = Set.of(OWNER, CONSUMER + "3.java", CONSUMER + "4.java");
 
     @Test
@@ -97,6 +102,8 @@ public class PinnedCoordinatedJUnitPreviewSWTBotTest {
         var checkout = Objects.requireNonNull(project.getLocation().toFile().toPath().toRealPath().getParent(),
                 "Missing repository for the pinned JDT project");
         var before = new TreeMap<String, byte[]>();
+        var requiredFiles = new TreeSet<>(FILES);
+        requiredFiles.add(MANIFEST);
         var diagnostics = new TreeMap<String, List<String>>();
         var external = new TreeSet<String>();
         try (Git git = Git.open(checkout.toFile()); RevWalk walk = new RevWalk(git.getRepository())) {
@@ -104,20 +111,23 @@ public class PinnedCoordinatedJUnitPreviewSWTBotTest {
             assertEquals(pins.getProperty("PIN_JDT_UI_REPOSITORY"), repo.getConfig().getString("remote", "origin", "url"));
             assertEquals(pin, repo.resolve("HEAD^{commit}").name());
             assertEquals(pin, repo.resolve("refs/tags/" + pins.getProperty("PIN_JDT_UI_REF") + "^{commit}").name());
-            for (String path : FILES) {
+            for (String path : requiredFiles) {
                 var file = project.getFile(path);
+                try (var tree = TreeWalk.forPath(repo, PROJECT + "/" + path, walk.parseCommit(repo.resolve("HEAD")).getTree())) {
+                    assertNotNull(tree, path);
+                    byte[] original = repo.open(tree.getObjectId(0)).getBytes();
+                    assertArrayEquals(original, Files.readAllBytes(file.getLocation().toFile().toPath()), path);
+                    before.put(path, original);
+                }
+                if (MANIFEST.equals(path)) {
+                    continue;
+                }
                 var unit = JavaCore.createCompilationUnitFrom(file);
                 var handle = unit.getPrimary().getHandleIdentifier().getBytes(StandardCharsets.UTF_8);
                 String id = "cu-" + digest(handle).substring(0, 12);
                 external.add(id);
                 if (OWNER.equals(path)) {
                     assertEquals(candidate.get("ownerCompilationUnit").getAsString(), id);
-                }
-                try (var tree = TreeWalk.forPath(repo, PROJECT + "/" + path, walk.parseCommit(repo.resolve("HEAD")).getTree())) {
-                    assertNotNull(tree, path);
-                    byte[] original = repo.open(tree.getObjectId(0)).getBytes();
-                    assertArrayEquals(original, Files.readAllBytes(file.getLocation().toFile().toPath()), path);
-                    before.put(path, original);
                 }
                 var problems = PinnedFilePreviewDriver.compilerDiagnostics(unit);
                 assertTrue(problems.stream().noneMatch(problem -> problem.startsWith("error ")),
@@ -136,12 +146,7 @@ public class PinnedCoordinatedJUnitPreviewSWTBotTest {
         Path image = evidence.resolve("junit-workspace-setup-pinned.png");
         var applied = new TreeMap<String, String>();
         CleanupWorkbenchDriver.run(scenario, PreviewContract.ATOMIC_CANDIDATE, () -> {
-            var wizard = driver.openCleanUpWizard(PinnedFilePreviewDriver.selectPinnedFile(bot, project.getFile(OWNER)));
-            var custom = wizard.bot().radio("Use configured profiles");
-            if (!custom.isSelected()) {
-                custom.click();
-            }
-            var preview = driver.openCleanUpPreview(wizard, NAME);
+            var preview = openPreview(bot, project.getFile(OWNER), driver);
             var row = CleanupWizardDriver.findTreeItemContaining(preview.tree(), NAME);
             assertNotNull(row);
             assertEquals(0, row.getItems().length, "The atomic candidate cannot have file-level checkboxes");
@@ -155,54 +160,118 @@ public class PinnedCoordinatedJUnitPreviewSWTBotTest {
                 }
             }
             row.select();
-            waitForFiles(bot, preview.shell());
+            waitForFiles(bot, preview.shell(), requiredFiles);
             var table = preview.shell().bot().table();
             for (int index = 0; index < table.rowCount(); index++) {
                 String file = table.cell(index, 0);
                 table.select(index);
+                if (MANIFEST.equals(file)) {
+                    waitForDiff(bot, preview.shell(), "org.junit.platform.suite.engine", "org.junit.jupiter.api.parallel");
+                    continue;
+                }
                 String expectedOld = OWNER.equals(file) ? "extends ExternalResource" : "@Rule";
                 String expectedNew = OWNER.equals(file) ? "BeforeEachCallback" : "@RegisterExtension";
                 waitForDiff(bot, preview.shell(), expectedOld, expectedNew);
             }
-            int selected = table.indexOf(OWNER);
+            int selected = table.indexOf(CONSUMER + "3.java");
             assertTrue(selected >= 0);
             table.select(selected);
-            waitForDiff(bot, preview.shell(), "extends ExternalResource", "BeforeEachCallback");
-            PinnedFilePreviewDriver.capture(preview.shell(), bot, image);
+            waitForDiff(bot, preview.shell(), "@Rule", "@RegisterExtension");
+            PinnedFilePreviewDriver.capture(preview.shell(), bot, image, () ->
+                    assertTrue(PinnedFilePreviewDriver.showVisibleDiff(preview.shell().widget, "@Rule", "@RegisterExtension"),
+                            "The selected consumer annotations must be visible at capture time"));
             CleanupWizardDriver.clickButtonAsync(preview.shell(), "Finish");
             driver.waitForShellToClose(preview.shell(), "Clean Up wizard");
-            for (String path : FILES) {
+            Job.getJobManager().join(ClasspathComputer.class,
+                    new NullProgressMonitor());
+            for (String path : requiredFiles) {
                 var file = project.getFile(path);
                 byte[] bytes = Files.readAllBytes(file.getLocation().toFile().toPath());
                 assertArrayEquals(expected.get(path), bytes, path);
+                applied.put(path, digest(bytes));
+                if (MANIFEST.equals(path)) {
+                    continue;
+                }
                 var added = new ArrayList<>(PinnedFilePreviewDriver.compilerDiagnostics(JavaCore.createCompilationUnitFrom(file)));
                 diagnostics.get(path).forEach(added::remove);
                 assertTrue(added.isEmpty(), () -> file + ": " + added);
-                applied.put(path, digest(bytes));
             }
         });
-        for (String path : FILES) {
+        Job.getJobManager().join(ClasspathComputer.class,
+                new NullProgressMonitor());
+        for (String path : requiredFiles) {
             var file = project.getFile(path);
             assertArrayEquals(before.get(path), Files.readAllBytes(file.getLocation().toFile().toPath()), path);
-            assertEquals(diagnostics.get(path), PinnedFilePreviewDriver.compilerDiagnostics(JavaCore.createCompilationUnitFrom(file)));
+            if (!MANIFEST.equals(path)) {
+                assertEquals(diagnostics.get(path), PinnedFilePreviewDriver.compilerDiagnostics(JavaCore.createCompilationUnitFrom(file)));
+            }
         }
+        // With the candidate excluded, its unrelated sibling still makes Finish available.
+        var independent = JavaCore.createCompilationUnitFrom(project.getFile(OTHER));
+        var independentBefore = PinnedFilePreviewDriver.compilerDiagnostics(independent);
+        assertTrue(independentBefore.stream().noneMatch(problem -> problem.startsWith("error ")), independentBefore::toString);
+        var exclusion = new CleanupScreenshotScenario("pinned-junit-excluded", PreviewContract.ATOMIC_CANDIDATE,
+                PROJECT, Set.of(OTHER), Set.of(OTHER));
+        CleanupWorkbenchDriver.run(exclusion, PreviewContract.ATOMIC_CANDIDATE, () -> {
+            var preview = openPreview(bot, project.getFile(OWNER), driver);
+            var row = CleanupWizardDriver.findTreeItemContaining(preview.tree(), NAME);
+            assertNotNull(row);
+            row.uncheck();
+            assertFalse(row.isChecked());
+            CleanupWizardDriver.clickButtonAsync(preview.shell(), "Finish");
+            driver.waitForShellToClose(preview.shell(), "Clean Up wizard");
+            var introduced = new ArrayList<>(PinnedFilePreviewDriver.compilerDiagnostics(independent));
+            independentBefore.forEach(introduced::remove);
+            assertTrue(introduced.isEmpty(), introduced::toString);
+            for (String path : requiredFiles) {
+                assertArrayEquals(before.get(path), Files.readAllBytes(project.getFile(path).getLocation().toFile().toPath()), path);
+            }
+        });
+        assertEquals(independentBefore, PinnedFilePreviewDriver.compilerDiagnostics(independent));
+        assertArrayEquals(before.get(MANIFEST), Files.readAllBytes(project.getFile(MANIFEST).getLocation().toFile().toPath()));
         var provenance = new JsonObject();
         provenance.addProperty("scenario", scenario.id());
         provenance.addProperty("previewContract", scenario.previewContract().name());
         provenance.addProperty("repository", pins.getProperty("PIN_JDT_UI_REPOSITORY"));
         provenance.addProperty("ref", pins.getProperty("PIN_JDT_UI_REF"));
         provenance.addProperty("commit", pin);
+        provenance.addProperty("eclipseRelease", pins.getProperty("PIN_ECLIPSE_RELEASE"));
         provenance.addProperty("project", PROJECT);
         provenance.addProperty("candidateId", CANDIDATE);
         provenance.add("upstreamTests", new com.google.gson.Gson().toJsonTree(upstreamTests));
         provenance.addProperty("cleanupProfile", "junit4-to-jupiter.properties");
         provenance.addProperty("profileSha256", artifacts.get("cleanupProfileSha256").getAsString());
         provenance.addProperty("strictMigrationPatchSha256", artifacts.get("migrationPatchSha256").getAsString());
-        provenance.addProperty("sourcePath", OWNER);
+        var baselineSha256 = new TreeMap<String, String>();
+        for (var file : before.entrySet()) {
+            baselineSha256.put(file.getKey(), digest(file.getValue()));
+        }
+        provenance.add("baselineSha256", new com.google.gson.Gson().toJsonTree(baselineSha256));
+        provenance.addProperty("headlessReport", "cleanup-check-report.json");
+        provenance.addProperty("headlessPatch", "migration.patch");
+        provenance.addProperty("candidateOutcome", candidate.get("outcome").getAsString());
+        provenance.add("candidateCompilationUnits", new com.google.gson.Gson().toJsonTree(external));
+        provenance.addProperty("ownerSourcePath", OWNER);
+        provenance.addProperty("sourcePath", CONSUMER + "3.java");
         provenance.add("appliedSha256", new com.google.gson.Gson().toJsonTree(applied));
         provenance.addProperty("screenshotSha256", digest(Files.readAllBytes(image)));
-        Files.writeString(evidence.resolve("junit-workspace-setup-pinned.provenance.json"),
-                new GsonBuilder().setPrettyPrinting().create().toJson(provenance) + "\n");
+        Path sidecar = evidence.resolve("junit-workspace-setup-pinned.provenance.json");
+        Files.writeString(sidecar, new GsonBuilder().setPrettyPrinting().create().toJson(provenance) + "\n");
+        Path published = sandbox.resolve("sandbox_junit_cleanup_help/images");
+        assertEquals(-1L, Files.mismatch(published.resolve(image.getFileName()), image),
+                "The generated coordinated preview differs from the published Help image");
+        assertEquals(-1L, Files.mismatch(published.resolve(sidecar.getFileName()), sidecar),
+                "The generated coordinated provenance differs from the published Help sidecar");
+    }
+
+    private static CleanupWizardDriver.CleanUpPreview openPreview(SWTWorkbenchBot bot,
+            org.eclipse.core.resources.IFile owner, CleanupWizardDriver driver) {
+        var wizard = driver.openCleanUpWizard(PinnedFilePreviewDriver.selectPinnedFile(bot, owner));
+        var custom = wizard.bot().radio("Use configured profiles");
+        if (!custom.isSelected()) {
+            custom.click();
+        }
+        return driver.openCleanUpPreview(wizard, NAME);
     }
 
     /** Apply only the audited file patches in an isolated repository, preserving upstream's exact diff format. */
@@ -236,7 +305,7 @@ public class PinnedCoordinatedJUnitPreviewSWTBotTest {
         return result;
     }
 
-    private static void waitForFiles(SWTWorkbenchBot bot, SWTBotShell shell) {
+    private static void waitForFiles(SWTWorkbenchBot bot, SWTBotShell shell, Set<String> requiredFiles) {
         bot.waitUntil(new DefaultCondition() {
             @Override public boolean test() {
                 var files = shell.bot().table();
@@ -244,10 +313,10 @@ public class PinnedCoordinatedJUnitPreviewSWTBotTest {
                 for (int index = 0; index < files.rowCount(); index++) {
                     actual.add(files.cell(index, 0));
                 }
-                return FILES.equals(actual);
+                return requiredFiles.equals(actual);
             }
             @Override public String getFailureMessage() {
-                return "The native candidate does not report its three strict corpus files";
+                return "The native candidate does not report its three strict corpus sources and required PDE descriptor";
             }
         });
     }
@@ -257,7 +326,8 @@ public class PinnedCoordinatedJUnitPreviewSWTBotTest {
             @Override public boolean test() {
                 return UIThreadRunnable.syncExec(shell.display,
                         (Result<Boolean>) () ->
-                                PinnedFilePreviewDriver.showVisibleDiff(shell.widget, oldText, newText));
+                                PinnedFilePreviewDriver.showVisibleDiff(shell.widget, oldText, newText,
+                                        "@Rule".equals(oldText)));
             }
             @Override public String getFailureMessage() {
                 return "Candidate diff does not show " + oldText + " and " + newText;

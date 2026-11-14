@@ -228,6 +228,10 @@ final class PinnedFilePreviewDriver {
     }
 
     static void capture(SWTBotShell shell, SWTWorkbenchBot bot, Path temp) {
+        capture(shell, bot, temp, () -> {});
+    }
+
+    static void capture(SWTBotShell shell, SWTWorkbenchBot bot, Path temp, Runnable positionComparison) {
         var area = UIThreadRunnable.syncExec(shell.display, (Result<Rectangle>) () -> {
             Rectangle bounds = shell.display.map(shell.widget, null, shell.widget.getClientArea());
             assertEquals(bounds, bounds.intersection(shell.widget.getMonitor().getClientArea()));
@@ -249,7 +253,13 @@ final class PinnedFilePreviewDriver {
             shell.display.update();
         });
         bot.sleep(650);
-        assertTrue(SWTUtils.captureScreenshot(temp.toString(), area));
+        UIThreadRunnable.syncExec(shell.display, () -> {
+            // GTK can restore the compare viewer's first difference when the native window remaps.
+            // Position the real controls after that event and paint them before reading the screen.
+            positionComparison.run();
+            shell.display.update();
+            assertTrue(SWTUtils.captureScreenshot(temp.toString(), area));
+        });
     }
 
     // Compare multiplicities. Source positions can shift when a cleanup introduces an import.
@@ -361,6 +371,10 @@ final class PinnedFilePreviewDriver {
      * strings somewhere in the dialog (or scrolling one pane twice) is not proof.
      */
     static boolean showVisibleDiff(Shell shell, String before, String after) {
+        return showVisibleDiff(shell, before, after, true);
+    }
+
+    static boolean showVisibleDiff(Shell shell, String before, String after, boolean entireLine) {
         var panes = new java.util.ArrayList<StyledText>();
         var controls = new ArrayDeque<Control>();
         controls.add(shell);
@@ -377,12 +391,12 @@ final class PinnedFilePreviewDriver {
             }
         }
         for (StyledText original : panes) {
-            if (!showDiffFragment(original, before)) {
+            if (!showDiffFragment(original, before, entireLine)) {
                 continue;
             }
             for (StyledText modified : panes) {
-                if (modified != original && showDiffFragment(modified, after)
-                        && showDiffFragment(original, before)) {
+                if (modified != original && showDiffFragment(modified, after, entireLine)
+                        && showDiffFragment(original, before, entireLine)) {
                     return true;
                 }
             }
@@ -390,7 +404,7 @@ final class PinnedFilePreviewDriver {
         return false;
     }
 
-    private static boolean showDiffFragment(StyledText pane, String fragment) {
+    private static boolean showDiffFragment(StyledText pane, String fragment, boolean entireLine) {
         int start = pane.getText().indexOf(fragment);
         if (start < 0) {
             return false;
@@ -398,8 +412,8 @@ final class PinnedFilePreviewDriver {
         int line = pane.getLineAtOffset(start);
         String content = pane.getLine(line);
         int lineOffset = pane.getOffsetAtLine(line);
-        int codeStart = lineOffset + content.length() - content.stripLeading().length();
-        int codeEnd = lineOffset + content.stripTrailing().length() - 1;
+        int codeStart = entireLine ? lineOffset + content.length() - content.stripLeading().length() : start;
+        int codeEnd = entireLine ? lineOffset + content.stripTrailing().length() - 1 : start + fragment.length() - 1;
         pane.setTopIndex(Math.max(0, line - 2));
         Rectangle text = pane.getTextBounds(codeStart, codeEnd);
         Rectangle client = pane.getClientArea();

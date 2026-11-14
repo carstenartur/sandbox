@@ -59,6 +59,8 @@ import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpDiagnosticsProvide
 import org.sandbox.jdt.cleanup.multifile.api.LineDelimiterPreserver;
 import org.sandbox.jdt.triggerpattern.git.UnifiedDiffFormatter;
 
+import org.sandbox.jdt.internal.common.PdeManifestImportUpdater;
+
 /**
  * Executes one cleanup refactoring over every source compilation unit of one
  * already imported Eclipse Java project.

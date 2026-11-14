@@ -158,5 +158,14 @@ public class MyTest {
       migration patch, checks that <code>removeTrailingCharacters</code> passed before and
       after migration, and verifies byte-exact Undo.</p>
    <p><img src="../images/junit-strings-pinned.png" alt="The JDT UI StringsTest source with its JUnit assertions migrating to Jupiter" /></p>
+   <h3>Apply a shared JUnit resource together with its PDE import</h3>
+   <p>On the same pin, one <em>Clean Up</em> candidate migrates <code>JUnitWorkspaceTestSetup</code>
+      and its two rule consumers. Selecting <code>TestRunSessionSerializationTests3.java</code> shows
+      <code>@Rule</code> becoming <code>@RegisterExtension</code>. The candidate also adds
+      <code>org.junit.jupiter.api.parallel</code> to the bundle manifest so that PDE can resolve the
+      new <code>@Isolated</code> annotation. The unchecked superclass is a separate proposed change.
+      Finish applies the four selected files. Undo restores their original bytes.</p>
+   <p><img src="../images/junit-workspace-setup-pinned.png"
+      alt="Pinned JDT UI coordinated migration showing both rule consumers, the shared resource and its required PDE manifest import" /></p>
 </body>
 </html>

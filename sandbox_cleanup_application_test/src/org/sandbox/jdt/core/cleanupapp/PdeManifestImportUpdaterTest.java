@@ -18,6 +18,8 @@ import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.Test;
 
+import org.sandbox.jdt.internal.common.PdeManifestImportUpdater;
+
 public class PdeManifestImportUpdaterTest {
 
 	private static final String PARALLEL_PACKAGE= "org.junit.jupiter.api.parallel"; //$NON-NLS-1$

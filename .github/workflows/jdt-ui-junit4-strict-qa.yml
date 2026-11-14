@@ -21,6 +21,7 @@ on:
       - 'sandbox_product/**'
       - 'sandbox_target/**'
       - '.github/workflows/jdt-ui-junit4-strict-qa.yml'
+      - '.github/patches/coordinated-cleanup-descriptor.patch'
   workflow_dispatch:
 
 concurrency:

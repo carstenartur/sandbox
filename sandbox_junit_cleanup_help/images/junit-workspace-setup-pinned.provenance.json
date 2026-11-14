@@ -1,0 +1,54 @@
+{
+  "scenario": "pinned-junit-workspace-setup",
+  "previewContract": "ATOMIC_CANDIDATE",
+  "repository": "https://github.com/eclipse-jdt/eclipse.jdt.ui.git",
+  "ref": "R4_40",
+  "commit": "c922f757b27b7e2b6215db383cec5f8aafd13227",
+  "eclipseRelease": "2026-06",
+  "project": "org.eclipse.jdt.ui.tests",
+  "candidateId": "external-resource:org.eclipse.jdt.ui.tests.core.rules.JUnitWorkspaceTestSetup",
+  "upstreamTests": {
+    "org.eclipse.jdt.junit.tests.TestRunSessionSerializationTests3": [
+      "testATestCase",
+      "testATestCase_testSucceed",
+      "testATestSuite",
+      "testAllTests",
+      "testFailingSuite",
+      "testFailures",
+      "testImportAntSuite"
+    ],
+    "org.eclipse.jdt.junit.tests.TestRunSessionSerializationTests4": [
+      "testATestCase",
+      "testATestSuite",
+      "testAllTests",
+      "testFailures",
+      "testImportAntSuite"
+    ]
+  },
+  "cleanupProfile": "junit4-to-jupiter.properties",
+  "profileSha256": "db130cfe692ac797db90ea1161cb8828d43d929b4dae733fd900e612eb785aa8",
+  "strictMigrationPatchSha256": "93dc9e01c88b33202287bbb8fda97a55e4c3171c38bcd6d69762d750a6a01d9d",
+  "baselineSha256": {
+    "META-INF/MANIFEST.MF": "76c3f92aad12e0ad50a142d8aa729fef1d6e50ff1498d740511920bc465c9dba",
+    "ui/org/eclipse/jdt/junit/tests/TestRunSessionSerializationTests3.java": "08fee85c32e1dd5170ea78224dd576655fca5a2546602d4647233a40f7d42862",
+    "ui/org/eclipse/jdt/junit/tests/TestRunSessionSerializationTests4.java": "59acf23d0e39153582104dfa1b8cca16f53d67983ed8a7432d0c2a752330f91f",
+    "ui/org/eclipse/jdt/ui/tests/core/rules/JUnitWorkspaceTestSetup.java": "54bf396664ae03a73d3c12a417b83620dac2fe27b050ed3d24c11c197656fd8d"
+  },
+  "headlessReport": "cleanup-check-report.json",
+  "headlessPatch": "migration.patch",
+  "candidateOutcome": "TRANSFORMED",
+  "candidateCompilationUnits": [
+    "cu-0dcb46027589",
+    "cu-1f31cce26ee4",
+    "cu-a7e711a8ac57"
+  ],
+  "ownerSourcePath": "ui/org/eclipse/jdt/ui/tests/core/rules/JUnitWorkspaceTestSetup.java",
+  "sourcePath": "ui/org/eclipse/jdt/junit/tests/TestRunSessionSerializationTests3.java",
+  "appliedSha256": {
+    "META-INF/MANIFEST.MF": "37eca75139d581772226f0a6d4a895255508c22bddb80b605488ab7ebdf8b531",
+    "ui/org/eclipse/jdt/junit/tests/TestRunSessionSerializationTests3.java": "3d4d8bb0f4f55014cc181418495ae247bc1f3bf5f0b35c18ac8f7fc321d8a31a",
+    "ui/org/eclipse/jdt/junit/tests/TestRunSessionSerializationTests4.java": "37965b42ef1ae014b7df128c58101da61ce5d81e9703eb40c6dfdc1f692b0166",
+    "ui/org/eclipse/jdt/ui/tests/core/rules/JUnitWorkspaceTestSetup.java": "2f829e24144ab6828b25e76ec7a70b5eb763e230a7c120ad88eda0fe624f3ebe"
+  },
+  "screenshotSha256": "7ccf2eca639bb6439d943f89908d6ec7b59fec5f4fec4aa24ab2f275cd6f7002"
+}
