@@ -253,6 +253,90 @@ public class JUnitScopeExpansionTest {
 	}
 
 	@ParameterizedTest
+	@org.junit.jupiter.params.provider.CsvSource({ "0.25d,true", "delta,false", "-0.25d,false" })
+	public void preservesResolvedDeltaAndMessageInAClosedForwarder(String delta, boolean accepted) throws CoreException {
+		addJupiter();
+		var pack= root.createPackageFragment("test", true, null);
+		String source= """
+				package test;
+				class NumericChecks {
+					static void verifyDelegatedNumericFixture(String message, double expected, double actual, double delta) {
+						compareNumericFixture(message, expected, actual, delta);
+					}
+					private static void compareNumericFixture(String message, double expected, double actual, double delta) {
+						org.junit.Assert.assertEquals(message, expected, actual, DELTA);
+					}
+				}
+				""".replace("DELTA", delta);
+		var helper= pack.createCompilationUnit("NumericChecks.java", source, false, null);
+		var selected= pack.createCompilationUnit("NumericCaller.java", """
+				package test;
+				class NumericCaller { void run() { NumericChecks.verifyDelegatedNumericFixture("tolerance", 1, 1, 0.25); } }
+				""", false, null);
+		var expanded= assertionCleanup().expandCleanUpScope(selected.getJavaProject(), List.of(selected), null);
+		if (!accepted) {
+			assertTrue(expanded.isEmpty());
+			assertEquals(source, helper.getSource());
+			return;
+		}
+		assertEquals(Set.of(helper, selected), Set.copyOf(expanded));
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT);
+		MultiFileCleanUpLifecycleAssertions.assertApplyCompileAndUndo(expanded.toArray(ICompilationUnit[]::new),
+				new ICompilationUnit[] { helper, selected }, new String[] {
+						source.replace("org.junit.Assert.assertEquals(message, expected, actual, 0.25d)",
+								"org.junit.jupiter.api.Assertions.assertEquals(expected, actual, 0.25d, message)"), selected.getSource() });
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	public void provenHelperGraphIncludesCallerInAReferencingProject(boolean startInConsumer) throws CoreException {
+		addJupiter();
+		var supplier= context.getJavaProject();
+		var pack= AbstractEclipseJava.addSourceContainer(supplier, "test")
+				.createPackageFragment("test", true, null);
+		String source= """
+				package test;
+				public class SharedFlagChecks {
+					static void checkProjectScopedFixtureFlag(boolean flag) {
+						org.junit.Assert.assertTrue(flag);
+						org.junit.Assert.assertFalse(false);
+					}
+				}
+				""";
+		var helper= pack.createCompilationUnit("SharedFlagChecks.java", source, false, null);
+		var selected= pack.createCompilationUnit("PrimaryProjectCaller.java", """
+				package test;
+				class PrimaryProjectCaller { void run() { SharedFlagChecks.checkProjectScopedFixtureFlag(true); } }
+				""", false, null);
+		var consumer= AbstractEclipseJava.createJavaProject(supplier.getElementName() + "Consumer", "bin");
+		try {
+			var entries= new java.util.ArrayList<>(java.util.Arrays.stream(supplier.getRawClasspath())
+					.filter(entry -> entry.getEntryKind() != org.eclipse.jdt.core.IClasspathEntry.CPE_SOURCE).toList());
+			entries.add(JavaCore.newProjectEntry(supplier.getPath()));
+			consumer.setRawClasspath(entries.toArray(org.eclipse.jdt.core.IClasspathEntry[]::new), null);
+			consumer.setOptions(supplier.getOptions(true));
+			var consumerPackage= AbstractEclipseJava.addSourceContainer(consumer, "test")
+					.createPackageFragment("test", true, null);
+			var secondary= consumerPackage.createCompilationUnit("SecondaryProjectCaller.java", """
+					package test;
+					class SecondaryProjectCaller { void run() { SharedFlagChecks.checkProjectScopedFixtureFlag(false); } }
+					""", false, null);
+			var seed= startInConsumer ? secondary : selected;
+			var expanded= assertionCleanup().expandCleanUpScope(seed.getJavaProject(), List.of(seed), null);
+			assertEquals(Set.of(selected, helper, secondary), Set.copyOf(expanded));
+			context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+			context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT);
+			MultiFileCleanUpLifecycleAssertions.assertApplyCompileAndUndo(expanded.toArray(ICompilationUnit[]::new),
+					new ICompilationUnit[] { helper, selected, secondary }, new String[] {
+							source.replace("org.junit.Assert.", "org.junit.jupiter.api.Assertions."),
+							selected.getSource(), secondary.getSource() });
+		} finally {
+			consumer.getProject().delete(true, true, null);
+		}
+	}
+
+	@ParameterizedTest
 	@ValueSource(strings = { "Bridge.verify(ready)", "Missing.unknown(ready)", "Leaf.check(ready, 1)" })
 	public void unprovenForwarderDoesNotAdmitAnySource(String delegate) throws CoreException {
 		addJupiter();

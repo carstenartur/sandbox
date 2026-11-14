@@ -24,6 +24,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -55,6 +56,7 @@ import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.StringLiteral;
@@ -79,7 +81,7 @@ import org.sandbox.jdt.cleanup.multifile.RelatedCompilationUnitSearch;
  */
 public final class JUnitSharedHelperScopeDetector {
 
-	private enum BooleanChecks {
+	private enum HelperChecks {
 		ASSERTIONS(ORG_JUNIT_ASSERT, ORG_JUNIT_JUPITER_API_ASSERTIONS, Set.of("assertTrue", "assertFalse")), //$NON-NLS-1$ //$NON-NLS-2$
 		ASSUMPTIONS(ORG_JUNIT_ASSUME, ORG_JUNIT_JUPITER_API_ASSUMPTIONS, Set.of("assumeTrue", "assumeFalse")); //$NON-NLS-1$ //$NON-NLS-2$
 
@@ -87,7 +89,7 @@ public final class JUnitSharedHelperScopeDetector {
 		final String target;
 		final Set<String> methods;
 
-		BooleanChecks(String source, String target, Set<String> methods) {
+		HelperChecks(String source, String target, Set<String> methods) {
 			this.source= source;
 			this.target= target;
 			this.methods= methods;
@@ -140,12 +142,12 @@ public final class JUnitSharedHelperScopeDetector {
 		Set<String> invocationCandidates= new LinkedHashSet<>();
 		Map<String, HelperCandidate> verified= new LinkedHashMap<>();
 		Set<List<IJavaElement>> assertionPaths= new LinkedHashSet<>();
-		BooleanChecks checks= migrateAssertions ? BooleanChecks.ASSERTIONS : BooleanChecks.ASSUMPTIONS;
+		HelperChecks checks= migrateAssertions ? HelperChecks.ASSERTIONS : HelperChecks.ASSUMPTIONS;
 		boolean followAssertionPaths= allowAssertionPaths && (migrateAssertions != migrateAssumptions)
 				&& available(project, checks.target);
 		Map<String, CompilationUnit> selectedRoots= parse(project, selected, monitor);
 		for (CompilationUnit root : selectedRoots.values()) {
-			collect(root, project, migrateAssertions, migrateAssumptions,
+			collect(root, migrateAssertions, migrateAssumptions,
 					followAssertionPaths, possible, invocationCandidates, verified);
 		}
 
@@ -157,7 +159,7 @@ public final class JUnitSharedHelperScopeDetector {
 			}
 		}
 		if (!declarationUnits.isEmpty()) {
-			roots.putAll(parse(project, new ArrayList<>(declarationUnits), monitor));
+			roots.putAll(parseByProject(declarationUnits, monitor));
 		}
 		for (HelperCandidate candidate : possible.values()) {
 			checkCanceled(monitor);
@@ -169,7 +171,7 @@ public final class JUnitSharedHelperScopeDetector {
 					&& isDirectWrapper(method, migrateAssertions, migrateAssumptions)) {
 				verified.putIfAbsent(candidate.bindingKey(), candidate);
 			} else if (followAssertionPaths && !verified.containsKey(candidate.bindingKey())) {
-				List<IJavaElement> path= assertionPath(project, candidate, roots, checks, monitor);
+				List<IJavaElement> path= assertionPath(candidate, roots, checks, monitor);
 				if (!path.isEmpty()) {
 					assertionPaths.add(path);
 				}
@@ -191,15 +193,15 @@ public final class JUnitSharedHelperScopeDetector {
 	}
 
 	/** Returns complete source closures whose newly admitted units support the assertion rewrite. */
-	public static List<ICompilationUnit> closeAssertionPaths(IJavaProject project, List<List<IJavaElement>> paths,
+	public static List<ICompilationUnit> closeAssertionPaths(Collection<IJavaProject> projects, List<List<IJavaElement>> paths,
 			Collection<ICompilationUnit> existingScope, Collection<ICompilationUnit> allowedUnits,
 			boolean migrateAssertions, IProgressMonitor monitor) throws CoreException {
-		BooleanChecks checks= migrateAssertions ? BooleanChecks.ASSERTIONS : BooleanChecks.ASSUMPTIONS;
+		HelperChecks checks= migrateAssertions ? HelperChecks.ASSERTIONS : HelperChecks.ASSUMPTIONS;
 		Set<ICompilationUnit> approved= new LinkedHashSet<>();
-		Set<ICompilationUnit> existing= new LinkedHashSet<>(normalize(project, existingScope));
+		Set<ICompilationUnit> existing= new LinkedHashSet<>(existingScope);
 		for (List<IJavaElement> path : paths) {
 			RelatedCompilationUnitSearch.Result closure= RelatedCompilationUnitSearch.findReferences(
-					project, path, List.of(), allowedUnits, monitor);
+					projects, path, List.of(), allowedUnits, monitor);
 			if (!closure.complete()) {
 				continue;
 			}
@@ -208,9 +210,11 @@ public final class JUnitSharedHelperScopeDetector {
 			if (added.isEmpty()) {
 				continue;
 			}
-			Map<String, CompilationUnit> roots= parse(project, added, monitor);
-			if (roots.size() == added.size()
-					&& roots.values().stream().allMatch(root -> hasSafeBooleanRewrites(root, checks))) {
+			if (added.stream().map(ICompilationUnit::getJavaProject).distinct().anyMatch(project -> !available(project, checks.target))) {
+				continue;
+			}
+			Map<String, CompilationUnit> roots= parseByProject(added, monitor);
+			if (roots.size() == added.size() && roots.values().stream().allMatch(root -> hasSafeRewrites(root, checks))) {
 				approved.addAll(added);
 			}
 		}
@@ -218,14 +222,14 @@ public final class JUnitSharedHelperScopeDetector {
 		return List.copyOf(approved);
 	}
 
-	private static void collect(CompilationUnit root, IJavaProject project, boolean migrateAssertions,
+	private static void collect(CompilationUnit root, boolean migrateAssertions,
 			boolean migrateAssumptions, boolean followMethodReferences, Map<String, HelperCandidate> possible,
 			Set<String> invocationCandidates, Map<String, HelperCandidate> verified) {
 		root.accept(new ASTVisitor() {
 			@Override
 			public boolean visit(MethodDeclaration node) {
 				IMethodBinding binding= declaration(node.resolveBinding());
-				HelperCandidate candidate= candidate(binding, project);
+				HelperCandidate candidate= candidate(binding);
 				if (candidate != null && isDirectWrapper(node, migrateAssertions, migrateAssumptions)) {
 					verified.putIfAbsent(candidate.bindingKey(), candidate);
 				}
@@ -255,7 +259,7 @@ public final class JUnitSharedHelperScopeDetector {
 			}
 
 			private void collectCandidate(IMethodBinding method, boolean fromMethodReference) {
-				HelperCandidate candidate= candidate(method, project);
+				HelperCandidate candidate= candidate(method);
 				if (candidate != null) {
 					possible.putIfAbsent(candidate.bindingKey(), candidate);
 					if (!fromMethodReference) {
@@ -267,8 +271,8 @@ public final class JUnitSharedHelperScopeDetector {
 	}
 
 	/** Proves every edge of an exact-dispatch helper component before admitting its caller closure. */
-	private static List<IJavaElement> assertionPath(IJavaProject project, HelperCandidate seed,
-			Map<String, CompilationUnit> roots, BooleanChecks checks, IProgressMonitor monitor) {
+	private static List<IJavaElement> assertionPath(HelperCandidate seed,
+			Map<String, CompilationUnit> roots, HelperChecks checks, IProgressMonitor monitor) {
 		var pending= new ArrayDeque<HelperCandidate>();
 		pending.add(seed);
 		Map<String, IJavaElement> visited= new LinkedHashMap<>();
@@ -282,7 +286,7 @@ public final class JUnitSharedHelperScopeDetector {
 			ICompilationUnit unit= current.compilationUnit();
 			String handle= unit.getHandleIdentifier();
 			if (!roots.containsKey(handle)) {
-				roots.putAll(parse(project, List.of(unit), monitor));
+				roots.putAll(parse(unit.getJavaProject(), List.of(unit), monitor));
 			}
 			CompilationUnit root= roots.get(handle);
 			if (root == null || !(root.findDeclaringNode(current.bindingKey()) instanceof MethodDeclaration method)
@@ -300,12 +304,12 @@ public final class JUnitSharedHelperScopeDetector {
 					return List.of();
 				}
 				if (checks.owns(target.getDeclaringClass())) {
-					if (!isSafeBooleanCheck(call, target, checks)) {
+					if (!isSafeCheck(call, target, checks)) {
 						return List.of();
 					}
 					hasTerminal= true;
 				} else {
-					HelperCandidate next= candidate(target, project);
+					HelperCandidate next= candidate(target);
 					if (next == null) {
 						return List.of();
 					}
@@ -335,7 +339,7 @@ public final class JUnitSharedHelperScopeDetector {
 		if (statement instanceof ExpressionStatement expression && expression.getExpression() instanceof MethodInvocation call) {
 			// Simple argument reads cannot hide another invocation or deferred callback.
 			for (Object argument : call.arguments()) {
-				if (!(argument instanceof SimpleName || argument instanceof BooleanLiteral || argument instanceof StringLiteral)) {
+				if (!(argument instanceof SimpleName || argument instanceof BooleanLiteral || argument instanceof StringLiteral || argument instanceof NumberLiteral)) {
 					return false;
 				}
 			}
@@ -374,9 +378,9 @@ public final class JUnitSharedHelperScopeDetector {
 		return invocation;
 	}
 
-	private static boolean hasSafeBooleanRewrites(CompilationUnit root, BooleanChecks checks) {
+	private static boolean hasSafeRewrites(CompilationUnit root, HelperChecks checks) {
 		// The local assertion cleanup rewrites every matching call and import in the
-		// newly admitted unit. Only directly qualified boolean calls have been proven here.
+		// newly admitted unit. Only directly qualified calls with verified argument evaluation are eligible.
 		for (Object item : root.imports()) {
 			ImportDeclaration imported= (ImportDeclaration) item;
 			String name= imported.getName().getFullyQualifiedName();
@@ -392,9 +396,9 @@ public final class JUnitSharedHelperScopeDetector {
 
 	private static final class AssertionRewriteCheck extends ASTVisitor {
 		private boolean safe= true;
-		private final BooleanChecks checks;
+		private final HelperChecks checks;
 
-		AssertionRewriteCheck(BooleanChecks checks) {
+		AssertionRewriteCheck(HelperChecks checks) {
 			this.checks= checks;
 		}
 
@@ -409,22 +413,27 @@ public final class JUnitSharedHelperScopeDetector {
 			if (method == null || method.isRecovered()) {
 				safe= false;
 			} else if (checks.owns(method.getDeclaringClass())) {
-				safe= isSafeBooleanCheck(invocation, method, checks);
+				safe= isSafeCheck(invocation, method, checks);
 			}
 			return safe;
 		}
 	}
 
-	private static boolean isSafeBooleanCheck(MethodInvocation invocation, IMethodBinding method, BooleanChecks checks) {
+	private static boolean isSafeCheck(MethodInvocation invocation, IMethodBinding method, HelperChecks checks) {
 		if (!(invocation.getExpression() instanceof Name qualifier)
 				|| !checks.source.equals(qualifier.getFullyQualifiedName())
 				|| !(qualifier.resolveBinding() instanceof ITypeBinding type) || !checks.owns(type)
 				|| !Modifier.isStatic(method.getModifiers())
-				|| !checks.methods.contains(method.getName())
 				|| !(invocation.getParent() instanceof ExpressionStatement)) {
 			return false;
 		}
 		ITypeBinding[] parameters= method.getParameterTypes();
+		if (checks == HelperChecks.ASSERTIONS && "assertEquals".equals(method.getName())) { //$NON-NLS-1$
+			return safeDeltaEquality(invocation, parameters);
+		}
+		if (!checks.methods.contains(method.getName())) {
+			return false;
+		}
 		if (parameters.length < 1 || parameters.length > 2
 				|| parameters.length != invocation.arguments().size()) {
 			return false;
@@ -438,6 +447,37 @@ public final class JUnitSharedHelperScopeDetector {
 		}
 		Expression message= (Expression) invocation.arguments().getFirst();
 		return message instanceof StringLiteral || isParameterRead(message, "java.lang.String"); //$NON-NLS-1$
+	}
+
+	/** Strictly positive, finite literal tolerances avoid JUnit 4/Jupiter validation differences. */
+	private static boolean safeDeltaEquality(MethodInvocation invocation, ITypeBinding[] parameters) {
+		if ((parameters.length != 3 && parameters.length != 4) || invocation.arguments().size() != parameters.length) {
+			return false;
+		}
+		int first= parameters.length - 3;
+		if (first != 0) {
+			Expression message= (Expression) invocation.arguments().getFirst();
+			if (!"java.lang.String".equals(parameters[0].getQualifiedName()) //$NON-NLS-1$
+					|| !(message instanceof StringLiteral || isParameterRead(message, "java.lang.String"))) { //$NON-NLS-1$
+				return false;
+			}
+		}
+		String numericType= parameters[first].getQualifiedName();
+		if (!"double".equals(numericType) && !"float".equals(numericType)) { //$NON-NLS-1$ //$NON-NLS-2$
+			return false;
+		}
+		for (int i= first; i < parameters.length; i++) {
+			Expression argument= (Expression) invocation.arguments().get(i);
+			if (!numericType.equals(parameters[i].getQualifiedName())
+					|| !(argument instanceof NumberLiteral || isParameterRead(argument, numericType))
+					|| argument.resolveTypeBinding() == null
+					|| !numericType.equals(argument.resolveTypeBinding().getQualifiedName())) {
+				return false;
+			}
+		}
+		Expression delta= (Expression) invocation.arguments().getLast();
+		return delta instanceof NumberLiteral && delta.resolveConstantExpressionValue() instanceof Number value
+				&& value.doubleValue() > 0 && Double.isFinite(value.doubleValue());
 	}
 
 	private static boolean isParameterRead(Expression expression, String typeName) {
@@ -455,13 +495,12 @@ public final class JUnitSharedHelperScopeDetector {
 		}
 	}
 
-	private static HelperCandidate candidate(IMethodBinding binding, IJavaProject project) {
+	private static HelperCandidate candidate(IMethodBinding binding) {
 		if (!eligible(binding)) {
 			return null;
 		}
 		IJavaElement javaElement= binding.getJavaElement();
-		if (!(javaElement instanceof IMethod method) || !method.exists()
-				|| !project.equals(method.getJavaProject())) {
+		if (!(javaElement instanceof IMethod method) || !method.exists() || method.isBinary()) {
 			return null;
 		}
 		IJavaElement ancestor= method.getAncestor(IJavaElement.COMPILATION_UNIT);
@@ -506,6 +545,18 @@ public final class JUnitSharedHelperScopeDetector {
 			}
 		}
 		return new ArrayList<>(result.values());
+	}
+
+	/** Parse source in its declaring project's binding environment and compiler options. */
+	private static Map<String, CompilationUnit> parseByProject(Collection<ICompilationUnit> units, IProgressMonitor monitor) {
+		var groups= units.stream().collect(Collectors.groupingBy(ICompilationUnit::getJavaProject,
+				LinkedHashMap::new, Collectors.toList()));
+		Map<String, CompilationUnit> roots= new LinkedHashMap<>();
+		for (var group : groups.entrySet()) {
+			checkCanceled(monitor);
+			roots.putAll(parse(group.getKey(), group.getValue(), monitor));
+		}
+		return roots;
 	}
 
 	private static Map<String, CompilationUnit> parse(IJavaProject project, List<ICompilationUnit> units,
