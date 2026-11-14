@@ -9,16 +9,24 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.lang.reflect.InvocationTargetException;
+import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.FileLocator;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
+import org.sandbox.jdt.triggerpattern.eclipse.ProjectRuleExamples;
 import org.sandbox.jdt.triggerpattern.api.RuleExampleSuite;
 import org.sandbox.jdt.triggerpattern.api.RuleExampleSuite.Example;
 import org.sandbox.jdt.triggerpattern.api.RuleExampleVerifier;
@@ -96,6 +104,47 @@ class RuleExamplesProjectTest {
 				"src//Sample.java", "src/./Sample.java", "src\\Sample.java", "C:/Sample.java")) {
 			assertThrows(IllegalArgumentException.class, () -> ProjectRuleExamples.parseSource(project,
 					project.getOptions(true), invalid, "class Sample {}", new NullProgressMonitor()), invalid);
+		}
+	}
+
+	@Test
+	void generatedJUnitTestReplaysSavedEvidenceAndFailsOnChangedRule(@TempDir Path classes) throws Exception {
+		ICompilationUnit unit = createUnit();
+		var project = context.getJavaProject().getProject();
+		String before = unit.getSource();
+		String relative = unit.getResource().getProjectRelativePath().toPortableString();
+		String negative = before.replace("1 + 2", "4");
+		var suite = new RuleExampleSuite(RuleExampleSuite.CURRENT_VERSION, List.of(
+				new Example("Addition", relative, before, before.replace("1 + 2", "3"), true),
+				new Example("Counterexample", relative, negative, negative, false)));
+		String name = "verified rule.sandbox-hint";
+		String rule = "<!binding-policy: required>\n1 + 2\n=> 3\n;;\n";
+		HintFileCreation.create(project, name, rule, suite, new NullProgressMonitor());
+		var hint = project.getFile(name);
+		Path file = Files.writeString(classes.resolve("RuleRegressionTest.java"),
+				RuleRegressionTestSource.forHint(hint.getFullPath().toPortableString()));
+		var classpath = new java.util.ArrayList<String>();
+		for (var bundle : Platform.getBundle("sandbox_triggerpattern").getBundleContext().getBundles()) {
+			var location = FileLocator.getBundleFileLocation(bundle);
+			if (location.isPresent()) {
+				classpath.add(location.get().getAbsolutePath());
+			}
+		}
+		assertEquals(0, javax.tools.ToolProvider.getSystemJavaCompiler().run(null, null, null,
+				"-proc:none", "-cp", String.join(java.io.File.pathSeparator, classpath), "-d", classes.toString(), file.toString()));
+		try (var loader = new URLClassLoader(new java.net.URL[] { classes.toUri().toURL() }, getClass().getClassLoader())) {
+			var test = loader.loadClass("RuleRegressionTest");
+			var constructor = test.getDeclaredConstructor();
+			constructor.setAccessible(true);
+			var method = test.getDeclaredMethod("replaysSavedExamples");
+			method.setAccessible(true);
+			method.invoke(constructor.newInstance());
+			try (var changed = new java.io.ByteArrayInputStream(
+					rule.replace("=> 3", "=> 4").getBytes(java.nio.charset.StandardCharsets.UTF_8))) {
+				hint.setContents(changed, true, false, null);
+			}
+			var failed = assertThrows(InvocationTargetException.class, () -> method.invoke(constructor.newInstance()));
+			assertTrue(failed.getCause() instanceof AssertionError, failed.toString());
 		}
 	}
 

@@ -2,7 +2,7 @@
  * Copyright (c) 2026 Carsten Hammer.
  * SPDX-License-Identifier: EPL-2.0
  *******************************************************************************/
-package org.sandbox.jdt.internal.ui.wizard;
+package org.sandbox.jdt.triggerpattern.eclipse;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -18,15 +18,18 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.sandbox.jdt.triggerpattern.api.RuleExampleVerifier;
 import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlan;
 import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlanContext;
+import org.sandbox.jdt.triggerpattern.internal.GuardRegistry;
 
 /** Replays authoring examples with the current destination project's bindings and compiler options. */
-final class ProjectRuleExamples {
+public final class ProjectRuleExamples {
 
 	private ProjectRuleExamples() {
 	}
 
-	static <T> T withVerifier(IJavaProject project, IProgressMonitor monitor, Function<RuleExampleVerifier, T> action) {
+	/** Replays rules using the project's options, classpath and exact source paths. */
+	public static <T> T withVerifier(IJavaProject project, IProgressMonitor monitor, Function<RuleExampleVerifier, T> action) {
 		checkCanceled(monitor);
+		GuardRegistry.getInstance();
 		Map<String, String> options = Map.copyOf(project.getOptions(true));
 		try (var context = SemanticRewritePlanContext.install(SemanticRewritePlan.empty(), options,
 				() -> checkCanceled(monitor))) {
@@ -38,7 +41,7 @@ final class ProjectRuleExamples {
 		}
 	}
 
-	static CompilationUnit parseSource(IJavaProject project, Map<String, String> options,
+	public static CompilationUnit parseSource(IJavaProject project, Map<String, String> options,
 			String unitName, String source, IProgressMonitor monitor) {
 		checkCanceled(monitor);
 		if (project == null || !project.exists() || !project.getProject().isAccessible()) {
@@ -65,7 +68,7 @@ final class ProjectRuleExamples {
 		return result;
 	}
 
-	static void checkCanceled(IProgressMonitor monitor) {
+	public static void checkCanceled(IProgressMonitor monitor) {
 		if (monitor.isCanceled() || Thread.currentThread().isInterrupted()) {
 			throw new OperationCanceledException();
 		}

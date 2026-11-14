@@ -105,6 +105,7 @@ public class NewRuleWizardPage extends WizardPage {
 	private boolean requiresReplacement;
 	private String authoringError;
 	private Consumer<String> projectPreviewAction;
+	private Supplier<String> exampleHintPath = () -> ""; //$NON-NLS-1$
 	private Supplier<IJavaProject> exampleProjectSupplier = () -> null;
 	private RuleExampleSuite examples;
 	private Supplier<Map<String, String>> metadataSupplier = Map::of;
@@ -142,6 +143,10 @@ public class NewRuleWizardPage extends WizardPage {
 	/** Supplies the actual current destination project for binding-aware replay. */
 	public void setExampleProjectSupplier(Supplier<IJavaProject> supplier) {
 		exampleProjectSupplier = Objects.requireNonNull(supplier);
+	}
+
+	void setExampleHintPath(Supplier<String> path) {
+		exampleHintPath = Objects.requireNonNull(path);
 	}
 
 	/** Retains complete compilation-unit evidence independently of rule editing. */
@@ -518,7 +523,7 @@ public class NewRuleWizardPage extends WizardPage {
 		var seed = factory == null ? null
 				: new RuleAuthoringDocument.ChangeExample(sourcePatternText.getText(), replacementText.getText());
 		RuleExamplesDialog dialog = new RuleExamplesDialog(getShell(), original, examples,
-				exampleProjectSupplier.get(), seed, factory);
+				exampleProjectSupplier.get(), seed, factory, exampleHintPath.get());
 		if (dialog.open() == Window.OK) {
 			examples = dialog.getSuite();
 			var proposal = dialog.getAcceptedProposal();
