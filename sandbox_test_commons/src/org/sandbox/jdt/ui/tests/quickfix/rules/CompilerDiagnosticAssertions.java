@@ -68,9 +68,10 @@ public final class CompilerDiagnosticAssertions {
 		while (node != null && !(node instanceof MethodDeclaration)) {
 			node= node.getParent();
 		}
-		if (!(node instanceof MethodDeclaration method)) {
+		if (node == null) {
 			return false;
 		}
+		MethodDeclaration method= (MethodDeclaration) node;
 		IMethodBinding binding= method.resolveBinding();
 		if (binding == null || binding.getDeclaringClass() == null) {
 			return false;
