@@ -161,7 +161,8 @@ public final class LocalArrayUsageAnalyzer {
 		} else if (parent instanceof MethodInvocation invocation) {
 			classifyMethodInvocation(reference, invocation, accumulator);
 		} else if (parent instanceof ClassInstanceCreation creation && creation.arguments().contains(reference)
-				&& ContainerConstructorTarget.isClosed(creation)) {
+				&& ContainerConstructorTarget.isClosed(creation)
+				&& hasExactArrayParameter(reference, creation.resolveConstructorBinding(), creation.arguments().indexOf(reference))) {
 			accumulator.reject(Kind.UNSAFE_ESCAPE,
 					"Array argument requires the exact private constructor and all its source callers", reference); //$NON-NLS-1$
 		} else if (parent instanceof Assignment assignment) {
@@ -291,6 +292,18 @@ public final class LocalArrayUsageAnalyzer {
 		}
 	}
 
+	/** Checks the invocation binding, including generic substitutions, before replacing covariant arrays with invariant lists. */
+	public static boolean hasExactArrayParameter(Expression argument, IMethodBinding method, int index) {
+		if (method == null || method.isRecovered() || method.isRawMethod() || method.isVarargs()
+				|| method.getDeclaringClass().isRawType() || index < 0 || index >= method.getParameterTypes().length) {
+			return false;
+		}
+		ITypeBinding argumentType= argument.resolveTypeBinding();
+		ITypeBinding parameterType= method.getParameterTypes()[index];
+		return argumentType != null && !argumentType.isRecovered() && argumentType.isArray()
+				&& !parameterType.isRecovered() && argumentType.isEqualTo(parameterType);
+	}
+
 	private static void classifyMethodInvocation(
 			Expression reference,
 			MethodInvocation invocation,
@@ -300,6 +313,11 @@ public final class LocalArrayUsageAnalyzer {
 			return;
 		}
 		if (invocation.arguments().contains(reference)) {
+			if (!hasExactArrayParameter(reference, invocation.resolveMethodBinding(), invocation.arguments().indexOf(reference))) {
+				accumulator.reject(Kind.UNSUPPORTED_CONTINUATION,
+						"The resolved parameter does not preserve the exact array element type for a List transfer", reference); //$NON-NLS-1$
+				return;
+			}
 			accumulator.reject(Kind.UNSAFE_ESCAPE,
 					"Array value is passed to another method", reference); //$NON-NLS-1$
 		} else {

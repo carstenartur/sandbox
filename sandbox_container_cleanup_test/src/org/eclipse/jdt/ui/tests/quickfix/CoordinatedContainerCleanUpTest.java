@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.CLEANUP;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.CLOSED_SOURCE_PARAMETER_MIGRATION;
@@ -287,6 +288,73 @@ class CoordinatedContainerCleanUpTest {
 				}
 			}
 			""";
+	}
+
+	@Test
+	void preservesTheElementSubstitutionOfAClosedGenericCall() throws Exception {
+		String source= genericConsumer("consume(values);"); //$NON-NLS-1$
+		ICompilationUnit unit= createUnit("Sample.java", source); //$NON-NLS-1$
+		NullProgressMonitor monitor= new NullProgressMonitor();
+		CoordinatedContainerCleanUpCore cleanup= cleanup();
+		cleanup.checkPreConditions(context.getJavaProject(), new ICompilationUnit[] { unit }, monitor);
+		ICleanUpFix fix= cleanup.createFix(new CleanUpContext(unit, parse(unit)));
+		assertNotNull(fix, cleanup.getLastPlanningDiagnosticsJson(context.getJavaProject()));
+		Change undo= fix.createChange(null).perform(monitor);
+		assertNotNull(undo);
+		assertTrue(unit.getSource().contains("List<String> values")); //$NON-NLS-1$
+		assertTrue(unit.getSource().contains("<T> void consume(List<T> items)")); //$NON-NLS-1$
+		assertFalse(Arrays.stream(parse(unit).getProblems()).anyMatch(problem -> problem.isError()));
+		cleanup.checkPostConditions(monitor);
+		undo.perform(monitor);
+		assertEquals(source, unit.getSource());
+	}
+
+	@Test
+	void rejectsWidenedElementSubstitutionAtAClosedGenericCall() throws Exception {
+		String source= genericConsumer("this.<Object>consume(values);"); //$NON-NLS-1$
+		ICompilationUnit unit= createUnit("Sample.java", source); //$NON-NLS-1$
+		assertFalse(Arrays.stream(parse(unit).getProblems()).anyMatch(problem -> problem.isError()));
+		CoordinatedContainerCleanUpCore cleanup= cleanup();
+		cleanup.checkPreConditions(context.getJavaProject(), new ICompilationUnit[] { unit }, new NullProgressMonitor());
+		assertNull(cleanup.createFix(new CleanUpContext(unit, parse(unit))));
+		assertEquals(source, unit.getSource());
+	}
+
+	@Test
+	void revalidatesTheGenericSubstitutionAtTheSameArgumentRange() throws Exception {
+		String source= genericConsumer("this.<String>consume(values);"); //$NON-NLS-1$
+		ICompilationUnit unit= createUnit("Sample.java", source); //$NON-NLS-1$
+		NullProgressMonitor monitor= new NullProgressMonitor();
+		CoordinatedContainerCleanUpCore cleanup= cleanup();
+		cleanup.checkPreConditions(context.getJavaProject(), new ICompilationUnit[] { unit }, monitor);
+		assertNotNull(cleanup.createFix(new CleanUpContext(unit, parse(unit))));
+
+		String changed= source.replace("<String>consume", "<Object>consume"); //$NON-NLS-1$ //$NON-NLS-2$
+		unit.getBuffer().setContents(changed);
+		unit.save(monitor, true);
+		CoreException failure= assertThrows(CoreException.class,
+				() -> cleanup.createFix(new CleanUpContext(unit, parse(unit))));
+		assertTrue(failure.getMessage().contains("argument-transfer target changed")); //$NON-NLS-1$
+		assertEquals(changed, unit.getSource());
+	}
+
+	private static String genericConsumer(String call) {
+		return """
+			package test;
+			import java.util.Arrays;
+			class Sample {
+				void collect(String value) {
+					String[] values = new String[0];
+					values = Arrays.copyOf(values, values.length + 1);
+					values[values.length - 1] = value;
+					%s
+				}
+				private <T> void consume(T[] items) {
+					System.out.println(items.length);
+					for (T item : items) System.out.println(item);
+				}
+			}
+			""".formatted(call);
 	}
 
 	private static String source() {
