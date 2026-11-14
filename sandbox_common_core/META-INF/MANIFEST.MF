@@ -11,6 +11,7 @@ Export-Package: org.sandbox.jdt.cleanup.io,
  org.sandbox.jdt.container.api,
  org.sandbox.jdt.internal.common,
  org.sandbox.jdt.triggerpattern.api,
+ org.sandbox.jdt.triggerpattern.git,
  org.sandbox.jdt.triggerpattern.internal,
  org.sandbox.jdt.triggerpattern.llm,
  org.sandbox.jdt.triggerpattern.nullability

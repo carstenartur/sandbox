@@ -30,6 +30,7 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
@@ -328,6 +329,13 @@ final class CleanupWizardDriver {
                             description.append(" text='").append(text.getText()).append("'");
                         } else if (control instanceof StyledText text) {
                             description.append(" text='").append(text.getText()).append("'");
+                        }
+                        if (control instanceof Table table && table.isVisible()) {
+                            for (var row : table.getItems()) {
+                                for (int column = 0; column < Math.max(1, table.getColumnCount()); column++) {
+                                    description.append(" [").append(row.getText(column)).append("]");
+                                }
+                            }
                         }
                         count++;
                         if (control instanceof Composite composite) {

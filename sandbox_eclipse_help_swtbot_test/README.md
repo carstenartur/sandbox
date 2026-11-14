@@ -54,18 +54,16 @@ missing Undo history and incomplete restoration. It never repairs source content
 failing assertion. Undo history is cleared before execution and after the callback
 and restoration checks, including their failure paths.
 
-The existing concrete scenarios still own profile configuration, navigation,
-selection, semantic diff assertions, intermediate Apply/Undo, clipping checks and
-screenshot capture. Their UI assertions and image baselines are not replaced or
-weakened by the lifecycle extraction. JUnit's `CleanupScreenshotScenarioTest`,
-`CleanupSourceSnapshotTest` and `CleanupScenarioRunnerTest` cover the new contracts
-in the normal Maven/Tycho test run; they need no SWTBot interaction or network access.
+The JFace, Method Reuse, Int-to-Enum and JUnit scenarios use
+`CleanupWizardDriver` for shared profile and wizard navigation. Each scenario
+supplies its enabled options, source selection and semantic assertions. The
+stock LTK and atomic-candidate scenarios retain their own screenshot checks.
 
-### Remaining upstream boundary (#1497)
+### Pinned Platform Status scenario (#1497)
 
-This is the first lifecycle extraction, not the completed cleanup-independent
-navigation driver. Profile/preview navigation still needs to be extracted from
-the concrete scenarios. The descriptor must then be extended with exact retained
-Oomph-workspace identity, the corresponding headless plan and validated screenshot
-provenance before adding the first pinned upstream Java scenario. No screenshot
-in this change is newly claimed to originate from an Oomph-provisioned JDT checkout.
+`PinnedStatusPreviewSWTBotTest` consumes the retained R4_40 Oomph workspace
+and the installed headless cleanup report and patch for `ProposalSorterHandle.java`.
+It checks the file selection, compares the applied source with the headless
+patch, checks byte-exact Undo and records the native preview and provenance.
+The commands and required paths are in the
+[upstream JDT QA guide](../qa/upstream-jdt/README.md#replay-the-platform-status-preview-in-the-retained-jdt-workspace).
