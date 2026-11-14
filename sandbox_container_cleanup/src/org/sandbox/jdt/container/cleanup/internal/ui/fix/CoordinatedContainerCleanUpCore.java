@@ -22,9 +22,11 @@ import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.Status;
 
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
@@ -38,7 +40,10 @@ import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpDiagnostics;
 import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
 import org.sandbox.jdt.cleanup.multifile.MultiFilePlanningMetrics;
 import org.sandbox.jdt.cleanup.multifile.MultiFileScopeDiagnostic;
+import org.sandbox.jdt.container.api.ClosedSourceContainerPlan;
+import org.sandbox.jdt.container.api.ClosedSourceReturnMigrationPlan;
 import org.sandbox.jdt.container.api.ClosedSourceParameterMigrationPlan;
+import org.sandbox.jdt.cleanup.multifile.ClosedSourceReturnMigrationFix;
 import org.sandbox.jdt.container.cleanup.internal.corext.fix.ClosedSourceContainerMigrationService;
 
 /**
@@ -47,7 +52,7 @@ import org.sandbox.jdt.container.cleanup.internal.corext.fix.ClosedSourceContain
  * rules are locally executable and save-action compatible.
  */
 public final class CoordinatedContainerCleanUpCore
-		extends AbstractPlannedMultiFileCleanUp<ClosedSourceParameterMigrationPlan> {
+		extends AbstractPlannedMultiFileCleanUp<ClosedSourceContainerPlan> {
 
 	private static final String CLEANUP_ID=
 			"sandbox_container_cleanup.closed_source_parameter_migration"; //$NON-NLS-1$
@@ -83,7 +88,7 @@ public final class CoordinatedContainerCleanUpCore
 	}
 
 	@Override
-	protected MultiFileCleanUpPlanResult<ClosedSourceParameterMigrationPlan> createPlan(
+	protected MultiFileCleanUpPlanResult<ClosedSourceContainerPlan> createPlan(
 			IJavaProject project, ICompilationUnit[] compilationUnits, IProgressMonitor monitor)
 			throws CoreException {
 		if (!isActive()) {
@@ -120,14 +125,28 @@ public final class CoordinatedContainerCleanUpCore
 	}
 
 	@Override
-	protected ICleanUpFix createFixForPlan(ClosedSourceParameterMigrationPlan plan,
+	protected ICleanUpFix createFixForPlan(ClosedSourceContainerPlan plan,
 			CleanUpContext context) throws CoreException {
 		ICompilationUnit unit= context.getCompilationUnit();
 		if (unit == null || context.getAST() == null
 				|| !plan.affectedCompilationUnitHandles().contains(primaryHandle(unit))) {
 			return null;
 		}
-		return ClosedSourceParameterMigrationFix.create(unit, context.getAST(), plan);
+		if (plan instanceof ClosedSourceReturnMigrationPlan returned) {
+			List<ICompilationUnit> affected= new ArrayList<>();
+			for (String handle : returned.affectedCompilationUnitHandles()) {
+				if (!(JavaCore.create(handle) instanceof ICompilationUnit source) || !source.exists()) {
+					throw new CoreException(Status.error("A required return consumer or producer is missing.")); //$NON-NLS-1$
+				}
+				affected.add(source);
+			}
+			var fresh= migrationService.plan(unit.getJavaProject(), affected.toArray(ICompilationUnit[]::new), null);
+			if (fresh.plan().filter(returned::equals).isEmpty()) {
+				throw new CoreException(Status.error("The return declaration, its callers or their observed uses changed.")); //$NON-NLS-1$
+			}
+			return ClosedSourceReturnMigrationFix.create(unit, context.getAST(), returned);
+		}
+		return ClosedSourceParameterMigrationFix.create(unit, context.getAST(), (ClosedSourceParameterMigrationPlan) plan);
 	}
 
 	/** Returns the most recent privacy-preserving planning diagnostics for the project. */
