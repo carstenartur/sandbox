@@ -24,9 +24,11 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.junit.jupiter.api.Test;
+import org.sandbox.jdt.container.api.ConcurrencyProtocol.Evidence;
 import org.sandbox.jdt.container.api.ConcurrencyProtocol.EvidenceKind;
 import org.sandbox.jdt.container.api.ConcurrencyProtocol.ReentrancyContract;
 import org.sandbox.jdt.container.api.ConcurrencyProtocol;
+import org.sandbox.jdt.container.api.ConcurrencyProtocolAssessment;
 import org.sandbox.jdt.container.api.ConcurrencyProtocolAssessment.DiagnosticOnly;
 import org.sandbox.jdt.container.api.ConcurrencyProtocolAssessment.RecommendedMigration;
 import org.sandbox.jdt.container.api.ConcurrencyProtocolAssessment.RetainExistingLocking;
@@ -284,7 +286,7 @@ class SynchronizedListIterationAnalyzerTest {
 		var reports= ContainerConcurrencyAnalyzer.analyze(parse(source, true), () -> {});
 		assertEquals(List.of("CONCURRENT_QUEUE", "PURPOSE_SPECIFIC_ABSTRACTION"), reports.stream()
 				.map(report -> ((RecommendedMigration) report).strategy().name()).toList());
-		assertTrue(reports.stream().noneMatch(report -> report.permitsSourceRewrite()));
+		assertTrue(reports.stream().noneMatch(ConcurrencyProtocolAssessment::permitsSourceRewrite));
 		for (String changed : List.of(source.replace("synchronized (queue)", "synchronized (this)"),
 				source.replace("Objects.requireNonNull(value)", "value"),
 				source.replace("String take()", "int size() { return queue.size(); } String take()"),
@@ -316,9 +318,9 @@ class SynchronizedListIterationAnalyzerTest {
 				}
 				""";
 		var observations= ContainerConcurrencyAnalyzer.analyze(parse(source, true), () -> {});
-		var jobs= observations.stream().filter(report -> report.protocol().identity().displayName().equals("jobs")).findFirst().orElseThrow();
+		var jobs= observations.stream().filter(report -> "jobs".equals(report.protocol().identity().displayName())).findFirst().orElseThrow();
 		assertEquals(SynchronizationKind.EXPLICIT_LOCK, jobs.protocol().summary().synchronization());
-		assertTrue(jobs.protocol().evidence().stream().anyMatch(e -> e.kind() == EvidenceKind.CALLBACK_UNDER_LOCK && anchor(source, e).equals("job.run()")));
+		assertTrue(jobs.protocol().evidence().stream().anyMatch(e -> e.kind() == EvidenceKind.CALLBACK_UNDER_LOCK && "job.run()".equals(anchor(source, e))));
 		assertTrue(jobs.protocol().evidence().stream().anyMatch(e -> e.kind() == EvidenceKind.LIVE_WRAPPER_RETURN));
 		assertTrue(observations.stream().anyMatch(r -> r.protocol().summary().synchronization() == SynchronizationKind.VOLATILE_SNAPSHOT));
 		assertTrue(observations.stream().anyMatch(r -> r.protocol().summary().synchronization() == SynchronizationKind.ATOMIC_REFERENCE));
@@ -372,7 +374,7 @@ class SynchronizedListIterationAnalyzerTest {
 		assertEquals(AnalysisCompleteness.LOCAL_SEED, report.protocol().completeness());
 		assertEquals(List.of(EvidenceKind.LOCKED_WRITE, EvidenceKind.LOCKED_READ,
 				EvidenceKind.LOCKED_ITERATION, EvidenceKind.LIVE_WRAPPER_RETURN),
-				report.protocol().evidence().stream().map(e -> e.kind()).toList());
+				report.protocol().evidence().stream().map(Evidence::kind).toList());
 		assertEquals(1, report.protocol().lockIdentities().size());
 		for (var evidence : report.protocol().evidence()) {
 			String snippet= source.substring(evidence.sourceStart(), evidence.sourceStart() + evidence.sourceLength());
@@ -394,7 +396,7 @@ class SynchronizedListIterationAnalyzerTest {
 		assertEquals(1, reports.size());
 		assertTrue(reports.getFirst().protocol().hasUnresolvedBoundary());
 		assertEquals(List.of(EvidenceKind.UNRESOLVED_BOUNDARY, EvidenceKind.UNRESOLVED_BOUNDARY),
-				reports.getFirst().protocol().evidence().stream().map(e -> e.kind()).toList());
+				reports.getFirst().protocol().evidence().stream().map(Evidence::kind).toList());
 		assertFalse(reports.getFirst().permitsSourceRewrite());
 		assertTrue(ContainerConcurrencyAnalyzer.analyze(parse(source, false), () -> {}).isEmpty());
 	}

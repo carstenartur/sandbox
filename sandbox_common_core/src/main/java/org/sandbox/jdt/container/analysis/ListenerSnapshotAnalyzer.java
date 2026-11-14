@@ -54,7 +54,12 @@ public final class ListenerSnapshotAnalyzer {
 	}
 	public record Notification(VariableDeclarationStatement array, SynchronizedStatement lock, EnhancedForStatement loop) {}
 	public record Observed(Plan plan, VariableDeclarationFragment field, List<SynchronizedStatement> registrations,
-			List<Notification> notifications) {}
+			List<Notification> notifications) {
+		public Observed {
+			registrations= List.copyOf(registrations);
+			notifications= List.copyOf(notifications);
+		}
+	}
 
 	public static Map<String, Observed> analyze(CompilationUnit root) {
 		Map<String, Observed> result= new LinkedHashMap<>();

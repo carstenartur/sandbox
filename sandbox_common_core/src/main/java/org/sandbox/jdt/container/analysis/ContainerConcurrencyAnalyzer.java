@@ -93,6 +93,9 @@ public final class ContainerConcurrencyAnalyzer {
 	private static final String SET= "java.util.Set"; //$NON-NLS-1$
 	private static final String STRING= "java.lang.String"; //$NON-NLS-1$
 
+	private static final Set<String> WRITE_METHODS= Set.of("add", "addAll", "remove", "removeAll", "retainAll", "clear", "set", "put", "offer", "getAndSet", "compareAndSet"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$ //$NON-NLS-10$ //$NON-NLS-11$
+	private static final Set<String> READ_METHODS= Set.of("contains", "containsAll", "get", "indexOf", "lastIndexOf", "isEmpty", "size", "toArray"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$
+
 	private record Field(VariableDeclarationFragment declaration, IVariableBinding binding, SynchronizationKind kind,
 			List<SimpleName> references) {}
 	private record Lock(String key, String label, SynchronizationKind kind) {}
@@ -232,30 +235,10 @@ public final class ContainerConcurrencyAnalyzer {
 				onlyLockedTraversal= false;
 			}
 			if (ref.getParent() instanceof MethodInvocation op && op.getExpression() == ref) {
-				String method= op.getName().getIdentifier();
 				fifo |= frontRemove(op);
-				hasClear |= "clear".equals(method); //$NON-NLS-1$
-				var kind= classifyCall(op);
-				if (kind == EvidenceKind.UNRESOLVED_BOUNDARY) {
-					evidence.add(at(kind, lock == null ? "" : lock.key(), "Iterator, stream, callback or unclassified operation needs a separate lifetime and locking proof.", op)); //$NON-NLS-1$ //$NON-NLS-2$
-				} else if (lock == null && field.kind() == SynchronizationKind.SYNCHRONIZED_WRAPPER) {
-					evidence.add(at(kind, field.binding().getKey(), "The wrapper synchronizes the individual call to " + method + ".", op)); //$NON-NLS-1$ //$NON-NLS-2$
-				} else {
-					addAccess(evidence, lock, kind, "Call to " + method, op); //$NON-NLS-1$
-				}
-			} else if (ref.getParent() instanceof EnhancedForStatement loop && loop.getExpression() == ref) {
-				addAccess(evidence, lock, EvidenceKind.LOCKED_ITERATION, "Encounter-order traversal", ref); //$NON-NLS-1$
-				observeCallbacks(loop, evidence);
-			} else if (ref.getParent() instanceof ReturnStatement) {
-				evidence.add(at(EvidenceKind.LIVE_WRAPPER_RETURN, "", "The field value escapes to its caller; inspect aliases and external mutation.", ref)); //$NON-NLS-1$ //$NON-NLS-2$
-			} else if (ref.getParent() instanceof Assignment write && write.getLeftHandSide() == ref
-					&& field.kind() == SynchronizationKind.VOLATILE_SNAPSHOT) {
-				evidence.add(at(EvidenceKind.SNAPSHOT_PUBLICATION, "", "Volatile replacement publishes the array reference. Verify ownership and later element writes.", write)); //$NON-NLS-1$ //$NON-NLS-2$
-			} else if (ref.getParent() instanceof ClassInstanceCreation copy && copy.arguments().contains(ref)) {
-				addAccess(evidence, lock, EvidenceKind.LOCKED_READ, "Collection passed to the copy constructor", copy); //$NON-NLS-1$
-			} else {
-				evidence.add(at(EvidenceKind.UNRESOLVED_BOUNDARY, "", "Inspect this alias, callback or published value before changing its protocol.", ref)); //$NON-NLS-1$ //$NON-NLS-2$
+				hasClear |= "clear".equals(op.getName().getIdentifier()); //$NON-NLS-1$
 			}
+			observeAccess(field, ref, lock, evidence);
 		}
 
 		if (evidence.isEmpty() || field.kind() == SynchronizationKind.NONE && !hasLock) {
@@ -265,11 +248,7 @@ public final class ContainerConcurrencyAnalyzer {
 		var identity= new ContainerIdentity(field.binding().getKey(), field.binding().getName(), field.declaration().getName().getStartPosition(),
 				field.declaration().getName().getLength());
 		if (field.kind() == SynchronizationKind.SYNCHRONIZED_WRAPPER && traversed && onlyLockedTraversal
-				&& Modifier.isPrivate(field.binding().getModifiers()) && Modifier.isFinal(field.binding().getModifiers())
-				&& field.declaration().getParent().getParent() instanceof TypeDeclaration owner && Modifier.isFinal(owner.getModifiers())
-				&& closedOwner(root, field, owner) && field.declaration().getInitializer() instanceof MethodInvocation wrapper
-				&& wrapper.arguments().size() == 1 && wrapper.arguments().getFirst() instanceof ClassInstanceCreation fresh
-				&& fresh.getAnonymousClassDeclaration() == null && fresh.arguments().isEmpty() && isType(fresh.resolveTypeBinding(), "java.util.ArrayList")) { //$NON-NLS-1$
+				&& closedTraversal(root, field)) {
 			var profile= new ConcurrencyProfile(ThreadExposure.UNKNOWN, kind, IterationSemantics.EXTERNALLY_LOCKED, AtomicityRequirement.TRANSACTION, WorkloadShape.UNKNOWN);
 			return new RetainExistingLocking(new ConcurrencyProtocol(identity, profile, ReentrancyContract.NO_CALLBACKS_OBSERVED, AnalysisCompleteness.LOCAL_USAGE_COMPLETE, evidence),
 					List.of(offered ? "All traversals hold the wrapper's own monitor. Individual appends acquire that monitor; no alias escapes and traversal invokes no callbacks." //$NON-NLS-1$
@@ -279,35 +258,10 @@ public final class ContainerConcurrencyAnalyzer {
 				: evidence.stream().anyMatch(e -> e.kind() == EvidenceKind.CALLBACK_OUTSIDE_LOCK) ? ReentrancyContract.CALLBACKS_OUTSIDE_LOCK : ReentrancyContract.UNKNOWN;
 		var strategy= fifo ? Strategy.CONCURRENT_QUEUE : batch && hasClear ? Strategy.PURPOSE_SPECIFIC_ABSTRACTION : null;
 		if (strategy != null && closedProtocol(root, field, strategy)) {
-			boolean queue= strategy == Strategy.CONCURRENT_QUEUE;
-			String reason= queue ? "Non-null tail insertions and a single locked empty-test/head removal implement FIFO without waiting, aliases, callbacks or size-based synchronization. A poll-based queue preserves order and duplicates." //$NON-NLS-1$
-					: "An atomic drain must copy and clear under the same monitor. A project-local pending-work abstraction can preserve first registration order and uniqueness, including null; separate concurrent clear and iteration can lose offers."; //$NON-NLS-1$
-			var profile= new ConcurrencyProfile(ThreadExposure.UNKNOWN, kind, IterationSemantics.EXTERNALLY_LOCKED,
-					queue ? AtomicityRequirement.CHECK_THEN_ACT : AtomicityRequirement.DRAIN, WorkloadShape.PRODUCER_CONSUMER);
-			var protocol= new ConcurrencyProtocol(identity, profile, ReentrancyContract.NO_CALLBACKS_OBSERVED, AnalysisCompleteness.LOCAL_USAGE_COMPLETE, evidence);
-			var target= new TargetContainerContract(queue ? ContainerShape.DEQUE : ContainerShape.CUSTOM_BUFFER, OrderRequirement.ENCOUNTER,
-					queue ? UniquenessRequirement.DUPLICATES_ALLOWED : UniquenessRequirement.REQUIRED, Mutability.MUTABLE,
-					queue ? NullContract.REJECTED : NullContract.ALLOWED, reason);
-			return new RecommendedMigration(protocol, target, strategy, Confidence.HIGH, List.of(reason));
+			return producerConsumerRecommendation(identity, kind, evidence, strategy);
 		}
 		if ((membership != null && membership.rejection().isEmpty()) || (listener != null && listener.plan().rejection().isEmpty())) {
-			boolean registrations= listener != null;
-			if (registrations) {
-				for (var notification : listener.notifications()) {
-					evidence.add(at(EvidenceKind.CALLBACK_OUTSIDE_LOCK, "", "Notification traverses the detached array outside the registration monitor.", notification.loop())); //$NON-NLS-1$ //$NON-NLS-2$
-				}
-			}
-			String proof= registrations
-					? "Registrations append under one monitor, including duplicates and null. Each notification copies the complete ordered registry before invoking callbacks outside the lock. Reentrant registration affects the next dispatch. Copy-on-write moves allocation to each registration; assess write frequency." //$NON-NLS-1$
-					: "Every reference is one non-null String membership operation. No external lock, compound check, iteration, callback, order observation or snapshot escapes. ConcurrentHashMap.newKeySet preserves the operation result and duplicate policy."; //$NON-NLS-1$
-			var profile= new ConcurrencyProfile(registrations ? ThreadExposure.CALLBACK_SHARED : ThreadExposure.UNKNOWN, kind,
-					registrations ? IterationSemantics.IMMUTABLE_SNAPSHOT : IterationSemantics.UNKNOWN, AtomicityRequirement.INDIVIDUAL_OPERATIONS, WorkloadShape.UNKNOWN);
-			var protocol= new ConcurrencyProtocol(identity, profile, registrations ? ReentrancyContract.CALLBACKS_OUTSIDE_LOCK : ReentrancyContract.NO_CALLBACKS_OBSERVED,
-					AnalysisCompleteness.LOCAL_USAGE_COMPLETE, evidence);
-			var target= new TargetContainerContract(registrations ? ContainerShape.LIST : ContainerShape.SET,
-					registrations ? OrderRequirement.ENCOUNTER : OrderRequirement.NONE, registrations ? UniquenessRequirement.DUPLICATES_ALLOWED : UniquenessRequirement.REQUIRED,
-					Mutability.MUTABLE, registrations ? NullContract.ALLOWED : NullContract.REJECTED, proof);
-			return new RecommendedMigration(protocol, target, registrations ? Strategy.COPY_ON_WRITE_SEQUENCE : Strategy.CONCURRENT_MEMBERSHIP_SET, Confidence.HIGH, List.of(proof));
+			return closedMigrationRecommendation(identity, kind, evidence, listener);
 		}
 
 		String reason= "Inspect lock identities across all accesses, snapshot ownership, callback reentrancy and external aliases. Preserve observable order, duplicate handling and null behavior. Frequency and external thread boundaries are unknown."; //$NON-NLS-1$
@@ -321,6 +275,75 @@ public final class ContainerConcurrencyAnalyzer {
 				WorkloadShape.UNKNOWN);
 		return new DiagnosticOnly(new ConcurrencyProtocol(identity, profile, callbacks, AnalysisCompleteness.LOCAL_SEED, evidence),
 				Severity.INFO, List.of(reason));
+	}
+
+	private static RecommendedMigration producerConsumerRecommendation(ContainerIdentity identity, SynchronizationKind kind,
+			List<Evidence> evidence, Strategy strategy) {
+		boolean queue= strategy == Strategy.CONCURRENT_QUEUE;
+		String reason= queue ? "Non-null tail insertions and a single locked empty-test/head removal implement FIFO without waiting, aliases, callbacks or size-based synchronization. A poll-based queue preserves order and duplicates." //$NON-NLS-1$
+				: "An atomic drain must copy and clear under the same monitor. A project-local pending-work abstraction can preserve first registration order and uniqueness, including null; separate concurrent clear and iteration can lose offers."; //$NON-NLS-1$
+		var profile= new ConcurrencyProfile(ThreadExposure.UNKNOWN, kind, IterationSemantics.EXTERNALLY_LOCKED,
+				queue ? AtomicityRequirement.CHECK_THEN_ACT : AtomicityRequirement.DRAIN, WorkloadShape.PRODUCER_CONSUMER);
+		var protocol= new ConcurrencyProtocol(identity, profile, ReentrancyContract.NO_CALLBACKS_OBSERVED, AnalysisCompleteness.LOCAL_USAGE_COMPLETE, evidence);
+		var target= new TargetContainerContract(queue ? ContainerShape.DEQUE : ContainerShape.CUSTOM_BUFFER, OrderRequirement.ENCOUNTER,
+				queue ? UniquenessRequirement.DUPLICATES_ALLOWED : UniquenessRequirement.REQUIRED, Mutability.MUTABLE,
+				queue ? NullContract.REJECTED : NullContract.ALLOWED, reason);
+		return new RecommendedMigration(protocol, target, strategy, Confidence.HIGH, List.of(reason));
+	}
+
+	private static RecommendedMigration closedMigrationRecommendation(ContainerIdentity identity, SynchronizationKind kind,
+			List<Evidence> evidence, ListenerSnapshotAnalyzer.Observed listener) {
+		boolean registrations= listener != null;
+		if (registrations) {
+			for (var notification : listener.notifications()) {
+				evidence.add(at(EvidenceKind.CALLBACK_OUTSIDE_LOCK, "", "Notification traverses the detached array outside the registration monitor.", notification.loop())); //$NON-NLS-1$ //$NON-NLS-2$
+			}
+		}
+		String proof= registrations
+				? "Registrations append under one monitor, including duplicates and null. Each notification copies the complete ordered registry before invoking callbacks outside the lock. Reentrant registration affects the next dispatch. Copy-on-write moves allocation to each registration; assess write frequency." //$NON-NLS-1$
+				: "Every reference is one non-null String membership operation. No external lock, compound check, iteration, callback, order observation or snapshot escapes. ConcurrentHashMap.newKeySet preserves the operation result and duplicate policy."; //$NON-NLS-1$
+		var profile= new ConcurrencyProfile(registrations ? ThreadExposure.CALLBACK_SHARED : ThreadExposure.UNKNOWN, kind,
+				registrations ? IterationSemantics.IMMUTABLE_SNAPSHOT : IterationSemantics.UNKNOWN, AtomicityRequirement.INDIVIDUAL_OPERATIONS, WorkloadShape.UNKNOWN);
+		var protocol= new ConcurrencyProtocol(identity, profile, registrations ? ReentrancyContract.CALLBACKS_OUTSIDE_LOCK : ReentrancyContract.NO_CALLBACKS_OBSERVED,
+				AnalysisCompleteness.LOCAL_USAGE_COMPLETE, evidence);
+		var target= new TargetContainerContract(registrations ? ContainerShape.LIST : ContainerShape.SET,
+				registrations ? OrderRequirement.ENCOUNTER : OrderRequirement.NONE, registrations ? UniquenessRequirement.DUPLICATES_ALLOWED : UniquenessRequirement.REQUIRED,
+				Mutability.MUTABLE, registrations ? NullContract.ALLOWED : NullContract.REJECTED, proof);
+		return new RecommendedMigration(protocol, target, registrations ? Strategy.COPY_ON_WRITE_SEQUENCE : Strategy.CONCURRENT_MEMBERSHIP_SET, Confidence.HIGH, List.of(proof));
+	}
+
+	private static void observeAccess(Field field, Expression ref, Lock lock, List<Evidence> evidence) {
+		if (ref.getParent() instanceof MethodInvocation op && op.getExpression() == ref) {
+			String method= op.getName().getIdentifier();
+			var kind= classifyCall(op);
+			if (kind == EvidenceKind.UNRESOLVED_BOUNDARY) {
+				evidence.add(at(kind, lock == null ? "" : lock.key(), "Iterator, stream, callback or unclassified operation needs a separate lifetime and locking proof.", op)); //$NON-NLS-1$ //$NON-NLS-2$
+			} else if (lock == null && field.kind() == SynchronizationKind.SYNCHRONIZED_WRAPPER) {
+				evidence.add(at(kind, field.binding().getKey(), "The wrapper synchronizes the individual call to " + method + ".", op)); //$NON-NLS-1$ //$NON-NLS-2$
+			} else {
+				addAccess(evidence, lock, kind, "Call to " + method, op); //$NON-NLS-1$
+			}
+		} else if (ref.getParent() instanceof EnhancedForStatement loop && loop.getExpression() == ref) {
+			addAccess(evidence, lock, EvidenceKind.LOCKED_ITERATION, "Encounter-order traversal", ref); //$NON-NLS-1$
+			observeCallbacks(loop, evidence);
+		} else if (ref.getParent() instanceof ReturnStatement) {
+			evidence.add(at(EvidenceKind.LIVE_WRAPPER_RETURN, "", "The field value escapes to its caller; inspect aliases and external mutation.", ref)); //$NON-NLS-1$ //$NON-NLS-2$
+		} else if (ref.getParent() instanceof Assignment write && write.getLeftHandSide() == ref
+				&& field.kind() == SynchronizationKind.VOLATILE_SNAPSHOT) {
+			evidence.add(at(EvidenceKind.SNAPSHOT_PUBLICATION, "", "Volatile replacement publishes the array reference. Verify ownership and later element writes.", write)); //$NON-NLS-1$ //$NON-NLS-2$
+		} else if (ref.getParent() instanceof ClassInstanceCreation copy && copy.arguments().contains(ref)) {
+			addAccess(evidence, lock, EvidenceKind.LOCKED_READ, "Collection passed to the copy constructor", copy); //$NON-NLS-1$
+		} else {
+			evidence.add(at(EvidenceKind.UNRESOLVED_BOUNDARY, "", "Inspect this alias, callback or published value before changing its protocol.", ref)); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+	}
+
+	private static boolean closedTraversal(CompilationUnit root, Field field) {
+		return Modifier.isPrivate(field.binding().getModifiers()) && Modifier.isFinal(field.binding().getModifiers())
+				&& field.declaration().getParent().getParent() instanceof TypeDeclaration owner && Modifier.isFinal(owner.getModifiers())
+				&& closedOwner(root, field, owner) && field.declaration().getInitializer() instanceof MethodInvocation wrapper
+				&& wrapper.arguments().size() == 1 && wrapper.arguments().getFirst() instanceof ClassInstanceCreation fresh
+				&& fresh.getAnonymousClassDeclaration() == null && fresh.arguments().isEmpty() && isType(fresh.resolveTypeBinding(), "java.util.ArrayList"); //$NON-NLS-1$
 	}
 
 	private static boolean plainAppend(MethodInvocation write, Field field) {
@@ -339,8 +362,8 @@ public final class ContainerConcurrencyAnalyzer {
 			@Override
 			public boolean preVisit2(ASTNode node) {
 				if (!(node instanceof Block || node instanceof EmptyStatement || node instanceof ExpressionStatement
-						|| node instanceof PostfixExpression || node instanceof SimpleName name && name.resolveBinding() instanceof IVariableBinding var
-								&& !var.isField() && var.getType().isPrimitive())) {
+						|| node instanceof PostfixExpression || node instanceof SimpleName name && name.resolveBinding() instanceof IVariableBinding variable
+								&& !variable.isField() && variable.getType().isPrimitive())) {
 					simple[0]= false;
 				}
 				return simple[0];
@@ -354,11 +377,11 @@ public final class ContainerConcurrencyAnalyzer {
 		if (method == null || method.isRecovered() || method.getMethodDeclaration().getDeclaringClass().isFromSource()) {
 			return EvidenceKind.UNRESOLVED_BOUNDARY;
 		}
-		return switch (method.getName()) {
-			case "add", "addAll", "remove", "removeAll", "retainAll", "clear", "set", "put", "offer", "getAndSet", "compareAndSet" -> EvidenceKind.LOCKED_WRITE; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$ //$NON-NLS-10$ //$NON-NLS-11$
-			case "contains", "containsAll", "get", "indexOf", "lastIndexOf", "isEmpty", "size", "toArray" -> EvidenceKind.LOCKED_READ; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$
-			default -> EvidenceKind.UNRESOLVED_BOUNDARY;
-		};
+		String name= method.getName();
+		if (WRITE_METHODS.contains(name)) {
+			return EvidenceKind.LOCKED_WRITE;
+		}
+		return READ_METHODS.contains(name) ? EvidenceKind.LOCKED_READ : EvidenceKind.UNRESOLVED_BOUNDARY;
 	}
 
 	private static boolean frontRemove(MethodInvocation op) {
