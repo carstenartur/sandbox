@@ -20,21 +20,8 @@
 	<properties>
 		<!-- Disable Tycho for this plain jar module (parent uses tycho-maven-plugin with extensions=true) -->
 		<tycho.mode>maven</tycho.mode>
-		<jgit-storage-hibernate.version>0.12.1</jgit-storage-hibernate.version>
+		<jgit-storage-hibernate.version>0.12.2</jgit-storage-hibernate.version>
 	</properties>
-
-	<repositories>
-		<repository>
-			<id>jgit-storage-hibernate-public</id>
-			<url>https://raw.githubusercontent.com/carstenartur/jgit-storage-hibernate/maven-repository/</url>
-			<releases>
-				<enabled>true</enabled>
-			</releases>
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
-		</repository>
-	</repositories>
 
 	<dependencies>
 		<!-- Released generic storage implementation. New Sandbox integration code must use this public API. -->
