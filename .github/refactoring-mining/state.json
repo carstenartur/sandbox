@@ -187,9 +187,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/carstenartur/sandbox": {
-      "lastProcessedCommit": "da5b109d8c5f0164c1666f01287a358629bae9f2",
-      "lastProcessedDate": "2026-11-05T02:31:37.649871803Z",
-      "totalProcessed": 56,
+      "lastProcessedCommit": "57d526e674cbb1fff77615cd2f145d0ebf50da2e",
+      "lastProcessedDate": "2026-11-14T02:18:46.306437087Z",
+      "totalProcessed": 100,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -270,6 +270,42 @@
           "diffLines": 502,
           "reason": "DIFF_TOO_LARGE",
           "deferredAt": "2026-11-05T02:27:38.052451091Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "3db412fb7c3e7ca2675a03a47970a330ce9ed9ab",
+          "message": "switch tests on, add tools to code coverage",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-14T02:16:43.088022009Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "36da23c5b4275c173cca55f90ea38fc8724158c1",
+          "message": "Merge pull request #9 from carstenartur/dependabot/maven/com.github.spotbugs-spotbugs-maven-plugin-4.7.0.0",
+          "diffLines": 14,
+          "reason": "API_FAILURE",
+          "deferredAt": "2026-11-14T02:18:51.458453229Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f1d9e5d5cdaa06a3cc158a838132039821141eed",
+          "message": "Bump spotbugs-maven-plugin from 4.7.0.0 to 4.7.1.0",
+          "diffLines": 14,
+          "reason": "API_FAILURE",
+          "deferredAt": "2026-11-14T02:18:51.458732990Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a62b3a7eed3db81cec3ba8ba3b9c1ab318662a39",
+          "message": "Merge pull request #11 from carstenartur/dependabot/maven/com.github.spotbugs-spotbugs-maven-plugin-4.7.1.0",
+          "diffLines": 14,
+          "reason": "API_FAILURE",
+          "deferredAt": "2026-11-14T02:18:51.458773822Z",
           "retryCount": 0,
           "maxRetries": 3
         }
@@ -5500,9 +5536,8 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "lastProcessedCommit": "31f1148ce0e56d853b31983a63eff358d6d7e01c",
-      "lastProcessedDate": "2026-11-13T02:21:41.215088405Z",
-      "totalProcessed": 916,
+      "lastProcessedDate": "2026-11-14T02:14:37.339038653Z",
+      "totalProcessed": 929,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -5963,14 +5998,60 @@
           "deferredAt": "2026-11-13T02:21:25.772725118Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "0dfb589593e911582f232afb028866cf213e458d",
+          "message": "Use jdk 5 for-each loop",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-14T02:13:11.224777919Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "7e491a84242e34c659e13ba6c85014a76afea8e2",
+          "message": "Use jdk 5 for-each loop",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-14T02:13:11.232739301Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "96aae7f86b741a42618dbe787394e64557605e66",
+          "message": "Use jdk 5 for-each loop",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-14T02:13:11.237796268Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "3cc2eb1128810a7319e9e23c0fc6029c324fb30a",
+          "message": "Use jdk 5 for-each loop",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-14T02:13:22.375510310Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "16b7363007dbfa4eb1664350b2d19649d4d3a918",
+          "message": "Use jdk 5 for-each loop",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-14T02:13:22.382998929Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
       "learnedMaxDiffLines": -1,
       "lastModelUsed": "gemini-2.5-flash",
-      "currentEpoch": 1,
+      "currentEpoch": 2,
       "completedEpochs": [
-        "2020-01-01 to 2026-01-01"
+        "2020-01-01 to 2026-01-01",
+        "2015-01-01 to 2020-01-01"
       ],
       "categoryHitCounts": {
         "API Misuse": 1,
@@ -6026,5 +6107,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 54453
+  "globalTotalProcessed": 54510
 }
