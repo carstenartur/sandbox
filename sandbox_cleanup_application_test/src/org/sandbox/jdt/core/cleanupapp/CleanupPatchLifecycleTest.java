@@ -212,12 +212,12 @@ class CleanupPatchLifecycleTest {
 		assertEquals(Integer.valueOf(2), app.start(new TestApplicationContext(args)));
 		assertArrayEquals(originalSource, read(source));
 		assertArrayEquals(originalDescriptor, read(descriptor));
-		String predicted= Files.readString(patch);
+		String predicted= Files.readString(patch, StandardCharsets.UTF_8);
 		assertTrue(predicted.contains(expectedDependency), predicted);
 		assertTrue(predicted.contains(descriptorPath), predicted);
 		args[args.length - 1]= "apply";
 		assertEquals(Integer.valueOf(0), app.start(new TestApplicationContext(args)));
-		assertEquals(predicted, Files.readString(patch));
+		assertEquals(predicted, Files.readString(patch, StandardCharsets.UTF_8));
 		assertTrue(new String(read(descriptor), StandardCharsets.UTF_8).contains(expectedDependency));
 		assertTrue(new String(read(source), StandardCharsets.UTF_8).contains("org.junit.platform.suite.api.Suite"));
 		if (maven) {
@@ -228,7 +228,7 @@ class CleanupPatchLifecycleTest {
 			assertEquals(Integer.valueOf(1), app.start(new TestApplicationContext(args)));
 			assertArrayEquals(originalSource, read(source));
 			assertEquals(unmanaged, new String(read(descriptor), StandardCharsets.UTF_8));
-			assertTrue(Files.readString(report).contains("Cannot plan the JUnit Platform Suite dependency"));
+			assertTrue(Files.readString(report, StandardCharsets.UTF_8).contains("Cannot plan the JUnit Platform Suite dependency"));
 		}
 	}
 
@@ -301,11 +301,11 @@ class CleanupPatchLifecycleTest {
 		assertEquals(2, app.start(new TestApplicationContext(args)));
 		assertArrayEquals(beforePom, read(pom));
 		assertArrayEquals(beforeSuite, read(suite));
-		String predicted= Files.readString(patch);
+		String predicted= Files.readString(patch, StandardCharsets.UTF_8);
 		args[args.length - 1]= "apply";
 		assertEquals(0, app.start(new TestApplicationContext(args)));
-		assertEquals(predicted, Files.readString(patch));
-		String after= Files.readString(pom.getLocation().toFile().toPath());
+		assertEquals(predicted, Files.readString(patch, StandardCharsets.UTF_8));
+		String after= Files.readString(pom.getLocation().toFile().toPath(), StandardCharsets.UTF_8);
 		assertTrue(after.contains("junit-platform-suite"));
 		assertEquals(!scope.equals("closed"), after.contains("<artifactId>junit-vintage-engine</artifactId>"), after);
 		assertEquals(!scope.equals("closed"), after.contains("<artifactId>junit</artifactId>"), after);
