@@ -32,7 +32,7 @@ import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.ArgumentTransfer;
 public record ClosedSourceParameterMigrationPlan(
 		TargetContainerContract targetContract,
 		ContainerLocalRewritePlan callerPlan,
-		List&lt;ContainerParameterRewritePlan&gt; parameterPlans) {
+		List&lt;ContainerParameterRewritePlan&gt; parameterPlans) implements ClosedSourceContainerPlan {
 
 	/** Compatibility constructor for the existing single-parameter vertical slice. */
 	public ClosedSourceParameterMigrationPlan(

@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ParallelRecordRewrite.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.cleanup.multifile</a> &gt; <span class="el_source">ParallelRecordRewrite.java</span></div><h1>ParallelRecordRewrite.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.cleanup.multifile;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
+import org.eclipse.jdt.core.dom.ArrayAccess;
+import org.eclipse.jdt.core.dom.ArrayCreation;
+import org.eclipse.jdt.core.dom.ArrayType;
+import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.EnhancedForStatement;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.ForStatement;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.NodeFinder;
+import org.eclipse.jdt.core.dom.NumberLiteral;
+import org.eclipse.jdt.core.dom.PostfixExpression;
+import org.eclipse.jdt.core.dom.RecordDeclaration;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SimpleType;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.TryStatement;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.VariableDeclarationExpression;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.internal.corext.codemanipulation.ContextSensitiveImportRewriteContext;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.text.edits.TextEditGroup;
+
+import org.sandbox.jdt.container.analysis.ParallelArrayRecordAnalyzer;
+import org.sandbox.jdt.container.api.ContainerUsageProfile;
+import org.sandbox.jdt.container.api.UsageEvidence.Kind;
+
+/** Strengthens the paired-array report with the control-flow proof required to rewrite reads and writes. */
+final class ParallelRecordRewrite extends CompilationUnitRewriteOperationWithSourceRange {
+	private static final String DESCRIPTION= &quot;Store private parallel arrays as local records in encounter order&quot;; //$NON-NLS-1$
+	private final VariableDeclarationStatement left;
+	private final VariableDeclarationStatement right;
+	private final Block growth;
+	private final List&lt;ArrayAccess&gt; reads;
+	private final String rowName;
+	private final String listName;
+
+<span class="nc" id="L72">	private ParallelRecordRewrite(VariableDeclarationStatement left, VariableDeclarationStatement right,</span>
+			Block growth, List&lt;ArrayAccess&gt; reads, String rowName, String listName) {
+<span class="nc" id="L74">		this.left= left;</span>
+<span class="nc" id="L75">		this.right= right;</span>
+<span class="nc" id="L76">		this.growth= growth;</span>
+<span class="nc" id="L77">		this.reads= List.copyOf(reads);</span>
+<span class="nc" id="L78">		this.rowName= rowName;</span>
+<span class="nc" id="L79">		this.listName= listName;</span>
+<span class="nc" id="L80">	}</span>
+
+	static List&lt;ParallelRecordRewrite&gt; find(ICompilationUnit unit, CompilationUnit root) {
+<span class="nc" id="L83">		var project= unit.getJavaProject();</span>
+<span class="nc bnc" id="L84" title="All 4 branches missed.">		if (project == null || root.getAST().apiLevel() &lt; AST.JLS16</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">				|| JavaCore.compareJavaVersions(project.getOption(JavaCore.COMPILER_SOURCE, true), JavaCore.VERSION_16) &lt; 0</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">				|| JavaCore.compareJavaVersions(project.getOption(JavaCore.COMPILER_COMPLIANCE, true), JavaCore.VERSION_16) &lt; 0) {</span>
+<span class="nc" id="L87">			return List.of();</span>
+		}
+<span class="nc" id="L89">		Set&lt;String&gt; names= new HashSet&lt;&gt;();</span>
+<span class="nc" id="L90">		root.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(SimpleName name) {
+<span class="nc" id="L93">				names.add(name.getIdentifier());</span>
+<span class="nc" id="L94">				return true;</span>
+			}
+		});
+<span class="nc" id="L97">		List&lt;ParallelRecordRewrite&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">		for (var profile : ParallelArrayRecordAnalyzer.analyze(root, () -&gt; { })) {</span>
+<span class="nc" id="L99">			ParallelRecordRewrite plan= plan(root, profile, names);</span>
+<span class="nc bnc" id="L100" title="All 2 branches missed.">			if (plan != null) {</span>
+<span class="nc" id="L101">				result.add(plan);</span>
+			}
+		}
+<span class="nc" id="L104">		return result;</span>
+	}
+
+	private static ParallelRecordRewrite plan(CompilationUnit root, ContainerUsageProfile profile, Set&lt;String&gt; names) {
+<span class="nc" id="L108">		List&lt;ArrayAccess&gt; writes= new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L109">		List&lt;ArrayAccess&gt; reads= new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">		for (var evidence : profile.evidence()) {</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">			if (!(NodeFinder.perform(root, evidence.sourceStart(), evidence.sourceLength()) instanceof ArrayAccess access)) {</span>
+<span class="nc" id="L112">				return null;</span>
+			}
+<span class="nc bnc" id="L114" title="All 2 branches missed.">			(evidence.kind() == Kind.PAIRED_ARRAY_WRITE ? writes : reads).add(access);</span>
+		}
+<span class="nc bnc" id="L116" title="All 4 branches missed.">		if (writes.size() != 2 || reads.isEmpty()) {</span>
+<span class="nc" id="L117">			return null;</span>
+		}
+<span class="nc" id="L119">		ArrayAccess first= writes.getFirst(), second= writes.getLast();</span>
+<span class="nc" id="L120">		var left= declaration(root, first.getArray());</span>
+<span class="nc" id="L121">		var right= declaration(root, second.getArray());</span>
+<span class="nc" id="L122">		var count= declaration(root, first.getIndex());</span>
+<span class="nc bnc" id="L123" title="All 8 branches missed.">		if (left == null || right == null || count == null || !(left.getParent() instanceof Block scope)</span>
+<span class="nc bnc" id="L124" title="All 4 branches missed.">				|| !(scope.getParent() instanceof MethodDeclaration) || !(left.getType() instanceof ArrayType leftType)</span>
+<span class="nc bnc" id="L125" title="All 6 branches missed.">				|| !(right.getType() instanceof ArrayType rightType) || !simpleComponent(leftType) || !simpleComponent(rightType)</span>
+<span class="nc bnc" id="L126" title="All 4 branches missed.">				|| left.getParent() != right.getParent() || left.getParent() != count.getParent()</span>
+<span class="nc bnc" id="L127" title="All 4 branches missed.">				|| !literalZero(left) || !literalZero(right)</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">				|| !(first.getParent().getParent().getParent() instanceof Block growth)</span>
+<span class="nc bnc" id="L129" title="All 4 branches missed.">				|| growth.statements().size() != 5 || !(growth.getParent() instanceof EnhancedForStatement loop)</span>
+<span class="nc bnc" id="L130" title="All 4 branches missed.">				|| loop.getBody() != growth || loop.getParent() != scope) {</span>
+<span class="nc" id="L131">			return null;</span>
+		}
+<span class="nc" id="L133">		int i= scope.statements().indexOf(left);</span>
+<span class="nc bnc" id="L134" title="All 6 branches missed.">		if (i &lt; 0 || i + 3 &gt;= scope.statements().size() || scope.statements().get(i + 1) != right</span>
+<span class="nc bnc" id="L135" title="All 4 branches missed.">				|| scope.statements().get(i + 2) != count || scope.statements().get(i + 3) != loop) {</span>
+<span class="nc" id="L136">			return null;</span>
+		}
+<span class="nc" id="L138">		String countKey= ((VariableDeclarationFragment) count.fragments().getFirst()).resolveBinding().getKey();</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">		for (ArrayAccess read : reads) {</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">			if (!inBounds(read, scope, i + 3, countKey)) {</span>
+<span class="nc" id="L141">				return null;</span>
+			}
+		}
+<span class="nc" id="L144">		String leftName= ((VariableDeclarationFragment) left.fragments().getFirst()).getName().getIdentifier();</span>
+<span class="nc" id="L145">		String rightName= ((VariableDeclarationFragment) right.fragments().getFirst()).getName().getIdentifier();</span>
+<span class="nc bnc" id="L146" title="All 6 branches missed.">		if (forbiddenComponent(leftName) || forbiddenComponent(rightName) || removesComment(root, growth)</span>
+<span class="nc bnc" id="L147" title="All 4 branches missed.">				|| removesComment(root, left) || removesComment(root, right)) {</span>
+<span class="nc" id="L148">			return null;</span>
+		}
+<span class="nc" id="L150">		return new ParallelRecordRewrite(left, right, growth, reads, unique(&quot;Row&quot;, names), unique(&quot;rows&quot;, names)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+	}
+
+	private static VariableDeclarationStatement declaration(CompilationUnit root, Expression expression) {
+<span class="nc bnc" id="L154" title="All 4 branches missed.">		return expression instanceof SimpleName name &amp;&amp; name.resolveBinding() instanceof IVariableBinding binding</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">				&amp;&amp; root.findDeclaringNode(binding) instanceof VariableDeclarationFragment fragment</span>
+<span class="nc bnc" id="L156" title="All 4 branches missed.">				&amp;&amp; fragment.getParent() instanceof VariableDeclarationStatement statement &amp;&amp; statement.fragments().size() == 1</span>
+<span class="nc bnc" id="L157" title="All 4 branches missed.">				&amp;&amp; statement.modifiers().isEmpty() &amp;&amp; fragment.extraDimensions().isEmpty() ? statement : null;</span>
+	}
+
+	/** Constant-valued qualifiers can have side effects; the removed empty-array creation must use a literal. */
+	private static boolean literalZero(VariableDeclarationStatement statement) {
+<span class="nc" id="L162">		var variable= (VariableDeclarationFragment) statement.fragments().getFirst();</span>
+<span class="nc bnc" id="L163" title="All 4 branches missed.">		return variable.getInitializer() instanceof ArrayCreation array &amp;&amp; array.dimensions().size() == 1</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">				&amp;&amp; array.dimensions().getFirst() instanceof NumberLiteral literal</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">				&amp;&amp; Integer.valueOf(0).equals(literal.resolveConstantExpressionValue());</span>
+	}
+
+	private static boolean simpleComponent(ArrayType array) {
+<span class="nc" id="L169">		var type= array.resolveBinding();</span>
+<span class="nc bnc" id="L170" title="All 8 branches missed.">		return type != null &amp;&amp; !type.isRecovered() &amp;&amp; type.getDimensions() == 1 &amp;&amp; type.getTypeAnnotations().length == 0</span>
+<span class="nc bnc" id="L171" title="All 4 branches missed.">				&amp;&amp; type.getElementType().getTypeAnnotations().length == 0 &amp;&amp; !type.getElementType().isTypeVariable()</span>
+<span class="nc bnc" id="L172" title="All 6 branches missed.">				&amp;&amp; !type.getElementType().isParameterizedType() &amp;&amp; !type.getElementType().isRawType() &amp;&amp; !type.getElementType().isLocal()</span>
+<span class="nc bnc" id="L173" title="All 2 branches missed.">				&amp;&amp; array.getElementType() instanceof SimpleType;</span>
+	}
+
+	/** Protect exception class and timing: list.get is used only with a proven in-bounds, monotonic row index. */
+	private static boolean inBounds(ArrayAccess read, Block scope, int populatedAt, String countKey) {
+<span class="nc" id="L178">		ASTNode node= read;</span>
+<span class="nc bnc" id="L179" title="All 4 branches missed.">		while (node != null &amp;&amp; !(node instanceof ForStatement)) {</span>
+<span class="nc bnc" id="L180" title="All 6 branches missed.">			if (node instanceof TryStatement || node instanceof LambdaExpression || node instanceof AnonymousClassDeclaration) {</span>
+<span class="nc" id="L181">				return false;</span>
+			}
+<span class="nc" id="L183">			node= node.getParent();</span>
+		}
+<span class="nc bnc" id="L185" title="All 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L186">			return false;</span>
+		}
+<span class="nc" id="L188">		ForStatement loop= (ForStatement) node;</span>
+<span class="nc bnc" id="L189" title="All 4 branches missed.">		if (loop.getParent() != scope || scope.statements().indexOf(loop) &lt;= populatedAt</span>
+<span class="nc bnc" id="L190" title="All 4 branches missed.">				|| loop.initializers().size() != 1 || !(loop.initializers().getFirst() instanceof VariableDeclarationExpression declaration)</span>
+<span class="nc bnc" id="L191" title="All 4 branches missed.">				|| declaration.fragments().size() != 1 || !(declaration.fragments().getFirst() instanceof VariableDeclarationFragment index)</span>
+<span class="nc bnc" id="L192" title="All 4 branches missed.">				|| index.getInitializer() == null || !Integer.valueOf(0).equals(index.getInitializer().resolveConstantExpressionValue())</span>
+<span class="nc bnc" id="L193" title="All 4 branches missed.">				|| !(loop.getExpression() instanceof InfixExpression condition) || condition.getOperator() != InfixExpression.Operator.LESS</span>
+<span class="nc bnc" id="L194" title="All 4 branches missed.">				|| condition.hasExtendedOperands() || !countKey.equals(key(condition.getRightOperand()))</span>
+<span class="nc bnc" id="L195" title="All 4 branches missed.">				|| loop.updaters().size() != 1 || !(loop.updaters().getFirst() instanceof PostfixExpression update)</span>
+<span class="nc bnc" id="L196" title="All 4 branches missed.">				|| update.getOperator() != PostfixExpression.Operator.INCREMENT || index.resolveBinding() == null</span>
+<span class="nc bnc" id="L197" title="All 2 branches missed.">				|| !&quot;int&quot;.equals(index.resolveBinding().getType().getName())) { //$NON-NLS-1$</span>
+<span class="nc" id="L198">			return false;</span>
+		}
+<span class="nc" id="L200">		String indexKey= index.resolveBinding().getKey();</span>
+<span class="nc bnc" id="L201" title="All 6 branches missed.">		if (!indexKey.equals(key(condition.getLeftOperand())) || !indexKey.equals(key(read.getIndex())) || !indexKey.equals(key(update.getOperand()))) {</span>
+<span class="nc" id="L202">			return false;</span>
+		}
+<span class="nc" id="L204">		Statement body= loop.getBody();</span>
+<span class="nc bnc" id="L205" title="All 4 branches missed.">		if (body instanceof Block block &amp;&amp; block.statements().size() == 1) {</span>
+<span class="nc" id="L206">			body= (Statement) block.statements().getFirst();</span>
+		}
+<span class="nc bnc" id="L208" title="All 4 branches missed.">		if (!(body instanceof ExpressionStatement statement) || !(statement.getExpression() instanceof MethodInvocation)) {</span>
+<span class="nc" id="L209">			return false;</span>
+		}
+<span class="nc" id="L211">		boolean[] safe= { true };</span>
+<span class="nc" id="L212">		body.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(SimpleName name) {
+<span class="nc bnc" id="L215" title="All 6 branches missed.">				if (indexKey.equals(key(name)) &amp;&amp; !(name.getParent() instanceof ArrayAccess access &amp;&amp; access.getIndex() == name)) {</span>
+<span class="nc" id="L216">					safe[0]= false;</span>
+				}
+<span class="nc" id="L218">				return safe[0];</span>
+			}
+		});
+<span class="nc bnc" id="L221" title="All 6 branches missed.">		return safe[0] &amp;&amp; read.getStartPosition() &gt;= body.getStartPosition()</span>
+<span class="nc" id="L222">				&amp;&amp; read.getStartPosition() + read.getLength() &lt;= body.getStartPosition() + body.getLength();</span>
+	}
+
+	private static String key(Expression expression) {
+<span class="nc bnc" id="L226" title="All 4 branches missed.">		return expression instanceof SimpleName name &amp;&amp; name.resolveBinding() instanceof IVariableBinding variable</span>
+<span class="nc" id="L227">				? variable.getVariableDeclaration().getKey() : &quot;&quot;; //$NON-NLS-1$</span>
+	}
+
+	private static String unique(String base, Set&lt;String&gt; names) {
+<span class="nc" id="L231">		String name= base;</span>
+<span class="nc bnc" id="L232" title="All 2 branches missed.">		for (int suffix= 2; !names.add(name); suffix++) {</span>
+<span class="nc" id="L233">			name= base + suffix;</span>
+		}
+<span class="nc" id="L235">		return name;</span>
+	}
+
+	@Override
+	public void rewriteASTInternal(CompilationUnitRewrite cu, LinkedProposalModelCore model) {
+<span class="nc" id="L240">		AST ast= cu.getRoot().getAST();</span>
+<span class="nc" id="L241">		ASTRewrite rewrite= cu.getASTRewrite();</span>
+<span class="nc" id="L242">		TextEditGroup group= createTextEditGroup(DESCRIPTION, cu);</span>
+<span class="nc" id="L243">		var imports= cu.getImportRewrite();</span>
+<span class="nc" id="L244">		var context= new ContextSensitiveImportRewriteContext(left, imports);</span>
+<span class="nc" id="L245">		var listType= imports.addImport(&quot;java.util.List&quot;, context); //$NON-NLS-1$</span>
+<span class="nc" id="L246">		var implType= imports.addImport(&quot;java.util.ArrayList&quot;, context); //$NON-NLS-1$</span>
+<span class="nc" id="L247">		var record= ast.newRecordDeclaration();</span>
+<span class="nc" id="L248">		record.setName(ast.newSimpleName(rowName));</span>
+<span class="nc" id="L249">		List&lt;String&gt; components= List.of(component(ast, record, left), component(ast, record, right));</span>
+<span class="nc" id="L250">		var blockRewrite= rewrite.getListRewrite(left.getParent(), Block.STATEMENTS_PROPERTY);</span>
+<span class="nc" id="L251">		blockRewrite.insertBefore(ast.newTypeDeclarationStatement(record), left, group);</span>
+<span class="nc" id="L252">		var variable= ast.newVariableDeclarationFragment();</span>
+<span class="nc" id="L253">		variable.setName(ast.newSimpleName(listName));</span>
+<span class="nc" id="L254">		var initializer= ast.newClassInstanceCreation();</span>
+<span class="nc" id="L255">		initializer.setType(ast.newParameterizedType(ast.newSimpleType(ast.newName(implType))));</span>
+<span class="nc" id="L256">		variable.setInitializer(initializer);</span>
+<span class="nc" id="L257">		var rows= ast.newVariableDeclarationStatement(variable);</span>
+<span class="nc" id="L258">		var list= ast.newParameterizedType(ast.newSimpleType(ast.newName(listType)));</span>
+<span class="nc" id="L259">		list.typeArguments().add(ast.newSimpleType(ast.newSimpleName(rowName)));</span>
+<span class="nc" id="L260">		rows.setType(list);</span>
+<span class="nc" id="L261">		rewrite.replace(left, rows, group);</span>
+<span class="nc" id="L262">		rewrite.remove(right, group);</span>
+<span class="nc" id="L263">		var row= ast.newClassInstanceCreation();</span>
+<span class="nc" id="L264">		row.setType(ast.newSimpleType(ast.newSimpleName(rowName)));</span>
+<span class="nc bnc" id="L265" title="All 2 branches missed.">		for (int i= 2; i &lt; 4; i++) {</span>
+<span class="nc" id="L266">			var store= (Assignment) ((ExpressionStatement) growth.statements().get(i)).getExpression();</span>
+<span class="nc" id="L267">			row.arguments().add(ASTNode.copySubtree(ast, store.getRightHandSide()));</span>
+		}
+<span class="nc" id="L269">		var add= ast.newMethodInvocation();</span>
+<span class="nc" id="L270">		add.setExpression(ast.newSimpleName(listName));</span>
+<span class="nc" id="L271">		add.setName(ast.newSimpleName(&quot;add&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L272">		add.arguments().add(row);</span>
+<span class="nc" id="L273">		rewrite.replace((ASTNode) growth.statements().getFirst(), ast.newExpressionStatement(add), group);</span>
+<span class="nc bnc" id="L274" title="All 2 branches missed.">		for (int i= 1; i &lt; 4; i++) {</span>
+<span class="nc" id="L275">			rewrite.remove((ASTNode) growth.statements().get(i), group);</span>
+		}
+<span class="nc" id="L277">		String leftKey= ((VariableDeclarationFragment) left.fragments().getFirst()).resolveBinding().getVariableDeclaration().getKey();</span>
+<span class="nc bnc" id="L278" title="All 2 branches missed.">		for (ArrayAccess read : reads) {</span>
+<span class="nc" id="L279">			var get= ast.newMethodInvocation();</span>
+<span class="nc" id="L280">			get.setExpression(ast.newSimpleName(listName));</span>
+<span class="nc" id="L281">			get.setName(ast.newSimpleName(&quot;get&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L282">			get.arguments().add(ASTNode.copySubtree(ast, read.getIndex()));</span>
+<span class="nc" id="L283">			var accessor= ast.newMethodInvocation();</span>
+<span class="nc" id="L284">			accessor.setExpression(get);</span>
+<span class="nc bnc" id="L285" title="All 2 branches missed.">			accessor.setName(ast.newSimpleName(components.get(leftKey.equals(key(read.getArray())) ? 0 : 1)));</span>
+<span class="nc" id="L286">			rewrite.replace(read, accessor, group);</span>
+		}
+<span class="nc" id="L288">	}</span>
+
+	private static String component(AST ast, RecordDeclaration record, VariableDeclarationStatement array) {
+<span class="nc" id="L291">		var fragment= (VariableDeclarationFragment) array.fragments().getFirst();</span>
+<span class="nc" id="L292">		var declaration= ast.newSingleVariableDeclaration();</span>
+<span class="nc" id="L293">		declaration.setType((Type) ASTNode.copySubtree(ast, ((ArrayType) array.getType()).getElementType()));</span>
+<span class="nc" id="L294">		String name= fragment.getName().getIdentifier();</span>
+<span class="nc" id="L295">		declaration.setName(ast.newSimpleName(name));</span>
+<span class="nc" id="L296">		record.recordComponents().add(declaration);</span>
+<span class="nc" id="L297">		return name;</span>
+	}
+
+	private static boolean removesComment(CompilationUnit root, ASTNode node) {
+<span class="nc" id="L301">		int start= root.getExtendedStartPosition(node);</span>
+<span class="nc" id="L302">		int end= start + root.getExtendedLength(node);</span>
+<span class="nc bnc" id="L303" title="All 2 branches missed.">		for (Object entry : root.getCommentList()) {</span>
+<span class="nc" id="L304">			var comment= (ASTNode) entry;</span>
+<span class="nc bnc" id="L305" title="All 4 branches missed.">			if (comment.getStartPosition() &lt; end &amp;&amp; comment.getStartPosition() + comment.getLength() &gt; start) {</span>
+<span class="nc" id="L306">				return true;</span>
+			}
+		}
+<span class="nc" id="L309">		return false;</span>
+	}
+
+	private static boolean forbiddenComponent(String name) {
+<span class="nc" id="L313">		return Set.of(&quot;clone&quot;, &quot;finalize&quot;, &quot;getClass&quot;, &quot;hashCode&quot;, &quot;notify&quot;, &quot;notifyAll&quot;, &quot;toString&quot;, &quot;wait&quot;).contains(name); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$</span>
+	}
+
+	@Override
+	public String getAdditionalInfo() {
+<span class="nc" id="L318">		return DESCRIPTION;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

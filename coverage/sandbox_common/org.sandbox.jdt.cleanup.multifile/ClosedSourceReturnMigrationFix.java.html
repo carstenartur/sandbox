@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ClosedSourceReturnMigrationFix.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.cleanup.multifile</a> &gt; <span class="el_source">ClosedSourceReturnMigrationFix.java</span></div><h1>ClosedSourceReturnMigrationFix.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.cleanup.multifile;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.Status;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ArrayType;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.NodeFinder;
+import org.eclipse.jdt.core.dom.ParameterizedType;
+import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
+
+import org.sandbox.jdt.container.analysis.ClosedReturnArrayUses;
+import org.sandbox.jdt.container.api.ClosedSourceReturnMigrationPlan;
+import org.sandbox.jdt.container.api.ClosedSourceReturnMigrationPlan.Range;
+
+/** Applies one unit of a validated, project-closed return and callers change. */
+public final class ClosedSourceReturnMigrationFix {
+
+	private static final String DESCRIPTION= &quot;Migrate closed array return and all its callers&quot;; //$NON-NLS-1$
+
+	private ClosedSourceReturnMigrationFix() {
+	}
+
+	public static ICleanUpFix create(ICompilationUnit unit, CompilationUnit root, ClosedSourceReturnMigrationPlan plan) throws CoreException {
+<span class="nc" id="L48">		String handle= unit.getPrimary().getHandleIdentifier();</span>
+<span class="nc" id="L49">		var expected= plan.consumers().stream().filter(consumer -&gt; consumer.unitHandle().equals(handle)).toList();</span>
+<span class="nc" id="L50">		var actual= ClosedReturnArrayUses.consumers(root, handle, plan.methodBindingKey());</span>
+<span class="nc bnc" id="L51" title="All 4 branches missed.">		if (actual.isEmpty() || !actual.get().equals(expected)) {</span>
+<span class="nc" id="L52">			throw new CoreException(Status.error(&quot;The return consumers differ in the supplied working-copy AST.&quot;)); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L54">		List&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations= new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L55">		Set&lt;ArrayType&gt; types= new LinkedHashSet&lt;&gt;();</span>
+<span class="nc" id="L56">		List&lt;QualifiedName&gt; lengths= new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">		if (plan.producer().compilationUnitHandle().equals(handle)) {</span>
+<span class="nc" id="L58">			if (ClosedReturnArrayUses.producer(root, plan.methodBindingKey(), plan.producer().bindingKey())</span>
+<span class="nc bnc" id="L59" title="All 2 branches missed.">					.filter(plan.returnType()::equals).isEmpty()) {</span>
+<span class="nc" id="L60">				throw new CoreException(Status.error(&quot;The return signature in the supplied working-copy AST changed.&quot;)); //$NON-NLS-1$</span>
+			}
+<span class="nc" id="L62">			operations.add(ContainerLocalRewriteFix.directReturnOperation(unit.getPrimary(), root, plan.producer()));</span>
+<span class="nc" id="L63">			types.add((ArrayType) node(root, plan.returnType()));</span>
+		}
+<span class="nc bnc" id="L65" title="All 2 branches missed.">		for (var consumer : expected) {</span>
+<span class="nc" id="L66">			types.add((ArrayType) node(root, consumer.localType()));</span>
+<span class="nc" id="L67">			consumer.functionTarget().ifPresent(function -&gt; types.add((ArrayType) node(root, function.returnArgument())));</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">			for (Range read : consumer.lengths()) {</span>
+<span class="nc" id="L69">				lengths.add((QualifiedName) node(root, read));</span>
+			}
+		}
+<span class="nc bnc" id="L72" title="All 2 branches missed.">		if (types.isEmpty()) {</span>
+<span class="nc" id="L73">			return null;</span>
+		}
+<span class="nc" id="L75">		operations.add(new CompilationUnitRewriteOperationWithSourceRange() {</span>
+			@Override
+			public void rewriteASTInternal(CompilationUnitRewrite cu, LinkedProposalModelCore linked) {
+<span class="nc" id="L78">				var ast= cu.getRoot().getAST();</span>
+<span class="nc" id="L79">				var group= createTextEditGroup(DESCRIPTION, cu);</span>
+<span class="nc" id="L80">				String list= cu.getImportRewrite().addImport(plan.producer().targetInterfaceType());</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">				for (ArrayType type : types) {</span>
+<span class="nc" id="L82">					ParameterizedType replacement= ast.newParameterizedType(ast.newSimpleType(ast.newName(list)));</span>
+<span class="nc" id="L83">					replacement.typeArguments().add(ASTNode.copySubtree(ast, type.getElementType()));</span>
+<span class="nc" id="L84">					cu.getASTRewrite().replace(type, replacement, group);</span>
+				}
+<span class="nc bnc" id="L86" title="All 2 branches missed.">				for (QualifiedName length : lengths) {</span>
+<span class="nc" id="L87">					var size= ast.newMethodInvocation();</span>
+<span class="nc" id="L88">					size.setExpression((Expression) ASTNode.copySubtree(ast, length.getQualifier()));</span>
+<span class="nc" id="L89">					size.setName(ast.newSimpleName(&quot;size&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L90">					cu.getASTRewrite().replace(length, size, group);</span>
+				}
+<span class="nc" id="L92">			}</span>
+
+			@Override
+			public String getAdditionalInfo() {
+<span class="nc" id="L96">				return DESCRIPTION;</span>
+			}
+		});
+<span class="nc" id="L99">		return new CompilationUnitRewriteOperationsFixCore(DESCRIPTION, root,</span>
+<span class="nc" id="L100">				operations.toArray(CompilationUnitRewriteOperationWithSourceRange[]::new));</span>
+	}
+
+	private static ASTNode node(CompilationUnit root, Range range) {
+<span class="nc" id="L104">		return NodeFinder.perform(root, range.start(), range.length());</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
