@@ -47,6 +47,7 @@ public class EclipseHelpTestModuleBoundaryTest {
 			"CleanupScreenshotScenarios.java", //$NON-NLS-1$
 			"CleanupSourceSnapshot.java", //$NON-NLS-1$
 			"CleanupSourceSnapshotTest.java", //$NON-NLS-1$
+			"CleanupWizardDriver.java", //$NON-NLS-1$
 			"CleanupWorkbenchDriver.java", //$NON-NLS-1$
 			"CodePatternsConfigurationScreenshot.java", //$NON-NLS-1$
 			"CodePatternsScreenshotVisibility.java", //$NON-NLS-1$

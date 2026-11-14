@@ -48,16 +48,12 @@ import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.swt.widgets.Tree;
 import org.eclipse.ltk.core.refactoring.IUndoManager;
 import org.eclipse.ltk.core.refactoring.RefactoringCore;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
@@ -492,26 +488,6 @@ public class SandboxHelpScreenshotsSWTBotTest {
         }
     }
 
-    private record CleanUpPreview(SWTBotShell shell, SWTBotTree tree) {
-    }
-
-    private enum CleanUpWizardPageKind {
-        CONDITION_STATUS,
-        PREVIEW
-    }
-
-    private record CleanUpWizardPage(SWTBotShell shell, CleanUpWizardPageKind kind,
-            SWTBotTree previewTree) {
-
-        private static CleanUpWizardPage conditionStatus(SWTBotShell shell) {
-            return new CleanUpWizardPage(shell, CleanUpWizardPageKind.CONDITION_STATUS, null);
-        }
-
-        private static CleanUpWizardPage preview(SWTBotShell shell, SWTBotTree tree) {
-            return new CleanUpWizardPage(shell, CleanUpWizardPageKind.PREVIEW, tree);
-        }
-    }
-
     private static final List<CleanupTab> CLEANUP_TABS = List.of(
             new CleanupTab("Explicit Encoding (Sandbox)", "sandbox_encoding_quickfix_help",
                     "explicit-encoding-cleanup.png"),
@@ -555,6 +531,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
             "Analyze all project source files for coordinated migrations";
     private static final String INT_TO_ENUM_CANDIDATE_FRAGMENT = "nested enum Status";
     private static SWTWorkbenchBot bot;
+    private static CleanupWizardDriver cleanupWizard;
     private static Path outputRoot;
     private static IProject otherProject;
     private static IProject documentationProject;
@@ -563,6 +540,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
     @BeforeAll
     public static void setUp() throws Exception {
         bot = new SWTWorkbenchBot();
+        cleanupWizard = new CleanupWizardDriver(bot);
         outputRoot = SandboxCheckout.locate(OUTPUT_PROPERTY);
         deleteGeneratedScreenshot("sandbox_jface_cleanup_help",
                 "jface-cleanup-real-preview-single-file-steps.png");
@@ -594,10 +572,10 @@ public class SandboxHelpScreenshotsSWTBotTest {
     @Test
     @Order(5)
     public void captureCleanupConfigurationTabs() throws IOException {
-        openPreferences();
+        cleanupWizard.openPreferences();
         SWTBotShell preferences = bot.shell("Preferences").activate();
-        selectPreferencePath(preferences.bot().tree(), "Java", "Code Style", "Clean Up");
-        clickButton(preferences, "Edit...", "Edit…");
+        cleanupWizard.selectPreferencePath(preferences.bot().tree(), "Java", "Code Style", "Clean Up");
+        CleanupWizardDriver.clickButton(preferences, "Edit...", "Edit…");
 
         SWTBotShell profileDialog = bot.activeShell();
         prepareForScreenshot(profileDialog);
@@ -614,9 +592,9 @@ public class SandboxHelpScreenshotsSWTBotTest {
             System.out.println("[help-screenshots] Captured cleanup tab: " + tab.label());
         }
 
-        clickButtonAndWaitForShellToClose(profileDialog, "Cleanup profile dialog", "Cancel");
+        cleanupWizard.clickButtonAndWaitForShellToClose(profileDialog, "Cleanup profile dialog", "Cancel");
         preferences.activate();
-        clickButtonAndWaitForShellToClose(preferences, "Preferences", "Cancel");
+        cleanupWizard.clickButtonAndWaitForShellToClose(preferences, "Preferences", "Cancel");
     }
 
     @Test
@@ -632,13 +610,13 @@ public class SandboxHelpScreenshotsSWTBotTest {
         SWTBotTreeItem singleFileNode = projectTree().getTreeItem(CLEANUP_PREVIEW_PROJECT).expand()
                 .getNode("src").expand().getNode("demo.single").expand().getNode("SingleFileCleanup.java");
         singleFileNode.select();
-        SWTBotShell wizard = openCleanUpWizard(singleFileNode);
-        clickButton(wizard, "Next >", "Next >");
-        bot.sleep(500);
+        var preview = cleanupWizard.openCleanUpPreview(cleanupWizard.openCleanUpWizard(singleFileNode),
+                "SingleFileCleanup.java");
+        SWTBotShell wizard = preview.shell();
         prepareForScreenshot(wizard);
 
-        SWTBotTree previewTree = wizard.bot().tree();
-        SWTBotTreeItem singlePreviewFile = findTreeItemContaining(previewTree, "SingleFileCleanup.java");
+        SWTBotTree previewTree = preview.tree();
+        SWTBotTreeItem singlePreviewFile = CleanupWizardDriver.findTreeItemContaining(previewTree, "SingleFileCleanup.java");
         assertTrue(singlePreviewFile != null, "Preview must contain the selected file");
         assertTrue(java.util.Arrays.stream(singlePreviewFile.getItems())
                 .allMatch(child -> child.getText().isBlank() && !child.isChecked()),
@@ -663,8 +641,8 @@ public class SandboxHelpScreenshotsSWTBotTest {
         captureCleanUpPreview(wizard, "sandbox_jface_cleanup_help",
                 "jface-cleanup-real-preview-single-file-steps.png");
 
-        clickButtonAsync(wizard, "Finish");
-        waitForShellToClose(wizard, "Clean Up wizard");
+        CleanupWizardDriver.clickButtonAsync(wizard, "Finish");
+        cleanupWizard.waitForShellToClose(wizard, "Clean Up wizard");
         String singleAfter = readFile(singleFile);
         assertTrue(singleAfter.contains("SubMonitor.convert"),
                 "The monitor migration in the selected file must be applied");
@@ -684,14 +662,14 @@ public class SandboxHelpScreenshotsSWTBotTest {
         SWTBotTreeItem multiPackage = projectTree().getTreeItem(CLEANUP_PREVIEW_PROJECT).expand()
                 .getNode("src").expand().getNode("demo.multi");
         multiPackage.select();
-        wizard = openCleanUpWizard(multiPackage);
-        clickButton(wizard, "Next >", "Next >");
-        bot.sleep(500);
+        preview = cleanupWizard.openCleanUpPreview(cleanupWizard.openCleanUpWizard(multiPackage),
+                "MonitorOnly.java");
+        wizard = preview.shell();
         prepareForScreenshot(wizard);
 
-        previewTree = wizard.bot().tree();
-        SWTBotTreeItem monitorPreviewFile = findTreeItemContaining(previewTree, "MonitorOnly.java");
-        SWTBotTreeItem sorterPreviewFile = findTreeItemContaining(previewTree, "SorterOnly.java");
+        previewTree = preview.tree();
+        SWTBotTreeItem monitorPreviewFile = CleanupWizardDriver.findTreeItemContaining(previewTree, "MonitorOnly.java");
+        SWTBotTreeItem sorterPreviewFile = CleanupWizardDriver.findTreeItemContaining(previewTree, "SorterOnly.java");
         assertTrue(monitorPreviewFile != null, "Preview must contain MonitorOnly.java");
         assertTrue(sorterPreviewFile != null, "Preview must contain SorterOnly.java");
         assertTrue(monitorPreviewFile.isChecked(), "MonitorOnly.java must initially be selected");
@@ -725,8 +703,8 @@ public class SandboxHelpScreenshotsSWTBotTest {
         captureCleanUpPreview(wizard, "sandbox_jface_cleanup_help",
                 "jface-cleanup-real-preview-multi-file-selection.png");
 
-        clickButtonAsync(wizard, "Finish");
-        waitForShellToClose(wizard, "Clean Up wizard");
+        CleanupWizardDriver.clickButtonAsync(wizard, "Finish");
+        cleanupWizard.waitForShellToClose(wizard, "Clean Up wizard");
 
         String monitorAfter = readFile(monitorFile);
         String sorterAfter = readFile(sorterFile);
@@ -754,13 +732,13 @@ public class SandboxHelpScreenshotsSWTBotTest {
                 .getNode("src").expand().getNode("demo.methodreuse").expand()
                 .getNode("RepeatedSequence.java");
         fileNode.select();
-        SWTBotShell originatingWizard = openCleanUpWizard(fileNode);
-        CleanUpPreview preview = openCleanUpPreview(originatingWizard,
+        SWTBotShell originatingWizard = cleanupWizard.openCleanUpWizard(fileNode);
+        CleanupWizardDriver.CleanUpPreview preview = cleanupWizard.openCleanUpPreview(originatingWizard,
                 "RepeatedSequence.java");
         SWTBotShell wizard = preview.shell();
         prepareForScreenshot(wizard);
 
-        SWTBotTreeItem previewFile = findTreeItemContaining(preview.tree(),
+        SWTBotTreeItem previewFile = CleanupWizardDriver.findTreeItemContaining(preview.tree(),
                 "RepeatedSequence.java");
         assertTrue(previewFile != null && previewFile.isChecked(),
                 "The real LTK preview must contain the selected Method Reuse file");
@@ -774,8 +752,8 @@ public class SandboxHelpScreenshotsSWTBotTest {
         assertTrue(diff.contains("extractedSequence(input);"),
                 "The LTK diff must show replacement of the duplicate occurrence");
 
-        clickButtonAsync(wizard, "Finish");
-        waitForShellToClose(wizard, "Clean Up wizard");
+        CleanupWizardDriver.clickButtonAsync(wizard, "Finish");
+        cleanupWizard.waitForShellToClose(wizard, "Clean Up wizard");
         String after = readFile(file);
         assertTrue(after.contains("private void extractedSequence(String value)"),
                 "Apply must create the private shared method");
@@ -804,12 +782,12 @@ public class SandboxHelpScreenshotsSWTBotTest {
         SWTBotTreeItem ownerNode = projectTree().getTreeItem(CLEANUP_PREVIEW_PROJECT).expand()
                 .getNode("src").expand().getNode("demo.coordinated").expand().getNode("StateOwner.java");
         ownerNode.select();
-        SWTBotShell wizard = openCleanUpWizard(ownerNode);
-        CleanUpPreview preview = openCleanUpPreview(wizard, INT_TO_ENUM_CANDIDATE_FRAGMENT);
+        SWTBotShell wizard = cleanupWizard.openCleanUpWizard(ownerNode);
+        CleanupWizardDriver.CleanUpPreview preview = cleanupWizard.openCleanUpPreview(wizard, INT_TO_ENUM_CANDIDATE_FRAGMENT);
         wizard = preview.shell();
 
         SWTBotTree previewTree = preview.tree();
-        SWTBotTreeItem candidate = findTreeItemContaining(previewTree, INT_TO_ENUM_CANDIDATE_FRAGMENT);
+        SWTBotTreeItem candidate = CleanupWizardDriver.findTreeItemContaining(previewTree, INT_TO_ENUM_CANDIDATE_FRAGMENT);
         assertTrue(candidate != null, "Preview must expose the coordinated Int-to-Enum candidate");
         candidate.select();
         waitForCoordinatedPreviewDetails(wizard);
@@ -836,11 +814,11 @@ public class SandboxHelpScreenshotsSWTBotTest {
         candidate.uncheck();
         assertTrue(!candidate.isChecked(), "The single candidate checkbox must disable the whole migration");
         if (wizard.bot().button("Finish").isEnabled()) {
-            clickButtonAsync(wizard, "Finish");
+            CleanupWizardDriver.clickButtonAsync(wizard, "Finish");
         } else {
-            clickButton(wizard, "Cancel");
+            CleanupWizardDriver.clickButton(wizard, "Cancel");
         }
-        waitForShellToClose(wizard, "Clean Up wizard");
+        cleanupWizard.waitForShellToClose(wizard, "Clean Up wizard");
         assertTrue(ownerBefore.equals(readFile(ownerFile)),
                 "Disabling the candidate must keep StateOwner.java byte-identical");
         assertTrue(callerBefore.equals(readFile(callerFile)),
@@ -849,15 +827,15 @@ public class SandboxHelpScreenshotsSWTBotTest {
         ownerNode = projectTree().getTreeItem(CLEANUP_PREVIEW_PROJECT).expand()
                 .getNode("src").expand().getNode("demo.coordinated").expand().getNode("StateOwner.java");
         ownerNode.select();
-        wizard = openCleanUpWizard(ownerNode);
-        preview = openCleanUpPreview(wizard, INT_TO_ENUM_CANDIDATE_FRAGMENT);
+        wizard = cleanupWizard.openCleanUpWizard(ownerNode);
+        preview = cleanupWizard.openCleanUpPreview(wizard, INT_TO_ENUM_CANDIDATE_FRAGMENT);
         wizard = preview.shell();
         previewTree = preview.tree();
-        candidate = findTreeItemContaining(previewTree, INT_TO_ENUM_CANDIDATE_FRAGMENT);
+        candidate = CleanupWizardDriver.findTreeItemContaining(previewTree, INT_TO_ENUM_CANDIDATE_FRAGMENT);
         assertTrue(candidate != null && candidate.isChecked(),
                 "Reopening the preview must present one selected atomic candidate");
-        clickButtonAsync(wizard, "Finish");
-        waitForShellToClose(wizard, "Clean Up wizard");
+        CleanupWizardDriver.clickButtonAsync(wizard, "Finish");
+        cleanupWizard.waitForShellToClose(wizard, "Clean Up wizard");
 
         String ownerAfter = readFile(ownerFile);
         String callerAfter = readFile(callerFile);
@@ -878,29 +856,29 @@ public class SandboxHelpScreenshotsSWTBotTest {
     @Test
     @Order(6)
     public void captureCssCleanupPreferences() throws IOException {
-        openPreferences();
+        cleanupWizard.openPreferences();
         SWTBotShell preferences = bot.shell("Preferences").activate();
-        selectPreferencePath(preferences.bot().tree(), "CSS Cleanup");
+        cleanupWizard.selectPreferencePath(preferences.bot().tree(), "CSS Cleanup");
         prepareForScreenshot(preferences);
         capture(preferences, "sandbox_css_cleanup_help", "css-cleanup-preferences.png");
-        clickButton(preferences, "Cancel");
+        CleanupWizardDriver.clickButton(preferences, "Cancel");
     }
 
     @Test
     @Order(1)
     public void captureRuleInferencePreferences() throws IOException {
-        openPreferences();
+        cleanupWizard.openPreferences();
         SWTBotShell preferences = bot.shell("Preferences").activate();
-        selectPreferencePath(preferences.bot().tree(), "Java", "LLM Rule Inference");
+        cleanupWizard.selectPreferencePath(preferences.bot().tree(), "Java", "LLM Rule Inference");
         prepareForScreenshot(preferences);
         capture(preferences, "sandbox_triggerpattern_help", "llm-rule-inference-preferences.png");
-        clickButton(preferences, "Cancel");
+        CleanupWizardDriver.clickButton(preferences, "Cancel");
     }
 
     @Test
     @Order(2)
     public void captureRefactoringMiningWorkflow() throws Exception {
-        SWTBotShell workbench = workbenchShell().activate();
+        SWTBotShell workbench = CleanupWizardDriver.workbenchShell().activate();
         showView(workbench, REFACTORING_MINING_VIEW);
         SWTBotView miningView = bot.viewByTitle("Refactoring Mining");
         var miningToolbarButtons = miningView.getToolbarButtons();
@@ -912,7 +890,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
         assertTrue(projectSelection.bot().table().rowCount() >= 2,
                 "Refactoring Mining must make the target explicit in a multi-project workspace");
         projectSelection.bot().table().select(DOCUMENTATION_PROJECT);
-        clickButton(projectSelection, "OK");
+        CleanupWizardDriver.clickButton(projectSelection, "OK");
 
         bot.waitUntil(new DefaultCondition() {
             @Override
@@ -934,7 +912,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
     @Test
     @Order(3)
     public void captureNewHintRuleWizard() throws Exception {
-        SWTBotShell workbench = workbenchShell().activate();
+        SWTBotShell workbench = CleanupWizardDriver.workbenchShell().activate();
         showView(workbench, PROJECT_EXPLORER_VIEW);
         SWTBotView projectExplorer = bot.viewByTitle("Project Explorer");
         projectExplorer.bot().tree().getTreeItem(DOCUMENTATION_PROJECT).select();
@@ -943,10 +921,10 @@ public class SandboxHelpScreenshotsSWTBotTest {
         SWTBotShell newWizard = bot.activeShell();
         SWTBotTreeItem category = newWizard.bot().tree().getTreeItem("Sandbox TriggerPattern").expand();
         category.getNode("Sandbox Hint File").select();
-        clickButton(newWizard, "Next >");
+        CleanupWizardDriver.clickButton(newWizard, "Next >");
 
         SWTBotShell hintWizard = bot.activeShell();
-        clickButton(hintWizard, "Next >");
+        CleanupWizardDriver.clickButton(hintWizard, "Next >");
         hintWizard = bot.activeShell();
         hintWizard.bot().textWithLabel("Before / source pattern:").setText("$s.getBytes(\"UTF-8\")");
         hintWizard.bot().textWithLabel("Guard (optional):").setText("sourceVersionGE(7)");
@@ -956,7 +934,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
 
         prepareForScreenshot(hintWizard);
         capture(hintWizard, "sandbox_triggerpattern_help", "new-hint-rule-wizard.png");
-        clickButton(hintWizard, "Cancel");
+        CleanupWizardDriver.clickButton(hintWizard, "Cancel");
         projectExplorer.close();
     }
 
@@ -983,288 +961,36 @@ public class SandboxHelpScreenshotsSWTBotTest {
     }
 
     private static void configureIntToEnumCleanupProfile() {
-        openPreferences();
-        SWTBotShell preferences = bot.shell("Preferences").activate();
-        selectPreferencePath(preferences.bot().tree(), "Java", "Code Style", "Clean Up");
-        clickButton(preferences, "Edit...", "Edit…");
-        SWTBotShell profileDialog = bot.activeShell();
-        profileDialog.bot().textWithLabel("Profile name:").setText("Sandbox Coordinated Preview");
-        profileDialog.bot().tabItem("Int to Enum (Sandbox)").activate();
-
-        ensureChecked(profileDialog, INT_TO_ENUM_MASTER_LABEL, true);
-        ensureChecked(profileDialog, INT_TO_ENUM_PROJECT_WIDE_LABEL, true);
-
-        clickButtonAndWaitForShellToClose(profileDialog, "Cleanup profile dialog", "OK");
-        preferences.activate();
-        clickButtonAndWaitForShellToClose(preferences, "Preferences", "Apply and Close", "OK");
+        cleanupWizard.configureProfile("Sandbox Coordinated Preview", "Int to Enum (Sandbox)", profile -> {
+            CleanupWizardDriver.ensureChecked(profile, INT_TO_ENUM_MASTER_LABEL, true);
+            CleanupWizardDriver.ensureChecked(profile, INT_TO_ENUM_PROJECT_WIDE_LABEL, true);
+        });
     }
 
     private static void configureMethodReuseCleanupProfile() {
-        openPreferences();
-        SWTBotShell preferences = bot.shell("Preferences").activate();
-        selectPreferencePath(preferences.bot().tree(), "Java", "Code Style", "Clean Up");
-        clickButton(preferences, "Edit...", "Edit…");
-        SWTBotShell profileDialog = bot.activeShell();
-        profileDialog.bot().textWithLabel("Profile name:")
-                .setText("Sandbox Method Reuse Preview");
-        profileDialog.bot().tabItem("Method Reuse (Sandbox)").activate();
-
-        ensureChecked(profileDialog, METHOD_REUSE_MASTER_LABEL, true);
-        ensureChecked(profileDialog, METHOD_REUSE_INLINE_LABEL, false);
-
-        clickButtonAndWaitForShellToClose(profileDialog, "Cleanup profile dialog", "OK");
-        preferences.activate();
-        clickButtonAndWaitForShellToClose(preferences, "Preferences", "Apply and Close", "OK");
+        cleanupWizard.configureProfile("Sandbox Method Reuse Preview", "Method Reuse (Sandbox)", profile -> {
+            CleanupWizardDriver.ensureChecked(profile, METHOD_REUSE_MASTER_LABEL, true);
+            CleanupWizardDriver.ensureChecked(profile, METHOD_REUSE_INLINE_LABEL, false);
+        });
     }
 
     private static void configureJFaceCleanupProfile() {
-        openPreferences();
-        SWTBotShell preferences = bot.shell("Preferences").activate();
-        selectPreferencePath(preferences.bot().tree(), "Java", "Code Style", "Clean Up");
-        clickButton(preferences, "Edit...", "Edit…");
-        SWTBotShell profileDialog = bot.activeShell();
-        profileDialog.bot().textWithLabel("Profile name:").setText("Sandbox Help Preview");
-        profileDialog.bot().tabItem("JFace Cleanup (Sandbox)").activate();
-
-        ensureChecked(profileDialog, JFACE_MASTER_LABEL, true);
-        ensureChecked(profileDialog, JFACE_MONITOR_LABEL, true);
-        ensureChecked(profileDialog, JFACE_VIEWER_SORTER_LABEL, true);
-        ensureChecked(profileDialog, JFACE_IMAGE_DATA_PROVIDER_LABEL, false);
-
-        clickButtonAndWaitForShellToClose(profileDialog, "Cleanup profile dialog", "OK");
-        preferences.activate();
-        clickButtonAndWaitForShellToClose(preferences, "Preferences", "Apply and Close", "OK");
-    }
-
-    private static void ensureChecked(SWTBotShell shell, String label, boolean checked) {
-        var checkBox = shell.bot().checkBox(label);
-        if (checkBox.isChecked() != checked) {
-            checkBox.click();
-        }
+        cleanupWizard.configureProfile("Sandbox Help Preview", "JFace Cleanup (Sandbox)", profile -> {
+            CleanupWizardDriver.ensureChecked(profile, JFACE_MASTER_LABEL, true);
+            CleanupWizardDriver.ensureChecked(profile, JFACE_MONITOR_LABEL, true);
+            CleanupWizardDriver.ensureChecked(profile, JFACE_VIEWER_SORTER_LABEL, true);
+            CleanupWizardDriver.ensureChecked(profile, JFACE_IMAGE_DATA_PROVIDER_LABEL, false);
+        });
     }
 
     private static void openProjectExplorer() {
-        SWTBotShell workbench = workbenchShell().activate();
+        SWTBotShell workbench = CleanupWizardDriver.workbenchShell().activate();
         showView(workbench, PROJECT_EXPLORER_VIEW);
         bot.viewByTitle("Project Explorer").setFocus();
     }
 
     private static SWTBotTree projectTree() {
         return bot.viewByTitle("Project Explorer").bot().tree();
-    }
-
-    private static SWTBotShell openCleanUpWizard(SWTBotTreeItem selection) {
-        WidgetNotFoundException failure = null;
-        for (String label : List.of("Clean Up...", "Clean Up…")) {
-            try {
-                selection.contextMenu("Source").menu(label).click();
-                return waitForCleanUpWizard();
-            } catch (WidgetNotFoundException exception) {
-                failure = exception;
-            }
-        }
-        throw failure;
-    }
-
-    private static SWTBotShell waitForCleanUpWizard() {
-        SWTBotShell[] result = new SWTBotShell[1];
-        bot.waitUntil(new DefaultCondition() {
-            @Override
-            public boolean test() {
-                for (SWTBotShell shell : bot.shells()) {
-                    if (!shell.getText().startsWith("Clean Up") || !shell.isOpen()) {
-                        continue;
-                    }
-                    try {
-                        shell.bot().button("Next >");
-                        shell.bot().button("Cancel");
-                        result[0] = shell;
-                        return true;
-                    } catch (WidgetNotFoundException exception) {
-                        // A cleanup profile or preferences shell can share the title.
-                    }
-                }
-                return false;
-            }
-
-            @Override
-            public String getFailureMessage() {
-                return "The real Clean Up wizard did not open; visible shells: " + visibleShells();
-            }
-        });
-        return result[0].activate();
-    }
-
-    private static CleanUpPreview openCleanUpPreview(SWTBotShell originatingWizard,
-            String expectedItemFragment) {
-        clickButton(originatingWizard, "Next >", "&Next >");
-        CleanUpWizardPage page = waitForCleanUpPreviewOrStatusPage(originatingWizard,
-                expectedItemFragment);
-        if (page.kind() == CleanUpWizardPageKind.CONDITION_STATUS) {
-            assertTrue(hasVisibleEnabledButton(page.shell(), "Next >"),
-                    () -> "The Clean Up condition status blocks the preview. "
-                            + "Visible shell controls:\n" + visibleShellDiagnostics());
-            clickButton(page.shell(), "Next >", "&Next >");
-            page = waitForCleanUpPreviewPage(page.shell(), expectedItemFragment);
-        }
-        return new CleanUpPreview(page.shell().activate(), page.previewTree());
-    }
-
-    private static CleanUpWizardPage waitForCleanUpPreviewOrStatusPage(
-            SWTBotShell originatingWizard, String expectedItemFragment) {
-        CleanUpWizardPage[] result = new CleanUpWizardPage[1];
-        bot.waitUntil(new DefaultCondition() {
-            @Override
-            public boolean test() {
-                for (SWTBotShell shell : candidateCleanUpShells(originatingWizard)) {
-                    SWTBotTree previewTree = visibleTreeContaining(shell, expectedItemFragment);
-                    if (previewTree != null) {
-                        result[0] = CleanUpWizardPage.preview(shell, previewTree);
-                        return true;
-                    }
-                    if (hasVisibleControl(shell, "RefactoringStatusViewer")) {
-                        result[0] = CleanUpWizardPage.conditionStatus(shell);
-                        return true;
-                    }
-                }
-                return false;
-            }
-
-            @Override
-            public String getFailureMessage() {
-                return "The Clean Up wizard exposed neither its condition status nor '"
-                        + expectedItemFragment + "'. Visible shell controls:\n"
-                        + visibleShellDiagnostics();
-            }
-        });
-        return result[0];
-    }
-
-    private static CleanUpWizardPage waitForCleanUpPreviewPage(SWTBotShell originatingWizard,
-            String expectedItemFragment) {
-        CleanUpWizardPage[] result = new CleanUpWizardPage[1];
-        bot.waitUntil(new DefaultCondition() {
-            @Override
-            public boolean test() {
-                for (SWTBotShell shell : candidateCleanUpShells(originatingWizard)) {
-                    SWTBotTree previewTree = visibleTreeContaining(shell, expectedItemFragment);
-                    if (previewTree != null) {
-                        result[0] = CleanUpWizardPage.preview(shell, previewTree);
-                        return true;
-                    }
-                }
-                return false;
-            }
-
-            @Override
-            public String getFailureMessage() {
-                return "The Clean Up preview did not expose the expected item '"
-                        + expectedItemFragment + "'. Visible shell controls:\n"
-                        + visibleShellDiagnostics();
-            }
-        });
-        return result[0];
-    }
-
-    private static List<SWTBotShell> candidateCleanUpShells(SWTBotShell originatingWizard) {
-        return java.util.Arrays.stream(bot.shells())
-                .filter(SWTBotShell::isOpen)
-                .filter(shell -> shell.widget == originatingWizard.widget
-                        || shell.getText().startsWith("Clean Up"))
-                .toList();
-    }
-
-    private static SWTBotTree visibleTreeContaining(SWTBotShell shell, String expectedItemFragment) {
-        for (Tree tree : visibleTreeControls(shell)) {
-            try {
-                SWTBotTree candidateTree = new SWTBotTree(tree);
-                if (findTreeItemContaining(candidateTree, expectedItemFragment) != null) {
-                    return candidateTree;
-                }
-            } catch (WidgetNotFoundException exception) {
-                // The page replaced the tree while SWTBot was inspecting it; retry later.
-            }
-        }
-        return null;
-    }
-
-    private static List<Tree> visibleTreeControls(SWTBotShell shell) {
-        return UIThreadRunnable.syncExec(shell.display, new Result<List<Tree>>() {
-            @Override
-            public List<Tree> run() {
-                List<Tree> trees = new ArrayList<>();
-                if (shell.widget.isDisposed()) {
-                    return trees;
-                }
-                Deque<Control> pending = new ArrayDeque<>();
-                pending.add(shell.widget);
-                while (!pending.isEmpty()) {
-                    Control control = pending.removeFirst();
-                    if (control instanceof Tree tree && tree.isVisible()) {
-                        trees.add(tree);
-                    }
-                    if (control instanceof Composite composite) {
-                        for (Control child : composite.getChildren()) {
-                            pending.addLast(child);
-                        }
-                    }
-                }
-                return trees;
-            }
-        });
-    }
-
-    private static boolean hasVisibleControl(SWTBotShell shell, String simpleClassName) {
-        return UIThreadRunnable.syncExec(shell.display, new Result<Boolean>() {
-            @Override
-            public Boolean run() {
-                if (shell.widget.isDisposed()) {
-                    return Boolean.FALSE;
-                }
-                Deque<Control> pending = new ArrayDeque<>();
-                pending.add(shell.widget);
-                while (!pending.isEmpty()) {
-                    Control control = pending.removeFirst();
-                    if (control.isVisible()
-                            && control.getClass().getSimpleName().equals(simpleClassName)) {
-                        return Boolean.TRUE;
-                    }
-                    if (control instanceof Composite composite) {
-                        for (Control child : composite.getChildren()) {
-                            pending.addLast(child);
-                        }
-                    }
-                }
-                return Boolean.FALSE;
-            }
-        });
-    }
-
-    private static boolean hasVisibleEnabledButton(SWTBotShell shell, String text) {
-        return UIThreadRunnable.syncExec(shell.display, new Result<Boolean>() {
-            @Override
-            public Boolean run() {
-                if (shell.widget.isDisposed()) {
-                    return Boolean.FALSE;
-                }
-                Deque<Control> pending = new ArrayDeque<>();
-                pending.add(shell.widget);
-                while (!pending.isEmpty()) {
-                    Control control = pending.removeFirst();
-                    if (control instanceof Button button && button.isVisible()
-                            && button.isEnabled()
-                            && text.equals(button.getText().replace("&", ""))) {
-                        return Boolean.TRUE;
-                    }
-                    if (control instanceof Composite composite) {
-                        for (Control child : composite.getChildren()) {
-                            pending.addLast(child);
-                        }
-                    }
-                }
-                return Boolean.FALSE;
-            }
-        });
     }
 
     private static void waitForCoordinatedPreviewDetails(SWTBotShell wizard) {
@@ -1292,80 +1018,9 @@ public class SandboxHelpScreenshotsSWTBotTest {
             @Override
             public String getFailureMessage() {
                 return "The coordinated Cleanup preview did not expose its atomic details. "
-                        + "Visible shell controls:\n" + visibleShellDiagnostics();
+                        + "Visible shell controls:\n" + cleanupWizard.visibleShellDiagnostics();
             }
         });
-    }
-
-    private static String visibleShellDiagnostics() {
-        List<String> shells = new ArrayList<>();
-        for (SWTBotShell shell : bot.shells()) {
-            if (!shell.isOpen()) {
-                continue;
-            }
-            shells.add(UIThreadRunnable.syncExec(shell.display, new Result<String>() {
-                @Override
-                public String run() {
-                    if (shell.widget.isDisposed()) {
-                        return "<disposed shell>";
-                    }
-                    StringBuilder description = new StringBuilder();
-                    description.append("Shell '").append(shell.widget.getText()).append("':");
-                    Deque<Control> pending = new ArrayDeque<>();
-                    pending.add(shell.widget);
-                    int count = 0;
-                    while (!pending.isEmpty() && count < 80) {
-                        Control control = pending.removeFirst();
-                        description.append("\n  ").append(control.getClass().getSimpleName())
-                                .append(" visible=").append(control.isVisible())
-                                .append(" enabled=").append(control.isEnabled());
-                        if (control instanceof Button button) {
-                            description.append(" text='").append(button.getText()).append("'");
-                        } else if (control instanceof Label label) {
-                            description.append(" text='").append(label.getText()).append("'");
-                        } else if (control instanceof Text text) {
-                            description.append(" text='").append(text.getText()).append("'");
-                        } else if (control instanceof StyledText text) {
-                            description.append(" text='").append(text.getText()).append("'");
-                        }
-                        count++;
-                        if (control instanceof Composite composite) {
-                            for (Control child : composite.getChildren()) {
-                                pending.addLast(child);
-                            }
-                        }
-                    }
-                    if (!pending.isEmpty()) {
-                        description.append("\n  ... additional controls omitted");
-                    }
-                    return description.toString();
-                }
-            }));
-        }
-        return String.join("\n", shells);
-    }
-
-    private static SWTBotTreeItem findTreeItemContaining(SWTBotTree tree, String needle) {
-        for (SWTBotTreeItem root : tree.getAllItems()) {
-            SWTBotTreeItem match = findDescendant(root, needle);
-            if (match != null) {
-                return match;
-            }
-        }
-        return null;
-    }
-
-    private static SWTBotTreeItem findDescendant(SWTBotTreeItem item, String needle) {
-        if (item.getText().contains(needle)) {
-            return item;
-        }
-        for (SWTBotTreeItem child : item.getItems()) {
-            SWTBotTreeItem match = findDescendant(child, needle);
-            if (match != null) {
-                return match;
-            }
-        }
-        return null;
     }
 
     private static String currentPlainText(SWTBotShell shell) {
@@ -1420,20 +1075,6 @@ public class SandboxHelpScreenshotsSWTBotTest {
             }
         }
         return texts;
-    }
-
-    private static void waitForShellToClose(SWTBotShell shell, String description) {
-        bot.waitUntil(new DefaultCondition() {
-            @Override
-            public boolean test() {
-                return shell.widget.isDisposed();
-            }
-
-            @Override
-            public String getFailureMessage() {
-                return description + " did not close";
-            }
-        });
     }
 
     private static void undoLastCleanup() throws Exception {
@@ -1651,15 +1292,6 @@ public class SandboxHelpScreenshotsSWTBotTest {
         git.commit().setMessage(message).setAuthor(identity).setCommitter(identity).call();
     }
 
-    private static SWTBotShell workbenchShell() {
-        return UIThreadRunnable.syncExec(Display.getDefault(), new Result<SWTBotShell>() {
-            @Override
-            public SWTBotShell run() {
-                return new SWTBotShell(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell());
-            }
-        });
-    }
-
     private static void showView(SWTBotShell workbench, String viewId) {
         UIThreadRunnable.syncExec(workbench.display, new VoidResult() {
             @Override
@@ -1672,69 +1304,6 @@ public class SandboxHelpScreenshotsSWTBotTest {
             }
         });
         bot.sleep(300);
-    }
-
-    private static void openPreferences() {
-        SWTBotShell workbench = workbenchShell().activate();
-        // Global bot.menu(...) first resolves the active shell. On GTK there is
-        // a brief gap after a modal dialog closes where no active shell exists.
-        // Bind the menu lookup to the known workbench shell instead.
-        workbench.bot().menu("Window").menu("Preferences...").click();
-        bot.shell("Preferences").activate();
-    }
-
-    private static void selectPreferencePath(SWTBotTree tree, String first, String... rest) {
-        SWTBotTreeItem item = tree.getTreeItem(first);
-        if (rest.length > 0) {
-            item.expand();
-        }
-        for (int index = 0; index < rest.length; index++) {
-            item = item.getNode(rest[index]);
-            if (index + 1 < rest.length) {
-                item.expand();
-            }
-        }
-        item.select();
-        bot.sleep(300);
-    }
-
-    private static void clickButton(SWTBotShell shell, String... labels) {
-        WidgetNotFoundException failure = null;
-        for (String label : labels) {
-            try {
-                shell.bot().button(label).click();
-                return;
-            } catch (WidgetNotFoundException exception) {
-                failure = exception;
-            }
-        }
-        throw failure;
-    }
-
-    private static void clickButtonAndWaitForShellToClose(SWTBotShell shell, String description,
-            String... labels) {
-        clickButton(shell, labels);
-        waitForShellToClose(shell, description);
-    }
-
-    private static void clickButtonAsync(SWTBotShell shell, String... labels) {
-        WidgetNotFoundException failure = null;
-        for (String label : labels) {
-            try {
-                var button = shell.bot().button(label);
-                shell.display.asyncExec(() -> {
-                    if (!button.widget.isDisposed() && button.widget.isEnabled()) {
-                        Event event = new Event();
-                        event.widget = button.widget;
-                        button.widget.notifyListeners(SWT.Selection, event);
-                    }
-                });
-                return;
-            } catch (WidgetNotFoundException exception) {
-                failure = exception;
-            }
-        }
-        throw failure;
     }
 
     private static void prepareForScreenshot(SWTBotShell shell) {
@@ -1809,11 +1378,6 @@ public class SandboxHelpScreenshotsSWTBotTest {
 
     private static void deleteGeneratedScreenshot(String helpBundle, String fileName) throws IOException {
         Files.deleteIfExists(outputRoot.resolve(helpBundle).resolve("images").resolve(fileName));
-    }
-
-    private static String visibleShells() {
-        return java.util.Arrays.stream(bot.shells()).filter(SWTBotShell::isOpen)
-                .map(SWTBotShell::getText).toList().toString();
     }
 
     private static void capture(SWTBotShell shell, String helpBundle, String fileName)
@@ -1904,7 +1468,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
 
     private static void closeAllDialogs() {
         try {
-            SWTBotShell workbench = workbenchShell();
+            SWTBotShell workbench = CleanupWizardDriver.workbenchShell();
             for (SWTBotShell shell : bot.shells()) {
                 if (shell.widget == workbench.widget || shell.widget.isDisposed()) {
                     continue;

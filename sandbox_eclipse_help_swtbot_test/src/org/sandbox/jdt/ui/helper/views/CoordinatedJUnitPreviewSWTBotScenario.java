@@ -43,16 +43,10 @@ import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
 
-import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Rectangle;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.swt.widgets.Tree;
 
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
@@ -73,26 +67,6 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseBundleClasspath;
 /** Real Workbench scenario for independently selectable atomic JUnit candidates. */
 final class CoordinatedJUnitPreviewSWTBotScenario {
 
-    private record CleanUpPreview(SWTBotShell shell, SWTBotTree tree) {
-    }
-
-    private enum CleanUpWizardPageKind {
-        CONDITION_STATUS,
-        PREVIEW
-    }
-
-    private record CleanUpWizardPage(SWTBotShell shell, CleanUpWizardPageKind kind,
-            SWTBotTree previewTree) {
-
-        private static CleanUpWizardPage conditionStatus(SWTBotShell shell) {
-            return new CleanUpWizardPage(shell, CleanUpWizardPageKind.CONDITION_STATUS, null);
-        }
-
-        private static CleanUpWizardPage preview(SWTBotShell shell, SWTBotTree tree) {
-            return new CleanUpWizardPage(shell, CleanUpWizardPageKind.PREVIEW, tree);
-        }
-    }
-
     private static final String CLEANUP_PREVIEW_PROJECT = "SandboxCleanupPreviewProject";
     private static final String PREVIEW_PACKAGE = "demo.junit.preview";
     private static final String PROJECT_EXPLORER_VIEW = "org.eclipse.ui.navigator.ProjectExplorer";
@@ -107,6 +81,7 @@ final class CoordinatedJUnitPreviewSWTBotScenario {
     private static final String SECOND_CANDIDATE_FRAGMENT = "SecondResource";
 
     private static SWTWorkbenchBot bot;
+    private static CleanupWizardDriver cleanupWizard;
     private static Path outputRoot;
 
     private CoordinatedJUnitPreviewSWTBotScenario() {
@@ -114,6 +89,7 @@ final class CoordinatedJUnitPreviewSWTBotScenario {
 
     static void prepareFixture() throws Exception {
         bot = new SWTWorkbenchBot();
+        cleanupWizard = new CleanupWizardDriver(bot);
         outputRoot = SandboxCheckout.locate(OUTPUT_PROPERTY);
         Files.deleteIfExists(outputRoot.resolve("sandbox_junit_cleanup_help")
                 .resolve("images").resolve(SCREENSHOT_FILE));
@@ -149,12 +125,12 @@ final class CoordinatedJUnitPreviewSWTBotScenario {
         SWTBotTreeItem packageNode = projectTree().getTreeItem(CLEANUP_PREVIEW_PROJECT).expand()
                 .getNode("src").expand().getNode(PREVIEW_PACKAGE);
         packageNode.select();
-        SWTBotShell wizard = openCleanUpWizard(packageNode);
-        CleanUpPreview preview = openCleanUpPreview(wizard, FIRST_CANDIDATE_FRAGMENT);
+        SWTBotShell wizard = cleanupWizard.openCleanUpWizard(packageNode);
+        CleanupWizardDriver.CleanUpPreview preview = cleanupWizard.openCleanUpPreview(wizard, FIRST_CANDIDATE_FRAGMENT);
         wizard = preview.shell();
 
-        SWTBotTreeItem firstCandidate = findTreeItemContaining(preview.tree(), FIRST_CANDIDATE_FRAGMENT);
-        SWTBotTreeItem secondCandidate = findTreeItemContaining(preview.tree(), SECOND_CANDIDATE_FRAGMENT);
+        SWTBotTreeItem firstCandidate = CleanupWizardDriver.findTreeItemContaining(preview.tree(), FIRST_CANDIDATE_FRAGMENT);
+        SWTBotTreeItem secondCandidate = CleanupWizardDriver.findTreeItemContaining(preview.tree(), SECOND_CANDIDATE_FRAGMENT);
         assertTrue(firstCandidate != null, "Preview must expose the first coordinated JUnit candidate");
         assertTrue(secondCandidate != null, "Preview must expose the second coordinated JUnit candidate");
         assertTrue(firstCandidate.isChecked() && secondCandidate.isChecked(),
@@ -175,8 +151,8 @@ final class CoordinatedJUnitPreviewSWTBotScenario {
         assertTrue(!secondCandidate.isChecked(),
                 "The second candidate must be independently deselectable as one whole unit");
 
-        clickButtonAsync(wizard, "Finish");
-        waitForShellToClose(wizard, "Clean Up wizard");
+        CleanupWizardDriver.clickButtonAsync(wizard, "Finish");
+        cleanupWizard.waitForShellToClose(wizard, "Clean Up wizard");
 
         String firstResourceAfter = readFile(firstResource);
         String firstTestAfter = readFile(firstTest);
@@ -264,248 +240,21 @@ final class CoordinatedJUnitPreviewSWTBotScenario {
     }
 
     private static void configureJUnitCleanupProfile() {
-        openPreferences();
-        SWTBotShell preferences = bot.shell("Preferences").activate();
-        selectPreferencePath(preferences.bot().tree(), "Java", "Code Style", "Clean Up");
-        clickButton(preferences, "Edit...", "Edit…");
-        SWTBotShell profileDialog = bot.activeShell();
-        profileDialog.bot().textWithLabel("Profile name:").setText("Sandbox Coordinated JUnit Preview");
-        profileDialog.bot().tabItem("JUnit Migration (Sandbox)").activate();
-
-        ensureChecked(profileDialog, JUNIT_MASTER_LABEL, true);
-        ensureChecked(profileDialog, JUNIT_BEST_EFFORT_LABEL, false);
-        ensureChecked(profileDialog, JUNIT_EXTERNAL_RESOURCE_LABEL, true);
-
-        clickButtonAndWaitForShellToClose(profileDialog, "Cleanup profile dialog", "OK");
-        preferences.activate();
-        clickButtonAndWaitForShellToClose(preferences, "Preferences", "Apply and Close", "OK");
-    }
-
-    private static void ensureChecked(SWTBotShell shell, String label, boolean checked) {
-        var checkBox = shell.bot().checkBox(label);
-        if (checkBox.isChecked() != checked) {
-            checkBox.click();
-        }
+        cleanupWizard.configureProfile("Sandbox Coordinated JUnit Preview", "JUnit Migration (Sandbox)", profile -> {
+            CleanupWizardDriver.ensureChecked(profile, JUNIT_MASTER_LABEL, true);
+            CleanupWizardDriver.ensureChecked(profile, JUNIT_BEST_EFFORT_LABEL, false);
+            CleanupWizardDriver.ensureChecked(profile, JUNIT_EXTERNAL_RESOURCE_LABEL, true);
+        });
     }
 
     private static void openProjectExplorer() {
-        SWTBotShell workbench = workbenchShell().activate();
+        SWTBotShell workbench = CleanupWizardDriver.workbenchShell().activate();
         showView(workbench, PROJECT_EXPLORER_VIEW);
         bot.viewByTitle("Project Explorer").setFocus();
     }
 
     private static SWTBotTree projectTree() {
         return bot.viewByTitle("Project Explorer").bot().tree();
-    }
-
-    private static SWTBotShell openCleanUpWizard(SWTBotTreeItem selection) {
-        WidgetNotFoundException failure = null;
-        for (String label : List.of("Clean Up...", "Clean Up…")) {
-            try {
-                selection.contextMenu("Source").menu(label).click();
-                return waitForCleanUpWizard();
-            } catch (WidgetNotFoundException exception) {
-                failure = exception;
-            }
-        }
-        throw failure;
-    }
-
-    private static SWTBotShell waitForCleanUpWizard() {
-        SWTBotShell[] result = new SWTBotShell[1];
-        bot.waitUntil(new DefaultCondition() {
-            @Override
-            public boolean test() {
-                for (SWTBotShell shell : bot.shells()) {
-                    if (!shell.getText().startsWith("Clean Up") || !shell.isOpen()) {
-                        continue;
-                    }
-                    try {
-                        shell.bot().button("Next >");
-                        shell.bot().button("Cancel");
-                        result[0] = shell;
-                        return true;
-                    } catch (WidgetNotFoundException exception) {
-                        // A profile or preferences shell can share the title.
-                    }
-                }
-                return false;
-            }
-
-            @Override
-            public String getFailureMessage() {
-                return "The real Clean Up wizard did not open; visible shells: " + visibleShells();
-            }
-        });
-        return result[0].activate();
-    }
-
-    private static CleanUpPreview openCleanUpPreview(SWTBotShell originatingWizard,
-            String expectedItemFragment) {
-        clickButton(originatingWizard, "Next >", "&Next >");
-        CleanUpWizardPage page = waitForCleanUpPreviewOrStatusPage(originatingWizard,
-                expectedItemFragment);
-        if (page.kind() == CleanUpWizardPageKind.CONDITION_STATUS) {
-            assertTrue(hasVisibleEnabledButton(page.shell(), "Next >"),
-                    () -> "The Clean Up condition status blocks the preview. Visible controls:\n"
-                            + visibleShellDiagnostics());
-            clickButton(page.shell(), "Next >", "&Next >");
-            page = waitForCleanUpPreviewPage(page.shell(), expectedItemFragment);
-        }
-        return new CleanUpPreview(page.shell().activate(), page.previewTree());
-    }
-
-    private static CleanUpWizardPage waitForCleanUpPreviewOrStatusPage(
-            SWTBotShell originatingWizard, String expectedItemFragment) {
-        CleanUpWizardPage[] result = new CleanUpWizardPage[1];
-        bot.waitUntil(new DefaultCondition() {
-            @Override
-            public boolean test() {
-                for (SWTBotShell shell : candidateCleanUpShells(originatingWizard)) {
-                    SWTBotTree previewTree = visibleTreeContaining(shell, expectedItemFragment);
-                    if (previewTree != null) {
-                        result[0] = CleanUpWizardPage.preview(shell, previewTree);
-                        return true;
-                    }
-                    if (hasVisibleControl(shell, "RefactoringStatusViewer")) {
-                        result[0] = CleanUpWizardPage.conditionStatus(shell);
-                        return true;
-                    }
-                }
-                return false;
-            }
-
-            @Override
-            public String getFailureMessage() {
-                return "The Clean Up wizard exposed neither its condition status nor '"
-                        + expectedItemFragment + "'. Visible controls:\n" + visibleShellDiagnostics();
-            }
-        });
-        return result[0];
-    }
-
-    private static CleanUpWizardPage waitForCleanUpPreviewPage(SWTBotShell originatingWizard,
-            String expectedItemFragment) {
-        CleanUpWizardPage[] result = new CleanUpWizardPage[1];
-        bot.waitUntil(new DefaultCondition() {
-            @Override
-            public boolean test() {
-                for (SWTBotShell shell : candidateCleanUpShells(originatingWizard)) {
-                    SWTBotTree previewTree = visibleTreeContaining(shell, expectedItemFragment);
-                    if (previewTree != null) {
-                        result[0] = CleanUpWizardPage.preview(shell, previewTree);
-                        return true;
-                    }
-                }
-                return false;
-            }
-
-            @Override
-            public String getFailureMessage() {
-                return "The Clean Up preview did not expose '" + expectedItemFragment
-                        + "'. Visible controls:\n" + visibleShellDiagnostics();
-            }
-        });
-        return result[0];
-    }
-
-    private static List<SWTBotShell> candidateCleanUpShells(SWTBotShell originatingWizard) {
-        return Stream.of(bot.shells()).filter(SWTBotShell::isOpen)
-                .filter(shell -> shell.widget == originatingWizard.widget
-                        || shell.getText().startsWith("Clean Up"))
-                .toList();
-    }
-
-    private static SWTBotTree visibleTreeContaining(SWTBotShell shell, String expectedItemFragment) {
-        for (Tree tree : visibleTreeControls(shell)) {
-            try {
-                SWTBotTree candidateTree = new SWTBotTree(tree);
-                if (findTreeItemContaining(candidateTree, expectedItemFragment) != null) {
-                    return candidateTree;
-                }
-            } catch (WidgetNotFoundException exception) {
-                // The page replaced the tree while SWTBot was inspecting it; retry.
-            }
-        }
-        return null;
-    }
-
-    private static List<Tree> visibleTreeControls(SWTBotShell shell) {
-        return UIThreadRunnable.syncExec(shell.display, new Result<List<Tree>>() {
-            @Override
-            public List<Tree> run() {
-                List<Tree> trees = new ArrayList<>();
-                if (shell.widget.isDisposed()) {
-                    return trees;
-                }
-                Deque<Control> pending = new ArrayDeque<>();
-                pending.add(shell.widget);
-                while (!pending.isEmpty()) {
-                    Control control = pending.removeFirst();
-                    if (control instanceof Tree tree && tree.isVisible()) {
-                        trees.add(tree);
-                    }
-                    if (control instanceof Composite composite) {
-                        for (Control child : composite.getChildren()) {
-                            pending.addLast(child);
-                        }
-                    }
-                }
-                return trees;
-            }
-        });
-    }
-
-    private static boolean hasVisibleControl(SWTBotShell shell, String simpleClassName) {
-        return UIThreadRunnable.syncExec(shell.display, new Result<Boolean>() {
-            @Override
-            public Boolean run() {
-                if (shell.widget.isDisposed()) {
-                    return Boolean.FALSE;
-                }
-                Deque<Control> pending = new ArrayDeque<>();
-                pending.add(shell.widget);
-                while (!pending.isEmpty()) {
-                    Control control = pending.removeFirst();
-                    if (control.isVisible()
-                            && control.getClass().getSimpleName().equals(simpleClassName)) {
-                        return Boolean.TRUE;
-                    }
-                    if (control instanceof Composite composite) {
-                        for (Control child : composite.getChildren()) {
-                            pending.addLast(child);
-                        }
-                    }
-                }
-                return Boolean.FALSE;
-            }
-        });
-    }
-
-    private static boolean hasVisibleEnabledButton(SWTBotShell shell, String text) {
-        return UIThreadRunnable.syncExec(shell.display, new Result<Boolean>() {
-            @Override
-            public Boolean run() {
-                if (shell.widget.isDisposed()) {
-                    return Boolean.FALSE;
-                }
-                Deque<Control> pending = new ArrayDeque<>();
-                pending.add(shell.widget);
-                while (!pending.isEmpty()) {
-                    Control control = pending.removeFirst();
-                    if (control instanceof Button button && button.isVisible() && button.isEnabled()
-                            && text.equals(button.getText().replace("&", ""))) {
-                        return Boolean.TRUE;
-                    }
-                    if (control instanceof Composite composite) {
-                        for (Control child : composite.getChildren()) {
-                            pending.addLast(child);
-                        }
-                    }
-                }
-                return Boolean.FALSE;
-            }
-        });
     }
 
     private static void waitForCoordinatedPreviewDetails(SWTBotShell wizard,
@@ -532,32 +281,9 @@ final class CoordinatedJUnitPreviewSWTBotScenario {
             @Override
             public String getFailureMessage() {
                 return "The coordinated JUnit preview did not expose its atomic details. "
-                        + "Visible controls:\n" + visibleShellDiagnostics();
+                        + "Visible controls:\n" + cleanupWizard.visibleShellDiagnostics();
             }
         });
-    }
-
-    private static SWTBotTreeItem findTreeItemContaining(SWTBotTree tree, String needle) {
-        for (SWTBotTreeItem root : tree.getAllItems()) {
-            SWTBotTreeItem match = findDescendant(root, needle);
-            if (match != null) {
-                return match;
-            }
-        }
-        return null;
-    }
-
-    private static SWTBotTreeItem findDescendant(SWTBotTreeItem item, String needle) {
-        if (item.getText().contains(needle)) {
-            return item;
-        }
-        for (SWTBotTreeItem child : item.getItems()) {
-            SWTBotTreeItem match = findDescendant(child, needle);
-            if (match != null) {
-                return match;
-            }
-        }
-        return null;
     }
 
     private static String currentPlainText(SWTBotShell shell) {
@@ -672,105 +398,10 @@ final class CoordinatedJUnitPreviewSWTBotScenario {
         });
     }
 
-    private static void openPreferences() {
-        SWTBotShell workbench = workbenchShell().activate();
-        workbench.bot().menu("Window").menu("Preferences...").click();
-        bot.shell("Preferences").activate();
-    }
-
-    private static void selectPreferencePath(SWTBotTree tree, String first, String... rest) {
-        SWTBotTreeItem item = tree.getTreeItem(first);
-        if (rest.length > 0) {
-            item.expand();
-        }
-        for (int index = 0; index < rest.length; index++) {
-            item = item.getNode(rest[index]);
-            if (index + 1 < rest.length) {
-                item.expand();
-            }
-        }
-        item.select();
-        SWTBotTreeItem selectedItem = item;
-        bot.waitUntil(new DefaultCondition() {
-            @Override
-            public boolean test() {
-                return selectedItem.isSelected();
-            }
-
-            @Override
-            public String getFailureMessage() {
-                return "The requested preference node was not selected: "
-                        + selectedItem.getText();
-            }
-        });
-    }
-
-    private static void clickButton(SWTBotShell shell, String... labels) {
-        WidgetNotFoundException failure = null;
-        for (String label : labels) {
-            try {
-                shell.bot().button(label).click();
-                return;
-            } catch (WidgetNotFoundException exception) {
-                failure = exception;
-            }
-        }
-        throw failure;
-    }
-
-    private static void clickButtonAndWaitForShellToClose(SWTBotShell shell, String description,
-            String... labels) {
-        clickButton(shell, labels);
-        waitForShellToClose(shell, description);
-    }
-
-    private static void clickButtonAsync(SWTBotShell shell, String... labels) {
-        WidgetNotFoundException failure = null;
-        for (String label : labels) {
-            try {
-                var button = shell.bot().button(label);
-                shell.display.asyncExec(() -> {
-                    if (!button.widget.isDisposed() && button.widget.isEnabled()) {
-                        Event event = new Event();
-                        event.widget = button.widget;
-                        button.widget.notifyListeners(SWT.Selection, event);
-                    }
-                });
-                return;
-            } catch (WidgetNotFoundException exception) {
-                failure = exception;
-            }
-        }
-        throw failure;
-    }
-
-    private static void waitForShellToClose(SWTBotShell shell, String description) {
-        bot.waitUntil(new DefaultCondition() {
-            @Override
-            public boolean test() {
-                return shell.widget.isDisposed();
-            }
-
-            @Override
-            public String getFailureMessage() {
-                return description + " did not close";
-            }
-        });
-    }
-
     private static void undoLastCleanup() throws Exception {
         IUndoManager undoManager = RefactoringCore.getUndoManager();
         assertTrue(undoManager.anythingToUndo(), "Cleanup operation should be undoable");
         undoManager.performUndo(null, new NullProgressMonitor());
-    }
-
-    private static SWTBotShell workbenchShell() {
-        return UIThreadRunnable.syncExec(Display.getDefault(), new Result<SWTBotShell>() {
-            @Override
-            public SWTBotShell run() {
-                return new SWTBotShell(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell());
-            }
-        });
     }
 
     private static void showView(SWTBotShell workbench, String viewId) {
@@ -784,54 +415,6 @@ final class CoordinatedJUnitPreviewSWTBotScenario {
                 }
             }
         });
-    }
-
-    private static String visibleShells() {
-        return Stream.of(bot.shells()).filter(SWTBotShell::isOpen)
-                .map(SWTBotShell::getText).toList().toString();
-    }
-
-    private static String visibleShellDiagnostics() {
-        List<String> shells = new ArrayList<>();
-        for (SWTBotShell shell : bot.shells()) {
-            if (!shell.isOpen()) {
-                continue;
-            }
-            shells.add(UIThreadRunnable.syncExec(shell.display, new Result<String>() {
-                @Override
-                public String run() {
-                    if (shell.widget.isDisposed()) {
-                        return "<disposed shell>";
-                    }
-                    StringBuilder result = new StringBuilder("Shell '")
-                            .append(shell.widget.getText()).append("':");
-                    Deque<Control> pending = new ArrayDeque<>();
-                    pending.add(shell.widget);
-                    int count = 0;
-                    while (!pending.isEmpty() && count < 80) {
-                        Control control = pending.removeFirst();
-                        result.append("\n  ").append(control.getClass().getSimpleName())
-                                .append(" visible=").append(control.isVisible())
-                                .append(" enabled=").append(control.isEnabled());
-                        if (control instanceof Button button) {
-                            result.append(" text='").append(button.getText()).append("'");
-                        } else if (control instanceof Label label) {
-                            result.append(" text='").append(label.getText()).append("'");
-                        } else if (control instanceof Text text) {
-                            result.append(" text='").append(text.getText()).append("'");
-                        }
-                        count++;
-                        if (control instanceof Composite composite) {
-                            for (Control child : composite.getChildren()) {
-                                pending.addLast(child);
-                            }
-                        }
-                    }
-                    return result.toString();
-                }
-            }));
-        }
-        return String.join("\n", shells);
     }
 
     private static IProject project() {
