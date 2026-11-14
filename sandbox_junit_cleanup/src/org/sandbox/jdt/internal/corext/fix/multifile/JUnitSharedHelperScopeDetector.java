@@ -66,7 +66,7 @@ import org.sandbox.jdt.cleanup.multifile.RelatedCompilationUnitSearch;
  * consists of exactly one direct JUnit 4 {@code Assert} or {@code Assume}
  * invocation. Public/protected helpers and overridable package-private instance
  * methods remain outside automatic migration. An assertion-only profile can
- * also follow static source forwarders to a verified boolean assertion wrapper.
+ * also follow static or private source forwarders to a verified boolean assertion wrapper.
  * Each method on that path needs a complete caller search.</p>
  */
 public final class JUnitSharedHelperScopeDetector {
@@ -76,7 +76,7 @@ public final class JUnitSharedHelperScopeDetector {
 	private record HelperCandidate(IMethod method, String bindingKey, ICompilationUnit compilationUnit) {
 	}
 
-	/** Ordinary helper seeds and static helper paths requiring a complete assertion-only closure. */
+	/** Ordinary helper seeds and exact-dispatch helper paths requiring a complete assertion-only closure. */
 	public record HelperSearchSeeds(JUnitScopeCandidateDetector.SearchSeeds ordinary,
 			List<List<IJavaElement>> assertionPaths) {
 		public HelperSearchSeeds {
@@ -97,7 +97,7 @@ public final class JUnitSharedHelperScopeDetector {
 		return findSearchSeeds(project, currentScope, migrateAssertions, migrateAssumptions, false, monitor).ordinary();
 	}
 
-	/** Also traces eligible static assertion paths when the cleanup profile allows it. */
+	/** Also traces eligible assertion paths with statically known targets when the cleanup profile allows it. */
 	public static HelperSearchSeeds findSearchSeeds(IJavaProject project,
 			Collection<ICompilationUnit> currentScope, boolean migrateAssertions,
 			boolean migrateAssumptions, boolean allowAssertionPaths, IProgressMonitor monitor) {
@@ -214,7 +214,7 @@ public final class JUnitSharedHelperScopeDetector {
 			@Override
 			public boolean visit(ExpressionMethodReference node) {
 				if (followMethodReferences) {
-					collectCandidate(resolvedStaticDeclaration(node.resolveMethodBinding()), true);
+					collectCandidate(exactDispatchDeclaration(node.resolveMethodBinding()), true);
 				}
 				return true;
 			}
@@ -222,7 +222,7 @@ public final class JUnitSharedHelperScopeDetector {
 			@Override
 			public boolean visit(TypeMethodReference node) {
 				if (followMethodReferences) {
-					collectCandidate(resolvedStaticDeclaration(node.resolveMethodBinding()), true);
+					collectCandidate(exactDispatchDeclaration(node.resolveMethodBinding()), true);
 				}
 				return true;
 			}
@@ -240,7 +240,7 @@ public final class JUnitSharedHelperScopeDetector {
 	}
 
 	/**
-	 * Follows exact static declarations until a direct JUnit assertion terminates
+	 * Follows non-overridable declarations until a direct JUnit assertion terminates
 	 * the path. A repeated key is a cycle, and a missing or ineligible edge
 	 * invalidates the entire path.
 	 */
@@ -257,14 +257,14 @@ public final class JUnitSharedHelperScopeDetector {
 			}
 			CompilationUnit root= roots.get(handle);
 			if (root == null || !(root.findDeclaringNode(current.bindingKey()) instanceof MethodDeclaration method)
-					|| !Modifier.isStatic(method.getModifiers())) {
+					|| !hasExactDispatch(method.getModifiers())) {
 				break;
 			}
 			MethodInvocation invocation= directInvocation(method);
 			if (invocation == null) {
 				break;
 			}
-			IMethodBinding callee= resolvedStaticDeclaration(invocation.resolveMethodBinding());
+			IMethodBinding callee= exactDispatchDeclaration(invocation.resolveMethodBinding());
 			if (callee == null) {
 				break;
 			}
@@ -408,17 +408,21 @@ public final class JUnitSharedHelperScopeDetector {
 		if (Modifier.isPublic(modifiers) || Modifier.isProtected(modifiers)) {
 			return false;
 		}
-		return Modifier.isPrivate(modifiers) || Modifier.isStatic(modifiers);
+		return hasExactDispatch(modifiers);
 	}
 
 	private static IMethodBinding declaration(IMethodBinding binding) {
 		return binding == null ? null : binding.getMethodDeclaration();
 	}
 
-	private static IMethodBinding resolvedStaticDeclaration(IMethodBinding binding) {
+	private static IMethodBinding exactDispatchDeclaration(IMethodBinding binding) {
 		IMethodBinding method= binding == null || binding.isRecovered() ? null : binding.getMethodDeclaration();
 		return method != null && !method.isRecovered() && method.getKey() != null
-				&& Modifier.isStatic(method.getModifiers()) ? method : null;
+				&& hasExactDispatch(method.getModifiers()) ? method : null;
+	}
+
+	private static boolean hasExactDispatch(int modifiers) {
+		return Modifier.isStatic(modifiers) || Modifier.isPrivate(modifiers);
 	}
 
 	private static List<ICompilationUnit> normalize(IJavaProject project,
