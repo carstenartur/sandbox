@@ -27,6 +27,7 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 
 import org.sandbox.jdt.container.analysis.AppendOnlyArraySeedDetector;
 import org.sandbox.jdt.container.analysis.BinaryArrayBoundaryAnalyzer;
+import org.sandbox.jdt.container.analysis.ContainerConcurrencyAnalyzer;
 import org.sandbox.jdt.container.analysis.ContainerContractInferrer;
 import org.sandbox.jdt.container.analysis.LocalArrayUsageAnalyzer;
 import org.sandbox.jdt.container.analysis.LocalDequeSequenceAnalyzer;
@@ -36,14 +37,14 @@ import org.sandbox.jdt.container.analysis.ParallelArrayRecordAnalyzer;
 import org.sandbox.jdt.container.analysis.RecordKeyLookupAnalyzer;
 import org.sandbox.jdt.container.analysis.SynchronizedListIterationAnalyzer;
 import org.sandbox.jdt.container.api.ConcurrencyProtocol.Evidence;
-import org.sandbox.jdt.container.api.ConcurrencyProtocolAssessment;
-import org.sandbox.jdt.container.api.ConcurrencyProtocolAssessment.DiagnosticOnly;
+import org.sandbox.jdt.container.api.ConcurrencyProtocolAssessment.RecommendedMigration;
 import org.sandbox.jdt.container.api.ConcurrencyProtocolAssessment.RetainExistingLocking;
-import org.sandbox.jdt.container.api.ContainerRecommendation;
+import org.sandbox.jdt.container.api.ConcurrencyProtocolAssessment;
 import org.sandbox.jdt.container.api.ContainerRecommendation.AutomationLevel;
 import org.sandbox.jdt.container.api.ContainerRecommendation.ContractAssessment;
-import org.sandbox.jdt.container.api.ContainerUsageProfile;
+import org.sandbox.jdt.container.api.ContainerRecommendation;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.AnalysisCompleteness;
+import org.sandbox.jdt.container.api.ContainerUsageProfile;
 import org.sandbox.jdt.container.api.TargetContainerContract;
 import org.sandbox.jdt.container.api.UsageEvidence;
 
@@ -105,13 +106,18 @@ final class ContainerAnalysisService {
 					.forEach(profile -> appendRows(compilationUnitHandle, rows, profile));
 		profiles.values().forEach(profile -> appendRows(compilationUnitHandle, rows, profile));
 		checkCanceled(monitor);
-		for (DiagnosticOnly observation : synchronizedListAnalyzer.analyze(root)) {
-			appendConcurrencyRows(compilationUnitHandle, rows, observation);
+		var existing= new ArrayList<ConcurrencyProtocolAssessment>(synchronizedListAnalyzer.analyze(root));
+		existing.addAll(synchronizedListAnalyzer.assessDrains(root));
+		var fields= ContainerConcurrencyAnalyzer.analyze(root, () -> checkCanceled(monitor), existing);
+		for (var assessment : existing) {
+			if (fields.stream().noneMatch(whole -> whole instanceof RetainExistingLocking
+					&& whole.protocol().identity().equals(assessment.protocol().identity()))) {
+				appendConcurrencyRows(compilationUnitHandle, rows, assessment);
+			}
 		}
-		for (var assessment : synchronizedListAnalyzer.assessDrains(root)) {
+		for (var assessment : fields) {
 			appendConcurrencyRows(compilationUnitHandle, rows, assessment);
 		}
-		checkCanceled(monitor);
 		rows.sort(Comparator.comparingInt(ContainerAnalysisRow::sourceStart)
 				.thenComparing(ContainerAnalysisRow::candidate)
 				.thenComparing(ContainerAnalysisRow::evidenceKind));
@@ -131,11 +137,21 @@ final class ContainerAnalysisService {
 	private static ContainerAnalysisRow concurrencyRow(String compilationUnitHandle,
 			ConcurrencyProtocolAssessment observation, Evidence evidence) {
 		boolean retain= observation instanceof RetainExistingLocking;
+		String target= retain ? "Retain existing locking" : "No proven target"; //$NON-NLS-1$ //$NON-NLS-2$
+		String confidence= retain ? "HIGH" : "N/A"; //$NON-NLS-1$ //$NON-NLS-2$
+		if (observation instanceof RecommendedMigration recommendation) {
+			target= recommendation.strategy().name();
+			confidence= recommendation.confidence().name();
+		}
+		var summary= observation.protocol().summary();
+		String semantics= String.join(System.lineSeparator(), observation.explanations()) + System.lineSeparator()
+				+ "Iteration: " + summary.iteration() + "; atomicity: " + summary.atomicity() + "; workload: " + summary.workload() //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				+ "; callbacks: " + observation.protocol().reentrancy(); //$NON-NLS-1$
 		return new ContainerAnalysisRow(compilationUnitHandle, observation.protocol().identity().displayName(),
 				observation.protocol().summary().synchronization().name(),
-				retain ? "Retain existing locking" : "No proven target", retain ? "HIGH" : "N/A", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+				target, confidence,
 				retain ? "NO_MIGRATION_RECOMMENDED" : AutomationLevel.REPORT_ONLY.name(), //$NON-NLS-1$
-				evidence.kind().name(), evidence.summary(), String.join(System.lineSeparator(), observation.explanations()),
+				evidence.kind().name(), evidence.summary(), semantics,
 				evidence.sourceStart(), evidence.sourceLength());
 	}
 
