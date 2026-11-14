@@ -151,7 +151,24 @@ public final class CoordinatedContainerCleanUpCore
 			}
 			return ClosedSourceReturnMigrationFix.create(unit, context.getAST(), (ClosedSourceReturnMigrationPlan) plan);
 		}
-		return ClosedSourceParameterMigrationFix.create(unit, context.getAST(), (ClosedSourceParameterMigrationPlan) plan);
+		return revalidateParameterAndCreateFix(unit, context, (ClosedSourceParameterMigrationPlan) plan);
+	}
+
+	private ICleanUpFix revalidateParameterAndCreateFix(ICompilationUnit unit, CleanUpContext context,
+			ClosedSourceParameterMigrationPlan parameter) throws CoreException {
+		ICleanUpFix fix= ClosedSourceParameterMigrationFix.create(unit, context.getAST(), parameter);
+		List<ICompilationUnit> affected= new ArrayList<>();
+		for (String handle : parameter.affectedCompilationUnitHandles()) {
+			if (!(JavaCore.create(handle) instanceof ICompilationUnit source) || !source.exists()) {
+				throw new CoreException(Status.error("A required parameter declaration or caller is missing.")); //$NON-NLS-1$
+			}
+			affected.add(source);
+		}
+		var fresh= migrationService.plan(unit.getJavaProject(), affected.toArray(ICompilationUnit[]::new), null);
+		if (fresh.plan().filter(parameter::equals).isEmpty()) {
+			throw new CoreException(Status.error("A parameter declaration, its callers or their observed uses changed.")); //$NON-NLS-1$
+		}
+		return fix;
 	}
 
 	/** Returns the most recent privacy-preserving planning diagnostics for the project. */
