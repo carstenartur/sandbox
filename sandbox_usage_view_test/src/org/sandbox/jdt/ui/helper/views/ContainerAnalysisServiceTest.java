@@ -216,6 +216,42 @@ public class ContainerAnalysisServiceTest {
 	}
 
 	@Test
+	public void atomicDrainReportsWhyTheWrapperMonitorMustBeRetained() {
+		String source= """
+				import java.util.*;
+				final class Sample {
+				    private final List<String> entries = Collections.synchronizedList(new ArrayList<>());
+				    void offer(String value) { entries.add(value); }
+				    List<String> drain() {
+				        synchronized (entries) {
+				            List<String> batch = new ArrayList<>(entries);
+				            entries.clear();
+				            return batch;
+				        }
+				    }
+				}
+				""";
+		List<ContainerAnalysisRow> rows= service.analyze(parse(source), "=Sample"); //$NON-NLS-1$
+		assertEquals(2, rows.size(), rows::toString);
+		assertTrue(rows.stream().allMatch(row -> "NO_MIGRATION_RECOMMENDED".equals(row.status()))); //$NON-NLS-1$
+		assertTrue(rows.stream().allMatch(row -> "Retain existing locking".equals(row.targetContract()))); //$NON-NLS-1$
+		assertEquals("LOCKED_WRITE", rows.get(0).evidenceKind()); //$NON-NLS-1$
+		assertEquals("entries.add(value)", fragment(source, rows.get(0))); //$NON-NLS-1$
+		assertEquals("DRAIN", rows.get(1).evidenceKind()); //$NON-NLS-1$
+		assertEquals("new ArrayList<>(entries)", fragment(source, rows.get(1))); //$NON-NLS-1$
+		assertTrue(rows.get(1).semanticSummary().contains("between the snapshot and clear")); //$NON-NLS-1$
+		for (String changed : List.of(source.replace("synchronized (entries)", "synchronized (this)"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("void offer", "List<String> expose() { return entries; } void offer"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("entries.clear();", "entries.clear(); offer(null);"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("entries.add(value);", "new Thread(() -> entries.add(value)).start();"))) { //$NON-NLS-1$ //$NON-NLS-2$
+			var ambiguous= service.analyze(parse(changed), "=Sample"); //$NON-NLS-1$
+			assertTrue(ambiguous.stream().noneMatch(row -> "NO_MIGRATION_RECOMMENDED".equals(row.status())), changed); //$NON-NLS-1$
+			assertTrue(ambiguous.stream().anyMatch(row -> "UNRESOLVED_BOUNDARY".equals(row.evidenceKind()) //$NON-NLS-1$
+					&& "REPORT_ONLY".equals(row.status())), changed); //$NON-NLS-1$
+		}
+	}
+
+	@Test
 	public void synchronizedListIterationsShowSourceEvidenceWithoutMigrationAdvice() {
 		String source= """
 				import java.util.ArrayList;

@@ -28,6 +28,7 @@ import org.sandbox.jdt.container.api.ConcurrencyProtocol;
 import org.sandbox.jdt.container.api.ConcurrencyProtocol.EvidenceKind;
 import org.sandbox.jdt.container.api.ConcurrencyProtocol.ReentrancyContract;
 import org.sandbox.jdt.container.api.ConcurrencyProtocolAssessment.DiagnosticOnly;
+import org.sandbox.jdt.container.api.ConcurrencyProtocolAssessment.RetainExistingLocking;
 import org.sandbox.jdt.container.api.ConcurrencyProtocolAssessment.Severity;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.AnalysisCompleteness;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.AtomicityRequirement;
@@ -162,6 +163,70 @@ class SynchronizedListIterationAnalyzerTest {
 		assertEquals(1, observations.size());
 		assertTrue(observations.getFirst().protocol().hasUnresolvedBoundary());
 		assertTrue(analyzer.analyze(parse(source, false)).isEmpty());
+	}
+
+	@Test
+	void distinguishesLiveReturnsSnapshotsAndDeferredReturns() {
+		String source= """
+				import java.util.*;
+				import java.util.function.Supplier;
+				class Sample {
+				    private final List<String> entries = Collections.synchronizedList(new ArrayList<>());
+				    List<String> live() { return entries; }
+				    List<String> snapshot() { synchronized(entries) { return List.copyOf(this.entries); } }
+				    List<String> backingCopy() { return new ArrayList<>(entries); }
+				    List<String> other(Sample other) { return other.entries; }
+				    Supplier<List<String>> later() { return () -> { return entries; }; }
+				    private List<String> internal() { return entries; }
+				}
+				""";
+		List<DiagnosticOnly> results= analyze(source);
+		assertEquals(2, results.size());
+		var live= results.get(0).protocol();
+		assertEquals("LIVE_WRAPPER_RETURN", live.evidence().getFirst().kind().name()); //$NON-NLS-1$
+		assertTrue(live.evidence().getFirst().summary().contains("monitor")); //$NON-NLS-1$
+		assertEquals("entries", anchor(source, live.evidence().getFirst())); //$NON-NLS-1$
+		var copy= results.get(1).protocol();
+		assertEquals(EvidenceKind.SNAPSHOT_PUBLICATION, copy.evidence().getFirst().kind());
+		assertEquals(IterationSemantics.IMMUTABLE_SNAPSHOT, copy.summary().iteration());
+		assertTrue(copy.hasSingleProtectingLock());
+		assertEquals("List.copyOf(this.entries)", anchor(source, copy.evidence().getFirst())); //$NON-NLS-1$
+		assertFalse(results.get(1).permitsSourceRewrite());
+		assertTrue(analyzer.analyze(parse(source, false)).isEmpty());
+	}
+
+	@Test
+	void classifiesTheSharedProducerAndDrainMonitorFromResolvedSource() {
+		String source= """
+				import java.util.*;
+				final class Sample {
+				    private final List<String> pending = Collections.synchronizedList(new ArrayList<>());
+				    void enqueue(String item) { pending.add(item); }
+				    List<String> takeBatch() {
+				        synchronized (pending) {
+				            var result = new ArrayList<>(pending);
+				            pending.clear();
+				            return result;
+				        }
+				    }
+				}
+				""";
+		var assessments= analyzer.assessDrains(parse(source, true));
+		assertEquals(1, assessments.size());
+		assertTrue(assessments.getFirst() instanceof RetainExistingLocking);
+		var assessment= assessments.getFirst();
+		assertFalse(assessment.permitsSourceRewrite());
+		var protocol= assessment.protocol();
+		assertTrue(protocol.hasSingleProtectingLock());
+		assertEquals(AtomicityRequirement.DRAIN, protocol.summary().atomicity());
+		assertEquals(WorkloadShape.PRODUCER_CONSUMER, protocol.summary().workload());
+		assertEquals(ReentrancyContract.NO_CALLBACKS_OBSERVED, protocol.reentrancy());
+		assertEquals(AnalysisCompleteness.LOCAL_USAGE_COMPLETE, protocol.completeness());
+		assertTrue(analyzer.assessDrains(parse(source, false)).isEmpty());
+	}
+
+	private static String anchor(String source, ConcurrencyProtocol.Evidence evidence) {
+		return source.substring(evidence.sourceStart(), evidence.sourceStart() + evidence.sourceLength());
 	}
 
 	private List<DiagnosticOnly> analyze(String source) {
