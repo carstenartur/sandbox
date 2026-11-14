@@ -225,6 +225,44 @@ class SynchronizedListIterationAnalyzerTest {
 		assertTrue(analyzer.assessDrains(parse(source, false)).isEmpty());
 	}
 
+	@Test
+	void reportsCheckThenAddOnlyForTheSameListAndStableElement() {
+		String source= """
+				import java.util.*;
+				class Sample {
+					private final List<String> entries = Collections.synchronizedList(new ArrayList<>());
+					private final List<String> other = Collections.synchronizedList(new ArrayList<>());
+					void add(String value, String different) {
+						synchronized (this.entries) {
+							if (!entries.contains(value)) { this.entries.add(value); }
+						}
+						synchronized (this) {
+							if (!entries.contains(value)) entries.add(value);
+						}
+						if (!entries.contains(value)) other.add(value);
+						if (!entries.contains(value)) entries.add(different);
+						if (!entries.contains(value)) { entries.add(value); entries.clear(); }
+						synchronized (entries) {
+							Runnable deferred = () -> { if (!entries.contains(value)) entries.add(value); };
+						}
+					}
+				}
+				""";
+		var reports= analyze(source);
+		assertEquals(3, reports.size());
+		var locked= reports.get(0);
+		assertEquals(AtomicityRequirement.CHECK_THEN_ACT, locked.protocol().summary().atomicity());
+		assertTrue(locked.protocol().hasSingleProtectingLock());
+		assertEquals(List.of("entries.contains(value)", "this.entries.add(value)"), //$NON-NLS-1$ //$NON-NLS-2$
+				locked.protocol().evidence().stream().map(e -> anchor(source, e)).toList());
+		for (var open : reports.subList(1, 3)) {
+			assertTrue(open.protocol().hasUnresolvedBoundary());
+			assertFalse(open.protocol().hasSingleProtectingLock());
+			assertFalse(open.permitsSourceRewrite());
+		}
+		assertTrue(analyzer.analyze(parse(source, false)).isEmpty());
+	}
+
 	private static String anchor(String source, ConcurrencyProtocol.Evidence evidence) {
 		return source.substring(evidence.sourceStart(), evidence.sourceStart() + evidence.sourceLength());
 	}
