@@ -61,6 +61,12 @@ accessors, independently observed duplicates and later writes prevent the change
       <code>Function&lt;String, String[]&gt;</code> to <code>Function&lt;String, List&lt;String&gt;&gt;</code>
       when the method reference or forwarding lambda and every call are proven in source.
       Callers that observe array identity or expose the function to other code block the migration.</li>
+  <li>The optional <strong>Retain a deprecated array overload</strong> setting applies to a
+      single internal static helper that returns its array parameter's length. Existing
+      compiled callers keep their original method descriptor. The retained overload passes
+      null through and otherwise passes an array-backed <code>Arrays.asList</code> view to
+      the list signature. A signature collision, a bare null call, or a method reference
+      excludes the candidate. A return-only change cannot produce a same-name overload.</li>
   <li>Unsupported aliasing, positional access, capture, publication or external
       signatures cause the cleanup to make no change.</li>
 </ul>

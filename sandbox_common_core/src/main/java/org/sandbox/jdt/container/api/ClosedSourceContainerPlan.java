@@ -13,6 +13,6 @@ package org.sandbox.jdt.container.api;
 import java.util.List;
 
 /** Source-closed signature change submitted to the coordinated Cleanup lifecycle. */
-public sealed interface ClosedSourceContainerPlan permits ClosedSourceParameterMigrationPlan, ClosedSourceReturnMigrationPlan {
+public sealed interface ClosedSourceContainerPlan permits ClosedSourceParameterMigrationPlan, ClosedSourceReturnMigrationPlan, LosslessParameterBridgePlan {
 	List<String> affectedCompilationUnitHandles();
 }

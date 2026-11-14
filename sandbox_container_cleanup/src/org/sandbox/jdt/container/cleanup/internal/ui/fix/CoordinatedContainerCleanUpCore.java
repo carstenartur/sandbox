@@ -11,6 +11,7 @@
 package org.sandbox.jdt.container.cleanup.internal.ui.fix;
 
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.CLEANUP;
+import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.RETAIN_PROVEN_PARAMETER_BRIDGE;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.CLOSED_SOURCE_PARAMETER_MIGRATION;
 
 import java.util.ArrayList;
@@ -41,6 +42,7 @@ import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
 import org.sandbox.jdt.cleanup.multifile.MultiFilePlanningMetrics;
 import org.sandbox.jdt.cleanup.multifile.MultiFileScopeDiagnostic;
 import org.sandbox.jdt.container.api.ClosedSourceContainerPlan;
+import org.sandbox.jdt.container.api.LosslessParameterBridgePlan;
 import org.sandbox.jdt.container.api.ClosedSourceReturnMigrationPlan;
 import org.sandbox.jdt.container.api.ClosedSourceParameterMigrationPlan;
 import org.sandbox.jdt.cleanup.multifile.ClosedSourceReturnMigrationFix;
@@ -95,7 +97,7 @@ public final class CoordinatedContainerCleanUpCore
 			return MultiFileCleanUpPlanResult.noPlan();
 		}
 		ClosedSourceContainerMigrationService.Planning planning=
-				migrationService.plan(project, compilationUnits, monitor);
+				migrationService.plan(project, compilationUnits, monitor, isEnabled(RETAIN_PROVEN_PARAMETER_BRIDGE));
 		if (!planning.candidateFound()) {
 			return MultiFileCleanUpPlanResult.noPlan();
 		}
@@ -132,19 +134,22 @@ public final class CoordinatedContainerCleanUpCore
 				|| !plan.affectedCompilationUnitHandles().contains(primaryHandle(unit))) {
 			return null;
 		}
-		if (plan instanceof ClosedSourceReturnMigrationPlan returned) {
+		if (plan instanceof ClosedSourceReturnMigrationPlan || plan instanceof LosslessParameterBridgePlan) {
 			List<ICompilationUnit> affected= new ArrayList<>();
-			for (String handle : returned.affectedCompilationUnitHandles()) {
+			for (String handle : plan.affectedCompilationUnitHandles()) {
 				if (!(JavaCore.create(handle) instanceof ICompilationUnit source) || !source.exists()) {
-					throw new CoreException(Status.error("A required return consumer or producer is missing.")); //$NON-NLS-1$
+					throw new CoreException(Status.error("A required signature, producer or consumer is missing.")); //$NON-NLS-1$
 				}
 				affected.add(source);
 			}
-			var fresh= migrationService.plan(unit.getJavaProject(), affected.toArray(ICompilationUnit[]::new), null);
-			if (fresh.plan().filter(returned::equals).isEmpty()) {
-				throw new CoreException(Status.error("The return declaration, its callers or their observed uses changed.")); //$NON-NLS-1$
+			var fresh= migrationService.plan(unit.getJavaProject(), affected.toArray(ICompilationUnit[]::new), null, plan instanceof LosslessParameterBridgePlan);
+			if (fresh.plan().filter(plan::equals).isEmpty()) {
+				throw new CoreException(Status.error("The return or parameter declaration, its callers or their observed uses changed.")); //$NON-NLS-1$
 			}
-			return ClosedSourceReturnMigrationFix.create(unit, context.getAST(), returned);
+			if (plan instanceof LosslessParameterBridgePlan bridge) {
+				return ClosedSourceParameterMigrationFix.create(unit, context.getAST(), bridge.migration(), bridge);
+			}
+			return ClosedSourceReturnMigrationFix.create(unit, context.getAST(), (ClosedSourceReturnMigrationPlan) plan);
 		}
 		return ClosedSourceParameterMigrationFix.create(unit, context.getAST(), (ClosedSourceParameterMigrationPlan) plan);
 	}

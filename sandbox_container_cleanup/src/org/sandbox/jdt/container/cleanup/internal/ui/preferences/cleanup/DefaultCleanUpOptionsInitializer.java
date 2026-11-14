@@ -11,6 +11,7 @@
 package org.sandbox.jdt.container.cleanup.internal.ui.preferences.cleanup;
 
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.CLEANUP;
+import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.RETAIN_PROVEN_PARAMETER_BRIDGE;
 
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.jdt.ui.cleanup.ICleanUpOptionsInitializer;
@@ -24,6 +25,7 @@ public final class DefaultCleanUpOptionsInitializer
 	@Override
 	public void setDefaultOptions(CleanUpOptions options) {
 		options.setOption(CLEANUP, CleanUpOptions.FALSE);
+		options.setOption(RETAIN_PROVEN_PARAMETER_BRIDGE, CleanUpOptions.FALSE);
 		for (ContainerCleanUpRule rule : ContainerCleanUpRule.values()) {
 			options.setOption(rule.optionId(), CleanUpOptions.FALSE);
 		}

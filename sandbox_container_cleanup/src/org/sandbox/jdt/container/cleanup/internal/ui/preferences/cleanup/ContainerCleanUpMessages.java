@@ -27,6 +27,7 @@ public final class ContainerCleanUpMessages extends NLS {
 	public static String ContainerTabPage_RecordKeyMap;
 	public static String ContainerTabPage_ConcurrentMembership;
 	public static String ContainerTabPage_ClosedSourceParameterMigration;
+	public static String ContainerTabPage_RetainProvenParameterBridge;
 
 	static {
 		NLS.initializeMessages(BUNDLE_NAME, ContainerCleanUpMessages.class);

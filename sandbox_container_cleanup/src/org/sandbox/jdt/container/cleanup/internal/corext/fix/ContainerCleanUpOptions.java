@@ -20,6 +20,7 @@ public final class ContainerCleanUpOptions {
 			ContainerCleanUpRule.UNIQUE_SEQUENCE_TO_ORDERED_SET.optionId();
 	public static final String PARALLEL_ARRAYS_TO_RECORDS= ContainerCleanUpRule.PARALLEL_ARRAYS_TO_RECORDS.optionId();
 	public static final String RECORD_KEY_MAP= ContainerCleanUpRule.RECORD_KEY_MAP.optionId();
+	public static final String RETAIN_PROVEN_PARAMETER_BRIDGE= "cleanup.container_contracts.retain_proven_parameter_bridge"; //$NON-NLS-1$
 	public static final String CLOSED_SOURCE_PARAMETER_MIGRATION=
 			ContainerCleanUpRule.CLOSED_SOURCE_PARAMETER_MIGRATION.optionId();
 

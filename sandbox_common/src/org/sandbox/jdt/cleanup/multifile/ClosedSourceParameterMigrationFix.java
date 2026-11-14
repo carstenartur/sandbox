@@ -25,6 +25,7 @@ import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 
 import org.sandbox.jdt.container.api.ClosedSourceParameterMigrationPlan;
 import org.sandbox.jdt.container.api.ContainerParameterRewritePlan;
+import org.sandbox.jdt.container.api.LosslessParameterBridgePlan;
 
 /** Resolves all compilation-unit-local members of one aggregate migration plan. */
 public final class ClosedSourceParameterMigrationFix {
@@ -43,6 +44,11 @@ public final class ClosedSourceParameterMigrationFix {
 			ICompilationUnit unit,
 			org.eclipse.jdt.core.dom.CompilationUnit root,
 			ClosedSourceParameterMigrationPlan plan) throws CoreException {
+		return create(unit, root, plan, null);
+	}
+
+	public static ICleanUpFix create(ICompilationUnit unit, org.eclipse.jdt.core.dom.CompilationUnit root,
+			ClosedSourceParameterMigrationPlan plan, LosslessParameterBridgePlan bridge) throws CoreException {
 		Objects.requireNonNull(unit, "unit"); //$NON-NLS-1$
 		Objects.requireNonNull(root, "root"); //$NON-NLS-1$
 		Objects.requireNonNull(plan, "plan"); //$NON-NLS-1$
@@ -60,6 +66,9 @@ public final class ClosedSourceParameterMigrationFix {
 			if (handle.equals(parameterPlan.compilationUnitHandle())) {
 				operations.add(ContainerParameterRewriteFix.operation(
 						validationUnit, root, parameterPlan));
+				if (bridge != null) {
+					operations.add(LosslessParameterBridgeFix.operation(validationUnit, root, bridge));
+				}
 			}
 		}
 		if (operations.isEmpty()) {
