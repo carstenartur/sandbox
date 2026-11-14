@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -24,10 +25,13 @@ import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.jdt.core.Flags;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.IMember;
 import org.eclipse.jdt.core.IMethod;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.ITypeHierarchy;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -40,6 +44,7 @@ import org.eclipse.jdt.core.dom.MethodReference;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.TypeLiteral;
+import org.eclipse.jdt.internal.corext.util.JdtFlags;
 import org.sandbox.jdt.container.api.ResolvedContainerFlowSearchPlan;
 import org.sandbox.jdt.container.api.ResolvedContainerFlowSearchPlan.TargetKind;
 
@@ -52,6 +57,7 @@ final class ContainerSignatureBoundaries {
 	private static final Set<String> HANDLE_LOOKUPS= Set.of("findStatic", "findVirtual", "findSpecial", "findConstructor"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 
 	enum Rejection {
+		EXTERNALLY_VISIBLE_PARAMETER("The method's public or protected signature is accessible outside the project. Source search cannot prove that external callers have migrated."), //$NON-NLS-1$
 		SIGNATURE_OVERLOAD_CONFLICT("A same-name overload outside the migrating family can collide after erasure or change which signature a caller selects."), //$NON-NLS-1$
 		REFLECTIVE_SIGNATURE_BOUNDARY("A reflective method or constructor lookup can observe this signature outside its resolved Java callers."); //$NON-NLS-1$
 		final String explanation;
@@ -65,8 +71,8 @@ final class ContainerSignatureBoundaries {
 
 	static Rejection check(IJavaProject project, ResolvedContainerFlowSearchPlan resolved, Map<String, CompilationUnit> roots,
 			IProgressMonitor monitor) throws CoreException {
-		Set<IMethod> methods= new HashSet<>();
-		Set<IMethod> changingParameters= new HashSet<>();
+		Set<IMethod> methods= new LinkedHashSet<>();
+		Set<IMethod> changingParameters= new LinkedHashSet<>();
 		for (var target : resolved.targets()) {
 			if (target.targetKind() == TargetKind.METHOD && JavaCore.create(target.javaElementHandle()) instanceof IMethod method) {
 				methods.add(method);
@@ -75,8 +81,9 @@ final class ContainerSignatureBoundaries {
 				}
 			}
 		}
-		if (conflicts(changingParameters, methods, monitor)) {
-			return Rejection.SIGNATURE_OVERLOAD_CONFLICT;
+		var boundary= parameterBoundary(changingParameters, methods, monitor);
+		if (boundary != null) {
+			return boundary;
 		}
 		if (methods.isEmpty()) {
 			return null;
@@ -88,31 +95,66 @@ final class ContainerSignatureBoundaries {
 		return observesProject(project, roots, signatures, monitor) ? Rejection.REFLECTIVE_SIGNATURE_BOUNDARY : null;
 	}
 
-	private static boolean conflicts(Set<IMethod> changingParameters, Set<IMethod> methods, IProgressMonitor monitor) throws CoreException {
-		Map<String, List<IMethod>> hierarchyMethods= new HashMap<>();
+	private static Rejection parameterBoundary(Set<IMethod> changingParameters, Set<IMethod> methods, IProgressMonitor monitor) throws CoreException {
+		Map<IType, ITypeHierarchy> hierarchies= new HashMap<>();
 		for (IMethod original : changingParameters) {
 			if (original.isConstructor()) {
-				continue; // The constructor proof already excludes overloaded constructors.
+				continue; // The constructor proof already requires a private, unambiguous constructor.
 			}
 			IType owner= original.getDeclaringType();
-			String typeKey= owner.getHandleIdentifier();
-			List<IMethod> familyContext= hierarchyMethods.get(typeKey);
-			if (familyContext == null) {
-				familyContext= new ArrayList<>();
-				for (IType type : owner.newTypeHierarchy(monitor).getAllTypes()) {
-					familyContext.addAll(List.of(type.getMethods()));
-				}
-				hierarchyMethods.put(typeKey, familyContext);
+			ITypeHierarchy hierarchy= hierarchies.get(owner);
+			if (hierarchy == null) {
+				hierarchy= owner.newTypeHierarchy(monitor);
+				hierarchies.put(owner, hierarchy);
 			}
-			for (IMethod candidate : familyContext) {
-				if (!methods.contains(candidate) && original.getElementName().equals(candidate.getElementName())
-						&& !candidate.isConstructor() && (candidate.getNumberOfParameters() == original.getNumberOfParameters()
-								|| Flags.isVarargs(candidate.getFlags()))) {
-					return true;
+			if (externallyVisible(original, hierarchy)) {
+				return Rejection.EXTERNALLY_VISIBLE_PARAMETER;
+			}
+			for (IType type : hierarchy.getAllTypes()) {
+				for (IMethod candidate : type.getMethods()) {
+					if (!methods.contains(candidate) && original.getElementName().equals(candidate.getElementName())
+							&& !candidate.isConstructor() && (candidate.getNumberOfParameters() == original.getNumberOfParameters()
+									|| Flags.isVarargs(candidate.getFlags()))) {
+						return Rejection.SIGNATURE_OVERLOAD_CONFLICT;
+					}
 				}
 			}
 		}
+		return null;
+	}
+
+	private static boolean externallyVisible(IMethod method, ITypeHierarchy hierarchy) throws JavaModelException {
+		if (!publicOrProtected(method)) {
+			return false;
+		}
+		IType owner= method.getDeclaringType();
+		if (externallyVisible(owner)) {
+			return true;
+		}
+		if (Flags.isFinal(owner.getFlags()) || owner.isInterface() && Flags.isStatic(method.getFlags())) {
+			return false;
+		}
+		// An accessible subtype inherits public/protected members even when it has no overriding declaration.
+		for (IType subtype : hierarchy.getAllSubtypes(owner)) {
+			if (externallyVisible(subtype)) {
+				return true;
+			}
+		}
 		return false;
+	}
+
+	private static boolean externallyVisible(IType declaration) throws JavaModelException {
+		for (IType type= declaration; type != null; type= type.getDeclaringType()) {
+			if (type.isAnonymous() || type.isLocal() || !publicOrProtected(type)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private static boolean publicOrProtected(IMember member) throws JavaModelException {
+		// JdtFlags includes implicit public interface members. Preserve an explicit private modifier.
+		return !Flags.isPrivate(member.getFlags()) && (JdtFlags.isPublic(member) || JdtFlags.isProtected(member));
 	}
 
 	private static boolean observesProject(IJavaProject project, Map<String, CompilationUnit> roots, List<Signature> signatures,

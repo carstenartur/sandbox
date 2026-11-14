@@ -12,15 +12,18 @@ package org.sandbox.jdt.container.cleanup.internal.ui.refactoring;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.ltk.ui.refactoring.RefactoringWizard;
 import org.eclipse.ltk.ui.refactoring.RefactoringWizardOpenOperation;
 import org.eclipse.ltk.ui.refactoring.UserInputWizardPage;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.handlers.HandlerUtil;
 
 import org.sandbox.jdt.container.api.ReturnPublicationPolicy;
@@ -59,20 +62,36 @@ public final class ReturnPublicationAction extends AbstractHandler {
 						var reject= new Button(control, SWT.RADIO);
 						reject.setText("Copy to an immutable list and throw NullPointerException at publication for any null element (Java 10+)"); //$NON-NLS-1$
 						reject.setEnabled(refactoring.supportsCopy());
+						var details= new Text(control, SWT.READ_ONLY | SWT.WRAP | SWT.MULTI | SWT.V_SCROLL | SWT.BORDER);
+						var layout= new GridData(SWT.FILL, SWT.FILL, true, true);
+						layout.widthHint= convertWidthInCharsToPixels(75);
+						layout.heightHint= convertHeightInCharsToPixels(5);
+						details.setLayoutData(layout);
 						preserve.addListener(SWT.Selection, event -> {
 							if (preserve.getSelection()) {
-								refactoring.select(ReturnPublicationPolicy.PRESERVE_NULLS);
-								setPageComplete(true);
+								selectPolicy(ReturnPublicationPolicy.PRESERVE_NULLS, details);
 							}
 						});
 						reject.addListener(SWT.Selection, event -> {
 							if (reject.getSelection()) {
-								refactoring.select(ReturnPublicationPolicy.REJECT_NULLS);
-								setPageComplete(true);
+								selectPolicy(ReturnPublicationPolicy.REJECT_NULLS, details);
 							}
 						});
 						setControl(control);
 						setPageComplete(false);
+					}
+
+					private void selectPolicy(ReturnPublicationPolicy policy, Text details) {
+						refactoring.select(policy);
+						try {
+							details.setText(String.join(System.lineSeparator(), refactoring.previewDetails()));
+							setErrorMessage(null);
+							setPageComplete(true);
+						} catch (CoreException stale) {
+							details.setText(""); //$NON-NLS-1$
+							setErrorMessage(stale.getStatus().getMessage());
+							setPageComplete(false);
+						}
 					}
 				});
 			}

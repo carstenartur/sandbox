@@ -12,11 +12,25 @@ package org.sandbox.jdt.cleanup.multifile;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /** Immutable machine-readable diagnostic for one coordinated-cleanup candidate. */
 public record MultiFileCandidateDiagnostic(String candidateId, String ownerCompilationUnitHandle,
 		MultiFileCandidateOutcome outcome, String reasonCode, String message,
-		List<String> relatedCompilationUnitHandles) {
+		List<String> relatedCompilationUnitHandles, Optional<Compatibility> compatibility) {
+
+	/** Stable, source-anonymous compatibility classifications supplied by a planner. */
+	public record Compatibility(String migrationMode, String bridgeFeasibility) {
+		public Compatibility {
+			Objects.requireNonNull(migrationMode);
+			Objects.requireNonNull(bridgeFeasibility);
+		}
+	}
+
+	public MultiFileCandidateDiagnostic(String candidateId, String ownerCompilationUnitHandle,
+			MultiFileCandidateOutcome outcome, String reasonCode, String message, List<String> relatedCompilationUnitHandles) {
+		this(candidateId, ownerCompilationUnitHandle, outcome, reasonCode, message, relatedCompilationUnitHandles, Optional.empty());
+	}
 
 	/** Validates and normalizes candidate diagnostics. */
 	public MultiFileCandidateDiagnostic {
@@ -25,6 +39,7 @@ public record MultiFileCandidateDiagnostic(String candidateId, String ownerCompi
 		outcome= Objects.requireNonNull(outcome);
 		reasonCode= Objects.requireNonNull(reasonCode);
 		message= Objects.requireNonNull(message);
+		Objects.requireNonNull(compatibility);
 		relatedCompilationUnitHandles= relatedCompilationUnitHandles == null
 				? List.of()
 				: relatedCompilationUnitHandles.stream().filter(Objects::nonNull).distinct().sorted().toList();

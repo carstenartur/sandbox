@@ -24,6 +24,13 @@ public record LosslessParameterBridgePlan(ClosedSourceParameterMigrationPlan mig
 	}
 
 	@Override
+	public ContainerCompatibilityDecision compatibility() {
+		return new ContainerCompatibilityDecision(ContainerCompatibilityDecision.Mode.LOSSLESS_BRIDGE,
+				ContainerCompatibilityDecision.BridgeFeasibility.LOSSLESS_WITH_PROOF,
+				"The deprecated array overload keeps its JVM descriptor and delegates to the new list overload. Arrays.asList shares storage and preserves length. Null arrays pass through and still fail at the length read. The callee never mutates, stores or inspects elements."); //$NON-NLS-1$
+	}
+
+	@Override
 	public List<String> affectedCompilationUnitHandles() {
 		return migration.affectedCompilationUnitHandles();
 	}

@@ -19,6 +19,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.WeakHashMap;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -128,7 +129,9 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 
 	private final Map<IJavaProject, P> plansByProject= new HashMap<>();
 	private final Map<IJavaProject, MultiFilePlanningMetrics> metricsByProject= new HashMap<>();
-	private final Map<IJavaProject, MultiFileCleanUpDiagnostics> diagnosticsByProject= new HashMap<>();
+	// Eclipse runs checkPostConditions before the headless application asks for the completed report.
+	// Diagnostics contain stable strings and counts; weak keys avoid retaining a closed Java project.
+	private final Map<IJavaProject, MultiFileCleanUpDiagnostics> diagnosticsByProject= new WeakHashMap<>();
 	private final Map<IJavaProject, ScopeAccumulator> scopesByProject= new HashMap<>();
 	private final Map<IJavaProject, Map<String, ICompilationUnit>> compilationUnitsByProject= new HashMap<>();
 
@@ -178,6 +181,11 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 			}
 			MultiFileCleanUpDiagnostics diagnostics= result.diagnostics();
 			ScopeAccumulator scope= scopesByProject.remove(project);
+			// The native headless host selects the full project and may skip the optional expansion hook.
+			if (scope == null && !diagnostics.candidates().isEmpty()) {
+				scope= new ScopeAccumulator();
+				scope.record(java.util.Arrays.asList(compilationUnits), List.of());
+			}
 			if (scope != null) {
 				MultiFileScopeDiagnostic mergedScope= scope.merge(diagnostics.scope());
 				String cleanupId= UNKNOWN_CLEANUP_ID.equals(diagnostics.cleanupId())
@@ -222,10 +230,12 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 		synchronized (lifecycleLock) {
 			try {
 				return checkPlanPostConditions(monitor);
+			} catch (CoreException | RuntimeException exception) {
+				diagnosticsByProject.clear();
+				throw exception;
 			} finally {
 				plansByProject.clear();
 				metricsByProject.clear();
-				diagnosticsByProject.clear();
 				scopesByProject.clear();
 				compilationUnitsByProject.clear();
 			}
@@ -309,6 +319,7 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 				}
 				details.add("Affected source files: " + units.size()); //$NON-NLS-1$
 				details.add(diagnostics.impact().compatibilityStatement());
+				details.addAll(getCandidatePreviewDetails(plansByProject.get(project), candidate));
 
 				Map<String, Object> preview= new LinkedHashMap<>();
 				preview.put(PREVIEW_ID, cleanupId + ':' + candidate.candidateId());
@@ -320,6 +331,11 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 			}
 			return List.copyOf(result);
 		}
+	}
+
+	/** Local, source-identifying explanations shown only in the workbench preview. */
+	protected List<String> getCandidatePreviewDetails(P plan, MultiFileCandidateDiagnostic candidate) throws CoreException {
+		return List.of();
 	}
 
 	/**
@@ -351,8 +367,7 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 
 	/**
 	 * Returns metrics from the current project's most recent planning attempt.
-	 * Metrics remain available through fix creation and postcondition checks and are
-	 * cleared with the rest of the lifecycle state.
+	 * Metrics remain available through fix creation and are cleared with the plan.
 	 *
 	 * @param project Java project
 	 * @return retained metrics or empty metrics when no planning run exists
@@ -364,9 +379,8 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 	}
 
 	/**
-	 * Returns structured diagnostics from the current project's most recent planning
-	 * attempt. Diagnostics remain available through fix creation and postcondition
-	 * checks and are cleared with the rest of the lifecycle state.
+	 * Returns the most recent diagnostics, including a successfully completed run.
+	 * Starting another plan in the project replaces its previous report.
 	 *
 	 * @param project Java project
 	 * @return retained diagnostics or empty diagnostics when no planning run exists

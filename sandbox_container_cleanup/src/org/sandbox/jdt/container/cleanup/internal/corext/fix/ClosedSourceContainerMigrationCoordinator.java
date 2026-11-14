@@ -29,6 +29,9 @@ import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTRequestor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
 import org.eclipse.jdt.internal.corext.refactoring.util.RefactoringASTParser;
 
@@ -253,11 +256,7 @@ final class ClosedSourceContainerMigrationCoordinator {
 				return Planning.rejected(candidate.candidateId(), candidate.unitHandle(), "IMPOSSIBLE_RETURN_TYPE_ONLY", //$NON-NLS-1$
 						"Java cannot retain a same-name compatibility overload differing only by return type.", discovery.requiredHandles()); //$NON-NLS-1$
 			}
-			var returnPlan= planReturn(candidate, component, resolved, roots);
-			return returnPlan.isPresent()
-					? Planning.accepted(candidate.candidateId(), candidate.unitHandle(), returnPlan.get(), discovery.requiredHandles())
-					: Planning.rejected(candidate.candidateId(), candidate.unitHandle(), "RETURN_CLOSURE_NOT_PROVEN", //$NON-NLS-1$
-							"The return declaration or a caller observes an unsupported array operation.", discovery.requiredHandles()); //$NON-NLS-1$
+			return planReturn(candidate, component, discovery, roots);
 		}
 
 		List<ContainerUsageProfile> parameterProfiles= List.copyOf(parameterProfilesByKey.values());
@@ -379,29 +378,39 @@ final class ClosedSourceContainerMigrationCoordinator {
 		}
 	}
 
-	private Optional<ClosedSourceReturnMigrationPlan> planReturn(Candidate candidate, ContainerFlowComponent component,
-			ResolvedContainerFlowSearchPlan resolved, Map<String, CompilationUnit> roots) {
+	private Planning planReturn(Candidate candidate, ContainerFlowComponent component,
+			Discovery discovery, Map<String, CompilationUnit> roots) {
 		var returns= component.nodes().stream().filter(node -> node.kind() == NodeKind.RETURN_POSITION).toList();
 		if (returns.size() != 1 || !component.diagnostics().isEmpty()) {
-			return Optional.empty();
+			return rejectedReturn(candidate, discovery, "RETURN_GROUP_INCOMPLETE", //$NON-NLS-1$
+					"A return migration requires one complete source declaration and every override or implementation."); //$NON-NLS-1$
 		}
 		FlowNode signature= returns.getFirst();
+		if (candidate.root().findDeclaringNode(signature.ownerKey()) instanceof MethodDeclaration method
+				&& method.getParent() instanceof TypeDeclaration owner
+				&& Modifier.isPublic(owner.getModifiers()) && (Modifier.isPublic(method.getModifiers()) || Modifier.isProtected(method.getModifiers()))) {
+			return rejectedReturn(candidate, discovery, "EXTERNAL_RETURN_DECLARATION", //$NON-NLS-1$
+					"The return declaration is callable outside the project. The planner cannot establish every consumer of the old array descriptor."); //$NON-NLS-1$
+		}
 		var type= ClosedReturnArrayUses.producer(candidate.root(), signature.ownerKey(), candidate.localProfile().identity().bindingKey());
 		var recommendation= contractInferrer.infer(candidate.localProfile());
 		if (type.isEmpty() || recommendation.isEmpty()) {
-			return Optional.empty();
+			return rejectedReturn(candidate, discovery, "UNSUPPORTED_RETURN_PRODUCER", //$NON-NLS-1$
+					"The return producer must be an internal static method that directly publishes its own fresh append-only array."); //$NON-NLS-1$
 		}
-		var groups= signaturePlanner.plan(component, resolved, recommendation.get());
+		var groups= signaturePlanner.plan(component, discovery.resolvedPlan(), recommendation.get());
 		if (groups.status() != PlanningStatus.REPORT_ONLY || groups.groups().size() != 1 || !groups.diagnostics().isEmpty()
 				|| groups.groups().getFirst().positionKind() != PositionKind.RETURN || groups.groups().getFirst().members().size() != 1
 				|| !groups.groups().getFirst().members().getFirst().flowNodeId().equals(signature.stableId())) {
-			return Optional.empty();
+			return rejectedReturn(candidate, discovery, "RETURN_GROUP_INCOMPLETE", //$NON-NLS-1$
+					"The resolved hierarchy contains an additional or unresolved return signature."); //$NON-NLS-1$
 		}
 		List<Consumer> consumers= new ArrayList<>();
 		for (var entry : roots.entrySet()) {
 			var callers= ClosedReturnArrayUses.consumers(entry.getValue(), entry.getKey(), signature.ownerKey());
 			if (callers.isEmpty()) {
-				return Optional.empty();
+				return rejectedReturn(candidate, discovery, "UNSUPPORTED_RETURN_CALLER", //$NON-NLS-1$
+						"A source caller cannot be rewritten as a local list with size-only reads. Every direct call and functional target must qualify."); //$NON-NLS-1$
 			}
 			consumers.addAll(callers.get());
 		}
@@ -411,7 +420,7 @@ final class ClosedSourceContainerMigrationCoordinator {
 		var producers= component.nodes().stream().filter(node -> node.bindingKey().equals(candidate.seed().identity().bindingKey())).toList();
 		if (consumers.isEmpty() || producers.size() != 1 || consumers.size() != consumerKeys.size()
 				|| component.nodes().size() != consumers.size() + 2 || component.edges().size() != consumers.size() + 1) {
-			return Optional.empty();
+			return incompleteReturnFlow(candidate, discovery);
 		}
 		FlowNode producer= producers.getFirst();
 		for (var edge : component.edges()) {
@@ -422,19 +431,30 @@ final class ClosedSourceContainerMigrationCoordinator {
 			}
 			if (edge.kind() != EdgeKind.INITIALIZER || !edge.sourceNodeId().equals(signature.stableId())
 					|| target.kind() != NodeKind.LOCAL_VARIABLE || !consumerKeys.remove(target.bindingKey())) {
-				return Optional.empty();
+				return incompleteReturnFlow(candidate, discovery);
 			}
 		}
 		if (!consumerKeys.isEmpty()) {
-			return Optional.empty();
+			return incompleteReturnFlow(candidate, discovery);
 		}
 		// Direct source-closed signature change; Java cannot preserve a same-name return-only overload.
 		var direct= new ContainerSignatureMigrationPlan(groups.targetContract(), groups.groups(), PlanningStatus.CLOSED_SOURCE_AUTOMATIC, List.of());
 		var bridges= bridgePlanner.plan(direct, recommendation.get());
 		var readiness= readinessPlanner.plan(component, recommendation.get(), direct, bridges);
 		var local= new ContainerFlowComponent(producer.stableId(), List.of(producer), List.of(), ClosureStatus.LOCAL_CLOSED, List.of());
-		return new ContainerLocalRewritePlanner().plan(local, recommendation.get(), readiness).plan()
-				.map(plan -> new ClosedSourceReturnMigrationPlan(plan, signature.javaElementHandle(), signature.ownerKey(), type.get(), consumers));
+		var plan= new ContainerLocalRewritePlanner().plan(local, recommendation.get(), readiness).plan()
+				.map(builder -> new ClosedSourceReturnMigrationPlan(builder, signature.javaElementHandle(), signature.ownerKey(), type.get(), consumers));
+		return plan.isPresent() ? Planning.accepted(candidate.candidateId(), candidate.unitHandle(), plan.get(), discovery.requiredHandles())
+				: incompleteReturnFlow(candidate, discovery);
+	}
+
+	private static Planning incompleteReturnFlow(Candidate candidate, Discovery discovery) {
+		return rejectedReturn(candidate, discovery, "RETURN_CLOSURE_NOT_PROVEN", //$NON-NLS-1$
+				"Every return reference must lead from the same fresh builder to exactly one resolved source consumer."); //$NON-NLS-1$
+	}
+
+	private static Planning rejectedReturn(Candidate candidate, Discovery discovery, String reason, String message) {
+		return Planning.rejected(candidate.candidateId(), candidate.unitHandle(), reason, message, discovery.requiredHandles());
 	}
 
 	private CandidateSelection selectCandidate(List<ICompilationUnit> scope,

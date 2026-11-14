@@ -38,6 +38,14 @@ notification's visibility of registrations made during a callback.</p>
 <p>For a strictly local list with stable equality and encounter-order iteration,
 this becomes a <code>LinkedHashSet</code>.</p>
 
+<h2 id="closed-unique">Project-wide unique list to ordered set</h2>
+<p>This opt-in rule changes an internal static producer of manually unique strings
+or enum values, its direct source callers, and their read-only helper parameters
+in one coordinated change. A <code>LinkedHashSet</code> retains the first encounter
+order, accepts null and ignores subsequent equal insertions. Positional access,
+unknown readers, other callers of the original reader contract, and reflective
+signature lookups prevent the migration.</p>
+
 <h2 id="parallel-records">Parallel arrays to a local record sequence</h2>
 <p>On Java 16 and later, the opt-in rule can replace two local reference arrays
 with a list of records. Both columns must start empty, grow in lockstep in an

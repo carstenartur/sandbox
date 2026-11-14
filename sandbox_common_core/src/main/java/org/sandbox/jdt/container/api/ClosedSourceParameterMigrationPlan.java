@@ -65,7 +65,12 @@ public record ClosedSourceParameterMigrationPlan(
 		validateArgumentTransfers(callerPlan, parameterPlans);
 	}
 
-	/** Returns affected compilation-unit handles in deterministic execution order. */
+	@Override
+	public ContainerCompatibilityDecision compatibility() {
+		return ContainerCompatibilityDecision.closedParameter();
+	}
+
+	@Override
 	public List<String> affectedCompilationUnitHandles() {
 		Set<String> handles= LinkedHashSet.newLinkedHashSet(parameterPlans.size() + 1);
 		handles.add(callerPlan.compilationUnitHandle());

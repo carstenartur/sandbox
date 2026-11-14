@@ -15,5 +15,16 @@ public enum ReturnPublicationPolicy {
 	/** Preserve null elements in the read-only view of the fresh, unaliased builder. */
 	PRESERVE_NULLS,
 	/** Create an immutable snapshot and throw at publication when an element is null. */
-	REJECT_NULLS
+	REJECT_NULLS;
+
+	public ContainerCompatibilityDecision compatibility() {
+		return switch (this) {
+			case PRESERVE_NULLS -> new ContainerCompatibilityDecision(ContainerCompatibilityDecision.Mode.POLICY_ADAPTER,
+					ContainerCompatibilityDecision.BridgeFeasibility.IMPOSSIBLE_RETURN_TYPE_ONLY,
+					"Collections.unmodifiableList publishes a read-only view of the fresh builder. Order, duplicates and null elements are preserved. The builder has no surviving alias. Java cannot retain the old same-name array return."); //$NON-NLS-1$
+			case REJECT_NULLS -> new ContainerCompatibilityDecision(ContainerCompatibilityDecision.Mode.BREAKING_SOURCE_MIGRATION,
+					ContainerCompatibilityDecision.BridgeFeasibility.IMPOSSIBLE_RETURN_TYPE_ONLY,
+					"List.copyOf publishes a read-only snapshot that preserves order and duplicates. A null element now throws NullPointerException at publication. Known callers migrate and the old array return descriptor is removed."); //$NON-NLS-1$
+		};
+	}
 }
