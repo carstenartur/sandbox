@@ -117,9 +117,9 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 <span class="fc" id="L117">					return true;</span>
 				})
 <span class="fc" id="L119">				.on(ClassInstanceCreation.class, (creation, holder) -&gt; {</span>
-<span class="nc" id="L120">					inspectExpressionCall(creation, creation.resolveConstructorBinding(),</span>
-<span class="nc" id="L121">							creation.arguments(), targets, result);</span>
-<span class="nc" id="L122">					return true;</span>
+<span class="fc" id="L120">					inspectExpressionCall(creation, creation.resolveConstructorBinding(),</span>
+<span class="fc" id="L121">							creation.arguments(), targets, result);</span>
+<span class="fc" id="L122">					return true;</span>
 				})
 <span class="fc" id="L124">				.on(ConstructorInvocation.class, (invocation, holder) -&gt; {</span>
 <span class="nc" id="L125">					inspectStatementCall(invocation, invocation.resolveConstructorBinding(),</span>

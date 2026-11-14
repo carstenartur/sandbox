@@ -74,7 +74,7 @@ public record ConcurrencyProtocol(
 	 * unprotected or unresolved access contradicts that proof.
 	 */
 	public boolean hasSingleProtectingLock() {
-<span class="pc bpc" id="L77" title="1 of 2 branches missed.">		if (hasUnresolvedBoundary() || evidence.stream()</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">		if (hasUnresolvedBoundary() || evidence.stream()</span>
 <span class="fc bfc" id="L78" title="All 4 branches covered.">				.anyMatch(item -&gt; item.kind() == EvidenceKind.UNPROTECTED_ACCESS)) {</span>
 <span class="fc" id="L79">			return false;</span>
 		}

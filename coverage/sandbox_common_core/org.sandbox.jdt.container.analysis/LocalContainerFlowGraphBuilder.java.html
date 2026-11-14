@@ -135,10 +135,10 @@ import org.sandbox.jdt.container.api.ContainerUsageProfile;
 					graph,
 					pendingBindings);
 <span class="fc bfc" id="L137" title="All 2 branches covered.">		} else if (parent instanceof Assignment assignment</span>
-<span class="pc bpc" id="L138" title="1 of 2 branches missed.">				&amp;&amp; assignment.getRightHandSide() == reference) {</span>
-<span class="nc" id="L139">			connectExpression(</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">				&amp;&amp; assignment.getRightHandSide() == reference) {</span>
+<span class="fc" id="L139">			connectExpression(</span>
 					sourceNode,
-<span class="nc" id="L141">					assignment.getLeftHandSide(),</span>
+<span class="fc" id="L141">					assignment.getLeftHandSide(),</span>
 					EdgeKind.ASSIGNMENT,
 					reference,
 					index,
@@ -156,12 +156,12 @@ import org.sandbox.jdt.container.api.ContainerUsageProfile;
 						graph,
 						pendingBindings);
 			}
-<span class="pc bpc" id="L159" title="1 of 2 branches missed.">		} else if (parent instanceof ClassInstanceCreation creation</span>
-<span class="nc bnc" id="L160" title="All 2 branches missed.">				&amp;&amp; creation.arguments().contains(reference)) {</span>
-<span class="nc" id="L161">			connectArguments(</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">		} else if (parent instanceof ClassInstanceCreation creation</span>
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">				&amp;&amp; creation.arguments().contains(reference)) {</span>
+<span class="fc" id="L161">			connectArguments(</span>
 					sourceNode,
-<span class="nc" id="L163">					creation.resolveConstructorBinding(),</span>
-<span class="nc" id="L164">					creation.arguments(),</span>
+<span class="fc" id="L163">					creation.resolveConstructorBinding(),</span>
+<span class="fc" id="L164">					creation.arguments(),</span>
 					reference,
 					index,
 					graph,
@@ -181,11 +181,11 @@ import org.sandbox.jdt.container.api.ContainerUsageProfile;
 			ContainerFlowIndex index,
 			ContainerFlowGraphAccumulator graph,
 			Deque&lt;String&gt; pendingBindings) {
-<span class="nc" id="L184">		Optional&lt;IVariableBinding&gt; target= variableBinding(targetExpression);</span>
-<span class="nc bnc" id="L185" title="All 2 branches missed.">		if (target.isPresent()) {</span>
-<span class="nc" id="L186">			connectVariable(</span>
+<span class="fc" id="L184">		Optional&lt;IVariableBinding&gt; target= variableBinding(targetExpression);</span>
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">		if (target.isPresent()) {</span>
+<span class="fc" id="L186">			connectVariable(</span>
 					sourceNode,
-<span class="nc" id="L188">					target.get(),</span>
+<span class="fc" id="L188">					target.get(),</span>
 					edgeKind,
 					evidence,
 					index,
@@ -194,7 +194,7 @@ import org.sandbox.jdt.container.api.ContainerUsageProfile;
 		} else {
 <span class="nc" id="L195">			graph.unclassifiedFlow(evidence);</span>
 		}
-<span class="nc" id="L197">	}</span>
+<span class="fc" id="L197">	}</span>
 
 	private static void connectVariable(
 			FlowNode sourceNode,
@@ -294,7 +294,7 @@ import org.sandbox.jdt.container.api.ContainerUsageProfile;
 <span class="nc" id="L294">			return;</span>
 		}
 <span class="fc" id="L296">		FlowNode returnNode= graph.ensureReturnNode(</span>
-				methodKey,
+				methodBinding,
 <span class="fc" id="L298">				index.compilationUnitHandle(),</span>
 				reference);
 <span class="fc" id="L300">		graph.addEdge(sourceNode, returnNode, EdgeKind.RETURN_TO_METHOD, reference);</span>

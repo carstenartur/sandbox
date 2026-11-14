@@ -129,7 +129,7 @@ public final class ContainerFlowScopeSearch {
 			Collection&lt;ICompilationUnit&gt; currentScope,
 			Collection&lt;ICompilationUnit&gt; allowedUnits,
 			IProgressMonitor monitor) throws CoreException {
-<span class="pc" id="L132">		return new ContainerFlowScopeSearch().find(</span>
+<span class="fc" id="L132">		return new ContainerFlowScopeSearch().find(</span>
 <span class="fc" id="L133">				project, plan, currentScope, allowedUnits, monitor);</span>
 	}
 
@@ -225,14 +225,14 @@ public final class ContainerFlowScopeSearch {
 			Map&lt;String, IJavaElement&gt; targetsByHandle,
 			Map&lt;String, ResolvedSearchTarget&gt; resolvedByKey,
 			Set&lt;String&gt; rejectionReasons) {
-<span class="pc bpc" id="L228" title="1 of 2 branches missed.">		if (!(element instanceof IField field)) {</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">		if (!(element instanceof IField field)) {</span>
 <span class="fc" id="L229">			rejectionReasons.add(&quot;A field-reference seed does not resolve to an IField: &quot; //$NON-NLS-1$</span>
 <span class="fc" id="L230">					+ seed.javaElementHandle());</span>
 <span class="fc" id="L231">			return;</span>
 		}
-<span class="nc" id="L233">		addTarget(field, targetsByHandle);</span>
-<span class="nc" id="L234">		addResolved(seed, TargetKind.FIELD, field, resolvedByKey);</span>
-<span class="nc" id="L235">	}</span>
+<span class="fc" id="L233">		addTarget(field, targetsByHandle);</span>
+<span class="fc" id="L234">		addResolved(seed, TargetKind.FIELD, field, resolvedByKey);</span>
+<span class="fc" id="L235">	}</span>
 
 	private static void addMethod(
 			SearchSeed seed,
@@ -326,55 +326,55 @@ public final class ContainerFlowScopeSearch {
 <span class="fc" id="L326">	}</span>
 
 	private static MethodFamily resolveMethodFamily(IMethod method, IProgressMonitor monitor) {
-<span class="nc" id="L329">		Map&lt;String, IMethod&gt; methodsByHandle= new LinkedHashMap&lt;&gt;();</span>
-<span class="nc" id="L330">		Set&lt;String&gt; reasons= new LinkedHashSet&lt;&gt;();</span>
-<span class="nc" id="L331">		addMethod(methodsByHandle, method);</span>
+<span class="fc" id="L329">		Map&lt;String, IMethod&gt; methodsByHandle= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L330">		Set&lt;String&gt; reasons= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L331">		addMethod(methodsByHandle, method);</span>
 
-<span class="nc" id="L333">		IType declaringType= method.getDeclaringType();</span>
-<span class="nc bnc" id="L334" title="All 4 branches missed.">		if (declaringType == null || !declaringType.exists()) {</span>
+<span class="fc" id="L333">		IType declaringType= method.getDeclaringType();</span>
+<span class="pc bpc" id="L334" title="2 of 4 branches missed.">		if (declaringType == null || !declaringType.exists()) {</span>
 <span class="nc" id="L335">			reasons.add(&quot;The method declaring type is missing while expanding the override family.&quot;); //$NON-NLS-1$</span>
 <span class="nc" id="L336">			return methodFamily(methodsByHandle, reasons);</span>
 		}
 
 		try {
-<span class="nc bnc" id="L340" title="All 2 branches missed.">			if (method.isConstructor()) {</span>
-<span class="nc" id="L341">				return methodFamily(methodsByHandle, reasons);</span>
+<span class="fc bfc" id="L340" title="All 2 branches covered.">			if (method.isConstructor()) {</span>
+<span class="fc" id="L341">				return methodFamily(methodsByHandle, reasons);</span>
 			}
-<span class="nc" id="L343">			ITypeHierarchy hierarchy= declaringType.newTypeHierarchy(monitor);</span>
-<span class="nc bnc" id="L344" title="All 2 branches missed.">			for (IType type : hierarchy.getAllTypes()) {</span>
-<span class="nc" id="L345">				checkCanceled(monitor);</span>
-<span class="nc" id="L346">				IMethod[] corresponding= type.findMethods(method);</span>
-<span class="nc bnc" id="L347" title="All 2 branches missed.">				if (corresponding == null) {</span>
-<span class="nc" id="L348">					continue;</span>
+<span class="fc" id="L343">			ITypeHierarchy hierarchy= declaringType.newTypeHierarchy(monitor);</span>
+<span class="fc bfc" id="L344" title="All 2 branches covered.">			for (IType type : hierarchy.getAllTypes()) {</span>
+<span class="fc" id="L345">				checkCanceled(monitor);</span>
+<span class="fc" id="L346">				IMethod[] corresponding= type.findMethods(method);</span>
+<span class="fc bfc" id="L347" title="All 2 branches covered.">				if (corresponding == null) {</span>
+<span class="fc" id="L348">					continue;</span>
 				}
-<span class="nc bnc" id="L350" title="All 2 branches missed.">				for (IMethod candidate : corresponding) {</span>
-<span class="nc" id="L351">					addMethod(methodsByHandle, candidate);</span>
+<span class="fc bfc" id="L350" title="All 2 branches covered.">				for (IMethod candidate : corresponding) {</span>
+<span class="fc" id="L351">					addMethod(methodsByHandle, candidate);</span>
 				}
 			}
-<span class="nc" id="L354">		} catch (JavaModelException exception) {</span>
+<span class="pc" id="L354">		} catch (JavaModelException exception) {</span>
 <span class="nc" id="L355">			reasons.add(&quot;JDT could not resolve the complete method override family: &quot; //$NON-NLS-1$</span>
 <span class="nc" id="L356">					+ exception.getMessage());</span>
 		}
-<span class="nc" id="L358">		return methodFamily(methodsByHandle, reasons);</span>
+<span class="fc" id="L358">		return methodFamily(methodsByHandle, reasons);</span>
 	}
 
 	private static MethodFamily methodFamily(
 			Map&lt;String, IMethod&gt; methodsByHandle,
 			Set&lt;String&gt; reasons) {
-<span class="nc" id="L364">		List&lt;IMethod&gt; methods= new ArrayList&lt;&gt;(methodsByHandle.values());</span>
-<span class="nc" id="L365">		methods.sort(Comparator.comparing(IJavaElement::getHandleIdentifier));</span>
-<span class="nc" id="L366">		return new MethodFamily(methods, reasons.isEmpty(), new ArrayList&lt;&gt;(reasons));</span>
+<span class="fc" id="L364">		List&lt;IMethod&gt; methods= new ArrayList&lt;&gt;(methodsByHandle.values());</span>
+<span class="fc" id="L365">		methods.sort(Comparator.comparing(IJavaElement::getHandleIdentifier));</span>
+<span class="fc" id="L366">		return new MethodFamily(methods, reasons.isEmpty(), new ArrayList&lt;&gt;(reasons));</span>
 	}
 
 	private static void addMethod(Map&lt;String, IMethod&gt; methodsByHandle, IMethod method) {
-<span class="nc bnc" id="L370" title="All 4 branches missed.">		if (method == null || !method.exists()) {</span>
+<span class="pc bpc" id="L370" title="2 of 4 branches missed.">		if (method == null || !method.exists()) {</span>
 <span class="nc" id="L371">			return;</span>
 		}
-<span class="nc" id="L373">		String handle= method.getHandleIdentifier();</span>
-<span class="nc bnc" id="L374" title="All 4 branches missed.">		if (handle != null &amp;&amp; !handle.isBlank()) {</span>
-<span class="nc" id="L375">			methodsByHandle.putIfAbsent(handle, method);</span>
+<span class="fc" id="L373">		String handle= method.getHandleIdentifier();</span>
+<span class="pc bpc" id="L374" title="2 of 4 branches missed.">		if (handle != null &amp;&amp; !handle.isBlank()) {</span>
+<span class="fc" id="L375">			methodsByHandle.putIfAbsent(handle, method);</span>
 		}
-<span class="nc" id="L377">	}</span>
+<span class="fc" id="L377">	}</span>
 
 	private static RelatedCompilationUnitSearch.Result validateCurrentScope(
 			IJavaProject project,

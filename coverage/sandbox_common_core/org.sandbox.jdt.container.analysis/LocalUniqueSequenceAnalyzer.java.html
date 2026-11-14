@@ -139,11 +139,11 @@ import org.sandbox.jdt.container.api.UsageEvidence.Kind;
 <span class="fc bfc" id="L139" title="All 2 branches covered.">		if (parent instanceof MethodInvocation invocation</span>
 <span class="pc bpc" id="L140" title="1 of 2 branches missed.">				&amp;&amp; invocation.getExpression() == name) {</span>
 <span class="fc" id="L141">			classifyInvocation(invocation, candidate.bindingKey(), observations);</span>
-<span class="pc bpc" id="L142" title="1 of 2 branches missed.">		} else if (parent instanceof EnhancedForStatement enhanced</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">		} else if (parent instanceof EnhancedForStatement enhanced</span>
 <span class="pc bpc" id="L143" title="1 of 2 branches missed.">				&amp;&amp; enhanced.getExpression() == name) {</span>
 <span class="fc" id="L144">			observations.iteration(name);</span>
 		} else {
-<span class="nc" id="L146">			observations.reject(Kind.UNSAFE_ESCAPE,</span>
+<span class="fc" id="L146">			observations.reject(Kind.UNSAFE_ESCAPE,</span>
 					&quot;Collection use escapes or observes unsupported list semantics&quot;, name); //$NON-NLS-1$
 		}
 <span class="fc" id="L149">	}</span>
@@ -170,7 +170,7 @@ import org.sandbox.jdt.container.api.UsageEvidence.Kind;
 
 	private static boolean isEmptyArrayList(ClassInstanceCreation creation) {
 <span class="fc" id="L172">		ITypeBinding type= creation.resolveTypeBinding();</span>
-<span class="pc bpc" id="L173" title="2 of 4 branches missed.">		return type != null &amp;&amp; ARRAY_LIST.equals(type.getErasure().getQualifiedName())</span>
+<span class="pc bpc" id="L173" title="1 of 4 branches missed.">		return type != null &amp;&amp; ARRAY_LIST.equals(type.getErasure().getQualifiedName())</span>
 <span class="fc bfc" id="L174" title="All 2 branches covered.">				&amp;&amp; creation.arguments().isEmpty()</span>
 <span class="pc bpc" id="L175" title="1 of 2 branches missed.">				&amp;&amp; creation.getAnonymousClassDeclaration() == null;</span>
 	}

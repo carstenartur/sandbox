@@ -22,10 +22,10 @@ public final class ContainerConstructorTarget {
 
 	/** Whether this constructor can be considered for a coordinated parameter rewrite. */
 	public static boolean isClosed(ClassInstanceCreation creation) {
-<span class="nc" id="L25">		IMethodBinding target= creation.resolveConstructorBinding();</span>
-<span class="nc bnc" id="L26" title="All 8 branches missed.">		if (target == null || target.isRecovered() || target.isVarargs() || target.isGenericMethod()</span>
-<span class="nc bnc" id="L27" title="All 4 branches missed.">				|| creation.getAnonymousClassDeclaration() != null || !Modifier.isPrivate(target.getModifiers())) {</span>
-<span class="nc" id="L28">			return false;</span>
+<span class="fc" id="L25">		IMethodBinding target= creation.resolveConstructorBinding();</span>
+<span class="pc bpc" id="L26" title="4 of 8 branches missed.">		if (target == null || target.isRecovered() || target.isVarargs() || target.isGenericMethod()</span>
+<span class="pc bpc" id="L27" title="2 of 4 branches missed.">				|| creation.getAnonymousClassDeclaration() != null || !Modifier.isPrivate(target.getModifiers())) {</span>
+<span class="fc" id="L28">			return false;</span>
 		}
 <span class="nc" id="L30">		ITypeBinding type= target.getDeclaringClass();</span>
 <span class="nc bnc" id="L31" title="All 8 branches missed.">		if (type == null || type.isRecovered() || !type.isFromSource() || type.isParameterizedType()</span>

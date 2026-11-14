@@ -390,128 +390,127 @@ public class GeminiClient implements LlmClient {
 	private void reserveRequest() throws IOException {
 <span class="fc" id="L391">		int previousCount = dailyRequestCount.getAndUpdate(count -&gt; Math.min(count + 1, MAX_DAILY_REQUESTS));</span>
 <span class="fc bfc" id="L392" title="All 2 branches covered.">		if (previousCount &gt;= MAX_DAILY_REQUESTS) {</span>
-<span class="fc" id="L393">			throw new IOException(&quot;Gemini client request budget exhausted after &quot; //$NON-NLS-1$</span>
-					+ previousCount + &quot; HTTP attempts&quot;); //$NON-NLS-1$
+<span class="fc" id="L393">			throw new RequestBudgetExhaustedException(previousCount);</span>
 		}
-<span class="fc" id="L396">	}</span>
+<span class="fc" id="L395">	}</span>
 
 	private String sendWithRetry(String requestBody) throws IOException {
-<span class="fc" id="L399">		int backoffMs = INITIAL_BACKOFF_MS;</span>
-<span class="fc" id="L400">		boolean allAttempts429 = true;</span>
+<span class="fc" id="L398">		int backoffMs = INITIAL_BACKOFF_MS;</span>
+<span class="fc" id="L399">		boolean allAttempts429 = true;</span>
 
-<span class="pc bpc" id="L402" title="1 of 2 branches missed.">		for (int attempt = 0; attempt &lt; MAX_RETRIES; attempt++) {</span>
+<span class="pc bpc" id="L401" title="1 of 2 branches missed.">		for (int attempt = 0; attempt &lt; MAX_RETRIES; attempt++) {</span>
 			try {
-<span class="fc" id="L404">				HttpRequest request = HttpRequest.newBuilder()</span>
-<span class="fc" id="L405">						.uri(URI.create(String.format(API_URL_TEMPLATE, model, apiKey)))</span>
-<span class="fc" id="L406">						.header(&quot;Content-Type&quot;, &quot;application/json&quot;)</span>
-<span class="fc" id="L407">						.timeout(REQUEST_TIMEOUT)</span>
-<span class="fc" id="L408">						.POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))</span>
-<span class="fc" id="L409">						.build();</span>
+<span class="fc" id="L403">				HttpRequest request = HttpRequest.newBuilder()</span>
+<span class="fc" id="L404">						.uri(URI.create(String.format(API_URL_TEMPLATE, model, apiKey)))</span>
+<span class="fc" id="L405">						.header(&quot;Content-Type&quot;, &quot;application/json&quot;)</span>
+<span class="fc" id="L406">						.timeout(REQUEST_TIMEOUT)</span>
+<span class="fc" id="L407">						.POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))</span>
+<span class="fc" id="L408">						.build();</span>
 
-<span class="fc" id="L411">				reserveRequest();</span>
+<span class="fc" id="L410">				reserveRequest();</span>
 				HttpResponse&lt;String&gt; response;
 				try {
-<span class="fc" id="L414">					response = httpClient.send(request,</span>
-<span class="fc" id="L415">							HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));</span>
-<span class="fc" id="L416">				} catch (IOException e) {</span>
-<span class="fc" id="L417">					allAttempts429 = false;</span>
-<span class="fc" id="L418">					consecutive429Batches = 0;</span>
-<span class="pc bpc" id="L419" title="1 of 6 branches missed.">					if (!isTransientTransportFailure(e) || Thread.currentThread().isInterrupted()</span>
-<span class="pc bpc" id="L420" title="1 of 2 branches missed.">							|| attempt + 1 == MAX_RETRIES || isApiUnavailable()) {</span>
-<span class="fc" id="L421">						throw e;</span>
+<span class="fc" id="L413">					response = httpClient.send(request,</span>
+<span class="fc" id="L414">							HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L415">				} catch (IOException e) {</span>
+<span class="fc" id="L416">					allAttempts429 = false;</span>
+<span class="fc" id="L417">					consecutive429Batches = 0;</span>
+<span class="pc bpc" id="L418" title="1 of 6 branches missed.">					if (!isTransientTransportFailure(e) || Thread.currentThread().isInterrupted()</span>
+<span class="pc bpc" id="L419" title="1 of 2 branches missed.">							|| attempt + 1 == MAX_RETRIES || isApiUnavailable()) {</span>
+<span class="fc" id="L420">						throw e;</span>
 					}
-<span class="fc" id="L423">					System.err.println(&quot;Transient Gemini transport failure (&quot; + e.getClass().getSimpleName() //$NON-NLS-1$</span>
+<span class="fc" id="L422">					System.err.println(&quot;Transient Gemini transport failure (&quot; + e.getClass().getSimpleName() //$NON-NLS-1$</span>
 							+ &quot;), attempt &quot; + (attempt + 1) + &quot;/&quot; + MAX_RETRIES //$NON-NLS-1$ //$NON-NLS-2$
 							+ &quot;; retrying in &quot; + backoffMs + &quot;ms&quot;); //$NON-NLS-1$ //$NON-NLS-2$
-<span class="fc" id="L426">					retryWait.pause(backoffMs);</span>
-<span class="fc" id="L427">					backoffMs *= 2;</span>
-<span class="fc" id="L428">					continue;</span>
-<span class="fc" id="L429">				}</span>
+<span class="fc" id="L425">					retryWait.pause(backoffMs);</span>
+<span class="fc" id="L426">					backoffMs *= 2;</span>
+<span class="fc" id="L427">					continue;</span>
+<span class="fc" id="L428">				}</span>
 
-<span class="fc bfc" id="L431" title="All 2 branches covered.">				if (response.statusCode() == 200) {</span>
-<span class="fc" id="L432">					lastSuccessfulCall = Instant.now();</span>
-<span class="fc" id="L433">					consecutive429Batches = 0;</span>
+<span class="fc bfc" id="L430" title="All 2 branches covered.">				if (response.statusCode() == 200) {</span>
+<span class="fc" id="L431">					lastSuccessfulCall = Instant.now();</span>
+<span class="fc" id="L432">					consecutive429Batches = 0;</span>
 					// Gradually reduce delay after success
-<span class="fc" id="L435">					rateLimitDelayMs.updateAndGet(delay -&gt; Math.max(RATE_LIMIT_DELAY_MS, delay / 2));</span>
-<span class="fc" id="L436">					return response.body();</span>
+<span class="fc" id="L434">					rateLimitDelayMs.updateAndGet(delay -&gt; Math.max(RATE_LIMIT_DELAY_MS, delay / 2));</span>
+<span class="fc" id="L435">					return response.body();</span>
 				}
 
-<span class="fc bfc" id="L439" title="All 2 branches covered.">				if (response.statusCode() == 429) {</span>
-<span class="fc" id="L440">					String retryAfter = response.headers().firstValue(&quot;Retry-After&quot;).orElse(null); //$NON-NLS-1$</span>
-<span class="fc" id="L441">					long waitMs = backoffMs;</span>
-<span class="fc" id="L442">					boolean usedRetryAfter = false;</span>
-<span class="pc bpc" id="L443" title="1 of 2 branches missed.">					if (retryAfter != null) {</span>
+<span class="fc bfc" id="L438" title="All 2 branches covered.">				if (response.statusCode() == 429) {</span>
+<span class="fc" id="L439">					String retryAfter = response.headers().firstValue(&quot;Retry-After&quot;).orElse(null); //$NON-NLS-1$</span>
+<span class="fc" id="L440">					long waitMs = backoffMs;</span>
+<span class="fc" id="L441">					boolean usedRetryAfter = false;</span>
+<span class="pc bpc" id="L442" title="1 of 2 branches missed.">					if (retryAfter != null) {</span>
 						try {
-<span class="fc" id="L445">							long seconds = Long.parseLong(retryAfter.trim());</span>
-<span class="pc bpc" id="L446" title="1 of 2 branches missed.">							if (seconds &gt;= 0) {</span>
-<span class="fc" id="L447">								waitMs = seconds * 1000;</span>
-<span class="fc" id="L448">								usedRetryAfter = true;</span>
+<span class="fc" id="L444">							long seconds = Long.parseLong(retryAfter.trim());</span>
+<span class="pc bpc" id="L445" title="1 of 2 branches missed.">							if (seconds &gt;= 0) {</span>
+<span class="fc" id="L446">								waitMs = seconds * 1000;</span>
+<span class="fc" id="L447">								usedRetryAfter = true;</span>
 							}
-<span class="nc" id="L450">						} catch (NumberFormatException nfe) {</span>
-<span class="nc" id="L451">							System.err.println(&quot;Invalid Retry-After header value '&quot; + retryAfter + &quot;', using exponential backoff instead.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L452">						}</span>
+<span class="nc" id="L449">						} catch (NumberFormatException nfe) {</span>
+<span class="nc" id="L450">							System.err.println(&quot;Invalid Retry-After header value '&quot; + retryAfter + &quot;', using exponential backoff instead.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L451">						}</span>
 					}
-<span class="fc" id="L454">					System.err.println(&quot;Rate limited (429), attempt &quot; + (attempt + 1) + &quot;/&quot; + MAX_RETRIES //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L453">					System.err.println(&quot;Rate limited (429), attempt &quot; + (attempt + 1) + &quot;/&quot; + MAX_RETRIES //$NON-NLS-1$ //$NON-NLS-2$</span>
 							+ &quot;, waiting &quot; + waitMs + &quot;ms&quot; //$NON-NLS-1$ //$NON-NLS-2$
-<span class="pc bpc" id="L456" title="1 of 2 branches missed.">							+ (usedRetryAfter ? &quot; (from Retry-After header)&quot; : &quot; (exponential backoff)&quot;)); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L457">					retryWait.pause(waitMs);</span>
-<span class="fc" id="L458">					backoffMs *= 2;</span>
-<span class="fc" id="L459">					continue;</span>
+<span class="pc bpc" id="L455" title="1 of 2 branches missed.">							+ (usedRetryAfter ? &quot; (from Retry-After header)&quot; : &quot; (exponential backoff)&quot;)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L456">					retryWait.pause(waitMs);</span>
+<span class="fc" id="L457">					backoffMs *= 2;</span>
+<span class="fc" id="L458">					continue;</span>
 				}
 
-<span class="fc" id="L462">				allAttempts429 = false;</span>
-<span class="fc" id="L463">				consecutive429Batches = 0;</span>
-<span class="pc bpc" id="L464" title="1 of 6 branches missed.">				if (response.statusCode() == 503 &amp;&amp; !Thread.currentThread().isInterrupted()</span>
-<span class="fc bfc" id="L465" title="All 2 branches covered.">						&amp;&amp; attempt + 1 &lt; MAX_RETRIES &amp;&amp; !isApiUnavailable()) {</span>
-<span class="fc" id="L466">					System.err.println(&quot;Gemini service unavailable (503), attempt &quot; + (attempt + 1) //$NON-NLS-1$</span>
+<span class="fc" id="L461">				allAttempts429 = false;</span>
+<span class="fc" id="L462">				consecutive429Batches = 0;</span>
+<span class="pc bpc" id="L463" title="1 of 6 branches missed.">				if (response.statusCode() == 503 &amp;&amp; !Thread.currentThread().isInterrupted()</span>
+<span class="fc bfc" id="L464" title="All 2 branches covered.">						&amp;&amp; attempt + 1 &lt; MAX_RETRIES &amp;&amp; !isApiUnavailable()) {</span>
+<span class="fc" id="L465">					System.err.println(&quot;Gemini service unavailable (503), attempt &quot; + (attempt + 1) //$NON-NLS-1$</span>
 							+ &quot;/&quot; + MAX_RETRIES + &quot;; retrying in &quot; + backoffMs + &quot;ms&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-<span class="fc" id="L468">					retryWait.pause(backoffMs);</span>
-<span class="fc" id="L469">					backoffMs *= 2;</span>
-<span class="fc" id="L470">					continue;</span>
+<span class="fc" id="L467">					retryWait.pause(backoffMs);</span>
+<span class="fc" id="L468">					backoffMs *= 2;</span>
+<span class="fc" id="L469">					continue;</span>
 				}
-<span class="fc" id="L472">				throw new IOException(&quot;Gemini API error: &quot; + response.statusCode() //$NON-NLS-1$</span>
-<span class="fc" id="L473">						+ &quot; - &quot; + response.body()); //$NON-NLS-1$</span>
+<span class="fc" id="L471">				throw new IOException(&quot;Gemini API error: &quot; + response.statusCode() //$NON-NLS-1$</span>
+<span class="fc" id="L472">						+ &quot; - &quot; + response.body()); //$NON-NLS-1$</span>
 
-<span class="fc" id="L475">			} catch (InterruptedException e) {</span>
-<span class="fc" id="L476">				Thread.currentThread().interrupt();</span>
-<span class="fc" id="L477">				throw new IOException(&quot;Interrupted during Gemini API call&quot;, e);</span>
+<span class="fc" id="L474">			} catch (InterruptedException e) {</span>
+<span class="fc" id="L475">				Thread.currentThread().interrupt();</span>
+<span class="fc" id="L476">				throw new IOException(&quot;Interrupted during Gemini API call&quot;, e);</span>
 			}
 		}
 
 		// Track consecutive 429 batches for faster abort
-<span class="nc bnc" id="L482" title="All 2 branches missed.">		if (allAttempts429) {</span>
-<span class="nc" id="L483">			consecutive429Batches++;</span>
-<span class="nc bnc" id="L484" title="All 2 branches missed.">			if (consecutive429Batches &gt;= 2) {</span>
-<span class="nc" id="L485">				System.err.println(&quot;Two consecutive batches entirely rate-limited (429). &quot; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L481" title="All 2 branches missed.">		if (allAttempts429) {</span>
+<span class="nc" id="L482">			consecutive429Batches++;</span>
+<span class="nc bnc" id="L483" title="All 2 branches missed.">			if (consecutive429Batches &gt;= 2) {</span>
+<span class="nc" id="L484">				System.err.println(&quot;Two consecutive batches entirely rate-limited (429). &quot; //$NON-NLS-1$</span>
 						+ &quot;Marking API as unavailable.&quot;); //$NON-NLS-1$
 				// Force unavailable by backdating lastSuccessfulCall
-<span class="nc" id="L488">				lastSuccessfulCall = Instant.now().minus(maxFailureDuration.plusSeconds(1));</span>
+<span class="nc" id="L487">				lastSuccessfulCall = Instant.now().minus(maxFailureDuration.plusSeconds(1));</span>
 			}
 			// Increase rate limit delay after 429 cascade
-<span class="nc" id="L491">			rateLimitDelayMs.updateAndGet(delay -&gt; Math.min(delay * 2, 120000));</span>
+<span class="nc" id="L490">			rateLimitDelayMs.updateAndGet(delay -&gt; Math.min(delay * 2, 120000));</span>
 		}
 
-<span class="nc" id="L494">		System.err.println(&quot;Max retries exceeded for Gemini API call, entering post-failure cooldown of &quot;</span>
+<span class="nc" id="L493">		System.err.println(&quot;Max retries exceeded for Gemini API call, entering post-failure cooldown of &quot;</span>
 				+ POST_FAILURE_COOLDOWN_MS + &quot;ms&quot;);
 		try {
-<span class="nc" id="L497">			retryWait.pause(POST_FAILURE_COOLDOWN_MS);</span>
-<span class="nc" id="L498">		} catch (InterruptedException e) {</span>
-<span class="nc" id="L499">			Thread.currentThread().interrupt();</span>
-<span class="nc" id="L500">		}</span>
-<span class="nc" id="L501">		return null;</span>
+<span class="nc" id="L496">			retryWait.pause(POST_FAILURE_COOLDOWN_MS);</span>
+<span class="nc" id="L497">		} catch (InterruptedException e) {</span>
+<span class="nc" id="L498">			Thread.currentThread().interrupt();</span>
+<span class="nc" id="L499">		}</span>
+<span class="nc" id="L500">		return null;</span>
 	}
 
 	private static boolean isTransientTransportFailure(IOException failure) {
-<span class="pc bpc" id="L505" title="1 of 2 branches missed.">		for (Throwable cause = failure; cause != null; cause = cause.getCause()) {</span>
-<span class="fc bfc" id="L506" title="All 2 branches covered.">			if (cause instanceof SSLException) {</span>
-<span class="fc" id="L507">				return false;</span>
+<span class="pc bpc" id="L504" title="1 of 2 branches missed.">		for (Throwable cause = failure; cause != null; cause = cause.getCause()) {</span>
+<span class="fc bfc" id="L505" title="All 2 branches covered.">			if (cause instanceof SSLException) {</span>
+<span class="fc" id="L506">				return false;</span>
 			}
-<span class="pc bpc" id="L509" title="4 of 8 branches missed.">			if (cause instanceof HttpTimeoutException || cause instanceof ConnectException</span>
+<span class="pc bpc" id="L508" title="4 of 8 branches missed.">			if (cause instanceof HttpTimeoutException || cause instanceof ConnectException</span>
 					|| cause instanceof SocketException || cause instanceof EOFException) {
-<span class="fc" id="L511">				return true;</span>
+<span class="fc" id="L510">				return true;</span>
 			}
 		}
-<span class="nc" id="L514">		return false;</span>
+<span class="nc" id="L513">		return false;</span>
 	}
 
 	/**
@@ -519,81 +518,81 @@ public class GeminiClient implements LlmClient {
 	 */
 	public CommitEvaluation parseResponse(String responseBody, String commitHash,
 			String commitMessage, String repoUrl) {
-<span class="fc" id="L522">		lastResponseTruncated = false;</span>
+<span class="fc" id="L521">		lastResponseTruncated = false;</span>
 		try {
-<span class="fc" id="L524">			JsonObject root = JsonParser.parseString(responseBody).getAsJsonObject();</span>
-<span class="fc" id="L525">			JsonArray candidates = root.getAsJsonArray(&quot;candidates&quot;);</span>
-<span class="pc bpc" id="L526" title="1 of 4 branches missed.">			if (candidates == null || candidates.isEmpty()) {</span>
-<span class="fc" id="L527">				return null;</span>
+<span class="fc" id="L523">			JsonObject root = JsonParser.parseString(responseBody).getAsJsonObject();</span>
+<span class="fc" id="L524">			JsonArray candidates = root.getAsJsonArray(&quot;candidates&quot;);</span>
+<span class="pc bpc" id="L525" title="1 of 4 branches missed.">			if (candidates == null || candidates.isEmpty()) {</span>
+<span class="fc" id="L526">				return null;</span>
 			}
 
-<span class="fc" id="L530">			JsonObject firstCandidate = candidates.get(0).getAsJsonObject();</span>
+<span class="fc" id="L529">			JsonObject firstCandidate = candidates.get(0).getAsJsonObject();</span>
 
 			// Check finishReason before parsing content
-<span class="fc" id="L533">			String finishReason = getStringOrNull(firstCandidate, &quot;finishReason&quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L534" title="All 2 branches covered.">			if (&quot;MAX_TOKENS&quot;.equals(finishReason)) { //$NON-NLS-1$</span>
-<span class="fc" id="L535">				System.err.println(&quot;Warning: Gemini response truncated (finishReason=MAX_TOKENS)&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L536">				lastResponseTruncated = true;</span>
+<span class="fc" id="L532">			String finishReason = getStringOrNull(firstCandidate, &quot;finishReason&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L533" title="All 2 branches covered.">			if (&quot;MAX_TOKENS&quot;.equals(finishReason)) { //$NON-NLS-1$</span>
+<span class="fc" id="L534">				System.err.println(&quot;Warning: Gemini response truncated (finishReason=MAX_TOKENS)&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L535">				lastResponseTruncated = true;</span>
 			}
-<span class="fc bfc" id="L538" title="All 2 branches covered.">			if (&quot;SAFETY&quot;.equals(finishReason)) { //$NON-NLS-1$</span>
-<span class="fc" id="L539">				System.err.println(&quot;Warning: Gemini refused (finishReason=SAFETY), skipping commit&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L540">				return null;</span>
-			}
-
-<span class="fc" id="L543">			JsonObject content = firstCandidate.getAsJsonObject(&quot;content&quot;);</span>
-<span class="pc bpc" id="L544" title="1 of 2 branches missed.">			if (content == null) {</span>
-<span class="nc" id="L545">				return null;</span>
+<span class="fc bfc" id="L537" title="All 2 branches covered.">			if (&quot;SAFETY&quot;.equals(finishReason)) { //$NON-NLS-1$</span>
+<span class="fc" id="L538">				System.err.println(&quot;Warning: Gemini refused (finishReason=SAFETY), skipping commit&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L539">				return null;</span>
 			}
 
-<span class="fc" id="L548">			JsonArray parts = content.getAsJsonArray(&quot;parts&quot;);</span>
-<span class="pc bpc" id="L549" title="2 of 4 branches missed.">			if (parts == null || parts.isEmpty()) {</span>
-<span class="nc" id="L550">				return null;</span>
+<span class="fc" id="L542">			JsonObject content = firstCandidate.getAsJsonObject(&quot;content&quot;);</span>
+<span class="pc bpc" id="L543" title="1 of 2 branches missed.">			if (content == null) {</span>
+<span class="nc" id="L544">				return null;</span>
 			}
 
-<span class="fc" id="L553">			String text = parts.get(0).getAsJsonObject().get(&quot;text&quot;).getAsString();</span>
+<span class="fc" id="L547">			JsonArray parts = content.getAsJsonArray(&quot;parts&quot;);</span>
+<span class="pc bpc" id="L548" title="2 of 4 branches missed.">			if (parts == null || parts.isEmpty()) {</span>
+<span class="nc" id="L549">				return null;</span>
+			}
+
+<span class="fc" id="L552">			String text = parts.get(0).getAsJsonObject().get(&quot;text&quot;).getAsString();</span>
 
 			// Extract JSON from text (may be wrapped in markdown code blocks)
-<span class="fc" id="L556">			String json = extractJson(text);</span>
-<span class="fc" id="L557">			JsonObject eval = JsonParser.parseString(json).getAsJsonObject();</span>
+<span class="fc" id="L555">			String json = extractJson(text);</span>
+<span class="fc" id="L556">			JsonObject eval = JsonParser.parseString(json).getAsJsonObject();</span>
 
-<span class="fc" id="L559">			return createEvaluation(eval, commitHash, commitMessage, repoUrl);</span>
-<span class="fc" id="L560">		} catch (Exception e) {</span>
-<span class="fc" id="L561">			System.err.println(&quot;Failed to parse Gemini response: &quot; + e.getMessage());</span>
-<span class="pc bpc" id="L562" title="2 of 4 branches missed.">			if (responseBody != null &amp;&amp; Boolean.parseBoolean(System.getenv(&quot;GEMINI_DEBUG&quot;))) {</span>
-<span class="nc" id="L563">				System.err.println(&quot;Raw response (first 500 chars): &quot;</span>
-<span class="nc" id="L564">						+ responseBody.substring(0, Math.min(500, responseBody.length())));</span>
+<span class="fc" id="L558">			return createEvaluation(eval, commitHash, commitMessage, repoUrl);</span>
+<span class="fc" id="L559">		} catch (Exception e) {</span>
+<span class="fc" id="L560">			System.err.println(&quot;Failed to parse Gemini response: &quot; + e.getMessage());</span>
+<span class="pc bpc" id="L561" title="2 of 4 branches missed.">			if (responseBody != null &amp;&amp; Boolean.parseBoolean(System.getenv(&quot;GEMINI_DEBUG&quot;))) {</span>
+<span class="nc" id="L562">				System.err.println(&quot;Raw response (first 500 chars): &quot;</span>
+<span class="nc" id="L563">						+ responseBody.substring(0, Math.min(500, responseBody.length())));</span>
 			}
-<span class="fc" id="L566">			return null;</span>
+<span class="fc" id="L565">			return null;</span>
 		}
 	}
 
 	public static String extractJson(String text) {
 		// Try to extract JSON from markdown code blocks
-<span class="fc" id="L572">		int jsonStart = text.indexOf(&quot;```json&quot;);</span>
-<span class="fc bfc" id="L573" title="All 2 branches covered.">		if (jsonStart &gt;= 0) {</span>
-<span class="fc" id="L574">			int contentStart = text.indexOf('\n', jsonStart) + 1;</span>
-<span class="fc" id="L575">			int contentEnd = text.indexOf(&quot;```&quot;, contentStart);</span>
-<span class="fc bfc" id="L576" title="All 2 branches covered.">			if (contentEnd &gt; contentStart) {</span>
-<span class="fc" id="L577">				return text.substring(contentStart, contentEnd).trim();</span>
+<span class="fc" id="L571">		int jsonStart = text.indexOf(&quot;```json&quot;);</span>
+<span class="fc bfc" id="L572" title="All 2 branches covered.">		if (jsonStart &gt;= 0) {</span>
+<span class="fc" id="L573">			int contentStart = text.indexOf('\n', jsonStart) + 1;</span>
+<span class="fc" id="L574">			int contentEnd = text.indexOf(&quot;```&quot;, contentStart);</span>
+<span class="fc bfc" id="L575" title="All 2 branches covered.">			if (contentEnd &gt; contentStart) {</span>
+<span class="fc" id="L576">				return text.substring(contentStart, contentEnd).trim();</span>
 			}
 			// Truncated code block (no closing ```): take rest of text
-<span class="fc" id="L580">			return repairTruncatedJson(text.substring(contentStart).trim());</span>
+<span class="fc" id="L579">			return repairTruncatedJson(text.substring(contentStart).trim());</span>
 		}
 
 		// Try plain code blocks
-<span class="fc" id="L584">		jsonStart = text.indexOf(&quot;```&quot;);</span>
-<span class="fc bfc" id="L585" title="All 2 branches covered.">		if (jsonStart &gt;= 0) {</span>
-<span class="fc" id="L586">			int contentStart = text.indexOf('\n', jsonStart) + 1;</span>
-<span class="fc" id="L587">			int contentEnd = text.indexOf(&quot;```&quot;, contentStart);</span>
-<span class="pc bpc" id="L588" title="1 of 2 branches missed.">			if (contentEnd &gt; contentStart) {</span>
-<span class="fc" id="L589">				return text.substring(contentStart, contentEnd).trim();</span>
+<span class="fc" id="L583">		jsonStart = text.indexOf(&quot;```&quot;);</span>
+<span class="fc bfc" id="L584" title="All 2 branches covered.">		if (jsonStart &gt;= 0) {</span>
+<span class="fc" id="L585">			int contentStart = text.indexOf('\n', jsonStart) + 1;</span>
+<span class="fc" id="L586">			int contentEnd = text.indexOf(&quot;```&quot;, contentStart);</span>
+<span class="pc bpc" id="L587" title="1 of 2 branches missed.">			if (contentEnd &gt; contentStart) {</span>
+<span class="fc" id="L588">				return text.substring(contentStart, contentEnd).trim();</span>
 			}
 			// Truncated code block (no closing ```): take rest of text
-<span class="nc" id="L592">			return repairTruncatedJson(text.substring(contentStart).trim());</span>
+<span class="nc" id="L591">			return repairTruncatedJson(text.substring(contentStart).trim());</span>
 		}
 
 		// Assume the text itself is JSON; attempt repair if truncated
-<span class="fc" id="L596">		return repairTruncatedJson(text.trim());</span>
+<span class="fc" id="L595">		return repairTruncatedJson(text.trim());</span>
 	}
 
 	/**
@@ -605,73 +604,73 @@ public class GeminiClient implements LlmClient {
 	 * @return the repaired JSON string
 	 */
 	public static String repairTruncatedJson(String json) {
-<span class="fc bfc" id="L608" title="All 4 branches covered.">		if (json == null || json.isEmpty()) {</span>
-<span class="fc" id="L609">			return json;</span>
+<span class="fc bfc" id="L607" title="All 4 branches covered.">		if (json == null || json.isEmpty()) {</span>
+<span class="fc" id="L608">			return json;</span>
 		}
 		// Try parsing first; if it works, no repair needed
 		try {
-<span class="fc" id="L613">			JsonParser.parseString(json);</span>
-<span class="fc" id="L614">			return json;</span>
-<span class="fc" id="L615">		} catch (Exception e) {</span>
+<span class="fc" id="L612">			JsonParser.parseString(json);</span>
+<span class="fc" id="L613">			return json;</span>
+<span class="fc" id="L614">		} catch (Exception e) {</span>
 			// Fall through to repair
 		}
 
-<span class="fc" id="L619">		StringBuilder sb = new StringBuilder(json);</span>
+<span class="fc" id="L618">		StringBuilder sb = new StringBuilder(json);</span>
 		// Remove trailing comma if present (common in truncated arrays/objects)
-<span class="fc" id="L621">		String trimmed = sb.toString().trim();</span>
-<span class="fc bfc" id="L622" title="All 2 branches covered.">		if (trimmed.endsWith(&quot;,&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L623">			sb = new StringBuilder(trimmed.substring(0, trimmed.length() - 1));</span>
+<span class="fc" id="L620">		String trimmed = sb.toString().trim();</span>
+<span class="fc bfc" id="L621" title="All 2 branches covered.">		if (trimmed.endsWith(&quot;,&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L622">			sb = new StringBuilder(trimmed.substring(0, trimmed.length() - 1));</span>
 		}
 
 		// Close unclosed strings, objects, and arrays
-<span class="fc" id="L627">		boolean inString = false;</span>
-<span class="fc" id="L628">		int openBraces = 0;</span>
-<span class="fc" id="L629">		int openBrackets = 0;</span>
-<span class="fc bfc" id="L630" title="All 2 branches covered.">		for (int i = 0; i &lt; sb.length(); i++) {</span>
-<span class="fc" id="L631">			char ch = sb.charAt(i);</span>
-<span class="pc bpc" id="L632" title="5 of 6 branches missed.">			if (ch == '\\' &amp;&amp; inString &amp;&amp; i + 1 &lt; sb.length()) {</span>
-<span class="nc" id="L633">				i++; // skip escaped character</span>
-<span class="nc" id="L634">				continue;</span>
+<span class="fc" id="L626">		boolean inString = false;</span>
+<span class="fc" id="L627">		int openBraces = 0;</span>
+<span class="fc" id="L628">		int openBrackets = 0;</span>
+<span class="fc bfc" id="L629" title="All 2 branches covered.">		for (int i = 0; i &lt; sb.length(); i++) {</span>
+<span class="fc" id="L630">			char ch = sb.charAt(i);</span>
+<span class="pc bpc" id="L631" title="5 of 6 branches missed.">			if (ch == '\\' &amp;&amp; inString &amp;&amp; i + 1 &lt; sb.length()) {</span>
+<span class="nc" id="L632">				i++; // skip escaped character</span>
+<span class="nc" id="L633">				continue;</span>
 			}
-<span class="fc bfc" id="L636" title="All 2 branches covered.">			if (ch == '&quot;') {</span>
-<span class="fc bfc" id="L637" title="All 2 branches covered.">				inString = !inString;</span>
-<span class="fc bfc" id="L638" title="All 2 branches covered.">			} else if (!inString) {</span>
-<span class="fc bfc" id="L639" title="All 2 branches covered.">				if (ch == '{') {</span>
-<span class="fc" id="L640">					openBraces++;</span>
-<span class="fc bfc" id="L641" title="All 2 branches covered.">				} else if (ch == '}') {</span>
-<span class="fc" id="L642">					openBraces--;</span>
-<span class="fc bfc" id="L643" title="All 2 branches covered.">				} else if (ch == '[') {</span>
-<span class="fc" id="L644">					openBrackets++;</span>
-<span class="pc bpc" id="L645" title="1 of 2 branches missed.">				} else if (ch == ']') {</span>
-<span class="nc" id="L646">					openBrackets--;</span>
+<span class="fc bfc" id="L635" title="All 2 branches covered.">			if (ch == '&quot;') {</span>
+<span class="fc bfc" id="L636" title="All 2 branches covered.">				inString = !inString;</span>
+<span class="fc bfc" id="L637" title="All 2 branches covered.">			} else if (!inString) {</span>
+<span class="fc bfc" id="L638" title="All 2 branches covered.">				if (ch == '{') {</span>
+<span class="fc" id="L639">					openBraces++;</span>
+<span class="fc bfc" id="L640" title="All 2 branches covered.">				} else if (ch == '}') {</span>
+<span class="fc" id="L641">					openBraces--;</span>
+<span class="fc bfc" id="L642" title="All 2 branches covered.">				} else if (ch == '[') {</span>
+<span class="fc" id="L643">					openBrackets++;</span>
+<span class="pc bpc" id="L644" title="1 of 2 branches missed.">				} else if (ch == ']') {</span>
+<span class="nc" id="L645">					openBrackets--;</span>
 				}
 			}
 		}
-<span class="fc bfc" id="L650" title="All 2 branches covered.">		if (inString) {</span>
-<span class="fc" id="L651">			sb.append('&quot;');</span>
+<span class="fc bfc" id="L649" title="All 2 branches covered.">		if (inString) {</span>
+<span class="fc" id="L650">			sb.append('&quot;');</span>
 		}
 		// Remove trailing comma after closing string
-<span class="fc" id="L654">		trimmed = sb.toString().trim();</span>
-<span class="pc bpc" id="L655" title="1 of 2 branches missed.">		if (trimmed.endsWith(&quot;,&quot;)) { //$NON-NLS-1$</span>
-<span class="nc" id="L656">			sb = new StringBuilder(trimmed.substring(0, trimmed.length() - 1));</span>
+<span class="fc" id="L653">		trimmed = sb.toString().trim();</span>
+<span class="pc bpc" id="L654" title="1 of 2 branches missed.">		if (trimmed.endsWith(&quot;,&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L655">			sb = new StringBuilder(trimmed.substring(0, trimmed.length() - 1));</span>
 		}
-<span class="fc bfc" id="L658" title="All 2 branches covered.">		for (int i = 0; i &lt; openBraces; i++) {</span>
-<span class="fc" id="L659">			sb.append('}');</span>
+<span class="fc bfc" id="L657" title="All 2 branches covered.">		for (int i = 0; i &lt; openBraces; i++) {</span>
+<span class="fc" id="L658">			sb.append('}');</span>
 		}
-<span class="fc bfc" id="L661" title="All 2 branches covered.">		for (int i = 0; i &lt; openBrackets; i++) {</span>
-<span class="fc" id="L662">			sb.append(']');</span>
+<span class="fc bfc" id="L660" title="All 2 branches covered.">		for (int i = 0; i &lt; openBrackets; i++) {</span>
+<span class="fc" id="L661">			sb.append(']');</span>
 		}
-<span class="fc" id="L664">		return sb.toString();</span>
+<span class="fc" id="L663">		return sb.toString();</span>
 	}
 
 	private static CommitEvaluation.TrafficLight parseTrafficLight(String value) {
-<span class="fc bfc" id="L668" title="All 2 branches covered.">		if (value == null) {</span>
-<span class="fc" id="L669">			return CommitEvaluation.TrafficLight.NOT_APPLICABLE;</span>
+<span class="fc bfc" id="L667" title="All 2 branches covered.">		if (value == null) {</span>
+<span class="fc" id="L668">			return CommitEvaluation.TrafficLight.NOT_APPLICABLE;</span>
 		}
 		try {
-<span class="fc" id="L672">			return CommitEvaluation.TrafficLight.valueOf(value.toUpperCase());</span>
-<span class="nc" id="L673">		} catch (IllegalArgumentException e) {</span>
-<span class="nc" id="L674">			return CommitEvaluation.TrafficLight.NOT_APPLICABLE;</span>
+<span class="fc" id="L671">			return CommitEvaluation.TrafficLight.valueOf(value.toUpperCase());</span>
+<span class="nc" id="L672">		} catch (IllegalArgumentException e) {</span>
+<span class="nc" id="L673">			return CommitEvaluation.TrafficLight.NOT_APPLICABLE;</span>
 		}
 	}
 
@@ -680,57 +679,57 @@ public class GeminiClient implements LlmClient {
 	 */
 	private static CommitEvaluation createEvaluation(JsonObject eval, String commitHash,
 			String commitMessage, String repoUrl) {
-<span class="fc" id="L683">		CommitEvaluation declined = DiscoveryAdmission.explicitDecline(eval, commitHash, commitMessage, repoUrl);</span>
-<span class="fc bfc" id="L684" title="All 2 branches covered.">		if (declined != null) {</span>
-<span class="fc" id="L685">			return declined;</span>
+<span class="fc" id="L682">		CommitEvaluation declined = DiscoveryAdmission.explicitDecline(eval, commitHash, commitMessage, repoUrl);</span>
+<span class="fc bfc" id="L683" title="All 2 branches covered.">		if (declined != null) {</span>
+<span class="fc" id="L684">			return declined;</span>
 		}
 		try {
-<span class="fc" id="L688">			return parseCandidateFields(eval, commitHash, commitMessage, repoUrl);</span>
-<span class="fc" id="L689">		} catch (RuntimeException e) {</span>
-<span class="fc" id="L690">			return DiscoveryAdmission.malformedFields(eval, commitHash, commitMessage, repoUrl, e);</span>
+<span class="fc" id="L687">			return parseCandidateFields(eval, commitHash, commitMessage, repoUrl);</span>
+<span class="fc" id="L688">		} catch (RuntimeException e) {</span>
+<span class="fc" id="L689">			return DiscoveryAdmission.malformedFields(eval, commitHash, commitMessage, repoUrl, e);</span>
 		}
 	}
 
 	private static CommitEvaluation parseCandidateFields(JsonObject eval, String commitHash,
 			String commitMessage, String repoUrl) {
-<span class="fc" id="L696">		boolean relevant = getBooleanOrDefault(eval, &quot;relevant&quot;, false); //$NON-NLS-1$</span>
-<span class="fc" id="L697">		String category = getStringOrNull(eval, &quot;category&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L695">		boolean relevant = getBooleanOrDefault(eval, &quot;relevant&quot;, false); //$NON-NLS-1$</span>
+<span class="fc" id="L696">		String category = getStringOrNull(eval, &quot;category&quot;); //$NON-NLS-1$</span>
 		// Default category for relevant commits without one
-<span class="pc bpc" id="L699" title="1 of 6 branches missed.">		if (relevant &amp;&amp; (category == null || category.isBlank())) {</span>
-<span class="fc" id="L700">			System.err.println(&quot;Warning: relevant commit &quot; + commitHash //$NON-NLS-1$</span>
+<span class="pc bpc" id="L698" title="1 of 6 branches missed.">		if (relevant &amp;&amp; (category == null || category.isBlank())) {</span>
+<span class="fc" id="L699">			System.err.println(&quot;Warning: relevant commit &quot; + commitHash //$NON-NLS-1$</span>
 					+ &quot; has no category, defaulting to 'Uncategorized'&quot;); //$NON-NLS-1$
-<span class="fc" id="L702">			category = &quot;Uncategorized&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L701">			category = &quot;Uncategorized&quot;; //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L704">		String dslRule = sanitizeDslRule(getStringOrNull(eval, &quot;dslRule&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L705">		String dslRuleAfterChange = sanitizeDslRule(getStringOrNull(eval, &quot;dslRuleAfterChange&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L706">		return DiscoveryAdmission.apply(eval, new CommitEvaluation(</span>
+<span class="fc" id="L703">		String dslRule = sanitizeDslRule(getStringOrNull(eval, &quot;dslRule&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L704">		String dslRuleAfterChange = sanitizeDslRule(getStringOrNull(eval, &quot;dslRuleAfterChange&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L705">		return DiscoveryAdmission.apply(eval, new CommitEvaluation(</span>
 				commitHash,
 				commitMessage,
 				repoUrl,
-<span class="fc" id="L710">				Instant.now(),</span>
+<span class="fc" id="L709">				Instant.now(),</span>
 				null,
 				relevant,
-<span class="fc" id="L713">				getStringOrNull(eval, &quot;irrelevantReason&quot;), //$NON-NLS-1$</span>
-<span class="fc" id="L714">				getBooleanOrDefault(eval, &quot;isDuplicate&quot;, false), //$NON-NLS-1$</span>
-<span class="fc" id="L715">				getStringOrNull(eval, &quot;duplicateOf&quot;), //$NON-NLS-1$</span>
-<span class="fc" id="L716">				getIntOrDefault(eval, &quot;reusability&quot;, 0), //$NON-NLS-1$</span>
-<span class="fc" id="L717">				getIntOrDefault(eval, &quot;codeImprovement&quot;, 0), //$NON-NLS-1$</span>
-<span class="fc" id="L718">				getIntOrDefault(eval, &quot;implementationEffort&quot;, 0), //$NON-NLS-1$</span>
-<span class="fc" id="L719">				parseTrafficLight(getStringOrNull(eval, &quot;trafficLight&quot;)), //$NON-NLS-1$</span>
+<span class="fc" id="L712">				getStringOrNull(eval, &quot;irrelevantReason&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L713">				getBooleanOrDefault(eval, &quot;isDuplicate&quot;, false), //$NON-NLS-1$</span>
+<span class="fc" id="L714">				getStringOrNull(eval, &quot;duplicateOf&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L715">				getIntOrDefault(eval, &quot;reusability&quot;, 0), //$NON-NLS-1$</span>
+<span class="fc" id="L716">				getIntOrDefault(eval, &quot;codeImprovement&quot;, 0), //$NON-NLS-1$</span>
+<span class="fc" id="L717">				getIntOrDefault(eval, &quot;implementationEffort&quot;, 0), //$NON-NLS-1$</span>
+<span class="fc" id="L718">				parseTrafficLight(getStringOrNull(eval, &quot;trafficLight&quot;)), //$NON-NLS-1$</span>
 				category,
-<span class="fc" id="L721">				getBooleanOrDefault(eval, &quot;isNewCategory&quot;, false), //$NON-NLS-1$</span>
-<span class="fc" id="L722">				getStringOrNull(eval, &quot;categoryReason&quot;), //$NON-NLS-1$</span>
-<span class="fc" id="L723">				getBooleanOrDefault(eval, &quot;canImplementInCurrentDsl&quot;, false), //$NON-NLS-1$</span>
+<span class="fc" id="L720">				getBooleanOrDefault(eval, &quot;isNewCategory&quot;, false), //$NON-NLS-1$</span>
+<span class="fc" id="L721">				getStringOrNull(eval, &quot;categoryReason&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L722">				getBooleanOrDefault(eval, &quot;canImplementInCurrentDsl&quot;, false), //$NON-NLS-1$</span>
 				dslRule,
-<span class="fc" id="L725">				getStringOrNull(eval, &quot;targetHintFile&quot;), //$NON-NLS-1$</span>
-<span class="fc" id="L726">				getStringOrNull(eval, &quot;languageChangeNeeded&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L724">				getStringOrNull(eval, &quot;targetHintFile&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L725">				getStringOrNull(eval, &quot;languageChangeNeeded&quot;), //$NON-NLS-1$</span>
 				dslRuleAfterChange,
-<span class="fc" id="L728">				getStringOrNull(eval, &quot;summary&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L727">				getStringOrNull(eval, &quot;summary&quot;), //$NON-NLS-1$</span>
 				null,
-<span class="fc" id="L730">				getStringOrNull(eval, &quot;beforeExample&quot;), //$NON-NLS-1$</span>
-<span class="fc" id="L731">				getStringOrNull(eval, &quot;afterExample&quot;), //$NON-NLS-1$</span>
-<span class="fc" id="L732">				getStringOrNull(eval, &quot;negativeExample&quot;), //$NON-NLS-1$</span>
-<span class="fc" id="L733">				DiscoveryAdmission.sourceVersion(eval), DiscoveryAdmission.sourceEvidence(eval)));</span>
+<span class="fc" id="L729">				getStringOrNull(eval, &quot;beforeExample&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L730">				getStringOrNull(eval, &quot;afterExample&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L731">				getStringOrNull(eval, &quot;negativeExample&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L732">				DiscoveryAdmission.sourceVersion(eval), DiscoveryAdmission.sourceEvidence(eval)));</span>
 	}
 
 	/**
@@ -743,49 +742,49 @@ public class GeminiClient implements LlmClient {
 	 *         or if the sanitized result is empty after stripping tags and trimming
 	 */
 	static String sanitizeDslRule(String dslRule) {
-<span class="fc bfc" id="L746" title="All 2 branches covered.">		if (dslRule == null) {</span>
-<span class="fc" id="L747">			return null;</span>
+<span class="fc bfc" id="L745" title="All 2 branches covered.">		if (dslRule == null) {</span>
+<span class="fc" id="L746">			return null;</span>
 		}
-<span class="fc" id="L749">		String result = dslRule;</span>
-<span class="fc" id="L750">		result = result.replaceAll(&quot;&lt;/?trigger&gt;&quot;, &quot;&quot;).trim(); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L751">		result = result.replaceAll(&quot;&lt;/?pattern&gt;&quot;, &quot;&quot;).trim(); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L752">		result = result.replaceAll(&quot;&lt;import&gt;[^&lt;]*&lt;/import&gt;&quot;, &quot;&quot;).trim(); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="pc bpc" id="L753" title="1 of 2 branches missed.">		return result.isEmpty() ? null : result;</span>
+<span class="fc" id="L748">		String result = dslRule;</span>
+<span class="fc" id="L749">		result = result.replaceAll(&quot;&lt;/?trigger&gt;&quot;, &quot;&quot;).trim(); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L750">		result = result.replaceAll(&quot;&lt;/?pattern&gt;&quot;, &quot;&quot;).trim(); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L751">		result = result.replaceAll(&quot;&lt;import&gt;[^&lt;]*&lt;/import&gt;&quot;, &quot;&quot;).trim(); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L752" title="1 of 2 branches missed.">		return result.isEmpty() ? null : result;</span>
 	}
 
 	private static String getStringOrNull(JsonObject obj, String key) {
-<span class="fc" id="L757">		JsonElement element = obj.get(key);</span>
-<span class="pc bpc" id="L758" title="1 of 4 branches missed.">		return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsString() : null;</span>
+<span class="fc" id="L756">		JsonElement element = obj.get(key);</span>
+<span class="pc bpc" id="L757" title="1 of 4 branches missed.">		return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsString() : null;</span>
 	}
 
 	private static boolean getBooleanOrDefault(JsonObject obj, String key, boolean defaultValue) {
-<span class="fc" id="L762">		JsonElement element = obj.get(key);</span>
-<span class="pc bpc" id="L763" title="1 of 4 branches missed.">		return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsBoolean() : defaultValue;</span>
+<span class="fc" id="L761">		JsonElement element = obj.get(key);</span>
+<span class="pc bpc" id="L762" title="1 of 4 branches missed.">		return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsBoolean() : defaultValue;</span>
 	}
 
 	private static int getIntOrDefault(JsonObject obj, String key, int defaultValue) {
-<span class="fc" id="L767">		JsonElement element = obj.get(key);</span>
-<span class="pc bpc" id="L768" title="1 of 4 branches missed.">		return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsInt() : defaultValue;</span>
+<span class="fc" id="L766">		JsonElement element = obj.get(key);</span>
+<span class="pc bpc" id="L767" title="1 of 4 branches missed.">		return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsInt() : defaultValue;</span>
 	}
 
 	private void rateLimit() {
-<span class="fc" id="L772">		long now = System.currentTimeMillis();</span>
-<span class="fc" id="L773">		long elapsed = now - lastRequestTime;</span>
-<span class="fc" id="L774">		int delayMs = rateLimitDelayMs.get();</span>
-<span class="pc bpc" id="L775" title="1 of 4 branches missed.">		if (elapsed &lt; delayMs &amp;&amp; lastRequestTime &gt; 0) {</span>
+<span class="fc" id="L771">		long now = System.currentTimeMillis();</span>
+<span class="fc" id="L772">		long elapsed = now - lastRequestTime;</span>
+<span class="fc" id="L773">		int delayMs = rateLimitDelayMs.get();</span>
+<span class="pc bpc" id="L774" title="1 of 4 branches missed.">		if (elapsed &lt; delayMs &amp;&amp; lastRequestTime &gt; 0) {</span>
 			try {
-<span class="fc" id="L777">				retryWait.pause(delayMs - elapsed);</span>
-<span class="nc" id="L778">			} catch (InterruptedException e) {</span>
-<span class="nc" id="L779">				Thread.currentThread().interrupt();</span>
-<span class="fc" id="L780">			}</span>
+<span class="fc" id="L776">				retryWait.pause(delayMs - elapsed);</span>
+<span class="nc" id="L777">			} catch (InterruptedException e) {</span>
+<span class="nc" id="L778">				Thread.currentThread().interrupt();</span>
+<span class="fc" id="L779">			}</span>
 		}
-<span class="fc" id="L782">		lastRequestTime = System.currentTimeMillis();</span>
-<span class="fc" id="L783">	}</span>
+<span class="fc" id="L781">		lastRequestTime = System.currentTimeMillis();</span>
+<span class="fc" id="L782">	}</span>
 
 	@Override
 
 	public void close() {
-<span class="fc" id="L788">		httpClient.close();</span>
-<span class="fc" id="L789">	}</span>
+<span class="fc" id="L787">		httpClient.close();</span>
+<span class="fc" id="L788">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

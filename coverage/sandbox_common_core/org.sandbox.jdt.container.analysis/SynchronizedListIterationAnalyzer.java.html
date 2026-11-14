@@ -20,9 +20,12 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
+import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
@@ -31,8 +34,10 @@ import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.SynchronizedStatement;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.sandbox.jdt.container.api.ConcurrencyProtocol;
@@ -51,148 +56,203 @@ import org.sandbox.jdt.container.api.ContainerUsageProfile.SynchronizationKind;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.ThreadExposure;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.WorkloadShape;
 
-/** Reports traversal and method-return boundaries for synchronized list fields. */
-<span class="fc" id="L55">public final class SynchronizedListIterationAnalyzer {</span>
+/** Reports compound membership checks, traversal and method-return boundaries for synchronized list fields. */
+<span class="fc" id="L60">public final class SynchronizedListIterationAnalyzer {</span>
 
 	private static final String LIST= &quot;java.util.List&quot;; //$NON-NLS-1$
 
 	/** Returns whole-field assessments of atomic copy-and-clear drains and their producers. */
 	public List&lt;ConcurrencyProtocolAssessment&gt; assessDrains(CompilationUnit unit) {
-<span class="fc" id="L61">		return SynchronizedListDrainAnalyzer.analyze(unit);</span>
+<span class="fc" id="L66">		return SynchronizedListDrainAnalyzer.analyze(unit);</span>
 	}
 
-	/** Returns source-ordered observations for matched loops and non-private method returns. */
+	/** Returns source-ordered observations for matched conditional insertions, loops and non-private method returns. */
 	public List&lt;DiagnosticOnly&gt; analyze(CompilationUnit unit) {
-<span class="fc" id="L66">		List&lt;DiagnosticOnly&gt; observations= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L67">		unit.accept(new ASTVisitor() {</span>
+<span class="fc" id="L71">		List&lt;DiagnosticOnly&gt; observations= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L72">		unit.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(IfStatement branch) {
+<span class="fc" id="L75">				observeConditionalAdd(unit, branch).ifPresent(observations::add);</span>
+<span class="fc" id="L76">				return true;</span>
+			}
+
 			@Override
 			public boolean visit(EnhancedForStatement loop) {
-<span class="fc" id="L70">				observe(unit, loop).ifPresent(observations::add);</span>
-<span class="fc" id="L71">				return true;</span>
+<span class="fc" id="L81">				observe(unit, loop).ifPresent(observations::add);</span>
+<span class="fc" id="L82">				return true;</span>
 			}
 
 			@Override
 			public boolean visit(ReturnStatement statement) {
-<span class="fc" id="L76">				observeReturn(unit, statement).ifPresent(observations::add);</span>
-<span class="fc" id="L77">				return true;</span>
+<span class="fc" id="L87">				observeReturn(unit, statement).ifPresent(observations::add);</span>
+<span class="fc" id="L88">				return true;</span>
 			}
 		});
-<span class="fc" id="L80">		return List.copyOf(observations);</span>
+<span class="fc" id="L91">		return List.copyOf(observations);</span>
+	}
+
+	/** Match the check and write separately; the wrapper synchronizes each method call. */
+	private static Optional&lt;DiagnosticOnly&gt; observeConditionalAdd(CompilationUnit unit, IfStatement branch) {
+<span class="fc bfc" id="L96" title="All 2 branches covered.">		if (!(unwrap(branch.getExpression()) instanceof PrefixExpression negated)</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">				|| negated.getOperator() != PrefixExpression.Operator.NOT</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">				|| !(unwrap(negated.getOperand()) instanceof MethodInvocation contains)</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">				|| !isListOperation(contains, &quot;contains&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L100">			return Optional.empty();</span>
+		}
+<span class="fc" id="L102">		Statement then= branch.getThenStatement();</span>
+<span class="fc bfc" id="L103" title="All 4 branches covered.">		if (then instanceof Block block &amp;&amp; block.statements().size() == 1) {</span>
+<span class="fc" id="L104">			then= (Statement) block.statements().getFirst();</span>
+		}
+<span class="fc bfc" id="L106" title="All 2 branches covered.">		if (!(then instanceof ExpressionStatement statement)</span>
+<span class="pc bpc" id="L107" title="2 of 4 branches missed.">				|| !(statement.getExpression() instanceof MethodInvocation add) || !isListOperation(add, &quot;add&quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">				|| !(unwrap((Expression) contains.arguments().getFirst()) instanceof SimpleName element)</span>
+<span class="pc bpc" id="L109" title="3 of 6 branches missed.">				|| !(element.resolveBinding() instanceof IVariableBinding variable) || variable.isField() || variable.isRecovered()</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">				|| !(unwrap((Expression) add.arguments().getFirst()) instanceof SimpleName added)</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">				|| !variable.isEqualTo(added.resolveBinding())) {</span>
+<span class="fc" id="L112">			return Optional.empty();</span>
+		}
+<span class="fc" id="L114">		VariableDeclarationFragment field= synchronizedListField(unit, contains.getExpression());</span>
+<span class="fc bfc" id="L115" title="All 4 branches covered.">		if (field == null || !field.resolveBinding().isEqualTo(currentInstanceField(add.getExpression()))) {</span>
+<span class="fc" id="L116">			return Optional.empty();</span>
+		}
+<span class="fc" id="L118">		IVariableBinding binding= field.resolveBinding().getVariableDeclaration();</span>
+<span class="fc" id="L119">		boolean locked= hasMatchingMonitor(branch, binding);</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">		String lock= locked ? binding.getKey() : null;</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">		String reason= locked</span>
+<span class="fc" id="L122">				? &quot;The same wrapper monitor covers contains and add. A replacement must preserve that compound operation.&quot; //$NON-NLS-1$</span>
+<span class="fc" id="L123">				: &quot;No enclosing monitor on this wrapper was verified across contains and add. Check whether callers serialize the operation.&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L124">		ContainerIdentity identity= new ContainerIdentity(binding.getKey(), binding.getName(),</span>
+<span class="fc" id="L125">				field.getName().getStartPosition(), field.getName().getLength());</span>
+<span class="fc" id="L126">		ConcurrencyProfile summary= new ConcurrencyProfile(ThreadExposure.UNKNOWN, SynchronizationKind.SYNCHRONIZED_WRAPPER,</span>
+				IterationSemantics.UNKNOWN, AtomicityRequirement.CHECK_THEN_ACT, WorkloadShape.UNKNOWN);
+<span class="fc" id="L128">		List&lt;Evidence&gt; evidence= List.of(</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">				new Evidence(locked ? EvidenceKind.CHECK_THEN_ACT : EvidenceKind.UNRESOLVED_BOUNDARY, lock,</span>
+<span class="fc" id="L130">						&quot;Tests membership before inserting the element.&quot;, contains.getStartPosition(), contains.getLength()), //$NON-NLS-1$</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">				new Evidence(locked ? EvidenceKind.LOCKED_WRITE : EvidenceKind.UNRESOLVED_BOUNDARY, lock,</span>
+<span class="fc" id="L132">						&quot;Adds the same element when absent.&quot;, add.getStartPosition(), add.getLength())); //$NON-NLS-1$</span>
+<span class="fc" id="L133">		var protocol= new ConcurrencyProtocol(identity, summary, ReentrancyContract.UNKNOWN, AnalysisCompleteness.LOCAL_SEED, evidence);</span>
+<span class="fc" id="L134">		return Optional.of(new DiagnosticOnly(protocol, Severity.INFO, List.of(reason)));</span>
+	}
+
+	private static boolean isListOperation(MethodInvocation invocation, String name) {
+<span class="fc" id="L138">		IMethodBinding method= invocation.resolveMethodBinding();</span>
+<span class="pc bpc" id="L139" title="2 of 6 branches missed.">		return method != null &amp;&amp; !method.isRecovered() &amp;&amp; isType(method.getMethodDeclaration().getDeclaringClass(), LIST)</span>
+<span class="pc bpc" id="L140" title="3 of 6 branches missed.">				&amp;&amp; name.equals(method.getName()) &amp;&amp; invocation.arguments().size() == 1 &amp;&amp; invocation.getExpression() != null;</span>
 	}
 
 	private static Optional&lt;DiagnosticOnly&gt; observe(CompilationUnit unit, EnhancedForStatement loop) {
-<span class="fc" id="L84">		Expression iterable= loop.getExpression();</span>
-<span class="fc" id="L85">		VariableDeclarationFragment declaration= synchronizedListField(unit, iterable);</span>
-<span class="pc bpc" id="L86" title="1 of 4 branches missed.">		if ((loop.getFlags() &amp; (ASTNode.MALFORMED | ASTNode.RECOVERED)) != 0 || declaration == null) {</span>
-<span class="fc" id="L87">			return Optional.empty();</span>
+<span class="fc" id="L144">		Expression iterable= loop.getExpression();</span>
+<span class="fc" id="L145">		VariableDeclarationFragment declaration= synchronizedListField(unit, iterable);</span>
+<span class="pc bpc" id="L146" title="1 of 4 branches missed.">		if ((loop.getFlags() &amp; (ASTNode.MALFORMED | ASTNode.RECOVERED)) != 0 || declaration == null) {</span>
+<span class="fc" id="L147">			return Optional.empty();</span>
 		}
-<span class="fc" id="L89">		IVariableBinding field= declaration.resolveBinding().getVariableDeclaration();</span>
-<span class="fc" id="L90">		String fieldKey= field.getKey();</span>
-<span class="fc" id="L91">		boolean locked= hasMatchingMonitor(loop, field);</span>
-<span class="fc bfc" id="L92" title="All 2 branches covered.">		Evidence evidence= locked</span>
-<span class="fc" id="L93">				? new Evidence(EvidenceKind.LOCKED_ITERATION, fieldKey,</span>
+<span class="fc" id="L149">		IVariableBinding field= declaration.resolveBinding().getVariableDeclaration();</span>
+<span class="fc" id="L150">		String fieldKey= field.getKey();</span>
+<span class="fc" id="L151">		boolean locked= hasMatchingMonitor(loop, field);</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">		Evidence evidence= locked</span>
+<span class="fc" id="L153">				? new Evidence(EvidenceKind.LOCKED_ITERATION, fieldKey,</span>
 						&quot;This loop holds the monitor of the synchronized list field.&quot;, //$NON-NLS-1$
-<span class="fc" id="L95">						iterable.getStartPosition(), iterable.getLength())</span>
-<span class="fc" id="L96">				: new Evidence(EvidenceKind.UNRESOLVED_BOUNDARY, null,</span>
+<span class="fc" id="L155">						iterable.getStartPosition(), iterable.getLength())</span>
+<span class="fc" id="L156">				: new Evidence(EvidenceKind.UNRESOLVED_BOUNDARY, null,</span>
 						&quot;The synchronized list monitor could not be verified for this loop.&quot;, //$NON-NLS-1$
-<span class="fc" id="L98">						iterable.getStartPosition(), iterable.getLength());</span>
-<span class="fc" id="L99">		ContainerIdentity identity= new ContainerIdentity(fieldKey, field.getName(),</span>
-<span class="fc" id="L100">				declaration.getName().getStartPosition(), declaration.getName().getLength());</span>
-<span class="fc" id="L101">		ConcurrencyProfile summary= new ConcurrencyProfile(ThreadExposure.UNKNOWN,</span>
+<span class="fc" id="L158">						iterable.getStartPosition(), iterable.getLength());</span>
+<span class="fc" id="L159">		ContainerIdentity identity= new ContainerIdentity(fieldKey, field.getName(),</span>
+<span class="fc" id="L160">				declaration.getName().getStartPosition(), declaration.getName().getLength());</span>
+<span class="fc" id="L161">		ConcurrencyProfile summary= new ConcurrencyProfile(ThreadExposure.UNKNOWN,</span>
 				SynchronizationKind.SYNCHRONIZED_WRAPPER,
-<span class="fc bfc" id="L103" title="All 2 branches covered.">				locked ? IterationSemantics.EXTERNALLY_LOCKED : IterationSemantics.UNKNOWN,</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">				locked ? IterationSemantics.EXTERNALLY_LOCKED : IterationSemantics.UNKNOWN,</span>
 				AtomicityRequirement.UNKNOWN, WorkloadShape.UNKNOWN);
-<span class="fc" id="L105">		ConcurrencyProtocol protocol= new ConcurrencyProtocol(identity, summary, ReentrancyContract.UNKNOWN,</span>
-<span class="fc" id="L106">				AnalysisCompleteness.LOCAL_SEED, List.of(evidence));</span>
-<span class="fc" id="L107">		return Optional.of(new DiagnosticOnly(protocol, Severity.INFO, List.of(</span>
+<span class="fc" id="L165">		ConcurrencyProtocol protocol= new ConcurrencyProtocol(identity, summary, ReentrancyContract.UNKNOWN,</span>
+<span class="fc" id="L166">				AnalysisCompleteness.LOCAL_SEED, List.of(evidence));</span>
+<span class="fc" id="L167">		return Optional.of(new DiagnosticOnly(protocol, Severity.INFO, List.of(</span>
 				&quot;Traversal of a synchronized list requires holding the returned list's monitor. &quot; //$NON-NLS-1$
 						+ &quot;This observation covers the loop's enclosing synchronized blocks. Publication and other accesses remain unverified.&quot;))); //$NON-NLS-1$
 	}
 
 	static VariableDeclarationFragment synchronizedListField(CompilationUnit unit, Expression expression) {
-<span class="fc" id="L113">		return SynchronizedListFieldFacts.synchronizedListField(unit, expression);</span>
+<span class="fc" id="L173">		return SynchronizedListFieldFacts.synchronizedListField(unit, expression);</span>
 	}
 
 	private static Optional&lt;DiagnosticOnly&gt; observeReturn(CompilationUnit unit, ReturnStatement statement) {
-<span class="pc bpc" id="L117" title="2 of 4 branches missed.">		if (statement.getExpression() == null || (statement.getFlags() &amp; (ASTNode.MALFORMED | ASTNode.RECOVERED)) != 0) {</span>
-<span class="nc" id="L118">			return Optional.empty();</span>
+<span class="pc bpc" id="L177" title="2 of 4 branches missed.">		if (statement.getExpression() == null || (statement.getFlags() &amp; (ASTNode.MALFORMED | ASTNode.RECOVERED)) != 0) {</span>
+<span class="nc" id="L178">			return Optional.empty();</span>
 		}
-<span class="fc" id="L120">		Expression expression= unwrap(statement.getExpression());</span>
-<span class="fc" id="L121">		Expression source= expression;</span>
-<span class="fc" id="L122">		boolean snapshot= false;</span>
-<span class="fc bfc" id="L123" title="All 2 branches covered.">		if (expression instanceof MethodInvocation call) {</span>
-<span class="fc bfc" id="L124" title="All 2 branches covered.">			if (!isListCopyOf(call)) {</span>
-<span class="fc" id="L125">				return Optional.empty();</span>
+<span class="fc" id="L180">		Expression expression= unwrap(statement.getExpression());</span>
+<span class="fc" id="L181">		Expression source= expression;</span>
+<span class="fc" id="L182">		boolean snapshot= false;</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">		if (expression instanceof MethodInvocation call) {</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">			if (!isListCopyOf(call)) {</span>
+<span class="fc" id="L185">				return Optional.empty();</span>
 			}
-<span class="fc" id="L127">			snapshot= true;</span>
-<span class="fc" id="L128">			source= (Expression) call.arguments().getFirst();</span>
+<span class="fc" id="L187">			snapshot= true;</span>
+<span class="fc" id="L188">			source= (Expression) call.arguments().getFirst();</span>
 		}
-<span class="fc" id="L130">		VariableDeclarationFragment declaration= synchronizedListField(unit, source);</span>
-<span class="fc bfc" id="L131" title="All 4 branches covered.">		if (declaration == null || !isMethodBoundary(statement)) {</span>
-<span class="fc" id="L132">			return Optional.empty();</span>
+<span class="fc" id="L190">		VariableDeclarationFragment declaration= synchronizedListField(unit, source);</span>
+<span class="fc bfc" id="L191" title="All 4 branches covered.">		if (declaration == null || !isMethodBoundary(statement)) {</span>
+<span class="fc" id="L192">			return Optional.empty();</span>
 		}
-<span class="fc" id="L134">		IVariableBinding field= declaration.resolveBinding().getVariableDeclaration();</span>
-<span class="fc bfc" id="L135" title="All 2 branches covered.">		String lock= hasMatchingMonitor(statement, field) ? field.getKey() : null;</span>
-<span class="fc bfc" id="L136" title="All 2 branches covered.">		Evidence evidence= new Evidence(snapshot ? EvidenceKind.SNAPSHOT_PUBLICATION : EvidenceKind.LIVE_WRAPPER_RETURN,</span>
-<span class="fc bfc" id="L137" title="All 2 branches covered.">				lock, snapshot ? &quot;List.copyOf returns an unmodifiable shallow snapshot of the synchronized list.&quot; //$NON-NLS-1$</span>
-<span class="fc" id="L138">						: &quot;The caller receives the live synchronized list and can use its monitor.&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L139">				expression.getStartPosition(), expression.getLength());</span>
-<span class="fc" id="L140">		ContainerIdentity identity= new ContainerIdentity(field.getKey(), field.getName(),</span>
-<span class="fc" id="L141">				declaration.getName().getStartPosition(), declaration.getName().getLength());</span>
-<span class="fc" id="L142">		ConcurrencyProfile summary= new ConcurrencyProfile(ThreadExposure.UNKNOWN, SynchronizationKind.SYNCHRONIZED_WRAPPER,</span>
-<span class="fc bfc" id="L143" title="All 2 branches covered.">				snapshot ? IterationSemantics.IMMUTABLE_SNAPSHOT : IterationSemantics.UNKNOWN,</span>
+<span class="fc" id="L194">		IVariableBinding field= declaration.resolveBinding().getVariableDeclaration();</span>
+<span class="fc bfc" id="L195" title="All 2 branches covered.">		String lock= hasMatchingMonitor(statement, field) ? field.getKey() : null;</span>
+<span class="fc bfc" id="L196" title="All 2 branches covered.">		Evidence evidence= new Evidence(snapshot ? EvidenceKind.SNAPSHOT_PUBLICATION : EvidenceKind.LIVE_WRAPPER_RETURN,</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">				lock, snapshot ? &quot;List.copyOf returns an unmodifiable shallow snapshot of the synchronized list.&quot; //$NON-NLS-1$</span>
+<span class="fc" id="L198">						: &quot;The caller receives the live synchronized list and can use its monitor.&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L199">				expression.getStartPosition(), expression.getLength());</span>
+<span class="fc" id="L200">		ContainerIdentity identity= new ContainerIdentity(field.getKey(), field.getName(),</span>
+<span class="fc" id="L201">				declaration.getName().getStartPosition(), declaration.getName().getLength());</span>
+<span class="fc" id="L202">		ConcurrencyProfile summary= new ConcurrencyProfile(ThreadExposure.UNKNOWN, SynchronizationKind.SYNCHRONIZED_WRAPPER,</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">				snapshot ? IterationSemantics.IMMUTABLE_SNAPSHOT : IterationSemantics.UNKNOWN,</span>
 				AtomicityRequirement.UNKNOWN, WorkloadShape.UNKNOWN);
-<span class="fc" id="L145">		ConcurrencyProtocol protocol= new ConcurrencyProtocol(identity, summary, ReentrancyContract.UNKNOWN,</span>
-<span class="fc" id="L146">				AnalysisCompleteness.LOCAL_SEED, List.of(evidence));</span>
-<span class="fc bfc" id="L147" title="All 2 branches covered.">		return Optional.of(new DiagnosticOnly(protocol, Severity.INFO, List.of(snapshot</span>
-<span class="fc" id="L148">				? &quot;Retain snapshot isolation, element identity and null rejection when assessing this return boundary.&quot; //$NON-NLS-1$</span>
-<span class="fc" id="L149">				: &quot;Callers may mutate or synchronize on the same wrapper. Inspect callers before changing its representation.&quot;))); //$NON-NLS-1$</span>
+<span class="fc" id="L205">		ConcurrencyProtocol protocol= new ConcurrencyProtocol(identity, summary, ReentrancyContract.UNKNOWN,</span>
+<span class="fc" id="L206">				AnalysisCompleteness.LOCAL_SEED, List.of(evidence));</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">		return Optional.of(new DiagnosticOnly(protocol, Severity.INFO, List.of(snapshot</span>
+<span class="fc" id="L208">				? &quot;Retain snapshot isolation, element identity and null rejection when assessing this return boundary.&quot; //$NON-NLS-1$</span>
+<span class="fc" id="L209">				: &quot;Callers may mutate or synchronize on the same wrapper. Inspect callers before changing its representation.&quot;))); //$NON-NLS-1$</span>
 	}
 
 	private static boolean isListCopyOf(MethodInvocation call) {
-<span class="fc" id="L153">		IMethodBinding method= call.resolveMethodBinding();</span>
-<span class="pc bpc" id="L154" title="1 of 6 branches missed.">		return method != null &amp;&amp; !method.isRecovered() &amp;&amp; call.arguments().size() == 1</span>
-<span class="pc bpc" id="L155" title="2 of 4 branches missed.">				&amp;&amp; &quot;copyOf&quot;.equals(method.getName()) &amp;&amp; Modifier.isStatic(method.getModifiers()) //$NON-NLS-1$</span>
-<span class="pc bpc" id="L156" title="1 of 2 branches missed.">				&amp;&amp; isType(method.getDeclaringClass(), LIST);</span>
+<span class="fc" id="L213">		IMethodBinding method= call.resolveMethodBinding();</span>
+<span class="pc bpc" id="L214" title="1 of 6 branches missed.">		return method != null &amp;&amp; !method.isRecovered() &amp;&amp; call.arguments().size() == 1</span>
+<span class="pc bpc" id="L215" title="2 of 4 branches missed.">				&amp;&amp; &quot;copyOf&quot;.equals(method.getName()) &amp;&amp; Modifier.isStatic(method.getModifiers()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L216" title="1 of 2 branches missed.">				&amp;&amp; isType(method.getDeclaringClass(), LIST);</span>
 	}
 
 	private static boolean isMethodBoundary(ReturnStatement statement) {
-<span class="pc bpc" id="L160" title="1 of 2 branches missed.">		for (ASTNode node= statement.getParent(); node != null; node= node.getParent()) {</span>
-<span class="pc bpc" id="L161" title="2 of 6 branches missed.">			if (node instanceof LambdaExpression || node instanceof AnonymousClassDeclaration || node instanceof AbstractTypeDeclaration) {</span>
-<span class="fc" id="L162">				return false;</span>
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">		for (ASTNode node= statement.getParent(); node != null; node= node.getParent()) {</span>
+<span class="pc bpc" id="L221" title="2 of 6 branches missed.">			if (node instanceof LambdaExpression || node instanceof AnonymousClassDeclaration || node instanceof AbstractTypeDeclaration) {</span>
+<span class="fc" id="L222">				return false;</span>
 			}
-<span class="fc bfc" id="L164" title="All 2 branches covered.">			if (node instanceof MethodDeclaration method) {</span>
-<span class="fc" id="L165">				IMethodBinding binding= method.resolveBinding();</span>
-<span class="pc bpc" id="L166" title="2 of 6 branches missed.">				return binding != null &amp;&amp; !binding.isRecovered() &amp;&amp; !Modifier.isPrivate(binding.getModifiers());</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">			if (node instanceof MethodDeclaration method) {</span>
+<span class="fc" id="L225">				IMethodBinding binding= method.resolveBinding();</span>
+<span class="pc bpc" id="L226" title="2 of 6 branches missed.">				return binding != null &amp;&amp; !binding.isRecovered() &amp;&amp; !Modifier.isPrivate(binding.getModifiers());</span>
 			}
 		}
-<span class="nc" id="L169">		return false;</span>
+<span class="nc" id="L229">		return false;</span>
 	}
 
 	
 
 	static boolean isType(ITypeBinding type, String qualifiedName) {
-<span class="fc" id="L175">		return SynchronizedListFieldFacts.isType(type, qualifiedName);</span>
+<span class="fc" id="L235">		return SynchronizedListFieldFacts.isType(type, qualifiedName);</span>
 	}
 
 	private static boolean hasMatchingMonitor(ASTNode site, IVariableBinding field) {
-<span class="pc bpc" id="L179" title="1 of 2 branches missed.">		for (ASTNode parent= site.getParent(); parent != null; parent= parent.getParent()) {</span>
-<span class="pc bpc" id="L180" title="3 of 10 branches missed.">			if (parent instanceof LambdaExpression || parent instanceof MethodDeclaration || parent instanceof Initializer</span>
+<span class="pc bpc" id="L239" title="1 of 2 branches missed.">		for (ASTNode parent= site.getParent(); parent != null; parent= parent.getParent()) {</span>
+<span class="pc bpc" id="L240" title="3 of 10 branches missed.">			if (parent instanceof LambdaExpression || parent instanceof MethodDeclaration || parent instanceof Initializer</span>
 					|| parent instanceof AbstractTypeDeclaration || parent instanceof AnonymousClassDeclaration) {
-<span class="nc" id="L182">				break;</span>
+<span class="nc" id="L242">				break;</span>
 			}
-<span class="fc bfc" id="L184" title="All 2 branches covered.">			if (parent instanceof SynchronizedStatement block) {</span>
-<span class="fc" id="L185">				IVariableBinding monitor= currentInstanceField(block.getExpression());</span>
-<span class="pc bpc" id="L186" title="1 of 4 branches missed.">				if (monitor != null &amp;&amp; field.isEqualTo(monitor)) {</span>
-<span class="fc" id="L187">					return true;</span>
+<span class="fc bfc" id="L244" title="All 2 branches covered.">			if (parent instanceof SynchronizedStatement block) {</span>
+<span class="fc" id="L245">				IVariableBinding monitor= currentInstanceField(block.getExpression());</span>
+<span class="pc bpc" id="L246" title="1 of 4 branches missed.">				if (monitor != null &amp;&amp; field.isEqualTo(monitor)) {</span>
+<span class="fc" id="L247">					return true;</span>
 				}
 			}
 		}
-<span class="fc" id="L191">		return false;</span>
+<span class="fc" id="L251">		return false;</span>
 	}
 
 	static IVariableBinding currentInstanceField(Expression expression) {
-<span class="fc" id="L195">		return SynchronizedListFieldFacts.currentInstanceField(expression);</span>
+<span class="fc" id="L255">		return SynchronizedListFieldFacts.currentInstanceField(expression);</span>
 	}
 
 	

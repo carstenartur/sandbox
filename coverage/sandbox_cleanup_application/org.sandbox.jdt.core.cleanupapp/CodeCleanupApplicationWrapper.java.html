@@ -244,8 +244,8 @@ import org.osgi.framework.BundleException;
 <span class="nc" id="L244">			throw new InterruptedException(&quot;Interrupted before starting workspace cleanup.&quot;); //$NON-NLS-1$</span>
 		}
 <span class="fc" id="L246">		Display current= Display.getCurrent();</span>
-<span class="fc bfc" id="L247" title="All 2 branches covered.">		Display display= current == null ? Display.getDefault() : current;</span>
-<span class="pc bpc" id="L248" title="1 of 4 branches missed.">		boolean ownsDisplay= current == null &amp;&amp; display.getThread() == Thread.currentThread();</span>
+<span class="pc bpc" id="L247" title="1 of 2 branches missed.">		Display display= current == null ? Display.getDefault() : current;</span>
+<span class="pc bpc" id="L248" title="3 of 4 branches missed.">		boolean ownsDisplay= current == null &amp;&amp; display.getThread() == Thread.currentThread();</span>
 		try {
 <span class="pc bpc" id="L250" title="3 of 4 branches missed.">			if (display.getThread() != Thread.currentThread() &amp;&amp; Job.getJobManager().currentRule() != null) {</span>
 <span class="nc" id="L251">				throw new IllegalStateException(&quot;Cannot dispatch cleanup while the calling thread owns a scheduling rule.&quot;); //$NON-NLS-1$</span>
@@ -262,7 +262,7 @@ import org.osgi.framework.BundleException;
 <span class="pc bpc" id="L262" title="1 of 2 branches missed.">			if (failure.get() != null) return rethrow(failure.get());</span>
 <span class="fc" id="L263">			return result.get();</span>
 		} finally {
-<span class="pc bpc" id="L265" title="1 of 4 branches missed.">			if (ownsDisplay &amp;&amp; !display.isDisposed()) display.dispose();</span>
+<span class="pc bpc" id="L265" title="3 of 4 branches missed.">			if (ownsDisplay &amp;&amp; !display.isDisposed()) display.dispose();</span>
 		}
 	}
 

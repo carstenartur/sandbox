@@ -35,10 +35,10 @@ import org.sandbox.jdt.container.api.ContainerFlowSearchPlan.SearchSeed;
 
 <span class="fc" id="L36">		Map&lt;String, SearchSeed&gt; seeds= new LinkedHashMap&lt;&gt;();</span>
 <span class="fc bfc" id="L37" title="All 2 branches covered.">		for (FlowNode node : graph.nodes()) {</span>
-<span class="pc bpc" id="L38" title="2 of 4 branches missed.">			switch (node.kind()) {</span>
-<span class="nc" id="L39">				case FIELD -&gt; addFieldReferences(node, seeds);</span>
+<span class="fc bfc" id="L38" title="All 4 branches covered.">			switch (node.kind()) {</span>
+<span class="fc" id="L39">				case FIELD -&gt; addFieldReferences(node, seeds);</span>
 <span class="fc" id="L40">				case PARAMETER -&gt; addMethodSignatureSearches(node, seeds, true);</span>
-<span class="nc" id="L41">				case RETURN_POSITION -&gt; addMethodSignatureSearches(node, seeds, false);</span>
+<span class="fc" id="L41">				case RETURN_POSITION -&gt; addMethodSignatureSearches(node, seeds, false);</span>
 				case LOCAL_VARIABLE, EXTERNAL_PARAMETER, UNKNOWN_BOUNDARY -&gt; {
 					// No source-scope expansion can be derived from this node alone.
 				}
@@ -50,18 +50,18 @@ import org.sandbox.jdt.container.api.ContainerFlowSearchPlan.SearchSeed;
 	private static void addFieldReferences(
 			FlowNode node,
 			Map&lt;String, SearchSeed&gt; seeds) {
-<span class="nc bnc" id="L53" title="All 2 branches missed.">		if (node.bindingKey().isBlank()) {</span>
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">		if (node.bindingKey().isBlank()) {</span>
 <span class="nc" id="L54">			return;</span>
 		}
-<span class="nc" id="L56">		add(seeds, new SearchSeed(</span>
-<span class="nc" id="L57">				node.stableId(),</span>
+<span class="fc" id="L56">		add(seeds, new SearchSeed(</span>
+<span class="fc" id="L57">				node.stableId(),</span>
 				SearchKind.FIELD_REFERENCES,
-<span class="nc" id="L59">				node.bindingKey(),</span>
-<span class="nc" id="L60">				node.ownerKey(),</span>
-<span class="nc" id="L61">				node.javaElementHandle(),</span>
+<span class="fc" id="L59">				node.bindingKey(),</span>
+<span class="fc" id="L60">				node.ownerKey(),</span>
+<span class="fc" id="L61">				node.javaElementHandle(),</span>
 				-1,
 				&quot;Find all source reads and writes of the field participating in container flow.&quot;)); //$NON-NLS-1$
-<span class="nc" id="L64">	}</span>
+<span class="fc" id="L64">	}</span>
 
 	private static void addMethodSignatureSearches(
 			FlowNode node,
@@ -70,14 +70,14 @@ import org.sandbox.jdt.container.api.ContainerFlowSearchPlan.SearchSeed;
 <span class="pc bpc" id="L70" title="1 of 2 branches missed.">		if (node.ownerKey().isBlank()) {</span>
 <span class="nc" id="L71">			return;</span>
 		}
-<span class="pc bpc" id="L73" title="2 of 4 branches missed.">		if (includeDeclaration &amp;&amp; !node.sourceResolved()) {</span>
-<span class="nc" id="L74">			add(seeds, new SearchSeed(</span>
-<span class="nc" id="L75">					node.stableId(),</span>
+<span class="fc bfc" id="L73" title="All 4 branches covered.">		if (includeDeclaration &amp;&amp; !node.sourceResolved()) {</span>
+<span class="fc" id="L74">			add(seeds, new SearchSeed(</span>
+<span class="fc" id="L75">					node.stableId(),</span>
 					SearchKind.METHOD_DECLARATION,
-<span class="nc" id="L77">					node.bindingKey(),</span>
-<span class="nc" id="L78">					node.ownerKey(),</span>
-<span class="nc" id="L79">					node.javaElementHandle(),</span>
-<span class="nc" id="L80">					node.signatureIndex(),</span>
+<span class="fc" id="L77">					node.bindingKey(),</span>
+<span class="fc" id="L78">					node.ownerKey(),</span>
+<span class="fc" id="L79">					node.javaElementHandle(),</span>
+<span class="fc" id="L80">					node.signatureIndex(),</span>
 					&quot;Resolve the source declaration that owns the parameter position.&quot;)); //$NON-NLS-1$
 		}
 <span class="fc" id="L83">		add(seeds, new SearchSeed(</span>
@@ -87,9 +87,9 @@ import org.sandbox.jdt.container.api.ContainerFlowSearchPlan.SearchSeed;
 <span class="fc" id="L87">				node.ownerKey(),</span>
 <span class="fc" id="L88">				node.javaElementHandle(),</span>
 <span class="fc" id="L89">				node.signatureIndex(),</span>
-<span class="pc bpc" id="L90" title="1 of 2 branches missed.">				includeDeclaration</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">				includeDeclaration</span>
 <span class="fc" id="L91">						? &quot;Find callers that pass values into the parameter position.&quot; //$NON-NLS-1$</span>
-<span class="pc" id="L92">						: &quot;Find callers that consume the method return value.&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L92">						: &quot;Find callers that consume the method return value.&quot;)); //$NON-NLS-1$</span>
 <span class="fc" id="L93">		add(seeds, new SearchSeed(</span>
 <span class="fc" id="L94">				node.stableId(),</span>
 				SearchKind.METHOD_OVERRIDE_FAMILY,

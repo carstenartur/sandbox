@@ -30,33 +30,46 @@ public record ContainerParameterRewritePlan(
 		int parameterIndex,
 		String targetInterfaceType,
 		TargetContainerContract targetContract,
-		List&lt;ParameterEdit&gt; edits) {
+		List&lt;ParameterEdit&gt; edits,
+		String ownedFieldBindingKey) {
 
-<span class="fc" id="L35">	public ContainerParameterRewritePlan {</span>
-<span class="fc" id="L36">		compilationUnitHandle= requiredText(</span>
+	public ContainerParameterRewritePlan(String compilationUnitHandle, String methodJavaElementHandle,
+			String parameterBindingKey, int parameterIndex, String targetInterfaceType,
+			TargetContainerContract targetContract, List&lt;ParameterEdit&gt; edits) {
+<span class="fc" id="L39">		this(compilationUnitHandle, methodJavaElementHandle, parameterBindingKey, parameterIndex,</span>
+				targetInterfaceType, targetContract, edits, &quot;&quot;); //$NON-NLS-1$
+<span class="fc" id="L41">	}</span>
+
+<span class="fc" id="L43">	public ContainerParameterRewritePlan {</span>
+<span class="fc" id="L44">		compilationUnitHandle= requiredText(</span>
 				compilationUnitHandle, &quot;compilationUnitHandle&quot;); //$NON-NLS-1$
-<span class="fc" id="L38">		methodJavaElementHandle= requiredText(</span>
+<span class="fc" id="L46">		methodJavaElementHandle= requiredText(</span>
 				methodJavaElementHandle, &quot;methodJavaElementHandle&quot;); //$NON-NLS-1$
-<span class="fc" id="L40">		parameterBindingKey= requiredText(</span>
+<span class="fc" id="L48">		parameterBindingKey= requiredText(</span>
 				parameterBindingKey, &quot;parameterBindingKey&quot;); //$NON-NLS-1$
-<span class="pc bpc" id="L42" title="1 of 2 branches missed.">		if (parameterIndex &lt; 0) {</span>
-<span class="nc" id="L43">			throw new IllegalArgumentException(&quot;parameterIndex must not be negative&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L50" title="1 of 2 branches missed.">		if (parameterIndex &lt; 0) {</span>
+<span class="nc" id="L51">			throw new IllegalArgumentException(&quot;parameterIndex must not be negative&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L45">		targetInterfaceType= requiredText(targetInterfaceType, &quot;targetInterfaceType&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L46">		Objects.requireNonNull(targetContract, &quot;targetContract&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L47">		edits= List.copyOf(Objects.requireNonNull(edits, &quot;edits&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L48">		validateEdits(edits);</span>
-<span class="fc" id="L49">	}</span>
+<span class="fc" id="L53">		targetInterfaceType= requiredText(targetInterfaceType, &quot;targetInterfaceType&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L54">		Objects.requireNonNull(targetContract, &quot;targetContract&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L55">		edits= List.copyOf(Objects.requireNonNull(edits, &quot;edits&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L56">		Objects.requireNonNull(ownedFieldBindingKey);</span>
+<span class="fc" id="L57">		validateEdits(edits);</span>
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">		boolean hasStorage= edits.stream().anyMatch(edit -&gt; edit.kind() == EditKind.CHANGE_OWNED_FIELD);</span>
+<span class="pc bpc" id="L59" title="2 of 4 branches missed.">		if (hasStorage != !ownedFieldBindingKey.isEmpty()) {</span>
+<span class="nc" id="L60">			throw new IllegalArgumentException(&quot;Field rewrite requires an exact field binding&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L62">	}</span>
 
 	/** One parameter rewrite or verification anchored to immutable source evidence. */
 	public record ParameterEdit(EditKind kind, int sourceStart, int sourceLength) {
 
-<span class="fc" id="L54">		public ParameterEdit {</span>
-<span class="fc" id="L55">			Objects.requireNonNull(kind, &quot;kind&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L56" title="2 of 4 branches missed.">			if (sourceStart &lt; 0 || sourceLength &lt; 0) {</span>
-<span class="nc" id="L57">				throw new IllegalArgumentException(&quot;Source range must not be negative&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L67">		public ParameterEdit {</span>
+<span class="fc" id="L68">			Objects.requireNonNull(kind, &quot;kind&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L69" title="2 of 4 branches missed.">			if (sourceStart &lt; 0 || sourceLength &lt; 0) {</span>
+<span class="nc" id="L70">				throw new IllegalArgumentException(&quot;Source range must not be negative&quot;); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L59">		}</span>
+<span class="fc" id="L72">		}</span>
 	}
 
 	/** Planning result retaining complete fail-closed diagnostics. */
@@ -64,79 +77,83 @@ public record ContainerParameterRewritePlan(
 			Optional&lt;ContainerParameterRewritePlan&gt; plan,
 			List&lt;PlanningDiagnostic&gt; diagnostics) {
 
-<span class="fc" id="L67">		public PlanningResult {</span>
-<span class="fc" id="L68">			plan= Objects.requireNonNull(plan, &quot;plan&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L69">			diagnostics= List.copyOf(Objects.requireNonNull(diagnostics, &quot;diagnostics&quot;)); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L70" title="1 of 4 branches missed.">			if (plan.isPresent() == !diagnostics.isEmpty()) {</span>
-<span class="nc" id="L71">				throw new IllegalArgumentException(</span>
+<span class="fc" id="L80">		public PlanningResult {</span>
+<span class="fc" id="L81">			plan= Objects.requireNonNull(plan, &quot;plan&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L82">			diagnostics= List.copyOf(Objects.requireNonNull(diagnostics, &quot;diagnostics&quot;)); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L83" title="1 of 4 branches missed.">			if (plan.isPresent() == !diagnostics.isEmpty()) {</span>
+<span class="nc" id="L84">				throw new IllegalArgumentException(</span>
 						&quot;A parameter rewrite result must contain either one plan or diagnostics&quot;); //$NON-NLS-1$
 			}
-<span class="fc" id="L74">		}</span>
+<span class="fc" id="L87">		}</span>
 
 		public static PlanningResult accepted(ContainerParameterRewritePlan plan) {
-<span class="fc" id="L77">			return new PlanningResult(Optional.of(plan), List.of());</span>
+<span class="fc" id="L90">			return new PlanningResult(Optional.of(plan), List.of());</span>
 		}
 
 		public static PlanningResult rejected(List&lt;PlanningDiagnostic&gt; diagnostics) {
-<span class="pc bpc" id="L81" title="1 of 2 branches missed.">			if (diagnostics.isEmpty()) {</span>
-<span class="nc" id="L82">				throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">			if (diagnostics.isEmpty()) {</span>
+<span class="nc" id="L95">				throw new IllegalArgumentException(</span>
 						&quot;A rejected parameter rewrite requires diagnostics&quot;); //$NON-NLS-1$
 			}
-<span class="fc" id="L85">			return new PlanningResult(Optional.empty(), diagnostics);</span>
+<span class="fc" id="L98">			return new PlanningResult(Optional.empty(), diagnostics);</span>
 		}
 
 		public boolean ready() {
-<span class="fc" id="L89">			return plan.isPresent();</span>
+<span class="fc" id="L102">			return plan.isPresent();</span>
 		}
 	}
 
 	/** One eligibility diagnostic. */
 	public record PlanningDiagnostic(DiagnosticKind kind, String message) {
 
-<span class="fc" id="L96">		public PlanningDiagnostic {</span>
-<span class="fc" id="L97">			Objects.requireNonNull(kind, &quot;kind&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L98">			message= requiredText(message, &quot;message&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L99">		}</span>
+<span class="fc" id="L109">		public PlanningDiagnostic {</span>
+<span class="fc" id="L110">			Objects.requireNonNull(kind, &quot;kind&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L111">			message= requiredText(message, &quot;message&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L112">		}</span>
 	}
 
-<span class="fc" id="L102">	public enum EditKind {</span>
-<span class="fc" id="L103">		CHANGE_PARAMETER_DECLARATION,</span>
-<span class="fc" id="L104">		REPLACE_LENGTH_WITH_SIZE,</span>
-<span class="fc" id="L105">		VERIFY_ENCOUNTER_ITERATION</span>
+<span class="fc" id="L115">	public enum EditKind {</span>
+<span class="fc" id="L116">		CHANGE_PARAMETER_DECLARATION,</span>
+<span class="fc" id="L117">		REPLACE_LENGTH_WITH_SIZE,</span>
+<span class="fc" id="L118">		VERIFY_ENCOUNTER_ITERATION,</span>
+<span class="fc" id="L119">		CHANGE_OWNED_FIELD,</span>
+<span class="fc" id="L120">		VERIFY_CONSTRUCTOR_STORE,</span>
+<span class="fc" id="L121">		VERIFY_TERMINAL_ARGUMENT,</span>
+<span class="fc" id="L122">		REPLACE_FIELD_LENGTH</span>
 	}
 
-<span class="fc" id="L108">	public enum DiagnosticKind {</span>
-<span class="fc" id="L109">		NOT_AUTOMATIC,</span>
-<span class="fc" id="L110">		SIGNATURE_PLAN_NOT_CLOSED_SOURCE,</span>
-<span class="fc" id="L111">		UNSUPPORTED_SIGNATURE_GROUP,</span>
-<span class="fc" id="L112">		SIGNATURE_MEMBER_MISMATCH,</span>
-<span class="fc" id="L113">		FLOW_NODE_MISMATCH,</span>
-<span class="fc" id="L114">		UNSUPPORTED_TARGET,</span>
-<span class="fc" id="L115">		INCOMPLETE_PARAMETER_PROFILE,</span>
-<span class="fc" id="L116">		UNSUPPORTED_PARAMETER_USAGE,</span>
-<span class="fc" id="L117">		UNSUPPORTED_EVIDENCE</span>
+<span class="fc" id="L125">	public enum DiagnosticKind {</span>
+<span class="fc" id="L126">		NOT_AUTOMATIC,</span>
+<span class="fc" id="L127">		SIGNATURE_PLAN_NOT_CLOSED_SOURCE,</span>
+<span class="fc" id="L128">		UNSUPPORTED_SIGNATURE_GROUP,</span>
+<span class="fc" id="L129">		SIGNATURE_MEMBER_MISMATCH,</span>
+<span class="fc" id="L130">		FLOW_NODE_MISMATCH,</span>
+<span class="fc" id="L131">		UNSUPPORTED_TARGET,</span>
+<span class="fc" id="L132">		INCOMPLETE_PARAMETER_PROFILE,</span>
+<span class="fc" id="L133">		UNSUPPORTED_PARAMETER_USAGE,</span>
+<span class="fc" id="L134">		UNSUPPORTED_EVIDENCE</span>
 	}
 
 	private static void validateEdits(List&lt;ParameterEdit&gt; edits) {
-<span class="pc bpc" id="L121" title="1 of 2 branches missed.">		if (edits.isEmpty()) {</span>
-<span class="nc" id="L122">			throw new IllegalArgumentException(&quot;A parameter rewrite plan requires edits&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">		if (edits.isEmpty()) {</span>
+<span class="nc" id="L139">			throw new IllegalArgumentException(&quot;A parameter rewrite plan requires edits&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L124">		Set&lt;EditKind&gt; kinds= EnumSet.noneOf(EditKind.class);</span>
-<span class="fc bfc" id="L125" title="All 2 branches covered.">		for (ParameterEdit edit : edits) {</span>
-<span class="fc" id="L126">			kinds.add(edit.kind());</span>
-<span class="fc" id="L127">		}</span>
-<span class="pc bpc" id="L128" title="1 of 2 branches missed.">		if (!kinds.contains(EditKind.CHANGE_PARAMETER_DECLARATION)) {</span>
-<span class="nc" id="L129">			throw new IllegalArgumentException(</span>
+<span class="fc" id="L141">		Set&lt;EditKind&gt; kinds= EnumSet.noneOf(EditKind.class);</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">		for (ParameterEdit edit : edits) {</span>
+<span class="fc" id="L143">			kinds.add(edit.kind());</span>
+<span class="fc" id="L144">		}</span>
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">		if (!kinds.contains(EditKind.CHANGE_PARAMETER_DECLARATION)) {</span>
+<span class="nc" id="L146">			throw new IllegalArgumentException(</span>
 					&quot;A parameter rewrite requires a declaration edit&quot;); //$NON-NLS-1$
 		}
-<span class="fc" id="L132">	}</span>
+<span class="fc" id="L149">	}</span>
 
 	private static String requiredText(String value, String fieldName) {
-<span class="fc" id="L135">		String text= Objects.requireNonNull(value, fieldName).strip();</span>
-<span class="pc bpc" id="L136" title="1 of 2 branches missed.">		if (text.isEmpty()) {</span>
-<span class="nc" id="L137">			throw new IllegalArgumentException(fieldName + &quot; must not be empty&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L152">		String text= Objects.requireNonNull(value, fieldName).strip();</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">		if (text.isEmpty()) {</span>
+<span class="nc" id="L154">			throw new IllegalArgumentException(fieldName + &quot; must not be empty&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L139">		return text;</span>
+<span class="fc" id="L156">		return text;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

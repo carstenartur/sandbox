@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>RuleRegressionTestSource.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_triggerpattern</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.wizard</a> &gt; <span class="el_source">RuleRegressionTestSource.java</span></div><h1>RuleRegressionTestSource.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.wizard;
+
+import org.eclipse.core.runtime.Path;
+import org.eclipse.jdt.core.dom.AST;
+
+/** Emits an executable Eclipse JUnit test for the wizard's actual rule and examples. */
+final class RuleRegressionTestSource {
+
+	private RuleRegressionTestSource() {
+	}
+
+	static String forHint(String workspacePath) {
+<span class="fc" id="L17">		var path = new Path(workspacePath);</span>
+<span class="pc bpc" id="L18" title="2 of 4 branches missed.">		if (!path.isAbsolute() || path.segmentCount() &lt; 2) {</span>
+<span class="nc" id="L19">			throw new IllegalArgumentException(&quot;Expected a hint file in a workspace project&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L21">		var literal = AST.newAST(AST.getJLSLatest(), false)</span>
+<span class="fc" id="L22">				.newStringLiteral();</span>
+<span class="fc" id="L23">		literal.setLiteralValue(workspacePath);</span>
+<span class="fc" id="L24">		return &quot;&quot;&quot;</span>
+				import static org.junit.jupiter.api.Assertions.assertTrue;
+
+				import java.io.IOException;
+				import java.nio.charset.StandardCharsets;
+				import org.eclipse.core.resources.IFile;
+				import org.eclipse.core.resources.ResourcesPlugin;
+				import org.eclipse.core.runtime.CoreException;
+				import org.eclipse.core.runtime.NullProgressMonitor;
+				import org.eclipse.core.runtime.Path;
+				import org.eclipse.jdt.core.JavaCore;
+				import org.junit.jupiter.api.Test;
+				import org.sandbox.jdt.triggerpattern.api.RuleExampleSuite;
+				import org.sandbox.jdt.triggerpattern.eclipse.ProjectRuleExamples;
+
+				class RuleRegressionTest {
+				    @Test
+				    void replaysSavedExamples() throws Exception {
+				        var root = ResourcesPlugin.getWorkspace().getRoot();
+				        var path = new Path(HINT_PATH);
+				        IFile hint = root.getFile(path);
+				        String rule = utf8(hint);
+				        IFile sidecar = root.getFile(path.addFileExtension(&quot;examples.json&quot;));
+				        var examples = RuleExampleSuite.fromJson(utf8(sidecar));
+				        var report = ProjectRuleExamples.withVerifier(JavaCore.create(hint.getProject()),
+				                new NullProgressMonitor(), verifier -&gt; verifier.verify(rule, examples));
+				        assertTrue(report.passed(), report::toString);
+				    }
+
+				    private static String utf8(IFile file) throws IOException, CoreException {
+				        try (var input = file.getContents()) {
+				            return new String(input.readAllBytes(), StandardCharsets.UTF_8);
+				        }
+				    }
+				}
+<span class="fc" id="L59">				&quot;&quot;&quot;.replace(&quot;HINT_PATH&quot;, literal.getEscapedValue()); //$NON-NLS-1$ //$NON-NLS-2$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

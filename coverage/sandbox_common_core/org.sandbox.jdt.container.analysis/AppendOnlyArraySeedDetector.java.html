@@ -105,8 +105,8 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 <span class="fc" id="L105">		Expression array= unwrap(growthAssignment.getLeftHandSide());</span>
 <span class="fc" id="L106">		Expression sourceArray= (Expression) copyOf.arguments().get(0);</span>
 <span class="fc" id="L107">		Expression requestedLength= (Expression) copyOf.arguments().get(1);</span>
-<span class="pc bpc" id="L108" title="2 of 4 branches missed.">		if (!sameVariable(array, sourceArray) || !isLengthPlusOne(requestedLength, array)) {</span>
-<span class="nc" id="L109">			return Optional.empty();</span>
+<span class="pc bpc" id="L108" title="1 of 4 branches missed.">		if (!sameVariable(array, sourceArray) || !isLengthPlusOne(requestedLength, array)) {</span>
+<span class="fc" id="L109">			return Optional.empty();</span>
 		}
 
 <span class="fc" id="L112">		Optional&lt;IVariableBinding&gt; binding= variableBinding(array);</span>
@@ -246,7 +246,7 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 <span class="nc" id="L246">			return false;</span>
 		}
 <span class="pc bpc" id="L248" title="1 of 4 branches missed.">		return isArrayLength(infix.getLeftOperand(), array) &amp;&amp; isOne(infix.getRightOperand())</span>
-<span class="pc bpc" id="L249" title="2 of 4 branches missed.">				|| isOne(infix.getLeftOperand()) &amp;&amp; isArrayLength(infix.getRightOperand(), array);</span>
+<span class="pc bpc" id="L249" title="1 of 4 branches missed.">				|| isOne(infix.getLeftOperand()) &amp;&amp; isArrayLength(infix.getRightOperand(), array);</span>
 	}
 
 	private static boolean isLengthMinusOne(Expression expression, Expression array) {

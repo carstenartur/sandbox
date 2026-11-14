@@ -91,26 +91,29 @@ public final class ContainerParameterRewriteFix {
 <span class="fc" id="L91">			ImportRewrite imports= cuRewrite.getImportRewrite();</span>
 <span class="fc" id="L92">			TextEditGroup group= createTextEditGroup(DESCRIPTION, cuRewrite);</span>
 
-<span class="fc" id="L94">			Type componentType= resolved.arrayType().getElementType();</span>
-<span class="fc" id="L95">			String interfaceName= imports.addImport(</span>
-<span class="fc" id="L96">					resolved.plan().targetInterfaceType());</span>
-<span class="fc" id="L97">			ParameterizedType listType= ast.newParameterizedType(</span>
-<span class="fc" id="L98">					ast.newSimpleType(ast.newName(interfaceName)));</span>
-<span class="fc" id="L99">			listType.typeArguments().add(ASTNode.copySubtree(ast, componentType));</span>
-<span class="fc" id="L100">			rewrite.replace(resolved.parameter().getType(), listType, group);</span>
+<span class="fc" id="L94">			String interfaceName= imports.addImport(</span>
+<span class="fc" id="L95">					resolved.plan().targetInterfaceType());</span>
+<span class="fc" id="L96">			rewrite.replace(resolved.parameter().getType(), listType(ast, interfaceName, resolved.arrayType().getElementType()), group);</span>
+<span class="pc" id="L97">			resolved.fieldType().ifPresent(field -&gt; rewrite.replace(field, listType(ast, interfaceName, field.getElementType()), group));</span>
 
-<span class="fc bfc" id="L102" title="All 2 branches covered.">			for (ResolvedLength length : resolved.lengths()) {</span>
-<span class="fc" id="L103">				MethodInvocation size= ast.newMethodInvocation();</span>
-<span class="fc" id="L104">				size.setExpression((Expression) ASTNode.copySubtree(</span>
-<span class="fc" id="L105">						ast, length.arrayExpression()));</span>
-<span class="fc" id="L106">				size.setName(ast.newSimpleName(&quot;size&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L107">				rewrite.replace(length.expression(), size, group);</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">			for (ResolvedLength length : resolved.lengths()) {</span>
+<span class="fc" id="L100">				MethodInvocation size= ast.newMethodInvocation();</span>
+<span class="fc" id="L101">				size.setExpression((Expression) ASTNode.copySubtree(</span>
+<span class="fc" id="L102">						ast, length.arrayExpression()));</span>
+<span class="fc" id="L103">				size.setName(ast.newSimpleName(&quot;size&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L104">				rewrite.replace(length.expression(), size, group);</span>
 			}
-<span class="fc" id="L109">		}</span>
+<span class="fc" id="L106">		}</span>
+
+		private static ParameterizedType listType(AST ast, String interfaceName, Type elementType) {
+<span class="fc" id="L109">			ParameterizedType list= ast.newParameterizedType(ast.newSimpleType(ast.newName(interfaceName)));</span>
+<span class="fc" id="L110">			list.typeArguments().add(ASTNode.copySubtree(ast, elementType));</span>
+<span class="fc" id="L111">			return list;</span>
+		}
 
 		@Override
 		public String getAdditionalInfo() {
-<span class="nc" id="L113">			return DESCRIPTION;</span>
+<span class="nc" id="L116">			return DESCRIPTION;</span>
 		}
 	}
 }

@@ -15,6 +15,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
@@ -38,9 +39,11 @@ import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.NodeFinder;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 
+import org.sandbox.jdt.container.analysis.ConstructorOwnedArrayField;
 import org.sandbox.jdt.container.api.ContainerParameterRewritePlan;
 import org.sandbox.jdt.container.api.ContainerParameterRewritePlan.EditKind;
 import org.sandbox.jdt.container.api.ContainerShape;
@@ -59,154 +62,186 @@ final class ContainerParameterRewriteResolver {
 			ICompilationUnit unit,
 			org.eclipse.jdt.core.dom.CompilationUnit root,
 			ContainerParameterRewritePlan plan) throws CoreException {
-<span class="fc" id="L62">		Objects.requireNonNull(unit, &quot;unit&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L63">		Objects.requireNonNull(root, &quot;root&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L64">		Objects.requireNonNull(plan, &quot;plan&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L65" title="1 of 2 branches missed.">		if (!plan.compilationUnitHandle().equals(unit.getHandleIdentifier())) {</span>
-<span class="nc" id="L66">			throw stale(unit, &quot;compilation-unit handle changed&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L65">		Objects.requireNonNull(unit, &quot;unit&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L66">		Objects.requireNonNull(root, &quot;root&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L67">		Objects.requireNonNull(plan, &quot;plan&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">		if (!plan.compilationUnitHandle().equals(unit.getHandleIdentifier())) {</span>
+<span class="nc" id="L69">			throw stale(unit, &quot;compilation-unit handle changed&quot;); //$NON-NLS-1$</span>
 		}
-<span class="pc bpc" id="L68" title="1 of 2 branches missed.">		if (!isExpectedTarget(plan)) {</span>
-<span class="nc" id="L69">			throw stale(unit, &quot;target strategy changed: interface=&quot; //$NON-NLS-1$</span>
-<span class="nc" id="L70">					+ plan.targetInterfaceType()</span>
-<span class="nc" id="L71">					+ &quot;, shape=&quot; + plan.targetContract().shape() //$NON-NLS-1$</span>
-<span class="nc" id="L72">					+ &quot;, mutability=&quot; + plan.targetContract().mutability()); //$NON-NLS-1$</span>
-		}
-
-<span class="fc" id="L75">		MethodDeclaration method= findMethod(unit, root, plan.methodJavaElementHandle());</span>
-<span class="pc bpc" id="L76" title="1 of 2 branches missed.">		if (plan.parameterIndex() &gt;= method.parameters().size()) {</span>
-<span class="nc" id="L77">			throw stale(unit, &quot;parameter index changed&quot;); //$NON-NLS-1$</span>
-		}
-<span class="fc" id="L79">		SingleVariableDeclaration parameter=</span>
-<span class="fc" id="L80">				(SingleVariableDeclaration) method.parameters().get(plan.parameterIndex());</span>
-<span class="pc bpc" id="L81" title="1 of 2 branches missed.">		if (parameter.isVarargs()</span>
-<span class="pc bpc" id="L82" title="1 of 2 branches missed.">				|| !parameter.extraDimensions().isEmpty()</span>
-<span class="pc bpc" id="L83" title="1 of 2 branches missed.">				|| !(parameter.getType() instanceof ArrayType arrayType)</span>
-<span class="pc bpc" id="L84" title="1 of 2 branches missed.">				|| arrayType.dimensions().size() != 1</span>
-<span class="pc bpc" id="L85" title="1 of 2 branches missed.">				|| !isReferenceComponent(arrayType)) {</span>
-<span class="nc" id="L86">			throw stale(unit, &quot;parameter is no longer a one-dimensional reference array&quot;); //$NON-NLS-1$</span>
-		}
-<span class="fc" id="L88">		IVariableBinding parameterBinding= parameter.resolveBinding();</span>
-<span class="pc bpc" id="L89" title="1 of 2 branches missed.">		if (parameterBinding == null</span>
-<span class="fc" id="L90">				|| !plan.parameterBindingKey().equals(</span>
-<span class="pc bpc" id="L91" title="1 of 2 branches missed.">						parameterBinding.getVariableDeclaration().getKey())) {</span>
-<span class="nc" id="L92">			throw stale(unit, &quot;parameter binding changed&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">		if (!isExpectedTarget(plan)) {</span>
+<span class="nc" id="L72">			throw stale(unit, &quot;target strategy changed: interface=&quot; //$NON-NLS-1$</span>
+<span class="nc" id="L73">					+ plan.targetInterfaceType()</span>
+<span class="nc" id="L74">					+ &quot;, shape=&quot; + plan.targetContract().shape() //$NON-NLS-1$</span>
+<span class="nc" id="L75">					+ &quot;, mutability=&quot; + plan.targetContract().mutability()); //$NON-NLS-1$</span>
 		}
 
-<span class="fc" id="L95">		List&lt;SimpleName&gt; references= matchingReferences(method, plan.parameterBindingKey());</span>
-<span class="fc" id="L96">		List&lt;ResolvedLength&gt; lengths= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L97">		List&lt;Expression&gt; encounterIterations= new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L98" title="All 2 branches covered.">		for (SimpleName name : references) {</span>
-<span class="fc bfc" id="L99" title="All 2 branches covered.">			if (parameter.getName() == name) {</span>
-<span class="fc" id="L100">				continue;</span>
-			}
-<span class="fc bfc" id="L102" title="All 2 branches covered.">			if (crossesExecutableBoundary(name, method)) {</span>
-<span class="fc" id="L103">				throw stale(unit, &quot;parameter is captured across an executable boundary&quot;); //$NON-NLS-1$</span>
-			}
-<span class="fc" id="L105">			Expression reference= completeReferenceExpression(name);</span>
-<span class="fc" id="L106">			ResolvedLength length= lengthRead(reference);</span>
-<span class="fc bfc" id="L107" title="All 2 branches covered.">			if (length != null) {</span>
-<span class="fc" id="L108">				lengths.add(length);</span>
-<span class="fc" id="L109">				continue;</span>
-			}
-<span class="fc bfc" id="L111" title="All 2 branches covered.">			if (reference.getParent() instanceof EnhancedForStatement enhanced</span>
-<span class="pc bpc" id="L112" title="1 of 2 branches missed.">					&amp;&amp; enhanced.getExpression() == reference) {</span>
-<span class="fc" id="L113">				encounterIterations.add(reference);</span>
-<span class="fc" id="L114">				continue;</span>
-			}
-<span class="fc" id="L116">			throw stale(unit, &quot;unexpected parameter use at source offset &quot; //$NON-NLS-1$</span>
-<span class="fc" id="L117">					+ name.getStartPosition());</span>
+<span class="fc" id="L78">		MethodDeclaration method= findMethod(unit, root, plan.methodJavaElementHandle());</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">		if (plan.parameterIndex() &gt;= method.parameters().size()) {</span>
+<span class="nc" id="L80">			throw stale(unit, &quot;parameter index changed&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L119">		verifyEditRanges(</span>
-<span class="fc" id="L120">				unit,</span>
-<span class="fc" id="L121">				plan,</span>
-<span class="fc" id="L122">				EditKind.REPLACE_LENGTH_WITH_SIZE,</span>
-<span class="fc" id="L123">				lengths.stream().map(ResolvedLength::expression).toList(),</span>
-<span class="fc" id="L124">				&quot;array length occurrence count or source ranges changed&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L82">		SingleVariableDeclaration parameter=</span>
+<span class="fc" id="L83">				(SingleVariableDeclaration) method.parameters().get(plan.parameterIndex());</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">		if (parameter.isVarargs()</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">				|| !parameter.extraDimensions().isEmpty()</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">				|| !(parameter.getType() instanceof ArrayType arrayType)</span>
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">				|| arrayType.dimensions().size() != 1</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">				|| !isReferenceComponent(arrayType)) {</span>
+<span class="nc" id="L89">			throw stale(unit, &quot;parameter is no longer a one-dimensional reference array&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L91">		IVariableBinding parameterBinding= parameter.resolveBinding();</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">		if (parameterBinding == null</span>
+<span class="fc" id="L93">				|| !plan.parameterBindingKey().equals(</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">						parameterBinding.getVariableDeclaration().getKey())) {</span>
+<span class="nc" id="L95">			throw stale(unit, &quot;parameter binding changed&quot;); //$NON-NLS-1$</span>
+		}
+
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">		if (!plan.ownedFieldBindingKey().isEmpty()) {</span>
+<span class="nc" id="L99">			return resolveOwnedField(unit, root, plan, method, parameter, arrayType);</span>
+		}
+<span class="fc" id="L101">		List&lt;SimpleName&gt; references= matchingReferences(method, plan.parameterBindingKey());</span>
+<span class="fc" id="L102">		List&lt;ResolvedLength&gt; lengths= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L103">		List&lt;Expression&gt; encounterIterations= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">		for (SimpleName name : references) {</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">			if (parameter.getName() == name) {</span>
+<span class="fc" id="L106">				continue;</span>
+			}
+<span class="fc bfc" id="L108" title="All 2 branches covered.">			if (crossesExecutableBoundary(name, method)) {</span>
+<span class="fc" id="L109">				throw stale(unit, &quot;parameter is captured across an executable boundary&quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L111">			Expression reference= completeReferenceExpression(name);</span>
+<span class="fc" id="L112">			ResolvedLength length= lengthRead(reference);</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">			if (length != null) {</span>
+<span class="fc" id="L114">				lengths.add(length);</span>
+<span class="fc" id="L115">				continue;</span>
+			}
+<span class="fc bfc" id="L117" title="All 2 branches covered.">			if (reference.getParent() instanceof EnhancedForStatement enhanced</span>
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">					&amp;&amp; enhanced.getExpression() == reference) {</span>
+<span class="fc" id="L119">				encounterIterations.add(reference);</span>
+<span class="fc" id="L120">				continue;</span>
+			}
+<span class="fc" id="L122">			throw stale(unit, &quot;unexpected parameter use at source offset &quot; //$NON-NLS-1$</span>
+<span class="fc" id="L123">					+ name.getStartPosition());</span>
+		}
 <span class="fc" id="L125">		verifyEditRanges(</span>
 <span class="fc" id="L126">				unit,</span>
 <span class="fc" id="L127">				plan,</span>
-<span class="fc" id="L128">				EditKind.VERIFY_ENCOUNTER_ITERATION,</span>
-<span class="fc" id="L129">				encounterIterations,</span>
-<span class="fc" id="L130">				&quot;encounter iteration occurrence count or source ranges changed&quot;); //$NON-NLS-1$</span>
-<span class="pc" id="L131">		lengths.sort(Comparator.comparingInt(length -&gt; length.expression().getStartPosition()));</span>
-<span class="fc" id="L132">		return new ResolvedPlan(plan, method, parameter, arrayType, lengths);</span>
+<span class="fc" id="L128">				EditKind.REPLACE_LENGTH_WITH_SIZE,</span>
+<span class="fc" id="L129">				lengths.stream().map(ResolvedLength::expression).toList(),</span>
+<span class="fc" id="L130">				&quot;array length occurrence count or source ranges changed&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L131">		verifyEditRanges(</span>
+<span class="fc" id="L132">				unit,</span>
+<span class="fc" id="L133">				plan,</span>
+<span class="fc" id="L134">				EditKind.VERIFY_ENCOUNTER_ITERATION,</span>
+<span class="fc" id="L135">				encounterIterations,</span>
+<span class="fc" id="L136">				&quot;encounter iteration occurrence count or source ranges changed&quot;); //$NON-NLS-1$</span>
+<span class="pc" id="L137">		lengths.sort(Comparator.comparingInt(length -&gt; length.expression().getStartPosition()));</span>
+<span class="fc" id="L138">		return new ResolvedPlan(plan, method, parameter, arrayType, Optional.empty(), lengths);</span>
+	}
+
+	private static ResolvedPlan resolveOwnedField(ICompilationUnit unit, org.eclipse.jdt.core.dom.CompilationUnit root,
+			ContainerParameterRewritePlan plan, MethodDeclaration method, SingleVariableDeclaration parameter,
+			ArrayType arrayType) throws CoreException {
+<span class="nc bnc" id="L144" title="All 2 branches missed.">		var anchors= plan.edits().stream().filter(edit -&gt; edit.kind() == EditKind.VERIFY_TERMINAL_ARGUMENT).toList();</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">		if (anchors.size() != 1) {</span>
+<span class="nc" id="L146">			throw stale(unit, &quot;owned field requires one terminal argument&quot;); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L148">		var argument= anchors.getFirst();</span>
+<span class="nc" id="L149">		var storage= ConstructorOwnedArrayField.analyze(root, plan.parameterBindingKey(),</span>
+<span class="nc" id="L150">				argument.sourceStart(), argument.sourceLength());</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">		var fieldEdits= plan.edits().stream().filter(edit -&gt; edit.kind() != EditKind.CHANGE_PARAMETER_DECLARATION).toList();</span>
+<span class="nc bnc" id="L152" title="All 4 branches missed.">		if (storage.isEmpty() || !storage.get().bindingKey().equals(plan.ownedFieldBindingKey())</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">				|| !storage.get().edits().equals(fieldEdits)) {</span>
+<span class="nc" id="L154">			throw stale(unit, &quot;owned field or its readers changed&quot;); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L156">		Optional&lt;ArrayType&gt; field= Optional.empty();</span>
+<span class="nc" id="L157">		List&lt;ResolvedLength&gt; lengths= new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">		for (var edit : fieldEdits) {</span>
+<span class="nc" id="L159">			ASTNode node= NodeFinder.perform(root, edit.sourceStart(), edit.sourceLength());</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">			if (edit.kind() == EditKind.CHANGE_OWNED_FIELD) {</span>
+<span class="nc" id="L161">				field= Optional.of((ArrayType) node);</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">			} else if (edit.kind() == EditKind.REPLACE_FIELD_LENGTH) {</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">				Expression receiver= node instanceof QualifiedName name ? name.getQualifier() : ((FieldAccess) node).getExpression();</span>
+<span class="nc" id="L164">				lengths.add(new ResolvedLength((Expression) node, receiver));</span>
+			}
+		}
+<span class="nc" id="L167">		return new ResolvedPlan(plan, method, parameter, arrayType, field, lengths);</span>
 	}
 
 	private static MethodDeclaration findMethod(
 			ICompilationUnit unit,
 			org.eclipse.jdt.core.dom.CompilationUnit root,
 			String methodHandle) throws CoreException {
-<span class="fc" id="L139">		List&lt;MethodDeclaration&gt; matches= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L140">		root.accept(new ASTVisitor() {</span>
+<span class="fc" id="L174">		List&lt;MethodDeclaration&gt; matches= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L175">		root.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(MethodDeclaration method) {
-<span class="fc bfc" id="L143" title="All 2 branches covered.">				if (methodHandle.equals(javaElementHandle(method.resolveBinding()))) {</span>
-<span class="fc" id="L144">					matches.add(method);</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">				if (methodHandle.equals(javaElementHandle(method.resolveBinding()))) {</span>
+<span class="fc" id="L179">					matches.add(method);</span>
 				}
-<span class="fc" id="L146">				return true;</span>
+<span class="fc" id="L181">				return true;</span>
 			}
 		});
-<span class="pc bpc" id="L149" title="1 of 2 branches missed.">		if (matches.size() != 1) {</span>
-<span class="nc" id="L150">			throw stale(unit, &quot;exact method declaration could not be resolved&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">		if (matches.size() != 1) {</span>
+<span class="nc" id="L185">			throw stale(unit, &quot;exact method declaration could not be resolved&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L152">		return matches.get(0);</span>
+<span class="fc" id="L187">		return matches.get(0);</span>
 	}
 
 	private static List&lt;SimpleName&gt; matchingReferences(
 			MethodDeclaration method,
 			String bindingKey) {
-<span class="fc" id="L158">		List&lt;SimpleName&gt; references= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L159">		method.accept(new ASTVisitor() {</span>
+<span class="fc" id="L193">		List&lt;SimpleName&gt; references= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L194">		method.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(SimpleName name) {
-<span class="fc bfc" id="L162" title="All 2 branches covered.">				if (name.resolveBinding() instanceof IVariableBinding binding</span>
-<span class="fc bfc" id="L163" title="All 2 branches covered.">						&amp;&amp; bindingKey.equals(binding.getVariableDeclaration().getKey())) {</span>
-<span class="fc" id="L164">					references.add(name);</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">				if (name.resolveBinding() instanceof IVariableBinding binding</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">						&amp;&amp; bindingKey.equals(binding.getVariableDeclaration().getKey())) {</span>
+<span class="fc" id="L199">					references.add(name);</span>
 				}
-<span class="fc" id="L166">				return true;</span>
+<span class="fc" id="L201">				return true;</span>
 			}
 		});
-<span class="fc" id="L169">		return references;</span>
+<span class="fc" id="L204">		return references;</span>
 	}
 
 	private static boolean crossesExecutableBoundary(
 			ASTNode reference,
 			MethodDeclaration expectedMethod) {
-<span class="pc bpc" id="L175" title="1 of 2 branches missed.">		for (ASTNode current= reference.getParent(); current != null;</span>
-<span class="fc" id="L176">				current= current.getParent()) {</span>
-<span class="fc bfc" id="L177" title="All 2 branches covered.">			if (current instanceof LambdaExpression</span>
-<span class="pc bpc" id="L178" title="1 of 2 branches missed.">					|| current instanceof AnonymousClassDeclaration</span>
-<span class="pc bpc" id="L179" title="1 of 2 branches missed.">					|| current instanceof AbstractTypeDeclaration) {</span>
-<span class="fc" id="L180">				return true;</span>
+<span class="pc bpc" id="L210" title="1 of 2 branches missed.">		for (ASTNode current= reference.getParent(); current != null;</span>
+<span class="fc" id="L211">				current= current.getParent()) {</span>
+<span class="fc bfc" id="L212" title="All 2 branches covered.">			if (current instanceof LambdaExpression</span>
+<span class="pc bpc" id="L213" title="1 of 2 branches missed.">					|| current instanceof AnonymousClassDeclaration</span>
+<span class="pc bpc" id="L214" title="1 of 2 branches missed.">					|| current instanceof AbstractTypeDeclaration) {</span>
+<span class="fc" id="L215">				return true;</span>
 			}
-<span class="fc bfc" id="L182" title="All 2 branches covered.">			if (current instanceof MethodDeclaration method) {</span>
-<span class="pc bpc" id="L183" title="1 of 2 branches missed.">				return method != expectedMethod;</span>
+<span class="fc bfc" id="L217" title="All 2 branches covered.">			if (current instanceof MethodDeclaration method) {</span>
+<span class="pc bpc" id="L218" title="1 of 2 branches missed.">				return method != expectedMethod;</span>
 			}
 		}
-<span class="nc" id="L186">		return true;</span>
+<span class="nc" id="L221">		return true;</span>
 	}
 
 	private static Expression completeReferenceExpression(SimpleName name) {
-<span class="fc" id="L190">		Expression reference= name;</span>
-<span class="pc bpc" id="L191" title="1 of 2 branches missed.">		while (reference.getParent() instanceof ParenthesizedExpression parenthesized) {</span>
-<span class="nc" id="L192">			reference= parenthesized;</span>
+<span class="fc" id="L225">		Expression reference= name;</span>
+<span class="pc bpc" id="L226" title="1 of 2 branches missed.">		while (reference.getParent() instanceof ParenthesizedExpression parenthesized) {</span>
+<span class="nc" id="L227">			reference= parenthesized;</span>
 		}
-<span class="fc" id="L194">		return reference;</span>
+<span class="fc" id="L229">		return reference;</span>
 	}
 
 	private static ResolvedLength lengthRead(Expression reference) {
-<span class="fc" id="L198">		ASTNode parent= reference.getParent();</span>
-<span class="fc bfc" id="L199" title="All 2 branches covered.">		if (parent instanceof QualifiedName qualified</span>
-<span class="pc bpc" id="L200" title="1 of 2 branches missed.">				&amp;&amp; qualified.getQualifier() == reference</span>
-<span class="pc bpc" id="L201" title="1 of 2 branches missed.">				&amp;&amp; &quot;length&quot;.equals(qualified.getName().getIdentifier())) { //$NON-NLS-1$</span>
-<span class="fc" id="L202">			return new ResolvedLength(qualified, reference);</span>
+<span class="fc" id="L233">		ASTNode parent= reference.getParent();</span>
+<span class="fc bfc" id="L234" title="All 2 branches covered.">		if (parent instanceof QualifiedName qualified</span>
+<span class="pc bpc" id="L235" title="1 of 2 branches missed.">				&amp;&amp; qualified.getQualifier() == reference</span>
+<span class="pc bpc" id="L236" title="1 of 2 branches missed.">				&amp;&amp; &quot;length&quot;.equals(qualified.getName().getIdentifier())) { //$NON-NLS-1$</span>
+<span class="fc" id="L237">			return new ResolvedLength(qualified, reference);</span>
 		}
-<span class="pc bpc" id="L204" title="1 of 2 branches missed.">		if (parent instanceof FieldAccess fieldAccess</span>
-<span class="nc bnc" id="L205" title="All 2 branches missed.">				&amp;&amp; fieldAccess.getExpression() == reference</span>
-<span class="nc bnc" id="L206" title="All 2 branches missed.">				&amp;&amp; &quot;length&quot;.equals(fieldAccess.getName().getIdentifier())) { //$NON-NLS-1$</span>
-<span class="nc" id="L207">			return new ResolvedLength(fieldAccess, reference);</span>
+<span class="pc bpc" id="L239" title="1 of 2 branches missed.">		if (parent instanceof FieldAccess fieldAccess</span>
+<span class="nc bnc" id="L240" title="All 2 branches missed.">				&amp;&amp; fieldAccess.getExpression() == reference</span>
+<span class="nc bnc" id="L241" title="All 2 branches missed.">				&amp;&amp; &quot;length&quot;.equals(fieldAccess.getName().getIdentifier())) { //$NON-NLS-1$</span>
+<span class="nc" id="L242">			return new ResolvedLength(fieldAccess, reference);</span>
 		}
-<span class="fc" id="L209">		return null;</span>
+<span class="fc" id="L244">		return null;</span>
 	}
 
 	private static void verifyEditRanges(
@@ -215,47 +250,47 @@ final class ContainerParameterRewriteResolver {
 			EditKind kind,
 			List&lt;? extends ASTNode&gt; resolvedNodes,
 			String staleMessage) throws CoreException {
-<span class="fc" id="L218">		List&lt;ContainerParameterRewritePlan.ParameterEdit&gt; planned= plan.edits().stream()</span>
-<span class="fc bfc" id="L219" title="All 2 branches covered.">				.filter(edit -&gt; edit.kind() == kind)</span>
-<span class="fc" id="L220">				.toList();</span>
-<span class="fc" id="L221">		Set&lt;SourceRange&gt; expected= HashSet.newHashSet(planned.size());</span>
-<span class="fc bfc" id="L222" title="All 2 branches covered.">		for (ContainerParameterRewritePlan.ParameterEdit edit : planned) {</span>
-<span class="fc" id="L223">			expected.add(new SourceRange(edit.sourceStart(), edit.sourceLength()));</span>
+<span class="fc" id="L253">		List&lt;ContainerParameterRewritePlan.ParameterEdit&gt; planned= plan.edits().stream()</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">				.filter(edit -&gt; edit.kind() == kind)</span>
+<span class="fc" id="L255">				.toList();</span>
+<span class="fc" id="L256">		Set&lt;SourceRange&gt; expected= HashSet.newHashSet(planned.size());</span>
+<span class="fc bfc" id="L257" title="All 2 branches covered.">		for (ContainerParameterRewritePlan.ParameterEdit edit : planned) {</span>
+<span class="fc" id="L258">			expected.add(new SourceRange(edit.sourceStart(), edit.sourceLength()));</span>
 		}
-<span class="fc" id="L225">		Set&lt;SourceRange&gt; actual= HashSet.newHashSet(resolvedNodes.size());</span>
-<span class="fc bfc" id="L226" title="All 2 branches covered.">		for (ASTNode node : resolvedNodes) {</span>
-<span class="fc" id="L227">			actual.add(new SourceRange(node.getStartPosition(), node.getLength()));</span>
+<span class="fc" id="L260">		Set&lt;SourceRange&gt; actual= HashSet.newHashSet(resolvedNodes.size());</span>
+<span class="fc bfc" id="L261" title="All 2 branches covered.">		for (ASTNode node : resolvedNodes) {</span>
+<span class="fc" id="L262">			actual.add(new SourceRange(node.getStartPosition(), node.getLength()));</span>
 		}
-<span class="pc bpc" id="L229" title="1 of 2 branches missed.">		if (expected.size() != planned.size()</span>
-<span class="pc bpc" id="L230" title="1 of 2 branches missed.">				|| actual.size() != resolvedNodes.size()</span>
-<span class="fc bfc" id="L231" title="All 2 branches covered.">				|| !expected.equals(actual)) {</span>
-<span class="fc" id="L232">			throw stale(unit, staleMessage);</span>
+<span class="pc bpc" id="L264" title="1 of 2 branches missed.">		if (expected.size() != planned.size()</span>
+<span class="pc bpc" id="L265" title="1 of 2 branches missed.">				|| actual.size() != resolvedNodes.size()</span>
+<span class="fc bfc" id="L266" title="All 2 branches covered.">				|| !expected.equals(actual)) {</span>
+<span class="fc" id="L267">			throw stale(unit, staleMessage);</span>
 		}
-<span class="fc" id="L234">	}</span>
+<span class="fc" id="L269">	}</span>
 
 	private static boolean isReferenceComponent(ArrayType arrayType) {
-<span class="fc" id="L237">		ITypeBinding component= arrayType.getElementType().resolveBinding();</span>
-<span class="pc bpc" id="L238" title="2 of 4 branches missed.">		return component != null &amp;&amp; !component.isPrimitive();</span>
+<span class="fc" id="L272">		ITypeBinding component= arrayType.getElementType().resolveBinding();</span>
+<span class="pc bpc" id="L273" title="2 of 4 branches missed.">		return component != null &amp;&amp; !component.isPrimitive();</span>
 	}
 
 	private static boolean isExpectedTarget(ContainerParameterRewritePlan plan) {
-<span class="pc bpc" id="L242" title="1 of 2 branches missed.">		return LIST.equals(plan.targetInterfaceType())</span>
-<span class="pc bpc" id="L243" title="1 of 2 branches missed.">				&amp;&amp; plan.targetContract().shape() == ContainerShape.LIST</span>
-<span class="pc bpc" id="L244" title="1 of 2 branches missed.">				&amp;&amp; plan.targetContract().mutability() == Mutability.MUTABLE;</span>
+<span class="pc bpc" id="L277" title="1 of 2 branches missed.">		return LIST.equals(plan.targetInterfaceType())</span>
+<span class="pc bpc" id="L278" title="1 of 2 branches missed.">				&amp;&amp; plan.targetContract().shape() == ContainerShape.LIST</span>
+<span class="pc bpc" id="L279" title="1 of 2 branches missed.">				&amp;&amp; plan.targetContract().mutability() == Mutability.MUTABLE;</span>
 	}
 
 	private static String javaElementHandle(IMethodBinding binding) {
-<span class="pc bpc" id="L248" title="1 of 2 branches missed.">		IJavaElement element= binding == null</span>
-<span class="pc" id="L249">				? null : binding.getMethodDeclaration().getJavaElement();</span>
-<span class="pc bpc" id="L250" title="1 of 2 branches missed.">		return element == null ? &quot;&quot; : element.getHandleIdentifier(); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L283" title="1 of 2 branches missed.">		IJavaElement element= binding == null</span>
+<span class="pc" id="L284">				? null : binding.getMethodDeclaration().getJavaElement();</span>
+<span class="pc bpc" id="L285" title="1 of 2 branches missed.">		return element == null ? &quot;&quot; : element.getHandleIdentifier(); //$NON-NLS-1$</span>
 	}
 
 	private static CoreException stale(ICompilationUnit unit, String reason) {
-<span class="fc" id="L254">		return new CoreException(new Status(</span>
-<span class="fc" id="L255">				IStatus.ERROR,</span>
-<span class="fc" id="L256">				PLUGIN_ID,</span>
-<span class="fc" id="L257">				&quot;Container parameter rewrite plan is stale for &quot; //$NON-NLS-1$</span>
-<span class="fc" id="L258">						+ unit.getElementName() + &quot;: &quot; + reason)); //$NON-NLS-1$</span>
+<span class="fc" id="L289">		return new CoreException(new Status(</span>
+<span class="fc" id="L290">				IStatus.ERROR,</span>
+<span class="fc" id="L291">				PLUGIN_ID,</span>
+<span class="fc" id="L292">				&quot;Container parameter rewrite plan is stale for &quot; //$NON-NLS-1$</span>
+<span class="fc" id="L293">						+ unit.getElementName() + &quot;: &quot; + reason)); //$NON-NLS-1$</span>
 	}
 
 	static record ResolvedPlan(
@@ -263,22 +298,23 @@ final class ContainerParameterRewriteResolver {
 			MethodDeclaration method,
 			SingleVariableDeclaration parameter,
 			ArrayType arrayType,
+			Optional&lt;ArrayType&gt; fieldType,
 			List&lt;ResolvedLength&gt; lengths) {
 
-<span class="fc" id="L268">		ResolvedPlan {</span>
-<span class="fc" id="L269">			Objects.requireNonNull(plan, &quot;plan&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L270">			Objects.requireNonNull(method, &quot;method&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L271">			Objects.requireNonNull(parameter, &quot;parameter&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L272">			Objects.requireNonNull(arrayType, &quot;arrayType&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L273">			lengths= List.copyOf(Objects.requireNonNull(lengths, &quot;lengths&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L274">		}</span>
+<span class="fc" id="L304">		ResolvedPlan {</span>
+<span class="fc" id="L305">			Objects.requireNonNull(plan, &quot;plan&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L306">			Objects.requireNonNull(method, &quot;method&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L307">			Objects.requireNonNull(parameter, &quot;parameter&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L308">			Objects.requireNonNull(arrayType, &quot;arrayType&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L309">			lengths= List.copyOf(Objects.requireNonNull(lengths, &quot;lengths&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L310">		}</span>
 	}
 
 	static record ResolvedLength(Expression expression, Expression arrayExpression) {
-<span class="fc" id="L278">		ResolvedLength {</span>
-<span class="fc" id="L279">			Objects.requireNonNull(expression, &quot;expression&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L280">			Objects.requireNonNull(arrayExpression, &quot;arrayExpression&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L281">		}</span>
+<span class="fc" id="L314">		ResolvedLength {</span>
+<span class="fc" id="L315">			Objects.requireNonNull(expression, &quot;expression&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L316">			Objects.requireNonNull(arrayExpression, &quot;arrayExpression&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L317">		}</span>
 	}
 
 	private record SourceRange(int start, int length) {

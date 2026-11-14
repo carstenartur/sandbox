@@ -66,7 +66,7 @@ import org.sandbox.jdt.cleanup.multifile.RelatedCompilationUnitSearch;
  * consists of exactly one direct JUnit 4 {@code Assert} or {@code Assume}
  * invocation. Public/protected helpers and overridable package-private instance
  * methods remain outside automatic migration. An assertion-only profile can
- * also follow static source forwarders to a verified boolean assertion wrapper.
+ * also follow static or private source forwarders to a verified boolean assertion wrapper.
  * Each method on that path needs a complete caller search.&lt;/p&gt;
  */
 public final class JUnitSharedHelperScopeDetector {
@@ -76,7 +76,7 @@ public final class JUnitSharedHelperScopeDetector {
 	private record HelperCandidate(IMethod method, String bindingKey, ICompilationUnit compilationUnit) {
 	}
 
-	/** Ordinary helper seeds and static helper paths requiring a complete assertion-only closure. */
+	/** Ordinary helper seeds and exact-dispatch helper paths requiring a complete assertion-only closure. */
 	public record HelperSearchSeeds(JUnitScopeCandidateDetector.SearchSeeds ordinary,
 			List&lt;List&lt;IJavaElement&gt;&gt; assertionPaths) {
 <span class="fc" id="L82">		public HelperSearchSeeds {</span>
@@ -97,7 +97,7 @@ public final class JUnitSharedHelperScopeDetector {
 <span class="fc" id="L97">		return findSearchSeeds(project, currentScope, migrateAssertions, migrateAssumptions, false, monitor).ordinary();</span>
 	}
 
-	/** Also traces eligible static assertion paths when the cleanup profile allows it. */
+	/** Also traces eligible assertion paths with statically known targets when the cleanup profile allows it. */
 	public static HelperSearchSeeds findSearchSeeds(IJavaProject project,
 			Collection&lt;ICompilationUnit&gt; currentScope, boolean migrateAssertions,
 			boolean migrateAssumptions, boolean allowAssertionPaths, IProgressMonitor monitor) {
@@ -214,7 +214,7 @@ public final class JUnitSharedHelperScopeDetector {
 			@Override
 			public boolean visit(ExpressionMethodReference node) {
 <span class="fc bfc" id="L216" title="All 2 branches covered.">				if (followMethodReferences) {</span>
-<span class="fc" id="L217">					collectCandidate(resolvedStaticDeclaration(node.resolveMethodBinding()), true);</span>
+<span class="fc" id="L217">					collectCandidate(exactDispatchDeclaration(node.resolveMethodBinding()), true);</span>
 				}
 <span class="fc" id="L219">				return true;</span>
 			}
@@ -222,7 +222,7 @@ public final class JUnitSharedHelperScopeDetector {
 			@Override
 			public boolean visit(TypeMethodReference node) {
 <span class="nc bnc" id="L224" title="All 2 branches missed.">				if (followMethodReferences) {</span>
-<span class="nc" id="L225">					collectCandidate(resolvedStaticDeclaration(node.resolveMethodBinding()), true);</span>
+<span class="nc" id="L225">					collectCandidate(exactDispatchDeclaration(node.resolveMethodBinding()), true);</span>
 				}
 <span class="nc" id="L227">				return true;</span>
 			}
@@ -240,7 +240,7 @@ public final class JUnitSharedHelperScopeDetector {
 <span class="fc" id="L240">	}</span>
 
 	/**
-	 * Follows exact static declarations until a direct JUnit assertion terminates
+	 * Follows non-overridable declarations until a direct JUnit assertion terminates
 	 * the path. A repeated key is a cycle, and a missing or ineligible edge
 	 * invalidates the entire path.
 	 */
@@ -257,14 +257,14 @@ public final class JUnitSharedHelperScopeDetector {
 			}
 <span class="fc" id="L258">			CompilationUnit root= roots.get(handle);</span>
 <span class="pc bpc" id="L259" title="2 of 4 branches missed.">			if (root == null || !(root.findDeclaringNode(current.bindingKey()) instanceof MethodDeclaration method)</span>
-<span class="pc bpc" id="L260" title="1 of 2 branches missed.">					|| !Modifier.isStatic(method.getModifiers())) {</span>
+<span class="pc bpc" id="L260" title="1 of 2 branches missed.">					|| !hasExactDispatch(method.getModifiers())) {</span>
 <span class="nc" id="L261">				break;</span>
 			}
 <span class="fc" id="L263">			MethodInvocation invocation= directInvocation(method);</span>
 <span class="fc bfc" id="L264" title="All 2 branches covered.">			if (invocation == null) {</span>
 <span class="fc" id="L265">				break;</span>
 			}
-<span class="fc" id="L267">			IMethodBinding callee= resolvedStaticDeclaration(invocation.resolveMethodBinding());</span>
+<span class="fc" id="L267">			IMethodBinding callee= exactDispatchDeclaration(invocation.resolveMethodBinding());</span>
 <span class="fc bfc" id="L268" title="All 2 branches covered.">			if (callee == null) {</span>
 <span class="fc" id="L269">				break;</span>
 			}
@@ -408,57 +408,61 @@ public final class JUnitSharedHelperScopeDetector {
 <span class="fc bfc" id="L408" title="All 4 branches covered.">		if (Modifier.isPublic(modifiers) || Modifier.isProtected(modifiers)) {</span>
 <span class="fc" id="L409">			return false;</span>
 		}
-<span class="fc bfc" id="L411" title="All 4 branches covered.">		return Modifier.isPrivate(modifiers) || Modifier.isStatic(modifiers);</span>
+<span class="fc" id="L411">		return hasExactDispatch(modifiers);</span>
 	}
 
 	private static IMethodBinding declaration(IMethodBinding binding) {
 <span class="fc bfc" id="L415" title="All 2 branches covered.">		return binding == null ? null : binding.getMethodDeclaration();</span>
 	}
 
-	private static IMethodBinding resolvedStaticDeclaration(IMethodBinding binding) {
+	private static IMethodBinding exactDispatchDeclaration(IMethodBinding binding) {
 <span class="pc bpc" id="L419" title="1 of 4 branches missed.">		IMethodBinding method= binding == null || binding.isRecovered() ? null : binding.getMethodDeclaration();</span>
 <span class="pc bpc" id="L420" title="2 of 6 branches missed.">		return method != null &amp;&amp; !method.isRecovered() &amp;&amp; method.getKey() != null</span>
-<span class="pc bpc" id="L421" title="1 of 2 branches missed.">				&amp;&amp; Modifier.isStatic(method.getModifiers()) ? method : null;</span>
+<span class="fc bfc" id="L421" title="All 2 branches covered.">				&amp;&amp; hasExactDispatch(method.getModifiers()) ? method : null;</span>
+	}
+
+	private static boolean hasExactDispatch(int modifiers) {
+<span class="fc bfc" id="L425" title="All 4 branches covered.">		return Modifier.isStatic(modifiers) || Modifier.isPrivate(modifiers);</span>
 	}
 
 	private static List&lt;ICompilationUnit&gt; normalize(IJavaProject project,
 			Collection&lt;ICompilationUnit&gt; units) {
-<span class="fc" id="L426">		Map&lt;String, ICompilationUnit&gt; result= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L427" title="All 2 branches covered.">		for (ICompilationUnit unit : units) {</span>
-<span class="pc bpc" id="L428" title="3 of 6 branches missed.">			if (unit != null &amp;&amp; unit.exists() &amp;&amp; project.equals(unit.getJavaProject())) {</span>
-<span class="fc" id="L429">				ICompilationUnit primary= unit.getPrimary();</span>
-<span class="fc" id="L430">				result.put(primary.getHandleIdentifier(), primary);</span>
+<span class="fc" id="L430">		Map&lt;String, ICompilationUnit&gt; result= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L431" title="All 2 branches covered.">		for (ICompilationUnit unit : units) {</span>
+<span class="pc bpc" id="L432" title="3 of 6 branches missed.">			if (unit != null &amp;&amp; unit.exists() &amp;&amp; project.equals(unit.getJavaProject())) {</span>
+<span class="fc" id="L433">				ICompilationUnit primary= unit.getPrimary();</span>
+<span class="fc" id="L434">				result.put(primary.getHandleIdentifier(), primary);</span>
 			}
 		}
-<span class="fc" id="L433">		return new ArrayList&lt;&gt;(result.values());</span>
+<span class="fc" id="L437">		return new ArrayList&lt;&gt;(result.values());</span>
 	}
 
 	private static Map&lt;String, CompilationUnit&gt; parse(IJavaProject project, List&lt;ICompilationUnit&gt; units,
 			IProgressMonitor monitor) {
-<span class="fc" id="L438">		Map&lt;String, CompilationUnit&gt; roots= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L439">		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);</span>
-<span class="fc" id="L440">		parser.setProject(project);</span>
-<span class="fc" id="L441">		parser.setResolveBindings(true);</span>
-<span class="fc" id="L442">		parser.setBindingsRecovery(IASTSharedValues.SHARED_BINDING_RECOVERY);</span>
-<span class="fc" id="L443">		parser.setStatementsRecovery(IASTSharedValues.SHARED_AST_STATEMENT_RECOVERY);</span>
-<span class="fc" id="L444">		parser.setCompilerOptions(RefactoringASTParser.getCompilerOptions(project));</span>
-<span class="fc" id="L445">		parser.createASTs(units.toArray(ICompilationUnit[]::new), new String[0], new ASTRequestor() {</span>
+<span class="fc" id="L442">		Map&lt;String, CompilationUnit&gt; roots= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L443">		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);</span>
+<span class="fc" id="L444">		parser.setProject(project);</span>
+<span class="fc" id="L445">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L446">		parser.setBindingsRecovery(IASTSharedValues.SHARED_BINDING_RECOVERY);</span>
+<span class="fc" id="L447">		parser.setStatementsRecovery(IASTSharedValues.SHARED_AST_STATEMENT_RECOVERY);</span>
+<span class="fc" id="L448">		parser.setCompilerOptions(RefactoringASTParser.getCompilerOptions(project));</span>
+<span class="fc" id="L449">		parser.createASTs(units.toArray(ICompilationUnit[]::new), new String[0], new ASTRequestor() {</span>
 			@Override
 			public void acceptAST(ICompilationUnit source, CompilationUnit ast) {
-<span class="fc" id="L448">				roots.put(source.getPrimary().getHandleIdentifier(), ast);</span>
-<span class="fc" id="L449">			}</span>
-<span class="fc" id="L450">		}, monitor);</span>
-<span class="fc" id="L451">		return roots;</span>
+<span class="fc" id="L452">				roots.put(source.getPrimary().getHandleIdentifier(), ast);</span>
+<span class="fc" id="L453">			}</span>
+<span class="fc" id="L454">		}, monitor);</span>
+<span class="fc" id="L455">		return roots;</span>
 	}
 
 	private static JUnitScopeCandidateDetector.SearchSeeds empty() {
-<span class="fc" id="L455">		return new JUnitScopeCandidateDetector.SearchSeeds(false, true, List.of(), List.of());</span>
+<span class="fc" id="L459">		return new JUnitScopeCandidateDetector.SearchSeeds(false, true, List.of(), List.of());</span>
 	}
 
 	private static void checkCanceled(IProgressMonitor monitor) {
-<span class="pc bpc" id="L459" title="1 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
-<span class="nc" id="L460">			throw new OperationCanceledException();</span>
+<span class="pc bpc" id="L463" title="1 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
+<span class="nc" id="L464">			throw new OperationCanceledException();</span>
 		}
-<span class="fc" id="L462">	}</span>
+<span class="fc" id="L466">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

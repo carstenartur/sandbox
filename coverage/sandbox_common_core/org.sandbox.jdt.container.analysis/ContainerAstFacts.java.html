@@ -48,11 +48,11 @@ final class ContainerAstFacts {
 	}
 
 	static Assignment assignment(Statement statement) {
-<span class="nc bnc" id="L51" title="All 2 branches missed.">		if (!(statement instanceof ExpressionStatement expressionStatement)) {</span>
-<span class="nc" id="L52">			return null;</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">		if (!(statement instanceof ExpressionStatement expressionStatement)) {</span>
+<span class="fc" id="L52">			return null;</span>
 		}
-<span class="nc" id="L54">		Expression expression= unwrap(expressionStatement.getExpression());</span>
-<span class="nc bnc" id="L55" title="All 2 branches missed.">		return expression instanceof Assignment assignment ? assignment : null;</span>
+<span class="fc" id="L54">		Expression expression= unwrap(expressionStatement.getExpression());</span>
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">		return expression instanceof Assignment assignment ? assignment : null;</span>
 	}
 
 	static Statement nextStatement(Statement statement) {
@@ -82,10 +82,10 @@ final class ContainerAstFacts {
 	static boolean isOne(Expression expression) {
 <span class="fc" id="L83">		Expression unwrapped= unwrap(expression);</span>
 <span class="fc" id="L84">		Object constant= unwrapped.resolveConstantExpressionValue();</span>
-<span class="pc bpc" id="L85" title="1 of 2 branches missed.">		if (constant instanceof Number number) {</span>
-<span class="pc bpc" id="L86" title="1 of 2 branches missed.">			return number.longValue() == 1L;</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">		if (constant instanceof Number number) {</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">			return number.longValue() == 1L;</span>
 		}
-<span class="nc bnc" id="L88" title="All 4 branches missed.">		return unwrapped instanceof NumberLiteral literal &amp;&amp; &quot;1&quot;.equals(literal.getToken()); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L88" title="3 of 4 branches missed.">		return unwrapped instanceof NumberLiteral literal &amp;&amp; &quot;1&quot;.equals(literal.getToken()); //$NON-NLS-1$</span>
 	}
 
 	static boolean sameVariable(Expression first, Expression second) {

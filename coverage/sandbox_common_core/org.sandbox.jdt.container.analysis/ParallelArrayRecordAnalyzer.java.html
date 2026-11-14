@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ParallelArrayRecordAnalyzer.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.analysis</a> &gt; <span class="el_source">ParallelArrayRecordAnalyzer.java</span></div><h1>ParallelArrayRecordAnalyzer.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials are made available under the terms
+ * of the Eclipse Public License 2.0 which accompanies this distribution, and is
+ * available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.analysis;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.ArrayAccess;
+import org.eclipse.jdt.core.dom.ArrayCreation;
+import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.PostfixExpression;
+import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.sandbox.jdt.container.api.ContainerRecommendation;
+import org.sandbox.jdt.container.api.ContainerRecommendation.AutomationLevel;
+import org.sandbox.jdt.container.api.ContainerRecommendation.Confidence;
+import org.sandbox.jdt.container.api.ContainerRecommendation.ContractAssessment;
+import org.sandbox.jdt.container.api.ContainerRecommendation.ContractProperty;
+import org.sandbox.jdt.container.api.ContainerRecommendation.Preservation;
+import org.sandbox.jdt.container.api.ContainerShape;
+import org.sandbox.jdt.container.api.ContainerUsageProfile;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AccessProfile;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AliasingContract;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AnalysisCompleteness;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ConcurrencyProfile;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ContainerIdentity;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ElementDomain;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.EscapeLevel;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.MutationLifecycle;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.NullContract;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.OrderRequirement;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.UniquenessRequirement;
+import org.sandbox.jdt.container.api.TargetContainerContract;
+import org.sandbox.jdt.container.api.TargetContainerContract.Mutability;
+import org.sandbox.jdt.container.api.UsageEvidence;
+import org.sandbox.jdt.container.api.UsageEvidence.Kind;
+
+/** Discovers local columns grown to the same row count and consumed together in source. */
+public final class ParallelArrayRecordAnalyzer {
+<span class="fc" id="L63">	private record Growth(SimpleName destination, SimpleName source, IVariableBinding array, IVariableBinding count) { }</span>
+
+	private ParallelArrayRecordAnalyzer() { }
+
+	public static List&lt;ContainerUsageProfile&gt; analyze(CompilationUnit root, Runnable checkCanceled) {
+<span class="fc" id="L68">		List&lt;ContainerUsageProfile&gt; profiles= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L69">		root.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(Block block) {
+<span class="fc" id="L72">				checkCanceled.run();</span>
+<span class="fc" id="L73">				List&lt;?&gt; statements= block.statements();</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">				for (int i= 0; i + 4 &lt; statements.size(); i++) {</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">					if (i % 128 == 0) {</span>
+<span class="fc" id="L76">						checkCanceled.run();</span>
+					}
+<span class="fc" id="L78">					Growth first= growth((Statement) statements.get(i));</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">					if (first != null) {</span>
+<span class="fc" id="L80">						Growth second= growth((Statement) statements.get(i + 1));</span>
+<span class="pc bpc" id="L81" title="2 of 6 branches missed.">						if (second != null &amp;&amp; !first.array().isEqualTo(second.array()) &amp;&amp; first.count().isEqualTo(second.count())) {</span>
+<span class="fc" id="L82">							profile(root, first, second, statements.subList(i + 2, i + 5), checkCanceled).ifPresent(profiles::add);</span>
+						}
+					}
+				}
+<span class="fc" id="L86">				return true;</span>
+			}
+		});
+<span class="fc" id="L89">		return List.copyOf(profiles);</span>
+	}
+
+	private static Growth growth(Statement statement) {
+<span class="fc" id="L93">		Assignment assignment= ContainerAstFacts.assignment(statement);</span>
+<span class="pc bpc" id="L94" title="1 of 4 branches missed.">		if (assignment == null || assignment.getOperator() != Assignment.Operator.ASSIGN</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">				|| !(assignment.getLeftHandSide() instanceof SimpleName name)</span>
+<span class="pc bpc" id="L96" title="2 of 4 branches missed.">				|| !(assignment.getRightHandSide() instanceof MethodInvocation copy) || copy.arguments().size() != 2</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">				|| !&quot;copyOf&quot;.equals(copy.getName().getIdentifier()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">				|| !(copy.arguments().get(0) instanceof SimpleName source)</span>
+<span class="pc bpc" id="L99" title="2 of 4 branches missed.">				|| !(copy.arguments().get(1) instanceof InfixExpression size) || size.hasExtendedOperands()</span>
+<span class="pc bpc" id="L100" title="1 of 4 branches missed.">				|| size.getOperator() != InfixExpression.Operator.PLUS || !ContainerAstFacts.isOne(size.getRightOperand())) {</span>
+<span class="fc" id="L101">			return null;</span>
+		}
+<span class="fc" id="L103">		var method= copy.resolveMethodBinding();</span>
+<span class="fc" id="L104">		IVariableBinding array= local(name);</span>
+<span class="fc" id="L105">		IVariableBinding count= local(size.getLeftOperand());</span>
+<span class="pc bpc" id="L106" title="4 of 8 branches missed.">		if (array == null || count == null || method == null || method.isRecovered()</span>
+<span class="pc bpc" id="L107" title="2 of 4 branches missed.">				|| method.getDeclaringClass() == null || array.getType().getDimensions() != 1</span>
+<span class="pc bpc" id="L108" title="1 of 4 branches missed.">				|| array.getType().getElementType().isPrimitive() || !&quot;int&quot;.equals(count.getType().getName()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">				|| !array.isEqualTo(local(source))</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">				|| !&quot;java.util.Arrays&quot;.equals(method.getDeclaringClass().getQualifiedName())) { //$NON-NLS-1$</span>
+<span class="fc" id="L111">			return null;</span>
+		}
+<span class="fc" id="L113">		return new Growth(name, source, array, count);</span>
+	}
+
+	private static IVariableBinding local(Expression expression) {
+<span class="pc bpc" id="L117" title="1 of 4 branches missed.">		if (expression instanceof SimpleName name &amp;&amp; name.resolveBinding() instanceof IVariableBinding variable</span>
+<span class="pc bpc" id="L118" title="3 of 6 branches missed.">				&amp;&amp; !variable.isRecovered() &amp;&amp; variable.getKey() != null &amp;&amp; !variable.isField()</span>
+<span class="pc bpc" id="L119" title="3 of 6 branches missed.">				&amp;&amp; !variable.isParameter() &amp;&amp; variable.getType() != null &amp;&amp; !variable.getType().isRecovered()) {</span>
+<span class="fc" id="L120">			return variable.getVariableDeclaration();</span>
+		}
+<span class="fc" id="L122">		return null;</span>
+	}
+
+	private static ArrayAccess write(Statement statement, Growth growth) {
+<span class="fc" id="L126">		Assignment assignment= ContainerAstFacts.assignment(statement);</span>
+<span class="pc bpc" id="L127" title="2 of 4 branches missed.">		if (assignment != null &amp;&amp; assignment.getOperator() == Assignment.Operator.ASSIGN</span>
+<span class="pc bpc" id="L128" title="2 of 4 branches missed.">				&amp;&amp; assignment.getLeftHandSide() instanceof ArrayAccess access &amp;&amp; growth.array().isEqualTo(local(access.getArray()))</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">				&amp;&amp; growth.count().isEqualTo(local(access.getIndex()))) {</span>
+<span class="fc" id="L130">			return access;</span>
+		}
+<span class="fc" id="L132">		return null;</span>
+	}
+
+	private static VariableDeclarationFragment emptyArray(CompilationUnit root, IVariableBinding binding) {
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">		if (root.findDeclaringNode(binding) instanceof VariableDeclarationFragment decl</span>
+<span class="pc bpc" id="L137" title="2 of 4 branches missed.">				&amp;&amp; decl.getInitializer() instanceof ArrayCreation init &amp;&amp; init.dimensions().size() == 1</span>
+<span class="pc bpc" id="L138" title="2 of 4 branches missed.">				&amp;&amp; init.resolveTypeBinding() != null &amp;&amp; binding.getType().isEqualTo(init.resolveTypeBinding())</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">				&amp;&amp; Integer.valueOf(0).equals(((Expression) init.dimensions().get(0)).resolveConstantExpressionValue())) {</span>
+<span class="fc" id="L140">			return decl;</span>
+		}
+<span class="fc" id="L142">		return null;</span>
+	}
+
+	private static Optional&lt;ContainerUsageProfile&gt; profile(CompilationUnit root, Growth first, Growth second,
+			List&lt;?&gt; tail, Runnable checkCanceled) {
+<span class="fc" id="L147">		ArrayAccess firstWrite= write((Statement) tail.get(0), first);</span>
+<span class="fc" id="L148">		ArrayAccess secondWrite= write((Statement) tail.get(1), second);</span>
+<span class="fc" id="L149">		VariableDeclarationFragment left= emptyArray(root, first.array());</span>
+<span class="fc" id="L150">		VariableDeclarationFragment right= emptyArray(root, second.array());</span>
+<span class="pc bpc" id="L151" title="2 of 8 branches missed.">		if (firstWrite == null || secondWrite == null || left == null || right == null</span>
+<span class="pc bpc" id="L152" title="2 of 4 branches missed.">				|| !(root.findDeclaringNode(first.count()) instanceof VariableDeclarationFragment count) || count.getInitializer() == null</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">				|| !Integer.valueOf(0).equals(count.getInitializer().resolveConstantExpressionValue())</span>
+<span class="pc bpc" id="L154" title="2 of 4 branches missed.">				|| !(left.getParent().getParent() instanceof Block scope) || right.getParent().getParent() != scope</span>
+<span class="pc bpc" id="L155" title="2 of 4 branches missed.">				|| count.getParent().getParent() != scope || !(tail.get(2) instanceof ExpressionStatement finish)</span>
+<span class="pc bpc" id="L156" title="2 of 4 branches missed.">				|| !(finish.getExpression() instanceof PostfixExpression increment) || increment.getOperator() != PostfixExpression.Operator.INCREMENT</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">				|| !first.count().isEqualTo(local(increment.getOperand()))) {</span>
+<span class="fc" id="L158">			return Optional.empty();</span>
+		}
+<span class="fc" id="L160">		Set&lt;ASTNode&gt; admitted= new HashSet&lt;&gt;(List.of(left.getName(), right.getName(), first.destination(), first.source(),</span>
+<span class="fc" id="L161">				second.destination(), second.source(), firstWrite.getArray(), secondWrite.getArray()));</span>
+<span class="fc" id="L162">		List&lt;UsageEvidence&gt; evidence= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L163">		evidence.add(evidence(Kind.PAIRED_ARRAY_WRITE, firstWrite));</span>
+<span class="fc" id="L164">		evidence.add(evidence(Kind.PAIRED_ARRAY_WRITE, secondWrite));</span>
+<span class="fc" id="L165">		class Uses extends ASTVisitor {</span>
+<span class="fc" id="L166">			boolean closed= true;</span>
+			@Override
+			public boolean visit(Block block) {
+<span class="fc" id="L169">				checkCanceled.run();</span>
+<span class="fc" id="L170">				return closed;</span>
+			}
+			@Override
+			public boolean visit(MethodInvocation invocation) {
+<span class="fc bfc" id="L174" title="All 4 branches covered.">				if (invocation.arguments().size() == 2 &amp;&amp; invocation.arguments().get(0) instanceof ArrayAccess a</span>
+<span class="pc bpc" id="L175" title="2 of 4 branches missed.">						&amp;&amp; invocation.arguments().get(1) instanceof ArrayAccess b &amp;&amp; first.array().isEqualTo(local(a.getArray()))</span>
+<span class="pc bpc" id="L176" title="1 of 4 branches missed.">						&amp;&amp; second.array().isEqualTo(local(b.getArray())) &amp;&amp; sameLocalIndex(a, b)</span>
+<span class="pc bpc" id="L177" title="2 of 4 branches missed.">						&amp;&amp; invocation.resolveMethodBinding() != null &amp;&amp; !invocation.resolveMethodBinding().isRecovered()) {</span>
+<span class="fc" id="L178">					admitted.add(a.getArray());</span>
+<span class="fc" id="L179">					admitted.add(b.getArray());</span>
+<span class="fc" id="L180">					evidence.add(evidence(Kind.PAIRED_ARRAY_READ, a));</span>
+<span class="fc" id="L181">					evidence.add(evidence(Kind.PAIRED_ARRAY_READ, b));</span>
+				}
+<span class="fc" id="L183">				return closed;</span>
+			}
+			@Override
+			public boolean visit(SimpleName use) {
+<span class="fc bfc" id="L187" title="All 4 branches covered.">				if (!admitted.contains(use) &amp;&amp; use.resolveBinding() instanceof IVariableBinding binding) {</span>
+<span class="fc bfc" id="L188" title="All 4 branches covered.">					if (first.array().isEqualTo(binding) || second.array().isEqualTo(binding)) {</span>
+<span class="fc" id="L189">						closed= false;</span>
+<span class="fc bfc" id="L190" title="All 6 branches covered.">					} else if (first.count().isEqualTo(binding) &amp;&amp; use != increment.getOperand() &amp;&amp; writes(use)) {</span>
+<span class="fc" id="L191">						closed= false;</span>
+					}
+				}
+<span class="fc" id="L194">				return closed;</span>
+			}
+		}
+<span class="fc" id="L197">		Uses uses= new Uses();</span>
+<span class="fc" id="L198">		scope.accept(uses);</span>
+<span class="pc bpc" id="L199" title="1 of 6 branches missed.">		if (!uses.closed || evidence.size() &lt;= 2 || hasErrors(root, scope)) {</span>
+<span class="fc" id="L200">			return Optional.empty();</span>
+		}
+<span class="fc" id="L202">		evidence.sort(Comparator.comparingInt(UsageEvidence::sourceStart));</span>
+<span class="fc" id="L203">		var identity= new ContainerIdentity(first.array().getKey() + &quot;|&quot; + second.array().getKey(), //$NON-NLS-1$</span>
+<span class="fc" id="L204">				first.array().getName() + &quot;, &quot; + second.array().getName(), firstWrite.getStartPosition(), firstWrite.getLength()); //$NON-NLS-1$</span>
+<span class="fc" id="L205">		return Optional.of(new ContainerUsageProfile(identity, ContainerShape.ARRAY, ElementDomain.REFERENCE,</span>
+				new AccessProfile(true, true, true, false, false, false, false), OrderRequirement.POSITIONAL,
+				UniquenessRequirement.DUPLICATES_ALLOWED, MutationLifecycle.UNKNOWN, NullContract.ALLOWED,
+<span class="fc" id="L208">				AliasingContract.NO_OBSERVED_ALIAS, EscapeLevel.LOCAL, ConcurrencyProfile.unknown(), AnalysisCompleteness.LOCAL_SEED, evidence));</span>
+	}
+
+	private static boolean hasErrors(CompilationUnit root, Block scope) {
+<span class="fc" id="L212">		int start= scope.getStartPosition();</span>
+<span class="fc" id="L213">		int end= start + scope.getLength();</span>
+<span class="pc bfc" id="L214" title="All 2 branches covered.">		for (var problem : root.getProblems()) {</span>
+<span class="pc bpc" id="L215" title="3 of 6 branches missed.">			if (problem.isError() &amp;&amp; problem.getSourceStart() &lt; end &amp;&amp; problem.getSourceEnd() &gt;= start) {</span>
+<span class="fc" id="L216">				return true;</span>
+			}
+		}
+<span class="fc" id="L219">		return false;</span>
+	}
+
+	private static boolean sameLocalIndex(ArrayAccess left, ArrayAccess right) {
+<span class="fc" id="L223">		IVariableBinding index= local(left.getIndex());</span>
+<span class="fc bfc" id="L224" title="All 4 branches covered.">		return index != null &amp;&amp; index.isEqualTo(local(right.getIndex()));</span>
+	}
+
+	private static boolean writes(SimpleName name) {
+<span class="fc" id="L228">		ASTNode operand= name;</span>
+<span class="pc bpc" id="L229" title="1 of 2 branches missed.">		while (operand.getParent() instanceof ParenthesizedExpression parentheses) {</span>
+<span class="nc" id="L230">			operand= parentheses;</span>
+		}
+<span class="fc" id="L232">		ASTNode parent= operand.getParent();</span>
+<span class="pc bpc" id="L233" title="3 of 6 branches missed.">		return parent instanceof Assignment assignment &amp;&amp; assignment.getLeftHandSide() == operand</span>
+<span class="pc bfc" id="L234" title="All 2 branches covered.">				|| parent instanceof PostfixExpression || parent instanceof PrefixExpression prefix</span>
+<span class="pc bnc" id="L235" title="All 4 branches missed.">				&amp;&amp; (prefix.getOperator() == PrefixExpression.Operator.INCREMENT || prefix.getOperator() == PrefixExpression.Operator.DECREMENT);</span>
+	}
+
+	private static UsageEvidence evidence(Kind kind, ArrayAccess access) {
+<span class="fc bfc" id="L239" title="All 2 branches covered.">		return new UsageEvidence(kind, kind == Kind.PAIRED_ARRAY_READ ? &quot;Read a component at the shared row index.&quot; //$NON-NLS-1$</span>
+<span class="fc" id="L240">				: &quot;Write a component at the shared append index.&quot;, access.getStartPosition(), access.getLength()); //$NON-NLS-1$</span>
+	}
+
+	static Optional&lt;ContainerRecommendation&gt; recommendation(ContainerUsageProfile profile) {
+<span class="fc bfc" id="L244" title="All 4 branches covered.">		if (profile.currentShape() != ContainerShape.ARRAY || profile.completeness() != AnalysisCompleteness.LOCAL_SEED</span>
+<span class="fc bfc" id="L245" title="All 4 branches covered.">				|| profile.evidence().stream().noneMatch(item -&gt; item.kind() == Kind.PAIRED_ARRAY_READ)</span>
+<span class="pc bpc" id="L246" title="2 of 4 branches missed.">				|| profile.evidence().stream().noneMatch(item -&gt; item.kind() == Kind.PAIRED_ARRAY_WRITE)) {</span>
+<span class="fc" id="L247">			return Optional.empty();</span>
+		}
+<span class="fc" id="L249">		var target= new TargetContainerContract(ContainerShape.RECORD_SEQUENCE, OrderRequirement.POSITIONAL,</span>
+				UniquenessRequirement.DUPLICATES_ALLOWED, Mutability.MUTABLE, NullContract.ALLOWED,
+				&quot;Store the paired components as an ordered sequence of records, one record per shared index.&quot;); //$NON-NLS-1$
+<span class="fc" id="L252">		return Optional.of(new ContainerRecommendation(profile, target,</span>
+<span class="fc" id="L253">				ContainerRuleRegistry.find(ContainerRuleRegistry.PARALLEL_ARRAY_RECORD_SEQUENCE).orElseThrow(), Confidence.MEDIUM,</span>
+<span class="fc" id="L254">				AutomationLevel.REPORT_ONLY, List.of(</span>
+					new ContractAssessment(ContractProperty.ORDER, Preservation.PRESERVED, &quot;Keep rows in their original indexed order, including duplicates.&quot;), //$NON-NLS-1$
+					new ContractAssessment(ContractProperty.NULLS, Preservation.PRESERVED, &quot;Reference components can retain their individual null values.&quot;), //$NON-NLS-1$
+					new ContractAssessment(ContractProperty.MUTABILITY, Preservation.CHANGED, &quot;Record components are final; individual array slots were writable.&quot;), //$NON-NLS-1$
+					new ContractAssessment(ContractProperty.ALIASING, Preservation.REQUIRES_PROOF, &quot;Retain component object identity and evaluation order, including partial writes if a later component throws.&quot;)))); //$NON-NLS-1$
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

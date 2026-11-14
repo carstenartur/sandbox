@@ -135,13 +135,13 @@ import org.sandbox.jdt.container.api.UsageEvidence.Kind;
 <span class="fc" id="L135">			classifyInvocation(invocation, candidate.bindingKey(), observations);</span>
 <span class="fc" id="L136">			return;</span>
 		}
-<span class="pc bpc" id="L138" title="2 of 4 branches missed.">		if (parent instanceof EnhancedForStatement enhanced &amp;&amp; enhanced.getExpression() == name) {</span>
+<span class="pc bpc" id="L138" title="1 of 4 branches missed.">		if (parent instanceof EnhancedForStatement enhanced &amp;&amp; enhanced.getExpression() == name) {</span>
 <span class="fc" id="L139">			observations.iteration(name);</span>
 <span class="fc" id="L140">			return;</span>
 		}
-<span class="nc" id="L142">		observations.reject(Kind.UNSAFE_ESCAPE,</span>
+<span class="fc" id="L142">		observations.reject(Kind.UNSAFE_ESCAPE,</span>
 				&quot;Sequence use escapes or observes unsupported positional semantics&quot;, name); //$NON-NLS-1$
-<span class="nc" id="L144">	}</span>
+<span class="fc" id="L144">	}</span>
 
 	private static void classifyInvocation(MethodInvocation invocation, String bindingKey,
 			Observations observations) {
@@ -195,7 +195,7 @@ import org.sandbox.jdt.container.api.UsageEvidence.Kind;
 
 	private static boolean isEmptyArrayList(ClassInstanceCreation creation) {
 <span class="fc" id="L197">		ITypeBinding type= creation.resolveTypeBinding();</span>
-<span class="pc bpc" id="L198" title="2 of 4 branches missed.">		return type != null &amp;&amp; ARRAY_LIST.equals(type.getErasure().getQualifiedName())</span>
+<span class="pc bpc" id="L198" title="1 of 4 branches missed.">		return type != null &amp;&amp; ARRAY_LIST.equals(type.getErasure().getQualifiedName())</span>
 <span class="fc bfc" id="L199" title="All 2 branches covered.">				&amp;&amp; creation.arguments().isEmpty()</span>
 <span class="pc bpc" id="L200" title="1 of 2 branches missed.">				&amp;&amp; creation.getAnonymousClassDeclaration() == null;</span>
 	}
@@ -299,9 +299,9 @@ import org.sandbox.jdt.container.api.UsageEvidence.Kind;
 <span class="fc" id="L299">		}</span>
 
 		ContainerUsageProfile profile() {
-<span class="pc bpc" id="L302" title="1 of 2 branches missed.">			if (!appendSeen) {</span>
-<span class="nc" id="L303">				reject(Kind.REJECTION_BOUNDARY,</span>
-<span class="nc" id="L304">						&quot;A deque recommendation requires at least one proven tail append&quot;, candidate.fragment()); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L302" title="All 2 branches covered.">			if (!appendSeen) {</span>
+<span class="fc" id="L303">				reject(Kind.REJECTION_BOUNDARY,</span>
+<span class="fc" id="L304">						&quot;A deque recommendation requires at least one proven tail append&quot;, candidate.fragment()); //$NON-NLS-1$</span>
 			}
 <span class="fc bfc" id="L306" title="All 4 branches covered.">			if (!headRemovalSeen &amp;&amp; !tailRemovalSeen) {</span>
 <span class="fc" id="L307">				reject(Kind.REJECTION_BOUNDARY,</span>
@@ -318,7 +318,7 @@ import org.sandbox.jdt.container.api.UsageEvidence.Kind;
 <span class="fc" id="L318">						candidate.fragment());</span>
 			}
 <span class="fc" id="L320">			evidence.sort(Comparator.comparingInt(UsageEvidence::sourceStart)</span>
-<span class="pc" id="L321">					.thenComparing(item -&gt; item.kind().ordinal()));</span>
+<span class="fc" id="L321">					.thenComparing(item -&gt; item.kind().ordinal()));</span>
 <span class="fc" id="L322">			return new ContainerUsageProfile(</span>
 <span class="fc" id="L323">					new ContainerIdentity(candidate.bindingKey(),</span>
 <span class="fc" id="L324">							candidate.fragment().getName().getIdentifier(),</span>

@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ConstructorOwnedArrayField.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.analysis</a> &gt; <span class="el_source">ConstructorOwnedArrayField.java</span></div><h1>ConstructorOwnedArrayField.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.analysis;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
+import org.eclipse.jdt.core.compiler.IProblem;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.ArrayType;
+import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.CreationReference;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.FieldAccess;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.NodeFinder;
+import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.ReturnStatement;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+
+import org.sandbox.jdt.container.api.ContainerParameterRewritePlan.EditKind;
+import org.sandbox.jdt.container.api.ContainerParameterRewritePlan.ParameterEdit;
+
+/** Proves the complete, same-unit ownership transfer and the field operations it permits. */
+public record ConstructorOwnedArrayField(String bindingKey, List&lt;ParameterEdit&gt; edits) {
+
+<span class="nc" id="L51">	public ConstructorOwnedArrayField {</span>
+<span class="nc" id="L52">		edits= List.copyOf(edits);</span>
+<span class="nc" id="L53">	}</span>
+
+	/** Recomputed during planning and again before applying an edit. */
+	public static Optional&lt;ConstructorOwnedArrayField&gt; analyze(CompilationUnit root, String parameterKey,
+			int callerArgumentStart, int callerArgumentLength) {
+<span class="nc bnc" id="L58" title="All 2 branches missed.">		if (Arrays.stream(root.getProblems()).anyMatch(IProblem::isError)) {</span>
+<span class="nc" id="L59">			return Optional.empty();</span>
+		}
+<span class="nc" id="L61">		ASTNode argument= NodeFinder.perform(root, callerArgumentStart, callerArgumentLength);</span>
+<span class="nc bnc" id="L62" title="All 4 branches missed.">		if (!(argument instanceof SimpleName argumentName) || !(argument.getParent() instanceof ClassInstanceCreation creation)</span>
+<span class="nc bnc" id="L63" title="All 4 branches missed.">				|| !ContainerConstructorTarget.isClosed(creation) || !(creation.getParent() instanceof ReturnStatement returned)</span>
+<span class="nc bnc" id="L64" title="All 4 branches missed.">				|| !(returned.getParent() instanceof Block body) || !(body.getParent() instanceof MethodDeclaration)</span>
+<span class="nc bnc" id="L65" title="All 4 branches missed.">				|| body.statements().getLast() != returned || !creation.arguments().contains(argument)) {</span>
+<span class="nc" id="L66">			return Optional.empty();</span>
+		}
+<span class="nc" id="L68">		var constructor= creation.resolveConstructorBinding().getMethodDeclaration();</span>
+<span class="nc bnc" id="L69" title="All 2 branches missed.">		if (!(root.findDeclaringNode(constructor) instanceof MethodDeclaration method)</span>
+<span class="nc bnc" id="L70" title="All 4 branches missed.">				|| !(method.getParent() instanceof TypeDeclaration owner) || !Modifier.isFinal(owner.getModifiers())</span>
+<span class="nc bnc" id="L71" title="All 6 branches missed.">				|| owner.getParent() != root || owner.getSuperclassType() != null || !owner.superInterfaceTypes().isEmpty()</span>
+<span class="nc bnc" id="L72" title="All 4 branches missed.">				|| owner.resolveBinding() == null || owner.resolveBinding().getAnnotations().length != 0</span>
+<span class="nc bnc" id="L73" title="All 6 branches missed.">				|| constructor.getAnnotations().length != 0 || method.getBody() == null || method.getBody().statements().size() != 1) {</span>
+<span class="nc" id="L74">			return Optional.empty();</span>
+		}
+<span class="nc" id="L76">		var parameter= (SingleVariableDeclaration) method.parameters().get(creation.arguments().indexOf(argument));</span>
+<span class="nc bnc" id="L77" title="All 6 branches missed.">		if (parameter.isVarargs() || !parameter.extraDimensions().isEmpty() || !(parameter.getType() instanceof ArrayType)</span>
+<span class="nc bnc" id="L78" title="All 4 branches missed.">				|| parameter.resolveBinding() == null || !parameterKey.equals(parameter.resolveBinding().getKey())</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">				|| !parameter.resolveBinding().getType().isEqualTo(argumentName.resolveTypeBinding())</span>
+<span class="nc bnc" id="L80" title="All 2 branches missed.">				|| !(method.getBody().statements().getFirst() instanceof ExpressionStatement statement)</span>
+<span class="nc bnc" id="L81" title="All 4 branches missed.">				|| !(statement.getExpression() instanceof Assignment store) || store.getOperator() != Assignment.Operator.ASSIGN</span>
+<span class="nc bnc" id="L82" title="All 4 branches missed.">				|| !(store.getRightHandSide() instanceof SimpleName rhs) || !parameter.resolveBinding().isEqualTo(rhs.resolveBinding())) {</span>
+<span class="nc" id="L83">			return Optional.empty();</span>
+		}
+<span class="nc" id="L85">		Expression left= store.getLeftHandSide();</span>
+<span class="nc" id="L86">		IVariableBinding field= SynchronizedListFieldFacts.currentInstanceField(left);</span>
+<span class="nc bnc" id="L87" title="All 6 branches missed.">		if (field == null || !Modifier.isPrivate(field.getModifiers()) || !Modifier.isFinal(field.getModifiers())</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">				|| !field.getType().isEqualTo(parameter.resolveBinding().getType())</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">				|| !(root.findDeclaringNode(field) instanceof VariableDeclarationFragment fragment)</span>
+<span class="nc bnc" id="L90" title="All 4 branches missed.">				|| !(fragment.getParent() instanceof FieldDeclaration declaration) || declaration.fragments().size() != 1</span>
+<span class="nc bnc" id="L91" title="All 4 branches missed.">				|| !fragment.extraDimensions().isEmpty() || fragment.getInitializer() != null</span>
+<span class="nc bnc" id="L92" title="All 4 branches missed.">				|| !(declaration.getType() instanceof ArrayType fieldType) || fieldType.getDimensions() != 1</span>
+<span class="nc bnc" id="L93" title="All 4 branches missed.">				|| field.getAnnotations().length != 0 || hasTypeAnnotations(field.getType())</span>
+<span class="nc bnc" id="L94" title="All 4 branches missed.">				|| parameter.resolveBinding().getAnnotations().length != 0 || hasTypeAnnotations(parameter.resolveBinding().getType())) {</span>
+<span class="nc" id="L95">			return Optional.empty();</span>
+		}
+<span class="nc" id="L97">		List&lt;ParameterEdit&gt; edits= new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L98">		edits.add(edit(EditKind.VERIFY_TERMINAL_ARGUMENT, argument));</span>
+<span class="nc" id="L99">		edits.add(edit(EditKind.CHANGE_OWNED_FIELD, declaration.getType()));</span>
+<span class="nc" id="L100">		edits.add(edit(EditKind.VERIFY_CONSTRUCTOR_STORE, rhs));</span>
+<span class="nc" id="L101">		boolean[] valid= { true };</span>
+<span class="nc" id="L102">		root.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(ClassInstanceCreation other) {
+<span class="nc bnc" id="L105" title="All 4 branches missed.">				if (other != creation &amp;&amp; other.resolveConstructorBinding() != null</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">						&amp;&amp; constructor.isEqualTo(other.resolveConstructorBinding().getMethodDeclaration())) {</span>
+<span class="nc" id="L107">					valid[0]= false;</span>
+				}
+<span class="nc" id="L109">				return valid[0];</span>
+			}
+
+			@Override
+			public boolean visit(CreationReference reference) {
+<span class="nc bnc" id="L114" title="All 2 branches missed.">				if (reference.resolveMethodBinding() != null</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">						&amp;&amp; constructor.isEqualTo(reference.resolveMethodBinding().getMethodDeclaration())) {</span>
+<span class="nc" id="L116">					valid[0]= false;</span>
+				}
+<span class="nc" id="L118">				return valid[0];</span>
+			}
+
+			@Override
+			public boolean visit(MethodDeclaration member) {
+<span class="nc bnc" id="L123" title="All 2 branches missed.">				if (Modifier.isNative(member.getModifiers())) {</span>
+<span class="nc" id="L124">					valid[0]= false;</span>
+				}
+<span class="nc" id="L126">				return valid[0];</span>
+			}
+
+			@Override
+			public boolean visit(MethodInvocation invocation) {
+<span class="nc" id="L131">				var binding= invocation.resolveMethodBinding();</span>
+<span class="nc bnc" id="L132" title="All 4 branches missed.">				if (binding == null || binding.isRecovered()) {</span>
+<span class="nc" id="L133">					valid[0]= false;</span>
+				} else {
+<span class="nc" id="L135">					String declaring= binding.getDeclaringClass().getErasure().getQualifiedName();</span>
+<span class="nc bnc" id="L136" title="All 4 branches missed.">					if (&quot;java.lang.Class&quot;.equals(declaring) || declaring.startsWith(&quot;java.lang.reflect.&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">							|| declaring.startsWith(&quot;java.lang.invoke.&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L138">						valid[0]= false;</span>
+					}
+				}
+<span class="nc" id="L141">				return valid[0];</span>
+			}
+
+			@Override
+			public boolean visit(SimpleName name) {
+<span class="nc" id="L146">				IBinding binding= name.resolveBinding();</span>
+<span class="nc bnc" id="L147" title="All 4 branches missed.">				if (binding == null &amp;&amp; name.getIdentifier().equals(field.getName())) {</span>
+<span class="nc" id="L148">					valid[0]= false;</span>
+				}
+<span class="nc bnc" id="L150" title="All 4 branches missed.">				if (!field.isEqualTo(binding) || name == fragment.getName()) {</span>
+<span class="nc" id="L151">					return valid[0];</span>
+				}
+<span class="nc" id="L153">				Expression reference= name;</span>
+<span class="nc bnc" id="L154" title="All 4 branches missed.">				if (name.getParent() instanceof FieldAccess access &amp;&amp; access.getName() == name) {</span>
+<span class="nc" id="L155">					reference= access;</span>
+<span class="nc bnc" id="L156" title="All 4 branches missed.">				} else if (name.getParent() instanceof QualifiedName qualified &amp;&amp; qualified.getName() == name) {</span>
+<span class="nc" id="L157">					reference= qualified;</span>
+				}
+<span class="nc bnc" id="L159" title="All 2 branches missed.">				if (reference == left) {</span>
+<span class="nc" id="L160">					return true;</span>
+				}
+<span class="nc bnc" id="L162" title="All 4 branches missed.">				if (reference.getParent() instanceof QualifiedName length &amp;&amp; length.getQualifier() == reference</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">						&amp;&amp; &quot;length&quot;.equals(length.getName().getIdentifier())) { //$NON-NLS-1$</span>
+<span class="nc" id="L164">					edits.add(edit(EditKind.REPLACE_FIELD_LENGTH, length));</span>
+<span class="nc bnc" id="L165" title="All 4 branches missed.">				} else if (reference.getParent() instanceof FieldAccess length &amp;&amp; length.getExpression() == reference</span>
+<span class="nc bnc" id="L166" title="All 2 branches missed.">						&amp;&amp; &quot;length&quot;.equals(length.getName().getIdentifier())) { //$NON-NLS-1$</span>
+<span class="nc" id="L167">					edits.add(edit(EditKind.REPLACE_FIELD_LENGTH, length));</span>
+				} else {
+<span class="nc" id="L169">					valid[0]= false;</span>
+				}
+<span class="nc" id="L171">				return valid[0];</span>
+			}
+		});
+<span class="nc bnc" id="L174" title="All 2 branches missed.">		return valid[0] ? Optional.of(new ConstructorOwnedArrayField(field.getKey(), edits)) : Optional.empty();</span>
+	}
+
+	private static boolean hasTypeAnnotations(ITypeBinding type) {
+<span class="nc bnc" id="L178" title="All 6 branches missed.">		return type.getTypeAnnotations().length != 0 || type.isArray() &amp;&amp; hasTypeAnnotations(type.getElementType());</span>
+	}
+
+	private static ParameterEdit edit(EditKind kind, ASTNode node) {
+<span class="nc" id="L182">		return new ParameterEdit(kind, node.getStartPosition(), node.getLength());</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

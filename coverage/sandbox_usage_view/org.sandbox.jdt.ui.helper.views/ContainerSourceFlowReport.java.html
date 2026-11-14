@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ContainerSourceFlowReport.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_usage_view</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.ui.helper.views</a> &gt; <span class="el_source">ContainerSourceFlowReport.java</span></div><h1>ContainerSourceFlowReport.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials are made available under the terms
+ * of the Eclipse Public License 2.0 which accompanies this distribution, and is
+ * available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.ui.helper.views;
+
+import java.util.ArrayDeque;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.sandbox.jdt.cleanup.multifile.ContainerFlowScopeSearch;
+import org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits;
+import org.sandbox.jdt.cleanup.multifile.SourceRootPolicy;
+import org.sandbox.jdt.container.analysis.AppendOnlyArraySeedDetector;
+import org.sandbox.jdt.container.analysis.ContainerFlowContinuationDetector;
+import org.sandbox.jdt.container.analysis.ContainerFlowSearchSeedExtractor;
+import org.sandbox.jdt.container.analysis.LocalArrayUsageAnalyzer;
+import org.sandbox.jdt.container.analysis.LocalContainerFlowGraphBuilder;
+import org.sandbox.jdt.container.api.ContainerFlowGraph;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.DiagnosticKind;
+import org.sandbox.jdt.container.api.ContainerFlowSearchPlan;
+import org.sandbox.jdt.container.api.ContainerUsageProfile;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ElementDomain;
+import org.sandbox.jdt.container.api.UsageEvidence.Kind;
+import org.sandbox.jdt.ui.helper.views.ContainerAnalysisService.ContainerAnalysisRow;
+
+/** Read-only source evidence for a binding-connected array, including incomplete and external boundaries. */
+<span class="fc" id="L43">final class ContainerSourceFlowReport {</span>
+	private record Location(ICompilationUnit unit, ContainerUsageProfile profile) { }
+	private record RootKey(String unitHandle, String bindingKey) { }
+
+<span class="fc" id="L47">	private final LocalContainerFlowGraphBuilder graphs= new LocalContainerFlowGraphBuilder();</span>
+<span class="fc" id="L48">	private final ContainerFlowSearchSeedExtractor searchSeeds= new ContainerFlowSearchSeedExtractor();</span>
+<span class="fc" id="L49">	private final ContainerFlowContinuationDetector continuations= new ContainerFlowContinuationDetector();</span>
+<span class="fc" id="L50">	private final LocalArrayUsageAnalyzer usage= new LocalArrayUsageAnalyzer();</span>
+
+	List&lt;ContainerAnalysisRow&gt; analyze(ICompilationUnit selected, IProgressMonitor monitor) throws CoreException {
+<span class="fc" id="L53">		Map&lt;ICompilationUnit, CompilationUnit&gt; roots= new HashMap&lt;&gt;();</span>
+<span class="fc" id="L54">		CompilationUnit source= root(selected, roots, monitor);</span>
+<span class="fc" id="L55">		List&lt;ICompilationUnit&gt; allowed= null;</span>
+<span class="fc" id="L56">		Set&lt;ContainerAnalysisRow&gt; rows= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">		for (var seed : new AppendOnlyArraySeedDetector().findSeeds(source)) {</span>
+<span class="pc bpc" id="L58" title="4 of 6 branches missed.">			if (!seed.identity().hasResolvedBinding() || (seed.elementDomain() != ElementDomain.REFERENCE &amp;&amp; seed.elementDomain() != ElementDomain.ENUM)) {</span>
+<span class="nc" id="L59">				continue;</span>
+			}
+<span class="fc" id="L61">			var graph= graphs.build(source, seed);</span>
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">			if (searchSeeds.extract(graph).isEmpty()) {</span>
+<span class="nc" id="L63">				continue;</span>
+			}
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">			if (allowed == null) {</span>
+<span class="fc" id="L66">				allowed= JavaProjectCompilationUnits.collect(selected.getJavaProject(), List.of(selected), SourceRootPolicy.PRODUCTION_WITH_DEPENDENT_TESTS);</span>
+			}
+<span class="fc" id="L68">			trace(new Location(selected, seed), graph, roots, allowed, rows, monitor);</span>
+		}
+<span class="fc" id="L70">		return rows.stream().sorted(Comparator.comparing(ContainerAnalysisRow::compilationUnitHandle)</span>
+<span class="fc" id="L71">				.thenComparingInt(ContainerAnalysisRow::sourceStart).thenComparing(ContainerAnalysisRow::evidenceKind)</span>
+<span class="fc" id="L72">				.thenComparing(ContainerAnalysisRow::candidate)).toList();</span>
+	}
+
+	private void trace(Location start, ContainerFlowGraph startingGraph, Map&lt;ICompilationUnit, CompilationUnit&gt; roots, List&lt;ICompilationUnit&gt; allowed,
+			Set&lt;ContainerAnalysisRow&gt; rows, IProgressMonitor monitor) throws CoreException {
+<span class="fc" id="L77">		var pending= new ArrayDeque&lt;Location&gt;();</span>
+<span class="fc" id="L78">		Set&lt;RootKey&gt; visited= new HashSet&lt;&gt;();</span>
+<span class="fc" id="L79">		Set&lt;String&gt; searched= new HashSet&lt;&gt;();</span>
+<span class="fc" id="L80">		String candidate= start.profile().identity().displayName();</span>
+<span class="fc" id="L81">		pending.add(start);</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">		while (!pending.isEmpty()) {</span>
+<span class="fc" id="L83">			Location location= pending.removeFirst();</span>
+<span class="fc" id="L84">			String handle= location.unit().getPrimary().getHandleIdentifier();</span>
+<span class="fc" id="L85">			var identity= location.profile().identity();</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">			if (!visited.add(new RootKey(handle, identity.bindingKey()))) {</span>
+<span class="fc" id="L87">				continue;</span>
+			}
+<span class="fc" id="L89">			CompilationUnit source= root(location.unit(), roots, monitor);</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">			var graph= location == start ? startingGraph : graphs.build(source, location.profile());</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">			for (var edge : graph.edges()) {</span>
+<span class="fc" id="L92">				rows.add(row(candidate, handle, edge.kind().name(), edge.sourceStart(), edge.sourceLength(),</span>
+<span class="fc" id="L93">						&quot;Binding-resolved array transfer from %s to %s&quot;.formatted(graph.node(edge.sourceNodeId()).orElseThrow().kind(), //$NON-NLS-1$</span>
+<span class="fc" id="L94">								graph.node(edge.targetNodeId()).orElseThrow().kind())));</span>
+			}
+<span class="fc bfc" id="L96" title="All 2 branches covered.">			for (var diagnostic : graph.diagnostics()) {</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">				if (diagnostic.kind() != DiagnosticKind.SCOPE_EXPANSION_REQUIRED) {</span>
+<span class="nc" id="L98">					rows.add(row(candidate, handle, diagnostic.kind().name(), diagnostic.sourceStart(), diagnostic.sourceLength(), diagnostic.message()));</span>
+				}
+			}
+<span class="fc bfc" id="L101" title="All 2 branches covered.">			for (var item : usage.analyze(source, location.profile()).evidence()) {</span>
+<span class="pc bpc" id="L102" title="2 of 6 branches missed.">				if (item.kind() == Kind.ARRAY_LENGTH_READ || item.kind() == Kind.INDEXED_READ || item.kind() == Kind.INDEXED_WRITE</span>
+<span class="pc bpc" id="L103" title="2 of 4 branches missed.">						|| item.kind() == Kind.ENCOUNTER_ITERATION || item.kind() == Kind.ARRAY_IDENTITY) {</span>
+<span class="fc" id="L104">					rows.add(row(candidate, handle, item.kind().name(), item.sourceStart(), item.sourceLength(), item.summary()));</span>
+				}
+			}
+<span class="fc" id="L107">			var requests= searchSeeds.extract(graph).seeds().stream().filter(seed -&gt; searched.add(seed.stableKey())).toList();</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">			if (requests.isEmpty()) {</span>
+<span class="fc" id="L109">				continue;</span>
+			}
+<span class="fc" id="L111">			var result= ContainerFlowScopeSearch.findRelatedUnits(location.unit().getJavaProject(), new ContainerFlowSearchPlan(requests),</span>
+<span class="fc" id="L112">					List.of(location.unit()), allowed, monitor);</span>
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">			for (String reason : result.rejectionReasons()) {</span>
+<span class="nc" id="L114">				rows.add(row(candidate, handle, &quot;SCOPE_BOUNDARY&quot;, identity.sourceStart(), identity.sourceLength(), reason)); //$NON-NLS-1$</span>
+			}
+<span class="fc bfc" id="L116" title="All 2 branches covered.">			for (var unit : result.compilationUnits()) {</span>
+<span class="fc" id="L117">				String targetHandle= unit.getPrimary().getHandleIdentifier();</span>
+<span class="fc" id="L118">				var plan= continuations.detect(root(unit, roots, monitor), targetHandle, result.resolvedPlan());</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">				for (var next : plan.roots()) {</span>
+<span class="fc" id="L120">					var evidence= next.profile().evidence().getFirst();</span>
+<span class="fc" id="L121">					rows.add(row(candidate, targetHandle, next.kind().name(), evidence.sourceStart(), evidence.sourceLength(), evidence.summary()));</span>
+<span class="fc" id="L122">					pending.addLast(new Location(unit, next.profile()));</span>
+				}
+<span class="fc bfc" id="L124" title="All 2 branches covered.">				for (var boundary : plan.diagnostics()) {</span>
+<span class="fc" id="L125">					rows.add(row(candidate, targetHandle, boundary.kind().name(), boundary.sourceStart(), boundary.sourceLength(), boundary.message()));</span>
+				}
+			}
+		}
+<span class="fc" id="L129">	}</span>
+
+	private static CompilationUnit root(ICompilationUnit unit, Map&lt;ICompilationUnit, CompilationUnit&gt; roots, IProgressMonitor monitor) {
+<span class="pc bpc" id="L132" title="1 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
+<span class="fc" id="L133">			throw new OperationCanceledException();</span>
+		}
+<span class="fc" id="L135">		return roots.computeIfAbsent(unit, key -&gt; ContainerAnalysisService.parse(key, monitor));</span>
+	}
+
+	private static ContainerAnalysisRow row(String candidate, String handle, String kind, int start, int length, String evidence) {
+<span class="fc" id="L139">		return new ContainerAnalysisRow(handle, candidate, &quot;ARRAY&quot;, &quot;Source flow&quot;, &quot;N/A&quot;, &quot;REPORT_ONLY&quot;, kind, evidence, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="fc" id="L140">				&quot;This observation identifies a related array use. Any representation change must preserve every consumer and boundary.&quot;, start, length); //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

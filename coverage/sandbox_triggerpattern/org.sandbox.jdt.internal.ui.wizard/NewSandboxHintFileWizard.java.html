@@ -127,161 +127,163 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 <span class="fc" id="L127">		rulePage = new NewRuleWizardPage();</span>
 <span class="fc" id="L128">		rulePage.setExamples(initialExamples);</span>
 <span class="fc" id="L129">		rulePage.setExampleProjectSupplier(this::selectedJavaProject);</span>
-<span class="fc" id="L130">		filePage.setContainerChangeListener(this::refreshProjectPreviewAction);</span>
-<span class="fc" id="L131">		rulePage.setMetadataSupplier(filePage::getEditedMetadata);</span>
-<span class="fc" id="L132">		rulePage.setDefaultContentSupplier(this::getTemplateContent);</span>
+<span class="pc" id="L130">		rulePage.setExampleHintPath(() -&gt; new Path(filePage.getContainerPath())</span>
+<span class="nc" id="L131">				.append(filePage.getFileName()).toPortableString());</span>
+<span class="fc" id="L132">		filePage.setContainerChangeListener(this::refreshProjectPreviewAction);</span>
+<span class="fc" id="L133">		rulePage.setMetadataSupplier(filePage::getEditedMetadata);</span>
+<span class="fc" id="L134">		rulePage.setDefaultContentSupplier(this::getTemplateContent);</span>
 
-<span class="pc bpc" id="L134" title="1 of 6 branches missed.">		if (initialCodeSnippet != null &amp;&amp; (!initialCodeSnippet.isBlank() || initialReplacement != null)) {</span>
-<span class="pc bpc" id="L135" title="1 of 2 branches missed.">			if (initialReplacement == null) {</span>
-<span class="nc" id="L136">				rulePage.setInitialSourcePattern(initialCodeSnippet);</span>
-<span class="nc" id="L137">			} else {</span>
-<span class="fc" id="L138">				rulePage.setInitialChange(initialCodeSnippet, initialReplacement);</span>
+<span class="pc bpc" id="L136" title="1 of 6 branches missed.">		if (initialCodeSnippet != null &amp;&amp; (!initialCodeSnippet.isBlank() || initialReplacement != null)) {</span>
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">			if (initialReplacement == null) {</span>
+<span class="nc" id="L138">				rulePage.setInitialSourcePattern(initialCodeSnippet);</span>
+<span class="nc" id="L139">			} else {</span>
+<span class="fc" id="L140">				rulePage.setInitialChange(initialCodeSnippet, initialReplacement);</span>
 			}
 
 			// Auto-trigger AI only if both configured AND available
-<span class="fc" id="L142">			IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode(PLUGIN_ID);</span>
-<span class="fc" id="L143">			boolean autoAi = prefs.getBoolean(LlmPreferencePage.PREF_WIZARD_AUTO_AI, false);</span>
-<span class="pc bpc" id="L144" title="3 of 4 branches missed.">			if (autoAi &amp;&amp; EclipseLlmService.getInstance().isAvailable()) {</span>
-<span class="nc" id="L145">				rulePage.setAutoTriggerAi(true);</span>
+<span class="fc" id="L144">			IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode(PLUGIN_ID);</span>
+<span class="fc" id="L145">			boolean autoAi = prefs.getBoolean(LlmPreferencePage.PREF_WIZARD_AUTO_AI, false);</span>
+<span class="pc bpc" id="L146" title="3 of 4 branches missed.">			if (autoAi &amp;&amp; EclipseLlmService.getInstance().isAvailable()) {</span>
+<span class="nc" id="L147">				rulePage.setAutoTriggerAi(true);</span>
 			}
 		}
 
-<span class="fc" id="L149">		refreshProjectPreviewAction();</span>
+<span class="fc" id="L151">		refreshProjectPreviewAction();</span>
 
-<span class="fc" id="L151">		addPage(filePage);</span>
-<span class="fc" id="L152">		addPage(rulePage);</span>
-<span class="fc" id="L153">	}</span>
+<span class="fc" id="L153">		addPage(filePage);</span>
+<span class="fc" id="L154">		addPage(rulePage);</span>
+<span class="fc" id="L155">	}</span>
 
 	@Override
 	public IWizardPage getNextPage(IWizardPage page) {
-<span class="pc bpc" id="L157" title="1 of 2 branches missed.">		if (page == filePage) {</span>
-<span class="fc" id="L158">			refreshProjectPreviewAction();</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">		if (page == filePage) {</span>
+<span class="fc" id="L160">			refreshProjectPreviewAction();</span>
 		}
-<span class="fc" id="L160">		return super.getNextPage(page);</span>
+<span class="fc" id="L162">		return super.getNextPage(page);</span>
 	}
 
 	private void refreshProjectPreviewAction() {
-<span class="pc bpc" id="L164" title="1 of 2 branches missed.">		if (rulePage == null) {</span>
-<span class="nc" id="L165">			return;</span>
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">		if (rulePage == null) {</span>
+<span class="nc" id="L167">			return;</span>
 		}
-<span class="pc bpc" id="L167" title="1 of 4 branches missed.">		if (projectPreviewAction == null &amp;&amp; selectedJavaProject() == null) {</span>
-<span class="fc" id="L168">			rulePage.setProjectPreviewAction(null);</span>
-<span class="fc" id="L169">			return;</span>
+<span class="pc bpc" id="L169" title="1 of 4 branches missed.">		if (projectPreviewAction == null &amp;&amp; selectedJavaProject() == null) {</span>
+<span class="fc" id="L170">			rulePage.setProjectPreviewAction(null);</span>
+<span class="fc" id="L171">			return;</span>
 		}
-<span class="fc" id="L171">		rulePage.setProjectPreviewAction(ignored -&gt; {</span>
-<span class="nc bnc" id="L172" title="All 2 branches missed.">			if (projectPreviewAction != null) {</span>
-<span class="nc" id="L173">				projectPreviewAction.accept(getFullDslDocument());</span>
-<span class="nc" id="L174">				return;</span>
+<span class="fc" id="L173">		rulePage.setProjectPreviewAction(ignored -&gt; {</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">			if (projectPreviewAction != null) {</span>
+<span class="nc" id="L175">				projectPreviewAction.accept(getFullDslDocument());</span>
+<span class="nc" id="L176">				return;</span>
 			}
-<span class="nc" id="L176">			IJavaProject project = selectedJavaProject();</span>
-<span class="nc bnc" id="L177" title="All 2 branches missed.">			if (project == null) {</span>
-<span class="nc" id="L178">				refreshProjectPreviewAction();</span>
-<span class="nc" id="L179">				return;</span>
+<span class="nc" id="L178">			IJavaProject project = selectedJavaProject();</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">			if (project == null) {</span>
+<span class="nc" id="L180">				refreshProjectPreviewAction();</span>
+<span class="nc" id="L181">				return;</span>
 			}
-<span class="nc" id="L181">			ProjectRulePreview.open(getShell(), project, getFullDslDocument());</span>
-<span class="nc" id="L182">		});</span>
-<span class="fc" id="L183">	}</span>
+<span class="nc" id="L183">			ProjectRulePreview.open(getShell(), project, getFullDslDocument());</span>
+<span class="nc" id="L184">		});</span>
+<span class="fc" id="L185">	}</span>
 
 	@Override
 	public boolean canFinish() {
 		// Allow finish from page 1 when template is EMPTY
-<span class="nc bnc" id="L188" title="All 2 branches missed.">		if (getContainer().getCurrentPage() == filePage) {</span>
-<span class="nc bnc" id="L189" title="All 2 branches missed.">			return filePage.isPageComplete()</span>
-<span class="nc bnc" id="L190" title="All 2 branches missed.">					&amp;&amp; filePage.getSelectedTemplate() == SandboxHintTemplates.EMPTY</span>
-<span class="nc bnc" id="L191" title="All 4 branches missed.">					&amp;&amp; (!rulePage.hasCustomContent() || rulePage.isPageComplete());</span>
+<span class="nc bnc" id="L190" title="All 2 branches missed.">		if (getContainer().getCurrentPage() == filePage) {</span>
+<span class="nc bnc" id="L191" title="All 2 branches missed.">			return filePage.isPageComplete()</span>
+<span class="nc bnc" id="L192" title="All 2 branches missed.">					&amp;&amp; filePage.getSelectedTemplate() == SandboxHintTemplates.EMPTY</span>
+<span class="nc bnc" id="L193" title="All 4 branches missed.">					&amp;&amp; (!rulePage.hasCustomContent() || rulePage.isPageComplete());</span>
 		}
 		// On the rule page, require both pages to be complete
-<span class="nc bnc" id="L194" title="All 4 branches missed.">		return filePage.isPageComplete() &amp;&amp; rulePage.isPageComplete();</span>
+<span class="nc bnc" id="L196" title="All 4 branches missed.">		return filePage.isPageComplete() &amp;&amp; rulePage.isPageComplete();</span>
 	}
 
 	@Override
 	public boolean performFinish() {
-<span class="nc" id="L199">		String containerPath = filePage.getContainerPath();</span>
-<span class="nc" id="L200">		String fileName = filePage.getFileName();</span>
-<span class="nc" id="L201">		String fullContent = getFullDslDocument();</span>
-<span class="nc" id="L202">		RuleExampleSuite examples = rulePage.getExamples();</span>
-<span class="nc" id="L203">		boolean generated = rulePage.isGeneratedRule();</span>
+<span class="nc" id="L201">		String containerPath = filePage.getContainerPath();</span>
+<span class="nc" id="L202">		String fileName = filePage.getFileName();</span>
+<span class="nc" id="L203">		String fullContent = getFullDslDocument();</span>
+<span class="nc" id="L204">		RuleExampleSuite examples = rulePage.getExamples();</span>
+<span class="nc" id="L205">		boolean generated = rulePage.isGeneratedRule();</span>
 
 		try {
-<span class="nc" id="L206">			getContainer().run(true, true,</span>
-<span class="nc" id="L207">					monitor -&gt; createFile(containerPath, fileName, fullContent, examples, generated, monitor));</span>
-<span class="nc" id="L208">		} catch (InvocationTargetException e) {</span>
-<span class="nc bnc" id="L209" title="All 2 branches missed.">			if (e.getCause() instanceof OperationCanceledException) {</span>
-<span class="nc" id="L210">				return false;</span>
+<span class="nc" id="L208">			getContainer().run(true, true,</span>
+<span class="nc" id="L209">					monitor -&gt; createFile(containerPath, fileName, fullContent, examples, generated, monitor));</span>
+<span class="nc" id="L210">		} catch (InvocationTargetException e) {</span>
+<span class="nc bnc" id="L211" title="All 2 branches missed.">			if (e.getCause() instanceof OperationCanceledException) {</span>
+<span class="nc" id="L212">				return false;</span>
 			}
-<span class="nc" id="L212">			MessageDialog.openError(getShell(), &quot;Error&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L213">					&quot;Could not create file: &quot; + e.getTargetException().getMessage()); //$NON-NLS-1$</span>
-<span class="nc" id="L214">			return false;</span>
-<span class="nc" id="L215">		} catch (InterruptedException | OperationCanceledException e) {</span>
+<span class="nc" id="L214">			MessageDialog.openError(getShell(), &quot;Error&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L215">					&quot;Could not create file: &quot; + e.getTargetException().getMessage()); //$NON-NLS-1$</span>
 <span class="nc" id="L216">			return false;</span>
+<span class="nc" id="L217">		} catch (InterruptedException | OperationCanceledException e) {</span>
+<span class="nc" id="L218">			return false;</span>
 		}
 
 		// Open the newly created file in the editor
-<span class="nc" id="L220">		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();</span>
-<span class="nc" id="L221">		IResource resource = root.findMember(new Path(containerPath));</span>
-<span class="nc bnc" id="L222" title="All 2 branches missed.">		if (resource instanceof IContainer container) {</span>
-<span class="nc" id="L223">			IFile file = container.getFile(new Path(fileName));</span>
-<span class="nc" id="L224">			IWorkbenchPage page = workbench.getActiveWorkbenchWindow().getActivePage();</span>
-<span class="nc bnc" id="L225" title="All 2 branches missed.">			if (page != null) {</span>
+<span class="nc" id="L222">		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();</span>
+<span class="nc" id="L223">		IResource resource = root.findMember(new Path(containerPath));</span>
+<span class="nc bnc" id="L224" title="All 2 branches missed.">		if (resource instanceof IContainer container) {</span>
+<span class="nc" id="L225">			IFile file = container.getFile(new Path(fileName));</span>
+<span class="nc" id="L226">			IWorkbenchPage page = workbench.getActiveWorkbenchWindow().getActivePage();</span>
+<span class="nc bnc" id="L227" title="All 2 branches missed.">			if (page != null) {</span>
 				try {
-<span class="nc" id="L227">					IDE.openEditor(page, file, true);</span>
-<span class="nc" id="L228">				} catch (PartInitException e) {</span>
+<span class="nc" id="L229">					IDE.openEditor(page, file, true);</span>
+<span class="nc" id="L230">				} catch (PartInitException e) {</span>
 					// ignore - file was created successfully
 				}
 			}
 		}
 
-<span class="nc" id="L234">		return true;</span>
+<span class="nc" id="L236">		return true;</span>
 	}
 
 	/** The same complete document is previewed, copied and finally written. */
 	public String getFullDslDocument() {
-<span class="fc bfc" id="L239" title="All 2 branches covered.">		if (rulePage.hasCustomContent()) {</span>
-<span class="fc" id="L240">			rulePage.applyPendingMetadata();</span>
-<span class="fc" id="L241">			return rulePage.getFullDslDocument();</span>
+<span class="fc bfc" id="L241" title="All 2 branches covered.">		if (rulePage.hasCustomContent()) {</span>
+<span class="fc" id="L242">			rulePage.applyPendingMetadata();</span>
+<span class="fc" id="L243">			return rulePage.getFullDslDocument();</span>
 		}
-<span class="fc" id="L243">		return new RuleAuthoringDocument(getTemplateContent()).withMetadata(filePage.getEditedMetadata()).content();</span>
+<span class="fc" id="L245">		return new RuleAuthoringDocument(getTemplateContent()).withMetadata(filePage.getEditedMetadata()).content();</span>
 	}
 
 	private String getTemplateContent() {
-<span class="fc" id="L247">		SandboxHintTemplates template = filePage.getSelectedTemplate();</span>
-<span class="fc" id="L248">		String content = template.getRuleContent();</span>
-<span class="pc bpc" id="L249" title="2 of 4 branches missed.">		if (template != SandboxHintTemplates.PLAN_AWARE &amp;&amp; template != SandboxHintTemplates.EMPTY) {</span>
-<span class="fc" id="L250">			content = new RuleAuthoringDocument(content)</span>
-<span class="fc" id="L251">					.withMetadata(Map.of(&quot;binding-policy&quot;, &quot;required&quot;)).content(); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L249">		SandboxHintTemplates template = filePage.getSelectedTemplate();</span>
+<span class="fc" id="L250">		String content = template.getRuleContent();</span>
+<span class="pc bpc" id="L251" title="2 of 4 branches missed.">		if (template != SandboxHintTemplates.PLAN_AWARE &amp;&amp; template != SandboxHintTemplates.EMPTY) {</span>
+<span class="fc" id="L252">			content = new RuleAuthoringDocument(content)</span>
+<span class="fc" id="L253">					.withMetadata(Map.of(&quot;binding-policy&quot;, &quot;required&quot;)).content(); //$NON-NLS-1$ //$NON-NLS-2$</span>
 		}
-<span class="fc" id="L253">		return content;</span>
+<span class="fc" id="L255">		return content;</span>
 	}
 
 	/** Resolves preview scope from the destination currently entered on the first page. */
 	private IJavaProject selectedJavaProject() {
-<span class="pc bpc" id="L258" title="1 of 4 branches missed.">		if (filePage == null || filePage.getContainerPath().isEmpty()) {</span>
-<span class="fc" id="L259">			return null;</span>
+<span class="pc bpc" id="L260" title="1 of 4 branches missed.">		if (filePage == null || filePage.getContainerPath().isEmpty()) {</span>
+<span class="fc" id="L261">			return null;</span>
 		}
-<span class="fc" id="L261">		IResource resource = ResourcesPlugin.getWorkspace().getRoot()</span>
-<span class="fc" id="L262">				.findMember(new Path(filePage.getContainerPath()));</span>
-<span class="pc bpc" id="L263" title="1 of 4 branches missed.">		if (!(resource instanceof IContainer container) || !container.isAccessible()</span>
-<span class="pc bpc" id="L264" title="1 of 2 branches missed.">				|| container.getProject() == null) {</span>
-<span class="fc" id="L265">			return null;</span>
+<span class="fc" id="L263">		IResource resource = ResourcesPlugin.getWorkspace().getRoot()</span>
+<span class="fc" id="L264">				.findMember(new Path(filePage.getContainerPath()));</span>
+<span class="pc bpc" id="L265" title="1 of 4 branches missed.">		if (!(resource instanceof IContainer container) || !container.isAccessible()</span>
+<span class="pc bpc" id="L266" title="1 of 2 branches missed.">				|| container.getProject() == null) {</span>
+<span class="fc" id="L267">			return null;</span>
 		}
-<span class="fc" id="L267">		IJavaProject project = JavaCore.create(container.getProject());</span>
-<span class="pc bpc" id="L268" title="2 of 4 branches missed.">		return project != null &amp;&amp; project.exists() ? project : null;</span>
+<span class="fc" id="L269">		IJavaProject project = JavaCore.create(container.getProject());</span>
+<span class="pc bpc" id="L270" title="2 of 4 branches missed.">		return project != null &amp;&amp; project.exists() ? project : null;</span>
 	}
 
 	private void createFile(String containerPath, String fileName, String content,
 			RuleExampleSuite examples, boolean generated, IProgressMonitor monitor) throws InvocationTargetException {
-<span class="nc" id="L273">		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();</span>
-<span class="nc" id="L274">		IResource resource = root.findMember(new Path(containerPath));</span>
-<span class="nc bnc" id="L275" title="All 4 branches missed.">		if (!(resource instanceof IContainer container) || !resource.exists()) {</span>
-<span class="nc" id="L276">			throw new InvocationTargetException(</span>
-<span class="nc" id="L277">					new CoreException(new Status(IStatus.ERROR, PLUGIN_ID,</span>
-<span class="nc" id="L278">							&quot;Container \&quot;&quot; + containerPath + &quot;\&quot; does not exist.&quot;))); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L275">		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();</span>
+<span class="nc" id="L276">		IResource resource = root.findMember(new Path(containerPath));</span>
+<span class="nc bnc" id="L277" title="All 4 branches missed.">		if (!(resource instanceof IContainer container) || !resource.exists()) {</span>
+<span class="nc" id="L278">			throw new InvocationTargetException(</span>
+<span class="nc" id="L279">					new CoreException(new Status(IStatus.ERROR, PLUGIN_ID,</span>
+<span class="nc" id="L280">							&quot;Container \&quot;&quot; + containerPath + &quot;\&quot; does not exist.&quot;))); //$NON-NLS-1$ //$NON-NLS-2$</span>
 		}
 		try {
-<span class="nc" id="L281">			HintFileCreation.create(container, fileName, content, examples, generated, monitor);</span>
-<span class="nc" id="L282">		} catch (CoreException e) {</span>
-<span class="nc" id="L283">			throw new InvocationTargetException(e);</span>
+<span class="nc" id="L283">			HintFileCreation.create(container, fileName, content, examples, generated, monitor);</span>
+<span class="nc" id="L284">		} catch (CoreException e) {</span>
+<span class="nc" id="L285">			throw new InvocationTargetException(e);</span>
 		}
-<span class="nc" id="L285">	}</span>
+<span class="nc" id="L287">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
