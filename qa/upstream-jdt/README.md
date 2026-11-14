@@ -330,7 +330,7 @@ Sandbox product if needed. The 1.3.10 product runs on Eclipse 2026-09, while
 the workspace target and JDT source remain pinned to 2026-06. For this product:
 
 ```sh
-"$SANDBOX_ECLIPSE" -nosplash -application org.eclipse.equinox.p2.director \
+"$SANDBOX_ECLIPSE" --launcher.suppressErrors -nosplash -application org.eclipse.equinox.p2.director \
   -repository https://download.eclipse.org/releases/2026-09/ \
   -installIU org.eclipse.oomph.targlets.feature.group
 ```
@@ -343,7 +343,7 @@ and the provisioned JDK 21. From the Sandbox checkout run:
 ```sh
 mkdir -p "$SANDBOX_STATUS_EVIDENCE"
 source_file="$JDT_UI/org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/ProposalSorterHandle.java"
-"$SANDBOX_ECLIPSE" -nosplash -data "$SANDBOX_STATUS_WORKSPACE" \
+"$SANDBOX_ECLIPSE" --launcher.suppressErrors -nosplash -data "$SANDBOX_STATUS_WORKSPACE" \
   -application org.sandbox.jdt.core.JavaCleanup --mode check \
   --config "$PWD/qa/upstream-jdt/platform-status.properties" \
   --report "$SANDBOX_STATUS_EVIDENCE/cleanup-check-report.json" \

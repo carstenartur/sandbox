@@ -99,12 +99,12 @@ jobs:
         run: |
           mkdir -p "$SANDBOX_STATUS_EVIDENCE"
           product="$GITHUB_WORKSPACE/sandbox_product/target/products/sandbox.bundle.producteclipse/linux/gtk/x86_64/eclipse"
-          xvfb-run -a "$product" -nosplash -consoleLog -application org.eclipse.equinox.p2.director \
+          xvfb-run -a "$product" --launcher.suppressErrors -nosplash -consoleLog -application org.eclipse.equinox.p2.director \
             -repository https://download.eclipse.org/releases/2026-09/ \
             -installIU org.eclipse.oomph.targlets.feature.group
           source_file="$RUNNER_TEMP/pinned-status/eclipse.jdt.ui/org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/ProposalSorterHandle.java"
           result=0
-          xvfb-run -a "$product" -nosplash -consoleLog -data "$SANDBOX_STATUS_WORKSPACE" \
+          xvfb-run -a "$product" --launcher.suppressErrors -nosplash -consoleLog -data "$SANDBOX_STATUS_WORKSPACE" \
             -application org.sandbox.jdt.core.JavaCleanup --mode check \
             --config "$GITHUB_WORKSPACE/qa/upstream-jdt/platform-status.properties" \
             --report "$SANDBOX_STATUS_EVIDENCE/cleanup-check-report.json" \
