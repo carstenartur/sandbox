@@ -21,6 +21,7 @@ import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCle
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -71,7 +72,7 @@ class ListenerSnapshotCleanUpTest {
 		assertFalse(transformed.contains("toArray(")); //$NON-NLS-1$
 		assertFalse(transformed.contains("synchronized (listeners)")); //$NON-NLS-1$
 		assertFalse(Arrays.stream(parse(unit).getProblems()).anyMatch(problem -> problem.isError()));
-		Path file= Files.writeString(output.resolve("Sample.java"), transformed); //$NON-NLS-1$
+		Path file= Files.writeString(output.resolve("Sample.java"), transformed, StandardCharsets.UTF_8); //$NON-NLS-1$
 		assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null,
 				"-d", output.toString(), file.toString())); //$NON-NLS-1$
 		try (var classes= new URLClassLoader(new URL[] { output.toUri().toURL() }, null)) {

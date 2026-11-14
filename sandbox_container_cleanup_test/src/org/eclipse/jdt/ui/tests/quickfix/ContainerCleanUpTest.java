@@ -23,6 +23,7 @@ import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCle
 
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -134,7 +135,7 @@ class ContainerCleanUpTest {
 	}
 
 	private static void verifyPublishedArrays(String source, Path directory) throws Exception {
-		Path file= Files.writeString(directory.resolve("Sample.java"), source); //$NON-NLS-1$
+		Path file= Files.writeString(directory.resolve("Sample.java"), source, StandardCharsets.UTF_8); //$NON-NLS-1$
 		int exit= javax.tools.ToolProvider.getSystemJavaCompiler().run(null, null, null,
 				"-d", directory.toString(), file.toString()); //$NON-NLS-1$
 		assertEquals(0, exit);

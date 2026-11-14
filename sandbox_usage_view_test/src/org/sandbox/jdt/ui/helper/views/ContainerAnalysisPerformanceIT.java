@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.File;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -120,7 +121,7 @@ class ContainerAnalysisPerformanceIT {
 			while (files.next()) {
 				String path= files.getPathString().substring(MODULE.length() + 1);
 				if (path.endsWith(".java")) { //$NON-NLS-1$
-					byte[] source= git.getRepository().open(files.getObjectId(0)).getBytes();
+					byte[] source= git.getRepository().open(files.getObjectId(0)).getBytes(Charset.defaultCharset());
 					Path destination= directory.resolve(path);
 					Path parent= java.util.Objects.requireNonNull(destination.getParent(),
 							"Imported Java source requires a parent directory: " + path); //$NON-NLS-1$
