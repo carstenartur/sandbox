@@ -127,6 +127,8 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 		rulePage = new NewRuleWizardPage();
 		rulePage.setExamples(initialExamples);
 		rulePage.setExampleProjectSupplier(this::selectedJavaProject);
+		rulePage.setExampleHintPath(() -> new Path(filePage.getContainerPath())
+				.append(filePage.getFileName()).toPortableString());
 		filePage.setContainerChangeListener(this::refreshProjectPreviewAction);
 		rulePage.setMetadataSupplier(filePage::getEditedMetadata);
 		rulePage.setDefaultContentSupplier(this::getTemplateContent);

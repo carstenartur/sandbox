@@ -18,6 +18,7 @@ import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.JavaCore;
+import org.sandbox.jdt.triggerpattern.eclipse.ProjectRuleExamples;
 import org.sandbox.jdt.triggerpattern.api.RuleExampleSuite;
 import org.sandbox.jdt.triggerpattern.api.RuleExampleVerifier;
 

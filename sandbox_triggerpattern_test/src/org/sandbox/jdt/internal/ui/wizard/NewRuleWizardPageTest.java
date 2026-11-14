@@ -41,6 +41,7 @@ import org.eclipse.ui.PlatformUI;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.sandbox.jdt.triggerpattern.eclipse.ProjectRuleExamples;
 import org.sandbox.jdt.triggerpattern.api.RuleExampleSuite;
 import org.sandbox.jdt.triggerpattern.internal.RuleAuthoringDocument;
 
@@ -199,10 +200,10 @@ class NewRuleWizardPageTest {
 		assertThrows(IllegalArgumentException.class, () -> ProjectRuleExamples.parseSource(null,
 				java.util.Map.of(), "Example.java", "class Example {}", new NullProgressMonitor()));
 		runOnDisplay(() -> {
-			var dialog = new RuleExamplesDialog(shell, "$x.old()\n=> $x.modern()\n;;\n", null, null, null, null);
+			var dialog = new RuleExamplesDialog(shell, "$x.old()\n=> $x.modern()\n;;\n", null, null, null, null, "");
 			try {
 				dialog.create();
-				for (String label : List.of("Verify", "Refine from examples", "Use proposed rule")) {
+				for (String label : List.of("Verify", "Refine from examples", "Use proposed rule", "Copy JUnit test")) {
 					assertFalse(descendants(dialog.getShell(), Button.class).stream()
 							.filter(button -> button.getText().equals(label)).findFirst().orElseThrow().isEnabled());
 				}

@@ -17,6 +17,9 @@ import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.ProgressMonitorDialog;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.dnd.Clipboard;
+import org.eclipse.swt.dnd.TextTransfer;
+import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -27,6 +30,7 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.sandbox.jdt.triggerpattern.eclipse.ProjectRuleExamples;
 import org.sandbox.jdt.triggerpattern.api.RuleExampleRefiner;
 import org.sandbox.jdt.triggerpattern.api.RuleExampleRefiner.Proposal;
 import org.sandbox.jdt.triggerpattern.api.RuleExampleSuite;
@@ -40,6 +44,8 @@ final class RuleExamplesDialog extends TitleAreaDialog {
 
 	private static final int USE_PROPOSAL = IDialogConstants.CLIENT_ID + 1;
 	private final String dsl;
+	private final String hintPath;
+	private Button copyTest;
 	private final IJavaProject project;
 	private final ChangeExample seed;
 	private final Function<ChangeExample, String> documentFactory;
@@ -50,9 +56,10 @@ final class RuleExamplesDialog extends TitleAreaDialog {
 	private Proposal acceptedProposal;
 
 	RuleExamplesDialog(Shell shell, String dsl, RuleExampleSuite suite, IJavaProject project,
-			ChangeExample seed, Function<ChangeExample, String> documentFactory) {
+			ChangeExample seed, Function<ChangeExample, String> documentFactory, String hintPath) {
 		super(shell);
 		this.dsl = dsl;
+		this.hintPath = hintPath;
 		this.suite = suite == null ? new RuleExampleSuite(RuleExampleSuite.CURRENT_VERSION, List.of()) : suite;
 		this.project = project;
 		this.seed = seed;
@@ -103,6 +110,8 @@ final class RuleExamplesDialog extends TitleAreaDialog {
 		action(actions, "Add counterexample", () -> addExample(false)); //$NON-NLS-1$
 		Button verify = action(actions, "Verify", () -> runVerification(false)); //$NON-NLS-1$
 		verify.setEnabled(hasProject());
+		copyTest = action(actions, "Copy JUnit test", this::copyJUnitTest); //$NON-NLS-1$
+		copyTest.setEnabled(false);
 		Button refine = action(actions, "Refine from examples", () -> runVerification(true)); //$NON-NLS-1$
 		refine.setEnabled(hasProject() && seed != null && documentFactory != null);
 		refine.setToolTipText("Available for the Before/After helper fields; imported or edited complete documents stay intact. " //$NON-NLS-1$
@@ -177,6 +186,9 @@ final class RuleExamplesDialog extends TitleAreaDialog {
 	private void invalidateResult() {
 		proposal = null;
 		acceptedProposal = null;
+		if (copyTest != null) {
+			copyTest.setEnabled(false);
+		}
 		Button use = getButton(USE_PROPOSAL);
 		if (use != null) {
 			use.setEnabled(false);
@@ -208,6 +220,16 @@ final class RuleExamplesDialog extends TitleAreaDialog {
 
 	private boolean hasProject() {
 		return project != null && project.exists() && project.getProject().isAccessible();
+	}
+
+	private void copyJUnitTest() {
+		Clipboard clipboard = new Clipboard(getShell().getDisplay());
+		try {
+			clipboard.setContents(new Object[] { RuleRegressionTestSource.forHint(hintPath) },
+					new Transfer[] { TextTransfer.getInstance() });
+		} finally {
+			clipboard.dispose();
+		}
 	}
 
 	private void runVerification(boolean refine) {
@@ -251,6 +273,7 @@ final class RuleExamplesDialog extends TitleAreaDialog {
 				getButton(USE_PROPOSAL).setEnabled(true);
 			} else {
 				output.setText(format(report.get()));
+				copyTest.setEnabled(report.get().passed() && !hintPath.isBlank());
 			}
 		} catch (InvocationTargetException exception) {
 			if (exception.getCause() instanceof OperationCanceledException) {
