@@ -51,8 +51,12 @@ public final class ClosedSourceContainerMigrationService {
 	/** Builds the immutable aggregate rewrite plan from the fully selected closure. */
 	public Planning plan(IJavaProject project, ICompilationUnit[] compilationUnits,
 			IProgressMonitor monitor) throws CoreException {
+		return plan(project, compilationUnits, monitor, false);
+	}
+
+	public Planning plan(IJavaProject project, ICompilationUnit[] compilationUnits, IProgressMonitor monitor, boolean retainBridge) throws CoreException {
 		ClosedSourceContainerMigrationCoordinator.Planning result=
-				coordinator.plan(project, compilationUnits, monitor);
+				coordinator.plan(project, compilationUnits, monitor, retainBridge);
 		return new Planning(result.plan(), result.candidateFound(), result.complete(),
 				externalCandidateId(result.candidateId()), result.ownerHandle(),
 				result.reasonCode(), result.message(), result.requiredHandles());

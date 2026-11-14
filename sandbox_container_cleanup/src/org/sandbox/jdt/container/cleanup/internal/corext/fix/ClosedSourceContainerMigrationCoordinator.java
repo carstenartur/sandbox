@@ -50,9 +50,11 @@ import org.sandbox.jdt.container.analysis.ContainerFlowSearchSeedExtractor;
 import org.sandbox.jdt.container.analysis.ContainerMigrationReadinessPlanner;
 import org.sandbox.jdt.container.analysis.ContainerSignatureAtomicityPlanner;
 import org.sandbox.jdt.container.analysis.LocalArrayUsageAnalyzer;
+import org.sandbox.jdt.container.analysis.LosslessArrayLengthBridge;
 import org.sandbox.jdt.container.analysis.LocalContainerFlowGraphBuilder;
 import org.sandbox.jdt.container.api.ClosedSourceParameterMigrationPlan;
 import org.sandbox.jdt.container.api.ClosedSourceContainerPlan;
+import org.sandbox.jdt.container.api.LosslessParameterBridgePlan;
 import org.sandbox.jdt.container.api.ClosedSourceReturnMigrationPlan;
 import org.sandbox.jdt.container.api.ClosedSourceReturnMigrationPlan.Consumer;
 import org.sandbox.jdt.container.api.ContainerFlowGraph.EdgeKind;
@@ -156,7 +158,7 @@ final class ClosedSourceContainerMigrationCoordinator {
 	}
 
 	Planning plan(IJavaProject project, ICompilationUnit[] compilationUnits,
-			IProgressMonitor monitor) throws CoreException {
+			IProgressMonitor monitor, boolean retainBridge) throws CoreException {
 		checkCanceled(monitor);
 		List<ICompilationUnit> scope= normalize(project, List.of(compilationUnits));
 		if (scope.isEmpty()) {
@@ -243,6 +245,10 @@ final class ClosedSourceContainerMigrationCoordinator {
 		}
 
 		if (component.nodes().stream().anyMatch(node -> node.kind() == NodeKind.RETURN_POSITION)) {
+			if (retainBridge) {
+				return Planning.rejected(candidate.candidateId(), candidate.unitHandle(), "IMPOSSIBLE_RETURN_TYPE_ONLY", //$NON-NLS-1$
+						"Java cannot retain a same-name compatibility overload differing only by return type.", discovery.requiredHandles()); //$NON-NLS-1$
+			}
 			var returnPlan= planReturn(candidate, component, resolved, roots);
 			return returnPlan.isPresent()
 					? Planning.accepted(candidate.candidateId(), candidate.unitHandle(), returnPlan.get(), discovery.requiredHandles())
@@ -285,9 +291,31 @@ final class ClosedSourceContainerMigrationCoordinator {
 			return Planning.rejected(candidate.candidateId(), candidate.unitHandle(),
 					reason, message, discovery.requiredHandles());
 		}
-		return Planning.accepted(candidate.candidateId(), candidate.unitHandle(),
-				storage.map(proof -> proof.complete(aggregate.plan().orElseThrow()))
-						.orElseGet(() -> aggregate.plan().orElseThrow()), discovery.requiredHandles());
+		var direct= storage.map(proof -> proof.complete(aggregate.plan().orElseThrow())).orElseGet(() -> aggregate.plan().orElseThrow());
+		if (retainBridge) {
+			var bridge= proveBridge(direct, scope, roots);
+			if (bridge.isEmpty()) {
+				return Planning.rejected(candidate.candidateId(), candidate.unitHandle(), "PARAMETER_BRIDGE_NOT_LOSSLESS", //$NON-NLS-1$
+						"The retained overload requires a closed length-only parameter with no overload collision, ambiguous caller or observable aliasing.", discovery.requiredHandles()); //$NON-NLS-1$
+			}
+			return Planning.accepted(candidate.candidateId(), candidate.unitHandle(), bridge.get(), discovery.requiredHandles());
+		}
+		return Planning.accepted(candidate.candidateId(), candidate.unitHandle(), direct, discovery.requiredHandles());
+	}
+
+	private static Optional<LosslessParameterBridgePlan> proveBridge(ClosedSourceParameterMigrationPlan direct,
+			List<ICompilationUnit> scope, Map<String, CompilationUnit> roots) throws CoreException {
+		if (direct.parameterPlans().size() != 1) {
+			return Optional.empty();
+		}
+		String handle= direct.parameterPlans().getFirst().compilationUnitHandle();
+		for (ICompilationUnit unit : scope) {
+			if (primaryHandle(unit).equals(handle)) {
+				return LosslessArrayLengthBridge.prove(roots.get(handle), unit.getSource(), direct).filter(bridge ->
+						roots.values().stream().allMatch(root -> LosslessArrayLengthBridge.hasSafeCallers(root, bridge.methodKey())));
+			}
+		}
+		return Optional.empty();
 	}
 
 	/** Discharges only the constructor-to-field edge, after proving every use of that field. */
@@ -571,7 +599,9 @@ final class ClosedSourceContainerMigrationCoordinator {
 				ClosedSourceContainerPlan plan, List<String> requiredHandles) {
 			return new Planning(Optional.of(plan), true, true, candidateId, ownerHandle,
 					"TRANSFORMED", //$NON-NLS-1$
-					plan instanceof ClosedSourceReturnMigrationPlan
+					plan instanceof LosslessParameterBridgePlan
+							? "Retain the original array descriptor in a deprecated overload. Null passes through and an array-backed list preserves length, order, duplicates and null elements." //$NON-NLS-1$
+							: plan instanceof ClosedSourceReturnMigrationPlan
 							? "Migrate the internal return declaration and all source callers directly. A return-only compatibility overload is impossible." //$NON-NLS-1$
 							: "Migrate the closed append-array caller and complete parameter override family atomically.", //$NON-NLS-1$
 					requiredHandles);
