@@ -252,7 +252,7 @@ final class VintageDeploymentPlan {
 				|| unit.getPackage().getName().getFullyQualifiedName().startsWith("junit.") || unit.types().size() != 1
 				|| !(unit.types().getFirst() instanceof TypeDeclaration type) || type.isInterface()
 				|| type.getSuperclassType() != null || !type.superInterfaceTypes().isEmpty() || !type.typeParameters().isEmpty()
-				|| !file.getFileName().toString().equals(type.getName().getIdentifier() + ".java")) {
+				|| !Path.of(type.getName().getIdentifier() + ".java").equals(file.getFileName())) {
 			return false;
 		}
 		Set<String> imports= new HashSet<>();
