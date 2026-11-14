@@ -160,7 +160,7 @@ final class PlatformSuiteDependencies {
 			builder.setErrorHandler(new DefaultHandler());
 			return builder.parse(new InputSource(new StringReader(source))).getDocumentElement();
 		} catch (ParserConfigurationException | SAXException e) {
-			throw new IOException("Cannot read the project's Maven dependency model", e); //$NON-NLS-1$
+			throw new IOException("Cannot read the project dependency descriptor", e); //$NON-NLS-1$
 		}
 	}
 

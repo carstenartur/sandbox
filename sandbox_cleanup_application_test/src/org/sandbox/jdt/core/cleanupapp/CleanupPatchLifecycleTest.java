@@ -47,6 +47,7 @@ class CleanupPatchLifecycleTest {
 
 	private final NullProgressMonitor monitor= new NullProgressMonitor();
 	private IProject project;
+	private IProject deploymentProject;
 
 	@BeforeEach
 	void createProject() throws Exception {
@@ -67,6 +68,9 @@ class CleanupPatchLifecycleTest {
 
 	@AfterEach
 	void deleteProject() throws Exception {
+		if (deploymentProject != null && deploymentProject.exists()) {
+			deploymentProject.delete(true, true, monitor);
+		}
 		if (project != null && project.exists()) {
 			project.delete(true, true, monitor);
 		}
@@ -318,8 +322,130 @@ class CleanupPatchLifecycleTest {
 		return Files.writeString(temporaryDirectory.resolve("cleanup.properties"), content, StandardCharsets.ISO_8859_1); //$NON-NLS-1$
 	}
 
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void includesExplicitPdeTestDeploymentInTheSuiteTransaction(boolean sibling) throws Exception {
+		IFolder sourceRoot= project.getFolder("src");
+		var javaProject= JavaCore.create(project);
+		javaProject.setRawClasspath(new IClasspathEntry[] {
+				JavaCore.newSourceEntry(sourceRoot.getFullPath()),
+				JavaCore.newContainerEntry(new org.eclipse.core.runtime.Path("org.eclipse.jdt.launching.JRE_CONTAINER")),
+				JavaCore.newContainerEntry(new org.eclipse.core.runtime.Path("org.eclipse.jdt.junit.JUNIT_CONTAINER/5"))
+		}, project.getFullPath().append("bin"), monitor);
+		IFile suite= createSource("src/probe/AllTests.java", """
+				package probe;
+				@org.junit.runner.RunWith(org.junit.runners.Suite.class)
+				@org.junit.runners.Suite.SuiteClasses(ExampleTest.class)
+				public class AllTests {}
+				""");
+		IFile member= createSource("src/probe/ExampleTest.java", """
+				package probe;
+				import org.junit.Test;
+				public class ExampleTest {
+					@Test public void adds() { org.junit.jupiter.api.Assertions.assertEquals(4, 4); }
+				}
+				""");
+		IFile manifest= createSource("META-INF/MANIFEST.MF", """
+				Manifest-Version: 1.0
+				Bundle-ManifestVersion: 2
+				Bundle-SymbolicName: probe.tests
+				Bundle-Version: 1.0.0
+				Bundle-RequiredExecutionEnvironment: JavaSE-17
+				Import-Package: org.junit,org.junit.runner,org.junit.runners,org.junit.jupiter.api
+
+				""");
+		IFile build= createSource("build.properties", "source.. = src/\r\nbin.includes = META-INF/,.\r\nadditional.bundles = junit-vintage-engine\r\n");
+		IProject owner= project;
+		if (sibling) {
+			deploymentProject= project.getWorkspace().getRoot().getProject(project.getName() + "-deployment");
+			deploymentProject.create(monitor);
+			deploymentProject.open(monitor);
+			owner= deploymentProject;
+		}
+		IFile feature= createSource(owner, "deployment/feature.xml", """
+				<feature id="probe.test.feature" version="1.0.0">
+				  <plugin id="probe.tests" version="0.0.0"/>
+				  <plugin id="junit-vintage-engine" version="0.0.0"/>
+				</feature>
+				""");
+		IFile target= createSource(owner, "deployment/test.target", """
+				<target name="JUnit tests"><locations><location type="InstallableUnit" includeSource="false" includeMode="planner">
+				  <repository location="https://download.eclipse.org/releases/2026-09/"/>
+				  <unit id="org.eclipse.equinox.launcher" version="0.0.0"/>
+				  <unit id="org.eclipse.equinox.simpleconfigurator" version="0.0.0"/>
+				  <unit id="org.eclipse.core.runtime" version="0.0.0"/>
+				  <unit id="junit-jupiter-engine" version="5.14.4"/>
+				  <unit id="junit-platform-launcher" version="1.14.4"/>
+				  <unit id="junit-vintage-engine" version="0.0.0"/>
+				</location></locations></target>
+				""");
+		var tracked= java.util.List.of(suite, member, manifest, build, feature, target);
+		Map<IFile, byte[]> original= new HashMap<>();
+		for (IFile file : tracked) {
+			original.put(file, read(file));
+		}
+		Path patch= temporaryDirectory.resolve("pde.patch");
+		Path report= temporaryDirectory.resolve("pde.json");
+		Path config= writeConfig("cleanup.junitcleanup=true\ncleanup.junitcleanup_4_runwith=true\ncleanup.junitcleanup_4_suite=true\ncleanup.junitcleanup_4_test=true\n");
+		String[] args= { "--project", project.getName(), "--config", config.toString(), "--report", report.toString(),
+				"--patch", patch.toString(), "--pde-deployment", feature.getFullPath().toPortableString(),
+				"--pde-deployment", target.getFullPath().toPortableString(), "--mode", "check" };
+		var app= new ProjectWideCodeCleanupApplication();
+		assertEquals(2, app.start(new TestApplicationContext(args)));
+		String predicted= Files.readString(patch);
+		for (IFile file : tracked) {
+			assertArrayEquals(original.get(file), read(file));
+			String path= sibling ? file.getFullPath().makeRelative().toPortableString() : file.getProjectRelativePath().toPortableString();
+			assertTrue(predicted.contains("--- a/" + path), predicted);
+		}
+		args[args.length - 1]= "apply";
+		assertEquals(0, app.start(new TestApplicationContext(args)));
+		assertEquals(predicted, Files.readString(patch));
+		if (!sibling) {
+			PdeDeploymentReplay.export(original);
+		}
+		for (IFile file : java.util.List.of(feature, target, build)) {
+			String content= new String(read(file), StandardCharsets.UTF_8);
+			assertTrue(content.contains("junit-platform-suite-api"), content);
+			assertTrue(content.contains("junit-platform-suite-engine"), content);
+			assertTrue(content.contains("junit-vintage-engine"), content);
+		}
+		assertTrue(new String(read(target), StandardCharsets.UTF_8)
+				.contains("id=\"junit-platform-suite-engine\" version=\"1.14.4\""));
+		args[args.length - 1]= "check";
+		assertEquals(0, app.start(new TestApplicationContext(args)));
+		assertEquals("", Files.readString(patch));
+
+		// An explicitly pinned target cannot authorize adding unconstrained suite units.
+		for (IFile file : tracked) {
+			file.setContents(new ByteArrayInputStream(original.get(file)), true, false, monitor);
+		}
+		String pinned= new String(original.get(target), StandardCharsets.UTF_8)
+				.replace("id=\"junit-vintage-engine\" version=\"0.0.0\"", "id=\"junit-vintage-engine\" version=\"5.14.4\"");
+		target.setContents(new ByteArrayInputStream(pinned.getBytes(StandardCharsets.UTF_8)), true, false, monitor);
+		args[args.length - 1]= "apply";
+		assertEquals(1, app.start(new TestApplicationContext(args)));
+		assertTrue(Files.readString(report).contains("unpinned Vintage unit"));
+		for (IFile file : tracked) {
+			assertArrayEquals(file.equals(target) ? pinned.getBytes(StandardCharsets.UTF_8) : original.get(file), read(file));
+		}
+
+		String unpinned= new String(original.get(target), StandardCharsets.UTF_8)
+				.replace("id=\"junit-platform-launcher\" version=\"1.14.4\"", "id=\"junit-platform-launcher\" version=\"0.0.0\"");
+		target.setContents(new ByteArrayInputStream(unpinned.getBytes(StandardCharsets.UTF_8)), true, false, monitor);
+		assertEquals(1, app.start(new TestApplicationContext(args)));
+		assertTrue(Files.readString(report).contains("launcher release version"));
+		for (IFile file : tracked) {
+			assertArrayEquals(file.equals(target) ? unpinned.getBytes(StandardCharsets.UTF_8) : original.get(file), read(file));
+		}
+	}
+
 	private IFile createSource(String relativePath, String source) throws Exception {
-		IFile file= project.getFile(relativePath);
+		return createSource(project, relativePath, source);
+	}
+
+	private IFile createSource(IProject owner, String relativePath, String source) throws Exception {
+		IFile file= owner.getFile(relativePath);
 		if (file.getParent() instanceof IFolder folder && !folder.exists()) {
 			createFolder(folder);
 		}
