@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -16,9 +17,12 @@ import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
+import org.eclipse.equinox.internal.p2.director.app.DirectorApplication.AvoidTrustPromptService;
+import org.eclipse.equinox.p2.core.UIServices;
 import org.eclipse.equinox.p2.metadata.ILicense;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.oomph.internal.setup.SetupPrompter;
+import org.eclipse.oomph.p2.core.P2Util;
 import org.eclipse.oomph.setup.Configuration;
 import org.eclipse.oomph.setup.SetupFactory;
 import org.eclipse.oomph.setup.SetupTask;
@@ -163,7 +167,21 @@ public class PinnedWorkspaceProbe implements IApplication {
         // The two consumers need imported source and a resolved target, not a full JDT workspace build.
         performer.initNeededSetupTasks(monitor).removeIf(task -> task instanceof ProjectsBuildTask
                 || task instanceof GitCloneTask && "github.clone.sandbox.qa".equals(task.getID()));
-        performer.perform(monitor);
+        // The workbench supplies an interactive p2 trust dialog even with a batch Oomph prompter.
+        var agent = P2Util.getCurrentProvisioningAgent();
+        var previous = agent.getService(UIServices.class);
+        var signedEclipseArtifacts = new AvoidTrustPromptService(true, true,
+                Set.of(java.net.URI.create("https://download.eclipse.org"), java.net.URI.create("https://archive.eclipse.org")),
+                null, null);
+        agent.registerService(UIServices.SERVICE_NAME, signedEclipseArtifacts);
+        try {
+            performer.perform(monitor);
+        } finally {
+            agent.unregisterService(UIServices.SERVICE_NAME, signedEclipseArtifacts);
+            if (previous != null) {
+                agent.registerService(UIServices.SERVICE_NAME, previous);
+            }
+        }
         if (!performer.hasSuccessfullyPerformed()) {
             throw new IllegalStateException("Oomph did not finish provisioning the pinned workspace");
         }
