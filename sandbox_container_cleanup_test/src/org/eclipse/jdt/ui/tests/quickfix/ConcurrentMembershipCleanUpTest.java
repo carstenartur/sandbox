@@ -11,7 +11,6 @@
 package org.eclipse.jdt.ui.tests.quickfix;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -69,6 +68,7 @@ class ConcurrentMembershipCleanUpTest {
 			}
 			""";
 		ICompilationUnit unit= createUnit(source);
+		compileWithoutDiagnostics(unit, output);
 		var cleanup= membershipCleanup();
 		cleanup.checkPreConditions(context.getJavaProject(), new ICompilationUnit[] { unit }, null);
 		ICleanUpFix fix= cleanup.createFix(new CleanUpContext(unit, parse(unit)));
@@ -76,10 +76,7 @@ class ConcurrentMembershipCleanUpTest {
 		var undo= fix.createChange(null).perform(null);
 		assertNotNull(undo);
 		assertTrue(unit.getSource().contains("ConcurrentHashMap.newKeySet()")); //$NON-NLS-1$
-		assertFalse(Arrays.stream(parse(unit).getProblems()).anyMatch(problem -> problem.isError()));
-		var file= Files.writeString(output.resolve("Sample.java"), unit.getSource()); //$NON-NLS-1$
-		assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null,
-				"-d", output.toString(), file.toString())); //$NON-NLS-1$
+		compileWithoutDiagnostics(unit, output);
 		try (var classes= new URLClassLoader(new URL[] { output.toUri().toURL() }, null)) {
 			var type= classes.loadClass("test.Sample"); //$NON-NLS-1$
 			var instance= type.getConstructor().newInstance();
@@ -143,7 +140,8 @@ class ConcurrentMembershipCleanUpTest {
 		ICompilationUnit unit= createUnit(source);
 		for (String extra : List.of("void lock() { synchronized (seen) {} }",
 				"Set<String> expose() { return seen; }", "boolean has(String key) { return seen.contains(key); }",
-				"void scan() { for (String key : seen) {} }")) {
+				"void scan() { for (String key : seen) {} }",
+				"boolean checked() { if (seen.contains(\"a\")) return false; return seen.add(\"a\"); }")) {
 			unit.getBuffer().setContents(source);
 			unit.save(null, true);
 			var cleanup= membershipCleanup();
@@ -157,6 +155,14 @@ class ConcurrentMembershipCleanUpTest {
 			assertNull(fresh.createFix(new CleanUpContext(unit, parse(unit))));
 			assertEquals(changed, unit.getSource());
 		}
+	}
+
+	private void compileWithoutDiagnostics(ICompilationUnit unit, Path target) throws Exception {
+		var problems= Arrays.stream(parse(unit).getProblems()).filter(p -> p.isError() || p.isWarning()).toList();
+		assertTrue(problems.isEmpty(), () -> unit.getElementName() + problems);
+		var file= Files.writeString(target.resolve("Sample.java"), unit.getSource()); //$NON-NLS-1$
+		assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null,
+				"-Xlint:all", "-Werror", "-d", target.toString(), file.toString())); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	}
 
 	private ICompilationUnit createUnit(String source) throws CoreException {

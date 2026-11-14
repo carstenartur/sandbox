@@ -104,8 +104,12 @@ class ClosedUniqueSequenceCleanUpTest {
 		return new CleanUpContext(unit, (CompilationUnit) parser.createAST(monitor));
 	}
 	private String execute(List<ICompilationUnit> units, Path target) throws Exception {
+		for (var unit : units) {
+			var problems= Arrays.stream(context(unit).getAST().getProblems()).filter(p -> p.isError() || p.isWarning()).toList();
+			assertTrue(problems.isEmpty(), () -> unit.getElementName() + problems);
+		}
 		Files.createDirectories(target);
-		List<String> args= new ArrayList<>(List.of("-d", target.toString()));
+		List<String> args= new ArrayList<>(List.of("-Xlint:all", "-Werror", "-d", target.toString()));
 		for (var unit : units) {
 			args.add(Files.writeString(target.resolve(unit.getElementName()), unit.getSource()).toString());
 		}
@@ -169,6 +173,80 @@ class ClosedUniqueSequenceCleanUpTest {
 		assertEquals(PRODUCER, producer.getSource());
 		assertEquals(CALLER, caller.getSource());
 		assertEquals(READER, reader.getSource());
+	}
+
+	private static final String REGISTRY= """
+			package p;
+			import java.util.*;
+			final class Names {
+				private static final List<String> entries = Collections.synchronizedList(new ArrayList<>());
+				static void register(String value) {
+					synchronized (entries) {
+						if (!entries.contains(value)) { entries.add(value); }
+					}
+				}
+				static List<String> snapshot() {
+					synchronized (entries) { return new ArrayList<>(entries); }
+				}
+			}
+			""";
+
+	@Test
+	void changesLockedRegistrySnapshotAndReadersInOneUndoableGroup(@TempDir Path directory) throws Exception {
+		var factory= create("Names.java", REGISTRY);
+		String clientSource= CALLER.replace("List<String> names = Names.unique(input);", """
+				for (String item : input) Names.register(item);
+						List<String> names = Names.snapshot();
+						Names.register("late");""");
+		var client= create("Report.java", clientSource);
+		var reader= create("Reader.java", READER);
+		var units= List.of(factory, client, reader);
+		var cleanup= cleanup(true);
+		assertTrue(cleanup.expandCleanUpScope(java.getJavaProject(), List.of(factory), monitor).containsAll(List.of(client, reader)));
+		cleanup.checkPreConditions(java.getJavaProject(), new ICompilationUnit[] {factory, client}, monitor);
+		assertNull(cleanup.createFix(context(factory)));
+		cleanup.checkPreConditions(java.getJavaProject(), units.toArray(ICompilationUnit[]::new), monitor);
+		assertEquals(1, cleanup.getCoordinatedCleanUpPreview(java.getJavaProject()).size());
+		var change= new CompositeChange("Locked registry and snapshot callers");
+		for (var unit : units) {
+			var fix= cleanup.createFix(context(unit));
+			assertNotNull(fix, unit.getElementName());
+			change.add(fix.createChange(monitor));
+		}
+		assertEquals("z,null,a,", execute(units, directory.resolve("before")));
+		var undo= change.perform(monitor);
+		assertTrue(factory.getSource().contains("synchronizedSet"));
+		assertFalse(factory.getSource().contains("entries.contains"));
+		assertTrue(client.getSource().contains("Set<String> names"));
+		assertTrue(reader.getSource().contains("print(Set<String> names)"));
+		assertEquals("z,null,a,", execute(units, directory.resolve("after")));
+		cleanup.checkPreConditions(java.getJavaProject(), units.toArray(ICompilationUnit[]::new), monitor);
+		assertNull(cleanup.createFix(context(factory)));
+		undo.perform(monitor);
+		assertEquals(REGISTRY, factory.getSource());
+		assertEquals(clientSource, client.getSource());
+		assertEquals(READER, reader.getSource());
+		cleanup.checkPreConditions(java.getJavaProject(), units.toArray(ICompilationUnit[]::new), monitor);
+		factory.getBuffer().setContents(REGISTRY.replace("if (!entries.contains", "if (true) System.out.println(entries); if (!entries.contains"));
+		factory.save(monitor, true);
+		assertThrows(CoreException.class, () -> cleanup.createFix(context(client)));
+		factory.getBuffer().setContents(REGISTRY);
+		factory.save(monitor, true);
+		var lookup= create("Reflection.java", "package p; class Reflection { Object field() throws Exception { return Names.class.getDeclaredField(\"entries\"); } }");
+		cleanup.checkPreConditions(java.getJavaProject(), units.toArray(ICompilationUnit[]::new), monitor);
+		assertNull(cleanup.createFix(context(factory)), "A string-based lookup in an unselected source unit observes the field type.");
+		lookup.delete(true, monitor);
+		for (String altered : List.of(REGISTRY.replace("synchronized (entries) { return", "synchronized (Names.class) { return"),
+				REGISTRY.replace("return new ArrayList<>(entries);", "return entries;"),
+				REGISTRY.replace("static void register", "static void leak() { System.out.println(entries); } static void register"),
+				REGISTRY.replace("entries.add(value)", "entries.add(null)"))) {
+			factory.getBuffer().setContents(altered);
+			factory.save(monitor, true);
+			cleanup.checkPreConditions(java.getJavaProject(), units.toArray(ICompilationUnit[]::new), monitor);
+			for (var unit : units) {
+				assertNull(cleanup.createFix(context(unit)), altered);
+			}
+		}
 	}
 
 	@Test
