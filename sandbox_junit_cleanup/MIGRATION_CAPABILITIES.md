@@ -86,6 +86,8 @@ Accepted helper methods are passed to the shared `RelatedCompilationUnitSearch`,
 
 The parameterized recursive-helper tests also compile the applied change and undo it. They exercise both assertion-only and assumption-only profiles with multiple terminal checks. An unresolved branch withholds the component, and a pure call cycle with no terminal JUnit check never expands the selection.
 
+The same caller search includes editable test roots in referencing projects and parses each unit with its own project classpath. The numeric assertion contract additionally accepts the resolved primitive float/double delta overload of fully qualified JUnit 4 assertEquals. The operands must be side-effect-free reads of the exact overload type or literals, and the delta must be a positive finite literal. Other tolerances and expression evaluation remain outside this expansion.
+
 ## Platform Suite resources
 
 `CleanupPatchLifecycleTest` applies the same Java suite migration to a PDE bundle and a standalone Maven test project. Check mode previews both files and restores their bytes. Apply produces the same patch. If a Maven version cannot be derived from the supported BOM, the application rolls back the Java change and reports the reason. `PlatformSuiteDependenciesTest` covers idempotency, CRLF preservation, attributed or inherited Maven model boundaries and annotation detection.
