@@ -14,6 +14,7 @@ import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCle
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.CLEANUP;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.PARALLEL_ARRAYS_TO_RECORDS;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.RECORD_KEY_MAP;
+import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.RETAIN_PROVEN_PARAMETER_BRIDGE;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.CLOSED_SOURCE_PARAMETER_MIGRATION;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.UNIQUE_SEQUENCE_TO_SET;
 
@@ -93,6 +94,9 @@ public final class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				ContainerCleanUpMessages.ContainerTabPage_ClosedSourceParameterMigration,
 				CLOSED_SOURCE_PARAMETER_MIGRATION,
 				FALSE_TRUE);
+		CheckboxPreference bridge= createCheckboxPref(group, numColumns - 2, ContainerCleanUpMessages.ContainerTabPage_RetainProvenParameterBridge,
+				RETAIN_PROVEN_PARAMETER_BRIDGE, FALSE_TRUE);
+		registerSlavePreference(closedSourceParameter, new CheckboxPreference[] { bridge });
 		CheckboxPreference membership= createCheckboxPref(group, numColumns - 1,
 				ContainerCleanUpMessages.ContainerTabPage_ConcurrentMembership, ConcurrentMembershipCleanUp.OPTION, FALSE_TRUE);
 		registerSlavePreference(

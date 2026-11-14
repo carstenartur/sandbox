@@ -18,7 +18,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.CLEANUP;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.CLOSED_SOURCE_PARAMETER_MIGRATION;
+import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.RETAIN_PROVEN_PARAMETER_BRIDGE;
 
+import java.lang.reflect.InvocationTargetException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -26,7 +32,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.tools.ToolProvider;
+
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import org.eclipse.core.runtime.CoreException;
@@ -510,6 +519,90 @@ class CoordinatedContainerCleanUpTest {
 			assertNull(rejected.createFix(new CleanUpContext(factory, parse(factory))), extra);
 			rejected.checkPostConditions(monitor);
 			assertEquals(factorySource, factory.getSource());
+		}
+	}
+
+	@Test
+	void retainsProvenArrayLengthBridgeOnlyByExplicitChoice(@TempDir Path output) throws Exception {
+		String source= """
+				package test;
+				import java.util.Arrays;
+				final class Sizes {
+				    static int count(String value) {
+				        String[] items = new String[0];
+				        items = Arrays.copyOf(items, items.length + 1);
+				        items[items.length - 1] = value;
+				        return size(items);
+				    }
+				    static int size(String[] items) { return items.length; }
+				}
+				""";
+		var unit= createUnit("Sizes.java", source); //$NON-NLS-1$
+		var scope= new ICompilationUnit[] { unit };
+		var monitor= new NullProgressMonitor();
+		var options= Map.of(CLEANUP, CleanUpOptions.TRUE, CLOSED_SOURCE_PARAMETER_MIGRATION, CleanUpOptions.TRUE,
+				RETAIN_PROVEN_PARAMETER_BRIDGE, CleanUpOptions.TRUE);
+		var clean= new CoordinatedContainerCleanUpCore(options);
+		clean.checkPreConditions(context.getJavaProject(), scope, monitor);
+		var fix= clean.createFix(new CleanUpContext(unit, parse(unit)));
+		assertNotNull(fix, clean.getLastPlanningDiagnosticsJson(context.getJavaProject()));
+		var undo= fix.createChange(null).perform(monitor);
+		assertNotNull(undo);
+		String migrated= unit.getSource();
+		assertTrue(migrated.contains("size(List<String> items)"), migrated); //$NON-NLS-1$
+		assertTrue(migrated.contains("@Deprecated"), migrated); //$NON-NLS-1$
+		assertTrue(migrated.contains("size(String[] items)"), migrated); //$NON-NLS-1$
+		assertTrue(migrated.contains("Arrays.asList(items)"), migrated); //$NON-NLS-1$
+		assertTrue(migrated.contains("items == null ? null :"), migrated); //$NON-NLS-1$
+		assertFalse(Arrays.stream(parse(unit).getProblems()).anyMatch(problem -> problem.isError()));
+		// This client is compiled against the old JVM descriptor and never recompiled.
+		Path sizes= Files.writeString(output.resolve("Sizes.java"), source); //$NON-NLS-1$
+		Path client= Files.writeString(output.resolve("PreviousClient.java"), //$NON-NLS-1$
+				"package test; public class PreviousClient { public static int read(String[] xs) { return Sizes.size(xs); } }"); //$NON-NLS-1$
+		var compiler= ToolProvider.getSystemJavaCompiler();
+		assertEquals(0, compiler.run(null, null, null, "-d", output.toString(), sizes.toString(), client.toString())); //$NON-NLS-1$
+		Files.writeString(sizes, migrated);
+		assertEquals(0, compiler.run(null, null, null, "-d", output.toString(), sizes.toString())); //$NON-NLS-1$
+		try (var classes= new URLClassLoader(new URL[] { output.toUri().toURL() }, null)) {
+			var read= classes.loadClass("test.PreviousClient").getMethod("read", String[].class); //$NON-NLS-1$ //$NON-NLS-2$
+			assertEquals(3, read.invoke(null, (Object) new String[] { null, "same", "same" })); //$NON-NLS-1$ //$NON-NLS-2$
+			assertEquals(0, read.invoke(null, (Object) new String[0]));
+			try {
+				read.invoke(null, (Object) null);
+				org.junit.jupiter.api.Assertions.fail("The original null length operation must still throw"); //$NON-NLS-1$
+			} catch (InvocationTargetException expected) {
+				assertEquals(NullPointerException.class, expected.getCause().getClass());
+			}
+		}
+		clean.checkPostConditions(monitor);
+		undo.perform(monitor);
+		assertEquals(source, unit.getSource());
+		// A caller added after preview invalidates the entire candidate, including the original producer.
+		var stale= new CoordinatedContainerCleanUpCore(options);
+		stale.checkPreConditions(context.getJavaProject(), scope, monitor);
+		var other= createUnit("FreshCaller.java", "package test; class FreshCaller { int read() { return Sizes.size(null); } }"); //$NON-NLS-1$ //$NON-NLS-2$
+		try {
+			stale.createFix(new CleanUpContext(unit, parse(unit)));
+			org.junit.jupiter.api.Assertions.fail("An ambiguous new caller must block the selected bridge"); //$NON-NLS-1$
+		} catch (CoreException expected) {
+			assertTrue(expected.getMessage().contains("callers")); //$NON-NLS-1$
+		}
+		assertEquals(source, unit.getSource());
+		stale.checkPostConditions(monitor);
+		other.delete(true, monitor);
+
+		for (String blocked : List.of(
+				source.replace("return size(items);", "return size(items) + size(null);"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("static int count", "static int size(java.util.List<Object> items) { return 1; } static int count"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("static int size(String[]", "public static int size(String[]"), //$NON-NLS-1$ //$NON-NLS-2$
+				source.replace("return items.length;", "items[0] = null; return items.length;"))) { //$NON-NLS-1$ //$NON-NLS-2$
+			unit.getBuffer().setContents(blocked);
+			unit.save(monitor, true);
+			var rejected= new CoordinatedContainerCleanUpCore(options);
+			rejected.checkPreConditions(context.getJavaProject(), scope, monitor);
+			assertNull(rejected.createFix(new CleanUpContext(unit, parse(unit))), blocked);
+			rejected.checkPostConditions(monitor);
+			assertEquals(blocked, unit.getSource());
 		}
 	}
 
