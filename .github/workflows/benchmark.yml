@@ -36,6 +36,40 @@ on:
         default: false
 
 jobs:
+  inspect-swt-evidence:
+    if: github.event_name == 'pull_request' && github.event.pull_request.number == 1906
+    name: Inspect the timed-out SWT baseline artifact
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+    steps:
+      - name: Verify the original archive and report the retained Maven phases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api repos/carstenartur/sandbox/actions/artifacts/14154562938/zip > "$RUNNER_TEMP/swt-evidence.zip"
+          echo "ab5bdca76283606919a45a588b46c10d429f3b208acf311fc1af81386afd4f38  $RUNNER_TEMP/swt-evidence.zip" | sha256sum -c -
+          python3 - "$RUNNER_TEMP/swt-evidence.zip" <<'PY'
+          import pathlib
+          import re
+          import sys
+          import zipfile
+
+          with zipfile.ZipFile(sys.argv[1]) as archive:
+              for entry in archive.infolist():
+                  print(f"Artifact entry {entry.filename} ({entry.file_size} bytes)")
+                  path = pathlib.PurePosixPath(entry.filename)
+                  if path.parent.name != "swt-evidence":
+                      continue
+                  if path.name not in {"baseline-maven.log", "generated-maven.log",
+                                       "baseline-exit-code.txt", "generated-exit-code.txt",
+                                       "inventory-comparison.log", "inventory-comparison-exit-code.txt"}:
+                      continue
+                  lines = archive.read(entry).decode("utf-8", errors="replace").splitlines()
+                  for line in lines[-60:]:
+                      line = re.sub(r"https?://[^/ @]+:[^/ @]+@", "[redacted]@", line)
+                      print(f"Retained {path.name}: {line[:1200]}")
+          PY
   swt-before-after:
     if: github.event.action != 'labeled'
     name: Pinned SWT mathematics before and after
