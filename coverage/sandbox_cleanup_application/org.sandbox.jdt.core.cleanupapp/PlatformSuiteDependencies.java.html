@@ -144,13 +144,13 @@ final class PlatformSuiteDependencies {
 <span class="nc" id="L144">		throw unsupported(&quot;could not locate the direct dependencies closing tag on its own line&quot;); //$NON-NLS-1$</span>
 	}
 
-	private static boolean supportedBom(Element dependency) {
+	static boolean supportedBom(Element dependency) {
 <span class="pc bpc" id="L148" title="1 of 4 branches missed.">		return coordinate(dependency, &quot;org.junit&quot;, &quot;junit-bom&quot;) &amp;&amp; &quot;pom&quot;.equals(value(dependency, &quot;type&quot;)) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
 <span class="pc bpc" id="L149" title="2 of 4 branches missed.">				&amp;&amp; &quot;import&quot;.equals(value(dependency, &quot;scope&quot;)) &amp;&amp; child(dependency, &quot;exclusions&quot;) == null //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
 <span class="fc bfc" id="L150" title="All 2 branches covered.">				&amp;&amp; value(dependency, &quot;version&quot;).matches(&quot;(?:5\\.(?:[89]|[1-9][0-9]+)|6\\.[0-9]+)\\.[0-9]+&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
 	}
 
-	private static Element parse(String source) throws IOException {
+	static Element parse(String source) throws IOException {
 		try {
 <span class="fc" id="L155">			DocumentBuilderFactory factory= DocumentBuilderFactory.newDefaultNSInstance();</span>
 <span class="fc" id="L156">			factory.setFeature(&quot;http://apache.org/xml/features/disallow-doctype-decl&quot;, true); //$NON-NLS-1$</span>
@@ -160,11 +160,11 @@ final class PlatformSuiteDependencies {
 <span class="fc" id="L160">			builder.setErrorHandler(new DefaultHandler());</span>
 <span class="fc" id="L161">			return builder.parse(new InputSource(new StringReader(source))).getDocumentElement();</span>
 <span class="fc" id="L162">		} catch (ParserConfigurationException | SAXException e) {</span>
-<span class="fc" id="L163">			throw new IOException(&quot;Cannot read the project's Maven dependency model&quot;, e); //$NON-NLS-1$</span>
+<span class="fc" id="L163">			throw new IOException(&quot;Cannot read the project dependency descriptor&quot;, e); //$NON-NLS-1$</span>
 		}
 	}
 
-	private static List&lt;Element&gt; children(Element parent, String name) {
+	static List&lt;Element&gt; children(Element parent, String name) {
 <span class="fc" id="L168">		List&lt;Element&gt; result= new ArrayList&lt;&gt;();</span>
 <span class="fc bfc" id="L169" title="All 2 branches covered.">		for (Node node= parent.getFirstChild(); node != null; node= node.getNextSibling()) {</span>
 <span class="pc bpc" id="L170" title="1 of 4 branches missed.">			if (node instanceof Element element &amp;&amp; MAVEN_NAMESPACE.equals(element.getNamespaceURI())</span>
@@ -175,7 +175,7 @@ final class PlatformSuiteDependencies {
 <span class="fc" id="L175">		return result;</span>
 	}
 
-	private static Element child(Element parent, String name) {
+	static Element child(Element parent, String name) {
 <span class="fc" id="L179">		List&lt;Element&gt; found= children(parent, name);</span>
 <span class="pc bpc" id="L180" title="1 of 2 branches missed.">		if (found.size() &gt; 1) {</span>
 <span class="nc" id="L181">			throw new IllegalArgumentException(&quot;Ambiguous Maven element: &quot; + name); //$NON-NLS-1$</span>
@@ -183,12 +183,12 @@ final class PlatformSuiteDependencies {
 <span class="fc bfc" id="L183" title="All 2 branches covered.">		return found.isEmpty() ? null : found.getFirst();</span>
 	}
 
-	private static String value(Element parent, String name) {
+	static String value(Element parent, String name) {
 <span class="fc" id="L187">		Element element= child(parent, name);</span>
 <span class="fc bfc" id="L188" title="All 2 branches covered.">		return element == null ? &quot;&quot; : element.getTextContent().strip(); //$NON-NLS-1$</span>
 	}
 
-	private static boolean coordinate(Element dependency, String group, String artifact) {
+	static boolean coordinate(Element dependency, String group, String artifact) {
 <span class="fc bfc" id="L192" title="All 4 branches covered.">		return group.equals(value(dependency, &quot;groupId&quot;)) &amp;&amp; artifact.equals(value(dependency, &quot;artifactId&quot;)); //$NON-NLS-1$ //$NON-NLS-2$</span>
 	}
 

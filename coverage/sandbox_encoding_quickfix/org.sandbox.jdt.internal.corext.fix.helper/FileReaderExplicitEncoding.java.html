@@ -25,7 +25,11 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 
 import org.sandbox.jdt.internal.common.HelperVisitor;
@@ -47,76 +51,102 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
  * Charset.defaultCharset() is available since Java 1.5
  *
  */
-<span class="fc" id="L50">public class FileReaderExplicitEncoding extends AbstractExplicitEncoding&lt;ClassInstanceCreation&gt; {</span>
+<span class="fc" id="L54">public class FileReaderExplicitEncoding extends AbstractExplicitEncoding&lt;ClassInstanceCreation&gt; {</span>
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed, ChangeBehavior cb) {
-<span class="fc" id="L54">		ReferenceHolder&lt;ASTNode, Object&gt; datah= ReferenceHolder.createForNodes();</span>
-<span class="fc" id="L55">		HelperVisitorFactory.forClassInstanceCreation(FileReader.class)</span>
-<span class="fc" id="L56">			.in(compilationUnit)</span>
-<span class="fc" id="L57">			.excluding(nodesprocessed)</span>
-<span class="fc" id="L58">			.processEach(datah, (visited, holder) -&gt; processFoundNode(fixcore, operations, cb, visited, holder));</span>
-<span class="fc" id="L59">	}</span>
+<span class="fc" id="L58">		ReferenceHolder&lt;ASTNode, Object&gt; datah= ReferenceHolder.createForNodes();</span>
+<span class="fc" id="L59">		HelperVisitorFactory.forClassInstanceCreation(FileReader.class)</span>
+<span class="fc" id="L60">			.in(compilationUnit)</span>
+<span class="fc" id="L61">			.excluding(nodesprocessed)</span>
+<span class="fc" id="L62">			.processEach(datah, (visited, holder) -&gt; processFoundNode(fixcore, operations, cb, visited, holder));</span>
+<span class="fc" id="L63">	}</span>
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
 			Set&lt;CompilationUnitRewriteOperation&gt; operations, ChangeBehavior cb,
 			ClassInstanceCreation visited, ReferenceHolder&lt;ASTNode, Object&gt; holder) {
-<span class="fc" id="L64">		List&lt;ASTNode&gt; arguments= visited.arguments();</span>
-<span class="pc bpc" id="L65" title="2 of 3 branches missed.">		switch (arguments.size()) {</span>
-			case 1:
-<span class="fc" id="L67">				break;</span>
-			case 2:
-<span class="nc bnc" id="L69" title="All 2 branches missed.">				if (!(arguments.get(1) instanceof StringLiteral)) {</span>
-<span class="nc" id="L70">					return false;</span>
-				}
-<span class="nc" id="L72">				StringLiteral argstring3= (StringLiteral) arguments.get(1);</span>
-<span class="nc bnc" id="L73" title="All 2 branches missed.">				if (!ENCODINGS.contains(argstring3.getLiteralValue())) {</span>
-<span class="nc" id="L74">					return false;</span>
-				}
-<span class="nc" id="L76">				holder.put(argstring3, ENCODING_MAP.get(argstring3.getLiteralValue()));</span>
-<span class="nc" id="L77">				break;</span>
-			default:
-<span class="nc" id="L79">				return false;</span>
+		// The replacement is a supertype of FileReader. Preserve concrete declarations,
+		// inferred variable types, and overloads requiring the original FileReader.
+<span class="fc bfc" id="L70" title="All 2 branches covered.">		if (!acceptsInputStreamReader(visited)) {</span>
+<span class="fc" id="L71">			return false;</span>
 		}
-<span class="fc" id="L81">		operations.add(fixcore.rewrite(visited, cb, holder));</span>
-<span class="fc" id="L82">		return false;</span>
+<span class="fc" id="L73">		List&lt;ASTNode&gt; arguments= visited.arguments();</span>
+<span class="pc bpc" id="L74" title="2 of 3 branches missed.">		switch (arguments.size()) {</span>
+			case 1:
+<span class="fc" id="L76">				break;</span>
+			case 2:
+<span class="nc bnc" id="L78" title="All 2 branches missed.">				if (!(arguments.get(1) instanceof StringLiteral)) {</span>
+<span class="nc" id="L79">					return false;</span>
+				}
+<span class="nc" id="L81">				StringLiteral argstring3= (StringLiteral) arguments.get(1);</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">				if (!ENCODINGS.contains(argstring3.getLiteralValue())) {</span>
+<span class="nc" id="L83">					return false;</span>
+				}
+<span class="nc" id="L85">				holder.put(argstring3, ENCODING_MAP.get(argstring3.getLiteralValue()));</span>
+<span class="nc" id="L86">				break;</span>
+			default:
+<span class="nc" id="L88">				return false;</span>
+		}
+<span class="fc" id="L90">		operations.add(fixcore.rewrite(visited, cb, holder));</span>
+<span class="fc" id="L91">		return false;</span>
+	}
+
+	private static boolean acceptsInputStreamReader(ClassInstanceCreation creation) {
+<span class="fc" id="L95">		ITypeBinding reader= creation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L96" title="2 of 4 branches missed.">		if (reader == null || creation.getAnonymousClassDeclaration() != null) {</span>
+<span class="nc" id="L97">			return false;</span>
+		}
+<span class="fc" id="L99">		ITypeBinding replacement= reader.getSuperclass();</span>
+<span class="fc" id="L100">		Expression expression= creation;</span>
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">		while (expression.getParent() instanceof ParenthesizedExpression parentheses) {</span>
+<span class="nc" id="L102">			expression= parentheses;</span>
+		}
+		ITypeBinding required;
+<span class="pc bpc" id="L105" title="1 of 4 branches missed.">		if (expression.getParent() instanceof VariableDeclarationFragment fragment &amp;&amp; fragment.getInitializer() == expression) {</span>
+<span class="fc" id="L106">			var binding= fragment.resolveBinding();</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">			required= binding == null ? null : binding.getType();</span>
+<span class="fc" id="L108">		} else {</span>
+<span class="fc" id="L109">			required= ASTNodes.getTargetType(expression);</span>
+		}
+<span class="pc bpc" id="L111" title="3 of 6 branches missed.">		return replacement != null &amp;&amp; required != null &amp;&amp; !required.isRecovered()</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">				&amp;&amp; replacement.isAssignmentCompatible(required);</span>
 	}
 
 	@Override
 	public void rewrite(UseExplicitEncodingFixCore upp, final ClassInstanceCreation visited, final CompilationUnitRewrite cuRewrite,
 			TextEditGroup group, ChangeBehavior cb, ReferenceHolder&lt;ASTNode, Object&gt; data) {
-<span class="fc" id="L88">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L89">		AST ast= cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L90">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, visited, (String) data.get(visited),getCharsetConstants(cuRewrite));</span>
+<span class="fc" id="L118">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L119">		AST ast= cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L120">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, visited, (String) data.get(visited),getCharsetConstants(cuRewrite));</span>
 		/**
 		 * new FileInputStream(&lt;filename&gt;)
 		 */
-<span class="fc" id="L94">		ClassInstanceCreation fisclassInstance= ast.newClassInstanceCreation();</span>
-<span class="fc" id="L95">		fisclassInstance.setType(ast.newSimpleType(addImport(FileInputStream.class.getCanonicalName(), cuRewrite, ast)));</span>
-<span class="fc" id="L96">		fisclassInstance.arguments().add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression((ASTNode) visited.arguments().get(0))));</span>
+<span class="fc" id="L124">		ClassInstanceCreation fisclassInstance= ast.newClassInstanceCreation();</span>
+<span class="fc" id="L125">		fisclassInstance.setType(ast.newSimpleType(addImport(FileInputStream.class.getCanonicalName(), cuRewrite, ast)));</span>
+<span class="fc" id="L126">		fisclassInstance.arguments().add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression((ASTNode) visited.arguments().get(0))));</span>
 		/**
 		 * new InputStreamReader(new FileInputStream(&lt;filename&gt;))
 		 */
-<span class="fc" id="L100">		ClassInstanceCreation isrclassInstance= ast.newClassInstanceCreation();</span>
-<span class="fc" id="L101">		isrclassInstance.setType(ast.newSimpleType(addImport(InputStreamReader.class.getCanonicalName(), cuRewrite, ast)));</span>
-<span class="fc" id="L102">		isrclassInstance.arguments().add(fisclassInstance);</span>
-<span class="fc" id="L103">		isrclassInstance.arguments().add(callToCharsetDefaultCharset);</span>
+<span class="fc" id="L130">		ClassInstanceCreation isrclassInstance= ast.newClassInstanceCreation();</span>
+<span class="fc" id="L131">		isrclassInstance.setType(ast.newSimpleType(addImport(InputStreamReader.class.getCanonicalName(), cuRewrite, ast)));</span>
+<span class="fc" id="L132">		isrclassInstance.arguments().add(fisclassInstance);</span>
+<span class="fc" id="L133">		isrclassInstance.arguments().add(callToCharsetDefaultCharset);</span>
 
-<span class="fc" id="L105">		cuRewrite.getImportRemover().registerRemovedNode(visited.getType());</span>
-<span class="fc" id="L106">		ASTNodes.replaceButKeepComment(rewrite, visited, isrclassInstance, group);</span>
-<span class="fc" id="L107">	}</span>
+<span class="fc" id="L135">		cuRewrite.getImportRemover().registerRemovedNode(visited.getType());</span>
+<span class="fc" id="L136">		ASTNodes.replaceButKeepComment(rewrite, visited, isrclassInstance, group);</span>
+<span class="fc" id="L137">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring, ChangeBehavior cb) {
-<span class="nc bnc" id="L111" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L112">			return &quot;Reader r=new InputStreamReader(new FileInputStream(inputfile),&quot; + cb.computeCharsetforPreview() + &quot;);\n&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L142">			return &quot;Reader r=new InputStreamReader(new FileInputStream(inputfile),&quot; + cb.computeCharsetforPreview() + &quot;);\n&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 		}
-<span class="nc" id="L114">		return &quot;Reader r=new FileReader(inputfile);\n&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L144">		return &quot;Reader r=new FileReader(inputfile);\n&quot;; //$NON-NLS-1$</span>
 	}
 
 	@Override
 	public String toString() {
-<span class="fc" id="L119">		return &quot;new FileReader(inputfile)&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L149">		return &quot;new FileReader(inputfile)&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

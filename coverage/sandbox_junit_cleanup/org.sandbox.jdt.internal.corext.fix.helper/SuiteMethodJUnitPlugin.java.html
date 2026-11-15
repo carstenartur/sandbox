@@ -132,10 +132,10 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 				continue;
 			}
 <span class="fc" id="L134">			ITypeBinding binding= annotation.resolveTypeBinding();</span>
-<span class="pc bpc" id="L135" title="2 of 4 branches missed.">			String name= binding == null || binding.isRecovered()</span>
-<span class="nc" id="L136">					? annotation.getTypeName().getFullyQualifiedName()</span>
+<span class="pc bpc" id="L135" title="1 of 4 branches missed.">			String name= binding == null || binding.isRecovered()</span>
+<span class="fc" id="L136">					? annotation.getTypeName().getFullyQualifiedName()</span>
 <span class="fc" id="L137">					: binding.getQualifiedName();</span>
-<span class="pc bpc" id="L138" title="3 of 4 branches missed.">			if (name.startsWith(&quot;org.junit.&quot;) || name.startsWith(&quot;junit.&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L138" title="1 of 4 branches missed.">			if (name.startsWith(&quot;org.junit.&quot;) || name.startsWith(&quot;junit.&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
 <span class="fc" id="L139">				return true;</span>
 			}
 		}

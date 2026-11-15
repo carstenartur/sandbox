@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>VintageDeploymentPlan.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_cleanup_application</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.core.cleanupapp</a> &gt; <span class="el_source">VintageDeploymentPlan.java</span></div><h1>VintageDeploymentPlan.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0, available at
+ * https://www.eclipse.org/legal/epl-2.0/.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.core.cleanupapp;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ArrayInitializer;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
+import org.eclipse.jdt.core.dom.MarkerAnnotation;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.NumberLiteral;
+import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.TypeLiteral;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+
+/** Retires test-scoped legacy engines only in a closed, source-only Maven Suite deployment. */
+final class VintageDeploymentPlan {
+	record SourceTransition(String before, String after) {
+	}
+
+<span class="fc" id="L46">	private static final Set&lt;String&gt; PROJECT_ELEMENTS= Set.of(&quot;modelVersion&quot;, &quot;groupId&quot;, &quot;artifactId&quot;, &quot;version&quot;, &quot;packaging&quot;,</span>
+<span class="fc" id="L47">			&quot;dependencyManagement&quot;, &quot;dependencies&quot;);</span>
+<span class="fc" id="L48">	private static final Set&lt;String&gt; DEP_FIELDS= Set.of(&quot;groupId&quot;, &quot;artifactId&quot;, &quot;scope&quot;, &quot;version&quot;);</span>
+<span class="fc" id="L49">	private static final Set&lt;String&gt; KNOWN_DEPS= Set.of(&quot;org.junit.jupiter:junit-jupiter&quot;, &quot;org.junit.platform:junit-platform-suite&quot;,</span>
+<span class="fc" id="L50">			&quot;junit:junit&quot;, &quot;org.junit.vintage:junit-vintage-engine&quot;);</span>
+<span class="fc" id="L51">	private static final Set&lt;String&gt; IMPORTS= Set.of(&quot;org.junit.jupiter.api.Test&quot;, &quot;org.junit.jupiter.api.Assertions&quot;,</span>
+<span class="fc" id="L52">			&quot;org.junit.platform.suite.api.Suite&quot;, &quot;org.junit.platform.suite.api.SelectClasses&quot;);</span>
+<span class="fc" id="L53">	private static final Pattern DEPENDENCY= Pattern.compile(&quot;&lt;dependency&gt;.*?&lt;/dependency&gt;&quot;, Pattern.DOTALL);</span>
+
+	private VintageDeploymentPlan() {
+	}
+
+	static String afterSuiteMigration(String pom, IFile descriptor, Map&lt;Path, SourceTransition&gt; sources) throws IOException, CoreException {
+<span class="pc bpc" id="L59" title="3 of 4 branches missed.">		if (!pom.contains(&quot;junit-vintage-engine&quot;) &amp;&amp; !pom.contains(&quot;&lt;artifactId&gt;junit&lt;/artifactId&gt;&quot;)) {</span>
+<span class="nc" id="L60">			return pom;</span>
+		}
+<span class="fc" id="L62">		Element project= PlatformSuiteDependencies.parse(pom);</span>
+<span class="fc bfc" id="L63" title="All 4 branches covered.">		if (!plainDependencies(project) || !closedProject(descriptor.getProject(), sources)) {</span>
+<span class="fc" id="L64">			return pom;</span>
+		}
+<span class="fc" id="L66">		String planned= pom;</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">		for (String id : new String[] { &quot;junit-vintage-engine&quot;, &quot;junit&quot; }) {</span>
+<span class="fc" id="L68">			planned= removeDirectDependency(planned, id);</span>
+		}
+<span class="fc" id="L70">		return planned;</span>
+	}
+
+	private static boolean onlyElements(Element parent, Set&lt;String&gt; allowed) {
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">		if (parent == null) {</span>
+<span class="nc" id="L75">			return false;</span>
+		}
+<span class="fc bfc" id="L77" title="All 2 branches covered.">		for (Node n= parent.getFirstChild(); n != null; n= n.getNextSibling()) {</span>
+<span class="pc bpc" id="L78" title="2 of 6 branches missed.">			if (n instanceof Element e &amp;&amp; (!allowed.contains(e.getTagName()) || !parent.getNamespaceURI().equals(e.getNamespaceURI())</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">					|| e.hasAttributes())) {</span>
+<span class="nc" id="L80">				return false;</span>
+			}
+		}
+<span class="fc" id="L83">		return true;</span>
+	}
+
+	private static boolean plainDependencies(Element project) {
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">		if (!onlyElements(project, PROJECT_ELEMENTS)) {</span>
+<span class="nc" id="L88">			return false;</span>
+		}
+<span class="fc" id="L90">		Element management= PlatformSuiteDependencies.child(project, &quot;dependencyManagement&quot;);</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">		if (!onlyElements(management, Set.of(&quot;dependencies&quot;))) {</span>
+<span class="nc" id="L92">			return false;</span>
+		}
+<span class="fc" id="L94">		Element managed= PlatformSuiteDependencies.child(management, &quot;dependencies&quot;);</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">		if (!onlyElements(managed, Set.of(&quot;dependency&quot;))) {</span>
+<span class="nc" id="L96">			return false;</span>
+		}
+<span class="fc" id="L98">		var boms= PlatformSuiteDependencies.children(managed, &quot;dependency&quot;);</span>
+<span class="pc bpc" id="L99" title="2 of 4 branches missed.">		if (boms.size() != 1 || !PlatformSuiteDependencies.supportedBom(boms.getFirst())) {</span>
+<span class="nc" id="L100">			return false;</span>
+		}
+<span class="fc" id="L102">		Set&lt;String&gt; found= new HashSet&lt;&gt;();</span>
+<span class="fc" id="L103">		Element dependencies= PlatformSuiteDependencies.child(project, &quot;dependencies&quot;);</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">		if (!onlyElements(dependencies, Set.of(&quot;dependency&quot;))) {</span>
+<span class="nc" id="L105">			return false;</span>
+		}
+<span class="fc bfc" id="L107" title="All 2 branches covered.">		for (Element dep : PlatformSuiteDependencies.children(dependencies, &quot;dependency&quot;)) {</span>
+<span class="fc" id="L108">			String id= PlatformSuiteDependencies.value(dep, &quot;groupId&quot;) + &quot;:&quot; + PlatformSuiteDependencies.value(dep, &quot;artifactId&quot;);</span>
+<span class="pc bpc" id="L109" title="1 of 4 branches missed.">			if (!onlyElements(dep, DEP_FIELDS) || !&quot;test&quot;.equals(PlatformSuiteDependencies.value(dep, &quot;scope&quot;))</span>
+<span class="pc bpc" id="L110" title="1 of 4 branches missed.">					|| !KNOWN_DEPS.contains(id) || !found.add(id)) {</span>
+<span class="fc" id="L111">				return false;</span>
+			}
+<span class="fc" id="L113">			String version= PlatformSuiteDependencies.value(dep, &quot;version&quot;);</span>
+<span class="pc bpc" id="L114" title="2 of 6 branches missed.">			if (&quot;junit:junit&quot;.equals(id) ? !&quot;4.13.2&quot;.equals(version) : !version.isEmpty()) {</span>
+<span class="nc" id="L115">				return false;</span>
+			}
+		}
+<span class="pc bpc" id="L118" title="2 of 4 branches missed.">		return found.contains(&quot;org.junit.jupiter:junit-jupiter&quot;) &amp;&amp; found.contains(&quot;org.junit.platform:junit-platform-suite&quot;);</span>
+	}
+
+	// Validate the exact XML node removal before taking its lexical slice.
+	private static String removeDirectDependency(String source, String artifact) throws IOException {
+<span class="fc" id="L123">		Element expected= PlatformSuiteDependencies.parse(source);</span>
+<span class="fc" id="L124">		Element dependencies= PlatformSuiteDependencies.child(expected, &quot;dependencies&quot;);</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">		for (Element dep : PlatformSuiteDependencies.children(dependencies, &quot;dependency&quot;)) {</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">			if (!artifact.equals(PlatformSuiteDependencies.value(dep, &quot;artifactId&quot;))) {</span>
+<span class="fc" id="L127">				continue;</span>
+			}
+<span class="fc" id="L129">			dependencies.removeChild(dep);</span>
+<span class="fc" id="L130">			expected.normalize();</span>
+<span class="fc" id="L131">			Matcher matcher= DEPENDENCY.matcher(source);</span>
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">			while (matcher.find()) {</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">				if (matcher.group().contains(&quot;&lt;artifactId&gt;&quot; + artifact + &quot;&lt;/artifactId&gt;&quot;)) {</span>
+<span class="fc" id="L134">					String candidate= source.substring(0, matcher.start()) + source.substring(matcher.end());</span>
+<span class="fc" id="L135">					Element actual= PlatformSuiteDependencies.parse(candidate);</span>
+<span class="fc" id="L136">					actual.normalize();</span>
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">					if (expected.isEqualNode(actual)) {</span>
+<span class="fc" id="L138">						int line= source.lastIndexOf('\n', matcher.start()) + 1;</span>
+<span class="fc" id="L139">						int end= source.indexOf('\n', matcher.end());</span>
+<span class="pc bpc" id="L140" title="2 of 4 branches missed.">						if (end &gt;= 0 &amp;&amp; source.substring(line, matcher.start()).isBlank()</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">								&amp;&amp; source.substring(matcher.end(), end).isBlank()) {</span>
+<span class="fc" id="L142">							return source.substring(0, line) + source.substring(end + 1);</span>
+						}
+<span class="nc" id="L144">						return candidate;</span>
+					}
+				}
+			}
+<span class="nc" id="L148">			break;</span>
+		}
+<span class="nc" id="L150">		return source;</span>
+	}
+
+	private static boolean closedProject(IProject project, Map&lt;Path, SourceTransition&gt; sources) throws IOException, CoreException {
+<span class="pc bpc" id="L154" title="2 of 4 branches missed.">		if (project.getReferencedProjects().length != 0 || project.getReferencingProjects().length != 0</span>
+<span class="pc bpc" id="L155" title="2 of 4 branches missed.">				|| project.getLocation() == null || sources.isEmpty()) {</span>
+<span class="nc" id="L156">			return false;</span>
+		}
+<span class="fc" id="L158">		boolean[] linked= { false };</span>
+<span class="fc" id="L159">		project.accept(resource -&gt; {</span>
+<span class="fc" id="L160">			linked[0] |= resource.isLinked();</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">			return !linked[0];</span>
+		});
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">		if (linked[0]) {</span>
+<span class="nc" id="L164">			return false;</span>
+		}
+<span class="fc" id="L166">		Path root= project.getLocation().toFile().toPath().toAbsolutePath().normalize();</span>
+<span class="fc" id="L167">		Set&lt;Path&gt; remaining= new HashSet&lt;&gt;(sources.keySet());</span>
+<span class="fc" id="L168">		try (var files= Files.walk(root)) {</span>
+<span class="fc" id="L169">			var iterator= files.iterator();</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">			while (iterator.hasNext()) {</span>
+<span class="fc" id="L171">				Path path= iterator.next();</span>
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">				if (Files.isSymbolicLink(path)) {</span>
+<span class="nc" id="L173">					return false;</span>
+				}
+<span class="fc bfc" id="L175" title="All 2 branches covered.">				if (Files.isDirectory(path)) {</span>
+<span class="fc" id="L176">					continue;</span>
+				}
+<span class="fc" id="L178">				String name= root.relativize(path).toString().replace(java.io.File.separatorChar, '/');</span>
+				// The standalone Maven model never reads the Eclipse compiler's bin directory.
+				// Only the class files corresponding to participating source files are expected there.
+<span class="pc bpc" id="L181" title="1 of 4 branches missed.">				if (name.startsWith(&quot;bin/&quot;) &amp;&amp; name.endsWith(&quot;.class&quot;)</span>
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">						&amp;&amp; sources.containsKey(root.resolve(&quot;src/test/java/&quot; + name.substring(4, name.length() - 6) + &quot;.java&quot;))) {</span>
+<span class="nc" id="L183">					continue;</span>
+				}
+<span class="fc bfc" id="L185" title="All 2 branches covered.">				if (Set.of(&quot;pom.xml&quot;, &quot;.project&quot;, &quot;.classpath&quot;, &quot;.settings/org.eclipse.jdt.core.prefs&quot;, &quot;.settings/org.eclipse.core.resources.prefs&quot;).contains(name)) {</span>
+<span class="fc" id="L186">					continue;</span>
+				}
+<span class="pc bpc" id="L188" title="1 of 4 branches missed.">				if (!name.startsWith(&quot;src/test/java/&quot;) || !remaining.remove(path)) {</span>
+<span class="fc" id="L189">					return false;</span>
+				}
+			}
+		}
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">		if (!remaining.isEmpty()) {</span>
+<span class="nc" id="L194">			return false;</span>
+		}
+<span class="fc" id="L196">		Set&lt;String&gt; selected= new HashSet&lt;&gt;();</span>
+<span class="fc" id="L197">		Set&lt;String&gt; migratedMembers= new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">		for (var source : sources.entrySet()) {</span>
+<span class="fc" id="L199">			Set&lt;String&gt; tests= new HashSet&lt;&gt;();</span>
+<span class="fc" id="L200">			SourceTransition transition= source.getValue();</span>
+<span class="fc bfc" id="L201" title="All 2 branches covered.">			if (!classify(source.getKey(), transition.after(), tests, selected)) {</span>
+<span class="fc" id="L202">				return false;</span>
+			}
+<span class="fc bfc" id="L204" title="All 4 branches covered.">			if (!tests.isEmpty() &amp;&amp; wasJUnit4Member(transition.before(), transition.after())) {</span>
+<span class="fc" id="L205">				migratedMembers.addAll(tests);</span>
+			}
+		}
+		// Jupiter-only tests were not runnable as children of an ordinary JUnit 4 Suite.
+<span class="pc bpc" id="L209" title="1 of 4 branches missed.">		return !selected.isEmpty() &amp;&amp; migratedMembers.containsAll(selected);</span>
+	}
+
+	// With no generators, external test libraries, resources or referenced projects,
+	// prove the deployed classes themselves. Unknown dispatch, inheritance, nested tests,
+	// reflective probes and engine configuration must all retain the old dependencies.
+	private static boolean wasJUnit4Member(String before, String after) {
+<span class="fc" id="L216">		CompilationUnit original= parse(before);</span>
+<span class="fc" id="L217">		CompilationUnit migrated= parse(after);</span>
+<span class="pc bpc" id="L218" title="2 of 4 branches missed.">		if (original.getProblems().length != 0 || original.types().size() != 1</span>
+<span class="pc bpc" id="L219" title="2 of 4 branches missed.">				|| !(original.types().getFirst() instanceof TypeDeclaration type) || !org.eclipse.jdt.core.dom.Modifier.isPublic(type.getModifiers())</span>
+<span class="pc bpc" id="L220" title="3 of 6 branches missed.">				|| type.bodyDeclarations().isEmpty() || original.getPackage() == null || migrated.getPackage() == null</span>
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">				|| !original.getPackage().getName().toString().equals(migrated.getPackage().getName().toString())) {</span>
+<span class="nc" id="L222">			return false;</span>
+		}
+		// This bounded case has only a Test import/annotation substitution.
+		// Match the compilation units structurally after that substitution so
+		// a changed method body, signature, fixture hook or class name cannot qualify.
+<span class="pc bpc" id="L227" title="1 of 2 branches missed.">		boolean legacyImport= original.imports().stream().anyMatch(item -&gt; item instanceof ImportDeclaration declaration</span>
+<span class="pc bpc" id="L228" title="2 of 6 branches missed.">				&amp;&amp; &quot;org.junit.Test&quot;.equals(declaration.getName().toString()) &amp;&amp; !declaration.isOnDemand() &amp;&amp; !declaration.isStatic());</span>
+<span class="fc bfc" id="L229" title="All 2 branches covered.">		for (Object member : type.bodyDeclarations()) {</span>
+<span class="pc bpc" id="L230" title="2 of 4 branches missed.">			if (!(member instanceof MethodDeclaration method) || !org.eclipse.jdt.core.dom.Modifier.isPublic(method.getModifiers())</span>
+<span class="pc bpc" id="L231" title="2 of 4 branches missed.">					|| org.eclipse.jdt.core.dom.Modifier.isStatic(method.getModifiers()) || !method.parameters().isEmpty()</span>
+<span class="fc bfc" id="L232" title="All 2 branches covered.">					|| !method.modifiers().stream().anyMatch(it -&gt; it instanceof MarkerAnnotation a</span>
+<span class="pc bpc" id="L233" title="2 of 8 branches missed.">						&amp;&amp; (&quot;org.junit.Test&quot;.equals(a.getTypeName().toString()) || legacyImport &amp;&amp; &quot;Test&quot;.equals(a.getTypeName().toString())))) {</span>
+<span class="fc" id="L234">				return false;</span>
+			}
+		}
+<span class="fc" id="L237">		String substituted= before.replace(&quot;org.junit.Test&quot;, &quot;org.junit.jupiter.api.Test&quot;);</span>
+<span class="fc" id="L238">		return parse(substituted).subtreeMatch(new org.eclipse.jdt.core.dom.ASTMatcher(), migrated);</span>
+	}
+
+	private static CompilationUnit parse(String source) {
+<span class="fc" id="L242">		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L243">		parser.setCompilerOptions(org.eclipse.jdt.core.JavaCore.getOptions());</span>
+<span class="fc" id="L244">		parser.setSource(source.toCharArray());</span>
+<span class="fc" id="L245">		return (CompilationUnit) parser.createAST(null);</span>
+	}
+
+	private static boolean classify(Path file, String source, Set&lt;String&gt; tests, Set&lt;String&gt; selected) {
+<span class="fc" id="L249">		CompilationUnit unit= parse(source);</span>
+<span class="pc bpc" id="L250" title="2 of 4 branches missed.">		if (unit.getProblems().length != 0 || unit.getPackage() == null</span>
+<span class="pc bpc" id="L251" title="2 of 4 branches missed.">				|| !unit.getPackage().annotations().isEmpty() || unit.getPackage().getName().getFullyQualifiedName().startsWith(&quot;org.junit&quot;)</span>
+<span class="pc bpc" id="L252" title="2 of 4 branches missed.">				|| unit.getPackage().getName().getFullyQualifiedName().startsWith(&quot;junit.&quot;) || unit.types().size() != 1</span>
+<span class="pc bpc" id="L253" title="2 of 4 branches missed.">				|| !(unit.types().getFirst() instanceof TypeDeclaration type) || type.isInterface()</span>
+<span class="pc bpc" id="L254" title="2 of 6 branches missed.">				|| type.getSuperclassType() != null || !type.superInterfaceTypes().isEmpty() || !type.typeParameters().isEmpty()</span>
+<span class="pc bpc" id="L255" title="1 of 2 branches missed.">				|| !Path.of(type.getName().getIdentifier() + &quot;.java&quot;).equals(file.getFileName())) {</span>
+<span class="fc" id="L256">			return false;</span>
+		}
+<span class="fc" id="L258">		Set&lt;String&gt; imports= new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L259" title="All 2 branches covered.">		for (Object element : unit.imports()) {</span>
+<span class="fc" id="L260">			ImportDeclaration decl= (ImportDeclaration) element;</span>
+<span class="fc" id="L261">			String name= decl.getName().getFullyQualifiedName();</span>
+<span class="pc bpc" id="L262" title="4 of 8 branches missed.">			if (decl.isStatic() || decl.isOnDemand() || !IMPORTS.contains(name) || !imports.add(name)) {</span>
+<span class="nc" id="L263">				return false;</span>
+			}
+		}
+<span class="fc" id="L266">		String prefix= unit.getPackage().getName().getFullyQualifiedName() + &quot;.&quot;;</span>
+<span class="fc" id="L267">		boolean suite= false;</span>
+<span class="fc" id="L268">		Set&lt;String&gt; targets= new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L269" title="All 2 branches covered.">		for (Object modifier : type.modifiers()) {</span>
+<span class="pc bpc" id="L270" title="1 of 4 branches missed.">			if (modifier instanceof MarkerAnnotation a &amp;&amp; resolves(a.getTypeName().toString(), &quot;org.junit.platform.suite.api.Suite&quot;, imports)) {</span>
+<span class="fc" id="L271">				suite= true;</span>
+<span class="fc bfc" id="L272" title="All 2 branches covered.">			} else if (modifier instanceof SingleMemberAnnotation a</span>
+<span class="pc bpc" id="L273" title="1 of 2 branches missed.">					&amp;&amp; resolves(a.getTypeName().toString(), &quot;org.junit.platform.suite.api.SelectClasses&quot;, imports)</span>
+<span class="pc bpc" id="L274" title="1 of 2 branches missed.">					&amp;&amp; a.getValue() instanceof ArrayInitializer members) {</span>
+<span class="fc bfc" id="L275" title="All 2 branches covered.">				for (Object item : members.expressions()) {</span>
+<span class="pc bpc" id="L276" title="2 of 4 branches missed.">					if (!(item instanceof TypeLiteral literal) || !literal.getType().isSimpleType()) {</span>
+<span class="nc" id="L277">						return false;</span>
+					}
+<span class="fc" id="L279">					targets.add(prefix + literal.getType().toString());</span>
+				}
+<span class="pc bpc" id="L281" title="1 of 2 branches missed.">			} else if (!(modifier instanceof org.eclipse.jdt.core.dom.Modifier)) {</span>
+<span class="nc" id="L282">				return false;</span>
+			}
+		}
+<span class="pc bpc" id="L285" title="1 of 4 branches missed.">		if (suite || !targets.isEmpty()) {</span>
+<span class="pc bpc" id="L286" title="3 of 6 branches missed.">			if (!suite || targets.isEmpty() || !type.bodyDeclarations().isEmpty()) {</span>
+<span class="nc" id="L287">				return false;</span>
+			}
+<span class="fc" id="L289">			selected.addAll(targets);</span>
+<span class="fc" id="L290">			return true;</span>
+		}
+<span class="pc bpc" id="L292" title="1 of 2 branches missed.">		if (type.bodyDeclarations().isEmpty()) {</span>
+<span class="nc" id="L293">			return false;</span>
+		}
+<span class="fc bfc" id="L295" title="All 2 branches covered.">		for (Object item : type.bodyDeclarations()) {</span>
+<span class="pc bpc" id="L296" title="1 of 4 branches missed.">			if (!(item instanceof MethodDeclaration method) || !plainJupiterTest(method, imports)) {</span>
+<span class="fc" id="L297">				return false;</span>
+			}
+		}
+<span class="fc" id="L300">		return tests.add(prefix + type.getName().getIdentifier());</span>
+	}
+
+	private static boolean resolves(String name, String expected, Set&lt;String&gt; imports) {
+<span class="pc bpc" id="L304" title="2 of 6 branches missed.">		return name.equals(expected) || imports.contains(expected) &amp;&amp; name.equals(expected.substring(expected.lastIndexOf('.') + 1));</span>
+	}
+
+	private static boolean plainJupiterTest(MethodDeclaration method, Set&lt;String&gt; imports) {
+<span class="fc" id="L308">		boolean test= false;</span>
+<span class="fc bfc" id="L309" title="All 2 branches covered.">		for (Object modifier : method.modifiers()) {</span>
+<span class="pc bpc" id="L310" title="1 of 4 branches missed.">			if (modifier instanceof MarkerAnnotation a &amp;&amp; resolves(a.getTypeName().toString(), &quot;org.junit.jupiter.api.Test&quot;, imports)) {</span>
+<span class="fc" id="L311">				test= true;</span>
+<span class="pc bpc" id="L312" title="1 of 2 branches missed.">			} else if (!(modifier instanceof org.eclipse.jdt.core.dom.Modifier)) {</span>
+<span class="nc" id="L313">				return false;</span>
+			}
+		}
+<span class="fc" id="L316">		Block body= method.getBody();</span>
+<span class="pc bpc" id="L317" title="3 of 8 branches missed.">		if (!test || body == null || !method.parameters().isEmpty() || !method.thrownExceptionTypes().isEmpty()</span>
+<span class="pc bpc" id="L318" title="2 of 4 branches missed.">				|| !&quot;void&quot;.equals(String.valueOf(method.getReturnType2())) || !method.typeParameters().isEmpty()) {</span>
+<span class="fc" id="L319">			return false;</span>
+		}
+<span class="fc bfc" id="L321" title="All 2 branches covered.">		for (Object item : body.statements()) {</span>
+<span class="pc bpc" id="L322" title="2 of 4 branches missed.">			if (!(item instanceof ExpressionStatement s) || !(s.getExpression() instanceof MethodInvocation call)</span>
+<span class="pc bpc" id="L323" title="2 of 4 branches missed.">					|| !call.getName().getIdentifier().equals(&quot;assertEquals&quot;) || call.getExpression() == null</span>
+<span class="pc bpc" id="L324" title="1 of 2 branches missed.">					|| !resolves(call.getExpression().toString(), &quot;org.junit.jupiter.api.Assertions&quot;, imports)</span>
+<span class="pc bpc" id="L325" title="2 of 4 branches missed.">					|| call.arguments().size() != 2 || !call.arguments().stream().allMatch(NumberLiteral.class::isInstance)) {</span>
+<span class="nc" id="L326">				return false;</span>
+			}
+		}
+<span class="fc" id="L329">		return true;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

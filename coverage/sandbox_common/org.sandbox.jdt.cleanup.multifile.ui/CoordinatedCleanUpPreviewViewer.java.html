@@ -79,219 +79,223 @@ import org.eclipse.ltk.ui.refactoring.IChangePreviewViewer;
 	private Label title;
 	private Text description;
 	private TableViewer files;
+	private Label filesLabel;
 	private Text details;
 	private ComparePreviewer comparePreviewer;
 
 	@Override
 	public void createControl(Composite parent) {
-<span class="nc" id="L87">		CompareConfiguration configuration= new CompareConfiguration();</span>
-<span class="nc" id="L88">		configuration.setLeftEditable(false);</span>
-<span class="nc" id="L89">		configuration.setRightEditable(false);</span>
-<span class="nc" id="L90">		configuration.setLeftLabel(&quot;Refactored source&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L91">		configuration.setRightLabel(&quot;Original source&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L88">		CompareConfiguration configuration= new CompareConfiguration();</span>
+<span class="nc" id="L89">		configuration.setLeftEditable(false);</span>
+<span class="nc" id="L90">		configuration.setRightEditable(false);</span>
+<span class="nc" id="L91">		configuration.setLeftLabel(&quot;Refactored source&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L92">		configuration.setRightLabel(&quot;Original source&quot;); //$NON-NLS-1$</span>
 
-<span class="nc" id="L93">		root= new AdaptableViewForm(parent, configuration);</span>
-<span class="nc" id="L94">		Composite body= new Composite(root, SWT.NONE);</span>
-<span class="nc" id="L95">		body.setLayout(new GridLayout(1, false));</span>
+<span class="nc" id="L94">		root= new AdaptableViewForm(parent, configuration);</span>
+<span class="nc" id="L95">		Composite body= new Composite(root, SWT.NONE);</span>
+<span class="nc" id="L96">		body.setLayout(new GridLayout(1, false));</span>
 
-<span class="nc" id="L97">		title= new Label(body, SWT.WRAP);</span>
-<span class="nc" id="L98">		title.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));</span>
+<span class="nc" id="L98">		title= new Label(body, SWT.WRAP);</span>
+<span class="nc" id="L99">		title.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));</span>
 
-<span class="nc" id="L100">		description= new Text(body, SWT.READ_ONLY | SWT.WRAP | SWT.MULTI);</span>
-<span class="nc" id="L101">		GridData descriptionData= new GridData(SWT.FILL, SWT.CENTER, true, false);</span>
-<span class="nc" id="L102">		descriptionData.heightHint= 42;</span>
-<span class="nc" id="L103">		description.setLayoutData(descriptionData);</span>
+<span class="nc" id="L101">		description= new Text(body, SWT.READ_ONLY | SWT.WRAP | SWT.MULTI);</span>
+<span class="nc" id="L102">		GridData descriptionData= new GridData(SWT.FILL, SWT.CENTER, true, false);</span>
+<span class="nc" id="L103">		descriptionData.heightHint= 42;</span>
+<span class="nc" id="L104">		description.setLayoutData(descriptionData);</span>
 
-<span class="nc" id="L105">		SashForm sash= new SashForm(body, SWT.HORIZONTAL);</span>
-<span class="nc" id="L106">		sash.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));</span>
+<span class="nc" id="L106">		SashForm sash= new SashForm(body, SWT.HORIZONTAL);</span>
+<span class="nc" id="L107">		sash.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));</span>
 
-<span class="nc" id="L108">		Composite overview= new Composite(sash, SWT.NONE);</span>
-<span class="nc" id="L109">		overview.setLayout(new GridLayout(1, false));</span>
+<span class="nc" id="L109">		Composite overview= new Composite(sash, SWT.NONE);</span>
+<span class="nc" id="L110">		overview.setLayout(new GridLayout(1, false));</span>
 
-<span class="nc" id="L111">		Label filesLabel= new Label(overview, SWT.NONE);</span>
-<span class="nc" id="L112">		filesLabel.setText(&quot;Affected source files&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L112">		filesLabel= new Label(overview, SWT.NONE);</span>
+<span class="nc" id="L113">		filesLabel.setText(&quot;Affected source files&quot;); //$NON-NLS-1$</span>
 
-<span class="nc" id="L114">		files= new TableViewer(overview, SWT.BORDER | SWT.SINGLE | SWT.V_SCROLL | SWT.H_SCROLL);</span>
-<span class="nc" id="L115">		files.setContentProvider(ArrayContentProvider.getInstance());</span>
-<span class="nc" id="L116">		files.setLabelProvider(new LabelProvider() {</span>
+<span class="nc" id="L115">		files= new TableViewer(overview, SWT.BORDER | SWT.SINGLE | SWT.V_SCROLL | SWT.H_SCROLL);</span>
+<span class="nc" id="L116">		files.setContentProvider(ArrayContentProvider.getInstance());</span>
+<span class="nc" id="L117">		files.setLabelProvider(new LabelProvider() {</span>
 			@Override
 			public String getText(Object element) {
-<span class="nc bnc" id="L119" title="All 2 branches missed.">				return element instanceof FilePreview preview ? preview.label() : super.getText(element);</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">				return element instanceof FilePreview preview ? preview.label() : super.getText(element);</span>
 			}
 		});
-<span class="nc" id="L122">		GridData filesData= new GridData(SWT.FILL, SWT.FILL, true, false);</span>
-<span class="nc" id="L123">		filesData.heightHint= 110;</span>
-<span class="nc" id="L124">		files.getControl().setLayoutData(filesData);</span>
-<span class="nc" id="L125">		files.addSelectionChangedListener(event -&gt; {</span>
-<span class="nc" id="L126">			IStructuredSelection selection= event.getStructuredSelection();</span>
-<span class="nc bnc" id="L127" title="All 2 branches missed.">			showFile(selection.getFirstElement() instanceof FilePreview preview ? preview : null);</span>
-<span class="nc" id="L128">		});</span>
+<span class="nc" id="L123">		GridData filesData= new GridData(SWT.FILL, SWT.FILL, true, false);</span>
+<span class="nc" id="L124">		filesData.heightHint= 110;</span>
+<span class="nc" id="L125">		files.getControl().setLayoutData(filesData);</span>
+<span class="nc" id="L126">		files.addSelectionChangedListener(event -&gt; {</span>
+<span class="nc" id="L127">			IStructuredSelection selection= event.getStructuredSelection();</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">			showFile(selection.getFirstElement() instanceof FilePreview preview ? preview : null);</span>
+<span class="nc" id="L129">		});</span>
 
-<span class="nc" id="L130">		Label detailsLabel= new Label(overview, SWT.NONE);</span>
-<span class="nc" id="L131">		detailsLabel.setText(&quot;Safety and scope evidence&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L131">		Label detailsLabel= new Label(overview, SWT.NONE);</span>
+<span class="nc" id="L132">		detailsLabel.setText(&quot;Safety and scope evidence&quot;); //$NON-NLS-1$</span>
 
-<span class="nc" id="L133">		details= new Text(overview, SWT.READ_ONLY | SWT.WRAP | SWT.MULTI | SWT.V_SCROLL);</span>
-<span class="nc" id="L134">		GridData detailsData= new GridData(SWT.FILL, SWT.FILL, true, true);</span>
-<span class="nc" id="L135">		detailsData.heightHint= 90;</span>
-<span class="nc" id="L136">		details.setLayoutData(detailsData);</span>
+<span class="nc" id="L134">		details= new Text(overview, SWT.READ_ONLY | SWT.WRAP | SWT.MULTI | SWT.V_SCROLL);</span>
+<span class="nc" id="L135">		GridData detailsData= new GridData(SWT.FILL, SWT.FILL, true, true);</span>
+<span class="nc" id="L136">		detailsData.heightHint= 90;</span>
+<span class="nc" id="L137">		details.setLayoutData(detailsData);</span>
 
-<span class="nc" id="L138">		comparePreviewer= new ComparePreviewer(sash, configuration);</span>
-<span class="nc" id="L139">		sash.setWeights(35, 65);</span>
+<span class="nc" id="L139">		comparePreviewer= new ComparePreviewer(sash, configuration);</span>
+<span class="nc" id="L140">		sash.setWeights(35, 65);</span>
 
-<span class="nc" id="L141">		root.setContent(body);</span>
-<span class="nc" id="L142">		Dialog.applyDialogFont(root);</span>
-<span class="nc" id="L143">		clear(&quot;Select a coordinated Cleanup candidate to inspect its affected files.&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L144">	}</span>
+<span class="nc" id="L142">		root.setContent(body);</span>
+<span class="nc" id="L143">		Dialog.applyDialogFont(root);</span>
+<span class="nc" id="L144">		clear(&quot;Select a coordinated Cleanup candidate to inspect its affected files.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L145">	}</span>
 
 	@Override
 	public Control getControl() {
-<span class="nc" id="L148">		return root;</span>
+<span class="nc" id="L149">		return root;</span>
 	}
 
 	@Override
 	public void setInput(ChangePreviewViewerInput input) {
-<span class="nc bnc" id="L153" title="All 4 branches missed.">		if (root == null || root.isDisposed()) {</span>
-<span class="nc" id="L154">			return;</span>
+<span class="nc bnc" id="L154" title="All 4 branches missed.">		if (root == null || root.isDisposed()) {</span>
+<span class="nc" id="L155">			return;</span>
 		}
-<span class="nc bnc" id="L156" title="All 2 branches missed.">		Change change= input == null ? null : input.getChange();</span>
-<span class="nc bnc" id="L157" title="All 4 branches missed.">		if (change == null || !CHANGE_CLASS.equals(change.getClass().getName())) {</span>
-<span class="nc" id="L158">			clear(&quot;No coordinated Cleanup candidate is selected.&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L159">			return;</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">		Change change= input == null ? null : input.getChange();</span>
+<span class="nc bnc" id="L158" title="All 4 branches missed.">		if (change == null || !CHANGE_CLASS.equals(change.getClass().getName())) {</span>
+<span class="nc" id="L159">			clear(&quot;No coordinated Cleanup candidate is selected.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L160">			return;</span>
 		}
 		try {
-<span class="nc" id="L162">			CandidatePreview candidate= readCandidate(change);</span>
-<span class="nc" id="L163">			title.setText(candidate.name());</span>
-<span class="nc bnc" id="L164" title="All 2 branches missed.">			description.setText(candidate.description().isBlank()</span>
-<span class="nc" id="L165">					? ATOMIC_SELECTION</span>
-<span class="nc" id="L166">					: candidate.description() + System.lineSeparator() + ATOMIC_SELECTION);</span>
-<span class="nc" id="L167">			details.setText(String.join(System.lineSeparator(), candidate.details()));</span>
-<span class="nc" id="L168">			setFileInput(candidate.files());</span>
-<span class="nc bnc" id="L169" title="All 2 branches missed.">			if (candidate.files().isEmpty()) {</span>
-<span class="nc" id="L170">				showFile(null);</span>
-<span class="nc" id="L171">			} else {</span>
-<span class="nc" id="L172">				files.setSelection(new org.eclipse.jface.viewers.StructuredSelection(candidate.files().get(0)), true);</span>
+<span class="nc" id="L163">			CandidatePreview candidate= readCandidate(change);</span>
+<span class="nc" id="L164">			title.setText(candidate.name());</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">			description.setText(candidate.description().isBlank()</span>
+<span class="nc" id="L166">					? ATOMIC_SELECTION</span>
+<span class="nc" id="L167">					: candidate.description() + System.lineSeparator() + ATOMIC_SELECTION);</span>
+<span class="nc" id="L168">			details.setText(String.join(System.lineSeparator(), candidate.details()));</span>
+<span class="nc" id="L169">			setFileInput(candidate.files());</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">			if (candidate.files().isEmpty()) {</span>
+<span class="nc" id="L171">				showFile(null);</span>
+<span class="nc" id="L172">			} else {</span>
+<span class="nc" id="L173">				files.setSelection(new org.eclipse.jface.viewers.StructuredSelection(candidate.files().get(0)), true);</span>
 			}
-<span class="nc" id="L174">			root.layout(true, true);</span>
-<span class="nc" id="L175">		} catch (CoreException | ReflectiveOperationException | RuntimeException exception) {</span>
-<span class="nc" id="L176">			clear(&quot;The coordinated Cleanup preview could not be created: &quot; + safeMessage(exception)); //$NON-NLS-1$</span>
+<span class="nc" id="L175">			root.layout(true, true);</span>
+<span class="nc" id="L176">		} catch (CoreException | ReflectiveOperationException | RuntimeException exception) {</span>
+<span class="nc" id="L177">			clear(&quot;The coordinated Cleanup preview could not be created: &quot; + safeMessage(exception)); //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L178">	}</span>
+<span class="nc" id="L179">	}</span>
 
 	private CandidatePreview readCandidate(Change change)
 			throws ReflectiveOperationException, CoreException {
-<span class="nc" id="L182">		String candidateDescription= invoke(change, &quot;getDescription&quot;, String.class); //$NON-NLS-1$</span>
-<span class="nc" id="L183">		List&lt;String&gt; safetyDetails= stringList(invoke(change, &quot;getSafetyDetails&quot;, List.class)); //$NON-NLS-1$</span>
-<span class="nc" id="L184">		Change[] changes= invoke(change, &quot;getChanges&quot;, Change[].class); //$NON-NLS-1$</span>
-<span class="nc" id="L185">		List&lt;FilePreview&gt; filePreviews= new ArrayList&lt;&gt;();</span>
-<span class="nc bnc" id="L186" title="All 2 branches missed.">		if (changes != null) {</span>
-<span class="nc bnc" id="L187" title="All 2 branches missed.">			for (Change child : changes) {</span>
-<span class="nc bnc" id="L188" title="All 2 branches missed.">				if (child != null) {</span>
-<span class="nc" id="L189">					collectFilePreviews(child, filePreviews);</span>
+<span class="nc" id="L183">		String candidateDescription= invoke(change, &quot;getDescription&quot;, String.class); //$NON-NLS-1$</span>
+<span class="nc" id="L184">		List&lt;String&gt; safetyDetails= stringList(invoke(change, &quot;getSafetyDetails&quot;, List.class)); //$NON-NLS-1$</span>
+<span class="nc" id="L185">		Change[] changes= invoke(change, &quot;getChanges&quot;, Change[].class); //$NON-NLS-1$</span>
+<span class="nc" id="L186">		List&lt;FilePreview&gt; filePreviews= new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L187" title="All 2 branches missed.">		if (changes != null) {</span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">			for (Change child : changes) {</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">				if (child != null) {</span>
+<span class="nc" id="L190">					collectFilePreviews(child, filePreviews);</span>
 				}
 			}
 		}
-<span class="nc" id="L193">		List&lt;String&gt; allDetails= new ArrayList&lt;&gt;();</span>
-<span class="nc" id="L194">		allDetails.add(ATOMIC_SELECTION);</span>
-<span class="nc" id="L195">		allDetails.addAll(safetyDetails);</span>
-<span class="nc bnc" id="L196" title="All 2 branches missed.">		if (filePreviews.isEmpty()) {</span>
-<span class="nc" id="L197">			allDetails.add(&quot;No textual source diff is available for this candidate.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L194">		List&lt;String&gt; allDetails= new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L195">		allDetails.add(ATOMIC_SELECTION);</span>
+<span class="nc" id="L196">		allDetails.addAll(safetyDetails);</span>
+<span class="nc bnc" id="L197" title="All 2 branches missed.">		if (filePreviews.isEmpty()) {</span>
+<span class="nc" id="L198">			allDetails.add(&quot;No textual source diff is available for this candidate.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L199">		return new CandidatePreview(change.getName(), candidateDescription, List.copyOf(allDetails),</span>
-<span class="nc" id="L200">				List.copyOf(filePreviews));</span>
+<span class="nc" id="L200">		return new CandidatePreview(change.getName(), candidateDescription, List.copyOf(allDetails),</span>
+<span class="nc" id="L201">				List.copyOf(filePreviews));</span>
 	}
 
 	private static void collectFilePreviews(Change change, List&lt;FilePreview&gt; result) throws CoreException {
-<span class="nc bnc" id="L204" title="All 2 branches missed.">		if (change instanceof TextEditBasedChange textChange) {</span>
-<span class="nc" id="L205">			NullProgressMonitor monitor= new NullProgressMonitor();</span>
-<span class="nc" id="L206">			String current= textChange.getCurrentContent(monitor);</span>
-<span class="nc" id="L207">			String preview= textChange.getPreviewContent(new NullProgressMonitor());</span>
-<span class="nc" id="L208">			IResource resource= resource(change);</span>
-<span class="nc bnc" id="L209" title="All 2 branches missed.">			String label= resource == null</span>
-<span class="nc" id="L210">					? change.getName()</span>
-<span class="nc" id="L211">					: resource.getProjectRelativePath().toPortableString();</span>
-<span class="nc" id="L212">			String type= textChange.getTextType();</span>
-<span class="nc" id="L213">			result.add(new FilePreview(label, current, preview,</span>
-<span class="nc bnc" id="L214" title="All 4 branches missed.">					type == null || type.isBlank() ? &quot;txt&quot; : type, resource)); //$NON-NLS-1$</span>
-<span class="nc" id="L215">			return;</span>
+<span class="nc bnc" id="L205" title="All 2 branches missed.">		if (change instanceof TextEditBasedChange textChange) {</span>
+<span class="nc" id="L206">			NullProgressMonitor monitor= new NullProgressMonitor();</span>
+<span class="nc" id="L207">			String current= textChange.getCurrentContent(monitor);</span>
+<span class="nc" id="L208">			String preview= textChange.getPreviewContent(new NullProgressMonitor());</span>
+<span class="nc" id="L209">			IResource resource= resource(change);</span>
+<span class="nc bnc" id="L210" title="All 2 branches missed.">			String label= resource == null</span>
+<span class="nc" id="L211">					? change.getName()</span>
+<span class="nc" id="L212">					: resource.getProjectRelativePath().toPortableString();</span>
+<span class="nc" id="L213">			String type= textChange.getTextType();</span>
+<span class="nc" id="L214">			result.add(new FilePreview(label, current, preview,</span>
+<span class="nc bnc" id="L215" title="All 4 branches missed.">					type == null || type.isBlank() ? &quot;txt&quot; : type, resource)); //$NON-NLS-1$</span>
+<span class="nc" id="L216">			return;</span>
 		}
-<span class="nc bnc" id="L217" title="All 2 branches missed.">		if (change instanceof CompositeChange composite) {</span>
-<span class="nc bnc" id="L218" title="All 2 branches missed.">			for (Change child : composite.getChildren()) {</span>
-<span class="nc" id="L219">				collectFilePreviews(child, result);</span>
+<span class="nc bnc" id="L218" title="All 2 branches missed.">		if (change instanceof CompositeChange composite) {</span>
+<span class="nc bnc" id="L219" title="All 2 branches missed.">			for (Change child : composite.getChildren()) {</span>
+<span class="nc" id="L220">				collectFilePreviews(child, result);</span>
 			}
 		}
-<span class="nc" id="L222">	}</span>
+<span class="nc" id="L223">	}</span>
 
 	private static IResource resource(Change change) {
-<span class="nc" id="L225">		Object modified= change.getModifiedElement();</span>
-<span class="nc bnc" id="L226" title="All 2 branches missed.">		if (modified instanceof IResource resource) {</span>
-<span class="nc" id="L227">			return resource;</span>
+<span class="nc" id="L226">		Object modified= change.getModifiedElement();</span>
+<span class="nc bnc" id="L227" title="All 2 branches missed.">		if (modified instanceof IResource resource) {</span>
+<span class="nc" id="L228">			return resource;</span>
 		}
-<span class="nc bnc" id="L229" title="All 2 branches missed.">		if (modified instanceof IAdaptable adaptable) {</span>
-<span class="nc" id="L230">			return adaptable.getAdapter(IResource.class);</span>
+<span class="nc bnc" id="L230" title="All 2 branches missed.">		if (modified instanceof IAdaptable adaptable) {</span>
+<span class="nc" id="L231">			return adaptable.getAdapter(IResource.class);</span>
 		}
-<span class="nc" id="L232">		return null;</span>
+<span class="nc" id="L233">		return null;</span>
 	}
 
 	private void setFileInput(List&lt;FilePreview&gt; input) {
-<span class="nc" id="L236">		files.setInput(input);</span>
+<span class="nc bnc" id="L237" title="All 2 branches missed.">		boolean containsMetadata= input.stream().anyMatch(file -&gt; file.resource() != null</span>
+<span class="nc bnc" id="L238" title="All 2 branches missed.">				&amp;&amp; !&quot;java&quot;.equals(file.resource().getFileExtension())); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L239" title="All 2 branches missed.">		filesLabel.setText(containsMetadata ? &quot;Affected files&quot; : &quot;Affected source files&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L240">		files.setInput(input);</span>
 		// Keep a short file list compact so the safety evidence gets the remaining height.
-<span class="nc" id="L238">		GridData data= (GridData) files.getControl().getLayoutData();</span>
-<span class="nc" id="L239">		data.heightHint= files.getTable().getItemHeight() * Math.max(1, Math.min(5, input.size()));</span>
-<span class="nc" id="L240">	}</span>
+<span class="nc" id="L242">		GridData data= (GridData) files.getControl().getLayoutData();</span>
+<span class="nc" id="L243">		data.heightHint= files.getTable().getItemHeight() * Math.max(1, Math.min(5, input.size()));</span>
+<span class="nc" id="L244">	}</span>
 
 	private void showFile(FilePreview preview) {
-<span class="nc bnc" id="L243" title="All 4 branches missed.">		if (comparePreviewer != null &amp;&amp; !comparePreviewer.isDisposed()) {</span>
-<span class="nc" id="L244">			comparePreviewer.setPreview(preview);</span>
+<span class="nc bnc" id="L247" title="All 4 branches missed.">		if (comparePreviewer != null &amp;&amp; !comparePreviewer.isDisposed()) {</span>
+<span class="nc" id="L248">			comparePreviewer.setPreview(preview);</span>
 		}
-<span class="nc" id="L246">	}</span>
+<span class="nc" id="L250">	}</span>
 
 	private void clear(String message) {
-<span class="nc bnc" id="L249" title="All 4 branches missed.">		if (title != null &amp;&amp; !title.isDisposed()) {</span>
-<span class="nc" id="L250">			title.setText(&quot;Coordinated Cleanup preview&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L253" title="All 4 branches missed.">		if (title != null &amp;&amp; !title.isDisposed()) {</span>
+<span class="nc" id="L254">			title.setText(&quot;Coordinated Cleanup preview&quot;); //$NON-NLS-1$</span>
 		}
-<span class="nc bnc" id="L252" title="All 4 branches missed.">		if (description != null &amp;&amp; !description.isDisposed()) {</span>
-<span class="nc bnc" id="L253" title="All 2 branches missed.">			description.setText(message == null ? &quot;&quot; : message); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L256" title="All 4 branches missed.">		if (description != null &amp;&amp; !description.isDisposed()) {</span>
+<span class="nc bnc" id="L257" title="All 2 branches missed.">			description.setText(message == null ? &quot;&quot; : message); //$NON-NLS-1$</span>
 		}
-<span class="nc bnc" id="L255" title="All 4 branches missed.">		if (details != null &amp;&amp; !details.isDisposed()) {</span>
-<span class="nc" id="L256">			details.setText(ATOMIC_SELECTION);</span>
+<span class="nc bnc" id="L259" title="All 4 branches missed.">		if (details != null &amp;&amp; !details.isDisposed()) {</span>
+<span class="nc" id="L260">			details.setText(ATOMIC_SELECTION);</span>
 		}
-<span class="nc bnc" id="L258" title="All 6 branches missed.">		if (files != null &amp;&amp; files.getControl() != null &amp;&amp; !files.getControl().isDisposed()) {</span>
-<span class="nc" id="L259">			setFileInput(List.of());</span>
+<span class="nc bnc" id="L262" title="All 6 branches missed.">		if (files != null &amp;&amp; files.getControl() != null &amp;&amp; !files.getControl().isDisposed()) {</span>
+<span class="nc" id="L263">			setFileInput(List.of());</span>
 		}
-<span class="nc" id="L261">		showFile(null);</span>
-<span class="nc" id="L262">	}</span>
+<span class="nc" id="L265">		showFile(null);</span>
+<span class="nc" id="L266">	}</span>
 
 	private static String safeMessage(Throwable throwable) {
-<span class="nc" id="L265">		Throwable current= throwable;</span>
-<span class="nc bnc" id="L266" title="All 4 branches missed.">		if (throwable instanceof InvocationTargetException invocation &amp;&amp; invocation.getCause() != null) {</span>
-<span class="nc" id="L267">			current= invocation.getCause();</span>
+<span class="nc" id="L269">		Throwable current= throwable;</span>
+<span class="nc bnc" id="L270" title="All 4 branches missed.">		if (throwable instanceof InvocationTargetException invocation &amp;&amp; invocation.getCause() != null) {</span>
+<span class="nc" id="L271">			current= invocation.getCause();</span>
 		}
-<span class="nc" id="L269">		String message= current.getMessage();</span>
-<span class="nc bnc" id="L270" title="All 4 branches missed.">		return message == null || message.isBlank() ? current.getClass().getSimpleName() : message;</span>
+<span class="nc" id="L273">		String message= current.getMessage();</span>
+<span class="nc bnc" id="L274" title="All 4 branches missed.">		return message == null || message.isBlank() ? current.getClass().getSimpleName() : message;</span>
 	}
 
 	private static List&lt;String&gt; stringList(Object value) {
-<span class="nc bnc" id="L274" title="All 2 branches missed.">		if (!(value instanceof List&lt;?&gt; list)) {</span>
-<span class="nc" id="L275">			return List.of();</span>
+<span class="nc bnc" id="L278" title="All 2 branches missed.">		if (!(value instanceof List&lt;?&gt; list)) {</span>
+<span class="nc" id="L279">			return List.of();</span>
 		}
-<span class="nc" id="L277">		return list.stream().filter(String.class::isInstance).map(String.class::cast).toList();</span>
+<span class="nc" id="L281">		return list.stream().filter(String.class::isInstance).map(String.class::cast).toList();</span>
 	}
 
 	private static &lt;T&gt; T invoke(Change change, String methodName, Class&lt;T&gt; expectedType)
 			throws ReflectiveOperationException {
-<span class="nc" id="L282">		Method method= change.getClass().getMethod(methodName);</span>
-<span class="nc" id="L283">		Object value= method.invoke(change);</span>
-<span class="nc" id="L284">		return expectedType.cast(value);</span>
+<span class="nc" id="L286">		Method method= change.getClass().getMethod(methodName);</span>
+<span class="nc" id="L287">		Object value= method.invoke(change);</span>
+<span class="nc" id="L288">		return expectedType.cast(value);</span>
 	}
 
 	private record CandidatePreview(String name, String description, List&lt;String&gt; details,
 			List&lt;FilePreview&gt; files) {
-<span class="nc" id="L289">		CandidatePreview {</span>
-<span class="nc bnc" id="L290" title="All 2 branches missed.">			name= name == null ? &quot;&quot; : name; //$NON-NLS-1$</span>
-<span class="nc bnc" id="L291" title="All 2 branches missed.">			description= description == null ? &quot;&quot; : description; //$NON-NLS-1$</span>
-<span class="nc bnc" id="L292" title="All 2 branches missed.">			details= details == null ? List.of() : details;</span>
-<span class="nc bnc" id="L293" title="All 2 branches missed.">			files= files == null ? List.of() : files;</span>
-<span class="nc" id="L294">		}</span>
+<span class="nc" id="L293">		CandidatePreview {</span>
+<span class="nc bnc" id="L294" title="All 2 branches missed.">			name= name == null ? &quot;&quot; : name; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L295" title="All 2 branches missed.">			description= description == null ? &quot;&quot; : description; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L296" title="All 2 branches missed.">			details= details == null ? List.of() : details;</span>
+<span class="nc bnc" id="L297" title="All 2 branches missed.">			files= files == null ? List.of() : files;</span>
+<span class="nc" id="L298">		}</span>
 	}
 
 	private record FilePreview(String label, String originalContent, String refactoredContent,
@@ -302,16 +306,16 @@ import org.eclipse.ltk.ui.refactoring.IChangePreviewViewer;
 		private final CompareConfiguration configuration;
 
 		AdaptableViewForm(Composite parent, CompareConfiguration configuration) {
-<span class="nc" id="L305">			super(parent, SWT.NONE);</span>
-<span class="nc" id="L306">			this.configuration= configuration;</span>
-<span class="nc" id="L307">		}</span>
+<span class="nc" id="L309">			super(parent, SWT.NONE);</span>
+<span class="nc" id="L310">			this.configuration= configuration;</span>
+<span class="nc" id="L311">		}</span>
 
 		@Override
 		public &lt;T&gt; T getAdapter(Class&lt;T&gt; adapter) {
-<span class="nc bnc" id="L311" title="All 2 branches missed.">			if (CompareConfiguration.class.equals(adapter)) {</span>
-<span class="nc" id="L312">				return adapter.cast(configuration);</span>
+<span class="nc bnc" id="L315" title="All 2 branches missed.">			if (CompareConfiguration.class.equals(adapter)) {</span>
+<span class="nc" id="L316">				return adapter.cast(configuration);</span>
 			}
-<span class="nc" id="L314">			return null;</span>
+<span class="nc" id="L318">			return null;</span>
 		}
 	}
 
@@ -319,24 +323,24 @@ import org.eclipse.ltk.ui.refactoring.IChangePreviewViewer;
 		private final CompareConfiguration configuration;
 
 		ComparePreviewer(Composite parent, CompareConfiguration configuration) {
-<span class="nc" id="L322">			super(parent, SWT.BORDER | SWT.FLAT, true);</span>
-<span class="nc" id="L323">			this.configuration= configuration;</span>
-<span class="nc" id="L324">		}</span>
+<span class="nc" id="L326">			super(parent, SWT.BORDER | SWT.FLAT, true);</span>
+<span class="nc" id="L327">			this.configuration= configuration;</span>
+<span class="nc" id="L328">		}</span>
 
 		@Override
 		protected Viewer getViewer(Viewer oldViewer, Object input) {
-<span class="nc" id="L328">			return CompareUI.findContentViewer(oldViewer, (ICompareInput) input, this, configuration);</span>
+<span class="nc" id="L332">			return CompareUI.findContentViewer(oldViewer, (ICompareInput) input, this, configuration);</span>
 		}
 
 		void setPreview(FilePreview preview) {
-<span class="nc bnc" id="L332" title="All 2 branches missed.">			if (preview == null) {</span>
-<span class="nc" id="L333">				setInput(null);</span>
-<span class="nc" id="L334">				return;</span>
+<span class="nc bnc" id="L336" title="All 2 branches missed.">			if (preview == null) {</span>
+<span class="nc" id="L337">				setInput(null);</span>
+<span class="nc" id="L338">				return;</span>
 			}
-<span class="nc" id="L336">			setInput(new DiffNode(</span>
-<span class="nc" id="L337">					new CompareElement(preview.refactoredContent(), preview.type(), preview.resource()),</span>
-<span class="nc" id="L338">					new CompareElement(preview.originalContent(), preview.type(), preview.resource())));</span>
-<span class="nc" id="L339">		}</span>
+<span class="nc" id="L340">			setInput(new DiffNode(</span>
+<span class="nc" id="L341">					new CompareElement(preview.refactoredContent(), preview.type(), preview.resource()),</span>
+<span class="nc" id="L342">					new CompareElement(preview.originalContent(), preview.type(), preview.resource())));</span>
+<span class="nc" id="L343">		}</span>
 	}
 
 	private static final class CompareElement
@@ -345,40 +349,40 @@ import org.eclipse.ltk.ui.refactoring.IChangePreviewViewer;
 		private final String type;
 		private final IResource resource;
 
-<span class="nc" id="L348">		CompareElement(String content, String type, IResource resource) {</span>
-<span class="nc" id="L349">			this.content= content;</span>
-<span class="nc" id="L350">			this.type= type;</span>
-<span class="nc" id="L351">			this.resource= resource;</span>
-<span class="nc" id="L352">		}</span>
+<span class="nc" id="L352">		CompareElement(String content, String type, IResource resource) {</span>
+<span class="nc" id="L353">			this.content= content;</span>
+<span class="nc" id="L354">			this.type= type;</span>
+<span class="nc" id="L355">			this.resource= resource;</span>
+<span class="nc" id="L356">		}</span>
 
 		@Override
 		public String getName() {
-<span class="nc" id="L356">			return &quot;Source&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L360">			return &quot;Source&quot;; //$NON-NLS-1$</span>
 		}
 
 		@Override
 		public Image getImage() {
-<span class="nc" id="L361">			return null;</span>
+<span class="nc" id="L365">			return null;</span>
 		}
 
 		@Override
 		public String getType() {
-<span class="nc" id="L366">			return type;</span>
+<span class="nc" id="L370">			return type;</span>
 		}
 
 		@Override
 		public InputStream getContents() {
-<span class="nc" id="L371">			return new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));</span>
+<span class="nc" id="L375">			return new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));</span>
 		}
 
 		@Override
 		public String getCharset() {
-<span class="nc" id="L376">			return StandardCharsets.UTF_8.name();</span>
+<span class="nc" id="L380">			return StandardCharsets.UTF_8.name();</span>
 		}
 
 		@Override
 		public IResource getResource() {
-<span class="nc" id="L381">			return resource;</span>
+<span class="nc" id="L385">			return resource;</span>
 		}
 	}
 }
