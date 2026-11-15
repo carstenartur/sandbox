@@ -140,62 +140,17 @@ public final class PublicWorkbenchProbe implements IStartup {
                 java.util.concurrent.CountDownLatch updated=new java.util.concurrent.CountDownLatch(1);
                 try (var update = new MavenUpdateWitness(updated)) {
                     String updateCommand = "org.eclipse.m2e.core.ui.command.updateProject";
-                    // Project Explorer can nest imported modules below their containing project.
-                    var mavenProject = root.getProject("sandbox");
-                    require(mavenProject.hasNature("org.eclipse.m2e.core.maven2Nature"), "No Maven nature on selection");
-                    var requested = new java.util.concurrent.atomic.AtomicBoolean();
-                    var lastSelection = new java.util.concurrent.atomic.AtomicReference<>("");
                     awaitUi(() -> {
                         var activeWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
-                        if (activeWindow == null) return false;
+                        if (activeWindow == null || activeWindow.getActivePage() == null) return false;
                         var page = activeWindow.getActivePage();
-                        if (page == null) return false;
                         var explorer = page.showView(IPageLayout.ID_PROJECT_EXPLORER);
-                        if (!requested.get()) {
-                            page.activate(explorer);
-                            explorer.setFocus();
-                            ((org.eclipse.ui.part.ISetSelectionTarget) explorer).selectReveal(
-                                    new org.eclipse.jface.viewers.StructuredSelection(mavenProject));
-                            requested.set(true);
-                        }
-                        String treeState = "";
-                        if (explorer.getSite().getSelectionProvider() instanceof org.eclipse.jface.viewers.TreeViewer viewer) {
-                            Tree tree = viewer.getTree();
-                            TreeItem target = findProjectItem(tree, tree.getItems(), mavenProject);
-                            treeState = " roots=" + Arrays.stream(tree.getItems()).limit(16).map(TreeItem::getText).toList()
-                                    + " matched=" + (target == null ? "<none>" : target.getText());
-                            if (target != null) {
-                                tree.setFocus();
-                                tree.showItem(target);
-                                viewer.setSelection(new org.eclipse.jface.viewers.StructuredSelection(target.getData()), true);
-                                tree.setSelection(target);
-                                Event event = new Event();
-                                event.item = target;
-                                tree.notifyListeners(SWT.Selection, event);
-                            }
-                        }
-                        var active = activeWindow.getSelectionService().getSelection();
-                        Object element = active instanceof org.eclipse.jface.viewers.IStructuredSelection selected
-                                ? selected.getFirstElement() : null;
-                        var selectedResource = element == null ? null : org.eclipse.core.runtime.Adapters.adapt(element, IResource.class);
-                        if (selectedResource == null && element instanceof org.eclipse.jdt.core.IJavaElement javaElement) {
-                            selectedResource = javaElement.getResource();
-                        }
-                        var view = page.getActivePart();
-                        String viewId = view == null ? "<none>" : view.getSite().getId();
-                        var command = activeWindow.getService(org.eclipse.ui.commands.ICommandService.class)
+                        page.activate(explorer);
+                        explorer.setFocus();
+                        var realCommand = activeWindow.getService(org.eclipse.ui.commands.ICommandService.class)
                                 .getCommand(updateCommand);
-                        String observed = viewId + " selection=" + (element == null ? "<empty>" : element.getClass().getName())
-                                + " resource=" + (selectedResource == null ? "<none>" : selectedResource.getFullPath())
-                                + " command-enabled=" + command.isEnabled() + treeState;
-                        if (!observed.equals(lastSelection.getAndSet(observed))) {
-                            Files.writeString(evidence.resolve("maven-selection.txt"), observed + "\n");
-                        }
-                        if (!IPageLayout.ID_PROJECT_EXPLORER.equals(viewId) || !mavenProject.equals(selectedResource)
-                                || !command.isEnabled()) return false;
-                        screenshot("maven-project-selection");
-                        return true;
-                    }, "existing Maven project selected in active Project Explorer", 2);
+                        return page.getActivePart() == explorer && realCommand.isEnabled();
+                    }, "enabled workspace Maven Update Project command", 2);
                     command(updateCommand);
                     awaitUi(() -> {
                         Shell active=display.getActiveShell();
@@ -204,8 +159,12 @@ public final class PublicWorkbenchProbe implements IStartup {
                         Button select=buttons.stream().filter(b -> b.getText().replace("&","").equals("Select All")).findFirst().orElse(null);
                         Button ok=buttons.stream().filter(b -> b.getText().equals("OK")).findFirst().orElse(null);
                         if(select==null || ok==null) return false;
-                        press(select); screenshot("maven-all-projects"); press(ok); return true;
-                    }, "normal Maven > Update Project dialog");
+                        press(select);
+                        verifyUpdateProjectSelection(active);
+                        screenshot("maven-all-projects");
+                        press(ok);
+                        return true;
+                    }, "normal Maven > Update Project dialog", 3);
                     require(updated.await(55, TimeUnit.MINUTES), "m2e UpdateMavenProjectJob did not complete");
                     require(update.result != null && update.result.isOK(), "m2e update failed: "+update.result);
                 }
@@ -254,6 +213,30 @@ public final class PublicWorkbenchProbe implements IStartup {
             catch(Exception ignored) { failure.printStackTrace(); }
             Runtime.getRuntime().halt(71);
         }
+    }
+
+    private void verifyUpdateProjectSelection(Shell dialog) throws Exception {
+        Set<String> expectedProjects = new TreeSet<>();
+        for (var project : ResourcesPlugin.getWorkspace().getRoot().getProjects()) {
+            if (project.isAccessible() && project.hasNature("org.eclipse.m2e.core.maven2Nature")) {
+                expectedProjects.add(project.getName());
+            }
+        }
+        List<Tree> trees = new ArrayList<>();
+        collect(dialog, Tree.class, trees);
+        Tree tree = trees.stream().filter(widget -> (widget.getStyle() & SWT.CHECK) != 0).findFirst().orElseThrow();
+        Set<String> checked = new TreeSet<>();
+        var pending = new java.util.ArrayDeque<TreeItem>(List.of(tree.getItems()));
+        while (!pending.isEmpty()) {
+            TreeItem node = pending.removeFirst();
+            if (node.getData() instanceof org.eclipse.core.resources.IProject project && node.getChecked()) {
+                checked.add(project.getName());
+            }
+            pending.addAll(List.of(node.getItems()));
+        }
+        Files.write(evidence.resolve("maven-update-expected-projects.txt"), expectedProjects);
+        Files.write(evidence.resolve("maven-update-checked-projects.txt"), checked);
+        require(!checked.isEmpty() && checked.equals(expectedProjects), "Update Maven Project selection differs from the workspace");
     }
 
     private void checkOomphStatus(StyledText log, String trigger) throws Exception {
@@ -339,29 +322,6 @@ public final class PublicWorkbenchProbe implements IStartup {
             display.syncExec(result); return result.get();
         },name,minutes);
     }
-    private static TreeItem findProjectItem(Tree tree, TreeItem[] items, org.eclipse.core.resources.IProject project) {
-        for (TreeItem item : items) {
-            Object data = item.getData();
-            if (data == null) continue;
-            IResource resource = org.eclipse.core.runtime.Adapters.adapt(data, IResource.class);
-            if (resource == null && data instanceof org.eclipse.jdt.core.IJavaElement javaElement) {
-                resource = javaElement.getResource();
-            }
-            if (project.equals(resource)) return item;
-            if (data instanceof org.eclipse.ui.IWorkingSet || data instanceof org.eclipse.core.resources.IWorkspaceRoot) {
-                if (!item.getExpanded()) {
-                    item.setExpanded(true);
-                    Event event = new Event();
-                    event.item = item;
-                    tree.notifyListeners(SWT.Expand, event);
-                }
-                TreeItem found = findProjectItem(tree, item.getItems(), project);
-                if (found != null) return found;
-            }
-        }
-        return null;
-    }
-
     private static TreeItem treeItem(Tree tree,TreeItem[] items,String text) {
         for(TreeItem item:items) {
             if(item.getText().contains(text)) return item;
