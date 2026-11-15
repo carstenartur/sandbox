@@ -1,0 +1,73 @@
+name: Public Eclipse Installer
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/public-epp-installer.yml'
+      - 'sandbox_oomph/src/test/java/org/sandbox/oomph/PublicEppInstallerTest.java'
+      - 'sandbox_oomph/src/test/resources/probe/Public*.java'
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/public-epp-installer.yml'
+      - 'sandbox_oomph/src/test/java/org/sandbox/oomph/PublicEppInstallerTest.java'
+      - 'sandbox_oomph/src/test/resources/probe/Public*.java'
+      - 'sandbox_oomph/sandboxproject.setup'
+      - 'sandbox_extra_search_test/.project'
+      - 'sandbox_extra_search_test/.classpath'
+      - 'sandbox_extra_search_test/pom.xml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-epp-installer-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  public-epp:
+    name: Public Java IDE installer and workspace
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          java-version: '25'
+          distribution: temurin
+          cache: maven
+      - uses: ./.github/actions/verify-eclipse-desktop-runtime
+      - name: Provide the SWT browser
+        run: |
+          if ! dpkg-query -W -f='${Status}' libwebkit2gtk-4.1-0 2>/dev/null | grep -q 'install ok installed'; then
+            sudo apt-get update
+            sudo apt-get install --yes --no-install-recommends libwebkit2gtk-4.1-0
+          fi
+      - name: Run the public installer on the normal main stream
+        run: |
+          set -eu
+          expected_main=$(git ls-remote --exit-code https://github.com/carstenartur/sandbox.git refs/heads/main | cut -f1)
+          xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" \
+            ./mvnw --batch-mode --no-transfer-progress -f sandbox_oomph/pom.xml \
+              -Dtest=PublicEppInstallerTest -Doomph.public.epp=true \
+              -Doomph.public.commit="$expected_main" test
+      - name: Upload native installer and workspace evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: public-epp-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            sandbox_oomph/target/surefire-reports/**
+            sandbox_oomph/target/public-epp/*.png
+            sandbox_oomph/target/public-epp/*.log
+            sandbox_oomph/target/public-epp/*.txt
+            sandbox_oomph/target/public-epp/*.sha512
+            sandbox_oomph/target/public-epp/*.ok
+            sandbox_oomph/target/public-epp/*.failed
+            sandbox_oomph/target/public-epp/installer-complete
+            sandbox_oomph/target/public-epp/user-home/**/.metadata/.log
+            sandbox_oomph/target/public-epp/user-home/**/org.eclipse.oomph.setup/setup.log
+          include-hidden-files: true
+          retention-days: 14
