@@ -40,8 +40,6 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.Modifier;
-import org.eclipse.jdt.core.dom.NodeFinder;
-import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.refactoring.CompilationUnitChange;
 import org.eclipse.jdt.internal.corext.refactoring.code.ExtractMethodRefactoring;
@@ -71,14 +69,14 @@ public final class RepeatedCodeSequenceExtractor {
 			int start, int length, int statementCount, String coarseShape) {
 	}
 
-	private record PreparedExtraction(ExtractMethodRefactoring refactoring, String ownerKey,
+	private record PreparedExtraction(ExtractMethodRefactoring refactoring, String ownerName,
 			int score, int statementCount, int duplicateCount, int sourceOffset) {
 
 		ICleanUpFix toCleanUpFix() {
 			return monitor -> {
 				SubMonitor progress= SubMonitor.convert(monitor, 3);
 				CompilationUnitChange change= extract(refactoring, progress.split(1));
-				if (ownerKey != null && canMakeGeneratedMethodStatic(change, ownerKey,
+				if (ownerName != null && canMakeGeneratedMethodStatic(change, ownerName,
 						refactoring.getMethodName(), progress.split(1))) {
 					// Extract Method uses this modifier mask to build the declaration and calculate type parameters.
 					refactoring.setVisibility(Modifier.PRIVATE | Modifier.STATIC);
@@ -102,7 +100,7 @@ public final class RepeatedCodeSequenceExtractor {
 		throw new CoreException(Status.error("Extract Method did not produce a compilation-unit change.")); //$NON-NLS-1$
 	}
 
-	private static boolean canMakeGeneratedMethodStatic(CompilationUnitChange change, String ownerKey,
+	private static boolean canMakeGeneratedMethodStatic(CompilationUnitChange change, String ownerName,
 			String methodName, IProgressMonitor monitor) throws CoreException {
 		ICompilationUnit unit= change.getCompilationUnit();
 		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
@@ -111,6 +109,7 @@ public final class RepeatedCodeSequenceExtractor {
 		parser.setSource(change.getPreviewContent(monitor).toCharArray());
 		var options= unit.getOptions(true);
 		options.put(JavaCore.COMPILER_PB_MISSING_STATIC_ON_METHOD, JavaCore.WARNING);
+		options.put(JavaCore.COMPILER_PB_POTENTIALLY_MISSING_STATIC_ON_METHOD, JavaCore.WARNING);
 		parser.setCompilerOptions(options);
 		parser.setResolveBindings(true);
 		CompilationUnit preview= (CompilationUnit) parser.createAST(monitor);
@@ -118,11 +117,10 @@ public final class RepeatedCodeSequenceExtractor {
 			if (problem.getID() != IProblem.MethodCanBeStatic) {
 				continue;
 			}
-			int start= problem.getSourceStart();
-			ASTNode node= NodeFinder.perform(preview, start, problem.getSourceEnd() - start + 1);
-			if (node instanceof SimpleName name && methodName.equals(name.getIdentifier())
-					&& name.getParent() instanceof MethodDeclaration method && name == method.getName()
-					&& method.resolveBinding() != null && ownerKey.equals(method.resolveBinding().getDeclaringClass().getKey())) {
+			// The diagnostic arguments
+			// identify the declaration; the allocator guarantees a fresh name in this type.
+			String[] arguments= problem.getArguments();
+			if (arguments.length >= 2 && ownerName.equals(arguments[0]) && methodName.equals(arguments[1])) {
 				return true;
 			}
 		}
@@ -273,8 +271,8 @@ public final class RepeatedCodeSequenceExtractor {
 		int duplicateCount= refactoring.getNumberOfDuplicates();
 		int score= Math.multiplyExact(candidate.statementCount(), duplicateCount);
 		ITypeBinding owner= candidate.enclosingType().resolveBinding();
-		String ownerKey= owner == null || owner.isInterface() ? null : owner.getKey();
-		return new PreparedExtraction(refactoring, ownerKey, score, candidate.statementCount(),
+		String ownerName= owner == null || owner.isInterface() ? null : owner.getErasure().getQualifiedName();
+		return new PreparedExtraction(refactoring, ownerName, score, candidate.statementCount(),
 				duplicateCount, candidate.start());
 	}
 

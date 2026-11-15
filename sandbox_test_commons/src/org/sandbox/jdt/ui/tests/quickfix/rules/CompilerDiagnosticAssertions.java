@@ -67,10 +67,13 @@ public final class CompilerDiagnosticAssertions {
 			return null;
 		}
 		ASTNode node= NodeFinder.perform(root, start, problem.getSourceEnd() - start + 1);
-		while (node != null && !(node instanceof MethodDeclaration)) {
+		while (node != null) {
+			if (node instanceof MethodDeclaration method) {
+				return method.resolveBinding();
+			}
 			node= node.getParent();
 		}
-		return node instanceof MethodDeclaration method ? method.resolveBinding() : null;
+		return null;
 	}
 
 	private static boolean hasUniqueMethodName(CompilationUnit root, IProblem problem) {
