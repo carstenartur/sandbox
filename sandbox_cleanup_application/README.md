@@ -200,13 +200,18 @@ to other tests. A bundle's existing `additional.bundles` entry in
 
 To verify the deployed suite independently, run the normal Tycho
 `CleanupPatchLifecycleTest` with `SANDBOX_PDE_SUITE_REPLAY` pointing to a new
-empty directory. Then run `python3 qa/pde-suite/verify.py /path/to/capture` with
-the same Java 21+ and Maven/Tycho 5.0.4 environment. Extra Maven settings such
-as `-s /path/to/settings.xml` and `-Dmaven.repo.local=/path/to/cache` can
-follow the capture path. An optional `--repository file:///path/to/p2` selects
-a local p2 mirror for the exported target. The two reactors compile the actual
-source and manifest, package the declared feature, execute `AllTests` on the
-old and new engines, and check the ordered successful test identities.
+empty directory. From the Sandbox checkout run the independent JUnit replay:
+```sh
+./mvnw -f qa/pde-suite/verify.xml -Dpde.capture=/absolute/path/to/capture verify
+```
+The replay needs Java 21+ and uses Tycho 5.0.4. Set
+`-Dpde.repository=file:///path/to/p2` to use a local mirror for the captured
+target. To supply Maven settings or a local repository to both nested Tycho
+builds, set `MAVEN_ARGS` before running the replay (for example,
+`MAVEN_ARGS="-s /absolute/path/to/settings.xml -Dmaven.repo.local=/absolute/path/to/cache"`).
+The two reactors compile the exported Java source and manifests with warnings
+as errors, package the feature, launch `AllTests` on each engine, and check
+that each launch executes exactly `probe.ExampleTest#adds` successfully.
 
 A patch spanning sibling projects uses paths relative to the common containing
 directory. Apply that patch from this directory. A single-project patch remains
