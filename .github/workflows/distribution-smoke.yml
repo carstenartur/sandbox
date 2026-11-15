@@ -113,6 +113,11 @@ jobs:
             command=(xvfb-run --auto-servernum "${command[@]}")
           fi
           log="$RUNNER_TEMP/sandbox-distribution-maven.log"
+          # A stalled Maven reactor scan previously left no JVM evidence at the job timeout.
+          (sleep 600; bash .github/scripts/capture-maven-reactor-scan.sh "$log" \
+            target/distribution-verification/reactor-threads.log) > "$RUNNER_TEMP/maven-scan-watch.log" 2>&1 &
+          scan_watch=$!
+          trap 'kill "$scan_watch" 2>/dev/null || :' EXIT
           "${command[@]}" 2>&1 | tee "$log" || status=$?
           mkdir -p target/distribution-verification
           cp "$log" target/distribution-verification/maven.log
