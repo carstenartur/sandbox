@@ -13,11 +13,19 @@
  *******************************************************************************/
 package org.eclipse.jdt.ui.tests.quickfix.Java22;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.Hashtable;
+import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import org.eclipse.jdt.testplugin.TestOptions;
 
@@ -26,10 +34,17 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.ui.cleanup.CleanUpContext;
+import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants;
 
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
+import org.sandbox.jdt.internal.ui.fix.IntToEnumCleanUpCore;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
+import org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 
 /**
@@ -241,12 +256,17 @@ public class IntToEnumCleanUpTest {
 		String expected = "package test1;\n"
 				+ "\n"
 				+ "public class E3 {\n"
+				+ "    /**\n"
+				+ "     * Values accepted by the status switch.\n"
+				+ "     */\n"
 				+ "    public enum Status {\n"
 				+ "\t\tPENDING, APPROVED, REJECTED\n"
 				+ "\t}\n"
 				+ "\n"
 				+ "\tpublic void process(Status status) {\n"
 				+ "        switch (status) {\n"
+				+ "        default:\n"
+				+ "            break;\n"
 				+ "        case PENDING:\n"
 				+ "            System.out.println(\"Pending\");\n"
 				+ "            break;\n"
@@ -260,6 +280,63 @@ public class IntToEnumCleanUpTest {
 				+ "    }\n"
 				+ "}\n";
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+	}
+
+
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	public void preservesArrowSwitchFallbackAndConstantDocumentation(boolean explicitDefault) throws CoreException {
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+		String source = """
+				package test1;
+				public class E {
+					/** A pending item. */
+					public static final int STATUS_PENDING = 0;
+					public static final int STATUS_DONE = 1;
+					public void process(int status) {
+						switch (status) {
+						case STATUS_PENDING -> System.out.println("pending");
+						case STATUS_DONE -> System.out.println("done");
+						%s
+						}
+					}
+				}
+				""".replace("%s", explicitDefault ? "default -> System.out.println(0);" : "");
+		ICompilationUnit unit = pack.createCompilationUnit("E.java", source, false, null);
+		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
+		parser.setSource(unit);
+		parser.setResolveBindings(true);
+		var cleanup = new IntToEnumCleanUpCore(Map.of(MYCleanUpConstants.INT_TO_ENUM_CLEANUP, CleanUpOptions.TRUE));
+		var units = new ICompilationUnit[] { unit };
+		assertFalse(cleanup.checkPreConditions(context.getJavaProject(), units, null).hasError());
+		var fix = cleanup.createFix(new CleanUpContext(unit, (CompilationUnit) parser.createAST(null)));
+		assertNotNull(fix);
+		var change = fix.createChange(null);
+		var diagnostics = CompilerDiagnosticAssertions.capture(units);
+		try {
+			var undo = change.perform(null);
+			try {
+				diagnostics.assertNoNewDiagnostics();
+				String result = unit.getSource();
+				assertTrue(result.contains("Values accepted by the status switch."), result);
+				assertTrue(result.contains("A pending item."), result);
+				assertTrue(result.contains("public enum Status"), result);
+				assertTrue(result.contains("case PENDING ->"), result);
+				assertEquals(1, result.split("default\\s*->", -1).length - 1, result);
+				if (explicitDefault) {
+					assertTrue(result.contains("default -> System.out.println(0);"), result);
+				} else {
+					assertTrue(result.contains("/* No matching constant. */"), result);
+				}
+			} finally {
+				undo.perform(null).dispose();
+				undo.dispose();
+			}
+			diagnostics.assertRestored();
+			assertEquals(source, unit.getSource());
+		} finally {
+			change.dispose();
+		}
 	}
 
 	@Test
