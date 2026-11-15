@@ -6,6 +6,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
@@ -16,6 +18,10 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.launching.JavaRuntime;
+import org.eclipse.oomph.setup.Installation;
+import org.eclipse.oomph.setup.Workspace;
+import org.eclipse.oomph.setup.internal.core.SetupContext;
+import org.eclipse.oomph.setup.internal.core.util.SetupCoreUtil;
 import org.eclipse.pde.core.target.ITargetPlatformService;
 import org.eclipse.pde.internal.core.PluginModelManager;
 import org.eclipse.swt.SWT;
@@ -65,6 +71,7 @@ public final class PublicWorkbenchProbe implements IStartup {
                 awaitUi(() -> {
                     var log = key(StyledText.class, "log");
                     if (log == null) return false;
+                    checkOomphStatus(log, "startup");
                     Button dismiss = key(Button.class, "dismiss");
                     if (dismiss != null && dismiss.getSelection()) { dismiss.setSelection(false); press(dismiss); }
                     Button finish = key(Button.class, "finish");
@@ -84,14 +91,16 @@ public final class PublicWorkbenchProbe implements IStartup {
             var launcher=Path.of(System.getProperty("eclipse.launcher")).toRealPath();
             var expectedLauncher=Path.of(System.getProperty("sandbox.public.launcher")).toRealPath();
             require(launcher.equals(expectedLauncher),"Wrong installed Eclipse executable: "+launcher);
-            var publicModel=org.eclipse.oomph.setup.internal.core.SetupContext.createInstallationWorkspaceAndUser(
-                    org.eclipse.oomph.setup.internal.core.util.SetupCoreUtil.createResourceSet());
-            var chosen=publicModel.getWorkspace().getStreams();
+            var models = SetupCoreUtil.createResourceSet();
+            // Demand-load the actual BOOTSTRAP files. Empty in-memory resources cannot prove the chosen stream.
+            var workspaceModel = (Workspace) models.getResource(SetupContext.WORKSPACE_SETUP_URI, true).getContents().getFirst();
+            var installationModel = (Installation) models.getResource(SetupContext.INSTALLATION_SETUP_URI, true).getContents().getFirst();
+            var chosen=workspaceModel.getStreams();
             String publicEntry="https://raw.githubusercontent.com/carstenartur/sandbox/main/sandbox_oomph/sandboxproject.setup";
             require(chosen.size()==1 && !chosen.getFirst().eIsProxy() && "main".equals(chosen.getFirst().getName())
                     && publicEntry.equals(chosen.getFirst().eResource().getURI().toString()),
                     "Unexpected stream in installed workspace: "+chosen);
-            var pv=publicModel.getInstallation().getProductVersion();
+            var pv=installationModel.getProductVersion();
             require(pv!=null && !pv.eIsProxy() && pv.getLabel().contains("2026-09"),"Wrong installed EPP product model: "+pv);
             Files.writeString(evidence.resolve(phase+"-identity.txt"),launcher+"\n"+pv.eResource().getURI()+" "+pv.getLabel()
                     +"\n"+chosen.getFirst().eResource().getURI()+" "+chosen.getFirst().getName()+"\n");
@@ -119,6 +128,7 @@ public final class PublicWorkbenchProbe implements IStartup {
                 awaitUi(() -> {
                     var log=key(StyledText.class,"log");
                     if(log==null) return false;
+                    checkOomphStatus(log, "manual");
                     var dismiss=key(Button.class,"dismiss");
                     if (dismiss!=null && dismiss.getSelection()) { dismiss.setSelection(false); press(dismiss); }
                     Button finish=key(Button.class,"finish");
@@ -182,6 +192,7 @@ public final class PublicWorkbenchProbe implements IStartup {
             require(expected.equals(git(clone,"rev-parse","HEAD")), "Public clone did not resolve expected main "+expected);
             require("https://github.com/carstenartur/sandbox.git".equals(git(clone,"remote","get-url","origin")),"Unexpected public Git origin");
             settle();
+            verifyInventory(Path.of(git(clone, "rev-parse", "--show-toplevel")));
             var errors = new ArrayList<String>();
             for (var marker: root.findMarkers(IMarker.PROBLEM,true,IResource.DEPTH_INFINITE)) {
                 if(marker.getAttribute(IMarker.SEVERITY,0)==IMarker.SEVERITY_ERROR)
@@ -202,6 +213,43 @@ public final class PublicWorkbenchProbe implements IStartup {
             catch(Exception ignored) { failure.printStackTrace(); }
             Runtime.getRuntime().halt(71);
         }
+    }
+
+    private void checkOomphStatus(StyledText log, String trigger) throws Exception {
+        if (log.getShell().getData("org.eclipse.oomph.setup.status") instanceof IStatus status
+                && status.matches(IStatus.ERROR | IStatus.CANCEL)) {
+            Files.writeString(evidence.resolve(trigger + "-tasks.log"), log.getText());
+            throw new IllegalStateException("Oomph " + trigger + " failed: " + status);
+        }
+    }
+
+    private void verifyInventory(Path clone) throws Exception {
+        var workspace = ResourcesPlugin.getWorkspace();
+        Set<String> expectedProjects = new TreeSet<>();
+        String descriptions = git(clone, "ls-files", "--", ".project", ":(glob)**/.project");
+        for (String path : descriptions.lines().toList()) {
+            if (path.startsWith(".github/")) continue; // excluded by the public project source locator
+            String xml = git(clone, "show", "HEAD:" + path);
+            try (var input = new java.io.ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8))) {
+                expectedProjects.add(workspace.loadProjectDescription(input).getName());
+            }
+        }
+        // The Maven import also creates these projects with no committed Eclipse descriptor.
+        for (String project : List.of("sandbox_distribution_verify", "sandbox_extra_search_help", "sandbox_oomph")) {
+            require(Files.isRegularFile(clone.resolve(project).resolve("pom.xml")), "Missing Maven project " + project);
+            expectedProjects.add(project);
+        }
+        Set<String> actual = new TreeSet<>();
+        for (var project : workspace.getRoot().getProjects()) {
+            actual.add(project.getName() + (project.isOpen() ? "" : " [closed]"));
+        }
+        Files.write(evidence.resolve(phase + "-expected-projects.txt"), expectedProjects);
+        Files.write(evidence.resolve(phase + "-projects.txt"), actual);
+        Set<String> missing = new TreeSet<>(expectedProjects);
+        missing.removeAll(actual);
+        Set<String> extra = new TreeSet<>(actual);
+        extra.removeAll(expectedProjects);
+        require(missing.isEmpty() && extra.isEmpty(), "Workspace project inventory: missing=" + missing + " extra=" + extra);
     }
 
     private static String git(Path clone,String... args) throws Exception {

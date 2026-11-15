@@ -155,7 +155,18 @@ public final class PublicInstallerUi {
                     }
                 }
             }
-            if (widget(Composite.class, "progress") == null || widget(StyledText.class, "log") == null) return false;
+            StyledText progressLog = widget(StyledText.class, "log");
+            if (widget(Composite.class, "progress") == null || progressLog == null) return false;
+            Object status = progressLog.getShell().getData("org.eclipse.oomph.setup.status");
+            if (status != null) {
+                Class<?> type = Class.forName("org.eclipse.core.runtime.IStatus", false, status.getClass().getClassLoader());
+                int severity = (int) type.getMethod("getSeverity").invoke(status);
+                if (severity >= 4) {
+                    capture("bootstrap-failure");
+                    Files.writeString(evidence.resolve("bootstrap.log"), progressLog.getText());
+                    throw new IllegalStateException("Oomph BOOTSTRAP failed: " + status + "\n" + progressLog.getText());
+                }
+            }
             if (active != null && active.getParent() instanceof Shell && active != widget(StyledText.class, "log").getShell()) {
                 capture("unexpected-bootstrap-dialog");
                 List<Button> buttons = new ArrayList<>();
