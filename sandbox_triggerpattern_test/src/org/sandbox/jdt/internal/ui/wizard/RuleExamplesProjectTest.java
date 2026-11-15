@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.InvocationTargetException;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -122,7 +123,7 @@ class RuleExamplesProjectTest {
 		HintFileCreation.create(project, name, rule, suite, new NullProgressMonitor());
 		var hint = project.getFile(name);
 		Path file = Files.writeString(classes.resolve("RuleRegressionTest.java"),
-				RuleRegressionTestSource.forHint(hint.getFullPath().toPortableString()));
+				RuleRegressionTestSource.forHint(hint.getFullPath().toPortableString()), StandardCharsets.UTF_8);
 		compile(file);
 		try (var loader = new URLClassLoader(new java.net.URL[] { classes.toUri().toURL() }, getClass().getClassLoader())) {
 			var test = loader.loadClass("RuleRegressionTest");
@@ -143,7 +144,8 @@ class RuleExamplesProjectTest {
 	@Test
 	void plannerScaffoldCompilesAndWithholdsAuthorization(@TempDir Path classes) throws Exception {
 		String contract = "strict-\"contract";
-		Path file = Files.writeString(classes.resolve("ProjectInspector.java"), PlanInspectionDialog.scaffold(contract));
+		Path file = Files.writeString(classes.resolve("ProjectInspector.java"), PlanInspectionDialog.scaffold(contract),
+				StandardCharsets.UTF_8);
 		compile(file);
 		try (var loader = new URLClassLoader(new java.net.URL[] { classes.toUri().toURL() }, getClass().getClassLoader())) {
 			Class<?> type = loader.loadClass("ProjectInspector");
