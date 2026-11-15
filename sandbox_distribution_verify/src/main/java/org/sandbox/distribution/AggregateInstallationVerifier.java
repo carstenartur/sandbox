@@ -10,6 +10,7 @@ import static org.sandbox.distribution.AggregateInstallationEvidence.fileName;
 import static org.sandbox.distribution.AggregateInstallationEvidence.require;
 import static org.sandbox.distribution.AggregateInstallationEvidence.xml;
 
+import java.io.EOFException;
 import java.io.InputStream;
 import java.io.IOException;
 import java.net.HttpRetryException;
@@ -1166,7 +1167,7 @@ public final class AggregateInstallationVerifier {
             try {
                 return download.run(attempt);
             } catch (IOException failure) {
-                boolean transientFailure = failure instanceof SocketException || failure instanceof SocketTimeoutException
+                boolean transientFailure = failure instanceof EOFException || failure instanceof SocketException || failure instanceof SocketTimeoutException
                         || failure instanceof HttpRetryException http && Set.of(429, 502, 503, 504).contains(http.responseCode());
                 if (attempt == 3 || !transientFailure) throw failure;
                 System.err.println("Retrying repository download after attempt " + attempt + ": " + failure.getMessage());
@@ -1182,6 +1183,10 @@ public final class AggregateInstallationVerifier {
         if (DIRECTOR.equals(application) && output.contains("phase=org.eclipse.equinox.internal.p2.engine.phases.Collect,")) {
             var status = TRANSIENT_HTTP_STATUS.matcher(output);
             if (status.find()) throw new HttpRetryException("Failed: " + stage, Integer.parseInt(status.group(1)));
+            if (output.contains("Problems downloading artifact: osgi.bundle,")
+                    && output.contains("java.io.EOFException: Unexpected end of ZLIB input stream")) {
+                throw new EOFException("Truncated p2 bundle during collection: " + stage);
+            }
         }
         throw new IOException("Failed: " + stage);
     }

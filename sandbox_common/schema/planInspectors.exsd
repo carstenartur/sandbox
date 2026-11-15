@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema targetNamespace="sandbox_common" xmlns="http://www.w3.org/2001/XMLSchema">
+   <annotation><appinfo><meta.schema plugin="sandbox_common" id="planInspectors" name="Semantic plan inspectors"/></appinfo>
+      <documentation>Contributes read-only project discovery for an exact requires-plan contract.</documentation>
+   </annotation>
+   <element name="extension">
+      <complexType>
+         <sequence><element ref="inspector" minOccurs="1" maxOccurs="unbounded"/></sequence>
+         <attribute name="point" type="string" use="required"/>
+         <attribute name="id" type="string"/>
+         <attribute name="name" type="string"/>
+      </complexType>
+   </element>
+   <element name="inspector">
+      <complexType>
+         <attribute name="contract" type="string" use="required"/>
+         <attribute name="class" type="string" use="required">
+            <annotation><appinfo><meta.attribute kind="java" basedOn=":org.sandbox.jdt.triggerpattern.eclipse.ProjectPlanInspector"/></appinfo></annotation>
+         </attribute>
+      </complexType>
+   </element>
+</schema>
