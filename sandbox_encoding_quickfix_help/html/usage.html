@@ -58,6 +58,17 @@
    <p>The selected platform default is not frozen to the charset of the machine running the cleanup and is not
       silently changed to UTF-8. Unsupported calls remain subject to the safety boundary below.</p>
 
+   <h3>Fallback after an unsupported encoding</h3>
+   <p>In the Eclipse JDT UI R4_40 source, <code>JavaCompareUtilities.getBytes</code> first tries the
+      caller's encoding. If that name is unsupported, Keep behavior preserves the platform default
+      in the fallback. Prefer UTF-8 makes an explicit policy change for that same fallback. Both
+      previews leave the caller's <code>s.getBytes(encoding)</code> expression intact.</p>
+   <p><img src="../images/encoding-keep-pinned.png" alt="Keep behavior changes the fallback to Charset.defaultCharset() in JavaCompareUtilities" /></p>
+   <p><img src="../images/encoding-utf8-pinned.png" alt="Prefer UTF-8 changes the same fallback to StandardCharsets.UTF_8" /></p>
+   <p>The same pinned inventory checks three unchanged controls. The formatter reads old profile
+      files with a concrete <code>FileReader</code>, <code>History</code> already specifies UTF-8,
+      and <code>AbstractSpellDictionary</code> supplies an indirect charset constant.</p>
+
    <h2>Aggregate UTF-8</h2>
    <p>This policy also adopts UTF-8 for supported implicit-default calls, but introduces or reuses a class-level
       charset constant. The generated references are qualified with their declaring type.</p>

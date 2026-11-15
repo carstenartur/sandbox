@@ -51,6 +51,7 @@ import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.launching.JavaRuntime;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.m2e.core.MavenPlugin;
 import org.eclipse.oomph.internal.setup.SetupPrompter;
 import org.eclipse.oomph.internal.ui.EarlyStart;
 import org.eclipse.oomph.base.BasePackage;
@@ -846,6 +847,16 @@ public class SetupProbe implements IApplication {
         require("target platform for sandbox".equals(target.getName()), "Wrong active target: " + target.getName());
         require(target.isResolved() && target.getStatus().isOK(), "Unresolved target: " + target.getStatus());
         bundleContext.ungetService(reference);
+        var gitSearchHost = workspace.getRoot().getProject("sandbox_extra_search");
+        var gitSearchTests = workspace.getRoot().getProject("sandbox_extra_search_test");
+        require(gitSearchHost.isOpen() && gitSearchTests.isOpen(),
+                "Oomph must import the Git search plug-in and its test fragment");
+        require(gitSearchTests.hasNature(JavaCore.NATURE_ID) && gitSearchTests.hasNature("org.eclipse.pde.PluginNature"),
+                "The Git search tests must be a Java/PDE project");
+        if (update) {
+            // Exercise Maven > Update Project on the fragment that reported a missing host JAR.
+            MavenPlugin.getProjectConfigurationManager().updateProjectConfiguration(gitSearchTests, monitor);
+        }
         // Saving the workspace and reading its target can enqueue more work.
         // Inspect markers only after those operations have also settled.
         awaitWorkspaceJobs(monitor);
@@ -884,6 +895,11 @@ public class SetupProbe implements IApplication {
             System.out.println("Pending workspace jobs: " + Arrays.toString(Job.getJobManager().find(null)));
         }
         require(errors.isEmpty(), "Workspace build errors:\n" + String.join("\n", errors));
+        var gitSearchView = JavaCore.create(gitSearchTests)
+                .findType("org.sandbox.jdt.internal.ui.search.gitindex.GitSearchView");
+        require(gitSearchView != null && gitSearchHost.equals(gitSearchView.getJavaProject().getProject()),
+                "Git search tests must resolve GitSearchView from their workspace host");
+        System.out.println("Git search fragment resolves workspace host: " + gitSearchView.getPath());
         require(workspace.isAutoBuilding(), "Setup did not restore automatic workspace builds");
         // A marker-free import is insufficient if no build ran. Verify the
         // generated-bundle providers and the consumers from the stale-wiring

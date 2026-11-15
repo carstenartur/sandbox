@@ -14,10 +14,14 @@ on:
       - 'sandbox_common_test/**'
       - 'sandbox_common_core/**'
       - 'sandbox_junit_cleanup/**'
+      - 'sandbox_junit_cleanup_help/**'
+      - 'sandbox_eclipse_help_swtbot_test/src/**/Pinned*Preview*.java'
+      - '.github/workflows/pinned-platform-status-preview.yml'
       - 'sandbox_junit_cleanup_test/**'
       - 'sandbox_product/**'
       - 'sandbox_target/**'
       - '.github/workflows/jdt-ui-junit4-strict-qa.yml'
+      - '.github/patches/coordinated-cleanup-descriptor.patch'
   workflow_dispatch:
 
 concurrency:
@@ -42,6 +46,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           path: sandbox
 
       - name: Checkout the pinned JDT UI R4_40 corpus
@@ -302,3 +307,14 @@ jobs:
             sandbox/**/target/surefire-reports/**
           retention-days: 9
           if-no-files-found: error
+
+
+  patched-preview-host:
+    uses: ./.github/workflows/patched-jdt-ui-atomic-help-screenshot.yml
+
+  pinned-native-junit:
+    needs: [strict-real-jdt-ui, patched-preview-host]
+    uses: ./.github/workflows/pinned-platform-status-preview.yml
+    with:
+      junit-artifact: jdt-ui-junit4-strict-evidence-${{ github.run_number }}
+      patched-host-artifact: patched-jdt-ui-atomic-preview-${{ github.run_number }}

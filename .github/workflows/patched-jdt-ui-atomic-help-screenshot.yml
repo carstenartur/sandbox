@@ -5,6 +5,7 @@ on:
     branches: [ main ]
     paths:
       - '.github/patched-jdt-ui.env'
+      - '.github/patches/coordinated-cleanup-descriptor.patch'
       - '.github/patched-jdt-ui-reactor.xml'
       - '.github/patched-ltk.properties'
       - '.github/actions/use-runner-maven/**'
@@ -33,12 +34,13 @@ on:
       - 'sandbox_junit_cleanup_help/**'
       - 'sandbox_eclipse_help_swtbot_test/**'
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: patched-preview-host-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -224,8 +226,11 @@ jobs:
             sandbox_int_to_enum_help/images/int-to-enum-coordinated-preview.png
             sandbox_junit_cleanup_help/images/junit-coordinated-preview.png
             ${{ runner.temp }}/patched-jdt-ui/provenance.json
+            ${{ runner.temp }}/patched-jdt-ui-source/eclipse.jdt.ui/org.eclipse.jdt.ui/core extension/org/eclipse/jdt/internal/corext/fix/CoordinatedCleanUpChange.java
+            ${{ runner.temp }}/patched-jdt-ui-source/eclipse.jdt.ui/org.eclipse.jdt.ui/core extension/org/eclipse/jdt/internal/corext/fix/CleanUpRefactoring.java
             ${{ runner.temp }}/patched-jdt-ui-compatibility/compatibility.json
             ${{ runner.temp }}/patched-jdt-ui-p2/evidence/repository-provenance.json
+            ${{ runner.temp }}/patched-jdt-ui-p2/repository/**
             ${{ runner.temp }}/patched-ltk/provenance.json
             ${{ runner.temp }}/patched-ltk/runtime.properties
             ${{ runner.temp }}/patched-ltk/*.log

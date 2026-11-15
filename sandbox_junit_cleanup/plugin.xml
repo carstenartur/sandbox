@@ -11,6 +11,12 @@
 		<cleanUp class="org.sandbox.jdt.internal.ui.fix.JUnitCleanUp" id="org.eclipse.jdt.ui.cleanup.junitcleanup" />
 		<!--      runAfter="org.eclipse.jdt.ui.cleanup.unboxing" -->
 	</extension>
+	<extension point="org.eclipse.core.runtime.adapters">
+		<factory adaptableType="org.eclipse.jdt.internal.corext.fix.CoordinatedCleanUpChange"
+			class="org.sandbox.jdt.internal.ui.fix.JUnitManifestChangeAdapter">
+			<adapter type="org.eclipse.ltk.core.refactoring.Change"/>
+		</factory>
+	</extension>
 	<extension point="org.sandbox.jdt.triggerpattern.hints">
 		<hintFile
 			id="junit5"

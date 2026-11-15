@@ -13,6 +13,7 @@ package org.sandbox.jdt.ui.helper.views;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.security.MessageDigest;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -46,10 +47,17 @@ final class CleanupWorkbenchDriver {
 				}
 				project.refreshLocal(IResource.DEPTH_INFINITE, new NullProgressMonitor());
 				Map<String, byte[]> files= new TreeMap<>();
+				MessageDigest sha256= MessageDigest.getInstance("SHA-256"); //$NON-NLS-1$
+				byte[] buffer= new byte[8192];
 				project.accept(resource -> {
 					if (resource instanceof IFile file && "java".equals(file.getFileExtension())) { //$NON-NLS-1$
 						try (InputStream input= file.getContents()) {
-							files.put(file.getProjectRelativePath().toPortableString(), input.readAllBytes());
+							// Keep full-project verification bounded even when several snapshots coexist.
+							int count;
+							while ((count= input.read(buffer)) != -1) {
+								sha256.update(buffer, 0, count);
+							}
+							files.put(file.getProjectRelativePath().toPortableString(), sha256.digest());
 						} catch (IOException exception) {
 							throw new UncheckedIOException("Cannot snapshot " + file.getFullPath(), exception); //$NON-NLS-1$
 						}
