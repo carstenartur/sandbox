@@ -59,6 +59,24 @@ public final class PublicInstallerUi {
                 if(versions.getItem(i).contains("2026-09") && !versions.getItem(i).toLowerCase().contains("latest")) {
                     versions.select(i);
                     versions.notifyListeners(SWT.Selection,new Event());
+                    return true;
+                }
+            }
+            return false;
+        });
+        await("select-temurin-jdk-25", () -> {
+            Path jdk = Path.of(System.getProperty("java.home")).toRealPath();
+            if (!Files.isExecutable(jdk.resolve("bin/javac"))) {
+                throw new IllegalStateException("The requested Java 25 environment has no javac: " + jdk);
+            }
+            for (Combo combo : controls(Combo.class)) {
+                for (int i = 0; i < combo.getItemCount(); i++) {
+                    String label = combo.getItem(i);
+                    if (!(label.equals(jdk.toString()) || label.startsWith(jdk + " "))) continue;
+                    combo.select(i);
+                    combo.notifyListeners(SWT.Selection, new Event());
+                    if (!label.equals(combo.getText())) return false;
+                    Files.writeString(evidence.resolve("installer-jdk.txt"), label + "\n");
                     capture("product");
                     return click("next");
                 }
@@ -108,16 +126,35 @@ public final class PublicInstallerUi {
             Button finish=widget(Button.class,"finish");
             if (finish==null || !finish.isEnabled()) return false;
             capture("bootstrap-confirmation");
-            return click("finish");
+            // Finish enters a nested modal license dialog before its listener returns.
+            display.asyncExec(() -> finish.notifyListeners(SWT.Selection, new Event()));
+            return true;
         });
         // Oomph enables Finish only when its real Bootstrap task performer returns success.
         await("bootstrap-finished", () -> {
-            if (display.getActiveShell()!=null && display.getActiveShell().getText().equals("Oomph License Confirmation")) {
-                List<Button> licenseButtons=new ArrayList<>(); collect(display.getActiveShell(),Button.class,licenseButtons);
-                Button accept=licenseButtons.stream().filter(b -> b.getText().equals("Accept")).findFirst().orElseThrow();
-                capture("license-confirmation"); accept.notifyListeners(SWT.Selection,new Event()); return false;
+            Shell active = display.getActiveShell();
+            if (active != null) {
+                List<Button> buttons = new ArrayList<>();
+                collect(active, Button.class, buttons);
+                boolean agreement = buttons.stream().anyMatch(b -> b.getText().equals("Decide Later"));
+                String acceptLabel = agreement ? "Accept Now"
+                        : "Oomph License Confirmation".equals(active.getText()) ? "Accept" : "";
+                for (Button button : buttons) {
+                    if (!acceptLabel.isEmpty() && acceptLabel.equals(button.getText())) {
+                        capture(agreement ? "eclipse-software-user-agreement" : "license-confirmation");
+                        display.asyncExec(() -> button.notifyListeners(SWT.Selection, new Event()));
+                        return false;
+                    }
+                }
             }
-            if(widget(Composite.class,"progress")==null || widget(StyledText.class,"log")==null) return false;
+            if (widget(Composite.class, "progress") == null || widget(StyledText.class, "log") == null) return false;
+            if (active != null && active.getParent() instanceof Shell && active != widget(StyledText.class, "log").getShell()) {
+                capture("unexpected-bootstrap-dialog");
+                List<Button> buttons = new ArrayList<>();
+                collect(active, Button.class, buttons);
+                throw new IllegalStateException("Unexpected Oomph dialog " + active.getText()
+                        + " with buttons " + buttons.stream().map(Button::getText).toList());
+            }
             for (String key : List.of("launch", "dismiss")) {
                 Button option=widget(Button.class,key);
                 if(option!=null && option.getSelection()) {
@@ -135,6 +172,7 @@ public final class PublicInstallerUi {
     }
 
     private static void await(String stage,Callable<Boolean> condition) throws Exception {
+        Files.writeString(evidence.resolve("installer-stage.txt"), stage + "\n");
         long end=System.nanoTime()+TimeUnit.MINUTES.toNanos(stage.equals("bootstrap-finished")?75:8);
         while(System.nanoTime()<end) {
             AtomicReference<Boolean> ready=new AtomicReference<>(false);

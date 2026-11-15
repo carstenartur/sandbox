@@ -25,7 +25,11 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 
 import org.sandbox.jdt.internal.common.HelperVisitor;
@@ -61,6 +65,11 @@ public class FileReaderExplicitEncoding extends AbstractExplicitEncoding<ClassIn
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
 			Set<CompilationUnitRewriteOperation> operations, ChangeBehavior cb,
 			ClassInstanceCreation visited, ReferenceHolder<ASTNode, Object> holder) {
+		// The replacement is a supertype of FileReader. Preserve concrete declarations,
+		// inferred variable types, and overloads requiring the original FileReader.
+		if (!acceptsInputStreamReader(visited)) {
+			return false;
+		}
 		List<ASTNode> arguments= visited.arguments();
 		switch (arguments.size()) {
 			case 1:
@@ -80,6 +89,27 @@ public class FileReaderExplicitEncoding extends AbstractExplicitEncoding<ClassIn
 		}
 		operations.add(fixcore.rewrite(visited, cb, holder));
 		return false;
+	}
+
+	private static boolean acceptsInputStreamReader(ClassInstanceCreation creation) {
+		ITypeBinding reader= creation.resolveTypeBinding();
+		if (reader == null || creation.getAnonymousClassDeclaration() != null) {
+			return false;
+		}
+		ITypeBinding replacement= reader.getSuperclass();
+		Expression expression= creation;
+		while (expression.getParent() instanceof ParenthesizedExpression parentheses) {
+			expression= parentheses;
+		}
+		ITypeBinding required;
+		if (expression.getParent() instanceof VariableDeclarationFragment fragment && fragment.getInitializer() == expression) {
+			var binding= fragment.resolveBinding();
+			required= binding == null ? null : binding.getType();
+		} else {
+			required= ASTNodes.getTargetType(expression);
+		}
+		return replacement != null && required != null && !required.isRecovered()
+				&& replacement.isAssignmentCompatible(required);
 	}
 
 	@Override

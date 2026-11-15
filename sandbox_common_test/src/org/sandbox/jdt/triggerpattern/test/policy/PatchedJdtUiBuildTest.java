@@ -57,7 +57,10 @@ class PatchedJdtUiBuildTest {
             parent = commit(git);
             String production = "org.eclipse.jdt.ui/core extension/org/eclipse/jdt/internal/corext/fix/CleanUpRefactoring.java";
             String test = "org.eclipse.jdt.ui.tests/ui/org/eclipse/jdt/ui/tests/quickfix/MultiFileCleanUpScopeExpansionTest.java";
-            write(source, production, "EXPAND_CLEAN_UP_SCOPE_METHOD");
+            write(source, production, "EXPAND_CLEAN_UP_SCOPE_METHOD" + "\n".repeat(1059)
+                    + "\t\treturn result.toArray(new Change[result.size()]);\n\t}\n");
+            write(source, production.replace("CleanUpRefactoring.java", "CoordinatedCleanUpChange.java"),
+                    "\n".repeat(79) + "\t\tfDelegate= new CompositeChange(name, changes);\n\t}\n");
             write(source, test, "MultiFileCleanUpScopeExpansionTest");
             write(source, ".github/fork-specific-files.txt", production + "\n" + test);
             patch = commit(git);
@@ -94,6 +97,8 @@ class PatchedJdtUiBuildTest {
     @Test
     void suppliesBothSnapshotDescriptorsFromThePinnedCheckoutBeforeMaven() throws Exception {
         assertEquals(73, run(), Files.readString(temporary.resolve("build.log")));
+        assertTrue(Files.readString(work.resolve("eclipse.jdt.ui/org.eclipse.jdt.ui/core extension/"
+                + "org/eclipse/jdt/internal/corext/fix/CoordinatedCleanUpChange.java")).contains("fDelegate.add(descriptor)"));
         List<String> args = Files.readAllLines(arguments);
         Path reactor = Path.of(args.get(args.indexOf("-f") + 1));
         var factory = DocumentBuilderFactory.newInstance();

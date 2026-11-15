@@ -79,9 +79,9 @@ class PublicEppInstallerTest {
         for(String phase:List.of("fresh","restart")) {
             assertFalse(Files.exists(run.resolve(phase+".ok")));
             exec(phase,List.of(eclipse.toString(),"-nosplash","-consoleLog","-data",workspace.toString(),
-                    "-vm",jdk.resolve("bin/java").toString(),"--launcher.appendVmargs","-vmargs","-Duser.home="+home,
+                    "--launcher.appendVmargs","-vmargs","-Duser.home="+home,
                     "-Duser.language=en","-Duser.country=US","-Doomph.setup.show.initial.progress=true","-Dsandbox.public.evidence="+run,"-Dsandbox.public.commit="+expected,
-                    "-Dsandbox.public.phase="+phase,"-Dsandbox.public.launcher="+eclipse),115);
+                    "-Dsandbox.public.phase="+phase,"-Dsandbox.public.launcher="+eclipse,"-Dsandbox.public.jdk="+jdk.toRealPath()),115);
             assertTrue(Files.isRegularFile(run.resolve(phase+".ok")),()->"Native EPP exited without receipt: "+phase);
             assertTrue(Files.readString(run.resolve(phase+".ok")).startsWith(expected+" "));
             assertEquals(0,Files.size(run.resolve(phase+"-errors.txt")),"Problems view contains errors");
@@ -131,12 +131,32 @@ class PublicEppInstallerTest {
         }
         return destination;
     }
+    private String diagnostics(String phase) {
+        StringBuilder result = new StringBuilder();
+        for (String name : List.of(phase + "-stage.txt", phase + ".failed", phase + ".log")) {
+            Path file = run.resolve(name);
+            if (!Files.isRegularFile(file)) continue;
+            try (var lines = Files.lines(file)) {
+                var selected = lines.filter(line -> name.endsWith(".txt") || name.endsWith(".failed")
+                        || line.contains("PUBLIC_INSTALLER") || line.contains("Exception")
+                        || line.contains("Caused by:") || line.contains("Timed out")).toList();
+                result.append(name).append('\n');
+                for (String line : selected.subList(Math.max(0, selected.size() - 16), selected.size())) {
+                    result.append(line).append('\n');
+                }
+            } catch (java.io.IOException failure) {
+                result.append(name).append(": ").append(failure.getMessage()).append('\n');
+            }
+        }
+        return result.toString();
+    }
     private void exec(String phase,List<String> arguments,int minutes) throws Exception {
         var process=new ProcessBuilder(arguments).directory(run.toFile()).redirectErrorStream(true).redirectOutput(run.resolve(phase+".log").toFile());
         process.environment().put("HOME",home.toString());
         process.environment().put("XDG_CONFIG_HOME",home.resolve("config").toString());
         process.environment().put("XDG_CACHE_HOME",home.resolve("cache").toString());
-        var child=process.start();
+        System.out.println("Starting public Eclipse phase " + phase);
+        var child = process.start();
         try {
             if(!child.waitFor(minutes,TimeUnit.MINUTES)) {
                 for(ProcessHandle h:child.descendants().toList()) if(h.info().command().orElse("").endsWith("/java")) {
@@ -144,9 +164,9 @@ class PublicEppInstallerTest {
                         .redirectOutput(run.resolve(phase+"-"+h.pid()+"-threads.log").toFile()).start();
                     if(!dump.waitFor(15,TimeUnit.SECONDS)) dump.destroyForcibly();
                 }
-                fail(phase+" timed out; retain target/public-epp");
+                fail(phase + " timed out\n" + diagnostics(phase));
             }
-            assertEquals(0,child.exitValue(),()->phase+" exited with "+child.exitValue()+"; retain target/public-epp");
+            assertEquals(0, child.exitValue(), () -> phase + " exited with " + child.exitValue() + "\n" + diagnostics(phase));
         } finally {
             if(child.isAlive()) { child.descendants().forEach(ProcessHandle::destroyForcibly); child.destroyForcibly(); }
         }

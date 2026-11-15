@@ -8,7 +8,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  *******************************************************************************/
-package org.sandbox.jdt.core.cleanupapp;
+package org.sandbox.jdt.internal.common;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;

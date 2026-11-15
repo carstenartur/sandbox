@@ -79,6 +79,7 @@ public final class CoordinatedCleanUpPreviewViewer implements IChangePreviewView
 	private Label title;
 	private Text description;
 	private TableViewer files;
+	private Label filesLabel;
 	private Text details;
 	private ComparePreviewer comparePreviewer;
 
@@ -108,7 +109,7 @@ public final class CoordinatedCleanUpPreviewViewer implements IChangePreviewView
 		Composite overview= new Composite(sash, SWT.NONE);
 		overview.setLayout(new GridLayout(1, false));
 
-		Label filesLabel= new Label(overview, SWT.NONE);
+		filesLabel= new Label(overview, SWT.NONE);
 		filesLabel.setText("Affected source files"); //$NON-NLS-1$
 
 		files= new TableViewer(overview, SWT.BORDER | SWT.SINGLE | SWT.V_SCROLL | SWT.H_SCROLL);
@@ -233,6 +234,9 @@ public final class CoordinatedCleanUpPreviewViewer implements IChangePreviewView
 	}
 
 	private void setFileInput(List<FilePreview> input) {
+		boolean containsMetadata= input.stream().anyMatch(file -> file.resource() != null
+				&& !"java".equals(file.resource().getFileExtension())); //$NON-NLS-1$
+		filesLabel.setText(containsMetadata ? "Affected files" : "Affected source files"); //$NON-NLS-1$ //$NON-NLS-2$
 		files.setInput(input);
 		// Keep a short file list compact so the safety evidence gets the remaining height.
 		GridData data= (GridData) files.getControl().getLayoutData();

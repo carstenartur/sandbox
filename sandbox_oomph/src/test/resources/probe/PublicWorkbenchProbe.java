@@ -56,6 +56,9 @@ public final class PublicWorkbenchProbe implements IStartup {
             require("org.eclipse.epp.package.java.product".equals(Platform.getProduct().getId()),
                     "Unexpected running product " + Platform.getProduct());
             require(Runtime.version().feature() == 25, "Expected Java 25: " + Runtime.version());
+            Path runningJdk = Path.of(System.getProperty("java.home")).toRealPath();
+            require(runningJdk.equals(Path.of(System.getProperty("sandbox.public.jdk")).toRealPath())
+                    && Files.isExecutable(runningJdk.resolve("bin/javac")), "The Java IDE is not running the selected full JDK: " + runningJdk);
             var root = ResourcesPlugin.getWorkspace().getRoot();
             if ("fresh".equals(phase)) {
                 // Show the normal asynchronous startup progress so its own success receipt can be observed.
