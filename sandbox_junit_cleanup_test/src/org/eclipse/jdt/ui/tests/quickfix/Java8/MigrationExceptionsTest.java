@@ -287,6 +287,7 @@ public class MyTest {
 					@Rule
 					public ExpectedException thrown = ExpectedException.none();
 					
+					@SuppressWarnings(value = { "nls" })
 					@Test
 					public void testExceptionWithMessageAndCause() {
 						thrown.expect(RuntimeException.class);
@@ -311,7 +312,7 @@ public class MyTest {
 				import org.junit.jupiter.api.Test;
 				
 				public class MyTest {
-					@SuppressWarnings("static-method")
+					@SuppressWarnings(value = { "nls", "static-method" })
 					@Test
 					public void testExceptionWithMessageAndCause() {
 						RuntimeException exception = assertThrows(RuntimeException.class, () -> {
