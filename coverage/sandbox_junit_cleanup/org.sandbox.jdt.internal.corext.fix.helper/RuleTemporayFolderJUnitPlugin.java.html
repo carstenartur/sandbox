@@ -14,6 +14,7 @@ import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULE;
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULES_TEMPORARY_FOLDER;
 
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -54,6 +55,7 @@ import org.eclipse.jdt.core.search.SearchParticipant;
 import org.eclipse.jdt.core.search.SearchPattern;
 import org.eclipse.jdt.core.search.SearchRequestor;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 import org.eclipse.text.edits.TextEditGroup;
 
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
@@ -69,372 +71,397 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 		cleanupId = &quot;cleanup.junit.ruletemporaryfolder&quot;,
 		description = &quot;Migrate a closed TemporaryFolder contract to @TempDir&quot;,
 		displayName = &quot;JUnit 4 @Rule TemporaryFolder → JUnit 5 @TempDir&quot;)
-<span class="fc" id="L72">public class RuleTemporayFolderJUnitPlugin extends TriggerPatternCleanupPlugin {</span>
+<span class="fc" id="L74">public class RuleTemporayFolderJUnitPlugin extends TriggerPatternCleanupPlugin {</span>
 
 	/** Stable fail-closed decision used by the cleanup and regression tests. */
 	public record Assessment(boolean eligible, String reasonCode, String explanation) {
-<span class="fc" id="L76">		public Assessment {</span>
-<span class="fc" id="L77">			reasonCode= Objects.requireNonNull(reasonCode);</span>
-<span class="fc" id="L78">			explanation= Objects.requireNonNull(explanation);</span>
-<span class="fc" id="L79">		}</span>
+<span class="fc" id="L78">		public Assessment {</span>
+<span class="fc" id="L79">			reasonCode= Objects.requireNonNull(reasonCode);</span>
+<span class="fc" id="L80">			explanation= Objects.requireNonNull(explanation);</span>
+<span class="fc" id="L81">		}</span>
 	}
 
 	private record InvocationPlan(MethodInvocation invocation, Operation operation) {
 	}
 
-<span class="fc" id="L85">	private enum Operation {</span>
-<span class="fc" id="L86">		GET_ROOT,</span>
-<span class="fc" id="L87">		NEW_FILE_RANDOM,</span>
-<span class="fc" id="L88">		NEW_FILE_NAMED,</span>
-<span class="fc" id="L89">		NEW_FOLDER_RANDOM,</span>
-<span class="fc" id="L90">		NEW_FOLDER_NAMED</span>
+<span class="fc" id="L87">	private enum Operation {</span>
+<span class="fc" id="L88">		GET_ROOT,</span>
+<span class="fc" id="L89">		NEW_FILE_RANDOM,</span>
+<span class="fc" id="L90">		NEW_FILE_NAMED,</span>
+<span class="fc" id="L91">		NEW_FOLDER_RANDOM,</span>
+<span class="fc" id="L92">		NEW_FOLDER_NAMED</span>
 	}
 
 	@Override
 	protected JunitHolder createHolder(Match match) {
-<span class="fc" id="L95">		FieldDeclaration field= (FieldDeclaration) match.getMatchedNode();</span>
-<span class="pc bpc" id="L96" title="1 of 2 branches missed.">		if (!assess(field).eligible()) {</span>
-<span class="nc" id="L97">			return null;</span>
+<span class="fc" id="L97">		FieldDeclaration field= (FieldDeclaration) match.getMatchedNode();</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">		if (!assess(field).eligible()) {</span>
+<span class="nc" id="L99">			return null;</span>
 		}
-<span class="fc" id="L99">		JunitHolder holder= new JunitHolder();</span>
-<span class="fc" id="L100">		holder.setMinv(field);</span>
-<span class="fc" id="L101">		return holder;</span>
+<span class="fc" id="L101">		JunitHolder holder= new JunitHolder();</span>
+<span class="fc" id="L102">		holder.setMinv(field);</span>
+<span class="fc" id="L103">		return holder;</span>
 	}
 
 	/** Proves that every use has an exact TempDir expression equivalent. */
 	public static Assessment assess(FieldDeclaration field) {
-<span class="pc bpc" id="L106" title="2 of 4 branches missed.">		if (field == null || field.fragments().size() != 1</span>
-<span class="pc bpc" id="L107" title="1 of 2 branches missed.">				|| !(field.fragments().get(0) instanceof VariableDeclarationFragment fragment)) {</span>
-<span class="nc" id="L108">			return rejected(&quot;TEMPORARY_FOLDER_FIELD_SHAPE_UNSUPPORTED&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L109">					&quot;TemporaryFolder must be declared as one rule field.&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L108" title="2 of 4 branches missed.">		if (field == null || field.fragments().size() != 1</span>
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">				|| !(field.fragments().get(0) instanceof VariableDeclarationFragment fragment)) {</span>
+<span class="nc" id="L110">			return rejected(&quot;TEMPORARY_FOLDER_FIELD_SHAPE_UNSUPPORTED&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L111">					&quot;TemporaryFolder must be declared as one rule field.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L111">		IVariableBinding fieldBinding= fragment.resolveBinding();</span>
-<span class="pc bpc" id="L112" title="1 of 2 branches missed.">		ITypeBinding type= fieldBinding == null ? null : fieldBinding.getType();</span>
-<span class="pc bpc" id="L113" title="2 of 4 branches missed.">		if (fieldBinding == null || type == null || !ORG_JUNIT_RULES_TEMPORARY_FOLDER</span>
-<span class="pc bpc" id="L114" title="1 of 2 branches missed.">				.equals(type.getErasure().getQualifiedName())) {</span>
-<span class="nc" id="L115">			return rejected(&quot;TEMPORARY_FOLDER_BINDING_UNRESOLVED&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L116">					&quot;The TemporaryFolder field binding could not be resolved.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L113">		IVariableBinding fieldBinding= fragment.resolveBinding();</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">		ITypeBinding type= fieldBinding == null ? null : fieldBinding.getType();</span>
+<span class="pc bpc" id="L115" title="2 of 4 branches missed.">		if (fieldBinding == null || type == null || !ORG_JUNIT_RULES_TEMPORARY_FOLDER</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">				.equals(type.getErasure().getQualifiedName())) {</span>
+<span class="nc" id="L117">			return rejected(&quot;TEMPORARY_FOLDER_BINDING_UNRESOLVED&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L118">					&quot;The TemporaryFolder field binding could not be resolved.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="pc bpc" id="L118" title="1 of 2 branches missed.">		if (Modifier.isStatic(field.getModifiers())) {</span>
-<span class="nc" id="L119">			return rejected(&quot;TEMPORARY_FOLDER_STATIC_RULE&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L120">					&quot;A JUnit 4 @Rule TemporaryFolder is instance-scoped.&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">		if (Modifier.isStatic(field.getModifiers())) {</span>
+<span class="nc" id="L121">			return rejected(&quot;TEMPORARY_FOLDER_STATIC_RULE&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L122">					&quot;A JUnit 4 @Rule TemporaryFolder is instance-scoped.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L122">		Expression initializer= fragment.getInitializer();</span>
-<span class="pc bpc" id="L123" title="1 of 2 branches missed.">		if (!(initializer instanceof ClassInstanceCreation creation)</span>
-<span class="pc bpc" id="L124" title="2 of 4 branches missed.">				|| creation.getAnonymousClassDeclaration() != null || !creation.arguments().isEmpty()) {</span>
-<span class="nc" id="L125">			return rejected(&quot;TEMPORARY_FOLDER_INITIALIZER_UNSUPPORTED&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L126">					&quot;Only new TemporaryFolder() without custom builder or subclass semantics is supported.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L124">		Expression initializer= fragment.getInitializer();</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">		if (!(initializer instanceof ClassInstanceCreation creation)</span>
+<span class="pc bpc" id="L126" title="2 of 4 branches missed.">				|| creation.getAnonymousClassDeclaration() != null || !creation.arguments().isEmpty()) {</span>
+<span class="nc" id="L127">			return rejected(&quot;TEMPORARY_FOLDER_INITIALIZER_UNSUPPORTED&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L128">					&quot;Only new TemporaryFolder() without custom builder or subclass semantics is supported.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="pc bpc" id="L128" title="1 of 2 branches missed.">		org.eclipse.jdt.core.dom.CompilationUnit root= field.getRoot() instanceof org.eclipse.jdt.core.dom.CompilationUnit unit</span>
-<span class="pc" id="L129">				? unit : null;</span>
-<span class="pc bpc" id="L130" title="2 of 4 branches missed.">		if (root == null || ASTNodes.getParent(field, TypeDeclaration.class) == null) {</span>
-<span class="nc" id="L131">			return rejected(&quot;TEMPORARY_FOLDER_OWNER_UNRESOLVED&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L132">					&quot;The declaring source type could not be resolved.&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">		org.eclipse.jdt.core.dom.CompilationUnit root= field.getRoot() instanceof org.eclipse.jdt.core.dom.CompilationUnit unit</span>
+<span class="pc" id="L131">				? unit : null;</span>
+<span class="pc bpc" id="L132" title="2 of 4 branches missed.">		if (root == null || ASTNodes.getParent(field, TypeDeclaration.class) == null) {</span>
+<span class="nc" id="L133">			return rejected(&quot;TEMPORARY_FOLDER_OWNER_UNRESOLVED&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L134">					&quot;The declaring source type could not be resolved.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="pc bpc" id="L134" title="1 of 2 branches missed.">		if (countTemporaryFolderFields(root) != 1) {</span>
-<span class="nc" id="L135">			return rejected(&quot;TEMPORARY_FOLDER_MULTIPLE_FIELDS&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L136">					&quot;Multiple TemporaryFolder fields require a coordinated migration.&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">		if (countTemporaryFolderFields(root) != 1) {</span>
+<span class="nc" id="L137">			return rejected(&quot;TEMPORARY_FOLDER_MULTIPLE_FIELDS&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L138">					&quot;Multiple TemporaryFolder fields require a coordinated migration.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L138">		String fieldKey= variableKey(fieldBinding);</span>
-<span class="pc bpc" id="L139" title="1 of 2 branches missed.">		if (fieldKey == null) {</span>
-<span class="nc" id="L140">			return rejected(&quot;TEMPORARY_FOLDER_BINDING_UNRESOLVED&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L141">					&quot;The TemporaryFolder field has no stable binding key.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L140">		String fieldKey= variableKey(fieldBinding);</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">		if (fieldKey == null) {</span>
+<span class="nc" id="L142">			return rejected(&quot;TEMPORARY_FOLDER_BINDING_UNRESOLVED&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L143">					&quot;The TemporaryFolder field has no stable binding key.&quot;); //$NON-NLS-1$</span>
 		}
 
-<span class="fc" id="L144">		Set&lt;MethodInvocation&gt; allowed= new LinkedHashSet&lt;&gt;();</span>
-<span class="fc" id="L145">		AtomicBoolean unsupported= new AtomicBoolean();</span>
-<span class="fc" id="L146">		root.accept(new ASTVisitor() {</span>
+<span class="fc" id="L146">		Set&lt;MethodInvocation&gt; allowed= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L147">		AtomicBoolean unsupported= new AtomicBoolean();</span>
+<span class="fc" id="L148">		root.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(MethodInvocation invocation) {
-<span class="fc bfc" id="L149" title="All 2 branches covered.">				if (fieldKey.equals(expressionVariableKey(invocation.getExpression()))) {</span>
-<span class="fc" id="L150">					Operation operation= operation(invocation);</span>
-<span class="fc bfc" id="L151" title="All 2 branches covered.">					if (operation == null) {</span>
-<span class="fc" id="L152">						unsupported.set(true);</span>
-<span class="fc" id="L153">					} else {</span>
-<span class="fc" id="L154">						allowed.add(invocation);</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">				if (fieldKey.equals(expressionVariableKey(invocation.getExpression()))) {</span>
+<span class="fc" id="L152">					Operation operation= operation(invocation);</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">					if (operation == null) {</span>
+<span class="fc" id="L154">						unsupported.set(true);</span>
+<span class="fc" id="L155">					} else {</span>
+<span class="fc" id="L156">						allowed.add(invocation);</span>
 					}
 				}
-<span class="fc" id="L157">				return true;</span>
+<span class="fc" id="L159">				return true;</span>
 			}
 
 			@Override
 			public boolean visit(SimpleName node) {
-<span class="fc" id="L162">				IBinding binding= node.resolveBinding();</span>
-<span class="fc bfc" id="L163" title="All 2 branches covered.">				if (!(binding instanceof IVariableBinding variable)</span>
-<span class="fc bfc" id="L164" title="All 4 branches covered.">						|| !fieldKey.equals(variableKey(variable)) || node == fragment.getName()) {</span>
-<span class="fc" id="L165">					return true;</span>
+<span class="fc" id="L164">				IBinding binding= node.resolveBinding();</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">				if (!(binding instanceof IVariableBinding variable)</span>
+<span class="fc bfc" id="L166" title="All 4 branches covered.">						|| !fieldKey.equals(variableKey(variable)) || node == fragment.getName()) {</span>
+<span class="fc" id="L167">					return true;</span>
 				}
-<span class="fc" id="L167">				MethodInvocation invocation= ASTNodes.getParent(node, MethodInvocation.class);</span>
-<span class="pc bpc" id="L168" title="1 of 4 branches missed.">				if (invocation == null || !allowed.contains(invocation)</span>
-<span class="pc bpc" id="L169" title="1 of 2 branches missed.">						|| invocation.getExpression() == null</span>
-<span class="pc bpc" id="L170" title="1 of 2 branches missed.">						|| !isDescendantOf(node, invocation.getExpression())) {</span>
-<span class="fc" id="L171">					unsupported.set(true);</span>
+<span class="fc" id="L169">				MethodInvocation invocation= ASTNodes.getParent(node, MethodInvocation.class);</span>
+<span class="pc bpc" id="L170" title="1 of 4 branches missed.">				if (invocation == null || !allowed.contains(invocation)</span>
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">						|| invocation.getExpression() == null</span>
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">						|| !isDescendantOf(node, invocation.getExpression())) {</span>
+<span class="fc" id="L173">					unsupported.set(true);</span>
 				}
-<span class="fc" id="L173">				return true;</span>
+<span class="fc" id="L175">				return true;</span>
 			}
 		});
-<span class="fc bfc" id="L176" title="All 2 branches covered.">		if (unsupported.get()) {</span>
-<span class="fc" id="L177">			return rejected(&quot;TEMPORARY_FOLDER_UNSUPPORTED_USE&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L178">					&quot;The rule is passed, assigned, referenced externally, or uses an unsupported TemporaryFolder operation.&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">		if (unsupported.get()) {</span>
+<span class="fc" id="L179">			return rejected(&quot;TEMPORARY_FOLDER_UNSUPPORTED_USE&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L180">					&quot;The rule is passed, assigned, referenced externally, or uses an unsupported TemporaryFolder operation.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="pc bpc" id="L180" title="1 of 2 branches missed.">		if (allowed.isEmpty()) {</span>
-<span class="nc" id="L181">			return rejected(&quot;TEMPORARY_FOLDER_UNUSED_RULE&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L182">					&quot;No supported TemporaryFolder operation was found.&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">		if (allowed.isEmpty()) {</span>
+<span class="nc" id="L183">			return rejected(&quot;TEMPORARY_FOLDER_UNUSED_RULE&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L184">					&quot;No supported TemporaryFolder operation was found.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="pc bpc" id="L184" title="1 of 2 branches missed.">		if (hasReferencesOutsideCompilationUnit(fieldBinding)) {</span>
-<span class="nc" id="L185">			return rejected(&quot;TEMPORARY_FOLDER_EXTERNAL_REFERENCE&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L186">					&quot;The TemporaryFolder field is referenced outside its compilation unit.&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">		if (hasReferencesOutsideCompilationUnit(fieldBinding)) {</span>
+<span class="nc" id="L187">			return rejected(&quot;TEMPORARY_FOLDER_EXTERNAL_REFERENCE&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L188">					&quot;The TemporaryFolder field is referenced outside its compilation unit.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L188">		return new Assessment(true, &quot;TEMPORARY_FOLDER_CLOSED_CONTRACT&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L189">				&quot;Every reference has an exact binding-proven TempDir equivalent.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L190">		return new Assessment(true, &quot;TEMPORARY_FOLDER_CLOSED_CONTRACT&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L191">				&quot;Every reference has an exact binding-proven TempDir equivalent.&quot;); //$NON-NLS-1$</span>
 	}
 
 	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
 			ImportRewrite imports, JunitHolder holder) {
-<span class="fc" id="L195">		FieldDeclaration field= holder.getFieldDeclaration();</span>
-<span class="pc bpc" id="L196" title="1 of 2 branches missed.">		if (!assess(field).eligible()) {</span>
-<span class="nc" id="L197">			return;</span>
+<span class="fc" id="L197">		FieldDeclaration field= holder.getFieldDeclaration();</span>
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">		if (!assess(field).eligible()) {</span>
+<span class="nc" id="L199">			return;</span>
 		}
-<span class="fc" id="L199">		VariableDeclarationFragment fragment= (VariableDeclarationFragment) field.fragments().get(0);</span>
-<span class="fc" id="L200">		String fieldKey= variableKey(fragment.resolveBinding());</span>
-<span class="fc" id="L201">		String fieldName= fragment.getName().getIdentifier();</span>
-<span class="fc" id="L202">		org.eclipse.jdt.core.dom.CompilationUnit root= (org.eclipse.jdt.core.dom.CompilationUnit) field.getRoot();</span>
+<span class="fc" id="L201">		VariableDeclarationFragment fragment= (VariableDeclarationFragment) field.fragments().get(0);</span>
+<span class="fc" id="L202">		String fieldKey= variableKey(fragment.resolveBinding());</span>
+<span class="fc" id="L203">		String fieldName= fragment.getName().getIdentifier();</span>
+<span class="fc" id="L204">		org.eclipse.jdt.core.dom.CompilationUnit root= (org.eclipse.jdt.core.dom.CompilationUnit) field.getRoot();</span>
 
-<span class="fc" id="L204">		removeRuleAnnotation(field, rewriter, group);</span>
-<span class="fc" id="L205">		String pathName= imports.addImport(&quot;java.nio.file.Path&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L206">		rewriter.replace(field.getType(), ast.newSimpleType(ast.newName(pathName)), group);</span>
-<span class="fc" id="L207">		rewriter.set(fragment, VariableDeclarationFragment.INITIALIZER_PROPERTY, null, group);</span>
-<span class="fc bfc" id="L208" title="All 2 branches covered.">		for (Object modifierObject : field.modifiers()) {</span>
-<span class="fc bfc" id="L209" title="All 4 branches covered.">			if (modifierObject instanceof Modifier modifier &amp;&amp; modifier.isFinal()) {</span>
-<span class="fc" id="L210">				rewriter.remove(modifier, group);</span>
+<span class="fc" id="L206">		removeRuleAnnotation(field, rewriter, group);</span>
+<span class="fc" id="L207">		String pathName= imports.addImport(&quot;java.nio.file.Path&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L208">		rewriter.replace(field.getType(), ast.newSimpleType(ast.newName(pathName)), group);</span>
+<span class="fc" id="L209">		rewriter.set(fragment, VariableDeclarationFragment.INITIALIZER_PROPERTY, null, group);</span>
+<span class="fc bfc" id="L210" title="All 2 branches covered.">		for (Object modifierObject : field.modifiers()) {</span>
+<span class="fc bfc" id="L211" title="All 4 branches covered.">			if (modifierObject instanceof Modifier modifier &amp;&amp; modifier.isFinal()) {</span>
+<span class="fc" id="L212">				rewriter.remove(modifier, group);</span>
 			}
 		}
-<span class="fc" id="L213">		MarkerAnnotation tempDir= ast.newMarkerAnnotation();</span>
-<span class="fc" id="L214">		tempDir.setTypeName(ast.newName(imports.addImport(ORG_JUNIT_JUPITER_API_IO_TEMP_DIR)));</span>
-<span class="fc" id="L215">		rewriter.getListRewrite(field, FieldDeclaration.MODIFIERS2_PROPERTY).insertFirst(tempDir, group);</span>
-<span class="fc" id="L216">		imports.removeImport(ORG_JUNIT_RULES_TEMPORARY_FOLDER);</span>
-<span class="fc bfc" id="L217" title="All 2 branches covered.">		if (!hasOtherRuleAnnotation(root, field)) {</span>
-<span class="fc" id="L218">			imports.removeImport(ORG_JUNIT_RULE);</span>
+<span class="fc" id="L215">		MarkerAnnotation tempDir= ast.newMarkerAnnotation();</span>
+<span class="fc" id="L216">		tempDir.setTypeName(ast.newName(imports.addImport(ORG_JUNIT_JUPITER_API_IO_TEMP_DIR)));</span>
+<span class="fc" id="L217">		rewriter.getListRewrite(field, FieldDeclaration.MODIFIERS2_PROPERTY).insertFirst(tempDir, group);</span>
+<span class="fc" id="L218">		imports.removeImport(ORG_JUNIT_RULES_TEMPORARY_FOLDER);</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">		if (!hasOtherRuleAnnotation(root, field)) {</span>
+<span class="fc" id="L220">			imports.removeImport(ORG_JUNIT_RULE);</span>
 		}
 
-<span class="fc" id="L221">		root.accept(new ASTVisitor() {</span>
+<span class="fc" id="L223">		root.accept(new ASTVisitor() {</span>
+			private String randomPrefix;
+
 			@Override
 			public boolean visit(MethodInvocation invocation) {
-<span class="fc bfc" id="L224" title="All 2 branches covered.">				if (!fieldKey.equals(expressionVariableKey(invocation.getExpression()))) {</span>
-<span class="fc" id="L225">					return true;</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">				if (!fieldKey.equals(expressionVariableKey(invocation.getExpression()))) {</span>
+<span class="fc" id="L229">					return true;</span>
 				}
-<span class="fc" id="L227">				Operation operation= operation(invocation);</span>
-<span class="pc bpc" id="L228" title="1 of 2 branches missed.">				if (operation == null) {</span>
-<span class="nc" id="L229">					return false;</span>
+<span class="fc" id="L231">				Operation operation= operation(invocation);</span>
+<span class="pc bpc" id="L232" title="1 of 2 branches missed.">				if (operation == null) {</span>
+<span class="nc" id="L233">					return false;</span>
 				}
-<span class="fc bfc" id="L231" title="All 2 branches covered.">				if (operation != Operation.GET_ROOT) {</span>
-<span class="fc" id="L232">					imports.addImport(&quot;java.nio.file.Files&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L235" title="All 2 branches covered.">				if (operation != Operation.GET_ROOT) {</span>
+<span class="fc" id="L236">					imports.addImport(&quot;java.nio.file.Files&quot;); //$NON-NLS-1$</span>
 				}
-<span class="fc" id="L234">				rewriter.replace(invocation, replacement(invocation, operation, fieldName, ast), group);</span>
-<span class="fc" id="L235">				return false;</span>
+<span class="fc bfc" id="L238" title="All 6 branches covered.">				if (randomPrefix == null &amp;&amp; (operation == Operation.NEW_FILE_RANDOM || operation == Operation.NEW_FOLDER_RANDOM)) {</span>
+<span class="fc" id="L239">					randomPrefix= addRandomPrefix(field, root, rewriter, group);</span>
+				}
+<span class="fc" id="L241">				rewriter.replace(invocation, replacement(invocation, operation, fieldName, randomPrefix, ast), group);</span>
+<span class="fc" id="L242">				return false;</span>
 			}
 		});
-<span class="fc" id="L238">	}</span>
+<span class="fc" id="L245">	}</span>
+
+	// Keep JUnit's filename prefix as a single non-translatable constant without
+	// suppressing diagnostics on the caller's existing statements or fields.
+	private static String addRandomPrefix(FieldDeclaration field, org.eclipse.jdt.core.dom.CompilationUnit root,
+			ASTRewrite rewrite, TextEditGroup group) {
+<span class="fc" id="L251">		Set&lt;String&gt; used= new HashSet&lt;&gt;();</span>
+<span class="fc" id="L252">		root.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(SimpleName name) {
+<span class="fc" id="L255">				used.add(name.getIdentifier());</span>
+<span class="fc" id="L256">				return true;</span>
+			}
+		});
+<span class="fc bfc" id="L259" title="All 2 branches covered.">		for (IBinding binding : new ScopeAnalyzer(root).getDeclarationsInScope(field.getStartPosition(), ScopeAnalyzer.VARIABLES)) {</span>
+<span class="fc" id="L260">			used.add(binding.getName());</span>
+		}
+<span class="fc" id="L262">		String name= &quot;JUNIT_TEMP_PREFIX&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L263" title="1 of 2 branches missed.">		for (int suffix= 2; used.contains(name); suffix++) {</span>
+<span class="nc" id="L264">			name= &quot;JUNIT_TEMP_PREFIX_&quot; + suffix; //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L266">		TypeDeclaration owner= ASTNodes.getParent(field, TypeDeclaration.class);</span>
+<span class="fc" id="L267">		String constant= &quot;private static final java.lang.String &quot; + name + &quot; = \&quot;junit\&quot;; //$NON-NLS-1$&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L268">		rewrite.getListRewrite(owner, TypeDeclaration.BODY_DECLARATIONS_PROPERTY)</span>
+<span class="fc" id="L269">				.insertBefore(rewrite.createStringPlaceholder(constant, ASTNode.FIELD_DECLARATION), field, group);</span>
+<span class="fc" id="L270">		return name;</span>
+	}
 
 	private static Expression replacement(MethodInvocation invocation, Operation operation,
-			String fieldName, AST ast) {
-<span class="fc bfc" id="L242" title="All 5 branches covered.">		return switch (operation) {</span>
-<span class="fc" id="L243">		case GET_ROOT -&gt; toFile(ast, ast.newSimpleName(fieldName));</span>
-<span class="fc" id="L244">		case NEW_FILE_RANDOM -&gt; toFile(ast,</span>
-<span class="fc" id="L245">				filesCall(ast, &quot;createTempFile&quot;, ast.newSimpleName(fieldName), //$NON-NLS-1$</span>
-<span class="fc" id="L246">						stringLiteral(ast, &quot;junit&quot;), ast.newNullLiteral())); //$NON-NLS-1$</span>
-<span class="fc" id="L247">		case NEW_FILE_NAMED -&gt; toFile(ast,</span>
-<span class="fc" id="L248">				filesCall(ast, &quot;createFile&quot;, resolve(ast, fieldName, //$NON-NLS-1$</span>
-<span class="fc" id="L249">						(Expression) invocation.arguments().get(0))));</span>
-<span class="fc" id="L250">		case NEW_FOLDER_RANDOM -&gt; toFile(ast,</span>
-<span class="fc" id="L251">				filesCall(ast, &quot;createTempDirectory&quot;, ast.newSimpleName(fieldName), //$NON-NLS-1$</span>
-<span class="fc" id="L252">						stringLiteral(ast, &quot;junit&quot;))); //$NON-NLS-1$</span>
-<span class="fc" id="L253">		case NEW_FOLDER_NAMED -&gt; toFile(ast,</span>
-<span class="fc" id="L254">				filesCall(ast, &quot;createDirectory&quot;, resolve(ast, fieldName, //$NON-NLS-1$</span>
-<span class="fc" id="L255">						(Expression) invocation.arguments().get(0))));</span>
+			String fieldName, String randomPrefix, AST ast) {
+<span class="fc bfc" id="L275" title="All 5 branches covered.">		return switch (operation) {</span>
+<span class="fc" id="L276">		case GET_ROOT -&gt; toFile(ast, ast.newSimpleName(fieldName));</span>
+<span class="fc" id="L277">		case NEW_FILE_RANDOM -&gt; toFile(ast,</span>
+<span class="fc" id="L278">				filesCall(ast, &quot;createTempFile&quot;, ast.newSimpleName(fieldName), //$NON-NLS-1$</span>
+<span class="fc" id="L279">						ast.newSimpleName(randomPrefix), ast.newNullLiteral()));</span>
+<span class="fc" id="L280">		case NEW_FILE_NAMED -&gt; toFile(ast,</span>
+<span class="fc" id="L281">				filesCall(ast, &quot;createFile&quot;, resolve(ast, fieldName, //$NON-NLS-1$</span>
+<span class="fc" id="L282">						(Expression) invocation.arguments().get(0))));</span>
+<span class="fc" id="L283">		case NEW_FOLDER_RANDOM -&gt; toFile(ast,</span>
+<span class="fc" id="L284">				filesCall(ast, &quot;createTempDirectory&quot;, ast.newSimpleName(fieldName), //$NON-NLS-1$</span>
+<span class="fc" id="L285">						ast.newSimpleName(randomPrefix)));</span>
+<span class="fc" id="L286">		case NEW_FOLDER_NAMED -&gt; toFile(ast,</span>
+<span class="fc" id="L287">				filesCall(ast, &quot;createDirectory&quot;, resolve(ast, fieldName, //$NON-NLS-1$</span>
+<span class="fc" id="L288">						(Expression) invocation.arguments().get(0))));</span>
 		};
 	}
 
 	private static MethodInvocation resolve(AST ast, String fieldName, Expression argument) {
-<span class="fc" id="L260">		MethodInvocation result= ast.newMethodInvocation();</span>
-<span class="fc" id="L261">		result.setExpression(ast.newSimpleName(fieldName));</span>
-<span class="fc" id="L262">		result.setName(ast.newSimpleName(&quot;resolve&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L263">		result.arguments().add(TestNameRefactorer.copyAndTransformTestNameReferences(argument, ast));</span>
-<span class="fc" id="L264">		return result;</span>
+<span class="fc" id="L293">		MethodInvocation result= ast.newMethodInvocation();</span>
+<span class="fc" id="L294">		result.setExpression(ast.newSimpleName(fieldName));</span>
+<span class="fc" id="L295">		result.setName(ast.newSimpleName(&quot;resolve&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L296">		result.arguments().add(TestNameRefactorer.copyAndTransformTestNameReferences(argument, ast));</span>
+<span class="fc" id="L297">		return result;</span>
 	}
 
 	private static MethodInvocation filesCall(AST ast, String name, Expression... arguments) {
-<span class="fc" id="L268">		MethodInvocation result= ast.newMethodInvocation();</span>
-<span class="fc" id="L269">		result.setExpression(ast.newSimpleName(&quot;Files&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L270">		result.setName(ast.newSimpleName(name));</span>
-<span class="fc bfc" id="L271" title="All 2 branches covered.">		for (Expression argument : arguments) {</span>
-<span class="fc" id="L272">			result.arguments().add(argument);</span>
+<span class="fc" id="L301">		MethodInvocation result= ast.newMethodInvocation();</span>
+<span class="fc" id="L302">		result.setExpression(ast.newSimpleName(&quot;Files&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L303">		result.setName(ast.newSimpleName(name));</span>
+<span class="fc bfc" id="L304" title="All 2 branches covered.">		for (Expression argument : arguments) {</span>
+<span class="fc" id="L305">			result.arguments().add(argument);</span>
 		}
-<span class="fc" id="L274">		return result;</span>
+<span class="fc" id="L307">		return result;</span>
 	}
 
 	private static MethodInvocation toFile(AST ast, Expression expression) {
-<span class="fc" id="L278">		MethodInvocation result= ast.newMethodInvocation();</span>
-<span class="fc" id="L279">		result.setExpression(expression);</span>
-<span class="fc" id="L280">		result.setName(ast.newSimpleName(&quot;toFile&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L281">		return result;</span>
-	}
-
-	private static org.eclipse.jdt.core.dom.StringLiteral stringLiteral(AST ast, String value) {
-<span class="fc" id="L285">		org.eclipse.jdt.core.dom.StringLiteral result= ast.newStringLiteral();</span>
-<span class="fc" id="L286">		result.setLiteralValue(value);</span>
-<span class="fc" id="L287">		return result;</span>
+<span class="fc" id="L311">		MethodInvocation result= ast.newMethodInvocation();</span>
+<span class="fc" id="L312">		result.setExpression(expression);</span>
+<span class="fc" id="L313">		result.setName(ast.newSimpleName(&quot;toFile&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L314">		return result;</span>
 	}
 
 	private static Operation operation(MethodInvocation invocation) {
-<span class="fc" id="L291">		IMethodBinding binding= invocation.resolveMethodBinding();</span>
-<span class="pc bpc" id="L292" title="1 of 2 branches missed.">		ITypeBinding declaring= binding == null ? null : binding.getDeclaringClass();</span>
-<span class="pc bpc" id="L293" title="1 of 2 branches missed.">		if (declaring == null || !ORG_JUNIT_RULES_TEMPORARY_FOLDER</span>
-<span class="pc bpc" id="L294" title="1 of 2 branches missed.">				.equals(declaring.getErasure().getQualifiedName())) {</span>
-<span class="nc" id="L295">			return null;</span>
+<span class="fc" id="L318">		IMethodBinding binding= invocation.resolveMethodBinding();</span>
+<span class="pc bpc" id="L319" title="1 of 2 branches missed.">		ITypeBinding declaring= binding == null ? null : binding.getDeclaringClass();</span>
+<span class="pc bpc" id="L320" title="1 of 2 branches missed.">		if (declaring == null || !ORG_JUNIT_RULES_TEMPORARY_FOLDER</span>
+<span class="pc bpc" id="L321" title="1 of 2 branches missed.">				.equals(declaring.getErasure().getQualifiedName())) {</span>
+<span class="nc" id="L322">			return null;</span>
 		}
-<span class="fc" id="L297">		String name= invocation.getName().getIdentifier();</span>
-<span class="fc" id="L298">		int arguments= invocation.arguments().size();</span>
-<span class="pc bpc" id="L299" title="1 of 4 branches missed.">		if (&quot;getRoot&quot;.equals(name) &amp;&amp; arguments == 0) { //$NON-NLS-1$</span>
-<span class="fc" id="L300">			return Operation.GET_ROOT;</span>
+<span class="fc" id="L324">		String name= invocation.getName().getIdentifier();</span>
+<span class="fc" id="L325">		int arguments= invocation.arguments().size();</span>
+<span class="pc bpc" id="L326" title="1 of 4 branches missed.">		if (&quot;getRoot&quot;.equals(name) &amp;&amp; arguments == 0) { //$NON-NLS-1$</span>
+<span class="fc" id="L327">			return Operation.GET_ROOT;</span>
 		}
-<span class="fc bfc" id="L302" title="All 2 branches covered.">		if (&quot;newFile&quot;.equals(name)) { //$NON-NLS-1$</span>
-<span class="fc bfc" id="L303" title="All 2 branches covered.">			return arguments == 0 ? Operation.NEW_FILE_RANDOM</span>
-<span class="pc bpc" id="L304" title="1 of 2 branches missed.">					: arguments == 1 ? Operation.NEW_FILE_NAMED : null;</span>
+<span class="fc bfc" id="L329" title="All 2 branches covered.">		if (&quot;newFile&quot;.equals(name)) { //$NON-NLS-1$</span>
+<span class="fc bfc" id="L330" title="All 2 branches covered.">			return arguments == 0 ? Operation.NEW_FILE_RANDOM</span>
+<span class="pc bpc" id="L331" title="1 of 2 branches missed.">					: arguments == 1 ? Operation.NEW_FILE_NAMED : null;</span>
 		}
-<span class="pc bpc" id="L306" title="1 of 2 branches missed.">		if (&quot;newFolder&quot;.equals(name)) { //$NON-NLS-1$</span>
-<span class="fc bfc" id="L307" title="All 2 branches covered.">			return arguments == 0 ? Operation.NEW_FOLDER_RANDOM</span>
-<span class="fc bfc" id="L308" title="All 2 branches covered.">					: arguments == 1 ? Operation.NEW_FOLDER_NAMED : null;</span>
+<span class="pc bpc" id="L333" title="1 of 2 branches missed.">		if (&quot;newFolder&quot;.equals(name)) { //$NON-NLS-1$</span>
+<span class="fc bfc" id="L334" title="All 2 branches covered.">			return arguments == 0 ? Operation.NEW_FOLDER_RANDOM</span>
+<span class="fc bfc" id="L335" title="All 2 branches covered.">					: arguments == 1 ? Operation.NEW_FOLDER_NAMED : null;</span>
 		}
-<span class="nc" id="L310">		return null;</span>
+<span class="nc" id="L337">		return null;</span>
 	}
 
 	private static void removeRuleAnnotation(FieldDeclaration field, ASTRewrite rewriter,
 			TextEditGroup group) {
-<span class="pc bpc" id="L315" title="1 of 2 branches missed.">		for (Object modifier : field.modifiers()) {</span>
-<span class="pc bpc" id="L316" title="1 of 2 branches missed.">			if (modifier instanceof Annotation annotation) {</span>
-<span class="fc" id="L317">				ITypeBinding binding= annotation.resolveTypeBinding();</span>
-<span class="pc bpc" id="L318" title="2 of 4 branches missed.">				if (binding != null &amp;&amp; ORG_JUNIT_RULE.equals(binding.getQualifiedName())) {</span>
-<span class="fc" id="L319">					rewriter.remove(annotation, group);</span>
-<span class="fc" id="L320">					return;</span>
+<span class="pc bpc" id="L342" title="1 of 2 branches missed.">		for (Object modifier : field.modifiers()) {</span>
+<span class="pc bpc" id="L343" title="1 of 2 branches missed.">			if (modifier instanceof Annotation annotation) {</span>
+<span class="fc" id="L344">				ITypeBinding binding= annotation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L345" title="2 of 4 branches missed.">				if (binding != null &amp;&amp; ORG_JUNIT_RULE.equals(binding.getQualifiedName())) {</span>
+<span class="fc" id="L346">					rewriter.remove(annotation, group);</span>
+<span class="fc" id="L347">					return;</span>
 				}
 			}
 		}
-<span class="nc" id="L324">	}</span>
+<span class="nc" id="L351">	}</span>
 
 	private static boolean hasOtherRuleAnnotation(org.eclipse.jdt.core.dom.CompilationUnit root,
 			FieldDeclaration migratedField) {
-<span class="fc" id="L328">		AtomicBoolean other= new AtomicBoolean();</span>
-<span class="fc" id="L329">		root.accept(new ASTVisitor() {</span>
+<span class="fc" id="L355">		AtomicBoolean other= new AtomicBoolean();</span>
+<span class="fc" id="L356">		root.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean preVisit2(ASTNode node) {
-<span class="fc bfc" id="L332" title="All 2 branches covered.">				if (!(node instanceof Annotation annotation)) {</span>
-<span class="fc bfc" id="L333" title="All 2 branches covered.">					return !other.get();</span>
+<span class="fc bfc" id="L359" title="All 2 branches covered.">				if (!(node instanceof Annotation annotation)) {</span>
+<span class="fc bfc" id="L360" title="All 2 branches covered.">					return !other.get();</span>
 				}
-<span class="fc bfc" id="L335" title="All 2 branches covered.">				if (ASTNodes.getParent(annotation, FieldDeclaration.class) == migratedField) {</span>
-<span class="fc" id="L336">					return true;</span>
+<span class="fc bfc" id="L362" title="All 2 branches covered.">				if (ASTNodes.getParent(annotation, FieldDeclaration.class) == migratedField) {</span>
+<span class="fc" id="L363">					return true;</span>
 				}
-<span class="fc" id="L338">				ITypeBinding binding= annotation.resolveTypeBinding();</span>
-<span class="pc bpc" id="L339" title="1 of 4 branches missed.">				if (binding != null &amp;&amp; ORG_JUNIT_RULE.equals(binding.getQualifiedName())) {</span>
-<span class="fc" id="L340">					other.set(true);</span>
+<span class="fc" id="L365">				ITypeBinding binding= annotation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L366" title="1 of 4 branches missed.">				if (binding != null &amp;&amp; ORG_JUNIT_RULE.equals(binding.getQualifiedName())) {</span>
+<span class="fc" id="L367">					other.set(true);</span>
 				}
-<span class="fc bfc" id="L342" title="All 2 branches covered.">				return !other.get();</span>
+<span class="fc bfc" id="L369" title="All 2 branches covered.">				return !other.get();</span>
 			}
 		});
-<span class="fc" id="L345">		return other.get();</span>
+<span class="fc" id="L372">		return other.get();</span>
 	}
 
 	private static int countTemporaryFolderFields(org.eclipse.jdt.core.dom.CompilationUnit root) {
-<span class="fc" id="L349">		int[] count= { 0 };</span>
-<span class="fc" id="L350">		root.accept(new ASTVisitor() {</span>
+<span class="fc" id="L376">		int[] count= { 0 };</span>
+<span class="fc" id="L377">		root.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(FieldDeclaration candidate) {
-<span class="fc" id="L353">				ITypeBinding binding= candidate.getType().resolveBinding();</span>
-<span class="pc bpc" id="L354" title="1 of 2 branches missed.">				if (binding != null &amp;&amp; ORG_JUNIT_RULES_TEMPORARY_FOLDER</span>
-<span class="fc bfc" id="L355" title="All 2 branches covered.">						.equals(binding.getErasure().getQualifiedName())) {</span>
-<span class="fc" id="L356">					count[0]+= candidate.fragments().size();</span>
+<span class="fc" id="L380">				ITypeBinding binding= candidate.getType().resolveBinding();</span>
+<span class="pc bpc" id="L381" title="1 of 2 branches missed.">				if (binding != null &amp;&amp; ORG_JUNIT_RULES_TEMPORARY_FOLDER</span>
+<span class="fc bfc" id="L382" title="All 2 branches covered.">						.equals(binding.getErasure().getQualifiedName())) {</span>
+<span class="fc" id="L383">					count[0]+= candidate.fragments().size();</span>
 				}
-<span class="fc" id="L358">				return true;</span>
+<span class="fc" id="L385">				return true;</span>
 			}
 		});
-<span class="fc" id="L361">		return count[0];</span>
+<span class="fc" id="L388">		return count[0];</span>
 	}
 
 	private static boolean hasReferencesOutsideCompilationUnit(IVariableBinding binding) {
-<span class="fc" id="L365">		IJavaElement element= binding.getJavaElement();</span>
-<span class="pc bpc" id="L366" title="1 of 2 branches missed.">		IJavaElement ownerElement= element == null ? null : element.getAncestor(IJavaElement.COMPILATION_UNIT);</span>
-<span class="pc bpc" id="L367" title="2 of 4 branches missed.">		if (!(element instanceof IField field) || !(ownerElement instanceof ICompilationUnit owner)) {</span>
-<span class="nc" id="L368">			return true;</span>
-		}
-<span class="fc" id="L370">		SearchPattern pattern= SearchPattern.createPattern(field, IJavaSearchConstants.REFERENCES);</span>
-<span class="pc bpc" id="L371" title="1 of 2 branches missed.">		if (pattern == null) {</span>
-<span class="nc" id="L372">			return true;</span>
-		}
-<span class="fc" id="L374">		AtomicBoolean external= new AtomicBoolean();</span>
-<span class="fc" id="L375">		SearchRequestor requestor= new SearchRequestor() {</span>
-			@Override
-			public void acceptSearchMatch(SearchMatch match) {
-<span class="fc" id="L378">				Object matchElement= match.getElement();</span>
-<span class="pc bpc" id="L379" title="1 of 2 branches missed.">				if (!(matchElement instanceof IJavaElement javaElement)) {</span>
-<span class="nc" id="L380">					external.set(true);</span>
-<span class="nc" id="L381">					return;</span>
-				}
-<span class="fc" id="L383">				IJavaElement matchedOwner= javaElement.getAncestor(IJavaElement.COMPILATION_UNIT);</span>
-<span class="pc bpc" id="L384" title="1 of 2 branches missed.">				if (!(matchedOwner instanceof ICompilationUnit matchedUnit)</span>
-<span class="pc bpc" id="L385" title="1 of 2 branches missed.">						|| !owner.getPrimary().equals(matchedUnit.getPrimary())) {</span>
-<span class="nc" id="L386">					external.set(true);</span>
-				}
-<span class="fc" id="L388">			}</span>
-		};
-		try {
-<span class="fc" id="L391">			new SearchEngine().search(pattern,</span>
-<span class="fc" id="L392">					new SearchParticipant[] { SearchEngine.getDefaultSearchParticipant() },</span>
-<span class="fc" id="L393">					SearchEngine.createWorkspaceScope(), requestor, new NullProgressMonitor());</span>
-<span class="pc" id="L394">		} catch (CoreException exception) {</span>
+<span class="fc" id="L392">		IJavaElement element= binding.getJavaElement();</span>
+<span class="pc bpc" id="L393" title="1 of 2 branches missed.">		IJavaElement ownerElement= element == null ? null : element.getAncestor(IJavaElement.COMPILATION_UNIT);</span>
+<span class="pc bpc" id="L394" title="2 of 4 branches missed.">		if (!(element instanceof IField field) || !(ownerElement instanceof ICompilationUnit owner)) {</span>
 <span class="nc" id="L395">			return true;</span>
 		}
-<span class="fc" id="L397">		return external.get();</span>
+<span class="fc" id="L397">		SearchPattern pattern= SearchPattern.createPattern(field, IJavaSearchConstants.REFERENCES);</span>
+<span class="pc bpc" id="L398" title="1 of 2 branches missed.">		if (pattern == null) {</span>
+<span class="nc" id="L399">			return true;</span>
+		}
+<span class="fc" id="L401">		AtomicBoolean external= new AtomicBoolean();</span>
+<span class="fc" id="L402">		SearchRequestor requestor= new SearchRequestor() {</span>
+			@Override
+			public void acceptSearchMatch(SearchMatch match) {
+<span class="fc" id="L405">				Object matchElement= match.getElement();</span>
+<span class="pc bpc" id="L406" title="1 of 2 branches missed.">				if (!(matchElement instanceof IJavaElement javaElement)) {</span>
+<span class="nc" id="L407">					external.set(true);</span>
+<span class="nc" id="L408">					return;</span>
+				}
+<span class="fc" id="L410">				IJavaElement matchedOwner= javaElement.getAncestor(IJavaElement.COMPILATION_UNIT);</span>
+<span class="pc bpc" id="L411" title="1 of 2 branches missed.">				if (!(matchedOwner instanceof ICompilationUnit matchedUnit)</span>
+<span class="pc bpc" id="L412" title="1 of 2 branches missed.">						|| !owner.getPrimary().equals(matchedUnit.getPrimary())) {</span>
+<span class="nc" id="L413">					external.set(true);</span>
+				}
+<span class="fc" id="L415">			}</span>
+		};
+		try {
+<span class="fc" id="L418">			new SearchEngine().search(pattern,</span>
+<span class="fc" id="L419">					new SearchParticipant[] { SearchEngine.getDefaultSearchParticipant() },</span>
+<span class="fc" id="L420">					SearchEngine.createWorkspaceScope(), requestor, new NullProgressMonitor());</span>
+<span class="pc" id="L421">		} catch (CoreException exception) {</span>
+<span class="nc" id="L422">			return true;</span>
+		}
+<span class="fc" id="L424">		return external.get();</span>
 	}
 
 	private static String expressionVariableKey(Expression expression) {
-<span class="fc bfc" id="L401" title="All 4 branches covered.">		if (expression instanceof SimpleName name &amp;&amp; name.resolveBinding() instanceof IVariableBinding variable) {</span>
-<span class="fc" id="L402">			return variableKey(variable);</span>
+<span class="fc bfc" id="L428" title="All 4 branches covered.">		if (expression instanceof SimpleName name &amp;&amp; name.resolveBinding() instanceof IVariableBinding variable) {</span>
+<span class="fc" id="L429">			return variableKey(variable);</span>
 		}
-<span class="pc bpc" id="L404" title="1 of 2 branches missed.">		if (expression instanceof FieldAccess access) {</span>
-<span class="nc" id="L405">			return variableKey(access.resolveFieldBinding());</span>
+<span class="pc bpc" id="L431" title="1 of 2 branches missed.">		if (expression instanceof FieldAccess access) {</span>
+<span class="nc" id="L432">			return variableKey(access.resolveFieldBinding());</span>
 		}
-<span class="pc bpc" id="L407" title="1 of 4 branches missed.">		if (expression instanceof QualifiedName name &amp;&amp; name.resolveBinding() instanceof IVariableBinding variable) {</span>
-<span class="fc" id="L408">			return variableKey(variable);</span>
+<span class="pc bpc" id="L434" title="1 of 4 branches missed.">		if (expression instanceof QualifiedName name &amp;&amp; name.resolveBinding() instanceof IVariableBinding variable) {</span>
+<span class="fc" id="L435">			return variableKey(variable);</span>
 		}
-<span class="fc" id="L410">		return null;</span>
+<span class="fc" id="L437">		return null;</span>
 	}
 
 	private static String variableKey(IVariableBinding binding) {
-<span class="pc bpc" id="L414" title="1 of 2 branches missed.">		if (binding == null) {</span>
-<span class="nc" id="L415">			return null;</span>
+<span class="pc bpc" id="L441" title="1 of 2 branches missed.">		if (binding == null) {</span>
+<span class="nc" id="L442">			return null;</span>
 		}
-<span class="fc" id="L417">		IVariableBinding declaration= binding.getVariableDeclaration();</span>
-<span class="pc bpc" id="L418" title="1 of 2 branches missed.">		return declaration == null ? null : declaration.getKey();</span>
+<span class="fc" id="L444">		IVariableBinding declaration= binding.getVariableDeclaration();</span>
+<span class="pc bpc" id="L445" title="1 of 2 branches missed.">		return declaration == null ? null : declaration.getKey();</span>
 	}
 
 	private static boolean isDescendantOf(ASTNode node, ASTNode ancestor) {
-<span class="pc bpc" id="L422" title="1 of 2 branches missed.">		for (ASTNode current= node; current != null; current= current.getParent()) {</span>
-<span class="pc bpc" id="L423" title="1 of 2 branches missed.">			if (current == ancestor) {</span>
-<span class="fc" id="L424">				return true;</span>
+<span class="pc bpc" id="L449" title="1 of 2 branches missed.">		for (ASTNode current= node; current != null; current= current.getParent()) {</span>
+<span class="pc bpc" id="L450" title="1 of 2 branches missed.">			if (current == ancestor) {</span>
+<span class="fc" id="L451">				return true;</span>
 			}
 		}
-<span class="nc" id="L427">		return false;</span>
+<span class="nc" id="L454">		return false;</span>
 	}
 
 	private static Assessment rejected(String code, String explanation) {
-<span class="fc" id="L431">		return new Assessment(false, code, explanation);</span>
+<span class="fc" id="L458">		return new Assessment(false, code, explanation);</span>
 	}
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L436" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L437">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L463" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L464">			return &quot;&quot;&quot;</span>
 					@TempDir
 					Path tempFolder;
 
@@ -444,7 +471,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 					}
 					&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L447">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L474">		return &quot;&quot;&quot;</span>
 					@Rule
 					public TemporaryFolder tempFolder = new TemporaryFolder();
 
@@ -457,7 +484,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 	@Override
 	public String toString() {
-<span class="fc" id="L460">		return &quot;RuleTemporaryFolder&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L487">		return &quot;RuleTemporaryFolder&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

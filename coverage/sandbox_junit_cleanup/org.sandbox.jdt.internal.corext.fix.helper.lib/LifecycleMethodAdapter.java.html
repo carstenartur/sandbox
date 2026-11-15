@@ -106,37 +106,47 @@ public final class LifecycleMethodAdapter {
 <span class="pc bpc" id="L106" title="1 of 4 branches missed.">				if (directExternalResourceSubclass &amp;&amp; node.getParent() instanceof ExpressionStatement statement) {</span>
 					// ExternalResource itself disappears from the hierarchy. Its empty
 					// before()/after() implementation therefore has no Jupiter equivalent.
-<span class="fc" id="L109">					rewriter.remove(statement, group);</span>
-<span class="fc" id="L110">				} else {</span>
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">					if (statement.getParent() instanceof Block block) {</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">						if (rewriter.getListRewrite(block, Block.STATEMENTS_PROPERTY).getRewrittenList().size() == 1) {</span>
+<span class="fc" id="L111">							rewriter.replace(statement, rewriter.createStringPlaceholder(</span>
+<span class="fc" id="L112">									&quot;/* The JUnit 4 superclass callback was empty. */&quot;, ASTNode.EMPTY_STATEMENT), group); //$NON-NLS-1$</span>
+<span class="fc" id="L113">						} else {</span>
+<span class="fc" id="L114">							rewriter.remove(statement, group);</span>
+						}
+<span class="fc" id="L116">					} else {</span>
+<span class="nc" id="L117">						rewriter.replace(statement, rewriter.createStringPlaceholder(</span>
+<span class="nc" id="L118">								&quot;{ /* The JUnit 4 superclass callback was empty. */ }&quot;, ASTNode.BLOCK), group); //$NON-NLS-1$</span>
+					}
+<span class="nc" id="L120">				} else {</span>
 					// A source superclass is migrated as part of the same closed plan, so
 					// preserve the explicit lifecycle chaining.
-<span class="fc" id="L113">					rewriter.replace(node.getName(), ast.newSimpleName(newMethodName), group);</span>
-<span class="fc" id="L114">					addContextArgumentIfMissing(node, rewriter, ast, group);</span>
+<span class="fc" id="L123">					rewriter.replace(node.getName(), ast.newSimpleName(newMethodName), group);</span>
+<span class="fc" id="L124">					addContextArgumentIfMissing(node, rewriter, ast, group);</span>
 				}
-<span class="fc" id="L116">				return true;</span>
+<span class="fc" id="L126">				return true;</span>
 			})
-<span class="fc" id="L118">			.build(method);</span>
-<span class="fc" id="L119">	}</span>
+<span class="fc" id="L128">			.build(method);</span>
+<span class="fc" id="L129">	}</span>
 
 	/** Adds an {@code ExtensionContext} parameter when it is not already present. */
 	public static void ensureExtensionContextParameter(MethodDeclaration method, ASTRewrite rewrite, AST ast,
 			TextEditGroup group, ImportRewrite importRewrite) {
-<span class="pc" id="L124">		boolean hasExtensionContext= method.parameters().stream()</span>
-<span class="pc bnc" id="L125" title="All 2 branches missed.">				.anyMatch(param -&gt; param instanceof SingleVariableDeclaration declaration</span>
-<span class="pc bpc" id="L126" title="3 of 4 branches missed.">						&amp;&amp; isExtensionContext(declaration, ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT))</span>
-<span class="fc" id="L127">				|| rewrite.getListRewrite(method, MethodDeclaration.PARAMETERS_PROPERTY).getRewrittenList().stream()</span>
-<span class="pc bnc" id="L128" title="All 2 branches missed.">						.anyMatch(param -&gt; param instanceof SingleVariableDeclaration declaration</span>
-<span class="pc bpc" id="L129" title="3 of 4 branches missed.">								&amp;&amp; EXTENSION_CONTEXT.equals(declaration.getType().toString()));</span>
-<span class="pc bpc" id="L130" title="1 of 2 branches missed.">		if (hasExtensionContext) {</span>
-<span class="nc" id="L131">			return;</span>
+<span class="pc" id="L134">		boolean hasExtensionContext= method.parameters().stream()</span>
+<span class="pc bnc" id="L135" title="All 2 branches missed.">				.anyMatch(param -&gt; param instanceof SingleVariableDeclaration declaration</span>
+<span class="pc bpc" id="L136" title="3 of 4 branches missed.">						&amp;&amp; isExtensionContext(declaration, ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT))</span>
+<span class="fc" id="L137">				|| rewrite.getListRewrite(method, MethodDeclaration.PARAMETERS_PROPERTY).getRewrittenList().stream()</span>
+<span class="pc bnc" id="L138" title="All 2 branches missed.">						.anyMatch(param -&gt; param instanceof SingleVariableDeclaration declaration</span>
+<span class="pc bpc" id="L139" title="3 of 4 branches missed.">								&amp;&amp; EXTENSION_CONTEXT.equals(declaration.getType().toString()));</span>
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">		if (hasExtensionContext) {</span>
+<span class="nc" id="L141">			return;</span>
 		}
 
-<span class="fc" id="L134">		SingleVariableDeclaration parameter= ast.newSingleVariableDeclaration();</span>
-<span class="fc" id="L135">		parameter.setType(ast.newSimpleType(ast.newName(EXTENSION_CONTEXT)));</span>
-<span class="fc" id="L136">		parameter.setName(ast.newSimpleName(VARIABLE_NAME_CONTEXT));</span>
-<span class="fc" id="L137">		rewrite.getListRewrite(method, MethodDeclaration.PARAMETERS_PROPERTY).insertLast(parameter, group);</span>
-<span class="fc" id="L138">		importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT);</span>
-<span class="fc" id="L139">	}</span>
+<span class="fc" id="L144">		SingleVariableDeclaration parameter= ast.newSingleVariableDeclaration();</span>
+<span class="fc" id="L145">		parameter.setType(ast.newSimpleType(ast.newName(EXTENSION_CONTEXT)));</span>
+<span class="fc" id="L146">		parameter.setName(ast.newSimpleName(VARIABLE_NAME_CONTEXT));</span>
+<span class="fc" id="L147">		rewrite.getListRewrite(method, MethodDeclaration.PARAMETERS_PROPERTY).insertLast(parameter, group);</span>
+<span class="fc" id="L148">		importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT);</span>
+<span class="fc" id="L149">	}</span>
 
 	/**
 	 * Historical compatibility method. Jupiter callbacks may throw
@@ -144,130 +154,133 @@ public final class LifecycleMethodAdapter {
 	 * therefore required to keep checked calls in real Eclipse fixtures compilable.
 	 */
 	public static void removeThrowsThrowable(MethodDeclaration method, ASTRewrite rewriter, TextEditGroup group) {
-<span class="nc" id="L147">		replaceThrowsThrowableWithException(method, rewriter, method.getAST(), group);</span>
-<span class="nc" id="L148">	}</span>
+<span class="nc" id="L157">		replaceThrowsThrowableWithException(method, rewriter, method.getAST(), group);</span>
+<span class="nc" id="L158">	}</span>
 
 	private static void replaceThrowsThrowableWithException(MethodDeclaration method, ASTRewrite rewriter,
 			AST ast, TextEditGroup group) {
-<span class="fc" id="L152">		boolean alreadyThrowsException= method.thrownExceptionTypes().stream()</span>
-<span class="pc bpc" id="L153" title="1 of 2 branches missed.">				.anyMatch(exception -&gt; exception instanceof Type type</span>
-<span class="pc bpc" id="L154" title="1 of 2 branches missed.">						&amp;&amp; isType(type, &quot;java.lang.Exception&quot;, &quot;Exception&quot;)); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L155">		ListRewrite exceptions= rewriter.getListRewrite(method,</span>
-<span class="fc" id="L156">				MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY);</span>
-<span class="fc bfc" id="L157" title="All 2 branches covered.">		for (Object exceptionObject : method.thrownExceptionTypes()) {</span>
-<span class="pc bpc" id="L158" title="1 of 2 branches missed.">			if (!(exceptionObject instanceof Type exceptionType)</span>
-<span class="pc bpc" id="L159" title="1 of 2 branches missed.">					|| !isType(exceptionType, &quot;java.lang.Throwable&quot;, &quot;Throwable&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L160">				continue;</span>
+<span class="fc" id="L162">		boolean alreadyThrowsException= method.thrownExceptionTypes().stream()</span>
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">				.anyMatch(exception -&gt; exception instanceof Type type</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">						&amp;&amp; isType(type, &quot;java.lang.Exception&quot;, &quot;Exception&quot;)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L165">		ListRewrite exceptions= rewriter.getListRewrite(method,</span>
+<span class="fc" id="L166">				MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY);</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">		for (Object exceptionObject : method.thrownExceptionTypes()) {</span>
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">			if (!(exceptionObject instanceof Type exceptionType)</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">					|| !isType(exceptionType, &quot;java.lang.Throwable&quot;, &quot;Throwable&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L170">				continue;</span>
 			}
-<span class="pc bpc" id="L162" title="1 of 2 branches missed.">			if (alreadyThrowsException) {</span>
-<span class="nc" id="L163">				exceptions.remove(exceptionType, group);</span>
-<span class="nc" id="L164">			} else {</span>
-<span class="fc" id="L165">				exceptions.replace(exceptionType,</span>
-<span class="fc" id="L166">						ast.newSimpleType(ast.newSimpleName(&quot;Exception&quot;)), group); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">			if (alreadyThrowsException) {</span>
+<span class="nc" id="L173">				exceptions.remove(exceptionType, group);</span>
+<span class="nc" id="L174">			} else {</span>
+<span class="fc" id="L175">				exceptions.replace(exceptionType,</span>
+<span class="fc" id="L176">						ast.newSimpleType(ast.newSimpleName(&quot;Exception&quot;)), group); //$NON-NLS-1$</span>
 			}
 		}
-<span class="fc" id="L169">	}</span>
+<span class="fc" id="L179">	}</span>
 
 	private static boolean isType(Type type, String qualifiedName, String sourceName) {
-<span class="fc" id="L172">		ITypeBinding binding= type.resolveBinding();</span>
-<span class="pc bpc" id="L173" title="1 of 2 branches missed.">		return binding != null ? qualifiedName.equals(binding.getErasure().getQualifiedName())</span>
-<span class="nc bnc" id="L174" title="All 4 branches missed.">				: sourceName.equals(type.toString()) || qualifiedName.equals(type.toString());</span>
+<span class="fc" id="L182">		ITypeBinding binding= type.resolveBinding();</span>
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">		return binding != null ? qualifiedName.equals(binding.getErasure().getQualifiedName())</span>
+<span class="nc bnc" id="L184" title="All 4 branches missed.">				: sourceName.equals(type.toString()) || qualifiedName.equals(type.toString());</span>
 	}
 
 	/** Changes protected callback implementations to the required public visibility. */
 	public static void setPublicVisibilityIfProtected(MethodDeclaration method, ASTRewrite rewrite, AST ast,
 			TextEditGroup group) {
-<span class="fc bfc" id="L180" title="All 2 branches covered.">		for (Object modifierObject : method.modifiers()) {</span>
-<span class="fc bfc" id="L181" title="All 4 branches covered.">			if (modifierObject instanceof Modifier modifier &amp;&amp; modifier.isProtected()) {</span>
-<span class="fc" id="L182">				rewrite.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY).replace(modifier,</span>
-<span class="fc" id="L183">						ast.newModifier(Modifier.ModifierKeyword.PUBLIC_KEYWORD), group);</span>
-<span class="fc" id="L184">				return;</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">		for (Object modifierObject : method.modifiers()) {</span>
+<span class="fc bfc" id="L191" title="All 4 branches covered.">			if (modifierObject instanceof Modifier modifier &amp;&amp; modifier.isProtected()) {</span>
+<span class="fc" id="L192">				rewrite.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY).replace(modifier,</span>
+<span class="fc" id="L193">						ast.newModifier(Modifier.ModifierKeyword.PUBLIC_KEYWORD), group);</span>
+<span class="fc" id="L194">				return;</span>
 			}
 		}
-<span class="fc" id="L187">	}</span>
+<span class="fc" id="L197">	}</span>
 
 	/** Creates a callback method while removing obsolete direct super lifecycle calls. */
 	public static MethodDeclaration createLifecycleCallbackMethod(AST ast, String methodName, String paramType,
 			Block oldBody, TextEditGroup group) {
-<span class="fc" id="L192">		MethodDeclaration method= ast.newMethodDeclaration();</span>
-<span class="fc" id="L193">		method.setName(ast.newSimpleName(methodName));</span>
-<span class="fc" id="L194">		method.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.PUBLIC_KEYWORD));</span>
-<span class="fc" id="L195">		method.setReturnType2(ast.newPrimitiveType(PrimitiveType.VOID));</span>
+<span class="fc" id="L202">		MethodDeclaration method= ast.newMethodDeclaration();</span>
+<span class="fc" id="L203">		method.setName(ast.newSimpleName(methodName));</span>
+<span class="fc" id="L204">		var override= ast.newMarkerAnnotation();</span>
+<span class="fc" id="L205">		override.setTypeName(ast.newSimpleName(&quot;Override&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L206">		method.modifiers().add(override);</span>
+<span class="fc" id="L207">		method.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.PUBLIC_KEYWORD));</span>
+<span class="fc" id="L208">		method.setReturnType2(ast.newPrimitiveType(PrimitiveType.VOID));</span>
 
-<span class="fc" id="L197">		SingleVariableDeclaration parameter= ast.newSingleVariableDeclaration();</span>
-<span class="fc" id="L198">		parameter.setType(ast.newSimpleType(ast.newName(paramType)));</span>
-<span class="fc" id="L199">		parameter.setName(ast.newSimpleName(VARIABLE_NAME_CONTEXT));</span>
-<span class="fc" id="L200">		method.parameters().add(parameter);</span>
+<span class="fc" id="L210">		SingleVariableDeclaration parameter= ast.newSingleVariableDeclaration();</span>
+<span class="fc" id="L211">		parameter.setType(ast.newSimpleType(ast.newName(paramType)));</span>
+<span class="fc" id="L212">		parameter.setName(ast.newSimpleName(VARIABLE_NAME_CONTEXT));</span>
+<span class="fc" id="L213">		method.parameters().add(parameter);</span>
 
-<span class="pc bpc" id="L202" title="1 of 2 branches missed.">		if (oldBody != null) {</span>
-<span class="fc" id="L203">			Block newBody= (Block) ASTNode.copySubtree(ast, oldBody);</span>
-<span class="fc" id="L204">			removeSuperLifecycleCalls(newBody);</span>
-<span class="fc" id="L205">			method.setBody(newBody);</span>
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">		if (oldBody != null) {</span>
+<span class="fc" id="L216">			Block newBody= (Block) ASTNode.copySubtree(ast, oldBody);</span>
+<span class="fc" id="L217">			removeSuperLifecycleCalls(newBody);</span>
+<span class="fc" id="L218">			method.setBody(newBody);</span>
 		}
-<span class="fc" id="L207">		return method;</span>
+<span class="fc" id="L220">		return method;</span>
 	}
 
 	private static void removeSuperLifecycleCalls(Block body) {
-<span class="fc" id="L211">		ReferenceHolder&lt;String, Object&gt; holder= ReferenceHolder.create();</span>
-<span class="fc" id="L212">		AstProcessorBuilder.with(holder)</span>
-<span class="fc" id="L213">			.onSuperMethodInvocation((node, ignored) -&gt; {</span>
-<span class="nc" id="L214">				String methodName= node.getName().getIdentifier();</span>
-<span class="nc bnc" id="L215" title="All 4 branches missed.">				if (METHOD_BEFORE.equals(methodName) || METHOD_AFTER.equals(methodName)</span>
-<span class="nc bnc" id="L216" title="All 4 branches missed.">						|| METHOD_BEFORE_EACH.equals(methodName) || METHOD_AFTER_EACH.equals(methodName)</span>
-<span class="nc bnc" id="L217" title="All 4 branches missed.">						|| METHOD_BEFORE_ALL.equals(methodName) || METHOD_AFTER_ALL.equals(methodName)) {</span>
-<span class="nc" id="L218">					ASTNode parent= node.getParent();</span>
-<span class="nc bnc" id="L219" title="All 2 branches missed.">					if (parent instanceof ExpressionStatement) {</span>
-<span class="nc" id="L220">						parent.delete();</span>
+<span class="fc" id="L224">		ReferenceHolder&lt;String, Object&gt; holder= ReferenceHolder.create();</span>
+<span class="fc" id="L225">		AstProcessorBuilder.with(holder)</span>
+<span class="fc" id="L226">			.onSuperMethodInvocation((node, ignored) -&gt; {</span>
+<span class="nc" id="L227">				String methodName= node.getName().getIdentifier();</span>
+<span class="nc bnc" id="L228" title="All 4 branches missed.">				if (METHOD_BEFORE.equals(methodName) || METHOD_AFTER.equals(methodName)</span>
+<span class="nc bnc" id="L229" title="All 4 branches missed.">						|| METHOD_BEFORE_EACH.equals(methodName) || METHOD_AFTER_EACH.equals(methodName)</span>
+<span class="nc bnc" id="L230" title="All 4 branches missed.">						|| METHOD_BEFORE_ALL.equals(methodName) || METHOD_AFTER_ALL.equals(methodName)) {</span>
+<span class="nc" id="L231">					ASTNode parent= node.getParent();</span>
+<span class="nc bnc" id="L232" title="All 2 branches missed.">					if (parent instanceof ExpressionStatement) {</span>
+<span class="nc" id="L233">						parent.delete();</span>
 					}
 				}
-<span class="nc" id="L223">				return true;</span>
+<span class="nc" id="L236">				return true;</span>
 			})
-<span class="fc" id="L225">			.build(body);</span>
-<span class="fc" id="L226">	}</span>
+<span class="fc" id="L238">			.build(body);</span>
+<span class="fc" id="L239">	}</span>
 
 	private static boolean directlyExtendsExternalResource(TypeDeclaration type) {
-<span class="fc" id="L229">		ITypeBinding binding= type.resolveBinding();</span>
-<span class="pc bpc" id="L230" title="1 of 2 branches missed.">		ITypeBinding superclass= binding == null ? null : binding.getSuperclass();</span>
-<span class="pc bpc" id="L231" title="1 of 2 branches missed.">		return superclass != null &amp;&amp; ORG_JUNIT_RULES_EXTERNAL_RESOURCE</span>
-<span class="fc bfc" id="L232" title="All 2 branches covered.">				.equals(superclass.getErasure().getQualifiedName());</span>
+<span class="fc" id="L242">		ITypeBinding binding= type.resolveBinding();</span>
+<span class="pc bpc" id="L243" title="1 of 2 branches missed.">		ITypeBinding superclass= binding == null ? null : binding.getSuperclass();</span>
+<span class="pc bpc" id="L244" title="1 of 2 branches missed.">		return superclass != null &amp;&amp; ORG_JUNIT_RULES_EXTERNAL_RESOURCE</span>
+<span class="fc bfc" id="L245" title="All 2 branches covered.">				.equals(superclass.getErasure().getQualifiedName());</span>
 	}
 
 	private static boolean isLifecycleMethod(MethodDeclaration method, String methodName) {
-<span class="fc" id="L236">		return methodName.equals(method.getName().getIdentifier());</span>
+<span class="fc" id="L249">		return methodName.equals(method.getName().getIdentifier());</span>
 	}
 
 	private static void addContextArgumentIfMissing(ASTNode node, ASTRewrite rewriter, AST ast,
 			TextEditGroup group) {
 		ListRewrite arguments;
-<span class="pc bpc" id="L242" title="1 of 2 branches missed.">		if (node instanceof MethodInvocation) {</span>
-<span class="nc" id="L243">			arguments= rewriter.getListRewrite(node, MethodInvocation.ARGUMENTS_PROPERTY);</span>
-<span class="pc bpc" id="L244" title="1 of 2 branches missed.">		} else if (node instanceof SuperMethodInvocation) {</span>
-<span class="fc" id="L245">			arguments= rewriter.getListRewrite(node, SuperMethodInvocation.ARGUMENTS_PROPERTY);</span>
-<span class="fc" id="L246">		} else {</span>
-<span class="nc" id="L247">			return;</span>
+<span class="pc bpc" id="L255" title="1 of 2 branches missed.">		if (node instanceof MethodInvocation) {</span>
+<span class="nc" id="L256">			arguments= rewriter.getListRewrite(node, MethodInvocation.ARGUMENTS_PROPERTY);</span>
+<span class="pc bpc" id="L257" title="1 of 2 branches missed.">		} else if (node instanceof SuperMethodInvocation) {</span>
+<span class="fc" id="L258">			arguments= rewriter.getListRewrite(node, SuperMethodInvocation.ARGUMENTS_PROPERTY);</span>
+<span class="fc" id="L259">		} else {</span>
+<span class="nc" id="L260">			return;</span>
 		}
-<span class="fc" id="L249">		boolean hasContextArgument= arguments.getRewrittenList().stream()</span>
-<span class="pc bnc" id="L250" title="All 2 branches missed.">				.anyMatch(argument -&gt; argument instanceof SimpleName name</span>
-<span class="nc bnc" id="L251" title="All 2 branches missed.">						&amp;&amp; VARIABLE_NAME_CONTEXT.equals(name.getIdentifier()));</span>
-<span class="pc bpc" id="L252" title="1 of 2 branches missed.">		if (!hasContextArgument) {</span>
-<span class="fc" id="L253">			arguments.insertFirst(ast.newSimpleName(VARIABLE_NAME_CONTEXT), group);</span>
+<span class="fc" id="L262">		boolean hasContextArgument= arguments.getRewrittenList().stream()</span>
+<span class="pc bnc" id="L263" title="All 2 branches missed.">				.anyMatch(argument -&gt; argument instanceof SimpleName name</span>
+<span class="nc bnc" id="L264" title="All 2 branches missed.">						&amp;&amp; VARIABLE_NAME_CONTEXT.equals(name.getIdentifier()));</span>
+<span class="pc bpc" id="L265" title="1 of 2 branches missed.">		if (!hasContextArgument) {</span>
+<span class="fc" id="L266">			arguments.insertFirst(ast.newSimpleName(VARIABLE_NAME_CONTEXT), group);</span>
 		}
-<span class="fc" id="L255">	}</span>
+<span class="fc" id="L268">	}</span>
 
 	private static boolean isExtensionContext(SingleVariableDeclaration parameter, String className) {
-<span class="nc" id="L258">		ITypeBinding binding= parameter.getType().resolveBinding();</span>
-<span class="nc bnc" id="L259" title="All 4 branches missed.">		return binding != null &amp;&amp; className.equals(binding.getQualifiedName());</span>
+<span class="nc" id="L271">		ITypeBinding binding= parameter.getType().resolveBinding();</span>
+<span class="nc bnc" id="L272" title="All 4 branches missed.">		return binding != null &amp;&amp; className.equals(binding.getQualifiedName());</span>
 	}
 
 	private static ASTRewrite getASTRewrite(ASTNode node, AST globalAST, ASTRewrite globalRewrite) {
-<span class="pc bpc" id="L263" title="1 of 2 branches missed.">		return node.getAST() == globalAST ? globalRewrite : ASTRewrite.create(node.getAST());</span>
+<span class="pc bpc" id="L276" title="1 of 2 branches missed.">		return node.getAST() == globalAST ? globalRewrite : ASTRewrite.create(node.getAST());</span>
 	}
 
 	private static ImportRewrite getImportRewrite(ASTNode node, AST globalAST,
 			ImportRewrite globalImportRewrite) {
-<span class="fc" id="L268">		org.eclipse.jdt.core.dom.CompilationUnit compilationUnit=</span>
-<span class="fc" id="L269">				org.sandbox.jdt.internal.corext.util.ASTNavigationUtils.findCompilationUnit(node);</span>
-<span class="pc bpc" id="L270" title="1 of 2 branches missed.">		return node.getAST() == globalAST ? globalImportRewrite : ImportRewrite.create(compilationUnit, true);</span>
+<span class="fc" id="L281">		org.eclipse.jdt.core.dom.CompilationUnit compilationUnit=</span>
+<span class="fc" id="L282">				org.sandbox.jdt.internal.corext.util.ASTNavigationUtils.findCompilationUnit(node);</span>
+<span class="pc bpc" id="L283" title="1 of 2 branches missed.">		return node.getAST() == globalAST ? globalImportRewrite : ImportRewrite.create(compilationUnit, true);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

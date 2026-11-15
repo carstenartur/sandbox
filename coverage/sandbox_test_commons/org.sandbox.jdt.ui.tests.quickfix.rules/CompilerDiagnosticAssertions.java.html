@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CompilerDiagnosticAssertions.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_test_commons</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.ui.tests.quickfix.rules</a> &gt; <span class="el_source">CompilerDiagnosticAssertions.java</span></div><h1>CompilerDiagnosticAssertions.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2024 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *
+ *******************************************************************************/
+package org.sandbox.jdt.ui.tests.quickfix.rules;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.ltk.core.refactoring.Change;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.compiler.IProblem;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.NodeFinder;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.internal.corext.dom.Bindings;
+import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
+
+/** Compares the JDT warning and error multiset for each complete source unit. */
+public final class CompilerDiagnosticAssertions {
+	private CompilerDiagnosticAssertions() {
+	}
+
+	record CompilerProblemKey(boolean error, int id, String arguments, String junit4Arguments) {
+		static CompilerProblemKey of(IProblem problem, CompilationUnit root) {
+<span class="fc" id="L47">			String[] arguments= problem.getArguments();</span>
+<span class="fc bfc" id="L48" title="All 4 branches covered.">			if ((problem.getID() == IProblem.MethodCanBeStatic || problem.getID() == IProblem.MethodCanBePotentiallyStatic)</span>
+<span class="pc bpc" id="L49" title="1 of 4 branches missed.">					&amp;&amp; arguments.length == 3 &amp;&amp; hasUniqueMethodName(root, problem)) {</span>
+				// Parameter types are part of the message even though the warning concerns
+				// use of the receiver. Preserve the full signature when it distinguishes overloads.
+<span class="fc" id="L52">				arguments= Arrays.copyOf(arguments, 2);</span>
+			}
+<span class="fc bfc" id="L54" title="All 2 branches covered.">			String junit4Arguments= problem.getID() == IProblem.OverridingMethodWithoutSuperInvocation</span>
+<span class="fc" id="L55">					? junit4CallbackArguments(declaringMethod(root, problem)) : null;</span>
+<span class="fc" id="L56">			return new CompilerProblemKey(problem.isError(), problem.getID(), Arrays.toString(arguments), junit4Arguments);</span>
+		}
+
+		String severity() {
+<span class="fc bfc" id="L60" title="All 2 branches covered.">			return error ? &quot;ERROR&quot; : &quot;WARNING&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+		}
+	}
+
+	private static IMethodBinding declaringMethod(CompilationUnit root, IProblem problem) {
+<span class="fc" id="L65">		int start= problem.getSourceStart();</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">		if (start &lt; 0) {</span>
+<span class="nc" id="L67">			return null;</span>
+		}
+<span class="fc" id="L69">		ASTNode node= NodeFinder.perform(root, start, problem.getSourceEnd() - start + 1);</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">		while (node != null) {</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">			if (node instanceof MethodDeclaration method) {</span>
+<span class="fc" id="L72">				return method.resolveBinding();</span>
+			}
+<span class="nc" id="L74">			node= node.getParent();</span>
+		}
+<span class="nc" id="L76">		return null;</span>
+	}
+
+	private static boolean hasUniqueMethodName(CompilationUnit root, IProblem problem) {
+<span class="fc" id="L80">		IMethodBinding binding= declaringMethod(root, problem);</span>
+<span class="pc bpc" id="L81" title="2 of 4 branches missed.">		if (binding == null || binding.getDeclaringClass() == null) {</span>
+<span class="nc" id="L82">			return false;</span>
+		}
+<span class="fc bfc" id="L84" title="All 2 branches covered.">		return Arrays.stream(binding.getDeclaringClass().getDeclaredMethods())</span>
+<span class="fc" id="L85">				.filter(candidate -&gt; candidate.getName().equals(binding.getName())).count() == 1;</span>
+	}
+
+	private static String junit4CallbackArguments(IMethodBinding method) {
+<span class="pc bpc" id="L89" title="3 of 6 branches missed.">		if (method == null || method.isRecovered() || method.getDeclaringClass() == null) {</span>
+<span class="nc" id="L90">			return null;</span>
+		}
+<span class="fc" id="L92">		var owner= method.getDeclaringClass();</span>
+<span class="fc" id="L93">		var parameters= method.getParameterTypes();</span>
+<span class="fc" id="L94">		String name= method.getName();</span>
+<span class="fc bfc" id="L95" title="All 6 branches covered.">		if (parameters.length == 0 &amp;&amp; (&quot;before&quot;.equals(name) || &quot;after&quot;.equals(name)) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">				&amp;&amp; Bindings.findTypeInHierarchy(owner, &quot;org.junit.rules.ExternalResource&quot;) != null) { //$NON-NLS-1$</span>
+<span class="fc" id="L97">			return Arrays.toString(new String[] { owner.getQualifiedName() + &quot;.&quot; + name + &quot;()&quot; }); //$NON-NLS-1$ //$NON-NLS-2$</span>
+		}
+<span class="fc" id="L99">		String extensionPackage= &quot;org.junit.jupiter.api.extension.&quot;; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L100" title="All 4 branches covered.">		if (parameters.length != 1 || !(extensionPackage + &quot;ExtensionContext&quot;).equals(parameters[0].getQualifiedName())) { //$NON-NLS-1$</span>
+<span class="fc" id="L101">			return null;</span>
+		}
+<span class="pc bpc" id="L103" title="2 of 3 branches missed.">		String phase= switch (name) {</span>
+<span class="nc" id="L104">			case &quot;beforeEach&quot;, &quot;beforeAll&quot; -&gt; &quot;before&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc" id="L105">			case &quot;afterEach&quot;, &quot;afterAll&quot; -&gt; &quot;after&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="nc" id="L106">			default -&gt; null;</span>
+		};
+<span class="pc bpc" id="L108" title="2 of 4 branches missed.">		if (phase == null || Bindings.findTypeInHierarchy(owner,</span>
+<span class="fc" id="L109">				extensionPackage + Character.toUpperCase(name.charAt(0)) + name.substring(1) + &quot;Callback&quot;) == null) { //$NON-NLS-1$</span>
+<span class="nc" id="L110">			return null;</span>
+		}
+<span class="fc" id="L112">		return Arrays.toString(new String[] { owner.getQualifiedName() + &quot;.&quot; + phase + &quot;()&quot; }); //$NON-NLS-1$ //$NON-NLS-2$</span>
+	}
+
+	/** Records diagnostics before a direct change or a workbench interaction. */
+	public static Snapshot capture(ICompilationUnit... units) {
+<span class="fc" id="L117">		return new Snapshot(units);</span>
+	}
+
+	/** Original per-file diagnostics, including warnings which an edit may remove. */
+	public static final class Snapshot {
+		private final ICompilationUnit[] units;
+		private final Map&lt;ICompilationUnit, Map&lt;CompilerProblemKey, Long&gt;&gt; before;
+
+<span class="fc" id="L125">		private Snapshot(ICompilationUnit[] units) {</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">			if (units.length == 0) {</span>
+<span class="nc" id="L127">				throw new IllegalArgumentException(&quot;The compiler check needs at least one compilation unit&quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L129">			this.units= units.clone();</span>
+<span class="fc" id="L130">			before= captureCompilerDiagnostics(this.units);</span>
+<span class="fc" id="L131">		}</span>
+
+		public void assertNoNewDiagnostics() {
+<span class="fc" id="L134">			assertNoNewCompilerDiagnostics(units, before);</span>
+<span class="fc" id="L135">		}</span>
+
+		public void assertRestored() {
+<span class="fc" id="L138">			assertEquals(before, captureCompilerDiagnostics(units), &quot;Undo must restore the original Java warning and error set&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L139">		}</span>
+	}
+
+	/** Performs a direct LTK change and checks every supplied unit against its own baseline. */
+	public static Change performAndCheck(Change change, IProgressMonitor monitor, ICompilationUnit... units) throws CoreException {
+<span class="fc" id="L144">		Snapshot before= capture(units);</span>
+<span class="fc" id="L145">		Change undo= change.perform(monitor);</span>
+<span class="fc" id="L146">		before.assertNoNewDiagnostics();</span>
+<span class="fc" id="L147">		return undo;</span>
+	}
+
+	static Map&lt;ICompilationUnit, Map&lt;CompilerProblemKey, Long&gt;&gt; captureCompilerDiagnostics(
+			ICompilationUnit[] units) {
+<span class="fc" id="L152">		Map&lt;ICompilationUnit, Map&lt;CompilerProblemKey, Long&gt;&gt; result= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">		for (ICompilationUnit unit : units) {</span>
+<span class="fc" id="L154">			result.put(unit, compilerDiagnostics(unit));</span>
+		}
+<span class="fc" id="L156">		return result;</span>
+	}
+
+	private static Map&lt;CompilerProblemKey, Long&gt; compilerDiagnostics(ICompilationUnit unit) {
+<span class="fc" id="L160">		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);</span>
+<span class="fc" id="L161">		parser.setSource(unit);</span>
+<span class="fc" id="L162">		var options= unit.getJavaProject().getOptions(true);</span>
+		// Test diagnostics include optional compiler warnings even when the cleanup
+		// fixture itself uses a lenient workspace profile. Keep project errors and its language level.
+<span class="fc bfc" id="L165" title="All 2 branches covered.">		options.replaceAll((key, severity) -&gt; key.startsWith(JavaCore.PLUGIN_ID + &quot;.compiler.problem.&quot;) //$NON-NLS-1$</span>
+<span class="fc bfc" id="L166" title="All 4 branches covered.">				&amp;&amp; (JavaCore.IGNORE.equals(severity) || JavaCore.INFO.equals(severity)) ? JavaCore.WARNING : severity);</span>
+<span class="fc" id="L167">		parser.setCompilerOptions(options);</span>
+<span class="fc" id="L168">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L169">		CompilationUnit root= (CompilationUnit) parser.createAST(null);</span>
+<span class="fc" id="L170">		return Arrays.stream(root.getProblems())</span>
+<span class="pc bpc" id="L171" title="1 of 4 branches missed.">				.filter(problem -&gt; problem.isError() || problem.isWarning())</span>
+<span class="fc" id="L172">				.collect(Collectors.groupingBy(problem -&gt; CompilerProblemKey.of(problem, root), LinkedHashMap::new, Collectors.counting()));</span>
+	}
+
+	static void assertNoNewCompilerDiagnostics(ICompilationUnit[] units,
+			Map&lt;ICompilationUnit, Map&lt;CompilerProblemKey, Long&gt;&gt; before) {
+<span class="fc" id="L177">		StringBuilder differences= new StringBuilder();</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">		for (ICompilationUnit unit : units) {</span>
+<span class="fc" id="L179">			Map&lt;CompilerProblemKey, Long&gt; baseline= before.getOrDefault(unit, Map.of());</span>
+<span class="fc" id="L180">			Map&lt;CompilerProblemKey, Long&gt; after= compilerDiagnostics(unit);</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">			for (Map.Entry&lt;CompilerProblemKey, Long&gt; entry : after.entrySet()) {</span>
+<span class="fc" id="L182">				CompilerProblemKey key= entry.getKey();</span>
+<span class="fc" id="L183">				long previous= baseline.getOrDefault(key, 0L);</span>
+<span class="pc bpc" id="L184" title="1 of 6 branches missed.">				if (previous == 0 &amp;&amp; key.junit4Arguments() != null &amp;&amp; !key.arguments().equals(key.junit4Arguments())) {</span>
+					// Credit a pre-existing missing super call only across one unambiguous JUnit migration.
+<span class="fc" id="L186">					CompilerProblemKey legacy= new CompilerProblemKey(key.error(), key.id(), key.junit4Arguments(), key.junit4Arguments());</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">					if (baseline.containsKey(legacy) &amp;&amp; after.keySet().stream()</span>
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">							.filter(candidate -&gt; key.junit4Arguments().equals(candidate.junit4Arguments())).count() == 1) {</span>
+<span class="fc" id="L189">						previous= baseline.get(legacy);</span>
+					}
+				}
+<span class="fc bfc" id="L192" title="All 2 branches covered.">				if (entry.getValue() &gt; previous) {</span>
+<span class="fc" id="L193">					CompilerProblemKey problem= entry.getKey();</span>
+<span class="fc" id="L194">					differences.append(unit.getElementName() + &quot; gained compiler diagnostic: &quot; + problem.severity() //$NON-NLS-1$</span>
+<span class="fc" id="L195">							+ &quot; id=&quot; + problem.id() + &quot; arguments=&quot; + problem.arguments() //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L196">							+ &quot; before=&quot; + previous + &quot; after=&quot; + entry.getValue()).append('\n'); //$NON-NLS-1$ //$NON-NLS-2$</span>
+				}
+			}
+		}
+<span class="fc bfc" id="L200" title="All 2 branches covered.">		if (!differences.isEmpty()) {</span>
+<span class="nc" id="L201">			fail(differences.toString());</span>
+		}
+<span class="fc" id="L203">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

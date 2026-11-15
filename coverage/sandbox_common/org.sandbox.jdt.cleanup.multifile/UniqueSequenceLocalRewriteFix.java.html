@@ -91,40 +91,42 @@ public final class UniqueSequenceLocalRewriteFix {
 <span class="fc" id="L91">			ParameterizedType setType= ast.newParameterizedType(</span>
 <span class="fc" id="L92">					ast.newSimpleType(ast.newName(interfaceName)));</span>
 <span class="fc" id="L93">			setType.typeArguments().add(ASTNode.copySubtree(ast, elementType));</span>
-<span class="fc" id="L94">			rewrite.replace(resolved.declaration().getType(), setType, group);</span>
+<span class="fc" id="L94">			cuRewrite.getImportRemover().registerRemovedNode(resolved.declarationType().getType());</span>
+<span class="fc" id="L95">			rewrite.replace(resolved.declaration().getType(), setType, group);</span>
 
-<span class="fc" id="L96">			String implementationName= imports.addImport(</span>
-<span class="fc" id="L97">					resolved.plan().targetImplementationType());</span>
-<span class="fc" id="L98">			ClassInstanceCreation creation= ast.newClassInstanceCreation();</span>
-<span class="fc" id="L99">			ParameterizedType implementationType= ast.newParameterizedType(</span>
-<span class="fc" id="L100">					ast.newSimpleType(ast.newName(implementationName)));</span>
-<span class="fc" id="L101">			creation.setType(implementationType);</span>
-<span class="fc" id="L102">			rewrite.replace(resolved.initializer(), creation, group);</span>
+<span class="fc" id="L97">			String implementationName= imports.addImport(</span>
+<span class="fc" id="L98">					resolved.plan().targetImplementationType());</span>
+<span class="fc" id="L99">			ClassInstanceCreation creation= ast.newClassInstanceCreation();</span>
+<span class="fc" id="L100">			ParameterizedType implementationType= ast.newParameterizedType(</span>
+<span class="fc" id="L101">					ast.newSimpleType(ast.newName(implementationName)));</span>
+<span class="fc" id="L102">			creation.setType(implementationType);</span>
+<span class="fc" id="L103">			cuRewrite.getImportRemover().registerRemovedNode(resolved.initializer().getType());</span>
+<span class="fc" id="L104">			rewrite.replace(resolved.initializer(), creation, group);</span>
 
-<span class="fc bfc" id="L104" title="All 2 branches covered.">			for (GuardedAdd guard : resolved.guards()) {</span>
-<span class="fc" id="L105">				rewrite.replace(</span>
-<span class="fc" id="L106">						guard.statement(),</span>
-<span class="fc" id="L107">						rewrite.createMoveTarget(addStatement(guard)),</span>
-<span class="fc" id="L108">						group);</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">			for (GuardedAdd guard : resolved.guards()) {</span>
+<span class="fc" id="L107">				rewrite.replace(</span>
+<span class="fc" id="L108">						guard.statement(),</span>
+<span class="fc" id="L109">						rewrite.createMoveTarget(addStatement(guard)),</span>
+<span class="fc" id="L110">						group);</span>
 			}
-<span class="fc" id="L110">		}</span>
+<span class="fc" id="L112">		}</span>
 
 		@Override
 		public String getAdditionalInfo() {
-<span class="nc" id="L114">			return DESCRIPTION;</span>
+<span class="nc" id="L116">			return DESCRIPTION;</span>
 		}
 	}
 
 	private static ExpressionStatement addStatement(GuardedAdd guard) {
-<span class="fc" id="L119">		ASTNode current= guard.add();</span>
-<span class="pc bpc" id="L120" title="2 of 4 branches missed.">		while (current != null &amp;&amp; current != guard.statement()) {</span>
-<span class="fc bfc" id="L121" title="All 2 branches covered.">			if (current instanceof ExpressionStatement statement) {</span>
-<span class="fc" id="L122">				return statement;</span>
+<span class="fc" id="L121">		ASTNode current= guard.add();</span>
+<span class="pc bpc" id="L122" title="2 of 4 branches missed.">		while (current != null &amp;&amp; current != guard.statement()) {</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">			if (current instanceof ExpressionStatement statement) {</span>
+<span class="fc" id="L124">				return statement;</span>
 			}
-<span class="fc" id="L124">			current= current.getParent();</span>
+<span class="fc" id="L126">			current= current.getParent();</span>
 		}
-<span class="nc" id="L126">		throw new IllegalStateException(</span>
-<span class="nc" id="L127">				&quot;Guarded add is not contained in an expression statement&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L128">		throw new IllegalStateException(</span>
+<span class="nc" id="L129">				&quot;Guarded add is not contained in an expression statement&quot;); //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

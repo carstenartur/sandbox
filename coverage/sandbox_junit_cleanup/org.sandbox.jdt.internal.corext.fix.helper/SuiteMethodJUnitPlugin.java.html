@@ -152,83 +152,90 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 <span class="nc" id="L152">			return;</span>
 		}
 
-<span class="fc" id="L155">		rewriter.remove(suite, group);</span>
-<span class="pc bpc" id="L156" title="1 of 4 branches missed.">		if (JUnit3LegacyShape.directlyExtendsTestCase(type) &amp;&amp; type.getSuperclassType() != null) {</span>
-<span class="fc" id="L157">			rewriter.remove(type.getSuperclassType(), group);</span>
-<span class="fc" id="L158">			importRewriter.removeImport(JUnit3LegacyShape.JUNIT3_TEST_CASE);</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">		if (JUnit3LegacyShape.suiteInitializer(type) == null) {</span>
+			// The selected tests are declared on the suite annotation. Document the
+			// otherwise empty type body left by removing the legacy suite method.
+<span class="fc" id="L158">			rewriter.replace(suite, rewriter.createStringPlaceholder(</span>
+<span class="fc" id="L159">					&quot;/* @SelectClasses lists the tests in this suite. */&quot;, ASTNode.METHOD_DECLARATION), group); //$NON-NLS-1$</span>
+<span class="fc" id="L160">		} else {</span>
+<span class="fc" id="L161">			rewriter.remove(suite, group);</span>
 		}
-<span class="fc bfc" id="L160" title="All 2 branches covered.">		for (MethodDeclaration method : type.getMethods()) {</span>
-<span class="pc bpc" id="L161" title="1 of 4 branches missed.">			if (method != suite &amp;&amp; JUnit3LegacyShape.isRemovableConstructor(method)) {</span>
-<span class="fc" id="L162">				rewriter.remove(method, group);</span>
+<span class="pc bpc" id="L163" title="1 of 4 branches missed.">		if (JUnit3LegacyShape.directlyExtendsTestCase(type) &amp;&amp; type.getSuperclassType() != null) {</span>
+<span class="fc" id="L164">			rewriter.remove(type.getSuperclassType(), group);</span>
+<span class="fc" id="L165">			importRewriter.removeImport(JUnit3LegacyShape.JUNIT3_TEST_CASE);</span>
+		}
+<span class="fc bfc" id="L167" title="All 2 branches covered.">		for (MethodDeclaration method : type.getMethods()) {</span>
+<span class="pc bpc" id="L168" title="1 of 4 branches missed.">			if (method != suite &amp;&amp; JUnit3LegacyShape.isRemovableConstructor(method)) {</span>
+<span class="fc" id="L169">				rewriter.remove(method, group);</span>
 			}
 		}
-<span class="fc" id="L165">		migrateSuiteInitializer(type, rewriter, ast, importRewriter, group);</span>
+<span class="fc" id="L172">		migrateSuiteInitializer(type, rewriter, ast, importRewriter, group);</span>
 
-<span class="fc" id="L167">		ListRewrite modifiers= rewriter.getListRewrite(type, TypeDeclaration.MODIFIERS2_PROPERTY);</span>
-<span class="fc" id="L168">		MarkerAnnotation suiteAnnotation= ast.newMarkerAnnotation();</span>
-<span class="fc" id="L169">		suiteAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_SUITE));</span>
-<span class="fc" id="L170">		modifiers.insertFirst(suiteAnnotation, group);</span>
+<span class="fc" id="L174">		ListRewrite modifiers= rewriter.getListRewrite(type, TypeDeclaration.MODIFIERS2_PROPERTY);</span>
+<span class="fc" id="L175">		MarkerAnnotation suiteAnnotation= ast.newMarkerAnnotation();</span>
+<span class="fc" id="L176">		suiteAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_SUITE));</span>
+<span class="fc" id="L177">		modifiers.insertFirst(suiteAnnotation, group);</span>
 
-<span class="fc" id="L172">		SingleMemberAnnotation selectClasses= ast.newSingleMemberAnnotation();</span>
-<span class="fc" id="L173">		selectClasses.setTypeName(ast.newSimpleName(ANNOTATION_SELECT_CLASSES));</span>
-<span class="fc bfc" id="L174" title="All 2 branches covered.">		if (selectedTypes.size() == 1) {</span>
-<span class="fc" id="L175">			selectClasses.setValue(newTypeLiteral(ast, String.valueOf(selectedTypes.get(0))));</span>
-<span class="fc" id="L176">		} else {</span>
-<span class="fc" id="L177">			ArrayInitializer initializer= ast.newArrayInitializer();</span>
-<span class="fc bfc" id="L178" title="All 2 branches covered.">			for (Object selected : selectedTypes) {</span>
-<span class="fc" id="L179">				addExpression(initializer, newTypeLiteral(ast, String.valueOf(selected)));</span>
+<span class="fc" id="L179">		SingleMemberAnnotation selectClasses= ast.newSingleMemberAnnotation();</span>
+<span class="fc" id="L180">		selectClasses.setTypeName(ast.newSimpleName(ANNOTATION_SELECT_CLASSES));</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">		if (selectedTypes.size() == 1) {</span>
+<span class="fc" id="L182">			selectClasses.setValue(newTypeLiteral(ast, String.valueOf(selectedTypes.get(0))));</span>
+<span class="fc" id="L183">		} else {</span>
+<span class="fc" id="L184">			ArrayInitializer initializer= ast.newArrayInitializer();</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">			for (Object selected : selectedTypes) {</span>
+<span class="fc" id="L186">				addExpression(initializer, newTypeLiteral(ast, String.valueOf(selected)));</span>
 			}
-<span class="fc" id="L181">			selectClasses.setValue(initializer);</span>
+<span class="fc" id="L188">			selectClasses.setValue(initializer);</span>
 		}
-<span class="fc" id="L183">		modifiers.insertAfter(selectClasses, suiteAnnotation, group);</span>
+<span class="fc" id="L190">		modifiers.insertAfter(selectClasses, suiteAnnotation, group);</span>
 
-<span class="fc" id="L185">		importRewriter.addImport(ORG_JUNIT_JUPITER_SUITE);</span>
-<span class="fc" id="L186">		importRewriter.addImport(ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES);</span>
-<span class="fc" id="L187">		importRewriter.removeImport(JUnit3SuiteModel.JUNIT3_TEST);</span>
-<span class="fc" id="L188">		importRewriter.removeImport(JUnit3SuiteModel.JUNIT3_TEST_SUITE);</span>
-<span class="fc" id="L189">	}</span>
+<span class="fc" id="L192">		importRewriter.addImport(ORG_JUNIT_JUPITER_SUITE);</span>
+<span class="fc" id="L193">		importRewriter.addImport(ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES);</span>
+<span class="fc" id="L194">		importRewriter.removeImport(JUnit3SuiteModel.JUNIT3_TEST);</span>
+<span class="fc" id="L195">		importRewriter.removeImport(JUnit3SuiteModel.JUNIT3_TEST_SUITE);</span>
+<span class="fc" id="L196">	}</span>
 
 	private static void migrateSuiteInitializer(TypeDeclaration type, ASTRewrite rewriter, AST ast,
 			ImportRewrite importRewriter, TextEditGroup group) {
-<span class="fc" id="L193">		Initializer initializer= JUnit3LegacyShape.suiteInitializer(type);</span>
-<span class="fc bfc" id="L194" title="All 2 branches covered.">		if (initializer == null) {</span>
-<span class="fc" id="L195">			return;</span>
+<span class="fc" id="L200">		Initializer initializer= JUnit3LegacyShape.suiteInitializer(type);</span>
+<span class="fc bfc" id="L201" title="All 2 branches covered.">		if (initializer == null) {</span>
+<span class="fc" id="L202">			return;</span>
 		}
-<span class="fc" id="L197">		MethodDeclaration beforeSuite= ast.newMethodDeclaration();</span>
-<span class="fc" id="L198">		beforeSuite.setName(ast.newSimpleName(BEFORE_SUITE_METHOD));</span>
-<span class="fc" id="L199">		beforeSuite.setReturnType2(ast.newPrimitiveType(PrimitiveType.VOID));</span>
-<span class="fc" id="L200">		MarkerAnnotation annotation= ast.newMarkerAnnotation();</span>
-<span class="fc" id="L201">		annotation.setTypeName(ast.newSimpleName(ANNOTATION_BEFORE_SUITE));</span>
-<span class="fc" id="L202">		addModifier(beforeSuite, annotation);</span>
-<span class="fc" id="L203">		addModifier(beforeSuite, ast.newModifier(Modifier.ModifierKeyword.STATIC_KEYWORD));</span>
-<span class="fc" id="L204">		beforeSuite.setBody((Block) ASTNode.copySubtree(ast, initializer.getBody()));</span>
+<span class="fc" id="L204">		MethodDeclaration beforeSuite= ast.newMethodDeclaration();</span>
+<span class="fc" id="L205">		beforeSuite.setName(ast.newSimpleName(BEFORE_SUITE_METHOD));</span>
+<span class="fc" id="L206">		beforeSuite.setReturnType2(ast.newPrimitiveType(PrimitiveType.VOID));</span>
+<span class="fc" id="L207">		MarkerAnnotation annotation= ast.newMarkerAnnotation();</span>
+<span class="fc" id="L208">		annotation.setTypeName(ast.newSimpleName(ANNOTATION_BEFORE_SUITE));</span>
+<span class="fc" id="L209">		addModifier(beforeSuite, annotation);</span>
+<span class="fc" id="L210">		addModifier(beforeSuite, ast.newModifier(Modifier.ModifierKeyword.STATIC_KEYWORD));</span>
+<span class="fc" id="L211">		beforeSuite.setBody((Block) ASTNode.copySubtree(ast, initializer.getBody()));</span>
 
-<span class="fc" id="L206">		ListRewrite bodyDeclarations= rewriter.getListRewrite(type, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);</span>
-<span class="fc" id="L207">		bodyDeclarations.insertFirst(beforeSuite, group);</span>
-<span class="fc" id="L208">		rewriter.remove(initializer, group);</span>
-<span class="fc" id="L209">		importRewriter.addImport(ORG_JUNIT_PLATFORM_SUITE_API_BEFORE_SUITE);</span>
-<span class="fc" id="L210">	}</span>
+<span class="fc" id="L213">		ListRewrite bodyDeclarations= rewriter.getListRewrite(type, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);</span>
+<span class="fc" id="L214">		bodyDeclarations.insertFirst(beforeSuite, group);</span>
+<span class="fc" id="L215">		rewriter.remove(initializer, group);</span>
+<span class="fc" id="L216">		importRewriter.addImport(ORG_JUNIT_PLATFORM_SUITE_API_BEFORE_SUITE);</span>
+<span class="fc" id="L217">	}</span>
 
 	@SuppressWarnings(&quot;unchecked&quot;)
 	private static void addModifier(MethodDeclaration method, Object modifier) {
-<span class="fc" id="L214">		method.modifiers().add(modifier);</span>
-<span class="fc" id="L215">	}</span>
+<span class="fc" id="L221">		method.modifiers().add(modifier);</span>
+<span class="fc" id="L222">	}</span>
 
 	@SuppressWarnings(&quot;unchecked&quot;)
 	private static void addExpression(ArrayInitializer initializer, TypeLiteral literal) {
-<span class="fc" id="L219">		initializer.expressions().add(literal);</span>
-<span class="fc" id="L220">	}</span>
+<span class="fc" id="L226">		initializer.expressions().add(literal);</span>
+<span class="fc" id="L227">	}</span>
 
 	private static TypeLiteral newTypeLiteral(AST ast, String typeName) {
-<span class="fc" id="L223">		TypeLiteral literal= ast.newTypeLiteral();</span>
-<span class="fc" id="L224">		literal.setType(ast.newSimpleType(ast.newName(typeName)));</span>
-<span class="fc" id="L225">		return literal;</span>
+<span class="fc" id="L230">		TypeLiteral literal= ast.newTypeLiteral();</span>
+<span class="fc" id="L231">		literal.setType(ast.newSimpleType(ast.newName(typeName)));</span>
+<span class="fc" id="L232">		return literal;</span>
 	}
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L230" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L231">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L237" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L238">			return &quot;&quot;&quot;</span>
 					@Suite
 					@SelectClasses({ FooTest.class, BarTest.class })
 					public class AllTests {
@@ -239,7 +246,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 					}
 					&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L242">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L249">		return &quot;&quot;&quot;</span>
 				public class AllTests {
 					static {
 						System.setProperty(&quot;modules&quot;, &quot;java.base&quot;);

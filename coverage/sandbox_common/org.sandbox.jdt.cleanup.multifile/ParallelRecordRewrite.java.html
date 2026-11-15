@@ -258,64 +258,70 @@ final class ParallelRecordRewrite extends CompilationUnitRewriteOperationWithSou
 <span class="nc" id="L258">		var list= ast.newParameterizedType(ast.newSimpleType(ast.newName(listType)));</span>
 <span class="nc" id="L259">		list.typeArguments().add(ast.newSimpleType(ast.newSimpleName(rowName)));</span>
 <span class="nc" id="L260">		rows.setType(list);</span>
-<span class="nc" id="L261">		rewrite.replace(left, rows, group);</span>
-<span class="nc" id="L262">		rewrite.remove(right, group);</span>
-<span class="nc" id="L263">		var row= ast.newClassInstanceCreation();</span>
-<span class="nc" id="L264">		row.setType(ast.newSimpleType(ast.newSimpleName(rowName)));</span>
-<span class="nc bnc" id="L265" title="All 2 branches missed.">		for (int i= 2; i &lt; 4; i++) {</span>
-<span class="nc" id="L266">			var store= (Assignment) ((ExpressionStatement) growth.statements().get(i)).getExpression();</span>
-<span class="nc" id="L267">			row.arguments().add(ASTNode.copySubtree(ast, store.getRightHandSide()));</span>
+<span class="nc" id="L261">		cu.getImportRemover().registerAddedImports(list);</span>
+<span class="nc" id="L262">		cu.getImportRemover().registerAddedImports(initializer.getType());</span>
+<span class="nc" id="L263">		rewrite.replace(left, rows, group);</span>
+<span class="nc" id="L264">		rewrite.remove(right, group);</span>
+<span class="nc" id="L265">		var row= ast.newClassInstanceCreation();</span>
+<span class="nc" id="L266">		row.setType(ast.newSimpleType(ast.newSimpleName(rowName)));</span>
+<span class="nc bnc" id="L267" title="All 2 branches missed.">		for (int i= 2; i &lt; 4; i++) {</span>
+<span class="nc" id="L268">			var store= (Assignment) ((ExpressionStatement) growth.statements().get(i)).getExpression();</span>
+<span class="nc" id="L269">			row.arguments().add(ASTNode.copySubtree(ast, store.getRightHandSide()));</span>
 		}
-<span class="nc" id="L269">		var add= ast.newMethodInvocation();</span>
-<span class="nc" id="L270">		add.setExpression(ast.newSimpleName(listName));</span>
-<span class="nc" id="L271">		add.setName(ast.newSimpleName(&quot;add&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L272">		add.arguments().add(row);</span>
-<span class="nc" id="L273">		rewrite.replace((ASTNode) growth.statements().getFirst(), ast.newExpressionStatement(add), group);</span>
-<span class="nc bnc" id="L274" title="All 2 branches missed.">		for (int i= 1; i &lt; 4; i++) {</span>
-<span class="nc" id="L275">			rewrite.remove((ASTNode) growth.statements().get(i), group);</span>
+<span class="nc" id="L271">		var add= ast.newMethodInvocation();</span>
+<span class="nc" id="L272">		add.setExpression(ast.newSimpleName(listName));</span>
+<span class="nc" id="L273">		add.setName(ast.newSimpleName(&quot;add&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L274">		add.arguments().add(row);</span>
+		// The first two statements perform the array growth. Stores may refer to
+		// imports retained by the record constructor and must not be registered here.
+<span class="nc" id="L277">		cu.getImportRemover().registerRemovedNode((ASTNode) growth.statements().get(0));</span>
+<span class="nc" id="L278">		cu.getImportRemover().registerRemovedNode((ASTNode) growth.statements().get(1));</span>
+<span class="nc" id="L279">		rewrite.replace((ASTNode) growth.statements().getFirst(), ast.newExpressionStatement(add), group);</span>
+<span class="nc bnc" id="L280" title="All 2 branches missed.">		for (int i= 1; i &lt; 4; i++) {</span>
+<span class="nc" id="L281">			rewrite.remove((ASTNode) growth.statements().get(i), group);</span>
 		}
-<span class="nc" id="L277">		String leftKey= ((VariableDeclarationFragment) left.fragments().getFirst()).resolveBinding().getVariableDeclaration().getKey();</span>
-<span class="nc bnc" id="L278" title="All 2 branches missed.">		for (ArrayAccess read : reads) {</span>
-<span class="nc" id="L279">			var get= ast.newMethodInvocation();</span>
-<span class="nc" id="L280">			get.setExpression(ast.newSimpleName(listName));</span>
-<span class="nc" id="L281">			get.setName(ast.newSimpleName(&quot;get&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L282">			get.arguments().add(ASTNode.copySubtree(ast, read.getIndex()));</span>
-<span class="nc" id="L283">			var accessor= ast.newMethodInvocation();</span>
-<span class="nc" id="L284">			accessor.setExpression(get);</span>
-<span class="nc bnc" id="L285" title="All 2 branches missed.">			accessor.setName(ast.newSimpleName(components.get(leftKey.equals(key(read.getArray())) ? 0 : 1)));</span>
-<span class="nc" id="L286">			rewrite.replace(read, accessor, group);</span>
+<span class="nc" id="L283">		String leftKey= ((VariableDeclarationFragment) left.fragments().getFirst()).resolveBinding().getVariableDeclaration().getKey();</span>
+<span class="nc bnc" id="L284" title="All 2 branches missed.">		for (ArrayAccess read : reads) {</span>
+<span class="nc" id="L285">			var get= ast.newMethodInvocation();</span>
+<span class="nc" id="L286">			get.setExpression(ast.newSimpleName(listName));</span>
+<span class="nc" id="L287">			get.setName(ast.newSimpleName(&quot;get&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L288">			get.arguments().add(ASTNode.copySubtree(ast, read.getIndex()));</span>
+<span class="nc" id="L289">			var accessor= ast.newMethodInvocation();</span>
+<span class="nc" id="L290">			accessor.setExpression(get);</span>
+<span class="nc bnc" id="L291" title="All 2 branches missed.">			accessor.setName(ast.newSimpleName(components.get(leftKey.equals(key(read.getArray())) ? 0 : 1)));</span>
+<span class="nc" id="L292">			rewrite.replace(read, accessor, group);</span>
 		}
-<span class="nc" id="L288">	}</span>
+<span class="nc" id="L294">	}</span>
 
 	private static String component(AST ast, RecordDeclaration record, VariableDeclarationStatement array) {
-<span class="nc" id="L291">		var fragment= (VariableDeclarationFragment) array.fragments().getFirst();</span>
-<span class="nc" id="L292">		var declaration= ast.newSingleVariableDeclaration();</span>
-<span class="nc" id="L293">		declaration.setType((Type) ASTNode.copySubtree(ast, ((ArrayType) array.getType()).getElementType()));</span>
-<span class="nc" id="L294">		String name= fragment.getName().getIdentifier();</span>
-<span class="nc" id="L295">		declaration.setName(ast.newSimpleName(name));</span>
-<span class="nc" id="L296">		record.recordComponents().add(declaration);</span>
-<span class="nc" id="L297">		return name;</span>
+<span class="nc" id="L297">		var fragment= (VariableDeclarationFragment) array.fragments().getFirst();</span>
+<span class="nc" id="L298">		var declaration= ast.newSingleVariableDeclaration();</span>
+<span class="nc" id="L299">		declaration.setType((Type) ASTNode.copySubtree(ast, ((ArrayType) array.getType()).getElementType()));</span>
+<span class="nc" id="L300">		String name= fragment.getName().getIdentifier();</span>
+<span class="nc" id="L301">		declaration.setName(ast.newSimpleName(name));</span>
+<span class="nc" id="L302">		record.recordComponents().add(declaration);</span>
+<span class="nc" id="L303">		return name;</span>
 	}
 
 	private static boolean removesComment(CompilationUnit root, ASTNode node) {
-<span class="nc" id="L301">		int start= root.getExtendedStartPosition(node);</span>
-<span class="nc" id="L302">		int end= start + root.getExtendedLength(node);</span>
-<span class="nc bnc" id="L303" title="All 2 branches missed.">		for (Object entry : root.getCommentList()) {</span>
-<span class="nc" id="L304">			var comment= (ASTNode) entry;</span>
-<span class="nc bnc" id="L305" title="All 4 branches missed.">			if (comment.getStartPosition() &lt; end &amp;&amp; comment.getStartPosition() + comment.getLength() &gt; start) {</span>
-<span class="nc" id="L306">				return true;</span>
+<span class="nc" id="L307">		int start= root.getExtendedStartPosition(node);</span>
+<span class="nc" id="L308">		int end= start + root.getExtendedLength(node);</span>
+<span class="nc bnc" id="L309" title="All 2 branches missed.">		for (Object entry : root.getCommentList()) {</span>
+<span class="nc" id="L310">			var comment= (ASTNode) entry;</span>
+<span class="nc bnc" id="L311" title="All 4 branches missed.">			if (comment.getStartPosition() &lt; end &amp;&amp; comment.getStartPosition() + comment.getLength() &gt; start) {</span>
+<span class="nc" id="L312">				return true;</span>
 			}
 		}
-<span class="nc" id="L309">		return false;</span>
+<span class="nc" id="L315">		return false;</span>
 	}
 
 	private static boolean forbiddenComponent(String name) {
-<span class="nc" id="L313">		return Set.of(&quot;clone&quot;, &quot;finalize&quot;, &quot;getClass&quot;, &quot;hashCode&quot;, &quot;notify&quot;, &quot;notifyAll&quot;, &quot;toString&quot;, &quot;wait&quot;).contains(name); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$</span>
+<span class="nc" id="L319">		return Set.of(&quot;clone&quot;, &quot;finalize&quot;, &quot;getClass&quot;, &quot;hashCode&quot;, &quot;notify&quot;, &quot;notifyAll&quot;, &quot;toString&quot;, &quot;wait&quot;).contains(name); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$</span>
 	}
 
 	@Override
 	public String getAdditionalInfo() {
-<span class="nc" id="L318">		return DESCRIPTION;</span>
+<span class="nc" id="L324">		return DESCRIPTION;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

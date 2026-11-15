@@ -418,7 +418,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 <span class="pc bpc" id="L418" title="1 of 2 branches missed.">		for (Object modifier : method.modifiers()) {</span>
 <span class="pc bpc" id="L419" title="1 of 2 branches missed.">			if (modifier instanceof Annotation annotation) {</span>
 <span class="fc" id="L420">				ITypeBinding binding= annotation.resolveTypeBinding();</span>
-<span class="pc bpc" id="L421" title="2 of 4 branches missed.">				if (binding != null &amp;&amp; ORG_JUNIT_TEST.equals(binding.getQualifiedName())) {</span>
+<span class="pc bpc" id="L421" title="1 of 4 branches missed.">				if (binding != null &amp;&amp; ORG_JUNIT_TEST.equals(binding.getQualifiedName())) {</span>
 <span class="fc" id="L422">					return true;</span>
 				}
 			}

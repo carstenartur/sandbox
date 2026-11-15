@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>AbstractEclipseJava.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_test_commons</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.ui.tests.quickfix.rules</a> &gt; <span class="el_source">AbstractEclipseJava.java</span></div><h1>AbstractEclipseJava.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>AbstractEclipseJava.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_test_commons</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.ui.tests.quickfix.rules</a> &gt; <span class="el_source">AbstractEclipseJava.java</span></div><h1>AbstractEclipseJava.java</h1><pre class="source lang-java linenums">/*******************************************************************************
  * Copyright (c) 2024 Carsten Hammer and others.
  *
  * This program and the accompanying materials
@@ -694,7 +694,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 */
 	public RefactoringStatus assertRefactoringResultAsExpected(final ICompilationUnit[] cus, final String[] expected,
 			final Set&lt;String&gt; setOfExpectedGroupCategories) throws CoreException {
-<span class="fc" id="L697">		final RefactoringStatus status = performRefactoringCheckingDiagnostics(cus, setOfExpectedGroupCategories);</span>
+<span class="fc" id="L697">		final RefactoringStatus status = performRefactoring(cus, setOfExpectedGroupCategories);</span>
 <span class="fc" id="L698">		final String[] previews = new String[cus.length];</span>
 <span class="fc bfc" id="L699" title="All 2 branches covered.">		for (int i = 0; i &lt; cus.length; i++) {</span>
 <span class="fc" id="L700">			final ICompilationUnit cu = cus[i];</span>
@@ -787,62 +787,11 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 <span class="fc" id="L787">		return assertRefactoringResultAsExpected(cus, expected, null);</span>
 	}
 
-	private record CompilerProblemKey(boolean error, int id, String arguments) {
-		static CompilerProblemKey of(IProblem problem) {
-<span class="fc" id="L792">			return new CompilerProblemKey(problem.isError(), problem.getID(),</span>
-<span class="fc" id="L793">					Arrays.toString(problem.getArguments()));</span>
-		}
-
-		String severity() {
-<span class="fc bfc" id="L797" title="All 2 branches covered.">			return error ? &quot;ERROR&quot; : &quot;WARNING&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-		}
-	}
-
-	private RefactoringStatus performRefactoringCheckingDiagnostics(ICompilationUnit[] units,
-			Set&lt;String&gt; expectedGroups) throws CoreException {
-<span class="fc" id="L803">		Map&lt;ICompilationUnit, Map&lt;CompilerProblemKey, Long&gt;&gt; before= captureCompilerDiagnostics(units);</span>
-<span class="fc" id="L804">		RefactoringStatus status= performRefactoring(units, expectedGroups);</span>
-<span class="fc" id="L805">		assertNoNewCompilerDiagnostics(units, before);</span>
-<span class="fc" id="L806">		return status;</span>
-	}
-
-	private static Map&lt;ICompilationUnit, Map&lt;CompilerProblemKey, Long&gt;&gt; captureCompilerDiagnostics(
-			ICompilationUnit[] units) {
-<span class="fc" id="L811">		Map&lt;ICompilationUnit, Map&lt;CompilerProblemKey, Long&gt;&gt; result= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L812" title="All 2 branches covered.">		for (ICompilationUnit unit : units) {</span>
-<span class="fc" id="L813">			result.put(unit, compilerDiagnostics(unit));</span>
-		}
-<span class="fc" id="L815">		return result;</span>
-	}
-
-	private static Map&lt;CompilerProblemKey, Long&gt; compilerDiagnostics(ICompilationUnit unit) {
-<span class="fc" id="L819">		CompilationUnit root= parseCompilationUnit(unit);</span>
-<span class="fc" id="L820">		return Arrays.stream(root.getProblems())</span>
-<span class="pc bpc" id="L821" title="1 of 4 branches missed.">				.filter(problem -&gt; problem.isError() || problem.isWarning())</span>
-<span class="fc" id="L822">				.collect(Collectors.groupingBy(CompilerProblemKey::of, LinkedHashMap::new, Collectors.counting()));</span>
-	}
-
-	private static void assertNoNewCompilerDiagnostics(ICompilationUnit[] units,
-			Map&lt;ICompilationUnit, Map&lt;CompilerProblemKey, Long&gt;&gt; before) {
-<span class="fc bfc" id="L827" title="All 2 branches covered.">		for (ICompilationUnit unit : units) {</span>
-<span class="fc" id="L828">			Map&lt;CompilerProblemKey, Long&gt; baseline= before.getOrDefault(unit, Map.of());</span>
-<span class="fc bfc" id="L829" title="All 2 branches covered.">			for (Map.Entry&lt;CompilerProblemKey, Long&gt; entry : compilerDiagnostics(unit).entrySet()) {</span>
-<span class="fc" id="L830">				long previous= baseline.getOrDefault(entry.getKey(), 0L);</span>
-<span class="fc bfc" id="L831" title="All 2 branches covered.">				if (entry.getValue() &gt; previous) {</span>
-<span class="fc" id="L832">					CompilerProblemKey problem= entry.getKey();</span>
-<span class="pc" id="L833">					fail(unit.getElementName() + &quot; gained compiler diagnostic: &quot; + problem.severity() //$NON-NLS-1$</span>
-<span class="fc" id="L834">							+ &quot; id=&quot; + problem.id() + &quot; arguments=&quot; + problem.arguments() //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L835">							+ &quot; before=&quot; + previous + &quot; after=&quot; + entry.getValue()); //$NON-NLS-1$ //$NON-NLS-2$</span>
-				}
-			}
-		}
-<span class="fc" id="L839">	}</span>
-
 	private static CompilationUnit parseCompilationUnit(ICompilationUnit unit) {
-<span class="fc" id="L842">		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);</span>
-<span class="fc" id="L843">		parser.setSource(unit);</span>
-<span class="fc" id="L844">		parser.setResolveBindings(true);</span>
-<span class="fc" id="L845">		return (CompilationUnit) parser.createAST(null);</span>
+<span class="fc" id="L791">		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);</span>
+<span class="fc" id="L792">		parser.setSource(unit);</span>
+<span class="fc" id="L793">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L794">		return (CompilationUnit) parser.createAST(null);</span>
 	}
 
 	/**
@@ -857,32 +806,32 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @throws AssertionError if compilation errors (non-warnings) are found
 	 */
 	protected CompilationUnit assertNoCompilationError(final ICompilationUnit cu) {
-<span class="fc" id="L860">		final CompilationUnit root = parseCompilationUnit(cu);</span>
-<span class="fc" id="L861">		final IProblem[] problems = root.getProblems();</span>
-<span class="fc" id="L862">		boolean hasProblems = false;</span>
-<span class="fc bfc" id="L863" title="All 2 branches covered.">		for (final IProblem prob : problems) {</span>
-<span class="pc bpc" id="L864" title="3 of 4 branches missed.">			if (!prob.isWarning() &amp;&amp; !prob.isInfo()) {</span>
-<span class="nc" id="L865">				hasProblems = true;</span>
-<span class="nc" id="L866">				break;</span>
+<span class="fc" id="L809">		final CompilationUnit root = parseCompilationUnit(cu);</span>
+<span class="fc" id="L810">		final IProblem[] problems = root.getProblems();</span>
+<span class="fc" id="L811">		boolean hasProblems = false;</span>
+<span class="fc bfc" id="L812" title="All 2 branches covered.">		for (final IProblem prob : problems) {</span>
+<span class="pc bpc" id="L813" title="1 of 4 branches missed.">			if (!prob.isWarning() &amp;&amp; !prob.isInfo()) {</span>
+<span class="nc" id="L814">				hasProblems = true;</span>
+<span class="nc" id="L815">				break;</span>
 			}
 		}
-<span class="pc bpc" id="L869" title="1 of 2 branches missed.">		if (hasProblems) {</span>
-<span class="nc" id="L870">			final StringBuilder builder = new StringBuilder();</span>
-<span class="nc" id="L871">			builder.append(cu.getElementName()).append(&quot; has compilation problems: \n&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L872" title="All 2 branches missed.">			for (final IProblem prob : problems) {</span>
-<span class="nc bnc" id="L873" title="All 4 branches missed.">				if (!prob.isWarning() &amp;&amp; !prob.isInfo()) {</span>
-<span class="nc" id="L874">					builder.append(&quot;ERROR line &quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L875">					builder.append(prob.getSourceLineNumber());</span>
-<span class="nc" id="L876">					builder.append(&quot;: &quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L877">					builder.append(prob.getMessage());</span>
-<span class="nc" id="L878">					builder.append(&quot; [id=&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L879">					builder.append(prob.getID());</span>
-<span class="nc" id="L880">					builder.append(&quot;]\n&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L818" title="1 of 2 branches missed.">		if (hasProblems) {</span>
+<span class="nc" id="L819">			final StringBuilder builder = new StringBuilder();</span>
+<span class="nc" id="L820">			builder.append(cu.getElementName()).append(&quot; has compilation problems: \n&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L821" title="All 2 branches missed.">			for (final IProblem prob : problems) {</span>
+<span class="nc bnc" id="L822" title="All 4 branches missed.">				if (!prob.isWarning() &amp;&amp; !prob.isInfo()) {</span>
+<span class="nc" id="L823">					builder.append(&quot;ERROR line &quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L824">					builder.append(prob.getSourceLineNumber());</span>
+<span class="nc" id="L825">					builder.append(&quot;: &quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L826">					builder.append(prob.getMessage());</span>
+<span class="nc" id="L827">					builder.append(&quot; [id=&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L828">					builder.append(prob.getID());</span>
+<span class="nc" id="L829">					builder.append(&quot;]\n&quot;); //$NON-NLS-1$</span>
 				}
 			}
-<span class="nc" id="L883">			fail(builder.toString());</span>
+<span class="nc" id="L832">			fail(builder.toString());</span>
 		}
-<span class="fc" id="L885">		return root;</span>
+<span class="fc" id="L834">		return root;</span>
 	}
 
 	/**
@@ -895,33 +844,33 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @param expecteds the expected strings
 	 */
 	public static void assertEqualStringsIgnoreOrder(final String[] actuals, final String[] expecteds) {
-<span class="fc" id="L898">		final ArrayList&lt;String&gt; actualList = new ArrayList&lt;&gt;(</span>
-<span class="fc" id="L899">				Arrays.stream(actuals).map(AbstractEclipseJava::normalizeLineEndings).toList());</span>
-<span class="fc" id="L900">		final ArrayList&lt;String&gt; expectedList = new ArrayList&lt;&gt;(</span>
-<span class="fc" id="L901">				Arrays.stream(expecteds).map(AbstractEclipseJava::normalizeLineEndings).toList());</span>
+<span class="fc" id="L847">		final ArrayList&lt;String&gt; actualList = new ArrayList&lt;&gt;(</span>
+<span class="fc" id="L848">				Arrays.stream(actuals).map(AbstractEclipseJava::normalizeLineEndings).toList());</span>
+<span class="fc" id="L849">		final ArrayList&lt;String&gt; expectedList = new ArrayList&lt;&gt;(</span>
+<span class="fc" id="L850">				Arrays.stream(expecteds).map(AbstractEclipseJava::normalizeLineEndings).toList());</span>
 		
 		// Remove matching elements from both lists
-<span class="fc bfc" id="L904" title="All 2 branches covered.">		for (int i = actualList.size() - 1; i &gt;= 0; i--) {</span>
-<span class="pc bpc" id="L905" title="1 of 2 branches missed.">			if (expectedList.remove(actualList.get(i))) {</span>
-<span class="fc" id="L906">				actualList.remove(i);</span>
+<span class="fc bfc" id="L853" title="All 2 branches covered.">		for (int i = actualList.size() - 1; i &gt;= 0; i--) {</span>
+<span class="pc bpc" id="L854" title="1 of 2 branches missed.">			if (expectedList.remove(actualList.get(i))) {</span>
+<span class="fc" id="L855">				actualList.remove(i);</span>
 			}
 		}
 		
-<span class="fc" id="L910">		final int numUnmatchedActuals = actualList.size();</span>
-<span class="fc" id="L911">		final int numUnmatchedExpected = expectedList.size();</span>
+<span class="fc" id="L859">		final int numUnmatchedActuals = actualList.size();</span>
+<span class="fc" id="L860">		final int numUnmatchedExpected = expectedList.size();</span>
 		
-<span class="pc bpc" id="L913" title="1 of 2 branches missed.">		if (numUnmatchedActuals + numUnmatchedExpected &gt; 0) {</span>
+<span class="pc bpc" id="L862" title="1 of 2 branches missed.">		if (numUnmatchedActuals + numUnmatchedExpected &gt; 0) {</span>
 			// Special case: if there's exactly one difference, show a direct comparison
-<span class="nc bnc" id="L915" title="All 4 branches missed.">			if (numUnmatchedActuals == 1 &amp;&amp; numUnmatchedExpected == 1) {</span>
-<span class="nc" id="L916">				assertEquals(expectedList.get(0), actualList.get(0));</span>
+<span class="nc bnc" id="L864" title="All 4 branches missed.">			if (numUnmatchedActuals == 1 &amp;&amp; numUnmatchedExpected == 1) {</span>
+<span class="nc" id="L865">				assertEquals(expectedList.get(0), actualList.get(0));</span>
 			}
 			
 			// Build detailed error message showing all differences
-<span class="nc" id="L920">			final String actual = buildStringFromList(actualList);</span>
-<span class="nc" id="L921">			final String expected = buildStringFromList(expectedList);</span>
-<span class="nc" id="L922">			assertEquals(expected, actual);</span>
+<span class="nc" id="L869">			final String actual = buildStringFromList(actualList);</span>
+<span class="nc" id="L870">			final String expected = buildStringFromList(expectedList);</span>
+<span class="nc" id="L871">			assertEquals(expected, actual);</span>
 		}
-<span class="fc" id="L924">	}</span>
+<span class="fc" id="L873">	}</span>
 
 	/**
 	 * Helper method to build a single string from a list of strings.
@@ -930,14 +879,14 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @return a single concatenated string with newline separators
 	 */
 	private static String buildStringFromList(final ArrayList&lt;String&gt; strings) {
-<span class="nc" id="L933">		final StringBuilder buf = new StringBuilder();</span>
-<span class="nc bnc" id="L934" title="All 2 branches missed.">		for (final String s : strings) {</span>
-<span class="nc bnc" id="L935" title="All 2 branches missed.">			if (s != null) {</span>
-<span class="nc" id="L936">				buf.append(s);</span>
-<span class="nc" id="L937">				buf.append(&quot;\n&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L882">		final StringBuilder buf = new StringBuilder();</span>
+<span class="nc bnc" id="L883" title="All 2 branches missed.">		for (final String s : strings) {</span>
+<span class="nc bnc" id="L884" title="All 2 branches missed.">			if (s != null) {</span>
+<span class="nc" id="L885">				buf.append(s);</span>
+<span class="nc" id="L886">				buf.append(&quot;\n&quot;); //$NON-NLS-1$</span>
 			}
 		}
-<span class="nc" id="L940">		return buf.toString();</span>
+<span class="nc" id="L889">		return buf.toString();</span>
 	}
 
 	/**
@@ -952,10 +901,10 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @return the normalized string, or {@code null} if input was {@code null}
 	 */
 	private static String normalizeLineEndings(final String s) {
-<span class="pc bpc" id="L955" title="1 of 2 branches missed.">		if (s == null) {</span>
-<span class="nc" id="L956">			return null;</span>
+<span class="pc bpc" id="L904" title="1 of 2 branches missed.">		if (s == null) {</span>
+<span class="nc" id="L905">			return null;</span>
 		}
-<span class="fc" id="L958">		return s.replace(&quot;\r\n&quot;, &quot;\n&quot;).replace(&quot;\r&quot;, &quot;\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="fc" id="L907">		return s.replace(&quot;\r\n&quot;, &quot;\n&quot;).replace(&quot;\r&quot;, &quot;\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
 	}
 
 	/**
@@ -981,15 +930,15 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @return the normalized string, or {@code null} if input was {@code null}
 	 */
 	private static String normalizeWhitespace(final String s) {
-<span class="pc bpc" id="L984" title="1 of 2 branches missed.">		if (s == null) {</span>
-<span class="nc" id="L985">			return null;</span>
+<span class="pc bpc" id="L933" title="1 of 2 branches missed.">		if (s == null) {</span>
+<span class="nc" id="L934">			return null;</span>
 		}
-<span class="fc" id="L987">		final String normalized = normalizeLineEndings(s);</span>
-<span class="fc" id="L988">		return Arrays.stream(normalized.split(&quot;\n&quot;, -1)) //$NON-NLS-1$</span>
-<span class="fc" id="L989">				.map(line -&gt; normalizeIndentation(line).stripTrailing())</span>
-<span class="fc" id="L990">				.collect(Collectors.joining(&quot;\n&quot;)) //$NON-NLS-1$</span>
-<span class="fc" id="L991">				.replaceAll(&quot;\n{3,}&quot;, &quot;\n\n&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L992">				.strip();</span>
+<span class="fc" id="L936">		final String normalized = normalizeLineEndings(s);</span>
+<span class="fc" id="L937">		return Arrays.stream(normalized.split(&quot;\n&quot;, -1)) //$NON-NLS-1$</span>
+<span class="fc" id="L938">				.map(line -&gt; normalizeIndentation(line).stripTrailing())</span>
+<span class="fc" id="L939">				.collect(Collectors.joining(&quot;\n&quot;)) //$NON-NLS-1$</span>
+<span class="fc" id="L940">				.replaceAll(&quot;\n{3,}&quot;, &quot;\n\n&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L941">				.strip();</span>
 	}
 
 	/**
@@ -999,15 +948,15 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @return the line with tabs replaced by spaces in leading whitespace
 	 */
 	private static String normalizeIndentation(final String line) {
-<span class="fc" id="L1002">		int i = 0;</span>
-<span class="fc bfc" id="L1003" title="All 6 branches covered.">		while (i &lt; line.length() &amp;&amp; (line.charAt(i) == ' ' || line.charAt(i) == '\t')) {</span>
-<span class="fc" id="L1004">			i++;</span>
+<span class="fc" id="L951">		int i = 0;</span>
+<span class="fc bfc" id="L952" title="All 6 branches covered.">		while (i &lt; line.length() &amp;&amp; (line.charAt(i) == ' ' || line.charAt(i) == '\t')) {</span>
+<span class="fc" id="L953">			i++;</span>
 		}
-<span class="fc bfc" id="L1006" title="All 2 branches covered.">		if (i == 0) {</span>
-<span class="fc" id="L1007">			return line;</span>
+<span class="fc bfc" id="L955" title="All 2 branches covered.">		if (i == 0) {</span>
+<span class="fc" id="L956">			return line;</span>
 		}
-<span class="fc" id="L1009">		final String leading = line.substring(0, i).replace(&quot;\t&quot;, &quot;    &quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L1010">		return leading + line.substring(i);</span>
+<span class="fc" id="L958">		final String leading = line.substring(0, i).replace(&quot;\t&quot;, &quot;    &quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L959">		return leading + line.substring(i);</span>
 	}
 
 	/**
@@ -1024,31 +973,31 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @param expecteds the expected strings
 	 */
 	public static void assertEqualStringsIgnoreOrderAndWhitespace(final String[] actuals, final String[] expecteds) {
-<span class="fc" id="L1027">		final ArrayList&lt;String&gt; actualList = new ArrayList&lt;&gt;(</span>
-<span class="fc" id="L1028">				Arrays.stream(actuals).map(AbstractEclipseJava::normalizeWhitespace).toList());</span>
-<span class="fc" id="L1029">		final ArrayList&lt;String&gt; expectedList = new ArrayList&lt;&gt;(</span>
-<span class="fc" id="L1030">				Arrays.stream(expecteds).map(AbstractEclipseJava::normalizeWhitespace).toList());</span>
+<span class="fc" id="L976">		final ArrayList&lt;String&gt; actualList = new ArrayList&lt;&gt;(</span>
+<span class="fc" id="L977">				Arrays.stream(actuals).map(AbstractEclipseJava::normalizeWhitespace).toList());</span>
+<span class="fc" id="L978">		final ArrayList&lt;String&gt; expectedList = new ArrayList&lt;&gt;(</span>
+<span class="fc" id="L979">				Arrays.stream(expecteds).map(AbstractEclipseJava::normalizeWhitespace).toList());</span>
 
 		// Remove matching elements from both lists
-<span class="fc bfc" id="L1033" title="All 2 branches covered.">		for (int i = actualList.size() - 1; i &gt;= 0; i--) {</span>
-<span class="pc bpc" id="L1034" title="1 of 2 branches missed.">			if (expectedList.remove(actualList.get(i))) {</span>
-<span class="fc" id="L1035">				actualList.remove(i);</span>
+<span class="fc bfc" id="L982" title="All 2 branches covered.">		for (int i = actualList.size() - 1; i &gt;= 0; i--) {</span>
+<span class="pc bpc" id="L983" title="1 of 2 branches missed.">			if (expectedList.remove(actualList.get(i))) {</span>
+<span class="fc" id="L984">				actualList.remove(i);</span>
 			}
 		}
 
-<span class="fc" id="L1039">		final int numUnmatchedActuals = actualList.size();</span>
-<span class="fc" id="L1040">		final int numUnmatchedExpected = expectedList.size();</span>
+<span class="fc" id="L988">		final int numUnmatchedActuals = actualList.size();</span>
+<span class="fc" id="L989">		final int numUnmatchedExpected = expectedList.size();</span>
 
-<span class="pc bpc" id="L1042" title="1 of 2 branches missed.">		if (numUnmatchedActuals + numUnmatchedExpected &gt; 0) {</span>
-<span class="nc bnc" id="L1043" title="All 4 branches missed.">			if (numUnmatchedActuals == 1 &amp;&amp; numUnmatchedExpected == 1) {</span>
-<span class="nc" id="L1044">				assertEquals(expectedList.get(0), actualList.get(0));</span>
+<span class="pc bpc" id="L991" title="1 of 2 branches missed.">		if (numUnmatchedActuals + numUnmatchedExpected &gt; 0) {</span>
+<span class="nc bnc" id="L992" title="All 4 branches missed.">			if (numUnmatchedActuals == 1 &amp;&amp; numUnmatchedExpected == 1) {</span>
+<span class="nc" id="L993">				assertEquals(expectedList.get(0), actualList.get(0));</span>
 			}
 
-<span class="nc" id="L1047">			final String actual = buildStringFromList(actualList);</span>
-<span class="nc" id="L1048">			final String expected = buildStringFromList(expectedList);</span>
-<span class="nc" id="L1049">			assertEquals(expected, actual);</span>
+<span class="nc" id="L996">			final String actual = buildStringFromList(actualList);</span>
+<span class="nc" id="L997">			final String expected = buildStringFromList(expectedList);</span>
+<span class="nc" id="L998">			assertEquals(expected, actual);</span>
 		}
-<span class="fc" id="L1051">	}</span>
+<span class="fc" id="L1000">	}</span>
 
 	/**
 	 * Executes the configured refactoring and asserts the result matches expectations,
@@ -1066,14 +1015,14 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 */
 	public RefactoringStatus assertRefactoringResultAsExpectedNormalizingWhitespace(final ICompilationUnit[] cus,
 			final String[] expected, final Set&lt;String&gt; setOfExpectedGroupCategories) throws CoreException {
-<span class="fc" id="L1069">		final RefactoringStatus status = performRefactoringCheckingDiagnostics(cus, setOfExpectedGroupCategories);</span>
-<span class="fc" id="L1070">		final String[] previews = new String[cus.length];</span>
-<span class="fc bfc" id="L1071" title="All 2 branches covered.">		for (int i = 0; i &lt; cus.length; i++) {</span>
-<span class="fc" id="L1072">			final ICompilationUnit cu = cus[i];</span>
-<span class="fc" id="L1073">			previews[i] = cu.getBuffer().getContents();</span>
+<span class="fc" id="L1018">		final RefactoringStatus status = performRefactoring(cus, setOfExpectedGroupCategories);</span>
+<span class="fc" id="L1019">		final String[] previews = new String[cus.length];</span>
+<span class="fc bfc" id="L1020" title="All 2 branches covered.">		for (int i = 0; i &lt; cus.length; i++) {</span>
+<span class="fc" id="L1021">			final ICompilationUnit cu = cus[i];</span>
+<span class="fc" id="L1022">			previews[i] = cu.getBuffer().getContents();</span>
 		}
-<span class="fc" id="L1075">		assertEqualStringsIgnoreOrderAndWhitespace(previews, expected);</span>
-<span class="fc" id="L1076">		return status;</span>
+<span class="fc" id="L1024">		assertEqualStringsIgnoreOrderAndWhitespace(previews, expected);</span>
+<span class="fc" id="L1025">		return status;</span>
 	}
 
 	/**
@@ -1089,10 +1038,10 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 */
 	protected final RefactoringStatus performRefactoring(final ICompilationUnit[] cus,
 			final Set&lt;String&gt; setOfExpectedGroupCategories) throws CoreException {
-<span class="fc" id="L1092">		final CleanUpRefactoring ref = new CleanUpRefactoring();</span>
-<span class="fc" id="L1093">		ref.setUseOptionsFromProfile(true);</span>
-<span class="fc" id="L1094">		return performRefactoring(ref, cus, JavaPlugin.getDefault().getCleanUpRegistry().createCleanUps(),</span>
-<span class="fc" id="L1095">				setOfExpectedGroupCategories);</span>
+<span class="fc" id="L1041">		final CleanUpRefactoring ref = new CleanUpRefactoring();</span>
+<span class="fc" id="L1042">		ref.setUseOptionsFromProfile(true);</span>
+<span class="fc" id="L1043">		return performRefactoring(ref, cus, JavaPlugin.getDefault().getCleanUpRegistry().createCleanUps(),</span>
+<span class="fc" id="L1044">				setOfExpectedGroupCategories);</span>
 	}
 
 	/**
@@ -1105,53 +1054,61 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @return the refactoring status
 	 * @throws CoreException if the refactoring fails
 	 */
-	protected RefactoringStatus performRefactoring(final CleanUpRefactoring ref, final ICompilationUnit[] cus,
+	protected final RefactoringStatus performRefactoring(final CleanUpRefactoring ref, final ICompilationUnit[] cus,
+			final ICleanUp[] cleanUps, final Set&lt;String&gt; setOfExpectedGroupCategories) throws CoreException {
+<span class="fc" id="L1059">		var before= CompilerDiagnosticAssertions.captureCompilerDiagnostics(cus);</span>
+<span class="fc" id="L1060">		var status= runRefactoring(ref, cus, cleanUps, setOfExpectedGroupCategories);</span>
+<span class="fc" id="L1061">		CompilerDiagnosticAssertions.assertNoNewCompilerDiagnostics(cus, before);</span>
+<span class="fc" id="L1062">		return status;</span>
+	}
+
+	protected RefactoringStatus runRefactoring(final CleanUpRefactoring ref, final ICompilationUnit[] cus,
 			final ICleanUp[] cleanUps, final Set&lt;String&gt; setOfExpectedGroupCategories) throws CoreException {
 		// A canonical connection must survive the temporary cleanup working copy.
 		// Otherwise an opener that loaded earlier can publish stale contents after
 		// JDT releases its document, before the test reads source or checks undo.
-<span class="fc bfc" id="L1113" title="All 2 branches covered.">		for (ICompilationUnit cu : cus) {</span>
-<span class="fc" id="L1114">			IPath path = cu.getPath();</span>
-<span class="fc bfc" id="L1115" title="All 2 branches covered.">			if (!retainedBuffers.containsKey(path)) {</span>
-<span class="fc" id="L1116">				ITextFileBufferManager manager = FileBuffers.getTextFileBufferManager();</span>
-<span class="fc" id="L1117">				manager.connect(path, LocationKind.IFILE, new NullProgressMonitor());</span>
-<span class="fc" id="L1118">				retainedBuffers.put(path, manager);</span>
+<span class="fc bfc" id="L1070" title="All 2 branches covered.">		for (ICompilationUnit cu : cus) {</span>
+<span class="fc" id="L1071">			IPath path = cu.getPath();</span>
+<span class="fc bfc" id="L1072" title="All 2 branches covered.">			if (!retainedBuffers.containsKey(path)) {</span>
+<span class="fc" id="L1073">				ITextFileBufferManager manager = FileBuffers.getTextFileBufferManager();</span>
+<span class="fc" id="L1074">				manager.connect(path, LocationKind.IFILE, new NullProgressMonitor());</span>
+<span class="fc" id="L1075">				retainedBuffers.put(path, manager);</span>
 			}
 		}
-<span class="fc bfc" id="L1121" title="All 2 branches covered.">		for (final ICompilationUnit cu : cus) {</span>
-<span class="fc" id="L1122">			ref.addCompilationUnit(cu);</span>
+<span class="fc bfc" id="L1078" title="All 2 branches covered.">		for (final ICompilationUnit cu : cus) {</span>
+<span class="fc" id="L1079">			ref.addCompilationUnit(cu);</span>
 		}
-<span class="fc bfc" id="L1124" title="All 2 branches covered.">		for (final ICleanUp cleanUp : cleanUps) {</span>
-<span class="fc" id="L1125">			ref.addCleanUp(cleanUp);</span>
+<span class="fc bfc" id="L1081" title="All 2 branches covered.">		for (final ICleanUp cleanUp : cleanUps) {</span>
+<span class="fc" id="L1082">			ref.addCleanUp(cleanUp);</span>
 		}
-<span class="fc" id="L1127">		final IUndoManager undoManager = RefactoringCore.getUndoManager();</span>
-<span class="fc" id="L1128">		undoManager.flush();</span>
-<span class="fc" id="L1129">		final CreateChangeOperation create = new CreateChangeOperation(</span>
-<span class="fc" id="L1130">				new CheckConditionsOperation(ref, CheckConditionsOperation.ALL_CONDITIONS), RefactoringStatus.FATAL);</span>
-<span class="fc" id="L1131">		final PerformChangeOperation perform = new PerformChangeOperation(create);</span>
-<span class="fc" id="L1132">		perform.setUndoManager(undoManager, ref.getName());</span>
-<span class="fc" id="L1133">		final IWorkspace workspace = ResourcesPlugin.getWorkspace();</span>
-<span class="fc" id="L1134">		workspace.run(perform, new NullProgressMonitor());</span>
-<span class="fc" id="L1135">		final RefactoringStatus status = create.getConditionCheckingStatus();</span>
-<span class="pc bpc" id="L1136" title="1 of 2 branches missed.">		if (status.hasFatalError()) {</span>
-<span class="nc" id="L1137">			throw new CoreException(</span>
-<span class="nc" id="L1138">					new StatusInfo(status.getSeverity(), status.getMessageMatchingSeverity(status.getSeverity())));</span>
+<span class="fc" id="L1084">		final IUndoManager undoManager = RefactoringCore.getUndoManager();</span>
+<span class="fc" id="L1085">		undoManager.flush();</span>
+<span class="fc" id="L1086">		final CreateChangeOperation create = new CreateChangeOperation(</span>
+<span class="fc" id="L1087">				new CheckConditionsOperation(ref, CheckConditionsOperation.ALL_CONDITIONS), RefactoringStatus.FATAL);</span>
+<span class="fc" id="L1088">		final PerformChangeOperation perform = new PerformChangeOperation(create);</span>
+<span class="fc" id="L1089">		perform.setUndoManager(undoManager, ref.getName());</span>
+<span class="fc" id="L1090">		final IWorkspace workspace = ResourcesPlugin.getWorkspace();</span>
+<span class="fc" id="L1091">		workspace.run(perform, new NullProgressMonitor());</span>
+<span class="fc" id="L1092">		final RefactoringStatus status = create.getConditionCheckingStatus();</span>
+<span class="pc bpc" id="L1093" title="1 of 2 branches missed.">		if (status.hasFatalError()) {</span>
+<span class="nc" id="L1094">			throw new CoreException(</span>
+<span class="nc" id="L1095">					new StatusInfo(status.getSeverity(), status.getMessageMatchingSeverity(status.getSeverity())));</span>
 		}
-<span class="fc" id="L1140">		assertTrue(perform.changeExecuted(), &quot;Change wasn't executed&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L1141">		final Change undo = perform.getUndoChange();</span>
-<span class="fc" id="L1142">		assertNotNull(undo, &quot;Undo doesn't exist&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L1143">		assertTrue(undoManager.anythingToUndo(), &quot;Undo manager is empty&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L1144" title="1 of 2 branches missed.">		if (setOfExpectedGroupCategories != null) {</span>
-<span class="nc" id="L1145">			final Change change = create.getChange();</span>
-<span class="nc" id="L1146">			final Set&lt;GroupCategory&gt; actualCategories = new HashSet&lt;&gt;();</span>
-<span class="nc" id="L1147">			collectGroupCategories(actualCategories, change);</span>
-<span class="nc" id="L1148">			actualCategories.forEach(actualCategory -&gt; {</span>
-<span class="nc" id="L1149">				assertTrue(setOfExpectedGroupCategories.contains(actualCategory.getName()),</span>
-<span class="nc" id="L1150">						() -&gt; &quot;Unexpected group category: &quot; + actualCategory.getName() + &quot;, should find: &quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L1151">								+ String.join(&quot;, &quot;, setOfExpectedGroupCategories)); //$NON-NLS-1$</span>
-<span class="nc" id="L1152">			});</span>
+<span class="fc" id="L1097">		assertTrue(perform.changeExecuted(), &quot;Change wasn't executed&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L1098">		final Change undo = perform.getUndoChange();</span>
+<span class="fc" id="L1099">		assertNotNull(undo, &quot;Undo doesn't exist&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L1100">		assertTrue(undoManager.anythingToUndo(), &quot;Undo manager is empty&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L1101" title="1 of 2 branches missed.">		if (setOfExpectedGroupCategories != null) {</span>
+<span class="nc" id="L1102">			final Change change = create.getChange();</span>
+<span class="nc" id="L1103">			final Set&lt;GroupCategory&gt; actualCategories = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L1104">			collectGroupCategories(actualCategories, change);</span>
+<span class="nc" id="L1105">			actualCategories.forEach(actualCategory -&gt; {</span>
+<span class="nc" id="L1106">				assertTrue(setOfExpectedGroupCategories.contains(actualCategory.getName()),</span>
+<span class="nc" id="L1107">						() -&gt; &quot;Unexpected group category: &quot; + actualCategory.getName() + &quot;, should find: &quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L1108">								+ String.join(&quot;, &quot;, setOfExpectedGroupCategories)); //$NON-NLS-1$</span>
+<span class="nc" id="L1109">			});</span>
 		}
-<span class="fc" id="L1154">		return status;</span>
+<span class="fc" id="L1111">		return status;</span>
 	}
 
 	/**
@@ -1161,16 +1118,16 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @param change the change to examine
 	 */
 	private void collectGroupCategories(final Set&lt;GroupCategory&gt; result, final Change change) {
-<span class="nc bnc" id="L1164" title="All 2 branches missed.">		if (change instanceof TextEditBasedChange) {</span>
-<span class="nc bnc" id="L1165" title="All 2 branches missed.">			for (final TextEditBasedChangeGroup group : ((TextEditBasedChange) change).getChangeGroups()) {</span>
-<span class="nc" id="L1166">				result.addAll(group.getGroupCategorySet().asList());</span>
+<span class="nc bnc" id="L1121" title="All 2 branches missed.">		if (change instanceof TextEditBasedChange) {</span>
+<span class="nc bnc" id="L1122" title="All 2 branches missed.">			for (final TextEditBasedChangeGroup group : ((TextEditBasedChange) change).getChangeGroups()) {</span>
+<span class="nc" id="L1123">				result.addAll(group.getGroupCategorySet().asList());</span>
 			}
-<span class="nc bnc" id="L1168" title="All 2 branches missed.">		} else if (change instanceof CompositeChange) {</span>
-<span class="nc bnc" id="L1169" title="All 2 branches missed.">			for (final Change child : ((CompositeChange) change).getChildren()) {</span>
-<span class="nc" id="L1170">				collectGroupCategories(result, child);</span>
+<span class="nc bnc" id="L1125" title="All 2 branches missed.">		} else if (change instanceof CompositeChange) {</span>
+<span class="nc bnc" id="L1126" title="All 2 branches missed.">			for (final Change child : ((CompositeChange) change).getChildren()) {</span>
+<span class="nc" id="L1127">				collectGroupCategories(result, child);</span>
 			}
 		}
-<span class="nc" id="L1173">	}</span>
+<span class="nc" id="L1130">	}</span>
 
 	/**
 	 * Enables a cleanup option in the current profile.
@@ -1179,9 +1136,9 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @throws CoreException if the profile cannot be updated
 	 */
 	public void enable(final String key) throws CoreException {
-<span class="fc" id="L1182">		cleanUpProfile.getSettings().put(key, CleanUpOptions.TRUE);</span>
-<span class="fc" id="L1183">		commitProfile();</span>
-<span class="fc" id="L1184">	}</span>
+<span class="fc" id="L1139">		cleanUpProfile.getSettings().put(key, CleanUpOptions.TRUE);</span>
+<span class="fc" id="L1140">		commitProfile();</span>
+<span class="fc" id="L1141">	}</span>
 
 	/**
 	 * Sets a cleanup option to a specific value in the current profile.
@@ -1194,9 +1151,9 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @throws CoreException if the profile cannot be updated
 	 */
 	public void set(final String key, final String value) throws CoreException {
-<span class="fc" id="L1197">		cleanUpProfile.getSettings().put(key, value);</span>
-<span class="fc" id="L1198">		commitProfile();</span>
-<span class="fc" id="L1199">	}</span>
+<span class="fc" id="L1154">		cleanUpProfile.getSettings().put(key, value);</span>
+<span class="fc" id="L1155">		commitProfile();</span>
+<span class="fc" id="L1156">	}</span>
 
 	/**
 	 * Disables a cleanup option in the current profile.
@@ -1205,9 +1162,9 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @throws CoreException if the profile cannot be updated
 	 */
 	public void disable(final String key) throws CoreException {
-<span class="fc" id="L1208">		cleanUpProfile.getSettings().put(key, CleanUpOptions.FALSE);</span>
-<span class="fc" id="L1209">		commitProfile();</span>
-<span class="fc" id="L1210">	}</span>
+<span class="fc" id="L1165">		cleanUpProfile.getSettings().put(key, CleanUpOptions.FALSE);</span>
+<span class="fc" id="L1166">		commitProfile();</span>
+<span class="fc" id="L1167">	}</span>
 
 	/**
 	 * Commits the current cleanup profile changes to persistent storage.
@@ -1215,13 +1172,13 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @throws CoreException if the profile cannot be saved
 	 */
 	private void commitProfile() throws CoreException {
-<span class="fc" id="L1218">		final List&lt;Profile&gt; profiles = CleanUpPreferenceUtil.getBuiltInProfiles();</span>
-<span class="fc" id="L1219">		profiles.add(cleanUpProfile);</span>
-<span class="fc" id="L1220">		final CleanUpProfileVersioner versioner = new CleanUpProfileVersioner();</span>
-<span class="fc" id="L1221">		final ProfileStore profileStore = new ProfileStore(CleanUpConstants.CLEANUP_PROFILES, versioner);</span>
-<span class="fc" id="L1222">		profileStore.writeProfiles(profiles, InstanceScope.INSTANCE);</span>
-<span class="fc" id="L1223">		CleanUpPreferenceUtil.saveSaveParticipantOptions(InstanceScope.INSTANCE, cleanUpProfile.getSettings());</span>
-<span class="fc" id="L1224">	}</span>
+<span class="fc" id="L1175">		final List&lt;Profile&gt; profiles = CleanUpPreferenceUtil.getBuiltInProfiles();</span>
+<span class="fc" id="L1176">		profiles.add(cleanUpProfile);</span>
+<span class="fc" id="L1177">		final CleanUpProfileVersioner versioner = new CleanUpProfileVersioner();</span>
+<span class="fc" id="L1178">		final ProfileStore profileStore = new ProfileStore(CleanUpConstants.CLEANUP_PROFILES, versioner);</span>
+<span class="fc" id="L1179">		profileStore.writeProfiles(profiles, InstanceScope.INSTANCE);</span>
+<span class="fc" id="L1180">		CleanUpPreferenceUtil.saveSaveParticipantOptions(InstanceScope.INSTANCE, cleanUpProfile.getSettings());</span>
+<span class="fc" id="L1181">	}</span>
 
 	/**
 	 * Gets the source folder for test compilation units.
@@ -1229,7 +1186,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @return the source folder root
 	 */
 	public IPackageFragmentRoot getSourceFolder() {
-<span class="fc" id="L1232">		return sourceFolder;</span>
+<span class="fc" id="L1189">		return sourceFolder;</span>
 	}
 
 	/**
@@ -1238,8 +1195,8 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @param sourceFolder the source folder root
 	 */
 	public void setSourceFolder(final IPackageFragmentRoot sourceFolder) {
-<span class="fc" id="L1241">		this.sourceFolder = sourceFolder;</span>
-<span class="fc" id="L1242">	}</span>
+<span class="fc" id="L1198">		this.sourceFolder = sourceFolder;</span>
+<span class="fc" id="L1199">	}</span>
 
 	/**
 	 * Gets the temporary Java project created for the test.
@@ -1247,7 +1204,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @return the Java project
 	 */
 	public IJavaProject getJavaProject() {
-<span class="fc" id="L1250">		return javaProject;</span>
+<span class="fc" id="L1207">		return javaProject;</span>
 	}
 
 	/**
@@ -1256,7 +1213,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @param javaProject the Java project
 	 */
 	public void setJavaProject(final IJavaProject javaProject) {
-<span class="fc" id="L1259">		this.javaProject = javaProject;</span>
-<span class="fc" id="L1260">	}</span>
+<span class="fc" id="L1216">		this.javaProject = javaProject;</span>
+<span class="fc" id="L1217">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

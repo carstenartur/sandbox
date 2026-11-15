@@ -54,32 +54,36 @@ final class LosslessParameterBridgeFix {
 <span class="nc" id="L54">				var original= (SingleVariableDeclaration) method.parameters().getFirst();</span>
 <span class="nc" id="L55">				String arg= original.getName().getIdentifier();</span>
 <span class="nc" id="L56">				var asList= ast.newMethodInvocation();</span>
-<span class="nc" id="L57">				asList.setExpression(ast.newName(imports.addImport(&quot;java.util.Arrays&quot;, context))); //$NON-NLS-1$</span>
-<span class="nc" id="L58">				asList.setName(ast.newSimpleName(&quot;asList&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L59">				asList.arguments().add(ast.newSimpleName(arg));</span>
-<span class="nc" id="L60">				var isNull= ast.newInfixExpression();</span>
-<span class="nc" id="L61">				isNull.setOperator(InfixExpression.Operator.EQUALS);</span>
-<span class="nc" id="L62">				isNull.setLeftOperand(ast.newSimpleName(arg));</span>
-<span class="nc" id="L63">				isNull.setRightOperand(ast.newNullLiteral());</span>
-<span class="nc" id="L64">				var nullable= ast.newConditionalExpression();</span>
-<span class="nc" id="L65">				nullable.setExpression(isNull);</span>
-<span class="nc" id="L66">				nullable.setThenExpression(ast.newNullLiteral());</span>
-<span class="nc" id="L67">				nullable.setElseExpression(asList);</span>
-<span class="nc" id="L68">				var delegate= ast.newMethodInvocation();</span>
-<span class="nc" id="L69">				delegate.setName(ast.newSimpleName(method.getName().getIdentifier()));</span>
-<span class="nc" id="L70">				delegate.arguments().add(nullable);</span>
-<span class="nc" id="L71">				var ret= ast.newReturnStatement();</span>
-<span class="nc" id="L72">				ret.setExpression(delegate);</span>
-<span class="nc" id="L73">				var body= ast.newBlock();</span>
-<span class="nc" id="L74">				body.statements().add(ret);</span>
-<span class="nc" id="L75">				overload.setBody(body);</span>
-<span class="nc" id="L76">				cu.getASTRewrite().getListRewrite(method.getParent(), TypeDeclaration.BODY_DECLARATIONS_PROPERTY)</span>
-<span class="nc" id="L77">						.insertAfter(overload, method, group);</span>
-<span class="nc" id="L78">			}</span>
+<span class="nc" id="L57">				String arraysName= imports.addImport(&quot;java.util.Arrays&quot;, context); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L58" title="All 2 branches missed.">				if (&quot;Arrays&quot;.equals(arraysName)) { //$NON-NLS-1$</span>
+<span class="nc" id="L59">					cu.getImportRemover().registerAddedImport(arraysName);</span>
+				}
+<span class="nc" id="L61">				asList.setExpression(ast.newName(arraysName));</span>
+<span class="nc" id="L62">				asList.setName(ast.newSimpleName(&quot;asList&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L63">				asList.arguments().add(ast.newSimpleName(arg));</span>
+<span class="nc" id="L64">				var isNull= ast.newInfixExpression();</span>
+<span class="nc" id="L65">				isNull.setOperator(InfixExpression.Operator.EQUALS);</span>
+<span class="nc" id="L66">				isNull.setLeftOperand(ast.newSimpleName(arg));</span>
+<span class="nc" id="L67">				isNull.setRightOperand(ast.newNullLiteral());</span>
+<span class="nc" id="L68">				var nullable= ast.newConditionalExpression();</span>
+<span class="nc" id="L69">				nullable.setExpression(isNull);</span>
+<span class="nc" id="L70">				nullable.setThenExpression(ast.newNullLiteral());</span>
+<span class="nc" id="L71">				nullable.setElseExpression(asList);</span>
+<span class="nc" id="L72">				var delegate= ast.newMethodInvocation();</span>
+<span class="nc" id="L73">				delegate.setName(ast.newSimpleName(method.getName().getIdentifier()));</span>
+<span class="nc" id="L74">				delegate.arguments().add(nullable);</span>
+<span class="nc" id="L75">				var ret= ast.newReturnStatement();</span>
+<span class="nc" id="L76">				ret.setExpression(delegate);</span>
+<span class="nc" id="L77">				var body= ast.newBlock();</span>
+<span class="nc" id="L78">				body.statements().add(ret);</span>
+<span class="nc" id="L79">				overload.setBody(body);</span>
+<span class="nc" id="L80">				cu.getASTRewrite().getListRewrite(method.getParent(), TypeDeclaration.BODY_DECLARATIONS_PROPERTY)</span>
+<span class="nc" id="L81">						.insertAfter(overload, method, group);</span>
+<span class="nc" id="L82">			}</span>
 
 			@Override
 			public String getAdditionalInfo() {
-<span class="nc" id="L82">				return &quot;The retained overload passes null through and uses the array-backed list view for length reads.&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L86">				return &quot;The retained overload passes null through and uses the array-backed list view for length reads.&quot;; //$NON-NLS-1$</span>
 			}
 		};
 	}

@@ -10,6 +10,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.cleanup.multifile;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
+
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -50,14 +52,14 @@ import org.sandbox.jdt.container.api.TargetContainerContract.Mutability;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 
-<span class="fc" id="L53">class ContainerParameterRewriteIntegrationTest {</span>
+<span class="fc" id="L55">class ContainerParameterRewriteIntegrationTest {</span>
 
 	@RegisterExtension
-<span class="fc" id="L56">	final AbstractEclipseJava context= new EclipseJava22();</span>
+<span class="fc" id="L58">	final AbstractEclipseJava context= new EclipseJava22();</span>
 
 	@Test
 	void convertsAReadOnlyArrayParameterToList() throws Exception {
-<span class="fc" id="L60">		ICompilationUnit unit= createUnit(&quot;&quot;&quot;</span>
+<span class="fc" id="L62">		ICompilationUnit unit= createUnit(&quot;&quot;&quot;</span>
 			package test;
 			class Sample {
 				void consume(String[] values) {
@@ -68,23 +70,23 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 				}
 			}
 			&quot;&quot;&quot;);
-<span class="fc" id="L71">		CompilationUnit root= parse(unit);</span>
+<span class="fc" id="L73">		CompilationUnit root= parse(unit);</span>
 
-<span class="fc" id="L73">		ContainerParameterRewriteFix.create(</span>
-<span class="fc" id="L74">				unit, root, plan(unit, root, 1, 1))</span>
-<span class="fc" id="L75">				.createChange(null).perform(null);</span>
+<span class="fc" id="L75">		var change= ContainerParameterRewriteFix.create(</span>
+<span class="fc" id="L76">				unit, root, plan(unit, root, 1, 1)).createChange(null);</span>
+<span class="fc" id="L77">		performAndCheck(change, null, unit);</span>
 
-<span class="fc" id="L77">		String source= unit.getSource();</span>
-<span class="fc" id="L78">		assertTrue(source.contains(&quot;import java.util.List;&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L79">		assertTrue(source.contains(&quot;void consume(List&lt;String&gt; values)&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L80">		assertTrue(source.contains(&quot;values.size()&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L81">		assertTrue(source.contains(&quot;for (String value : values)&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L82">		assertFalse(source.contains(&quot;values.length&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L83">	}</span>
+<span class="fc" id="L79">		String source= unit.getSource();</span>
+<span class="fc" id="L80">		assertTrue(source.contains(&quot;import java.util.List;&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L81">		assertTrue(source.contains(&quot;void consume(List&lt;String&gt; values)&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L82">		assertTrue(source.contains(&quot;values.size()&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L83">		assertTrue(source.contains(&quot;for (String value : values)&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L84">		assertFalse(source.contains(&quot;values.length&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L85">	}</span>
 
 	@Test
 	void rejectsAnUnexpectedParameterUse() throws Exception {
-<span class="fc" id="L87">		ICompilationUnit unit= createUnit(&quot;&quot;&quot;</span>
+<span class="fc" id="L89">		ICompilationUnit unit= createUnit(&quot;&quot;&quot;</span>
 			package test;
 			class Sample {
 				void consume(String[] values) {
@@ -92,18 +94,18 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 				}
 			}
 			&quot;&quot;&quot;);
-<span class="fc" id="L95">		CompilationUnit root= parse(unit);</span>
+<span class="fc" id="L97">		CompilationUnit root= parse(unit);</span>
 
-<span class="fc" id="L97">		CoreException exception= assertThrows(CoreException.class, () -&gt;</span>
-<span class="nc" id="L98">				ContainerParameterRewriteFix.create(</span>
-<span class="pc" id="L99">						unit, root, plan(unit, root, 0, 0)));</span>
+<span class="fc" id="L99">		CoreException exception= assertThrows(CoreException.class, () -&gt;</span>
+<span class="nc" id="L100">				ContainerParameterRewriteFix.create(</span>
+<span class="pc" id="L101">						unit, root, plan(unit, root, 0, 0)));</span>
 
-<span class="fc" id="L101">		assertTrue(exception.getMessage().contains(&quot;unexpected parameter use&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L102">	}</span>
+<span class="fc" id="L103">		assertTrue(exception.getMessage().contains(&quot;unexpected parameter use&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L104">	}</span>
 
 	@Test
 	void rejectsParameterCaptureEvenWhenTheNestedUseIsOnlyLength() throws Exception {
-<span class="fc" id="L106">		ICompilationUnit unit= createUnit(&quot;&quot;&quot;</span>
+<span class="fc" id="L108">		ICompilationUnit unit= createUnit(&quot;&quot;&quot;</span>
 			package test;
 			class Sample {
 				void consume(String[] values) {
@@ -112,18 +114,18 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 				}
 			}
 			&quot;&quot;&quot;);
-<span class="fc" id="L115">		CompilationUnit root= parse(unit);</span>
+<span class="fc" id="L117">		CompilationUnit root= parse(unit);</span>
 
-<span class="fc" id="L117">		CoreException exception= assertThrows(CoreException.class, () -&gt;</span>
-<span class="nc" id="L118">				ContainerParameterRewriteFix.create(</span>
-<span class="pc" id="L119">						unit, root, plan(unit, root, 1, 0)));</span>
+<span class="fc" id="L119">		CoreException exception= assertThrows(CoreException.class, () -&gt;</span>
+<span class="nc" id="L120">				ContainerParameterRewriteFix.create(</span>
+<span class="pc" id="L121">						unit, root, plan(unit, root, 1, 0)));</span>
 
-<span class="fc" id="L121">		assertTrue(exception.getMessage().contains(&quot;captured&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L122">	}</span>
+<span class="fc" id="L123">		assertTrue(exception.getMessage().contains(&quot;captured&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L124">	}</span>
 
 	@Test
 	void rejectsChangedLengthAndIterationCounts() throws Exception {
-<span class="fc" id="L126">		ICompilationUnit unit= createUnit(&quot;&quot;&quot;</span>
+<span class="fc" id="L128">		ICompilationUnit unit= createUnit(&quot;&quot;&quot;</span>
 			package test;
 			class Sample {
 				void consume(String[] values) {
@@ -134,22 +136,22 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 				}
 			}
 			&quot;&quot;&quot;);
-<span class="fc" id="L137">		CompilationUnit root= parse(unit);</span>
+<span class="fc" id="L139">		CompilationUnit root= parse(unit);</span>
 
-<span class="fc" id="L139">		CoreException length= assertThrows(CoreException.class, () -&gt;</span>
-<span class="nc" id="L140">				ContainerParameterRewriteFix.create(</span>
-<span class="pc" id="L141">						unit, root, plan(unit, root, 0, 1)));</span>
-<span class="fc" id="L142">		assertTrue(length.getMessage().contains(&quot;length occurrence count&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L141">		CoreException length= assertThrows(CoreException.class, () -&gt;</span>
+<span class="nc" id="L142">				ContainerParameterRewriteFix.create(</span>
+<span class="pc" id="L143">						unit, root, plan(unit, root, 0, 1)));</span>
+<span class="fc" id="L144">		assertTrue(length.getMessage().contains(&quot;length occurrence count&quot;)); //$NON-NLS-1$</span>
 
-<span class="fc" id="L144">		CoreException iteration= assertThrows(CoreException.class, () -&gt;</span>
-<span class="nc" id="L145">				ContainerParameterRewriteFix.create(</span>
-<span class="pc" id="L146">						unit, root, plan(unit, root, 1, 0)));</span>
-<span class="fc" id="L147">		assertTrue(iteration.getMessage().contains(&quot;encounter iteration&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L148">	}</span>
+<span class="fc" id="L146">		CoreException iteration= assertThrows(CoreException.class, () -&gt;</span>
+<span class="nc" id="L147">				ContainerParameterRewriteFix.create(</span>
+<span class="pc" id="L148">						unit, root, plan(unit, root, 1, 0)));</span>
+<span class="fc" id="L149">		assertTrue(iteration.getMessage().contains(&quot;encounter iteration&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L150">	}</span>
 
 	@Test
 	void rejectsShiftedUsageRangesWithUnchangedCounts() throws Exception {
-<span class="fc" id="L152">		ICompilationUnit unit= createUnit(&quot;&quot;&quot;</span>
+<span class="fc" id="L154">		ICompilationUnit unit= createUnit(&quot;&quot;&quot;</span>
 			package test;
 			class Sample {
 				void consume(String[] values) {
@@ -160,33 +162,33 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 				}
 			}
 			&quot;&quot;&quot;);
-<span class="fc" id="L163">		ContainerParameterRewritePlan originalPlan= plan(unit, parse(unit), 1, 1);</span>
-<span class="fc" id="L164">		unit.getBuffer().setContents(unit.getSource().replace(</span>
-<span class="fc" id="L165">				&quot;int count = values.length;&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L166">				&quot;\n\t\tint count = values.length;&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L167">		unit.save(null, true);</span>
+<span class="fc" id="L165">		ContainerParameterRewritePlan originalPlan= plan(unit, parse(unit), 1, 1);</span>
+<span class="fc" id="L166">		unit.getBuffer().setContents(unit.getSource().replace(</span>
+<span class="fc" id="L167">				&quot;int count = values.length;&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L168">				&quot;\n\t\tint count = values.length;&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L169">		unit.save(null, true);</span>
 
-<span class="fc" id="L169">		CoreException exception= assertThrows(CoreException.class, () -&gt;</span>
-<span class="nc" id="L170">				ContainerParameterRewriteFix.create(</span>
-<span class="pc" id="L171">						unit, parse(unit), originalPlan));</span>
+<span class="fc" id="L171">		CoreException exception= assertThrows(CoreException.class, () -&gt;</span>
+<span class="nc" id="L172">				ContainerParameterRewriteFix.create(</span>
+<span class="pc" id="L173">						unit, parse(unit), originalPlan));</span>
 
-<span class="fc" id="L173">		assertTrue(exception.getMessage().contains(&quot;source ranges changed&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L174">	}</span>
+<span class="fc" id="L175">		assertTrue(exception.getMessage().contains(&quot;source ranges changed&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L176">	}</span>
 
 	private ICompilationUnit createUnit(String source) throws CoreException {
-<span class="fc" id="L177">		IPackageFragment fragment= context.getSourceFolder()</span>
-<span class="fc" id="L178">				.createPackageFragment(&quot;test&quot;, false, null); //$NON-NLS-1$</span>
-<span class="fc" id="L179">		return fragment.createCompilationUnit(&quot;Sample.java&quot;, source, true, null); //$NON-NLS-1$</span>
+<span class="fc" id="L179">		IPackageFragment fragment= context.getSourceFolder()</span>
+<span class="fc" id="L180">				.createPackageFragment(&quot;test&quot;, false, null); //$NON-NLS-1$</span>
+<span class="fc" id="L181">		return fragment.createCompilationUnit(&quot;Sample.java&quot;, source, true, null); //$NON-NLS-1$</span>
 	}
 
 	private CompilationUnit parse(ICompilationUnit unit) {
-<span class="fc" id="L183">		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());</span>
-<span class="fc" id="L184">		parser.setProject(context.getJavaProject());</span>
-<span class="fc" id="L185">		parser.setSource(unit);</span>
-<span class="fc" id="L186">		parser.setResolveBindings(true);</span>
-<span class="fc" id="L187">		parser.setBindingsRecovery(true);</span>
-<span class="fc" id="L188">		parser.setStatementsRecovery(true);</span>
-<span class="fc" id="L189">		return (CompilationUnit) parser.createAST(null);</span>
+<span class="fc" id="L185">		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L186">		parser.setProject(context.getJavaProject());</span>
+<span class="fc" id="L187">		parser.setSource(unit);</span>
+<span class="fc" id="L188">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L189">		parser.setBindingsRecovery(true);</span>
+<span class="fc" id="L190">		parser.setStatementsRecovery(true);</span>
+<span class="fc" id="L191">		return (CompilationUnit) parser.createAST(null);</span>
 	}
 
 	private static ContainerParameterRewritePlan plan(
@@ -194,108 +196,108 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 			CompilationUnit root,
 			int lengthCount,
 			int iterationCount) {
-<span class="fc" id="L197">		SourceFacts facts= sourceFacts(root);</span>
-<span class="pc bpc" id="L198" title="1 of 2 branches missed.">		if (lengthCount &gt; facts.lengths().size()</span>
-<span class="pc bpc" id="L199" title="1 of 2 branches missed.">				|| iterationCount &gt; facts.iterations().size()) {</span>
-<span class="nc" id="L200">			throw new IllegalArgumentException(&quot;Requested evidence exceeds source facts&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L199">		SourceFacts facts= sourceFacts(root);</span>
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">		if (lengthCount &gt; facts.lengths().size()</span>
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">				|| iterationCount &gt; facts.iterations().size()) {</span>
+<span class="nc" id="L202">			throw new IllegalArgumentException(&quot;Requested evidence exceeds source facts&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L202">		List&lt;ParameterEdit&gt; edits= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L203">		edits.add(new ParameterEdit(</span>
-<span class="fc" id="L204">				EditKind.CHANGE_PARAMETER_DECLARATION,</span>
-<span class="fc" id="L205">				facts.parameter().getStartPosition(),</span>
-<span class="fc" id="L206">				facts.parameter().getLength()));</span>
-<span class="fc" id="L207">		facts.lengths().stream().limit(lengthCount).forEach(range -&gt; edits.add(</span>
-<span class="fc" id="L208">				new ParameterEdit(</span>
-<span class="fc" id="L209">						EditKind.REPLACE_LENGTH_WITH_SIZE,</span>
-<span class="fc" id="L210">						range.start(), range.length())));</span>
-<span class="fc" id="L211">		facts.iterations().stream().limit(iterationCount).forEach(range -&gt; edits.add(</span>
-<span class="fc" id="L212">				new ParameterEdit(</span>
-<span class="fc" id="L213">						EditKind.VERIFY_ENCOUNTER_ITERATION,</span>
-<span class="fc" id="L214">						range.start(), range.length())));</span>
-<span class="fc" id="L215">		return new ContainerParameterRewritePlan(</span>
-<span class="fc" id="L216">				unit.getHandleIdentifier(),</span>
-<span class="fc" id="L217">				facts.methodJavaElementHandle(),</span>
-<span class="fc" id="L218">				facts.parameterBindingKey(),</span>
-<span class="fc" id="L219">				0,</span>
-<span class="fc" id="L220">				&quot;java.util.List&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L221">				targetContract(),</span>
-<span class="fc" id="L222">				edits);</span>
+<span class="fc" id="L204">		List&lt;ParameterEdit&gt; edits= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L205">		edits.add(new ParameterEdit(</span>
+<span class="fc" id="L206">				EditKind.CHANGE_PARAMETER_DECLARATION,</span>
+<span class="fc" id="L207">				facts.parameter().getStartPosition(),</span>
+<span class="fc" id="L208">				facts.parameter().getLength()));</span>
+<span class="fc" id="L209">		facts.lengths().stream().limit(lengthCount).forEach(range -&gt; edits.add(</span>
+<span class="fc" id="L210">				new ParameterEdit(</span>
+<span class="fc" id="L211">						EditKind.REPLACE_LENGTH_WITH_SIZE,</span>
+<span class="fc" id="L212">						range.start(), range.length())));</span>
+<span class="fc" id="L213">		facts.iterations().stream().limit(iterationCount).forEach(range -&gt; edits.add(</span>
+<span class="fc" id="L214">				new ParameterEdit(</span>
+<span class="fc" id="L215">						EditKind.VERIFY_ENCOUNTER_ITERATION,</span>
+<span class="fc" id="L216">						range.start(), range.length())));</span>
+<span class="fc" id="L217">		return new ContainerParameterRewritePlan(</span>
+<span class="fc" id="L218">				unit.getHandleIdentifier(),</span>
+<span class="fc" id="L219">				facts.methodJavaElementHandle(),</span>
+<span class="fc" id="L220">				facts.parameterBindingKey(),</span>
+<span class="fc" id="L221">				0,</span>
+<span class="fc" id="L222">				&quot;java.util.List&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L223">				targetContract(),</span>
+<span class="fc" id="L224">				edits);</span>
 	}
 
 	private static SourceFacts sourceFacts(CompilationUnit root) {
-<span class="fc" id="L226">		MethodDeclaration method= method(root);</span>
-<span class="fc" id="L227">		SingleVariableDeclaration parameter=</span>
-<span class="fc" id="L228">				(SingleVariableDeclaration) method.parameters().get(0);</span>
-<span class="fc" id="L229">		IVariableBinding parameterBinding= parameter.resolveBinding();</span>
-<span class="fc" id="L230">		IMethodBinding methodBinding= method.resolveBinding();</span>
-<span class="pc bpc" id="L231" title="1 of 2 branches missed.">		IJavaElement methodElement= methodBinding == null</span>
-<span class="pc" id="L232">				? null : methodBinding.getMethodDeclaration().getJavaElement();</span>
-<span class="pc bpc" id="L233" title="2 of 4 branches missed.">		if (parameterBinding == null || methodElement == null) {</span>
-<span class="nc" id="L234">			throw new IllegalStateException(&quot;Missing method or parameter binding&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L228">		MethodDeclaration method= method(root);</span>
+<span class="fc" id="L229">		SingleVariableDeclaration parameter=</span>
+<span class="fc" id="L230">				(SingleVariableDeclaration) method.parameters().get(0);</span>
+<span class="fc" id="L231">		IVariableBinding parameterBinding= parameter.resolveBinding();</span>
+<span class="fc" id="L232">		IMethodBinding methodBinding= method.resolveBinding();</span>
+<span class="pc bpc" id="L233" title="1 of 2 branches missed.">		IJavaElement methodElement= methodBinding == null</span>
+<span class="pc" id="L234">				? null : methodBinding.getMethodDeclaration().getJavaElement();</span>
+<span class="pc bpc" id="L235" title="2 of 4 branches missed.">		if (parameterBinding == null || methodElement == null) {</span>
+<span class="nc" id="L236">			throw new IllegalStateException(&quot;Missing method or parameter binding&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L236">		String bindingKey= parameterBinding.getVariableDeclaration().getKey();</span>
-<span class="fc" id="L237">		List&lt;SourceRange&gt; lengths= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L238">		List&lt;SourceRange&gt; iterations= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L239">		method.accept(new ASTVisitor() {</span>
+<span class="fc" id="L238">		String bindingKey= parameterBinding.getVariableDeclaration().getKey();</span>
+<span class="fc" id="L239">		List&lt;SourceRange&gt; lengths= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L240">		List&lt;SourceRange&gt; iterations= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L241">		method.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(QualifiedName name) {
-<span class="fc bfc" id="L242" title="All 2 branches covered.">				if (&quot;length&quot;.equals(name.getName().getIdentifier()) //$NON-NLS-1$</span>
-<span class="pc bpc" id="L243" title="1 of 2 branches missed.">						&amp;&amp; name.getQualifier() instanceof SimpleName qualifier</span>
-<span class="pc bpc" id="L244" title="1 of 2 branches missed.">						&amp;&amp; qualifier.resolveBinding() instanceof IVariableBinding binding</span>
-<span class="pc bpc" id="L245" title="1 of 2 branches missed.">						&amp;&amp; bindingKey.equals(binding.getVariableDeclaration().getKey())) {</span>
-<span class="fc" id="L246">					lengths.add(new SourceRange(</span>
-<span class="fc" id="L247">							name.getStartPosition(), name.getLength()));</span>
+<span class="fc bfc" id="L244" title="All 2 branches covered.">				if (&quot;length&quot;.equals(name.getName().getIdentifier()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">						&amp;&amp; name.getQualifier() instanceof SimpleName qualifier</span>
+<span class="pc bpc" id="L246" title="1 of 2 branches missed.">						&amp;&amp; qualifier.resolveBinding() instanceof IVariableBinding binding</span>
+<span class="pc bpc" id="L247" title="1 of 2 branches missed.">						&amp;&amp; bindingKey.equals(binding.getVariableDeclaration().getKey())) {</span>
+<span class="fc" id="L248">					lengths.add(new SourceRange(</span>
+<span class="fc" id="L249">							name.getStartPosition(), name.getLength()));</span>
 				}
-<span class="fc" id="L249">				return true;</span>
+<span class="fc" id="L251">				return true;</span>
 			}
 
 			@Override
 			public boolean visit(EnhancedForStatement enhanced) {
-<span class="pc bpc" id="L254" title="1 of 2 branches missed.">				if (enhanced.getExpression() instanceof SimpleName name</span>
-<span class="pc bpc" id="L255" title="1 of 2 branches missed.">						&amp;&amp; name.resolveBinding() instanceof IVariableBinding binding</span>
-<span class="pc bpc" id="L256" title="1 of 2 branches missed.">						&amp;&amp; bindingKey.equals(binding.getVariableDeclaration().getKey())) {</span>
-<span class="fc" id="L257">					iterations.add(new SourceRange(</span>
-<span class="fc" id="L258">							name.getStartPosition(), name.getLength()));</span>
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">				if (enhanced.getExpression() instanceof SimpleName name</span>
+<span class="pc bpc" id="L257" title="1 of 2 branches missed.">						&amp;&amp; name.resolveBinding() instanceof IVariableBinding binding</span>
+<span class="pc bpc" id="L258" title="1 of 2 branches missed.">						&amp;&amp; bindingKey.equals(binding.getVariableDeclaration().getKey())) {</span>
+<span class="fc" id="L259">					iterations.add(new SourceRange(</span>
+<span class="fc" id="L260">							name.getStartPosition(), name.getLength()));</span>
 				}
-<span class="fc" id="L260">				return true;</span>
+<span class="fc" id="L262">				return true;</span>
 			}
 		});
-<span class="fc" id="L263">		Comparator&lt;SourceRange&gt; order= Comparator.comparingInt(SourceRange::start);</span>
-<span class="fc" id="L264">		lengths.sort(order);</span>
-<span class="fc" id="L265">		iterations.sort(order);</span>
-<span class="fc" id="L266">		return new SourceFacts(</span>
-<span class="fc" id="L267">				parameter,</span>
-<span class="fc" id="L268">				methodElement.getHandleIdentifier(),</span>
-<span class="fc" id="L269">				bindingKey,</span>
-<span class="fc" id="L270">				List.copyOf(lengths),</span>
-<span class="fc" id="L271">				List.copyOf(iterations));</span>
+<span class="fc" id="L265">		Comparator&lt;SourceRange&gt; order= Comparator.comparingInt(SourceRange::start);</span>
+<span class="fc" id="L266">		lengths.sort(order);</span>
+<span class="fc" id="L267">		iterations.sort(order);</span>
+<span class="fc" id="L268">		return new SourceFacts(</span>
+<span class="fc" id="L269">				parameter,</span>
+<span class="fc" id="L270">				methodElement.getHandleIdentifier(),</span>
+<span class="fc" id="L271">				bindingKey,</span>
+<span class="fc" id="L272">				List.copyOf(lengths),</span>
+<span class="fc" id="L273">				List.copyOf(iterations));</span>
 	}
 
 	private static MethodDeclaration method(CompilationUnit root) {
-<span class="fc" id="L275">		MethodDeclaration[] result= { null };</span>
-<span class="fc" id="L276">		root.accept(new ASTVisitor() {</span>
+<span class="fc" id="L277">		MethodDeclaration[] result= { null };</span>
+<span class="fc" id="L278">		root.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(MethodDeclaration declaration) {
-<span class="pc bpc" id="L279" title="1 of 2 branches missed.">				if (&quot;consume&quot;.equals(declaration.getName().getIdentifier())) { //$NON-NLS-1$</span>
-<span class="fc" id="L280">					result[0]= declaration;</span>
+<span class="pc bpc" id="L281" title="1 of 2 branches missed.">				if (&quot;consume&quot;.equals(declaration.getName().getIdentifier())) { //$NON-NLS-1$</span>
+<span class="fc" id="L282">					result[0]= declaration;</span>
 				}
-<span class="fc" id="L282">				return true;</span>
+<span class="fc" id="L284">				return true;</span>
 			}
 		});
-<span class="pc bpc" id="L285" title="1 of 2 branches missed.">		if (result[0] == null) {</span>
-<span class="nc" id="L286">			throw new IllegalStateException(&quot;Missing consume method&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L287" title="1 of 2 branches missed.">		if (result[0] == null) {</span>
+<span class="nc" id="L288">			throw new IllegalStateException(&quot;Missing consume method&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L288">		return result[0];</span>
+<span class="fc" id="L290">		return result[0];</span>
 	}
 
 	private static TargetContainerContract targetContract() {
-<span class="fc" id="L292">		return new TargetContainerContract(</span>
-<span class="fc" id="L293">				ContainerShape.LIST,</span>
-<span class="fc" id="L294">				OrderRequirement.ENCOUNTER,</span>
-<span class="fc" id="L295">				UniquenessRequirement.DUPLICATES_ALLOWED,</span>
-<span class="fc" id="L296">				Mutability.MUTABLE,</span>
-<span class="fc" id="L297">				NullContract.ALLOWED,</span>
-<span class="fc" id="L298">				&quot;Use a mutable dynamic sequence.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L294">		return new TargetContainerContract(</span>
+<span class="fc" id="L295">				ContainerShape.LIST,</span>
+<span class="fc" id="L296">				OrderRequirement.ENCOUNTER,</span>
+<span class="fc" id="L297">				UniquenessRequirement.DUPLICATES_ALLOWED,</span>
+<span class="fc" id="L298">				Mutability.MUTABLE,</span>
+<span class="fc" id="L299">				NullContract.ALLOWED,</span>
+<span class="fc" id="L300">				&quot;Use a mutable dynamic sequence.&quot;); //$NON-NLS-1$</span>
 	}
 
 	private record SourceFacts(

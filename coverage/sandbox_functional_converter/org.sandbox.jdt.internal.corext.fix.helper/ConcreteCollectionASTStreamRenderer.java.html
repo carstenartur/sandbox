@@ -55,7 +55,7 @@ final class ConcreteCollectionASTStreamRenderer extends ASTStreamRenderer {
 <span class="fc" id="L55">		collector.arguments().add(constructorReference);</span>
 
 <span class="fc" id="L57">		MethodInvocation collectCall= ast.newMethodInvocation();</span>
-<span class="fc" id="L58">		collectCall.setExpression(pipeline);</span>
+<span class="fc" id="L58">		collectCall.setExpression(collectionInput(pipeline));</span>
 <span class="fc" id="L59">		collectCall.setName(ast.newSimpleName(&quot;collect&quot;)); //$NON-NLS-1$</span>
 <span class="fc" id="L60">		collectCall.arguments().add(collector);</span>
 <span class="fc" id="L61">		return collectCall;</span>

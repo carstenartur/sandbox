@@ -22,11 +22,16 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.SubMonitor;
 
 import org.eclipse.ltk.core.refactoring.Change;
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 
 import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.compiler.IProblem;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
@@ -64,20 +69,62 @@ public final class RepeatedCodeSequenceExtractor {
 			int start, int length, int statementCount, String coarseShape) {
 	}
 
-	private record PreparedExtraction(ExtractMethodRefactoring refactoring,
+	private record PreparedExtraction(ExtractMethodRefactoring refactoring, String ownerName,
 			int score, int statementCount, int duplicateCount, int sourceOffset) {
 
 		ICleanUpFix toCleanUpFix() {
-<span class="fc" id="L71">			return monitor -&gt; {</span>
-<span class="pc bpc" id="L72" title="1 of 2 branches missed.">				IProgressMonitor effectiveMonitor= monitor == null ? new NullProgressMonitor() : monitor;</span>
-<span class="fc" id="L73">				Change change= refactoring.createChange(effectiveMonitor);</span>
-<span class="pc bpc" id="L74" title="1 of 2 branches missed.">				if (change instanceof CompilationUnitChange compilationUnitChange) {</span>
-<span class="fc" id="L75">					return compilationUnitChange;</span>
+<span class="fc" id="L76">			return monitor -&gt; {</span>
+<span class="fc" id="L77">				SubMonitor progress= SubMonitor.convert(monitor, 3);</span>
+<span class="fc" id="L78">				CompilationUnitChange change= extract(refactoring, progress.split(1));</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">				if (ownerName != null &amp;&amp; canMakeGeneratedMethodStatic(change, ownerName,</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">						refactoring.getMethodName(), progress.split(1))) {</span>
+					// Extract Method uses this modifier mask to build the declaration and calculate type parameters.
+<span class="fc" id="L82">					refactoring.setVisibility(Modifier.PRIVATE | Modifier.STATIC);</span>
+					try {
+<span class="fc" id="L84">						return extract(refactoring, progress.split(1));</span>
+					} finally {
+<span class="fc" id="L86">						refactoring.setVisibility(Modifier.PRIVATE);</span>
+<span class="fc" id="L87">						change.dispose();</span>
+					}
 				}
-<span class="nc" id="L77">				throw new CoreException(Status.error(</span>
-<span class="nc" id="L78">						&quot;Extract Method did not produce a compilation-unit change.&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L90">				return change;</span>
 			};
 		}
+	}
+
+	private static CompilationUnitChange extract(ExtractMethodRefactoring refactoring, IProgressMonitor monitor) throws CoreException {
+<span class="fc" id="L96">		Change change= refactoring.createChange(monitor);</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">		if (change instanceof CompilationUnitChange compilationUnitChange) {</span>
+<span class="fc" id="L98">			return compilationUnitChange;</span>
+		}
+<span class="nc" id="L100">		throw new CoreException(Status.error(&quot;Extract Method did not produce a compilation-unit change.&quot;)); //$NON-NLS-1$</span>
+	}
+
+	private static boolean canMakeGeneratedMethodStatic(CompilationUnitChange change, String ownerName,
+			String methodName, IProgressMonitor monitor) throws CoreException {
+<span class="fc" id="L105">		ICompilationUnit unit= change.getCompilationUnit();</span>
+<span class="fc" id="L106">		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L107">		parser.setProject(unit.getJavaProject());</span>
+<span class="fc" id="L108">		parser.setUnitName(unit.getPath().toPortableString());</span>
+<span class="fc" id="L109">		parser.setSource(change.getPreviewContent(monitor).toCharArray());</span>
+<span class="fc" id="L110">		var options= unit.getOptions(true);</span>
+<span class="fc" id="L111">		options.put(JavaCore.COMPILER_PB_MISSING_STATIC_ON_METHOD, JavaCore.WARNING);</span>
+<span class="fc" id="L112">		options.put(JavaCore.COMPILER_PB_POTENTIALLY_MISSING_STATIC_ON_METHOD, JavaCore.WARNING);</span>
+<span class="fc" id="L113">		parser.setCompilerOptions(options);</span>
+<span class="fc" id="L114">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L115">		CompilationUnit preview= (CompilationUnit) parser.createAST(monitor);</span>
+<span class="pc bfc" id="L116" title="All 2 branches covered.">		for (IProblem problem : preview.getProblems()) {</span>
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">			if (problem.getID() != IProblem.MethodCanBeStatic) {</span>
+<span class="nc" id="L118">				continue;</span>
+			}
+			// The diagnostic arguments
+			// identify the declaration; the allocator guarantees a fresh name in this type.
+<span class="fc" id="L122">			String[] arguments= problem.getArguments();</span>
+<span class="pc bpc" id="L123" title="3 of 6 branches missed.">			if (arguments.length &gt;= 2 &amp;&amp; ownerName.equals(arguments[0]) &amp;&amp; methodName.equals(arguments[1])) {</span>
+<span class="fc" id="L124">				return true;</span>
+			}
+		}
+<span class="fc" id="L127">		return false;</span>
 	}
 
 	private RepeatedCodeSequenceExtractor() {
@@ -100,198 +147,200 @@ public final class RepeatedCodeSequenceExtractor {
 	 */
 	public static ICleanUpFix createFix(ICompilationUnit unit, CompilationUnit root,
 			int configuredMinimum) throws CoreException {
-<span class="pc bpc" id="L103" title="2 of 4 branches missed.">		if (unit == null || root == null) {</span>
-<span class="nc" id="L104">			return null;</span>
+<span class="pc bpc" id="L150" title="2 of 4 branches missed.">		if (unit == null || root == null) {</span>
+<span class="nc" id="L151">			return null;</span>
 		}
-<span class="fc" id="L106">		int minimumStatements= normalizeMinimum(configuredMinimum);</span>
-<span class="fc" id="L107">		List&lt;List&lt;Candidate&gt;&gt; groups= candidateGroups(root, minimumStatements);</span>
-<span class="fc" id="L108">		PreparedExtraction best= null;</span>
-<span class="fc" id="L109">		int checks= 0;</span>
-<span class="fc bfc" id="L110" title="All 2 branches covered.">		for (List&lt;Candidate&gt; group : groups) {</span>
-<span class="fc bfc" id="L111" title="All 2 branches covered.">			for (Candidate candidate : group) {</span>
-<span class="pc bpc" id="L112" title="1 of 2 branches missed.">				if (checks++ &gt;= MAX_REFACTORING_CHECKS) {</span>
-<span class="nc bnc" id="L113" title="All 2 branches missed.">					return best == null ? null : best.toCleanUpFix();</span>
+<span class="fc" id="L153">		int minimumStatements= normalizeMinimum(configuredMinimum);</span>
+<span class="fc" id="L154">		List&lt;List&lt;Candidate&gt;&gt; groups= candidateGroups(root, minimumStatements);</span>
+<span class="fc" id="L155">		PreparedExtraction best= null;</span>
+<span class="fc" id="L156">		int checks= 0;</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">		for (List&lt;Candidate&gt; group : groups) {</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">			for (Candidate candidate : group) {</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">				if (checks++ &gt;= MAX_REFACTORING_CHECKS) {</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">					return best == null ? null : best.toCleanUpFix();</span>
 				}
-<span class="fc bfc" id="L115" title="All 2 branches covered.">				if (!hasJdtDuplicate(candidate)) {</span>
-<span class="fc" id="L116">					continue;</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">				if (!hasJdtDuplicate(candidate)) {</span>
+<span class="fc" id="L163">					continue;</span>
 				}
-<span class="fc" id="L118">				PreparedExtraction prepared= prepare(root, candidate);</span>
-<span class="fc bfc" id="L119" title="All 2 branches covered.">				if (isBetter(prepared, best)) {</span>
-<span class="fc" id="L120">					best= prepared;</span>
+<span class="fc" id="L165">				PreparedExtraction prepared= prepare(root, candidate);</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">				if (isBetter(prepared, best)) {</span>
+<span class="fc" id="L167">					best= prepared;</span>
 				}
 				// A coarse group may still contain several semantically distinct
 				// sequences. Inspect every representative within the bounded budget;
 				// JDT determines each candidate's actual duplicate set.
 			}
 		}
-<span class="fc bfc" id="L127" title="All 2 branches covered.">		return best == null ? null : best.toCleanUpFix();</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">		return best == null ? null : best.toCleanUpFix();</span>
 	}
 
 	/** Normalizes profile values to a conservative supported range. */
 	public static int normalizeMinimum(int configuredMinimum) {
-<span class="pc bpc" id="L132" title="1 of 2 branches missed.">		if (configuredMinimum &lt; MINIMUM_ALLOWED_STATEMENTS</span>
-<span class="pc bpc" id="L133" title="1 of 2 branches missed.">				|| configuredMinimum &gt; MAXIMUM_ALLOWED_STATEMENTS) {</span>
-<span class="nc" id="L134">			return DEFAULT_MINIMUM_STATEMENTS;</span>
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">		if (configuredMinimum &lt; MINIMUM_ALLOWED_STATEMENTS</span>
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">				|| configuredMinimum &gt; MAXIMUM_ALLOWED_STATEMENTS) {</span>
+<span class="nc" id="L181">			return DEFAULT_MINIMUM_STATEMENTS;</span>
 		}
-<span class="fc" id="L136">		return configuredMinimum;</span>
+<span class="fc" id="L183">		return configuredMinimum;</span>
 	}
 
 	private static List&lt;List&lt;Candidate&gt;&gt; candidateGroups(CompilationUnit root, int minimumStatements) {
-<span class="fc" id="L140">		Map&lt;String, List&lt;Candidate&gt;&gt; grouped= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L141">		root.accept(new ASTVisitor() {</span>
+<span class="fc" id="L187">		Map&lt;String, List&lt;Candidate&gt;&gt; grouped= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L188">		root.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(Block block) {
-<span class="fc" id="L144">				AbstractTypeDeclaration enclosingType= enclosingType(block);</span>
-<span class="pc bpc" id="L145" title="2 of 4 branches missed.">				if (enclosingType == null || enclosingType.resolveBinding() == null</span>
-<span class="pc bpc" id="L146" title="1 of 2 branches missed.">						|| enclosingMethod(block) == null) {</span>
-<span class="nc" id="L147">					return true;</span>
+<span class="fc" id="L191">				AbstractTypeDeclaration enclosingType= enclosingType(block);</span>
+<span class="pc bpc" id="L192" title="2 of 4 branches missed.">				if (enclosingType == null || enclosingType.resolveBinding() == null</span>
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">						|| enclosingMethod(block) == null) {</span>
+<span class="nc" id="L194">					return true;</span>
 				}
 				@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L150">				List&lt;Statement&gt; statements= block.statements();</span>
-<span class="fc" id="L151">				int maximumLength= Math.min(statements.size(), MAXIMUM_ALLOWED_STATEMENTS);</span>
-<span class="fc bfc" id="L152" title="All 2 branches covered.">				for (int length= maximumLength; length &gt;= minimumStatements; length--) {</span>
-<span class="fc bfc" id="L153" title="All 2 branches covered.">					for (int startIndex= 0; startIndex + length &lt;= statements.size(); startIndex++) {</span>
-<span class="fc" id="L154">						Candidate candidate= candidate(enclosingType, statements, startIndex, length);</span>
-<span class="fc" id="L155">						grouped.computeIfAbsent(candidate.coarseShape(), ignored -&gt; new ArrayList&lt;&gt;())</span>
-<span class="fc" id="L156">								.add(candidate);</span>
+<span class="fc" id="L197">				List&lt;Statement&gt; statements= block.statements();</span>
+<span class="fc" id="L198">				int maximumLength= Math.min(statements.size(), MAXIMUM_ALLOWED_STATEMENTS);</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">				for (int length= maximumLength; length &gt;= minimumStatements; length--) {</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">					for (int startIndex= 0; startIndex + length &lt;= statements.size(); startIndex++) {</span>
+<span class="fc" id="L201">						Candidate candidate= candidate(enclosingType, statements, startIndex, length);</span>
+<span class="fc" id="L202">						grouped.computeIfAbsent(candidate.coarseShape(), ignored -&gt; new ArrayList&lt;&gt;())</span>
+<span class="fc" id="L203">								.add(candidate);</span>
 					}
 				}
-<span class="fc" id="L159">				return true;</span>
+<span class="fc" id="L206">				return true;</span>
 			}
 		});
-<span class="fc" id="L162">		Comparator&lt;Candidate&gt; candidateOrder= Comparator.comparingInt(Candidate::start);</span>
-<span class="fc" id="L163">		return grouped.values().stream()</span>
-<span class="pc bpc" id="L164" title="1 of 2 branches missed.">				.filter(group -&gt; group.size() &gt;= 2)</span>
-<span class="fc" id="L165">				.peek(group -&gt; group.sort(candidateOrder))</span>
-<span class="fc" id="L166">				.sorted(Comparator</span>
-<span class="pc" id="L167">						.&lt;List&lt;Candidate&gt;&gt;comparingInt(group -&gt; group.get(0).statementCount())</span>
-<span class="fc" id="L168">						.reversed()</span>
-<span class="fc" id="L169">						.thenComparing(Comparator.comparingInt(List&lt;Candidate&gt;::size).reversed())</span>
-<span class="pc" id="L170">						.thenComparingInt(group -&gt; group.get(0).start()))</span>
-<span class="fc" id="L171">				.toList();</span>
+<span class="fc" id="L209">		Comparator&lt;Candidate&gt; candidateOrder= Comparator.comparingInt(Candidate::start);</span>
+<span class="fc" id="L210">		return grouped.values().stream()</span>
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">				.filter(group -&gt; group.size() &gt;= 2)</span>
+<span class="fc" id="L212">				.peek(group -&gt; group.sort(candidateOrder))</span>
+<span class="fc" id="L213">				.sorted(Comparator</span>
+<span class="pc" id="L214">						.&lt;List&lt;Candidate&gt;&gt;comparingInt(group -&gt; group.get(0).statementCount())</span>
+<span class="fc" id="L215">						.reversed()</span>
+<span class="fc" id="L216">						.thenComparing(Comparator.comparingInt(List&lt;Candidate&gt;::size).reversed())</span>
+<span class="pc" id="L217">						.thenComparingInt(group -&gt; group.get(0).start()))</span>
+<span class="fc" id="L218">				.toList();</span>
 	}
 
 	private static Candidate candidate(AbstractTypeDeclaration enclosingType,
 			List&lt;Statement&gt; statements, int startIndex, int length) {
-<span class="fc" id="L176">		ASTNode[] nodes= new ASTNode[length];</span>
-<span class="fc" id="L177">		StringBuilder shape= new StringBuilder(typeIdentity(enclosingType))</span>
-<span class="fc" id="L178">				.append(':').append(length);</span>
-<span class="fc bfc" id="L179" title="All 2 branches covered.">		for (int index= 0; index &lt; length; index++) {</span>
-<span class="fc" id="L180">			Statement statement= statements.get(startIndex + index);</span>
-<span class="fc" id="L181">			nodes[index]= statement;</span>
-<span class="fc" id="L182">			shape.append(':').append(statement.getNodeType());</span>
+<span class="fc" id="L223">		ASTNode[] nodes= new ASTNode[length];</span>
+<span class="fc" id="L224">		StringBuilder shape= new StringBuilder(typeIdentity(enclosingType))</span>
+<span class="fc" id="L225">				.append(':').append(length);</span>
+<span class="fc bfc" id="L226" title="All 2 branches covered.">		for (int index= 0; index &lt; length; index++) {</span>
+<span class="fc" id="L227">			Statement statement= statements.get(startIndex + index);</span>
+<span class="fc" id="L228">			nodes[index]= statement;</span>
+<span class="fc" id="L229">			shape.append(':').append(statement.getNodeType());</span>
 		}
-<span class="fc" id="L184">		ASTNode first= nodes[0];</span>
-<span class="fc" id="L185">		ASTNode last= nodes[nodes.length - 1];</span>
-<span class="fc" id="L186">		int start= first.getStartPosition();</span>
-<span class="fc" id="L187">		int end= last.getStartPosition() + last.getLength();</span>
-<span class="fc" id="L188">		return new Candidate(enclosingType, nodes, start, end - start, length, shape.toString());</span>
+<span class="fc" id="L231">		ASTNode first= nodes[0];</span>
+<span class="fc" id="L232">		ASTNode last= nodes[nodes.length - 1];</span>
+<span class="fc" id="L233">		int start= first.getStartPosition();</span>
+<span class="fc" id="L234">		int end= last.getStartPosition() + last.getLength();</span>
+<span class="fc" id="L235">		return new Candidate(enclosingType, nodes, start, end - start, length, shape.toString());</span>
 	}
 
 	private static String typeIdentity(AbstractTypeDeclaration type) {
-<span class="fc" id="L192">		ITypeBinding binding= type.resolveBinding();</span>
-<span class="pc bpc" id="L193" title="1 of 2 branches missed.">		String key= binding == null ? null : binding.getKey();</span>
-<span class="pc bpc" id="L194" title="2 of 4 branches missed.">		return key == null || key.isBlank()</span>
-<span class="nc" id="L195">				? Integer.toString(type.getStartPosition())</span>
-<span class="fc" id="L196">				: key;</span>
+<span class="fc" id="L239">		ITypeBinding binding= type.resolveBinding();</span>
+<span class="pc bpc" id="L240" title="1 of 2 branches missed.">		String key= binding == null ? null : binding.getKey();</span>
+<span class="pc bpc" id="L241" title="2 of 4 branches missed.">		return key == null || key.isBlank()</span>
+<span class="nc" id="L242">				? Integer.toString(type.getStartPosition())</span>
+<span class="fc" id="L243">				: key;</span>
 	}
 
 	private static boolean hasJdtDuplicate(Candidate candidate) {
-<span class="fc bfc" id="L200" title="All 2 branches covered.">		for (SnippetFinder.Match match : SnippetFinder.perform(candidate.enclosingType(), candidate.nodes())) {</span>
-<span class="pc bpc" id="L201" title="2 of 4 branches missed.">			if (match != null &amp;&amp; !match.isInvalidNode()) {</span>
-<span class="fc" id="L202">				return true;</span>
+<span class="fc bfc" id="L247" title="All 2 branches covered.">		for (SnippetFinder.Match match : SnippetFinder.perform(candidate.enclosingType(), candidate.nodes())) {</span>
+<span class="pc bpc" id="L248" title="2 of 4 branches missed.">			if (match != null &amp;&amp; !match.isInvalidNode()) {</span>
+<span class="fc" id="L249">				return true;</span>
 			}
 		}
-<span class="fc" id="L205">		return false;</span>
+<span class="fc" id="L252">		return false;</span>
 	}
 
 	private static PreparedExtraction prepare(CompilationUnit root, Candidate candidate)
 			throws CoreException {
-<span class="fc" id="L210">		ExtractMethodRefactoring refactoring= new ExtractMethodRefactoring(root,</span>
-<span class="fc" id="L211">				candidate.start(), candidate.length());</span>
-<span class="fc" id="L212">		RefactoringStatus initial= refactoring.checkInitialConditions(new NullProgressMonitor());</span>
-<span class="pc bpc" id="L213" title="2 of 4 branches missed.">		if (hasError(initial) || refactoring.getNumberOfDuplicates() == 0) {</span>
-<span class="nc" id="L214">			return null;</span>
+<span class="fc" id="L257">		ExtractMethodRefactoring refactoring= new ExtractMethodRefactoring(root,</span>
+<span class="fc" id="L258">				candidate.start(), candidate.length());</span>
+<span class="fc" id="L259">		RefactoringStatus initial= refactoring.checkInitialConditions(new NullProgressMonitor());</span>
+<span class="pc bpc" id="L260" title="2 of 4 branches missed.">		if (hasError(initial) || refactoring.getNumberOfDuplicates() == 0) {</span>
+<span class="nc" id="L261">			return null;</span>
 		}
-<span class="fc" id="L216">		refactoring.setMethodName(uniqueMethodName(candidate.enclosingType()));</span>
-<span class="fc" id="L217">		refactoring.setVisibility(Modifier.PRIVATE);</span>
-<span class="fc" id="L218">		refactoring.setGenerateJavadoc(false);</span>
-<span class="fc" id="L219">		refactoring.setReplaceDuplicates(true);</span>
-<span class="fc" id="L220">		RefactoringStatus finalStatus= refactoring.checkFinalConditions(new NullProgressMonitor());</span>
-<span class="pc bpc" id="L221" title="1 of 2 branches missed.">		if (hasError(finalStatus)) {</span>
-<span class="nc" id="L222">			return null;</span>
+<span class="fc" id="L263">		refactoring.setMethodName(uniqueMethodName(candidate.enclosingType()));</span>
+<span class="fc" id="L264">		refactoring.setVisibility(Modifier.PRIVATE);</span>
+<span class="fc" id="L265">		refactoring.setGenerateJavadoc(false);</span>
+<span class="fc" id="L266">		refactoring.setReplaceDuplicates(true);</span>
+<span class="fc" id="L267">		RefactoringStatus finalStatus= refactoring.checkFinalConditions(new NullProgressMonitor());</span>
+<span class="pc bpc" id="L268" title="1 of 2 branches missed.">		if (hasError(finalStatus)) {</span>
+<span class="nc" id="L269">			return null;</span>
 		}
-<span class="fc" id="L224">		int duplicateCount= refactoring.getNumberOfDuplicates();</span>
-<span class="fc" id="L225">		int score= Math.multiplyExact(candidate.statementCount(), duplicateCount);</span>
-<span class="fc" id="L226">		return new PreparedExtraction(refactoring, score, candidate.statementCount(),</span>
-<span class="fc" id="L227">				duplicateCount, candidate.start());</span>
+<span class="fc" id="L271">		int duplicateCount= refactoring.getNumberOfDuplicates();</span>
+<span class="fc" id="L272">		int score= Math.multiplyExact(candidate.statementCount(), duplicateCount);</span>
+<span class="fc" id="L273">		ITypeBinding owner= candidate.enclosingType().resolveBinding();</span>
+<span class="pc bpc" id="L274" title="2 of 4 branches missed.">		String ownerName= owner == null || owner.isInterface() ? null : owner.getErasure().getQualifiedName();</span>
+<span class="fc" id="L275">		return new PreparedExtraction(refactoring, ownerName, score, candidate.statementCount(),</span>
+<span class="fc" id="L276">				duplicateCount, candidate.start());</span>
 	}
 
 	private static boolean hasError(RefactoringStatus status) {
-<span class="pc bpc" id="L231" title="2 of 4 branches missed.">		return status != null &amp;&amp; status.getSeverity() &gt;= RefactoringStatus.ERROR;</span>
+<span class="pc bpc" id="L280" title="2 of 4 branches missed.">		return status != null &amp;&amp; status.getSeverity() &gt;= RefactoringStatus.ERROR;</span>
 	}
 
 	private static boolean isBetter(PreparedExtraction candidate, PreparedExtraction current) {
-<span class="pc bpc" id="L235" title="1 of 2 branches missed.">		if (candidate == null) {</span>
-<span class="nc" id="L236">			return false;</span>
+<span class="pc bpc" id="L284" title="1 of 2 branches missed.">		if (candidate == null) {</span>
+<span class="nc" id="L285">			return false;</span>
 		}
-<span class="fc bfc" id="L238" title="All 2 branches covered.">		if (current == null) {</span>
-<span class="fc" id="L239">			return true;</span>
+<span class="fc bfc" id="L287" title="All 2 branches covered.">		if (current == null) {</span>
+<span class="fc" id="L288">			return true;</span>
 		}
-<span class="pc bpc" id="L241" title="1 of 2 branches missed.">		if (candidate.score() != current.score()) {</span>
-<span class="nc bnc" id="L242" title="All 2 branches missed.">			return candidate.score() &gt; current.score();</span>
+<span class="pc bpc" id="L290" title="1 of 2 branches missed.">		if (candidate.score() != current.score()) {</span>
+<span class="nc bnc" id="L291" title="All 2 branches missed.">			return candidate.score() &gt; current.score();</span>
 		}
-<span class="pc bpc" id="L244" title="1 of 2 branches missed.">		if (candidate.statementCount() != current.statementCount()) {</span>
-<span class="nc bnc" id="L245" title="All 2 branches missed.">			return candidate.statementCount() &gt; current.statementCount();</span>
+<span class="pc bpc" id="L293" title="1 of 2 branches missed.">		if (candidate.statementCount() != current.statementCount()) {</span>
+<span class="nc bnc" id="L294" title="All 2 branches missed.">			return candidate.statementCount() &gt; current.statementCount();</span>
 		}
-<span class="pc bpc" id="L247" title="1 of 2 branches missed.">		if (candidate.duplicateCount() != current.duplicateCount()) {</span>
-<span class="nc bnc" id="L248" title="All 2 branches missed.">			return candidate.duplicateCount() &gt; current.duplicateCount();</span>
+<span class="pc bpc" id="L296" title="1 of 2 branches missed.">		if (candidate.duplicateCount() != current.duplicateCount()) {</span>
+<span class="nc bnc" id="L297" title="All 2 branches missed.">			return candidate.duplicateCount() &gt; current.duplicateCount();</span>
 		}
-<span class="pc bpc" id="L250" title="1 of 2 branches missed.">		return candidate.sourceOffset() &lt; current.sourceOffset();</span>
+<span class="pc bpc" id="L299" title="1 of 2 branches missed.">		return candidate.sourceOffset() &lt; current.sourceOffset();</span>
 	}
 
 	private static String uniqueMethodName(AbstractTypeDeclaration type) {
-<span class="fc" id="L254">		Set&lt;String&gt; names= new LinkedHashSet&lt;&gt;();</span>
-<span class="fc bfc" id="L255" title="All 2 branches covered.">		for (Object declaration : type.bodyDeclarations()) {</span>
-<span class="pc bpc" id="L256" title="1 of 2 branches missed.">			if (declaration instanceof MethodDeclaration method) {</span>
-<span class="fc" id="L257">				names.add(method.getName().getIdentifier());</span>
+<span class="fc" id="L303">		Set&lt;String&gt; names= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L304" title="All 2 branches covered.">		for (Object declaration : type.bodyDeclarations()) {</span>
+<span class="fc bfc" id="L305" title="All 2 branches covered.">			if (declaration instanceof MethodDeclaration method) {</span>
+<span class="fc" id="L306">				names.add(method.getName().getIdentifier());</span>
 			}
 		}
-<span class="pc bpc" id="L260" title="1 of 2 branches missed.">		if (!names.contains(BASE_METHOD_NAME)) {</span>
-<span class="fc" id="L261">			return BASE_METHOD_NAME;</span>
+<span class="pc bpc" id="L309" title="1 of 2 branches missed.">		if (!names.contains(BASE_METHOD_NAME)) {</span>
+<span class="fc" id="L310">			return BASE_METHOD_NAME;</span>
 		}
-<span class="nc bnc" id="L263" title="All 2 branches missed.">		for (int suffix= 2; suffix &lt; Integer.MAX_VALUE; suffix++) {</span>
-<span class="nc" id="L264">			String candidate= BASE_METHOD_NAME + suffix;</span>
-<span class="nc bnc" id="L265" title="All 2 branches missed.">			if (!names.contains(candidate)) {</span>
-<span class="nc" id="L266">				return candidate;</span>
+<span class="nc bnc" id="L312" title="All 2 branches missed.">		for (int suffix= 2; suffix &lt; Integer.MAX_VALUE; suffix++) {</span>
+<span class="nc" id="L313">			String candidate= BASE_METHOD_NAME + suffix;</span>
+<span class="nc bnc" id="L314" title="All 2 branches missed.">			if (!names.contains(candidate)) {</span>
+<span class="nc" id="L315">				return candidate;</span>
 			}
 		}
-<span class="nc" id="L269">		throw new IllegalStateException(&quot;Cannot allocate an extracted method name&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L318">		throw new IllegalStateException(&quot;Cannot allocate an extracted method name&quot;); //$NON-NLS-1$</span>
 	}
 
 	private static AbstractTypeDeclaration enclosingType(ASTNode node) {
-<span class="fc" id="L273">		ASTNode current= node;</span>
-<span class="pc bpc" id="L274" title="1 of 2 branches missed.">		while (current != null) {</span>
-<span class="fc bfc" id="L275" title="All 2 branches covered.">			if (current instanceof AbstractTypeDeclaration type) {</span>
-<span class="fc" id="L276">				return type;</span>
+<span class="fc" id="L322">		ASTNode current= node;</span>
+<span class="pc bpc" id="L323" title="1 of 2 branches missed.">		while (current != null) {</span>
+<span class="fc bfc" id="L324" title="All 2 branches covered.">			if (current instanceof AbstractTypeDeclaration type) {</span>
+<span class="fc" id="L325">				return type;</span>
 			}
-<span class="pc bpc" id="L278" title="1 of 2 branches missed.">			if (current.getNodeType() == ASTNode.ANONYMOUS_CLASS_DECLARATION) {</span>
-<span class="nc" id="L279">				return null;</span>
+<span class="pc bpc" id="L327" title="1 of 2 branches missed.">			if (current.getNodeType() == ASTNode.ANONYMOUS_CLASS_DECLARATION) {</span>
+<span class="nc" id="L328">				return null;</span>
 			}
-<span class="fc" id="L281">			current= current.getParent();</span>
+<span class="fc" id="L330">			current= current.getParent();</span>
 		}
-<span class="nc" id="L283">		return null;</span>
+<span class="nc" id="L332">		return null;</span>
 	}
 
 	private static MethodDeclaration enclosingMethod(ASTNode node) {
-<span class="fc" id="L287">		ASTNode current= node;</span>
-<span class="pc bpc" id="L288" title="2 of 4 branches missed.">		while (current != null &amp;&amp; !(current instanceof AbstractTypeDeclaration)) {</span>
-<span class="fc bfc" id="L289" title="All 2 branches covered.">			if (current instanceof MethodDeclaration method) {</span>
-<span class="fc" id="L290">				return method;</span>
+<span class="fc" id="L336">		ASTNode current= node;</span>
+<span class="pc bpc" id="L337" title="2 of 4 branches missed.">		while (current != null &amp;&amp; !(current instanceof AbstractTypeDeclaration)) {</span>
+<span class="fc bfc" id="L338" title="All 2 branches covered.">			if (current instanceof MethodDeclaration method) {</span>
+<span class="fc" id="L339">				return method;</span>
 			}
-<span class="fc" id="L292">			current= current.getParent();</span>
+<span class="fc" id="L341">			current= current.getParent();</span>
 		}
-<span class="nc" id="L294">		return null;</span>
+<span class="nc" id="L343">		return null;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

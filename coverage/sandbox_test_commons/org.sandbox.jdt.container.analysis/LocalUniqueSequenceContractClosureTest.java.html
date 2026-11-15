@@ -10,6 +10,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.container.analysis;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -41,21 +43,21 @@ import org.sandbox.jdt.container.api.ResolvedContainerFlowSearchPlan;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 
-<span class="fc" id="L44">class LocalUniqueSequenceContractClosureTest {</span>
+<span class="fc" id="L46">class LocalUniqueSequenceContractClosureTest {</span>
 
 	@RegisterExtension
-<span class="fc" id="L47">	final AbstractEclipseJava context= new EclipseJava22();</span>
+<span class="fc" id="L49">	final AbstractEclipseJava context= new EclipseJava22();</span>
 
-<span class="fc" id="L49">	private final ContainerSignatureAtomicityPlanner signaturePlanner=</span>
-<span class="fc" id="L50">			new ContainerSignatureAtomicityPlanner();</span>
-<span class="fc" id="L51">	private final ContainerBridgePolicyPlanner bridgePlanner=</span>
-<span class="fc" id="L52">			new ContainerBridgePolicyPlanner();</span>
-<span class="fc" id="L53">	private final ContainerMigrationReadinessPlanner readinessPlanner=</span>
-<span class="fc" id="L54">			new ContainerMigrationReadinessPlanner();</span>
+<span class="fc" id="L51">	private final ContainerSignatureAtomicityPlanner signaturePlanner=</span>
+<span class="fc" id="L52">			new ContainerSignatureAtomicityPlanner();</span>
+<span class="fc" id="L53">	private final ContainerBridgePolicyPlanner bridgePlanner=</span>
+<span class="fc" id="L54">			new ContainerBridgePolicyPlanner();</span>
+<span class="fc" id="L55">	private final ContainerMigrationReadinessPlanner readinessPlanner=</span>
+<span class="fc" id="L56">			new ContainerMigrationReadinessPlanner();</span>
 
 	@Test
 	void strictLocalUniqueSequenceReachesAutomaticRewrite() throws Exception {
-<span class="fc" id="L58">		ICompilationUnit unit= createUnit(&quot;&quot;&quot;</span>
+<span class="fc" id="L60">		ICompilationUnit unit= createUnit(&quot;&quot;&quot;</span>
 			package test;
 			import java.util.ArrayList;
 			import java.util.List;
@@ -71,71 +73,71 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 				}
 			}
 			&quot;&quot;&quot;);
-<span class="fc" id="L74">		CompilationUnit root= parse(unit);</span>
-<span class="fc" id="L75">		ContainerUsageProfile profile=</span>
-<span class="fc" id="L76">				new LocalUniqueSequenceAnalyzer().analyze(root).get(0);</span>
-<span class="fc" id="L77">		var recommendation= new UniqueSequenceContractInferrer()</span>
-<span class="fc" id="L78">				.infer(profile).orElseThrow();</span>
-<span class="fc" id="L79">		ContainerFlowComponent component= localComponent(unit, profile);</span>
-<span class="fc" id="L80">		ContainerSignatureMigrationPlan signaturePlan= signaturePlanner.plan(</span>
-<span class="fc" id="L81">				component, ResolvedContainerFlowSearchPlan.empty(), recommendation);</span>
-<span class="fc" id="L82">		ContainerBridgePolicyPlan bridgePlan=</span>
-<span class="fc" id="L83">				bridgePlanner.plan(signaturePlan, recommendation);</span>
-<span class="fc" id="L84">		ContainerMigrationReadiness readiness= readinessPlanner.plan(</span>
-<span class="fc" id="L85">				component, recommendation, signaturePlan, bridgePlan);</span>
-<span class="fc" id="L86">		var rewrite= new UniqueSequenceLocalRewritePlanner().plan(</span>
-<span class="fc" id="L87">				unit.getHandleIdentifier(), recommendation, readiness);</span>
+<span class="fc" id="L76">		CompilationUnit root= parse(unit);</span>
+<span class="fc" id="L77">		ContainerUsageProfile profile=</span>
+<span class="fc" id="L78">				new LocalUniqueSequenceAnalyzer().analyze(root).get(0);</span>
+<span class="fc" id="L79">		var recommendation= new UniqueSequenceContractInferrer()</span>
+<span class="fc" id="L80">				.infer(profile).orElseThrow();</span>
+<span class="fc" id="L81">		ContainerFlowComponent component= localComponent(unit, profile);</span>
+<span class="fc" id="L82">		ContainerSignatureMigrationPlan signaturePlan= signaturePlanner.plan(</span>
+<span class="fc" id="L83">				component, ResolvedContainerFlowSearchPlan.empty(), recommendation);</span>
+<span class="fc" id="L84">		ContainerBridgePolicyPlan bridgePlan=</span>
+<span class="fc" id="L85">				bridgePlanner.plan(signaturePlan, recommendation);</span>
+<span class="fc" id="L86">		ContainerMigrationReadiness readiness= readinessPlanner.plan(</span>
+<span class="fc" id="L87">				component, recommendation, signaturePlan, bridgePlan);</span>
+<span class="fc" id="L88">		var rewrite= new UniqueSequenceLocalRewritePlanner().plan(</span>
+<span class="fc" id="L89">				unit.getHandleIdentifier(), recommendation, readiness);</span>
 
-<span class="fc" id="L89">		assertEquals(ContainerSignatureMigrationPlan.PlanningStatus.NO_SIGNATURE_CHANGE,</span>
-<span class="fc" id="L90">				signaturePlan.status());</span>
-<span class="fc" id="L91">		assertEquals(ContainerBridgePolicyPlan.PlanningStatus.NO_BRIDGE_NEEDED,</span>
-<span class="fc" id="L92">				bridgePlan.status());</span>
-<span class="fc" id="L93">		assertEquals(ExecutionStatus.AUTOMATIC, readiness.status());</span>
-<span class="fc" id="L94">		assertTrue(rewrite.ready());</span>
+<span class="fc" id="L91">		assertEquals(ContainerSignatureMigrationPlan.PlanningStatus.NO_SIGNATURE_CHANGE,</span>
+<span class="fc" id="L92">				signaturePlan.status());</span>
+<span class="fc" id="L93">		assertEquals(ContainerBridgePolicyPlan.PlanningStatus.NO_BRIDGE_NEEDED,</span>
+<span class="fc" id="L94">				bridgePlan.status());</span>
+<span class="fc" id="L95">		assertEquals(ExecutionStatus.AUTOMATIC, readiness.status());</span>
+<span class="fc" id="L96">		assertTrue(rewrite.ready());</span>
 
-<span class="fc" id="L96">		UniqueSequenceLocalRewriteFix.create(unit, root, rewrite.plan().orElseThrow())</span>
-<span class="fc" id="L97">				.createChange(null).perform(null);</span>
+<span class="fc" id="L98">		var change= UniqueSequenceLocalRewriteFix.create(unit, root, rewrite.plan().orElseThrow()).createChange(null);</span>
+<span class="fc" id="L99">		performAndCheck(change, null, unit);</span>
 
-<span class="fc" id="L99">		String transformed= unit.getSource();</span>
-<span class="fc" id="L100">		assertTrue(transformed.contains(&quot;Set&lt;String&gt; values&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L101">		assertTrue(transformed.contains(&quot;new LinkedHashSet&lt;&gt;()&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L102">		assertTrue(transformed.contains(&quot;values.add(value);&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L103">		assertFalse(transformed.contains(&quot;values.contains(value)&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L104">	}</span>
+<span class="fc" id="L101">		String transformed= unit.getSource();</span>
+<span class="fc" id="L102">		assertTrue(transformed.contains(&quot;Set&lt;String&gt; values&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L103">		assertTrue(transformed.contains(&quot;new LinkedHashSet&lt;&gt;()&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L104">		assertTrue(transformed.contains(&quot;values.add(value);&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L105">		assertFalse(transformed.contains(&quot;values.contains(value)&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L106">	}</span>
 
 	private static ContainerFlowComponent localComponent(
 			ICompilationUnit unit,
 			ContainerUsageProfile profile) {
-<span class="fc" id="L109">		FlowNode root= new FlowNode(</span>
-<span class="fc" id="L110">				&quot;local:&quot; + profile.identity().bindingKey(), //$NON-NLS-1$</span>
-<span class="fc" id="L111">				NodeKind.LOCAL_VARIABLE,</span>
-<span class="fc" id="L112">				profile.identity().bindingKey(),</span>
-<span class="fc" id="L113">				&quot;method-key&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L114">				unit.getHandleIdentifier(),</span>
-<span class="fc" id="L115">				&quot;local-handle&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L116">				-1,</span>
-<span class="fc" id="L117">				true,</span>
-<span class="fc" id="L118">				profile.identity().sourceStart(),</span>
-<span class="fc" id="L119">				profile.identity().sourceLength());</span>
-<span class="fc" id="L120">		return new ContainerFlowComponent(</span>
-<span class="fc" id="L121">				root.stableId(), List.of(root), List.of(),</span>
-<span class="fc" id="L122">				ClosureStatus.LOCAL_CLOSED, List.of());</span>
+<span class="fc" id="L111">		FlowNode root= new FlowNode(</span>
+<span class="fc" id="L112">				&quot;local:&quot; + profile.identity().bindingKey(), //$NON-NLS-1$</span>
+<span class="fc" id="L113">				NodeKind.LOCAL_VARIABLE,</span>
+<span class="fc" id="L114">				profile.identity().bindingKey(),</span>
+<span class="fc" id="L115">				&quot;method-key&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L116">				unit.getHandleIdentifier(),</span>
+<span class="fc" id="L117">				&quot;local-handle&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L118">				-1,</span>
+<span class="fc" id="L119">				true,</span>
+<span class="fc" id="L120">				profile.identity().sourceStart(),</span>
+<span class="fc" id="L121">				profile.identity().sourceLength());</span>
+<span class="fc" id="L122">		return new ContainerFlowComponent(</span>
+<span class="fc" id="L123">				root.stableId(), List.of(root), List.of(),</span>
+<span class="fc" id="L124">				ClosureStatus.LOCAL_CLOSED, List.of());</span>
 	}
 
 	private ICompilationUnit createUnit(String source) throws CoreException {
-<span class="fc" id="L126">		IPackageFragment fragment= context.getSourceFolder()</span>
-<span class="fc" id="L127">				.createPackageFragment(&quot;test&quot;, false, null); //$NON-NLS-1$</span>
-<span class="fc" id="L128">		return fragment.createCompilationUnit(&quot;Sample.java&quot;, source, true, null); //$NON-NLS-1$</span>
+<span class="fc" id="L128">		IPackageFragment fragment= context.getSourceFolder()</span>
+<span class="fc" id="L129">				.createPackageFragment(&quot;test&quot;, false, null); //$NON-NLS-1$</span>
+<span class="fc" id="L130">		return fragment.createCompilationUnit(&quot;Sample.java&quot;, source, true, null); //$NON-NLS-1$</span>
 	}
 
 	private CompilationUnit parse(ICompilationUnit unit) {
-<span class="fc" id="L132">		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());</span>
-<span class="fc" id="L133">		parser.setProject(context.getJavaProject());</span>
-<span class="fc" id="L134">		parser.setSource(unit);</span>
-<span class="fc" id="L135">		parser.setResolveBindings(true);</span>
-<span class="fc" id="L136">		parser.setBindingsRecovery(true);</span>
-<span class="fc" id="L137">		parser.setStatementsRecovery(true);</span>
-<span class="fc" id="L138">		return (CompilationUnit) parser.createAST(null);</span>
+<span class="fc" id="L134">		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L135">		parser.setProject(context.getJavaProject());</span>
+<span class="fc" id="L136">		parser.setSource(unit);</span>
+<span class="fc" id="L137">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L138">		parser.setBindingsRecovery(true);</span>
+<span class="fc" id="L139">		parser.setStatementsRecovery(true);</span>
+<span class="fc" id="L140">		return (CompilationUnit) parser.createAST(null);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

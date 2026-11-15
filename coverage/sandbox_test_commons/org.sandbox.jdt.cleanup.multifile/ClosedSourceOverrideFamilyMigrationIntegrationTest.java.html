@@ -10,6 +10,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.cleanup.multifile;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -63,257 +65,257 @@ import org.sandbox.jdt.container.api.TargetContainerContract.Mutability;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 
-<span class="fc" id="L66">class ClosedSourceOverrideFamilyMigrationIntegrationTest {</span>
+<span class="fc" id="L68">class ClosedSourceOverrideFamilyMigrationIntegrationTest {</span>
 
 	@RegisterExtension
-<span class="fc" id="L69">	final AbstractEclipseJava context= new EclipseJava22();</span>
+<span class="fc" id="L71">	final AbstractEclipseJava context= new EclipseJava22();</span>
 
 	@Test
 	void appliesAndUndoesCompleteOverrideFamilyAtomically() throws Exception {
-<span class="fc" id="L73">		ICompilationUnit caller= createUnit(&quot;Caller.java&quot;, callerSource()); //$NON-NLS-1$</span>
-<span class="fc" id="L74">		ICompilationUnit contract= createUnit(&quot;Contract.java&quot;, contractSource()); //$NON-NLS-1$</span>
-<span class="fc" id="L75">		ICompilationUnit first= createUnit(&quot;First.java&quot;, firstSource()); //$NON-NLS-1$</span>
-<span class="fc" id="L76">		ICompilationUnit second= createUnit(&quot;Second.java&quot;, secondSource()); //$NON-NLS-1$</span>
-<span class="fc" id="L77">		List&lt;ICompilationUnit&gt; units= List.of(caller, contract, first, second);</span>
-<span class="fc" id="L78">		List&lt;String&gt; originals= units.stream().map(unit -&gt; {</span>
+<span class="fc" id="L75">		ICompilationUnit caller= createUnit(&quot;Caller.java&quot;, callerSource()); //$NON-NLS-1$</span>
+<span class="fc" id="L76">		ICompilationUnit contract= createUnit(&quot;Contract.java&quot;, contractSource()); //$NON-NLS-1$</span>
+<span class="fc" id="L77">		ICompilationUnit first= createUnit(&quot;First.java&quot;, firstSource()); //$NON-NLS-1$</span>
+<span class="fc" id="L78">		ICompilationUnit second= createUnit(&quot;Second.java&quot;, secondSource()); //$NON-NLS-1$</span>
+<span class="fc" id="L79">		List&lt;ICompilationUnit&gt; units= List.of(caller, contract, first, second);</span>
+<span class="fc" id="L80">		List&lt;String&gt; originals= units.stream().map(unit -&gt; {</span>
 			try {
-<span class="fc" id="L80">				return unit.getSource();</span>
-<span class="nc" id="L81">			} catch (CoreException exception) {</span>
-<span class="nc" id="L82">				throw new IllegalStateException(exception);</span>
+<span class="fc" id="L82">				return unit.getSource();</span>
+<span class="nc" id="L83">			} catch (CoreException exception) {</span>
+<span class="nc" id="L84">				throw new IllegalStateException(exception);</span>
 			}
-<span class="fc" id="L84">		}).toList();</span>
+<span class="fc" id="L86">		}).toList();</span>
 
-<span class="fc" id="L86">		CompilationUnit callerRoot= parse(caller);</span>
-<span class="fc" id="L87">		CompilationUnit contractRoot= parse(contract);</span>
-<span class="fc" id="L88">		CompilationUnit firstRoot= parse(first);</span>
-<span class="fc" id="L89">		CompilationUnit secondRoot= parse(second);</span>
-<span class="fc" id="L90">		CallerFacts callerFacts= callerFacts(callerRoot);</span>
-<span class="fc" id="L91">		ParameterFacts contractFacts= parameterFacts(contractRoot, false);</span>
-<span class="fc" id="L92">		ParameterFacts firstFacts= parameterFacts(firstRoot, true);</span>
-<span class="fc" id="L93">		ParameterFacts secondFacts= parameterFacts(secondRoot, true);</span>
-<span class="fc" id="L94">		ClosedSourceParameterMigrationPlan plan= plan(</span>
-<span class="fc" id="L95">				caller,</span>
-<span class="fc" id="L96">				callerFacts,</span>
-<span class="fc" id="L97">				List.of(</span>
-<span class="fc" id="L98">						parameterPlan(contract, contractFacts),</span>
-<span class="fc" id="L99">						parameterPlan(first, firstFacts),</span>
-<span class="fc" id="L100">						parameterPlan(second, secondFacts)),</span>
-<span class="fc" id="L101">				contractFacts.methodHandle());</span>
+<span class="fc" id="L88">		CompilationUnit callerRoot= parse(caller);</span>
+<span class="fc" id="L89">		CompilationUnit contractRoot= parse(contract);</span>
+<span class="fc" id="L90">		CompilationUnit firstRoot= parse(first);</span>
+<span class="fc" id="L91">		CompilationUnit secondRoot= parse(second);</span>
+<span class="fc" id="L92">		CallerFacts callerFacts= callerFacts(callerRoot);</span>
+<span class="fc" id="L93">		ParameterFacts contractFacts= parameterFacts(contractRoot, false);</span>
+<span class="fc" id="L94">		ParameterFacts firstFacts= parameterFacts(firstRoot, true);</span>
+<span class="fc" id="L95">		ParameterFacts secondFacts= parameterFacts(secondRoot, true);</span>
+<span class="fc" id="L96">		ClosedSourceParameterMigrationPlan plan= plan(</span>
+<span class="fc" id="L97">				caller,</span>
+<span class="fc" id="L98">				callerFacts,</span>
+<span class="fc" id="L99">				List.of(</span>
+<span class="fc" id="L100">						parameterPlan(contract, contractFacts),</span>
+<span class="fc" id="L101">						parameterPlan(first, firstFacts),</span>
+<span class="fc" id="L102">						parameterPlan(second, secondFacts)),</span>
+<span class="fc" id="L103">				contractFacts.methodHandle());</span>
 
-<span class="fc" id="L103">		List&lt;CompilationUnit&gt; roots= List.of(</span>
-<span class="fc" id="L104">				callerRoot, contractRoot, firstRoot, secondRoot);</span>
-<span class="fc" id="L105">		CompositeChange change= new CompositeChange(</span>
-<span class="fc" id="L106">				&quot;Migrate complete parameter override family&quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L107" title="All 2 branches covered.">		for (int index= 0; index &lt; units.size(); index++) {</span>
-<span class="fc" id="L108">			ICleanUpFix fix= ClosedSourceParameterMigrationFix.create(</span>
-<span class="fc" id="L109">					units.get(index), roots.get(index), plan);</span>
-<span class="fc" id="L110">			assertNotNull(fix);</span>
-<span class="fc" id="L111">			change.add(fix.createChange(null));</span>
+<span class="fc" id="L105">		List&lt;CompilationUnit&gt; roots= List.of(</span>
+<span class="fc" id="L106">				callerRoot, contractRoot, firstRoot, secondRoot);</span>
+<span class="fc" id="L107">		CompositeChange change= new CompositeChange(</span>
+<span class="fc" id="L108">				&quot;Migrate complete parameter override family&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">		for (int index= 0; index &lt; units.size(); index++) {</span>
+<span class="fc" id="L110">			ICleanUpFix fix= ClosedSourceParameterMigrationFix.create(</span>
+<span class="fc" id="L111">					units.get(index), roots.get(index), plan);</span>
+<span class="fc" id="L112">			assertNotNull(fix);</span>
+<span class="fc" id="L113">			change.add(fix.createChange(null));</span>
 		}
-<span class="fc" id="L113">		Change undo= change.perform(new NullProgressMonitor());</span>
-<span class="fc" id="L114">		assertNotNull(undo);</span>
+<span class="fc" id="L115">		Change undo= performAndCheck(change, new NullProgressMonitor(), caller, contract, first, second);</span>
+<span class="fc" id="L116">		assertNotNull(undo);</span>
 
-<span class="fc" id="L116">		assertTrue(caller.getSource().contains(&quot;List&lt;String&gt; values&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L117">		assertTrue(caller.getSource().contains(&quot;receiver.consume(values)&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L118">		assertFalse(caller.getSource().contains(&quot;Arrays.copyOf(values&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L119">		assertTrue(contract.getSource().contains(&quot;void consume(List&lt;String&gt; values)&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L120">		assertTrue(first.getSource().contains(&quot;void consume(List&lt;String&gt; values)&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L121">		assertTrue(second.getSource().contains(&quot;void consume(List&lt;String&gt; values)&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L122">		assertTrue(first.getSource().contains(&quot;values.size()&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L123">		assertTrue(second.getSource().contains(&quot;values.size()&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L118">		assertTrue(caller.getSource().contains(&quot;List&lt;String&gt; values&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L119">		assertTrue(caller.getSource().contains(&quot;receiver.consume(values)&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L120">		assertFalse(caller.getSource().contains(&quot;Arrays.copyOf(values&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L121">		assertTrue(contract.getSource().contains(&quot;void consume(List&lt;String&gt; values)&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L122">		assertTrue(first.getSource().contains(&quot;void consume(List&lt;String&gt; values)&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L123">		assertTrue(second.getSource().contains(&quot;void consume(List&lt;String&gt; values)&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L124">		assertTrue(first.getSource().contains(&quot;values.size()&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L125">		assertTrue(second.getSource().contains(&quot;values.size()&quot;)); //$NON-NLS-1$</span>
 
-<span class="fc" id="L125">		undo.perform(new NullProgressMonitor());</span>
-<span class="fc bfc" id="L126" title="All 2 branches covered.">		for (int index= 0; index &lt; units.size(); index++) {</span>
-<span class="fc" id="L127">			assertEquals(originals.get(index), units.get(index).getSource());</span>
+<span class="fc" id="L127">		undo.perform(new NullProgressMonitor());</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">		for (int index= 0; index &lt; units.size(); index++) {</span>
+<span class="fc" id="L129">			assertEquals(originals.get(index), units.get(index).getSource());</span>
 		}
-<span class="fc" id="L129">	}</span>
+<span class="fc" id="L131">	}</span>
 
 	private static ClosedSourceParameterMigrationPlan plan(
 			ICompilationUnit caller,
 			CallerFacts callerFacts,
 			List&lt;ContainerParameterRewritePlan&gt; parameterPlans,
 			String callTargetMethodHandle) {
-<span class="fc" id="L136">		TargetContainerContract target= target();</span>
-<span class="fc" id="L137">		ContainerLocalRewritePlan callerPlan= new ContainerLocalRewritePlan(</span>
-<span class="fc" id="L138">				caller.getHandleIdentifier(),</span>
-<span class="fc" id="L139">				callerFacts.bindingKey(),</span>
-<span class="fc" id="L140">				&quot;java.util.List&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L141">				&quot;java.util.ArrayList&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L142">				target,</span>
-<span class="fc" id="L143">				List.of(</span>
-<span class="fc" id="L144">						new LocalEdit(EditKind.CHANGE_LOCAL_DECLARATION, 1, 1),</span>
-<span class="fc" id="L145">						new LocalEdit(EditKind.REPLACE_EMPTY_ARRAY_INITIALIZER, 1, 1),</span>
-<span class="fc" id="L146">						new LocalEdit(EditKind.REMOVE_ARRAY_GROWTH, 2, 1),</span>
-<span class="fc" id="L147">						new LocalEdit(EditKind.REPLACE_TAIL_WRITE_WITH_ADD, 3, 1),</span>
-<span class="fc" id="L148">						new LocalEdit(</span>
-<span class="fc" id="L149">								EditKind.VERIFY_ARGUMENT_TRANSFER,</span>
-<span class="fc" id="L150">								callerFacts.argumentStart(),</span>
-<span class="fc" id="L151">								callerFacts.argumentLength())),</span>
-<span class="fc" id="L152">				List.of(new ArgumentTransfer(</span>
-<span class="fc" id="L153">						callTargetMethodHandle,</span>
-<span class="fc" id="L154">						0,</span>
-<span class="fc" id="L155">						callerFacts.argumentStart(),</span>
-<span class="fc" id="L156">						callerFacts.argumentLength())));</span>
-<span class="fc" id="L157">		return new ClosedSourceParameterMigrationPlan(</span>
-<span class="fc" id="L158">				target, callerPlan, parameterPlans);</span>
+<span class="fc" id="L138">		TargetContainerContract target= target();</span>
+<span class="fc" id="L139">		ContainerLocalRewritePlan callerPlan= new ContainerLocalRewritePlan(</span>
+<span class="fc" id="L140">				caller.getHandleIdentifier(),</span>
+<span class="fc" id="L141">				callerFacts.bindingKey(),</span>
+<span class="fc" id="L142">				&quot;java.util.List&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L143">				&quot;java.util.ArrayList&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L144">				target,</span>
+<span class="fc" id="L145">				List.of(</span>
+<span class="fc" id="L146">						new LocalEdit(EditKind.CHANGE_LOCAL_DECLARATION, 1, 1),</span>
+<span class="fc" id="L147">						new LocalEdit(EditKind.REPLACE_EMPTY_ARRAY_INITIALIZER, 1, 1),</span>
+<span class="fc" id="L148">						new LocalEdit(EditKind.REMOVE_ARRAY_GROWTH, 2, 1),</span>
+<span class="fc" id="L149">						new LocalEdit(EditKind.REPLACE_TAIL_WRITE_WITH_ADD, 3, 1),</span>
+<span class="fc" id="L150">						new LocalEdit(</span>
+<span class="fc" id="L151">								EditKind.VERIFY_ARGUMENT_TRANSFER,</span>
+<span class="fc" id="L152">								callerFacts.argumentStart(),</span>
+<span class="fc" id="L153">								callerFacts.argumentLength())),</span>
+<span class="fc" id="L154">				List.of(new ArgumentTransfer(</span>
+<span class="fc" id="L155">						callTargetMethodHandle,</span>
+<span class="fc" id="L156">						0,</span>
+<span class="fc" id="L157">						callerFacts.argumentStart(),</span>
+<span class="fc" id="L158">						callerFacts.argumentLength())));</span>
+<span class="fc" id="L159">		return new ClosedSourceParameterMigrationPlan(</span>
+<span class="fc" id="L160">				target, callerPlan, parameterPlans);</span>
 	}
 
 	private static ContainerParameterRewritePlan parameterPlan(
 			ICompilationUnit unit,
 			ParameterFacts facts) {
-<span class="fc" id="L164">		List&lt;ParameterEdit&gt; edits= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L165">		edits.add(new ParameterEdit(</span>
-<span class="fc" id="L166">				ContainerParameterRewritePlan.EditKind.CHANGE_PARAMETER_DECLARATION,</span>
-<span class="fc" id="L167">				1,</span>
-<span class="fc" id="L168">				1));</span>
-<span class="fc bfc" id="L169" title="All 2 branches covered.">		if (facts.lengthStart() &gt;= 0) {</span>
-<span class="fc" id="L170">			edits.add(new ParameterEdit(</span>
-<span class="fc" id="L171">					ContainerParameterRewritePlan.EditKind.REPLACE_LENGTH_WITH_SIZE,</span>
-<span class="fc" id="L172">					facts.lengthStart(),</span>
-<span class="fc" id="L173">					facts.lengthLength()));</span>
+<span class="fc" id="L166">		List&lt;ParameterEdit&gt; edits= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L167">		edits.add(new ParameterEdit(</span>
+<span class="fc" id="L168">				ContainerParameterRewritePlan.EditKind.CHANGE_PARAMETER_DECLARATION,</span>
+<span class="fc" id="L169">				1,</span>
+<span class="fc" id="L170">				1));</span>
+<span class="fc bfc" id="L171" title="All 2 branches covered.">		if (facts.lengthStart() &gt;= 0) {</span>
+<span class="fc" id="L172">			edits.add(new ParameterEdit(</span>
+<span class="fc" id="L173">					ContainerParameterRewritePlan.EditKind.REPLACE_LENGTH_WITH_SIZE,</span>
+<span class="fc" id="L174">					facts.lengthStart(),</span>
+<span class="fc" id="L175">					facts.lengthLength()));</span>
 		}
-<span class="fc bfc" id="L175" title="All 2 branches covered.">		if (facts.iterationStart() &gt;= 0) {</span>
-<span class="fc" id="L176">			edits.add(new ParameterEdit(</span>
-<span class="fc" id="L177">					ContainerParameterRewritePlan.EditKind.VERIFY_ENCOUNTER_ITERATION,</span>
-<span class="fc" id="L178">					facts.iterationStart(),</span>
-<span class="fc" id="L179">					facts.iterationLength()));</span>
+<span class="fc bfc" id="L177" title="All 2 branches covered.">		if (facts.iterationStart() &gt;= 0) {</span>
+<span class="fc" id="L178">			edits.add(new ParameterEdit(</span>
+<span class="fc" id="L179">					ContainerParameterRewritePlan.EditKind.VERIFY_ENCOUNTER_ITERATION,</span>
+<span class="fc" id="L180">					facts.iterationStart(),</span>
+<span class="fc" id="L181">					facts.iterationLength()));</span>
 		}
-<span class="fc" id="L181">		return new ContainerParameterRewritePlan(</span>
-<span class="fc" id="L182">				unit.getHandleIdentifier(),</span>
-<span class="fc" id="L183">				facts.methodHandle(),</span>
-<span class="fc" id="L184">				facts.bindingKey(),</span>
-<span class="fc" id="L185">				0,</span>
-<span class="fc" id="L186">				&quot;java.util.List&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L187">				target(),</span>
-<span class="fc" id="L188">				edits);</span>
+<span class="fc" id="L183">		return new ContainerParameterRewritePlan(</span>
+<span class="fc" id="L184">				unit.getHandleIdentifier(),</span>
+<span class="fc" id="L185">				facts.methodHandle(),</span>
+<span class="fc" id="L186">				facts.bindingKey(),</span>
+<span class="fc" id="L187">				0,</span>
+<span class="fc" id="L188">				&quot;java.util.List&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L189">				target(),</span>
+<span class="fc" id="L190">				edits);</span>
 	}
 
 	private static CallerFacts callerFacts(CompilationUnit root) {
-<span class="fc" id="L192">		String[] bindingKey= { null };</span>
-<span class="fc" id="L193">		int[] argumentRange= { -1, -1 };</span>
-<span class="fc" id="L194">		root.accept(new ASTVisitor() {</span>
+<span class="fc" id="L194">		String[] bindingKey= { null };</span>
+<span class="fc" id="L195">		int[] argumentRange= { -1, -1 };</span>
+<span class="fc" id="L196">		root.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(VariableDeclarationFragment fragment) {
-<span class="pc bpc" id="L197" title="1 of 2 branches missed.">				if (&quot;values&quot;.equals(fragment.getName().getIdentifier())) { //$NON-NLS-1$</span>
-<span class="fc" id="L198">					IVariableBinding binding= fragment.resolveBinding();</span>
-<span class="pc bpc" id="L199" title="1 of 2 branches missed.">					bindingKey[0]= binding == null</span>
-<span class="pc" id="L200">							? null : binding.getVariableDeclaration().getKey();</span>
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">				if (&quot;values&quot;.equals(fragment.getName().getIdentifier())) { //$NON-NLS-1$</span>
+<span class="fc" id="L200">					IVariableBinding binding= fragment.resolveBinding();</span>
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">					bindingKey[0]= binding == null</span>
+<span class="pc" id="L202">							? null : binding.getVariableDeclaration().getKey();</span>
 				}
-<span class="fc" id="L202">				return true;</span>
+<span class="fc" id="L204">				return true;</span>
 			}
 
 			@Override
 			public boolean visit(MethodInvocation invocation) {
-<span class="fc bfc" id="L207" title="All 2 branches covered.">				if (!&quot;consume&quot;.equals(invocation.getName().getIdentifier()) //$NON-NLS-1$</span>
-<span class="pc bpc" id="L208" title="1 of 2 branches missed.">						|| invocation.arguments().size() != 1) {</span>
-<span class="fc" id="L209">					return true;</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">				if (!&quot;consume&quot;.equals(invocation.getName().getIdentifier()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L210" title="1 of 2 branches missed.">						|| invocation.arguments().size() != 1) {</span>
+<span class="fc" id="L211">					return true;</span>
 				}
-<span class="fc" id="L211">				Expression argument= (Expression) invocation.arguments().get(0);</span>
-<span class="pc bpc" id="L212" title="1 of 2 branches missed.">				if (argument instanceof SimpleName name</span>
-<span class="pc bpc" id="L213" title="1 of 2 branches missed.">						&amp;&amp; &quot;values&quot;.equals(name.getIdentifier())) { //$NON-NLS-1$</span>
-<span class="fc" id="L214">					argumentRange[0]= name.getStartPosition();</span>
-<span class="fc" id="L215">					argumentRange[1]= name.getLength();</span>
+<span class="fc" id="L213">				Expression argument= (Expression) invocation.arguments().get(0);</span>
+<span class="pc bpc" id="L214" title="1 of 2 branches missed.">				if (argument instanceof SimpleName name</span>
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">						&amp;&amp; &quot;values&quot;.equals(name.getIdentifier())) { //$NON-NLS-1$</span>
+<span class="fc" id="L216">					argumentRange[0]= name.getStartPosition();</span>
+<span class="fc" id="L217">					argumentRange[1]= name.getLength();</span>
 				}
-<span class="fc" id="L217">				return true;</span>
+<span class="fc" id="L219">				return true;</span>
 			}
 		});
-<span class="pc bpc" id="L220" title="2 of 4 branches missed.">		if (bindingKey[0] == null || argumentRange[0] &lt; 0) {</span>
-<span class="nc" id="L221">			throw new IllegalStateException(&quot;Missing caller source facts&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L222" title="2 of 4 branches missed.">		if (bindingKey[0] == null || argumentRange[0] &lt; 0) {</span>
+<span class="nc" id="L223">			throw new IllegalStateException(&quot;Missing caller source facts&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L223">		return new CallerFacts(</span>
-<span class="fc" id="L224">				bindingKey[0], argumentRange[0], argumentRange[1]);</span>
+<span class="fc" id="L225">		return new CallerFacts(</span>
+<span class="fc" id="L226">				bindingKey[0], argumentRange[0], argumentRange[1]);</span>
 	}
 
 	private static ParameterFacts parameterFacts(
 			CompilationUnit root,
 			boolean requireBodyEvidence) {
-<span class="fc" id="L230">		String[] methodHandle= { null };</span>
-<span class="fc" id="L231">		String[] bindingKey= { null };</span>
-<span class="fc" id="L232">		int[] lengthRange= { -1, -1 };</span>
-<span class="fc" id="L233">		int[] iterationRange= { -1, -1 };</span>
-<span class="fc" id="L234">		root.accept(new ASTVisitor() {</span>
+<span class="fc" id="L232">		String[] methodHandle= { null };</span>
+<span class="fc" id="L233">		String[] bindingKey= { null };</span>
+<span class="fc" id="L234">		int[] lengthRange= { -1, -1 };</span>
+<span class="fc" id="L235">		int[] iterationRange= { -1, -1 };</span>
+<span class="fc" id="L236">		root.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(MethodDeclaration method) {
-<span class="pc bpc" id="L237" title="1 of 2 branches missed.">				if (!&quot;consume&quot;.equals(method.getName().getIdentifier())) { //$NON-NLS-1$</span>
-<span class="nc" id="L238">					return true;</span>
+<span class="pc bpc" id="L239" title="1 of 2 branches missed.">				if (!&quot;consume&quot;.equals(method.getName().getIdentifier())) { //$NON-NLS-1$</span>
+<span class="nc" id="L240">					return true;</span>
 				}
-<span class="fc" id="L240">				IMethodBinding binding= method.resolveBinding();</span>
-<span class="pc bpc" id="L241" title="1 of 2 branches missed.">				IJavaElement element= binding == null</span>
-<span class="pc" id="L242">						? null : binding.getMethodDeclaration().getJavaElement();</span>
-<span class="pc bpc" id="L243" title="1 of 2 branches missed.">				methodHandle[0]= element == null</span>
-<span class="pc" id="L244">						? null : element.getHandleIdentifier();</span>
-<span class="fc" id="L245">				SingleVariableDeclaration parameter=</span>
-<span class="fc" id="L246">						(SingleVariableDeclaration) method.parameters().get(0);</span>
-<span class="fc" id="L247">				IVariableBinding parameterBinding= parameter.resolveBinding();</span>
-<span class="pc bpc" id="L248" title="1 of 2 branches missed.">				bindingKey[0]= parameterBinding == null</span>
-<span class="pc" id="L249">						? null : parameterBinding.getVariableDeclaration().getKey();</span>
-<span class="fc" id="L250">				return true;</span>
+<span class="fc" id="L242">				IMethodBinding binding= method.resolveBinding();</span>
+<span class="pc bpc" id="L243" title="1 of 2 branches missed.">				IJavaElement element= binding == null</span>
+<span class="pc" id="L244">						? null : binding.getMethodDeclaration().getJavaElement();</span>
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">				methodHandle[0]= element == null</span>
+<span class="pc" id="L246">						? null : element.getHandleIdentifier();</span>
+<span class="fc" id="L247">				SingleVariableDeclaration parameter=</span>
+<span class="fc" id="L248">						(SingleVariableDeclaration) method.parameters().get(0);</span>
+<span class="fc" id="L249">				IVariableBinding parameterBinding= parameter.resolveBinding();</span>
+<span class="pc bpc" id="L250" title="1 of 2 branches missed.">				bindingKey[0]= parameterBinding == null</span>
+<span class="pc" id="L251">						? null : parameterBinding.getVariableDeclaration().getKey();</span>
+<span class="fc" id="L252">				return true;</span>
 			}
 
 			@Override
 			public boolean visit(QualifiedName name) {
-<span class="fc bfc" id="L255" title="All 2 branches covered.">				if (&quot;length&quot;.equals(name.getName().getIdentifier()) //$NON-NLS-1$</span>
-<span class="pc bpc" id="L256" title="1 of 2 branches missed.">						&amp;&amp; name.getQualifier() instanceof SimpleName qualifier</span>
-<span class="pc bpc" id="L257" title="1 of 2 branches missed.">						&amp;&amp; &quot;values&quot;.equals(qualifier.getIdentifier())) { //$NON-NLS-1$</span>
-<span class="fc" id="L258">					lengthRange[0]= name.getStartPosition();</span>
-<span class="fc" id="L259">					lengthRange[1]= name.getLength();</span>
+<span class="fc bfc" id="L257" title="All 2 branches covered.">				if (&quot;length&quot;.equals(name.getName().getIdentifier()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L258" title="1 of 2 branches missed.">						&amp;&amp; name.getQualifier() instanceof SimpleName qualifier</span>
+<span class="pc bpc" id="L259" title="1 of 2 branches missed.">						&amp;&amp; &quot;values&quot;.equals(qualifier.getIdentifier())) { //$NON-NLS-1$</span>
+<span class="fc" id="L260">					lengthRange[0]= name.getStartPosition();</span>
+<span class="fc" id="L261">					lengthRange[1]= name.getLength();</span>
 				}
-<span class="fc" id="L261">				return true;</span>
+<span class="fc" id="L263">				return true;</span>
 			}
 
 			@Override
 			public boolean visit(EnhancedForStatement statement) {
-<span class="fc" id="L266">				Expression expression= statement.getExpression();</span>
-<span class="pc bpc" id="L267" title="1 of 2 branches missed.">				if (expression instanceof SimpleName name</span>
-<span class="pc bpc" id="L268" title="1 of 2 branches missed.">						&amp;&amp; &quot;values&quot;.equals(name.getIdentifier())) { //$NON-NLS-1$</span>
-<span class="fc" id="L269">					iterationRange[0]= expression.getStartPosition();</span>
-<span class="fc" id="L270">					iterationRange[1]= expression.getLength();</span>
+<span class="fc" id="L268">				Expression expression= statement.getExpression();</span>
+<span class="pc bpc" id="L269" title="1 of 2 branches missed.">				if (expression instanceof SimpleName name</span>
+<span class="pc bpc" id="L270" title="1 of 2 branches missed.">						&amp;&amp; &quot;values&quot;.equals(name.getIdentifier())) { //$NON-NLS-1$</span>
+<span class="fc" id="L271">					iterationRange[0]= expression.getStartPosition();</span>
+<span class="fc" id="L272">					iterationRange[1]= expression.getLength();</span>
 				}
-<span class="fc" id="L272">				return true;</span>
+<span class="fc" id="L274">				return true;</span>
 			}
 		});
-<span class="pc bpc" id="L275" title="2 of 4 branches missed.">		if (methodHandle[0] == null || bindingKey[0] == null</span>
-<span class="fc bfc" id="L276" title="All 2 branches covered.">				|| requireBodyEvidence</span>
-<span class="pc bpc" id="L277" title="2 of 4 branches missed.">						&amp;&amp; (lengthRange[0] &lt; 0 || iterationRange[0] &lt; 0)) {</span>
-<span class="nc" id="L278">			throw new IllegalStateException(&quot;Missing parameter source facts&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L277" title="2 of 4 branches missed.">		if (methodHandle[0] == null || bindingKey[0] == null</span>
+<span class="fc bfc" id="L278" title="All 2 branches covered.">				|| requireBodyEvidence</span>
+<span class="pc bpc" id="L279" title="2 of 4 branches missed.">						&amp;&amp; (lengthRange[0] &lt; 0 || iterationRange[0] &lt; 0)) {</span>
+<span class="nc" id="L280">			throw new IllegalStateException(&quot;Missing parameter source facts&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L280">		return new ParameterFacts(</span>
-<span class="fc" id="L281">				methodHandle[0],</span>
-<span class="fc" id="L282">				bindingKey[0],</span>
-<span class="fc" id="L283">				lengthRange[0],</span>
-<span class="fc" id="L284">				lengthRange[1],</span>
-<span class="fc" id="L285">				iterationRange[0],</span>
-<span class="fc" id="L286">				iterationRange[1]);</span>
+<span class="fc" id="L282">		return new ParameterFacts(</span>
+<span class="fc" id="L283">				methodHandle[0],</span>
+<span class="fc" id="L284">				bindingKey[0],</span>
+<span class="fc" id="L285">				lengthRange[0],</span>
+<span class="fc" id="L286">				lengthRange[1],</span>
+<span class="fc" id="L287">				iterationRange[0],</span>
+<span class="fc" id="L288">				iterationRange[1]);</span>
 	}
 
 	private ICompilationUnit createUnit(String name, String source) throws CoreException {
-<span class="fc" id="L290">		IPackageFragment fragment= context.getSourceFolder()</span>
-<span class="fc" id="L291">				.createPackageFragment(&quot;test&quot;, false, null); //$NON-NLS-1$</span>
-<span class="fc" id="L292">		return fragment.createCompilationUnit(name, source, true, null);</span>
+<span class="fc" id="L292">		IPackageFragment fragment= context.getSourceFolder()</span>
+<span class="fc" id="L293">				.createPackageFragment(&quot;test&quot;, false, null); //$NON-NLS-1$</span>
+<span class="fc" id="L294">		return fragment.createCompilationUnit(name, source, true, null);</span>
 	}
 
 	private CompilationUnit parse(ICompilationUnit unit) {
-<span class="fc" id="L296">		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());</span>
-<span class="fc" id="L297">		parser.setProject(context.getJavaProject());</span>
-<span class="fc" id="L298">		parser.setSource(unit);</span>
-<span class="fc" id="L299">		parser.setResolveBindings(true);</span>
-<span class="fc" id="L300">		parser.setBindingsRecovery(true);</span>
-<span class="fc" id="L301">		parser.setStatementsRecovery(true);</span>
-<span class="fc" id="L302">		return (CompilationUnit) parser.createAST(null);</span>
+<span class="fc" id="L298">		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L299">		parser.setProject(context.getJavaProject());</span>
+<span class="fc" id="L300">		parser.setSource(unit);</span>
+<span class="fc" id="L301">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L302">		parser.setBindingsRecovery(true);</span>
+<span class="fc" id="L303">		parser.setStatementsRecovery(true);</span>
+<span class="fc" id="L304">		return (CompilationUnit) parser.createAST(null);</span>
 	}
 
 	private static TargetContainerContract target() {
-<span class="fc" id="L306">		return new TargetContainerContract(</span>
-<span class="fc" id="L307">				ContainerShape.LIST,</span>
-<span class="fc" id="L308">				OrderRequirement.ENCOUNTER,</span>
-<span class="fc" id="L309">				UniquenessRequirement.DUPLICATES_ALLOWED,</span>
-<span class="fc" id="L310">				Mutability.MUTABLE,</span>
-<span class="fc" id="L311">				NullContract.ALLOWED,</span>
-<span class="fc" id="L312">				&quot;Use one mutable dynamic sequence contract.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L308">		return new TargetContainerContract(</span>
+<span class="fc" id="L309">				ContainerShape.LIST,</span>
+<span class="fc" id="L310">				OrderRequirement.ENCOUNTER,</span>
+<span class="fc" id="L311">				UniquenessRequirement.DUPLICATES_ALLOWED,</span>
+<span class="fc" id="L312">				Mutability.MUTABLE,</span>
+<span class="fc" id="L313">				NullContract.ALLOWED,</span>
+<span class="fc" id="L314">				&quot;Use one mutable dynamic sequence contract.&quot;); //$NON-NLS-1$</span>
 	}
 
 	private static String callerSource() {
-<span class="fc" id="L316">		return &quot;&quot;&quot;</span>
+<span class="fc" id="L318">		return &quot;&quot;&quot;</span>
 			package test;
 			import java.util.Arrays;
 			class Caller {
@@ -328,7 +330,7 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 	}
 
 	private static String contractSource() {
-<span class="fc" id="L331">		return &quot;&quot;&quot;</span>
+<span class="fc" id="L333">		return &quot;&quot;&quot;</span>
 			package test;
 			interface Contract {
 				void consume(String[] values);
@@ -337,15 +339,15 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 	}
 
 	private static String firstSource() {
-<span class="fc" id="L340">		return implementationSource(&quot;First&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L342">		return implementationSource(&quot;First&quot;); //$NON-NLS-1$</span>
 	}
 
 	private static String secondSource() {
-<span class="fc" id="L344">		return implementationSource(&quot;Second&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L346">		return implementationSource(&quot;Second&quot;); //$NON-NLS-1$</span>
 	}
 
 	private static String implementationSource(String typeName) {
-<span class="fc" id="L348">		return &quot;&quot;&quot;</span>
+<span class="fc" id="L350">		return &quot;&quot;&quot;</span>
 			package test;
 			class TYPE_NAME implements Contract {
 				@Override
@@ -356,7 +358,7 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 					}
 				}
 			}
-<span class="fc" id="L359">			&quot;&quot;&quot;.replace(&quot;TYPE_NAME&quot;, typeName); //$NON-NLS-1$</span>
+<span class="fc" id="L361">			&quot;&quot;&quot;.replace(&quot;TYPE_NAME&quot;, typeName); //$NON-NLS-1$</span>
 	}
 
 	private record CallerFacts(

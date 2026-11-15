@@ -10,6 +10,7 @@
 package org.sandbox.jdt.ui.tests.quickfix.rules;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -30,94 +31,139 @@ import org.eclipse.jdt.ui.cleanup.ICleanUp;
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 
 /** Characterizes the default before/after compiler-diagnostic guard. */
-<span class="fc" id="L33">class CompilerDiagnosticRegressionTest {</span>
+<span class="fc" id="L34">class CompilerDiagnosticRegressionTest {</span>
 
 	@RegisterExtension
-<span class="fc" id="L36">	final DiagnosticHarness context= new DiagnosticHarness();</span>
+<span class="fc" id="L37">	final DiagnosticHarness context= new DiagnosticHarness();</span>
 
 	@Test
 	void rejectsANewWarning() throws Exception {
-<span class="fc" id="L40">		context.getJavaProject().setOption(JavaCore.COMPILER_PB_UNUSED_LOCAL, JavaCore.WARNING);</span>
-<span class="fc" id="L41">		String before= source(&quot;int value= 1; System.out.println(value);&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L42">		String after= source(&quot;int value= 1;&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L43">		ICompilationUnit unit= createUnit(before);</span>
-<span class="fc" id="L44">		context.output(after);</span>
+<span class="fc" id="L41">		context.getJavaProject().setOption(JavaCore.COMPILER_PB_UNUSED_LOCAL, JavaCore.WARNING);</span>
+<span class="fc" id="L42">		String before= source(&quot;int value= 1; System.out.println(value);&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L43">		String after= source(&quot;int value= 1;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L44">		ICompilationUnit unit= createUnit(before);</span>
+<span class="fc" id="L45">		context.output(after);</span>
 
-<span class="fc" id="L46">		AssertionError failure= assertThrows(AssertionError.class, () -&gt;</span>
-<span class="nc" id="L47">				context.assertRefactoringResultAsExpected(new ICompilationUnit[] { unit }, new String[] { after }, null));</span>
+<span class="fc" id="L47">		AssertionError failure= assertThrows(AssertionError.class, () -&gt;</span>
+<span class="nc" id="L48">				context.assertRefactoringResultAsExpected(new ICompilationUnit[] { unit }, new String[] { after }, null));</span>
 
-<span class="fc" id="L49">		assertTrue(failure.getMessage().contains(&quot;WARNING&quot;), failure.getMessage()); //$NON-NLS-1$</span>
-<span class="fc" id="L50">	}</span>
+<span class="fc" id="L50">		assertTrue(failure.getMessage().contains(&quot;WARNING&quot;), failure.getMessage()); //$NON-NLS-1$</span>
+<span class="fc" id="L51">	}</span>
 
 	@Test
 	void whitespaceNormalizingAssertionAlsoRejectsANewWarning() throws Exception {
-<span class="fc" id="L54">		context.getJavaProject().setOption(JavaCore.COMPILER_PB_UNUSED_LOCAL, JavaCore.WARNING);</span>
-<span class="fc" id="L55">		String before= source(&quot;int value= 1; System.out.println(value);&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L56">		String after= source(&quot;int value= 1;&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L57">		ICompilationUnit unit= createUnit(before);</span>
-<span class="fc" id="L58">		context.output(after);</span>
+<span class="fc" id="L55">		context.getJavaProject().setOption(JavaCore.COMPILER_PB_UNUSED_LOCAL, JavaCore.WARNING);</span>
+<span class="fc" id="L56">		String before= source(&quot;int value= 1; System.out.println(value);&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L57">		String after= source(&quot;int value= 1;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L58">		ICompilationUnit unit= createUnit(before);</span>
+<span class="fc" id="L59">		context.output(after);</span>
 
-<span class="fc" id="L60">		assertThrows(AssertionError.class, () -&gt;</span>
-<span class="pc" id="L61">				context.assertRefactoringResultAsExpectedNormalizingWhitespace(</span>
-<span class="pc" id="L62">						new ICompilationUnit[] { unit }, new String[] { after }, null));</span>
-<span class="fc" id="L63">	}</span>
+<span class="fc" id="L61">		assertThrows(AssertionError.class, () -&gt;</span>
+<span class="pc" id="L62">				context.assertRefactoringResultAsExpectedNormalizingWhitespace(</span>
+<span class="pc" id="L63">						new ICompilationUnit[] { unit }, new String[] { after }, null));</span>
+<span class="fc" id="L64">	}</span>
+
+	@Test
+	void directExecutionChecksUnusedLocalsEvenWithLenientProjectOptions() throws Exception {
+<span class="fc" id="L68">		context.getJavaProject().setOption(JavaCore.COMPILER_PB_UNUSED_LOCAL, JavaCore.IGNORE);</span>
+<span class="fc" id="L69">		ICompilationUnit unit= createUnit(source(&quot;int value= 1; System.out.println(value);&quot;));</span>
+<span class="fc" id="L70">		context.output(source(&quot;int value= 1;&quot;));</span>
+<span class="pc" id="L71">		var failure= assertThrows(AssertionError.class, () -&gt; context.performRefactoring(new ICompilationUnit[] { unit }, null));</span>
+<span class="fc" id="L72">		assertTrue(failure.getMessage().contains(&quot;WARNING&quot;), failure.getMessage());</span>
+<span class="fc" id="L73">		assertEquals(JavaCore.IGNORE, context.getJavaProject().getOption(JavaCore.COMPILER_PB_UNUSED_LOCAL, true));</span>
+<span class="fc" id="L74">	}</span>
 
 	@Test
 	void rejectsANewCompilerError() throws Exception {
-<span class="fc" id="L67">		String before= source(&quot;int value= 1; System.out.println(value);&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L68">		String after= source(&quot;int value= missing; System.out.println(value);&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L69">		ICompilationUnit unit= createUnit(before);</span>
-<span class="fc" id="L70">		context.output(after);</span>
+<span class="fc" id="L78">		String before= source(&quot;int value= 1; System.out.println(value);&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L79">		String after= source(&quot;int value= missing; System.out.println(value);&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L80">		ICompilationUnit unit= createUnit(before);</span>
+<span class="fc" id="L81">		context.output(after);</span>
 
-<span class="fc" id="L72">		AssertionError failure= assertThrows(AssertionError.class, () -&gt;</span>
-<span class="nc" id="L73">				context.assertRefactoringResultAsExpected(new ICompilationUnit[] { unit }, new String[] { after }, null));</span>
+<span class="fc" id="L83">		AssertionError failure= assertThrows(AssertionError.class, () -&gt;</span>
+<span class="nc" id="L84">				context.assertRefactoringResultAsExpected(new ICompilationUnit[] { unit }, new String[] { after }, null));</span>
 
-<span class="fc" id="L75">		assertTrue(failure.getMessage().contains(&quot;ERROR&quot;), failure.getMessage()); //$NON-NLS-1$</span>
-<span class="fc" id="L76">	}</span>
+<span class="fc" id="L86">		assertTrue(failure.getMessage().contains(&quot;ERROR&quot;), failure.getMessage()); //$NON-NLS-1$</span>
+<span class="fc" id="L87">	}</span>
 
 	@Test
 	void rejectsAnAdditionalOccurrenceOfTheSameError() throws Exception {
-<span class="fc" id="L80">		String before= source(&quot;missing();&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L81">		String after= source(&quot;missing(); missing();&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L82">		ICompilationUnit unit= createUnit(before);</span>
-<span class="fc" id="L83">		context.output(after);</span>
+<span class="fc" id="L91">		String before= source(&quot;missing();&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L92">		String after= source(&quot;missing(); missing();&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L93">		ICompilationUnit unit= createUnit(before);</span>
+<span class="fc" id="L94">		context.output(after);</span>
 
-<span class="fc" id="L85">		AssertionError failure= assertThrows(AssertionError.class, () -&gt;</span>
-<span class="nc" id="L86">				context.assertRefactoringResultAsExpected(new ICompilationUnit[] { unit }, new String[] { after }, null));</span>
+<span class="fc" id="L96">		AssertionError failure= assertThrows(AssertionError.class, () -&gt;</span>
+<span class="nc" id="L97">				context.assertRefactoringResultAsExpected(new ICompilationUnit[] { unit }, new String[] { after }, null));</span>
 
-<span class="fc" id="L88">		assertTrue(failure.getMessage().contains(&quot;before=1 after=2&quot;), failure.getMessage()); //$NON-NLS-1$</span>
-<span class="fc" id="L89">	}</span>
+<span class="fc" id="L99">		assertTrue(failure.getMessage().contains(&quot;before=1 after=2&quot;), failure.getMessage()); //$NON-NLS-1$</span>
+<span class="fc" id="L100">	}</span>
 
 	@Test
 	void changingTheDiagnosticArgumentsIsARegression() throws Exception {
-<span class="fc" id="L93">		context.getJavaProject().setOption(JavaCore.COMPILER_PB_UNUSED_LOCAL, JavaCore.WARNING);</span>
-<span class="fc" id="L94">		String before= source(&quot;int first= 1;&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L95">		String after= source(&quot;int second= 1;&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L96">		ICompilationUnit unit= createUnit(before);</span>
-<span class="fc" id="L97">		context.output(after);</span>
+<span class="fc" id="L104">		context.getJavaProject().setOption(JavaCore.COMPILER_PB_UNUSED_LOCAL, JavaCore.WARNING);</span>
+<span class="fc" id="L105">		String before= source(&quot;int first= 1;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L106">		String after= source(&quot;int second= 1;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L107">		ICompilationUnit unit= createUnit(before);</span>
+<span class="fc" id="L108">		context.output(after);</span>
 
-<span class="fc" id="L99">		assertThrows(AssertionError.class, () -&gt;</span>
-<span class="nc" id="L100">				context.assertRefactoringResultAsExpected(new ICompilationUnit[] { unit }, new String[] { after }, null));</span>
-<span class="fc" id="L101">	}</span>
+<span class="fc" id="L110">		assertThrows(AssertionError.class, () -&gt;</span>
+<span class="nc" id="L111">				context.assertRefactoringResultAsExpected(new ICompilationUnit[] { unit }, new String[] { after }, null));</span>
+<span class="fc" id="L112">	}</span>
 
 	@Test
 	void diagnosticsAreComparedPerCompilationUnit() throws Exception {
-<span class="fc" id="L105">		String broken= source(&quot;First&quot;, &quot;missing();&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L106">		String clean= source(&quot;Second&quot;, &quot;System.out.println(1);&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L107">		ICompilationUnit first= createUnit(&quot;First.java&quot;, broken); //$NON-NLS-1$</span>
-<span class="fc" id="L108">		ICompilationUnit second= createUnit(&quot;Second.java&quot;, clean); //$NON-NLS-1$</span>
-<span class="fc" id="L109">		context.output(clean, broken);</span>
+<span class="fc" id="L116">		String broken= source(&quot;First&quot;, &quot;missing();&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L117">		String clean= source(&quot;Second&quot;, &quot;System.out.println(1);&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L118">		ICompilationUnit first= createUnit(&quot;First.java&quot;, broken); //$NON-NLS-1$</span>
+<span class="fc" id="L119">		ICompilationUnit second= createUnit(&quot;Second.java&quot;, clean); //$NON-NLS-1$</span>
+<span class="fc" id="L120">		String fixedFirst= source(&quot;First&quot;, &quot;System.out.println(1);&quot;);</span>
+<span class="fc" id="L121">		String brokenSecond= source(&quot;Second&quot;, &quot;missing();&quot;);</span>
+<span class="fc" id="L122">		context.output(fixedFirst, brokenSecond);</span>
 
-<span class="fc" id="L111">		AssertionError failure= assertThrows(AssertionError.class, () -&gt;</span>
-<span class="pc" id="L112">				context.assertRefactoringResultAsExpected(</span>
-<span class="pc" id="L113">						new ICompilationUnit[] { first, second }, new String[] { clean, broken }, null));</span>
+<span class="fc" id="L124">		AssertionError failure= assertThrows(AssertionError.class, () -&gt;</span>
+<span class="pc" id="L125">				context.assertRefactoringResultAsExpected(</span>
+<span class="pc" id="L126">						new ICompilationUnit[] { first, second }, new String[] { fixedFirst, brokenSecond }, null));</span>
 
-<span class="fc" id="L115">		assertTrue(failure.getMessage().contains(&quot;Second.java&quot;), failure.getMessage()); //$NON-NLS-1$</span>
-<span class="fc" id="L116">	}</span>
+<span class="fc" id="L128">		assertTrue(failure.getMessage().contains(&quot;Second.java&quot;), failure.getMessage()); //$NON-NLS-1$</span>
+<span class="fc" id="L129">	}</span>
+
+	@Test
+	void existingStaticSuggestionSurvivesAChangeOfParameterType() throws Exception {
+<span class="fc" id="L133">		String before= &quot;package test; class Sample { int run(int input) { return input; } }&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L134">		String after= before.replace(&quot;int run(int&quot;, &quot;long run(long&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L135">		ICompilationUnit unit= createUnit(before);</span>
+<span class="fc" id="L136">		context.output(after);</span>
+<span class="fc" id="L137">		assertDoesNotThrow(() -&gt; context.performRefactoring(new ICompilationUnit[] { unit }, null));</span>
+<span class="fc" id="L138">	}</span>
+
+	@Test
+	void movingAStaticSuggestionBetweenOverloadsIsARegression() throws Exception {
+<span class="fc" id="L142">		String before= &quot;package test; class Sample { int value; int run(int x) { return x; } long run(long x) { return value + x; } }&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L143">		String after= before.replace(&quot;return x;&quot;, &quot;return value + x;&quot;).replace(&quot;long x) { return value + x;&quot;, &quot;long x) { return x;&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="fc" id="L144">		ICompilationUnit unit= createUnit(before);</span>
+<span class="fc" id="L145">		context.output(after);</span>
+<span class="fc" id="L146">		AssertionError failure= assertThrows(AssertionError.class,</span>
+<span class="pc" id="L147">				() -&gt; context.performRefactoring(new ICompilationUnit[] { unit }, null));</span>
+<span class="fc" id="L148">		assertTrue(failure.getMessage().contains(&quot;WARNING&quot;), failure.getMessage()); //$NON-NLS-1$</span>
+<span class="fc" id="L149">	}</span>
+
+	@Test
+	void undoMustRestoreTheOriginalWarningInEachUnit() throws Exception {
+<span class="fc" id="L153">		String warning= source(&quot;int result= 1;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L154">		String clean= source(&quot;int result= 1; System.out.println(result);&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L155">		ICompilationUnit unit= createUnit(warning);</span>
+<span class="fc" id="L156">		var before= CompilerDiagnosticAssertions.capture(unit);</span>
+<span class="fc" id="L157">		unit.getBuffer().setContents(clean);</span>
+<span class="fc" id="L158">		before.assertNoNewDiagnostics();</span>
+<span class="fc" id="L159">		assertThrows(AssertionError.class, before::assertRestored);</span>
+<span class="fc" id="L160">		unit.getBuffer().setContents(warning);</span>
+<span class="fc" id="L161">		before.assertRestored();</span>
+<span class="fc" id="L162">	}</span>
 
 	@Test
 	void lineMovementOfTheSameExistingErrorIsAllowed() throws Exception {
-<span class="fc" id="L120">		String before= &quot;&quot;&quot;</span>
+<span class="fc" id="L166">		String before= &quot;&quot;&quot;</span>
 				package test;
 				class Sample {
 					void run() {
@@ -125,7 +171,7 @@ import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 					}
 				}
 				&quot;&quot;&quot;;
-<span class="fc" id="L128">		String after= &quot;&quot;&quot;</span>
+<span class="fc" id="L174">		String after= &quot;&quot;&quot;</span>
 				package test;
 				class Sample {
 
@@ -134,70 +180,70 @@ import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 					}
 				}
 				&quot;&quot;&quot;;
-<span class="fc" id="L137">		ICompilationUnit unit= createUnit(before);</span>
-<span class="fc" id="L138">		context.output(after);</span>
+<span class="fc" id="L183">		ICompilationUnit unit= createUnit(before);</span>
+<span class="fc" id="L184">		context.output(after);</span>
 
-<span class="fc" id="L140">		assertDoesNotThrow(() -&gt;</span>
-<span class="fc" id="L141">				context.assertRefactoringResultAsExpected(new ICompilationUnit[] { unit }, new String[] { after }, null));</span>
-<span class="fc" id="L142">	}</span>
+<span class="fc" id="L186">		assertDoesNotThrow(() -&gt;</span>
+<span class="fc" id="L187">				context.assertRefactoringResultAsExpected(new ICompilationUnit[] { unit }, new String[] { after }, null));</span>
+<span class="fc" id="L188">	}</span>
 
 	@Test
 	void removingAnExistingWarningIsAllowed() throws Exception {
-<span class="fc" id="L146">		context.getJavaProject().setOption(JavaCore.COMPILER_PB_UNUSED_LOCAL, JavaCore.WARNING);</span>
-<span class="fc" id="L147">		String before= source(&quot;int value= 1;&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L148">		String after= source(&quot;int value= 1; System.out.println(value);&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L149">		ICompilationUnit unit= createUnit(before);</span>
-<span class="fc" id="L150">		context.output(after);</span>
+<span class="fc" id="L192">		context.getJavaProject().setOption(JavaCore.COMPILER_PB_UNUSED_LOCAL, JavaCore.WARNING);</span>
+<span class="fc" id="L193">		String before= source(&quot;int value= 1;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L194">		String after= source(&quot;int value= 1; System.out.println(value);&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L195">		ICompilationUnit unit= createUnit(before);</span>
+<span class="fc" id="L196">		context.output(after);</span>
 
-<span class="fc" id="L152">		assertDoesNotThrow(() -&gt;</span>
-<span class="fc" id="L153">				context.assertRefactoringResultAsExpected(new ICompilationUnit[] { unit }, new String[] { after }, null));</span>
-<span class="fc" id="L154">	}</span>
+<span class="fc" id="L198">		assertDoesNotThrow(() -&gt;</span>
+<span class="fc" id="L199">				context.assertRefactoringResultAsExpected(new ICompilationUnit[] { unit }, new String[] { after }, null));</span>
+<span class="fc" id="L200">	}</span>
 
 	private ICompilationUnit createUnit(String source) throws CoreException {
-<span class="fc" id="L157">		return createUnit(&quot;Sample.java&quot;, source); //$NON-NLS-1$</span>
+<span class="fc" id="L203">		return createUnit(&quot;Sample.java&quot;, source); //$NON-NLS-1$</span>
 	}
 
 	private ICompilationUnit createUnit(String name, String source) throws CoreException {
-<span class="fc" id="L161">		return context.getSourceFolder().createPackageFragment(&quot;test&quot;, false, null) //$NON-NLS-1$</span>
-<span class="fc" id="L162">				.createCompilationUnit(name, source, true, null);</span>
+<span class="fc" id="L207">		return context.getSourceFolder().createPackageFragment(&quot;test&quot;, false, null) //$NON-NLS-1$</span>
+<span class="fc" id="L208">				.createCompilationUnit(name, source, true, null);</span>
 	}
 
 	private static String source(String statement) {
-<span class="fc" id="L166">		return source(&quot;Sample&quot;, statement); //$NON-NLS-1$</span>
+<span class="fc" id="L212">		return source(&quot;Sample&quot;, statement); //$NON-NLS-1$</span>
 	}
 
 	private static String source(String typeName, String statement) {
-<span class="fc" id="L170">		return &quot;&quot;&quot;</span>
+<span class="fc" id="L216">		return &quot;&quot;&quot;</span>
 				package test;
 				class TYPE {
 					void run() {
 						STATEMENT
 					}
 				}
-<span class="fc" id="L177">				&quot;&quot;&quot;.replace(&quot;TYPE&quot;, typeName).replace(&quot;STATEMENT&quot;, statement); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L223">				&quot;&quot;&quot;.replace(&quot;TYPE&quot;, typeName).replace(&quot;STATEMENT&quot;, statement); //$NON-NLS-1$ //$NON-NLS-2$</span>
 	}
 
 	private static final class DiagnosticHarness extends AbstractEclipseJava {
-<span class="fc" id="L181">		private String[] output= new String[0];</span>
+<span class="fc" id="L227">		private String[] output= new String[0];</span>
 
 		DiagnosticHarness() {
-<span class="fc" id="L184">			super(&quot;testresources/rtstubs_22.jar&quot;, JavaCore.VERSION_22); //$NON-NLS-1$</span>
-<span class="fc" id="L185">		}</span>
+<span class="fc" id="L230">			super(&quot;testresources/rtstubs_22.jar&quot;, JavaCore.VERSION_22); //$NON-NLS-1$</span>
+<span class="fc" id="L231">		}</span>
 
 		void output(String... source) {
-<span class="fc" id="L188">			output= source.clone();</span>
-<span class="fc" id="L189">		}</span>
+<span class="fc" id="L234">			output= source.clone();</span>
+<span class="fc" id="L235">		}</span>
 
 		@Override
-		protected RefactoringStatus performRefactoring(CleanUpRefactoring ref, ICompilationUnit[] units,
+		protected RefactoringStatus runRefactoring(CleanUpRefactoring ref, ICompilationUnit[] units,
 				ICleanUp[] cleanUps, Set&lt;String&gt; expectedGroups) throws CoreException {
-<span class="pc bpc" id="L194" title="1 of 2 branches missed.">			if (units.length != output.length) {</span>
-<span class="nc" id="L195">				throw new CoreException(org.eclipse.core.runtime.Status.error(&quot;Missing simulated refactoring output&quot;)); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L240" title="1 of 2 branches missed.">			if (units.length != output.length) {</span>
+<span class="nc" id="L241">				throw new CoreException(org.eclipse.core.runtime.Status.error(&quot;Missing simulated refactoring output&quot;)); //$NON-NLS-1$</span>
 			}
-<span class="fc bfc" id="L197" title="All 2 branches covered.">			for (int index= 0; index &lt; units.length; index++) {</span>
-<span class="fc" id="L198">				units[index].getBuffer().setContents(output[index]);</span>
+<span class="fc bfc" id="L243" title="All 2 branches covered.">			for (int index= 0; index &lt; units.length; index++) {</span>
+<span class="fc" id="L244">				units[index].getBuffer().setContents(output[index]);</span>
 			}
-<span class="fc" id="L200">			return new RefactoringStatus();</span>
+<span class="fc" id="L246">			return new RefactoringStatus();</span>
 		}
 	}
 }

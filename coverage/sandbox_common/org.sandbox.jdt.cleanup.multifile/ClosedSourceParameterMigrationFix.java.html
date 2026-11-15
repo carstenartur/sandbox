@@ -59,7 +59,7 @@ public final class ClosedSourceParameterMigrationFix {
 <span class="fc" id="L59">		List&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations=</span>
 <span class="fc" id="L60">				new ArrayList&lt;&gt;();</span>
 <span class="fc bfc" id="L61" title="All 2 branches covered.">		if (handle.equals(plan.callerPlan().compilationUnitHandle())) {</span>
-<span class="fc" id="L62">			operations.add(ContainerLocalRewriteFix.operation(</span>
+<span class="fc" id="L62">			operations.add(ContainerLocalRewriteFix.coordinatedCallerOperation(</span>
 <span class="fc" id="L63">					validationUnit, root, plan.callerPlan()));</span>
 		}
 <span class="fc bfc" id="L65" title="All 2 branches covered.">		for (ContainerParameterRewritePlan parameterPlan : plan.parameterPlans()) {</span>

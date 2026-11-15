@@ -10,6 +10,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.cleanup.multifile;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -40,32 +42,32 @@ import org.sandbox.jdt.container.api.UniqueSequenceLocalRewritePlan;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 
-<span class="fc" id="L43">class UniqueSequenceLocalRewriteIntegrationTest {</span>
+<span class="fc" id="L45">class UniqueSequenceLocalRewriteIntegrationTest {</span>
 
 	@RegisterExtension
-<span class="fc" id="L46">	final AbstractEclipseJava context= new EclipseJava22();</span>
+<span class="fc" id="L48">	final AbstractEclipseJava context= new EclipseJava22();</span>
 
 	@Test
 	void appliesTheStrictLocalOrderedSetRewrite() throws Exception {
-<span class="fc" id="L50">		ICompilationUnit unit= createUnit(validSource());</span>
-<span class="fc" id="L51">		CompilationUnit root= parse(unit);</span>
+<span class="fc" id="L52">		ICompilationUnit unit= createUnit(validSource());</span>
+<span class="fc" id="L53">		CompilationUnit root= parse(unit);</span>
 
-<span class="fc" id="L53">		UniqueSequenceLocalRewritePlan plan= plan(unit, root);</span>
-<span class="fc" id="L54">		UniqueSequenceLocalRewriteFix.create(unit, root, plan)</span>
-<span class="fc" id="L55">				.createChange(null).perform(null);</span>
+<span class="fc" id="L55">		UniqueSequenceLocalRewritePlan plan= plan(unit, root);</span>
+<span class="fc" id="L56">		var change= UniqueSequenceLocalRewriteFix.create(unit, root, plan).createChange(null);</span>
+<span class="fc" id="L57">		performAndCheck(change, null, unit);</span>
 
-<span class="fc" id="L57">		String source= unit.getSource();</span>
-<span class="fc" id="L58">		assertTrue(source.contains(&quot;Set&lt;String&gt; values&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L59">		assertTrue(source.contains(&quot;new LinkedHashSet&lt;&gt;()&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L60">		assertTrue(source.contains(&quot;values.add(value);&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L61">		assertTrue(source.contains(&quot;values.size()&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L62">		assertTrue(source.contains(&quot;for (String current : values)&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L63">		assertFalse(source.contains(&quot;values.contains(value)&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L64">	}</span>
+<span class="fc" id="L59">		String source= unit.getSource();</span>
+<span class="fc" id="L60">		assertTrue(source.contains(&quot;Set&lt;String&gt; values&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L61">		assertTrue(source.contains(&quot;new LinkedHashSet&lt;&gt;()&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L62">		assertTrue(source.contains(&quot;values.add(value);&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L63">		assertTrue(source.contains(&quot;values.size()&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L64">		assertTrue(source.contains(&quot;for (String current : values)&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L65">		assertFalse(source.contains(&quot;values.contains(value)&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L66">	}</span>
 
 	@Test
 	void unorderedContractStillUsesConservativeLinkedHashSetExecution() throws Exception {
-<span class="fc" id="L68">		ICompilationUnit unit= createUnit(&quot;&quot;&quot;</span>
+<span class="fc" id="L70">		ICompilationUnit unit= createUnit(&quot;&quot;&quot;</span>
 			package test;
 			import java.util.ArrayList;
 			import java.util.List;
@@ -79,30 +81,30 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 				}
 			}
 			&quot;&quot;&quot;);
-<span class="fc" id="L82">		CompilationUnit root= parse(unit);</span>
-<span class="fc" id="L83">		var profile= new LocalUniqueSequenceAnalyzer().analyze(root).get(0);</span>
-<span class="fc" id="L84">		var recommendation= new UniqueSequenceContractInferrer().infer(profile).orElseThrow();</span>
+<span class="fc" id="L84">		CompilationUnit root= parse(unit);</span>
+<span class="fc" id="L85">		var profile= new LocalUniqueSequenceAnalyzer().analyze(root).get(0);</span>
+<span class="fc" id="L86">		var recommendation= new UniqueSequenceContractInferrer().infer(profile).orElseThrow();</span>
 
-<span class="fc" id="L86">		assertEquals(OrderRequirement.NONE, profile.orderRequirement());</span>
-<span class="fc" id="L87">		assertEquals(OrderRequirement.NONE, recommendation.targetContract().orderRequirement());</span>
-<span class="fc" id="L88">		assertEquals(ContainerRuleRegistry.UNORDERED_UNIQUE_SEQUENCE_SET,</span>
-<span class="fc" id="L89">				recommendation.rule().ruleId());</span>
+<span class="fc" id="L88">		assertEquals(OrderRequirement.NONE, profile.orderRequirement());</span>
+<span class="fc" id="L89">		assertEquals(OrderRequirement.NONE, recommendation.targetContract().orderRequirement());</span>
+<span class="fc" id="L90">		assertEquals(ContainerRuleRegistry.UNORDERED_UNIQUE_SEQUENCE_SET,</span>
+<span class="fc" id="L91">				recommendation.rule().ruleId());</span>
 
-<span class="fc" id="L91">		UniqueSequenceLocalRewritePlan plan= plan(unit, recommendation);</span>
-<span class="fc" id="L92">		assertEquals(&quot;java.util.LinkedHashSet&quot;, plan.targetImplementationType()); //$NON-NLS-1$</span>
-<span class="fc" id="L93">		UniqueSequenceLocalRewriteFix.create(unit, root, plan)</span>
-<span class="fc" id="L94">				.createChange(null).perform(null);</span>
+<span class="fc" id="L93">		UniqueSequenceLocalRewritePlan plan= plan(unit, recommendation);</span>
+<span class="fc" id="L94">		assertEquals(&quot;java.util.LinkedHashSet&quot;, plan.targetImplementationType()); //$NON-NLS-1$</span>
+<span class="fc" id="L95">		var change= UniqueSequenceLocalRewriteFix.create(unit, root, plan).createChange(null);</span>
+<span class="fc" id="L96">		performAndCheck(change, null, unit);</span>
 
-<span class="fc" id="L96">		String transformed= unit.getSource();</span>
-<span class="fc" id="L97">		assertTrue(transformed.contains(&quot;Set&lt;String&gt; values&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L98">		assertTrue(transformed.contains(&quot;new LinkedHashSet&lt;&gt;()&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L99">		assertFalse(transformed.contains(&quot;values.contains(value)&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L100">		assertTrue(transformed.contains(&quot;return values.size();&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L101">	}</span>
+<span class="fc" id="L98">		String transformed= unit.getSource();</span>
+<span class="fc" id="L99">		assertTrue(transformed.contains(&quot;Set&lt;String&gt; values&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L100">		assertTrue(transformed.contains(&quot;new LinkedHashSet&lt;&gt;()&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L101">		assertFalse(transformed.contains(&quot;values.contains(value)&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L102">		assertTrue(transformed.contains(&quot;return values.size();&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L103">	}</span>
 
 	@Test
 	void rejectsUnguardedOrMismatchedInsertion() throws Exception {
-<span class="fc" id="L105">		ICompilationUnit unguarded= createUnit(&quot;&quot;&quot;</span>
+<span class="fc" id="L107">		ICompilationUnit unguarded= createUnit(&quot;&quot;&quot;</span>
 			package test;
 			import java.util.ArrayList;
 			import java.util.List;
@@ -113,12 +115,12 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 				}
 			}
 			&quot;&quot;&quot;);
-<span class="fc" id="L116">		var unguardedProfile= new LocalUniqueSequenceAnalyzer()</span>
-<span class="fc" id="L117">				.analyze(parse(unguarded)).get(0);</span>
-<span class="pc bpc" id="L118" title="1 of 2 branches missed.">		assertTrue(unguardedProfile.completeness() == AnalysisCompleteness.REJECTED);</span>
-<span class="fc" id="L119">		assertTrue(new UniqueSequenceContractInferrer().infer(unguardedProfile).isEmpty());</span>
+<span class="fc" id="L118">		var unguardedProfile= new LocalUniqueSequenceAnalyzer()</span>
+<span class="fc" id="L119">				.analyze(parse(unguarded)).get(0);</span>
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">		assertTrue(unguardedProfile.completeness() == AnalysisCompleteness.REJECTED);</span>
+<span class="fc" id="L121">		assertTrue(new UniqueSequenceContractInferrer().infer(unguardedProfile).isEmpty());</span>
 
-<span class="fc" id="L121">		ICompilationUnit mismatched= createUnit(&quot;&quot;&quot;</span>
+<span class="fc" id="L123">		ICompilationUnit mismatched= createUnit(&quot;&quot;&quot;</span>
 			package test;
 			import java.util.ArrayList;
 			import java.util.List;
@@ -131,64 +133,64 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 				}
 			}
 			&quot;&quot;&quot;);
-<span class="fc" id="L134">		var mismatchedProfile= new LocalUniqueSequenceAnalyzer()</span>
-<span class="fc" id="L135">				.analyze(parse(mismatched)).get(0);</span>
-<span class="pc bpc" id="L136" title="1 of 2 branches missed.">		assertTrue(mismatchedProfile.completeness() == AnalysisCompleteness.REJECTED);</span>
-<span class="fc" id="L137">	}</span>
+<span class="fc" id="L136">		var mismatchedProfile= new LocalUniqueSequenceAnalyzer()</span>
+<span class="fc" id="L137">				.analyze(parse(mismatched)).get(0);</span>
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">		assertTrue(mismatchedProfile.completeness() == AnalysisCompleteness.REJECTED);</span>
+<span class="fc" id="L139">	}</span>
 
 	@Test
 	void rejectsAStaleGuardPlan() throws Exception {
-<span class="fc" id="L141">		ICompilationUnit unit= createUnit(validSource());</span>
-<span class="fc" id="L142">		UniqueSequenceLocalRewritePlan plan= plan(unit, parse(unit));</span>
-<span class="fc" id="L143">		unit.getBuffer().setContents(validSource().replace(</span>
-<span class="fc" id="L144">				&quot;if (!values.contains(value)) {&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L145">				&quot;if (true) {&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L143">		ICompilationUnit unit= createUnit(validSource());</span>
+<span class="fc" id="L144">		UniqueSequenceLocalRewritePlan plan= plan(unit, parse(unit));</span>
+<span class="fc" id="L145">		unit.getBuffer().setContents(validSource().replace(</span>
+<span class="fc" id="L146">				&quot;if (!values.contains(value)) {&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L147">				&quot;if (true) {&quot;)); //$NON-NLS-1$</span>
 
-<span class="fc" id="L147">		CoreException exception= assertThrows(</span>
-<span class="fc" id="L148">				CoreException.class,</span>
-<span class="pc" id="L149">				() -&gt; UniqueSequenceLocalRewriteFix.create(unit, parse(unit), plan));</span>
-<span class="fc" id="L150">		assertTrue(exception.getMessage().contains(&quot;occurrence count changed&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L151">	}</span>
+<span class="fc" id="L149">		CoreException exception= assertThrows(</span>
+<span class="fc" id="L150">				CoreException.class,</span>
+<span class="pc" id="L151">				() -&gt; UniqueSequenceLocalRewriteFix.create(unit, parse(unit), plan));</span>
+<span class="fc" id="L152">		assertTrue(exception.getMessage().contains(&quot;occurrence count changed&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L153">	}</span>
 
 	private UniqueSequenceLocalRewritePlan plan(
 			ICompilationUnit unit,
 			CompilationUnit root) {
-<span class="fc" id="L156">		var profile= new LocalUniqueSequenceAnalyzer().analyze(root).get(0);</span>
-<span class="fc" id="L157">		var recommendation= new UniqueSequenceContractInferrer()</span>
-<span class="fc" id="L158">				.infer(profile).orElseThrow();</span>
-<span class="fc" id="L159">		return plan(unit, recommendation);</span>
+<span class="fc" id="L158">		var profile= new LocalUniqueSequenceAnalyzer().analyze(root).get(0);</span>
+<span class="fc" id="L159">		var recommendation= new UniqueSequenceContractInferrer()</span>
+<span class="fc" id="L160">				.infer(profile).orElseThrow();</span>
+<span class="fc" id="L161">		return plan(unit, recommendation);</span>
 	}
 
 	private static UniqueSequenceLocalRewritePlan plan(
 			ICompilationUnit unit,
 			org.sandbox.jdt.container.api.ContainerRecommendation recommendation) {
-<span class="fc" id="L165">		var readiness= new ContainerMigrationReadiness(</span>
-<span class="fc" id="L166">				recommendation.targetContract(),</span>
-<span class="fc" id="L167">				ExecutionStatus.AUTOMATIC,</span>
-<span class="fc" id="L168">				List.of());</span>
-<span class="fc" id="L169">		return new UniqueSequenceLocalRewritePlanner()</span>
-<span class="fc" id="L170">				.plan(unit.getHandleIdentifier(), recommendation, readiness)</span>
-<span class="fc" id="L171">				.plan().orElseThrow();</span>
+<span class="fc" id="L167">		var readiness= new ContainerMigrationReadiness(</span>
+<span class="fc" id="L168">				recommendation.targetContract(),</span>
+<span class="fc" id="L169">				ExecutionStatus.AUTOMATIC,</span>
+<span class="fc" id="L170">				List.of());</span>
+<span class="fc" id="L171">		return new UniqueSequenceLocalRewritePlanner()</span>
+<span class="fc" id="L172">				.plan(unit.getHandleIdentifier(), recommendation, readiness)</span>
+<span class="fc" id="L173">				.plan().orElseThrow();</span>
 	}
 
 	private ICompilationUnit createUnit(String source) throws CoreException {
-<span class="fc" id="L175">		IPackageFragment fragment= context.getSourceFolder()</span>
-<span class="fc" id="L176">				.createPackageFragment(&quot;test&quot;, false, null); //$NON-NLS-1$</span>
-<span class="fc" id="L177">		return fragment.createCompilationUnit(&quot;Sample.java&quot;, source, true, null); //$NON-NLS-1$</span>
+<span class="fc" id="L177">		IPackageFragment fragment= context.getSourceFolder()</span>
+<span class="fc" id="L178">				.createPackageFragment(&quot;test&quot;, false, null); //$NON-NLS-1$</span>
+<span class="fc" id="L179">		return fragment.createCompilationUnit(&quot;Sample.java&quot;, source, true, null); //$NON-NLS-1$</span>
 	}
 
 	private CompilationUnit parse(ICompilationUnit unit) {
-<span class="fc" id="L181">		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());</span>
-<span class="fc" id="L182">		parser.setProject(context.getJavaProject());</span>
-<span class="fc" id="L183">		parser.setSource(unit);</span>
-<span class="fc" id="L184">		parser.setResolveBindings(true);</span>
-<span class="fc" id="L185">		parser.setBindingsRecovery(true);</span>
-<span class="fc" id="L186">		parser.setStatementsRecovery(true);</span>
-<span class="fc" id="L187">		return (CompilationUnit) parser.createAST(null);</span>
+<span class="fc" id="L183">		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L184">		parser.setProject(context.getJavaProject());</span>
+<span class="fc" id="L185">		parser.setSource(unit);</span>
+<span class="fc" id="L186">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L187">		parser.setBindingsRecovery(true);</span>
+<span class="fc" id="L188">		parser.setStatementsRecovery(true);</span>
+<span class="fc" id="L189">		return (CompilationUnit) parser.createAST(null);</span>
 	}
 
 	private static String validSource() {
-<span class="fc" id="L191">		return &quot;&quot;&quot;</span>
+<span class="fc" id="L193">		return &quot;&quot;&quot;</span>
 			package test;
 			import java.util.ArrayList;
 			import java.util.List;

@@ -120,7 +120,7 @@ public class MethodReuseCleanUpCore extends AbstractCleanUp {
 				void first(String value) {
 				    extractedSequence(value);
 				}
-				private void extractedSequence(String value) {
+				private static void extractedSequence(String value) {
 				    String text = value.trim();
 				    text = text.toLowerCase();
 				    System.out.println(text);
