@@ -66,10 +66,13 @@ run_upstream() {
     # Use only the baseline's resolved artifacts for the generated build.
     command+=(--offline)
   else
-    # The platform parent checks these plugin repositories before Maven Central.
+    # The release parent also consults eclipse-hosted for ordinary Maven roots in the SDK target.
+    # Match the Resolver transport settings used for the pinned JDT UI release build.
+    command+=("-Dorg.slf4j.simpleLogger.log.org.eclipse.aether.internal.impl.DefaultArtifactResolver=debug")
     local repo_id
-    for repo_id in tycho-snapshots eclipse-snapshots eclipse-cbi; do
-      command+=("-Daether.connector.http.retryHandler.intervalMax.$repo_id=5000")
+    for repo_id in tycho-snapshots eclipse-snapshots eclipse-cbi eclipse-hosted; do
+      command+=("-Daether.connector.http.retryHandler.intervalMax.$repo_id=5000"
+                "-Daether.transport.http.retryHandler.intervalMax.$repo_id=5000")
     done
   fi
   printf '%q ' "${command[@]}" > "$OUTPUT/$phase-command.txt"
