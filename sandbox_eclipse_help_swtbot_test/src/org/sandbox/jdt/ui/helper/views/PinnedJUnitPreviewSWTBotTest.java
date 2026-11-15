@@ -13,6 +13,7 @@ package org.sandbox.jdt.ui.helper.views;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -67,13 +68,13 @@ public class PinnedJUnitPreviewSWTBotTest {
         verifyDigest(artifacts, "migrationPatchSha256", migration);
         String relative = PROJECT + "/" + SOURCE;
         String header = "--- a/" + relative + "\n+++ b/" + relative + "\n";
-        String all = Files.readString(migration);
+        String all = Files.readString(migration, StandardCharsets.UTF_8);
         int begin = all.indexOf(header);
         assertTrue(begin >= 0, relative);
         int end = all.indexOf("diff --git ", begin);
         String patch = all.substring(begin, end >= 0 ? end : all.length()).replace(header,
                 "--- a/" + SOURCE + "\n+++ b/" + SOURCE + "\n");
-        assertEquals(patch, Files.readString(evidence.resolve("junit/cleanup-check.patch")),
+        assertEquals(patch, Files.readString(evidence.resolve("junit/cleanup-check.patch"), StandardCharsets.UTF_8),
                 "The screenshot selection must reproduce the patch exercised in the full before/after build");
         Path inventory = corpus.resolve("test-inventory-comparison.json");
         verifyDigest(artifacts, "testInventorySha256", inventory);
@@ -123,7 +124,7 @@ public class PinnedJUnitPreviewSWTBotTest {
     }
 
     private static JsonObject json(Path path) throws Exception {
-        return JsonParser.parseString(Files.readString(path)).getAsJsonObject();
+        return JsonParser.parseString(Files.readString(path, StandardCharsets.UTF_8)).getAsJsonObject();
     }
 
     private static void verifyDigest(JsonObject artifacts, String key, Path file) throws Exception {

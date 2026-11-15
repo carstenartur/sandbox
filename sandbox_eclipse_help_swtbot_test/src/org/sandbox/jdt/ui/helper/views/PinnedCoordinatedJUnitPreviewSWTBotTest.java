@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -115,7 +116,7 @@ public class PinnedCoordinatedJUnitPreviewSWTBotTest {
                 var file = project.getFile(path);
                 try (var tree = TreeWalk.forPath(repo, PROJECT + "/" + path, walk.parseCommit(repo.resolve("HEAD")).getTree())) {
                     assertNotNull(tree, path);
-                    byte[] original = repo.open(tree.getObjectId(0)).getBytes();
+                    byte[] original = repo.open(tree.getObjectId(0)).getBytes(Charset.defaultCharset());
                     assertArrayEquals(original, Files.readAllBytes(file.getLocation().toFile().toPath()), path);
                     before.put(path, original);
                 }
@@ -137,7 +138,7 @@ public class PinnedCoordinatedJUnitPreviewSWTBotTest {
         }
         assertEquals(external, new TreeSet<>(candidate.getAsJsonArray("relatedCompilationUnits").asList().stream()
                 .map(x -> x.getAsString()).toList()));
-        String fullPatch = Files.readString(corpus.resolve("migration.patch"));
+        String fullPatch = Files.readString(corpus.resolve("migration.patch"), StandardCharsets.UTF_8);
         assertEquals(artifacts.get("migrationPatchSha256").getAsString(), digest(fullPatch.getBytes(StandardCharsets.UTF_8)));
         Map<String, byte[]> expected = testedMigration(before, fullPatch);
         var bot = new SWTWorkbenchBot();
@@ -256,7 +257,8 @@ public class PinnedCoordinatedJUnitPreviewSWTBotTest {
         provenance.add("appliedSha256", new com.google.gson.Gson().toJsonTree(applied));
         provenance.addProperty("screenshotSha256", digest(Files.readAllBytes(image)));
         Path sidecar = evidence.resolve("junit-workspace-setup-pinned.provenance.json");
-        Files.writeString(sidecar, new GsonBuilder().setPrettyPrinting().create().toJson(provenance) + "\n");
+        Files.writeString(sidecar, (new GsonBuilder().setPrettyPrinting().create().toJson(provenance) + "\n"),
+				StandardCharsets.UTF_8);
         Path published = sandbox.resolve("sandbox_junit_cleanup_help/images");
         assertEquals(-1L, Files.mismatch(published.resolve(image.getFileName()), image),
                 "The generated coordinated preview differs from the published Help image");
@@ -336,7 +338,7 @@ public class PinnedCoordinatedJUnitPreviewSWTBotTest {
     }
 
     private static JsonObject json(Path file) throws Exception {
-        return JsonParser.parseString(Files.readString(file)).getAsJsonObject();
+        return JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8)).getAsJsonObject();
     }
 
     private static String digest(byte[] bytes) throws Exception {

@@ -13,6 +13,8 @@ package org.sandbox.jdt.ui.helper.views;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -49,7 +51,7 @@ public class PinnedEncodingPreviewSWTBotTest {
     private static void compareFallback(boolean preferUtf8) throws Exception {
         String name = preferUtf8 ? "encoding-utf8" : "encoding-keep";
         Path evidence = Path.of(System.getenv("SANDBOX_STATUS_EVIDENCE"), name);
-        var controls = JsonParser.parseString(Files.readString(evidence.resolve("controls.json"))).getAsJsonObject();
+        var controls = JsonParser.parseString(Files.readString(evidence.resolve("controls.json"), StandardCharsets.UTF_8)).getAsJsonObject();
         assertEquals(3, controls.get("filesProcessed").getAsInt());
         assertEquals(0, controls.get("filesChanged").getAsInt());
         assertEquals(0, controls.get("errorCount").getAsInt());
@@ -64,9 +66,9 @@ public class PinnedEncodingPreviewSWTBotTest {
                 Path path = root.resolve(control.getKey());
                 try (var tree = TreeWalk.forPath(git.getRepository(), project.getName() + "/" + control.getKey(), baseline.getTree())) {
                     org.junit.jupiter.api.Assertions.assertNotNull(tree, control.getKey());
-                    org.junit.jupiter.api.Assertions.assertArrayEquals(git.getRepository().open(tree.getObjectId(0)).getBytes(),
+                    org.junit.jupiter.api.Assertions.assertArrayEquals(git.getRepository().open(tree.getObjectId(0)).getBytes(Charset.defaultCharset()),
                             Files.readAllBytes(path), control.getKey());
-                    assertTrue(Files.readString(path).contains(control.getValue()), control.getKey());
+                    assertTrue(Files.readString(path, StandardCharsets.UTF_8).contains(control.getValue()), control.getKey());
                 }
             }
         }
