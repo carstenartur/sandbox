@@ -1,4 +1,3 @@
-import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -10,6 +9,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.jar.JarFile;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.graphics.GC;
@@ -141,7 +141,8 @@ public final class PublicInstallerUi {
                 List<Button> buttons = new ArrayList<>();
                 collect(active, Button.class, buttons);
                 if ("Trust Artifacts".equals(active.getText())) {
-                    inspectArtifactSigners(active);
+                    confirmReleaseWorkspaceResolver(active, buttons);
+                    return false;
                 }
                 boolean agreement = buttons.stream().anyMatch(b -> b.getText().equals("Decide Later"));
                 String acceptLabel = agreement ? "Accept Now"
@@ -178,46 +179,102 @@ public final class PublicInstallerUi {
         });
     }
 
-    private static void inspectArtifactSigners(Shell shell) throws Exception {
-        StringBuilder report = new StringBuilder();
+    // Published 2026-09 SimRel artifact, also byte-identical on Maven Central. The
+    // SHA-256 pin is the trust basis. Today's PKI does not validate the 2015 TSA.
+    private static final String WORKSPACE_RESOLVER = "org.eclipse.m2e.workspace.cli";
+    private static final String M2E_HASH = "53376fa2d7bfd2d5166806e74af9576ee3f8f1c1ac916e2cb4d2bb0c3e72c02f";
+    private static final String ECLIPSE_LEAF = "9de986bd62b59a7082505e7284d2d67556321a15b9ec7d372ccdd2ad142690a1";
+
+    private static void confirmReleaseWorkspaceResolver(Shell shell, List<Button> buttons) throws Exception {
+        capture("artifact-signers");
         List<Table> tables = new ArrayList<>();
         collect(shell, Table.class, tables);
-        for (Table table : tables) {
-            for (TableItem row : table.getItems()) {
-                for (int i = 0; i < table.getColumnCount(); i++) {
-                    if (i > 0) report.append(" | ");
-                    report.append(row.getText(i));
+        Table artifacts = tables.stream().filter(t -> t.getColumnCount() == 3).findFirst().orElseThrow();
+        if (artifacts.getItemCount() != 1) throw new IllegalStateException("Unexpected set of p2 artifacts");
+        TableItem artifact = artifacts.getItem(0);
+        if (!"osgi.bundle".equals(artifact.getText(0)) || !WORKSPACE_RESOLVER.equals(artifact.getText(1))
+                || !"0.4.0".equals(artifact.getText(2))) {
+            throw new IllegalStateException("Unexpected p2 artifact: " + artifact.getText(0) + "/"
+                    + artifact.getText(1) + "/" + artifact.getText(2));
+        }
+        Table signers = tables.stream().filter(t -> t.getColumnCount() == 4).findFirst().orElseThrow();
+        TableItem leaf = null;
+        for (TableItem row : signers.getItems()) {
+            if (row.getChecked() || !"x509".equals(row.getText(0))) {
+                throw new IllegalStateException("Unexpected p2 signer: " + row.getText(2));
+            }
+            Object node = row.getData();
+            Class<?> treeNode = Class.forName("org.eclipse.jface.viewers.TreeNode", false, node.getClass().getClassLoader());
+            X509Certificate cert = (X509Certificate) treeNode.getMethod("getValue").invoke(node);
+            if (ECLIPSE_LEAF.equals(sha256(cert.getEncoded()))) leaf = row;
+        }
+        if (leaf == null) throw new IllegalStateException("The published Eclipse end-entity certificate is absent");
+        Path pool = Path.of(System.getProperty("user.home"));
+        String filename = WORKSPACE_RESOLVER + "_0.4.0.jar";
+        List<Path> files;
+        try (var paths = Files.walk(pool)) {
+            files = paths.filter(p -> p.endsWith(filename) && Files.isRegularFile(p)).toList();
+        }
+        if (files.isEmpty()) throw new IllegalStateException("Cannot verify the actual p2 pool bytes for " + filename);
+        for (Path file : files) verifyWorkspaceResolver(file);
+        Button remember = buttons.stream().filter(b -> "Remember selected signers".equals(label(b))).findFirst().orElseThrow();
+        Button always = buttons.stream().filter(b -> "Always trust all content".equals(label(b))).findFirst().orElseThrow();
+        if (always.getSelection()) throw new IllegalStateException("Unexpected global trust setting");
+        if (remember.getSelection()) {
+            remember.setSelection(false);
+            remember.notifyListeners(SWT.Selection, new Event());
+        }
+        signers.setSelection(leaf);
+        leaf.setChecked(true);
+        Event checked = new Event();
+        checked.item = leaf;
+        checked.detail = SWT.CHECK;
+        signers.notifyListeners(SWT.Selection, checked);
+        Event selected = new Event();
+        selected.item = leaf;
+        signers.notifyListeners(SWT.Selection, selected);
+        Button trust = buttons.stream().filter(b -> "Trust Selected".equals(label(b))).findFirst().orElseThrow();
+        if (!trust.isEnabled() || remember.getSelection() || always.getSelection()) {
+            throw new IllegalStateException("Single temporary signer selection is unavailable");
+        }
+        Files.writeString(evidence.resolve("installer-signers.txt"), "osgi.bundle/" + WORKSPACE_RESOLVER
+                + "/0.4.0 SHA-256 " + M2E_HASH + "\nEclipse Foundation leaf SHA-256 " + ECLIPSE_LEAF
+                + "\nHistorical signing time 2015-05-18T13:22:08Z. The expired timestamp chain does not establish current PKI trust."
+                + "\nVerified the staged JAR against Eclipse 2026-09 and Maven Central. Selected only the leaf for this transaction.\n");
+        capture("verified-m2e-artifact");
+        display.asyncExec(() -> trust.notifyListeners(SWT.Selection, new Event()));
+    }
+
+    private static String label(Button button) {
+        return button.getText().replace("&", "");
+    }
+
+    private static String sha256(byte[] bytes) throws Exception {
+        return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
+    }
+
+    private static void verifyWorkspaceResolver(Path file) throws Exception {
+        if (Files.size(file) != 17_901 || !M2E_HASH.equals(sha256(Files.readAllBytes(file)))) {
+            throw new IllegalStateException("p2 pool JAR differs from the published Eclipse artifact " + file.getFileName());
+        }
+        try (JarFile jar = new JarFile(file.toFile(), true)) {
+            var classes = jar.stream().filter(entry -> entry.getName().endsWith(".class")).toList();
+            if (classes.isEmpty()) throw new IllegalStateException("Missing m2e implementation classes");
+            for (var entry : classes) {
+                try (var stream = jar.getInputStream(entry)) {
+                    stream.transferTo(java.io.OutputStream.nullOutputStream());
                 }
-                report.append('\n');
-                if (!"x509".equals(row.getText(0))) continue;
-                Files.writeString(evidence.resolve("installer-signers.txt"), report);
-                Object node = row.getData();
-                ClassLoader loader = node.getClass().getClassLoader();
-                Class<?> treeNode = Class.forName("org.eclipse.jface.viewers.TreeNode", false, loader);
-                Object value = treeNode.getMethod("getValue").invoke(node);
-                if (value instanceof X509Certificate certificate) {
-                    String fingerprint = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
-                            .digest(certificate.getEncoded()));
-                    report.append("SHA-256 ").append(fingerprint).append(" subject ").append(certificate.getSubjectX500Principal())
-                            .append(" issuer ").append(certificate.getIssuerX500Principal()).append(" valid ")
-                            .append(certificate.getNotBefore().toInstant()).append(" through ")
-                            .append(certificate.getNotAfter().toInstant()).append('\n');
+                var signers = entry.getCodeSigners();
+                if (signers == null || signers.length != 1) throw new IllegalStateException("Missing Eclipse code signature");
+                var certificate = (X509Certificate) signers[0].getSignerCertPath().getCertificates().getFirst();
+                var timestamp = signers[0].getTimestamp();
+                if (!ECLIPSE_LEAF.equals(sha256(certificate.getEncoded())) || timestamp == null
+                        || !timestamp.getTimestamp().toInstant().equals(java.time.Instant.parse("2015-05-18T13:22:08Z"))) {
+                    throw new IllegalStateException("Unexpected m2e class signature or timestamp " + entry.getName());
                 }
-                Files.writeString(evidence.resolve("installer-signers.txt"), report);
-                Class<?> adaptable = Class.forName("org.eclipse.core.runtime.IAdaptable", false, loader);
-                if (adaptable.isInstance(node)) {
-                    Class<?> key = Class.forName("org.eclipse.equinox.p2.metadata.IArtifactKey", false, loader);
-                    Object artifacts = adaptable.getMethod("getAdapter", Class.class)
-                            .invoke(node, Array.newInstance(key, 0).getClass());
-                    if (artifacts instanceof Object[] keys) {
-                        for (Object artifact : keys) report.append("associated ").append(artifact).append('\n');
-                    }
-                }
+                certificate.checkValidity(timestamp.getTimestamp());
             }
         }
-        capture("artifact-signers");
-        Files.writeString(evidence.resolve("installer-signers.txt"), report);
-        throw new IllegalStateException("Public installer requested trust for these signers and artifacts:\n" + report);
     }
 
     private static void await(String stage,Callable<Boolean> condition) throws Exception {
