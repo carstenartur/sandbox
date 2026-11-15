@@ -76,6 +76,33 @@ class NewRuleWizardPageTest {
 	}
 
 	@Test
+	void browserShowsBindingRolesAndFactsAlongsideRefusals() {
+		runOnDisplay(() -> {
+			var key = org.sandbox.jdt.triggerpattern.api.SemanticRewritePlan.NodeKey.type("LExample;");
+			var plan = org.sandbox.jdt.triggerpattern.api.SemanticRewritePlan.builder("strict-plan")
+					.add(key, "TEST").putInteger(key, "order", 2).build();
+			var component = new org.sandbox.jdt.triggerpattern.eclipse.ProjectPlanInspector.Component("Example", plan);
+			var report = new org.sandbox.jdt.triggerpattern.eclipse.ProjectPlanInspector.Report(
+					List.of(component), List.of("UNRESOLVED_PROVIDER: Select its source"));
+			var dialog = new PlanInspectionDialog(shell, "strict-plan", report);
+			try {
+				dialog.create();
+				var tree = descendants(dialog.getShell(), org.eclipse.swt.widgets.Tree.class).getFirst();
+				assertEquals("Example", tree.getItem(0).getText());
+				var target = tree.getItem(0).getItem(0);
+				assertTrue(target.getText().contains("LExample;"));
+				assertEquals("TEST", target.getItem(0).getText());
+				assertTrue(target.getItem(1).getText().contains("order = "));
+				assertEquals("UNRESOLVED_PROVIDER: Select its source", tree.getItem(1).getText());
+				assertTrue(descendants(dialog.getShell(), Button.class).stream()
+						.anyMatch(button -> "Copy planner scaffold".equals(button.getText())));
+			} finally {
+				dialog.close();
+			}
+		});
+	}
+
+	@Test
 	void inferredDocumentsRetainTheReplayRequirementThroughManualEdits() {
 		runOnDisplay(() -> {
 			var page = new NewRuleWizardPage();

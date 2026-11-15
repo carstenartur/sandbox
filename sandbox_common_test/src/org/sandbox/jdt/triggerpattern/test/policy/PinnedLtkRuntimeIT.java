@@ -78,6 +78,12 @@ class PinnedLtkRuntimeIT {
                 Exception buildFailure = null;
                 try {
                     runMaven(reactor, output.resolve("build.log"), Duration.ofMinutes(35),
+                            // The pinned release parent and UI profile try these repositories before Central.
+                            // Let the wrapper's Resolver move on when an endpoint requests a long backoff.
+                            "-Daether.connector.http.retryHandler.intervalMax.tycho-snapshots=5000",
+                            "-Daether.connector.http.retryHandler.intervalMax.eclipse-snapshots=5000",
+                            "-Daether.connector.http.retryHandler.intervalMax.eclipse-cbi=5000",
+                            "-Daether.connector.http.retryHandler.intervalMax.eclipse-hosted=5000",
                             "-Pbuild-individual-bundles", "-pl",
                             ":org.eclipse.ltk.core.refactoring,:org.eclipse.ltk.core.refactoring.tests", "-am",
                             "-Declipse-sdk-repo=" + pin(buildPins, "PATCHED_JDT_UI_SDK_REPOSITORY"),
