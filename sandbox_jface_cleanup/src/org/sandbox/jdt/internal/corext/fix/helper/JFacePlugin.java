@@ -28,6 +28,7 @@ import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.CastExpression;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
@@ -365,7 +366,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 		AstProcessorBuilder.with(typeReplacementHolder, nodesprocessed)
 			.onCastExpression((node, holder) -> {
 				org.eclipse.jdt.core.dom.Type castType = node.getType();
-				if (isSubProgressMonitorType(castType)) {
+				if (isSubProgressMonitorType(castType) && !isMigratedInitializerCast(node)) {
 					logDebug("Found SubProgressMonitor cast at position " + node.getStartPosition()); //$NON-NLS-1$
 					typeHolder.typesToReplace.add(castType);
 				}
@@ -378,6 +379,26 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 			typeReplacementHolder.put(0, typeHolder);
 			operations.add(fixcore.rewrite(typeReplacementHolder));
 		}
+	}
+
+	/** Only an explicitly interface-typed initializer supplies the same widening conversion as the migrated cast. */
+	private static boolean isMigratedInitializerCast(CastExpression cast) {
+		return cast.getParent() instanceof VariableDeclarationFragment variable
+				&& variable.resolveBinding() != null
+				&& IProgressMonitor.class.getName().equals(variable.resolveBinding().getType().getQualifiedName())
+				&& isSubProgressMonitorType(cast.getType())
+				&& ASTNodes.getUnparenthesedExpression(cast.getExpression()) instanceof ClassInstanceCreation creation
+				&& isSubProgressMonitorType(creation.getType()) && creation.arguments().size() >= 2;
+	}
+
+	private static void replaceMonitorConstruction(ASTRewrite rewrite, ClassInstanceCreation creation,
+			MethodInvocation replacement, TextEditGroup group) {
+		ASTNode destination = ASTNodes.getTypedAncestor(creation, CastExpression.class);
+		if (!(destination instanceof CastExpression cast) || !isMigratedInitializerCast(cast)
+				|| ASTNodes.getUnparenthesedExpression(cast.getExpression()) != creation) {
+			destination = creation;
+		}
+		ASTNodes.replaceButKeepComment(rewrite, destination, replacement, group);
 	}
 
 	/**
@@ -509,7 +530,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 						}
 					}
 					
-					ASTNodes.replaceButKeepComment(rewrite, submon, splitCall, group);
+					replaceMonitorConstruction(rewrite, submon, splitCall, group);
 				}
 				
 				continue;
@@ -563,7 +584,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 						}
 					}
 					
-					ASTNodes.replaceButKeepComment(rewrite, submon, splitCall, group);
+					replaceMonitorConstruction(rewrite, submon, splitCall, group);
 				}
 				
 				continue;
@@ -680,7 +701,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 					}
 				}
 				
-				ASTNodes.replaceButKeepComment(rewrite, submon, newMethodInvocation2, group);
+				replaceMonitorConstruction(rewrite, submon, newMethodInvocation2, group);
 			}
 		}
 		

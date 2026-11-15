@@ -576,7 +576,7 @@ import org.eclipse.core.runtime.SubMonitor;
 public class Test {
 	public void doWork(IProgressMonitor monitor) {
 		SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
-		IProgressMonitor sub = (IProgressMonitor) subMonitor.split(50);
+		IProgressMonitor sub = subMonitor.split(50);
 	}
 }
 """), //$NON-NLS-1$
@@ -855,7 +855,28 @@ import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 public class Test {
 	public void method(TableViewer viewer) {
-		ViewerComparator sorter = (ViewerComparator) viewer.getComparator();
+		ViewerComparator sorter = viewer.getComparator();
+	}
+}
+"""),
+		NarrowerComparatorCast(
+"""
+package test;
+import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jface.viewers.TreePathViewerSorter;
+public class Test {
+	public TreePathViewerSorter method(TableViewer viewer) {
+		return (TreePathViewerSorter) viewer.getSorter();
+	}
+}
+""",
+"""
+package test;
+import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jface.viewers.TreePathViewerComparator;
+public class Test {
+	public TreePathViewerComparator method(TableViewer viewer) {
+		return (TreePathViewerComparator) viewer.getComparator();
 	}
 }
 """),
@@ -880,7 +901,7 @@ public class Test {
 	private ViewerComparator sorter;
 	public void configure(TableViewer viewer) {
 		viewer.setComparator(new ViewerComparator());
-		ViewerComparator s = (ViewerComparator) viewer.getComparator();
+		ViewerComparator s = viewer.getComparator();
 	}
 }
 """);
