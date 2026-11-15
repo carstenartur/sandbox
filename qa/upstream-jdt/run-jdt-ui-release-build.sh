@@ -36,6 +36,13 @@ cmp "$BUILD_DIR/eclipse.platform.releng.prereqs.sdk/eclipse-sdk-prereqs.target" 
   "$(dirname "$JDT_UI")/eclipse.platform.releng.prereqs.sdk/eclipse-sdk-prereqs.target"
 cp "$SCRIPT_DIR/jdt-ui-reactor.xml" "$BUILD_DIR/pom.xml"
 cp "$CONFIG" "$BUILD_DIR/build-inputs.env"
-"$MAVEN_BIN" -f "$BUILD_DIR/pom.xml" \
+# The release parent loads Tycho through these Eclipse plugin repositories.
+# Its individual-bundle profile also uses eclipse-hosted for ordinary dependencies.
+retry_options=()
+for repo_id in tycho-snapshots eclipse-snapshots eclipse-cbi eclipse-hosted; do
+  retry_options+=("-Daether.connector.http.retryHandler.intervalMax.$repo_id=5000"
+                  "-Daether.transport.http.retryHandler.intervalMax.$repo_id=5000")
+done
+"$MAVEN_BIN" "${retry_options[@]}" -f "$BUILD_DIR/pom.xml" \
   "-Djdt-ui-source=$(realpath --relative-to="$BUILD_DIR" "$JDT_UI")" \
   "-Declipse-sdk-repo=$PATCHED_JDT_UI_SDK_REPOSITORY" "$@"
