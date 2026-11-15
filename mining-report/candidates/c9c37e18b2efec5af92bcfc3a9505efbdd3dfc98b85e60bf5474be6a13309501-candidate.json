@@ -13,8 +13,9 @@
   "category": "API Modernization",
   "summary": "Adds a check for `!resource.exists()` to `resource !\u003d null` condition when `resource` is an `IResource`.",
   "sourceVersion": "21",
-  "status": "READY_FOR_REVIEW",
+  "status": "REJECTED",
   "discoveredAt": "2026-08-22T02:33:24.073179813Z",
+  "rejectionReason": "Reject as a context-specific behavior change. The source commit fixes filtered resources in Package Explorer delta handling and changes both the enclosing branch and its removal guard. For an existing non-null resource the original condition is true and the proposed one is false. A general replacement would suppress unrelated actions on valid resources.",
   "ruleFingerprint": "sha256:a24d4e5e9e5e21e132443fc543038a29270bb4ef1d4645d7ff9c4ae631d93ea1",
   "behaviorFingerprint": "sha256:6a236fa07ffa71843d2ba20f96b3bf3d29b0afbcdf388ade326f09dc4a4b3ca5",
   "verification": {
@@ -40,6 +41,13 @@
       "actor": "CandidateVerificationCli",
       "reason": "All deterministic candidate gates passed",
       "occurredAt": "2026-11-05T02:31:55.001170658Z"
+    },
+    {
+      "from": "READY_FOR_REVIEW",
+      "to": "REJECTED",
+      "actor": "OpenAI Codex (on behalf of carstenartur)",
+      "reason": "Reject as a context-specific behavior change. The source commit fixes filtered resources in Package Explorer delta handling and changes both the enclosing branch and its removal guard. For an existing non-null resource the original condition is true and the proposed one is false. A general replacement would suppress unrelated actions on valid resources.",
+      "occurredAt": "2026-11-13T03:51:26.132313778Z"
     }
   ]
 }
