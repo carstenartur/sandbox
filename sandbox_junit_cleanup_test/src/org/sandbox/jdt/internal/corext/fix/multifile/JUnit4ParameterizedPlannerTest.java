@@ -13,6 +13,7 @@ package org.sandbox.jdt.internal.corext.fix.multifile;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.sandbox.jdt.internal.corext.fix.multifile.JUnit4ParameterizedPlan.*;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,7 @@ import org.eclipse.core.runtime.OperationCanceledException;
 
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
+import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -91,6 +93,33 @@ public class JUnit4ParameterizedPlannerTest {
 		assertTrue(parameters.stream().allMatch(key -> !plan.semanticPlan().valuesByNode().containsKey(key)));
 		assertTrue(plan.isCurrent(before));
 		assertEquals(before, sources(unit), "Discovery must never execute or rewrite source");
+	}
+
+	@Test
+	public void inspectsRegisteredPlannerOnTheActualProjectWithoutEditingOrExecuting() throws CoreException {
+		ICompilationUnit unit= sample(CONSTRUCTOR + PROVIDER);
+		Map<String, String> before= sources(unit);
+		List<String> baseline= compilerProblems(unit);
+		var report= org.sandbox.jdt.triggerpattern.eclipse.ProjectPlanInspector.inspect(
+				CONTRACT, unit.getJavaProject(), null);
+		assertEquals(1, report.components().size(), report.diagnostics().toString());
+		assertEquals(prepared(unit).semanticPlan().rolesByNode(),
+				report.components().getFirst().plan().rolesByNode());
+		assertEquals(prepared(unit).semanticPlan().relations(),
+				report.components().getFirst().plan().relations());
+		assertEquals(baseline, compilerProblems(unit), "Read-only inspection must preserve every compiler diagnostic");
+		assertEquals(before, sources(unit));
+	}
+
+	private static List<String> compilerProblems(ICompilationUnit unit) {
+		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
+		parser.setSource(unit);
+		parser.setResolveBindings(true);
+		CompilationUnit root= (CompilationUnit) parser.createAST(null);
+		List<IProblem> diagnostics= Arrays.stream(root.getProblems()).toList();
+		assertTrue(diagnostics.stream().noneMatch(IProblem::isError), diagnostics::toString);
+		return diagnostics.stream().filter(IProblem::isWarning)
+				.map(problem -> problem.getID() + " " + problem.getMessage()).sorted().toList();
 	}
 
 	@Test

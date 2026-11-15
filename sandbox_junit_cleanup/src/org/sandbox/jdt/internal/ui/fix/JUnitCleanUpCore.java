@@ -265,8 +265,8 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 						lifecycleAnnotations, monitor)
 				: new JUnitScopeCandidateDetector.SearchSeeds(false, true, List.of(), List.of());
 		// Every newly admitted unit receives the active cleanup options. Limit the
-		// additional static helper scope to the one rewrite its proof covers.
-		boolean allowAssertionPaths= migrateAssertionHelpers && fixes.size() == 1
+		// additional helper scope to the one rewrite its proof covers.
+		boolean allowAssertionPaths= (migrateAssertionHelpers || migrateAssumptionHelpers) && fixes.size() == 1
 				&& !isEnabled(JUnitMigrationOptions.BEST_EFFORT);
 		HelperSearchSeeds helperSeeds=
 				JUnitSharedHelperScopeDetector.findSearchSeeds(project, currentScope,
@@ -280,7 +280,7 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 			return List.of();
 		}
 
-		List<IJavaProject> coordinatedProjects= coordinatedProjects(project, seeds);
+		List<IJavaProject> coordinatedProjects= coordinatedProjects(project, seeds, helperSeeds);
 		List<IJavaProject> readOnlyProjects= JavaProjectCompilationUnits.readOnlyProjects(coordinatedProjects);
 		if (!readOnlyProjects.isEmpty()) {
 			clearScopeDecision(project);
@@ -313,7 +313,7 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 			Set<ICompilationUnit> existingScope= new LinkedHashSet<>(currentScope);
 			existingScope.addAll(requiredUnits);
 			List<ICompilationUnit> additional= JUnitSharedHelperScopeDetector.closeAssertionPaths(
-					project, helperSeeds.assertionPaths(), existingScope, allowedUnits, monitor);
+					coordinatedProjects, helperSeeds.assertionPaths(), existingScope, allowedUnits, migrateAssertionHelpers, monitor);
 			if (!additional.isEmpty()) {
 				existingScope.addAll(additional);
 				requiredUnits= new ArrayList<>(existingScope);
@@ -337,7 +337,7 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 	 * and all projects that transitively reference them.
 	 */
 	private static List<IJavaProject> coordinatedProjects(IJavaProject project,
-			JUnitScopeCandidateDetector.SearchSeeds seeds) {
+			JUnitScopeCandidateDetector.SearchSeeds seeds, HelperSearchSeeds helpers) {
 		Set<IJavaProject> declaring= new LinkedHashSet<>();
 		declaring.add(project);
 		for (IJavaElement element : seeds.elements()) {
@@ -347,6 +347,7 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 			}
 		}
 		declaring.addAll(JavaProjectCompilationUnits.owningProjects(seeds.directCompilationUnits()));
+		helpers.assertionPaths().stream().flatMap(List::stream).map(IJavaElement::getJavaProject).forEach(declaring::add);
 		return JavaProjectCompilationUnits.withReferencingProjects(declaring);
 	}
 

@@ -2,10 +2,12 @@
 package org.sandbox.distribution;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
@@ -100,6 +102,27 @@ class RepositoryDownloadRecoveryTest {
                 return 0;
             }));
             assertEquals(1, calls.get());
+        }
+    }
+
+    @Test
+    void retriesTruncatedCompressedBundleOnlyDuringDirectorCollection() throws Exception {
+        String message = "Problems downloading artifact: osgi.bundle,org.eclipse.emf.databinding,1.10.0.v20260704-1256.\n"
+                + "java.io.EOFException: Unexpected end of ZLIB input stream";
+        String collect = "phase=org.eclipse.equinox.internal.p2.engine.phases.Collect, operand=, action=).\n";
+        List<Integer> attempts = new ArrayList<>();
+        AggregateInstallationVerifier.downloadWithRetry(attempt -> {
+            attempts.add(attempt);
+            AggregateInstallationVerifier.requireSuccessfulProcess(attempt == 1 ? 13 : 0, Set.of(0),
+                    "org.eclipse.equinox.p2.director", "legacy-stock", collect + message);
+            return attempt;
+        });
+        assertEquals(List.of(1, 2), attempts);
+        for (String permanent : List.of(message, collect + "java.io.EOFException: Unexpected end of ZLIB input stream",
+                collect + "Problems downloading artifact: osgi.bundle,x,1.0.0.\njava.security.SignatureException: Invalid signature")) {
+            IOException failure = assertThrows(IOException.class, () -> AggregateInstallationVerifier.requireSuccessfulProcess(
+                    13, Set.of(0), "org.eclipse.equinox.p2.director", "legacy-stock", permanent));
+            assertFalse(failure instanceof EOFException, permanent);
         }
     }
 

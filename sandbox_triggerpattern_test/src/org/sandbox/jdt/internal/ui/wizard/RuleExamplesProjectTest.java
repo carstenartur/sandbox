@@ -123,15 +123,7 @@ class RuleExamplesProjectTest {
 		var hint = project.getFile(name);
 		Path file = Files.writeString(classes.resolve("RuleRegressionTest.java"),
 				RuleRegressionTestSource.forHint(hint.getFullPath().toPortableString()));
-		var classpath = new java.util.ArrayList<String>();
-		for (var bundle : Platform.getBundle("sandbox_triggerpattern").getBundleContext().getBundles()) {
-			var location = FileLocator.getBundleFileLocation(bundle);
-			if (location.isPresent()) {
-				classpath.add(location.get().getAbsolutePath());
-			}
-		}
-		assertEquals(0, javax.tools.ToolProvider.getSystemJavaCompiler().run(null, null, null,
-				"-proc:none", "-cp", String.join(java.io.File.pathSeparator, classpath), "-d", classes.toString(), file.toString()));
+		compile(file);
 		try (var loader = new URLClassLoader(new java.net.URL[] { classes.toUri().toURL() }, getClass().getClassLoader())) {
 			var test = loader.loadClass("RuleRegressionTest");
 			var constructor = test.getDeclaredConstructor();
@@ -146,6 +138,36 @@ class RuleExamplesProjectTest {
 			var failed = assertThrows(InvocationTargetException.class, () -> method.invoke(constructor.newInstance()));
 			assertTrue(failed.getCause() instanceof AssertionError, failed.toString());
 		}
+	}
+
+	@Test
+	void plannerScaffoldCompilesAndWithholdsAuthorization(@TempDir Path classes) throws Exception {
+		String contract = "strict-\"contract";
+		Path file = Files.writeString(classes.resolve("ProjectInspector.java"), PlanInspectionDialog.scaffold(contract));
+		compile(file);
+		try (var loader = new URLClassLoader(new java.net.URL[] { classes.toUri().toURL() }, getClass().getClassLoader())) {
+			Class<?> type = loader.loadClass("ProjectInspector");
+			assertEquals(contract, type.getField("CONTRACT").get(null));
+			var inspector = (org.sandbox.jdt.triggerpattern.eclipse.ProjectPlanInspector) type.getConstructor().newInstance();
+			var result = inspector.discover(contract, context.getJavaProject(), new NullProgressMonitor());
+			assertTrue(result.components().isEmpty());
+			assertEquals(List.of("PLAN_NOT_IMPLEMENTED: Complete discovery for " + contract), result.diagnostics());
+		}
+	}
+
+	private static void compile(Path file) {
+		var classpath = new java.util.ArrayList<String>();
+		for (var bundle : Platform.getBundle("sandbox_triggerpattern").getBundleContext().getBundles()) {
+			var location = FileLocator.getBundleFileLocation(bundle);
+			if (location.isPresent()) {
+				classpath.add(location.get().getAbsolutePath());
+			}
+		}
+		var compiler = java.util.Objects.requireNonNull(javax.tools.ToolProvider.getSystemJavaCompiler(),
+				"Scaffold compilation needs a full JDK");
+		Path output = java.util.Objects.requireNonNull(file.getParent(), "Generated source needs an output directory");
+		assertEquals(0, compiler.run(null, null, null,
+				"-proc:none", "-sourcepath", output.toString(), "-Xlint:all,-path", "-Werror", "-cp", String.join(java.io.File.pathSeparator, classpath), "-d", output.toString(), file.toString()));
 	}
 
 	private ICompilationUnit createUnit() throws Exception {
