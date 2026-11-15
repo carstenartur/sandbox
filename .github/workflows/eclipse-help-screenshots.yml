@@ -209,6 +209,14 @@ jobs:
             -C "$evidence" .
           sha256sum "$archive" | tee "$evidence/archive-sha256.txt"
           cat "$evidence/sha256.txt"
+
+          # Capture the changed enum preview from this read-only verification run.
+          image="$evidence/files/sandbox_int_to_enum_help/images/int-to-enum-cleanup.png"
+          if ! cmp -s "$image" <(git show HEAD:sandbox_int_to_enum_help/images/int-to-enum-cleanup.png); then
+            echo 'BEGIN_ENUM_NATIVE_PNG_1906'
+            base64 --wrap=96 "$image"
+            echo 'END_ENUM_NATIVE_PNG_1906'
+          fi
           find "$evidence/files" -type f -printf '%P %s bytes\n' | sort
 
       # Intentional baseline changes must be copied from a completed verifier
