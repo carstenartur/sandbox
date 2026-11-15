@@ -22,6 +22,7 @@ import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCle
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -176,7 +177,7 @@ class ListenerSnapshotCleanUpTest {
 	private void compileWithoutDiagnostics(ICompilationUnit unit, Path target) throws Exception {
 		var problems= Arrays.stream(parse(unit).getProblems()).filter(p -> p.isError() || p.isWarning()).toList();
 		assertTrue(problems.isEmpty(), () -> unit.getElementName() + problems);
-		var file= Files.writeString(target.resolve("Sample.java"), unit.getSource()); //$NON-NLS-1$
+		var file= Files.writeString(target.resolve("Sample.java"), unit.getSource(), StandardCharsets.UTF_8); //$NON-NLS-1$
 		assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null,
 				"-Xlint:all", "-Werror", "-d", target.toString(), file.toString())); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	}

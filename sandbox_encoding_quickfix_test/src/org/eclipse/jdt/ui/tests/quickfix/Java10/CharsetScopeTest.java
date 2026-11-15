@@ -12,6 +12,7 @@ package org.eclipse.jdt.ui.tests.quickfix.Java10;
 import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -563,7 +564,7 @@ class CharsetScopeTest {
         java.nio.file.Files.createDirectories(directory);
         String simpleName= className.substring(className.lastIndexOf('.') + 1);
         var file= directory.resolve(simpleName + ".java"); //$NON-NLS-1$
-        java.nio.file.Files.writeString(file, source, java.nio.charset.StandardCharsets.UTF_8);
+        java.nio.file.Files.writeString(file, source, StandardCharsets.UTF_8);
         var compiler= javax.tools.ToolProvider.getSystemJavaCompiler();
         assertNotNull(compiler);
         var diagnostics= new javax.tools.DiagnosticCollector<javax.tools.JavaFileObject>();
