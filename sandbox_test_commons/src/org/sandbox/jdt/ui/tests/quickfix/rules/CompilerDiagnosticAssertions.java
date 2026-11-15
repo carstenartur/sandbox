@@ -34,6 +34,7 @@ import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.NodeFinder;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.internal.corext.dom.Bindings;
 import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
 
 /** Compares the JDT warning and error multiset for each complete source unit. */
@@ -41,7 +42,7 @@ public final class CompilerDiagnosticAssertions {
 	private CompilerDiagnosticAssertions() {
 	}
 
-	record CompilerProblemKey(boolean error, int id, String arguments) {
+	record CompilerProblemKey(boolean error, int id, String arguments, String junit4Arguments) {
 		static CompilerProblemKey of(IProblem problem, CompilationUnit root) {
 			String[] arguments= problem.getArguments();
 			if ((problem.getID() == IProblem.MethodCanBeStatic || problem.getID() == IProblem.MethodCanBePotentiallyStatic)
@@ -50,8 +51,9 @@ public final class CompilerDiagnosticAssertions {
 				// use of the receiver. Preserve the full signature when it distinguishes overloads.
 				arguments= Arrays.copyOf(arguments, 2);
 			}
-			return new CompilerProblemKey(problem.isError(), problem.getID(),
-					Arrays.toString(arguments));
+			String junit4Arguments= problem.getID() == IProblem.OverridingMethodWithoutSuperInvocation
+					? junit4CallbackArguments(declaringMethod(root, problem)) : null;
+			return new CompilerProblemKey(problem.isError(), problem.getID(), Arrays.toString(arguments), junit4Arguments);
 		}
 
 		String severity() {
@@ -59,25 +61,52 @@ public final class CompilerDiagnosticAssertions {
 		}
 	}
 
-	private static boolean hasUniqueMethodName(CompilationUnit root, IProblem problem) {
+	private static IMethodBinding declaringMethod(CompilationUnit root, IProblem problem) {
 		int start= problem.getSourceStart();
 		if (start < 0) {
-			return false;
+			return null;
 		}
 		ASTNode node= NodeFinder.perform(root, start, problem.getSourceEnd() - start + 1);
 		while (node != null && !(node instanceof MethodDeclaration)) {
 			node= node.getParent();
 		}
-		if (node == null) {
-			return false;
-		}
-		MethodDeclaration method= (MethodDeclaration) node;
-		IMethodBinding binding= method.resolveBinding();
+		return node instanceof MethodDeclaration method ? method.resolveBinding() : null;
+	}
+
+	private static boolean hasUniqueMethodName(CompilationUnit root, IProblem problem) {
+		IMethodBinding binding= declaringMethod(root, problem);
 		if (binding == null || binding.getDeclaringClass() == null) {
 			return false;
 		}
 		return Arrays.stream(binding.getDeclaringClass().getDeclaredMethods())
 				.filter(candidate -> candidate.getName().equals(binding.getName())).count() == 1;
+	}
+
+	private static String junit4CallbackArguments(IMethodBinding method) {
+		if (method == null || method.isRecovered() || method.getDeclaringClass() == null) {
+			return null;
+		}
+		var owner= method.getDeclaringClass();
+		var parameters= method.getParameterTypes();
+		String name= method.getName();
+		if (parameters.length == 0 && ("before".equals(name) || "after".equals(name)) //$NON-NLS-1$ //$NON-NLS-2$
+				&& Bindings.findTypeInHierarchy(owner, "org.junit.rules.ExternalResource") != null) { //$NON-NLS-1$
+			return Arrays.toString(new String[] { owner.getQualifiedName() + "." + name + "()" }); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+		String extensionPackage= "org.junit.jupiter.api.extension."; //$NON-NLS-1$
+		if (parameters.length != 1 || !(extensionPackage + "ExtensionContext").equals(parameters[0].getQualifiedName())) { //$NON-NLS-1$
+			return null;
+		}
+		String phase= switch (name) {
+			case "beforeEach", "beforeAll" -> "before"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			case "afterEach", "afterAll" -> "after"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			default -> null;
+		};
+		if (phase == null || Bindings.findTypeInHierarchy(owner,
+				extensionPackage + Character.toUpperCase(name.charAt(0)) + name.substring(1) + "Callback") == null) { //$NON-NLS-1$
+			return null;
+		}
+		return Arrays.toString(new String[] { owner.getQualifiedName() + "." + phase + "()" }); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	/** Records diagnostics before a direct change or a workbench interaction. */
@@ -145,8 +174,18 @@ public final class CompilerDiagnosticAssertions {
 		StringBuilder differences= new StringBuilder();
 		for (ICompilationUnit unit : units) {
 			Map<CompilerProblemKey, Long> baseline= before.getOrDefault(unit, Map.of());
-			for (Map.Entry<CompilerProblemKey, Long> entry : compilerDiagnostics(unit).entrySet()) {
-				long previous= baseline.getOrDefault(entry.getKey(), 0L);
+			Map<CompilerProblemKey, Long> after= compilerDiagnostics(unit);
+			for (Map.Entry<CompilerProblemKey, Long> entry : after.entrySet()) {
+				CompilerProblemKey key= entry.getKey();
+				long previous= baseline.getOrDefault(key, 0L);
+				if (previous == 0 && key.junit4Arguments() != null && !key.arguments().equals(key.junit4Arguments())) {
+					// Credit a pre-existing missing super call only across one unambiguous JUnit migration.
+					CompilerProblemKey legacy= new CompilerProblemKey(key.error(), key.id(), key.junit4Arguments(), key.junit4Arguments());
+					if (baseline.containsKey(legacy) && after.keySet().stream()
+							.filter(candidate -> key.junit4Arguments().equals(candidate.junit4Arguments())).count() == 1) {
+						previous= baseline.get(legacy);
+					}
+				}
 				if (entry.getValue() > previous) {
 					CompilerProblemKey problem= entry.getKey();
 					differences.append(unit.getElementName() + " gained compiler diagnostic: " + problem.severity() //$NON-NLS-1$

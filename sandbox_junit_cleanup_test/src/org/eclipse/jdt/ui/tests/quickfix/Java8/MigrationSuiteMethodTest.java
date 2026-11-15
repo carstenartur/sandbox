@@ -73,6 +73,7 @@ public class MigrationSuiteMethodTest {
 				@Suite
 				@SelectClasses({ FooTest.class, BarTest.class })
 				public class AllTests {
+					/* @SelectClasses lists the tests in this suite. */
 				}
 				""" }, null); //$NON-NLS-1$
 	}

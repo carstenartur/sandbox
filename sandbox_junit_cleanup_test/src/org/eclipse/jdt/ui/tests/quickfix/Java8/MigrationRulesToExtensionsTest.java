@@ -236,11 +236,13 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import org.junit.jupiter.api.Test;
 
 public class MyTest {
+	@SuppressWarnings("static-method")
 	@Test
 	public void test1() {
 		assertAll(() -> assertThat("a", equalTo("a")), () -> assertThat("b", equalTo("b")));
 	}
 
+	@SuppressWarnings("static-method")
 	@Test
 	public void test2() {
 		assertAll(() -> assertThat("x", equalTo("x")));
@@ -487,12 +489,13 @@ public class MyTest {
 				import org.junit.jupiter.api.io.TempDir;
 				
 				public class MyTest {
+					private static final java.lang.String JUNIT_TEMP_PREFIX = "junit"; //$NON-NLS-1$
 					@TempDir
 					public Path folder;
 
 					@Test
 					public void test() throws Exception {
-						File file = Files.createTempFile(folder, "junit", null).toFile();
+						File file = Files.createTempFile(folder, JUNIT_TEMP_PREFIX, null).toFile();
 					}
 				}
 				"""),
@@ -524,12 +527,13 @@ public class MyTest {
 				import org.junit.jupiter.api.io.TempDir;
 				
 				public class MyTest {
+					private static final java.lang.String JUNIT_TEMP_PREFIX = "junit"; //$NON-NLS-1$
 					@TempDir
 					public Path folder;
 
 					@Test
 					public void test() throws Exception {
-						File dir = Files.createTempDirectory(folder, "junit").toFile();
+						File dir = Files.createTempDirectory(folder, JUNIT_TEMP_PREFIX).toFile();
 					}
 				}
 				"""),
@@ -700,6 +704,7 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import org.junit.jupiter.api.Test;
 
 public class MyTest {
+	@SuppressWarnings("static-method")
 	@Test
 	public void testMultipleErrors() {
 		assertAll(() -> assertThat("value1", equalTo("expected1")), () -> assertThat("value2", equalTo("expected2")));
@@ -730,6 +735,7 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import org.junit.jupiter.api.Test;
 
 public class MyTest {
+	@SuppressWarnings("static-method")
 	@Test
 	public void testWithAddError() {
 		assertAll(() -> {
@@ -767,6 +773,7 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import org.junit.jupiter.api.Test;
 
 public class MyTest {
+	@SuppressWarnings("static-method")
 	@Test
 	public void testMixed() {
 		assertAll(() -> assertThat("value1", equalTo("expected1")), () -> {

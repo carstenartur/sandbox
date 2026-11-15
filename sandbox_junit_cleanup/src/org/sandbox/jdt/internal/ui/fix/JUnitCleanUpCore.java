@@ -217,6 +217,7 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 		if (operations.isEmpty()) {
 			return null;
 		}
+		InstanceTestMethodDiagnostics.addIfNeeded(compilationUnit, effectiveFixSet, operations);
 		return new CompilationUnitRewriteOperationsFixCore(JUnitCleanUpFix_refactor, compilationUnit,
 				operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]));
 	}
