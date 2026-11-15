@@ -89,7 +89,15 @@ grep -Fq "$SCOPE_TEST" "$WORK_DIR/$SYNC_MANIFEST"
 
 # Retain upstream's Tycho bootstrap for bundles whose POMs are generated.
 cp -R "$WORK_DIR/.mvn" "$BUILD_DIR/"
-mvn --batch-mode -ntp -f "$BUILD_DIR/pom.xml" \
+# The pinned parent and JDT build profile use Eclipse repositories before Central.
+# Try the next repository when one of these endpoints requests a longer retry delay.
+retry_options=()
+for repo_id in tycho-snapshots eclipse-snapshots eclipse-cbi eclipse-hosted; do
+  # Maven Resolver 1.x (Maven 3.9) and 2.x (Maven 3.10) use different property names.
+  retry_options+=("-Daether.connector.http.retryHandler.intervalMax.$repo_id=5000"
+                  "-Daether.transport.http.retryHandler.intervalMax.$repo_id=5000")
+done
+mvn --batch-mode -ntp "${retry_options[@]}" -f "$BUILD_DIR/pom.xml" \
   -Pbuild-individual-bundles \
   -pl ":$PATCHED_JDT_UI_BUNDLE" -am \
   -Declipse-sdk-repo="$PATCHED_JDT_UI_SDK_REPOSITORY" \
