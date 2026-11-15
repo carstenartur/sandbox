@@ -17,7 +17,6 @@ import java.security.MessageDigest;
 import java.time.Duration;
 import java.util.HexFormat;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -55,14 +54,18 @@ class PublicEppInstallerTest {
         assertEquals(56_002_664L, Files.size(archive), "Unexpected public Installer 1.42 archive size");
         assertEquals("5d4010f80d327e67476d5d3e3d3c4d84959c6075798651f091747f6301c71783",
                 digest(archive, "SHA-256"), "Archive differs from the measured 1.42.0 standalone installer");
-        var published=http.send(HttpRequest.newBuilder(URI.create("https://www.eclipse.org/downloads/sums.php?file="+FILE+"&type=sha512"))
-                .timeout(Duration.ofMinutes(2)).build(),HttpResponse.BodyHandlers.ofString());
-        assertEquals(200,published.statusCode());
-        var match=java.util.regex.Pattern.compile("(?i)(?<![a-f0-9])[a-f0-9]{128}(?![a-f0-9])").matcher(published.body());
-        assertTrue(match.find(),"Eclipse publisher's SHA-512 was not returned");
-        String actual=digest(archive, "SHA-512");
-        assertEquals(match.group().toLowerCase(Locale.ROOT),actual);
-        Files.writeString(run.resolve("archive.sha512"),actual+"  "+FILE+"\n");
+        // Both versioned Eclipse release listings advertise the same non-JRE installer.
+        // The generic mirror checksum service has no checksum for this archived drop.
+        String secondFile = FILE.replace("/products/", "/products/latest/");
+        Path releaseCopy = run.resolve("publisher-installer.tar.gz");
+        var releaseResponse = http.send(HttpRequest.newBuilder(URI.create("https://download.eclipse.org" + secondFile))
+                .timeout(Duration.ofMinutes(6)).build(), HttpResponse.BodyHandlers.ofFile(releaseCopy));
+        assertEquals(200, releaseResponse.statusCode());
+        String archiveSha512 = digest(archive, "SHA-512");
+        assertEquals(archiveSha512, digest(releaseCopy, "SHA-512"), "Versioned Eclipse release paths disagree");
+        Files.writeString(run.resolve("archive.sha512"), archiveSha512 + "  " + FILE + "\n"
+                + archiveSha512 + "  " + secondFile + "\n");
+        Files.delete(releaseCopy);
         exec("unpack",List.of("tar","-xf",archive.toString(),"-C",run.toString()),3);
         Path installer=only(run,"eclipse-inst",true);
         Files.writeString(run.resolve("expected-main.txt"), expected + "\n");
