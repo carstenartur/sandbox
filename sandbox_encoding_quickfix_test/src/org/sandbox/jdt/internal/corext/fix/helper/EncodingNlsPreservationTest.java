@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -413,7 +414,7 @@ public class EncodingNlsPreservationTest {
 		Change undo= null;
 		try {
 			change.initializeValidationData(null);
-			undo= change.perform(null);
+			undo= performAndCheck(change, null, cu);
 			assertEquals(expected, cu.getSource());
 			assertCompilesWithoutNlsProblems(cu);
 			assertNotNull(undo);

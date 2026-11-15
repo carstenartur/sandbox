@@ -152,7 +152,14 @@ public class SuiteMethodJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 			return;
 		}
 
-		rewriter.remove(suite, group);
+		if (JUnit3LegacyShape.suiteInitializer(type) == null) {
+			// The selected tests are declared on the suite annotation. Document the
+			// otherwise empty type body left by removing the legacy suite method.
+			rewriter.replace(suite, rewriter.createStringPlaceholder(
+					"/* @SelectClasses lists the tests in this suite. */", ASTNode.METHOD_DECLARATION), group); //$NON-NLS-1$
+		} else {
+			rewriter.remove(suite, group);
+		}
 		if (JUnit3LegacyShape.directlyExtendsTestCase(type) && type.getSuperclassType() != null) {
 			rewriter.remove(type.getSuperclassType(), group);
 			importRewriter.removeImport(JUnit3LegacyShape.JUNIT3_TEST_CASE);

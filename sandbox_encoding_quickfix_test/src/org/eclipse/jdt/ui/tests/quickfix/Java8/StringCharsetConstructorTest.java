@@ -9,6 +9,7 @@
  *******************************************************************************/
 package org.eclipse.jdt.ui.tests.quickfix.Java8;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -112,7 +113,7 @@ class StringCharsetConstructorTest {
             assertEquals(preview, change.getPreviewContent(null));
             assertEquals(before, unit.getSource());
             change.initializeValidationData(null);
-            var undo= change.perform(null);
+            var undo= performAndCheck(change, null, unit);
             assertNotNull(undo);
             try {
                 List<ClassInstanceCreation> updated= constructors(parse(unit));

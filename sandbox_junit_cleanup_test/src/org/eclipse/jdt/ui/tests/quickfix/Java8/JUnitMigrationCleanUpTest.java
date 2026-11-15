@@ -33,8 +33,12 @@ package org.eclipse.jdt.ui.tests.quickfix.Java8;
  * #L%
  */
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.junit.JUnitCore;
@@ -45,6 +49,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
+import org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
 import org.sandbox.jdt.ui.tests.quickfix.rules.JUnitMigrationFixtureClasspath;
 
@@ -363,6 +368,35 @@ public class MyExternalResource implements BeforeEachCallback, AfterEachCallback
 	}
 
 	@Test
+	public void movingMissingSuperCallBetweenJupiterCallbacksIsANewWarning() throws CoreException {
+		IPackageFragment pack= fRootJUnit4.createPackageFragment("test", true, null); //$NON-NLS-1$
+		String source= """
+				package test;
+				import org.junit.jupiter.api.extension.AfterAllCallback;
+				import org.junit.jupiter.api.extension.AfterEachCallback;
+				import org.junit.jupiter.api.extension.ExtensionContext;
+				class Parent implements AfterEachCallback, AfterAllCallback {
+				    public void afterEach(ExtensionContext context) { }
+				    public void afterAll(ExtensionContext context) { }
+				}
+				class Child extends Parent {
+				    @Override public void afterEach(ExtensionContext context) { }
+				    @Override public void afterAll(ExtensionContext context) { super.afterAll(context); }
+				}
+				""";
+		ICompilationUnit unit= pack.createCompilationUnit("Parent.java", source, true, null); //$NON-NLS-1$
+		var before= CompilerDiagnosticAssertions.capture(unit);
+		unit.getBuffer().setContents(source.replace(
+				"@Override public void afterEach(ExtensionContext context) { }", //$NON-NLS-1$
+				"@Override public void afterEach(ExtensionContext context) { super.afterEach(context); }") //$NON-NLS-1$
+				.replace("super.afterAll(context);", "")); //$NON-NLS-1$ //$NON-NLS-2$
+
+		AssertionError failure= assertThrows(AssertionError.class, before::assertNoNewDiagnostics);
+		assertTrue(failure.getMessage().contains("id=" + IProblem.OverridingMethodWithoutSuperInvocation), failure.getMessage()); //$NON-NLS-1$
+		assertTrue(failure.getMessage().contains("Child.afterAll"), failure.getMessage()); //$NON-NLS-1$
+	}
+
+	@Test
 	public void testJUnitCleanupThreeFiles() throws CoreException {
 		IPackageFragment pack= fRootJUnit4.createPackageFragment("test", true, null);
 		ICompilationUnit cu= pack.createCompilationUnit("MyTest.java",
@@ -594,6 +628,7 @@ public class MyTest {
 
         @Override
         public void afterEach(ExtensionContext context) {
+            /* The JUnit 4 superclass callback was empty. */
         }
     }
 
@@ -692,6 +727,7 @@ public class MyTest {
 
         @Override
         public void afterAll(ExtensionContext context) {
+            /* The JUnit 4 superclass callback was empty. */
         }
     }
 

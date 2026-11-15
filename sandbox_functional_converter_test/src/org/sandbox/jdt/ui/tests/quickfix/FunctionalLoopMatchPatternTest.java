@@ -361,7 +361,7 @@ String expected = """
 
 			class MyTest {
 				public boolean allLongEnough(List<String> items) {
-					if (!items.stream().map(item -> item.length()).allMatch(len -> (len > 5))) {
+					if (!items.stream().mapToInt(item -> item.length()).allMatch(len -> (len > 5))) {
 						return false;
 					}
 					return true;

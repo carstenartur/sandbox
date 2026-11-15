@@ -9,6 +9,7 @@
  *******************************************************************************/
 package org.eclipse.jdt.ui.tests.quickfix.Java10;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Arrays;
@@ -378,7 +379,7 @@ class CharsetScopeTest {
         try {
             String secondPreview= secondChange.getPreviewContent(null);
             assertEquals(firstPreview, secondPreview);
-            var undo= secondChange.perform(null);
+            var undo= performAndCheck(secondChange, null, unit);
             assertNotNull(undo);
             try {
                 assertEquals(secondPreview, unit.getSource());

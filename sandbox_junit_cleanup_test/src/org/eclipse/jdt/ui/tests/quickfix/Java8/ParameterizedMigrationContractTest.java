@@ -172,6 +172,7 @@ public class ParameterizedMigrationContractTest {
 						int index = 0;
 						for (java.lang.Object row : rows) {
 							java.lang.Object[] arguments = (java.lang.Object[]) row;
+							@java.lang.SuppressWarnings("nls")
 							java.lang.String name = "[" + java.text.MessageFormat
 									.format("{index}".replace("{index}", java.lang.Integer.toString(index++)), arguments) + "]";
 							result.add(org.junit.jupiter.params.provider.Arguments.argumentSet(name, arguments));
@@ -256,6 +257,7 @@ public class ParameterizedMigrationContractTest {
 						int index = 0;
 						for (java.lang.Object row : rows) {
 							java.lang.Object[] arguments = (java.lang.Object[]) row;
+							@java.lang.SuppressWarnings("nls")
 							java.lang.String name = "[" + java.text.MessageFormat
 									.format("{index}".replace("{index}", java.lang.Integer.toString(index++)), arguments) + "]";
 							result.add(org.junit.jupiter.params.provider.Arguments.argumentSet(name, arguments));

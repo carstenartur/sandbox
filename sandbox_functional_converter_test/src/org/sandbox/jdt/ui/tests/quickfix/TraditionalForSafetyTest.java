@@ -8,6 +8,7 @@
 package org.sandbox.jdt.ui.tests.quickfix;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
 
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -279,7 +280,7 @@ class TraditionalForSafetyTest {
 			var change = proposal.getTextChange();
 			change.initializeValidationData(null);
 			assertFalse(change.isValid(null).hasFatalError());
-			Change undo = change.perform(null);
+			Change undo = performAndCheck(change, null, unit);
 			try {
 				assertEquals(preview, unit.getSource());
 				assertNotNull(undo);

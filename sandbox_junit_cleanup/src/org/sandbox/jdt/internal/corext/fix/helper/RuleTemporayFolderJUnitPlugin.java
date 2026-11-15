@@ -14,6 +14,7 @@ import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULE;
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULES_TEMPORARY_FOLDER;
 
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -54,6 +55,7 @@ import org.eclipse.jdt.core.search.SearchParticipant;
 import org.eclipse.jdt.core.search.SearchPattern;
 import org.eclipse.jdt.core.search.SearchRequestor;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 import org.eclipse.text.edits.TextEditGroup;
 
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
@@ -219,6 +221,8 @@ public class RuleTemporayFolderJUnitPlugin extends TriggerPatternCleanupPlugin {
 		}
 
 		root.accept(new ASTVisitor() {
+			private String randomPrefix;
+
 			@Override
 			public boolean visit(MethodInvocation invocation) {
 				if (!fieldKey.equals(expressionVariableKey(invocation.getExpression()))) {
@@ -231,25 +235,54 @@ public class RuleTemporayFolderJUnitPlugin extends TriggerPatternCleanupPlugin {
 				if (operation != Operation.GET_ROOT) {
 					imports.addImport("java.nio.file.Files"); //$NON-NLS-1$
 				}
-				rewriter.replace(invocation, replacement(invocation, operation, fieldName, ast), group);
+				if (randomPrefix == null && (operation == Operation.NEW_FILE_RANDOM || operation == Operation.NEW_FOLDER_RANDOM)) {
+					randomPrefix= addRandomPrefix(field, root, rewriter, group);
+				}
+				rewriter.replace(invocation, replacement(invocation, operation, fieldName, randomPrefix, ast), group);
 				return false;
 			}
 		});
 	}
 
+	// Keep JUnit's filename prefix as a single non-translatable constant without
+	// suppressing diagnostics on the caller's existing statements or fields.
+	private static String addRandomPrefix(FieldDeclaration field, org.eclipse.jdt.core.dom.CompilationUnit root,
+			ASTRewrite rewrite, TextEditGroup group) {
+		Set<String> used= new HashSet<>();
+		root.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(SimpleName name) {
+				used.add(name.getIdentifier());
+				return true;
+			}
+		});
+		for (IBinding binding : new ScopeAnalyzer(root).getDeclarationsInScope(field.getStartPosition(), ScopeAnalyzer.VARIABLES)) {
+			used.add(binding.getName());
+		}
+		String name= "JUNIT_TEMP_PREFIX"; //$NON-NLS-1$
+		for (int suffix= 2; used.contains(name); suffix++) {
+			name= "JUNIT_TEMP_PREFIX_" + suffix; //$NON-NLS-1$
+		}
+		TypeDeclaration owner= ASTNodes.getParent(field, TypeDeclaration.class);
+		String constant= "private static final java.lang.String " + name + " = \"junit\"; //$NON-NLS-1$"; //$NON-NLS-1$ //$NON-NLS-2$
+		rewrite.getListRewrite(owner, TypeDeclaration.BODY_DECLARATIONS_PROPERTY)
+				.insertBefore(rewrite.createStringPlaceholder(constant, ASTNode.FIELD_DECLARATION), field, group);
+		return name;
+	}
+
 	private static Expression replacement(MethodInvocation invocation, Operation operation,
-			String fieldName, AST ast) {
+			String fieldName, String randomPrefix, AST ast) {
 		return switch (operation) {
 		case GET_ROOT -> toFile(ast, ast.newSimpleName(fieldName));
 		case NEW_FILE_RANDOM -> toFile(ast,
 				filesCall(ast, "createTempFile", ast.newSimpleName(fieldName), //$NON-NLS-1$
-						stringLiteral(ast, "junit"), ast.newNullLiteral())); //$NON-NLS-1$
+						ast.newSimpleName(randomPrefix), ast.newNullLiteral()));
 		case NEW_FILE_NAMED -> toFile(ast,
 				filesCall(ast, "createFile", resolve(ast, fieldName, //$NON-NLS-1$
 						(Expression) invocation.arguments().get(0))));
 		case NEW_FOLDER_RANDOM -> toFile(ast,
 				filesCall(ast, "createTempDirectory", ast.newSimpleName(fieldName), //$NON-NLS-1$
-						stringLiteral(ast, "junit"))); //$NON-NLS-1$
+						ast.newSimpleName(randomPrefix)));
 		case NEW_FOLDER_NAMED -> toFile(ast,
 				filesCall(ast, "createDirectory", resolve(ast, fieldName, //$NON-NLS-1$
 						(Expression) invocation.arguments().get(0))));
@@ -278,12 +311,6 @@ public class RuleTemporayFolderJUnitPlugin extends TriggerPatternCleanupPlugin {
 		MethodInvocation result= ast.newMethodInvocation();
 		result.setExpression(expression);
 		result.setName(ast.newSimpleName("toFile")); //$NON-NLS-1$
-		return result;
-	}
-
-	private static org.eclipse.jdt.core.dom.StringLiteral stringLiteral(AST ast, String value) {
-		org.eclipse.jdt.core.dom.StringLiteral result= ast.newStringLiteral();
-		result.setLiteralValue(value);
 		return result;
 	}
 

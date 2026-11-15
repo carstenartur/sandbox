@@ -9,6 +9,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.ui.tests.quickfix;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -221,7 +222,7 @@ class StatusDiagnosticPreservationTest {
 			String preview = change.getPreviewContent(null);
 			assertEquals(preview, change.getPreviewContent(null));
 			assertEquals(before, unit.getSource());
-			var undo = change.perform(null);
+			var undo = performAndCheck(change, null, unit);
 			assertNotNull(undo);
 			try {
 				after = unit.getSource();

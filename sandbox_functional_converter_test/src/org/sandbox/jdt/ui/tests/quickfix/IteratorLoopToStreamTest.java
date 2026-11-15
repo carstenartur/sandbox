@@ -532,7 +532,7 @@ public class IteratorLoopToStreamTest {
 				import java.util.*;
 				public class MyTest {
 					int calculateSum(List<Integer> numbers) {
-						int sum = numbers.stream().reduce(0, Integer::sum);
+						int sum = numbers.stream().mapToInt(num -> num.intValue()).reduce(0, Integer::sum);
 						return sum;
 					}
 				}

@@ -69,6 +69,7 @@ public class ParameterizedStagedMigrationTest {
 						import org.junit.jupiter.params.provider.MethodSource;
 
 						public class StagedParameterizedTest {
+							@SuppressWarnings("static-method")
 							@ParameterizedTest
 							@MethodSource("data")
 							public void verifiesValue(int value) {

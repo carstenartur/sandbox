@@ -7,6 +7,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.multifile;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Arrays;
@@ -93,7 +95,7 @@ class BestEffortMarkerDocumentationTest {
         var root= parse(unit);
         var type= type(root, "Example");
         var longer= gap(unit, type, "candidate-long");
-        perform(root, List.of(longer));
+        perform(unit, root, List.of(longer));
         root= parse(unit);
         var shorter= gap(unit, type(root, "Example"), "candidate");
         assertFalse(operations(root, List.of(shorter)).isEmpty(), "Candidate prefix is not marker identity");
@@ -126,7 +128,7 @@ class BestEffortMarkerDocumentationTest {
             String preview= change.getPreviewContent(null);
             assertEquals(preview, change.getPreviewContent(null));
             assertEquals(before, unit.getSource());
-            var undo= change.perform(null);
+            var undo= performAndCheck(change, null, unit);
             try {
                 assertEquals(preview, unit.getSource());
                 root= parse(unit);
@@ -163,12 +165,12 @@ class BestEffortMarkerDocumentationTest {
         return operations;
     }
 
-    private static void perform(CompilationUnit root, List<JUnitBestEffortSupport.Gap> gaps)
+    private static void perform(ICompilationUnit unit, CompilationUnit root, List<JUnitBestEffortSupport.Gap> gaps)
             throws Exception {
         var change= new CompilationUnitRewriteOperationsFixCore("Document migration gap", root,
                 operations(root, gaps).toArray(CompilationUnitRewriteOperationWithSourceRange[]::new)).createChange(null);
         try {
-            var undo= change.perform(null);
+            var undo= performAndCheck(change, null, unit);
             if (undo != null) undo.dispose();
         } finally { change.dispose(); }
     }

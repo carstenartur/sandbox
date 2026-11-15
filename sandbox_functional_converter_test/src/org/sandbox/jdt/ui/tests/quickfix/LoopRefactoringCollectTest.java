@@ -267,7 +267,7 @@ public class LoopRefactoringCollectTest {
 				import java.util.stream.Collectors;
 				class MyTest {
 					public void process(List<Integer> numbers) {
-						List<Integer> doubled = numbers.stream().map(num -> num * 2)
+						List<Integer> doubled = numbers.stream().mapToInt(num -> num * 2).boxed()
 								.collect(Collectors.toCollection(java.util.ArrayList::new));
 						System.out.println(doubled);
 					}

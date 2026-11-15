@@ -258,6 +258,8 @@ final class ParallelRecordRewrite extends CompilationUnitRewriteOperationWithSou
 		var list= ast.newParameterizedType(ast.newSimpleType(ast.newName(listType)));
 		list.typeArguments().add(ast.newSimpleType(ast.newSimpleName(rowName)));
 		rows.setType(list);
+		cu.getImportRemover().registerAddedImports(list);
+		cu.getImportRemover().registerAddedImports(initializer.getType());
 		rewrite.replace(left, rows, group);
 		rewrite.remove(right, group);
 		var row= ast.newClassInstanceCreation();
@@ -270,6 +272,10 @@ final class ParallelRecordRewrite extends CompilationUnitRewriteOperationWithSou
 		add.setExpression(ast.newSimpleName(listName));
 		add.setName(ast.newSimpleName("add")); //$NON-NLS-1$
 		add.arguments().add(row);
+		// The first two statements perform the array growth. Stores may refer to
+		// imports retained by the record constructor and must not be registered here.
+		cu.getImportRemover().registerRemovedNode((ASTNode) growth.statements().get(0));
+		cu.getImportRemover().registerRemovedNode((ASTNode) growth.statements().get(1));
 		rewrite.replace((ASTNode) growth.statements().getFirst(), ast.newExpressionStatement(add), group);
 		for (int i= 1; i < 4; i++) {
 			rewrite.remove((ASTNode) growth.statements().get(i), group);

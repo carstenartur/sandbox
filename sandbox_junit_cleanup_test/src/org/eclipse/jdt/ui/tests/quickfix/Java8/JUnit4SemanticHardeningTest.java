@@ -148,6 +148,7 @@ public class JUnit4SemanticHardeningTest {
 						import org.junit.jupiter.api.Test;
 
 						public class ExpectedMessageTest {
+							@SuppressWarnings("static-method")
 							@Test
 							public void testSubstring() {
 								IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
@@ -231,14 +232,15 @@ public class JUnit4SemanticHardeningTest {
 						import org.junit.jupiter.api.io.TempDir;
 
 						public class TemporaryFolderTest {
+							private static final java.lang.String JUNIT_TEMP_PREFIX = "junit"; //$NON-NLS-1$
 							@TempDir
 							public Path folder;
 
 							@Test
 							public void testFiles() throws IOException {
-								File randomFile = Files.createTempFile(folder, "junit", null).toFile();
+								File randomFile = Files.createTempFile(folder, JUNIT_TEMP_PREFIX, null).toFile();
 								File namedFile = Files.createFile(folder.resolve("named.txt")).toFile();
-								File randomFolder = Files.createTempDirectory(folder, "junit").toFile();
+								File randomFolder = Files.createTempDirectory(folder, JUNIT_TEMP_PREFIX).toFile();
 								File namedFolder = Files.createDirectory(folder.resolve("named")).toFile();
 								File root = folder.toFile();
 							}
@@ -453,6 +455,7 @@ public class JUnit4SemanticHardeningTest {
 								int index = 0;
 								for (java.lang.Object row : rows) {
 									java.lang.Object[] arguments = (java.lang.Object[]) row;
+									@java.lang.SuppressWarnings("nls")
 									java.lang.String name = "[" + java.text.MessageFormat
 											.format("{index}".replace("{index}", java.lang.Integer.toString(index++)), arguments) + "]";
 									result.add(org.junit.jupiter.params.provider.Arguments.argumentSet(name, arguments));

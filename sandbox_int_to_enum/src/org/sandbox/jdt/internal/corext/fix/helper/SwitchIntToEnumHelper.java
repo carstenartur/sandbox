@@ -30,6 +30,7 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.Javadoc;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.PrimitiveType;
@@ -37,6 +38,8 @@ import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.SwitchCase;
 import org.eclipse.jdt.core.dom.SwitchStatement;
+import org.eclipse.jdt.core.dom.TagElement;
+import org.eclipse.jdt.core.dom.TextElement;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
@@ -252,12 +255,23 @@ public class SwitchIntToEnumHelper extends AbstractTool<ReferenceHolder<Integer,
 			// 1. Create enum declaration
 			EnumDeclaration enumDecl = ast.newEnumDeclaration();
 			enumDecl.setName(ast.newSimpleName(enumName));
+			Javadoc doc = ast.newJavadoc();
+			TagElement tag = ast.newTagElement();
+			TextElement text = ast.newTextElement();
+			text.setText("Values accepted by the " + data.comparedVariable + " switch."); //$NON-NLS-1$ //$NON-NLS-2$
+			tag.fragments().add(text);
+			doc.tags().add(tag);
+			enumDecl.setJavadoc(doc);
 			enumDecl.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.PUBLIC_KEYWORD));
 
 			for (String constName : data.constantNames) {
 				EnumConstantDeclaration enumConst = ast.newEnumConstantDeclaration();
 				String enumValueName = constName.substring(prefix.length());
 				enumConst.setName(ast.newSimpleName(enumValueName));
+				Javadoc original = data.constantFields.get(constName).getJavadoc();
+				if (original != null) {
+					enumConst.setJavadoc((Javadoc) ASTNode.copySubtree(ast, original));
+				}
 				enumDecl.enumConstants().add(enumConst);
 			}
 
@@ -299,8 +313,17 @@ public class SwitchIntToEnumHelper extends AbstractTool<ReferenceHolder<Integer,
 			}
 
 			// 5. Update switch case labels to enum values
+			SwitchCase firstCase = null;
+			boolean hasDefault = false;
 			for (Object stmt : data.switchStatement.statements()) {
-				if (stmt instanceof SwitchCase switchCase && !switchCase.isDefault()) {
+				if (stmt instanceof SwitchCase switchCase) {
+					if (firstCase == null) {
+						firstCase = switchCase;
+					}
+					if (switchCase.isDefault()) {
+						hasDefault = true;
+						continue;
+					}
 					for (Object expr : switchCase.expressions()) {
 						if (expr instanceof SimpleName sn) {
 							String constName = sn.getIdentifier();
@@ -312,6 +335,19 @@ public class SwitchIntToEnumHelper extends AbstractTool<ReferenceHolder<Integer,
 						}
 					}
 				}
+			}
+
+			// Previously an unmatched int left the switch without executing a case.
+			// Insert its equivalent first so existing fall-through paths keep their targets.
+			if (!hasDefault && firstCase != null) {
+				SwitchCase fallback = ast.newSwitchCase();
+				fallback.setSwitchLabeledRule(firstCase.isSwitchLabeledRule());
+				ListRewrite statements = rewrite.getListRewrite(data.switchStatement, SwitchStatement.STATEMENTS_PROPERTY);
+				statements.insertFirst(fallback, group);
+				ASTNode body = firstCase.isSwitchLabeledRule()
+						? rewrite.createStringPlaceholder("{ /* No matching constant. */ }", ASTNode.BLOCK) //$NON-NLS-1$
+						: ast.newBreakStatement();
+				statements.insertAfter(body, fallback, group);
 			}
 
 			// 6. Update method parameter type from int to enum
@@ -425,11 +461,14 @@ public class SwitchIntToEnumHelper extends AbstractTool<ReferenceHolder<Integer,
 		}
 		return """
 				// After:
+				/** Values accepted by the status switch. */
 				public enum Status {
 				    PENDING, APPROVED
 				}
 
 				switch (status) {
+				    default:
+				        break;
 				    case PENDING:
 				        // handle pending
 				        break;

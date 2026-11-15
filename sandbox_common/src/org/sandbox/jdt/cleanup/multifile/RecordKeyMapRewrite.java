@@ -15,6 +15,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.text.edits.TextEditGroup;
+
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Block;
@@ -51,10 +53,11 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 
 import org.sandbox.jdt.container.analysis.RecordKeyLookupAnalyzer;
 import org.sandbox.jdt.container.api.ContainerUsageProfile;
+import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 
 /** Converts a private first-match index whose complete content is determined during construction. */
 final class RecordKeyMapRewrite extends CompilationUnitRewriteOperationWithSourceRange {
-	private record Insertion(MethodInvocation add, Expression key) {}
+	private record Insertion(MethodInvocation add, Expression key, String accessor) {}
 	private record Scan(EnhancedForStatement loop, SimpleName query) {}
 	private static final String DESCRIPTION= "Index a closed record sequence by its immutable String key"; //$NON-NLS-1$
 	private final FieldDeclaration field;
@@ -134,7 +137,8 @@ final class RecordKeyMapRewrite extends CompilationUnitRewriteOperationWithSourc
 		if (keyIndex < 0) {
 			return null;
 		}
-		var inserts= construction(owner, fragment.resolveBinding(), element, keyIndex, admitted);
+		var inserts= construction(owner, fragment.resolveBinding(), element, keyIndex,
+				((SingleVariableDeclaration) record.recordComponents().get(keyIndex)).getName().getIdentifier(), admitted);
 		if (inserts == null || inserts.isEmpty() || !allUsesAdmitted(root, fragment.resolveBinding(), admitted)
 				|| includesComments(root, field.getType()) || includesComments(root, empty)) {
 			return null;
@@ -143,10 +147,10 @@ final class RecordKeyMapRewrite extends CompilationUnitRewriteOperationWithSourc
 	}
 
 	private static List<Insertion> construction(TypeDeclaration owner, IVariableBinding field,
-			ITypeBinding record, int keyIndex, Set<ASTNode> admitted) {
+			ITypeBinding record, int keyIndex, String accessor, Set<ASTNode> admitted) {
 		List<Insertion> insertions= new ArrayList<>();
 		for (MethodDeclaration method : owner.getMethods()) {
-			if (method.isConstructor() && (method.getBody() == null || !constructionStatements(method.getBody(), field, record, keyIndex, admitted, insertions))) {
+			if (method.isConstructor() && (method.getBody() == null || !constructionStatements(method.getBody(), field, record, keyIndex, accessor, admitted, insertions))) {
 				return null;
 			}
 		}
@@ -155,10 +159,10 @@ final class RecordKeyMapRewrite extends CompilationUnitRewriteOperationWithSourc
 
 	/** Before publication only conditional inserts of fresh records with inert constructor arguments are allowed. */
 	private static boolean constructionStatements(Statement statement, IVariableBinding field, ITypeBinding record,
-			int keyIndex, Set<ASTNode> admitted, List<Insertion> insertions) {
+			int keyIndex, String accessor, Set<ASTNode> admitted, List<Insertion> insertions) {
 		if (statement instanceof Block block) {
 			for (Object child : block.statements()) {
-				if (!constructionStatements((Statement) child, field, record, keyIndex, admitted, insertions)) {
+				if (!constructionStatements((Statement) child, field, record, keyIndex, accessor, admitted, insertions)) {
 					return false;
 				}
 			}
@@ -166,8 +170,8 @@ final class RecordKeyMapRewrite extends CompilationUnitRewriteOperationWithSourc
 		}
 		if (statement instanceof IfStatement branch && branch.getExpression() instanceof SimpleName name
 				&& name.resolveBinding() instanceof IVariableBinding flag && flag.isParameter() && flag.getType().isPrimitive()) {
-			return constructionStatements(branch.getThenStatement(), field, record, keyIndex, admitted, insertions)
-					&& (branch.getElseStatement() == null || constructionStatements(branch.getElseStatement(), field, record, keyIndex, admitted, insertions));
+			return constructionStatements(branch.getThenStatement(), field, record, keyIndex, accessor, admitted, insertions)
+					&& (branch.getElseStatement() == null || constructionStatements(branch.getElseStatement(), field, record, keyIndex, accessor, admitted, insertions));
 		}
 		if (!(statement instanceof ExpressionStatement expr) || !(expr.getExpression() instanceof MethodInvocation add)
 				|| !(referenceName(add.getExpression()) instanceof SimpleName name) || !field.isEqualTo(name.resolveBinding())
@@ -182,7 +186,11 @@ final class RecordKeyMapRewrite extends CompilationUnitRewriteOperationWithSourc
 			}
 		}
 		admitted.add(name);
-		insertions.add(new Insertion(add, (Expression) row.arguments().get(keyIndex)));
+		Expression key= (Expression) row.arguments().get(keyIndex);
+		if (key.getNodeType() == ASTNode.STRING_LITERAL && includesComments((CompilationUnit) add.getRoot(), statement)) {
+			return false;
+		}
+		insertions.add(new Insertion(add, key, accessor));
 		return true;
 	}
 
@@ -266,12 +274,18 @@ final class RecordKeyMapRewrite extends CompilationUnitRewriteOperationWithSourc
 		var map= ast.newParameterizedType(ast.newSimpleType(ast.newName(imports.addImport("java.util.Map", context)))); //$NON-NLS-1$
 		map.typeArguments().add(ast.newSimpleType(ast.newName(imports.addImport("java.lang.String", context)))); //$NON-NLS-1$
 		map.typeArguments().add(ASTNode.copySubtree(ast, (Type) ((ParameterizedType) field.getType()).typeArguments().getFirst()));
+		cu.getImportRemover().registerRemovedNode(((ParameterizedType) field.getType()).getType());
 		rewrite.replace(field.getType(), map, group);
 		var creation= ast.newClassInstanceCreation();
 		creation.setType(ast.newParameterizedType(ast.newSimpleType(ast.newName(imports.addImport("java.util.LinkedHashMap", context))))); //$NON-NLS-1$
+		cu.getImportRemover().registerRemovedNode(fragment.getInitializer());
 		rewrite.replace(fragment.getInitializer(), creation, group);
 		for (var insertion : insertions) {
 			var call= insertion.add();
+			if (insertion.key().getNodeType() == ASTNode.STRING_LITERAL) {
+				insertRecordWithLiteralKey(cu, insertion, group);
+				continue;
+			}
 			rewrite.set(call, MethodInvocation.NAME_PROPERTY, ast.newSimpleName("putIfAbsent"), group); //$NON-NLS-1$
 			rewrite.getListRewrite(call, MethodInvocation.ARGUMENTS_PROPERTY).insertFirst(ASTNode.copySubtree(ast, insertion.key()), group);
 		}
@@ -286,7 +300,10 @@ final class RecordKeyMapRewrite extends CompilationUnitRewriteOperationWithSourc
 			checked.arguments().add(ASTNode.copySubtree(ast, scan.query()));
 			lookup.arguments().add(checked);
 			var empty= ast.newMethodInvocation();
-			empty.setExpression((Expression) ASTNode.copySubtree(ast, fieldRead));
+			var qualifiedField= ast.newFieldAccess();
+			qualifiedField.setExpression(ast.newThisExpression());
+			qualifiedField.setName(ast.newSimpleName(fragment.getName().getIdentifier()));
+			empty.setExpression(qualifiedField);
 			empty.setName(ast.newSimpleName("isEmpty")); //$NON-NLS-1$
 			var guard= ast.newIfStatement();
 			guard.setExpression(empty);
@@ -297,6 +314,37 @@ final class RecordKeyMapRewrite extends CompilationUnitRewriteOperationWithSourc
 			var body= (Block) scan.loop().getParent();
 			rewrite.replace(((ReturnStatement) body.statements().getLast()).getExpression(), lookup, group);
 		}
+	}
+
+	/** Evaluates the record once and uses its generated accessor, retaining the single key literal. */
+	private void insertRecordWithLiteralKey(CompilationUnitRewrite cu, Insertion insertion, TextEditGroup group) {
+		var ast= cu.getRoot().getAST();
+		var rewrite= cu.getASTRewrite();
+		var call= insertion.add();
+		var row= (ClassInstanceCreation) call.arguments().getFirst();
+		var entry= ast.newVariableDeclarationFragment();
+		var used= ASTNavigationUtils.getUsedVariableNames(call);
+		String name= "entry"; //$NON-NLS-1$
+		for (int n= 2; used.contains(name) || name.equals(fragment.getName().getIdentifier()); n++) {
+			name= "entry" + n; //$NON-NLS-1$
+		}
+		entry.setName(ast.newSimpleName(name));
+		entry.setInitializer((Expression) rewrite.createMoveTarget(row));
+		var declaration= ast.newVariableDeclarationStatement(entry);
+		declaration.setType((Type) ASTNode.copySubtree(ast, row.getType()));
+		declaration.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.FINAL_KEYWORD));
+		var key= ast.newMethodInvocation();
+		key.setExpression(ast.newSimpleName(name));
+		key.setName(ast.newSimpleName(insertion.accessor()));
+		var put= ast.newMethodInvocation();
+		put.setExpression((Expression) ASTNode.copySubtree(ast, call.getExpression()));
+		put.setName(ast.newSimpleName("putIfAbsent")); //$NON-NLS-1$
+		put.arguments().add(key);
+		put.arguments().add(ast.newSimpleName(name));
+		var block= ast.newBlock();
+		block.statements().add(declaration);
+		block.statements().add(ast.newExpressionStatement(put));
+		rewrite.replace(call.getParent(), block, group);
 	}
 
 	@Override

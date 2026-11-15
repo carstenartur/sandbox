@@ -10,6 +10,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.container.analysis;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -93,8 +95,8 @@ class LocalUniqueSequenceContractClosureTest {
 		assertEquals(ExecutionStatus.AUTOMATIC, readiness.status());
 		assertTrue(rewrite.ready());
 
-		UniqueSequenceLocalRewriteFix.create(unit, root, rewrite.plan().orElseThrow())
-				.createChange(null).perform(null);
+		var change= UniqueSequenceLocalRewriteFix.create(unit, root, rewrite.plan().orElseThrow()).createChange(null);
+		performAndCheck(change, null, unit);
 
 		String transformed= unit.getSource();
 		assertTrue(transformed.contains("Set<String> values")); //$NON-NLS-1$

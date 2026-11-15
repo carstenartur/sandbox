@@ -135,6 +135,7 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.JUnitMigrationFixtureClasspath;
 					@Rule
 					public ExpectedException thrown = ExpectedException.none();
 					
+					@SuppressWarnings("nls")
 					@Test
 					public void testException() {
 						thrown.expect(IllegalArgumentException.class);
@@ -155,6 +156,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.Test;
 
 public class MyTest {
+	@SuppressWarnings({ "nls", "static-method" })
 	@Test
 	public void testException() {
 		assertThrows(IllegalArgumentException.class, () -> {
@@ -258,6 +260,7 @@ public class MyTest {
 				import org.junit.jupiter.api.Test;
 				
 				public class MyTest {
+					@SuppressWarnings("static-method")
 					@Test
 					public void testExceptionWithCause() {
 						RuntimeException exception = assertThrows(RuntimeException.class, () -> {
@@ -284,6 +287,7 @@ public class MyTest {
 					@Rule
 					public ExpectedException thrown = ExpectedException.none();
 					
+					@SuppressWarnings(value = { "nls" })
 					@Test
 					public void testExceptionWithMessageAndCause() {
 						thrown.expect(RuntimeException.class);
@@ -308,6 +312,7 @@ public class MyTest {
 				import org.junit.jupiter.api.Test;
 				
 				public class MyTest {
+					@SuppressWarnings(value = { "nls", "static-method" })
 					@Test
 					public void testExceptionWithMessageAndCause() {
 						RuntimeException exception = assertThrows(RuntimeException.class, () -> {

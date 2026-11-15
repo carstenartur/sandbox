@@ -8,6 +8,7 @@
  *******************************************************************************/
 package org.eclipse.jdt.ui.tests.quickfix.Java10;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -81,7 +82,7 @@ class ReplacedConstructorImportTest {
 			String preview= change.getPreviewContent(null);
 			assertEquals(retained, preview.contains(importLine), preview);
 			change.initializeValidationData(null);
-			var undo= change.perform(null);
+			var undo= performAndCheck(change, null, unit);
 			assertNotNull(undo);
 			try {
 				assertEquals(preview, unit.getSource());

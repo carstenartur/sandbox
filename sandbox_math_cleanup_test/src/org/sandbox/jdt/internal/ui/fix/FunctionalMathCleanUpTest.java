@@ -2,6 +2,7 @@
 package org.sandbox.jdt.internal.ui.fix;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -126,7 +127,7 @@ class FunctionalMathCleanUpTest {
         assertTrue(preview.contains("frame"),"The changed stack contract must be documented on the method");
         assertEquals(TAIL_SOURCE,unit.getSource());assertEquals(1,change.getTextEditChangeGroups().length);
         compareRun(TAIL_SOURCE,preview,-1,0,1,30,300);
-        var undo=change.perform(MONITOR);parse(unit);assertEquals(preview,unit.getSource());
+        var undo=performAndCheck(change, MONITOR, unit);parse(unit);assertEquals(preview,unit.getSource());
         var repeated=new MathematicalCleanUpCore(settings);repeated.checkPreConditions(java,new ICompilationUnit[]{unit},MONITOR);
         assertNull(repeated.createFix(new CleanUpContext(unit,parse(unit))),"Reapplying keeps the proven loop intact");
         undo.perform(MONITOR);assertEquals(TAIL_SOURCE,unit.getSource());
@@ -176,7 +177,9 @@ class FunctionalMathCleanUpTest {
         settings.put(MathCleanUpOptions.EXCLUSIONS,"**/Sample.java");String excluded=change(unit,settings).getPreviewContent(MONITOR);
         assertTrue(excluded.contains("return step(n - 1"));assertTrue(excluded.contains("return other(right,n-1"));assertTrue(excluded.contains(".forEach("));
     }
-    @Test void tailAndAuditedValueReuseCoexistInOneNativeTransaction() throws Exception {
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings={"BigInteger.valueOf(101)", "new BigInteger(\"1267650600228229401496703205383\")"})
+    void tailAndAuditedValueReuseCoexistInOneNativeTransaction(String modulus) throws Exception {
         String source="""
             import java.math.BigInteger;
             public final class Sample {
@@ -194,7 +197,7 @@ class FunctionalMathCleanUpTest {
                 public Leaf combine(Leaf other){BigInteger a=amber.multiply(other.amber),b=blue.multiply(other.blue);
                     BigInteger c=amber.multiply(other.blue),d=blue.multiply(other.amber);return new Leaf(a.subtract(b).mod(P),c.add(d).mod(P));}
             }
-            """;
+            """.replace("BigInteger.valueOf(101)",modulus);
         var settings=tailOptions();settings.put(MathCleanUpOptions.KINDS,"INT,LONG,BIG_INTEGER");settings.put(MathCleanUpOptions.GOAL,"LOWER_ESTIMATED_RUNTIME");
         settings.put(MathCleanUpOptions.MATHEMATICAL_OPT_IN,"true");settings.put(MathCleanUpOptions.VALUE_RUNTIME,"AUDITED_OPENJDK_25_0_5_8");
         settings.put(MathCleanUpOptions.WORK_BUDGET,"20000000");settings.put(MathCleanUpOptions.MAX_STATES,"20000");settings.put(MathCleanUpOptions.TIMEOUT_SECONDS,"5");
@@ -203,7 +206,7 @@ class FunctionalMathCleanUpTest {
         assertTrue(preview.contains("audited OpenJDK 25.0.5+8"),preview);assertTrue(preview.contains("frame"),preview);
         assertFalse(preview.contains("$series"),"Mathematical mode retains an ordinary verified tail loop");
         compareRun(source,preview,8,17);assertEquals(source,unit.getSource());
-        var undo=change.perform(MONITOR);parse(unit);undo.perform(MONITOR);assertEquals(source,unit.getSource());
+        var undo=performAndCheck(change, MONITOR, unit);parse(unit);undo.perform(MONITOR);assertEquals(source,unit.getSource());
     }
     private void compareRun(String beforeSource,String afterSource,int... inputs) throws Exception {
         try(var before=compile(beforeSource);var after=compile(afterSource)) {
@@ -219,7 +222,7 @@ class FunctionalMathCleanUpTest {
         assertTrue(preview.contains(".forEach("),preview);
         assertEquals(1,change.getTextEditChangeGroups().length,"The composed proof is one atomic selection");
         change.initializeValidationData(MONITOR);assertFalse(change.isValid(MONITOR).hasFatalError());
-        var undo=change.perform(MONITOR);
+        var undo=performAndCheck(change, MONITOR, unit);
         assertEquals(preview,unit.getSource());parse(unit);assertNotNull(undo);
         undo.perform(MONITOR);assertEquals(SOURCE,unit.getSource());
     }
@@ -228,7 +231,7 @@ class FunctionalMathCleanUpTest {
         var unit=unit(source);var change=change(unit,options());String preview=change.getPreviewContent(MONITOR);
         assertFalse(preview.contains(".map("),preview);assertFalse(preview.contains(".sum()"),preview);
         assertEquals(source,unit.getSource());
-        var undo=change.perform(MONITOR);parse(unit);undo.perform(MONITOR);assertEquals(source,unit.getSource());
+        var undo=performAndCheck(change, MONITOR, unit);parse(unit);undo.perform(MONITOR);assertEquals(source,unit.getSource());
     }
     @Test void freshSumReplayExhaustionRemainsADiagnosticNotAnUnhandledLimit() throws Exception {
         String source="class Sample { int first(){return java.util.stream.IntStream.range(0,100).sum();} int second(){return java.util.stream.IntStream.range(0,200).sum();} }";
@@ -260,7 +263,7 @@ class FunctionalMathCleanUpTest {
         var unit=unit(source);var result=change(unit,options());
         assertTrue(result.getPreviewContent(MONITOR).contains(".forEach("));
         assertEquals(source,unit.getSource());
-        var undo=result.perform(MONITOR);parse(unit);undo.perform(MONITOR);assertEquals(source,unit.getSource());
+        var undo=performAndCheck(result, MONITOR, unit);parse(unit);undo.perform(MONITOR);assertEquals(source,unit.getSource());
     }
     @Test void earlierConvertedScopesKeepLaterMathematicalLocalBindings() throws Exception {
         String source="""
@@ -308,7 +311,7 @@ class FunctionalMathCleanUpTest {
             assertNotNull(change);assertTrue(deferred.isEmpty());assertEquals(1,change.getTextEditChangeGroups().length);
             var group=change.getTextEditChangeGroups()[0];group.setEnabled(false);assertEquals(SOURCE,change.getPreviewContent(MONITOR));group.setEnabled(true);
             String preview=change.getPreviewContent(MONITOR);assertTrue(preview.contains(".forEach("),preview);assertFalse(preview.contains("for(int i="));
-            var undo=change.perform(MONITOR);assertEquals(preview,unit.getSource());undo.perform(MONITOR);assertEquals(SOURCE,unit.getSource());
+            var undo=performAndCheck(change, MONITOR, unit);assertEquals(preview,unit.getSource());undo.perform(MONITOR);assertEquals(SOURCE,unit.getSource());
         }
     }
     private CompilationUnitChange mergedChange(ICompilationUnit unit) throws Exception {
@@ -341,7 +344,7 @@ class FunctionalMathCleanUpTest {
         String preview=aggregate.getPreviewContent(MONITOR);assertTrue(preview.startsWith("// header\n"));assertTrue(preview.contains(".forEach("));
         var detached=new org.eclipse.text.edits.MultiTextEdit();detached.addChildren(aggregate.getEdit().copy().removeChildren());
         var document=new Document(SOURCE);detached.apply(document);assertEquals(preview,document.get());assertEquals(SOURCE,unit.getSource());
-        var undo=aggregate.perform(MONITOR);assertEquals(preview,unit.getSource());undo.perform(MONITOR);assertEquals(SOURCE,unit.getSource());
+        var undo=performAndCheck(aggregate, MONITOR, unit);assertEquals(preview,unit.getSource());undo.perform(MONITOR);assertEquals(SOURCE,unit.getSource());
     }
     @Test void existingTargetsAndSourceFiltersRemainEffective() throws Exception {
         var unit=unit(SOURCE);var settings=options();settings.put("cleanup.loop_conversion.target_format","iterator_while");
@@ -370,7 +373,7 @@ class FunctionalMathCleanUpTest {
         }
         var status=refactoring.checkFinalConditions(MONITOR);assertFalse(status.hasFatalError(),status.toString());
         var change=refactoring.createChange(MONITOR);assertNotNull(change);assertEquals(source,unit.getSource());
-        var undo=change.perform(MONITOR);assertTrue(unit.getSource().contains(".forEach("));parse(unit);
+        var undo=performAndCheck(change, MONITOR, unit);assertTrue(unit.getSource().contains(".forEach("));parse(unit);
         undo.perform(MONITOR);assertEquals(source,unit.getSource());
         assertDoesNotThrow(()->FunctionalMathOptions.validate(settings,MathCleanUpOptions.parse(settings,17),false));
         settings.put(MathCleanUpOptions.CLEANUP,"true");settings.put(MathCleanUpOptions.SAFETY,"GUARDED_FALLBACK");
@@ -451,7 +454,7 @@ class FunctionalMathCleanUpTest {
             String preview=change.getPreviewContent(MONITOR);assertEquals(dirty,unit.getSource());
             var cancelled=new NullProgressMonitor();cancelled.setCanceled(true);
             assertThrows(OperationCanceledException.class,()->change.perform(cancelled));assertEquals(dirty,unit.getSource());
-            var undo=change.perform(MONITOR);assertEquals(preview,unit.getSource());undo.perform(MONITOR);assertEquals(dirty,unit.getSource());
+            var undo=performAndCheck(change, MONITOR, unit);assertEquals(preview,unit.getSource());undo.perform(MONITOR);assertEquals(dirty,unit.getSource());
         } finally {unit.discardWorkingCopy();}
     }
     @Test void listenerBudgetVetoSurvivesJFaceSafeRunner() throws Exception {

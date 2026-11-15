@@ -591,7 +591,7 @@ public class FunctionalLoopFilterMapTest {
 
 			class MyTest {
 				public void processChained(List<Integer> numbers) {
-					numbers.stream().filter(num -> (num != null && num > 0)).map(num -> num * num)
+					numbers.stream().filter(num -> (num != null && num > 0)).mapToInt(num -> num * num)
 							.filter(squared -> (squared < 100)).forEachOrdered(squared -> System.out.println(squared));
 				}
 				}""";
@@ -682,7 +682,7 @@ public class FunctionalLoopFilterMapTest {
 
 			class MyTest {
 				public void processPositiveSquares(List<Integer> numbers) {
-					numbers.stream().filter(num -> !(num <= 0)).map(num -> num * num)
+					numbers.stream().filter(num -> !(num <= 0)).mapToInt(num -> num * num)
 							.forEachOrdered(squared -> System.out.println(squared));
 				}
 				}""";

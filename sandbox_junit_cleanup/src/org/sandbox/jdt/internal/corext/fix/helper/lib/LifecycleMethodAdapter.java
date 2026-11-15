@@ -106,7 +106,17 @@ public final class LifecycleMethodAdapter {
 				if (directExternalResourceSubclass && node.getParent() instanceof ExpressionStatement statement) {
 					// ExternalResource itself disappears from the hierarchy. Its empty
 					// before()/after() implementation therefore has no Jupiter equivalent.
-					rewriter.remove(statement, group);
+					if (statement.getParent() instanceof Block block) {
+						if (rewriter.getListRewrite(block, Block.STATEMENTS_PROPERTY).getRewrittenList().size() == 1) {
+							rewriter.replace(statement, rewriter.createStringPlaceholder(
+									"/* The JUnit 4 superclass callback was empty. */", ASTNode.EMPTY_STATEMENT), group); //$NON-NLS-1$
+						} else {
+							rewriter.remove(statement, group);
+						}
+					} else {
+						rewriter.replace(statement, rewriter.createStringPlaceholder(
+								"{ /* The JUnit 4 superclass callback was empty. */ }", ASTNode.BLOCK), group); //$NON-NLS-1$
+					}
 				} else {
 					// A source superclass is migrated as part of the same closed plan, so
 					// preserve the explicit lifecycle chaining.
@@ -191,6 +201,9 @@ public final class LifecycleMethodAdapter {
 			Block oldBody, TextEditGroup group) {
 		MethodDeclaration method= ast.newMethodDeclaration();
 		method.setName(ast.newSimpleName(methodName));
+		var override= ast.newMarkerAnnotation();
+		override.setTypeName(ast.newSimpleName("Override")); //$NON-NLS-1$
+		method.modifiers().add(override);
 		method.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.PUBLIC_KEYWORD));
 		method.setReturnType2(ast.newPrimitiveType(PrimitiveType.VOID));
 

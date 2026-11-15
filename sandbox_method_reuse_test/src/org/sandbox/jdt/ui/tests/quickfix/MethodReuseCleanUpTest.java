@@ -186,7 +186,7 @@ public class MethodReuseCleanUpTest {
 					extractedSequence(value);
 				}
 
-				private void extractedSequence(String value) {
+				private static void extractedSequence(String value) {
 					String text = value.trim();
 					text = text.toLowerCase();
 					System.out.println(text);
@@ -201,6 +201,46 @@ public class MethodReuseCleanUpTest {
 				}
 			}
 			""" }, null);
+	}
+
+	@Test
+	void extractedSequenceReadingAnInstanceFieldRemainsAnInstanceMethod() throws CoreException {
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
+		String source= """
+				package test1;
+				public class Repeated {
+					private String suffix;
+					public void first(String value) {
+						String text = value.trim();
+						text = text + suffix;
+						System.out.println(text);
+					}
+					public void second(String input) {
+						String text = input.trim();
+						text = text + suffix;
+						System.out.println(text);
+					}
+				}
+				""";
+		ICompilationUnit unit= pack.createCompilationUnit("Repeated.java", source, false, null); //$NON-NLS-1$
+		context.enable(MYCleanUpConstants.METHOD_REUSE_CLEANUP);
+		context.assertRefactoringResultAsExpectedNormalizingWhitespace(new ICompilationUnit[] { unit }, new String[] { """
+				package test1;
+				public class Repeated {
+					private String suffix;
+					public void first(String value) {
+						extractedSequence(value);
+					}
+					private void extractedSequence(String value) {
+						String text = value.trim();
+						text = text + suffix;
+						System.out.println(text);
+					}
+					public void second(String input) {
+						extractedSequence(input);
+					}
+				}
+				""" }, null);
 	}
 
 	@Test
@@ -263,7 +303,7 @@ public class MethodReuseCleanUpTest {
 				MethodReuseCleanUpOptions.MINIMUM_STATEMENTS, "3", //$NON-NLS-1$
 				MYCleanUpConstants.METHOD_REUSE_INLINE_SEQUENCES, CleanUpOptions.FALSE));
 
-		assertTrue(cleanup.getPreview().contains("private void extractedSequence(String value)")); //$NON-NLS-1$
+		assertTrue(cleanup.getPreview().contains("private static void extractedSequence(String value)")); //$NON-NLS-1$
 		assertTrue(cleanup.getPreview().contains("extractedSequence(input);")); //$NON-NLS-1$
 	}
 }

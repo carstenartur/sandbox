@@ -54,7 +54,11 @@ final class LosslessParameterBridgeFix {
 				var original= (SingleVariableDeclaration) method.parameters().getFirst();
 				String arg= original.getName().getIdentifier();
 				var asList= ast.newMethodInvocation();
-				asList.setExpression(ast.newName(imports.addImport("java.util.Arrays", context))); //$NON-NLS-1$
+				String arraysName= imports.addImport("java.util.Arrays", context); //$NON-NLS-1$
+				if ("Arrays".equals(arraysName)) { //$NON-NLS-1$
+					cu.getImportRemover().registerAddedImport(arraysName);
+				}
+				asList.setExpression(ast.newName(arraysName));
 				asList.setName(ast.newSimpleName("asList")); //$NON-NLS-1$
 				asList.arguments().add(ast.newSimpleName(arg));
 				var isNull= ast.newInfixExpression();
