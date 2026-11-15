@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.core.cleanupapp;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.jar.Manifest;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -91,7 +93,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 	}
 
 	private record Arguments(String projectName, Path projectLocation, Path configuration,
-			Path report, Path patch, Mode mode) {
+			Path report, Path patch, Mode mode, List<String> pdeDeployments) {
 	}
 
 	private record SourceSnapshot(ICompilationUnit unit, IFile file, Path path, String relativePath,
@@ -137,7 +139,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 						+ arguments.projectName());
 			}
 			sources= snapshots(javaProject);
-			resources= resourceSnapshots(project);
+			resources= resourceSnapshots(project, arguments.pdeDeployments());
 			if (sources.isEmpty()) {
 				throw new IllegalArgumentException("Java project contains no source compilation units: " //$NON-NLS-1$
 						+ arguments.projectName());
@@ -230,6 +232,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 		Path report= null;
 		Path patch= null;
 		Mode mode= Mode.CHECK;
+		List<String> pdeDeployments= new ArrayList<>();
 		for (int index= 0; index < values.length; index++) {
 			String value= values[index];
 			switch (value) {
@@ -239,6 +242,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 			case "--project" -> project= requiredValue(values, ++index, value); //$NON-NLS-1$
 			case "--project-location" -> projectLocation= Path.of(requiredValue(values, ++index, value)); //$NON-NLS-1$
 			case "--config", "-config" -> configuration= Path.of(requiredValue(values, ++index, value)); //$NON-NLS-1$ //$NON-NLS-2$
+			case "--pde-deployment" -> pdeDeployments.add(requiredValue(values, ++index, value)); //$NON-NLS-1$
 			case "--report" -> report= Path.of(requiredValue(values, ++index, value)); //$NON-NLS-1$
 			case "--patch" -> patch= Path.of(requiredValue(values, ++index, value)); //$NON-NLS-1$
 			case "--mode" -> { //$NON-NLS-1$
@@ -268,7 +272,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 		return new Arguments(project,
 				projectLocation == null ? null : projectLocation.toAbsolutePath().normalize(),
 				configuration.toAbsolutePath().normalize(), report.toAbsolutePath().normalize(),
-				patch == null ? null : patch.toAbsolutePath().normalize(), mode);
+				patch == null ? null : patch.toAbsolutePath().normalize(), mode, List.copyOf(pdeDeployments));
 	}
 
 	private static String requiredValue(String[] values, int index, String option) {
@@ -358,22 +362,51 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 	}
 
 
-	private static List<ResourceSnapshot> resourceSnapshots(IProject project) throws IOException {
-		// Tycho bundle dependencies are supplied by PDE. Standalone Maven projects
-		// instead use the module's own POM.
+	private static List<ResourceSnapshot> resourceSnapshots(IProject project, List<String> selected) throws IOException {
+		List<IFile> files= new ArrayList<>();
 		IFile descriptor= project.getFile(PDE_MANIFEST);
-		if (!descriptor.exists()) {
+		if (descriptor.exists()) {
+			files.add(descriptor);
+			IFile build= project.getFile("build.properties"); //$NON-NLS-1$
+			if (build.exists()) {
+				files.add(build);
+			}
+			IWorkspaceRoot root= project.getWorkspace().getRoot();
+			for (String path : selected) {
+				if (!path.startsWith("/") || !(root.findMember(path) instanceof IFile file) //$NON-NLS-1$
+						|| !("feature.xml".equals(file.getName()) || "target".equals(file.getFileExtension()))) { //$NON-NLS-1$ //$NON-NLS-2$
+					throw new IOException("Expected a workspace feature.xml or .target file: " + path); //$NON-NLS-1$
+				}
+				if (!files.contains(file)) {
+					files.add(file);
+				}
+			}
+		} else {
+			if (!selected.isEmpty()) {
+				throw new IOException("PDE deployment descriptors require a bundle manifest"); //$NON-NLS-1$
+			}
 			descriptor= project.getFile(MAVEN_POM);
+			if (descriptor.exists()) {
+				files.add(descriptor);
+			}
 		}
-		if (!descriptor.exists()) {
-			return List.of();
+		List<ResourceSnapshot> snapshots= new ArrayList<>();
+		for (IFile file : files) {
+			if (file.isLinked(IResource.CHECK_ANCESTORS) || file.getLocation() == null) {
+				throw new IOException("Cannot snapshot a linked descriptor: " + file.getFullPath()); //$NON-NLS-1$
+			}
+			Path path= file.getLocation().toFile().toPath().toAbsolutePath().normalize();
+			if (!path.toRealPath().equals(path)) {
+				throw new IOException("Cannot snapshot a symbolic descriptor path: " + path); //$NON-NLS-1$
+			}
+			if (!project.equals(file.getProject()) && !project.getLocation().removeLastSegments(1)
+					.equals(file.getProject().getLocation().removeLastSegments(1))) {
+				throw new IOException("External deployment project must be a physical sibling: " + path); //$NON-NLS-1$
+			}
+			snapshots.add(new ResourceSnapshot(file, path, file.getProjectRelativePath().toPortableString(),
+					Files.readAllBytes(path)));
 		}
-		if (descriptor.getLocation() == null) {
-			return List.of();
-		}
-		Path path= descriptor.getLocation().toFile().toPath().toAbsolutePath().normalize();
-		return List.of(new ResourceSnapshot(descriptor, path,
-				descriptor.getProjectRelativePath().toPortableString(), Files.readAllBytes(path)));
+		return List.copyOf(snapshots);
 	}
 
 	private static void updateProjectMetadata(List<SourceSnapshot> sources, List<ResourceSnapshot> resources,
@@ -416,15 +449,50 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 				updated= PdeManifestImportUpdater.addImport(updated, PlatformSuiteDependencies.API_PACKAGE);
 			} else {
 				String pom= StandardCharsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(updated)).toString();
-				updated= PlatformSuiteDependencies.addToPom(pom).getBytes(StandardCharsets.UTF_8);
+				String withSuite= PlatformSuiteDependencies.addToPom(pom);
+				Map<Path, VintageDeploymentPlan.SourceTransition> participants= new LinkedHashMap<>();
+				for (SourceSnapshot source : sources) {
+					Charset encoding= Charset.forName(source.file().getCharset());
+					participants.put(source.path(), new VintageDeploymentPlan.SourceTransition(
+							new String(source.before(), encoding), Files.readString(source.path(), encoding)));
+				}
+				String deployment= VintageDeploymentPlan.afterSuiteMigration(withSuite, descriptor.file(), participants);
+				updated= deployment.getBytes(StandardCharsets.UTF_8);
 			}
 		}
-		if (!Arrays.equals(descriptor.before(), Files.readAllBytes(descriptor.path()))) {
-			throw new IOException("Project descriptor changed during cleanup: " + descriptor.relativePath()); //$NON-NLS-1$
+		Map<ResourceSnapshot, byte[]> proposed= new LinkedHashMap<>();
+		proposed.put(descriptor, updated);
+		if (pde && suiteIntroduced && resources.size() > 1) {
+			String bundle= new Manifest(new ByteArrayInputStream(descriptor.before()))
+					.getMainAttributes().getValue("Bundle-SymbolicName"); //$NON-NLS-1$
+			for (ResourceSnapshot resource : resources.subList(1, resources.size())) {
+				boolean build= "build.properties".equals(resource.relativePath()); //$NON-NLS-1$
+				Charset charset= build ? StandardCharsets.ISO_8859_1 : Charset.forName(resource.file().getCharset());
+				String source= charset.newDecoder().decode(java.nio.ByteBuffer.wrap(resource.before())).toString();
+				String result;
+				if (build) {
+					result= PdeSuiteDeployment.buildProperties(source);
+				} else {
+					if (bundle == null) {
+						throw new IOException("Deployment planning requires Bundle-SymbolicName"); //$NON-NLS-1$
+					}
+					result= PdeSuiteDeployment.xml(source, "feature.xml".equals(resource.file().getName()), //$NON-NLS-1$
+							bundle.split(";", 2)[0].strip()); //$NON-NLS-1$
+				}
+				if (!source.equals(result)) {
+					proposed.put(resource, result.getBytes(charset));
+				}
+			}
 		}
-		if (!Arrays.equals(updated, descriptor.before())) {
-			written.add(descriptor);
-			Files.write(descriptor.path(), updated);
+		for (var entry : proposed.entrySet()) {
+			ResourceSnapshot resource= entry.getKey();
+			if (!Arrays.equals(resource.before(), Files.readAllBytes(resource.path()))) {
+				throw new IOException("Project descriptor changed during cleanup: " + resource.file().getFullPath()); //$NON-NLS-1$
+			}
+			if (!Arrays.equals(entry.getValue(), resource.before())) {
+				written.add(resource);
+				Files.write(resource.path(), entry.getValue());
+			}
 		}
 	}
 
@@ -445,20 +513,27 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 	private static List<ChangedFile> changedFiles(List<SourceSnapshot> sources,
 			List<ResourceSnapshot> resources) throws IOException {
 		List<ChangedFile> result= new ArrayList<>();
+		IProject project= sources.getFirst().file().getProject();
+		boolean mixed= resources.stream().anyMatch(r -> !project.equals(r.file().getProject()));
+		Path parent= project.getLocation().toFile().toPath().getParent();
 		for (SourceSnapshot source : sources) {
 			byte[] after= Files.readAllBytes(source.path());
 			if (!Arrays.equals(source.before(), after)) {
-				result.add(new ChangedFile(source.relativePath(), source.before(), after));
+				result.add(new ChangedFile(mixed ? patchPath(parent, source.path()) : source.relativePath(), source.before(), after));
 			}
 		}
 		for (ResourceSnapshot resource : resources) {
 			byte[] after= Files.readAllBytes(resource.path());
 			if (!Arrays.equals(resource.before(), after)) {
-				result.add(new ChangedFile(resource.relativePath(), resource.before(), after));
+				result.add(new ChangedFile(mixed ? patchPath(parent, resource.path()) : resource.relativePath(), resource.before(), after));
 			}
 		}
 		result.sort(Comparator.comparing(ChangedFile::relativePath));
 		return List.copyOf(result);
+	}
+
+	private static String patchPath(Path root, Path file) {
+		return root.relativize(file).toString().replace(java.io.File.separatorChar, '/');
 	}
 
 	private static void restore(List<SourceSnapshot> sources, List<ResourceSnapshot> resources,
@@ -640,6 +715,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 				  --config <cleanup.properties>
 				  --report <result.json>
 				  [--patch <changes.patch>]
+				  [--pde-deployment </workspace-project/feature.xml or .target>] (repeatable)
 				  [--mode check|apply]
 				"""); //$NON-NLS-1$
 	}

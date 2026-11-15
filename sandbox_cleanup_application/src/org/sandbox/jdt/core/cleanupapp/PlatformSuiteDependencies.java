@@ -144,13 +144,13 @@ final class PlatformSuiteDependencies {
 		throw unsupported("could not locate the direct dependencies closing tag on its own line"); //$NON-NLS-1$
 	}
 
-	private static boolean supportedBom(Element dependency) {
+	static boolean supportedBom(Element dependency) {
 		return coordinate(dependency, "org.junit", "junit-bom") && "pom".equals(value(dependency, "type")) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 				&& "import".equals(value(dependency, "scope")) && child(dependency, "exclusions") == null //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				&& value(dependency, "version").matches("(?:5\\.(?:[89]|[1-9][0-9]+)|6\\.[0-9]+)\\.[0-9]+"); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
-	private static Element parse(String source) throws IOException {
+	static Element parse(String source) throws IOException {
 		try {
 			DocumentBuilderFactory factory= DocumentBuilderFactory.newDefaultNSInstance();
 			factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true); //$NON-NLS-1$
@@ -160,11 +160,11 @@ final class PlatformSuiteDependencies {
 			builder.setErrorHandler(new DefaultHandler());
 			return builder.parse(new InputSource(new StringReader(source))).getDocumentElement();
 		} catch (ParserConfigurationException | SAXException e) {
-			throw new IOException("Cannot read the project's Maven dependency model", e); //$NON-NLS-1$
+			throw new IOException("Cannot read the project dependency descriptor", e); //$NON-NLS-1$
 		}
 	}
 
-	private static List<Element> children(Element parent, String name) {
+	static List<Element> children(Element parent, String name) {
 		List<Element> result= new ArrayList<>();
 		for (Node node= parent.getFirstChild(); node != null; node= node.getNextSibling()) {
 			if (node instanceof Element element && MAVEN_NAMESPACE.equals(element.getNamespaceURI())
@@ -175,7 +175,7 @@ final class PlatformSuiteDependencies {
 		return result;
 	}
 
-	private static Element child(Element parent, String name) {
+	static Element child(Element parent, String name) {
 		List<Element> found= children(parent, name);
 		if (found.size() > 1) {
 			throw new IllegalArgumentException("Ambiguous Maven element: " + name); //$NON-NLS-1$
@@ -183,12 +183,12 @@ final class PlatformSuiteDependencies {
 		return found.isEmpty() ? null : found.getFirst();
 	}
 
-	private static String value(Element parent, String name) {
+	static String value(Element parent, String name) {
 		Element element= child(parent, name);
 		return element == null ? "" : element.getTextContent().strip(); //$NON-NLS-1$
 	}
 
-	private static boolean coordinate(Element dependency, String group, String artifact) {
+	static boolean coordinate(Element dependency, String group, String artifact) {
 		return group.equals(value(dependency, "groupId")) && artifact.equals(value(dependency, "artifactId")); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
