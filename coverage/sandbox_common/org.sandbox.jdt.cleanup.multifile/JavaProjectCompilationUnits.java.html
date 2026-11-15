@@ -167,16 +167,16 @@ public final class JavaProjectCompilationUnits {
 <span class="pc bpc" id="L167" title="2 of 4 branches missed.">			if (current == null || !current.isAccessible()) {</span>
 <span class="nc" id="L168">				continue;</span>
 			}
-<span class="pc bpc" id="L170" title="1 of 2 branches missed.">			for (IProject referencing : current.getReferencingProjects()) {</span>
-<span class="nc bnc" id="L171" title="All 4 branches missed.">				if (referencing == null || !referencing.isAccessible()) {</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">			for (IProject referencing : current.getReferencingProjects()) {</span>
+<span class="pc bpc" id="L171" title="2 of 4 branches missed.">				if (referencing == null || !referencing.isAccessible()) {</span>
 <span class="nc" id="L172">					continue;</span>
 				}
-<span class="nc" id="L174">				IJavaProject javaProject= JavaCore.create(referencing);</span>
-<span class="nc bnc" id="L175" title="All 4 branches missed.">				if (javaProject == null || !javaProject.exists()</span>
-<span class="nc bnc" id="L176" title="All 2 branches missed.">						|| result.putIfAbsent(javaProject.getHandleIdentifier(), javaProject) != null) {</span>
-<span class="nc" id="L177">					continue;</span>
+<span class="fc" id="L174">				IJavaProject javaProject= JavaCore.create(referencing);</span>
+<span class="pc bpc" id="L175" title="2 of 4 branches missed.">				if (javaProject == null || !javaProject.exists()</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">						|| result.putIfAbsent(javaProject.getHandleIdentifier(), javaProject) != null) {</span>
+<span class="fc" id="L177">					continue;</span>
 				}
-<span class="nc" id="L179">				pending.add(referencing);</span>
+<span class="fc" id="L179">				pending.add(referencing);</span>
 			}
 		}
 <span class="fc" id="L182">		return List.copyOf(result.values());</span>

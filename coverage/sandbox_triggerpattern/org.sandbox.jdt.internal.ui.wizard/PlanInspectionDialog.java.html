@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>PlanInspectionDialog.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_triggerpattern</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.wizard</a> &gt; <span class="el_source">PlanInspectionDialog.java</span></div><h1>PlanInspectionDialog.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.wizard;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.Comparator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jface.dialogs.Dialog;
+import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.dialogs.ProgressMonitorDialog;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.dnd.Clipboard;
+import org.eclipse.swt.dnd.TextTransfer;
+import org.eclipse.swt.dnd.Transfer;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Tree;
+import org.eclipse.swt.widgets.TreeItem;
+import org.sandbox.jdt.triggerpattern.api.HintPlanRequirement;
+import org.sandbox.jdt.triggerpattern.eclipse.ProjectPlanInspector;
+import org.sandbox.jdt.triggerpattern.eclipse.ProjectPlanInspector.Report;
+
+/** Browses the source planner's evidence; only the coordinated cleanup may execute it. */
+final class PlanInspectionDialog extends Dialog {
+	private final String contract;
+	private final Report report;
+
+	PlanInspectionDialog(Shell shell, String contract, Report report) {
+<span class="fc" id="L46">		super(shell);</span>
+<span class="fc" id="L47">		setShellStyle(getShellStyle() | SWT.RESIZE);</span>
+<span class="fc" id="L48">		this.contract= contract;</span>
+<span class="fc" id="L49">		this.report= report;</span>
+<span class="fc" id="L50">	}</span>
+
+	static void open(Shell shell, String dsl, IJavaProject project) {
+<span class="nc" id="L53">		String title= &quot;Browse semantic plan&quot;; //$NON-NLS-1$</span>
+		Optional&lt;String&gt; requirement;
+		try {
+<span class="nc" id="L56">			requirement= HintPlanRequirement.fromContent(dsl);</span>
+<span class="nc" id="L57">		} catch (IllegalArgumentException e) {</span>
+<span class="nc" id="L58">			MessageDialog.openError(shell, title, e.getMessage());</span>
+<span class="nc" id="L59">			return;</span>
+		}
+<span class="nc bnc" id="L61" title="All 4 branches missed.">		if (requirement.isEmpty() || project == null) {</span>
+<span class="nc" id="L62">			MessageDialog.openInformation(shell, title,</span>
+<span class="nc" id="L63">					&quot;Select a destination Java project and declare &lt;!requires-plan: contract-id&gt; in the rule.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L64">			return;</span>
+		}
+<span class="nc" id="L66">		String contract= requirement.get();</span>
+<span class="nc" id="L67">		var result= new AtomicReference&lt;Report&gt;();</span>
+		try {
+<span class="nc" id="L69">			new ProgressMonitorDialog(shell).run(true, true, monitor -&gt; {</span>
+				try {
+<span class="nc" id="L71">					result.set(ProjectPlanInspector.inspect(contract, project, monitor));</span>
+<span class="nc" id="L72">				} catch (OperationCanceledException e) {</span>
+<span class="nc" id="L73">					throw new InterruptedException();</span>
+<span class="nc" id="L74">				} catch (CoreException e) {</span>
+<span class="nc" id="L75">					result.set(new Report(List.of(), List.of(e.getStatus().getMessage())));</span>
+				}
+<span class="nc" id="L77">			});</span>
+<span class="nc" id="L78">			new PlanInspectionDialog(shell, contract, result.get()).open();</span>
+<span class="nc" id="L79">		} catch (InterruptedException e) {</span>
+			// Cancellation does not open an incomplete plan.
+<span class="nc" id="L81">		} catch (InvocationTargetException e) {</span>
+<span class="nc" id="L82">			MessageDialog.openError(shell, title, String.valueOf(e.getCause()));</span>
+		}
+<span class="nc" id="L84">	}</span>
+
+	@Override
+	protected void configureShell(Shell shell) {
+<span class="fc" id="L88">		super.configureShell(shell);</span>
+<span class="fc" id="L89">		shell.setText(&quot;Semantic plan — &quot; + contract); //$NON-NLS-1$</span>
+<span class="fc" id="L90">	}</span>
+
+	@Override
+	protected Control createDialogArea(Composite parent) {
+<span class="fc" id="L94">		Composite area= (Composite) super.createDialogArea(parent);</span>
+<span class="fc" id="L95">		Tree tree= new Tree(area, SWT.BORDER | SWT.V_SCROLL | SWT.H_SCROLL);</span>
+<span class="fc" id="L96">		GridData size= new GridData(SWT.FILL, SWT.FILL, true, true);</span>
+<span class="fc" id="L97">		size.widthHint= 760;</span>
+<span class="fc" id="L98">		size.heightHint= 380;</span>
+<span class="fc" id="L99">		tree.setLayoutData(size);</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">		for (var component : report.components()) {</span>
+<span class="fc" id="L101">			var root= new TreeItem(tree, SWT.NONE);</span>
+<span class="fc" id="L102">			root.setText(component.label());</span>
+<span class="fc" id="L103">			var plan= component.plan();</span>
+<span class="fc" id="L104">			var keys= new LinkedHashSet&lt;&gt;(plan.rolesByNode().keySet());</span>
+<span class="fc" id="L105">			keys.addAll(plan.valuesByNode().keySet());</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">			for (var key : keys.stream().sorted(Comparator.comparing(Object::toString)).toList()) {</span>
+<span class="fc" id="L107">				var node= item(root, key.toString());</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">				for (String role : new TreeSet&lt;&gt;(plan.rolesByNode().getOrDefault(key, Set.of()))) {</span>
+<span class="fc" id="L109">					item(node, role);</span>
+				}
+<span class="fc" id="L111">				new TreeMap&lt;&gt;(plan.valuesByNode().getOrDefault(key, Map.of()))</span>
+<span class="fc" id="L112">						.forEach((name, value) -&gt; item(node, name + &quot; = &quot; + value)); //$NON-NLS-1$</span>
+			}
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">			for (var relation : plan.relations()) {</span>
+<span class="nc" id="L115">				var row= item(root, relation.kind() + &quot;  &quot; + relation.source() + &quot; → &quot; + relation.target()); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L116">				new TreeMap&lt;&gt;(relation.attributes()).forEach((name, value) -&gt; item(row, name + &quot; = &quot; + value)); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L118">			root.setExpanded(true);</span>
+		}
+<span class="fc bfc" id="L120" title="All 2 branches covered.">		for (String diagnostic : report.diagnostics()) {</span>
+<span class="fc" id="L121">			new TreeItem(tree, SWT.NONE).setText(diagnostic);</span>
+		}
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">		if (tree.getItemCount() == 0) {</span>
+<span class="nc" id="L124">			new TreeItem(tree, SWT.NONE).setText(&quot;No eligible component in the selected project.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L126">		return area;</span>
+	}
+
+	private static TreeItem item(TreeItem parent, String text) {
+<span class="fc" id="L130">		TreeItem child= new TreeItem(parent, SWT.NONE);</span>
+<span class="fc" id="L131">		child.setText(text);</span>
+<span class="fc" id="L132">		return child;</span>
+	}
+
+	@Override
+	protected void createButtonsForButtonBar(Composite parent) {
+<span class="fc" id="L137">		createButton(parent, IDialogConstants.CLIENT_ID, &quot;Copy planner scaffold&quot;, false); //$NON-NLS-1$</span>
+<span class="fc" id="L138">		createButton(parent, IDialogConstants.OK_ID, IDialogConstants.CLOSE_LABEL, true);</span>
+<span class="fc" id="L139">	}</span>
+
+	@Override
+	protected void buttonPressed(int id) {
+<span class="nc bnc" id="L143" title="All 2 branches missed.">		if (id == IDialogConstants.CLIENT_ID) {</span>
+<span class="nc" id="L144">			Clipboard clipboard= new Clipboard(getShell().getDisplay());</span>
+			try {
+<span class="nc" id="L146">				clipboard.setContents(new Object[] { scaffold(contract) }, new Transfer[] { TextTransfer.getInstance() });</span>
+<span class="nc" id="L147">			} finally {</span>
+<span class="nc" id="L148">				clipboard.dispose();</span>
+			}
+<span class="nc" id="L150">			return;</span>
+		}
+<span class="nc" id="L152">		super.buttonPressed(id);</span>
+<span class="nc" id="L153">	}</span>
+
+	static String scaffold(String contract) {
+<span class="fc" id="L156">		var literal= AST.newAST(AST.getJLSLatest(), false).newStringLiteral();</span>
+<span class="fc" id="L157">		literal.setLiteralValue(contract);</span>
+<span class="fc" id="L158">		return &quot;&quot;&quot;</span>
+				import java.util.List;
+				import org.eclipse.core.runtime.CoreException;
+				import org.eclipse.core.runtime.IProgressMonitor;
+				import org.eclipse.jdt.core.IJavaProject;
+				import org.sandbox.jdt.triggerpattern.eclipse.ProjectPlanInspector;
+
+				public final class ProjectInspector implements ProjectPlanInspector {
+				    public static final String CONTRACT = CONTRACT_LITERAL;
+
+				    @Override
+				    public Report discover(String contract, IJavaProject project, IProgressMonitor monitor) throws CoreException {
+				        // Discover closed source components, then return their immutable semantic plans.
+				        // Register this class at sandbox_common.planInspectors with this exact contract.
+				        return new Report(List.of(), List.of(&quot;PLAN_NOT_IMPLEMENTED: Complete discovery for &quot; + CONTRACT));
+				    }
+				}
+<span class="fc" id="L175">				&quot;&quot;&quot;.replace(&quot;CONTRACT_LITERAL&quot;, literal.getEscapedValue()); //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

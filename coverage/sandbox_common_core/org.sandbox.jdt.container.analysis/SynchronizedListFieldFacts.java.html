@@ -72,7 +72,7 @@ final class SynchronizedListFieldFacts {
 
 	static boolean isType(ITypeBinding type, String qualifiedName) {
 <span class="pc bpc" id="L74" title="1 of 6 branches missed.">		return type != null &amp;&amp; !type.isRecovered() &amp;&amp; !type.isFromSource()</span>
-<span class="pc bpc" id="L75" title="1 of 2 branches missed.">				&amp;&amp; qualifiedName.equals(type.getErasure().getQualifiedName());</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">				&amp;&amp; qualifiedName.equals(type.getErasure().getQualifiedName());</span>
 	}
 
 	static IVariableBinding currentInstanceField(Expression expression) {

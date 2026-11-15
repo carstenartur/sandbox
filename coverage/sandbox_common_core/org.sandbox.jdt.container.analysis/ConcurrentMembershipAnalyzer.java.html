@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ConcurrentMembershipAnalyzer.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.analysis</a> &gt; <span class="el_source">ConcurrentMembershipAnalyzer.java</span></div><h1>ConcurrentMembershipAnalyzer.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.analysis;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.eclipse.jdt.core.compiler.IProblem;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.FieldAccess;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.ReturnStatement;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+
+/** Binding proof for the individual add, remove and contains operations on a private JDK set. */
+public final class ConcurrentMembershipAnalyzer {
+	private ConcurrentMembershipAnalyzer() {
+	}
+
+<span class="fc" id="L44">	public record Use(String operation, int offset) {}</span>
+	public record Field(String key, int initializerOffset, List&lt;Use&gt; uses, String rejection) {
+<span class="fc" id="L46">		public Field {</span>
+<span class="fc" id="L47">			uses= List.copyOf(uses);</span>
+<span class="fc" id="L48">		}</span>
+	}
+
+<span class="fc" id="L51">	private static final Set&lt;String&gt; OPERATIONS= Set.of(&quot;add&quot;, &quot;remove&quot;, &quot;contains&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+
+	public static Map&lt;String, Field&gt; analyze(CompilationUnit unit) {
+<span class="fc" id="L54">		Map&lt;String, VariableDeclarationFragment&gt; seeds= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L55">		unit.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(VariableDeclarationFragment fragment) {
+<span class="fc bfc" id="L58" title="All 2 branches covered.">				if (isSeed(fragment)) {</span>
+<span class="fc" id="L59">					seeds.put(fragment.resolveBinding().getVariableDeclaration().getKey(), fragment);</span>
+				}
+<span class="fc" id="L61">				return true;</span>
+			}
+		});
+<span class="fc" id="L64">		Map&lt;String, Field&gt; results= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">		for (var entry : seeds.entrySet()) {</span>
+<span class="fc" id="L66">			var uses= new ArrayList&lt;Use&gt;();</span>
+<span class="fc" id="L67">			String[] rejection= { &quot;&quot; }; //$NON-NLS-1$</span>
+<span class="fc" id="L68">			var seed= entry.getValue();</span>
+<span class="fc" id="L69">			ITypeBinding owner= seed.resolveBinding().getDeclaringClass();</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">			if (!(seed.getParent().getParent() instanceof TypeDeclaration type)</span>
+<span class="pc bpc" id="L71" title="2 of 4 branches missed.">					|| !type.isPackageMemberTypeDeclaration() || !Modifier.isFinal(owner.getModifiers())</span>
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">					|| java.util.Arrays.stream(type.getMethods()).anyMatch(method -&gt; Modifier.isNative(method.getModifiers()))</span>
+<span class="pc bpc" id="L73" title="3 of 6 branches missed.">					|| owner.getAnnotations().length != 0 || owner.getInterfaces().length != 0 || !binaryType(owner.getSuperclass(), &quot;java.lang.Object&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L74">				rejection[0]= &quot;The owner must be a final top-level class without serialization or inherited protocols.&quot;; //$NON-NLS-1$</span>
+			}
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">			for (IProblem problem : unit.getProblems()) {</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">				if (problem.isError()) {</span>
+<span class="nc" id="L78">					rejection[0]= &quot;Resolve the compilation errors before analyzing all field references.&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L79">					break;</span>
+				}
+			}
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">			if (rejection[0].isEmpty()) {</span>
+<span class="fc" id="L83">				unit.accept(new ASTVisitor() {</span>
+					@Override
+					public boolean visit(SimpleName name) {
+<span class="fc bfc" id="L86" title="All 4 branches covered.">						if (!name.isDeclaration() &amp;&amp; name.resolveBinding() instanceof IVariableBinding binding</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">								&amp;&amp; entry.getKey().equals(binding.getVariableDeclaration().getKey())) {</span>
+<span class="fc" id="L88">							MethodInvocation operation= membershipOperation(name);</span>
+<span class="pc bpc" id="L89" title="1 of 4 branches missed.">							if (operation == null || !individualOperation(operation, owner)) {</span>
+<span class="fc" id="L90">								rejection[0]= &quot;A field access escapes, observes iteration or locking, participates in a compound operation, or lacks a non-null String key.&quot;; //$NON-NLS-1$</span>
+							} else {
+<span class="fc" id="L92">								uses.add(new Use(operation.getName().getIdentifier(), name.getStartPosition()));</span>
+							}
+						}
+<span class="fc" id="L95">						return true;</span>
+					}
+				});
+			}
+<span class="pc bpc" id="L99" title="1 of 4 branches missed.">			if (rejection[0].isEmpty() &amp;&amp; uses.stream().noneMatch(use -&gt; &quot;add&quot;.equals(use.operation()))) { //$NON-NLS-1$</span>
+<span class="nc" id="L100">				rejection[0]= &quot;No atomic membership insertion was found.&quot;; //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L102">			results.put(entry.getKey(), new Field(entry.getKey(), seed.getInitializer().getStartPosition(), uses, rejection[0]));</span>
+<span class="fc" id="L103">		}</span>
+<span class="fc" id="L104">		return results;</span>
+	}
+
+	private static boolean isSeed(VariableDeclarationFragment field) {
+<span class="fc" id="L108">		IVariableBinding binding= field.resolveBinding();</span>
+<span class="pc bpc" id="L109" title="3 of 8 branches missed.">		if (binding == null || binding.isRecovered() || !binding.isField() || binding.getKey() == null</span>
+<span class="pc bpc" id="L110" title="2 of 4 branches missed.">				|| !Modifier.isPrivate(binding.getModifiers()) || !Modifier.isFinal(binding.getModifiers())</span>
+<span class="pc bpc" id="L111" title="1 of 4 branches missed.">				|| Modifier.isStatic(binding.getModifiers()) || !binaryType(binding.getType(), &quot;java.util.Set&quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L112" title="2 of 4 branches missed.">				|| binding.getAnnotations().length != 0 || binding.getType().getTypeArguments().length != 1</span>
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">				|| !binaryType(binding.getType().getTypeArguments()[0], &quot;java.lang.String&quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">				|| !(field.getInitializer() instanceof MethodInvocation factory)</span>
+<span class="pc bpc" id="L115" title="2 of 4 branches missed.">				|| !jdkMethod(factory, &quot;java.util.Collections&quot;, &quot;synchronizedSet&quot;) || factory.arguments().size() != 1 //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">				|| !(factory.arguments().getFirst() instanceof ClassInstanceCreation fresh)</span>
+<span class="pc bpc" id="L117" title="2 of 4 branches missed.">				|| !fresh.arguments().isEmpty() || fresh.getAnonymousClassDeclaration() != null) {</span>
+<span class="fc" id="L118">			return false;</span>
+		}
+<span class="fc" id="L120">		var constructor= fresh.resolveConstructorBinding();</span>
+<span class="pc bpc" id="L121" title="2 of 6 branches missed.">		return constructor != null &amp;&amp; !constructor.isRecovered() &amp;&amp; binaryType(fresh.resolveTypeBinding(), &quot;java.util.HashSet&quot;); //$NON-NLS-1$</span>
+	}
+
+	private static MethodInvocation membershipOperation(SimpleName fieldName) {
+<span class="fc" id="L125">		Expression receiver= fieldName;</span>
+<span class="pc bpc" id="L126" title="3 of 4 branches missed.">		if (fieldName.getParent() instanceof FieldAccess access &amp;&amp; access.getName() == fieldName) {</span>
+<span class="nc" id="L127">			receiver= access;</span>
+		}
+<span class="pc bpc" id="L129" title="2 of 4 branches missed.">		if (!(receiver.getParent() instanceof MethodInvocation operation) || operation.getExpression() != receiver</span>
+<span class="pc bpc" id="L130" title="2 of 4 branches missed.">				|| !OPERATIONS.contains(operation.getName().getIdentifier()) || operation.arguments().size() != 1</span>
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">				|| !jdkMethod(operation, &quot;java.util.Set&quot;, operation.getName().getIdentifier())) { //$NON-NLS-1$</span>
+<span class="nc" id="L132">			return null;</span>
+		}
+<span class="fc" id="L134">		Expression key= (Expression) operation.arguments().getFirst();</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">		if (!binaryType(key.resolveTypeBinding(), &quot;java.lang.String&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L136">			return null;</span>
+		}
+<span class="pc bpc" id="L138" title="1 of 4 branches missed.">		if (key instanceof StringLiteral || key instanceof MethodInvocation guard</span>
+<span class="pc bpc" id="L139" title="2 of 4 branches missed.">				&amp;&amp; guard.arguments().size() == 1 &amp;&amp; jdkMethod(guard, &quot;java.util.Objects&quot;, &quot;requireNonNull&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L140">			return operation;</span>
+		}
+<span class="nc" id="L142">		return null;</span>
+	}
+
+	private static boolean individualOperation(MethodInvocation operation, ITypeBinding owner) {
+<span class="fc" id="L146">		var site= operation.getParent();</span>
+<span class="pc bpc" id="L147" title="1 of 4 branches missed.">		if (!(site instanceof ReturnStatement || site instanceof ExpressionStatement)</span>
+<span class="pc bpc" id="L148" title="1 of 4 branches missed.">				|| !(site.getParent() instanceof Block body) || body.statements().size() != 1</span>
+<span class="pc bpc" id="L149" title="2 of 4 branches missed.">				|| !(body.getParent() instanceof MethodDeclaration method) || method.resolveBinding() == null) {</span>
+<span class="fc" id="L150">			return false;</span>
+		}
+<span class="pc bpc" id="L152" title="2 of 4 branches missed.">		return !Modifier.isSynchronized(method.getModifiers()) &amp;&amp; owner.isEqualTo(method.resolveBinding().getDeclaringClass());</span>
+	}
+
+	private static boolean jdkMethod(MethodInvocation call, String owner, String name) {
+<span class="fc" id="L156">		IMethodBinding binding= call.resolveMethodBinding();</span>
+<span class="pc bpc" id="L157" title="3 of 6 branches missed.">		return binding != null &amp;&amp; !binding.isRecovered() &amp;&amp; name.equals(binding.getName())</span>
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">				&amp;&amp; binaryType(binding.getMethodDeclaration().getDeclaringClass(), owner);</span>
+	}
+
+	private static boolean binaryType(ITypeBinding type, String name) {
+<span class="pc bpc" id="L162" title="3 of 6 branches missed.">		return type != null &amp;&amp; !type.isRecovered() &amp;&amp; !type.isFromSource()</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">				&amp;&amp; name.equals(type.getErasure().getQualifiedName());</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
