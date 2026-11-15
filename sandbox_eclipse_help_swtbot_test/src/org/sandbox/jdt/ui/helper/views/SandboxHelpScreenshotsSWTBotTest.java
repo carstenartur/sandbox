@@ -745,7 +745,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
         previewFile.select();
         bot.sleep(300);
         String diff = currentDiffText(wizard);
-        assertTrue(diff.contains("private void extractedSequence(String value)"),
+        assertTrue(diff.contains("private static void extractedSequence(String value)"),
                 "The LTK diff must show the extracted private method");
         assertTrue(diff.contains("extractedSequence(value);"),
                 "The LTK diff must show replacement of the selected occurrence");
@@ -755,7 +755,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
         CleanupWizardDriver.clickButtonAsync(wizard, "Finish");
         cleanupWizard.waitForShellToClose(wizard, "Clean Up wizard");
         String after = readFile(file);
-        assertTrue(after.contains("private void extractedSequence(String value)"),
+        assertTrue(after.contains("private static void extractedSequence(String value)"),
                 "Apply must create the private shared method");
         assertTrue(after.contains("extractedSequence(value);")
                 && after.contains("extractedSequence(input);"),
