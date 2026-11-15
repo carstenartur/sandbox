@@ -1,0 +1,39 @@
+name: Inspect pinned JUnit Help evidence
+on:
+  pull_request:
+    branches: [ main ]
+    paths: [ '.github/workflows/inspect-pinned-help-evidence.yml' ]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  capture-evidence:
+    name: Inspect the two published native JUnit captures
+    if: github.event.pull_request.number == 1908
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Verify original archive and read the two Help images with their provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/paired-junit-evidence.zip"
+          gh api repos/carstenartur/sandbox/actions/artifacts/14147399592/zip > "$archive"
+          echo "75ddd37622e8feaaf28227ab06c29933465267e03c20dab4b98f7a627db9aa5a  $archive" | sha256sum --check
+          for stem in junit/junit-strings-pinned junit-atomic/junit-workspace-setup-pinned; do
+            for suffix in png provenance.json; do
+              name="${stem##*/}.$suffix"
+              entry="sandbox/sandbox/target/pinned-status-evidence/$stem.$suffix"
+              unzip -p "$archive" "$entry" > "$RUNNER_TEMP/$name"
+              test -s "$RUNNER_TEMP/$name"
+              sha256sum "$RUNNER_TEMP/$name"
+              echo "BEGIN_NATIVE_HELP_$name"
+              base64 --wrap=96 "$RUNNER_TEMP/$name"
+              echo "END_NATIVE_HELP_$name"
+            done
+          done
