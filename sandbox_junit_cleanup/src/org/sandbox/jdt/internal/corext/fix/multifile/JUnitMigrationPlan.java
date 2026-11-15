@@ -234,16 +234,38 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 					resolvedTypes.keySet(), resolvedMethods.keySet(), resolvedInvocations.keySet());
 		}
 
+		SemanticRewritePlan plan= hierarchyPlan(plannedTypes);
+		Set<NodeKey> expectedHintTargets= new LinkedHashSet<>(plan.rolesByNode().keySet());
+		for (TypeMigration planned : plannedTypes) {
+			if (!planned.removeTestCaseSuperclass()) {
+				expectedHintTargets.remove(NodeKey.type(planned.typeBindingKey()));
+			}
+			nodesProcessed.add(resolvedTypes.get(planned.typeBindingKey()));
+			planned.methods().stream().map(MethodMigration::methodBindingKey)
+					.map(resolvedMethods::get).forEach(nodesProcessed::add);
+			planned.invocations().stream()
+					.map(invocation -> NodeKey.invocation(invocation.methodBindingKey(), invocation.sourceStart(),
+							invocation.sourceLength()))
+					.map(resolvedInvocations::get).forEach(nodesProcessed::add);
+		}
+
+		Set<NodeKey> covered= PlanAwareHintFileFixCore.findOperationsFromContent(root, loadJUnit3HintProgram(),
+				plan, unit.getJavaProject().getOptions(true), operations, nodesProcessed);
+		if (!covered.equals(expectedHintTargets)) {
+			throw new CoreException(new Status(IStatus.ERROR, "sandbox_junit_cleanup", //$NON-NLS-1$
+					"The plan-aware JUnit hint program covered " + covered + " but expected " //$NON-NLS-1$ //$NON-NLS-2$
+							+ expectedHintTargets));
+		}
+	}
+
+	/** Both the browser and the checked execution path read the same immutable authorization. */
+	static SemanticRewritePlan hierarchyPlan(List<TypeMigration> plannedTypes) throws CoreException {
 		SemanticRewritePlan.Builder plan= SemanticRewritePlan.builder("junit3-hierarchy"); //$NON-NLS-1$
-		Set<NodeKey> expectedHintTargets= new LinkedHashSet<>();
 		for (TypeMigration planned : plannedTypes) {
 			NodeKey typeKey= NodeKey.type(planned.typeBindingKey());
 			plan.add(typeKey, ROLE_HIERARCHY_TYPE)
 					.putBoolean(typeKey, FACT_REMOVE_TEST_CASE_SUPERCLASS,
 							planned.removeTestCaseSuperclass());
-			if (planned.removeTestCaseSuperclass()) {
-				expectedHintTargets.add(typeKey);
-			}
 			for (MethodMigration method : planned.methods()) {
 				NodeKey key= NodeKey.method(method.methodBindingKey());
 				plan.add(key, methodRole(method.kind()));
@@ -256,31 +278,15 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 				} else {
 					plan.putBoolean(key, FACT_REMOVE_OVERRIDE, method.removeOverride());
 				}
-				expectedHintTargets.add(key);
 			}
 			for (InvocationMigration invocation : planned.invocations()) {
 				NodeKey key= NodeKey.invocation(invocation.methodBindingKey(), invocation.sourceStart(),
 						invocation.sourceLength());
 				plan.add(key, invocation.kind() == InvocationKind.MESSAGE_FIRST
 						? ROLE_ASSERTION_MESSAGE_FIRST : ROLE_ASSERTION_QUALIFY);
-				expectedHintTargets.add(key);
 			}
-			nodesProcessed.add(resolvedTypes.get(planned.typeBindingKey()));
-			planned.methods().stream().map(MethodMigration::methodBindingKey)
-					.map(resolvedMethods::get).forEach(nodesProcessed::add);
-			planned.invocations().stream()
-					.map(invocation -> NodeKey.invocation(invocation.methodBindingKey(), invocation.sourceStart(),
-							invocation.sourceLength()))
-					.map(resolvedInvocations::get).forEach(nodesProcessed::add);
 		}
-
-		Set<NodeKey> covered= PlanAwareHintFileFixCore.findOperationsFromContent(root, loadJUnit3HintProgram(),
-				plan.build(), unit.getJavaProject().getOptions(true), operations, nodesProcessed);
-		if (!covered.equals(expectedHintTargets)) {
-			throw new CoreException(new Status(IStatus.ERROR, "sandbox_junit_cleanup", //$NON-NLS-1$
-					"The plan-aware JUnit hint program covered " + covered + " but expected " //$NON-NLS-1$ //$NON-NLS-2$
-							+ expectedHintTargets));
-		}
+		return plan.build();
 	}
 
 	private static String methodRole(MethodKind kind) {

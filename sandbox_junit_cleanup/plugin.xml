@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugin>
+   <extension point="sandbox_common.planInspectors">
+      <inspector contract="junit3-hierarchy" class="org.sandbox.jdt.internal.corext.fix.multifile.JUnitProjectPlanInspector"/>
+      <inspector contract="junit4-parameterized" class="org.sandbox.jdt.internal.corext.fix.multifile.JUnitProjectPlanInspector"/>
+   </extension>
 	<extension point="org.eclipse.jdt.ui.cleanUps">
 		<cleanUpConfigurationUI class="org.sandbox.jdt.internal.ui.preferences.cleanup.HelpAwareSandboxCodeTabPage" cleanUpKind="cleanUp" name="JUnit Migration (Sandbox)" />
 		<cleanUpOptionsInitializer class="org.sandbox.jdt.internal.ui.preferences.cleanup.DefaultCleanUpOptionsInitializer" cleanUpKind="cleanUp"></cleanUpOptionsInitializer>

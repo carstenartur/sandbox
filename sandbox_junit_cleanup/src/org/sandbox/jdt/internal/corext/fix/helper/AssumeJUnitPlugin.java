@@ -24,6 +24,7 @@ import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
@@ -131,6 +132,9 @@ public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {
 				// mixed case; otherwise the ordinary import rewrite remains
 				// unchanged.
 				importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSUMPTIONS, methodName, false);
+			} else if (minv.getExpression() instanceof QualifiedName name
+					&& ORG_JUNIT_ASSUME.equals(name.getFullyQualifiedName()) && isLegacyAssumeInvocation(minv)) {
+				ASTNodes.replaceButKeepComment(rewriter, name, ast.newName(ORG_JUNIT_JUPITER_API_ASSUMPTIONS), group);
 			} else if (minv.getExpression() != null) {
 				importRewriter.addImport(ORG_JUNIT_JUPITER_API_ASSUMPTIONS);
 			}
