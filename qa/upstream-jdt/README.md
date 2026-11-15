@@ -303,6 +303,31 @@ Until both boundaries pass on the integrated commit, Sandbox must not claim
 that the overall JUnit migration or its documentation-driven real-corpus QA is
 complete.
 
+### Replay the tested JUnit source and both encoding policies
+
+The strict migration workflow passes its own successful before/after artifact to the pinned
+Workbench job. The file-level scenario selects `StringsTest.java` at R4_40, verifies its
+entry in the complete migration patch, and reads both raw Surefire reports to check
+`StringsTest.removeTrailingCharacters` was executed and passed twice. The test also checks
+the artifact digests, exact pin and profile, visible comparison, Apply and byte-exact Undo.
+`SANDBOX_JUNIT_CORPUS_EVIDENCE` points to the extracted `jdt-ui-strict-evidence` directory.
+The separate `PinnedCoordinatedJUnitPreviewSWTBotTest` selects the genuine
+`JUnitWorkspaceTestSetup` resource in that same retained project. The strict workflow
+supplies its verified patched JDT UI and LTK repositories to the Tycho target. The
+test checks the three compilation-unit identities from the headless candidate,
+its two consumers' twelve upstream tests, the individual native file diffs and the
+PDE `Import-Package` change needed for `@Isolated`. Deselecting the separate proposed
+superclass change preserves it. The transaction applies the four selected paths, verifies
+compiler errors and warnings for every affected Java source and restores their original bytes on Undo. Its capture and sidecar live in
+`$SANDBOX_STATUS_EVIDENCE/junit-atomic/`. For acceptance, inspect the fresh patched
+job's JUnit report together with these artifacts.
+
+On the same JDT UI pin, the two encoding profiles target `JavaCompareUtilities.java`.
+The fallback after a caller-specified, unsupported encoding selects either the platform
+default or UTF-8. The committed Help images compare those two policies. The complete
+`FormatterProfileStore`, `History` and `AbstractSpellDictionary` sources must be unchanged
+by both profiles. The screenshot job retains the two policy reports, patches and sidecars.
+
 ### Replay the Platform Status preview in the retained JDT workspace
 
 The **Pinned Platform Status preview** CI job builds the candidate Linux

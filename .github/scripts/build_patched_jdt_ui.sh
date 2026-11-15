@@ -87,6 +87,13 @@ grep -Fq 'MultiFileCleanUpScopeExpansionTest' "$WORK_DIR/$SCOPE_TEST"
 grep -Fq "$PRODUCTION_SOURCE" "$WORK_DIR/$SYNC_MANIFEST"
 grep -Fq "$SCOPE_TEST" "$WORK_DIR/$SYNC_MANIFEST"
 
+# Stage the Sandbox-owned descriptor hook against the verified, immutable fork checkout.
+DESCRIPTOR_PATCH="$ROOT_DIR/.github/patches/coordinated-cleanup-descriptor.patch"
+git -C "$WORK_DIR" apply --unidiff-zero --check "$DESCRIPTOR_PATCH"
+git -C "$WORK_DIR" apply --unidiff-zero "$DESCRIPTOR_PATCH"
+DESCRIPTOR_PATCH_SHA256=$(sha256sum "$DESCRIPTOR_PATCH" | awk '{print $1}')
+export DESCRIPTOR_PATCH_SHA256
+
 # Retain upstream's Tycho bootstrap for bundles whose POMs are generated.
 cp -R "$WORK_DIR/.mvn" "$BUILD_DIR/"
 # The pinned parent and JDT build profile use Eclipse repositories before Central.
@@ -188,6 +195,7 @@ payload = {
     'sourceRepository': os.environ['PATCHED_JDT_UI_REPOSITORY'],
     'sourceCommit': os.environ['PATCHED_JDT_UI_COMMIT'],
     'sourceParent': os.environ['ACTUAL_PARENT'],
+    'descriptorPatchSha256': os.environ['DESCRIPTOR_PATCH_SHA256'],
     'relengRepository': os.environ['PATCHED_JDT_UI_RELENG_REPOSITORY'],
     'relengCommit': os.environ['PATCHED_JDT_UI_RELENG_COMMIT'],
     'platformParentSha256': os.environ['PATCHED_JDT_UI_PARENT_SHA256'],

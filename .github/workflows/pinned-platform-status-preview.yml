@@ -10,6 +10,9 @@ on:
       - 'pom.xml'
       - 'qa/upstream-jdt/pins.env'
       - 'qa/upstream-jdt/platform-status.properties'
+      - 'qa/upstream-jdt/encoding-*.properties'
+      - 'sandbox_encoding_quickfix/**'
+      - 'sandbox_encoding_quickfix_help/**'
       - 'qa/upstream-jdt/pinned-status-fonts.conf'
       - 'sandbox_oomph/**'
       - 'sandbox_common/**'
@@ -22,12 +25,20 @@ on:
       - 'sandbox_eclipse_help_swtbot_test/**'
       - 'sandbox_help_build/**'
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      junit-artifact:
+        required: true
+        type: string
+      patched-host-artifact:
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: pinned-workbench-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -115,13 +126,102 @@ jobs:
             exit 1
           fi
 
+      - name: Inventory both encoding policies in the retained project
+        if: inputs.junit-artifact == ''
+        run: |
+          product="$GITHUB_WORKSPACE/sandbox_product/target/products/sandbox.bundle.producteclipse/linux/gtk/x86_64/eclipse"
+          project="$SANDBOX_STATUS_RUNTIME/eclipse.jdt.ui/org.eclipse.jdt.ui"
+          for policy in encoding-keep encoding-utf8; do
+            dir="$SANDBOX_STATUS_EVIDENCE/$policy"
+            mkdir -p "$dir"
+            config="$GITHUB_WORKSPACE/qa/upstream-jdt/$policy.properties"
+            check=(xvfb-run -a "$product" --launcher.suppressErrors -nosplash -consoleLog
+              -data "$SANDBOX_STATUS_WORKSPACE" -application org.sandbox.jdt.core.JavaCleanup --mode check --config "$config")
+            rc=0
+            "${check[@]}" --report "$dir/cleanup-check-report.json" --patch "$dir/cleanup-check.patch" \
+              "$project/ui/org/eclipse/jdt/internal/ui/compare/JavaCompareUtilities.java" || rc=$?
+            test "$rc" -eq 2
+            "${check[@]}" --report "$dir/controls.json" --patch "$dir/controls.patch" \
+              "$project/ui/org/eclipse/jdt/internal/ui/preferences/formatter/FormatterProfileStore.java" \
+              "$project/core extension/org/eclipse/jdt/internal/corext/util/History.java" \
+              "$project/ui/org/eclipse/jdt/internal/ui/text/spelling/engine/AbstractSpellDictionary.java"
+          done
+
       - name: Compare the native preview, apply, undo and Help provenance
+        if: inputs.junit-artifact == ''
         run: |
           xvfb-run -a --server-args='-screen 0 1920x1200x24' ./mvnw --batch-mode --no-transfer-progress \
           -f sandbox_help_build/pom.xml -Phelp-screenshots,pinned-status-preview \
           -Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.PinnedStatusPreviewSWTBotTest \
           -DfailIfNoTests=false -Dsandbox.tycho.linux-only=true -Dspotbugs.skip=true verify
           test -s "$SANDBOX_STATUS_EVIDENCE/platform-status-pinned.png"
+
+      - name: Reproduce the pinned fallback under Keep behavior and Prefer UTF-8
+        if: inputs.junit-artifact == ''
+        run: >-
+          xvfb-run -a --server-args='-screen 0 1920x1200x24' ./mvnw --batch-mode --no-transfer-progress
+          -f sandbox_help_build/pom.xml -Phelp-screenshots,pinned-status-preview
+          -Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.PinnedEncodingPreviewSWTBotTest
+          -DfailIfNoTests=false -Dsandbox.tycho.linux-only=true -Dspotbugs.skip=true verify
+
+      - name: Download the paired strict evidence from this workflow run
+        id: strict-evidence
+        if: inputs.junit-artifact != ''
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ inputs.junit-artifact }}
+          path: ${{ runner.temp }}/strict-artifact
+
+      - name: Replay the tested JUnit source in the native workbench
+        if: inputs.junit-artifact != ''
+        run: |
+          export SANDBOX_JUNIT_CORPUS_EVIDENCE="$RUNNER_TEMP/strict-artifact/jdt-ui-strict-evidence"
+          dir="$SANDBOX_STATUS_EVIDENCE/junit"
+          mkdir -p "$dir"
+          product="$GITHUB_WORKSPACE/sandbox_product/target/products/sandbox.bundle.producteclipse/linux/gtk/x86_64/eclipse"
+          source_file="$SANDBOX_STATUS_RUNTIME/eclipse.jdt.ui/org.eclipse.jdt.ui.tests/ui/org/eclipse/jdt/ui/tests/core/StringsTest.java"
+          rc=0
+          xvfb-run -a "$product" --launcher.suppressErrors -nosplash -consoleLog -data "$SANDBOX_STATUS_WORKSPACE" \
+            -application org.sandbox.jdt.core.JavaCleanup --mode check --config "$GITHUB_WORKSPACE/qa/upstream-jdt/junit4-to-jupiter.properties" \
+            --report "$dir/cleanup-check-report.json" --patch "$dir/cleanup-check.patch" "$source_file" || rc=$?
+          test "$rc" -eq 2
+          xvfb-run -a --server-args='-screen 0 1920x1200x24' ./mvnw --batch-mode --no-transfer-progress \
+            -f sandbox_help_build/pom.xml -Phelp-screenshots,pinned-status-preview \
+            -Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.PinnedJUnitPreviewSWTBotTest \
+            -DfailIfNoTests=false -Dsandbox.tycho.linux-only=true -Dspotbugs.skip=true verify
+          test -s "$dir/junit-strings-pinned.png"
+
+      - name: Download the patched JDT UI and LTK used in the same workflow
+        id: patched-host
+        if: ${{ !cancelled() && inputs.patched-host-artifact != '' && steps.strict-evidence.outcome == 'success' }}
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ inputs.patched-host-artifact }}
+          path: ${{ runner.temp }}/atomic-host
+
+      - name: Replay the coordinated strict corpus candidate
+        if: ${{ !cancelled() && steps.patched-host.outcome == 'success' }}
+        run: |
+          export SANDBOX_JUNIT_CORPUS_EVIDENCE="$RUNNER_TEMP/strict-artifact/jdt-ui-strict-evidence"
+          mapfile -t jdt_repo < <(find "$RUNNER_TEMP/atomic-host" -type d -path '*/patched-jdt-ui-p2/repository')
+          mapfile -t ltk_repo < <(find "$RUNNER_TEMP/atomic-host" -type d -path '*/patched-ltk/repository')
+          test "${#jdt_repo[@]}" -eq 1
+          test "${#ltk_repo[@]}" -eq 1
+          target=sandbox_target/eclipse.target
+          awk -v jdt="file:${jdt_repo[0]}" -v ltk="file:${ltk_repo[0]}" '
+            function patch(id, repo) {
+              print "<location includeAllPlatforms=\"false\" includeConfigurePhase=\"true\" includeMode=\"planner\" includeSource=\"true\" type=\"InstallableUnit\">"
+              print "<unit id=\"" id ".feature.group\" version=\"0.0.0\"/><repository location=\"" repo "\"/></location>"
+            }
+            /<\/locations>/ { patch("sandbox_patched_jdt_ui_feature", jdt); patch("sandbox_patched_ltk_feature", ltk) }
+            {print}
+          ' "$target" > "$RUNNER_TEMP/pinned-atomic.target"
+          cp "$RUNNER_TEMP/pinned-atomic.target" "$target"
+          xvfb-run -a --server-args='-screen 0 1920x1200x24' ./mvnw --batch-mode --no-transfer-progress \
+            -f sandbox_help_build/pom.xml -Phelp-screenshots,pinned-status-preview \
+            -Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.PinnedCoordinatedJUnitPreviewSWTBotTest \
+            -DfailIfNoTests=false -Dsandbox.tycho.linux-only=true -Dspotbugs.skip=true verify
+          test -s "$SANDBOX_STATUS_EVIDENCE/junit-atomic/junit-workspace-setup-pinned.png"
 
       - name: Retain the native evidence and Eclipse test reports
         if: always()

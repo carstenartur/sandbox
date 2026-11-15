@@ -1,0 +1,20 @@
+diff --git a/org.eclipse.jdt.ui/core extension/org/eclipse/jdt/internal/corext/fix/CoordinatedCleanUpChange.java b/org.eclipse.jdt.ui/core extension/org/eclipse/jdt/internal/corext/fix/CoordinatedCleanUpChange.java
+--- a/org.eclipse.jdt.ui/core extension/org/eclipse/jdt/internal/corext/fix/CoordinatedCleanUpChange.java
++++ b/org.eclipse.jdt.ui/core extension/org/eclipse/jdt/internal/corext/fix/CoordinatedCleanUpChange.java
+@@ -80 +80,6 @@
+-		fDelegate= new CompositeChange(name, changes);
++		fDelegate= new CompositeChange(name, changes);
++		// An optional cleanup may require a non-Java project descriptor in the same selection and Undo.
++		Object required= org.eclipse.core.runtime.Platform.getAdapterManager().loadAdapter(this, Change.class.getName());
++		if (required instanceof Change descriptor) {
++			fDelegate.add(descriptor);
++		}
+diff --git a/org.eclipse.jdt.ui/core extension/org/eclipse/jdt/internal/corext/fix/CleanUpRefactoring.java b/org.eclipse.jdt.ui/core extension/org/eclipse/jdt/internal/corext/fix/CleanUpRefactoring.java
+--- a/org.eclipse.jdt.ui/core extension/org/eclipse/jdt/internal/corext/fix/CleanUpRefactoring.java
++++ b/org.eclipse.jdt.ui/core extension/org/eclipse/jdt/internal/corext/fix/CleanUpRefactoring.java
+@@ -1060 +1060,4 @@
+-		return result.toArray(new Change[result.size()]);
++		// AST completion order can interleave ordinary files and coordinated candidates differently on each run.
++		// Stable partitioning preserves the existing order within each group of independent file changes.
++		result.sort(java.util.Comparator.comparing(change -> !(change instanceof CoordinatedCleanUpChange)));
++		return result.toArray(new Change[result.size()]);
