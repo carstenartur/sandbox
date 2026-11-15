@@ -14,6 +14,8 @@
 package org.sandbox.jdt.internal.corext.fix.helper;
 
 import org.eclipse.jdt.core.dom.*;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.dom.Bindings;
 import org.sandbox.functional.core.builder.LoopModelBuilder;
 import org.sandbox.functional.core.model.*;
 import org.sandbox.functional.core.model.SourceDescriptor.SourceType;
@@ -80,7 +82,7 @@ public class JdtLoopExtractor {
         
         // Build model — mark as unconvertible if any patterns detected
         LoopModelBuilder builder = new LoopModelBuilder()
-            .source(sourceType, sourceExpression, elementType)
+            .source(sourceType, sourceExpression, sourceElementType(iterable, elementType))
             .element(varName, elementType, isFinal)
             .metadata(analyzer.hasBreak(), analyzer.hasLabeledContinue(), 
                       false, analyzer.modifiesIteratedCollection(), true);
@@ -129,7 +131,7 @@ public class JdtLoopExtractor {
                 || isConcurrentCollection;
 
         LoopModelBuilder builder = new LoopModelBuilder()
-                .source(sourceType, sourceExpression, elementType)
+                .source(sourceType, sourceExpression, sourceElementType(iterable, elementType))
                 .element(variableName, elementType, false)
                 .metadata(analyzer.hasBreak(), analyzer.hasLabeledContinue(), false,
                         analyzer.modifiesIteratedCollection(), true);
@@ -156,6 +158,11 @@ public class JdtLoopExtractor {
             return;
         }
         analyzeStatements(statements, builder, variableName, compilationUnit, false);
+    }
+
+    private static String sourceElementType(Expression iterable, String fallback) {
+        ITypeBinding source = iterable.resolveTypeBinding();
+        return source != null && source.isArray() ? source.getComponentType().getName() : fallback;
     }
 
     private SourceType determineSourceType(Expression iterable) {
@@ -480,11 +487,13 @@ public class JdtLoopExtractor {
                     if (init != null) {
                         String newVarName = frag.getName().getIdentifier();
                         String mapExpr = init.toString();
+                        ITypeBinding declared = frag.resolveBinding() != null ? frag.resolveBinding().getType() : null;
+                        String mapType = declared == null ? varDecl.getType().toString() : declared.getQualifiedName();
                         
                         // Check if remaining non-terminal statements need wrapping
                         // (V1 VARIABLE_DECLARATION.shouldWrapRemaining pattern)
                         if (shouldWrapRemainingInMap(statements, i, newVarName)) {
-                            builder.map(mapExpr, varDecl.getType().toString(), newVarName);
+                            builder.map(mapExpr, mapType, newVarName);
                             attachComments(builder.getLastOperation(), stmt, compilationUnit);
                             currentVarName = newVarName;
                             hasOperations = true;
@@ -494,7 +503,7 @@ public class JdtLoopExtractor {
                             continue;
                         }
                         
-                        builder.map(mapExpr, varDecl.getType().toString(), newVarName);
+                        builder.map(mapExpr, mapType, newVarName);
                         attachComments(builder.getLastOperation(), stmt, compilationUnit);
                         currentVarName = newVarName;
                         hasOperations = true;
@@ -513,7 +522,7 @@ public class JdtLoopExtractor {
                     if (lhs instanceof SimpleName name 
                             && name.getIdentifier().equals(currentVarName)) {
                         String mapExpr = assign.getRightHandSide().toString();
-                        builder.map(mapExpr, null, currentVarName);
+                        builder.map(mapExpr, typeName(lhs), currentVarName);
                         attachComments(builder.getLastOperation(), stmt, compilationUnit);
                         hasOperations = true;
                         continue;
@@ -854,6 +863,37 @@ public class JdtLoopExtractor {
         return binding instanceof IVariableBinding variableBinding && !variableBinding.isField();
     }
 
+    private static String typeName(Expression expression) {
+        ITypeBinding type = expression.resolveTypeBinding();
+        return type == null ? null : type.getQualifiedName();
+    }
+
+    private static boolean mapReductionValue(LoopModelBuilder builder, Expression value, Expression target, String variable) {
+        String targetType = typeName(target);
+        if (!("int".equals(targetType) || "long".equals(targetType) || "double".equals(targetType))) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+            if (!value.toString().equals(variable)) {
+                builder.map(value.toString(), null);
+            }
+            return true;
+        }
+        String expression = value.toString();
+        ITypeBinding valueType = value.resolveTypeBinding();
+        // Compound assignment may narrow the result after each iteration. A primitive
+        // stream of the accumulator type cannot reproduce that arithmetic.
+        if (valueType == null || !valueType.isAssignmentCompatible(target.resolveTypeBinding())) {
+            return false;
+        }
+        if (!valueType.isPrimitive()) {
+            String primitive = Bindings.getUnboxedTypeName(valueType.getErasure().getQualifiedName());
+            if (primitive != null) {
+                // Unbox the original wrapper before any widening performed by the accumulator.
+                expression = (value instanceof Name ? expression : "(" + expression + ")") + "." + primitive + "Value()"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+            }
+        }
+        builder.map(expression, targetType);
+        return true;
+    }
+
     private void addReduceTerminal(Statement stmt, LoopModelBuilder builder, String varName) {
         ExpressionStatement exprStmt = (ExpressionStatement) stmt;
         Expression expr = exprStmt.getExpression();
@@ -861,28 +901,23 @@ public class JdtLoopExtractor {
         if (expr instanceof Assignment assign) {
             Assignment.Operator op = assign.getOperator();
             String accumVar = assign.getLeftHandSide().toString();
-            String valueExpr = assign.getRightHandSide().toString();
             String accumType = resolveReducerType(assign.getLeftHandSide());
             
-            if (op == Assignment.Operator.PLUS_ASSIGN) {
-                // sum += value → .map(var -> value).reduce(sum, Integer/Long/Double::sum)
-                if (!valueExpr.equals(varName)) {
-                    builder.map(valueExpr, null);
+            if (op == Assignment.Operator.PLUS_ASSIGN || op == Assignment.Operator.TIMES_ASSIGN
+                    || op == Assignment.Operator.MINUS_ASSIGN) {
+                if (!mapReductionValue(builder, assign.getRightHandSide(), assign.getLeftHandSide(), varName)) {
+                    return;
                 }
+            }
+            if (op == Assignment.Operator.PLUS_ASSIGN) {
                 builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
                     accumVar, accumType + "::sum", null,
                     org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.SUM, accumVar));
             } else if (op == Assignment.Operator.TIMES_ASSIGN) {
-                if (!valueExpr.equals(varName)) {
-                    builder.map(valueExpr, null);
-                }
                 builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
                     accumVar, "(a, b) -> a * b", null,
                     org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.PRODUCT, accumVar));
             } else if (op == Assignment.Operator.MINUS_ASSIGN) {
-                if (!valueExpr.equals(varName)) {
-                    builder.map(valueExpr, null);
-                }
                 builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
                     accumVar, "(a, b) -> a - b", null,
                     org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM, accumVar));
@@ -890,7 +925,7 @@ public class JdtLoopExtractor {
                 if (assign.getRightHandSide() instanceof InfixExpression infix) {
                     addInfixReduceTerminal(infix, builder, varName, accumVar);
                 } else if (isMathMaxMinPattern(assign)) {
-                    addMathMaxMinReduce(assign, builder, accumVar);
+                    addMathMaxMinReduce(assign, builder, accumVar, varName);
                 }
             }
         } else if (expr instanceof PostfixExpression postfix) {
@@ -898,7 +933,7 @@ public class JdtLoopExtractor {
             String accumVar = postfix.getOperand().toString();
             String accumType = resolveReducerType(postfix.getOperand());
             String mapValue = isLongType(accumType) ? "1L" : "1"; //$NON-NLS-1$ //$NON-NLS-2$
-            builder.map(mapValue, null);
+            builder.map(mapValue, typeName(postfix.getOperand()));
             builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
                 accumVar, accumType + "::sum", null,
                 org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.COUNT, accumVar));
@@ -907,12 +942,12 @@ public class JdtLoopExtractor {
             String accumType = resolveReducerType(prefix.getOperand());
             String mapValue = isLongType(accumType) ? "1L" : "1"; //$NON-NLS-1$ //$NON-NLS-2$
             if (prefix.getOperator() == PrefixExpression.Operator.INCREMENT) {
-                builder.map(mapValue, null);
+                builder.map(mapValue, typeName(prefix.getOperand()));
                 builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
                     accumVar, accumType + "::sum", null,
                     org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.COUNT, accumVar));
             } else {
-                builder.map(mapValue, null);
+                builder.map(mapValue, typeName(prefix.getOperand()));
                 builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
                     accumVar, "(a, b) -> a - b", null,
                     org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM, accumVar));
@@ -967,10 +1002,18 @@ public class JdtLoopExtractor {
      * Adds Math.max/min reduce terminal.
      * Pattern: max = Math.max(max, num) → .reduce(max, Math::max)
      */
-    private void addMathMaxMinReduce(Assignment assign, LoopModelBuilder builder, String accumVar) {
+    private void addMathMaxMinReduce(Assignment assign, LoopModelBuilder builder, String accumVar, String varName) {
         MethodInvocation mi = (MethodInvocation) assign.getRightHandSide();
         String methodName = mi.getName().getIdentifier();
-        
+        Expression first = (Expression) mi.arguments().get(0);
+        Expression second = (Expression) mi.arguments().get(1);
+        Expression target = assign.getLeftHandSide();
+        boolean firstIsTarget = ASTNodes.isSameLocalVariable(target, first);
+        if (firstIsTarget == ASTNodes.isSameLocalVariable(target, second)
+                || !mapReductionValue(builder, firstIsTarget ? second : first, target, varName)) {
+            return;
+        }
+
         org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType type = 
             "max".equals(methodName) ? org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.MAX
                                      : org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.MIN;
@@ -981,15 +1024,11 @@ public class JdtLoopExtractor {
     
     private void addInfixReduceTerminal(InfixExpression infix, LoopModelBuilder builder, 
                                          String varName, String accumVar) {
-        String rightOperand = infix.getRightOperand().toString();
         InfixExpression.Operator op = infix.getOperator();
         String accumType = resolveReducerType(infix.getLeftOperand());
         
-        // Only add a MAP operation if the right operand is NOT the identity (loop variable)
-        // e.g., count = count + 1 → .map(item -> 1).reduce(count, Integer::sum)
-        // but result = result + item → .reduce(result, (a, b) -> a + b) [no map needed]
-        if (!rightOperand.equals(varName)) {
-            builder.map(rightOperand, null);
+        if (!mapReductionValue(builder, infix.getRightOperand(), infix.getLeftOperand(), varName)) {
+            return;
         }
         
         if (op == InfixExpression.Operator.PLUS) {

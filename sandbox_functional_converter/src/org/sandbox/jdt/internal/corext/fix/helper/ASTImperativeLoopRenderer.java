@@ -19,6 +19,7 @@ import java.util.Set;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.CastExpression;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
@@ -28,6 +29,7 @@ import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.NullLiteral;
 import org.eclipse.jdt.core.dom.ParameterizedType;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.PrefixExpression;
@@ -104,7 +106,13 @@ final class ASTImperativeLoopRenderer {
 				String previous = current;
 				current = LoopVariableNames.fresh("mapped", names); //$NON-NLS-1$
 				currentType = ast.resolveWellKnownType(conversion.outputType());
-				body.statements().add(declaration(type(currentType), current, ast.newSimpleName(previous)));
+				Expression converted = ast.newSimpleName(previous);
+				if (conversion.kind() == StreamTypeConversionOp.Kind.BOXED) {
+					MethodInvocation box = call(ast.newName(imports.addImport(conversion.outputType(), importContext)), "valueOf"); //$NON-NLS-1$
+					box.arguments().add(converted);
+					converted = box;
+				}
+				body.statements().add(declaration(type(currentType), current, converted));
 				continue;
 			}
 			FunctionalExpression function = function(operation);
@@ -186,7 +194,14 @@ final class ASTImperativeLoopRenderer {
 			parameter.setType(type(context.elementType()));
 			parameter.setName(ast.newSimpleName(elementName));
 			loop.setParameter(parameter);
-			loop.setExpression(copy(context.source()));
+			if (model.getSource().type() == SourceType.ARRAY
+					&& ASTNodes.getUnparenthesedExpression(context.source()) instanceof CastExpression cast
+					&& ASTNodes.getUnparenthesedExpression(cast.getExpression()) instanceof NullLiteral) {
+				// The cast selects an Arrays.stream overload. Preserve its null check before iteration.
+				loop.setExpression(call(copy(Objects.requireNonNull(context.streamSource())), "toArray")); //$NON-NLS-1$
+			} else {
+				loop.setExpression(copy(context.source()));
+			}
 			loop.setBody(body);
 			replacement.statements().add(loop);
 		}

@@ -129,8 +129,8 @@ package test1;
 import java.util.*;
 class MyTest {
 	public void process(List<Integer> numbers) {
-		numbers.stream().map(num -> num * 2).filter(doubled -> (doubled > 10)).map(doubled -> "Value: " + doubled)
-				.forEachOrdered(result -> System.out.println(result));
+		numbers.stream().mapToInt(num -> num * 2).filter(doubled -> (doubled > 10))
+				.mapToObj(doubled -> "Value: " + doubled).forEachOrdered(result -> System.out.println(result));
 	}
 }
 """;

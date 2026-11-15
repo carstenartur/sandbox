@@ -424,6 +424,23 @@ public class AccumulatorAndSequenceSafetyTest {
 				""");
 	}
 
+	@Test
+	void retainsPerIterationNarrowingInCompoundAssignment() throws CoreException {
+		assertNoChange("""
+				package test;
+				import java.util.List;
+				class E {
+					int sum(List<Double> values) {
+						int total = 0;
+						for (Double value : values) {
+							total += value;
+						}
+						return total;
+					}
+				}
+				""");
+	}
+
 	private void assertNoChange(String source) throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		ICompilationUnit unit= pack.createCompilationUnit("E.java", source, false, null); //$NON-NLS-1$
