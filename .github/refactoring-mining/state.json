@@ -5536,8 +5536,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "lastProcessedDate": "2026-11-14T02:14:37.339038653Z",
-      "totalProcessed": 929,
+      "lastProcessedCommit": "e7b1d273a03aacde2e7d10915227a1c9383105f4",
+      "lastProcessedDate": "2026-11-15T02:31:48.481332787Z",
+      "totalProcessed": 980,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -6043,6 +6044,24 @@
           "deferredAt": "2026-11-14T02:13:22.382998929Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "fdfcf440a8a8efca8027f4d673a54826669c999f",
+          "message": "Bug 235646 - [Expressions View] Add support for columns in the expressions view.",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-15T02:26:26.092057655Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "916fb3950e5d4fd68de850548451799b15265523",
+          "message": "Bug 299961 - Breakpoints view: Condition detail pane not updated when condition changed via dialog",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-15T02:26:48.482586102Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -6107,5 +6126,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 54510
+  "globalTotalProcessed": 54561
 }
