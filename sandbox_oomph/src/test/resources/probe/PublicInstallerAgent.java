@@ -1,14 +1,17 @@
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.instrument.Instrumentation;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 
 public final class PublicInstallerAgent {
     public static void premain(String argument, Instrumentation instrumentation) {
         Thread driver = new Thread(() -> {
+            String[] options = argument.split(";", 3);
             try {
-                String[] options = argument.split(";", 3);
                 Class<?> display = null;
                 for (int i = 0; i < 900 && display == null; ++i) {
                     display = Arrays.stream(instrumentation.getAllLoadedClasses())
@@ -27,6 +30,13 @@ public final class PublicInstallerAgent {
                 }
             } catch (Throwable t) {
                 t.printStackTrace();
+                try {
+                    StringWriter trace = new StringWriter();
+                    t.printStackTrace(new PrintWriter(trace));
+                    Files.writeString(Path.of(options[1]).resolve("installer.failed"), trace.toString());
+                } catch (Exception receiptFailure) {
+                    receiptFailure.printStackTrace();
+                }
                 Runtime.getRuntime().halt(71);
             }
         }, "public-installer-acceptance");

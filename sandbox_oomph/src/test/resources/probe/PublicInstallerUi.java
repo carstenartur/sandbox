@@ -1,7 +1,11 @@
+import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -136,6 +140,9 @@ public final class PublicInstallerUi {
             if (active != null) {
                 List<Button> buttons = new ArrayList<>();
                 collect(active, Button.class, buttons);
+                if ("Trust Artifacts".equals(active.getText())) {
+                    inspectArtifactSigners(active);
+                }
                 boolean agreement = buttons.stream().anyMatch(b -> b.getText().equals("Decide Later"));
                 String acceptLabel = agreement ? "Accept Now"
                         : "Oomph License Confirmation".equals(active.getText()) ? "Accept" : "";
@@ -169,6 +176,48 @@ public final class PublicInstallerUi {
             Files.writeString(evidence.resolve("installer-complete"),"Eclipse IDE for Java Developers 2026-09 / Github Projects / Sandbox Project / Main\n");
             return click("finish");
         });
+    }
+
+    private static void inspectArtifactSigners(Shell shell) throws Exception {
+        StringBuilder report = new StringBuilder();
+        List<Table> tables = new ArrayList<>();
+        collect(shell, Table.class, tables);
+        for (Table table : tables) {
+            for (TableItem row : table.getItems()) {
+                for (int i = 0; i < table.getColumnCount(); i++) {
+                    if (i > 0) report.append(" | ");
+                    report.append(row.getText(i));
+                }
+                report.append('\n');
+                if (!"x509".equals(row.getText(0))) continue;
+                Files.writeString(evidence.resolve("installer-signers.txt"), report);
+                Object node = row.getData();
+                ClassLoader loader = node.getClass().getClassLoader();
+                Class<?> treeNode = Class.forName("org.eclipse.jface.viewers.TreeNode", false, loader);
+                Object value = treeNode.getMethod("getValue").invoke(node);
+                if (value instanceof X509Certificate certificate) {
+                    String fingerprint = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                            .digest(certificate.getEncoded()));
+                    report.append("SHA-256 ").append(fingerprint).append(" subject ").append(certificate.getSubjectX500Principal())
+                            .append(" issuer ").append(certificate.getIssuerX500Principal()).append(" valid ")
+                            .append(certificate.getNotBefore().toInstant()).append(" through ")
+                            .append(certificate.getNotAfter().toInstant()).append('\n');
+                }
+                Files.writeString(evidence.resolve("installer-signers.txt"), report);
+                Class<?> adaptable = Class.forName("org.eclipse.core.runtime.IAdaptable", false, loader);
+                if (adaptable.isInstance(node)) {
+                    Class<?> key = Class.forName("org.eclipse.equinox.p2.metadata.IArtifactKey", false, loader);
+                    Object artifacts = adaptable.getMethod("getAdapter", Class.class)
+                            .invoke(node, Array.newInstance(key, 0).getClass());
+                    if (artifacts instanceof Object[] keys) {
+                        for (Object artifact : keys) report.append("associated ").append(artifact).append('\n');
+                    }
+                }
+            }
+        }
+        capture("artifact-signers");
+        Files.writeString(evidence.resolve("installer-signers.txt"), report);
+        throw new IllegalStateException("Public installer requested trust for these signers and artifacts:\n" + report);
     }
 
     private static void await(String stage,Callable<Boolean> condition) throws Exception {

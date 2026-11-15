@@ -158,7 +158,14 @@ class PublicEppInstallerTest {
         System.out.println("Starting public Eclipse phase " + phase);
         var child = process.start();
         try {
-            if(!child.waitFor(minutes,TimeUnit.MINUTES)) {
+            long deadline = System.nanoTime() + TimeUnit.MINUTES.toNanos(minutes);
+            while (child.isAlive() && System.nanoTime() < deadline) {
+                if (Files.isRegularFile(run.resolve(phase + ".failed"))) {
+                    fail("The native " + phase + " driver reported a failure\n" + diagnostics(phase));
+                }
+                child.waitFor(2, TimeUnit.SECONDS);
+            }
+            if (child.isAlive()) {
                 for(ProcessHandle h:child.descendants().toList()) if(h.info().command().orElse("").endsWith("/java")) {
                     var dump=new ProcessBuilder(jdk.resolve("bin/jcmd").toString(),String.valueOf(h.pid()),"Thread.print","-l")
                         .redirectOutput(run.resolve(phase+"-"+h.pid()+"-threads.log").toFile()).start();
