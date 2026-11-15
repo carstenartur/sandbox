@@ -133,7 +133,7 @@ class PublicEppInstallerTest {
     }
     private String diagnostics(String phase) {
         StringBuilder result = new StringBuilder();
-        for (String name : List.of(phase + "-stage.txt", phase + ".failed", phase + ".log")) {
+        for (String name : List.of(phase + "-stage.txt", "maven-selection.txt", phase + ".failed", phase + ".log")) {
             Path file = run.resolve(name);
             if (!Files.isRegularFile(file)) continue;
             try (var lines = Files.lines(file)) {

@@ -139,23 +139,59 @@ public final class PublicWorkbenchProbe implements IStartup {
                 }, "completed MANUAL operation");
                 java.util.concurrent.CountDownLatch updated=new java.util.concurrent.CountDownLatch(1);
                 try (var update = new MavenUpdateWitness(updated)) {
+                    String updateCommand = "org.eclipse.m2e.core.ui.command.updateProject";
+                    var mavenProject = root.getProject("sandbox_oomph");
+                    require(mavenProject.hasNature("org.eclipse.m2e.core.maven2Nature"), "No Maven nature on selection");
+                    var requested = new java.util.concurrent.atomic.AtomicBoolean();
+                    var lastSelection = new java.util.concurrent.atomic.AtomicReference<>("");
                     awaitUi(() -> {
-                        var window=PlatformUI.getWorkbench().getActiveWorkbenchWindow();
-                        if(window==null) return false;
-                        var page=window.getActivePage();
-                        var explorer=page.showView(IPageLayout.ID_PROJECT_EXPLORER);
-                        page.activate(explorer);
-                        var mavenProject=root.getProject("sandbox_oomph");
-                        require(mavenProject.hasNature("org.eclipse.m2e.core.maven2Nature"),"No Maven nature on selection");
-                        var selection=new org.eclipse.jface.viewers.StructuredSelection(mavenProject);
-                        ((org.eclipse.ui.part.ISetSelectionTarget)explorer).selectReveal(selection);
-                        var active=window.getSelectionService().getSelection();
-                        if (!(active instanceof org.eclipse.jface.viewers.IStructuredSelection actual)
-                                || !mavenProject.equals(actual.getFirstElement())) return false;
+                        var activeWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+                        if (activeWindow == null) return false;
+                        var page = activeWindow.getActivePage();
+                        if (page == null) return false;
+                        var explorer = page.showView(IPageLayout.ID_PROJECT_EXPLORER);
+                        if (!requested.get()) {
+                            page.activate(explorer);
+                            explorer.setFocus();
+                            ((org.eclipse.ui.part.ISetSelectionTarget) explorer).selectReveal(
+                                    new org.eclipse.jface.viewers.StructuredSelection(mavenProject));
+                            requested.set(true);
+                        }
+                        if (explorer.getSite().getSelectionProvider() instanceof org.eclipse.jface.viewers.TreeViewer viewer) {
+                            Tree tree = viewer.getTree();
+                            TreeItem target = findProjectItem(tree, tree.getItems(), mavenProject);
+                            if (target != null && (tree.getSelectionCount() != 1 || tree.getSelection()[0] != target)) {
+                                tree.setFocus();
+                                tree.showItem(target);
+                                tree.setSelection(target);
+                                Event event = new Event();
+                                event.item = target;
+                                tree.notifyListeners(SWT.Selection, event);
+                            }
+                        }
+                        var active = activeWindow.getSelectionService().getSelection();
+                        Object element = active instanceof org.eclipse.jface.viewers.IStructuredSelection selected
+                                ? selected.getFirstElement() : null;
+                        var selectedResource = element == null ? null : org.eclipse.core.runtime.Adapters.adapt(element, IResource.class);
+                        if (selectedResource == null && element instanceof org.eclipse.jdt.core.IJavaElement javaElement) {
+                            selectedResource = javaElement.getResource();
+                        }
+                        var view = page.getActivePart();
+                        String viewId = view == null ? "<none>" : view.getSite().getId();
+                        var command = activeWindow.getService(org.eclipse.ui.commands.ICommandService.class)
+                                .getCommand(updateCommand);
+                        String observed = viewId + " selection=" + (element == null ? "<empty>" : element.getClass().getName())
+                                + " resource=" + (selectedResource == null ? "<none>" : selectedResource.getFullPath())
+                                + " command-enabled=" + command.isEnabled();
+                        if (!observed.equals(lastSelection.getAndSet(observed))) {
+                            Files.writeString(evidence.resolve("maven-selection.txt"), observed + "\n");
+                        }
+                        if (!IPageLayout.ID_PROJECT_EXPLORER.equals(viewId) || !mavenProject.equals(selectedResource)
+                                || !command.isEnabled()) return false;
                         screenshot("maven-project-selection");
                         return true;
-                    },"existing Maven project selected in active Project Explorer");
-                    command("org.eclipse.m2e.core.ui.command.updateProject");
+                    }, "existing Maven project selected in active Project Explorer", 2);
+                    command(updateCommand);
                     awaitUi(() -> {
                         Shell active=display.getActiveShell();
                         if(active==null || !active.getText().equals("Update Maven Project")) return false;
@@ -282,16 +318,45 @@ public final class PublicWorkbenchProbe implements IStartup {
         @Override public void close() { Job.getJobManager().removeJobChangeListener(this); }
     }
     private static void await(java.util.concurrent.Callable<Boolean> test,String name) throws Exception {
-        long end=System.nanoTime()+TimeUnit.MINUTES.toNanos(50);
+        await(test, name, 50);
+    }
+    private static void await(java.util.concurrent.Callable<Boolean> test, String name, int minutes) throws Exception {
+        long end=System.nanoTime()+TimeUnit.MINUTES.toNanos(minutes);
         do { if(test.call()) return; Thread.sleep(500); } while(System.nanoTime()<end);
         throw new AssertionError("Timed out waiting for "+name);
     }
     private void awaitUi(java.util.concurrent.Callable<Boolean> test,String name) throws Exception {
+        awaitUi(test, name, 50);
+    }
+    private void awaitUi(java.util.concurrent.Callable<Boolean> test, String name, int minutes) throws Exception {
         await(() -> {
             var result=new java.util.concurrent.FutureTask<Boolean>(test);
             display.syncExec(result); return result.get();
-        },name);
+        },name,minutes);
     }
+    private static TreeItem findProjectItem(Tree tree, TreeItem[] items, org.eclipse.core.resources.IProject project) {
+        for (TreeItem item : items) {
+            Object data = item.getData();
+            if (data == null) continue;
+            IResource resource = org.eclipse.core.runtime.Adapters.adapt(data, IResource.class);
+            if (resource == null && data instanceof org.eclipse.jdt.core.IJavaElement javaElement) {
+                resource = javaElement.getResource();
+            }
+            if (project.equals(resource)) return item;
+            if (data instanceof org.eclipse.ui.IWorkingSet) {
+                if (!item.getExpanded()) {
+                    item.setExpanded(true);
+                    Event event = new Event();
+                    event.item = item;
+                    tree.notifyListeners(SWT.Expand, event);
+                }
+                TreeItem found = findProjectItem(tree, item.getItems(), project);
+                if (found != null) return found;
+            }
+        }
+        return null;
+    }
+
     private static TreeItem treeItem(Tree tree,TreeItem[] items,String text) {
         for(TreeItem item:items) {
             if(item.getText().contains(text)) return item;
