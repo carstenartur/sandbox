@@ -9,6 +9,7 @@
  *******************************************************************************/
 package org.eclipse.jdt.ui.tests.quickfix.Java10;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Arrays;
@@ -536,7 +537,7 @@ public class CharsetModernizationTest {
             assertEquals(after, change.getPreviewContent(null));
             assertEquals(before, unit.getSource(), "Preview must not mutate source"); //$NON-NLS-1$
             change.initializeValidationData(null);
-            var undo= change.perform(null);
+            var undo= performAndCheck(change, null, unit);
             assertNotNull(undo);
             try {
                 diagnostics(unit).forEach((key, count) ->

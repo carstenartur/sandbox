@@ -208,7 +208,7 @@ String expected = """
 				public static void main( String[] args) {
 					List<Integer> ls = new ArrayList<>();
 					int i =0;
-					i = ls.stream().map(_ -> 1).reduce(i, Integer::sum);
+					i = ls.stream().mapToInt(_ -> 1).reduce(i, Integer::sum);
 
 				}
 
@@ -268,7 +268,7 @@ String expected = """
 				public static void main( String[] args) {
 					List<Integer> ints=new ArrayList<>();
 					long len=0L;
-					len = ints.stream().map(_ -> 1L).reduce(len, Long::sum);
+					len = ints.stream().mapToLong(_ -> 1L).reduce(len, Long::sum);
 
 				}
 				}""";
@@ -315,7 +315,7 @@ String expected = """
 			class MyTest {
 				public int findMax(List<Integer> numbers) {
 					int max = Integer.MIN_VALUE;
-					max = numbers.stream().reduce(max, Math::max);
+					max = numbers.stream().mapToInt(num -> num.intValue()).reduce(max, Math::max);
 					return max;
 				}
 				}""";
@@ -362,7 +362,7 @@ String expected = """
 			class MyTest {
 				public int findMin(List<Integer> numbers) {
 					int min = Integer.MAX_VALUE;
-					min = numbers.stream().reduce(min, Math::min);
+					min = numbers.stream().mapToInt(num -> num.intValue()).reduce(min, Math::min);
 					return min;
 				}
 				}""";
@@ -408,7 +408,7 @@ String expected = """
 			class MyTest {
 				public int sumPositiveNumbers(List<Integer> numbers) {
 					int sum = 0;
-					sum = numbers.stream().filter(num -> (num > 0)).reduce(sum, Integer::sum);
+					sum = numbers.stream().filter(num -> (num > 0)).mapToInt(num -> num.intValue()).reduce(sum, Integer::sum);
 					return sum;
 				}
 				}""";
@@ -453,7 +453,7 @@ String expected = """
 			class MyTest {
 				public int sumOfSquares(List<Integer> numbers) {
 					int sum = 0;
-					sum = numbers.stream().map(num -> num * num).reduce(sum, Integer::sum);
+					sum = numbers.stream().mapToInt(num -> num * num).reduce(sum, Integer::sum);
 					return sum;
 				}
 				}""";
@@ -500,7 +500,7 @@ String expected = """
 			class MyTest {
 				public int sumOfPositiveSquares(List<Integer> numbers) {
 					int total = 0;
-					total = numbers.stream().filter(num -> (num > 0)).map(num -> num * num).reduce(total, Integer::sum);
+					total = numbers.stream().filter(num -> (num > 0)).mapToInt(num -> num * num).reduce(total, Integer::sum);
 					return total;
 				}
 				}""";

@@ -10,6 +10,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.cleanup.multifile;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -68,9 +70,9 @@ class ContainerLocalRewriteIntegrationTest {
 			""");
 		CompilationUnit root= parse(unit);
 
-		ContainerLocalRewriteFix.create(
-				unit, root, plan(unit, root, 1, 1, 1, 1))
-				.createChange(null).perform(null);
+		var change= ContainerLocalRewriteFix.create(
+				unit, root, plan(unit, root, 1, 1, 1, 1)).createChange(null);
+		performAndCheck(change, null, unit);
 
 		String source= unit.getSource();
 		assertTrue(source.contains("List<String> values")); //$NON-NLS-1$
@@ -98,9 +100,9 @@ class ContainerLocalRewriteIntegrationTest {
 			""");
 		CompilationUnit root= parse(unit);
 
-		ContainerLocalRewriteFix.create(
-				unit, root, plan(unit, root, 2, 2, 0, 0))
-				.createChange(null).perform(null);
+		var change= ContainerLocalRewriteFix.create(
+				unit, root, plan(unit, root, 2, 2, 0, 0)).createChange(null);
+		performAndCheck(change, null, unit);
 
 		String source= unit.getSource();
 		assertEquals(2, occurrences(source, "values.add(")); //$NON-NLS-1$

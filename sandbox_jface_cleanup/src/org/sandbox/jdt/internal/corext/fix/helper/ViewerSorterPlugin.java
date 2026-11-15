@@ -18,7 +18,10 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.AnnotatableType;
+import org.eclipse.jdt.core.dom.CastExpression;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
@@ -27,6 +30,8 @@ import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.dom.Bindings;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
@@ -476,6 +481,22 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 		}
 	}
 
+	private static boolean hasExactComparatorResult(CastExpression cast, String replacement, SorterHolder holder) {
+		Expression argument = ASTNodes.getUnparenthesedExpression(cast.getExpression());
+		if (!(argument instanceof MethodInvocation call) || !holder.methodNamesToReplace.contains(call.getName())
+				|| !"getSorter".equals(call.getName().getIdentifier()) //$NON-NLS-1$
+				|| (cast.getType() instanceof AnnotatableType annotated && !annotated.annotations().isEmpty())) {
+			return false;
+		}
+		ITypeBinding receiver = call.getExpression() == null ? ASTNodes.getEnclosingType(call)
+				: call.getExpression().resolveTypeBinding();
+		if (receiver == null || receiver.isRecovered()) {
+			return false;
+		}
+		IMethodBinding getter = Bindings.findMethodInHierarchy(receiver, "getComparator", new String[0]); //$NON-NLS-1$
+		return getter != null && !getter.isRecovered() && replacement.equals(getter.getReturnType().getQualifiedName());
+	}
+
 	/**
 	 * Rewrites AST nodes to transform ViewerSorter patterns to ViewerComparator.
 	 * 
@@ -520,13 +541,14 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 				String replacementQualifiedName = getReplacementTypeName(typeToReplace);
 				
 				if (replacementQualifiedName != null) {
-					// Create new type with proper import
-					Name newTypeName = addImport(replacementQualifiedName, cuRewrite, ast);
-					Type newType = ast.newSimpleType(newTypeName);
-					
-					// Replace the type
-					rewrite.replace(typeToReplace, newType, group);
-					
+					if (typeToReplace.getParent() instanceof CastExpression cast
+							&& hasExactComparatorResult(cast, replacementQualifiedName, holder)) {
+						rewrite.replace(cast, rewrite.createMoveTarget(cast.getExpression()), group);
+					} else {
+						Name newTypeName = addImport(replacementQualifiedName, cuRewrite, ast);
+						rewrite.replace(typeToReplace, ast.newSimpleType(newTypeName), group);
+					}
+
 					// Remove old import (if binding is available and fully resolved)
 					ITypeBinding typeBinding = typeToReplace.resolveBinding();
 					if (typeBinding != null && !typeBinding.isRecovered()) {

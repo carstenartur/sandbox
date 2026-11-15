@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.eclipse.jdt.ui.tests.quickfix;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -121,7 +122,7 @@ class CoordinatedContainerCleanUpTest {
 
 		ICleanUpFix fix= cleanup.createFix(new CleanUpContext(unit, parse(unit)));
 		assertNotNull(fix);
-		Change undo= fix.createChange(null).perform(monitor);
+		Change undo= performAndCheck(fix.createChange(null), monitor, unit, unrelated);
 		assertNotNull(undo);
 
 		String transformed= unit.getSource();
@@ -162,7 +163,7 @@ class CoordinatedContainerCleanUpTest {
 		cleanup.checkPreConditions(context.getJavaProject(), new ICompilationUnit[] { unit }, monitor);
 		ICleanUpFix fix= cleanup.createFix(new CleanUpContext(unit, parse(unit)));
 		assertNotNull(fix, cleanup.getLastPlanningDiagnosticsJson(context.getJavaProject()));
-		Change undo= fix.createChange(null).perform(monitor);
+		Change undo= performAndCheck(fix.createChange(null), monitor, unit);
 		assertNotNull(undo);
 		String transformed= unit.getSource();
 		assertTrue(transformed.contains("private Sample(List<String> items)")); //$NON-NLS-1$
@@ -201,7 +202,7 @@ class CoordinatedContainerCleanUpTest {
 		assertTrue(preview.contains("test.Sample.rowCount"), preview); //$NON-NLS-1$
 		ICleanUpFix fix= cleanup.createFix(new CleanUpContext(unit, parse(unit)));
 		assertNotNull(fix, cleanup.getLastPlanningDiagnosticsJson(context.getJavaProject()));
-		Change undo= fix.createChange(null).perform(monitor);
+		Change undo= performAndCheck(fix.createChange(null), monitor, unit);
 		assertNotNull(undo);
 		String transformed= unit.getSource();
 		assertTrue(transformed.contains("private final List<String> entries;"), transformed); //$NON-NLS-1$
@@ -367,7 +368,7 @@ class CoordinatedContainerCleanUpTest {
 		assertNotNull(otherFix);
 		change.add(otherFix.createChange(null));
 		change.initializeValidationData(monitor);
-		Change undo= change.perform(monitor);
+		Change undo= performAndCheck(change, monitor, scope);
 		assertNotNull(undo);
 		assertTrue(rows.getSource().contains("static List<String> collect("), rows.getSource()); //$NON-NLS-1$
 		assertTrue(rows.getSource().contains("rows.add(value)")); //$NON-NLS-1$
@@ -488,7 +489,7 @@ class CoordinatedContainerCleanUpTest {
 			change.add(fix.createChange(monitor));
 		}
 		change.initializeValidationData(monitor);
-		Change undo= change.perform(monitor);
+		Change undo= performAndCheck(change, monitor, scope);
 		assertNotNull(undo);
 		assertTrue(readers.getSource().contains("Function<String, List<String>> reference = Factory::rows;"), readers.getSource()); //$NON-NLS-1$
 		assertTrue(readers.getSource().contains("Function<String, List<String>> forward = v -> Factory.rows(v);")); //$NON-NLS-1$
@@ -554,7 +555,7 @@ class CoordinatedContainerCleanUpTest {
 		}
 		var fix= clean.createFix(new CleanUpContext(unit, parse(unit)));
 		assertNotNull(fix, clean.getLastPlanningDiagnosticsJson(context.getJavaProject()));
-		var undo= fix.createChange(null).perform(monitor);
+		var undo= performAndCheck(fix.createChange(null), monitor, scope);
 		assertNotNull(undo);
 		String migrated= unit.getSource();
 		assertTrue(migrated.contains("size(List<String> items)"), migrated); //$NON-NLS-1$
@@ -585,6 +586,24 @@ class CoordinatedContainerCleanUpTest {
 		clean.checkPostConditions(monitor);
 		undo.perform(monitor);
 		assertEquals(source, unit.getSource());
+		// A nested type shadows the simple name in both the producer and the generated overload.
+		String shadowed= source.replace("import java.util.Arrays;", "") //$NON-NLS-1$ //$NON-NLS-2$
+				.replace("final class Sizes {", "final class Sizes { static class Arrays {}") //$NON-NLS-1$ //$NON-NLS-2$
+				.replace("Arrays.copyOf", "java.util.Arrays.copyOf"); //$NON-NLS-1$ //$NON-NLS-2$
+		unit.getBuffer().setContents(shadowed);
+		unit.save(monitor, true);
+		var shadowedCleanup= new CoordinatedContainerCleanUpCore(options);
+		shadowedCleanup.checkPreConditions(context.getJavaProject(), scope, monitor);
+		var shadowedFix= shadowedCleanup.createFix(new CleanUpContext(unit, parse(unit)));
+		assertNotNull(shadowedFix);
+		var shadowedUndo= performAndCheck(shadowedFix.createChange(null), monitor, scope);
+		assertTrue(unit.getSource().contains("java.util.Arrays.asList(items)"), unit.getSource()); //$NON-NLS-1$
+		shadowedUndo.perform(monitor);
+		assertEquals(shadowed, unit.getSource());
+		shadowedCleanup.checkPostConditions(monitor);
+		unit.getBuffer().setContents(source);
+		unit.save(monitor, true);
+
 		// A caller added after preview invalidates the entire candidate, including the original producer.
 		var stale= new CoordinatedContainerCleanUpCore(options);
 		stale.checkPreConditions(context.getJavaProject(), scope, monitor);
@@ -674,7 +693,7 @@ class CoordinatedContainerCleanUpTest {
 		cleanup.checkPreConditions(context.getJavaProject(), new ICompilationUnit[] { unit }, monitor);
 		ICleanUpFix fix= cleanup.createFix(new CleanUpContext(unit, parse(unit)));
 		assertNotNull(fix, cleanup.getLastPlanningDiagnosticsJson(context.getJavaProject()));
-		Change undo= fix.createChange(null).perform(monitor);
+		Change undo= performAndCheck(fix.createChange(null), monitor, unit);
 		assertNotNull(undo);
 		assertTrue(unit.getSource().contains("List<String> values")); //$NON-NLS-1$
 		assertTrue(unit.getSource().contains("<T> void consume(List<T> items)")); //$NON-NLS-1$

@@ -436,7 +436,7 @@ class MyTest {
 				class MyTest {
 					String item = "outer";
 					public void process(List<String> items) {
-						items.forEach(item -> System.out.println(item));
+						items.forEach(item1 -> System.out.println(item1));
 						System.out.println(item);
 					}
 				}

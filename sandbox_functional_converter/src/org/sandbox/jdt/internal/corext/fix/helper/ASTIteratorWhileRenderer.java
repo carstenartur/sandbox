@@ -74,7 +74,14 @@ public class ASTIteratorWhileRenderer {
 		iteratorCall.setName(ast.newSimpleName("iterator")); //$NON-NLS-1$
 		iteratorFragment.setInitializer(iteratorCall);
 		VariableDeclarationStatement iteratorDeclaration = ast.newVariableDeclarationStatement(iteratorFragment);
-		iteratorDeclaration.setType(imports.addImport(iterator, ast, importContext));
+		Type iteratorType = imports.addImport(iterator, ast, importContext);
+		if (iterator.isRawType()) {
+			// A raw Iterable supplies Objects. Iterator<?> preserves that contract without introducing a raw declaration.
+			ParameterizedType wildcardIterator = ast.newParameterizedType(iteratorType);
+			wildcardIterator.typeArguments().add(ast.newWildcardType());
+			iteratorType = wildcardIterator;
+		}
+		iteratorDeclaration.setType(iteratorType);
 
 		SingleVariableDeclaration parameter = original.getParameter();
 		VariableDeclarationFragment element = ast.newVariableDeclarationFragment();
@@ -85,7 +92,18 @@ public class ASTIteratorWhileRenderer {
 		MethodInvocation next = ast.newMethodInvocation();
 		next.setExpression(ast.newSimpleName(iteratorName));
 		next.setName(ast.newSimpleName("next")); //$NON-NLS-1$
-		element.setInitializer(next);
+		Expression value = next;
+		if (parameter.resolveBinding().getType().isPrimitive() && iterable.getTypeArguments().length == 1) {
+			String primitive = Bindings.getUnboxedTypeName(iterable.getTypeArguments()[0].getErasure().getQualifiedName());
+			if (primitive != null) {
+				// Unbox the source wrapper before assignment performs the original primitive widening.
+				var unbox = ast.newMethodInvocation();
+				unbox.setExpression(next);
+				unbox.setName(ast.newSimpleName(primitive + "Value")); //$NON-NLS-1$
+				value = unbox;
+			}
+		}
+		element.setInitializer(value);
 		VariableDeclarationStatement declaration = ast.newVariableDeclarationStatement(element);
 		declaration.setType(parameter.getType().isVar() ? imports.addImport(parameter.resolveBinding().getType(), ast, importContext)
 				: (Type) rewrite.createCopyTarget(parameter.getType()));

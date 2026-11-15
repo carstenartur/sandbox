@@ -22,11 +22,16 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.SubMonitor;
 
 import org.eclipse.ltk.core.refactoring.Change;
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 
 import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.compiler.IProblem;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
@@ -64,20 +69,62 @@ public final class RepeatedCodeSequenceExtractor {
 			int start, int length, int statementCount, String coarseShape) {
 	}
 
-	private record PreparedExtraction(ExtractMethodRefactoring refactoring,
+	private record PreparedExtraction(ExtractMethodRefactoring refactoring, String ownerName,
 			int score, int statementCount, int duplicateCount, int sourceOffset) {
 
 		ICleanUpFix toCleanUpFix() {
 			return monitor -> {
-				IProgressMonitor effectiveMonitor= monitor == null ? new NullProgressMonitor() : monitor;
-				Change change= refactoring.createChange(effectiveMonitor);
-				if (change instanceof CompilationUnitChange compilationUnitChange) {
-					return compilationUnitChange;
+				SubMonitor progress= SubMonitor.convert(monitor, 3);
+				CompilationUnitChange change= extract(refactoring, progress.split(1));
+				if (ownerName != null && canMakeGeneratedMethodStatic(change, ownerName,
+						refactoring.getMethodName(), progress.split(1))) {
+					// Extract Method uses this modifier mask to build the declaration and calculate type parameters.
+					refactoring.setVisibility(Modifier.PRIVATE | Modifier.STATIC);
+					try {
+						return extract(refactoring, progress.split(1));
+					} finally {
+						refactoring.setVisibility(Modifier.PRIVATE);
+						change.dispose();
+					}
 				}
-				throw new CoreException(Status.error(
-						"Extract Method did not produce a compilation-unit change.")); //$NON-NLS-1$
+				return change;
 			};
 		}
+	}
+
+	private static CompilationUnitChange extract(ExtractMethodRefactoring refactoring, IProgressMonitor monitor) throws CoreException {
+		Change change= refactoring.createChange(monitor);
+		if (change instanceof CompilationUnitChange compilationUnitChange) {
+			return compilationUnitChange;
+		}
+		throw new CoreException(Status.error("Extract Method did not produce a compilation-unit change.")); //$NON-NLS-1$
+	}
+
+	private static boolean canMakeGeneratedMethodStatic(CompilationUnitChange change, String ownerName,
+			String methodName, IProgressMonitor monitor) throws CoreException {
+		ICompilationUnit unit= change.getCompilationUnit();
+		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
+		parser.setProject(unit.getJavaProject());
+		parser.setUnitName(unit.getPath().toPortableString());
+		parser.setSource(change.getPreviewContent(monitor).toCharArray());
+		var options= unit.getOptions(true);
+		options.put(JavaCore.COMPILER_PB_MISSING_STATIC_ON_METHOD, JavaCore.WARNING);
+		options.put(JavaCore.COMPILER_PB_POTENTIALLY_MISSING_STATIC_ON_METHOD, JavaCore.WARNING);
+		parser.setCompilerOptions(options);
+		parser.setResolveBindings(true);
+		CompilationUnit preview= (CompilationUnit) parser.createAST(monitor);
+		for (IProblem problem : preview.getProblems()) {
+			if (problem.getID() != IProblem.MethodCanBeStatic) {
+				continue;
+			}
+			// The diagnostic arguments
+			// identify the declaration; the allocator guarantees a fresh name in this type.
+			String[] arguments= problem.getArguments();
+			if (arguments.length >= 2 && ownerName.equals(arguments[0]) && methodName.equals(arguments[1])) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private RepeatedCodeSequenceExtractor() {
@@ -223,7 +270,9 @@ public final class RepeatedCodeSequenceExtractor {
 		}
 		int duplicateCount= refactoring.getNumberOfDuplicates();
 		int score= Math.multiplyExact(candidate.statementCount(), duplicateCount);
-		return new PreparedExtraction(refactoring, score, candidate.statementCount(),
+		ITypeBinding owner= candidate.enclosingType().resolveBinding();
+		String ownerName= owner == null || owner.isInterface() ? null : owner.getErasure().getQualifiedName();
+		return new PreparedExtraction(refactoring, ownerName, score, candidate.statementCount(),
 				duplicateCount, candidate.start());
 	}
 

@@ -34,8 +34,13 @@ final class JavaValueGuardBindings {
             @Override public boolean visit(ClassInstanceCreation creation) {
                 var constructor=creation.resolveConstructorBinding();
                 if(constructor==null || !scalarType(constructor.getDeclaringClass()) || creation.getAnonymousClassDeclaration()!=null
-                    || creation.getExpression()!=null || constructor.getParameterTypes().length!=1 || !constructor.getParameterTypes()[0].getQualifiedName().equals("java.lang.String")
-                    || creation.arguments().size()!=1 || !(creation.arguments().getFirst() instanceof StringLiteral))throw unavailable("CONSTRUCTOR");return true;
+                    || creation.getExpression()!=null || constructor.getParameterTypes().length!=1
+                    || creation.arguments().size()!=1)throw unavailable("CONSTRUCTOR");
+                String type=constructor.getParameterTypes()[0].getQualifiedName();
+                Object argument=creation.arguments().getFirst();
+                if (!(type.equals("java.lang.String") && argument instanceof StringLiteral)
+                    && !(type.equals("byte[]") && literalBytes(argument)))throw unavailable("CONSTRUCTOR");
+                return true;
             }
             @Override public boolean visit(MethodInvocation call) {
                 var method=call.resolveMethodBinding();if(method==null || method.isRecovered())throw unavailable("METHOD");
@@ -77,6 +82,17 @@ final class JavaValueGuardBindings {
                 return true;
             }
         });
+    }
+    private static boolean literalBytes(Object argument) {
+        if (!(argument instanceof ArrayCreation array) || array.getInitializer()==null
+                || !array.dimensions().isEmpty() || array.getInitializer().expressions().isEmpty())return false;
+        for (Object entry : array.getInitializer().expressions()) {
+            if (!(entry instanceof Expression expression) || !(expression.resolveConstantExpressionValue() instanceof Integer value)
+                    || value<Byte.MIN_VALUE || value>Byte.MAX_VALUE)return false;
+            if (!(expression instanceof NumberLiteral) && !(expression instanceof PrefixExpression prefix
+                    && prefix.getOperator()==PrefixExpression.Operator.MINUS && prefix.getOperand() instanceof NumberLiteral))return false;
+        }
+        return true;
     }
     private static boolean scalarType(ITypeBinding type) {
         return JavaValueSourceSummary.big(type) && !type.isNested() && "java.math.BigInteger".equals(type.getBinaryName());

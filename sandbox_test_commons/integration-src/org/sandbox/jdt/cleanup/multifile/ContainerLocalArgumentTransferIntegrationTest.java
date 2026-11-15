@@ -10,7 +10,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.cleanup.multifile;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -54,20 +54,15 @@ class ContainerLocalArgumentTransferIntegrationTest {
 	final AbstractEclipseJava context= new EclipseJava22();
 
 	@Test
-	void retainsOneExactlyPlannedMethodArgument() throws Exception {
+	void refusesAnArgumentTransferWithoutTheReceivingDeclaration() throws Exception {
 		ICompilationUnit unit= createUnit(source(false));
 		CompilationUnit root= parse(unit);
 		SourceFacts facts= facts(root);
 
-		ContainerLocalRewriteFix.create(unit, root, plan(unit, facts))
-				.createChange(null).perform(null);
-
-		String transformed= unit.getSource();
-		assertTrue(transformed.contains("List<String> values")); //$NON-NLS-1$
-		assertTrue(transformed.contains("new ArrayList<>()")); //$NON-NLS-1$
-		assertTrue(transformed.contains("values.add(value)")); //$NON-NLS-1$
-		assertTrue(transformed.contains("consume(values)")); //$NON-NLS-1$
-		assertFalse(transformed.contains("Arrays.copyOf(values")); //$NON-NLS-1$
+		CoreException failure= assertThrows(CoreException.class,
+				() -> ContainerLocalRewriteFix.create(unit, root, plan(unit, facts)));
+		assertTrue(failure.getMessage().contains("coordinated caller and parameter migration")); //$NON-NLS-1$
+		assertEquals(source(false), unit.getSource());
 	}
 
 	@Test

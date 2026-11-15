@@ -142,9 +142,10 @@ public class E1 {
 				import java.io.FileNotFoundException;
 
 				public class E1 {
-				    void method(String filename) {
+				    void method(String filename) throws java.io.IOException {
 				        try {
 				            Writer fw=new FileWriter(filename);
+				            fw.write('x');
 				            } catch (FileNotFoundException e) {
 				            e.printStackTrace();
 				            }
@@ -162,9 +163,10 @@ public class E1 {
 						import java.io.OutputStreamWriter;
 
 						public class E1 {
-						    void method(String filename) {
+						    void method(String filename) throws java.io.IOException {
 						        try {
 						            Writer fw=new OutputStreamWriter(new FileOutputStream(filename), Charset.defaultCharset());
+						            fw.write('x');
 						            } catch (FileNotFoundException e) {
 						            e.printStackTrace();
 						            }
@@ -381,18 +383,21 @@ public class E1 {
 	// Methodendeklaration, die `UnsupportedEncodingException` wirft (und durch den Cleanup angepasst wird)
 	void methodWithThrows(String filename) throws FileNotFoundException, UnsupportedEncodingException {
 		OutputStreamWriter os = new OutputStreamWriter(new FileOutputStream(filename), "non-existing-encoding"); // wirft UnsupportedEncodingException
+		System.out.println(os.getEncoding());
 	}
 
 	// Neue Methode: methodWithThrowsChange() - nach dem Cleanup wird keine UnsupportedEncodingException mehr geworfen
 	void methodWithThrowsChange(String filename) throws FileNotFoundException {
 		// Nach dem Cleanup, der String "UTF-8" wird zu einer StandardCharset-Konstanten geändert
 		OutputStreamWriter os = new OutputStreamWriter(new FileOutputStream(filename), "UTF-8"); // wirft keine UnsupportedEncodingException mehr
+		System.out.println(os.getEncoding());
 	}
 
 	// Methode mit einem try-catch, um die UnsupportedEncodingException zu behandeln (und durch den Cleanup angepasst wird)
 	void methodWithCatch(String filename) {
 		try {
 			OutputStreamWriter os = new OutputStreamWriter(new FileOutputStream(filename), "non-existing-encoding"); // könnte UnsupportedEncodingException werfen
+			System.out.println(os.getEncoding());
 		} catch (FileNotFoundException | UnsupportedEncodingException e) {
 			// Hier wird die UnsupportedEncodingException abgefangen
 			e.printStackTrace();
@@ -404,6 +409,7 @@ public class E1 {
 		try {
 			// Nach dem Cleanup wird "UTF-8" ersetzt
 			OutputStreamWriter os = new OutputStreamWriter(new FileOutputStream(filename), "UTF-8"); // keine UnsupportedEncodingException
+			System.out.println(os.getEncoding());
 		} catch (FileNotFoundException | UnsupportedEncodingException e) {
 			// Dieser Block wird nicht mehr erreicht, da keine UnsupportedEncodingException mehr geworfen wird
 			e.printStackTrace();
@@ -477,18 +483,21 @@ public class E1 {
 	// Methodendeklaration, die `UnsupportedEncodingException` wirft (und durch den Cleanup angepasst wird)
 	void methodWithThrows(String filename) throws FileNotFoundException, UnsupportedEncodingException {
 		OutputStreamWriter os = new OutputStreamWriter(new FileOutputStream(filename), "non-existing-encoding"); // wirft UnsupportedEncodingException
+		System.out.println(os.getEncoding());
 	}
 
 	// Neue Methode: methodWithThrowsChange() - nach dem Cleanup wird keine UnsupportedEncodingException mehr geworfen
 	void methodWithThrowsChange(String filename) throws FileNotFoundException {
 		// Nach dem Cleanup, der String "UTF-8" wird zu einer StandardCharset-Konstanten geändert
 		OutputStreamWriter os = new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8); // wirft keine UnsupportedEncodingException mehr
+		System.out.println(os.getEncoding());
 	}
 
 	// Methode mit einem try-catch, um die UnsupportedEncodingException zu behandeln (und durch den Cleanup angepasst wird)
 	void methodWithCatch(String filename) {
 		try {
 			OutputStreamWriter os = new OutputStreamWriter(new FileOutputStream(filename), "non-existing-encoding"); // könnte UnsupportedEncodingException werfen
+			System.out.println(os.getEncoding());
 		} catch (FileNotFoundException | UnsupportedEncodingException e) {
 			// Hier wird die UnsupportedEncodingException abgefangen
 			e.printStackTrace();
@@ -500,6 +509,7 @@ public class E1 {
 		try {
 			// Nach dem Cleanup wird "UTF-8" ersetzt
 			OutputStreamWriter os = new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8); // keine UnsupportedEncodingException
+			System.out.println(os.getEncoding());
 		} catch (FileNotFoundException e) {
 			// Dieser Block wird nicht mehr erreicht, da keine UnsupportedEncodingException mehr geworfen wird
 			e.printStackTrace();
@@ -850,6 +860,7 @@ public class E1 {
 
 		// Fälle mit String Encoding als "UTF-8" (soll durch StandardCharsets.UTF_8 ersetzt werden)
 		String s1 = new String(b, "UTF-8"); // "UTF-8" als String-Literal
+		System.out.println(s1);
 		String s2 = new String(b, 0, 1, "UTF-8"); // "UTF-8" als String-Literal
 
 		// Fall mit ISO-8859-1 Encoding (soll durch StandardCharsets.ISO_8859_1 ersetzt werden)
@@ -899,12 +910,14 @@ public class E1 {
 	static void methodWithThrows(String filename) throws UnsupportedEncodingException {
 		byte[] b = {(byte) 59};
 		String s1 = new String(b, "non-existing-encoding"); // wirft UnsupportedEncodingException
+		System.out.println(s1);
 	}
 
 	// Nach dem Cleanup sollte dies keine UnsupportedEncodingException mehr werfen
 	static void methodWithThrowsChange(String filename) throws FileNotFoundException {
 		byte[] b = {(byte) 59};
 		String s1 = new String(b, "UTF-8"); // wirft keine UnsupportedEncodingException mehr
+		System.out.println(s1);
 	}
 
 	// Methodendeklaration mit try-catch für UnsupportedEncodingException (wird im Cleanup angepasst)
@@ -912,6 +925,7 @@ public class E1 {
 		byte[] b = {(byte) 59};
 		try {
 			String s1 = new String(b, "non-existing-encoding"); // könnte UnsupportedEncodingException werfen
+			System.out.println(s1);
 		} catch (UnsupportedEncodingException e) {
 			// UnsupportedEncodingException wird geworfen und abgefangen
 			e.printStackTrace();
@@ -922,6 +936,7 @@ public class E1 {
 	static void methodWithThrowsChange2(String filename) throws FileNotFoundException, UnsupportedEncodingException {
 		byte[] b = {(byte) 59};
 		String s1 = new String(b, "UTF-8"); // UTF-8 wird durch StandardCharsets.UTF_8 ersetzt
+		System.out.println(s1);
 	}
 }
 """,
@@ -941,6 +956,7 @@ public class E1 {
 
 		// Fälle mit String Encoding als "UTF-8" (soll durch StandardCharsets.UTF_8 ersetzt werden)
 		String s1 = new String(b, StandardCharsets.UTF_8); // "UTF-8" als String-Literal
+		System.out.println(s1);
 		String s2 = new String(b, 0, 1, StandardCharsets.UTF_8); // "UTF-8" als String-Literal
 
 		// Fall mit ISO-8859-1 Encoding (soll durch StandardCharsets.ISO_8859_1 ersetzt werden)
@@ -990,12 +1006,14 @@ public class E1 {
 	static void methodWithThrows(String filename) throws UnsupportedEncodingException {
 		byte[] b = {(byte) 59};
 		String s1 = new String(b, "non-existing-encoding"); // wirft UnsupportedEncodingException
+		System.out.println(s1);
 	}
 
 	// Nach dem Cleanup sollte dies keine UnsupportedEncodingException mehr werfen
 	static void methodWithThrowsChange(String filename) throws FileNotFoundException {
 		byte[] b = {(byte) 59};
 		String s1 = new String(b, StandardCharsets.UTF_8); // wirft keine UnsupportedEncodingException mehr
+		System.out.println(s1);
 	}
 
 	// Methodendeklaration mit try-catch für UnsupportedEncodingException (wird im Cleanup angepasst)
@@ -1003,6 +1021,7 @@ public class E1 {
 		byte[] b = {(byte) 59};
 		try {
 			String s1 = new String(b, "non-existing-encoding"); // könnte UnsupportedEncodingException werfen
+			System.out.println(s1);
 		} catch (UnsupportedEncodingException e) {
 			// UnsupportedEncodingException wird geworfen und abgefangen
 			e.printStackTrace();
@@ -1013,6 +1032,7 @@ public class E1 {
 	static void methodWithThrowsChange2(String filename) throws FileNotFoundException {
 		byte[] b = {(byte) 59};
 		String s1 = new String(b, StandardCharsets.UTF_8); // UTF-8 wird durch StandardCharsets.UTF_8 ersetzt
+		System.out.println(s1);
 	}
 }
 """),

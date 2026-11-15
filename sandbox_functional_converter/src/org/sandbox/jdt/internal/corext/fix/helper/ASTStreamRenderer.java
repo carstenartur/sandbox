@@ -15,11 +15,15 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import static org.sandbox.jdt.internal.corext.fix.helper.StreamConstants.*;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.internal.corext.dom.LinkedNodeFinder;
+import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 import org.sandbox.functional.core.model.SourceDescriptor;
 import org.sandbox.functional.core.model.FunctionalExpression;
 import org.sandbox.functional.core.operation.FilterOp;
@@ -44,6 +48,7 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
     private final AST ast;
     private final CompilationUnit compilationUnit;
     private final Statement originalBody;
+    private String primitiveElement;
     
     public ASTStreamRenderer(AST ast, ASTRewrite rewrite, CompilationUnit compilationUnit, Statement originalBody) {
         this.ast = ast;
@@ -54,6 +59,11 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
     
     @Override
     public Expression renderSource(SourceDescriptor source) {
+        primitiveElement = switch (source.type()) {
+            case INT_RANGE, EXPLICIT_RANGE -> "int"; //$NON-NLS-1$
+            case ARRAY -> numericStreamType(source.elementTypeName());
+            default -> null;
+        };
         if (source.streamExpression() != null) return createExpression(source.streamExpression());
         // Create: collection.stream() or Arrays.stream(array)
         switch (source.type()) {
@@ -150,14 +160,48 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
     
     @Override
     public Expression renderMap(Expression pipeline, String expression, String variableName, String targetType) {
-        // pipeline.map(var -> expression)
+        // A primitive local stays primitive in downstream filters, overloads and reductions.
+        if (primitiveElement != null && primitiveElement.equals(targetType) && variableName.equals(expression)) {
+            return pipeline;
+        }
         MethodInvocation mapCall = ast.newMethodInvocation();
         mapCall.setExpression(pipeline);
-        mapCall.setName(ast.newSimpleName(MAP_METHOD));
+        mapCall.setName(ast.newSimpleName(mappingMethod(targetType)));
         mapCall.arguments().add(createLambda(variableName, expression));
         return mapCall;
     }
     
+    private static String numericStreamType(String type) {
+        return switch (type) {
+            case "int", "long", "double" -> type; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+            case null, default -> null;
+        };
+    }
+
+    private String mappingMethod(String targetType) {
+        String previous = primitiveElement;
+        primitiveElement = numericStreamType(targetType);
+        if (java.util.Objects.equals(previous, primitiveElement)) {
+            return MAP_METHOD;
+        }
+        return switch (primitiveElement) {
+            case "int" -> "mapToInt"; //$NON-NLS-1$ //$NON-NLS-2$
+            case "long" -> "mapToLong"; //$NON-NLS-1$ //$NON-NLS-2$
+            case "double" -> "mapToDouble"; //$NON-NLS-1$ //$NON-NLS-2$
+            case null, default -> "mapToObj"; //$NON-NLS-1$
+        };
+    }
+
+    protected final Expression collectionInput(Expression pipeline) {
+        if (primitiveElement == null) {
+            return pipeline;
+        }
+        MethodInvocation boxed = ast.newMethodInvocation();
+        boxed.setExpression(pipeline);
+        boxed.setName(ast.newSimpleName("boxed")); //$NON-NLS-1$
+        return boxed;
+    }
+
     @Override
     public Expression renderMapOp(Expression pipeline, MapOp mapOp, String variableName) {
         if (mapOp.function() != null) {
@@ -399,48 +443,26 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         
         // Use original body if available (production), otherwise fall back to string parsing (tests)
         if (originalBody != null) {
-            // Production path: Use copySubtree from original body to preserve binding information
-            if (originalBody instanceof Block) {
-                Block block = (Block) originalBody;
-                if (block.statements().size() == 1) {
-                    // Single statement - extract as expression
-                    Statement stmt = (Statement) block.statements().get(0);
-                    if (stmt instanceof ExpressionStatement) {
-                        ExpressionStatement exprStmt = (ExpressionStatement) stmt;
-                        Expression body = (Expression) ASTNode.copySubtree(ast, exprStmt.getExpression());
-                        setLambdaParameterName(param, effectiveParameterName(variableName, body));
-                        lambda.setBody(body);
-                    } else {
-                        // Not an expression statement, copy the whole statement as block
-                        Block lambdaBlock = ast.newBlock();
-                        lambdaBlock.statements().add(ASTNode.copySubtree(ast, stmt));
-                        setLambdaParameterName(param, effectiveParameterName(variableName, lambdaBlock));
-                        lambda.setBody(lambdaBlock);
-                    }
-                } else {
-                    // Multiple statements - copy all into a block
-                    Block lambdaBlock = ast.newBlock();
-                    for (Object stmt : block.statements()) {
-                        lambdaBlock.statements().add(ASTNode.copySubtree(ast, (Statement) stmt));
-                    }
-                    setLambdaParameterName(param, effectiveParameterName(variableName, lambdaBlock));
-                    lambda.setBody(lambdaBlock);
-                }
-            } else {
-                // Body is a single statement (not a block)
-                if (originalBody instanceof ExpressionStatement) {
-                    ExpressionStatement exprStmt = (ExpressionStatement) originalBody;
-                    Expression body = (Expression) ASTNode.copySubtree(ast, exprStmt.getExpression());
-                    setLambdaParameterName(param, effectiveParameterName(variableName, body));
-                    lambda.setBody(body);
-                } else {
-                    // Not an expression statement, wrap in block
-                    Block lambdaBlock = ast.newBlock();
-                    lambdaBlock.statements().add(ASTNode.copySubtree(ast, originalBody));
-                    setLambdaParameterName(param, effectiveParameterName(variableName, lambdaBlock));
-                    lambda.setBody(lambdaBlock);
-                }
+            ASTNode sourceBody = originalBody;
+            if (sourceBody instanceof Block block && block.statements().size() == 1) {
+                sourceBody = (Statement) block.statements().get(0);
             }
+            if (sourceBody instanceof ExpressionStatement statement) {
+                sourceBody = statement.getExpression();
+            }
+            ASTNode body = ASTNode.copySubtree(ast, sourceBody);
+            String parameterName = effectiveParameterName(variableName, body);
+            if (originalBody.getParent() instanceof EnhancedForStatement loop
+                    && variableName.equals(parameterName) && variableName.equals(loop.getParameter().getName().getIdentifier())) {
+                parameterName = avoidHidingField(loop, sourceBody, body, variableName);
+            }
+            setLambdaParameterName(param, parameterName);
+            if (body instanceof Statement statement && !(body instanceof Block)) {
+                Block lambdaBlock = ast.newBlock();
+                lambdaBlock.statements().add(statement);
+                body = lambdaBlock;
+            }
+            lambda.setBody(body);
         } else {
             // Test/fallback path: Use bodyStatements strings (for unit tests)
             String parameterName = effectiveParameterName(variableName, bodyStatements);
@@ -462,6 +484,43 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         return forEachCall;
     }
     
+    private String avoidHidingField(EnhancedForStatement loop, ASTNode source, ASTNode copy, String name) {
+        IVariableBinding element = loop.getParameter().resolveBinding();
+        if (element == null || compilationUnit == null) {
+            return name;
+        }
+        // At the loop boundary its element is not in scope yet, so fields remain visible.
+        IBinding[] visible = new ScopeAnalyzer(compilationUnit).getDeclarationsInScope(loop.getStartPosition(),
+                ScopeAnalyzer.VARIABLES | ScopeAnalyzer.CHECK_VISIBILITY);
+        Set<String> fields = new HashSet<>();
+        for (IBinding binding : visible) {
+            if (binding instanceof IVariableBinding field && field.isField()) {
+                fields.add(field.getName());
+            }
+        }
+        if (!fields.contains(name)) {
+            return name;
+        }
+        Set<String> reserved = new HashSet<>(LoopVariableNames.usedNames(loop));
+        reserved.addAll(fields);
+        String replacement = LoopVariableNames.fresh(name, reserved);
+        // copySubtree retains source ranges but drops bindings. Match the original element uses by position.
+        Set<Integer> uses = new HashSet<>();
+        for (SimpleName use : LinkedNodeFinder.findByBinding(source, element)) {
+            uses.add(use.getStartPosition());
+        }
+        copy.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(SimpleName identifier) {
+                if (uses.contains(identifier.getStartPosition())) {
+                    identifier.setIdentifier(replacement);
+                }
+                return true;
+            }
+        });
+        return replacement;
+    }
+
     @Override
     public Expression renderFilterWithPredicate(Expression pipeline, Supplier<Expression> predicateSupplier,
                                                  String variableName) {
@@ -498,7 +557,7 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         // Similar to renderMap but uses the supplier
         MethodInvocation mapCall = ast.newMethodInvocation();
         mapCall.setExpression(pipeline);
-        mapCall.setName(ast.newSimpleName(MAP_METHOD));
+        mapCall.setName(ast.newSimpleName(mappingMethod(targetType)));
         
         LambdaExpression lambda = ast.newLambdaExpression();
         VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
@@ -526,7 +585,7 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
     public Expression renderCollect(Expression pipeline, CollectTerminal terminal, String variableName) {
         // pipeline.collect(Collectors.toList()) etc.
         MethodInvocation collectCall = ast.newMethodInvocation();
-        collectCall.setExpression(pipeline);
+        collectCall.setExpression(collectionInput(pipeline));
         collectCall.setName(ast.newSimpleName(COLLECT_METHOD));
         
         MethodInvocation collector = ast.newMethodInvocation();
@@ -829,7 +888,7 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         
         MethodInvocation mapCall = ast.newMethodInvocation();
         mapCall.setExpression(pipeline);
-        mapCall.setName(ast.newSimpleName(MAP_METHOD));
+        mapCall.setName(ast.newSimpleName(mappingMethod(mapOp.targetType())));
         
         LambdaExpression lambda = ast.newLambdaExpression();
         VariableDeclarationFragment param = ast.newVariableDeclarationFragment();

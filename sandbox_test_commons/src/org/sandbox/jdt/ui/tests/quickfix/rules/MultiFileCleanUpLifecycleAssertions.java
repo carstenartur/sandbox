@@ -14,13 +14,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IWorkspace;
@@ -37,9 +33,6 @@ import org.eclipse.ltk.core.refactoring.RefactoringCore;
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 
 import org.eclipse.jdt.core.ICompilationUnit;
-import org.eclipse.jdt.core.dom.ASTParser;
-import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
 import org.eclipse.jdt.internal.corext.fix.CleanUpRefactoring;
 import org.eclipse.jdt.internal.ui.JavaPlugin;
 import org.eclipse.jdt.ui.cleanup.ICleanUp;
@@ -48,14 +41,11 @@ import org.eclipse.jdt.ui.cleanup.ICleanUp;
  * Assertions for the complete lifecycle of one coordinated multi-file cleanup.
  *
  * <p>The helper executes one {@link CleanUpRefactoring}, verifies every affected
- * compilation unit and its Java error set after apply, performs the returned undo
+ * compilation unit and its Java warning and error set after apply, performs the returned undo
  * change, and finally proves that source and semantic state returned to the
  * original per-file baseline.</p>
  */
 public final class MultiFileCleanUpLifecycleAssertions {
-
-	private record ProblemSignature(int id, String message) {
-	}
 
 	private MultiFileCleanUpLifecycleAssertions() {
 		// assertions only
@@ -81,7 +71,7 @@ public final class MultiFileCleanUpLifecycleAssertions {
 	 * units expected to be affected after coordinated scope expansion.
 	 *
 	 * @param selectedUnits compilation units explicitly added to the refactoring
-	 * @param verifiedUnits units whose source and Java errors must be verified
+	 * @param verifiedUnits units whose source and Java warnings and errors must be verified
 	 * @param expectedAfterApply expected source contents for {@code verifiedUnits}
 	 * @return the final-condition status of the cleanup refactoring
 	 * @throws CoreException if Eclipse cannot create or execute either change
@@ -100,7 +90,7 @@ public final class MultiFileCleanUpLifecycleAssertions {
 				.allMatch(verifiedHandles::contains),
 				"Each selected compilation unit must be included in verifiedUnits"); //$NON-NLS-1$
 		String[] originals= contents(verifiedUnits);
-		Map<String, Map<ProblemSignature, Long>> baselineProblems= errorCounts(verifiedUnits);
+		var baselineProblems= CompilerDiagnosticAssertions.capture(verifiedUnits);
 
 		CleanUpRefactoring refactoring= new CleanUpRefactoring();
 		refactoring.setUseOptionsFromProfile(true);
@@ -128,14 +118,13 @@ public final class MultiFileCleanUpLifecycleAssertions {
 		assertNotNull(undo, "The coordinated cleanup did not create an undo change"); //$NON-NLS-1$
 
 		assertPostApplyContents(verifiedUnits, expectedAfterApply);
-		assertNoNewErrors(verifiedUnits, baselineProblems, "after apply"); //$NON-NLS-1$
+		baselineProblems.assertNoNewDiagnostics();
 
 		PerformChangeOperation performUndo= new PerformChangeOperation(undo);
 		workspace.run(performUndo, new NullProgressMonitor());
 		assertTrue(performUndo.changeExecuted(), "The coordinated cleanup undo change was not executed"); //$NON-NLS-1$
 		assertRestoredContents(verifiedUnits, originals);
-		assertEquals(baselineProblems, errorCounts(verifiedUnits),
-				"Undo must restore the original Java error set"); //$NON-NLS-1$
+		baselineProblems.assertRestored();
 		return status;
 	}
 
@@ -161,45 +150,6 @@ public final class MultiFileCleanUpLifecycleAssertions {
 		String[] result= new String[units.length];
 		for (int i= 0; i < units.length; i++) {
 			result[i]= units[i].getBuffer().getContents();
-		}
-		return result;
-	}
-
-	private static void assertNoNewErrors(ICompilationUnit[] units,
-			Map<String, Map<ProblemSignature, Long>> baseline, String phase) {
-		Map<String, Map<ProblemSignature, Long>> current= errorCounts(units);
-		StringBuilder newErrors= new StringBuilder();
-		for (Map.Entry<String, Map<ProblemSignature, Long>> unitEntry : current.entrySet()) {
-			Map<ProblemSignature, Long> previous= baseline.getOrDefault(unitEntry.getKey(), Map.of());
-			for (Map.Entry<ProblemSignature, Long> problemEntry : unitEntry.getValue().entrySet()) {
-				long added= problemEntry.getValue() - previous.getOrDefault(problemEntry.getKey(), 0L);
-				if (added > 0) {
-					newErrors.append(unitEntry.getKey()).append(": ") //$NON-NLS-1$
-							.append(problemEntry.getKey().message()).append(" [id=") //$NON-NLS-1$
-							.append(problemEntry.getKey().id()).append("] x").append(added).append('\n'); //$NON-NLS-1$
-				}
-			}
-		}
-		if (!newErrors.isEmpty()) {
-			fail("New Java errors " + phase + ":\n" + newErrors); //$NON-NLS-1$ //$NON-NLS-2$
-		}
-	}
-
-	private static Map<String, Map<ProblemSignature, Long>> errorCounts(ICompilationUnit[] units) {
-		Map<String, Map<ProblemSignature, Long>> result= new LinkedHashMap<>();
-		for (ICompilationUnit unit : units) {
-			ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);
-			parser.setSource(unit);
-			parser.setProject(unit.getJavaProject());
-			parser.setResolveBindings(true);
-			parser.setBindingsRecovery(IASTSharedValues.SHARED_BINDING_RECOVERY);
-			parser.setStatementsRecovery(IASTSharedValues.SHARED_AST_STATEMENT_RECOVERY);
-			CompilationUnit root= (CompilationUnit) parser.createAST(null);
-			Map<ProblemSignature, Long> problems= Arrays.stream(root.getProblems())
-					.filter(problem -> !problem.isWarning() && !problem.isInfo())
-					.map(problem -> new ProblemSignature(problem.getID(), problem.getMessage()))
-					.collect(Collectors.groupingBy(Function.identity(), LinkedHashMap::new, Collectors.counting()));
-			result.put(unit.getPrimary().getHandleIdentifier(), problems);
 		}
 		return result;
 	}

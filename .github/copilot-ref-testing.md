@@ -91,6 +91,12 @@ Excluded from default build. Tests verify actual UI interactions.
 - Use `@EnumSource` or `@ValueSource` for parameterized tests
 - `@Disabled` for future features (with explanation)
 
+### Compiler diagnostics for Java cleanup output
+
+Run the Eclipse compiler on the complete affected compilation units before and after a cleanup. A change must not introduce a warning or error, including additional occurrences of an existing diagnostic. Existing warnings in the input fixture may be removed. Keep the project language level and classpath when comparing diagnostics.
+
+The standard assertions in `AbstractEclipseJava` and `MultiFileCleanUpLifecycleAssertions` perform this check. For a direct LTK change, use `CompilerDiagnosticAssertions.performAndCheck(change, monitor, affectedUnits)`. For a workbench action, call `CompilerDiagnosticAssertions.capture(affectedUnits)` before the action, `assertNoNewDiagnostics()` after Apply, and `assertRestored()` after Undo. Include dependent callers and declarations for changes that span multiple files.
+
 ## CI Log Analysis — CRITICAL
 
 **YOU CANNOT RELIABLY RUN ECLIPSE PLUGIN TESTS LOCALLY** in the agent environment. When tests fail:

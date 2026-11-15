@@ -138,9 +138,10 @@ enum ExplicitEncodingPatterns {
 				import java.io.FileNotFoundException;
 
 				public class E1 {
-				    void method(String filename) {
+				    void method(String filename) throws java.io.IOException {
 				        try {
 				            Writer fw=new FileWriter(filename);
+				            fw.write('x');
 				            } catch (FileNotFoundException e) {
 				            e.printStackTrace();
 				            }
@@ -158,9 +159,10 @@ enum ExplicitEncodingPatterns {
 						import java.io.OutputStreamWriter;
 
 						public class E1 {
-						    void method(String filename) {
+						    void method(String filename) throws java.io.IOException {
 						        try {
 						            Writer fw=new OutputStreamWriter(new FileOutputStream(filename), Charset.defaultCharset());
+						            fw.write('x');
 						            } catch (FileNotFoundException e) {
 						            e.printStackTrace();
 						            }

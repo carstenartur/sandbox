@@ -10,6 +10,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.cleanup.multifile;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -51,8 +53,8 @@ class UniqueSequenceLocalRewriteIntegrationTest {
 		CompilationUnit root= parse(unit);
 
 		UniqueSequenceLocalRewritePlan plan= plan(unit, root);
-		UniqueSequenceLocalRewriteFix.create(unit, root, plan)
-				.createChange(null).perform(null);
+		var change= UniqueSequenceLocalRewriteFix.create(unit, root, plan).createChange(null);
+		performAndCheck(change, null, unit);
 
 		String source= unit.getSource();
 		assertTrue(source.contains("Set<String> values")); //$NON-NLS-1$
@@ -90,8 +92,8 @@ class UniqueSequenceLocalRewriteIntegrationTest {
 
 		UniqueSequenceLocalRewritePlan plan= plan(unit, recommendation);
 		assertEquals("java.util.LinkedHashSet", plan.targetImplementationType()); //$NON-NLS-1$
-		UniqueSequenceLocalRewriteFix.create(unit, root, plan)
-				.createChange(null).perform(null);
+		var change= UniqueSequenceLocalRewriteFix.create(unit, root, plan).createChange(null);
+		performAndCheck(change, null, unit);
 
 		String transformed= unit.getSource();
 		assertTrue(transformed.contains("Set<String> values")); //$NON-NLS-1$

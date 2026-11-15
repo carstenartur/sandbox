@@ -68,9 +68,11 @@ public class MyTest {
 	}
 
 	class Er_5b8b4 implements BeforeEachCallback, AfterEachCallback {
+		@Override
 		public void beforeEach(ExtensionContext context) {
 		}
 
+		@Override
 		public void afterEach(ExtensionContext context) {
 		}
 	}
@@ -206,6 +208,7 @@ public class MyTest {
 
         @Override
         public void afterEach(ExtensionContext context) {
+            /* The JUnit 4 superclass callback was empty. */
         }
     }
 
@@ -270,20 +273,24 @@ public class MyTest {
     }
 
 	class AnonymousRule_9ea4e implements BeforeEachCallback, AfterEachCallback {
+		@Override
 		public void beforeEach(ExtensionContext context) {
 			System.out.println("Anonymous rule before");
 		}
 
+		@Override
 		public void afterEach(ExtensionContext context) {
 			System.out.println("Anonymous rule after");
 		}
 	}
 
 	class SecondRule_c4213 implements BeforeEachCallback, AfterEachCallback {
+		@Override
 		public void beforeEach(ExtensionContext context) {
 			System.out.println("Second rule before");
 		}
 
+		@Override
 		public void afterEach(ExtensionContext context) {
 			System.out.println("Second rule after");
 		}

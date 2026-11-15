@@ -10,6 +10,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.cleanup.multifile;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
+
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -70,9 +72,9 @@ class ContainerParameterRewriteIntegrationTest {
 			""");
 		CompilationUnit root= parse(unit);
 
-		ContainerParameterRewriteFix.create(
-				unit, root, plan(unit, root, 1, 1))
-				.createChange(null).perform(null);
+		var change= ContainerParameterRewriteFix.create(
+				unit, root, plan(unit, root, 1, 1)).createChange(null);
+		performAndCheck(change, null, unit);
 
 		String source= unit.getSource();
 		assertTrue(source.contains("import java.util.List;")); //$NON-NLS-1$

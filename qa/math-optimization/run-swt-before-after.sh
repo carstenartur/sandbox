@@ -16,6 +16,30 @@ PATCH="$SANDBOX_ROOT/qa/math-optimization/target/swt-current-patch/swt-source-re
 [[ "$OUTPUT/" != "$SWT_CHECKOUT/"* ]]
 [[ ! -e "$OUTPUT/baseline" && ! -e "$OUTPUT/generated" ]]
 [[ $(git -C "$SWT_CHECKOUT" rev-parse HEAD) == "$COMMIT" ]]
+# Match the SWT submodule and its platform parent/target definition from the
+# same integration build. Tycho reads extensions from the reactor root.
+BUILD_ROOT="$(dirname "$SWT_CHECKOUT")"
+RELENG="$BUILD_ROOT/releng"
+RELENG_COMMIT=dd305292a3ee34b4f592bbb0fa7c36fb8646bb71
+[[ $(git -C "$RELENG" rev-parse HEAD) == "$RELENG_COMMIT" ]]
+[[ $(git -C "$RELENG" rev-parse HEAD:eclipse.platform.swt) == "$COMMIT" ]]
+git -C "$RELENG" diff --exit-code HEAD -- eclipse-platform-parent eclipse.platform.releng.prereqs.sdk
+printf '%s\n' "$RELENG_COMMIT" > "$OUTPUT/releng-commit.txt"
+sha256sum "$RELENG/eclipse-platform-parent/pom.xml" \
+  "$RELENG/eclipse.platform.releng.prereqs.sdk/eclipse-sdk-prereqs.target" > "$OUTPUT/platform-build-inputs.sha256"
+for input in "$RELENG/eclipse-platform-parent" "$RELENG/eclipse.platform.releng.prereqs.sdk" "$SWT_CHECKOUT/.mvn"; do
+  destination="$BUILD_ROOT/$(basename "$input")"
+  if [[ ! -e "$destination" && ! -L "$destination" ]]; then
+    ln -s "$input" "$destination"
+  fi
+  diff -qr "$input" "$destination"
+done
+REACTOR="$BUILD_ROOT/swt-reactor.xml"
+TEMPLATE="$SANDBOX_ROOT/qa/math-optimization/swt-reactor.xml"
+if [[ ! -e "$REACTOR" && ! -L "$REACTOR" ]]; then
+  cp "$TEMPLATE" "$REACTOR"
+fi
+cmp "$TEMPLATE" "$REACTOR"
 git -C "$SWT_CHECKOUT" diff --exit-code HEAD --
 test -s "$PATCH"
 git -C "$SWT_CHECKOUT" apply --check "$PATCH"
@@ -33,12 +57,24 @@ run_upstream() {
   local -a command=(
     dbus-run-session -- xvfb-run -a -s '-screen 0 1024x768x24 -noreset'
     "$MAVEN" --batch-mode --no-transfer-progress --no-snapshot-updates
+    -f "$REACTOR" "-Dswt.source=$(basename "$SWT_CHECKOUT")"
     -Pbuild-individual-bundles -DforkCount=1 -DskipNativeTests=false
     -Dtycho.baseline.replace=none --fail-at-end clean verify
   )
   # Maven's no-snapshot-updates flag does not freeze the upstream P2 composite.
-  # Use only the baseline's resolved artifacts for the generated build.
-  if [[ "$phase" == generated ]]; then command+=(--offline); fi
+  if [[ "$phase" == generated ]]; then
+    # Use only the baseline's resolved artifacts for the generated build.
+    command+=(--offline)
+  else
+    # The release parent also consults eclipse-hosted for ordinary Maven roots in the SDK target.
+    # Match the Resolver transport settings used for the pinned JDT UI release build.
+    command+=("-Dorg.slf4j.simpleLogger.log.org.eclipse.aether.internal.impl.DefaultArtifactResolver=debug")
+    local repo_id
+    for repo_id in tycho-snapshots eclipse-snapshots eclipse-cbi eclipse-hosted; do
+      command+=("-Daether.connector.http.retryHandler.intervalMax.$repo_id=5000"
+                "-Daether.transport.http.retryHandler.intervalMax.$repo_id=5000")
+    done
+  fi
   printf '%q ' "${command[@]}" > "$OUTPUT/$phase-command.txt"
   printf '\n' >> "$OUTPUT/$phase-command.txt"
   local status=0

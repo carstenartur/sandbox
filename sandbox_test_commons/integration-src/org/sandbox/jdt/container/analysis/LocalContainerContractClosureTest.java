@@ -10,6 +10,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.container.analysis;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -127,8 +129,8 @@ class LocalContainerContractClosureTest {
 				.filter(edit -> edit.kind() == EditKind.REPLACE_LENGTH_WITH_SIZE)
 				.count());
 
-		ContainerLocalRewriteFix.create(unit, root, plan)
-				.createChange(null).perform(null);
+		var change= ContainerLocalRewriteFix.create(unit, root, plan).createChange(null);
+		performAndCheck(change, null, unit);
 
 		String transformed= unit.getSource();
 		assertTrue(transformed.contains("List<String> values")); //$NON-NLS-1$

@@ -96,7 +96,7 @@ class StreamChainToLoopTest {
 		}
 
 		@Override
-		protected RefactoringStatus performRefactoring(CleanUpRefactoring ref, ICompilationUnit[] units,
+		protected RefactoringStatus runRefactoring(CleanUpRefactoring ref, ICompilationUnit[] units,
 				ICleanUp[] cleanups, Set<String> expectedGroups) throws CoreException {
 			cleanupAst = null;
 			cleanupStatus = null;
@@ -136,7 +136,7 @@ class StreamChainToLoopTest {
 					traced[index] = new AbstractCleanUpCoreWrapper<UseFunctionalCallCleanUpCore>(Map.of(), core) { };
 				}
 			}
-			cleanupStatus = super.performRefactoring(ref, units, traced, expectedGroups);
+			cleanupStatus = super.runRefactoring(ref, units, traced, expectedGroups);
 			return cleanupStatus;
 		}
 
@@ -647,6 +647,18 @@ class StreamChainToLoopTest {
 
 	static Stream<String> iteratorBodies() {
 		return Stream.of(
+				"""
+				public static String run() {
+					List<String> values = new ArrayList<>();
+					List<? extends Character> letters = Arrays.asList('a', 'b');
+					for (int code : letters) { values.add(Integer.toString(code)); }
+					for (boolean flag : Arrays.asList(true, false)) { values.add(Boolean.toString(flag)); }
+					try {
+						for (double number : Arrays.asList(1L, null)) { values.add(Double.toString(number)); }
+					} catch (NullPointerException expected) { values.add("null"); }
+					return values.toString();
+				}
+				""",
 				"""
 				public static String run() {
 					List<String> result = new ArrayList<>();

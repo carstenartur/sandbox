@@ -8,6 +8,7 @@
 package org.sandbox.jdt.ui.tests.quickfix;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -107,7 +108,7 @@ class LoopConversionAssistTest {
 		var change = first.getTextChange();
 		change.initializeValidationData(null);
 		assertFalse(change.isValid(null).hasFatalError());
-		Change undo = change.perform(null);
+		Change undo = performAndCheck(change, null, workingCopy);
 		try {
 			assertEquals(preview, invocation.getCompilationUnit().getSource());
 			context.verify(invocation.getCompilationUnit());

@@ -2,6 +2,7 @@
 package org.sandbox.jdt.internal.ui.fix;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
 import java.util.HashMap;
 import java.util.Arrays;
 import java.util.UUID;
@@ -87,7 +88,7 @@ class MathematicalSliceChangeTest {
                 for(var problem:previewAst.getProblems())assertFalse(problem.isError(),problem.toString());
             }
             var copied=change.getEdit().copy();
-            var undo=change.perform(monitor);assertEquals(preview,unit.getSource());
+            var undo=performAndCheck(change, monitor, unit);assertEquals(preview,unit.getSource());
             assertNotNull(undo);undo.perform(monitor);assertEquals(source,unit.getSource());
             String modified=source.replace("unchanged effect","different effect");
             unit.getBuffer().setContents(modified);unit.save(monitor,true);

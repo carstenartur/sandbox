@@ -9,6 +9,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Arrays;
@@ -179,7 +180,7 @@ public class EncodingExceptionSafetyTest {
             assertFalse(after.contains("new String(bytes, \"UTF-8\")"), after); //$NON-NLS-1$
             assertEquals(before, unit.getSource());
             change.initializeValidationData(null);
-            var undo= change.perform(null);
+            var undo= performAndCheck(change, null, unit);
             assertNotNull(undo);
             try {
                 assertEquals(after, unit.getSource());

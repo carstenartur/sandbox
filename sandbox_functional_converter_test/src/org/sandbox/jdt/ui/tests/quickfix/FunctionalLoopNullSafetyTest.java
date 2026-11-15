@@ -268,7 +268,7 @@ public class FunctionalLoopNullSafetyTest {
 					class MyTest {
 						public int sum(List<Integer> items) {
 							int total = 0;
-							total = items.stream().reduce(total, Integer::sum);
+							total = items.stream().mapToInt(item -> item.intValue()).reduce(total, Integer::sum);
 							return total;
 						}
 					}""";
@@ -300,7 +300,7 @@ public class FunctionalLoopNullSafetyTest {
 					class MyTest {
 						public int findMax(List<Integer> items) {
 							int max = Integer.MIN_VALUE;
-							max = items.stream().reduce(max, Math::max);
+							max = items.stream().mapToInt(item -> item.intValue()).reduce(max, Math::max);
 							return max;
 						}
 					}""";
