@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 2: Abstract methods do not specify a body",
-    "verifiedAt": "2026-11-14T02:19:09.142845126Z",
+    "verifiedAt": "2026-11-15T02:32:11.784367226Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
