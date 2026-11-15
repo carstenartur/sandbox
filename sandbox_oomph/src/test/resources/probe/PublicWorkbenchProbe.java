@@ -140,7 +140,8 @@ public final class PublicWorkbenchProbe implements IStartup {
                 java.util.concurrent.CountDownLatch updated=new java.util.concurrent.CountDownLatch(1);
                 try (var update = new MavenUpdateWitness(updated)) {
                     String updateCommand = "org.eclipse.m2e.core.ui.command.updateProject";
-                    var mavenProject = root.getProject("sandbox_oomph");
+                    // Project Explorer can nest imported modules below their containing project.
+                    var mavenProject = root.getProject("sandbox");
                     require(mavenProject.hasNature("org.eclipse.m2e.core.maven2Nature"), "No Maven nature on selection");
                     var requested = new java.util.concurrent.atomic.AtomicBoolean();
                     var lastSelection = new java.util.concurrent.atomic.AtomicReference<>("");
@@ -157,12 +158,16 @@ public final class PublicWorkbenchProbe implements IStartup {
                                     new org.eclipse.jface.viewers.StructuredSelection(mavenProject));
                             requested.set(true);
                         }
+                        String treeState = "";
                         if (explorer.getSite().getSelectionProvider() instanceof org.eclipse.jface.viewers.TreeViewer viewer) {
                             Tree tree = viewer.getTree();
                             TreeItem target = findProjectItem(tree, tree.getItems(), mavenProject);
-                            if (target != null && (tree.getSelectionCount() != 1 || tree.getSelection()[0] != target)) {
+                            treeState = " roots=" + Arrays.stream(tree.getItems()).limit(16).map(TreeItem::getText).toList()
+                                    + " matched=" + (target == null ? "<none>" : target.getText());
+                            if (target != null) {
                                 tree.setFocus();
                                 tree.showItem(target);
+                                viewer.setSelection(new org.eclipse.jface.viewers.StructuredSelection(target.getData()), true);
                                 tree.setSelection(target);
                                 Event event = new Event();
                                 event.item = target;
@@ -182,7 +187,7 @@ public final class PublicWorkbenchProbe implements IStartup {
                                 .getCommand(updateCommand);
                         String observed = viewId + " selection=" + (element == null ? "<empty>" : element.getClass().getName())
                                 + " resource=" + (selectedResource == null ? "<none>" : selectedResource.getFullPath())
-                                + " command-enabled=" + command.isEnabled();
+                                + " command-enabled=" + command.isEnabled() + treeState;
                         if (!observed.equals(lastSelection.getAndSet(observed))) {
                             Files.writeString(evidence.resolve("maven-selection.txt"), observed + "\n");
                         }
@@ -343,7 +348,7 @@ public final class PublicWorkbenchProbe implements IStartup {
                 resource = javaElement.getResource();
             }
             if (project.equals(resource)) return item;
-            if (data instanceof org.eclipse.ui.IWorkingSet) {
+            if (data instanceof org.eclipse.ui.IWorkingSet || data instanceof org.eclipse.core.resources.IWorkspaceRoot) {
                 if (!item.getExpanded()) {
                     item.setExpanded(true);
                     Event event = new Event();
