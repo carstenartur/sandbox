@@ -9,6 +9,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.math.BigInteger;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -128,7 +129,7 @@ class JavaRationalDenominatorTest {
 
     private List<String> execute(String source, String name) throws Exception {
         Path folder = Files.createTempDirectory(temporary, "rationals");
-        Path javaSource = Files.writeString(folder.resolve("RationalMap.java"), source);
+        Path javaSource = Files.writeString(folder.resolve("RationalMap.java"), source, StandardCharsets.UTF_8);
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null, "--release", "17", "-d", folder.toString(), javaSource.toString()));
         try (var loader = new URLClassLoader(new URL[] { folder.toUri().toURL() }, ClassLoader.getPlatformClassLoader())) {
             Class<?> type;
