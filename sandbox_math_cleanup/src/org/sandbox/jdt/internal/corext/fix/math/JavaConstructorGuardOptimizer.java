@@ -131,7 +131,9 @@ final class JavaConstructorGuardOptimizer {
                     || node instanceof AnonymousClassDeclaration) return null;
             node = node.getParent();
         }
-        if (node instanceof MethodDeclaration method && !method.isConstructor() && !Modifier.isStatic(method.getModifiers())
+        if (node == null) return null;
+        var method = (MethodDeclaration) node;
+        if (!method.isConstructor() && !Modifier.isStatic(method.getModifiers())
                 && method.getParent() instanceof TypeDeclaration owner && !owner.isInterface() && !owner.isLocalTypeDeclaration())
             return owner;
         return null;
@@ -337,7 +339,8 @@ final class JavaConstructorGuardOptimizer {
             fallbackStart += change.replacement().length() - change.length();
         ASTNode mapped = NodeFinder.perform(ast, fallbackStart, 1);
         while (mapped != null && !(mapped instanceof IfStatement)) mapped = mapped.getParent();
-        if (!(mapped instanceof IfStatement statement)) throw invalid();
+        if (mapped == null) throw invalid();
+        var statement = (IfStatement) mapped;
         var receiverBinding = receiver.resolveBinding();
         var constantBinding = constant.resolveBinding();
         Expression expression = conjunction(statement.getExpression()).getFirst();
