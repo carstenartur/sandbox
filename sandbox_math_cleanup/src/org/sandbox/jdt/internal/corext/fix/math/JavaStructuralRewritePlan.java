@@ -242,7 +242,7 @@ public final class JavaStructuralRewritePlan {
                 checkCancellation(monitor);
                 Path file = temporary.root.resolve(key);
                 Files.createDirectories(Objects.requireNonNull(file.getParent()));
-                Files.writeString(file, input.get(key));
+                Files.writeString(file, input.get(key), StandardCharsets.UTF_8);
                 sources.add(file.toString());
             }
             var parser = ASTParser.newParser(AST.getJLSLatest());

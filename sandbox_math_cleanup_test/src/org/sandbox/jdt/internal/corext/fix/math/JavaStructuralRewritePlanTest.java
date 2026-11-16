@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -122,9 +123,9 @@ class JavaStructuralRewritePlanTest {
 
     @Test void rejectsClasspathDriftBeforeEditingAnySource() throws IOException {
         Path binaryRoot = Files.createTempDirectory(temporary, "classes");
-        var marker = Files.writeString(binaryRoot.resolve("receipt"), "original");
+        var marker = Files.writeString(binaryRoot.resolve("receipt"), "original", StandardCharsets.UTF_8);
         var plan = JavaStructuralRewritePlan.verify(AFFINE, CARRIED, List.of(binaryRoot.toString()), 17, List.of(), null);
-        Files.writeString(marker, "changed");
+        Files.writeString(marker, "changed", StandardCharsets.UTF_8);
         assertThrows(IllegalArgumentException.class, () -> plan.apply(AFFINE));
     }
 
@@ -185,7 +186,7 @@ class JavaStructuralRewritePlanTest {
         for (var entry : sources.entrySet()) {
             Path file = root.resolve(entry.getKey());
             Files.createDirectories(file.getParent());
-            Files.writeString(file, entry.getValue());
+            Files.writeString(file, entry.getValue(), StandardCharsets.UTF_8);
             arguments.add(file.toString());
         }
         if (ToolProvider.getSystemJavaCompiler().run(null, null, null, arguments.toArray(String[]::new)) != 0)
