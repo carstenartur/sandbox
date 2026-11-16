@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -112,7 +113,7 @@ class ConstructorGuardSpecializationTest {
     private String probe(String source) throws Exception {
         Path directory = Files.createTempDirectory(temp, "constructor-guard-");
         Path input = directory.resolve("Calculation.java");
-        Files.writeString(input, source);
+        Files.writeString(input, source, StandardCharsets.UTF_8);
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null, "--release", "17",
                 "-classpath", directory.toString(), "-d", directory.toString(), input.toString()));
         try (var loader = new URLClassLoader(new java.net.URL[] {directory.toUri().toURL()}, null)) {
