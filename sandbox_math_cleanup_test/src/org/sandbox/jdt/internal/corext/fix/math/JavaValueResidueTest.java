@@ -81,6 +81,19 @@ class JavaValueResidueTest {
             assertTrue(result.replacements().stream().noneMatch(edit->edit.replacement().equals("wrap")),result.replacements().toString());
         }
     }
+    @Test void retainsTheInvokedFactoryBindingWhenTheDirectAlternativeIsPublic() throws Exception {
+        String source = reducedFactoryFixture()
+            .replace("public static Leaf of(BigInteger a, BigInteger b)",
+                "public static Leaf direct(BigInteger a, BigInteger b) { return new Leaf(a, b); }\n"
+                    + "public static Leaf of(BigInteger a, BigInteger b)")
+            .replace("static Leaf wrap(BigInteger a, BigInteger b) { return new Leaf(a, b); }", "");
+        var analysis = analyzeReducedFactory(source, JavaValueReuseTest.options());
+        assertEquals(1, analysis.replacements().size(), analysis.diagnostics().toString());
+        assertEquals("direct", analysis.replacements().getFirst().replacement());
+        var helper = new JavaImmutableValueTest();
+        helper.directory = directory;
+        assertEquals(executeReducedFactory(source), executeReducedFactory(helper.apply(source, analysis)));
+    }
     private MathematicalAnalysis.Analysis analyzeReducedFactory(String source,MathCleanUpOptions options) throws Exception {
         var helper=new JavaImmutableValueTest();helper.directory=directory;
         var profile=new HashMap<>(options.toMap());

@@ -46,8 +46,8 @@ final class JavaValueResidueOptimizer {
                 if(selectionOffset>=0 && !overlaps(selectionOffset,Math.max(1,selectionLength),start,length)
                     || replacements.stream().anyMatch(edit->overlaps(start,length,edit.offset(),edit.length())))continue;
                 try {
-                    var session=new JavaValueSourceSummary.Session(ast,options,work);var access=JavaValueAccess.discover(ast,session,factory.resolveTypeBinding(),work);
-                    if(!access.factory().isEqualTo(factory.resolveMethodBinding()))continue;
+                    var session=new JavaValueSourceSummary.Session(ast,options,work);
+                    var access=JavaValueAccess.discover(ast,session,factory.resolveTypeBinding(),factory.resolveMethodBinding(),work);
                     var arguments=new ArrayList<Argument>();var usedNames=new HashSet<String>();block.accept(new ASTVisitor(){@Override public boolean visit(SimpleName name){usedNames.add(name.getIdentifier());return true;}});
                     for(Object item:factory.arguments()) {
                         var name=(SimpleName)item;var binding=(IVariableBinding)name.resolveBinding();
