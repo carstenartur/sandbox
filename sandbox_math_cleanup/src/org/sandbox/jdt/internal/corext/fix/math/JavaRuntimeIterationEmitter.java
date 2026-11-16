@@ -260,38 +260,41 @@ final class JavaRuntimeIterationEmitter {
         // With a nonzero stride and a representable final counter the count fits an unsigned long.
         // Shift it logically so a full-width long range keeps all of its exponent bits.
         // Each dot product wraps at the state's Java width, which implements the verified ring.
-        out.append(String.format(Locale.ROOT, """
-                %3$s[] %1$snext = new %3$s[%2$d];
-                %3$s[][] %1$ssquare = new %3$s[%2$d][%2$d];
-                long %1$sexponent = %1$scount.longValue();
-                while (%1$sexponent != 0L) {
-                    if ((%1$sexponent & 1L) != 0L) {
-                        for (int %1$sr = 0; %1$sr < %2$d; %1$sr++) {
-                            %3$s %1$sdot = 0;
-                            for (int %1$sc = 0; %1$sc < %2$d; %1$sc++)
-                                %1$sdot += %1$smatrix[%1$sr][%1$sc] * %1$svector[%1$sc];
-                            %1$snext[%1$sr] = %1$sdot;
+        String template = """
+                ${width}[] ${prefix}next = new ${width}[${dimension}];
+                ${width}[][] ${prefix}square = new ${width}[${dimension}][${dimension}];
+                long ${prefix}exponent = ${prefix}count.longValue();
+                while (${prefix}exponent != 0L) {
+                    if ((${prefix}exponent & 1L) != 0L) {
+                        for (int ${prefix}r = 0; ${prefix}r < ${dimension}; ${prefix}r++) {
+                            ${width} ${prefix}dot = 0;
+                            for (int ${prefix}c = 0; ${prefix}c < ${dimension}; ${prefix}c++)
+                                ${prefix}dot += ${prefix}matrix[${prefix}r][${prefix}c] * ${prefix}vector[${prefix}c];
+                            ${prefix}next[${prefix}r] = ${prefix}dot;
                         }
-                        %3$s[] %1$spreviousVector = %1$svector;
-                        %1$svector = %1$snext;
-                        %1$snext = %1$spreviousVector;
+                        ${width}[] ${prefix}previousVector = ${prefix}vector;
+                        ${prefix}vector = ${prefix}next;
+                        ${prefix}next = ${prefix}previousVector;
                     }
-                    %1$sexponent = %1$sexponent >>> 1;
-                    if (%1$sexponent != 0L) {
-                        for (int %1$sr = 0; %1$sr < %2$d; %1$sr++) {
-                            for (int %1$sc = 0; %1$sc < %2$d; %1$sc++) {
-                                %3$s %1$sdot = 0;
-                                for (int %1$sk = 0; %1$sk < %2$d; %1$sk++)
-                                    %1$sdot += %1$smatrix[%1$sr][%1$sk] * %1$smatrix[%1$sk][%1$sc];
-                                %1$ssquare[%1$sr][%1$sc] = %1$sdot;
+                    ${prefix}exponent = ${prefix}exponent >>> 1;
+                    if (${prefix}exponent != 0L) {
+                        for (int ${prefix}r = 0; ${prefix}r < ${dimension}; ${prefix}r++) {
+                            for (int ${prefix}c = 0; ${prefix}c < ${dimension}; ${prefix}c++) {
+                                ${width} ${prefix}dot = 0;
+                                for (int ${prefix}k = 0; ${prefix}k < ${dimension}; ${prefix}k++)
+                                    ${prefix}dot += ${prefix}matrix[${prefix}r][${prefix}k] * ${prefix}matrix[${prefix}k][${prefix}c];
+                                ${prefix}square[${prefix}r][${prefix}c] = ${prefix}dot;
                             }
                         }
-                        %3$s[][] %1$spreviousMatrix = %1$smatrix;
-                        %1$smatrix = %1$ssquare;
-                        %1$ssquare = %1$spreviousMatrix;
+                        ${width}[][] ${prefix}previousMatrix = ${prefix}matrix;
+                        ${prefix}matrix = ${prefix}square;
+                        ${prefix}square = ${prefix}previousMatrix;
                     }
                 }
-                """, p, dimension, width)); //$NON-NLS-1$
+                """; //$NON-NLS-1$
+        out.append(template.replace("${prefix}", p) //$NON-NLS-1$
+                .replace("${dimension}", Integer.toString(dimension)) //$NON-NLS-1$
+                .replace("${width}", width)); //$NON-NLS-1$
         for (int state = 0; state < context.targets().size(); state++)
             out.append(context.targets().get(state).getName()).append(" = ").append(p).append("vector[") //$NON-NLS-1$ //$NON-NLS-2$
                     .append(state).append("];\n"); //$NON-NLS-1$
