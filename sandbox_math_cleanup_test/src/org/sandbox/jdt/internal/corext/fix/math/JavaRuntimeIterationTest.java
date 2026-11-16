@@ -78,19 +78,21 @@ class JavaRuntimeIterationTest extends JavaContextTestSupport {
         String source = """
                 public class Sample {
                     public static long run(int seed) {
-                        long value = seed;
-                        for (long i = Long.MIN_VALUE; i < Long.MAX_VALUE; i++)
+                        long value = seed, iterations = 0L;
+                        for (long i = Long.MIN_VALUE; i < Long.MAX_VALUE; i++) {
                             value *= -1L;
-                        return value;
+                            iterations += 1L;
+                        }
+                        return value + iterations;
                     }
                 }
                 """;
         String generated = transformed(source);
         try (var loader = compile(generated)) {
-            // The original would perform 2^64 - 1 sign changes, an odd count.
+            // The original negates the seed an odd number of times and its iteration total wraps to -1.
             var run = loader.loadClass("Sample").getMethod("run", int.class);
-            assertEquals(-17L, run.invoke(null, 17));
-            assertEquals(2147483648L, run.invoke(null, Integer.MIN_VALUE));
+            assertEquals(-18L, run.invoke(null, 17));
+            assertEquals(2147483647L, run.invoke(null, Integer.MIN_VALUE));
         }
     }
     @Test void primitiveMatrixGuardsProfitAndCounterAdvance() throws Exception {
