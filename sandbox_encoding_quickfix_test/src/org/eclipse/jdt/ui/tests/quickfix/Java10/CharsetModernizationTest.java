@@ -381,6 +381,24 @@ public class CharsetModernizationTest {
     }
 
     @org.junit.jupiter.api.Test
+    void aggregatePrintStreamKeepsSharedTryBodyLocalScope() throws Exception {
+        String after= verify(ChangeBehavior.ENFORCE_UTF8_AGGREGATE, """
+                void write(java.io.OutputStream out, java.io.ByteArrayOutputStream bytes) {
+                    try {
+                        java.io.PrintStream stream= new java.io.PrintStream(out, false, "UTF-8");
+                        stream.print(bytes.toString("UTF-8"));
+                    } catch (java.io.UnsupportedEncodingException ex) {
+                        throw new AssertionError(ex);
+                    }
+                    int stream= 1;
+                    System.out.println(stream);
+                }
+                """, 1);
+        assertFalse(after.contains("UnsupportedEncodingException"), after); //$NON-NLS-1$
+        assertFalse(after.contains("bytes.toString(\"UTF-8\")"), after); //$NON-NLS-1$
+    }
+
+    @org.junit.jupiter.api.Test
     void aggregatePrintStreamKeepsTryResourcesAndFinally() throws Exception {
         String after= verify(ChangeBehavior.ENFORCE_UTF8_AGGREGATE, """
                 void print(java.io.OutputStream out) {

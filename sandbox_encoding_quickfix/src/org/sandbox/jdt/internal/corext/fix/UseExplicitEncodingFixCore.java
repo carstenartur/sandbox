@@ -64,7 +64,6 @@ public enum UseExplicitEncodingFixCore {
 	FILEREADER(new FileReaderExplicitEncoding(), false),
 	FILEWRITER(new FileWriterExplicitEncoding(), false),
 	PRINTWRITER(new PrintWriterExplicitEncoding(), false),
-	PRINTSTREAM(new PrintStreamExplicitEncoding(), true),
 	BYTEARRAYOUTPUTSTREAM(new ByteArrayOutputStreamExplicitEncoding(), false),
 	FORMATTER(new FormatterExplicitEncoding(), true),
 	URLDECODER(new URLDecoderDecodeExplicitEncoding(), true),
@@ -75,7 +74,9 @@ public enum UseExplicitEncodingFixCore {
 	FILES_NEWBUFFEREDWRITER(new FilesNewBufferedWriterExplicitEncoding(), false),
 	FILES_READALLLINES(new FilesReadAllLinesExplicitEncoding(), false),
 	FILES_READSTRING(new FilesReadStringExplicitEncoding(), false),
-	FILES_WRITESTRING(new FilesWriteStringExplicitEncoding(), false);
+	FILES_WRITESTRING(new FilesWriteStringExplicitEncoding(), false),
+	// Finalize shared catches after the other rewrites have recorded their converted calls.
+	PRINTSTREAM(new PrintStreamExplicitEncoding(), true);
 
 	AbstractExplicitEncoding<ASTNode> explicitencoding;
 	private final boolean dslHandled;

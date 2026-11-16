@@ -56,14 +56,26 @@ final class CheckedExceptionAnalysis extends AbstractExceptionAnalyzer {
                 !Bindings.isRuntimeException(exception) && Bindings.findTypeInHierarchy(exception, Error.class.getName()) == null);
     }
 
+    static void copyConvertedCalls(ASTRewrite source, ASTRewrite candidate, String exceptionFQN) {
+        if (source != null) {
+            convertedCalls(candidate, exceptionFQN).addAll(convertedCalls(source, exceptionFQN));
+        }
+    }
+
     @SuppressWarnings("unchecked")
-    static boolean canRemove(ASTNode scope, ASTNode visited, String exceptionFQN, ASTRewrite rewrite) {
+    private static Set<ASTNode> convertedCalls(ASTRewrite rewrite, String exceptionFQN) {
         String key= CheckedExceptionAnalysis.class.getName() + ':' + exceptionFQN;
         Set<ASTNode> converted= (Set<ASTNode>) rewrite.getProperty(key);
         if (converted == null) {
             converted= Collections.newSetFromMap(new IdentityHashMap<>());
             rewrite.setProperty(key, converted);
         }
+        return converted;
+    }
+
+    @SuppressWarnings("unchecked")
+    static boolean canRemove(ASTNode scope, ASTNode visited, String exceptionFQN, ASTRewrite rewrite) {
+        Set<ASTNode> converted= convertedCalls(rewrite, exceptionFQN);
         ASTNode invocation= visited;
         while (invocation != null && !(invocation instanceof MethodInvocation)
                 && !(invocation instanceof ClassInstanceCreation) && !(invocation instanceof SuperMethodInvocation)

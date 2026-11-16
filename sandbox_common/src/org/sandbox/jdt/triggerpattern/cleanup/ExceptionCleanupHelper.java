@@ -101,7 +101,7 @@ public class ExceptionCleanupHelper {
 	}
 
 	/** Checks that the exception is handled locally and its handlers can be removed safely. */
-	public static boolean canRemoveExceptionLocally(ASTNode visited, ITypeBinding exception) {
+	public static boolean canRemoveExceptionLocally(ASTNode visited, ITypeBinding exception, ASTRewrite previousRewrite) {
 		if (ASTNodes.getFirstAncestorOrNull(visited, LambdaExpression.class) != null) {
 			// Removing a handler can change the inferred return or exception type of a lambda.
 			return false;
@@ -116,6 +116,7 @@ public class ExceptionCleanupHelper {
 
 		boolean handled = false;
 		ASTRewrite candidateRewrite = ASTRewrite.create(visited.getAST());
+		CheckedExceptionAnalysis.copyConvertedCalls(previousRewrite, candidateRewrite, exception.getQualifiedName());
 		for (TryStatement statement : enclosingProtectedTries(visited)) {
 			List<CatchClause> clauses = statement.catchClauses();
 			for (CatchClause clause : clauses) {

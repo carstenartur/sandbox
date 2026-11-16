@@ -113,16 +113,11 @@ public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp implements I
 		}
 
 		ChangeBehavior cb= computeRefactorDeepth();
-		Set<CompilationUnitRewriteOperation> operations= new LinkedHashSet<>();
+		LinkedHashSet<CompilationUnitRewriteOperation> operations= new LinkedHashSet<>();
 		Set<ASTNode> nodesprocessed= new HashSet<>();
 
 		if (exceptionPlan != null) {
 			exceptionPlan.requireComplete();
-			operations.add(new CompilationUnitRewriteOperation() {
-				@Override public void rewriteAST(CompilationUnitRewrite rewrite, LinkedProposalModelCore model) {
-					CharsetConstructorMigration.install(rewrite, exceptionPlan);
-				}
-			});
 		}
 
 		// DSL-first architecture: DSL rules run first from encoding.sandbox-hint.
@@ -165,6 +160,11 @@ public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp implements I
 		}
 
 		if (exceptionPlan != null) {
+			operations.addFirst(new CompilationUnitRewriteOperation() {
+				@Override public void rewriteAST(CompilationUnitRewrite rewrite, LinkedProposalModelCore model) {
+					CharsetConstructorMigration.install(rewrite, exceptionPlan);
+				}
+			});
 			operations.add(new CompilationUnitRewriteOperation() {
 				@Override public void rewriteAST(CompilationUnitRewrite rewrite, LinkedProposalModelCore model) throws CoreException {
 					exceptionPlan.apply(rewrite, new TextEditGroup("Adapt checked exceptions to Charset constructors")); //$NON-NLS-1$

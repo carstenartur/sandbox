@@ -47,16 +47,17 @@ public class PrintStreamExplicitEncoding extends AbstractExplicitEncoding<ClassI
 		if (javaElement == null || !JavaModelUtil.is10OrHigher(javaElement.getJavaProject())) {
 			return;
 		}
+		boolean hasPriorOperations= !operations.isEmpty();
 		ReferenceHolder<ASTNode, Object> datah= ReferenceHolder.createForNodes();
 		HelperVisitorFactory.forClassInstanceCreation(PrintStream.class)
 			.in(compilationUnit)
 			.excluding(nodesprocessed)
-			.processEach(datah, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));
+			.processEach(datah, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder, hasPriorOperations));
 	}
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore, Set<CompilationUnitRewriteOperation> operations,
 			ChangeBehavior cb, ClassInstanceCreation visited,
-			ReferenceHolder<ASTNode, Object> holder) {
+			ReferenceHolder<ASTNode, Object> holder, boolean hasPriorOperations) {
 		// The file and path Charset overloads add IOException to the checked exception contract.
 		var constructor= visited.resolveConstructorBinding();
 		var firstParameter= constructor.getParameterTypes()[0];
@@ -70,7 +71,7 @@ public class PrintStreamExplicitEncoding extends AbstractExplicitEncoding<ClassI
 		} else if (argumentCount == 3 && arguments.get(2) instanceof StringLiteral literal && isKnownEncoding(literal)) {
 			ITypeBinding[] exceptions= constructor.getExceptionTypes();
 			if (exceptions.length != 1 || !UnsupportedEncodingException.class.getName().equals(exceptions[0].getQualifiedName())
-					|| !ExceptionCleanupHelper.canRemoveExceptionLocally(visited, exceptions[0])) {
+					|| !hasPriorOperations && !ExceptionCleanupHelper.canRemoveExceptionLocally(visited, exceptions[0], null)) {
 				return false;
 			}
 			holder.put(visited, new NodeData(true, literal, getEncodingConstantName(literal)));
@@ -87,6 +88,10 @@ public class PrintStreamExplicitEncoding extends AbstractExplicitEncoding<ClassI
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		NodeData nodeData= (NodeData) data.get(visited);
+		if (nodeData.replace() && !ExceptionCleanupHelper.canRemoveExceptionLocally(visited,
+				visited.resolveConstructorBinding().getExceptionTypes()[0], rewrite)) {
+			return;
+		}
 		ASTNode charset= cb.computeCharsetASTNode(cuRewrite, ast, visited, nodeData.encoding(), getCharsetConstants(cuRewrite));
 		if (nodeData.replace()) {
 			EncodingSourceRewrite.record(cuRewrite, nodeData.visited());
