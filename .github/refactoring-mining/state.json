@@ -5536,9 +5536,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "lastProcessedCommit": "e7b1d273a03aacde2e7d10915227a1c9383105f4",
-      "lastProcessedDate": "2026-11-15T02:31:48.481332787Z",
-      "totalProcessed": 980,
+      "lastProcessedCommit": "91318132cad78a15f778232fc25680f4f8093730",
+      "lastProcessedDate": "2026-11-16T02:21:55.250871216Z",
+      "totalProcessed": 1035,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -6062,6 +6062,51 @@
           "deferredAt": "2026-11-15T02:26:48.482586102Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "27318d82f29e86b279afb32bb32a07ea99525f26",
+          "message": "Bug 303348 - [flex-hierarchy] Exception during shut-down when tracing turned on",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-16T02:16:58.417796240Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "73e6c6bb1e214e306d9010f36caa30529c820927",
+          "message": "Bug 301825 - [breakpoints] Breakpoints view doesn\u0027t always link with Debug view any more",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-16T02:16:58.424848685Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "af98c3645fb2064df6e6c8a517989c2c54ef92c6",
+          "message": "[304066] Added more failure reporting to tests.",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-16T02:18:15.975502240Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "926b964754902dd7890543883fdeda8443dc609e",
+          "message": "Bug 297899 - Stepping key-bindings get ignored the first time they are pressed",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-16T02:18:46.189579169Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "c4b39148b7caa93e2cb11474d17ffee5414f0497",
+          "message": "Bug 306518 - Patch to adopt new red cancel button in ProgressMonitorPart",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-16T02:20:24.935235683Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -6126,5 +6171,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 54561
+  "globalTotalProcessed": 54616
 }
