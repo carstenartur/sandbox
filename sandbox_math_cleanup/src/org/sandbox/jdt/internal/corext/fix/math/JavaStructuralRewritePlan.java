@@ -26,6 +26,7 @@ import java.util.Set;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.WorkingCopyOwner;
@@ -58,7 +59,7 @@ public final class JavaStructuralRewritePlan {
     private record Body(String syntax, List<Method> calls, Map<String, List<String>> references) { }
     private record Member(String owner, String name, String declaration) { }
     private record Name(String owner, String name) { }
-    private record Snapshot(Map<Method, Body> methods, Map<String, Body> initializers, Set<Member> api, Set<Name> inherited) { }
+    private record Snapshot(Map<Method, Body> methods, Map<String, Body> initializers, Set<Member> api) { }
     private record BinaryInput(Path root, String sha256) { }
 
     private final Map<String, String> original;
@@ -111,11 +112,21 @@ public final class JavaStructuralRewritePlan {
     /** Verify against the real Java project's compiler options, classpath and private working copies. */
     public static JavaStructuralRewritePlan verifyWorkspace(Map<String, ICompilationUnit> units, Map<String, String> replacement,
             List<Invocation> expected, IProgressMonitor monitor) throws JavaModelException {
+        return verifyWorkspace(units, replacement, expected, monitor, false);
+    }
+
+    private static JavaStructuralRewritePlan verifyWorkspace(Map<String, ICompilationUnit> units, Map<String, String> replacement,
+            List<Invocation> expected, IProgressMonitor monitor, boolean undo) throws JavaModelException {
         var scope = Map.copyOf(units);
         var after = Map.copyOf(replacement);
         if (scope.isEmpty() || !scope.keySet().equals(after.keySet()) || new HashSet<>(scope.values()).size() != scope.size())
             throw new IllegalArgumentException("STRUCTURAL_SOURCE_SET_DIFFERS"); //$NON-NLS-1$
         var project = scope.values().iterator().next().getJavaProject();
+        for (var other : project.getJavaModel().getJavaProjects()) {
+            checkCancellation(monitor);
+            if (Arrays.asList(other.getRequiredProjectNames()).contains(project.getElementName()))
+                throw new IllegalArgumentException("STRUCTURAL_DEPENDENT_PROJECT: " + other.getElementName()); //$NON-NLS-1$
+        }
         var before = new LinkedHashMap<String, String>();
         for (var source : scope.entrySet()) {
             checkCancellation(monitor);
@@ -124,12 +135,33 @@ public final class JavaStructuralRewritePlan {
                 throw new IllegalArgumentException("STRUCTURAL_WORKSPACE_SCOPE_DIFFERS"); //$NON-NLS-1$
             before.put(source.getKey(), source.getValue().getSource());
         }
-        var old = workspaceSnapshot(scope, before, monitor);
-        var changed = workspaceSnapshot(scope, after, monitor);
+        // An unedited source can still lose a call or resolve to a different overload.
+        var complete = new LinkedHashMap<>(scope);
+        var current = new LinkedHashMap<>(before);
+        var edited = new LinkedHashMap<>(after);
+        var primary = new HashSet<ICompilationUnit>();
+        scope.values().forEach(unit -> primary.add(unit.getPrimary()));
+        for (var fragment : project.getPackageFragments()) {
+            if (fragment.getKind() != IPackageFragmentRoot.K_SOURCE || !fragment.getJavaProject().equals(project)) continue;
+            for (var unit : fragment.getCompilationUnits()) {
+                checkCancellation(monitor);
+                if (!primary.add(unit.getPrimary())) continue;
+                if (!unit.exists() || unit.hasUnsavedChanges())
+                    throw new IllegalArgumentException("STRUCTURAL_WORKSPACE_SCOPE_DIFFERS"); //$NON-NLS-1$
+                String key = unit.getPath().toPortableString();
+                String source = unit.getSource();
+                complete.put(key, unit);
+                current.put(key, source);
+                edited.put(key, source);
+            }
+        }
+        var old = workspaceSnapshot(complete, current, monitor);
+        var changed = workspaceSnapshot(complete, edited, monitor);
         var calls = List.copyOf(expected);
-        verifySnapshots(old, changed, calls, monitor);
-        for (var source : scope.entrySet()) {
-            if (!before.get(source.getKey()).equals(source.getValue().getSource()))
+        verifySnapshots(undo ? changed : old, undo ? old : changed, calls, monitor);
+        for (var source : complete.entrySet()) {
+            if (!source.getValue().exists() || source.getValue().hasUnsavedChanges()
+                    || !current.get(source.getKey()).equals(source.getValue().getSource()))
                 throw new IllegalArgumentException("STALE_STRUCTURAL_REWRITE"); //$NON-NLS-1$
         }
         return new JavaStructuralRewritePlan(Map.copyOf(before), after, List.of(), calls);
@@ -146,9 +178,19 @@ public final class JavaStructuralRewritePlan {
         return workspace;
     }
 
+    /** Recompile the inverse against the current callers, preserving the direction of the original contract. */
+    public void verifyWorkspaceUndo(Map<String, ICompilationUnit> units, IProgressMonitor monitor) throws JavaModelException {
+        requireCurrentBinaries(binaries);
+        var workspace = verifyWorkspace(units, original, invocations, monitor, true);
+        if (!replacement.equals(workspace.original))
+            throw new IllegalArgumentException("STALE_STRUCTURAL_UNDO"); //$NON-NLS-1$
+        requireCurrentBinaries(binaries);
+    }
+
     private static void verifySnapshots(Snapshot old, Snapshot changed, List<Invocation> invocations, IProgressMonitor monitor) {
         verifyPublicSurface(old, changed);
         verifyRetainedBindings(old.methods(), changed.methods());
+        verifyMigratedBindings(old.methods(), changed.methods());
         verifyRetainedBindings(old.initializers(), changed.initializers());
         for (var invocation : invocations) {
             checkCancellation(monitor);
@@ -213,28 +255,41 @@ public final class JavaStructuralRewritePlan {
     private static <K> void verifyRetainedBindings(Map<K, Body> before, Map<K, Body> after) {
         for (var previous : before.entrySet()) {
             var current = after.get(previous.getKey());
-            if (current != null && current.syntax().equals(previous.getValue().syntax())
-                    && !current.calls().equals(previous.getValue().calls()))
-                throw new IllegalArgumentException("RETAINED_JAVA_BINDING_DIFFERS: " + previous.getKey()); //$NON-NLS-1$
-            if (current == null) continue;
-            for (var reference : previous.getValue().references().entrySet()) {
-                var retained = current.references().get(reference.getKey());
-                if (retained == null) continue;
-                var old = reference.getValue();
-                var shorter = old.size() <= retained.size() ? old : retained;
-                var longer = old.size() <= retained.size() ? retained : old;
-                int matching = 0;
-                for (var value : longer) if (matching < shorter.size() && shorter.get(matching).equals(value)) matching++;
-                if (matching != shorter.size())
-                    throw new IllegalArgumentException("RETAINED_JAVA_BINDING_DIFFERS: " + previous.getKey() + " " //$NON-NLS-1$ //$NON-NLS-2$
-                        + reference.getKey());
-            }
+            if (current != null) verifyRetainedBody(previous.getKey(), previous.getValue(), current);
+        }
+    }
+
+    private static void verifyMigratedBindings(Map<Method, Body> before, Map<Method, Body> after) {
+        var additions = new HashMap<Name, List<Body>>();
+        after.forEach((method, body) -> {
+            if (!before.containsKey(method))
+                additions.computeIfAbsent(new Name(method.owner(), method.name()), key -> new ArrayList<>()).add(body);
+        });
+        before.forEach((method, body) -> {
+            if (!after.containsKey(method))
+                for (var replacement : additions.getOrDefault(new Name(method.owner(), method.name()), List.of()))
+                    verifyRetainedBody(method, body, replacement);
+        });
+    }
+
+    private static void verifyRetainedBody(Object declaration, Body before, Body after) {
+        if (before.syntax().equals(after.syntax()) && !before.calls().equals(after.calls()))
+            throw new IllegalArgumentException("RETAINED_JAVA_BINDING_DIFFERS: " + declaration); //$NON-NLS-1$
+        for (var reference : before.references().entrySet()) {
+            var retained = after.references().get(reference.getKey());
+            if (retained == null || retained.equals(reference.getValue())) continue;
+            // A text match cannot disambiguate changed counts of otherwise identical references.
+            var bindings = new HashSet<>(reference.getValue());
+            bindings.addAll(retained);
+            if (bindings.size() != 1)
+                throw new IllegalArgumentException("RETAINED_JAVA_BINDING_DIFFERS: " + declaration + " " //$NON-NLS-1$ //$NON-NLS-2$
+                    + reference.getKey());
         }
     }
 
     private static void verifyPublicSurface(Snapshot before, Snapshot after) {
         if (!after.api().containsAll(before.api())) throw new IllegalArgumentException("EXTERNAL_JAVA_SIGNATURE_DIFFERS"); //$NON-NLS-1$
-        var names = new HashSet<>(before.inherited());
+        var names = new HashSet<Name>();
         for (var member : before.api()) names.add(new Name(member.owner(), member.name()));
         for (var member : after.api()) if (!before.api().contains(member) && names.contains(new Name(member.owner(), member.name())))
             throw new IllegalArgumentException("EXTERNAL_JAVA_OVERLOAD_ADDED"); //$NON-NLS-1$
@@ -289,15 +344,17 @@ public final class JavaStructuralRewritePlan {
             parser.setWorkingCopyOwner(owner);
             parser.setResolveBindings(true);
             var parsed = new ArrayList<CompilationUnit>();
+            var errors = new ArrayList<String>();
             parser.createASTs(copies.toArray(ICompilationUnit[]::new), new String[0], new ASTRequestor() {
                 @Override public void acceptAST(ICompilationUnit unit, CompilationUnit ast) {
                     checkCancellation(monitor);
                     for (var problem : ast.getProblems()) if (problem.isError())
-                        throw new IllegalArgumentException("STRUCTURAL_JAVA_ERROR: " + unit.getElementName() //$NON-NLS-1$
+                        errors.add("STRUCTURAL_JAVA_ERROR: " + unit.getElementName() //$NON-NLS-1$
                             + ":" + problem.getSourceLineNumber() + " " + problem.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$
                     parsed.add(ast);
                 }
             }, monitor);
+            if (!errors.isEmpty()) throw new IllegalArgumentException(errors.getFirst());
             if (parsed.size() != scope.size()) throw new IllegalArgumentException("STRUCTURAL_INCOMPLETE_COMPILATION"); //$NON-NLS-1$
             return describe(parsed, monitor);
         } finally {
@@ -309,14 +366,13 @@ public final class JavaStructuralRewritePlan {
         var methods = new HashMap<Method, Body>();
         var initializers = new HashMap<String, Body>();
         var api = new HashSet<Member>();
-        var inherited = new HashSet<Name>();
         for (var unit : units) unit.accept(new ASTVisitor() {
             private final Map<String, Integer> initializerCounts = new HashMap<>();
             @Override public void preVisit(ASTNode node) { checkCancellation(monitor); }
-            @Override public boolean visit(TypeDeclaration node) { recordSurface(node.resolveBinding(), api, inherited); return true; }
-            @Override public boolean visit(EnumDeclaration node) { recordSurface(node.resolveBinding(), api, inherited); return true; }
-            @Override public boolean visit(RecordDeclaration node) { recordSurface(node.resolveBinding(), api, inherited); return true; }
-            @Override public boolean visit(AnnotationTypeDeclaration node) { recordSurface(node.resolveBinding(), api, inherited); return true; }
+            @Override public boolean visit(TypeDeclaration node) { recordSurface(node.resolveBinding(), api); return true; }
+            @Override public boolean visit(EnumDeclaration node) { recordSurface(node.resolveBinding(), api); return true; }
+            @Override public boolean visit(RecordDeclaration node) { recordSurface(node.resolveBinding(), api); return true; }
+            @Override public boolean visit(AnnotationTypeDeclaration node) { recordSurface(node.resolveBinding(), api); return true; }
             @Override public boolean visit(MethodDeclaration node) {
                 if (node.getBody() != null) {
                     var method = symbol(node.resolveBinding());
@@ -344,43 +400,48 @@ public final class JavaStructuralRewritePlan {
                 initializers.put(key, describeBody(node));
             }
         });
-        return new Snapshot(Map.copyOf(methods), Map.copyOf(initializers), Set.copyOf(api), Set.copyOf(inherited));
+        return new Snapshot(Map.copyOf(methods), Map.copyOf(initializers), Set.copyOf(api));
     }
 
-    private static void recordSurface(ITypeBinding binding, Set<Member> api, Set<Name> inherited) {
+    private static void recordSurface(ITypeBinding binding, Set<Member> api) {
         if (binding == null || binding.isRecovered()) throw new IllegalArgumentException("UNRESOLVED_JAVA_TYPE"); //$NON-NLS-1$
+        if (!external(binding.getModifiers())) return;
         for (var enclosing = binding; enclosing != null; enclosing = enclosing.getDeclaringClass())
-            if (enclosing.isLocal() || enclosing.isAnonymous() || !external(enclosing.getModifiers())) return;
+            if (enclosing.isLocal() || enclosing.isAnonymous()) return;
         String owner = type(binding);
         var parents = new ArrayList<ITypeBinding>(Arrays.asList(binding.getInterfaces()));
         if (binding.getSuperclass() != null) parents.add(binding.getSuperclass());
         api.add(new Member(owner, "#type", binding.getKey() + " " + binding.getModifiers() + " " //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
             + parents.stream().map(ITypeBinding::getKey).toList() + typeParameters(binding.getTypeParameters())));
-        for (var parent : parents) inheritedNames(owner, parent, inherited, new HashSet<>());
-        for (var method : binding.getDeclaredMethods()) if (external(method.getModifiers())) {
+        var visited = new HashSet<String>();
+        for (var parent : parents) recordInheritedSurface(owner, parent, api, visited);
+        recordMembers(owner, binding, api, true);
+    }
+
+    private static void recordMembers(String owner, ITypeBinding binding, Set<Member> api, boolean constructors) {
+        for (var method : binding.getDeclaredMethods()) if (external(method.getModifiers()) && (constructors || !method.isConstructor())) {
             var shape = symbol(method);
             var thrown = Arrays.stream(method.getExceptionTypes()).map(ITypeBinding::getKey).toList();
             api.add(new Member(owner, shape.name(), method.getKey() + " " + method.getModifiers() + " " + thrown //$NON-NLS-1$ //$NON-NLS-2$
                 + typeParameters(method.getTypeParameters()) + method.getReturnType().getKey()
-                + Arrays.stream(method.getParameterTypes()).map(ITypeBinding::getKey).toList()));
+                + Arrays.stream(method.getParameterTypes()).map(ITypeBinding::getKey).toList() + method.isVarargs()));
         }
         for (var field : binding.getDeclaredFields()) if (external(field.getModifiers()))
             api.add(new Member(owner, field.getName(), field.getKey() + " " + field.getType().getKey() + " " //$NON-NLS-1$ //$NON-NLS-2$
                 + field.getModifiers() + " " + field.getConstantValue())); //$NON-NLS-1$
+        for (var nested : binding.getDeclaredTypes()) if (external(nested.getModifiers()))
+            api.add(new Member(owner, nested.getName(), nested.getKey() + " " + nested.getModifiers())); //$NON-NLS-1$
     }
 
     private static List<List<String>> typeParameters(ITypeBinding[] parameters) {
         return Arrays.stream(parameters).map(parameter -> Arrays.stream(parameter.getTypeBounds()).map(ITypeBinding::getKey).toList()).toList();
     }
 
-    private static void inheritedNames(String owner, ITypeBinding parent, Set<Name> names, Set<String> visited) {
+    private static void recordInheritedSurface(String owner, ITypeBinding parent, Set<Member> api, Set<String> visited) {
         if (parent == null || !visited.add(parent.getKey())) return;
-        for (var method : parent.getDeclaredMethods())
-            if (external(method.getModifiers()) && !method.isConstructor()) names.add(new Name(owner, method.getName()));
-        for (var field : parent.getDeclaredFields())
-            if (external(field.getModifiers())) names.add(new Name(owner, field.getName()));
-        inheritedNames(owner, parent.getSuperclass(), names, visited);
-        for (var iface : parent.getInterfaces()) inheritedNames(owner, iface, names, visited);
+        recordMembers(owner, parent, api, false);
+        recordInheritedSurface(owner, parent.getSuperclass(), api, visited);
+        for (var iface : parent.getInterfaces()) recordInheritedSurface(owner, iface, api, visited);
     }
 
     private static Body describeBody(ASTNode root) {
@@ -400,9 +461,13 @@ public final class JavaStructuralRewritePlan {
             @Override public boolean visit(SimpleName node) {
                 if (node.isDeclaration()) return true;
                 var binding = node.resolveBinding();
-                if (binding instanceof IVariableBinding variable)
-                    reference("variable:", node, variable.isField() ? variable.getVariableDeclaration().getKey() : "local"); //$NON-NLS-1$ //$NON-NLS-2$
-                else if (binding instanceof ITypeBinding type) reference("type:", node, type.getKey()); //$NON-NLS-1$
+                if (binding instanceof IVariableBinding variable) {
+                    var position = node.getLocationInParent();
+                    boolean qualified = position == FieldAccess.NAME_PROPERTY || position == SuperFieldAccess.NAME_PROPERTY
+                        || position == QualifiedName.NAME_PROPERTY;
+                    reference("variable:", qualified ? node.getParent() : node, //$NON-NLS-1$
+                        variable.isField() ? variable.getVariableDeclaration().getKey() : "local"); //$NON-NLS-1$
+                } else if (binding instanceof ITypeBinding type) reference("type:", node, type.getKey()); //$NON-NLS-1$
                 return true;
             }
             @Override public boolean visit(MethodInvocation node) { return add(node, node.resolveMethodBinding()); }

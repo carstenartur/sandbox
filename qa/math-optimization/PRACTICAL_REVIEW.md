@@ -152,3 +152,19 @@ Each fork used one worker, 32 deterministic messages, five 500 ms warmup
 and five 500 ms measurement iterations. Allocation increased by
 7.9–8.0%. Wall time varied across forks and a separate thread CPU-time run
 also showed inconsistent differences. The candidate stays experimental.
+
+## Bouncy Castle 1.85.2 archive scan on 16 November 2026
+
+Sandbox `ea460537` parsed 3,126 of 3,136 source entries. Ten multi-release
+and module entries reported binding errors. The strict profile accepted 126
+regions in 55 files, and the mathematical profile accepted 134 in 62 files.
+117 regions shared the same path, offset, and length across both profiles.
+[Workflow evidence](https://github.com/carstenartur/sandbox/actions/runs/43903214335/artifacts/14252450280)
+
+The compiled corpus test exercised nine digest rewrites in `LongDigest`,
+`MD4Digest`, `MD5Digest`, `SHA1Digest` and `SHA256Digest`. The separate
+hash-to-curve benchmark compiled the exact original and generated SWU class,
+then checked byte equality on complete public hash calls. For P-256 with
+256-byte messages it measured 88.63 to 86.34 µs/op and 54,171 to 51,355 B/op.
+Seven other timing comparisons had overlapping intervals. The measured class
+changes small modular powers in `SimplifiedShallueVanDeWoestijneMapToCurve.process`.

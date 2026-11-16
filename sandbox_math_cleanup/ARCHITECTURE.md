@@ -5,13 +5,13 @@ This module participates in the explicit mathematics cleanup. Numerical proof an
 ## Coordinated changes to internal declarations
 
 `JavaStructuralRewritePlan` verifies the before and after sources together.
-It checks expected constructor and method references, retained bindings, and
-the existing public and protected surface including generic supertypes. The
-plan pins source text and classpath contents. Pass a verified plan to
-`MathematicalStructuralChange.preview` for one Eclipse preview. It resolves
-the edits in the actual project and checks the complete group again under
-the workspace rule before applying it. Native undo uses the refactoring
-change objects, and a failed partial application uses their rollback data.
+It checks expected calls, retained bindings across same-name signature changes,
+and the public and protected surface, including inherited members and varargs.
+The plan pins source text and classpath contents. Pass it to
+`MathematicalStructuralChange.preview` for one Eclipse preview. This checks all
+sources in the actual project, including unedited callers, and rejects projects
+with workspace dependents. Apply, Undo and Redo recheck the current callers under
+the workspace rule. A recoverable save failure restores the complete group.
 
 `JavaProjectiveRewritePlan` also replays the Regelsuche proof for an affine
 tuple and its carried numerators, common scale and weights. A source adapter
@@ -19,7 +19,6 @@ recovers the expressions and supplies the consuming operation contracts and
 expected changes to invocations. The Java verifier checks those declared
 bindings without assuming that a compilable program implements the same
 arithmetic. The resulting source plan can use the same native preview.
-The independent two-file test changes a constructor and caller.
 The optional Bouncy Castle test applies the audited three-file G2 proposal
 and checks byte-exact undo of the group.
 

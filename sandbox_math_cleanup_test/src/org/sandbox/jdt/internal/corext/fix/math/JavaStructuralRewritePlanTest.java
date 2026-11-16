@@ -106,6 +106,46 @@ class JavaStructuralRewritePlanTest {
         assertThrows(IllegalArgumentException.class, () -> prepare(original, overload, List.of()));
     }
 
+    @Test void rejectsRebindingInAMethodWhoseSignatureChanges() {
+        String path = "projection/Value.java";
+        String original = """
+            package projection;
+            class Value {
+                private static int f(long n) { return 1; }
+                int project(int input) { return f(input); }
+                int sample() { return project(4); }
+            }
+            """;
+        String edited = original.replace("project(int input)", "project(int input, int scale)")
+            .replace("project(4)", "project(4, 2)")
+            .replace("int sample()", "private static int f(int n) { return 2; } int sample()");
+        var caller = new Method("projection.Value", "sample", List.of(), "int");
+        var before = new Method("projection.Value", "project", List.of("int"), "int");
+        var after = new Method("projection.Value", "project", List.of("int", "int"), "int");
+        var edges = List.of(new Invocation(caller, before, 1, 0), new Invocation(caller, after, 0, 1));
+        assertThrows(IllegalArgumentException.class, () -> prepare(Map.of(path, original), Map.of(path, edited), edges));
+    }
+
+    @Test void rejectsRemovalOfPublicMembersInheritedThroughAPackagePrivateClass() {
+        String path = "projection/Api.java";
+        String original = """
+            package projection;
+            class Hidden { public void ping(int n) { } public static class Nested { } }
+            public class Api extends Hidden { }
+            """;
+        String edited = original.replace("public void ping(int n) { }", "");
+        assertThrows(IllegalArgumentException.class, () -> prepare(Map.of(path, original), Map.of(path, edited), List.of()));
+        String noMemberType = original.replace("public static class Nested { }", "");
+        assertThrows(IllegalArgumentException.class, () -> prepare(Map.of(path, original), Map.of(path, noMemberType), List.of()));
+    }
+
+    @Test void rejectsChangingAPublicVarargsMethodToAnArrayParameter() {
+        String path = "projection/Api.java";
+        String original = "package projection; public class Api { public void ping(String... input) { } }";
+        String edited = original.replace("String...", "String[]");
+        assertThrows(IllegalArgumentException.class, () -> prepare(Map.of(path, original), Map.of(path, edited), List.of()));
+    }
+
     @Test void rejectsInheritedFieldRebindingAndParameterizedSupertypeChanges() {
         String path = "projection/Hierarchy.java";
         String original = """
@@ -173,6 +213,9 @@ class JavaStructuralRewritePlanTest {
         String swapped = original.replace("String x = \"first\"", "CharSequence x = \"first\"")
             .replace("CharSequence x = \"second\"", "String x = \"second\"");
         assertThrows(IllegalArgumentException.class, () -> prepare(Map.of(path, original), Map.of(path, swapped), List.of()));
+        String inserted = original.replace("{ String x = \"first\"; f(x); }",
+            "{ CharSequence x = \"first\"; f(x); } { String x = \"added\"; f(x); }");
+        assertThrows(IllegalArgumentException.class, () -> prepare(Map.of(path, original), Map.of(path, inserted), List.of()));
     }
 
     private static JavaStructuralRewritePlan prepare(Map<String, String> original, Map<String, String> edited,

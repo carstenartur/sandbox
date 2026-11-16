@@ -12,6 +12,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.eclipse.core.filebuffers.FileBuffers;
+import org.eclipse.core.filebuffers.IFileBufferStatusCodes;
+import org.eclipse.core.filebuffers.LocationKind;
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -70,6 +74,33 @@ class MathematicalStructuralChangeTest {
             var carried = new Method("example.Value", "<init>", List.of("int", "int"), "void");
             var calls = List.of(new Invocation(show, original, 1, 0), new Invocation(show, carried, 0, 1));
             var evidence = JavaStructuralRewritePlan.verify(source, replacement, List.of(), 17, calls, monitor);
+            String otherBefore = "package example; class Other { void show() { new Value(4); } }\n";
+            var other = pkg.createCompilationUnit("Other.java", otherBefore, true, monitor);
+            assertThrows(IllegalArgumentException.class,
+                () -> MathematicalStructuralChange.preview("Omitted caller", units, evidence, monitor));
+            assertEquals(source, Map.of(valuePath, value.getSource(), callerPath, caller.getSource()));
+            assertEquals(otherBefore, other.getSource());
+            other.delete(true, monitor);
+
+            ((IFile) value.getResource()).setCharset("US-ASCII", monitor);
+            var unsavable = Map.of(valuePath, valueAfter + "// \u00e9\n", callerPath, callerAfter);
+            var failingEvidence = JavaStructuralRewritePlan.verify(source, unsavable, List.of(), 17, calls, monitor);
+            var failing = MathematicalStructuralChange.preview("Cannot save the changed constructor", units, failingEvidence, monitor);
+            failing.initializeValidationData(monitor);
+            var buffers = FileBuffers.getTextFileBufferManager();
+            buffers.connect(value.getPath(), LocationKind.IFILE, monitor);
+            try {
+                var buffer = buffers.getTextFileBuffer(value.getPath(), LocationKind.IFILE);
+                var failure = assertThrows(CoreException.class, () -> failing.perform(monitor));
+                assertEquals(IFileBufferStatusCodes.CHARSET_MAPPING_FAILED, failure.getStatus().getCode());
+                assertFalse(buffer.isDirty());
+                assertEquals(valueBefore, buffer.getDocument().get());
+                assertEquals(source, Map.of(valuePath, value.getSource(), callerPath, caller.getSource()));
+            } finally {
+                buffers.disconnect(value.getPath(), LocationKind.IFILE, monitor);
+                failing.dispose();
+            }
+
             var change = MathematicalStructuralChange.preview("Change constructor and caller", units, evidence, monitor);
             change.initializeValidationData(monitor);
             assertFalse(change.isValid(monitor).hasFatalError());
@@ -89,6 +120,26 @@ class MathematicalStructuralChangeTest {
             var undo = performAndCheck(change, monitor, value, caller);
             assertNotNull(undo);
             assertEquals(replacement, Map.of(valuePath, value.getSource(), callerPath, caller.getSource()));
+            buffers.connect(caller.getPath(), LocationKind.IFILE, monitor);
+            try {
+                var buffer = buffers.getTextFileBuffer(caller.getPath(), LocationKind.IFILE);
+                String dirtyCaller = callerAfter + "// unsaved editor text\n";
+                buffer.getDocument().set(dirtyCaller);
+                assertThrows(CoreException.class, () -> undo.perform(monitor));
+                assertTrue(buffer.isDirty());
+                assertEquals(dirtyCaller, buffer.getDocument().get());
+                assertEquals(valueAfter, value.getSource());
+                buffer.revert(monitor);
+            } finally {
+                buffers.disconnect(caller.getPath(), LocationKind.IFILE, monitor);
+            }
+            String otherAfter = otherBefore.replace("Value(4)", "Value(4, 2)");
+            var newCaller = pkg.createCompilationUnit("Other.java", otherAfter, true, monitor);
+            assertThrows(CoreException.class, () -> undo.perform(monitor));
+            assertEquals(replacement, Map.of(valuePath, value.getSource(), callerPath, caller.getSource()));
+            assertEquals(otherAfter, newCaller.getSource());
+            newCaller.delete(true, monitor);
+
             undo.perform(monitor);
             assertEquals(source, Map.of(valuePath, value.getSource(), callerPath, caller.getSource()));
         } finally {
