@@ -46,8 +46,8 @@ final class JavaValueResidueOptimizer {
                 if(selectionOffset>=0 && !overlaps(selectionOffset,Math.max(1,selectionLength),start,length)
                     || replacements.stream().anyMatch(edit->overlaps(start,length,edit.offset(),edit.length())))continue;
                 try {
-                    var session=new JavaValueSourceSummary.Session(ast,options,work);var access=JavaValueAccess.discover(ast,session,factory.resolveTypeBinding(),work);
-                    if(!access.factory().isEqualTo(factory.resolveMethodBinding()))continue;
+                    var session=new JavaValueSourceSummary.Session(ast,options,work);
+                    var access=JavaValueAccess.discover(ast,session,factory.resolveTypeBinding(),factory.resolveMethodBinding(),work);
                     var arguments=new ArrayList<Argument>();var usedNames=new HashSet<String>();block.accept(new ASTVisitor(){@Override public boolean visit(SimpleName name){usedNames.add(name.getIdentifier());return true;}});
                     for(Object item:factory.arguments()) {
                         var name=(SimpleName)item;var binding=(IVariableBinding)name.resolveBinding();
@@ -67,18 +67,17 @@ final class JavaValueResidueOptimizer {
                         String guard="java.util.Objects.nonNull("+raw+") && "+raw+".getClass() == java.math.BigInteger.class && "+raw+".abs().bitLength() <= 4096 && "+mod+" != null && "+mod+".getClass() == java.math.BigInteger.class && "+mod+".equals(new java.math.BigInteger(\""+value+"\"))"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$
                         arguments.add(new Argument(local,statement,reduction,modulus,value,raw,mod,guard));
                     }
-                    independentNormalizations(ast,factory.resolveMethodBinding(),arguments,work);
-                    var scalar=new JavaComputationExtractor.ScalarProjector(ast,options);var normalized=new ArrayList<JavaValueSourceSummary.Term>();
-                    for(var argument:arguments) {
-                        var input=session.input(argument.local().getName().getIdentifier());
-                        var substitutions=new IdentityHashMap<Expression,de.regelsuche.ast.Expr>();substitutions.put(argument.reduction().getExpression(),input.expression());
-                        substitutions.put((Expression)argument.reduction().arguments().getFirst(),JavaExpressions.literal(argument.value()));
-                        normalized.add(new JavaValueSourceSummary.Scalar(scalar.expression(argument.reduction(),substitutions)));
+                    boolean exactFactoryMod=independentNormalizations(ast,factory.resolveMethodBinding(),arguments,work);
+                    if (exactFactoryMod && options.valueRuntime()==MathCleanUpOptions.ValueRuntime.AUDITED_OPENJDK_25_0_5_8) {
+                        try {
+                            if (useDirectFactory(ast,source,factory,arguments,access,options,compiler,environment,monitor,
+                                    replacements,evidence,work,documentation)) continue;
+                        } catch (IllegalArgumentException unavailable) {
+                            work.check();
+                            diagnostics.add(new MathematicalAnalysis.Diagnostic("VALUE_RESIDUE_DIRECT_UNAVAILABLE",unavailable.getMessage(),start,length,MathematicalAnalysis.Stage.SOURCE)); //$NON-NLS-1$
+                        }
                     }
-                    var projected=(JavaValueSourceSummary.Value)session.invoke(factory.resolveMethodBinding(),null,normalized);var summary=session.summary(projected);
-                    for(var value:summary.staticValues())if(arguments.stream().noneMatch(argument->argument.modulus().isEqualTo(value.field())))throw JavaValueSourceSummary.unavailable("VALUE_RESIDUE_UNGUARDED_CONSTANT"); //$NON-NLS-1$
-                    var trace=new ArrayList<>(scalar.trace().occurrences());trace.addAll(summary.trace().occurrences());
-                    summary=new JavaValueSourceSummary.Summary(summary.value(),summary.plan(),new SourceEvaluationTrace(trace),summary.assumptions(),summary.inputs(),summary.staticValues(),summary.sourceFingerprint());
+                    var summary=projectNormalizedFactory(ast,session,factory.resolveMethodBinding(),arguments,options);
                     var edits=new ArrayList<MathematicalAnalysis.Replacement>();
                     for(var argument:arguments) {
                         String raw=text(source,argument.reduction().getExpression()),modulus=text(source,(Expression)argument.reduction().arguments().getFirst());
@@ -134,6 +133,195 @@ final class JavaValueResidueOptimizer {
             diagnostics.add(new MathematicalAnalysis.Diagnostic("VALUE_RESIDUE_LIMIT",unavailable.getMessage(),0,source.length(),MathematicalAnalysis.Stage.SOURCE)); //$NON-NLS-1$
         }
     }
+    private static JavaValueSourceSummary.Summary projectNormalizedFactory(CompilationUnit ast,JavaValueSourceSummary.Session session,
+            IMethodBinding factory,List<Argument> arguments,MathCleanUpOptions options) {
+        var scalar=new JavaComputationExtractor.ScalarProjector(ast,options);
+        var normalized=new ArrayList<JavaValueSourceSummary.Term>();
+        for (var argument:arguments) {
+            var input=session.input(argument.local().getName().getIdentifier());
+            var substitutions=new IdentityHashMap<Expression,de.regelsuche.ast.Expr>();
+            substitutions.put(argument.reduction().getExpression(),input.expression());
+            substitutions.put((Expression)argument.reduction().arguments().getFirst(),JavaExpressions.literal(argument.value()));
+            normalized.add(new JavaValueSourceSummary.Scalar(scalar.expression(argument.reduction(),substitutions)));
+        }
+        var projected=(JavaValueSourceSummary.Value)session.invoke(factory,null,normalized);
+        var summary=session.summary(projected);
+        for (var value:summary.staticValues())
+            if (arguments.stream().noneMatch(argument->argument.modulus().isEqualTo(value.field())))
+                throw JavaValueSourceSummary.unavailable("VALUE_RESIDUE_UNGUARDED_CONSTANT"); //$NON-NLS-1$
+        var trace=new ArrayList<>(scalar.trace().occurrences());trace.addAll(summary.trace().occurrences());
+        return new JavaValueSourceSummary.Summary(summary.value(),summary.plan(),new SourceEvaluationTrace(trace),
+            summary.assumptions(),summary.inputs(),summary.staticValues(),summary.sourceFingerprint());
+    }
+    private static boolean useDirectFactory(CompilationUnit ast,String source,MethodInvocation factory,List<Argument> arguments,
+            JavaValueAccess.Access access,MathCleanUpOptions options,Map<String,String> compiler,MathematicalAnalysis.SourceEnvironment environment,
+            IProgressMonitor monitor,List<MathematicalAnalysis.Replacement> replacements,List<MathematicalAnalysis.VerifiedRegion> evidence,
+            JavaValueSourceSummary.Work work,MathematicalJavadoc documentation) {
+        var owner=access.shape().type();
+        if (!(factory.getExpression() instanceof Name qualifier) || !owner.isEqualTo(qualifier.resolveBinding())) return false;
+        var alternative=directFactory(ast,owner,access.shape().constructor().resolveBinding(),factory.resolveMethodBinding(),work);
+        if (alternative==null || arguments.stream().anyMatch(argument->!exactReduction(ast,argument.reduction(),work))) return false;
+        var before=projectNormalizedFactory(ast,new JavaValueSourceSummary.Session(ast,options,work),factory.resolveMethodBinding(),arguments,options);
+        int start=factory.getName().getStartPosition(),length=factory.getName().getLength();
+        String original=source.substring(start,start+length),replacement=alternative.getName();
+        if (replacements.stream().anyMatch(edit->overlaps(start,length,edit.offset(),edit.length()))) return false;
+        String generated=source.substring(0,start)+replacement+source.substring(start+length);
+        work.charge(generated.length());
+        var after=MathematicalAnalysis.checkGeneratedSource(ast,source,generated,compiler,options.targetJava(),monitor,environment,start,length,replacement.length());
+        VerificationResult.Verified proof;
+        OptimizationResult.CostAssessment cost;
+        try (var context=JavaSourceContext.open(after,generated,environment,monitor,options,work.remaining())) {
+            var session=new JavaValueSourceSummary.Session(after,options,work);
+            if (!(NodeFinder.perform(after,start,replacement.length()) instanceof SimpleName name)
+                || !(name.getParent() instanceof MethodInvocation replay) || replay.getName()!=name
+                || !alternative.isEqualTo(replay.resolveMethodBinding()) || !factoryCandidate(replay,work)
+                || !(replay.getExpression() instanceof Name replayQualifier) || !owner.isEqualTo(replayQualifier.resolveBinding())
+                || !isDirectFactory(after,replay.resolveMethodBinding(),session.shape(replay.resolveTypeBinding()).constructor().resolveBinding(),work))
+                throw JavaValueSourceSummary.unavailable("VALUE_RESIDUE_DIRECT_REPLAY_CALL"); //$NON-NLS-1$
+            var replayArguments=new ArrayList<Argument>();
+            for (int index=0;index<arguments.size();index++) {
+                var argument=arguments.get(index);
+                var actual=(SimpleName)replay.arguments().get(index);
+                if (!(after.findDeclaringNode(actual.resolveBinding()) instanceof VariableDeclarationFragment local)
+                    || !(local.getParent() instanceof VariableDeclarationStatement statement)
+                    || !(local.getInitializer() instanceof MethodInvocation reduction)
+                    || statement.getStartPosition()!=argument.statement().getStartPosition()
+                    || !text(source,argument.statement()).equals(text(generated,statement))
+                    || !argument.reduction().resolveMethodBinding().isEqualTo(reduction.resolveMethodBinding())
+                    || reduction.arguments().size()!=1 || !argument.modulus().isEqualTo(JavaValueSourceSummary.variable((Expression)reduction.arguments().getFirst()))
+                    || !exactReduction(after,reduction,work))
+                    throw JavaValueSourceSummary.unavailable("VALUE_RESIDUE_DIRECT_REPLAY_ARGUMENT"); //$NON-NLS-1$
+                var modulus=(JavaValueSourceSummary.Scalar)session.constant(JavaValueSourceSummary.variable((Expression)reduction.arguments().getFirst()));
+                if (!modulus.expression().equals(JavaExpressions.literal(argument.value())))
+                    throw JavaValueSourceSummary.unavailable("VALUE_RESIDUE_DIRECT_REPLAY_MODULUS"); //$NON-NLS-1$
+                replayArguments.add(new Argument(local,statement,reduction,argument.modulus(),argument.value(),"","","")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+            }
+            var projected=projectNormalizedFactory(after,session,replay.resolveMethodBinding(),replayArguments,options);
+            if (!before.inputs().equals(projected.inputs()))
+                throw JavaValueSourceSummary.unavailable("VALUE_RESIDUE_REPLAY_INPUTS"); //$NON-NLS-1$
+            // The raw producer stays in place and can exceed the SDK bound. For any normal
+            // return, its retained mod result r is already a bounded representative, r mod p = r.
+            // Check the projected factories for every bounded representative of each retained input.
+            long cap=Math.min(100_000,work.remaining()/2);
+            if (cap<6000) throw JavaValueSourceSummary.unavailable("VALUE_RESIDUE_PROOF_BUDGET"); //$NON-NLS-1$
+            var request=before.request(options,work.allocate(cap,options));
+            var verification=new ComputationOptimizer().verify(request,projected.plan(),work.token());
+            if (verification instanceof VerificationResult.BudgetExceeded exceeded && exceeded.work()>cap) work.charge(exceeded.work()-cap);
+            if (!(verification instanceof VerificationResult.Verified verified))
+                throw JavaValueSourceSummary.unavailable("VALUE_RESIDUE_DIRECT_REPLAY_PROOF: "+verification); //$NON-NLS-1$
+            proof=verified;
+            cost=JavaValueCallOptimizer.cost(before,projected,request,"",work); //$NON-NLS-1$
+            context.checkpoint().requireCurrent();
+            work.check();
+        }
+        if (!cost.estimatedRuntimeImprovement()) return false;
+        var runtime=ValueRuntimeEvidence.qualify(ast,options,work);
+        var plan=new JavaSourceRewritePlan("Source.java",JavaComputationTask.hash(source),source.length(),start,length,List.of(),List.of(),Map.of(), //$NON-NLS-1$
+            List.of(new JavaSourceRewritePlan.Change(start,length,JavaComputationTask.hash(original),replacement)),runtime);
+        documentation.add(ast,start,length,"Explicit mathematical mode: removing duplicate BigInteger normalization requires the audited OpenJDK 25.0.5+8 scalar implementation. Component reference identity may change."); //$NON-NLS-1$
+        replacements.add(new MathematicalAnalysis.Replacement(start,length,replacement,"Verified direct factory for already normalized components")); //$NON-NLS-1$
+        evidence.add(new MathematicalAnalysis.VerifiedRegion(start,length,proof.evidence(),cost,original,replacement,null,plan));
+        return true;
+    }
+    private static IMethodBinding directFactory(CompilationUnit ast,ITypeBinding owner,IMethodBinding constructor,IMethodBinding original,
+            JavaValueSourceSummary.Work work) {
+        IMethodBinding result=null;
+        for (var method:owner.getDeclaredMethods()) {
+            work.charge(1);
+            if (method.getName().equals(original.getName()) || !Modifier.isStatic(method.getModifiers())
+                || !owner.isEqualTo(method.getReturnType()) || method.getParameterTypes().length!=constructor.getParameterTypes().length
+                || Arrays.stream(method.getParameterTypes()).anyMatch(parameter->!JavaValueSourceSummary.big(parameter))
+                || Modifier.isPrivate(method.getModifiers())
+                || !(Modifier.isPublic(method.getModifiers()) || owner.getPackage().getName().equals(ast.getPackage()==null
+                    ? "" : ast.getPackage().getName().getFullyQualifiedName())) //$NON-NLS-1$
+                || !isDirectFactory(ast,method,constructor,work)) continue;
+            if (result!=null) return null;
+            result=method;
+        }
+        return result;
+    }
+    private static boolean isDirectFactory(CompilationUnit ast,IMethodBinding binding,IMethodBinding constructor,
+            JavaValueSourceSummary.Work work) {
+        if (Modifier.isSynchronized(binding.getModifiers()) || Modifier.isNative(binding.getModifiers()) || binding.isGenericMethod()
+            || binding.isVarargs()) return false;
+        var method=sourceMethod(ast,binding,work);
+        if (method==null || !(soleReturn(method) instanceof ClassInstanceCreation creation) || creation.getAnonymousClassDeclaration()!=null
+            || creation.getExpression()!=null || !constructor.isEqualTo(creation.resolveConstructorBinding())
+            || method.parameters().size()!=creation.arguments().size()) return false;
+        for (int index=0;index<creation.arguments().size();index++) {
+            work.charge(1);
+            var parameter=(SingleVariableDeclaration)method.parameters().get(index);
+            if (!(creation.arguments().get(index) instanceof SimpleName name) || parameter.resolveBinding()==null
+                || !parameter.resolveBinding().isEqualTo(name.resolveBinding())) return false;
+        }
+        return true;
+    }
+    private static boolean exactReduction(CompilationUnit ast,MethodInvocation reduction,JavaValueSourceSummary.Work work) {
+        if (!jdkMod(reduction.resolveMethodBinding())) return false;
+        Expression modulus=(Expression)reduction.arguments().getFirst();
+        if (!(modulus instanceof SimpleName || modulus instanceof QualifiedName name && name.getQualifier().resolveBinding() instanceof ITypeBinding))
+            return false;
+        if (!exactModulus(ast,JavaValueSourceSummary.variable(modulus),0,work)) return false;
+        Expression producer=reduction.getExpression();
+        if (producer instanceof MethodInvocation call) {
+            var binding=call.resolveMethodBinding();
+            if (binding==null || !Modifier.isStatic(binding.getModifiers())) return false;
+            var method=sourceMethod(ast,binding,work);
+            if (method==null) return false;
+            producer=soleReturn(method);
+        }
+        return exactBigIntegerCreation(producer);
+    }
+    private static boolean jdkScalar(ITypeBinding type) {
+        return JavaValueGuardBindings.scalarType(type) && !type.isFromSource();
+    }
+    private static boolean jdkMod(IMethodBinding method) {
+        return method!=null && !method.isRecovered() && jdkScalar(method.getDeclaringClass()) && "mod".equals(method.getName()) //$NON-NLS-1$
+            && !Modifier.isStatic(method.getModifiers()) && method.getParameterTypes().length==1
+            && method.getDeclaringClass().isEqualTo(method.getParameterTypes()[0])
+            && method.getDeclaringClass().isEqualTo(method.getReturnType());
+    }
+    private static boolean exactBigIntegerCreation(Expression expression) {
+        if (!(expression instanceof ClassInstanceCreation creation) || creation.getAnonymousClassDeclaration()!=null
+            || creation.getExpression()!=null) return false;
+        var constructor=creation.resolveConstructorBinding();
+        return constructor!=null && !constructor.isRecovered() && jdkScalar(constructor.getDeclaringClass());
+    }
+    private static boolean exactModulus(CompilationUnit ast,IVariableBinding field,int depth,JavaValueSourceSummary.Work work) {
+        work.charge(1);
+        if (depth>=32 || field==null || field.isRecovered() || !field.isField() || !jdkScalar(field.getType())
+            || !Modifier.isStatic(field.getModifiers()) || !Modifier.isFinal(field.getModifiers())) return false;
+        // The existing constant inference separately checks the recognized field/value and signs.
+        if (jdkScalar(field.getDeclaringClass())) return true;
+        var definition=JavaSourceContext.definition(ast,field.getVariableDeclaration());
+        if (definition==null || !(definition.declaration() instanceof VariableDeclarationFragment variable)
+            || !field.isEqualTo(variable.resolveBinding())) return false;
+        Expression initializer=variable.getInitializer();
+        while (initializer instanceof ParenthesizedExpression parentheses) {
+            work.charge(1);
+            initializer=parentheses.getExpression();
+        }
+        if (initializer instanceof MethodInvocation call) {
+            var method=call.resolveMethodBinding();
+            return method!=null && !method.isRecovered() && jdkScalar(method.getDeclaringClass())
+                && Modifier.isStatic(method.getModifiers()) && JavaValueUseProof.scalarOriginMethod(method);
+        }
+        if (initializer instanceof Name name)
+            return exactModulus(ast,JavaValueSourceSummary.variable(name),depth+1,work);
+        return exactBigIntegerCreation(initializer);
+    }
+    private static MethodDeclaration sourceMethod(CompilationUnit ast,IMethodBinding binding,JavaValueSourceSummary.Work work) {
+        work.charge(1);
+        if (binding.isRecovered()) return null;
+        var definition=JavaSourceContext.definition(ast,binding.getMethodDeclaration());
+        return definition!=null && definition.declaration() instanceof MethodDeclaration method && method.resolveBinding()!=null
+            && binding.getMethodDeclaration().isEqualTo(method.resolveBinding()) && binding.getModifiers()==method.getModifiers() ? method : null;
+    }
+    private static Expression soleReturn(MethodDeclaration method) {
+        var body=method.getBody();
+        return body!=null && body.statements().size()==1 && body.statements().getFirst() instanceof ReturnStatement returned
+            ? returned.getExpression() : null;
+    }
     private static boolean factoryCandidate(MethodInvocation call,JavaValueSourceSummary.Work work) {
         var method=call.resolveMethodBinding();var type=call.resolveTypeBinding();
         if(method==null || !Modifier.isStatic(method.getModifiers()) || !JavaValueAccess.possiblyDirect(type)
@@ -146,13 +334,13 @@ final class JavaValueResidueOptimizer {
         return true;
     }
     /** A rejected guard can leave a subclass in another component: source evaluation must not let it observe an unreduced peer. */
-    private static void independentNormalizations(CompilationUnit ast,IMethodBinding factory,List<Argument> arguments,JavaValueSourceSummary.Work work) {
+    private static boolean independentNormalizations(CompilationUnit ast,IMethodBinding factory,List<Argument> arguments,JavaValueSourceSummary.Work work) {
         var definition=JavaSourceContext.definition(ast,factory.getMethodDeclaration());work.charge(1);
         if(definition==null || !(definition.declaration() instanceof MethodDeclaration method) || method.getBody()==null
             || method.getBody().statements().size()!=1 || !(method.getBody().statements().getFirst() instanceof ReturnStatement returned)
             || !(returned.getExpression() instanceof ClassInstanceCreation creation) || creation.arguments().size()!=arguments.size())
             throw JavaValueSourceSummary.unavailable("VALUE_RESIDUE_FACTORY_COMPONENTS"); //$NON-NLS-1$
-        var seen=new HashSet<Integer>();
+        var seen=new HashSet<Integer>();boolean exactMod=true;
         for(Object item:creation.arguments()) {
             work.charge(1);
             if(!(item instanceof MethodInvocation reduction) || !(reduction.getExpression() instanceof SimpleName receiver)
@@ -163,7 +351,9 @@ final class JavaValueResidueOptimizer {
             var modulus=JavaValueSourceSummary.variable((Expression)reduction.arguments().getFirst());
             if(parameter<0 || !seen.add(parameter) || modulus==null || !modulus.isEqualTo(arguments.get(parameter).modulus()))
                 throw JavaValueSourceSummary.unavailable("VALUE_RESIDUE_FACTORY_MODULUS_OR_PARAMETER"); //$NON-NLS-1$
+            exactMod &= jdkMod(reduction.resolveMethodBinding());
         }
+        return exactMod;
     }
     private static void verifyCapture(CompilationUnit ast,String source,String generated,Argument argument,ConditionalExpression condition,MethodInvocation fallback,JavaValueSourceSummary.Work work) {
         work.charge(condition.getLength());var parser=ASTParser.newParser(AST.getJLSLatest());parser.setKind(ASTParser.K_EXPRESSION);parser.setSource(argument.guard().toCharArray());
