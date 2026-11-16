@@ -96,7 +96,7 @@ final class MathematicsHelpScreenshots {
     static void capture() throws Exception {
         Path root= SandboxCheckout.locate("sandbox.repository.root"); //$NON-NLS-1$
         Path output= SandboxCheckout.locate("sandbox.help.screenshot.output").resolve("sandbox_math_cleanup_help/images"); //$NON-NLS-1$ //$NON-NLS-2$
-        var receipt= JsonParser.parseString(Files.readString(root.resolve("sandbox_math_cleanup/lib/qualification.json"))).getAsJsonObject(); //$NON-NLS-1$
+        var receipt= JsonParser.parseString(Files.readString(root.resolve("sandbox_math_cleanup/lib/qualification.json"), StandardCharsets.UTF_8)).getAsJsonObject(); //$NON-NLS-1$
         var sdkQualification= new SdkQualification(receipt.get("standaloneJarSha256").getAsString(), receipt.get("sourceRevision").getAsString()); //$NON-NLS-1$ //$NON-NLS-2$
         assertTrue(sdkQualification.jarSha256().matches("[0-9a-f]{64}")); //$NON-NLS-1$
         assertTrue(sdkQualification.sourceRevision().matches("[0-9a-f]{40}")); //$NON-NLS-1$
@@ -123,7 +123,7 @@ final class MathematicsHelpScreenshots {
         assertEquals(fixture.getFileName().toString(), id);
         assertTrue(id.matches("[0-9]{2}-[a-z0-9-]+")); //$NON-NLS-1$
         byte[] original= Files.readAllBytes(fixture.resolve("before.java.txt")); //$NON-NLS-1$
-        String before= new String(original, StandardCharsets.UTF_8), after= Files.readString(fixture.resolve("after.java.txt")); //$NON-NLS-1$
+        String before= new String(original, StandardCharsets.UTF_8), after= Files.readString(fixture.resolve("after.java.txt"), StandardCharsets.UTF_8); //$NON-NLS-1$
         assertEquals(properties.getProperty("excerptSha256"), sha256(original)); //$NON-NLS-1$
         assertNotEquals(before, after, "Each screenshot must demonstrate an actual source change"); //$NON-NLS-1$
         Path png= output.resolve(id + ".png"), provenance= output.resolve(id + ".provenance.json"); //$NON-NLS-1$ //$NON-NLS-2$
@@ -196,7 +196,8 @@ final class MathematicsHelpScreenshots {
                     + " sha256=" + sha256(Files.readAllBytes(adapter))); //$NON-NLS-1$
             evidence.put("targetJava", project.getOption(JavaCore.COMPILER_CODEGEN_TARGET_PLATFORM, true)); //$NON-NLS-1$
             evidence.put("screenshotSha256", sha256(image)); evidence.put("verification", "AST clean; native preview exact; apply exact; undo byte exact"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-            Files.write(png, image); Files.writeString(provenance, "{\n  \"schemaVersion\": 1,\n  \"profile\": " + json(profile) + ",\n  \"evidence\": " + json(evidence) + "\n}\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+            Files.write(png, image); Files.writeString(provenance, ("{\n  \"schemaVersion\": 1,\n  \"profile\": " + json(profile)
+					+ ",\n  \"evidence\": " + json(evidence) + "\n}\n"), StandardCharsets.UTF_8); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
         } catch (Exception | Error exception) {
             primaryFailure= exception;
             throw exception;
