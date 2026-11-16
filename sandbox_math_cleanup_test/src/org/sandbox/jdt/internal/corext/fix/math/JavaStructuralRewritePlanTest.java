@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import javax.tools.ToolProvider;
@@ -184,7 +185,7 @@ class JavaStructuralRewritePlanTest {
         var arguments = new java.util.ArrayList<>(List.of("--release", "17", "-d", root.toString()));
         for (var entry : sources.entrySet()) {
             Path file = root.resolve(entry.getKey());
-            Files.createDirectories(file.getParent());
+            Files.createDirectories(Objects.requireNonNull(file.getParent(), "Projection source must have a parent directory"));
             Files.writeString(file, entry.getValue());
             arguments.add(file.toString());
         }

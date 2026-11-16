@@ -94,25 +94,35 @@ class BouncyCastleRuntimeCorpusTest {
 
     @Test void documentedInputsAreUnmodifiedEntriesOfThePinnedProductionArchive() throws Exception {
         Map<String, String> sources = productionSources();
-        Path sdk = checkout().resolve("sandbox_math_cleanup/lib");
-        var qualification = new com.fasterxml.jackson.databind.ObjectMapper().readTree(sdk.resolve("qualification.json").toFile());
+        Path root = checkout();
+        Path sdk = root.resolve("sandbox_math_cleanup/lib");
+        var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        var qualification = mapper.readTree(sdk.resolve("qualification.json").toFile());
         String sdkHash = digest(Files.readAllBytes(sdk.resolve("regelsuche-optimization-sdk.jar")));
         assertEquals(qualification.required("standaloneJarSha256").asText(), sdkHash, "Qualified SDK artifact");
-        Path directory = checkout().resolve("sandbox_eclipse_help_swtbot_test/fixtures/mathematics");
+        String sdkSourceRevision = qualification.required("sourceRevision").asText();
+        Path directory = root.resolve("sandbox_eclipse_help_swtbot_test/fixtures/mathematics");
+        Path gallery = root.resolve("sandbox_math_cleanup_help/images");
         try (var entries = Files.list(directory)) {
             var fixtures = entries.filter(Files::isDirectory).sorted().toList();
             assertEquals(5, fixtures.size());
             for (Path fixture : fixtures) {
                 var metadata = new java.util.Properties();
                 try (var reader = Files.newBufferedReader(fixture.resolve("example.properties"), StandardCharsets.UTF_8)) { metadata.load(reader); }
-                assertEquals(sdkHash, metadata.getProperty("sdkSha256"), fixture + ": screenshot SDK artifact");
-                assertEquals(qualification.required("sourceRevision").asText(), metadata.getProperty("sdkOptimizationSourceRevision"),
-                        fixture + ": screenshot SDK source revision");
                 String file = metadata.getProperty("fileName");
                 assertNotNull(file);
                 String expected = sources.get(file.replace(".java", ""));
                 assertNotNull(expected, file);
                 assertEquals(expected, Files.readString(fixture.resolve("before.java.txt"), StandardCharsets.UTF_8), fixture.toString());
+
+                String id = fixture.getFileName().toString();
+                var evidence = mapper.readTree(gallery.resolve(id + ".provenance.json").toFile()).required("evidence");
+                assertEquals(sdkHash, evidence.required("sdkSha256").asText(), fixture + ": screenshot SDK artifact");
+                assertEquals(sdkSourceRevision, evidence.required("sdkOptimizationSourceRevision").asText(),
+                        fixture + ": screenshot SDK source revision");
+                assertEquals(expected, evidence.required("before").asText(), fixture + ": captured production source");
+                assertEquals(digest(Files.readAllBytes(gallery.resolve(id + ".png"))), evidence.required("screenshotSha256").asText(),
+                        fixture + ": screenshot content");
             }
         }
     }
