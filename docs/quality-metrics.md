@@ -1,4 +1,4 @@
-# Published test and coverage metrics
+# Published quality reports
 
 The README badges are generated from the machine-readable reports of the complete Maven verification. JaCoCo remains the sole coverage measurement.
 
@@ -48,6 +48,14 @@ coverage/index.html
 ```
 
 It does not parse JUnit or JaCoCo evidence.
+
+## Java duplication report
+
+The `reports` profile also runs PMD's Copy/Paste Detector once across the Maven reactor at `verify`. It compares Java production sources in Eclipse plug-ins and Maven modules with a minimum match of 100 tokens. CPD findings are advisory.
+
+Run `./mvnw -Preports verify` from the repository root. The HTML report with modules, files, and line numbers is at `target/duplication-report/cpd.html`, and the XML is at `target/cpd.xml`.
+
+The quality workflow retains both reports as evidence and publishes the HTML report at [`duplication/cpd.html`](https://carstenartur.github.io/sandbox/duplication/cpd.html) with successful `main` reports.
 
 ## Verification and provenance
 
