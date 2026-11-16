@@ -49,8 +49,15 @@ class MathematicalStructuralChangeTest {
 
             String valuePath = "example/Value.java";
             String callerPath = "example/Caller.java";
-            String valueBefore = "package example; class Value { Value(int input) {} }\n";
-            String valueAfter = "package example; class Value { Value(int input, int scale) {} }\n";
+            String valueBefore = """
+                package example;
+                class Value {
+                    final int coordinate;
+                    Value(int input) { this.coordinate = input / 2; }
+                }
+                """;
+            String valueAfter = valueBefore.replace("Value(int input)", "Value(int input, int scale)")
+                .replace("input / 2", "input / scale");
             String callerBefore = "package example; public class Caller { public void show() { new Value(4); } }\n";
             String callerAfter = callerBefore.replace("Value(4)", "Value(4, 2)");
             var value = pkg.createCompilationUnit("Value.java", valueBefore, true, monitor);
