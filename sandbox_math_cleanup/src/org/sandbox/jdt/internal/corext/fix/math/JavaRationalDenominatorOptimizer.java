@@ -259,8 +259,10 @@ final class JavaRationalDenominatorOptimizer {
             return BigInteger.valueOf(((Number)literal).longValue());
         }
         var binding = variable(value);
-        require(binding != null && jdkType(binding.getDeclaringClass()) && Modifier.isStatic(binding.getModifiers())
-            && value instanceof Name);
+        if (binding == null || !jdkType(binding.getDeclaringClass()) || !Modifier.isStatic(binding.getModifiers())
+                || !(value instanceof Name)) {
+            throw new UnsupportedShape();
+        }
         return switch (binding.getName()) {
             case "ZERO" -> BigInteger.ZERO; //$NON-NLS-1$
             case "ONE" -> BigInteger.ONE; //$NON-NLS-1$
@@ -402,9 +404,11 @@ final class JavaRationalDenominatorOptimizer {
             }
         });
         var field = exactModulus[0];
-        require(field != null && field.isField() && Modifier.isPrivate(field.getModifiers()) && Modifier.isStatic(field.getModifiers())
-            && Modifier.isFinal(field.getModifiers()) && parsed.findDeclaringNode(field) instanceof VariableDeclarationFragment);
-        BigInteger modulus = constant(((VariableDeclarationFragment)parsed.findDeclaringNode(field)).getInitializer(), work);
+        if (field == null || !field.isField() || !Modifier.isPrivate(field.getModifiers()) || !Modifier.isStatic(field.getModifiers())
+                || !Modifier.isFinal(field.getModifiers()) || !(parsed.findDeclaringNode(field) instanceof VariableDeclarationFragment fragment)) {
+            throw new UnsupportedShape();
+        }
+        BigInteger modulus = constant(fragment.getInitializer(), work);
         require(compact(guard.getExpression().toString()).equals(compact(guard(sameSource, modulus, field.getName(), factored.table().getName(), " ")))); //$NON-NLS-1$
         Map<String, IBinding> operands = new HashMap<>();
         for (SimpleName name : List.of(p, sameSource.input(), sameSource.weight())) operands.put(name.getIdentifier(), name.resolveBinding());
@@ -456,8 +460,10 @@ final class JavaRationalDenominatorOptimizer {
         require(expression instanceof MethodInvocation);
         var call = (MethodInvocation)expression;
         var binding = call.resolveMethodBinding();
-        require(binding != null && !binding.isRecovered() && jdkType(binding.getDeclaringClass()) && jdkType(binding.getReturnType())
-            && binding.getName().equals(method) && call.arguments().size() == arity);
+        if (binding == null || binding.isRecovered() || !jdkType(binding.getDeclaringClass()) || !jdkType(binding.getReturnType())
+                || !binding.getName().equals(method) || call.arguments().size() != arity) {
+            throw new UnsupportedShape();
+        }
         if (Modifier.isStatic(binding.getModifiers())) {
             require(call.getExpression() instanceof Name name && name.resolveBinding() instanceof ITypeBinding type && jdkType(type));
         }

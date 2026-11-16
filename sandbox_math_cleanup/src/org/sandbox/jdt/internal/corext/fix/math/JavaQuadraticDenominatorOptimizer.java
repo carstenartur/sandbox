@@ -68,7 +68,7 @@ final class JavaQuadraticDenominatorOptimizer {
                 : yPrime.mul(yNum).mul(mathIso3Inverse).mul(mathIso3XFactor);
             """;
     private static final String SUPPORT = """
-            private static final Fp2Element MATH_ISO3_OFFSET = Fp2Element.of(%dL, %dL);
+            private static final Fp2Element MATH_ISO3_OFFSET = Fp2Element.of({{real}}L, {{imaginary}}L);
 
             private static boolean mathIso3Reduced(Fp2Element value)
             {
@@ -113,13 +113,16 @@ final class JavaQuadraticDenominatorOptimizer {
             audit(ast, site.method().resolveBinding().getReturnType(), POINT, POINT_SHA);
             var modulusField = field(field, "P"); //$NON-NLS-1$
             var modulusDeclaration = JavaSourceContext.definition(ast, modulusField);
-            require(modulusDeclaration != null && modulusDeclaration.declaration() instanceof VariableDeclarationFragment fragment
-                    && fragment.getInitializer() instanceof QualifiedName name && name.resolveBinding() instanceof IVariableBinding, "QUADRATIC_DENOMINATOR_PRIME"); //$NON-NLS-1$
-            var primeField = (IVariableBinding) ((QualifiedName) ((VariableDeclarationFragment) modulusDeclaration.declaration())
-                    .getInitializer()).resolveBinding();
+            if (modulusDeclaration == null || !(modulusDeclaration.declaration() instanceof VariableDeclarationFragment fragment)
+                    || !(fragment.getInitializer() instanceof QualifiedName name)
+                    || !(name.resolveBinding() instanceof IVariableBinding primeField)) {
+                throw new IllegalArgumentException("QUADRATIC_DENOMINATOR_PRIME"); //$NON-NLS-1$
+            }
             audit(ast, primeField.getDeclaringClass(), PRIME, PRIME_SHA);
             var fact = JavaSourceContext.constant(ast, modulusField);
-            require(fact != null && fact.value().mod(BigInteger.valueOf(4)).equals(BigInteger.valueOf(3)), "QUADRATIC_DENOMINATOR_PRIME"); //$NON-NLS-1$
+            if (fact == null || !fact.value().mod(BigInteger.valueOf(4)).equals(BigInteger.valueOf(3))) {
+                throw new IllegalArgumentException("QUADRATIC_DENOMINATOR_PRIME"); //$NON-NLS-1$
+            }
             BigInteger modulus = fact.value();
             var xd = coefficients(ast, site, 1, 2);
             var yd = coefficients(ast, site, 3, 3);
@@ -128,7 +131,7 @@ final class JavaQuadraticDenominatorOptimizer {
             var coefficient = plan.denominator().getFirst();
             long real = signedLong(coefficient.real(), modulus), imaginary = signedLong(coefficient.imaginary(), modulus);
             String rewritten = REWRITE.stripTrailing().replace("\n", "\n        ").replace("\n        \n", "\n\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-            String support = "\n\n" + String.format(Locale.ROOT, SUPPORT, real, imaginary) //$NON-NLS-1$
+            String support = "\n\n" + SUPPORT.replace("{{real}}", Long.toString(real)).replace("{{imaginary}}", Long.toString(imaginary)) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                     .indent(4).stripTrailing().replace("\n    \n", "\n\n"); //$NON-NLS-1$ //$NON-NLS-2$
             String original = source.substring(start, site.end());
             String replacement = rewritten + source.substring(site.stop(), site.end()) + support;
