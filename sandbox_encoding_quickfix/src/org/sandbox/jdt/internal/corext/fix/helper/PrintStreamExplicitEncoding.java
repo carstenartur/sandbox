@@ -15,6 +15,7 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Set;
 
@@ -24,6 +25,7 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
@@ -34,6 +36,7 @@ import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCo
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
+import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
 
 /** Adds Charset arguments to PrintStream constructors backed by an OutputStream. */
 public class PrintStreamExplicitEncoding extends AbstractExplicitEncoding<ClassInstanceCreation> {
@@ -55,7 +58,8 @@ public class PrintStreamExplicitEncoding extends AbstractExplicitEncoding<ClassI
 			ChangeBehavior cb, ClassInstanceCreation visited,
 			ReferenceHolder<ASTNode, Object> holder) {
 		// The file and path Charset overloads add IOException to the checked exception contract.
-		var firstParameter= visited.resolveConstructorBinding().getParameterTypes()[0];
+		var constructor= visited.resolveConstructorBinding();
+		var firstParameter= constructor.getParameterTypes()[0];
 		if (!OutputStream.class.getName().equals(firstParameter.getQualifiedName())) {
 			return false;
 		}
@@ -64,6 +68,11 @@ public class PrintStreamExplicitEncoding extends AbstractExplicitEncoding<ClassI
 		if (argumentCount == 1) {
 			holder.put(visited, new NodeData(false, visited, null));
 		} else if (argumentCount == 3 && arguments.get(2) instanceof StringLiteral literal && isKnownEncoding(literal)) {
+			ITypeBinding[] exceptions= constructor.getExceptionTypes();
+			if (exceptions.length != 1 || !UnsupportedEncodingException.class.getName().equals(exceptions[0].getQualifiedName())
+					|| !ExceptionCleanupHelper.canRemoveExceptionLocally(visited, exceptions[0])) {
+				return false;
+			}
 			holder.put(visited, new NodeData(true, literal, getEncodingConstantName(literal)));
 		} else {
 			return false;
@@ -80,9 +89,10 @@ public class PrintStreamExplicitEncoding extends AbstractExplicitEncoding<ClassI
 		NodeData nodeData= (NodeData) data.get(visited);
 		ASTNode charset= cb.computeCharsetASTNode(cuRewrite, ast, visited, nodeData.encoding(), getCharsetConstants(cuRewrite));
 		if (nodeData.replace()) {
-			if (!replaceArgumentAndRemoveNLS(rewrite, nodeData.visited(), charset, group, cuRewrite)) {
-				removeUnsupportedEncodingException(visited, group, rewrite, cuRewrite.getImportRemover());
-			}
+			EncodingSourceRewrite.record(cuRewrite, nodeData.visited());
+			rewrite.replace(nodeData.visited(), charset, group);
+			ExceptionCleanupHelper.removeCheckedExceptionFromEnclosingTries(visited,
+					UnsupportedEncodingException.class.getName(), group, rewrite, cuRewrite.getImportRemover());
 			return;
 		}
 		ListRewrite arguments= rewrite.getListRewrite(visited, ClassInstanceCreation.ARGUMENTS_PROPERTY);

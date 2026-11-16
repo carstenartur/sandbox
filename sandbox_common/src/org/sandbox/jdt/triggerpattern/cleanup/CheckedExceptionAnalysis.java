@@ -49,6 +49,13 @@ final class CheckedExceptionAnalysis extends AbstractExceptionAnalyzer {
         this.rewrite= rewrite;
     }
 
+    static boolean hasCheckedException(ASTNode scope) {
+        CheckedExceptionAnalysis analysis= new CheckedExceptionAnalysis(Set.of(), null, ASTRewrite.create(scope.getAST()));
+        scope.accept(analysis);
+        return analysis.uncertain || analysis.getCurrentExceptions().stream().anyMatch(exception ->
+                !Bindings.isRuntimeException(exception) && Bindings.findTypeInHierarchy(exception, Error.class.getName()) == null);
+    }
+
     @SuppressWarnings("unchecked")
     static boolean canRemove(ASTNode scope, ASTNode visited, String exceptionFQN, ASTRewrite rewrite) {
         String key= CheckedExceptionAnalysis.class.getName() + ':' + exceptionFQN;

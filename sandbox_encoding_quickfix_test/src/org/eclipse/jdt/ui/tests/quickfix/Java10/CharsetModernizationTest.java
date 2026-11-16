@@ -77,9 +77,9 @@ public class CharsetModernizationTest {
                 java.io.PrintStream open(java.io.OutputStream out) {
                     return new java.io.PrintStream(out);
                 }
-                java.io.PrintStream open(java.io.OutputStream out, boolean autoFlush)
-                        throws java.io.UnsupportedEncodingException {
-                    return new java.io.PrintStream(out, autoFlush, "UTF-16LE");
+                java.io.PrintStream open(java.io.OutputStream out, boolean autoFlush) {
+                    try { return new java.io.PrintStream(out, autoFlush, "UTF-16LE"); }
+                    catch (java.io.UnsupportedEncodingException ex) { throw new AssertionError(ex); }
                 }
                 """, 2);
         assertTrue(after.contains("new java.io.PrintStream(path);"), after); //$NON-NLS-1$
@@ -88,6 +88,274 @@ public class CharsetModernizationTest {
         assertTrue(after.contains("out, autoFlush,"), after); //$NON-NLS-1$
         assertTrue(after.contains("UTF_16LE"), after); //$NON-NLS-1$
         assertEquals(1, after.lines().filter(line -> line.contains("UnsupportedEncodingException")).count(), after); //$NON-NLS-1$
+    }
+
+    @org.junit.jupiter.api.Test
+    void aggregatePrintStreamKeepsThrowsNeededByPrivateCaller() throws Exception {
+        String after= verify(ChangeBehavior.ENFORCE_UTF8_AGGREGATE, """
+                private java.io.PrintStream open(java.io.OutputStream out) throws java.io.UnsupportedEncodingException {
+                    return new java.io.PrintStream(out, false, "UTF-8");
+                }
+                java.io.PrintStream caller(java.io.OutputStream out) {
+                    try { return open(out); }
+                    catch (java.io.UnsupportedEncodingException ex) { throw new AssertionError(ex); }
+                }
+                java.io.PrintStream withDefaultCharset(java.io.OutputStream out) {
+                    return new java.io.PrintStream(out);
+                }
+                """, 1);
+        assertTrue(after.contains("throws java.io.UnsupportedEncodingException"), after); //$NON-NLS-1$
+        assertTrue(after.contains("new java.io.PrintStream(out, false, \"UTF-8\")"), after); //$NON-NLS-1$
+    }
+
+    @org.junit.jupiter.api.Test
+    void aggregatePrintStreamKeepsThrowsNeededByAnotherCompilationUnit() throws Exception {
+        var caller= context.getSourceFolder().createPackageFragment("test1", false, null) //$NON-NLS-1$
+                .createCompilationUnit("Caller.java", //$NON-NLS-1$
+                        """
+                        package test1;
+                        class Caller {
+                            java.io.PrintStream call(E1 factory, java.io.OutputStream out) {
+                                try { return factory.open(out); }
+                                catch (java.io.UnsupportedEncodingException ex) { throw new AssertionError(ex); }
+                            }
+                        }
+                        """, false, null);
+        String after= verifySource(ChangeBehavior.ENFORCE_UTF8_AGGREGATE, """
+                package test1;
+                import java.io.UnsupportedEncodingException;
+                public class E1 {
+                    public java.io.PrintStream open(java.io.OutputStream out) throws UnsupportedEncodingException {
+                        return new java.io.PrintStream(out, false, "UTF-8");
+                    }
+                    java.io.PrintStream withDefaultCharset(java.io.OutputStream out) {
+                        return new java.io.PrintStream(out);
+                    }
+                }
+                """, 1, null, caller);
+        assertTrue(after.contains("throws UnsupportedEncodingException"), after); //$NON-NLS-1$
+        assertTrue(after.contains("new java.io.PrintStream(out, false, \"UTF-8\")"), after); //$NON-NLS-1$
+    }
+
+    @org.junit.jupiter.api.Test
+    void aggregatePrintStreamSkipsChangeWhenRetainingThrowsWouldAddWarning() throws Exception {
+        var options= JavaCore.getOptions();
+        options.put(JavaCore.COMPILER_PB_UNUSED_DECLARED_THROWN_EXCEPTION, JavaCore.WARNING);
+        JavaCore.setOptions(options);
+        assertNoAggregatePrintStreamFix("""
+                private java.io.PrintStream open(java.io.OutputStream out) throws java.io.UnsupportedEncodingException {
+                    return new java.io.PrintStream(out, false, "UTF-8");
+                }
+                java.io.PrintStream caller(java.io.OutputStream out) {
+                    try { return open(out); }
+                    catch (java.io.UnsupportedEncodingException ex) { throw new AssertionError(ex); }
+                }
+                """);
+    }
+
+    @org.junit.jupiter.api.Test
+    void aggregatePrintStreamSkipsChangeWithBroaderCheckedCatch() throws Exception {
+        assertNoAggregatePrintStreamFix("""
+                java.io.PrintStream open(java.io.OutputStream out) {
+                    try { return new java.io.PrintStream(out, false, "UTF-8"); }
+                    catch (java.io.IOException ex) { throw new AssertionError(ex); }
+                }
+                """);
+    }
+
+    @org.junit.jupiter.api.Test
+    void aggregatePrintStreamKeepsMultiCatchOverloadBinding() throws Exception {
+        assertNoAggregatePrintStreamFix("""
+                String handle(Exception ex) { return "general"; }
+                String handle(IllegalArgumentException ex) { return "narrow"; }
+                String print(java.io.OutputStream out, boolean fail) {
+                    try (var stream= new java.io.PrintStream(out, false, "UTF-8")) {
+                        if (fail) throw new IllegalArgumentException();
+                        return stream.toString();
+                    } catch (java.io.UnsupportedEncodingException | IllegalArgumentException ex) {
+                        return handle(ex);
+                    }
+                }
+                """);
+    }
+
+    @org.junit.jupiter.api.Test
+    void aggregatePrintStreamKeepsAnonymousConstructorException() throws Exception {
+        assertNoAggregatePrintStreamFix("""
+                java.io.PrintStream open(java.io.OutputStream out) {
+                    try {
+                        return new Object() {
+                            final java.io.PrintStream stream= new java.io.PrintStream(out, false, "UTF-8");
+                        }.stream;
+                    } catch (java.io.UnsupportedEncodingException ex) {
+                        return null;
+                    }
+                }
+                """);
+    }
+
+    @org.junit.jupiter.api.Test
+    void aggregatePrintStreamKeepsInferredLambdaException() throws Exception {
+        assertNoAggregatePrintStreamFix("""
+                interface Action<X extends Exception> { java.io.PrintStream run() throws X; }
+                <X extends Exception> java.io.PrintStream call(Action<X> action) throws X { return action.run(); }
+                java.io.PrintStream open(java.io.OutputStream out) {
+                    try { return call(() -> new java.io.PrintStream(out, false, "UTF-8")); }
+                    catch (java.io.UnsupportedEncodingException ex) { return null; }
+                }
+                """);
+    }
+
+    @org.junit.jupiter.api.Test
+    void aggregatePrintStreamKeepsReachableCodeAfterTry() throws Exception {
+        assertNoAggregatePrintStreamFix("""
+                void print(java.io.OutputStream out) {
+                    try (var stream= new java.io.PrintStream(out, false, "UTF-8")) {
+                        stream.flush();
+                        return;
+                    } catch (java.io.UnsupportedEncodingException ex) { }
+                    System.out.flush();
+                }
+                """);
+    }
+
+    @org.junit.jupiter.api.Test
+    void aggregatePrintStreamKeepsReachableCodeAfterLoop() throws Exception {
+        assertNoAggregatePrintStreamFix("""
+                void print(java.io.OutputStream out) {
+                    while (true) {
+                        try (var stream= new java.io.PrintStream(out, false, "UTF-8")) {
+                            stream.flush();
+                        } catch (java.io.UnsupportedEncodingException ex) { break; }
+                    }
+                    System.out.flush();
+                }
+                """);
+    }
+
+    @org.junit.jupiter.api.Test
+    void aggregatePrintStreamKeepsSubtypeCatchReachable() throws Exception {
+        assertNoAggregatePrintStreamFix("""
+                static class SpecializedEncodingException extends java.io.UnsupportedEncodingException {
+                    private static final long serialVersionUID= 1L;
+                }
+                java.io.PrintStream open(java.io.OutputStream out) {
+                    try { return new java.io.PrintStream(out, false, "UTF-8"); }
+                    catch (SpecializedEncodingException ex) { return null; }
+                    catch (java.io.UnsupportedEncodingException ex) { throw new AssertionError(ex); }
+                }
+                """);
+    }
+
+    @org.junit.jupiter.api.Test
+    void aggregatePrintStreamKeepsCheckedExceptionFromHandler() throws Exception {
+        assertNoAggregatePrintStreamFix("""
+                void print(java.io.OutputStream out) {
+                    try {
+                        try (var stream= new java.io.PrintStream(out, false, "UTF-8")) {
+                            stream.flush();
+                        } catch (java.io.UnsupportedEncodingException ex) {
+                            throw new java.io.FileNotFoundException();
+                        }
+                    } catch (java.io.FileNotFoundException ex) { }
+                }
+                """);
+    }
+
+    @org.junit.jupiter.api.Test
+    void aggregatePrintStreamKeepsCommentBeforeUnbracedTry() throws Exception {
+        assertNoAggregatePrintStreamFix("""
+                java.io.PrintStream open(java.io.OutputStream out, boolean enabled) {
+                    if (enabled)
+                        // Only print when enabled.
+                        try { return new java.io.PrintStream(out, false, "UTF-8"); }
+                        catch (java.io.UnsupportedEncodingException ex) { throw new AssertionError(ex); }
+                    return null;
+                }
+                """);
+    }
+
+    private void assertNoAggregatePrintStreamFix(String members) throws Exception {
+        String before= "package test1;\npublic class E1 {\n" + members + "}\n"; //$NON-NLS-1$ //$NON-NLS-2$
+        var unit= context.getSourceFolder().createPackageFragment("test1", false, null) //$NON-NLS-1$
+                .createCompilationUnit("E1.java", before, false, null); //$NON-NLS-1$
+        assertTrue(diagnostics(unit).isEmpty());
+        var cleanup= new UseExplicitEncodingCleanUpCore(CharsetScopeTest.options(ChangeBehavior.ENFORCE_UTF8_AGGREGATE));
+        assertNull(cleanup.createFix(new CleanUpContext(unit, parse(unit))));
+    }
+
+    @org.junit.jupiter.api.Test
+    void aggregatePrintStreamKeepsUnbracedIfBranchAndItsComments() throws Exception {
+        var options= JavaCore.getOptions();
+        options.put(JavaCore.COMPILER_PB_NON_NLS_STRING_LITERAL, JavaCore.WARNING);
+        JavaCore.setOptions(options);
+        String after= verify(ChangeBehavior.ENFORCE_UTF8_AGGREGATE, """
+                java.io.PrintStream print(java.io.OutputStream out, boolean enabled) {
+                    if (enabled)
+                        try {
+                            // Keep the guarded work.
+                            return new java.io.PrintStream(out, false, "UTF-8").printf("%s", enabled); //$NON-NLS-1$ //$NON-NLS-2$ Keep the format.
+                        } catch (java.io.UnsupportedEncodingException ex) {
+                            throw new AssertionError(ex);
+                        }
+                    else
+                        return null;
+                }
+                """, 1);
+        assertFalse(after.contains("try {"), after); //$NON-NLS-1$
+        assertFalse(after.contains("UnsupportedEncodingException"), after); //$NON-NLS-1$
+        assertTrue(after.contains("// Keep the guarded work."), after); //$NON-NLS-1$
+        assertTrue(after.contains("$NON-NLS-1$"), after); //$NON-NLS-1$
+        assertFalse(after.contains("$NON-NLS-2$"), after); //$NON-NLS-1$
+        assertTrue(after.contains("Keep the format."), after); //$NON-NLS-1$
+    }
+
+    @org.junit.jupiter.api.Test
+    void aggregatePrintStreamKeepsTryBodyLocalScope() throws Exception {
+        String after= verifySource(ChangeBehavior.ENFORCE_UTF8_AGGREGATE, """
+                package test1;
+                import java.io.UnsupportedEncodingException;
+                public class E1 {
+                    void print(java.io.OutputStream out) {
+                        try {
+                            java.io.PrintStream stream= new java.io.PrintStream(out, false, "UTF-8");
+                            stream.flush();
+                        } catch (UnsupportedEncodingException ex) {
+                            throw new AssertionError(ex);
+                        }
+                        java.io.OutputStream stream= out;
+                        System.out.println(stream);
+                    }
+                }
+                """, 1, null);
+        assertFalse(after.contains("UnsupportedEncodingException"), after); //$NON-NLS-1$
+    }
+
+    @org.junit.jupiter.api.Test
+    void aggregatePrintStreamKeepsTryResourcesAndFinally() throws Exception {
+        String after= verify(ChangeBehavior.ENFORCE_UTF8_AGGREGATE, """
+                void print(java.io.OutputStream out) {
+                    try (var stream= new java.io.PrintStream(out, false, "UTF-8")) {
+                        stream.println();
+                    } catch (java.io.UnsupportedEncodingException ex) {
+                        throw new AssertionError(ex);
+                    }
+                }
+                java.io.PrintStream open(java.io.OutputStream out) {
+                    try {
+                        try {
+                            return new java.io.PrintStream(out, false, "UTF-8");
+                        } finally {
+                            System.out.flush();
+                        }
+                    } catch (java.io.UnsupportedEncodingException ex) {
+                        throw new AssertionError(ex);
+                    }
+                }
+                """, 2);
+        assertFalse(after.contains("UnsupportedEncodingException"), after); //$NON-NLS-1$
+        assertTrue(after.contains("try (var stream="), after); //$NON-NLS-1$
+        assertTrue(after.contains("} finally {"), after); //$NON-NLS-1$
     }
 
     @ParameterizedTest
@@ -543,10 +811,14 @@ public class CharsetModernizationTest {
         return verifySource(mode, before, expectedConstructors, hints);
     }
 
-    private String verifySource(ChangeBehavior mode, String before, int expectedConstructors, String hints) throws Exception {
+    private String verifySource(ChangeBehavior mode, String before, int expectedConstructors, String hints,
+            ICompilationUnit... relatedUnits) throws Exception {
         ICompilationUnit unit= context.getSourceFolder().createPackageFragment("test1", false, null) //$NON-NLS-1$
                 .createCompilationUnit("E1.java", before, false, null); //$NON-NLS-1$
         Map<String, Long> beforeWarnings= diagnostics(unit);
+        for (ICompilationUnit relatedUnit : relatedUnits) diagnostics(relatedUnit);
+        ICompilationUnit[] affectedUnits= Arrays.copyOf(relatedUnits, relatedUnits.length + 1);
+        affectedUnits[relatedUnits.length]= unit;
         Map<String, String> options= new HashMap<>();
         options.put(MYCleanUpConstants.EXPLICITENCODING_CLEANUP, "true"); //$NON-NLS-1$
         options.put(switch (mode) {
@@ -563,7 +835,7 @@ public class CharsetModernizationTest {
             assertEquals(after, change.getPreviewContent(null));
             assertEquals(before, unit.getSource(), "Preview must not mutate source"); //$NON-NLS-1$
             change.initializeValidationData(null);
-            var undo= performAndCheck(change, null, unit);
+            var undo= performAndCheck(change, null, affectedUnits);
             assertNotNull(undo);
             try {
                 diagnostics(unit).forEach((key, count) ->
@@ -582,8 +854,9 @@ public class CharsetModernizationTest {
                         var parameters= binding.getParameterTypes();
                         int charsetIndex= switch (owner) {
                             case "java.util.Scanner", "java.util.Formatter" -> 1; //$NON-NLS-1$ //$NON-NLS-2$
-                            case "java.io.PrintStream" -> "java.io.OutputStream".equals(parameters[0].getQualifiedName()) //$NON-NLS-1$ //$NON-NLS-2$
-                                    ? parameters.length - 1 : -1;
+                            case "java.io.PrintStream" -> parameters.length == 3 //$NON-NLS-1$
+                                    && "java.io.OutputStream".equals(parameters[0].getQualifiedName()) //$NON-NLS-1$
+                                    && "java.nio.charset.Charset".equals(parameters[2].getQualifiedName()) ? 2 : -1; //$NON-NLS-1$
                             default -> -1;
                         };
                         if (charsetIndex >= 0) {

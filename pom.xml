@@ -1012,8 +1012,7 @@
 			</build>
 		</profile>
 
-		<!-- Reports profile: Generate HTML test reports (without parallel build
-		warning) -->
+		<!-- Reports profile: Generate test and Java duplication reports -->
 		<profile>
 			<id>reports</id>
 			<activation>
@@ -1036,6 +1035,51 @@
 									<showSuccess>true</showSuccess>
 									<linkXRef>false</linkXRef>
 								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-pmd-plugin</artifactId>
+						<version>3.28.0</version>
+						<inherited>false</inherited>
+						<configuration>
+							<minimumTokens>100</minimumTokens>
+							<includeTests>false</includeTests>
+							<linkXRef>false</linkXRef>
+							<outputDirectory>${project.build.directory}/duplication-report</outputDirectory>
+							<!-- Tycho can expose test bundles as compile source roots. -->
+							<excludeRoots>
+								<excludeRoot>${project.basedir}/sandbox-benchmarks</excludeRoot>
+								<excludeRoot>${project.basedir}/sandbox_cleanup_application_test</excludeRoot>
+								<excludeRoot>${project.basedir}/sandbox_common_test</excludeRoot>
+								<excludeRoot>${project.basedir}/sandbox_container_cleanup_test</excludeRoot>
+								<excludeRoot>${project.basedir}/sandbox_css_cleanup_test</excludeRoot>
+								<excludeRoot>${project.basedir}/sandbox_eclipse_help_swtbot_test</excludeRoot>
+								<excludeRoot>${project.basedir}/sandbox_encoding_quickfix_test</excludeRoot>
+								<excludeRoot>${project.basedir}/sandbox_extra_search_test</excludeRoot>
+								<excludeRoot>${project.basedir}/sandbox_functional_converter_test</excludeRoot>
+								<excludeRoot>${project.basedir}/sandbox_int_to_enum_test</excludeRoot>
+								<excludeRoot>${project.basedir}/sandbox_jface_cleanup_test</excludeRoot>
+								<excludeRoot>${project.basedir}/sandbox_junit_cleanup_test</excludeRoot>
+								<excludeRoot>${project.basedir}/sandbox_math_cleanup_test</excludeRoot>
+								<excludeRoot>${project.basedir}/sandbox_method_reuse_test</excludeRoot>
+								<excludeRoot>${project.basedir}/sandbox_platform_helper_test</excludeRoot>
+								<excludeRoot>${project.basedir}/sandbox_test_commons</excludeRoot>
+								<excludeRoot>${project.basedir}/sandbox_tools_test</excludeRoot>
+								<excludeRoot>${project.basedir}/sandbox_triggerpattern_test</excludeRoot>
+								<excludeRoot>${project.basedir}/sandbox_usage_view_test</excludeRoot>
+								<excludeRoot>${project.basedir}/sandbox_use_general_type_test</excludeRoot>
+								<excludeRoot>${project.basedir}/sandbox_xml_cleanup_test</excludeRoot>
+							</excludeRoots>
+						</configuration>
+						<executions>
+							<execution>
+								<id>report-duplicate-code</id>
+								<phase>verify</phase>
+								<goals>
+									<goal>aggregate-cpd</goal>
+								</goals>
 							</execution>
 						</executions>
 					</plugin>
