@@ -241,7 +241,7 @@ public final class JavaStructuralRewritePlan {
             for (String key : input.keySet().stream().sorted().toList()) {
                 checkCancellation(monitor);
                 Path file = temporary.root.resolve(key);
-                Files.createDirectories(file.getParent());
+                Files.createDirectories(Objects.requireNonNull(file.getParent()));
                 Files.writeString(file, input.get(key));
                 sources.add(file.toString());
             }
