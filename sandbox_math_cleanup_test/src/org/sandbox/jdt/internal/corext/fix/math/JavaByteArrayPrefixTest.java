@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -154,13 +155,14 @@ class JavaByteArrayPrefixTest {
         var result = analyze(SOURCE, UTILITY, -1);
         assertEquals(1, result.sourceDependencyReceipts().size());
         assertTrue(result.matches(SOURCE, result.compilerOptions()));
-        Files.writeString(directory.resolve("ByteUtilities.java"), UTILITY.replace("return r;", "return null;")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+        Files.writeString(directory.resolve("ByteUtilities.java"), UTILITY.replace("return r;", "return null;"),
+				StandardCharsets.UTF_8); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
         assertFalse(result.matches(SOURCE, result.compilerOptions()));
         assertThrows(IllegalArgumentException.class, result::newEdit);
     }
 
     private MathematicalAnalysis.Analysis analyze(String source, String utility, int selection) throws Exception {
-        Files.writeString(directory.resolve("ByteUtilities.java"), utility); //$NON-NLS-1$
+        Files.writeString(directory.resolve("ByteUtilities.java"), utility, StandardCharsets.UTF_8); //$NON-NLS-1$
         String unit = directory.resolve("Prefix.java").toString(); //$NON-NLS-1$
         var options = new MathCleanUpOptions(true, Set.of(NumericKind.BIG_INTEGER), SafetyProfile.PRESERVE_JAVA,
                 OptimizationGoal.LOWER_ESTIMATED_RUNTIME, 100_000, 2000, false, 17, List.of());
@@ -193,8 +195,8 @@ class JavaByteArrayPrefixTest {
         Path output = Files.createTempDirectory(directory, "prefix"); //$NON-NLS-1$
         Path script = output.resolve("Prefix.java"); //$NON-NLS-1$
         Path utility = output.resolve("ByteUtilities.java"); //$NON-NLS-1$
-        Files.writeString(script, source);
-        Files.writeString(utility, UTILITY);
+        Files.writeString(script, source, StandardCharsets.UTF_8);
+        Files.writeString(utility, UTILITY, StandardCharsets.UTF_8);
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null, "--release", "17", //$NON-NLS-1$ //$NON-NLS-2$
                 "-d", output.toString(), script.toString(), utility.toString())); //$NON-NLS-1$
         return new URLClassLoader(new URL[]{output.toUri().toURL()}, ClassLoader.getPlatformClassLoader());
