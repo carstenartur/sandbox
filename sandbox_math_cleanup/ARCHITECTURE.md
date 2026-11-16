@@ -2,6 +2,22 @@
 
 This module participates in the explicit mathematics cleanup. Numerical proof and Java source emission are separate from the Eclipse UI. The [current qualification](../docs/superpowers/plans/2026-10-31-java-mathematics-context-qualification.md) identifies the tested revisions and boundaries of its dated evidence; consult the linked integration PR for current CI results.
 
+## Common polynomial denominators
+
+The existing mathematics opt-in lets Regelsuche derive one polynomial whose
+square and cube match two source denominators. The scalar projection checks
+the Horner loop, implicit monic terms, private coefficient tables and Java
+bindings before selecting the plan. The emitted guard checks the inferred
+modulus and operand types. An original-path fallback preserves other moduli
+and partially initialized classes.
+
+The quadratic projection uses the same Regelsuche verifier for the two
+components of the audited Bouncy Castle G2 field implementation. It checks the
+source receipts, rebuilds the factor from the emitted literal, and retains
+one inversion with its original exceptional behavior. Both projections
+recheck their bindings and coefficients after combined Apply. Measured
+allocation and elapsed time are recorded in the integration PR.
+
 ## Native tail and converter transaction
 
 `FunctionalMathCoordinator` owns a private working copy and one aggregate work

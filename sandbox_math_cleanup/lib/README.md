@@ -1,8 +1,18 @@
 # Pinned Regelsuche optimization SDK
 
+## Qualified snapshot for common polynomial denominators
+
+The bundled SDK comes from [SDK transfer run 43840995141](https://github.com/carstenartur/sandbox/actions/runs/43840995141).
+Its receipt identifies Regelsuche commit `5333a11772ee839af0a69746010ac15b47df3bb5`
+and version `0.5.3-issue1657-5333a11772ee`. The standalone JAR SHA-256 is
+`c665c5c0f8cfb29052eb4416b7971d7dddfa13da6d7f98ad10ce9559582e37d1`.
+This source-qualified snapshot supplies denominator discovery and replay over
+large modular coefficients. A local rebuild from the same Regelsuche commit
+produced identical standalone JAR bytes.
+
 ## Qualified Regelsuche snapshot for consistent factor placement
 
-The bundled optimizer SDK and `qualification.json` come from the
+The previous bundled optimizer SDK and `qualification.json` came from the
 [SDK transfer run](https://github.com/carstenartur/sandbox/actions/runs/42583063561)
 for Regelsuche commit `5ae21899f77c8994413204b62832a9e725d324bb`.
 
