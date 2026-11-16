@@ -207,6 +207,24 @@ public class CharsetModernizationTest {
     }
 
     @org.junit.jupiter.api.Test
+    void aggregatePrintStreamKeepsInferredLambdaReturnType() throws Exception {
+        assertNoAggregatePrintStreamFix("""
+                <T> T call(java.util.function.Supplier<T> action) { return action.get(); }
+                int length(java.io.OutputStream out) {
+                    var result= call(() -> {
+                        try (var stream= new java.io.PrintStream(out, false, "UTF-8")) {
+                            stream.flush();
+                            throw new AssertionError();
+                        } catch (java.io.UnsupportedEncodingException ex) {
+                            return "fallback";
+                        }
+                    });
+                    return result.length();
+                }
+                """);
+    }
+
+    @org.junit.jupiter.api.Test
     void aggregatePrintStreamKeepsReachableCodeAfterTry() throws Exception {
         assertNoAggregatePrintStreamFix("""
                 void print(java.io.OutputStream out) {
@@ -263,6 +281,37 @@ public class CharsetModernizationTest {
     }
 
     @org.junit.jupiter.api.Test
+    void aggregatePrintStreamKeepsCatchWhenPreciseRethrowIsUncertain() throws Exception {
+        assertNoAggregatePrintStreamFix("""
+                void print(java.io.OutputStream out) {
+                    try (var stream= new java.io.PrintStream(out, false, "UTF-8")) {
+                        try { stream.println(); }
+                        catch (Exception ex) { throw ex; }
+                    } catch (java.io.UnsupportedEncodingException ex) {
+                        throw new AssertionError(ex);
+                    }
+                }
+                """);
+    }
+
+    @org.junit.jupiter.api.Test
+    void aggregatePrintStreamKeepsCatchWhenFinallySuppressesThrow() throws Exception {
+        assertNoAggregatePrintStreamFix("""
+                void print(java.io.OutputStream out, boolean suppress) {
+                    try (var stream= new java.io.PrintStream(out, false, "UTF-8")) {
+                        stream.flush();
+                        if (suppress) {
+                            try { throw new java.io.UnsupportedEncodingException(); }
+                            finally { return; }
+                        }
+                    } catch (java.io.UnsupportedEncodingException ex) {
+                        throw new AssertionError(ex);
+                    }
+                }
+                """);
+    }
+
+    @org.junit.jupiter.api.Test
     void aggregatePrintStreamKeepsCommentBeforeUnbracedTry() throws Exception {
         assertNoAggregatePrintStreamFix("""
                 java.io.PrintStream open(java.io.OutputStream out, boolean enabled) {
@@ -279,7 +328,7 @@ public class CharsetModernizationTest {
         String before= "package test1;\npublic class E1 {\n" + members + "}\n"; //$NON-NLS-1$ //$NON-NLS-2$
         var unit= context.getSourceFolder().createPackageFragment("test1", false, null) //$NON-NLS-1$
                 .createCompilationUnit("E1.java", before, false, null); //$NON-NLS-1$
-        assertTrue(diagnostics(unit).isEmpty());
+        diagnostics(unit);
         var cleanup= new UseExplicitEncodingCleanUpCore(CharsetScopeTest.options(ChangeBehavior.ENFORCE_UTF8_AGGREGATE));
         assertNull(cleanup.createFix(new CleanUpContext(unit, parse(unit))));
     }

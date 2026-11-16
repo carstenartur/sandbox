@@ -102,7 +102,11 @@ public class ExceptionCleanupHelper {
 
 	/** Checks that the exception is handled locally and its handlers can be removed safely. */
 	public static boolean canRemoveExceptionLocally(ASTNode visited, ITypeBinding exception) {
-		ASTNode scope = ASTNodes.getFirstAncestorOrNull(visited, BodyDeclaration.class, LambdaExpression.class);
+		if (ASTNodes.getFirstAncestorOrNull(visited, LambdaExpression.class) != null) {
+			// Removing a handler can change the inferred return or exception type of a lambda.
+			return false;
+		}
+		ASTNode scope = ASTNodes.getFirstAncestorOrNull(visited, BodyDeclaration.class);
 		if ((scope instanceof FieldDeclaration || scope instanceof Initializer)
 				&& scope.getParent() instanceof AnonymousClassDeclaration
 				&& !Modifier.isStatic(((BodyDeclaration) scope).getModifiers())) {
@@ -111,6 +115,7 @@ public class ExceptionCleanupHelper {
 		}
 
 		boolean handled = false;
+		ASTRewrite candidateRewrite = ASTRewrite.create(visited.getAST());
 		for (TryStatement statement : enclosingProtectedTries(visited)) {
 			List<CatchClause> clauses = statement.catchClauses();
 			for (CatchClause clause : clauses) {
@@ -123,9 +128,12 @@ public class ExceptionCleanupHelper {
 					}
 					if (exception.isEqualTo(binding)) {
 						// Narrowing a multi-catch can change the type of the catch parameter.
-						if (caught instanceof UnionType || !canDiscardCatch(statement, clause)) {
+						if (caught instanceof UnionType || !canDiscardCatch(statement, clause)
+								|| !canRemoveException(statement, visited, exception.getQualifiedName(), candidateRewrite)) {
 							return false;
 						}
+						// Model the inner removal before examining an enclosing catch.
+						candidateRewrite.remove(clause, null);
 						handled = true;
 					} else if (exception.isAssignmentCompatible(binding) || binding.isAssignmentCompatible(exception)) {
 						// Other handlers could become unreachable or change a precise rethrow.
