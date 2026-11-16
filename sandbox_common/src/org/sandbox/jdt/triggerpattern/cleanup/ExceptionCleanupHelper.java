@@ -146,6 +146,29 @@ public class ExceptionCleanupHelper {
 		return handled;
 	}
 
+	/** Proves that the enclosing method still needs the existing throws declaration after conversion. */
+	public static boolean canKeepDeclaredThrows(ASTNode visited, ITypeBinding exception, ASTRewrite rewrite) {
+		ASTNode scope = ASTNodes.getFirstAncestorOrNull(visited, BodyDeclaration.class, LambdaExpression.class);
+		if (!(scope instanceof MethodDeclaration method)) {
+			return false;
+		}
+		for (TryStatement statement : enclosingProtectedTries(visited)) {
+			List<CatchClause> clauses = statement.catchClauses();
+			for (CatchClause clause : clauses) {
+				Type caught = clause.getException().getType();
+				List<?> types = caught instanceof UnionType union ? union.types() : List.of(caught);
+				for (Object type : types) {
+					ITypeBinding binding = ((Type) type).resolveBinding();
+					if (binding == null || binding.isRecovered() || exception.isAssignmentCompatible(binding)
+							|| binding.isAssignmentCompatible(exception)) {
+						return false;
+					}
+				}
+			}
+		}
+		return CheckedExceptionAnalysis.hasSurvivingDeclaredThrows(method, exception, rewrite);
+	}
+
 	private static boolean canDiscardCatch(TryStatement statement, CatchClause clause) {
 		List<Statement> handler = clause.getBody().statements();
 		// Limit removal to straight-line handlers and method exits. A break, continue,

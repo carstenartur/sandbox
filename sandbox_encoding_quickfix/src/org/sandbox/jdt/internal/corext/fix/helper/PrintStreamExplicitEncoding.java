@@ -40,6 +40,8 @@ import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
 
 /** Adds Charset arguments to PrintStream constructors backed by an OutputStream. */
 public class PrintStreamExplicitEncoding extends AbstractExplicitEncoding<ClassInstanceCreation> {
+	private record ConstructorData(StringLiteral encodingArgument, String encoding, ITypeBinding removedException) {
+	}
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb) {
@@ -67,14 +69,19 @@ public class PrintStreamExplicitEncoding extends AbstractExplicitEncoding<ClassI
 		List<?> arguments= visited.arguments();
 		int argumentCount= arguments.size();
 		if (argumentCount == 1) {
-			holder.put(visited, new NodeData(false, visited, null));
+			holder.put(visited, new ConstructorData(null, null, null));
 		} else if (argumentCount == 3 && arguments.get(2) instanceof StringLiteral literal && isKnownEncoding(literal)) {
 			ITypeBinding[] exceptions= constructor.getExceptionTypes();
-			if (exceptions.length != 1 || !UnsupportedEncodingException.class.getName().equals(exceptions[0].getQualifiedName())
-					|| !hasPriorOperations && !ExceptionCleanupHelper.canRemoveExceptionLocally(visited, exceptions[0], null)) {
+			if (exceptions.length != 1 || exceptions[0].isRecovered()
+					|| !UnsupportedEncodingException.class.getName().equals(exceptions[0].getQualifiedName())) {
 				return false;
 			}
-			holder.put(visited, new NodeData(true, literal, getEncodingConstantName(literal)));
+			ITypeBinding exception= exceptions[0];
+			if (!hasPriorOperations && !ExceptionCleanupHelper.canRemoveExceptionLocally(visited, exception, null)
+					&& !ExceptionCleanupHelper.canKeepDeclaredThrows(visited, exception, null)) {
+				return false;
+			}
+			holder.put(visited, new ConstructorData(literal, getEncodingConstantName(literal), exception));
 		} else {
 			return false;
 		}
@@ -87,17 +94,20 @@ public class PrintStreamExplicitEncoding extends AbstractExplicitEncoding<ClassI
 			TextEditGroup group, ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
-		NodeData nodeData= (NodeData) data.get(visited);
-		if (nodeData.replace() && !ExceptionCleanupHelper.canRemoveExceptionLocally(visited,
-				visited.resolveConstructorBinding().getExceptionTypes()[0], rewrite)) {
+		ConstructorData nodeData= (ConstructorData) data.get(visited);
+		ITypeBinding exception= nodeData.removedException();
+		boolean removeCatches= exception != null && ExceptionCleanupHelper.canRemoveExceptionLocally(visited, exception, rewrite);
+		if (exception != null && !removeCatches && !ExceptionCleanupHelper.canKeepDeclaredThrows(visited, exception, rewrite)) {
 			return;
 		}
 		ASTNode charset= cb.computeCharsetASTNode(cuRewrite, ast, visited, nodeData.encoding(), getCharsetConstants(cuRewrite));
-		if (nodeData.replace()) {
-			EncodingSourceRewrite.record(cuRewrite, nodeData.visited());
-			rewrite.replace(nodeData.visited(), charset, group);
-			ExceptionCleanupHelper.removeCheckedExceptionFromEnclosingTries(visited,
-					UnsupportedEncodingException.class.getName(), group, rewrite, cuRewrite.getImportRemover());
+		if (exception != null) {
+			EncodingSourceRewrite.record(cuRewrite, nodeData.encodingArgument());
+			rewrite.replace(nodeData.encodingArgument(), charset, group);
+			if (removeCatches) {
+				ExceptionCleanupHelper.removeCheckedExceptionFromEnclosingTries(visited,
+						UnsupportedEncodingException.class.getName(), group, rewrite, cuRewrite.getImportRemover());
+			}
 			return;
 		}
 		ListRewrite arguments= rewrite.getListRewrite(visited, ClassInstanceCreation.ARGUMENTS_PROPERTY);
