@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.SplittableRandom;
 import java.util.Set;
 import java.util.jar.JarFile;
@@ -115,7 +116,7 @@ class BouncyCastleRuntimeCorpusTest {
                 assertNotNull(expected, file);
                 assertEquals(expected, Files.readString(fixture.resolve("before.java.txt"), StandardCharsets.UTF_8), fixture.toString());
 
-                String id = fixture.getFileName().toString();
+                String id = Objects.requireNonNull(fixture.getFileName(), "Fixture directory must have a name").toString();
                 var evidence = mapper.readTree(gallery.resolve(id + ".provenance.json").toFile()).required("evidence");
                 assertEquals(sdkHash, evidence.required("sdkSha256").asText(), fixture + ": screenshot SDK artifact");
                 assertEquals(sdkSourceRevision, evidence.required("sdkOptimizationSourceRevision").asText(),
