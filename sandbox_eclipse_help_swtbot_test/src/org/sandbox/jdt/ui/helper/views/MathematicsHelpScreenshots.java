@@ -81,26 +81,34 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.Platform;
 
+import com.google.gson.JsonParser;
+
 /** Captures the real registered mathematics cleanup, with executable source provenance. */
 final class MathematicsHelpScreenshots {
     private static final NullProgressMonitor MONITOR= new NullProgressMonitor();
     private static final String CLEANUP= "org.sandbox.jdt.ui.cleanup.mathematics"; //$NON-NLS-1$
     private static final String PREFIX= "cleanup.mathematics"; //$NON-NLS-1$
 
+    private record SdkQualification(String jarSha256, String sourceRevision) { }
+
     private MathematicsHelpScreenshots() { }
 
     static void capture() throws Exception {
         Path root= SandboxCheckout.locate("sandbox.repository.root"); //$NON-NLS-1$
         Path output= SandboxCheckout.locate("sandbox.help.screenshot.output").resolve("sandbox_math_cleanup_help/images"); //$NON-NLS-1$ //$NON-NLS-2$
+        var receipt= JsonParser.parseString(Files.readString(root.resolve("sandbox_math_cleanup/lib/qualification.json"))).getAsJsonObject(); //$NON-NLS-1$
+        var sdkQualification= new SdkQualification(receipt.get("standaloneJarSha256").getAsString(), receipt.get("sourceRevision").getAsString()); //$NON-NLS-1$ //$NON-NLS-2$
+        assertTrue(sdkQualification.jarSha256().matches("[0-9a-f]{64}")); //$NON-NLS-1$
+        assertTrue(sdkQualification.sourceRevision().matches("[0-9a-f]{40}")); //$NON-NLS-1$
         try (var directories= Files.list(root.resolve("sandbox_eclipse_help_swtbot_test/fixtures/mathematics"))) { //$NON-NLS-1$
             List<Path> fixtures= directories.filter(Files::isDirectory).sorted().toList();
             assertFalse(fixtures.isEmpty(), "Mathematics screenshot fixtures must exist"); //$NON-NLS-1$
             Files.createDirectories(output);
-            for (Path fixture : fixtures) captureFixture(fixture, output);
+            for (Path fixture : fixtures) captureFixture(fixture, output, sdkQualification);
         }
     }
 
-    private static void captureFixture(Path fixture, Path output) throws Exception {
+    private static void captureFixture(Path fixture, Path output, SdkQualification sdkQualification) throws Exception {
         Properties properties= new Properties();
         try (var reader= Files.newBufferedReader(fixture.resolve("example.properties"), StandardCharsets.UTF_8)) { properties.load(reader); } //$NON-NLS-1$
         for (String key : List.of("id", "fileName", "packageName", "kinds", "goal", "beforeFragment", "afterFragment", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$
@@ -176,9 +184,10 @@ final class MathematicsHelpScreenshots {
             assertTrue(installedCleanup != null);
             try (var sdk= java.util.Objects.requireNonNull(installedCleanup.getEntry("lib/regelsuche-optimization-sdk.jar")).openStream()) { //$NON-NLS-1$
                 String sdkHash= sha256(sdk.readAllBytes());
-                assertEquals(properties.getProperty("sdkSha256"), sdkHash, "Preview must use the qualified SDK artifact"); //$NON-NLS-1$ //$NON-NLS-2$
+                assertEquals(sdkQualification.jarSha256(), sdkHash, "Preview must use the qualified SDK artifact"); //$NON-NLS-1$
                 evidence.put("sdkSha256", sdkHash); //$NON-NLS-1$
             }
+            evidence.put("sdkOptimizationSourceRevision", sdkQualification.sourceRevision()); //$NON-NLS-1$
             var adapter= FileLocator.getBundleFileLocation(installedCleanup).orElseThrow().toPath();
             evidence.put("adapterClassesSha256", BundleClassFingerprint.sha256(adapter)); //$NON-NLS-1$
             // The complete archive changes with the Tycho build qualifier. Retain

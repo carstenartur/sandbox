@@ -1,8 +1,17 @@
 # Pinned Regelsuche optimization SDK
 
+## Qualified snapshot for weighted projective handoffs
+
+The standalone JAR and its receipt come from [SDK transfer run 43848881086](https://github.com/carstenartur/sandbox/actions/runs/43848881086).
+The Regelsuche source is `f0b65289f0254424f61ac94a04b6194ef56c5b11`, the
+receipt version is `0.5.3-issue1657-f0b65289f025`, and the JAR SHA-256 is
+`8cafc3008ddac7c4c69a0fa2f25fc9a7dc25b505b84b9ce79e8d16428d91885d`.
+The SDK independently checks weighted projective tuples and exposes the
+unit precondition to Java source adapters.
+
 ## Qualified Regelsuche snapshot for consistent factor placement
 
-The bundled optimizer SDK and `qualification.json` come from the
+The previous bundled optimizer SDK and `qualification.json` came from the
 [SDK transfer run](https://github.com/carstenartur/sandbox/actions/runs/42583063561)
 for Regelsuche commit `5ae21899f77c8994413204b62832a9e725d324bb`.
 
