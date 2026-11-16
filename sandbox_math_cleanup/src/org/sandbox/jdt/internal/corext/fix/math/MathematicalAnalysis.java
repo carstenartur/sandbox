@@ -280,6 +280,8 @@ public final class MathematicalAnalysis {
       // Remove reservations before any final source/binding replay or public result.
       replacements.addAll(protectedReservations);
       MathematicalJavadoc documentation = new MathematicalJavadoc();
+      JavaByteArrayPrefixOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
+            compilerOptions, environment, replacements, evidence, valueWork);
       if (options.fieldInversions()) {
          JavaFieldInversionOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
                compilerOptions, environment, replacements, evidence, diagnostics, valueWork);
