@@ -12,6 +12,7 @@ package org.eclipse.jdt.ui.tests.quickfix.Java10;
 import static org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.performAndCheck;
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -519,7 +520,7 @@ public class CharsetModernizationTest {
     private static String compileAndRun(String source, java.nio.file.Path directory) throws Exception {
         java.nio.file.Files.createDirectories(directory);
         var file= directory.resolve("E1.java");
-        java.nio.file.Files.writeString(file, source, java.nio.charset.StandardCharsets.UTF_8);
+        java.nio.file.Files.writeString(file, source, StandardCharsets.UTF_8);
         var compiler= javax.tools.ToolProvider.getSystemJavaCompiler();
         assertNotNull(compiler);
         var diagnostics= new javax.tools.DiagnosticCollector<javax.tools.JavaFileObject>();
