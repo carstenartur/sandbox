@@ -2,6 +2,27 @@
 
 This module participates in the explicit mathematics cleanup. Numerical proof and Java source emission are separate from the Eclipse UI. The [current qualification](../docs/superpowers/plans/2026-10-31-java-mathematics-context-qualification.md) identifies the tested revisions and boundaries of its dated evidence; consult the linked integration PR for current CI results.
 
+## Coordinated changes to internal declarations
+
+`JavaStructuralRewritePlan` verifies the before and after sources together.
+It checks expected constructor and method references, retained bindings, and
+the existing public and protected surface including generic supertypes. The
+plan pins source text and classpath contents. Pass a verified plan to
+`MathematicalStructuralChange.preview` for one Eclipse preview. It resolves
+the edits in the actual project and checks the complete group again under
+the workspace rule before applying it. Native undo uses the refactoring
+change objects, and a failed partial application uses their rollback data.
+
+`JavaProjectiveRewritePlan` also replays the Regelsuche proof for an affine
+tuple and its carried numerators, common scale and weights. A source adapter
+recovers the expressions and supplies the consuming operation contracts and
+expected changes to invocations. The Java verifier checks those declared
+bindings without assuming that a compilable program implements the same
+arithmetic. The resulting source plan can use the same native preview.
+The independent two-file test changes a constructor and caller.
+The optional Bouncy Castle test applies the audited three-file G2 proposal
+and checks byte-exact undo of the group.
+
 ## Native tail and converter transaction
 
 `FunctionalMathCoordinator` owns a private working copy and one aggregate work

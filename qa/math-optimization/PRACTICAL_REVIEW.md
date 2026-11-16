@@ -121,3 +121,34 @@ interpreting estimated scores or optimizer wall time as generated-program speed.
 For cryptographic code, separately establish whether inputs are public and assess
 secret-dependent control flow/memory access. Strict Java equivalence is not a
 constant-time proof. Keep declined proposals and their reasons in the review.
+
+## Projective G2 qualification
+
+The [denominator revision](https://github.com/carstenartur/bc-java/commit/c94090d236df8baceb4918ba410b234e84cda53c)
+is the input to the [projective G2 experiment](https://github.com/carstenartur/bc-java/commit/67ddb1323fb97e46b0b744901118a84fa81438e3).
+The candidate carries a projective point from the isogeny through addition
+and cofactor clearing and normalizes at the affine output boundary.
+`BouncyCastleProjectivePlanTest` qualifies the exact three-file edit and
+checks byte-exact undo. Supply the respective `core/src/main/java`
+directories and the compiled denominator revision's core classes.
+
+```sh
+mvn -f qa/math-optimization/pom.xml -Dtest=BouncyCastleProjectivePlanTest \
+  -Dsandbox.math.bc.projective.base="$BC_DENOMINATOR_SOURCE" \
+  -Dsandbox.math.bc.projective.candidate="$BC_PROJECTIVE_SOURCE" \
+  -Dsandbox.math.bc.projective.classes="$BC_DENOMINATOR_CLASSES" test
+```
+
+The full public G2 hash used three Fp2 inversions in all 101 measured
+inputs. The denominator revision used 13. The compressed outputs agreed
+byte for byte. Both variants compiled with `javac --release 8`.
+
+| Full public hash, JMH 1.37 on Java 25 | Denominators | Projective |
+| --- | ---: | ---: |
+| Allocated bytes per operation, two fork means | 3,452,636–3,455,006 | 3,726,553–3,729,648 |
+| Wall time in ms per operation, two fork means | 8.54–10.90 | 9.97–23.18 |
+
+Each fork used one worker, 32 deterministic messages, five 500 ms warmup
+and five 500 ms measurement iterations. Allocation increased by
+7.9–8.0%. Wall time varied across forks and a separate thread CPU-time run
+also showed inconsistent differences. The candidate stays experimental.
