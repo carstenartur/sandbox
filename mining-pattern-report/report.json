@@ -1,6 +1,6 @@
 {
   "summary": {
-    "totalMatches": 453,
+    "totalMatches": 455,
     "repositories": {
       "eclipse.jdt.core": {
         "files": 227,
@@ -33,8 +33,8 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1935,
-        "matches": 183,
+        "files": 2009,
+        "matches": 185,
         "rules": 12
       }
     }
@@ -2338,7 +2338,7 @@
       "hintFile": "stream-performance",
       "rule": "stream-performance.nested-flatmap.review",
       "file": "sandbox_triggerpattern_test/src/org/sandbox/jdt/internal/ui/wizard/ProjectRuleRefactoringTest.java",
-      "line": 322,
+      "line": 323,
       "matchedCode": "java.util.Arrays.stream(registry.getConfigurationElementsFor(\"org.eclipse.ui.menus\")).filter(element -> \"popup:#AbstractTextEditorContext\".equals(element.getAttribute(\"locationURI\"))).flatMap(element -> java.util.Arrays.stream(element.getChildren(\"menu\"))).flatMap(element -> java.util.Arrays.stream(element.getChildren(\"command\")))"
     },
     {
@@ -2408,7 +2408,7 @@
       "hintFile": "stream-performance",
       "rule": "stream-performance.sorted-before-collect.review",
       "file": "sandbox_distribution_verify/src/main/java/org/sandbox/distribution/AggregateInstallationVerifier.java",
-      "line": 920,
+      "line": 944,
       "matchedCode": "variable.getModifiers().stream().map(modifier -> modifier.name().toLowerCase(java.util.Locale.ROOT)).sorted().collect(java.util.stream.Collectors.joining(\" \"))"
     },
     {
@@ -2497,7 +2497,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "sandbox_test_commons/integration-src/org/sandbox/jdt/ui/tests/quickfix/rules/CompilerDiagnosticRegressionTest.java",
-      "line": 188,
+      "line": 234,
       "matchedCode": "source.clone()"
     },
     {
@@ -2507,6 +2507,14 @@
       "file": "sandbox_test_commons/src/org/sandbox/jdt/ui/tests/quickfix/rules/AbstractEclipseJava.java",
       "line": 452,
       "matchedCode": "System.arraycopy(prevNatures,0,newNatures,0,prevNatures.length)"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_test_commons/src/org/sandbox/jdt/ui/tests/quickfix/rules/CompilerDiagnosticAssertions.java",
+      "line": 129,
+      "matchedCode": "units.clone()"
     },
     {
       "repository": "sandbox",
@@ -2833,7 +2841,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "sandbox_common/src/org/sandbox/jdt/cleanup/multifile/AbstractPlannedMultiFileCleanUp.java",
-      "line": 174,
+      "line": 177,
       "matchedCode": "compilationUnits.clone()"
     },
     {
@@ -2905,7 +2913,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CleanupPatchLifecycleTest.java",
-      "line": 213,
+      "line": 475,
       "matchedCode": "arguments.clone()"
     },
     {
@@ -2913,7 +2921,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CleanupPatchLifecycleTest.java",
-      "line": 220,
+      "line": 482,
       "matchedCode": "arguments.clone()"
     },
     {
@@ -2929,7 +2937,7 @@
       "hintFile": "arrays",
       "rule": "arrays.aslist-contains.review",
       "file": "sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/ui/fix/MathematicalWorkbenchSWTBotTest.java",
-      "line": 451,
+      "line": 456,
       "matchedCode": "Arrays.asList(labels).contains(control.getText().replace(\"&\",\"\"))"
     },
     {
@@ -3113,7 +3121,7 @@
       "hintFile": "string-equals",
       "rule": "string-equals.null-or-empty.review",
       "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java",
-      "line": 506,
+      "line": 528,
       "matchedCode": "units == null || units.isEmpty()"
     },
     {
@@ -3153,7 +3161,7 @@
       "hintFile": "string-equals",
       "rule": "string-equals.null-or-empty.review",
       "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/JdtLoopExtractor.java",
-      "line": 1070,
+      "line": 1109,
       "matchedCode": "commentList == null || commentList.isEmpty()"
     },
     {
@@ -3161,7 +3169,7 @@
       "hintFile": "string-equals",
       "rule": "string-equals.null-or-empty.review",
       "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java",
-      "line": 685,
+      "line": 744,
       "matchedCode": "expressionText == null || expressionText.isEmpty()"
     },
     {
@@ -3185,7 +3193,7 @@
       "hintFile": "string-equals",
       "rule": "string-equals.null-or-empty.review",
       "file": "sandbox_int_to_enum/src/org/sandbox/jdt/internal/corext/fix/helper/SwitchIntToEnumHelper.java",
-      "line": 336,
+      "line": 372,
       "matchedCode": "names == null || names.isEmpty()"
     },
     {
@@ -3193,7 +3201,7 @@
       "hintFile": "string-equals",
       "rule": "string-equals.null-or-empty.review",
       "file": "sandbox_oomph/src/test/resources/probe/SetupProbe.java",
-      "line": 984,
+      "line": 1010,
       "matchedCode": "unsigned == null || unsigned.isEmpty()"
     },
     {
@@ -3337,7 +3345,7 @@
       "hintFile": "string-equals",
       "rule": "string-equals.null-or-empty.review",
       "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java",
-      "line": 526,
+      "line": 525,
       "matchedCode": "candidates == null || candidates.isEmpty()"
     },
     {
@@ -3345,7 +3353,7 @@
       "hintFile": "string-equals",
       "rule": "string-equals.null-or-empty.review",
       "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java",
-      "line": 549,
+      "line": 548,
       "matchedCode": "parts == null || parts.isEmpty()"
     },
     {
@@ -3353,7 +3361,7 @@
       "hintFile": "string-equals",
       "rule": "string-equals.null-or-empty.review",
       "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java",
-      "line": 608,
+      "line": 607,
       "matchedCode": "json == null || json.isEmpty()"
     },
     {
@@ -3435,6 +3443,14 @@
       "file": "sandbox_common/src/org/sandbox/jdt/cleanup/multifile/RelatedCompilationUnitSearch.java",
       "line": 156,
       "matchedCode": "projects == null || projects.isEmpty()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "string-equals",
+      "rule": "string-equals.null-or-empty.review",
+      "file": "sandbox_common/src/org/sandbox/jdt/cleanup/multifile/RecordKeyMapRewrite.java",
+      "line": 142,
+      "matchedCode": "inserts == null || inserts.isEmpty()"
     },
     {
       "repository": "sandbox",
@@ -3625,7 +3641,7 @@
       "hintFile": "modernize-java9",
       "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
       "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java",
-      "line": 372,
+      "line": 394,
       "matchedCode": "computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collectors.toList())"
     },
     {

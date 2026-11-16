@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-11-13
+# Refactoring Mining Report — 2026-11-16
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -9,7 +9,7 @@
 | eclipse.platform | 311 | 71 | 4 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
-| sandbox | 1935 | 183 | 12 |
+| sandbox | 2009 | 185 | 12 |
 
 ## Details
 ### eclipse.jdt.core
@@ -352,7 +352,7 @@
 - `sandbox_common_core/src/test/java/org/sandbox/jdt/triggerpattern/internal/StructuredRewriteActionParserTest.java:85` — `list.values().size()` → `list.size()`
 
 #### Rule: `stream-performance` → `stream-performance.nested-flatmap.review`
-- `sandbox_triggerpattern_test/src/org/sandbox/jdt/internal/ui/wizard/ProjectRuleRefactoringTest.java:322` — `java.util.Arrays.stream(registry.getConfigurationElementsFor("org.eclipse.ui....`
+- `sandbox_triggerpattern_test/src/org/sandbox/jdt/internal/ui/wizard/ProjectRuleRefactoringTest.java:323` — `java.util.Arrays.stream(registry.getConfigurationElementsFor("org.eclipse.ui....`
 - `sandbox_tools/src/org/sandbox/jdt/internal/corext/fix/helper/WhileToForEach.java:258` — `miExpr.receiver().flatMap(receiver -> receiver.asSimpleName()).flatMap(Simple...`
 
 #### Rule: `stream-performance` → `stream-performance.collection-stream-foreach.to-collection-foreach`
@@ -365,7 +365,7 @@
 - `sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/JHViewContentProvider.java:103` — `Arrays.asList(packageRoot.getJavaProject().getPackageFragments()).stream().fo...` → `Arrays.asList(packageRoot.getJavaProject().getPackageFragments()).forEach((pa...`
 
 #### Rule: `stream-performance` → `stream-performance.sorted-before-collect.review`
-- `sandbox_distribution_verify/src/main/java/org/sandbox/distribution/AggregateInstallationVerifier.java:920` — `variable.getModifiers().stream().map(modifier -> modifier.name().toLowerCase(...`
+- `sandbox_distribution_verify/src/main/java/org/sandbox/distribution/AggregateInstallationVerifier.java:944` — `variable.getModifiers().stream().map(modifier -> modifier.name().toLowerCase(...`
 - `sandbox_common/src/org/sandbox/jdt/cleanup/multifile/GeneratedNameAllocator.java:205` — `group.stream().map(NestedTypeRequest::requestId).filter(candidateId -> !candi...`
 
 #### Rule: `arrays` → `arrays.clone.review`
@@ -377,7 +377,8 @@
 - `qa/math-optimization/src/test/java/org/sandbox/math/qa/SwtCurrentSourceRefinementTest.java:239` — `first.clone()`
 - `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java:273` — `fixes.clone()`
 - `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java:708` — `fixes.clone()`
-- `sandbox_test_commons/integration-src/org/sandbox/jdt/ui/tests/quickfix/rules/CompilerDiagnosticRegressionTest.java:188` — `source.clone()`
+- `sandbox_test_commons/integration-src/org/sandbox/jdt/ui/tests/quickfix/rules/CompilerDiagnosticRegressionTest.java:234` — `source.clone()`
+- `sandbox_test_commons/src/org/sandbox/jdt/ui/tests/quickfix/rules/CompilerDiagnosticAssertions.java:129` — `units.clone()`
 - `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/StreamChainToLoopTest.java:106` — `cleanups.clone()`
 - `sandbox_xml_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/XMLResourceSupport.java:73` — `originalBytes.clone()`
 - `sandbox_xml_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/XMLResourceSupport.java:74` — `bom.clone()`
@@ -410,13 +411,13 @@
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/cleanup/multifile/api/LineDelimiterPreserver.java:215` — `bytes.clone()`
 - `sandbox_common/src/org/sandbox/jdt/triggerpattern/editor/SandboxHintTemplateStore.java:75` — `TEMPLATES.clone()`
 - `sandbox_common/src/org/sandbox/jdt/triggerpattern/cleanup/NlsAwareCleanUpFix.java:29` — `operations.clone()`
-- `sandbox_common/src/org/sandbox/jdt/cleanup/multifile/AbstractPlannedMultiFileCleanUp.java:174` — `compilationUnits.clone()`
+- `sandbox_common/src/org/sandbox/jdt/cleanup/multifile/AbstractPlannedMultiFileCleanUp.java:177` — `compilationUnits.clone()`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapperWorkspaceRuleTest.java:202` — `arguments.clone()`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWorkspacePathTest.java:210` — `arguments.clone()`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapperExitCodeTest.java:111` — `arguments.clone()`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapperExitCodeTest.java:119` — `arguments.clone()`
-- `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CleanupPatchLifecycleTest.java:213` — `arguments.clone()`
-- `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CleanupPatchLifecycleTest.java:220` — `arguments.clone()`
+- `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CleanupPatchLifecycleTest.java:475` — `arguments.clone()`
+- `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CleanupPatchLifecycleTest.java:482` — `arguments.clone()`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapperPersistedClasspathTest.java:120` — `arguments.clone()`
 - `sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/math/JavaArrayStoreTest.java:71` — `a.clone()`
 - `sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/math/JavaArrayStoreTest.java:71` — `b.clone()`
@@ -456,21 +457,21 @@
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java:66` — `Arrays.asList(filtered).contains("--source")`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java:139` — `Arrays.asList(values).contains(expected.toFile().getPath())`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java:144` — `Arrays.asList(values).contains(unexpected.toFile().getPath())`
-- `sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/ui/fix/MathematicalWorkbenchSWTBotTest.java:451` — `Arrays.asList(labels).contains(control.getText().replace("&",""))`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/ui/fix/MathematicalWorkbenchSWTBotTest.java:456` — `Arrays.asList(labels).contains(control.getText().replace("&",""))`
 - `sandbox_eclipse_help_swtbot_test/src/org/sandbox/jdt/ui/helper/views/MathematicsHelpScreenshots.java:323` — `Arrays.asList(labels).contains(control.getText().replace("&",""))`
 
 #### Rule: `string-equals` → `string-equals.null-or-empty.review`
-- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java:506` — `units == null || units.isEmpty()`
+- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java:528` — `units == null || units.isEmpty()`
 - `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/RunWithJUnitPlugin.java:161` — `runnerQualifiedName == null || runnerQualifiedName.isEmpty()`
 - `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitMigrationPlan.java:118` — `blockedRuleUnitHandles == null || blockedRuleUnitHandles.isEmpty()`
 - `sandbox_mining_core/src/main/java/org/sandbox/mining/core/report/StatisticsCollector.java:237` — `evaluations == null || evaluations.isEmpty()`
 - `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/EnhancedForHandler.java:491` — `targetVariable == null || targetVariable.isEmpty()`
-- `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/JdtLoopExtractor.java:1070` — `commentList == null || commentList.isEmpty()`
-- `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java:685` — `expressionText == null || expressionText.isEmpty()`
+- `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/JdtLoopExtractor.java:1109` — `commentList == null || commentList.isEmpty()`
+- `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java:744` — `expressionText == null || expressionText.isEmpty()`
 - `sandbox_triggerpattern/src/org/sandbox/jdt/internal/ui/wizard/NewSandboxHintFileWizardPage.java:211` — `selection == null || selection.isEmpty()`
 - `sandbox_int_to_enum/src/org/sandbox/jdt/internal/ui/fix/IntToEnumCleanUpCore.java:271` — `units == null || units.isEmpty()`
-- `sandbox_int_to_enum/src/org/sandbox/jdt/internal/corext/fix/helper/SwitchIntToEnumHelper.java:336` — `names == null || names.isEmpty()`
-- `sandbox_oomph/src/test/resources/probe/SetupProbe.java:984` — `unsigned == null || unsigned.isEmpty()`
+- `sandbox_int_to_enum/src/org/sandbox/jdt/internal/corext/fix/helper/SwitchIntToEnumHelper.java:372` — `names == null || names.isEmpty()`
+- `sandbox_oomph/src/test/resources/probe/SetupProbe.java:1010` — `unsigned == null || unsigned.isEmpty()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/ImportDirective.java:240` — `replacementPattern == null || replacementPattern.isEmpty()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/ImportDirective.java:284` — `sourcePattern == null || sourcePattern.isEmpty()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/ImportDirective.java:327` — `replacementPatterns == null || replacementPatterns.isEmpty()`
@@ -488,9 +489,9 @@
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/PlaceholderInfo.java:41` — `name == null || name.isEmpty()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:301` — `candidates == null || candidates.isEmpty()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:322` — `parts == null || parts.isEmpty()`
-- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:526` — `candidates == null || candidates.isEmpty()`
-- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:549` — `parts == null || parts.isEmpty()`
-- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:608` — `json == null || json.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:525` — `candidates == null || candidates.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:548` — `parts == null || parts.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:607` — `json == null || json.isEmpty()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/OpenAiCompatibleClient.java:256` — `choices == null || choices.isEmpty()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/OpenAiCompatibleClient.java:293` — `choices == null || choices.isEmpty()`
 - `sandbox_common/src/org/sandbox/jdt/triggerpattern/mining/git/JGitHistoryProvider.java:231` — `diffText == null || diffText.isEmpty()`
@@ -501,6 +502,7 @@
 - `sandbox_common/src/org/sandbox/jdt/triggerpattern/cleanup/PlanAwareHintFileFixCore.java:80` — `plan == null || plan.isEmpty()`
 - `sandbox_common/src/org/sandbox/jdt/triggerpattern/internal/GuardRegistry.java:158` — `name == null || name.isEmpty()`
 - `sandbox_common/src/org/sandbox/jdt/cleanup/multifile/RelatedCompilationUnitSearch.java:156` — `projects == null || projects.isEmpty()`
+- `sandbox_common/src/org/sandbox/jdt/cleanup/multifile/RecordKeyMapRewrite.java:142` — `inserts == null || inserts.isEmpty()`
 - `sandbox_common/src/org/sandbox/jdt/cleanup/multifile/JavaProjectCompilationUnits.java:270` — `currentScope == null || currentScope.isEmpty()`
 - `sandbox_common/src/org/sandbox/jdt/internal/corext/util/NamingUtils.java:63` — `name == null || name.isEmpty()`
 - `sandbox_common/src/org/sandbox/jdt/internal/corext/util/NamingUtils.java:84` — `input == null || input.isEmpty()`
@@ -526,7 +528,7 @@
 - `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/AnalyticsResource.java:59` — `repo == null || repo.isEmpty()`
 
 #### Rule: `modernize-java9` → `modernize-java16.stream-collect-tolist.consider-stream-tolist`
-- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java:372` — `computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collector...`
+- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java:394` — `computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collector...`
 - `sandbox_tools/src/org/sandbox/jdt/internal/ui/fix/UseIteratorToForLoopCleanUpCore.java:87` — `computeFixSet().stream().map(UseIteratorToForLoopFixCore::toString).collect(C...`
 - `sandbox_int_to_enum/src/org/sandbox/jdt/internal/ui/fix/IntToEnumCleanUpCore.java:213` — `computeFixSet().stream().map(IntToEnumFixCore::toString).collect(Collectors.t...`
 - `sandbox_platform_helper/src/org/sandbox/jdt/internal/ui/fix/SimplifyPlatformStatusCleanUpCore.java:89` — `computeFixSet().stream().map(SimplifyPlatformStatusFixCore::toString).collect...`
