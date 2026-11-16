@@ -456,3 +456,26 @@ merges discovered and caller-supplied ranges before copying protected text, filt
 scalar regions before slice discovery, and excludes those ranges from runtime
 preflight. Existing overlap checks remain mandatory. Recognition preserves code
 only; it neither certifies it nor authorizes new arithmetic assumptions.
+
+## Constructor guards
+
+Explicit mathematical mode with the Estimated Runtime goal can cache an existing
+three-part BigInteger guard at construction. JDT resolves the non-null check,
+exact-class check and `BigInteger.equals(Object)` to one blank final instance
+field and one static final field initialized with an exact BigInteger creation
+in the same class. The pass preserves the rest of the condition in its original
+short-circuit order. A class with a serializable supertype, a nonlocal constant,
+unproved dispatch or a constructor without a suitable direct assignment stays
+outside this pass.
+
+The plan initializes a blank final boolean after the source assignment and any
+explicit superclass invocation in every nondelegating constructor. Resolved
+`this(...)` calls share the initialization performed by their target. A cache miss
+runs the original guard, including when a method runs before the final cache
+field is set or when the same-class constant was unavailable at construction.
+A cache hit rechecks the original receiver for null and reads the bound static
+field at its original use, preserving the class initialization boundary even
+if an instance escapes during construction. The source pass checks the generated
+bindings and exact edit envelope before submitting one coordinated Preview,
+Apply and Undo. The constructor work is amortized over calls, so the source
+receipt makes no measured latency or timing claim.

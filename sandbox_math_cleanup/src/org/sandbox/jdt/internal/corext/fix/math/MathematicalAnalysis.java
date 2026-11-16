@@ -885,6 +885,9 @@ public final class MathematicalAnalysis {
          if (isCancelled(monitor)) return cancelled(sourceDigest, compilerOptions);
       }
 
+      remainingWork = JavaConstructorGuardOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
+            compilerOptions, environment, replacements, evidence, diagnostics, remainingWork);
+
       replacements.removeAll(protectedReservations);
       MathematicalAnalysis.Analysis analysis = new MathematicalAnalysis.Analysis(replacements, diagnostics, sourceDigest, compilerOptions, evidence, documentation.edits(source));
       if (replacements.size() > 1 || !analysis.documentation().isEmpty()) {
@@ -942,6 +945,13 @@ public final class MathematicalAnalysis {
                JavaFiniteSumOptimizer.verify(ast, combinedAst, source, combined.get(), region, allEdits,
                      options, allowance, cancellation);
             }
+            var constructorWork = new JavaLoopInvariantAnalysis.Work(Math.max(0, remainingWork), cancellation);
+            for (var region : evidence) if (region.constructorGuard() != null) {
+               var allEdits = new ArrayList<>(replacements);
+               allEdits.addAll(analysis.documentation());
+               JavaConstructorGuardOptimizer.verify(combinedAst, combined.get(), region, allEdits, constructorWork);
+            }
+            remainingWork -= constructorWork.used;
             for (var region : evidence) if (region.runtimeIteration() != null) {
                var allEdits = new ArrayList<>(replacements); allEdits.addAll(analysis.documentation());
                remainingWork -= JavaRuntimeIterationOptimizer.verify(ast, combinedAst, source, combined.get(), region,
@@ -1448,12 +1458,20 @@ public final class MathematicalAnalysis {
       String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,
       LoopSchedulingEvidence scheduling, FiniteSumEvidence finiteSum, RuntimeIterationEvidence runtimeIteration,
       SourceNumericBranchEvidence sourceNumericBranch, FixedPowerEvidence fixedPower, ValueInverseEvidence valueInverse,
-      FieldInversionEvidence fieldInversion) {
+      FieldInversionEvidence fieldInversion, ConstructorGuardEvidence constructorGuard) {
       public VerifiedRegion {
          if (sourcePlan != null) sourcePlan.requireEnvelope(offset, length, original, replacement);
          if (explanation != null && !proof.equals(explanation.verified().proof())) {
             throw new IllegalArgumentException("EXPLANATION_PROOF_BINDING_DIFFERS");
          }
+      }
+      public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
+            String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,
+            LoopSchedulingEvidence scheduling, FiniteSumEvidence finiteSum, RuntimeIterationEvidence runtimeIteration,
+            SourceNumericBranchEvidence sourceNumericBranch, FixedPowerEvidence fixedPower, ValueInverseEvidence valueInverse,
+            FieldInversionEvidence fieldInversion) {
+         this(offset, length, proof, cost, original, replacement, explanation, sourcePlan, scheduling, finiteSum,
+               runtimeIteration, sourceNumericBranch, fixedPower, valueInverse, fieldInversion, null);
       }
       public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
             String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,
