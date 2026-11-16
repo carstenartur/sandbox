@@ -50,10 +50,10 @@ class JavaRuntimeIterationTest extends JavaContextTestSupport {
         String boxed = width.equals("int") ? "Integer" : "Long";
         String source = """
                 public class Sample {
-                    public static %1$s run(int n) {
-                        %1$s x = %2$s.MAX_VALUE + n, y = %2$s.MIN_VALUE;
-                        %1$s factor = %2$s.MAX_VALUE - n;
-                        %1$s i = -3;
+                    public static ${width} run(int n) {
+                        ${width} x = ${boxed}.MAX_VALUE + n, y = ${boxed}.MIN_VALUE;
+                        ${width} factor = ${boxed}.MAX_VALUE - n;
+                        ${width} i = -3;
                         while (i < n) {
                             x = factor * x + y + i * i;
                             y = x - y;
@@ -62,7 +62,7 @@ class JavaRuntimeIterationTest extends JavaContextTestSupport {
                         return x + y + i;
                     }
                 }
-                """.formatted(width, boxed);
+                """.replace("${width}", width).replace("${boxed}", boxed);
         var result = analyze(source);
         var proof = result.evidence().stream().map(MathematicalAnalysis.VerifiedRegion::runtimeIteration)
                 .filter(e -> e != null && e.linear() != null).findFirst().orElseThrow();
