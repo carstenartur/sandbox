@@ -22,6 +22,22 @@ arithmetic. The resulting source plan can use the same native preview.
 The optional Bouncy Castle test applies the audited three-file G2 proposal
 and checks byte-exact undo of the group.
 
+## Common polynomial denominators
+
+The existing mathematics opt-in lets Regelsuche derive one polynomial whose
+square and cube match two source denominators. The scalar projection checks
+the Horner loop, implicit monic terms, private coefficient tables and Java
+bindings before selecting the plan. The emitted guard checks the inferred
+modulus and operand types. An original-path fallback preserves other moduli
+and partially initialized classes.
+
+The quadratic projection uses the same Regelsuche verifier for the two
+components of the audited Bouncy Castle G2 field implementation. It checks the
+source receipts, rebuilds the factor from the emitted literal, and retains
+one inversion with its original exceptional behavior. Both projections
+recheck their bindings and coefficients after combined Apply. Measured
+allocation and elapsed time are recorded in the integration PR.
+
 ## Native tail and converter transaction
 
 `FunctionalMathCoordinator` owns a private working copy and one aggregate work

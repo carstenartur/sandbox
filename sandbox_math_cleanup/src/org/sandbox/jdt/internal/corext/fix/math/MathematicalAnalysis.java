@@ -285,6 +285,10 @@ public final class MathematicalAnalysis {
                compilerOptions, environment, replacements, evidence, diagnostics, valueWork);
          sourceContext.takeWork(); // Source dependencies were charged through valueWork.
       }
+      JavaRationalDenominatorOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
+            compilerOptions, environment, replacements, evidence, diagnostics, valueWork);
+      JavaQuadraticDenominatorOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
+            compilerOptions, environment, replacements, evidence, diagnostics, valueWork);
       JavaFixedPowerOptimizer.optimize(ast,source,options,monitor,selectionOffset,selectionLength,compilerOptions,environment,replacements,evidence,diagnostics,valueWork);
       if (selectionOffset >= 0)
          JavaValueResidueOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
@@ -929,6 +933,20 @@ public final class MathematicalAnalysis {
                for (var region : evidence) if(region.fixedPower()!=null)
                   JavaFixedPowerOptimizer.verifyCombined(combinedAst,combined.get(),region,options,valueWork);
                remainingWork-=valueWork.used-beforePowerReplay;
+            }
+            if (evidence.stream().anyMatch(region -> JavaRationalDenominatorOptimizer.isRegion(region)
+                  || JavaQuadraticDenominatorOptimizer.isRegion(region))) {
+               valueWork.charge(Math.max(0, valueWork.remaining() - Math.max(0, remainingWork)));
+               long beforeDenominatorReplay = valueWork.used;
+               var allEdits = new ArrayList<>(replacements);
+               allEdits.addAll(analysis.documentation());
+               for (var region : evidence) {
+                  if (JavaRationalDenominatorOptimizer.isRegion(region))
+                     JavaRationalDenominatorOptimizer.verifyCombined(combinedAst, combined.get(), region, allEdits, valueWork);
+                  if (JavaQuadraticDenominatorOptimizer.isRegion(region))
+                     JavaQuadraticDenominatorOptimizer.verifyCombined(combinedAst, combined.get(), region, allEdits, valueWork);
+               }
+               remainingWork -= valueWork.used - beforeDenominatorReplay;
             }
             for (var region : acceptedContexts) JavaExpressionContexts.verifyBoundary(ast, combinedAst, region, replacements);
             for (var pair : acceptedStreamPairs) JavaNumericStreamOptimizer.verifyBoundary(ast, combinedAst, pair, replacements);
