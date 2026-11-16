@@ -1,4 +1,4 @@
-# Enforce JaCoCo line coverage and publish measured JUnit and JaCoCo metrics.
+# Enforce JaCoCo line coverage and publish JUnit, JaCoCo and CPD reports.
 name: Verified test and coverage metrics
 
 on:
@@ -151,12 +151,16 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf "$QUALITY_SITE"
-          mkdir -p "$QUALITY_SITE/coverage" "$QUALITY_SITE/tests"
+          mkdir -p "$QUALITY_SITE/coverage" "$QUALITY_SITE/tests" "$QUALITY_SITE/duplication"
 
           coverage_dir='sandbox_coverage/target/site/jacoco-aggregate'
           test -s "$coverage_dir/jacoco.csv"
           test -s "$coverage_dir/index.html"
           cp -a "$coverage_dir/." "$QUALITY_SITE/coverage/"
+
+          cpd_dir='target/duplication-report'
+          test -s "$cpd_dir/cpd.html"
+          cp -a "$cpd_dir/." "$QUALITY_SITE/duplication/"
 
           while IFS= read -r -d '' report; do
             site_dir="$(dirname "$report")"
@@ -266,7 +270,7 @@ jobs:
                 <tr><td>Instruction coverage</td><td>$COVERAGE%</td></tr>
               </tbody>
             </table>
-            <p><a href="../coverage/">Aggregate JaCoCo report</a> · <a href="../quality-summary.json">Machine-readable summary</a></p>
+            <p><a href="../coverage/">Aggregate JaCoCo report</a> · <a href="../duplication/cpd.html">Duplicate Java code</a> · <a href="../quality-summary.json">Machine-readable summary</a></p>
             <h2>Module reports</h2>
             <ul>
           EOF
@@ -298,6 +302,8 @@ jobs:
             target/quality-site/**
             sandbox_coverage/target/site/jacoco-aggregate/jacoco.csv
             sandbox_coverage/target/site/jacoco-aggregate/jacoco.xml
+            target/duplication-report/**
+            target/cpd.xml
             target/github-coverage/cobertura.xml
             **/target/surefire-reports/TEST-*.xml
             **/target/failsafe-reports/TEST-*.xml
@@ -360,6 +366,8 @@ jobs:
             echo '[Test totals and module reports](https://carstenartur.github.io/sandbox/tests/)'
             echo
             echo '[Aggregate JaCoCo coverage](https://carstenartur.github.io/sandbox/coverage/)'
+            echo
+            echo '[Duplicate Java code (CPD)](https://carstenartur.github.io/sandbox/duplication/cpd.html)'
             echo
             echo '[Machine-readable summary](https://carstenartur.github.io/sandbox/quality-summary.json)'
           } >> "$GITHUB_STEP_SUMMARY"
