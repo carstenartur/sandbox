@@ -14,6 +14,101 @@ class JavaValueResidueTest {
         return JavaValueCallTest.fixture().replace("BigInteger.valueOf(101)","new BigInteger(\"4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787\")").replace("public static Leaf scale(Leaf x){return x.combine(TWIST);}",
             "public static Leaf scale(BigInteger x,BigInteger y){BigInteger a=x.mod(Leaf.P);BigInteger b=y.mod(Leaf.P);return Leaf.of(a,b);}");
     }
+    private static String reducedFactoryFixture() {
+        return """
+            import java.math.BigInteger;
+            public final class Calculation {
+                public static Leaf[] scale(byte[] x, byte[] y) {
+                    Leaf[] output = new Leaf[2];
+                    for (int i = 0; i < output.length; i++) {
+                        BigInteger a = Octets.decode(x).mod(Leaf.P);
+                        BigInteger b = new BigInteger(y).mod(Leaf.P);
+                        output[i] = Leaf.of(a, b);
+                    }
+                    return output;
+                }
+            }
+            final class Octets {
+                static BigInteger decode(byte[] input) {
+                    return new BigInteger(java.util.Arrays.copyOf(input, input.length));
+                }
+            }
+            final class Leaf {
+                public static final BigInteger P = Characteristic.P;
+                public static final BigInteger OTHER = new BigInteger("21");
+                private final BigInteger left, right;
+                private Leaf(BigInteger a, BigInteger b) { this.left = a; this.right = b; }
+                public static Leaf of(BigInteger a, BigInteger b) { return new Leaf(a.mod(P), b.mod(P)); }
+                static Leaf wrap(BigInteger a, BigInteger b) { return new Leaf(a, b); }
+                public BigInteger left() { return left; }
+                public BigInteger right() { return right; }
+            }
+            final class Characteristic {
+                public static final BigInteger P = new BigInteger("1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab", 16);
+            }
+            """;
+    }
+    @Test void rewritesOnlyTheCallNameWhenTheOriginalModOperationsAlreadyNormalizeBothValues() throws Exception {
+        String source=reducedFactoryFixture();
+        var analysis=analyzeReducedFactory(source,JavaValueReuseTest.options());
+        int name=source.indexOf("Leaf.of(a, b)")+"Leaf.".length();
+        assertEquals(1,analysis.replacements().size(),analysis.diagnostics().toString());
+        var edit=analysis.replacements().getFirst();
+        assertEquals(name,edit.offset());
+        assertEquals("of".length(),edit.length());
+        assertEquals("wrap",edit.replacement());
+        assertTrue(analysis.evidence().getFirst().sourcePlan().valueRuntime().current());
+        var helper=new JavaImmutableValueTest();helper.directory=directory;
+        String generated=helper.apply(source,analysis);
+        assertTrue(generated.contains("output[i] = Leaf.wrap(a, b);"));
+        assertEquals(executeReducedFactory(source),executeReducedFactory(generated));
+        assertFalse(analyzeReducedFactory(generated,JavaValueReuseTest.options()).changed());
+    }
+    @Test void requiresTheSameModulusExactProducersAndAnIdentityOrderedDirectFactory() throws Exception {
+        String source=reducedFactoryFixture();
+        var unqualified=analyzeReducedFactory(source,JavaValueCallTest.options());
+        assertTrue(unqualified.replacements().stream().anyMatch(edit->edit.replacement().contains("Mathematics factory residue")));
+        assertTrue(unqualified.replacements().stream().noneMatch(edit->edit.replacement().equals("wrap")));
+        for (String rejected : List.of(
+                source.replace("new BigInteger(y).mod(Leaf.P)", "new BigInteger(y).mod(Leaf.OTHER)"),
+                source.replace("new BigInteger(java.util.Arrays.copyOf(input, input.length))",
+                    "new BigInteger(input) { @Override public BigInteger mod(BigInteger p) { return p.add(ONE); } }"),
+                source.replace("return new BigInteger(java.util.Arrays.copyOf(input, input.length));",
+                    "return input.length == 0 ? BigInteger.ZERO : new BigInteger(input);"),
+                source.replace("return new Leaf(a, b);", "return new Leaf(b, a);"),
+                source.replace("return new Leaf(a, b);", "System.out.print(a); return new Leaf(a, b);"))) {
+            var result=analyzeReducedFactory(rejected,JavaValueReuseTest.options());
+            assertTrue(result.replacements().stream().noneMatch(edit->edit.replacement().equals("wrap")),result.replacements().toString());
+        }
+    }
+    private MathematicalAnalysis.Analysis analyzeReducedFactory(String source,MathCleanUpOptions options) throws Exception {
+        var helper=new JavaImmutableValueTest();helper.directory=directory;
+        var profile=new HashMap<>(options.toMap());
+        profile.put(MathCleanUpOptions.TIMEOUT_SECONDS,"20");
+        var analysis=MathematicalAnalysis.analyze(helper.parse(source),source,MathCleanUpOptions.parse(profile,17),
+            null,source.indexOf("output[i]"),1,helper.environment());
+        assertTrue(analysis.diagnostics().stream().noneMatch(diagnostic->diagnostic.code().equals("CANCELLED")),analysis.diagnostics().toString());
+        return analysis;
+    }
+    private List<String> executeReducedFactory(String source) throws Exception {
+        Path output=Files.createTempDirectory(directory,"reduced");Path file=output.resolve("Calculation.java");Files.writeString(file,source);
+        assertEquals(0,javax.tools.ToolProvider.getSystemJavaCompiler().run(null,null,null,"--release","17","-d",output.toString(),file.toString()));
+        try(var loader=new java.net.URLClassLoader(new java.net.URL[]{output.toUri().toURL()},ClassLoader.getPlatformClassLoader())) {
+            var method=loader.loadClass("Calculation").getMethod("scale",byte[].class,byte[].class);
+            var leaf=loader.loadClass("Leaf");var left=leaf.getMethod("left");var right=leaf.getMethod("right");
+            left.setAccessible(true);right.setAccessible(true);
+            byte[][] inputs={null,new byte[0],new byte[]{0},new byte[]{-1},new byte[]{127},BigInteger.ONE.shiftLeft(5000).toByteArray()};
+            var outcomes=new ArrayList<String>();
+            for(byte[] a:inputs)for(byte[] b:inputs)try {
+                Object[] values=(Object[])method.invoke(null,a,b);
+                assertNotSame(values[0],values[1]);
+                for(var value:values)outcomes.add(left.invoke(value)+":"+right.invoke(value));
+            } catch(java.lang.reflect.InvocationTargetException failure) {
+                outcomes.add(failure.getCause().getClass().getName());
+            }
+            return outcomes;
+        }
+    }
     @Test void factoryReceivesRawValuesOnlyWhenEarlierReductionsAreTotalAndUnobserved() throws Exception {
         String source=fixture();var helper=new JavaImmutableValueTest();helper.directory=directory;
         var analysis=MathematicalAnalysis.analyze(helper.parse(source),source,JavaValueCallTest.options(),null,-1,0,helper.environment());
