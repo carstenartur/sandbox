@@ -64,6 +64,32 @@ public class CharsetModernizationTest {
                 """, 1);
     }
 
+    @org.junit.jupiter.api.Test
+    void aggregatePrintStreamKeepsTypeCharsetAndAutoFlush() throws Exception {
+        String after= verify(ChangeBehavior.ENFORCE_UTF8_AGGREGATE, """
+                java.io.PrintStream open(String path) throws java.io.FileNotFoundException {
+                    return new java.io.PrintStream(path);
+                }
+                java.io.PrintStream open(java.io.File file)
+                        throws java.io.FileNotFoundException, java.io.UnsupportedEncodingException {
+                    return new java.io.PrintStream(file, "ISO-8859-1");
+                }
+                java.io.PrintStream open(java.io.OutputStream out) {
+                    return new java.io.PrintStream(out);
+                }
+                java.io.PrintStream open(java.io.OutputStream out, boolean autoFlush)
+                        throws java.io.UnsupportedEncodingException {
+                    return new java.io.PrintStream(out, autoFlush, "UTF-16LE");
+                }
+                """, 2);
+        assertTrue(after.contains("new java.io.PrintStream(path);"), after); //$NON-NLS-1$
+        assertTrue(after.contains("new java.io.PrintStream(file, \"ISO-8859-1\");"), after); //$NON-NLS-1$
+        assertTrue(after.contains("out, false,"), after); //$NON-NLS-1$
+        assertTrue(after.contains("out, autoFlush,"), after); //$NON-NLS-1$
+        assertTrue(after.contains("UTF_16LE"), after); //$NON-NLS-1$
+        assertEquals(1, after.lines().filter(line -> line.contains("UnsupportedEncodingException")).count(), after); //$NON-NLS-1$
+    }
+
     @ParameterizedTest
     @EnumSource(ChangeBehavior.class)
     void formatterRemovesObsoleteThrows(ChangeBehavior mode) throws Exception {
@@ -553,9 +579,16 @@ public class CharsetModernizationTest {
                         var binding= node.resolveConstructorBinding();
                         assertNotNull(binding);
                         String owner= binding.getDeclaringClass().getQualifiedName();
-                        if (owner.equals("java.util.Scanner") || owner.equals("java.util.Formatter")) { //$NON-NLS-1$ //$NON-NLS-2$
-                            assertTrue(binding.getParameterTypes().length > 1, after);
-                            assertEquals("java.nio.charset.Charset", binding.getParameterTypes()[1].getQualifiedName(), after); //$NON-NLS-1$
+                        var parameters= binding.getParameterTypes();
+                        int charsetIndex= switch (owner) {
+                            case "java.util.Scanner", "java.util.Formatter" -> 1; //$NON-NLS-1$ //$NON-NLS-2$
+                            case "java.io.PrintStream" -> "java.io.OutputStream".equals(parameters[0].getQualifiedName()) //$NON-NLS-1$ //$NON-NLS-2$
+                                    ? parameters.length - 1 : -1;
+                            default -> -1;
+                        };
+                        if (charsetIndex >= 0) {
+                            assertTrue(parameters.length > charsetIndex, after);
+                            assertEquals("java.nio.charset.Charset", parameters[charsetIndex].getQualifiedName(), after); //$NON-NLS-1$
                             typed.incrementAndGet();
                         }
                         return true;

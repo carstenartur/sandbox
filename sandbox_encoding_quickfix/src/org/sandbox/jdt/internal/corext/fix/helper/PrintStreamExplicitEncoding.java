@@ -13,9 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import java.io.BufferedWriter;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Set;
@@ -28,35 +26,24 @@ import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 
-import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
-import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 
-/**
- * Change
- *
- * Find: Stream fw=new PrintStream("file.txt", "UTF-8")
- *
- * Rewrite: Stream fw=new PrintStream("file.txt", StandardCharsets.UTF_8)
- *
- * Find: Stream fw=new PrintStream(new File("file.txt"), "UTF-8")
- *
- * Rewrite: Stream fw=new PrintStream(new File("file.txt"), StandardCharsets.UTF_8)
- *
- * Find: Stream fw=new PrintStream(new java.io.OutputStream(), boolean, "UTF-8")
- *
- * Rewrite: Stream fw=new PrintStream(new java.io.OutputStream(), boolean, StandardCharsets.UTF_8)
- *
- */
+/** Adds Charset arguments to PrintStream constructors backed by an OutputStream. */
 public class PrintStreamExplicitEncoding extends AbstractExplicitEncoding<ClassInstanceCreation> {
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb) {
+		var javaElement= compilationUnit.getJavaElement();
+		if (javaElement == null || !JavaModelUtil.is10OrHigher(javaElement.getJavaProject())) {
+			return;
+		}
 		ReferenceHolder<ASTNode, Object> datah= ReferenceHolder.createForNodes();
 		HelperVisitorFactory.forClassInstanceCreation(PrintStream.class)
 			.in(compilationUnit)
@@ -67,32 +54,19 @@ public class PrintStreamExplicitEncoding extends AbstractExplicitEncoding<ClassI
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore, Set<CompilationUnitRewriteOperation> operations,
 			ChangeBehavior cb, ClassInstanceCreation visited,
 			ReferenceHolder<ASTNode, Object> holder) {
-		List<ASTNode> arguments= visited.arguments();
-		switch (arguments.size()) {
-			case 1:
-				break;
-			case 2:
-				if (!(arguments.get(1) instanceof StringLiteral)) {
-					return false;
-				}
-				StringLiteral argstring3= (StringLiteral) arguments.get(1);
-				if (!ENCODINGS.contains(argstring3.getLiteralValue())) {
-					return false;
-				}
-				holder.put(argstring3, ENCODING_MAP.get(argstring3.getLiteralValue()));
-				break;
-			case 3:
-				if (!(arguments.get(2) instanceof StringLiteral)) {
-					return false;
-				}
-				StringLiteral argstring4= (StringLiteral) arguments.get(2);
-				if (!ENCODINGS.contains(argstring4.getLiteralValue())) {
-					return false;
-				}
-				holder.put(argstring4, ENCODING_MAP.get(argstring4.getLiteralValue()));
-				break;
-			default:
-				return false;
+		// The file and path Charset overloads add IOException to the checked exception contract.
+		var firstParameter= visited.resolveConstructorBinding().getParameterTypes()[0];
+		if (!OutputStream.class.getName().equals(firstParameter.getQualifiedName())) {
+			return false;
+		}
+		List<?> arguments= visited.arguments();
+		int argumentCount= arguments.size();
+		if (argumentCount == 1) {
+			holder.put(visited, new NodeData(false, visited, null));
+		} else if (argumentCount == 3 && arguments.get(2) instanceof StringLiteral literal && isKnownEncoding(literal)) {
+			holder.put(visited, new NodeData(true, literal, getEncodingConstantName(literal)));
+		} else {
+			return false;
 		}
 		operations.add(fixcore.rewrite(visited, cb, holder));
 		return false;
@@ -103,32 +77,26 @@ public class PrintStreamExplicitEncoding extends AbstractExplicitEncoding<ClassI
 			TextEditGroup group, ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
-		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, visited, (String) data.get(visited),getCharsetConstants(cuRewrite));
-		/**
-		 * new FileOutputStream(<filename>)
-		 */
-		ClassInstanceCreation fosclassInstance= ast.newClassInstanceCreation();
-		fosclassInstance.setType(ast.newSimpleType(addImport(FileOutputStream.class.getCanonicalName(), cuRewrite, ast)));
-		fosclassInstance.arguments().add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression((ASTNode) visited.arguments().get(0))));
-		/**
-		 * new OutputStreamWriter(new FileOutputStream(<filename>))
-		 */
-		ClassInstanceCreation oswclassInstance= ast.newClassInstanceCreation();
-		oswclassInstance.setType(ast.newSimpleType(addImport(OutputStreamWriter.class.getCanonicalName(), cuRewrite, ast)));
-		oswclassInstance.arguments().add(fosclassInstance);
-		oswclassInstance.arguments().add(callToCharsetDefaultCharset);
-		/**
-		 * new BufferedWriter(new OutputStreamWriter(new FileOutputStream(<filename>)))
-		 */
-		ClassInstanceCreation bwclassInstance= ast.newClassInstanceCreation();
-		bwclassInstance.setType(ast.newSimpleType(addImport(BufferedWriter.class.getCanonicalName(), cuRewrite, ast)));
-		bwclassInstance.arguments().add(oswclassInstance);
-
-		ASTNodes.replaceButKeepComment(rewrite, visited, bwclassInstance, group);
+		NodeData nodeData= (NodeData) data.get(visited);
+		ASTNode charset= cb.computeCharsetASTNode(cuRewrite, ast, visited, nodeData.encoding(), getCharsetConstants(cuRewrite));
+		if (nodeData.replace()) {
+			if (!replaceArgumentAndRemoveNLS(rewrite, nodeData.visited(), charset, group, cuRewrite)) {
+				removeUnsupportedEncodingException(visited, group, rewrite, cuRewrite.getImportRemover());
+			}
+			return;
+		}
+		ListRewrite arguments= rewrite.getListRewrite(visited, ClassInstanceCreation.ARGUMENTS_PROPERTY);
+		arguments.insertLast(ast.newBooleanLiteral(false), group);
+		arguments.insertLast(charset, group);
 	}
 
 	@Override
 	public String getPreview(boolean afterRefactoring, ChangeBehavior cb) {
+		if (cb == ChangeBehavior.ENFORCE_UTF8_AGGREGATE) {
+			return afterRefactoring
+					? "PrintStream stream = new PrintStream(out, false, " + cb.computeCharsetforPreview() + ");\n" //$NON-NLS-1$ //$NON-NLS-2$
+					: "PrintStream stream = new PrintStream(out);\n"; //$NON-NLS-1$
+		}
 		if (afterRefactoring) {
 			return "Stream w=new PrintStream(\"out.txt\"," + cb.computeCharsetforPreview() + ");\n" + //$NON-NLS-1$ //$NON-NLS-2$
 					"Stream w=new PrintStream(\"out.txt\",StandardCharsets.UTF_8);\n" + //$NON-NLS-1$
