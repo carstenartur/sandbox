@@ -45,6 +45,70 @@ class JavaRuntimeIterationTest extends JavaContextTestSupport {
     }) void affineProductsGeometricAndOrderedCoupledStates(String loop) throws Exception {
         String source=sample(loop);int above=(int)analyze(source).evidence().stream().filter(e->e.runtimeIteration()!=null).findFirst().orElseThrow().runtimeIteration().minimumIterations()+1;compare(source,transformed(source),-1,0,1,32,4096,50000,above);
     }
+    @ParameterizedTest @ValueSource(strings={"int", "long"})
+    void primitiveMatrixPreservesSignedWraparoundAndLiveCounter(String width) throws Exception {
+        String boxed = width.equals("int") ? "Integer" : "Long";
+        String source = """
+                public class Sample {
+                    public static %1$s run(int n) {
+                        %1$s x = %2$s.MAX_VALUE + n, y = %2$s.MIN_VALUE;
+                        %1$s factor = %2$s.MAX_VALUE - n;
+                        %1$s i = -3;
+                        while (i < n) {
+                            x = factor * x + y + i * i;
+                            y = x - y;
+                            i++;
+                        }
+                        return x + y + i;
+                    }
+                }
+                """.formatted(width, boxed);
+        var result = analyze(source);
+        var proof = result.evidence().stream().map(MathematicalAnalysis.VerifiedRegion::runtimeIteration)
+                .filter(e -> e != null && e.linear() != null).findFirst().orElseThrow();
+        String generated = transformed(source);
+        int threshold = Math.toIntExact(proof.minimumIterations());
+        compare(source, generated, Integer.MIN_VALUE, -3, -2, 19, threshold - 4, threshold - 3,
+                threshold - 2, 80_003, 100_000);
+        assertTrue(generated.contains(width + "[][]"), generated);
+        assertFalse(generated.contains("java.math.BigInteger[][]"), generated);
+        assertFalse(generated.contains(".mod("), generated);
+    }
+    @Test void primitiveMatrixProcessesUnsignedLongIterationCount() throws Exception {
+        String source = """
+                public class Sample {
+                    public static long run(int seed) {
+                        long value = seed;
+                        for (long i = Long.MIN_VALUE; i < Long.MAX_VALUE; i++)
+                            value *= -1L;
+                        return value;
+                    }
+                }
+                """;
+        String generated = transformed(source);
+        try (var loader = compile(generated)) {
+            // The original would perform 2^64 - 1 sign changes, an odd count.
+            var run = loader.loadClass("Sample").getMethod("run", int.class);
+            assertEquals(-17L, run.invoke(null, 17));
+            assertEquals(2147483648L, run.invoke(null, Integer.MIN_VALUE));
+        }
+    }
+    @Test void primitiveMatrixGuardsProfitAndCounterAdvance() throws Exception {
+        String loop = "for (int i = 1; i <= n; i++) value *= 3;";
+        String source = "public class Sample {public static int run(int n) {int value = 17; "
+                + loop + " return value;}}";
+        String generated = transformed(source);
+        int threshold = Math.toIntExact(analyze(source).evidence().getFirst().runtimeIteration().minimumIterations());
+        compare(source, generated, threshold - 1, threshold);
+        assertTrue(generated.contains(loop), generated);
+        // Probe the retained fallback without executing its nonterminating loop at MAX_VALUE.
+        try (var loader = compile(generated.replace(loop, "return -2;"))) {
+            var run = loader.loadClass("Sample").getMethod("run", int.class);
+            assertEquals(-2, run.invoke(null, threshold - 1));
+            assertNotEquals(-2, run.invoke(null, threshold));
+            assertEquals(-2, run.invoke(null, Integer.MAX_VALUE));
+        }
+    }
     @ParameterizedTest @ValueSource(strings={
         "for(int i=0;i<n;i++) for(int j=0;j<=i;j++) sum+=j*j;",
         "for(int i=0;i<n;i++) for(int j=0;j<n;j++) sum+=i*j;"
@@ -110,7 +174,10 @@ class JavaRuntimeIterationTest extends JavaContextTestSupport {
     }
     @Test void exactLinearGrowthAndLongPrimitiveOutputs() throws Exception {
         String exact="public class Sample {public static int run(int n){java.math.BigInteger sum=java.math.BigInteger.ONE;for(int i=0;i<n;i++) sum=sum.multiply(java.math.BigInteger.valueOf(2));return sum.bitLength();}}";
-        compare(exact,transformed(exact),-1,0,1,5000,40000);
+        String generated = transformed(exact);
+        assertTrue(generated.contains("java.math.BigInteger[][]"), generated);
+        assertTrue(generated.contains("rowBits"), generated);
+        compare(exact,generated,-1,0,1,5000,40000);
         String wide="public class Sample {public static long run(int n){long sum=Long.MAX_VALUE;for(long i=-50000;i<n;i+=3) sum+=i*i*n;return sum;}}";
         compare(wide,transformed(wide),-50001,-1,0,1,50000);
     }

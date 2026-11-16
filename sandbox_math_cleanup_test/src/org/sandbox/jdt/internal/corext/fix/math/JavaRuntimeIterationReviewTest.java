@@ -27,6 +27,22 @@ class JavaRuntimeIterationReviewTest extends JavaContextTestSupport {
         assertTrue(result.evidence().stream().anyMatch(e->e.runtimeIteration()!=null),result.diagnostics().toString());
         assertTrue(result.matches(source,compiler));assertEquals(compiler,result.compilerOptions());
     }
+    @Test void longMatrixWidensIntParametersWithoutUnnecessaryCasts() {
+        String source = """
+                class Calculation {
+                    static long run(int n, int factor) {
+                        long value = Long.MAX_VALUE;
+                        for (int i = 0; i < n; i++) value *= factor;
+                        return value;
+                    }
+                }
+                """;
+        var compiler = GeneratedSourceDiagnosticsTest.compiler();
+        var environment = new MathematicalAnalysis.SourceEnvironment("Calculation.java", List.of(), List.of(), List.of(), compiler);
+        var result = MathematicalAnalysis.analyze(GeneratedSourceDiagnosticsTest.parse(source, compiler), source, options(), null, -1, 0, environment);
+        assertTrue(result.evidence().stream().anyMatch(e -> e.runtimeIteration() != null && e.runtimeIteration().linear() != null),
+                result.diagnostics().toString());
+    }
     @Test void innerTerminationUsesItsOwnWidthInBothDirections() throws Exception {
         for(boolean wideOuter:List.of(true,false)) {
             String loop="for("+(wideOuter?"long":"int")+" i=0;i<n;i++)for("+(wideOuter?"int":"long")+" j=0;j<=n;j++)sum+=1;";

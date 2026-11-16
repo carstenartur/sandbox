@@ -5,6 +5,7 @@ import java.math.BigInteger;
 import java.util.*;
 import org.eclipse.jdt.core.dom.*;
 import de.regelsuche.ast.*;
+import de.regelsuche.ast.iteration.IntegerArithmetic;
 import de.regelsuche.sdk.optimization.iteration.PolynomialSumPlan;
 import de.regelsuche.symbol.SymbolId;
 import org.sandbox.jdt.internal.corext.fix.math.RuntimeIterationEvidence.EmissionStrategy;
@@ -22,10 +23,26 @@ final class JavaRuntimeIterationEmitter {
         this.context=context;this.evidence=evidence;this.work=work;
         this.explanations=explanations;
         prefix=freshPrefix(source,context.node().getStartPosition(),work);
-        names.put(context.startSymbol(),prefix+"start");names.put(context.countSymbol(),prefix+"count");
+        boolean primitiveLinear = evidence.strategy() == EmissionStrategy.PRIMITIVE_LINEAR;
+        String conversion = primitiveLinear ? "." + context.width() + "Value()" : ""; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+        names.put(context.startSymbol(), prefix + "start" + conversion); //$NON-NLS-1$
+        names.put(context.countSymbol(), prefix + "count" + conversion); //$NON-NLS-1$
         if(context.partition()!=null)for(int part=0;part<context.partition().starts().size();part++)
             names.put(context.partition().starts().get(part),prefix+"partStart"+part);
-        for(var binding:context.bindings()) names.put(binding.symbol(),binding.primitiveType().equals(BIG)?binding.name():join(BIG,".valueOf(",binding.name(),")"));
+        for (var binding : context.bindings()) {
+            String value = binding.name();
+            if (primitiveLinear) {
+                if (binding.primitiveType().equals(BIG)) throw invalid();
+                if (!binding.primitiveType().equals(context.width())) {
+                    // Widen each int read in the long ring without an unnecessary-cast diagnostic.
+                    value = context.width().equals("long") ? join("(0L + ", value, ")") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                            : join("((int)", value, ")"); //$NON-NLS-1$ //$NON-NLS-2$
+                }
+            } else if (!binding.primitiveType().equals(BIG)) {
+                value = join(BIG, ".valueOf(", value, ")"); //$NON-NLS-1$ //$NON-NLS-2$
+            }
+            names.put(binding.symbol(), value);
+        }
     }
     static String emit(CompilationUnit unit,String source,JavaRuntimeIterationAnalysis.Context context,RuntimeIterationEvidence evidence,JavaLoopInvariantAnalysis.Work work) {
         return emit(unit,source,context,evidence,work,MathCleanUpOptions.ExplanationMode.NONE);
@@ -38,8 +55,15 @@ final class JavaRuntimeIterationEmitter {
         var explanation=MathExplanation.renderRuntime(context,evidence,work);
         if(explanation.emitted(explanations))out.append(explanation.sourceComment());
     }
-    /** Only checked constant coefficients are lowered; no Java-side polynomial synthesis. */
+    /** Selects a lowering for the SDK transport; source and proof are replayed independently. */
     static EmissionStrategy strategy(JavaRuntimeIterationAnalysis.Context context,RuntimeIterationEvidence evidence) {
+        if (context.linear() != null && evidence.linear() != null) {
+            var arithmetic = context.linear().arithmetic();
+            if (evidence.linear().source().arithmetic() == arithmetic
+                    && (arithmetic == IntegerArithmetic.JAVA_INT && context.width().equals("int") //$NON-NLS-1$
+                        || arithmetic == IntegerArithmetic.JAVA_LONG && context.width().equals("long"))) //$NON-NLS-1$
+                return EmissionStrategy.PRIMITIVE_LINEAR;
+        }
         var h=context.header();
         if(context.stream() || context.partition()!=null || context.linear()!=null || context.nested()!=null
                 || evidence.partition()!=null || evidence.linear()!=null || evidence.nested()!=null
@@ -68,7 +92,7 @@ final class JavaRuntimeIterationEmitter {
     private String emit(CompilationUnit unit,String source) {
         if(evidence.strategy()!=EmissionStrategy.BIG_INTEGER) {
             if(evidence.strategy()!=strategy(context,evidence))throw invalid();
-            return primitive(unit,source);
+            if (evidence.strategy() != EmissionStrategy.PRIMITIVE_LINEAR) return primitive(unit,source);
         }
         var h=context.header();String p=prefix;
         var out=new Output(work);
@@ -117,7 +141,8 @@ final class JavaRuntimeIterationEmitter {
         }
         out.append("){\n");
         for(Object item:unit.getCommentList()) {work.tick();ASTNode comment=(ASTNode)item;if(comment.getStartPosition()>=context.node().getStartPosition() && comment.getStartPosition()+comment.getLength()<=context.node().getStartPosition()+context.node().getLength()) out.append(text(source,comment)).append('\n');}
-        if(evidence.linear()!=null) linear(out,source);
+        if (evidence.strategy() == EmissionStrategy.PRIMITIVE_LINEAR) primitiveLinear(out);
+        else if(evidence.linear()!=null) linear(out,source);
         else {
             List<PolynomialSumPlan> plans=evidence.nested()!=null?List.of(evidence.nested().outer()):evidence.sums();
             if(context.partition()!=null) {
@@ -198,26 +223,113 @@ final class JavaRuntimeIterationEmitter {
         }
     }
     private void linear(Output out,String source) {
+        if (!context.width().equals(BIG)) throw invalid();
         var transition=evidence.linear().transition();String p=prefix;int d=transition.matrix().size();
         out.append(BIG).append("[][] ").append(p).append("matrix = new ").append(BIG).append("[][]{");
         for(int i=0;i<d;i++) {if(i>0) out.append(',');out.append('{');for(int j=0;j<d;j++){if(j>0)out.append(',');out.append(expression(transition.matrix().get(i).get(j)));}out.append('}');}out.append("};\n");
         out.append(BIG).append("[] ").append(p).append("vector = new ").append(BIG).append("[]{");
         for(int i=0;i<d;i++){if(i>0)out.append(',');out.append(expression(transition.initial().get(i)));}out.append("};\n");
-        boolean exact=context.width().equals(BIG);
-        if(exact) {
-            // Infinity norm bounds every intermediate matrix power and vector product before allocating them.
-            out.append("int ").append(p).append("rowBits=1, ").append(p).append("initialBits=1;\n");
-            out.append("for(int ").append(p).append("r=0;").append(p).append("r<").append(d).append(';').append(p).append("r++){ ").append(BIG).append(' ').append(p).append("norm=").append(BIG).append(".ZERO;for(int ").append(p).append("c=0;").append(p).append("c<").append(d).append(';').append(p).append("c++) ").append(p).append("norm=").append(p).append("norm.add(").append(p).append("matrix[").append(p).append("r][").append(p).append("c].abs());").append(p).append("rowBits=java.lang.Math.max(").append(p).append("rowBits,").append(p).append("norm.bitLength());").append(p).append("initialBits=java.lang.Math.max(").append(p).append("initialBits,").append(p).append("vector[").append(p).append("r].bitLength()+1);}\n");
-            out.append("if(").append(prefix).append("count.multiply(").append(BIG).append(".valueOf(").append(p).append("rowBits)).add(").append(BIG).append(".valueOf(").append(p).append("initialBits)).compareTo(").append(number(BigInteger.valueOf(RuntimeIterationEvidence.MAX_RESULT_BITS))).append(")<=0){\n");
-        } else out.append(BIG).append(' ').append(p).append("modulus=").append(BIG).append(".ONE.shiftLeft(").append(context.width().equals("int")?32:64).append(");\n");
+        // Infinity norm bounds every intermediate matrix power and vector product before allocating them.
+        out.append("int ").append(p).append("rowBits=1, ").append(p).append("initialBits=1;\n");
+        out.append("for(int ").append(p).append("r=0;").append(p).append("r<").append(d).append(';').append(p).append("r++){ ").append(BIG).append(' ').append(p).append("norm=").append(BIG).append(".ZERO;for(int ").append(p).append("c=0;").append(p).append("c<").append(d).append(';').append(p).append("c++) ").append(p).append("norm=").append(p).append("norm.add(").append(p).append("matrix[").append(p).append("r][").append(p).append("c].abs());").append(p).append("rowBits=java.lang.Math.max(").append(p).append("rowBits,").append(p).append("norm.bitLength());").append(p).append("initialBits=java.lang.Math.max(").append(p).append("initialBits,").append(p).append("vector[").append(p).append("r].bitLength()+1);}\n");
+        out.append("if(").append(prefix).append("count.multiply(").append(BIG).append(".valueOf(").append(p).append("rowBits)).add(").append(BIG).append(".valueOf(").append(p).append("initialBits)).compareTo(").append(number(BigInteger.valueOf(RuntimeIterationEvidence.MAX_RESULT_BITS))).append(")<=0){\n");
         out.append(BIG).append(' ').append(p).append("exponent=").append(p).append("count;\nwhile(").append(p).append("exponent.signum()>0){\nif(").append(p).append("exponent.testBit(0)){\n");
         out.append(BIG).append("[] ").append(p).append("next=new ").append(BIG).append('[').append(d).append("];\n");
-        out.append("for(int ").append(p).append("r=0;").append(p).append("r<").append(d).append(';').append(p).append("r++){ ").append(p).append("next[").append(p).append("r]=").append(BIG).append(".ZERO;for(int ").append(p).append("c=0;").append(p).append("c<").append(d).append(';').append(p).append("c++) ").append(p).append("next[").append(p).append("r]=").append(p).append("next[").append(p).append("r].add(").append(p).append("matrix[").append(p).append("r][").append(p).append("c].multiply(").append(p).append("vector[").append(p).append("c]))").append(exact?"":".mod("+p+"modulus)").append(";}\n").append(p).append("vector=").append(p).append("next;}\n");
+        out.append("for(int ").append(p).append("r=0;").append(p).append("r<").append(d).append(';').append(p).append("r++){ ").append(p).append("next[").append(p).append("r]=").append(BIG).append(".ZERO;for(int ").append(p).append("c=0;").append(p).append("c<").append(d).append(';').append(p).append("c++) ").append(p).append("next[").append(p).append("r]=").append(p).append("next[").append(p).append("r].add(").append(p).append("matrix[").append(p).append("r][").append(p).append("c].multiply(").append(p).append("vector[").append(p).append("c]));}\n").append(p).append("vector=").append(p).append("next;}\n");
         out.append(p).append("exponent=").append(p).append("exponent.shiftRight(1);if(").append(p).append("exponent.signum()>0){\n");
         out.append(BIG).append("[][] ").append(p).append("square=new ").append(BIG).append('[').append(d).append("][").append(d).append("];\n");
-        out.append("for(int ").append(p).append("r=0;").append(p).append("r<").append(d).append(';').append(p).append("r++)for(int ").append(p).append("c=0;").append(p).append("c<").append(d).append(';').append(p).append("c++){ ").append(p).append("square[").append(p).append("r][").append(p).append("c]=").append(BIG).append(".ZERO;for(int ").append(p).append("k=0;").append(p).append("k<").append(d).append(';').append(p).append("k++) ").append(p).append("square[").append(p).append("r][").append(p).append("c]=").append(p).append("square[").append(p).append("r][").append(p).append("c].add(").append(p).append("matrix[").append(p).append("r][").append(p).append("k].multiply(").append(p).append("matrix[").append(p).append("k][").append(p).append("c]))").append(exact?"":".mod("+p+"modulus)").append(";}\n").append(p).append("matrix=").append(p).append("square;}}\n");
+        out.append("for(int ").append(p).append("r=0;").append(p).append("r<").append(d).append(';').append(p).append("r++)for(int ").append(p).append("c=0;").append(p).append("c<").append(d).append(';').append(p).append("c++){ ").append(p).append("square[").append(p).append("r][").append(p).append("c]=").append(BIG).append(".ZERO;for(int ").append(p).append("k=0;").append(p).append("k<").append(d).append(';').append(p).append("k++) ").append(p).append("square[").append(p).append("r][").append(p).append("c]=").append(p).append("square[").append(p).append("r][").append(p).append("c].add(").append(p).append("matrix[").append(p).append("r][").append(p).append("k].multiply(").append(p).append("matrix[").append(p).append("k][").append(p).append("c]));}\n").append(p).append("matrix=").append(p).append("square;}}\n");
         for(int state=0;state<context.targets().size();state++) assign(out,state,p+"vector["+state+"]");finalCounter(out);
-        if(exact) out.append("}else{\n").append(fallback(source)).append("\n}\n");
+        out.append("}else{\n").append(fallback(source)).append("\n}\n");
+    }
+    private void primitiveLinear(Output out) {
+        var transition = evidence.linear().transition();
+        String width = context.width();
+        String p = prefix;
+        int dimension = transition.matrix().size();
+        out.append(width).append("[][] ").append(p).append("matrix = {"); //$NON-NLS-1$ //$NON-NLS-2$
+        for (int row = 0; row < dimension; row++) {
+            if (row > 0) out.append(',');
+            out.append('{');
+            primitiveLinearValues(out, transition.matrix().get(row));
+            out.append('}');
+        }
+        out.append("};\n").append(width).append("[] ").append(p).append("vector = {"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+        primitiveLinearValues(out, transition.initial());
+        out.append("};\n"); //$NON-NLS-1$
+        // With a nonzero stride and a representable final counter the count fits an unsigned long.
+        // Shift it logically so a full-width long range keeps all of its exponent bits.
+        // Each dot product wraps at the state's Java width, which implements the verified ring.
+        out.append(String.format(Locale.ROOT, """
+                %3$s[] %1$snext = new %3$s[%2$d];
+                %3$s[][] %1$ssquare = new %3$s[%2$d][%2$d];
+                long %1$sexponent = %1$scount.longValue();
+                while (%1$sexponent != 0L) {
+                    if ((%1$sexponent & 1L) != 0L) {
+                        for (int %1$sr = 0; %1$sr < %2$d; %1$sr++) {
+                            %3$s %1$sdot = 0;
+                            for (int %1$sc = 0; %1$sc < %2$d; %1$sc++)
+                                %1$sdot += %1$smatrix[%1$sr][%1$sc] * %1$svector[%1$sc];
+                            %1$snext[%1$sr] = %1$sdot;
+                        }
+                        %3$s[] %1$spreviousVector = %1$svector;
+                        %1$svector = %1$snext;
+                        %1$snext = %1$spreviousVector;
+                    }
+                    %1$sexponent = %1$sexponent >>> 1;
+                    if (%1$sexponent != 0L) {
+                        for (int %1$sr = 0; %1$sr < %2$d; %1$sr++) {
+                            for (int %1$sc = 0; %1$sc < %2$d; %1$sc++) {
+                                %3$s %1$sdot = 0;
+                                for (int %1$sk = 0; %1$sk < %2$d; %1$sk++)
+                                    %1$sdot += %1$smatrix[%1$sr][%1$sk] * %1$smatrix[%1$sk][%1$sc];
+                                %1$ssquare[%1$sr][%1$sc] = %1$sdot;
+                            }
+                        }
+                        %3$s[][] %1$spreviousMatrix = %1$smatrix;
+                        %1$smatrix = %1$ssquare;
+                        %1$ssquare = %1$spreviousMatrix;
+                    }
+                }
+                """, p, dimension, width)); //$NON-NLS-1$
+        for (int state = 0; state < context.targets().size(); state++)
+            out.append(context.targets().get(state).getName()).append(" = ").append(p).append("vector[") //$NON-NLS-1$ //$NON-NLS-2$
+                    .append(state).append("];\n"); //$NON-NLS-1$
+        finalCounter(out);
+    }
+    private void primitiveLinearValues(Output out, List<Expr> values) {
+        for (int index = 0; index < values.size(); index++) {
+            if (index > 0) out.append(',');
+            out.append(primitiveLinearExpression(values.get(index), 0));
+        }
+    }
+    private String primitiveLinearExpression(Expr expression, int depth) {
+        work.tick();
+        if (depth > 64) throw invalid();
+        return switch (expression) {
+            case NumberExpr number -> {
+                if (!number.value().denominator().equals(BigInteger.ONE)) throw invalid();
+                BigInteger numerator = number.value().numerator();
+                yield context.width().equals("int") ? Integer.toString(numerator.intValue()) //$NON-NLS-1$
+                        : join(Long.toString(numerator.longValue()), "L"); //$NON-NLS-1$
+            }
+            case VariableExpr variable -> {
+                String value = names.get(variable.symbol().orElseThrow());
+                if (value == null) throw invalid();
+                yield value;
+            }
+            case BinaryExpr binary -> {
+                String operator = switch (binary.operator()) {
+                    case ADD -> " + "; //$NON-NLS-1$
+                    case SUB -> " - "; //$NON-NLS-1$
+                    case MUL -> " * "; //$NON-NLS-1$
+                    default -> throw invalid();
+                };
+                yield join("(", primitiveLinearExpression(binary.left(), depth + 1), operator, //$NON-NLS-1$
+                        primitiveLinearExpression(binary.right(), depth + 1), ")"); //$NON-NLS-1$
+            }
+            default -> throw invalid();
+        };
     }
     private void assign(Output out,int state,String value) {
         if(context.stream()) out.append("return ");else out.append(context.targets().get(state).getName()).append(" = ");

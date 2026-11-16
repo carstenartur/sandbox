@@ -82,8 +82,12 @@ public final class JavaRuntimeIterationTemplates {
                             && updates(fast,count,charge))return true;
                 } else if((after!=null || stream) && checks.calls.contains("compareTo")) {
                     var calculation=facts(fast,charge);
-                    if(calculation.reads(count) && calculation.calls.contains("multiply")
-                            && (calculation.names.contains(prefix+"result0") || calculation.names.contains(prefix+"vector")))return true;
+                    if (!calculation.reads(count)) continue;
+                    if (calculation.calls.contains("multiply") //$NON-NLS-1$
+                            && (calculation.names.contains(prefix + "result0") || calculation.names.contains(prefix + "vector"))) return true; //$NON-NLS-1$ //$NON-NLS-2$
+                    if (calculation.calls.contains("longValue") //$NON-NLS-1$
+                            && calculation.operators.containsAll(Set.of(InfixExpression.Operator.TIMES, InfixExpression.Operator.RIGHT_SHIFT_UNSIGNED))
+                            && calculation.names.containsAll(Set.of(prefix + "matrix", prefix + "vector", prefix + "exponent"))) return true; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                 }
             }
         }

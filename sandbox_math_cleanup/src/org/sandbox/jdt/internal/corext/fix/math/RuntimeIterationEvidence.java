@@ -13,7 +13,7 @@ import de.regelsuche.symbol.SymbolId;
 public record RuntimeIterationEvidence(String sourceSha256,List<FiniteSumEvidence.Binding> bindings,
         List<PolynomialSumPlan> sums,LinearIterationOptimizer.Candidate linear,PolynomialSeries.NestedPlan nested,Partition partition,EmissionStrategy strategy) {
     /** Java lowering choice; independent source replay must derive this value again. */
-    public enum EmissionStrategy { BIG_INTEGER, PRIMITIVE_UNIT, PRIMITIVE_GUARDED }
+    public enum EmissionStrategy { BIG_INTEGER, PRIMITIVE_UNIT, PRIMITIVE_GUARDED, PRIMITIVE_LINEAR }
     /** Value-only source correspondence: no AST identity can qualify a partition. */
     public record Partition(int period,int residue,boolean inclusive,boolean firstOnLow,int splitOffset,int splitLength,List<SymbolId> starts) {
         public Partition {
@@ -58,7 +58,7 @@ public record RuntimeIterationEvidence(String sourceSha256,List<FiniteSumEvidenc
         return new OptimizationBudget(budget.maximumWork()-used,budget.maximumStates(),budget.maximumCandidates(),budget.timeoutMillis());
     }
     public long minimumIterations() {
-        long count=strategy==EmissionStrategy.BIG_INTEGER?4096:16;
+        long count=isPrimitiveConstantSum()?16:4096;
         while(count*sourceOperations()<=candidateOperations(count) && count<(1L<<40)) count*=2;
         return count;
     }
@@ -69,7 +69,7 @@ public record RuntimeIterationEvidence(String sourceSha256,List<FiniteSumEvidenc
         return Math.max(1,sums.stream().mapToLong(p->operations(p.source().term())+1).sum());
     }
     private long candidateOperations(long count) {
-        if(strategy!=EmissionStrategy.BIG_INTEGER)return (strategy==EmissionStrategy.PRIMITIVE_UNIT?8:16)+3L*sums.size();
+        if(isPrimitiveConstantSum())return (strategy==EmissionStrategy.PRIMITIVE_UNIT?8:16)+3L*sums.size();
         long scalar=32; // advisory allocation/arithmetic weight, explicitly not a timing measurement
         if(linear!=null) {
             long d=linear.transition().matrix().size(),bits=64-Long.numberOfLeadingZeros(count);
@@ -78,6 +78,9 @@ public record RuntimeIterationEvidence(String sourceSha256,List<FiniteSumEvidenc
         }
         List<PolynomialSumPlan> plans=nested==null?sums:List.of(nested.outer());
         return scalar*(64+(partition==null?0:12L*plans.size())+plans.stream().mapToLong(p->operations(p.initial())+p.coefficients().stream().mapToLong(c->operations(c)+5).sum()).sum());
+    }
+    private boolean isPrimitiveConstantSum() {
+        return strategy == EmissionStrategy.PRIMITIVE_UNIT || strategy == EmissionStrategy.PRIMITIVE_GUARDED;
     }
     private static long operations(Expr expression) {
         if(expression instanceof BinaryExpr binary)return 1+operations(binary.left())+operations(binary.right());
@@ -96,7 +99,11 @@ public record RuntimeIterationEvidence(String sourceSha256,List<FiniteSumEvidenc
     }
     long verificationLimit() {return 100000L*(partition==null?1:sums.size());}
     public String description() {
-        if(strategy!=EmissionStrategy.BIG_INTEGER)return "Verified runtime constant sum using primitive Java arithmetic; "
+        if (strategy == EmissionStrategy.PRIMITIVE_LINEAR)
+            return "Verified runtime linear transition by binary matrix powering with primitive Java arithmetic; " //$NON-NLS-1$
+                    + "original execution below " + minimumIterations() + " iterations or on failed counter-range guards. " //$NON-NLS-1$ //$NON-NLS-2$
+                    + "The estimate retains the conservative BigInteger matrix cost model; source bindings, strategy and the complete emitted template are replayed."; //$NON-NLS-1$
+        if(isPrimitiveConstantSum())return "Verified runtime constant sum using primitive Java arithmetic; "
                 +(strategy==EmissionStrategy.PRIMITIVE_UNIT?"cost reference at "+minimumIterations()+" iterations; guaranteed-terminating exclusive unit-stride int headers use the closed form for every count. "
                         :"guarded crossover at "+minimumIterations()+" iterations; original execution below threshold or on failed counter-range guards. ")
                 +"Scores estimate primitive count/guard work and modular accumulator updates; this estimate is not a measured speedup; source bindings, strategy and the complete emitted template are replayed.";
