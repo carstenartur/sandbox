@@ -33,6 +33,7 @@ final class JavaByteArrayPrefixOptimizer {
                 || !source.contains("concatenate") || !source.contains("copyOfRange") || work.remaining() < source.length()) return; //$NON-NLS-1$ //$NON-NLS-2$
         var scopes = new ArrayList<Block>();
         var names = new HashSet<String>();
+        JavaSourceContext.valueWork(ast, work);
         try {
             ast.accept(new ASTVisitor() {
                 @Override public boolean preVisit2(ASTNode node) { work.charge(1); return true; }
@@ -81,6 +82,8 @@ final class JavaByteArrayPrefixOptimizer {
             throw expired;
         } catch (IllegalArgumentException exhausted) {
             // Discovery and candidate replay share the request budget.
+        } finally {
+            JavaSourceContext.valueWork(ast, null);
         }
     }
 

@@ -159,11 +159,23 @@ class JavaByteArrayPrefixTest {
         assertThrows(IllegalArgumentException.class, result::newEdit);
     }
 
+    @Test void utilityDiscoveryAndRewriteShareTheRequestBudget() throws Exception {
+        String largerUtility = UTILITY + " ".repeat(6_000); //$NON-NLS-1$
+        long limitedBudget = 4L * SOURCE.length() + 256;
+        assertTrue(analyze(SOURCE, UTILITY, -1, limitedBudget).changed());
+        assertFalse(analyze(SOURCE, largerUtility, -1, limitedBudget).changed());
+        assertTrue(analyze(SOURCE, largerUtility, -1, limitedBudget + 256).changed());
+    }
+
     private MathematicalAnalysis.Analysis analyze(String source, String utility, int selection) throws Exception {
+        return analyze(source, utility, selection, 100_000);
+    }
+
+    private MathematicalAnalysis.Analysis analyze(String source, String utility, int selection, long workBudget) throws Exception {
         Files.writeString(directory.resolve("ByteUtilities.java"), utility); //$NON-NLS-1$
         String unit = directory.resolve("Prefix.java").toString(); //$NON-NLS-1$
         var options = new MathCleanUpOptions(true, Set.of(NumericKind.BIG_INTEGER), SafetyProfile.PRESERVE_JAVA,
-                OptimizationGoal.LOWER_ESTIMATED_RUNTIME, 100_000, 2000, false, 17, List.of());
+                OptimizationGoal.LOWER_ESTIMATED_RUNTIME, workBudget, 2000, false, 17, List.of());
         var compiler = new HashMap<String, String>();
         JavaCore.setComplianceOptions("17", compiler); //$NON-NLS-1$
         var environment = new MathematicalAnalysis.SourceEnvironment(unit, List.of(), List.of(directory.toString()),
