@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 4: The method installCodeMinigProviders() is undefined for the type MyEditor",
-    "verifiedAt": "2026-11-15T02:32:07.693081978Z",
+    "verifiedAt": "2026-11-16T02:22:08.967652701Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
