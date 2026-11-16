@@ -54,6 +54,10 @@ final class JavaValueAccess {
     }
     static Access discover(CompilationUnit ast,JavaValueSourceSummary.Session session,ITypeBinding type,
             JavaValueSourceSummary.Work work) {
+        return discover(ast,session,type,null,work);
+    }
+    static Access discover(CompilationUnit ast,JavaValueSourceSummary.Session session,ITypeBinding type,
+            IMethodBinding requiredFactory,JavaValueSourceSummary.Work work) {
         var shape=session.shape(type);
         if(shape.components().stream().anyMatch(component->component.shape()!=null))throw JavaValueSourceSummary.unavailable("VALUE_ACCESS_DIRECT_ONLY"); //$NON-NLS-1$
         var getters=new ArrayList<IMethodBinding>();
@@ -79,6 +83,7 @@ final class JavaValueAccess {
         IMethodBinding factory=null;
         for(var method:type.getDeclaredMethods()) {
             work.charge(1);
+            if(requiredFactory!=null && !method.isEqualTo(requiredFactory))continue;
             if(!Modifier.isPublic(method.getModifiers()) || !Modifier.isStatic(method.getModifiers())
                 || !method.getReturnType().isEqualTo(type) || method.getParameterTypes().length!=shape.components().size()
                 || Arrays.stream(method.getParameterTypes()).anyMatch(parameter->!JavaValueSourceSummary.big(parameter)))continue;

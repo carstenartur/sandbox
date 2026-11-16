@@ -126,13 +126,14 @@ final class JavaValueCallOptimizer {
         var replayRequest=new OptimizationRequest(after.plan(),after.trace(),request.selectedKinds(),request.semanticsRevision(),request.assumptions(),
             request.safetyProfile(),request.goal(),request.budget(),request.checkedPolicy());
         var target=NumericExecutionCost.estimateSource(replayRequest,emitted).orElseThrow(()->JavaValueSourceSummary.unavailable("VALUE_CALL_TARGET_COST")); //$NON-NLS-1$
-        long guardWork=7L*(guards.split(" && ",-1).length)+2L*after.inputs().size(); //$NON-NLS-1$
+        long guardWork=guards.isEmpty()?0:7L*(guards.split(" && ",-1).length)+2L*after.inputs().size(); //$NON-NLS-1$
         work.charge(original.cost().inspectionWork()+emitted.cost().inspectionWork()+source.inspectionWork()+target.inspectionWork());
         var sourceCost=new de.regelsuche.search.program.PreparedJointComputation.Cost(source.operationWork(),source.peakWords(),original.cost().retainedOutputStorage(),
             original.cost().outputBindings(),original.cost().operationCount(),source.inspectionWork());
         var targetCost=new de.regelsuche.search.program.PreparedJointComputation.Cost(target.operationWork()+guardWork,target.peakWords(),emitted.cost().retainedOutputStorage(),
             emitted.cost().outputBindings(),emitted.cost().operationCount(),target.inspectionWork());
-        return new OptimizationResult.CostAssessment(sourceCost.weighted(10,1,1,1),targetCost.weighted(10,1,1,1),guardWork,original.cost().operationCount(),
+        int fallbackOperations=guards.isEmpty()?0:original.cost().operationCount();
+        return new OptimizationResult.CostAssessment(sourceCost.weighted(10,1,1,1),targetCost.weighted(10,1,1,1),guardWork,fallbackOperations,
             sourceCost,targetCost,targetCost.operationWork()<sourceCost.operationWork());
     }
     private static String accessExpression(String source,JavaValueAccess.Access access,String receiver,JavaValueSourceSummary.Work work) {

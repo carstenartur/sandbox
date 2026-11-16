@@ -94,7 +94,7 @@ final class JavaValueGuardBindings {
         }
         return true;
     }
-    private static boolean scalarType(ITypeBinding type) {
+    static boolean scalarType(ITypeBinding type) {
         return JavaValueSourceSummary.big(type) && !type.isNested() && "java.math.BigInteger".equals(type.getBinaryName());
     }
     private static IllegalArgumentException unavailable(String part) {return JavaValueSourceSummary.unavailable("VALUE_GUARD_BINDING_"+part);}
