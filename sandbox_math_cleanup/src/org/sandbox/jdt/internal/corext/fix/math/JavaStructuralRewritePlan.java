@@ -96,11 +96,16 @@ public final class JavaStructuralRewritePlan {
             throw new IllegalArgumentException("STRUCTURAL_SOURCE_SET_DIFFERS"); //$NON-NLS-1$
         for (String key : before.keySet()) verifyPath(key);
         var binaryInputs = dependencyPaths.stream().map(Path::of).map(JavaStructuralRewritePlan::binaryInput).toList();
-        var old = snapshot(before, dependencyPaths, targetJava, monitor);
-        var changed = snapshot(after, dependencyPaths, targetJava, monitor);
-        verifySnapshots(old, changed, invocations, monitor);
-        requireCurrentBinaries(binaryInputs);
-        return new JavaStructuralRewritePlan(before, after, binaryInputs, invocations);
+        // JDT source binding keys can include the source path. Keep it stable across both compilations.
+        try (var temporary = new TemporarySources()) {
+            var old = snapshot(before, temporary.root, dependencyPaths, targetJava, monitor);
+            var changed = snapshot(after, temporary.root, dependencyPaths, targetJava, monitor);
+            verifySnapshots(old, changed, invocations, monitor);
+            requireCurrentBinaries(binaryInputs);
+            return new JavaStructuralRewritePlan(before, after, binaryInputs, invocations);
+        } catch (IOException inaccessible) {
+            throw new UncheckedIOException(inaccessible);
+        }
     }
 
     /** Verify against the real Java project's compiler options, classpath and private working copies. */
@@ -235,40 +240,37 @@ public final class JavaStructuralRewritePlan {
             throw new IllegalArgumentException("EXTERNAL_JAVA_OVERLOAD_ADDED"); //$NON-NLS-1$
     }
 
-    private static Snapshot snapshot(Map<String, String> input, List<String> classpath, int target, IProgressMonitor monitor) {
-        try (var temporary = new TemporarySources()) {
-            var sources = new ArrayList<String>();
-            for (String key : input.keySet().stream().sorted().toList()) {
-                checkCancellation(monitor);
-                Path file = temporary.root.resolve(key);
-                Files.createDirectories(Objects.requireNonNull(file.getParent()));
-                Files.writeString(file, input.get(key));
-                sources.add(file.toString());
-            }
-            var parser = ASTParser.newParser(AST.getJLSLatest());
-            var options = new HashMap<String, String>();
-            JavaCore.setComplianceOptions(target == 8 ? "1.8" : Integer.toString(target), options); //$NON-NLS-1$
-            parser.setCompilerOptions(options);
-            parser.setResolveBindings(true);
-            parser.setEnvironment(classpath.toArray(String[]::new), new String[] { temporary.root.toString() },
-                new String[] { "UTF-8" }, true); //$NON-NLS-1$
-            var units = new ArrayList<CompilationUnit>();
-            String[] encodings = new String[sources.size()];
-            Arrays.fill(encodings, "UTF-8"); //$NON-NLS-1$
-            parser.createASTs(sources.toArray(String[]::new), encodings, new String[0], new FileASTRequestor() {
-                @Override public void acceptAST(String path, CompilationUnit ast) {
-                    checkCancellation(monitor);
-                    for (var problem : ast.getProblems()) if (problem.isError())
-                        throw new IllegalArgumentException("STRUCTURAL_JAVA_ERROR: " + temporary.root.relativize(Path.of(path)) //$NON-NLS-1$
-                            + ":" + problem.getSourceLineNumber() + " " + problem.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$
-                    units.add(ast);
-                }
-            }, monitor);
-            if (units.size() != input.size()) throw new IllegalArgumentException("STRUCTURAL_INCOMPLETE_COMPILATION"); //$NON-NLS-1$
-            return describe(units, monitor);
-        } catch (IOException inaccessible) {
-            throw new UncheckedIOException(inaccessible);
+    private static Snapshot snapshot(Map<String, String> input, Path sourceRoot, List<String> classpath, int target,
+            IProgressMonitor monitor) throws IOException {
+        var sources = new ArrayList<String>();
+        for (String key : input.keySet().stream().sorted().toList()) {
+            checkCancellation(monitor);
+            Path file = sourceRoot.resolve(key);
+            Files.createDirectories(Objects.requireNonNull(file.getParent()));
+            Files.writeString(file, input.get(key));
+            sources.add(file.toString());
         }
+        var parser = ASTParser.newParser(AST.getJLSLatest());
+        var options = new HashMap<String, String>();
+        JavaCore.setComplianceOptions(target == 8 ? "1.8" : Integer.toString(target), options); //$NON-NLS-1$
+        parser.setCompilerOptions(options);
+        parser.setResolveBindings(true);
+        parser.setEnvironment(classpath.toArray(String[]::new), new String[] { sourceRoot.toString() },
+            new String[] { "UTF-8" }, true); //$NON-NLS-1$
+        var units = new ArrayList<CompilationUnit>();
+        String[] encodings = new String[sources.size()];
+        Arrays.fill(encodings, "UTF-8"); //$NON-NLS-1$
+        parser.createASTs(sources.toArray(String[]::new), encodings, new String[0], new FileASTRequestor() {
+            @Override public void acceptAST(String path, CompilationUnit ast) {
+                checkCancellation(monitor);
+                for (var problem : ast.getProblems()) if (problem.isError())
+                    throw new IllegalArgumentException("STRUCTURAL_JAVA_ERROR: " + sourceRoot.relativize(Path.of(path)) //$NON-NLS-1$
+                        + ":" + problem.getSourceLineNumber() + " " + problem.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$
+                units.add(ast);
+            }
+        }, monitor);
+        if (units.size() != input.size()) throw new IllegalArgumentException("STRUCTURAL_INCOMPLETE_COMPILATION"); //$NON-NLS-1$
+        return describe(units, monitor);
     }
 
     private static Snapshot workspaceSnapshot(Map<String, ICompilationUnit> scope, Map<String, String> sources,
