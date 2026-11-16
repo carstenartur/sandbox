@@ -145,11 +145,16 @@ public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp implements I
 		// Imperative helpers: non-DSL patterns always run.
 		// DSL-handled patterns are skipped when DSL is active — DSL should handle them.
 		// The nodesprocessed set provides node-level dedup as safety net.
+		// Run the aggregate PrintStream helper after the other helpers record their converted calls.
+		boolean runPrintStreamLast= !dslActive && computeFixSet.remove(UseExplicitEncodingFixCore.PRINTSTREAM);
 		computeFixSet.forEach(i -> {
 			if (!dslActive || !i.isDslHandled()) {
 				i.findOperations(compilationUnit, operations, nodesprocessed, cb);
 			}
 		});
+		if (runPrintStreamLast) {
+			UseExplicitEncodingFixCore.PRINTSTREAM.findOperations(compilationUnit, operations, nodesprocessed, cb);
+		}
 
 		if (dslActive) {
 			CompilationUnitRewriteOperation importCleanup=
