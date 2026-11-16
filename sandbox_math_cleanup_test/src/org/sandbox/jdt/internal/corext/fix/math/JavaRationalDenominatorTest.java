@@ -15,17 +15,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.tools.ToolProvider;
 
-import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jface.text.Document;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.sandbox.jdt.math.tests.StrictCompilerOptions;
 
 import de.regelsuche.sdk.optimization.NumericKind;
 import de.regelsuche.sdk.optimization.OptimizationGoal;
@@ -44,22 +48,22 @@ class JavaRationalDenominatorTest {
             RationalMap(BigInteger modulus) { this.modulus = modulus; }
             BigInteger[] map(BigInteger value, BigInteger weight) {
                 BigInteger nx = horner(N, N.length - 1, value);
-                BigInteger dx = horner(X, X.length - 1, value).add(power(value, X.length)).mod(modulus);
+                BigInteger dx = horner(X, X.length - 1, value).add(power(value, X.length)).mod(this.modulus);
                 BigInteger ny = horner(N, N.length - 1, value);
-                BigInteger dy = horner(Y, Y.length - 1, value).add(power(value, Y.length)).mod(modulus);
-                BigInteger rx = nx.multiply(dx.modInverse(modulus)).mod(modulus);
-                BigInteger ry = weight.multiply(ny).mod(modulus).multiply(dy.modInverse(modulus)).mod(modulus);
+                BigInteger dy = horner(Y, Y.length - 1, value).add(power(value, Y.length)).mod(this.modulus);
+                BigInteger rx = nx.multiply(dx.modInverse(this.modulus)).mod(this.modulus);
+                BigInteger ry = weight.multiply(ny).mod(this.modulus).multiply(dy.modInverse(this.modulus)).mod(this.modulus);
                 return new BigInteger[] { rx, ry };
             }
             private BigInteger horner(BigInteger[] coefficients, int top, BigInteger value) {
                 BigInteger total = coefficients[top];
                 for (int i = top - 1; i >= 0; --i) {
-                    total = total.multiply(value).add(coefficients[i]).mod(modulus);
+                    total = total.multiply(value).add(coefficients[i]).mod(this.modulus);
                 }
                 return total;
             }
             private BigInteger power(BigInteger base, int exponent) {
-                return base.modPow(BigInteger.valueOf(exponent), modulus);
+                return base.modPow(BigInteger.valueOf(exponent), this.modulus);
             }
         }
         """;
@@ -67,10 +71,38 @@ class JavaRationalDenominatorTest {
     @Test void discoversTheDenominatorAndKeepsTheOriginalForOtherModuli() throws Exception {
         String generated = apply(SOURCE, true);
         assertTrue(generated.contains("mathDenominatorInverse"), generated);
-        assertTrue(generated.contains("dx.modInverse(modulus)"), generated);
-        assertTrue(generated.contains("dy.modInverse(modulus)"), generated);
+        assertTrue(generated.contains("dx.modInverse(this.modulus)"), generated);
+        assertTrue(generated.contains("dy.modInverse(this.modulus)"), generated);
+        var compiler = StrictCompilerOptions.allWarnings(17);
+        for (String source : List.of(SOURCE, generated)) {
+            var problems = parse(source, compiler).getProblems();
+            assertEquals(1, problems.length, Arrays.toString(problems));
+            assertEquals(IProblem.MissingNonNullByDefaultAnnotationOnType, problems[0].getID());
+            assertTrue(problems[0].isWarning());
+        }
         assertEquals(execute(SOURCE, "map"), execute(generated, "map"));
         assertEquals(generated, apply(generated, true));
+    }
+
+    @Test void discoversTheDenominatorWithImplicitThisInHelpers() throws Exception {
+        String original = SOURCE.replace("add(coefficients[i]).mod(this.modulus)", "add(coefficients[i]).mod(modulus)")
+            .replace("modPow(BigInteger.valueOf(exponent), this.modulus)", "modPow(BigInteger.valueOf(exponent), modulus)");
+        String generated = apply(original, true);
+        assertTrue(generated.contains("mathDenominatorInverse"), generated);
+        assertEquals(execute(original, "map"), execute(generated, "map"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "modPow(BigInteger.valueOf(exponent), ", "dx.modInverse(", "dy.modInverse(" })
+    void preservesNullReceiverWhenReadingTheSameFieldOnAnotherInstance(String access) throws Exception {
+        String original = SOURCE.replace("private final BigInteger modulus;",
+                "private static final RationalMap PEER = null; private final BigInteger modulus;")
+            .replace(access + "this.modulus)", access + "RationalMap.PEER.modulus)");
+        String generated = apply(original, true);
+        // Modulus 101, input 1, and weight 2 take the fast path for a valid mapping.
+        assertEquals(NullPointerException.class.getName(), execute(original, "map").get(1));
+        assertEquals(NullPointerException.class.getName(), execute(generated, "map").get(1));
+        assertFalse(generated.contains("mathDenominatorInverse"), generated);
     }
 
     @Test void keepsEarlyClassInitializationFailure() throws Exception {
@@ -143,25 +175,33 @@ class JavaRationalDenominatorTest {
         assertFalse(apply(SOURCE, false).contains("mathDenominatorInverse"));
     }
 
-    private static String apply(String source, boolean optIn) throws Exception {
+    private static CompilationUnit parse(String source, Map<String, String> compiler) {
         var parser = ASTParser.newParser(AST.getJLSLatest());
         parser.setSource(source.toCharArray());
         parser.setUnitName("RationalMap.java");
         parser.setEnvironment(new String[0], new String[0], new String[0], true);
         parser.setResolveBindings(true);
-        var compiler = new HashMap<String, String>();
-        JavaCore.setComplianceOptions("17", compiler);
         parser.setCompilerOptions(compiler);
-        var ast = (CompilationUnit) parser.createAST(null);
+        return (CompilationUnit)parser.createAST(null);
+    }
+
+    private static String apply(String source, boolean optIn) throws Exception {
+        var compiler = StrictCompilerOptions.allWarnings(17);
+        var ast = parse(source, compiler);
+        assertFalse(Arrays.stream(ast.getProblems()).anyMatch(IProblem::isError), () -> Arrays.toString(ast.getProblems()));
         var base = new MathCleanUpOptions(true, Set.of(NumericKind.BIG_INTEGER), SafetyProfile.PRESERVE_JAVA,
             OptimizationGoal.LOWER_ESTIMATED_RUNTIME, 12_000_000, 20_000, false, 17, List.of(), optIn);
         var profile = new HashMap<>(base.toMap());
         profile.put(MathCleanUpOptions.TIMEOUT_SECONDS, "20");
         var options = MathCleanUpOptions.parse(profile, 17);
-        var environment = new MathematicalAnalysis.SourceEnvironment("RationalMap.java", List.of(), List.of(), List.of());
+        var environment = new MathematicalAnalysis.SourceEnvironment("RationalMap.java", List.of(), List.of(), List.of(), compiler);
         var analysis = MathematicalAnalysis.analyze(ast, source, options, null, -1, 0, environment);
+        var edit = analysis.newEdit();
+        var provenance = GeneratedSourceDiagnostics.edits(edit);
         var document = new Document(source);
-        analysis.newEdit().apply(document);
-        return document.get();
+        edit.apply(document);
+        String generated = document.get();
+        GeneratedSourceDiagnostics.verify(ast, source, parse(generated, compiler), generated, provenance, null);
+        return generated;
     }
 }

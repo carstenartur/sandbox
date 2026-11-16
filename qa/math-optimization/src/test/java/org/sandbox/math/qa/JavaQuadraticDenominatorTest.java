@@ -11,14 +11,14 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import javax.tools.ToolProvider;
 
-import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -29,6 +29,7 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.api.io.TempDir;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
 import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
+import org.sandbox.jdt.math.tests.StrictCompilerOptions;
 import org.sandbox.jdt.triggerpattern.test.policy.PinnedGitRepository;
 
 @EnabledIfSystemProperty(named = "sandbox.math.bc.rational.upstream", matches = "true")
@@ -48,7 +49,9 @@ class JavaQuadraticDenominatorTest {
                 : PinnedGitRepository.cloneAt(temporary.resolve("bc"), URI.create(mirror), "refs/heads/main", COMMIT)) {
             Path sources = checkout.directory().resolve("core/src/main/java");
             String original = Files.readString(sources.resolve(TARGET));
-            var analysis = analyze(original, sources, true);
+            var compiler = StrictCompilerOptions.allWarnings(17);
+            var originalAst = parse(original, sources, compiler);
+            var analysis = analyze(originalAst, original, sources, compiler, true);
             assertTrue(analysis.diagnostics().stream().anyMatch(diagnostic -> VERIFIED.equals(diagnostic.code())),
                     () -> analysis.diagnostics().toString());
             var document = new Document(original);
@@ -56,6 +59,11 @@ class JavaQuadraticDenominatorTest {
             String generated = document.get();
             assertTrue(generated.contains("Fp2Element.of(6L, -6L)"));
             assertEquals(1, tail(generated).split("\\.inverse\\(\\)", -1).length - 1);
+            var originalWarnings = new ArrayList<>(warnings(originalAst));
+            assertFalse(originalWarnings.isEmpty(), "Expected optional compiler warnings in the pinned input");
+            for (String warning : warnings(parse(generated, sources, compiler))) {
+                assertTrue(originalWarnings.remove(warning), () -> "New compiler warning " + warning);
+            }
             undo.apply(document);
             assertEquals(original, document.get());
             assertEquals(run(sources, original, "original"), run(sources, generated, "generated"));
@@ -73,8 +81,11 @@ class JavaQuadraticDenominatorTest {
     }
 
     private static MathematicalAnalysis.Analysis analyze(String source, Path sources, boolean optIn) {
-        var compiler = new HashMap<String, String>();
-        JavaCore.setComplianceOptions("17", compiler);
+        var compiler = StrictCompilerOptions.allWarnings(17);
+        return analyze(parse(source, sources, compiler), source, sources, compiler, optIn);
+    }
+
+    private static CompilationUnit parse(String source, Path sources, Map<String, String> compiler) {
         var parser = ASTParser.newParser(AST.getJLSLatest());
         parser.setEnvironment(new String[0], new String[] {sources.toString()}, null, true);
         parser.setUnitName(TARGET);
@@ -82,8 +93,18 @@ class JavaQuadraticDenominatorTest {
         parser.setResolveBindings(true);
         parser.setSource(source.toCharArray());
         var ast = (CompilationUnit) parser.createAST(null);
-        assertTrue(Arrays.stream(ast.getProblems()).noneMatch(problem -> problem.isError()),
+        assertTrue(Arrays.stream(ast.getProblems()).noneMatch(IProblem::isError),
                 () -> Arrays.toString(ast.getProblems()));
+        return ast;
+    }
+
+    private static List<String> warnings(CompilationUnit ast) {
+        return Arrays.stream(ast.getProblems()).filter(IProblem::isWarning)
+                .map(problem -> problem.getID() + " " + Arrays.toString(problem.getArguments())).toList();
+    }
+
+    private static MathematicalAnalysis.Analysis analyze(CompilationUnit ast, String source, Path sources,
+            Map<String, String> compiler, boolean optIn) {
         var options = MathCleanUpOptions.parse(Map.of(MathCleanUpOptions.CLEANUP, "true",
                 MathCleanUpOptions.TIMEOUT_SECONDS, "20", MathCleanUpOptions.MATHEMATICAL_OPT_IN,
                 Boolean.toString(optIn)), 17);

@@ -61,7 +61,7 @@ final class JavaQuadraticDenominatorOptimizer {
             Fp2Element yDen = mathIso3UseFactor ? null : horner(K4, xPrime).add(xPrime.square().mul(xPrime));
 
             Fp2Element mathIso3Inverse = (mathIso3UseFactor ? mathIso3XFactor : mathIso3XFactor.mul(yDen)).inverse();
-            Fp2Element mathIso3InverseSquared = mathIso3UseFactor ? mathIso3Inverse.square() : null;
+            Fp2Element mathIso3InverseSquared = mathIso3UseFactor ? mathIso3Inverse.square() : mathIso3Inverse;
             Fp2Element x = mathIso3UseFactor ? xNum.mul(mathIso3InverseSquared) : xNum.mul(mathIso3Inverse).mul(yDen);
             Fp2Element y = mathIso3UseFactor
                 ? yPrime.mul(yNum).mul(mathIso3InverseSquared.mul(mathIso3Inverse))

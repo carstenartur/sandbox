@@ -1,14 +1,25 @@
 # Pinned Regelsuche optimization SDK
 
-## Qualified snapshot for common polynomial denominators
+## Qualified snapshot for polynomial denominators and projective handoffs
 
-The bundled SDK comes from [SDK transfer run 43840995141](https://github.com/carstenartur/sandbox/actions/runs/43840995141).
-Its receipt identifies Regelsuche commit `5333a11772ee839af0a69746010ac15b47df3bb5`
-and version `0.5.3-issue1657-5333a11772ee`. The standalone JAR SHA-256 is
-`c665c5c0f8cfb29052eb4416b7971d7dddfa13da6d7f98ad10ce9559582e37d1`.
-This source-qualified snapshot supplies denominator discovery and replay over
-large modular coefficients. A local rebuild from the same Regelsuche commit
-produced identical standalone JAR bytes.
+The standalone JAR and its receipt come from
+[SDK transfer run 43952122987](https://github.com/carstenartur/sandbox/actions/runs/43952122987)
+for Regelsuche main commit `51564131a16609f496eca18d7dc4347c8ca6d054`.
+The receipt version is `0.5.3-issue1657-51564131a166`. The JAR SHA-256 is
+`e27c4861f42c75feef50f2251655143933f8bc166b56b1f40ae7bba1199202c1`.
+The SDK discovers and replays common polynomial denominators over large
+modular coefficients and verifies weighted projective tuples and their unit
+precondition. The qualification rebuilt the SDK twice from clean checkouts
+and compared the resulting distribution files byte for byte.
+
+## Previous snapshot for weighted projective handoffs
+
+The preceding JAR and its receipt came from [SDK transfer run 43848881086](https://github.com/carstenartur/sandbox/actions/runs/43848881086).
+The Regelsuche source is `f0b65289f0254424f61ac94a04b6194ef56c5b11`, the
+receipt version is `0.5.3-issue1657-f0b65289f025`, and the JAR SHA-256 is
+`8cafc3008ddac7c4c69a0fa2f25fc9a7dc25b505b84b9ce79e8d16428d91885d`.
+The SDK independently checks weighted projective tuples and exposes the
+unit precondition to Java source adapters.
 
 ## Qualified Regelsuche snapshot for consistent factor placement
 

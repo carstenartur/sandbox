@@ -33,7 +33,7 @@ final class JavaRationalDenominatorOptimizer {
     private JavaRationalDenominatorOptimizer() { }
 
     private record Horner(MethodDeclaration method, IVariableBinding table, IVariableBinding input) { }
-    private record Denominator(Horner horner, List<Coefficient> coefficients, SimpleName modulus) { }
+    private record Denominator(Horner horner, List<Coefficient> coefficients, Expression modulus) { }
     private record Site(Denominator x, Denominator y, Statement start, VariableDeclarationStatement numerator,
             VariableDeclarationStatement resultX, VariableDeclarationStatement resultY, ReturnStatement end,
             MethodInvocation inverseX, MethodInvocation inverseY, SimpleName input, SimpleName weight) { }
@@ -116,26 +116,27 @@ final class JavaRationalDenominatorOptimizer {
         var resultY = declaration(statements.get(start + 4));
         var x = denominator(ast, owner, denominatorX.getInitializer(), work);
         var y = denominator(ast, owner, denominatorY.getInitializer(), work);
-        require(same(x.modulus(), y.modulus().resolveBinding()) && x.horner().input().isEqualTo(y.horner().input())
+        var modulus = variable(x.modulus());
+        require(same(y.modulus(), modulus) && x.horner().input().isEqualTo(y.horner().input())
             && x.horner().method() == y.horner().method());
         var horner = x.horner().method();
         var nx = hornerCall(ast, owner, numeratorX.getInitializer());
         var ny = hornerCall(ast, owner, numeratorY.getInitializer());
         require(nx.method() == horner && ny.method() == horner && nx.input().isEqualTo(x.horner().input())
             && ny.input().isEqualTo(x.horner().input()));
-        verifyHorner(horner, (IVariableBinding)x.modulus().resolveBinding());
+        verifyHorner(horner, modulus);
         for (var table : List.of(x.horner().table(), y.horner().table(), nx.table(), ny.table())) {
             coefficientTable(ast, table, work);
             unmodifiedTable(owner, table, horner.resolveBinding(), work);
         }
-        var xMultiply = jdk(receiverOfMod(resultX.getInitializer(), x.modulus()), "multiply", 1); //$NON-NLS-1$
+        var xMultiply = jdk(receiverOfMod(resultX.getInitializer(), modulus), "multiply", 1); //$NON-NLS-1$
         require(same(xMultiply.getExpression(), numeratorX.resolveBinding()));
-        var inverseX = inverse(argument(xMultiply, 0), denominatorX.resolveBinding(), x.modulus());
-        var yMultiply = jdk(receiverOfMod(resultY.getInitializer(), x.modulus()), "multiply", 1); //$NON-NLS-1$
-        var weighted = jdk(receiverOfMod(yMultiply.getExpression(), x.modulus()), "multiply", 1); //$NON-NLS-1$
+        var inverseX = inverse(argument(xMultiply, 0), denominatorX.resolveBinding(), modulus);
+        var yMultiply = jdk(receiverOfMod(resultY.getInitializer(), modulus), "multiply", 1); //$NON-NLS-1$
+        var weighted = jdk(receiverOfMod(yMultiply.getExpression(), modulus), "multiply", 1); //$NON-NLS-1$
         require(same(argument(weighted, 0), numeratorY.resolveBinding()) && weighted.getExpression() instanceof SimpleName
             && variable(weighted.getExpression()) != null && !variable(weighted.getExpression()).isField());
-        var inverseY = inverse(argument(yMultiply, 0), denominatorY.resolveBinding(), x.modulus());
+        var inverseY = inverse(argument(yMultiply, 0), denominatorY.resolveBinding(), modulus);
         onlyRead(method.getBody(), denominatorX.resolveBinding(), inverseX.getExpression(), work);
         onlyRead(method.getBody(), denominatorY.resolveBinding(), inverseY.getExpression(), work);
         var hornerCall = jdk(jdk(denominatorX.getInitializer(), "mod", 1).getExpression(), "add", 1).getExpression(); //$NON-NLS-1$ //$NON-NLS-2$
@@ -154,11 +155,10 @@ final class JavaRationalDenominatorOptimizer {
 
     private static Denominator denominator(CompilationUnit ast, TypeDeclaration owner, Expression initializer, JavaValueSourceSummary.Work work) {
         var mod = jdk(initializer, "mod", 1); //$NON-NLS-1$
-        require(argument(mod, 0) instanceof SimpleName);
-        var modulus = (SimpleName)argument(mod, 0);
+        var modulus = argument(mod, 0);
         var field = variable(modulus);
         require(field != null && field.isField() && Modifier.isFinal(field.getModifiers()) && jdkType(field.getType())
-            && field.getDeclaringClass().isEqualTo(owner.resolveBinding()));
+            && field.getDeclaringClass().isEqualTo(owner.resolveBinding()) && same(modulus, field));
         var add = jdk(mod.getExpression(), "add", 1); //$NON-NLS-1$
         var horner = hornerCall(ast, owner, add.getExpression());
         require(argument(add, 0) instanceof MethodInvocation);
@@ -312,18 +312,18 @@ final class JavaRationalDenominatorOptimizer {
         String inverse = fresh(reserved, "mathDenominatorInverse"); //$NON-NLS-1$
         String square = fresh(reserved, "mathDenominatorInverseSquared"); //$NON-NLS-1$
         String cube = fresh(reserved, "mathDenominatorInverseCubed"); //$NON-NLS-1$
-        String p = site.x().modulus().getIdentifier();
+        String p = site.x().modulus().toString();
         String input = site.input().getIdentifier();
         String memberIndent = indent(source, method.getStartPosition());
         String baseIndent = indent(source, site.start().getStartPosition());
         String thenIndent = baseIndent + "    "; //$NON-NLS-1$
         String horner = site.x().horner().method().getName().getIdentifier();
         String coefficientIndent = memberIndent + "    "; //$NON-NLS-1$
-        var factors = new StringJoiner(",\n" + coefficientIndent, "{\n" + coefficientIndent, "\n" + memberIndent + "}"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+        var factors = new StringJoiner("\n" + coefficientIndent, "{\n" + coefficientIndent, "\n" + memberIndent + "}"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
         for (var c : proposal.plan().denominator())
-            factors.add(BigInteger.ONE.equals(c.real()) ? "java.math.BigInteger.ONE" : integerLiteral(c.real())); //$NON-NLS-1$
+            factors.add(BigInteger.ONE.equals(c.real()) ? "java.math.BigInteger.ONE," : integerLiteral(c.real()) + ", //$NON-NLS-1$"); //$NON-NLS-1$ //$NON-NLS-2$
         String fields = "// Common factor of the two coordinate denominators, checked modulo " + modulus + ".\n" //$NON-NLS-1$ //$NON-NLS-2$
-            + memberIndent + "private static final java.math.BigInteger " + modulus + " = " + integerLiteral(proposal.modulus()) + ";\n" //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+            + memberIndent + "private static final java.math.BigInteger " + modulus + " = " + integerLiteral(proposal.modulus()) + "; //$NON-NLS-1$\n" //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
             + memberIndent + "private static final java.math.BigInteger[] " + field + " = " + factors + ";\n\n" + memberIndent; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
         String guard = guard(site, proposal.modulus(), modulus, field, "\n" + thenIndent); //$NON-NLS-1$
         String optimized = "if (" + guard + ")\n" + baseIndent + "{\n" + thenIndent + text(source, site.numerator()) + "\n" //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
@@ -339,7 +339,7 @@ final class JavaRationalDenominatorOptimizer {
     }
 
     private static String guard(Site site, BigInteger modulus, String modulusField, String factorField, String newline) {
-        String p = site.x().modulus().getIdentifier();
+        String p = site.x().modulus().toString();
         String x = site.input().getIdentifier();
         String y = site.weight().getIdentifier();
         return exact(p) + " && " + p + ".equals(" + modulusField + ")" + newline //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -387,18 +387,18 @@ final class JavaRationalDenominatorOptimizer {
         require(statements.size() == 7);
         var inverse = declaration(statements.get(1));
         var inversion = jdk(inverse.getInitializer(), "modInverse", 1); //$NON-NLS-1$
-        require(same(argument(inversion, 0), sameSource.x().modulus().resolveBinding()));
+        var modulusBinding = variable(sameSource.x().modulus());
+        require(same(argument(inversion, 0), modulusBinding));
         var factored = hornerCall(parsed, owner, inversion.getExpression());
         require(factored.method() == sameSource.x().horner().method() && factored.input().isEqualTo(sameSource.x().horner().input()));
-        SimpleName p = sameSource.x().modulus();
         var square = declaration(statements.get(2));
         var cube = declaration(statements.get(3));
-        verifyProduct(square.getInitializer(), p, inverse.resolveBinding(), inverse.resolveBinding());
-        verifyProduct(cube.getInitializer(), p, square.resolveBinding(), inverse.resolveBinding());
+        verifyProduct(square.getInitializer(), modulusBinding, inverse.resolveBinding(), inverse.resolveBinding());
+        verifyProduct(cube.getInitializer(), modulusBinding, square.resolveBinding(), inverse.resolveBinding());
         var exactModulus = new IVariableBinding[1];
         guard.getExpression().accept(new ASTVisitor() {
             @Override public boolean visit(MethodInvocation call) {
-                if (call.getName().getIdentifier().equals("equals") && same(call.getExpression(), p.resolveBinding()) //$NON-NLS-1$
+                if (call.getName().getIdentifier().equals("equals") && same(call.getExpression(), modulusBinding) //$NON-NLS-1$
                         && call.arguments().size() == 1) exactModulus[0] = variable(argument(call, 0));
                 return true;
             }
@@ -410,8 +410,10 @@ final class JavaRationalDenominatorOptimizer {
         }
         BigInteger modulus = constant(fragment.getInitializer(), work);
         require(compact(guard.getExpression().toString()).equals(compact(guard(sameSource, modulus, field.getName(), factored.table().getName(), " ")))); //$NON-NLS-1$
+        JavaValueGuardBindings.verifyNonNullCalls(guard.getExpression(), work);
         Map<String, IBinding> operands = new HashMap<>();
-        for (SimpleName name : List.of(p, sameSource.input(), sameSource.weight())) operands.put(name.getIdentifier(), name.resolveBinding());
+        operands.put(modulusBinding.getName(), modulusBinding);
+        for (SimpleName name : List.of(sameSource.input(), sameSource.weight())) operands.put(name.getIdentifier(), name.resolveBinding());
         for (var binding : List.of(field, factored.table(), sameSource.x().horner().table(), sameSource.y().horner().table())) operands.put(binding.getName(), binding);
         guard.getExpression().accept(new ASTVisitor() {
             @Override public boolean visit(SimpleName name) {
@@ -433,7 +435,7 @@ final class JavaRationalDenominatorOptimizer {
         return fragment.replaceAll("\\s+", ""); //$NON-NLS-1$ //$NON-NLS-2$
     }
 
-    private static void verifyProduct(Expression expression, SimpleName modulus, IVariableBinding left, IVariableBinding right) {
+    private static void verifyProduct(Expression expression, IVariableBinding modulus, IVariableBinding left, IVariableBinding right) {
         var product = jdk(receiverOfMod(expression, modulus), "multiply", 1); //$NON-NLS-1$
         require(same(product.getExpression(), left) && same(argument(product, 0), right));
     }
@@ -473,14 +475,14 @@ final class JavaRationalDenominatorOptimizer {
         return type != null && !type.isRecovered() && !type.isFromSource() && !type.isNested()
             && "java.math.BigInteger".equals(type.getBinaryName()); //$NON-NLS-1$
     }
-    private static Expression receiverOfMod(Expression expression, SimpleName modulus) {
+    private static Expression receiverOfMod(Expression expression, IVariableBinding modulus) {
         var mod = jdk(expression, "mod", 1); //$NON-NLS-1$
-        require(same(argument(mod, 0), modulus.resolveBinding()));
+        require(same(argument(mod, 0), modulus));
         return mod.getExpression();
     }
-    private static MethodInvocation inverse(Expression expression, IVariableBinding denominator, SimpleName modulus) {
+    private static MethodInvocation inverse(Expression expression, IVariableBinding denominator, IVariableBinding modulus) {
         var inverse = jdk(expression, "modInverse", 1); //$NON-NLS-1$
-        require(same(inverse.getExpression(), denominator) && same(argument(inverse, 0), modulus.resolveBinding()));
+        require(same(inverse.getExpression(), denominator) && same(argument(inverse, 0), modulus));
         return inverse;
     }
     private static Expression argument(MethodInvocation call, int i) {
@@ -499,11 +501,19 @@ final class JavaRationalDenominatorOptimizer {
         return expression.resolveConstantExpressionValue() instanceof Integer i && i == n;
     }
     private static IVariableBinding variable(Expression expression) {
-        return expression instanceof Name name && name.resolveBinding() instanceof IVariableBinding field ? field : null;
+        return JavaValueSourceSummary.variable(expression);
     }
     private static boolean same(Expression expression, IBinding binding) {
         var value = variable(expression);
-        return binding != null && value != null && value.isEqualTo(binding);
+        if (binding == null || value == null || value.isRecovered() || !value.isEqualTo(binding)) return false;
+        if (expression instanceof SimpleName) return true;
+        if (!value.isField()) return false;
+        // Even a static field access can evaluate an expression used to qualify it.
+        if (expression instanceof FieldAccess access) {
+            return access.getExpression() instanceof ThisExpression self && self.getQualifier() == null;
+        }
+        return Modifier.isStatic(value.getModifiers()) && expression instanceof QualifiedName name
+            && name.getQualifier().resolveBinding() instanceof ITypeBinding type && type.isEqualTo(value.getDeclaringClass());
     }
     private static boolean overlaps(int a, int al, int b, int bl) {
         return a < (long)b + bl && b < (long)a + al;
@@ -527,7 +537,8 @@ final class JavaRationalDenominatorOptimizer {
         return "new java.math.BigInteger(\"" + value.toString(16) + "\", 16)"; //$NON-NLS-1$ //$NON-NLS-2$
     }
     private static String exact(String name) {
-        return name + " != null && " + name + ".getClass() == java.math.BigInteger.class"; //$NON-NLS-1$ //$NON-NLS-2$
+        // Preserve the compiler's null-flow facts in the fallback.
+        return "java.util.Objects.nonNull(" + name + ") && " + name + ".getClass() == java.math.BigInteger.class"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
     }
     private static void require(boolean supported) {
         if (!supported) throw new UnsupportedShape();

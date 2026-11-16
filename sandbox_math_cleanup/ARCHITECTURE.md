@@ -2,6 +2,26 @@
 
 This module participates in the explicit mathematics cleanup. Numerical proof and Java source emission are separate from the Eclipse UI. The [current qualification](../docs/superpowers/plans/2026-10-31-java-mathematics-context-qualification.md) identifies the tested revisions and boundaries of its dated evidence; consult the linked integration PR for current CI results.
 
+## Coordinated changes to internal declarations
+
+`JavaStructuralRewritePlan` verifies the before and after sources together.
+It checks expected calls, retained bindings across same-name signature changes,
+and the public and protected surface, including inherited members and varargs.
+The plan pins source text and classpath contents. Pass it to
+`MathematicalStructuralChange.preview` for one Eclipse preview. This checks all
+sources in the actual project, including unedited callers, and rejects projects
+with workspace dependents. Apply, Undo and Redo recheck the current callers under
+the workspace rule. A recoverable save failure restores the complete group.
+
+`JavaProjectiveRewritePlan` also replays the Regelsuche proof for an affine
+tuple and its carried numerators, common scale and weights. A source adapter
+recovers the expressions and supplies the consuming operation contracts and
+expected changes to invocations. The Java verifier checks those declared
+bindings without assuming that a compilable program implements the same
+arithmetic. The resulting source plan can use the same native preview.
+The optional Bouncy Castle test applies the audited three-file G2 proposal
+and checks byte-exact undo of the group.
+
 ## Common polynomial denominators
 
 The existing mathematics opt-in lets Regelsuche derive one polynomial whose
