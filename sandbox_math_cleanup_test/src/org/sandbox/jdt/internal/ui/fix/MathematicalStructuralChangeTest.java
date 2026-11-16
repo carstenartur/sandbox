@@ -140,8 +140,11 @@ class MathematicalStructuralChangeTest {
             assertEquals(otherAfter, newCaller.getSource());
             newCaller.delete(true, monitor);
 
-            undo.perform(monitor);
+            var redo = undo.perform(monitor);
             assertEquals(source, Map.of(valuePath, value.getSource(), callerPath, caller.getSource()));
+            assertNotNull(redo);
+            redo.perform(monitor);
+            assertEquals(replacement, Map.of(valuePath, value.getSource(), callerPath, caller.getSource()));
         } finally {
             if (project.exists()) project.delete(true, true, monitor);
         }

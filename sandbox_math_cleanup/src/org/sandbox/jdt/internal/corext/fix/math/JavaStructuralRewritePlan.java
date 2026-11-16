@@ -178,12 +178,13 @@ public final class JavaStructuralRewritePlan {
         return workspace;
     }
 
-    /** Recompile the inverse against the current callers, preserving the direction of the original contract. */
-    public void verifyWorkspaceUndo(Map<String, ICompilationUnit> units, IProgressMonitor monitor) throws JavaModelException {
+    /** Recompile Undo or Redo against the current callers, preserving the original proof direction. */
+    public void verifyWorkspaceTransition(Map<String, ICompilationUnit> units, IProgressMonitor monitor, boolean undo)
+            throws JavaModelException {
         requireCurrentBinaries(binaries);
-        var workspace = verifyWorkspace(units, original, invocations, monitor, true);
-        if (!replacement.equals(workspace.original))
-            throw new IllegalArgumentException("STALE_STRUCTURAL_UNDO"); //$NON-NLS-1$
+        var workspace = verifyWorkspace(units, undo ? original : replacement, invocations, monitor, undo);
+        if (!(undo ? replacement : original).equals(workspace.original))
+            throw new IllegalArgumentException("STALE_STRUCTURAL_TRANSITION"); //$NON-NLS-1$
         requireCurrentBinaries(binaries);
     }
 

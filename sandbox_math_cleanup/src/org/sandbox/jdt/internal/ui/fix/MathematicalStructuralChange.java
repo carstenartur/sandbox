@@ -136,8 +136,7 @@ public final class MathematicalStructuralChange extends CompositeChange {
                 throw new CoreException(Status.error("Structural change failed workspace validation")); //$NON-NLS-1$
             if (verifyScope) {
                 try {
-                    if (undoing) plan.verifyWorkspaceUndo(units, monitor);
-                    else plan.rebindWorkspace(units, monitor);
+                    plan.verifyWorkspaceTransition(units, monitor, undoing);
                 } catch (IllegalArgumentException stale) {
                     throw new CoreException(Status.error(stale.getMessage(), stale));
                 }
