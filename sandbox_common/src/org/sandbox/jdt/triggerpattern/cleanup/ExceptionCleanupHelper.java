@@ -13,20 +13,36 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.cleanup;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.BodyDeclaration;
 import org.eclipse.jdt.core.dom.CatchClause;
-import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.Comment;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.EmptyStatement;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.IfStatement;
+import org.eclipse.jdt.core.dom.Initializer;
 import org.eclipse.jdt.core.dom.ITypeBinding;
-import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.Javadoc;
-import org.eclipse.jdt.core.dom.TagElement;
+import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.TagElement;
+import org.eclipse.jdt.core.dom.ThrowStatement;
 import org.eclipse.jdt.core.dom.TryStatement;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.UnionType;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
@@ -79,9 +95,151 @@ public class ExceptionCleanupHelper {
 		if (parent instanceof MethodDeclaration method) {
 			removeExceptionFromMethodThrows(method, exceptionFQN, exceptionSimple, rewrite, group, importRemover);
 		} else if (parent instanceof TryStatement tryStatement) {
-			int removedCount = removeExceptionFromTryCatch(tryStatement, exceptionFQN, exceptionSimple, rewrite, group, importRemover);
+			int removedCount = removeExceptionFromTryCatch(tryStatement, exceptionFQN, rewrite, group, importRemover);
 			simplifyEmptyTryStatement(tryStatement, rewrite, group, removedCount);
 		}
+	}
+
+	/** Checks that the exception is handled locally and its handlers can be removed safely. */
+	public static boolean canRemoveExceptionLocally(ASTNode visited, ITypeBinding exception, ASTRewrite previousRewrite) {
+		if (ASTNodes.getFirstAncestorOrNull(visited, LambdaExpression.class) != null) {
+			// Removing a handler can change the inferred return or exception type of a lambda.
+			return false;
+		}
+		ASTNode scope = ASTNodes.getFirstAncestorOrNull(visited, BodyDeclaration.class);
+		if ((scope instanceof FieldDeclaration || scope instanceof Initializer)
+				&& scope.getParent() instanceof AnonymousClassDeclaration
+				&& !Modifier.isStatic(((BodyDeclaration) scope).getModifiers())) {
+			// The exception may contribute to an inferred constructor throws clause.
+			return false;
+		}
+
+		boolean handled = false;
+		ASTRewrite candidateRewrite = ASTRewrite.create(visited.getAST());
+		CheckedExceptionAnalysis.copyConvertedCalls(previousRewrite, candidateRewrite, exception.getQualifiedName());
+		for (TryStatement statement : enclosingProtectedTries(visited)) {
+			List<CatchClause> clauses = statement.catchClauses();
+			for (CatchClause clause : clauses) {
+				Type caught = clause.getException().getType();
+				List<?> types = caught instanceof UnionType union ? union.types() : List.of(caught);
+				for (Object type : types) {
+					ITypeBinding binding = ((Type) type).resolveBinding();
+					if (binding == null || binding.isRecovered()) {
+						return false;
+					}
+					if (exception.isEqualTo(binding)) {
+						// Narrowing a multi-catch can change the type of the catch parameter.
+						if (caught instanceof UnionType || !canDiscardCatch(statement, clause)
+								|| !canRemoveException(statement, visited, exception.getQualifiedName(), candidateRewrite)) {
+							return false;
+						}
+						// Model the inner removal before examining an enclosing catch.
+						candidateRewrite.remove(clause, null);
+						handled = true;
+					} else if (exception.isAssignmentCompatible(binding) || binding.isAssignmentCompatible(exception)) {
+						// Other handlers could become unreachable or change a precise rethrow.
+						return false;
+					}
+				}
+			}
+		}
+		return handled;
+	}
+
+	/** Proves that the enclosing method still needs the existing throws declaration after conversion. */
+	public static boolean canKeepDeclaredThrows(ASTNode visited, ITypeBinding exception, ASTRewrite rewrite) {
+		ASTNode scope = ASTNodes.getFirstAncestorOrNull(visited, BodyDeclaration.class, LambdaExpression.class);
+		if (!(scope instanceof MethodDeclaration method)) {
+			return false;
+		}
+		for (TryStatement statement : enclosingProtectedTries(visited)) {
+			List<CatchClause> clauses = statement.catchClauses();
+			for (CatchClause clause : clauses) {
+				Type caught = clause.getException().getType();
+				List<?> types = caught instanceof UnionType union ? union.types() : List.of(caught);
+				for (Object type : types) {
+					ITypeBinding binding = ((Type) type).resolveBinding();
+					if (binding == null || binding.isRecovered() || exception.isAssignmentCompatible(binding)
+							|| binding.isAssignmentCompatible(exception)) {
+						return false;
+					}
+				}
+			}
+		}
+		return CheckedExceptionAnalysis.hasSurvivingDeclaredThrows(method, exception, rewrite);
+	}
+
+	private static boolean canDiscardCatch(TryStatement statement, CatchClause clause) {
+		List<Statement> handler = clause.getBody().statements();
+		// Limit removal to straight-line handlers and method exits. A break, continue,
+		// or yield can affect reachability beyond the try even when its body completes normally.
+		if (!handler.stream().allMatch(child -> isStraightLine(child) || child instanceof ReturnStatement || child instanceof ThrowStatement)) {
+			return false;
+		}
+		if (!ASTNodes.fallsThrough(clause.getBody()) && !isStraightLine(statement.getBody())) {
+			return false;
+		}
+		if (statement.catchClauses().size() == 1 && statement.resources().isEmpty() && statement.getFinally() == null
+				&& hasLeadingStatementComment(statement)) {
+			return false;
+		}
+		return !CheckedExceptionAnalysis.hasCheckedException(clause.getBody());
+	}
+
+	private static boolean isStraightLine(Statement statement) {
+		if (statement instanceof Block block) {
+			List<Statement> children = block.statements();
+			return children.stream().allMatch(ExceptionCleanupHelper::isStraightLine);
+		}
+		return statement instanceof EmptyStatement || statement instanceof ExpressionStatement
+				|| statement instanceof VariableDeclarationStatement;
+	}
+
+	private static boolean hasLeadingStatementComment(TryStatement statement) {
+		if (!statement.getLocationInParent().isChildProperty() || !(statement.getRoot() instanceof CompilationUnit root)) {
+			return false;
+		}
+		ASTNode parent = statement.getParent();
+		int parentStart = parent.getStartPosition();
+		if (parent instanceof IfStatement conditional) {
+			ASTNode preceding = conditional.getThenStatement() == statement ? conditional.getExpression() : conditional.getThenStatement();
+			parentStart = preceding.getStartPosition() + preceding.getLength();
+		}
+		for (Object node : root.getCommentList()) {
+			Comment comment = (Comment) node;
+			if (comment.getStartPosition() >= parentStart
+					&& comment.getStartPosition() + comment.getLength() <= statement.getStartPosition()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** Removes obsolete catches while preserving the scope of the body and caller contracts. */
+	public static void removeCheckedExceptionFromEnclosingTries(ASTNode visited, String exceptionFQN,
+			TextEditGroup group, ASTRewrite rewrite, ImportRemover importRemover) {
+		for (TryStatement statement : enclosingProtectedTries(visited)) {
+			if (!canRemoveException(statement, visited, exceptionFQN, rewrite)) {
+				continue;
+			}
+			int removed = removeExceptionFromTryCatch(statement, exceptionFQN, rewrite, group, importRemover);
+			if (removed == statement.catchClauses().size() && statement.getFinally() == null && statement.resources().isEmpty()) {
+				// A block fits single-statement arms and keeps local declarations scoped to the body.
+				ASTNodes.replaceButKeepComment(rewrite, statement, rewrite.createMoveTarget(statement.getBody()), group);
+			}
+		}
+	}
+
+	private static List<TryStatement> enclosingProtectedTries(ASTNode visited) {
+		List<TryStatement> result = new ArrayList<>();
+		for (ASTNode child = visited, parent = child.getParent();
+				parent != null && !(parent instanceof BodyDeclaration) && !(parent instanceof LambdaExpression);
+				child = parent, parent = parent.getParent()) {
+			if (parent instanceof TryStatement statement && (child == statement.getBody() || statement.resources().contains(child))) {
+				result.add(statement);
+			}
+		}
+		return result;
 	}
 
 	/** Records the converted invocation and proves that no surviving expression needs the handler. */
@@ -193,7 +351,6 @@ public class ExceptionCleanupHelper {
 	static int removeExceptionFromTryCatch(
 			TryStatement tryStatement,
 			String exceptionFQN,
-			String exceptionSimple,
 			ASTRewrite rewrite,
 			TextEditGroup group,
 			ImportRemover importRemover) {
