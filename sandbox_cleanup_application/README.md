@@ -4,6 +4,8 @@
 
 Runs the cleanup implementations installed in an Eclipse/Equinox distribution without opening the workbench.
 
+For command-line use on Linux x86_64, download the `sandbox-cleanup-cli` ZIP or tarball from [GitHub Releases](https://github.com/carstenartur/sandbox/releases) and run `bin/sandbox-cleanup`. Both archives contain the application bundle, Eclipse runtime, and launcher. Maven builds can use [`io.github.carstenartur:sandbox-maven-plugin`](../docs/maven-plugin.md), which downloads the matching distribution on first use.
+
 ## Application ID
 
 ```text

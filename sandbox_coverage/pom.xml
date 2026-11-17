@@ -207,12 +207,12 @@
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.sandbox</groupId>
+			<groupId>io.github.carstenartur</groupId>
 			<artifactId>sandbox-mining-cli</artifactId>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.sandbox</groupId>
+			<groupId>io.github.carstenartur</groupId>
 			<artifactId>sandbox-mining-core</artifactId>
 			<scope>compile</scope>
 		</dependency>

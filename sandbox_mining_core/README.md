@@ -232,6 +232,24 @@ Only resumable scan state may be merged automatically. Candidate state stays on 
 
 ## Build and tests
 
+For releases that include the mining tools on Maven Central, set `SANDBOX_VERSION`
+to the published version. With Maven and Java 25, download the standalone JAR
+and verify the candidate JSON files in a local directory:
+
+```shell
+mvn dependency:copy \
+  "-Dartifact=io.github.carstenartur:sandbox-mining-core:${SANDBOX_VERSION}:jar:all" \
+  -DoutputDirectory=.
+java -cp "sandbox-mining-core-${SANDBOX_VERSION}-all.jar" \
+  org.sandbox.mining.core.candidate.CandidateVerificationCli \
+  --candidate-dir mining-candidates --report-dir mining-report
+```
+
+Use `java -jar "sandbox-mining-core-${SANDBOX_VERSION}-all.jar"` with the
+discovery configuration, scan state and LLM provider for a mining run. For use
+from Java, declare `io.github.carstenartur:sandbox-mining-core` as an ordinary
+Maven dependency. The unclassified JAR uses transitive dependencies.
+
 ```shell
 mvn -pl sandbox_common_core,sandbox_mining_core -am test
 ```

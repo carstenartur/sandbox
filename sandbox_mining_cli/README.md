@@ -8,6 +8,20 @@
 
 ## Usage
 
+For releases that include the mining tools on Maven Central, set `SANDBOX_VERSION`
+to the published version. With Maven and Java 25, download the standalone JAR
+and list its options:
+
+```shell
+mvn dependency:copy \
+  "-Dartifact=io.github.carstenartur:sandbox-mining-cli:${SANDBOX_VERSION}:jar:all" \
+  -DoutputDirectory=.
+java -jar "sandbox-mining-cli-${SANDBOX_VERSION}-all.jar" --help
+```
+
+For use from Java, declare `io.github.carstenartur:sandbox-mining-cli` as an
+ordinary Maven dependency. The unclassified JAR uses transitive dependencies.
+
 ```bash
 java -jar sandbox-mining-cli.jar [options]
   --config <path>    Path to repos.yml configuration file
