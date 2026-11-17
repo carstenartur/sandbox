@@ -27,6 +27,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.MessageDigest;
@@ -58,14 +59,18 @@ import org.eclipse.jdt.internal.ui.JavaPlugin;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.jdt.ui.cleanup.ICleanUp;
 import org.eclipse.ltk.core.refactoring.Change;
+import org.eclipse.ltk.core.refactoring.CompositeChange;
+import org.eclipse.ltk.core.refactoring.NullChange;
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
+import org.eclipse.ltk.core.refactoring.TextEditBasedChange;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.Version;
+import org.sandbox.jdt.cleanup.multifile.api.LineDelimiterPreserver;
 import org.sandbox.jdt.triggerpattern.git.UnifiedDiffFormatter;
 
-<span class="fc" id="L67">public class CodeCleanupApplication implements IApplication {</span>
-<span class="fc" id="L68">	private static final File[] FILES = new File[0];</span>
+<span class="fc" id="L72">public class CodeCleanupApplication implements IApplication {</span>
+<span class="fc" id="L73">	private static final File[] FILES = new File[0];</span>
 
 	private static final String ARG_CONFIG = &quot;-config&quot;; //$NON-NLS-1$
 
@@ -97,41 +102,41 @@ import org.sandbox.jdt.triggerpattern.git.UnifiedDiffFormatter;
 	/**
 	 * Execution mode for the cleanup application.
 	 */
-<span class="fc" id="L100">	enum CleanupMode {</span>
-<span class="fc" id="L101">		/** Apply changes to files (default, backwards compatible). */</span>
-<span class="fc" id="L102">		APPLY,</span>
-<span class="fc" id="L103">		/** Check for changes without modifying files; exit 2 if changes needed. */</span>
-<span class="fc" id="L104">		CHECK,</span>
-<span class="fc" id="L105">		/** Generate unified diff output without modifying files. */</span>
-<span class="fc" id="L106">		DIFF</span>
+<span class="fc" id="L105">	enum CleanupMode {</span>
+<span class="fc" id="L106">		/** Apply changes to files (default, backwards compatible). */</span>
+<span class="fc" id="L107">		APPLY,</span>
+<span class="fc" id="L108">		/** Check for changes without modifying files; exit 2 if changes needed. */</span>
+<span class="fc" id="L109">		CHECK,</span>
+<span class="fc" id="L110">		/** Generate unified diff output without modifying files. */</span>
+<span class="fc" id="L111">		DIFF</span>
 	}
 
 	/**
 	 * Scope filter for source files.
 	 */
-<span class="fc" id="L112">	enum CleanupScope {</span>
-<span class="fc" id="L113">		MAIN, TEST, BOTH</span>
+<span class="fc" id="L117">	enum CleanupScope {</span>
+<span class="fc" id="L118">		MAIN, TEST, BOTH</span>
 	}
 
 	private String configName;
 
-<span class="fc" id="L118">	private Map&lt;String, String&gt; options = null;</span>
+<span class="fc" id="L123">	private Map&lt;String, String&gt; options = null;</span>
 
 	private static final String PDE_LAUNCH = &quot;-pdelaunch&quot;; //$NON-NLS-1$
 
-<span class="fc" id="L122">	private boolean quiet = false;</span>
+<span class="fc" id="L127">	private boolean quiet = false;</span>
 
-<span class="fc" id="L124">	private boolean verbose = false;</span>
+<span class="fc" id="L129">	private boolean verbose = false;</span>
 
-<span class="fc" id="L126">	private boolean helpRequested = false;</span>
+<span class="fc" id="L131">	private boolean helpRequested = false;</span>
 
-<span class="fc" id="L128">	CleanupMode cleanupMode = CleanupMode.APPLY;</span>
+<span class="fc" id="L133">	CleanupMode cleanupMode = CleanupMode.APPLY;</span>
 
-<span class="fc" id="L130">	CleanupScope cleanupScope = CleanupScope.BOTH;</span>
+<span class="fc" id="L135">	CleanupScope cleanupScope = CleanupScope.BOTH;</span>
 
-<span class="fc" id="L132">	String patchFile = null;</span>
+<span class="fc" id="L137">	String patchFile = null;</span>
 
-<span class="fc" id="L134">	String reportFile = null;</span>
+<span class="fc" id="L139">	String reportFile = null;</span>
 
 	private static final int INITIALSIZE = 1;
 
@@ -147,57 +152,57 @@ import org.sandbox.jdt.triggerpattern.git.UnifiedDiffFormatter;
 
 	private static final int PATCH_PARSE_MODE = 5;
 
-<span class="fc" id="L150">	private static final int REPORT_PARSE_MODE = 6;</span>
+<span class="fc" id="L155">	private static final int REPORT_PARSE_MODE = 6;</span>
 
-<span class="fc" id="L152">	private final List&lt;String&gt; changedFiles = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L157">	private final List&lt;String&gt; changedFiles = new ArrayList&lt;&gt;();</span>
 
-<span class="fc" id="L154">	private final List&lt;String&gt; errors = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L159">	private final List&lt;String&gt; errors = new ArrayList&lt;&gt;();</span>
 
-<span class="fc" id="L156">	private final ByteArrayOutputStream patchContent = new ByteArrayOutputStream();</span>
+<span class="fc" id="L161">	private final ByteArrayOutputStream patchContent = new ByteArrayOutputStream();</span>
 
-<span class="fc" id="L158">	private int filesProcessed = 0;</span>
+<span class="fc" id="L163">	private int filesProcessed = 0;</span>
 
 	private static IFile findWorkspaceFile(File file) throws IOException, CoreException {
-<span class="fc" id="L161">		var root = ResourcesPlugin.getWorkspace().getRoot();</span>
-<span class="fc" id="L162">		IPath filePath = Path.fromOSString(file.getAbsolutePath());</span>
-<span class="fc" id="L163">		IFile direct = root.getFileForLocation(filePath);</span>
-<span class="pc bpc" id="L164" title="1 of 4 branches missed.">		if (direct != null &amp;&amp; direct.exists()) {</span>
-<span class="fc" id="L165">			return direct;</span>
+<span class="fc" id="L166">		var root = ResourcesPlugin.getWorkspace().getRoot();</span>
+<span class="fc" id="L167">		IPath filePath = Path.fromOSString(file.getAbsolutePath());</span>
+<span class="fc" id="L168">		IFile direct = root.getFileForLocation(filePath);</span>
+<span class="pc bpc" id="L169" title="1 of 4 branches missed.">		if (direct != null &amp;&amp; direct.exists()) {</span>
+<span class="fc" id="L170">			return direct;</span>
 		}
-<span class="fc" id="L167">		var matches = new LinkedHashSet&lt;&gt;(Arrays.stream(root.findFilesForLocationURI(file.toURI()))</span>
-<span class="fc" id="L168">				.filter(IFile::isAccessible).toList());</span>
-<span class="fc bfc" id="L169" title="All 2 branches covered.">		if (matches.isEmpty()) {</span>
+<span class="fc" id="L172">		var matches = new LinkedHashSet&lt;&gt;(Arrays.stream(root.findFilesForLocationURI(file.toURI()))</span>
+<span class="fc" id="L173">				.filter(IFile::isAccessible).toList());</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">		if (matches.isEmpty()) {</span>
 			// Import canonicalizes its directory, but source arguments may retain
 			// a symbolic link or Windows short-name alias. Keep direct links first.
-<span class="fc" id="L172">			matches.addAll(Arrays.stream(root.findFilesForLocationURI(file.getCanonicalFile().toURI()))</span>
-<span class="fc" id="L173">					.filter(IFile::isAccessible).toList());</span>
+<span class="fc" id="L177">			matches.addAll(Arrays.stream(root.findFilesForLocationURI(file.getCanonicalFile().toURI()))</span>
+<span class="fc" id="L178">					.filter(IFile::isAccessible).toList());</span>
 		}
-<span class="fc bfc" id="L175" title="All 2 branches covered.">		if (matches.size() &lt; 2) {</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">		if (matches.size() &lt; 2) {</span>
 			// URI lookup can hide links indexed under a noncanonical alias.
 			// Fallback cost is a metadata traversal plus canonical linked-file paths;
 			// do not refresh resources or retain a potentially stale context cache.
-<span class="fc" id="L179">			List&lt;IFile&gt; linkedFiles = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L180">			root.accept(proxy -&gt; {</span>
-<span class="pc bpc" id="L181" title="1 of 2 branches missed.">				if (!proxy.isAccessible()) return false;</span>
-<span class="fc bfc" id="L182" title="All 2 branches covered.">				if (proxy.getType() == IResource.FILE) {</span>
-<span class="fc" id="L183">					IFile candidate = (IFile) proxy.requestResource();</span>
-<span class="fc bfc" id="L184" title="All 2 branches covered.">					if (candidate.isLinked(IResource.CHECK_ANCESTORS)) linkedFiles.add(candidate);</span>
+<span class="fc" id="L184">			List&lt;IFile&gt; linkedFiles = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L185">			root.accept(proxy -&gt; {</span>
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">				if (!proxy.isAccessible()) return false;</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">				if (proxy.getType() == IResource.FILE) {</span>
+<span class="fc" id="L188">					IFile candidate = (IFile) proxy.requestResource();</span>
+<span class="fc bfc" id="L189" title="All 2 branches covered.">					if (candidate.isLinked(IResource.CHECK_ANCESTORS)) linkedFiles.add(candidate);</span>
 				}
-<span class="fc" id="L186">				return true;</span>
-<span class="fc" id="L187">			}, IResource.NONE);</span>
-<span class="fc" id="L188">			File canonicalFile = file.getCanonicalFile();</span>
-<span class="fc bfc" id="L189" title="All 2 branches covered.">			for (IFile candidate : linkedFiles) {</span>
-<span class="fc" id="L190">				IPath location = candidate.getLocation();</span>
-<span class="pc bpc" id="L191" title="2 of 4 branches missed.">				if (location != null &amp;&amp; canonicalFile.equals(location.toFile().getCanonicalFile())) {</span>
-<span class="fc" id="L192">					matches.add(candidate);</span>
-<span class="fc bfc" id="L193" title="All 2 branches covered.">					if (matches.size() &gt; 1) break;</span>
+<span class="fc" id="L191">				return true;</span>
+<span class="fc" id="L192">			}, IResource.NONE);</span>
+<span class="fc" id="L193">			File canonicalFile = file.getCanonicalFile();</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">			for (IFile candidate : linkedFiles) {</span>
+<span class="fc" id="L195">				IPath location = candidate.getLocation();</span>
+<span class="pc bpc" id="L196" title="2 of 4 branches missed.">				if (location != null &amp;&amp; canonicalFile.equals(location.toFile().getCanonicalFile())) {</span>
+<span class="fc" id="L197">					matches.add(candidate);</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">					if (matches.size() &gt; 1) break;</span>
 				}
 			}
 		}
-<span class="fc bfc" id="L197" title="All 2 branches covered.">		if (matches.size() &gt; 1) {</span>
-<span class="fc" id="L198">			throw new IOException(&quot;Multiple accessible workspace files match source location: &quot; + file.getAbsolutePath()); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">		if (matches.size() &gt; 1) {</span>
+<span class="fc" id="L203">			throw new IOException(&quot;Multiple accessible workspace files match source location: &quot; + file.getAbsolutePath()); //$NON-NLS-1$</span>
 		}
-<span class="fc bfc" id="L200" title="All 2 branches covered.">		return matches.isEmpty() ? null : matches.getFirst();</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">		return matches.isEmpty() ? null : matches.getFirst();</span>
 	}
 
 	/**
@@ -206,29 +211,24 @@ import org.sandbox.jdt.triggerpattern.git.UnifiedDiffFormatter;
 	 */
 	private void cleanFile(final File file) {
 		try {
-<span class="fc bfc" id="L209" title="All 2 branches covered.">			if (this.verbose) {</span>
-<span class="fc" id="L210">				System.out.println(Messages.bind(Messages.CommandLineCleaning, file.getAbsolutePath()));</span>
+<span class="fc bfc" id="L214" title="All 2 branches covered.">			if (this.verbose) {</span>
+<span class="fc" id="L215">				System.out.println(Messages.bind(Messages.CommandLineCleaning, file.getAbsolutePath()));</span>
 			}
 
-<span class="fc" id="L213">			IFile iFile = findWorkspaceFile(file);</span>
+<span class="fc" id="L218">			IFile iFile = findWorkspaceFile(file);</span>
 
-<span class="pc bpc" id="L215" title="1 of 4 branches missed.">			if (iFile == null || !iFile.exists()) {</span>
-<span class="fc" id="L216">				recordError(Messages.bind(Messages.FileOutsideWorkspace, file.getAbsolutePath()));</span>
-<span class="fc" id="L217">				return;</span>
+<span class="pc bpc" id="L220" title="1 of 4 branches missed.">			if (iFile == null || !iFile.exists()) {</span>
+<span class="fc" id="L221">				recordError(Messages.bind(Messages.FileOutsideWorkspace, file.getAbsolutePath()));</span>
+<span class="fc" id="L222">				return;</span>
 			}
 
-<span class="fc" id="L220">			ICompilationUnit cu = JavaCore.createCompilationUnitFrom(iFile);</span>
-<span class="pc bpc" id="L221" title="1 of 2 branches missed.">			if (cu == null) {</span>
-<span class="nc" id="L222">				recordError(Messages.bind(Messages.CleanupProblem, file.getAbsolutePath()));</span>
-<span class="nc" id="L223">				return;</span>
+<span class="fc" id="L225">			ICompilationUnit cu = JavaCore.createCompilationUnitFrom(iFile);</span>
+<span class="pc bpc" id="L226" title="1 of 2 branches missed.">			if (cu == null) {</span>
+<span class="nc" id="L227">				recordError(Messages.bind(Messages.CleanupProblem, file.getAbsolutePath()));</span>
+<span class="nc" id="L228">				return;</span>
 			}
 
-<span class="fc" id="L226">			this.filesProcessed++;</span>
-
-<span class="fc" id="L228">			byte[] originalContent = null;</span>
-<span class="fc bfc" id="L229" title="All 4 branches covered.">			if (this.cleanupMode == CleanupMode.CHECK || this.cleanupMode == CleanupMode.DIFF) {</span>
-<span class="fc" id="L230">				originalContent = Files.readAllBytes(file.toPath());</span>
-			}
+<span class="fc" id="L231">			this.filesProcessed++;</span>
 
 <span class="fc" id="L233">			CleanUpRefactoring refactoring = new CleanUpRefactoring();</span>
 <span class="fc" id="L234">			refactoring.addCompilationUnit(cu);</span>
@@ -263,250 +263,258 @@ import org.sandbox.jdt.triggerpattern.git.UnifiedDiffFormatter;
 			}
 
 <span class="fc bfc" id="L265" title="All 4 branches covered.">			if (this.cleanupMode == CleanupMode.CHECK || this.cleanupMode == CleanupMode.DIFF) {</span>
-				try {
-<span class="fc" id="L267">					change.perform(new NullProgressMonitor());</span>
-<span class="fc" id="L268">					cu.save(new NullProgressMonitor(), true);</span>
-<span class="fc" id="L269">					iFile.refreshLocal(1, new NullProgressMonitor());</span>
+<span class="fc" id="L266">				preview(change, iFile, file);</span>
+<span class="fc" id="L267">			} else {</span>
+<span class="fc" id="L268">				byte[] beforeContent = Files.readAllBytes(file.toPath());</span>
+<span class="fc" id="L269">				change.perform(new NullProgressMonitor());</span>
+<span class="fc" id="L270">				cu.save(new NullProgressMonitor(), true);</span>
+<span class="fc" id="L271">				iFile.refreshLocal(1, new NullProgressMonitor());</span>
 
-<span class="fc" id="L271">					byte[] newContent = Files.readAllBytes(file.toPath());</span>
-<span class="pc bpc" id="L272" title="1 of 2 branches missed.">					boolean changed = !MessageDigest.isEqual(computeHash(originalContent), computeHash(newContent));</span>
-
-<span class="pc bpc" id="L274" title="1 of 2 branches missed.">					if (changed) {</span>
-<span class="fc" id="L275">						this.changedFiles.add(file.getAbsolutePath());</span>
-<span class="fc" id="L276">						String patchPath = iFile.getProjectRelativePath().toPortableString();</span>
-
-<span class="pc bpc" id="L278" title="1 of 4 branches missed.">						if (this.cleanupMode == CleanupMode.DIFF &amp;&amp; !this.quiet) {</span>
-<span class="fc" id="L279">							printUnifiedDiff(patchPath, originalContent, newContent);</span>
-						}
-<span class="pc bpc" id="L281" title="1 of 2 branches missed.">						if (this.patchFile != null) {</span>
-<span class="fc" id="L282">							appendUnifiedDiff(patchPath, originalContent, newContent);</span>
-						}
-					}
-<span class="fc" id="L285">				} finally {</span>
-<span class="fc" id="L286">					Files.write(file.toPath(), originalContent);</span>
-<span class="fc" id="L287">					iFile.refreshLocal(1, new NullProgressMonitor());</span>
-				}
-			} else {
-<span class="fc" id="L290">				byte[] beforeContent = Files.readAllBytes(file.toPath());</span>
-<span class="fc" id="L291">				change.perform(new NullProgressMonitor());</span>
-<span class="fc" id="L292">				cu.save(new NullProgressMonitor(), true);</span>
-<span class="fc" id="L293">				iFile.refreshLocal(1, new NullProgressMonitor());</span>
-
-<span class="fc" id="L295">				byte[] afterContent = Files.readAllBytes(file.toPath());</span>
-<span class="fc bfc" id="L296" title="All 2 branches covered.">				if (!MessageDigest.isEqual(computeHash(beforeContent), computeHash(afterContent))) {</span>
-<span class="fc" id="L297">					this.changedFiles.add(file.getAbsolutePath());</span>
-<span class="pc bpc" id="L298" title="1 of 2 branches missed.">					if (this.patchFile != null) {</span>
-<span class="fc" id="L299">						String patchPath = iFile.getProjectRelativePath().toPortableString();</span>
-<span class="fc" id="L300">						appendUnifiedDiff(patchPath, beforeContent, afterContent);</span>
+<span class="fc" id="L273">				byte[] afterContent = Files.readAllBytes(file.toPath());</span>
+<span class="fc bfc" id="L274" title="All 2 branches covered.">				if (!MessageDigest.isEqual(computeHash(beforeContent), computeHash(afterContent))) {</span>
+<span class="fc" id="L275">					this.changedFiles.add(file.getAbsolutePath());</span>
+<span class="pc bpc" id="L276" title="1 of 2 branches missed.">					if (this.patchFile != null) {</span>
+<span class="fc" id="L277">						String patchPath = iFile.getProjectRelativePath().toPortableString();</span>
+<span class="fc" id="L278">						appendUnifiedDiff(patchPath, beforeContent, afterContent);</span>
 					}
 				}
 			}
-<span class="pc" id="L304">		} catch (CoreException e) {</span>
-<span class="nc" id="L305">			final String errorMessage = Messages.bind(Messages.CaughtException, &quot;CoreException&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L306">					e.getLocalizedMessage());</span>
-<span class="nc" id="L307">			Util.log(e, errorMessage);</span>
-<span class="nc" id="L308">			recordError(Messages.bind(Messages.ExceptionSkip, errorMessage));</span>
-<span class="fc" id="L309">		} catch (Exception e) {</span>
-<span class="fc" id="L310">			final String errorMessage = Messages.bind(Messages.CaughtException, e.getClass().getSimpleName(),</span>
-<span class="fc" id="L311">					e.getLocalizedMessage());</span>
-<span class="fc" id="L312">			Util.log(e, errorMessage);</span>
-<span class="fc" id="L313">			recordError(Messages.bind(Messages.ExceptionSkip, errorMessage));</span>
+<span class="pc" id="L282">		} catch (CoreException e) {</span>
+<span class="nc" id="L283">			final String errorMessage = Messages.bind(Messages.CaughtException, &quot;CoreException&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L284">					e.getLocalizedMessage());</span>
+<span class="nc" id="L285">			Util.log(e, errorMessage);</span>
+<span class="nc" id="L286">			recordError(Messages.bind(Messages.ExceptionSkip, errorMessage));</span>
+<span class="fc" id="L287">		} catch (Exception e) {</span>
+<span class="fc" id="L288">			final String errorMessage = Messages.bind(Messages.CaughtException, e.getClass().getSimpleName(),</span>
+<span class="fc" id="L289">					e.getLocalizedMessage());</span>
+<span class="fc" id="L290">			Util.log(e, errorMessage);</span>
+<span class="fc" id="L291">			recordError(Messages.bind(Messages.ExceptionSkip, errorMessage));</span>
 		}
-<span class="fc" id="L315">	}</span>
+<span class="fc" id="L293">	}</span>
+
+	private void preview(Change change, IFile input, File inputPath) throws CoreException, IOException {
+<span class="pc bpc" id="L296" title="1 of 2 branches missed.">		if (change instanceof NullChange) return;</span>
+<span class="fc bfc" id="L297" title="All 2 branches covered.">		if (change instanceof CompositeChange composite) {</span>
+<span class="fc bfc" id="L298" title="All 2 branches covered.">			for (Change child : composite.getChildren()) preview(child, input, inputPath);</span>
+<span class="fc" id="L299">			return;</span>
+		}
+		// JDT uses a CompilationUnitChange for one pass and a MultiStateCompilationUnitChange
+		// for successive edits. Both implement the full-document, in-memory LTK preview.
+<span class="pc bpc" id="L303" title="1 of 2 branches missed.">		if (!(change instanceof TextEditBasedChange text)) {</span>
+<span class="nc" id="L304">			throw new IOException(&quot;Unsupported cleanup preview: &quot; + change.getName()); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L306">		Object target = text.getModifiedElement();</span>
+<span class="pc bpc" id="L307" title="1 of 2 branches missed.">		if (target instanceof ICompilationUnit unit) target = unit.getResource();</span>
+<span class="pc bpc" id="L308" title="2 of 4 branches missed.">		if (!(target instanceof IFile file) || file.getLocation() == null) {</span>
+<span class="nc" id="L309">			throw new IOException(&quot;Cleanup preview has no local file: &quot; + change.getName()); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L311">		var monitor = new NullProgressMonitor();</span>
+<span class="fc" id="L312">		String before = text.getCurrentContent(monitor);</span>
+<span class="fc" id="L313">		String after = text.getPreviewContent(monitor);</span>
+<span class="pc bpc" id="L314" title="1 of 2 branches missed.">		if (before.equals(after)) return;</span>
+
+<span class="pc bpc" id="L316" title="1 of 2 branches missed.">		File source = file.equals(input) ? inputPath : file.getLocation().toFile();</span>
+<span class="fc" id="L317">		byte[] original = Files.readAllBytes(source.toPath());</span>
+<span class="fc" id="L318">		byte[] modified = LineDelimiterPreserver.encodePreview(original, Charset.forName(file.getCharset()), before, after);</span>
+<span class="fc" id="L319">		this.changedFiles.add(source.getAbsolutePath());</span>
+<span class="fc" id="L320">		String patchPath = file.getProjectRelativePath().toPortableString();</span>
+<span class="pc bpc" id="L321" title="1 of 4 branches missed.">		if (this.cleanupMode == CleanupMode.DIFF &amp;&amp; !this.quiet) printUnifiedDiff(patchPath, original, modified);</span>
+<span class="pc bpc" id="L322" title="1 of 2 branches missed.">		if (this.patchFile != null) appendUnifiedDiff(patchPath, original, modified);</span>
+<span class="fc" id="L323">	}</span>
 
 	File[] processCommandLine(final String[] argsArray) {
-<span class="fc" id="L318">		resetRunState();</span>
-<span class="pc bpc" id="L319" title="1 of 2 branches missed.">		if (argsArray == null) {</span>
-<span class="nc" id="L320">			return failWithNull(Messages.bind(Messages.CommandLineErrorFileDir));</span>
+<span class="fc" id="L326">		resetRunState();</span>
+<span class="pc bpc" id="L327" title="1 of 2 branches missed.">		if (argsArray == null) {</span>
+<span class="nc" id="L328">			return failWithNull(Messages.bind(Messages.CommandLineErrorFileDir));</span>
 		}
 
-<span class="fc" id="L323">		int index = 0;</span>
-<span class="fc" id="L324">		final int argCount = argsArray.length;</span>
-<span class="fc" id="L325">		int parseMode = DEFAULT_PARSE_MODE;</span>
-<span class="fc" id="L326">		int fileCounter = 0;</span>
-<span class="fc" id="L327">		File[] filesToCleanup = new File[INITIALSIZE];</span>
+<span class="fc" id="L331">		int index = 0;</span>
+<span class="fc" id="L332">		final int argCount = argsArray.length;</span>
+<span class="fc" id="L333">		int parseMode = DEFAULT_PARSE_MODE;</span>
+<span class="fc" id="L334">		int fileCounter = 0;</span>
+<span class="fc" id="L335">		File[] filesToCleanup = new File[INITIALSIZE];</span>
 
-<span class="fc bfc" id="L329" title="All 2 branches covered.">		loop: while (index &lt; argCount) {</span>
-<span class="fc" id="L330">			final String currentArg = argsArray[index++];</span>
+<span class="fc bfc" id="L337" title="All 2 branches covered.">		loop: while (index &lt; argCount) {</span>
+<span class="fc" id="L338">			final String currentArg = argsArray[index++];</span>
 
-<span class="pc bpc" id="L332" title="1 of 8 branches missed.">			switch (parseMode) {</span>
+<span class="pc bpc" id="L340" title="1 of 8 branches missed.">			switch (parseMode) {</span>
 				default:
-<span class="nc" id="L334">					break;</span>
+<span class="nc" id="L342">					break;</span>
 				case DEFAULT_PARSE_MODE:
-<span class="pc bpc" id="L336" title="1 of 2 branches missed.">					if (PDE_LAUNCH.equals(currentArg)) {</span>
-<span class="nc" id="L337">						continue loop;</span>
+<span class="pc bpc" id="L344" title="1 of 2 branches missed.">					if (PDE_LAUNCH.equals(currentArg)) {</span>
+<span class="nc" id="L345">						continue loop;</span>
 					}
-<span class="fc bfc" id="L339" title="All 4 branches covered.">					if (ARG_HELP.equals(currentArg) || &quot;--help&quot;.equals(currentArg)) { //$NON-NLS-1$</span>
-<span class="fc" id="L340">						this.helpRequested = true;</span>
-<span class="fc" id="L341">						displayHelp();</span>
-<span class="fc" id="L342">						return FILES;</span>
+<span class="fc bfc" id="L347" title="All 4 branches covered.">					if (ARG_HELP.equals(currentArg) || &quot;--help&quot;.equals(currentArg)) { //$NON-NLS-1$</span>
+<span class="fc" id="L348">						this.helpRequested = true;</span>
+<span class="fc" id="L349">						displayHelp();</span>
+<span class="fc" id="L350">						return FILES;</span>
 					}
-<span class="pc bpc" id="L344" title="1 of 4 branches missed.">					if (ARG_VERBOSE.equals(currentArg) || &quot;--verbose&quot;.equals(currentArg)) { //$NON-NLS-1$</span>
-<span class="fc" id="L345">						this.verbose = true;</span>
-<span class="fc" id="L346">						continue loop;</span>
-					}
-<span class="fc bfc" id="L348" title="All 4 branches covered.">					if (ARG_QUIET.equals(currentArg) || &quot;--quiet&quot;.equals(currentArg)) { //$NON-NLS-1$</span>
-<span class="fc" id="L349">						this.quiet = true;</span>
-<span class="fc" id="L350">						continue loop;</span>
-					}
-<span class="fc bfc" id="L352" title="All 4 branches covered.">					if (ARG_CONFIG.equals(currentArg) || &quot;--config&quot;.equals(currentArg)) { //$NON-NLS-1$</span>
-<span class="fc" id="L353">						parseMode = CONFIG_PARSE_MODE;</span>
+<span class="pc bpc" id="L352" title="1 of 4 branches missed.">					if (ARG_VERBOSE.equals(currentArg) || &quot;--verbose&quot;.equals(currentArg)) { //$NON-NLS-1$</span>
+<span class="fc" id="L353">						this.verbose = true;</span>
 <span class="fc" id="L354">						continue loop;</span>
 					}
-<span class="fc bfc" id="L356" title="All 2 branches covered.">					if (ARG_MODE.equals(currentArg)) {</span>
-<span class="fc" id="L357">						parseMode = MODE_PARSE_MODE;</span>
+<span class="fc bfc" id="L356" title="All 4 branches covered.">					if (ARG_QUIET.equals(currentArg) || &quot;--quiet&quot;.equals(currentArg)) { //$NON-NLS-1$</span>
+<span class="fc" id="L357">						this.quiet = true;</span>
 <span class="fc" id="L358">						continue loop;</span>
 					}
-<span class="fc bfc" id="L360" title="All 2 branches covered.">					if (ARG_SOURCE.equals(currentArg)) {</span>
-<span class="fc" id="L361">						parseMode = SOURCE_PARSE_MODE;</span>
+<span class="fc bfc" id="L360" title="All 4 branches covered.">					if (ARG_CONFIG.equals(currentArg) || &quot;--config&quot;.equals(currentArg)) { //$NON-NLS-1$</span>
+<span class="fc" id="L361">						parseMode = CONFIG_PARSE_MODE;</span>
 <span class="fc" id="L362">						continue loop;</span>
 					}
-<span class="fc bfc" id="L364" title="All 2 branches covered.">					if (ARG_SCOPE.equals(currentArg)) {</span>
-<span class="fc" id="L365">						parseMode = SCOPE_PARSE_MODE;</span>
+<span class="fc bfc" id="L364" title="All 2 branches covered.">					if (ARG_MODE.equals(currentArg)) {</span>
+<span class="fc" id="L365">						parseMode = MODE_PARSE_MODE;</span>
 <span class="fc" id="L366">						continue loop;</span>
 					}
-<span class="fc bfc" id="L368" title="All 2 branches covered.">					if (ARG_PATCH.equals(currentArg)) {</span>
-<span class="fc" id="L369">						parseMode = PATCH_PARSE_MODE;</span>
+<span class="fc bfc" id="L368" title="All 2 branches covered.">					if (ARG_SOURCE.equals(currentArg)) {</span>
+<span class="fc" id="L369">						parseMode = SOURCE_PARSE_MODE;</span>
 <span class="fc" id="L370">						continue loop;</span>
 					}
-<span class="fc bfc" id="L372" title="All 2 branches covered.">					if (ARG_REPORT.equals(currentArg)) {</span>
-<span class="fc" id="L373">						parseMode = REPORT_PARSE_MODE;</span>
+<span class="fc bfc" id="L372" title="All 2 branches covered.">					if (ARG_SCOPE.equals(currentArg)) {</span>
+<span class="fc" id="L373">						parseMode = SCOPE_PARSE_MODE;</span>
 <span class="fc" id="L374">						continue loop;</span>
 					}
-<span class="pc bpc" id="L376" title="1 of 2 branches missed.">					if (currentArg.startsWith(&quot;-&quot;)) { //$NON-NLS-1$</span>
-<span class="nc" id="L377">						return failWithEmpty(&quot;Unknown option: &quot; + currentArg); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L376" title="All 2 branches covered.">					if (ARG_PATCH.equals(currentArg)) {</span>
+<span class="fc" id="L377">						parseMode = PATCH_PARSE_MODE;</span>
+<span class="fc" id="L378">						continue loop;</span>
 					}
-<span class="fc" id="L379">					final File file = new File(currentArg);</span>
-<span class="fc bfc" id="L380" title="All 2 branches covered.">					if (file.exists()) {</span>
-<span class="fc bfc" id="L381" title="All 2 branches covered.">						if (filesToCleanup.length == fileCounter) {</span>
-<span class="fc" id="L382">							System.arraycopy(filesToCleanup, 0,</span>
-<span class="fc" id="L383">									filesToCleanup = new File[fileCounter * 2], 0, fileCounter);</span>
+<span class="fc bfc" id="L380" title="All 2 branches covered.">					if (ARG_REPORT.equals(currentArg)) {</span>
+<span class="fc" id="L381">						parseMode = REPORT_PARSE_MODE;</span>
+<span class="fc" id="L382">						continue loop;</span>
+					}
+<span class="pc bpc" id="L384" title="1 of 2 branches missed.">					if (currentArg.startsWith(&quot;-&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L385">						return failWithEmpty(&quot;Unknown option: &quot; + currentArg); //$NON-NLS-1$</span>
+					}
+<span class="fc" id="L387">					final File file = new File(currentArg);</span>
+<span class="fc bfc" id="L388" title="All 2 branches covered.">					if (file.exists()) {</span>
+<span class="fc bfc" id="L389" title="All 2 branches covered.">						if (filesToCleanup.length == fileCounter) {</span>
+<span class="fc" id="L390">							System.arraycopy(filesToCleanup, 0,</span>
+<span class="fc" id="L391">									filesToCleanup = new File[fileCounter * 2], 0, fileCounter);</span>
 						}
-<span class="fc" id="L385">						filesToCleanup[fileCounter++] = file;</span>
-<span class="fc" id="L386">					} else {</span>
+<span class="fc" id="L393">						filesToCleanup[fileCounter++] = file;</span>
+<span class="fc" id="L394">					} else {</span>
 						String canonicalPath;
 						try {
-<span class="fc" id="L389">							canonicalPath = file.getCanonicalPath();</span>
-<span class="pc" id="L390">						} catch (IOException e2) {</span>
-<span class="nc" id="L391">							canonicalPath = file.getAbsolutePath();</span>
+<span class="fc" id="L397">							canonicalPath = file.getCanonicalPath();</span>
+<span class="pc" id="L398">						} catch (IOException e2) {</span>
+<span class="nc" id="L399">							canonicalPath = file.getAbsolutePath();</span>
 						}
-<span class="pc bpc" id="L393" title="1 of 2 branches missed.">						final String errorMsg = file.isAbsolute()</span>
-<span class="fc" id="L394">								? Messages.bind(Messages.CommandLineErrorFile, canonicalPath)</span>
-<span class="nc" id="L395">								: Messages.bind(Messages.CommandLineErrorFileTryFullPath, canonicalPath);</span>
-<span class="fc" id="L396">						return failWithEmpty(errorMsg);</span>
+<span class="pc bpc" id="L401" title="1 of 2 branches missed.">						final String errorMsg = file.isAbsolute()</span>
+<span class="fc" id="L402">								? Messages.bind(Messages.CommandLineErrorFile, canonicalPath)</span>
+<span class="nc" id="L403">								: Messages.bind(Messages.CommandLineErrorFileTryFullPath, canonicalPath);</span>
+<span class="fc" id="L404">						return failWithEmpty(errorMsg);</span>
 					}
 					break;
 				case CONFIG_PARSE_MODE:
-<span class="fc" id="L400">					this.configName = currentArg;</span>
-<span class="fc" id="L401">					this.options = readConfig(currentArg);</span>
-<span class="fc bfc" id="L402" title="All 2 branches covered.">					if (this.options == null) {</span>
-<span class="fc" id="L403">						System.out.println();</span>
-<span class="fc" id="L404">						displayHelp();</span>
-<span class="fc" id="L405">						return FILES;</span>
-					}
-<span class="fc" id="L407">					parseMode = DEFAULT_PARSE_MODE;</span>
-<span class="fc" id="L408">					continue loop;</span>
-				case MODE_PARSE_MODE:
-					try {
-<span class="fc" id="L411">						this.cleanupMode = CleanupMode.valueOf(currentArg.toUpperCase());</span>
-<span class="fc" id="L412">					} catch (@SuppressWarnings(&quot;unused&quot;) IllegalArgumentException e) {</span>
-<span class="fc" id="L413">						return failWithEmpty(Messages.bind(Messages.CommandLineErrorInvalidMode, currentArg));</span>
+<span class="fc" id="L408">					this.configName = currentArg;</span>
+<span class="fc" id="L409">					this.options = readConfig(currentArg);</span>
+<span class="fc bfc" id="L410" title="All 2 branches covered.">					if (this.options == null) {</span>
+<span class="fc" id="L411">						System.out.println();</span>
+<span class="fc" id="L412">						displayHelp();</span>
+<span class="fc" id="L413">						return FILES;</span>
 					}
 <span class="fc" id="L415">					parseMode = DEFAULT_PARSE_MODE;</span>
 <span class="fc" id="L416">					continue loop;</span>
-				case SOURCE_PARSE_MODE: {
-<span class="fc" id="L418">					final File sourceDir = new File(currentArg);</span>
-<span class="pc bpc" id="L419" title="1 of 2 branches missed.">					if (sourceDir.exists()) {</span>
-<span class="pc bpc" id="L420" title="1 of 2 branches missed.">						if (filesToCleanup.length == fileCounter) {</span>
-<span class="nc" id="L421">							System.arraycopy(filesToCleanup, 0,</span>
-<span class="nc" id="L422">									filesToCleanup = new File[fileCounter * 2], 0, fileCounter);</span>
-						}
-<span class="fc" id="L424">						filesToCleanup[fileCounter++] = sourceDir;</span>
-<span class="fc" id="L425">					} else {</span>
-<span class="nc" id="L426">						return failWithEmpty(Messages.bind(Messages.CommandLineErrorFile, currentArg));</span>
+				case MODE_PARSE_MODE:
+					try {
+<span class="fc" id="L419">						this.cleanupMode = CleanupMode.valueOf(currentArg.toUpperCase());</span>
+<span class="fc" id="L420">					} catch (@SuppressWarnings(&quot;unused&quot;) IllegalArgumentException e) {</span>
+<span class="fc" id="L421">						return failWithEmpty(Messages.bind(Messages.CommandLineErrorInvalidMode, currentArg));</span>
 					}
-<span class="fc" id="L428">					parseMode = DEFAULT_PARSE_MODE;</span>
-<span class="fc" id="L429">					continue loop;</span>
+<span class="fc" id="L423">					parseMode = DEFAULT_PARSE_MODE;</span>
+<span class="fc" id="L424">					continue loop;</span>
+				case SOURCE_PARSE_MODE: {
+<span class="fc" id="L426">					final File sourceDir = new File(currentArg);</span>
+<span class="pc bpc" id="L427" title="1 of 2 branches missed.">					if (sourceDir.exists()) {</span>
+<span class="pc bpc" id="L428" title="1 of 2 branches missed.">						if (filesToCleanup.length == fileCounter) {</span>
+<span class="nc" id="L429">							System.arraycopy(filesToCleanup, 0,</span>
+<span class="nc" id="L430">									filesToCleanup = new File[fileCounter * 2], 0, fileCounter);</span>
+						}
+<span class="fc" id="L432">						filesToCleanup[fileCounter++] = sourceDir;</span>
+<span class="fc" id="L433">					} else {</span>
+<span class="nc" id="L434">						return failWithEmpty(Messages.bind(Messages.CommandLineErrorFile, currentArg));</span>
+					}
+<span class="fc" id="L436">					parseMode = DEFAULT_PARSE_MODE;</span>
+<span class="fc" id="L437">					continue loop;</span>
 				}
 				case SCOPE_PARSE_MODE:
 					try {
-<span class="fc" id="L433">						this.cleanupScope = CleanupScope.valueOf(currentArg.toUpperCase());</span>
-<span class="fc" id="L434">					} catch (@SuppressWarnings(&quot;unused&quot;) IllegalArgumentException e) {</span>
-<span class="fc" id="L435">						return failWithEmpty(Messages.bind(Messages.CommandLineErrorInvalidScope, currentArg));</span>
+<span class="fc" id="L441">						this.cleanupScope = CleanupScope.valueOf(currentArg.toUpperCase());</span>
+<span class="fc" id="L442">					} catch (@SuppressWarnings(&quot;unused&quot;) IllegalArgumentException e) {</span>
+<span class="fc" id="L443">						return failWithEmpty(Messages.bind(Messages.CommandLineErrorInvalidScope, currentArg));</span>
 					}
-<span class="fc" id="L437">					parseMode = DEFAULT_PARSE_MODE;</span>
-<span class="fc" id="L438">					continue loop;</span>
-				case PATCH_PARSE_MODE:
-<span class="fc" id="L440">					this.patchFile = currentArg;</span>
-<span class="fc" id="L441">					parseMode = DEFAULT_PARSE_MODE;</span>
-<span class="fc" id="L442">					continue loop;</span>
-				case REPORT_PARSE_MODE:
-<span class="fc" id="L444">					this.reportFile = currentArg;</span>
 <span class="fc" id="L445">					parseMode = DEFAULT_PARSE_MODE;</span>
+<span class="fc" id="L446">					continue loop;</span>
+				case PATCH_PARSE_MODE:
+<span class="fc" id="L448">					this.patchFile = currentArg;</span>
+<span class="fc" id="L449">					parseMode = DEFAULT_PARSE_MODE;</span>
+<span class="fc" id="L450">					continue loop;</span>
+				case REPORT_PARSE_MODE:
+<span class="fc" id="L452">					this.reportFile = currentArg;</span>
+<span class="fc" id="L453">					parseMode = DEFAULT_PARSE_MODE;</span>
 					continue loop;
 			}
 		}
 
-<span class="fc bfc" id="L450" title="All 2 branches covered.">		if (parseMode != DEFAULT_PARSE_MODE) {</span>
-<span class="pc bpc" id="L451" title="1 of 2 branches missed.">			if (parseMode == CONFIG_PARSE_MODE) {</span>
-<span class="fc" id="L452">				return failWithNull(Messages.bind(Messages.CommandLineErrorNoConfigFile));</span>
+<span class="fc bfc" id="L458" title="All 2 branches covered.">		if (parseMode != DEFAULT_PARSE_MODE) {</span>
+<span class="pc bpc" id="L459" title="1 of 2 branches missed.">			if (parseMode == CONFIG_PARSE_MODE) {</span>
+<span class="fc" id="L460">				return failWithNull(Messages.bind(Messages.CommandLineErrorNoConfigFile));</span>
 			}
-<span class="nc" id="L454">			return failWithNull(&quot;Missing value for option &quot; + optionForParseMode(parseMode)); //$NON-NLS-1$</span>
+<span class="nc" id="L462">			return failWithNull(&quot;Missing value for option &quot; + optionForParseMode(parseMode)); //$NON-NLS-1$</span>
 		}
-<span class="fc bfc" id="L456" title="All 2 branches covered.">		if (this.options == null) {</span>
-<span class="fc" id="L457">			return failWithNull(Messages.bind(Messages.CommandLineErrorNoConfigFile));</span>
+<span class="fc bfc" id="L464" title="All 2 branches covered.">		if (this.options == null) {</span>
+<span class="fc" id="L465">			return failWithNull(Messages.bind(Messages.CommandLineErrorNoConfigFile));</span>
 		}
-<span class="fc bfc" id="L459" title="All 4 branches covered.">		if (this.quiet &amp;&amp; this.verbose) {</span>
-<span class="fc" id="L460">			return failWithNull(Messages.bind(Messages.CommandLineErrorQuietVerbose,</span>
-<span class="fc" id="L461">					new String[] { ARG_QUIET, ARG_VERBOSE }));</span>
+<span class="fc bfc" id="L467" title="All 4 branches covered.">		if (this.quiet &amp;&amp; this.verbose) {</span>
+<span class="fc" id="L468">			return failWithNull(Messages.bind(Messages.CommandLineErrorQuietVerbose,</span>
+<span class="fc" id="L469">					new String[] { ARG_QUIET, ARG_VERBOSE }));</span>
 		}
-<span class="fc bfc" id="L463" title="All 2 branches covered.">		if (fileCounter == 0) {</span>
-<span class="fc" id="L464">			return failWithNull(Messages.bind(Messages.CommandLineErrorFileDir));</span>
+<span class="fc bfc" id="L471" title="All 2 branches covered.">		if (fileCounter == 0) {</span>
+<span class="fc" id="L472">			return failWithNull(Messages.bind(Messages.CommandLineErrorFileDir));</span>
 		}
-<span class="pc bpc" id="L466" title="1 of 2 branches missed.">		if (filesToCleanup.length != fileCounter) {</span>
-<span class="nc" id="L467">			System.arraycopy(filesToCleanup, 0, filesToCleanup = new File[fileCounter], 0, fileCounter);</span>
+<span class="pc bpc" id="L474" title="1 of 2 branches missed.">		if (filesToCleanup.length != fileCounter) {</span>
+<span class="nc" id="L475">			System.arraycopy(filesToCleanup, 0, filesToCleanup = new File[fileCounter], 0, fileCounter);</span>
 		}
-<span class="fc" id="L469">		return filesToCleanup;</span>
+<span class="fc" id="L477">		return filesToCleanup;</span>
 	}
 
 	private void resetRunState() {
-<span class="fc" id="L473">		this.configName = null;</span>
-<span class="fc" id="L474">		this.options = null;</span>
-<span class="fc" id="L475">		this.quiet = false;</span>
-<span class="fc" id="L476">		this.verbose = false;</span>
-<span class="fc" id="L477">		this.helpRequested = false;</span>
-<span class="fc" id="L478">		this.cleanupMode = CleanupMode.APPLY;</span>
-<span class="fc" id="L479">		this.cleanupScope = CleanupScope.BOTH;</span>
-<span class="fc" id="L480">		this.patchFile = null;</span>
-<span class="fc" id="L481">		this.reportFile = null;</span>
-<span class="fc" id="L482">		this.changedFiles.clear();</span>
-<span class="fc" id="L483">		this.errors.clear();</span>
-<span class="fc" id="L484">		this.patchContent.reset();</span>
-<span class="fc" id="L485">		this.filesProcessed = 0;</span>
-<span class="fc" id="L486">	}</span>
+<span class="fc" id="L481">		this.configName = null;</span>
+<span class="fc" id="L482">		this.options = null;</span>
+<span class="fc" id="L483">		this.quiet = false;</span>
+<span class="fc" id="L484">		this.verbose = false;</span>
+<span class="fc" id="L485">		this.helpRequested = false;</span>
+<span class="fc" id="L486">		this.cleanupMode = CleanupMode.APPLY;</span>
+<span class="fc" id="L487">		this.cleanupScope = CleanupScope.BOTH;</span>
+<span class="fc" id="L488">		this.patchFile = null;</span>
+<span class="fc" id="L489">		this.reportFile = null;</span>
+<span class="fc" id="L490">		this.changedFiles.clear();</span>
+<span class="fc" id="L491">		this.errors.clear();</span>
+<span class="fc" id="L492">		this.patchContent.reset();</span>
+<span class="fc" id="L493">		this.filesProcessed = 0;</span>
+<span class="fc" id="L494">	}</span>
 
 	private File[] failWithEmpty(String message) {
-<span class="fc" id="L489">		recordError(message);</span>
-<span class="fc" id="L490">		System.out.println();</span>
-<span class="fc" id="L491">		displayHelp();</span>
-<span class="fc" id="L492">		return FILES;</span>
+<span class="fc" id="L497">		recordError(message);</span>
+<span class="fc" id="L498">		System.out.println();</span>
+<span class="fc" id="L499">		displayHelp();</span>
+<span class="fc" id="L500">		return FILES;</span>
 	}
 
 	private File[] failWithNull(String message) {
-<span class="fc" id="L496">		recordError(message);</span>
-<span class="fc" id="L497">		System.out.println();</span>
-<span class="fc" id="L498">		displayHelp();</span>
-<span class="fc" id="L499">		return null;</span>
+<span class="fc" id="L504">		recordError(message);</span>
+<span class="fc" id="L505">		System.out.println();</span>
+<span class="fc" id="L506">		displayHelp();</span>
+<span class="fc" id="L507">		return null;</span>
 	}
 
 	private static String optionForParseMode(int parseMode) {
-<span class="nc bnc" id="L503" title="All 6 branches missed.">		return switch (parseMode) {</span>
-<span class="nc" id="L504">			case MODE_PARSE_MODE -&gt; ARG_MODE;</span>
-<span class="nc" id="L505">			case SOURCE_PARSE_MODE -&gt; ARG_SOURCE;</span>
-<span class="nc" id="L506">			case SCOPE_PARSE_MODE -&gt; ARG_SCOPE;</span>
-<span class="nc" id="L507">			case PATCH_PARSE_MODE -&gt; ARG_PATCH;</span>
-<span class="nc" id="L508">			case REPORT_PARSE_MODE -&gt; ARG_REPORT;</span>
-<span class="nc" id="L509">			default -&gt; ARG_CONFIG;</span>
+<span class="nc bnc" id="L511" title="All 6 branches missed.">		return switch (parseMode) {</span>
+<span class="nc" id="L512">			case MODE_PARSE_MODE -&gt; ARG_MODE;</span>
+<span class="nc" id="L513">			case SOURCE_PARSE_MODE -&gt; ARG_SOURCE;</span>
+<span class="nc" id="L514">			case SCOPE_PARSE_MODE -&gt; ARG_SCOPE;</span>
+<span class="nc" id="L515">			case PATCH_PARSE_MODE -&gt; ARG_PATCH;</span>
+<span class="nc" id="L516">			case REPORT_PARSE_MODE -&gt; ARG_REPORT;</span>
+<span class="nc" id="L517">			default -&gt; ARG_CONFIG;</span>
 		};
 	}
 
@@ -515,35 +523,35 @@ import org.sandbox.jdt.triggerpattern.git.UnifiedDiffFormatter;
 	 * specified configuration file.
 	 */
 	private Map&lt;String, String&gt; readConfig(final String filename) {
-<span class="fc" id="L518">		final File configFile = new File(filename);</span>
-<span class="fc" id="L519">		try (BufferedInputStream stream = new BufferedInputStream(new FileInputStream(configFile))) {</span>
-<span class="fc" id="L520">			final Properties formatterOptions = new Properties();</span>
-<span class="fc" id="L521">			formatterOptions.load(stream);</span>
-<span class="fc" id="L522">			Map&lt;String, String&gt; optionsMap = new HashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L523" title="All 2 branches covered.">			for (String key : formatterOptions.stringPropertyNames()) {</span>
-<span class="fc" id="L524">				optionsMap.put(key, formatterOptions.getProperty(key));</span>
+<span class="fc" id="L526">		final File configFile = new File(filename);</span>
+<span class="fc" id="L527">		try (BufferedInputStream stream = new BufferedInputStream(new FileInputStream(configFile))) {</span>
+<span class="fc" id="L528">			final Properties formatterOptions = new Properties();</span>
+<span class="fc" id="L529">			formatterOptions.load(stream);</span>
+<span class="fc" id="L530">			Map&lt;String, String&gt; optionsMap = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L531" title="All 2 branches covered.">			for (String key : formatterOptions.stringPropertyNames()) {</span>
+<span class="fc" id="L532">				optionsMap.put(key, formatterOptions.getProperty(key));</span>
 			}
-<span class="fc" id="L526">			return optionsMap;</span>
-<span class="fc" id="L527">		} catch (IOException e) {</span>
+<span class="fc" id="L534">			return optionsMap;</span>
+<span class="fc" id="L535">		} catch (IOException e) {</span>
 			String canonicalPath;
 			try {
-<span class="fc" id="L530">				canonicalPath = configFile.getCanonicalPath();</span>
-<span class="pc" id="L531">			} catch (IOException e2) {</span>
-<span class="nc" id="L532">				canonicalPath = configFile.getAbsolutePath();</span>
+<span class="fc" id="L538">				canonicalPath = configFile.getCanonicalPath();</span>
+<span class="pc" id="L539">			} catch (IOException e2) {</span>
+<span class="nc" id="L540">				canonicalPath = configFile.getAbsolutePath();</span>
 			}
 			final String errorMessage;
-<span class="pc bpc" id="L535" title="2 of 4 branches missed.">			if (!configFile.exists() &amp;&amp; !configFile.isAbsolute()) {</span>
-<span class="nc" id="L536">				errorMessage = Messages.bind(Messages.ConfigFileNotFoundErrorTryFullPath, new Object[] {</span>
-<span class="nc" id="L537">						canonicalPath,</span>
-<span class="nc" id="L538">						System.getProperty(&quot;user.dir&quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L543" title="2 of 4 branches missed.">			if (!configFile.exists() &amp;&amp; !configFile.isAbsolute()) {</span>
+<span class="nc" id="L544">				errorMessage = Messages.bind(Messages.ConfigFileNotFoundErrorTryFullPath, new Object[] {</span>
+<span class="nc" id="L545">						canonicalPath,</span>
+<span class="nc" id="L546">						System.getProperty(&quot;user.dir&quot;) //$NON-NLS-1$</span>
 				});
-<span class="nc" id="L540">			} else {</span>
-<span class="fc" id="L541">				errorMessage = Messages.bind(Messages.ConfigFileReadingError, canonicalPath);</span>
+<span class="nc" id="L548">			} else {</span>
+<span class="fc" id="L549">				errorMessage = Messages.bind(Messages.ConfigFileReadingError, canonicalPath);</span>
 			}
-<span class="fc" id="L543">			Util.log(e, errorMessage);</span>
-<span class="fc" id="L544">			recordError(errorMessage);</span>
+<span class="fc" id="L551">			Util.log(e, errorMessage);</span>
+<span class="fc" id="L552">			recordError(errorMessage);</span>
 		}
-<span class="fc" id="L546">		return null;</span>
+<span class="fc" id="L554">		return null;</span>
 	}
 
 	/**
@@ -551,247 +559,247 @@ import org.sandbox.jdt.triggerpattern.git.UnifiedDiffFormatter;
 	 */
 	@Override
 	public Object start(final IApplicationContext context) throws Exception {
-<span class="fc" id="L554">		Instant startTime = Instant.now();</span>
-<span class="fc" id="L555">		final File[] filesToCleanup = processCommandLine(</span>
-<span class="fc" id="L556">				(String[]) context.getArguments().get(IApplicationContext.APPLICATION_ARGS));</span>
+<span class="fc" id="L562">		Instant startTime = Instant.now();</span>
+<span class="fc" id="L563">		final File[] filesToCleanup = processCommandLine(</span>
+<span class="fc" id="L564">				(String[]) context.getArguments().get(IApplicationContext.APPLICATION_ARGS));</span>
 
-<span class="fc bfc" id="L558" title="All 4 branches covered.">		if (filesToCleanup == null || this.helpRequested) {</span>
-<span class="fc" id="L559">			return IApplication.EXIT_OK;</span>
+<span class="fc bfc" id="L566" title="All 4 branches covered.">		if (filesToCleanup == null || this.helpRequested) {</span>
+<span class="fc" id="L567">			return IApplication.EXIT_OK;</span>
 		}
 
-<span class="fc bfc" id="L562" title="All 2 branches covered.">		if (!this.quiet) {</span>
-<span class="pc bpc" id="L563" title="1 of 2 branches missed.">			if (this.configName != null) {</span>
-<span class="fc" id="L564">				System.out.println(Messages.bind(Messages.CommandLineConfigFile, this.configName));</span>
+<span class="fc bfc" id="L570" title="All 2 branches covered.">		if (!this.quiet) {</span>
+<span class="pc bpc" id="L571" title="1 of 2 branches missed.">			if (this.configName != null) {</span>
+<span class="fc" id="L572">				System.out.println(Messages.bind(Messages.CommandLineConfigFile, this.configName));</span>
 			}
-<span class="fc" id="L566">			System.out.println(Messages.bind(Messages.CommandLineStart));</span>
-<span class="fc bfc" id="L567" title="All 2 branches covered.">			if (this.cleanupMode != CleanupMode.APPLY) {</span>
-<span class="fc" id="L568">				System.out.println(Messages.bind(Messages.CommandLineMode, this.cleanupMode.name().toLowerCase()));</span>
-			}
-		}
-
-<span class="fc bfc" id="L572" title="All 2 branches covered.">		for (final File file : filesToCleanup) {</span>
-<span class="pc bpc" id="L573" title="1 of 2 branches missed.">			if (file.isDirectory()) {</span>
-<span class="nc" id="L574">				cleanDirTree(file);</span>
-<span class="pc bpc" id="L575" title="1 of 2 branches missed.">			} else if (Util.isJavaLikeFileName(file.getPath())) {</span>
-<span class="fc" id="L576">				cleanFile(file);</span>
-<span class="fc" id="L577">			} else {</span>
-<span class="nc" id="L578">				recordError(&quot;Not a Java source file: &quot; + file.getAbsolutePath()); //$NON-NLS-1$</span>
+<span class="fc" id="L574">			System.out.println(Messages.bind(Messages.CommandLineStart));</span>
+<span class="fc bfc" id="L575" title="All 2 branches covered.">			if (this.cleanupMode != CleanupMode.APPLY) {</span>
+<span class="fc" id="L576">				System.out.println(Messages.bind(Messages.CommandLineMode, this.cleanupMode.name().toLowerCase()));</span>
 			}
 		}
 
-<span class="fc" id="L582">		Instant endTime = Instant.now();</span>
-
-<span class="fc bfc" id="L584" title="All 2 branches covered.">		if (this.patchFile != null) {</span>
-<span class="fc" id="L585">			writePatchFile();</span>
-		}
-<span class="pc bpc" id="L587" title="1 of 2 branches missed.">		if (this.reportFile != null) {</span>
-<span class="nc" id="L588">			writeJsonReport(startTime, endTime);</span>
-		}
-
-<span class="fc bfc" id="L591" title="All 2 branches covered.">		if (!this.quiet) {</span>
-<span class="fc" id="L592">			System.out.println(Messages.bind(Messages.CommandLineDone));</span>
-<span class="fc bfc" id="L593" title="All 2 branches covered.">			if (!this.changedFiles.isEmpty()) {</span>
-<span class="fc" id="L594">				System.out.println(Messages.bind(Messages.CommandLineChangedFiles,</span>
-<span class="fc" id="L595">						String.valueOf(this.changedFiles.size())));</span>
-			}
-<span class="fc bfc" id="L597" title="All 2 branches covered.">			if (!this.errors.isEmpty()) {</span>
-<span class="fc" id="L598">				System.out.println(&quot;Errors: &quot; + this.errors.size()); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L580" title="All 2 branches covered.">		for (final File file : filesToCleanup) {</span>
+<span class="pc bpc" id="L581" title="1 of 2 branches missed.">			if (file.isDirectory()) {</span>
+<span class="nc" id="L582">				cleanDirTree(file);</span>
+<span class="pc bpc" id="L583" title="1 of 2 branches missed.">			} else if (Util.isJavaLikeFileName(file.getPath())) {</span>
+<span class="fc" id="L584">				cleanFile(file);</span>
+<span class="fc" id="L585">			} else {</span>
+<span class="nc" id="L586">				recordError(&quot;Not a Java source file: &quot; + file.getAbsolutePath()); //$NON-NLS-1$</span>
 			}
 		}
 
-<span class="fc bfc" id="L602" title="All 4 branches covered.">		if (this.cleanupMode == CleanupMode.CHECK || this.cleanupMode == CleanupMode.DIFF) {</span>
-<span class="fc bfc" id="L603" title="All 2 branches covered.">			return this.changedFiles.isEmpty() ? Integer.valueOf(EXIT_OK) : Integer.valueOf(EXIT_CHANGES);</span>
+<span class="fc" id="L590">		Instant endTime = Instant.now();</span>
+
+<span class="fc bfc" id="L592" title="All 2 branches covered.">		if (this.patchFile != null) {</span>
+<span class="fc" id="L593">			writePatchFile();</span>
 		}
-<span class="fc" id="L605">		return IApplication.EXIT_OK;</span>
+<span class="pc bpc" id="L595" title="1 of 2 branches missed.">		if (this.reportFile != null) {</span>
+<span class="nc" id="L596">			writeJsonReport(startTime, endTime);</span>
+		}
+
+<span class="fc bfc" id="L599" title="All 2 branches covered.">		if (!this.quiet) {</span>
+<span class="fc" id="L600">			System.out.println(Messages.bind(Messages.CommandLineDone));</span>
+<span class="fc bfc" id="L601" title="All 2 branches covered.">			if (!this.changedFiles.isEmpty()) {</span>
+<span class="fc" id="L602">				System.out.println(Messages.bind(Messages.CommandLineChangedFiles,</span>
+<span class="fc" id="L603">						String.valueOf(this.changedFiles.size())));</span>
+			}
+<span class="fc bfc" id="L605" title="All 2 branches covered.">			if (!this.errors.isEmpty()) {</span>
+<span class="fc" id="L606">				System.out.println(&quot;Errors: &quot; + this.errors.size()); //$NON-NLS-1$</span>
+			}
+		}
+
+<span class="fc bfc" id="L610" title="All 4 branches covered.">		if (this.cleanupMode == CleanupMode.CHECK || this.cleanupMode == CleanupMode.DIFF) {</span>
+<span class="fc bfc" id="L611" title="All 2 branches covered.">			return this.changedFiles.isEmpty() ? Integer.valueOf(EXIT_OK) : Integer.valueOf(EXIT_CHANGES);</span>
+		}
+<span class="fc" id="L613">		return IApplication.EXIT_OK;</span>
 	}
 
 	boolean hasErrors() {
-<span class="fc bfc" id="L609" title="All 2 branches covered.">		return !this.errors.isEmpty();</span>
+<span class="fc bfc" id="L617" title="All 2 branches covered.">		return !this.errors.isEmpty();</span>
 	}
 
 	@Override
 	public void stop() {
 		// do nothing
-<span class="nc" id="L615">	}</span>
+<span class="nc" id="L623">	}</span>
 
 	private static void displayHelp() {
-<span class="fc" id="L618">		System.out.println(Messages.bind(Messages.CommandLineUsage));</span>
-<span class="fc" id="L619">	}</span>
+<span class="fc" id="L626">		System.out.println(Messages.bind(Messages.CommandLineUsage));</span>
+<span class="fc" id="L627">	}</span>
 
 	private void recordError(String message) {
-<span class="fc" id="L622">		this.errors.add(message);</span>
-<span class="fc" id="L623">		System.err.println(message);</span>
-<span class="fc" id="L624">	}</span>
+<span class="fc" id="L630">		this.errors.add(message);</span>
+<span class="fc" id="L631">		System.err.println(message);</span>
+<span class="fc" id="L632">	}</span>
 
 	/**
 	 * Recursively clean up the Java source code that is contained in the
 	 * directory rooted at dir.
 	 */
 	private void cleanDirTree(final File dir) {
-<span class="nc" id="L631">		final File[] files = dir.listFiles();</span>
-<span class="nc bnc" id="L632" title="All 2 branches missed.">		if (files == null) {</span>
-<span class="nc" id="L633">			recordError(&quot;Cannot read source directory: &quot; + dir.getAbsolutePath()); //$NON-NLS-1$</span>
-<span class="nc" id="L634">			return;</span>
+<span class="nc" id="L639">		final File[] files = dir.listFiles();</span>
+<span class="nc bnc" id="L640" title="All 2 branches missed.">		if (files == null) {</span>
+<span class="nc" id="L641">			recordError(&quot;Cannot read source directory: &quot; + dir.getAbsolutePath()); //$NON-NLS-1$</span>
+<span class="nc" id="L642">			return;</span>
 		}
 
-<span class="nc bnc" id="L637" title="All 2 branches missed.">		for (final File file : files) {</span>
-<span class="nc bnc" id="L638" title="All 2 branches missed.">			if (file.isDirectory()) {</span>
-<span class="nc bnc" id="L639" title="All 2 branches missed.">				if (shouldProcessDirectory(file)) {</span>
-<span class="nc" id="L640">					cleanDirTree(file);</span>
+<span class="nc bnc" id="L645" title="All 2 branches missed.">		for (final File file : files) {</span>
+<span class="nc bnc" id="L646" title="All 2 branches missed.">			if (file.isDirectory()) {</span>
+<span class="nc bnc" id="L647" title="All 2 branches missed.">				if (shouldProcessDirectory(file)) {</span>
+<span class="nc" id="L648">					cleanDirTree(file);</span>
 				}
-<span class="nc bnc" id="L642" title="All 2 branches missed.">			} else if (Util.isJavaLikeFileName(file.getPath())) {</span>
-<span class="nc" id="L643">				cleanFile(file);</span>
+<span class="nc bnc" id="L650" title="All 2 branches missed.">			} else if (Util.isJavaLikeFileName(file.getPath())) {</span>
+<span class="nc" id="L651">				cleanFile(file);</span>
 			}
 		}
-<span class="nc" id="L646">	}</span>
+<span class="nc" id="L654">	}</span>
 
 	/**
 	 * Check if a directory should be processed based on the scope setting.
 	 */
 	private boolean shouldProcessDirectory(final File dir) {
-<span class="nc bnc" id="L652" title="All 2 branches missed.">		if (this.cleanupScope == CleanupScope.BOTH) {</span>
-<span class="nc" id="L653">			return true;</span>
+<span class="nc bnc" id="L660" title="All 2 branches missed.">		if (this.cleanupScope == CleanupScope.BOTH) {</span>
+<span class="nc" id="L661">			return true;</span>
 		}
-<span class="nc" id="L655">		String name = dir.getName();</span>
-<span class="nc bnc" id="L656" title="All 2 branches missed.">		if (this.cleanupScope == CleanupScope.MAIN) {</span>
-<span class="nc bnc" id="L657" title="All 4 branches missed.">			return !&quot;test&quot;.equals(name) &amp;&amp; !&quot;tests&quot;.equals(name); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L663">		String name = dir.getName();</span>
+<span class="nc bnc" id="L664" title="All 2 branches missed.">		if (this.cleanupScope == CleanupScope.MAIN) {</span>
+<span class="nc bnc" id="L665" title="All 4 branches missed.">			return !&quot;test&quot;.equals(name) &amp;&amp; !&quot;tests&quot;.equals(name); //$NON-NLS-1$ //$NON-NLS-2$</span>
 		}
-<span class="nc bnc" id="L659" title="All 4 branches missed.">		return &quot;test&quot;.equals(name) || &quot;tests&quot;.equals(name); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L667" title="All 4 branches missed.">		return &quot;test&quot;.equals(name) || &quot;tests&quot;.equals(name); //$NON-NLS-1$ //$NON-NLS-2$</span>
 	}
 
 	private static byte[] computeHash(byte[] content) {
 		try {
-<span class="fc" id="L664">			return MessageDigest.getInstance(&quot;SHA-256&quot;).digest(content); //$NON-NLS-1$</span>
-<span class="nc" id="L665">		} catch (NoSuchAlgorithmException e) {</span>
-<span class="nc" id="L666">			throw new AssertionError(e);</span>
+<span class="fc" id="L672">			return MessageDigest.getInstance(&quot;SHA-256&quot;).digest(content); //$NON-NLS-1$</span>
+<span class="nc" id="L673">		} catch (NoSuchAlgorithmException e) {</span>
+<span class="nc" id="L674">			throw new AssertionError(e);</span>
 		}
 	}
 
 	private static void printUnifiedDiff(String filePath, byte[] original, byte[] modified) {
 		try {
-<span class="fc" id="L672">			System.out.write(UnifiedDiffFormatter.format(filePath, original, modified));</span>
-<span class="pc" id="L673">		} catch (IOException e) {</span>
-<span class="nc" id="L674">			throw new IllegalStateException(&quot;Cannot print unified diff for &quot; + filePath, e); //$NON-NLS-1$</span>
-		}
-<span class="fc" id="L676">	}</span>
-
-	private void appendUnifiedDiff(String filePath, byte[] original, byte[] modified) {
-		try {
-<span class="fc" id="L680">			this.patchContent.writeBytes(UnifiedDiffFormatter.format(filePath, original, modified));</span>
+<span class="fc" id="L680">			System.out.write(UnifiedDiffFormatter.format(filePath, original, modified));</span>
 <span class="pc" id="L681">		} catch (IOException e) {</span>
-<span class="nc" id="L682">			throw new IllegalStateException(&quot;Cannot append unified diff for &quot; + filePath, e); //$NON-NLS-1$</span>
+<span class="nc" id="L682">			throw new IllegalStateException(&quot;Cannot print unified diff for &quot; + filePath, e); //$NON-NLS-1$</span>
 		}
 <span class="fc" id="L684">	}</span>
 
-	private void writePatchFile() {
-<span class="fc" id="L687">		try (var output = Files.newOutputStream(new File(this.patchFile).toPath())) {</span>
-<span class="fc" id="L688">			this.patchContent.writeTo(output);</span>
-<span class="pc bpc" id="L689" title="1 of 2 branches missed.">			if (this.verbose) {</span>
-<span class="nc" id="L690">				System.out.println(Messages.bind(Messages.CommandLinePatchWritten, this.patchFile));</span>
-			}
-<span class="nc" id="L692">		} catch (IOException e) {</span>
-<span class="nc" id="L693">			recordError(Messages.bind(Messages.CommandLinePatchError, this.patchFile));</span>
+	private void appendUnifiedDiff(String filePath, byte[] original, byte[] modified) {
+		try {
+<span class="fc" id="L688">			this.patchContent.writeBytes(UnifiedDiffFormatter.format(filePath, original, modified));</span>
+<span class="pc" id="L689">		} catch (IOException e) {</span>
+<span class="nc" id="L690">			throw new IllegalStateException(&quot;Cannot append unified diff for &quot; + filePath, e); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L695">	}</span>
+<span class="fc" id="L692">	}</span>
+
+	private void writePatchFile() {
+<span class="fc" id="L695">		try (var output = Files.newOutputStream(new File(this.patchFile).toPath())) {</span>
+<span class="fc" id="L696">			this.patchContent.writeTo(output);</span>
+<span class="pc bpc" id="L697" title="1 of 2 branches missed.">			if (this.verbose) {</span>
+<span class="nc" id="L698">				System.out.println(Messages.bind(Messages.CommandLinePatchWritten, this.patchFile));</span>
+			}
+<span class="nc" id="L700">		} catch (IOException e) {</span>
+<span class="nc" id="L701">			recordError(Messages.bind(Messages.CommandLinePatchError, this.patchFile));</span>
+		}
+<span class="fc" id="L703">	}</span>
 
 	private void writeJsonReport(Instant startTime, Instant endTime) {
-<span class="nc" id="L698">		try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(</span>
-<span class="nc" id="L699">				Files.newOutputStream(new File(this.reportFile).toPath()), StandardCharsets.UTF_8))) {</span>
-<span class="nc" id="L700">			Map&lt;String, Object&gt; report = new LinkedHashMap&lt;&gt;();</span>
-<span class="nc" id="L701">			report.put(&quot;tool&quot;, &quot;sandbox-cleanup&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L702">			report.put(&quot;version&quot;, getToolVersion()); //$NON-NLS-1$</span>
-<span class="nc" id="L703">			report.put(&quot;mode&quot;, this.cleanupMode.name().toLowerCase()); //$NON-NLS-1$</span>
-<span class="nc" id="L704">			report.put(&quot;scope&quot;, this.cleanupScope.name().toLowerCase()); //$NON-NLS-1$</span>
-<span class="nc" id="L705">			report.put(&quot;startTime&quot;, startTime.toString()); //$NON-NLS-1$</span>
-<span class="nc" id="L706">			report.put(&quot;endTime&quot;, endTime.toString()); //$NON-NLS-1$</span>
-<span class="nc" id="L707">			report.put(&quot;durationMs&quot;, endTime.toEpochMilli() - startTime.toEpochMilli()); //$NON-NLS-1$</span>
-<span class="nc" id="L708">			report.put(&quot;filesProcessed&quot;, this.filesProcessed); //$NON-NLS-1$</span>
-<span class="nc" id="L709">			report.put(&quot;filesChanged&quot;, this.changedFiles.size()); //$NON-NLS-1$</span>
-<span class="nc" id="L710">			report.put(&quot;changedFiles&quot;, this.changedFiles); //$NON-NLS-1$</span>
-<span class="nc" id="L711">			report.put(&quot;errorCount&quot;, this.errors.size()); //$NON-NLS-1$</span>
-<span class="nc" id="L712">			report.put(&quot;errors&quot;, this.errors); //$NON-NLS-1$</span>
+<span class="nc" id="L706">		try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(</span>
+<span class="nc" id="L707">				Files.newOutputStream(new File(this.reportFile).toPath()), StandardCharsets.UTF_8))) {</span>
+<span class="nc" id="L708">			Map&lt;String, Object&gt; report = new LinkedHashMap&lt;&gt;();</span>
+<span class="nc" id="L709">			report.put(&quot;tool&quot;, &quot;sandbox-cleanup&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L710">			report.put(&quot;version&quot;, getToolVersion()); //$NON-NLS-1$</span>
+<span class="nc" id="L711">			report.put(&quot;mode&quot;, this.cleanupMode.name().toLowerCase()); //$NON-NLS-1$</span>
+<span class="nc" id="L712">			report.put(&quot;scope&quot;, this.cleanupScope.name().toLowerCase()); //$NON-NLS-1$</span>
+<span class="nc" id="L713">			report.put(&quot;startTime&quot;, startTime.toString()); //$NON-NLS-1$</span>
+<span class="nc" id="L714">			report.put(&quot;endTime&quot;, endTime.toString()); //$NON-NLS-1$</span>
+<span class="nc" id="L715">			report.put(&quot;durationMs&quot;, endTime.toEpochMilli() - startTime.toEpochMilli()); //$NON-NLS-1$</span>
+<span class="nc" id="L716">			report.put(&quot;filesProcessed&quot;, this.filesProcessed); //$NON-NLS-1$</span>
+<span class="nc" id="L717">			report.put(&quot;filesChanged&quot;, this.changedFiles.size()); //$NON-NLS-1$</span>
+<span class="nc" id="L718">			report.put(&quot;changedFiles&quot;, this.changedFiles); //$NON-NLS-1$</span>
+<span class="nc" id="L719">			report.put(&quot;errorCount&quot;, this.errors.size()); //$NON-NLS-1$</span>
+<span class="nc" id="L720">			report.put(&quot;errors&quot;, this.errors); //$NON-NLS-1$</span>
 
-<span class="nc" id="L714">			writeJsonObject(writer, report, 0);</span>
-<span class="nc" id="L715">			writer.println();</span>
+<span class="nc" id="L722">			writeJsonObject(writer, report, 0);</span>
+<span class="nc" id="L723">			writer.println();</span>
 
-<span class="nc bnc" id="L717" title="All 2 branches missed.">			if (this.verbose) {</span>
-<span class="nc" id="L718">				System.out.println(Messages.bind(Messages.CommandLineReportWritten, this.reportFile));</span>
+<span class="nc bnc" id="L725" title="All 2 branches missed.">			if (this.verbose) {</span>
+<span class="nc" id="L726">				System.out.println(Messages.bind(Messages.CommandLineReportWritten, this.reportFile));</span>
 			}
-<span class="nc" id="L720">		} catch (IOException e) {</span>
-<span class="nc" id="L721">			recordError(Messages.bind(Messages.CommandLineReportError, this.reportFile));</span>
+<span class="nc" id="L728">		} catch (IOException e) {</span>
+<span class="nc" id="L729">			recordError(Messages.bind(Messages.CommandLineReportError, this.reportFile));</span>
 		}
-<span class="nc" id="L723">	}</span>
+<span class="nc" id="L731">	}</span>
 
 	@SuppressWarnings(&quot;unchecked&quot;)
 	private static void writeJsonObject(PrintWriter writer, Map&lt;String, Object&gt; map, int indent) {
-<span class="nc" id="L727">		String pad = &quot;  &quot;.repeat(indent); //$NON-NLS-1$</span>
-<span class="nc" id="L728">		String innerPad = &quot;  &quot;.repeat(indent + 1); //$NON-NLS-1$</span>
-<span class="nc" id="L729">		writer.println(&quot;{&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L730">		int i = 0;</span>
-<span class="nc bnc" id="L731" title="All 2 branches missed.">		for (Map.Entry&lt;String, Object&gt; entry : map.entrySet()) {</span>
-<span class="nc" id="L732">			writer.print(innerPad + &quot;\&quot;&quot; + escapeJson(entry.getKey()) + &quot;\&quot;: &quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L733">			Object val = entry.getValue();</span>
-<span class="nc bnc" id="L734" title="All 2 branches missed.">			if (val instanceof String s) {</span>
-<span class="nc" id="L735">				writer.print(&quot;\&quot;&quot; + escapeJson(s) + &quot;\&quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc bnc" id="L736" title="All 4 branches missed.">			} else if (val instanceof Number || val instanceof Boolean) {</span>
-<span class="nc" id="L737">				writer.print(val);</span>
-<span class="nc bnc" id="L738" title="All 2 branches missed.">			} else if (val instanceof List&lt;?&gt; list) {</span>
-<span class="nc" id="L739">				writeJsonArray(writer, list, indent + 1);</span>
-<span class="nc bnc" id="L740" title="All 2 branches missed.">			} else if (val instanceof Map&lt;?, ?&gt; m) {</span>
-<span class="nc" id="L741">				writeJsonObject(writer, (Map&lt;String, Object&gt;) m, indent + 1);</span>
-<span class="nc" id="L742">			} else {</span>
-<span class="nc" id="L743">				writer.print(&quot;null&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L735">		String pad = &quot;  &quot;.repeat(indent); //$NON-NLS-1$</span>
+<span class="nc" id="L736">		String innerPad = &quot;  &quot;.repeat(indent + 1); //$NON-NLS-1$</span>
+<span class="nc" id="L737">		writer.println(&quot;{&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L738">		int i = 0;</span>
+<span class="nc bnc" id="L739" title="All 2 branches missed.">		for (Map.Entry&lt;String, Object&gt; entry : map.entrySet()) {</span>
+<span class="nc" id="L740">			writer.print(innerPad + &quot;\&quot;&quot; + escapeJson(entry.getKey()) + &quot;\&quot;: &quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L741">			Object val = entry.getValue();</span>
+<span class="nc bnc" id="L742" title="All 2 branches missed.">			if (val instanceof String s) {</span>
+<span class="nc" id="L743">				writer.print(&quot;\&quot;&quot; + escapeJson(s) + &quot;\&quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L744" title="All 4 branches missed.">			} else if (val instanceof Number || val instanceof Boolean) {</span>
+<span class="nc" id="L745">				writer.print(val);</span>
+<span class="nc bnc" id="L746" title="All 2 branches missed.">			} else if (val instanceof List&lt;?&gt; list) {</span>
+<span class="nc" id="L747">				writeJsonArray(writer, list, indent + 1);</span>
+<span class="nc bnc" id="L748" title="All 2 branches missed.">			} else if (val instanceof Map&lt;?, ?&gt; m) {</span>
+<span class="nc" id="L749">				writeJsonObject(writer, (Map&lt;String, Object&gt;) m, indent + 1);</span>
+<span class="nc" id="L750">			} else {</span>
+<span class="nc" id="L751">				writer.print(&quot;null&quot;); //$NON-NLS-1$</span>
 			}
-<span class="nc bnc" id="L745" title="All 2 branches missed.">			if (i++ &lt; map.size() - 1) {</span>
-<span class="nc" id="L746">				writer.print(&quot;,&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L753" title="All 2 branches missed.">			if (i++ &lt; map.size() - 1) {</span>
+<span class="nc" id="L754">				writer.print(&quot;,&quot;); //$NON-NLS-1$</span>
 			}
-<span class="nc" id="L748">			writer.println();</span>
+<span class="nc" id="L756">			writer.println();</span>
 		}
-<span class="nc" id="L750">		writer.print(pad + &quot;}&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L751">	}</span>
+<span class="nc" id="L758">		writer.print(pad + &quot;}&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L759">	}</span>
 
 	private static void writeJsonArray(PrintWriter writer, List&lt;?&gt; list, int indent) {
-<span class="nc bnc" id="L754" title="All 2 branches missed.">		if (list.isEmpty()) {</span>
-<span class="nc" id="L755">			writer.print(&quot;[]&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L756">			return;</span>
+<span class="nc bnc" id="L762" title="All 2 branches missed.">		if (list.isEmpty()) {</span>
+<span class="nc" id="L763">			writer.print(&quot;[]&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L764">			return;</span>
 		}
-<span class="nc" id="L758">		String innerPad = &quot;  &quot;.repeat(indent + 1); //$NON-NLS-1$</span>
-<span class="nc" id="L759">		String pad = &quot;  &quot;.repeat(indent); //$NON-NLS-1$</span>
-<span class="nc" id="L760">		writer.println(&quot;[&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L761" title="All 2 branches missed.">		for (int i = 0; i &lt; list.size(); i++) {</span>
-<span class="nc" id="L762">			Object item = list.get(i);</span>
-<span class="nc bnc" id="L763" title="All 2 branches missed.">			if (item instanceof String s) {</span>
-<span class="nc" id="L764">				writer.print(innerPad + &quot;\&quot;&quot; + escapeJson(s) + &quot;\&quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L765">			} else {</span>
-<span class="nc" id="L766">				writer.print(innerPad + item);</span>
+<span class="nc" id="L766">		String innerPad = &quot;  &quot;.repeat(indent + 1); //$NON-NLS-1$</span>
+<span class="nc" id="L767">		String pad = &quot;  &quot;.repeat(indent); //$NON-NLS-1$</span>
+<span class="nc" id="L768">		writer.println(&quot;[&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L769" title="All 2 branches missed.">		for (int i = 0; i &lt; list.size(); i++) {</span>
+<span class="nc" id="L770">			Object item = list.get(i);</span>
+<span class="nc bnc" id="L771" title="All 2 branches missed.">			if (item instanceof String s) {</span>
+<span class="nc" id="L772">				writer.print(innerPad + &quot;\&quot;&quot; + escapeJson(s) + &quot;\&quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L773">			} else {</span>
+<span class="nc" id="L774">				writer.print(innerPad + item);</span>
 			}
-<span class="nc bnc" id="L768" title="All 2 branches missed.">			if (i &lt; list.size() - 1) {</span>
-<span class="nc" id="L769">				writer.print(&quot;,&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L776" title="All 2 branches missed.">			if (i &lt; list.size() - 1) {</span>
+<span class="nc" id="L777">				writer.print(&quot;,&quot;); //$NON-NLS-1$</span>
 			}
-<span class="nc" id="L771">			writer.println();</span>
+<span class="nc" id="L779">			writer.println();</span>
 		}
-<span class="nc" id="L773">		writer.print(pad + &quot;]&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L774">	}</span>
+<span class="nc" id="L781">		writer.print(pad + &quot;]&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L782">	}</span>
 
 	private static String escapeJson(String s) {
-<span class="nc" id="L777">		return s.replace(&quot;\\&quot;, &quot;\\\\&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L778">				.replace(&quot;\&quot;&quot;, &quot;\\\&quot;&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L779">				.replace(&quot;\n&quot;, &quot;\\n&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L780">				.replace(&quot;\r&quot;, &quot;\\r&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L781">				.replace(&quot;\t&quot;, &quot;\\t&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L785">		return s.replace(&quot;\\&quot;, &quot;\\\\&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L786">				.replace(&quot;\&quot;&quot;, &quot;\\\&quot;&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L787">				.replace(&quot;\n&quot;, &quot;\\n&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L788">				.replace(&quot;\r&quot;, &quot;\\r&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L789">				.replace(&quot;\t&quot;, &quot;\\t&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
 	}
 
 	static String getToolVersion() {
-<span class="fc" id="L785">		String configuredVersion = System.getProperty(&quot;sandbox.cleanup.version&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L786" title="1 of 4 branches missed.">		if (configuredVersion != null &amp;&amp; !configuredVersion.isBlank()) {</span>
-<span class="fc" id="L787">			return configuredVersion;</span>
+<span class="fc" id="L793">		String configuredVersion = System.getProperty(&quot;sandbox.cleanup.version&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L794" title="1 of 4 branches missed.">		if (configuredVersion != null &amp;&amp; !configuredVersion.isBlank()) {</span>
+<span class="fc" id="L795">			return configuredVersion;</span>
 		}
-<span class="fc" id="L789">		Bundle bundle = FrameworkUtil.getBundle(CodeCleanupApplication.class);</span>
-<span class="pc bpc" id="L790" title="1 of 2 branches missed.">		if (bundle == null) {</span>
-<span class="nc" id="L791">			return &quot;unknown&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L797">		Bundle bundle = FrameworkUtil.getBundle(CodeCleanupApplication.class);</span>
+<span class="pc bpc" id="L798" title="1 of 2 branches missed.">		if (bundle == null) {</span>
+<span class="nc" id="L799">			return &quot;unknown&quot;; //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L793">		Version version = bundle.getVersion();</span>
-<span class="fc" id="L794">		return &quot;%d.%d.%d&quot;.formatted(version.getMajor(), version.getMinor(), version.getMicro()); //$NON-NLS-1$</span>
+<span class="fc" id="L801">		Version version = bundle.getVersion();</span>
+<span class="fc" id="L802">		return &quot;%d.%d.%d&quot;.formatted(version.getMajor(), version.getMinor(), version.getMicro()); //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
