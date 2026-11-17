@@ -80,7 +80,7 @@ class ReplacedConstructorImportTest {
 			assertNotNull(fix);
 			var change= fix.createChange(null);
 			String preview= change.getPreviewContent(null);
-			assertEquals(retained, preview.contains(importLine), preview);
+			assertEquals(retained || "PrintWriter".equals(type), preview.contains(importLine), preview); //$NON-NLS-1$
 			change.initializeValidationData(null);
 			var undo= performAndCheck(change, null, unit);
 			assertNotNull(undo);

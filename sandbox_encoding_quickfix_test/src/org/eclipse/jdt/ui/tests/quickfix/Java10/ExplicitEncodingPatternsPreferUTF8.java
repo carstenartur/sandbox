@@ -680,23 +680,22 @@ public class E1 {
 				"""
 package test1;
 
+import java.io.PrintWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
-import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
 
 public class E1 {
     void method(String filename) {
         try {
-            Writer w=new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8));
+            Writer w=new PrintWriter(new FileOutputStream(filename), false, StandardCharsets.UTF_8);
             } catch (FileNotFoundException e) {
             e.printStackTrace();
             }
        }
 }
-						"""),
+						""", false),
 		STRINGGETBYTES(
 """
 package test1;
