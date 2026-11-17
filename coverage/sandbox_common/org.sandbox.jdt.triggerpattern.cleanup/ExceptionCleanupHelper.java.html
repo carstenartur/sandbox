@@ -136,7 +136,7 @@ public class ExceptionCleanupHelper {
 						// Model the inner removal before examining an enclosing catch.
 <span class="fc" id="L137">						candidateRewrite.remove(clause, null);</span>
 <span class="fc" id="L138">						handled = true;</span>
-<span class="pc bpc" id="L139" title="1 of 4 branches missed.">					} else if (exception.isAssignmentCompatible(binding) || binding.isAssignmentCompatible(exception)) {</span>
+<span class="fc bfc" id="L139" title="All 4 branches covered.">					} else if (exception.isAssignmentCompatible(binding) || binding.isAssignmentCompatible(exception)) {</span>
 						// Other handlers could become unreachable or change a precise rethrow.
 <span class="fc" id="L141">						return false;</span>
 					}
@@ -160,7 +160,7 @@ public class ExceptionCleanupHelper {
 <span class="pc bpc" id="L160" title="1 of 2 branches missed.">				for (Object type : types) {</span>
 <span class="fc" id="L161">					ITypeBinding binding = ((Type) type).resolveBinding();</span>
 <span class="pc bpc" id="L162" title="2 of 6 branches missed.">					if (binding == null || binding.isRecovered() || exception.isAssignmentCompatible(binding)</span>
-<span class="pc bpc" id="L163" title="1 of 2 branches missed.">							|| binding.isAssignmentCompatible(exception)) {</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">							|| binding.isAssignmentCompatible(exception)) {</span>
 <span class="fc" id="L164">						return false;</span>
 					}
 				}

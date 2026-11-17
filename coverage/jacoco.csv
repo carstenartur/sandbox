@@ -17,8 +17,8 @@ sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.cleanup,EncodingS
 sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.cleanup,AbstractPatternCleanupPlugin,577,314,56,34,127,72,54,21,17,13
 sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.cleanup,AbstractPatternCleanupPlugin.PluginRewriteOperation,36,9,0,0,9,4,1,1,1,1
 sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.cleanup,DslPluginRegistry,47,60,8,6,10,13,9,3,2,3
-sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.cleanup,CheckedExceptionAnalysis,69,664,43,115,6,104,43,67,4,27
-sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.cleanup,ExceptionCleanupHelper,22,902,40,154,6,172,40,77,0,20
+sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.cleanup,CheckedExceptionAnalysis,63,670,41,117,6,104,42,68,4,27
+sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.cleanup,ExceptionCleanupHelper,22,902,38,156,6,172,38,79,0,20
 sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.cleanup,CheckedExceptionMigration.Plan.new ASTVisitor() {...},75,318,14,30,10,49,14,11,0,3
 sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.cleanup,AbstractPatternCleanupPlugin.AnnotationReplacementInfo,17,20,7,3,1,5,5,3,1,2
 sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.cleanup,HintFileFixCore,212,285,48,48,60,67,35,23,4,6
@@ -371,7 +371,7 @@ sandbox_coverage/sandbox_encoding_quickfix,org.sandbox.jdt.internal.corext.fix.h
 sandbox_coverage/sandbox_encoding_quickfix,org.sandbox.jdt.internal.corext.fix.helper,FilesReadStringExplicitEncoding,12,165,6,10,5,39,6,9,1,6
 sandbox_coverage/sandbox_encoding_quickfix,org.sandbox.jdt.internal.corext.fix.helper,ChannelsNewReaderExplicitEncoding,10,164,5,13,4,37,5,11,1,6
 sandbox_coverage/sandbox_encoding_quickfix,org.sandbox.jdt.internal.corext.fix.helper,AbstractExplicitEncoding,144,498,43,59,32,122,35,39,2,21
-sandbox_coverage/sandbox_encoding_quickfix,org.sandbox.jdt.internal.corext.fix.helper,PrintWriterExplicitEncoding,8,136,2,2,3,28,2,7,1,6
+sandbox_coverage/sandbox_encoding_quickfix,org.sandbox.jdt.internal.corext.fix.helper,PrintWriterExplicitEncoding,18,426,24,64,8,73,24,32,1,11
 sandbox_coverage/sandbox_encoding_quickfix,org.sandbox.jdt.internal.corext.fix.helper,FilesNewBufferedWriterExplicitEncoding,20,167,7,9,6,40,7,8,1,6
 sandbox_coverage/sandbox_encoding_quickfix,org.sandbox.jdt.internal.corext.fix.helper,ChannelsNewWriterExplicitEncoding,10,166,5,13,4,36,5,11,1,6
 sandbox_coverage/sandbox_encoding_quickfix,org.sandbox.jdt.internal.corext.fix.helper,EncodingDslRemovedCatchImportCleanup.new ASTVisitor() {...},0,34,0,6,0,4,0,5,0,2
@@ -384,6 +384,7 @@ sandbox_coverage/sandbox_encoding_quickfix,org.sandbox.jdt.internal.corext.fix.h
 sandbox_coverage/sandbox_encoding_quickfix,org.sandbox.jdt.internal.corext.fix.helper,FileWriterExplicitEncoding,8,113,2,0,3,23,2,6,1,6
 sandbox_coverage/sandbox_encoding_quickfix,org.sandbox.jdt.internal.corext.fix.helper,PrintStreamExplicitEncoding,21,245,12,36,8,52,10,21,1,6
 sandbox_coverage/sandbox_encoding_quickfix,org.sandbox.jdt.internal.corext.fix.helper,FilesNewBufferedReaderExplicitEncoding,10,161,5,9,4,38,5,9,1,6
+sandbox_coverage/sandbox_encoding_quickfix,org.sandbox.jdt.internal.corext.fix.helper,PrintWriterExplicitEncoding.ConstructorData,0,12,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox_encoding_quickfix,org.sandbox.jdt.internal.corext.fix.helper,OutputStreamWriterExplicitEncoding,8,155,3,10,3,37,3,11,1,6
 sandbox_coverage/sandbox_encoding_quickfix,org.sandbox.jdt.internal.corext.fix.helper,EncodingCleanUpFix,0,6,0,0,0,2,0,1,0,1
 sandbox_coverage/sandbox_encoding_quickfix,org.sandbox.jdt.internal.corext.fix.helper,ChangeBehavior,241,843,86,142,44,154,74,68,4,24

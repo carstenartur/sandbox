@@ -84,7 +84,7 @@ final class CheckedExceptionAnalysis extends AbstractExceptionAnalyzer {
 <span class="pc bpc" id="L84" title="1 of 2 branches missed.">        if (Arrays.stream(declared).anyMatch(ITypeBinding::isRecovered)</span>
 <span class="pc bpc" id="L85" title="1 of 2 branches missed.">                || Arrays.stream(declared).noneMatch(removed::isAssignmentCompatible)) return false;</span>
 <span class="fc" id="L86">        List&lt;ITypeBinding&gt; affected= Arrays.stream(declared)</span>
-<span class="pc bpc" id="L87" title="3 of 4 branches missed.">                .filter(type -&gt; removed.isAssignmentCompatible(type) || type.isAssignmentCompatible(removed)).toList();</span>
+<span class="pc bpc" id="L87" title="1 of 4 branches missed.">                .filter(type -&gt; removed.isAssignmentCompatible(type) || type.isAssignmentCompatible(removed)).toList();</span>
 <span class="fc bfc" id="L88" title="All 2 branches covered.">        ASTRewrite rewrite= previousRewrite == null ? ASTRewrite.create(method.getAST()) : previousRewrite;</span>
 <span class="fc" id="L89">        Set&lt;ASTNode&gt; earlierCalls= Collections.newSetFromMap(new IdentityHashMap&lt;&gt;());</span>
 <span class="fc" id="L90">        convertedCalls(rewrite).values().forEach(earlierCalls::addAll);</span>
