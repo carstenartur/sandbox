@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 6: The import org.eclipse.jdt.internal.ui.text.javadoc cannot be resolved",
-    "verifiedAt": "2026-11-16T02:22:11.648181401Z",
+    "verifiedAt": "2026-11-17T03:02:26.792073047Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0

@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 1: The type SubstitutionTextReader must implement the inherited abstract method Reader.close()",
-    "verifiedAt": "2026-11-16T02:22:21.255174421Z",
+    "verifiedAt": "2026-11-17T03:02:35.133402676Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
