@@ -365,6 +365,7 @@ jobs:
           cp -a sandbox_updatesite/target/repository/. "$destination/"
           cp target/distribution-verification/verification.json "$destination/distribution-verification.json"
           cp target/distribution-verification/verification.md "$destination/distribution-verification.md"
+          cp .github/pages/p2-composite.index gh-pages-release/releases/p2.index
 
           cd gh-pages-release/releases
           mapfile -t versions < <(find . -mindepth 1 -maxdepth 1 -type d -printf '%f\n' \

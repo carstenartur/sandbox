@@ -151,6 +151,7 @@ jobs:
           cp .github/pages/index.html gh-pages-content/index.html
 
           mkdir -p gh-pages-content/snapshots
+          cp .github/pages/p2-composite.index gh-pages-content/snapshots/p2.index
           timestamp="$(date +%s)000"
           cat > gh-pages-content/snapshots/compositeContent.xml << EOF
           <?xml version='1.0' encoding='UTF-8'?>
@@ -202,8 +203,9 @@ jobs:
           mkdir -p snapshots/latest
           cp -a "$staged_site/snapshots/latest/." snapshots/latest/
           cp "$staged_site/snapshots/compositeContent.xml" "$staged_site/snapshots/compositeArtifacts.xml" snapshots/
+          cp "$staged_site/snapshots/p2.index" snapshots/p2.index
           cp "$staged_site/index.html" index.html
-          git add -- snapshots/latest snapshots/compositeContent.xml snapshots/compositeArtifacts.xml index.html
+          git add -- snapshots/latest snapshots/compositeContent.xml snapshots/compositeArtifacts.xml snapshots/p2.index index.html
           if ! git diff --cached --quiet; then
             git -c user.name='github-actions[bot]' -c user.email='github-actions[bot]@users.noreply.github.com' \
               commit -m "Deploy verified snapshot for $VALIDATED_SHA"
