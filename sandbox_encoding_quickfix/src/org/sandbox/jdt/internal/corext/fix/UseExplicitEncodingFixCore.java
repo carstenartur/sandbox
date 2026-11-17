@@ -94,7 +94,7 @@ public enum UseExplicitEncodingFixCore {
 	 * {@code encoding.sandbox-hint} that cover string-based charset argument
 	 * replacement and zero-argument/missing-encoding patterns.
 	 * Tier 3 patterns (structural rewrites like FileReader→InputStreamReader,
-	 * FileWriter→OutputStreamWriter, PrintWriter→BufferedWriter) remain
+	 * FileWriter→OutputStreamWriter, file-backed PrintWriter constructors) remain
 	 * imperative-only ({@code false}) because they require complex AST
 	 * restructuring that the DSL cannot express.</p>
 	 *

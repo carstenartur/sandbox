@@ -6,7 +6,7 @@
 
 `sandbox-maven-plugin` integrates the Sandbox cleanup CLI into Maven builds. It provides goals for applying Eclipse JDT cleanups, checking for required cleanups, and generating diffs — all without requiring an Eclipse IDE installation.
 
-The plugin runs the `sandbox-cleanup-cli` distribution with Java 25. For release 1.3.10, select an Eclipse workspace that already contains your project. [Project sources and workspace](../docs/maven-plugin.md#project-sources-and-workspace)
+The plugin runs the `sandbox-cleanup-cli` distribution with Java 25. Starting with 1.3.11, it creates a temporary workspace from the Maven project by default. [Project sources and workspace](../docs/maven-plugin.md#project-sources-and-workspace)
 
 ## Goals
 
