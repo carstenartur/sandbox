@@ -1,0 +1,150 @@
+{
+  "schemaVersion": 3,
+  "result": "PASS",
+  "platform": "linux/gtk/x86_64",
+  "eclipseRelease": "2026-09",
+  "orbitRelease": "2026-09",
+  "bouncyCastleVersion": "1.85 family (bcprov 1.85.2)",
+  "publishedFeatureCount": 18,
+  "p2MetadataUnits": 76,
+  "p2ArtifactKeys": 57,
+  "p2ArtifactFilesChecked": 57,
+  "p2ChecksumsChecked": 57,
+  "productPluginCount": 370,
+  "productSingletonBundleCount": 211,
+  "productRoot": "/home/runner/work/sandbox/sandbox/sandbox_product/target/products/sandbox.bundle.producteclipse/linux/gtk/x86_64",
+  "repository": {
+    "metadataUnits": 76,
+    "artifactKeys": 57,
+    "artifactFilesChecked": 57,
+    "checksumsChecked": 57,
+    "publishedFeatures": [
+{
+  "id": "sandbox_feature",
+  "iu": "sandbox_feature.feature.group",
+  "version": "1.3.10",
+  "artifactSize": 1941,
+  "artifactSha256": "7415e2ff16ed6e448490b085a3df080489017ea7070962aecc967a5ab3e7fcc9"
+},
+{
+  "id": "sandbox_encoding_quickfix_feature",
+  "iu": "sandbox_encoding_quickfix_feature.feature.group",
+  "version": "1.3.10",
+  "artifactSize": 7872,
+  "artifactSha256": "73fab2cbee1e28589b8c214b3bdac1cae7f6841d53a930af56ab6b46c0794155"
+},
+{
+  "id": "sandbox_platform_helper_feature",
+  "iu": "sandbox_platform_helper_feature.feature.group",
+  "version": "1.3.10",
+  "artifactSize": 8110,
+  "artifactSha256": "1b988d0df3dfd701a912351b4aedbdb95ed0f7353cb52151e654c0eb39275d6d"
+},
+{
+  "id": "sandbox_functional_converter_feature",
+  "iu": "sandbox_functional_converter_feature.feature.group",
+  "version": "1.3.10",
+  "artifactSize": 7987,
+  "artifactSha256": "98e03cd6c975e69c91663e267bf6b7674cd6199abe8e6a13ef1d7665c1f5b88b"
+},
+{
+  "id": "sandbox_tools_feature",
+  "iu": "sandbox_tools_feature.feature.group",
+  "version": "1.3.10",
+  "artifactSize": 7809,
+  "artifactSha256": "222cd0f465c5575edf0d466e67496d0bc71e7c308af6115111b3bb694a4ef864"
+},
+{
+  "id": "sandbox_triggerpattern_feature",
+  "iu": "sandbox_triggerpattern_feature.feature.group",
+  "version": "1.3.10",
+  "artifactSize": 7944,
+  "artifactSha256": "74d0dccc8c8cb331310827773c6e0deec4547c8aa433d1c5c61d4c420a7a3ed3"
+},
+{
+  "id": "sandbox_xml_cleanup_feature",
+  "iu": "sandbox_xml_cleanup_feature.feature.group",
+  "version": "1.3.10",
+  "artifactSize": 8085,
+  "artifactSha256": "74df9a647777afe46d0515bc36d3c84dd701069a3e7f38900e5dba5f18e12010"
+},
+{
+  "id": "sandbox_jface_cleanup_feature",
+  "iu": "sandbox_jface_cleanup_feature.feature.group",
+  "version": "1.3.10",
+  "artifactSize": 7851,
+  "artifactSha256": "11ebd2fe90cfdff06e3e96cadb6bce14e79019b5641f0a54355f537b713100e9"
+},
+{
+  "id": "sandbox_junit_cleanup_feature",
+  "iu": "sandbox_junit_cleanup_feature.feature.group",
+  "version": "1.3.10",
+  "artifactSize": 7865,
+  "artifactSha256": "7d7e663622d31fbf6277929489bddd3ff5b48f1f8f99505cfe2f655ec53c242f"
+},
+{
+  "id": "sandbox_method_reuse_feature",
+  "iu": "sandbox_method_reuse_feature.feature.group",
+  "version": "1.3.10",
+  "artifactSize": 2678,
+  "artifactSha256": "7ace9ba68aa97a94aabc62fa68cbb1e9d5c8fc4e5ba0612d1be85c36cefac153"
+},
+{
+  "id": "sandbox_usage_view_feature",
+  "iu": "sandbox_usage_view_feature.feature.group",
+  "version": "1.3.10",
+  "artifactSize": 2824,
+  "artifactSha256": "48e5d9dea17cde240dbd339eb890becdc3f60e5c65ec381035c857a43c3eab0f"
+},
+{
+  "id": "sandbox_cleanup_application_feature",
+  "iu": "sandbox_cleanup_application_feature.feature.group",
+  "version": "1.3.10",
+  "artifactSize": 7860,
+  "artifactSha256": "0bb39e8ed161c0d4cbe4fb53285f45b0a2dafb335d9e8132762d9143cc7010bd"
+},
+{
+  "id": "sandbox_css_cleanup_feature",
+  "iu": "sandbox_css_cleanup_feature.feature.group",
+  "version": "1.3.10",
+  "artifactSize": 2702,
+  "artifactSha256": "e2d60f4ab1dbb2ff37c12cbb3abbc5f3084d5f28933e8f954be0ef3cf22f84c7"
+},
+{
+  "id": "sandbox_extra_search_feature",
+  "iu": "sandbox_extra_search_feature.feature.group",
+  "version": "1.3.10",
+  "artifactSize": 8362,
+  "artifactSha256": "f69871d4cf76f2dc84672efb5c5be5be9595883f59d9f0efc69e6965e730f5f7"
+},
+{
+  "id": "sandbox_int_to_enum_feature",
+  "iu": "sandbox_int_to_enum_feature.feature.group",
+  "version": "1.3.10",
+  "artifactSize": 12076,
+  "artifactSha256": "48d624267a4233f0c6c217436ce1c3736861e94c8f2f448306cd679cc2b9a055"
+},
+{
+  "id": "sandbox_container_cleanup_feature",
+  "iu": "sandbox_container_cleanup_feature.feature.group",
+  "version": "1.3.10",
+  "artifactSize": 1404,
+  "artifactSha256": "b282bb892a92bdcfb03d2779ce0ac739b92c9471141ed7211844ef653d649556"
+},
+{
+  "id": "sandbox_use_general_type_feature",
+  "iu": "sandbox_use_general_type_feature.feature.group",
+  "version": "1.3.10",
+  "artifactSize": 8137,
+  "artifactSha256": "0a5bb23a3188c933558af9b0f0e87f064164adbbbb55c29f40828ef60117d413"
+},
+{
+  "id": "sandbox_math_cleanup_feature",
+  "iu": "sandbox_math_cleanup_feature.feature.group",
+  "version": "1.3.10",
+  "artifactSize": 6574,
+  "artifactSha256": "00c1bd00c7fe65f5b84bd9fcd34d595dee79a0786e0a98d1395c80242485fd87"
+}
+    ]
+  }
+}
