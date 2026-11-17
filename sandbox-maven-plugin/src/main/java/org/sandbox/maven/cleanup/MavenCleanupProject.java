@@ -21,7 +21,13 @@ import org.codehaus.plexus.util.xml.Xpp3Dom;
 record MavenCleanupProject(Path directory, List<Path> sources, String cliScope) {
 	private record Source(Path path, boolean test) {}
 
-	static MavenCleanupProject prepare(MavenProject project, Path selection, String scope, Path run)
+	@FunctionalInterface
+	interface ClasspathResolver {
+		MavenProject resolve(boolean includeTests) throws IOException;
+	}
+
+	static MavenCleanupProject prepare(MavenProject project, Path selection, String scope, Path run,
+			boolean emitsPatch, ClasspathResolver resolver)
 			throws IOException, DependencyResolutionRequiredException {
 		Path base = project.getBasedir().toPath().toRealPath();
 		Path selected = selection.toRealPath();
@@ -29,7 +35,7 @@ record MavenCleanupProject(Path directory, List<Path> sources, String cliScope) 
 		if (!List.of("main", "test", "both").contains(requested)) {
 			throw new IOException("Unknown cleanup scope: " + scope);
 		}
-		if (Files.isRegularFile(base.resolve(".project"))) {
+		if (MavenEclipseMetadata.canImportDirectly(base)) {
 			return new MavenCleanupProject(base, List.of(selected), requested);
 		}
 
@@ -38,19 +44,46 @@ record MavenCleanupProject(Path directory, List<Path> sources, String cliScope) 
 		addRoots(roots, project.getTestCompileSourceRoots(), true, base);
 		List<Path> inputs = new ArrayList<>();
 		boolean matched = selected.equals(base);
+		boolean includeTests = false;
 		for (Source root : roots) {
 			if (!selected.equals(base) && !selected.startsWith(root.path()) && !root.path().startsWith(selected)) continue;
 			matched = true;
 			if (requested.equals(root.test() ? "main" : "test")) continue;
 			inputs.add(selected.startsWith(root.path()) ? selected : root.path());
+			includeTests |= root.test();
 		}
 		if (!matched) throw new IOException("Requested source is outside the Maven source roots: " + selected);
+		Path patchBase = patchBase(base, inputs, emitsPatch);
 		if (inputs.isEmpty()) inputs.add(Files.createDirectory(run.resolve("empty-input")));
+		if (!includeTests) roots.removeIf(Source::test);
 
 		Path descriptor = Files.createDirectory(run.resolve("project"));
-		writeProject(project, base, roots, descriptor, requested);
+		writeProject(resolver.resolve(includeTests), patchBase, roots, descriptor, requested, includeTests);
+		boolean mavenLanguageConfigured = hasLanguageSetting(project, false) || (includeTests && hasLanguageSetting(project, true));
+		MavenEclipseMetadata.preserve(base, descriptor, patchBase, mavenLanguageConfigured);
 		// Maven already selected the source sets, including nonstandard test directories.
 		return new MavenCleanupProject(descriptor, List.copyOf(inputs), "both");
+	}
+
+	private static Path patchBase(Path module, List<Path> inputs, boolean emitsPatch) throws IOException {
+		if (!emitsPatch || inputs.stream().allMatch(input -> input.startsWith(module))) return module;
+		Path checkout = checkoutRoot(module);
+		for (Path input : inputs) {
+			if (input.startsWith(module)) continue;
+			if (checkout == null || !input.startsWith(checkout) || !checkout.equals(checkoutRoot(input))) {
+				throw new IOException("Cannot create an applicable patch for Maven source outside this checkout: " + input);
+			}
+		}
+		// A patch spanning sibling modules must use one common path prefix for all of its files.
+		return checkout;
+	}
+
+	private static Path checkoutRoot(Path path) {
+		for (Path parent = path; parent != null; parent = parent.getParent()) {
+			// Linked worktrees and submodules have a .git file instead of a directory.
+			if (Files.exists(parent.resolve(".git"))) return parent;
+		}
+		return null;
 	}
 
 	private static void addRoots(List<Source> roots, List<String> configured, boolean test, Path base) throws IOException {
@@ -71,7 +104,7 @@ record MavenCleanupProject(Path directory, List<Path> sources, String cliScope) 
 		}
 	}
 
-	private static void writeProject(MavenProject project, Path base, List<Source> roots, Path directory, String scope)
+	private static void writeProject(MavenProject project, Path base, List<Source> roots, Path directory, String scope, boolean includeTests)
 			throws IOException, DependencyResolutionRequiredException {
 		var description = new Xpp3Dom("projectDescription");
 		child(description, "name", "sandbox-maven-cleanup");
@@ -94,7 +127,7 @@ record MavenCleanupProject(Path directory, List<Path> sources, String cliScope) 
 		entry(classpath, "con", "org.eclipse.jdt.launching.JRE_CONTAINER", false);
 		var compile = new LinkedHashSet<>(project.getCompileClasspathElements());
 		var libraries = new LinkedHashSet<>(compile);
-		libraries.addAll(project.getTestClasspathElements());
+		if (includeTests) libraries.addAll(project.getTestClasspathElements());
 		for (String library : libraries) {
 			Path path = Path.of(library);
 			if (Files.notExists(path) && (library.equals(project.getBuild().getOutputDirectory())
@@ -141,6 +174,11 @@ record MavenCleanupProject(Path directory, List<Path> sources, String cliScope) 
 				resources.store(writer, null);
 			}
 		}
+	}
+
+	private static boolean hasLanguageSetting(MavenProject project, boolean test) {
+		return compilerSetting(project, "release", test) != null || compilerSetting(project, "source", test) != null
+				|| compilerSetting(project, "target", test) != null;
 	}
 
 	private static LanguageLevel languageLevel(MavenProject project, boolean test) {

@@ -16,14 +16,13 @@ package org.sandbox.maven.cleanup;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
-import org.apache.maven.plugins.annotations.ResolutionScope;
 
 /**
  * Diff goal: runs cleanup in diff mode (generates unified diff output).
  *
  * Usage: {@code mvn sandbox:diff}
  */
-@Mojo(requiresDependencyResolution = ResolutionScope.TEST, name = "diff")
+@Mojo(name = "diff")
 public class DiffMojo extends AbstractSandboxMojo {
 
 	@Override

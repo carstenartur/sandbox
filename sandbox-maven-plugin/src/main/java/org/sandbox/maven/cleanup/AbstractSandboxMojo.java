@@ -26,11 +26,14 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.project.ProjectDependenciesResolver;
 
 /**
  * Base class for Sandbox cleanup Maven plugin goals.
@@ -40,6 +43,12 @@ public abstract class AbstractSandboxMojo extends AbstractMojo {
 
 	@Parameter(defaultValue = "${project}", readonly = true, required = true)
 	private MavenProject project;
+
+	@Parameter(defaultValue = "${session}", readonly = true, required = true)
+	private MavenSession session;
+
+	@Component
+	private ProjectDependenciesResolver dependencies;
 
 	/**
 	 * Version of the sandbox-cleanup-cli tool to use.
@@ -119,7 +128,9 @@ public abstract class AbstractSandboxMojo extends AbstractMojo {
 			return;
 		}
 		try (var run = new CleanupRun()) {
-			var input = MavenCleanupProject.prepare(project, sourceDir.toPath(), scope, run.directory);
+			boolean emitsPatch = "diff".equals(getMode()) || patchFile != null;
+			var input = MavenCleanupProject.prepare(project, sourceDir.toPath(), scope, run.directory, emitsPatch,
+					includeTests -> MavenCleanupClasspath.resolve(project, session.getRepositorySession(), dependencies, includeTests));
 			runCleanup(toolHome, input, run.directory.resolve("workspace"));
 		} catch (IOException | DependencyResolutionRequiredException e) {
 			throw new MojoExecutionException("Cannot prepare or close the cleanup workspace: " + e.getMessage(), e);

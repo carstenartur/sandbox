@@ -27,6 +27,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.MessageDigest;
@@ -58,10 +59,14 @@ import org.eclipse.jdt.internal.ui.JavaPlugin;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.jdt.ui.cleanup.ICleanUp;
 import org.eclipse.ltk.core.refactoring.Change;
+import org.eclipse.ltk.core.refactoring.CompositeChange;
+import org.eclipse.ltk.core.refactoring.NullChange;
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
+import org.eclipse.ltk.core.refactoring.TextEditBasedChange;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.Version;
+import org.sandbox.jdt.cleanup.multifile.api.LineDelimiterPreserver;
 import org.sandbox.jdt.triggerpattern.git.UnifiedDiffFormatter;
 
 public class CodeCleanupApplication implements IApplication {
@@ -225,11 +230,6 @@ public class CodeCleanupApplication implements IApplication {
 
 			this.filesProcessed++;
 
-			byte[] originalContent = null;
-			if (this.cleanupMode == CleanupMode.CHECK || this.cleanupMode == CleanupMode.DIFF) {
-				originalContent = Files.readAllBytes(file.toPath());
-			}
-
 			CleanUpRefactoring refactoring = new CleanUpRefactoring();
 			refactoring.addCompilationUnit(cu);
 
@@ -263,29 +263,7 @@ public class CodeCleanupApplication implements IApplication {
 			}
 
 			if (this.cleanupMode == CleanupMode.CHECK || this.cleanupMode == CleanupMode.DIFF) {
-				try {
-					change.perform(new NullProgressMonitor());
-					cu.save(new NullProgressMonitor(), true);
-					iFile.refreshLocal(1, new NullProgressMonitor());
-
-					byte[] newContent = Files.readAllBytes(file.toPath());
-					boolean changed = !MessageDigest.isEqual(computeHash(originalContent), computeHash(newContent));
-
-					if (changed) {
-						this.changedFiles.add(file.getAbsolutePath());
-						String patchPath = iFile.getProjectRelativePath().toPortableString();
-
-						if (this.cleanupMode == CleanupMode.DIFF && !this.quiet) {
-							printUnifiedDiff(patchPath, originalContent, newContent);
-						}
-						if (this.patchFile != null) {
-							appendUnifiedDiff(patchPath, originalContent, newContent);
-						}
-					}
-				} finally {
-					Files.write(file.toPath(), originalContent);
-					iFile.refreshLocal(1, new NullProgressMonitor());
-				}
+				preview(change, iFile, file);
 			} else {
 				byte[] beforeContent = Files.readAllBytes(file.toPath());
 				change.perform(new NullProgressMonitor());
@@ -312,6 +290,36 @@ public class CodeCleanupApplication implements IApplication {
 			Util.log(e, errorMessage);
 			recordError(Messages.bind(Messages.ExceptionSkip, errorMessage));
 		}
+	}
+
+	private void preview(Change change, IFile input, File inputPath) throws CoreException, IOException {
+		if (change instanceof NullChange) return;
+		if (change instanceof CompositeChange composite) {
+			for (Change child : composite.getChildren()) preview(child, input, inputPath);
+			return;
+		}
+		// JDT uses a CompilationUnitChange for one pass and a MultiStateCompilationUnitChange
+		// for successive edits. Both implement the full-document, in-memory LTK preview.
+		if (!(change instanceof TextEditBasedChange text)) {
+			throw new IOException("Unsupported cleanup preview: " + change.getName()); //$NON-NLS-1$
+		}
+		Object target = text.getModifiedElement();
+		if (target instanceof ICompilationUnit unit) target = unit.getResource();
+		if (!(target instanceof IFile file) || file.getLocation() == null) {
+			throw new IOException("Cleanup preview has no local file: " + change.getName()); //$NON-NLS-1$
+		}
+		var monitor = new NullProgressMonitor();
+		String before = text.getCurrentContent(monitor);
+		String after = text.getPreviewContent(monitor);
+		if (before.equals(after)) return;
+
+		File source = file.equals(input) ? inputPath : file.getLocation().toFile();
+		byte[] original = Files.readAllBytes(source.toPath());
+		byte[] modified = LineDelimiterPreserver.encodePreview(original, Charset.forName(file.getCharset()), before, after);
+		this.changedFiles.add(source.getAbsolutePath());
+		String patchPath = file.getProjectRelativePath().toPortableString();
+		if (this.cleanupMode == CleanupMode.DIFF && !this.quiet) printUnifiedDiff(patchPath, original, modified);
+		if (this.patchFile != null) appendUnifiedDiff(patchPath, original, modified);
 	}
 
 	File[] processCommandLine(final String[] argsArray) {

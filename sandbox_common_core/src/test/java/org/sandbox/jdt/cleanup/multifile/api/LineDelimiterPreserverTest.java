@@ -98,6 +98,18 @@ class LineDelimiterPreserverTest {
 				() -> LineDelimiterPreserver.preserve(original, malformed, StandardCharsets.UTF_8.name()));
 	}
 
+	@Test
+	void encodesBufferPreviewsWithTheOriginalByteOrderAndSignature() throws Exception {
+		byte[] original= withBom(UTF_16_LE_BOM, "a\r\n".getBytes(StandardCharsets.UTF_16LE)); //$NON-NLS-1$
+		byte[] expected= withBom(UTF_16_LE_BOM, "b\n".getBytes(StandardCharsets.UTF_16LE)); //$NON-NLS-1$
+		assertArrayEquals(expected, LineDelimiterPreserver.encodePreview(original, StandardCharsets.UTF_16,
+				"a\r\n", "b\n")); //$NON-NLS-1$ //$NON-NLS-2$
+		assertArrayEquals(expected, LineDelimiterPreserver.encodePreview(original, StandardCharsets.UTF_16LE,
+				"\uFEFFa\r\n", "\uFEFFb\n")); //$NON-NLS-1$ //$NON-NLS-2$
+		assertThrows(IOException.class, () -> LineDelimiterPreserver.encodePreview(original, StandardCharsets.UTF_16,
+				"stale", "b")); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
 	private static byte[] withBom(byte[] bom, byte[] content) {
 		byte[] result= new byte[bom.length + content.length];
 		System.arraycopy(bom, 0, result, 0, bom.length);

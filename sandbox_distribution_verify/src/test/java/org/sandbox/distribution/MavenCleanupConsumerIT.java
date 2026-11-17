@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -44,13 +45,17 @@ class MavenCleanupConsumerIT {
                 </project>
                 """.formatted(System.getProperty("sandbox.plugin.version")));
         byte[] original = Files.readAllBytes(source);
+        Files.setLastModifiedTime(source, FileTime.fromMillis(1_700_000_000_000L));
+        FileTime originalTime = Files.getLastModifiedTime(source);
         runGoal(project, "check", 1, 1);
         assertArrayEquals(original, Files.readAllBytes(source));
+        assertEquals(originalTime, Files.getLastModifiedTime(source));
         Path preview = runGoal(project, "diff", 0, 1);
         String patch = Files.readString(preview.resolve("cleanup.patch"));
         assertTrue(patch.contains("+++ b/" + relative), patch);
         assertTrue(patch.contains("+        return StandardCharsets.UTF_8;"), patch);
         assertArrayEquals(original, Files.readAllBytes(source));
+        assertEquals(originalTime, Files.getLastModifiedTime(source));
 
         runGoal(project, "apply", 0, 1);
         assertTrue(Files.readString(source).contains("return StandardCharsets.UTF_8;"));

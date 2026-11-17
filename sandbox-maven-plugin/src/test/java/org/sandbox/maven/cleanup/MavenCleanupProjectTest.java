@@ -20,6 +20,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPathFactory;
 
 import org.apache.maven.model.Build;
+import org.apache.maven.model.Dependency;
 import org.apache.maven.project.MavenProject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -44,7 +45,7 @@ class MavenCleanupProjectTest {
 		project.getProperties().setProperty("maven.compiler.release", "17");
 		project.getProperties().setProperty("project.build.sourceEncoding", "UTF-8");
 		Path run = Files.createDirectory(temporary.resolve("run"));
-		var input = MavenCleanupProject.prepare(project, checkout, "test", run);
+		var input = prepare(project, checkout, "test", run);
 		assertEquals(List.of(test), input.sources());
 		assertEquals("both", input.cliScope()); // The custom test root has already been selected by Maven.
 		Path description = input.directory().resolve(".project");
@@ -72,10 +73,10 @@ class MavenCleanupProjectTest {
 		project.addCompileSourceRoot(src.toString());
 		project.addTestCompileSourceRoot(temporary.resolve("src/test/java").toString());
 		var run = Files.createDirectory(temporary.resolve("run"));
-		assertEquals(List.of(selected), MavenCleanupProject.prepare(project, selected, "main", run).sources());
+		assertEquals(List.of(selected), prepare(project, selected, "main", run).sources());
 		Path unknown = Files.createDirectory(temporary.resolve("other"));
-		assertThrows(IOException.class, () -> MavenCleanupProject.prepare(project, unknown, "both", run));
-		assertThrows(IOException.class, () -> MavenCleanupProject.prepare(project, temporary.resolve("missing"), "both", run));
+		assertThrows(IOException.class, () -> prepare(project, unknown, "both", run));
+		assertThrows(IOException.class, () -> prepare(project, temporary.resolve("missing"), "both", run));
 	}
 
 	@Test
@@ -86,10 +87,10 @@ class MavenCleanupProjectTest {
 		project.addTestCompileSourceRoot(Files.createDirectories(temporary.resolve("src/test/java")).toString());
 		project.getProperties().setProperty("maven.compiler.release", "8");
 		project.getProperties().setProperty("maven.compiler.testRelease", "17");
-		assertThrows(IOException.class, () -> MavenCleanupProject.prepare(project, temporary, "both",
+		assertThrows(IOException.class, () -> prepare(project, temporary, "both",
 				Files.createDirectory(temporary.resolve("both-run"))));
-		var test = MavenCleanupProject.prepare(project, temporary, "test", Files.createDirectory(temporary.resolve("test-run")));
-		var main = MavenCleanupProject.prepare(project, temporary, "main", Files.createDirectory(temporary.resolve("main-run")));
+		var test = prepare(project, temporary, "test", Files.createDirectory(temporary.resolve("test-run")));
+		var main = prepare(project, temporary, "main", Files.createDirectory(temporary.resolve("main-run")));
 		assertEquals("17", preferences(test).getProperty("org.eclipse.jdt.core.compiler.source"));
 		assertEquals("1.8", preferences(main).getProperty("org.eclipse.jdt.core.compiler.source"));
 	}
@@ -98,16 +99,71 @@ class MavenCleanupProjectTest {
 	void respectsNativeProjectMetadataAndCallerWorkspaceSettings() throws Exception {
 		var project = new MavenProject();
 		initialize(project, temporary);
-		Files.writeString(temporary.resolve(".project"), "existing metadata");
+		String description = "<projectDescription><name>Original</name><natures><nature>org.eclipse.jdt.core.javanature</nature></natures></projectDescription>";
+		Files.writeString(temporary.resolve(".project"), description);
+		Files.createDirectory(temporary.resolve("src"));
+		Files.writeString(temporary.resolve(".classpath"), "<classpath><classpathentry kind='src' path='src'/><classpathentry kind='output' path='bin'/></classpath>");
 		Path run = Files.createDirectory(temporary.resolve("run"));
-		var input = MavenCleanupProject.prepare(project, temporary, "test", run);
+		var input = MavenCleanupProject.prepare(project, temporary, "test", run, false, includeTests -> {
+			throw new AssertionError("A native Eclipse project must use its existing classpath");
+		});
 		assertEquals(temporary, input.directory());
 		assertEquals(List.of(temporary), input.sources());
 		assertEquals("test", input.cliScope());
-		assertEquals("existing metadata", Files.readString(temporary.resolve(".project")));
+		assertEquals(description, Files.readString(temporary.resolve(".project")));
 		assertTrue(AbstractSandboxMojo.hasCallerWorkspace(Map.of("SANDBOX_WORKSPACE", "/configured")));
 		assertTrue(AbstractSandboxMojo.hasCallerWorkspace(Map.of("SANDBOX_CLEANUP_WORKSPACE", "/legacy")));
 		assertFalse(AbstractSandboxMojo.hasCallerWorkspace(Map.of("SANDBOX_WORKSPACE", "")));
+	}
+
+	@Test
+	void mainOnlyResolutionPreservesCompileRootsAndLeavesUnavailableTestArtifactsOutOfCollection() throws Exception {
+		var project = new MavenProject();
+		initialize(project, temporary);
+		for (String scope : List.of("compile", "provided", "system", "runtime", "test")) {
+			var dependency = new Dependency();
+			dependency.setGroupId("example");
+			dependency.setArtifactId(scope);
+			dependency.setVersion("1");
+			dependency.setScope(scope);
+			project.getModel().addDependency(dependency);
+		}
+		var main = MavenCleanupClasspath.request(project, null, false);
+		assertEquals(List.of("compile", "provided", "system"), main.getMavenProject().getDependencies().stream().map(Dependency::getScope).toList());
+		var test = MavenCleanupClasspath.request(project, null, true);
+		assertEquals(5, test.getMavenProject().getDependencies().size());
+		assertEquals(5, project.getDependencies().size());
+		assertEquals("0", value(Path.of("target/classes/META-INF/maven/plugin.xml"), "count(//mojo/requiresDependencyResolution)"));
+	}
+
+	@Test
+	void givesPatchesOneCheckoutRelativePathForModuleAndSiblingRoots() throws Exception {
+		Path checkout = Files.createDirectory(temporary.resolve("checkout"));
+		Files.createDirectory(checkout.resolve(".git"));
+		Path module = Files.createDirectory(checkout.resolve("module"));
+		Path src = Files.createDirectories(module.resolve("src/main/java"));
+		Path shared = Files.createDirectories(checkout.resolve("shared/java"));
+		var project = new MavenProject();
+		initialize(project, module);
+		project.addCompileSourceRoot(src.toString());
+		project.addCompileSourceRoot(shared.toString());
+		var input = MavenCleanupProject.prepare(project, module, "main", Files.createDirectory(temporary.resolve("run")),
+				true, includeTests -> project);
+		Path metadata = input.directory().resolve(".project");
+		assertEquals(src.toUri().toASCIIString(), value(metadata, "//link[name='module/src/main/java']/locationURI"));
+		assertEquals(shared.toUri().toASCIIString(), value(metadata, "//link[name='shared/java']/locationURI"));
+		Path outside = Files.createDirectory(temporary.resolve("external"));
+		project.addTestCompileSourceRoot(outside.toString());
+		assertThrows(IOException.class, () -> MavenCleanupProject.prepare(project, module, "test",
+				Files.createDirectory(temporary.resolve("patch")), true, includeTests -> project));
+		assertEquals(List.of(outside), prepare(project, outside, "test", Files.createDirectory(temporary.resolve("check"))).sources());
+		var onlyMain = MavenCleanupProject.prepare(project, src, "both", Files.createDirectory(temporary.resolve("main")),
+				true, includeTests -> { assertFalse(includeTests); return project; });
+		assertEquals(List.of(src), onlyMain.sources());
+	}
+
+	private static MavenCleanupProject prepare(MavenProject project, Path selected, String scope, Path run) throws Exception {
+		return MavenCleanupProject.prepare(project, selected, scope, run, false, includeTests -> project);
 	}
 
 	private static void initialize(MavenProject project, Path checkout) {

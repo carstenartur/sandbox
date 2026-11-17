@@ -118,6 +118,20 @@ public final class LineDelimiterPreserver {
 		return Arrays.equals(encoded, rewritten) ? rewritten : encoded;
 	}
 
+	/** Encodes an in-memory edit with the source file's character set and byte-order mark. */
+	public static byte[] encodePreview(byte[] original, Charset declaredCharset, String before, String after) throws IOException {
+		Encoding encoding= encodingOf(original, declaredCharset);
+		String diskText= decode(original, encoding, "original"); //$NON-NLS-1$
+		if (encoding.byteOrderMark().length > 0 && before.equals('\uFEFF' + diskText) && after.startsWith("\uFEFF")) { //$NON-NLS-1$
+			// Some document providers expose the signature as the first character.
+			return encode(after.substring(1), encoding);
+		}
+		if (!before.equals(diskText)) {
+			throw new IOException("Source contents differ from the document used to compute the cleanup preview"); //$NON-NLS-1$
+		}
+		return encode(after, encoding);
+	}
+
 	private static Encoding encodingOf(byte[] content, Charset declared) throws IOException {
 		Bom bom= Bom.detect(content);
 		if (bom != null) {
