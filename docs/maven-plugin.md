@@ -1,7 +1,6 @@
 # Sandbox Cleanup Maven Plugin
 
-Maven plugin for running Sandbox Eclipse JDT cleanup transformations on any
-Maven project.
+Run Eclipse JDT cleanups on Maven Java sources with the Sandbox CLI. The CLI requires Java 25. On a Linux CI runner, use GTK and a display such as Xvfb.
 
 ## Quick Start
 
@@ -21,6 +20,14 @@ Set `sandbox.version` to the Sandbox release published on Maven Central and add 
     </plugins>
 </build>
 ```
+
+## Project sources and workspace
+
+In version 1.3.10, the CLI needs an Eclipse workspace that already contains the project. Close Eclipse and set `SANDBOX_WORKSPACE` to that workspace before invoking Maven. With an empty workspace, the CLI reports `Skipping file outside workspace`.
+
+The development version creates a temporary Eclipse workspace by default. For plain Maven and m2e projects it reads the module’s source roots, compiler settings and resolved dependencies for the selected scope. It imports a native Eclipse Java project directly when the CLI can use its classpath. Set `SANDBOX_WORKSPACE` to use a workspace you have already configured.
+
+If main and test sources use different Java language levels, run `-Dsandbox.scope=main` and `-Dsandbox.scope=test` separately. `sandbox:check` and `sandbox:diff` preview edits in memory. `sandbox:apply` writes changes to the original source files.
 
 ## Goals
 

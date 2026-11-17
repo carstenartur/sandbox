@@ -144,6 +144,18 @@ jobs:
             -Pconsumer-e2e -Dcleanup.review.image=sandbox-cleanup:consumer-ci \
             -Dcleanup.review.skipPull=true \
             test-compile failsafe:integration-test failsafe:verify
+      - name: Exercise the Maven plugin from a plain Java project
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./mvnw -B -ntp -f maven-central/pom.xml -pl :sandbox-maven-plugin \
+            -Pcentral-release -Dtycho.mode=maven -Dgpg.skip=true install
+          archives=(sandbox_cleanup_cli_dist/target/sandbox-cleanup-cli-*-dist.tar.gz)
+          versioned="${archives[0]#*/target/sandbox-cleanup-cli-}"
+          xvfb-run --auto-servernum ./mvnw -B -ntp -f sandbox_distribution_verify/pom.xml \
+            -Dtycho.mode=maven -Dtest=MavenCleanupConsumerIT -Dsandbox.plugin.version="${versioned%-dist.tar.gz}" \
+            -Dsandbox.cli.home="$RUNNER_TEMP/cleanup-consumer-image/dist" surefire:test
       - name: Verify installed mathematics without a display
         shell: bash
         run: >-
@@ -165,6 +177,7 @@ jobs:
             target/distribution-verification/
             sandbox_common_test/target/cleanup-review/failsafe-reports/
             sandbox_common_test/target/cleanup-review/consumer-evidence/
+            sandbox_distribution_verify/target/surefire-reports/*MavenCleanupConsumerIT*
             sandbox_math_cleanup_test/target/headless-probe/
             sandbox_math_cleanup_test/target/surefire-reports/
             sandbox_math_cleanup_test/target/screenshots/

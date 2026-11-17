@@ -16,6 +16,7 @@ import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.Map;
 import java.util.Objects;
 
@@ -68,6 +69,10 @@ class CodeCleanupApplicationWorkspacePathTest {
 		}
 		Path alias= Files.createSymbolicLink(temporary.resolve("project-alias"), project.getLocation().toFile().toPath()); //$NON-NLS-1$
 		Path input= alias.resolve("src/Sample.java"); //$NON-NLS-1$
+		// A write followed by restoring the bytes must still fail the preview assertion.
+		Files.setLastModifiedTime(input, FileTime.fromMillis(1_700_000_000_000L));
+		FileTime before= Files.getLastModifiedTime(input);
+		source.refreshLocal(IResource.DEPTH_ZERO, monitor);
 		assertNotEquals(input.toFile().getAbsoluteFile(), input.toFile().getCanonicalFile());
 		Path patch= temporary.resolve("alias.patch"); //$NON-NLS-1$
 
@@ -81,6 +86,7 @@ class CodeCleanupApplicationWorkspacePathTest {
 			assertNotEquals(ORIGINAL, Files.readString(input));
 		} else {
 			assertArrayEquals(ORIGINAL.getBytes(StandardCharsets.UTF_8), Files.readAllBytes(input));
+			assertEquals(before, Files.getLastModifiedTime(input));
 		}
 	}
 
