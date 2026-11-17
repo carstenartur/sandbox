@@ -97,14 +97,14 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Install CSS and desktop-test tooling
+      - name: Install CSS, desktop-test and report tooling
         if: steps.gate.outputs.run == 'true'
         run: |
           npm install --global prettier stylelint stylelint-config-standard
           sudo apt-get update
           sudo apt-get install -y \
             xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
-            libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
+            libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1 libxml2-utils
 
       - name: Build the complete coverage reactor
         if: steps.gate.outputs.run == 'true'
@@ -182,6 +182,23 @@ jobs:
           generate-coverage-endpoint: true
           coverage-endpoint-filename: coverage.json
           generate-branches-badge: false
+
+      - name: Generate CPD badge endpoint
+        if: success() && steps.gate.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          report_stats="$(xmllint --nonet --xpath \
+            'concat(local-name(/*), ":", count(/*/*[local-name() = "duplication"]))' target/cpd.xml)"
+          if [[ ! "$report_stats" =~ ^pmd-cpd:([0-9]+)$ ]]; then
+            echo 'Expected a PMD CPD XML report at target/cpd.xml.' >&2
+            exit 1
+          fi
+          groups="${BASH_REMATCH[1]}"
+          mkdir -p "$QUALITY_SITE/badges"
+          jq -n --arg groups "$groups" \
+            '{schemaVersion: 1, label: "CPD groups", message: $groups, color: "blue"}' \
+            > "$QUALITY_SITE/badges/duplication.json"
 
       - name: Generate test endpoint and report index
         if: success() && steps.gate.outputs.run == 'true'
@@ -290,6 +307,7 @@ jobs:
 
           test -s "$QUALITY_SITE/badges/tests.json"
           test -s "$QUALITY_SITE/badges/coverage.json"
+          test -s "$QUALITY_SITE/badges/duplication.json"
           test -s "$QUALITY_SITE/quality-summary.json"
           test -s "$QUALITY_SITE/tests/index.html"
 

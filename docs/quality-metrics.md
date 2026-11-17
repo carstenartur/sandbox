@@ -37,17 +37,18 @@ xvfb-run --auto-servernum ./mvnw \
 
 The Maven `reports` profile creates each available `target/site/surefire-report.html`. The workflow copies those generated module sites and the aggregate JaCoCo HTML report into one publication tree.
 
-A small shell step only formats the already calculated action outputs as:
+The published quality tree also contains:
 
 ```text
 badges/tests.json
 badges/coverage.json
+badges/duplication.json
 quality-summary.json
 tests/index.html
 coverage/index.html
 ```
 
-It does not parse JUnit or JaCoCo evidence.
+The test and coverage metrics come from the report actions.
 
 ## Java duplication report
 
@@ -55,7 +56,7 @@ The `reports` profile also runs PMD's Copy/Paste Detector once across the Maven 
 
 Run `./mvnw -Preports verify` from the repository root. The HTML report with modules, files, and line numbers is at `target/duplication-report/cpd.html`, and the XML is at `target/cpd.xml`.
 
-The quality workflow retains both reports as evidence and publishes the HTML report at [`duplication/cpd.html`](https://carstenartur.github.io/sandbox/duplication/cpd.html) with successful `main` reports.
+The quality workflow retains both reports as evidence. Successful `main` runs publish the HTML report at [`duplication/cpd.html`](https://carstenartur.github.io/sandbox/duplication/cpd.html) and publish the number of duplication groups from the CPD XML as `badges/duplication.json`. The CPD badge at the top of the README opens the HTML report.
 
 ## Verification and provenance
 

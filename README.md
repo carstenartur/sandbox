@@ -4,6 +4,37 @@ Sandbox helps Java developers modernize existing code, turn repeated edits into 
 
 **Status:** Experimental and under active development. Supported transformations have regression tests; the supported source shapes, evidence and limitations are documented per module.
 
+## 🔗 CI Status & Resources
+
+[![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)
+[![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fcarstenartur%2Fsandbox%2Fgh-pages%2Fbadges%2Fcoverage.json)](https://carstenartur.github.io/sandbox/coverage/)
+[![Tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fcarstenartur%2Fsandbox%2Fgh-pages%2Fbadges%2Ftests.json)](https://carstenartur.github.io/sandbox/tests/)
+[![CPD duplicate groups](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fcarstenartur%2Fsandbox%2Fgh-pages%2Fbadges%2Fduplication.json)](https://carstenartur.github.io/sandbox/duplication/cpd.html)
+[![Benchmarks](https://github.com/carstenartur/sandbox/actions/workflows/benchmark.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/benchmark.yml)
+[![Snapshot Deploy](https://github.com/carstenartur/sandbox/actions/workflows/deploy-snapshot.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/deploy-snapshot.yml)
+[![Commit Mining](https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml)
+[![Refactoring Mining](https://github.com/carstenartur/sandbox/actions/workflows/refactoring-mining.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/refactoring-mining.yml)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20941684.svg)](https://doi.org/10.5281/zenodo.20941684)
+[![Eclipse Marketplace](https://img.shields.io/badge/Eclipse%20Marketplace-Sandbox-blue)](https://marketplace.eclipse.org/content/sandbox)
+<br>
+🏠 **[Project Dashboard](https://carstenartur.github.io/sandbox/)** | 📊 **[Test Results](https://carstenartur.github.io/sandbox/tests/)** | 📈 **[Code Coverage](https://carstenartur.github.io/sandbox/coverage/)** | **[Duplicate Java Code (CPD)](https://carstenartur.github.io/sandbox/duplication/cpd.html)** | ⚡ **[Performance Charts](https://carstenartur.github.io/sandbox/dev/bench/)**
+
+<details>
+<summary>Legacy Branch CI Status</summary>
+
+### 2022-09
+
+[![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg?branch=2022-09)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)<br>
+[![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg?branch=2022-09)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
+
+### 2022-06
+
+[![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg?branch=2022-06)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)<br>
+[![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg?branch=2022-06)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
+
+</details>
+
 ## Overview
 
 Choose the workflow that matches your work:
@@ -432,36 +463,6 @@ Contributions are welcome across the cleanup workflows, rule authoring, Java ana
 ## 📦 Release Process
 
 > **For Maintainers**: See [Release Process](CONTRIBUTING.md#release-process) in CONTRIBUTING.md for instructions on creating and publishing releases.
-
-## 🔗 CI Status & Resources
-
-[![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)
-[![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
-[![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fcarstenartur%2Fsandbox%2Fgh-pages%2Fbadges%2Fcoverage.json)](https://carstenartur.github.io/sandbox/coverage/)
-[![Tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fcarstenartur%2Fsandbox%2Fgh-pages%2Fbadges%2Ftests.json)](https://carstenartur.github.io/sandbox/tests/)
-[![Benchmarks](https://github.com/carstenartur/sandbox/actions/workflows/benchmark.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/benchmark.yml)
-[![Snapshot Deploy](https://github.com/carstenartur/sandbox/actions/workflows/deploy-snapshot.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/deploy-snapshot.yml)
-[![Commit Mining](https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml)
-[![Refactoring Mining](https://github.com/carstenartur/sandbox/actions/workflows/refactoring-mining.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/refactoring-mining.yml)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20941684.svg)](https://doi.org/10.5281/zenodo.20941684)
-[![Eclipse Marketplace](https://img.shields.io/badge/Eclipse%20Marketplace-Sandbox-blue)](https://marketplace.eclipse.org/content/sandbox)
-<br>
-🏠 **[Project Dashboard](https://carstenartur.github.io/sandbox/)** | 📊 **[Test Results](https://carstenartur.github.io/sandbox/tests/)** | 📈 **[Code Coverage](https://carstenartur.github.io/sandbox/coverage/)** | ⚡ **[Performance Charts](https://carstenartur.github.io/sandbox/dev/bench/)**
-
-<details>
-<summary>Legacy Branch CI Status</summary>
-
-### 2022-09
-
-[![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg?branch=2022-09)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)  
-[![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg?branch=2022-09)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
-
-### 2022-06
-
-[![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg?branch=2022-06)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)  
-[![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg?branch=2022-06)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
-
-</details>
 
 ---
 
