@@ -5536,9 +5536,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "lastProcessedCommit": "91318132cad78a15f778232fc25680f4f8093730",
-      "lastProcessedDate": "2026-11-16T02:21:55.250871216Z",
-      "totalProcessed": 1035,
+      "lastProcessedCommit": "8690dc0100e0f54129dcb1a77ce1923e33de9f80",
+      "lastProcessedDate": "2026-11-17T03:00:59.152470095Z",
+      "totalProcessed": 1087,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -6107,6 +6107,33 @@
           "deferredAt": "2026-11-16T02:20:24.935235683Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "6a27be2e48a3a2ed7a1790e16a112a2c5746939b",
+          "message": "Bug 307162 - [flex-hierarhcy] Tree viewer does not update when created with the POPUP style flag",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-17T02:55:00.526474543Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a3a2d1fe06229fce36f67787c1f6fe96d9fc93cd",
+          "message": "Bug 311384 - NPE toggling breakpoints",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-17T02:56:03.601556589Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "c5fa8bd04942e2b5b6b6c75d9f9830ad504e5d56",
+          "message": "copyright updates",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-17T02:59:06.626222348Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -6171,5 +6198,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 54616
+  "globalTotalProcessed": 54668
 }
