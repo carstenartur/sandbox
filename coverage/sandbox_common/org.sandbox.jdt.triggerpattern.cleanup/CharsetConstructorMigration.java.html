@@ -174,7 +174,7 @@ public final class CharsetConstructorMigration {
 
     private static IMethodBinding target(ClassInstanceCreation node) {
 <span class="fc" id="L176">        IMethodBinding old= node.resolveConstructorBinding();</span>
-<span class="pc bpc" id="L177" title="3 of 6 branches missed.">        if (old == null || old.isRecovered() || node.getAnonymousClassDeclaration() != null) return null;</span>
+<span class="pc bpc" id="L177" title="2 of 6 branches missed.">        if (old == null || old.isRecovered() || node.getAnonymousClassDeclaration() != null) return null;</span>
 <span class="fc" id="L178">        ITypeBinding[] parameters= old.getParameterTypes();</span>
 <span class="fc bfc" id="L179" title="All 4 branches covered.">        if (parameters.length == 0 || parameters.length &gt; 3) return null;</span>
 <span class="fc" id="L180">        String owner= old.getDeclaringClass().getQualifiedName();</span>

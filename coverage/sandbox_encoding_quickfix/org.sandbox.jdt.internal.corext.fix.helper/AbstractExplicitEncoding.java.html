@@ -131,11 +131,11 @@ import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
 	}
 
 	protected static boolean isKnownEncoding(StringLiteral literal) {
-<span class="nc bnc" id="L134" title="All 4 branches missed.">		return literal != null &amp;&amp; ENCODINGS.contains(literal.getLiteralValue().toUpperCase(Locale.ROOT));</span>
+<span class="pc bpc" id="L134" title="2 of 4 branches missed.">		return literal != null &amp;&amp; ENCODINGS.contains(literal.getLiteralValue().toUpperCase(Locale.ROOT));</span>
 	}
 
 	protected static String getEncodingConstantName(StringLiteral literal) {
-<span class="nc bnc" id="L138" title="All 2 branches missed.">		return literal == null ? null : ENCODING_MAP.get(literal.getLiteralValue().toUpperCase(Locale.ROOT));</span>
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">		return literal == null ? null : ENCODING_MAP.get(literal.getLiteralValue().toUpperCase(Locale.ROOT));</span>
 	}
 
 	/** Skip only unchanged charset spellings; keep FQN shortening and aggregation available. */

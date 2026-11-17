@@ -13,20 +13,36 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.cleanup;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.BodyDeclaration;
 import org.eclipse.jdt.core.dom.CatchClause;
-import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.Comment;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.EmptyStatement;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.IfStatement;
+import org.eclipse.jdt.core.dom.Initializer;
 import org.eclipse.jdt.core.dom.ITypeBinding;
-import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.Javadoc;
-import org.eclipse.jdt.core.dom.TagElement;
+import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.TagElement;
+import org.eclipse.jdt.core.dom.ThrowStatement;
 import org.eclipse.jdt.core.dom.TryStatement;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.UnionType;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
@@ -71,22 +87,164 @@ public class ExceptionCleanupHelper {
 			ASTRewrite rewrite,
 			ImportRemover importRemover) {
 
-<span class="fc" id="L74">		ASTNode parent = findEnclosingMethodOrTry(visited);</span>
-<span class="fc bfc" id="L75" title="All 4 branches covered.">		if (parent == null || !canRemoveException(parent, visited, exceptionFQN, rewrite)) {</span>
-<span class="fc" id="L76">			return;</span>
+<span class="fc" id="L90">		ASTNode parent = findEnclosingMethodOrTry(visited);</span>
+<span class="fc bfc" id="L91" title="All 4 branches covered.">		if (parent == null || !canRemoveException(parent, visited, exceptionFQN, rewrite)) {</span>
+<span class="fc" id="L92">			return;</span>
 		}
 
-<span class="fc bfc" id="L79" title="All 2 branches covered.">		if (parent instanceof MethodDeclaration method) {</span>
-<span class="fc" id="L80">			removeExceptionFromMethodThrows(method, exceptionFQN, exceptionSimple, rewrite, group, importRemover);</span>
-<span class="pc bpc" id="L81" title="1 of 2 branches missed.">		} else if (parent instanceof TryStatement tryStatement) {</span>
-<span class="fc" id="L82">			int removedCount = removeExceptionFromTryCatch(tryStatement, exceptionFQN, exceptionSimple, rewrite, group, importRemover);</span>
-<span class="fc" id="L83">			simplifyEmptyTryStatement(tryStatement, rewrite, group, removedCount);</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">		if (parent instanceof MethodDeclaration method) {</span>
+<span class="fc" id="L96">			removeExceptionFromMethodThrows(method, exceptionFQN, exceptionSimple, rewrite, group, importRemover);</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">		} else if (parent instanceof TryStatement tryStatement) {</span>
+<span class="fc" id="L98">			int removedCount = removeExceptionFromTryCatch(tryStatement, exceptionFQN, rewrite, group, importRemover);</span>
+<span class="fc" id="L99">			simplifyEmptyTryStatement(tryStatement, rewrite, group, removedCount);</span>
 		}
-<span class="fc" id="L85">	}</span>
+<span class="fc" id="L101">	}</span>
+
+	/** Checks that the exception is handled locally and its handlers can be removed safely. */
+	public static boolean canRemoveExceptionLocally(ASTNode visited, ITypeBinding exception, ASTRewrite previousRewrite) {
+<span class="fc bfc" id="L105" title="All 2 branches covered.">		if (ASTNodes.getFirstAncestorOrNull(visited, LambdaExpression.class) != null) {</span>
+			// Removing a handler can change the inferred return or exception type of a lambda.
+<span class="fc" id="L107">			return false;</span>
+		}
+<span class="fc" id="L109">		ASTNode scope = ASTNodes.getFirstAncestorOrNull(visited, BodyDeclaration.class);</span>
+<span class="pc bpc" id="L110" title="1 of 4 branches missed.">		if ((scope instanceof FieldDeclaration || scope instanceof Initializer)</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">				&amp;&amp; scope.getParent() instanceof AnonymousClassDeclaration</span>
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">				&amp;&amp; !Modifier.isStatic(((BodyDeclaration) scope).getModifiers())) {</span>
+			// The exception may contribute to an inferred constructor throws clause.
+<span class="fc" id="L114">			return false;</span>
+		}
+
+<span class="fc" id="L117">		boolean handled = false;</span>
+<span class="fc" id="L118">		ASTRewrite candidateRewrite = ASTRewrite.create(visited.getAST());</span>
+<span class="fc" id="L119">		CheckedExceptionAnalysis.copyConvertedCalls(previousRewrite, candidateRewrite, exception.getQualifiedName());</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">		for (TryStatement statement : enclosingProtectedTries(visited)) {</span>
+<span class="fc" id="L121">			List&lt;CatchClause&gt; clauses = statement.catchClauses();</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">			for (CatchClause clause : clauses) {</span>
+<span class="fc" id="L123">				Type caught = clause.getException().getType();</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">				List&lt;?&gt; types = caught instanceof UnionType union ? union.types() : List.of(caught);</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">				for (Object type : types) {</span>
+<span class="fc" id="L126">					ITypeBinding binding = ((Type) type).resolveBinding();</span>
+<span class="pc bpc" id="L127" title="2 of 4 branches missed.">					if (binding == null || binding.isRecovered()) {</span>
+<span class="nc" id="L128">						return false;</span>
+					}
+<span class="fc bfc" id="L130" title="All 2 branches covered.">					if (exception.isEqualTo(binding)) {</span>
+						// Narrowing a multi-catch can change the type of the catch parameter.
+<span class="fc bfc" id="L132" title="All 4 branches covered.">						if (caught instanceof UnionType || !canDiscardCatch(statement, clause)</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">								|| !canRemoveException(statement, visited, exception.getQualifiedName(), candidateRewrite)) {</span>
+<span class="fc" id="L134">							return false;</span>
+						}
+						// Model the inner removal before examining an enclosing catch.
+<span class="fc" id="L137">						candidateRewrite.remove(clause, null);</span>
+<span class="fc" id="L138">						handled = true;</span>
+<span class="pc bpc" id="L139" title="1 of 4 branches missed.">					} else if (exception.isAssignmentCompatible(binding) || binding.isAssignmentCompatible(exception)) {</span>
+						// Other handlers could become unreachable or change a precise rethrow.
+<span class="fc" id="L141">						return false;</span>
+					}
+				}
+			}
+		}
+<span class="fc" id="L146">		return handled;</span>
+	}
+
+	/** Proves that the enclosing method still needs the existing throws declaration after conversion. */
+	public static boolean canKeepDeclaredThrows(ASTNode visited, ITypeBinding exception, ASTRewrite rewrite) {
+<span class="fc" id="L151">		ASTNode scope = ASTNodes.getFirstAncestorOrNull(visited, BodyDeclaration.class, LambdaExpression.class);</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">		if (!(scope instanceof MethodDeclaration method)) {</span>
+<span class="fc" id="L153">			return false;</span>
+		}
+<span class="fc bfc" id="L155" title="All 2 branches covered.">		for (TryStatement statement : enclosingProtectedTries(visited)) {</span>
+<span class="fc" id="L156">			List&lt;CatchClause&gt; clauses = statement.catchClauses();</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">			for (CatchClause clause : clauses) {</span>
+<span class="fc" id="L158">				Type caught = clause.getException().getType();</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">				List&lt;?&gt; types = caught instanceof UnionType union ? union.types() : List.of(caught);</span>
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">				for (Object type : types) {</span>
+<span class="fc" id="L161">					ITypeBinding binding = ((Type) type).resolveBinding();</span>
+<span class="pc bpc" id="L162" title="2 of 6 branches missed.">					if (binding == null || binding.isRecovered() || exception.isAssignmentCompatible(binding)</span>
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">							|| binding.isAssignmentCompatible(exception)) {</span>
+<span class="fc" id="L164">						return false;</span>
+					}
+				}
+			}
+		}
+<span class="fc" id="L169">		return CheckedExceptionAnalysis.hasSurvivingDeclaredThrows(method, exception, rewrite);</span>
+	}
+
+	private static boolean canDiscardCatch(TryStatement statement, CatchClause clause) {
+<span class="fc" id="L173">		List&lt;Statement&gt; handler = clause.getBody().statements();</span>
+		// Limit removal to straight-line handlers and method exits. A break, continue,
+		// or yield can affect reachability beyond the try even when its body completes normally.
+<span class="pc bpc" id="L176" title="2 of 8 branches missed.">		if (!handler.stream().allMatch(child -&gt; isStraightLine(child) || child instanceof ReturnStatement || child instanceof ThrowStatement)) {</span>
+<span class="fc" id="L177">			return false;</span>
+		}
+<span class="pc bpc" id="L179" title="1 of 4 branches missed.">		if (!ASTNodes.fallsThrough(clause.getBody()) &amp;&amp; !isStraightLine(statement.getBody())) {</span>
+<span class="fc" id="L180">			return false;</span>
+		}
+<span class="pc bpc" id="L182" title="2 of 6 branches missed.">		if (statement.catchClauses().size() == 1 &amp;&amp; statement.resources().isEmpty() &amp;&amp; statement.getFinally() == null</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">				&amp;&amp; hasLeadingStatementComment(statement)) {</span>
+<span class="fc" id="L184">			return false;</span>
+		}
+<span class="fc bfc" id="L186" title="All 2 branches covered.">		return !CheckedExceptionAnalysis.hasCheckedException(clause.getBody());</span>
+	}
+
+	private static boolean isStraightLine(Statement statement) {
+<span class="fc bfc" id="L190" title="All 2 branches covered.">		if (statement instanceof Block block) {</span>
+<span class="fc" id="L191">			List&lt;Statement&gt; children = block.statements();</span>
+<span class="fc" id="L192">			return children.stream().allMatch(ExceptionCleanupHelper::isStraightLine);</span>
+		}
+<span class="pc bpc" id="L194" title="1 of 4 branches missed.">		return statement instanceof EmptyStatement || statement instanceof ExpressionStatement</span>
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">				|| statement instanceof VariableDeclarationStatement;</span>
+	}
+
+	private static boolean hasLeadingStatementComment(TryStatement statement) {
+<span class="pc bpc" id="L199" title="1 of 4 branches missed.">		if (!statement.getLocationInParent().isChildProperty() || !(statement.getRoot() instanceof CompilationUnit root)) {</span>
+<span class="fc" id="L200">			return false;</span>
+		}
+<span class="fc" id="L202">		ASTNode parent = statement.getParent();</span>
+<span class="fc" id="L203">		int parentStart = parent.getStartPosition();</span>
+<span class="pc bpc" id="L204" title="1 of 2 branches missed.">		if (parent instanceof IfStatement conditional) {</span>
+<span class="pc bpc" id="L205" title="1 of 2 branches missed.">			ASTNode preceding = conditional.getThenStatement() == statement ? conditional.getExpression() : conditional.getThenStatement();</span>
+<span class="fc" id="L206">			parentStart = preceding.getStartPosition() + preceding.getLength();</span>
+		}
+<span class="fc bfc" id="L208" title="All 2 branches covered.">		for (Object node : root.getCommentList()) {</span>
+<span class="fc" id="L209">			Comment comment = (Comment) node;</span>
+<span class="pc bpc" id="L210" title="1 of 2 branches missed.">			if (comment.getStartPosition() &gt;= parentStart</span>
+<span class="fc bfc" id="L211" title="All 2 branches covered.">					&amp;&amp; comment.getStartPosition() + comment.getLength() &lt;= statement.getStartPosition()) {</span>
+<span class="fc" id="L212">				return true;</span>
+			}
+		}
+<span class="fc" id="L215">		return false;</span>
+	}
+
+	/** Removes obsolete catches while preserving the scope of the body and caller contracts. */
+	public static void removeCheckedExceptionFromEnclosingTries(ASTNode visited, String exceptionFQN,
+			TextEditGroup group, ASTRewrite rewrite, ImportRemover importRemover) {
+<span class="fc bfc" id="L221" title="All 2 branches covered.">		for (TryStatement statement : enclosingProtectedTries(visited)) {</span>
+<span class="fc bfc" id="L222" title="All 2 branches covered.">			if (!canRemoveException(statement, visited, exceptionFQN, rewrite)) {</span>
+<span class="fc" id="L223">				continue;</span>
+			}
+<span class="fc" id="L225">			int removed = removeExceptionFromTryCatch(statement, exceptionFQN, rewrite, group, importRemover);</span>
+<span class="pc bpc" id="L226" title="2 of 6 branches missed.">			if (removed == statement.catchClauses().size() &amp;&amp; statement.getFinally() == null &amp;&amp; statement.resources().isEmpty()) {</span>
+				// A block fits single-statement arms and keeps local declarations scoped to the body.
+<span class="fc" id="L228">				ASTNodes.replaceButKeepComment(rewrite, statement, rewrite.createMoveTarget(statement.getBody()), group);</span>
+			}
+		}
+<span class="fc" id="L231">	}</span>
+
+	private static List&lt;TryStatement&gt; enclosingProtectedTries(ASTNode visited) {
+<span class="fc" id="L234">		List&lt;TryStatement&gt; result = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L235">		for (ASTNode child = visited, parent = child.getParent();</span>
+<span class="pc bpc" id="L236" title="2 of 6 branches missed.">				parent != null &amp;&amp; !(parent instanceof BodyDeclaration) &amp;&amp; !(parent instanceof LambdaExpression);</span>
+<span class="fc" id="L237">				child = parent, parent = parent.getParent()) {</span>
+<span class="pc bpc" id="L238" title="1 of 6 branches missed.">			if (parent instanceof TryStatement statement &amp;&amp; (child == statement.getBody() || statement.resources().contains(child))) {</span>
+<span class="fc" id="L239">				result.add(statement);</span>
+			}
+		}
+<span class="fc" id="L242">		return result;</span>
+	}
 
 	/** Records the converted invocation and proves that no surviving expression needs the handler. */
 	public static boolean canRemoveException(ASTNode scope, ASTNode visited, String exceptionFQN, ASTRewrite rewrite) {
-<span class="fc" id="L89">		return CheckedExceptionAnalysis.canRemove(scope, visited, exceptionFQN, rewrite);</span>
+<span class="fc" id="L247">		return CheckedExceptionAnalysis.canRemove(scope, visited, exceptionFQN, rewrite);</span>
 	}
 
 	// ------------------------------------------------------------------
@@ -94,21 +252,21 @@ public class ExceptionCleanupHelper {
 	// ------------------------------------------------------------------
 
 	static ASTNode findEnclosingMethodOrTry(ASTNode node) {
-<span class="fc bfc" id="L97" title="All 2 branches covered.">		if (node == null) {</span>
-<span class="fc" id="L98">			return null;</span>
+<span class="fc bfc" id="L255" title="All 2 branches covered.">		if (node == null) {</span>
+<span class="fc" id="L256">			return null;</span>
 		}
-<span class="fc" id="L100">		ASTNode tryStmt = ASTNodes.getFirstAncestorOrNull(node, TryStatement.class);</span>
-<span class="fc" id="L101">		ASTNode methodDecl = ASTNodes.getFirstAncestorOrNull(node, MethodDeclaration.class);</span>
-<span class="fc bfc" id="L102" title="All 2 branches covered.">		if (tryStmt != null) {</span>
-<span class="fc" id="L103">			return tryStmt;</span>
+<span class="fc" id="L258">		ASTNode tryStmt = ASTNodes.getFirstAncestorOrNull(node, TryStatement.class);</span>
+<span class="fc" id="L259">		ASTNode methodDecl = ASTNodes.getFirstAncestorOrNull(node, MethodDeclaration.class);</span>
+<span class="fc bfc" id="L260" title="All 2 branches covered.">		if (tryStmt != null) {</span>
+<span class="fc" id="L261">			return tryStmt;</span>
 		}
-<span class="fc" id="L105">		return methodDecl;</span>
+<span class="fc" id="L263">		return methodDecl;</span>
 	}
 
 	static boolean isTargetException(Type type, String exceptionFQN) {
-<span class="fc" id="L109">		var binding = type.resolveBinding();</span>
-<span class="pc bpc" id="L110" title="2 of 4 branches missed.">		return binding != null &amp;&amp; !binding.isRecovered()</span>
-<span class="fc bfc" id="L111" title="All 2 branches covered.">				&amp;&amp; exceptionFQN.equals(binding.getErasure().getQualifiedName());</span>
+<span class="fc" id="L267">		var binding = type.resolveBinding();</span>
+<span class="pc bpc" id="L268" title="2 of 4 branches missed.">		return binding != null &amp;&amp; !binding.isRecovered()</span>
+<span class="fc bfc" id="L269" title="All 2 branches covered.">				&amp;&amp; exceptionFQN.equals(binding.getErasure().getQualifiedName());</span>
 	}
 
 	static void removeExceptionFromMethodThrows(
@@ -119,38 +277,38 @@ public class ExceptionCleanupHelper {
 			TextEditGroup group,
 			ImportRemover importRemover) {
 
-<span class="fc" id="L122">		ListRewrite throwsRewrite = rewrite.getListRewrite(method,</span>
-<span class="fc" id="L123">				MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY);</span>
-<span class="fc" id="L124">		List&lt;Type&gt; thrownExceptions = method.thrownExceptionTypes();</span>
-<span class="fc bfc" id="L125" title="All 2 branches covered.">		for (Type exceptionType : thrownExceptions) {</span>
-<span class="fc bfc" id="L126" title="All 2 branches covered.">			if (isTargetException(exceptionType, exceptionFQN)) {</span>
-<span class="fc" id="L127">				throwsRewrite.remove(exceptionType, group);</span>
-<span class="fc" id="L128">				importRemover.registerRemovedNode(exceptionType);</span>
-<span class="fc" id="L129">                updateThrowsJavadoc(method, exceptionFQN, null, rewrite, group, importRemover);</span>
+<span class="fc" id="L280">		ListRewrite throwsRewrite = rewrite.getListRewrite(method,</span>
+<span class="fc" id="L281">				MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY);</span>
+<span class="fc" id="L282">		List&lt;Type&gt; thrownExceptions = method.thrownExceptionTypes();</span>
+<span class="fc bfc" id="L283" title="All 2 branches covered.">		for (Type exceptionType : thrownExceptions) {</span>
+<span class="fc bfc" id="L284" title="All 2 branches covered.">			if (isTargetException(exceptionType, exceptionFQN)) {</span>
+<span class="fc" id="L285">				throwsRewrite.remove(exceptionType, group);</span>
+<span class="fc" id="L286">				importRemover.registerRemovedNode(exceptionType);</span>
+<span class="fc" id="L287">                updateThrowsJavadoc(method, exceptionFQN, null, rewrite, group, importRemover);</span>
 			}
 		}
-<span class="fc" id="L132">	}</span>
+<span class="fc" id="L290">	}</span>
 
     /** Returns whether a matching documented exception was found. */
     static boolean updateThrowsJavadoc(MethodDeclaration method, String oldType, String replacement,
             ASTRewrite rewrite, TextEditGroup group, ImportRemover imports) {
-<span class="fc" id="L137">        Javadoc javadoc= method.getJavadoc();</span>
-<span class="fc bfc" id="L138" title="All 2 branches covered.">        if (javadoc == null) return false;</span>
-<span class="fc" id="L139">        boolean found= false;</span>
-<span class="fc" id="L140">        ListRewrite tags= rewrite.getListRewrite(javadoc, Javadoc.TAGS_PROPERTY);</span>
-<span class="fc bfc" id="L141" title="All 2 branches covered.">        for (Object item : List.copyOf(tags.getRewrittenList())) {</span>
-<span class="fc" id="L142">            TagElement tag= (TagElement) item;</span>
-<span class="pc bpc" id="L143" title="1 of 4 branches missed.">            if ((TagElement.TAG_THROWS.equals(tag.getTagName()) || TagElement.TAG_EXCEPTION.equals(tag.getTagName()))</span>
-<span class="pc bpc" id="L144" title="2 of 4 branches missed.">                    &amp;&amp; !tag.fragments().isEmpty() &amp;&amp; tag.fragments().get(0) instanceof Name name</span>
-<span class="pc bpc" id="L145" title="1 of 4 branches missed.">                    &amp;&amp; name.resolveBinding() instanceof ITypeBinding type &amp;&amp; oldType.equals(type.getErasure().getQualifiedName())) {</span>
-<span class="fc bfc" id="L146" title="All 2 branches covered.">                if (replacement == null) {</span>
-<span class="fc" id="L147">                    tags.remove(tag, group);</span>
-<span class="fc" id="L148">                    imports.registerRemovedNode(tag);</span>
-<span class="fc" id="L149">                } else rewrite.replace(name, method.getAST().newName(replacement), group);</span>
-<span class="fc" id="L150">                found= true;</span>
+<span class="fc" id="L295">        Javadoc javadoc= method.getJavadoc();</span>
+<span class="fc bfc" id="L296" title="All 2 branches covered.">        if (javadoc == null) return false;</span>
+<span class="fc" id="L297">        boolean found= false;</span>
+<span class="fc" id="L298">        ListRewrite tags= rewrite.getListRewrite(javadoc, Javadoc.TAGS_PROPERTY);</span>
+<span class="fc bfc" id="L299" title="All 2 branches covered.">        for (Object item : List.copyOf(tags.getRewrittenList())) {</span>
+<span class="fc" id="L300">            TagElement tag= (TagElement) item;</span>
+<span class="pc bpc" id="L301" title="1 of 4 branches missed.">            if ((TagElement.TAG_THROWS.equals(tag.getTagName()) || TagElement.TAG_EXCEPTION.equals(tag.getTagName()))</span>
+<span class="pc bpc" id="L302" title="2 of 4 branches missed.">                    &amp;&amp; !tag.fragments().isEmpty() &amp;&amp; tag.fragments().get(0) instanceof Name name</span>
+<span class="pc bpc" id="L303" title="1 of 4 branches missed.">                    &amp;&amp; name.resolveBinding() instanceof ITypeBinding type &amp;&amp; oldType.equals(type.getErasure().getQualifiedName())) {</span>
+<span class="fc bfc" id="L304" title="All 2 branches covered.">                if (replacement == null) {</span>
+<span class="fc" id="L305">                    tags.remove(tag, group);</span>
+<span class="fc" id="L306">                    imports.registerRemovedNode(tag);</span>
+<span class="fc" id="L307">                } else rewrite.replace(name, method.getAST().newName(replacement), group);</span>
+<span class="fc" id="L308">                found= true;</span>
             }
         }
-<span class="fc" id="L153">        return found;</span>
+<span class="fc" id="L311">        return found;</span>
     }
 
 	static boolean removeExceptionFromUnionType(
@@ -161,75 +319,74 @@ public class ExceptionCleanupHelper {
 			TextEditGroup group,
 			ImportRemover importRemover) {
 
-<span class="fc" id="L164">		ListRewrite unionRewrite = rewrite.getListRewrite(unionType, UnionType.TYPES_PROPERTY);</span>
-<span class="fc" id="L165">		List&lt;Type&gt; types = unionType.types();</span>
+<span class="fc" id="L322">		ListRewrite unionRewrite = rewrite.getListRewrite(unionType, UnionType.TYPES_PROPERTY);</span>
+<span class="fc" id="L323">		List&lt;Type&gt; types = unionType.types();</span>
 
-<span class="fc" id="L167">		List&lt;Type&gt; typesToRemove = types.stream()</span>
-<span class="fc" id="L168">				.filter(t -&gt; isTargetException(t, exceptionFQN))</span>
-<span class="fc" id="L169">				.toList();</span>
+<span class="fc" id="L325">		List&lt;Type&gt; typesToRemove = types.stream()</span>
+<span class="fc" id="L326">				.filter(t -&gt; isTargetException(t, exceptionFQN))</span>
+<span class="fc" id="L327">				.toList();</span>
 
-<span class="fc" id="L171">		typesToRemove.forEach(type -&gt; {</span>
-<span class="fc" id="L172">			unionRewrite.remove(type, group);</span>
-<span class="fc" id="L173">			importRemover.registerRemovedNode(type);</span>
-<span class="fc" id="L174">		});</span>
+<span class="fc" id="L329">		typesToRemove.forEach(type -&gt; {</span>
+<span class="fc" id="L330">			unionRewrite.remove(type, group);</span>
+<span class="fc" id="L331">			importRemover.registerRemovedNode(type);</span>
+<span class="fc" id="L332">		});</span>
 
-<span class="fc" id="L176">		int remainingCount = types.size() - typesToRemove.size();</span>
-<span class="fc bfc" id="L177" title="All 2 branches covered.">		if (remainingCount == 1) {</span>
-<span class="fc" id="L178">			Type remainingType = types.stream()</span>
-<span class="fc bfc" id="L179" title="All 2 branches covered.">					.filter(type -&gt; !typesToRemove.contains(type))</span>
-<span class="fc" id="L180">					.findFirst()</span>
-<span class="fc" id="L181">					.orElse(null);</span>
-<span class="pc bpc" id="L182" title="1 of 2 branches missed.">			if (remainingType != null) {</span>
-<span class="fc" id="L183">				rewrite.replace(unionType, remainingType, group);</span>
+<span class="fc" id="L334">		int remainingCount = types.size() - typesToRemove.size();</span>
+<span class="fc bfc" id="L335" title="All 2 branches covered.">		if (remainingCount == 1) {</span>
+<span class="fc" id="L336">			Type remainingType = types.stream()</span>
+<span class="fc bfc" id="L337" title="All 2 branches covered.">					.filter(type -&gt; !typesToRemove.contains(type))</span>
+<span class="fc" id="L338">					.findFirst()</span>
+<span class="fc" id="L339">					.orElse(null);</span>
+<span class="pc bpc" id="L340" title="1 of 2 branches missed.">			if (remainingType != null) {</span>
+<span class="fc" id="L341">				rewrite.replace(unionType, remainingType, group);</span>
 			}
-<span class="pc bpc" id="L185" title="1 of 2 branches missed.">		} else if (remainingCount == 0) {</span>
-<span class="nc" id="L186">			rewrite.remove(catchClause, group);</span>
-<span class="nc" id="L187">			importRemover.registerRemovedNode(catchClause);</span>
-<span class="nc" id="L188">			return true;</span>
+<span class="pc bpc" id="L343" title="1 of 2 branches missed.">		} else if (remainingCount == 0) {</span>
+<span class="nc" id="L344">			rewrite.remove(catchClause, group);</span>
+<span class="nc" id="L345">			importRemover.registerRemovedNode(catchClause);</span>
+<span class="nc" id="L346">			return true;</span>
 		}
-<span class="fc" id="L190">		return false;</span>
+<span class="fc" id="L348">		return false;</span>
 	}
 
 	static int removeExceptionFromTryCatch(
 			TryStatement tryStatement,
 			String exceptionFQN,
-			String exceptionSimple,
 			ASTRewrite rewrite,
 			TextEditGroup group,
 			ImportRemover importRemover) {
 
-<span class="fc" id="L201">		int removedCount = 0;</span>
-<span class="fc" id="L202">		List&lt;CatchClause&gt; catchClauses = tryStatement.catchClauses();</span>
-<span class="fc bfc" id="L203" title="All 2 branches covered.">		for (CatchClause catchClause : catchClauses) {</span>
-<span class="fc" id="L204">			SingleVariableDeclaration exception = catchClause.getException();</span>
-<span class="fc" id="L205">			Type exceptionType = exception.getType();</span>
+<span class="fc" id="L358">		int removedCount = 0;</span>
+<span class="fc" id="L359">		List&lt;CatchClause&gt; catchClauses = tryStatement.catchClauses();</span>
+<span class="fc bfc" id="L360" title="All 2 branches covered.">		for (CatchClause catchClause : catchClauses) {</span>
+<span class="fc" id="L361">			SingleVariableDeclaration exception = catchClause.getException();</span>
+<span class="fc" id="L362">			Type exceptionType = exception.getType();</span>
 
-<span class="fc bfc" id="L207" title="All 2 branches covered.">			if (exceptionType instanceof UnionType unionType) {</span>
-<span class="pc bpc" id="L208" title="1 of 2 branches missed.">				if (removeExceptionFromUnionType(unionType, catchClause, exceptionFQN, rewrite, group, importRemover)) {</span>
-<span class="nc" id="L209">					removedCount++;</span>
+<span class="fc bfc" id="L364" title="All 2 branches covered.">			if (exceptionType instanceof UnionType unionType) {</span>
+<span class="pc bpc" id="L365" title="1 of 2 branches missed.">				if (removeExceptionFromUnionType(unionType, catchClause, exceptionFQN, rewrite, group, importRemover)) {</span>
+<span class="nc" id="L366">					removedCount++;</span>
 				}
-<span class="pc bfc" id="L211" title="All 2 branches covered.">			} else if (isTargetException(exceptionType, exceptionFQN)) {</span>
-<span class="fc" id="L212">				rewrite.remove(catchClause, group);</span>
-<span class="fc" id="L213">				importRemover.registerRemovedNode(catchClause);</span>
-<span class="fc" id="L214">				removedCount++;</span>
+<span class="pc bfc" id="L368" title="All 2 branches covered.">			} else if (isTargetException(exceptionType, exceptionFQN)) {</span>
+<span class="fc" id="L369">				rewrite.remove(catchClause, group);</span>
+<span class="fc" id="L370">				importRemover.registerRemovedNode(catchClause);</span>
+<span class="fc" id="L371">				removedCount++;</span>
 			}
 		}
-<span class="fc" id="L217">		return removedCount;</span>
+<span class="fc" id="L374">		return removedCount;</span>
 	}
 
 	static void simplifyEmptyTryStatement(TryStatement tryStatement, ASTRewrite rewrite, TextEditGroup group, int removedCatchCount) {
-<span class="fc" id="L221">		int remainingCatchClauses = tryStatement.catchClauses().size() - removedCatchCount;</span>
-<span class="fc bfc" id="L222" title="All 4 branches covered.">		if (remainingCatchClauses &gt; 0 || tryStatement.getFinally() != null) {</span>
-<span class="fc" id="L223">			return;</span>
+<span class="fc" id="L378">		int remainingCatchClauses = tryStatement.catchClauses().size() - removedCatchCount;</span>
+<span class="fc bfc" id="L379" title="All 4 branches covered.">		if (remainingCatchClauses &gt; 0 || tryStatement.getFinally() != null) {</span>
+<span class="fc" id="L380">			return;</span>
 		}
 
-<span class="fc" id="L226">		Block tryBlock = tryStatement.getBody();</span>
-<span class="fc bfc" id="L227" title="All 2 branches covered.">		boolean hasResources = !tryStatement.resources().isEmpty();</span>
-<span class="pc bpc" id="L228" title="1 of 2 branches missed.">		boolean hasStatements = !tryBlock.statements().isEmpty();</span>
+<span class="fc" id="L383">		Block tryBlock = tryStatement.getBody();</span>
+<span class="fc bfc" id="L384" title="All 2 branches covered.">		boolean hasResources = !tryStatement.resources().isEmpty();</span>
+<span class="pc bpc" id="L385" title="1 of 2 branches missed.">		boolean hasStatements = !tryBlock.statements().isEmpty();</span>
 
-<span class="pc bpc" id="L230" title="1 of 4 branches missed.">		if (!hasResources &amp;&amp; !hasStatements) {</span>
-<span class="nc" id="L231">			rewrite.remove(tryStatement, group);</span>
-<span class="pc bpc" id="L232" title="1 of 4 branches missed.">		} else if (!hasResources &amp;&amp; tryStatement.getParent() instanceof Block) {</span>
+<span class="pc bpc" id="L387" title="1 of 4 branches missed.">		if (!hasResources &amp;&amp; !hasStatements) {</span>
+<span class="nc" id="L388">			rewrite.remove(tryStatement, group);</span>
+<span class="pc bpc" id="L389" title="1 of 4 branches missed.">		} else if (!hasResources &amp;&amp; tryStatement.getParent() instanceof Block) {</span>
 			// Inline statements from try body into the parent block,
 			// replacing the try statement with its individual statements
 			// to avoid producing an orphaned { ... } block.
@@ -237,14 +394,14 @@ public class ExceptionCleanupHelper {
 			// BEFORE invoking removeUnsupportedEncodingException (which triggers
 			// this method). createMoveTarget marks nodes as moved, and
 			// replaceAndRemoveNLS fails silently on already-moved nodes.
-<span class="fc" id="L240">			List&lt;?&gt; statements = rewrite.getListRewrite(tryBlock, Block.STATEMENTS_PROPERTY).getRewrittenList();</span>
-<span class="fc" id="L241">			ASTNode[] moved = new ASTNode[statements.size()];</span>
-<span class="fc bfc" id="L242" title="All 2 branches covered.">			for (int i = 0; i &lt; statements.size(); i++) {</span>
-<span class="fc" id="L243">				ASTNode statement = (ASTNode) statements.get(i);</span>
-<span class="fc bfc" id="L244" title="All 2 branches covered.">				moved[i] = statement.getParent() == null ? statement : rewrite.createMoveTarget(statement);</span>
+<span class="fc" id="L397">			List&lt;?&gt; statements = rewrite.getListRewrite(tryBlock, Block.STATEMENTS_PROPERTY).getRewrittenList();</span>
+<span class="fc" id="L398">			ASTNode[] moved = new ASTNode[statements.size()];</span>
+<span class="fc bfc" id="L399" title="All 2 branches covered.">			for (int i = 0; i &lt; statements.size(); i++) {</span>
+<span class="fc" id="L400">				ASTNode statement = (ASTNode) statements.get(i);</span>
+<span class="fc bfc" id="L401" title="All 2 branches covered.">				moved[i] = statement.getParent() == null ? statement : rewrite.createMoveTarget(statement);</span>
 			}
-<span class="fc" id="L246">			rewrite.replace(tryStatement, rewrite.createGroupNode(moved), group);</span>
+<span class="fc" id="L403">			rewrite.replace(tryStatement, rewrite.createGroupNode(moved), group);</span>
 		}
-<span class="fc" id="L248">	}</span>
+<span class="fc" id="L405">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

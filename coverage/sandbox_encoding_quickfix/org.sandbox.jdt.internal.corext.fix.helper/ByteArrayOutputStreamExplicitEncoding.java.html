@@ -101,13 +101,13 @@ import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 <span class="fc" id="L101">			operations.add(fixcore.rewrite(visited, cb, holder));</span>
 <span class="fc" id="L102">			return false;</span>
 		}
-<span class="pc bpc" id="L104" title="1 of 2 branches missed.">		if (ASTNodes.usesGivenSignature(visited, ByteArrayOutputStream.class.getCanonicalName(), METHOD_TOSTRING)) {</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">		if (ASTNodes.usesGivenSignature(visited, ByteArrayOutputStream.class.getCanonicalName(), METHOD_TOSTRING)) {</span>
 <span class="fc" id="L105">			NodeData nd2= new NodeData(false, visited, null);</span>
 <span class="fc" id="L106">			holder.put(visited, nd2);</span>
 <span class="fc" id="L107">			operations.add(fixcore.rewrite(visited, cb, holder));</span>
 <span class="fc" id="L108">			return false;</span>
 		}
-<span class="nc" id="L110">		return false;</span>
+<span class="fc" id="L110">		return false;</span>
 	}
 
 	@Override
