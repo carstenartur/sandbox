@@ -113,16 +113,11 @@ public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp implements I
 		}
 
 		ChangeBehavior cb= computeRefactorDeepth();
-		Set<CompilationUnitRewriteOperation> operations= new LinkedHashSet<>();
+		LinkedHashSet<CompilationUnitRewriteOperation> operations= new LinkedHashSet<>();
 		Set<ASTNode> nodesprocessed= new HashSet<>();
 
 		if (exceptionPlan != null) {
 			exceptionPlan.requireComplete();
-			operations.add(new CompilationUnitRewriteOperation() {
-				@Override public void rewriteAST(CompilationUnitRewrite rewrite, LinkedProposalModelCore model) {
-					CharsetConstructorMigration.install(rewrite, exceptionPlan);
-				}
-			});
 		}
 
 		// DSL-first architecture: DSL rules run first from encoding.sandbox-hint.
@@ -150,11 +145,16 @@ public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp implements I
 		// Imperative helpers: non-DSL patterns always run.
 		// DSL-handled patterns are skipped when DSL is active — DSL should handle them.
 		// The nodesprocessed set provides node-level dedup as safety net.
+		// Run the aggregate PrintStream helper after the other helpers record their converted calls.
+		boolean runPrintStreamLast= !dslActive && computeFixSet.remove(UseExplicitEncodingFixCore.PRINTSTREAM);
 		computeFixSet.forEach(i -> {
 			if (!dslActive || !i.isDslHandled()) {
 				i.findOperations(compilationUnit, operations, nodesprocessed, cb);
 			}
 		});
+		if (runPrintStreamLast) {
+			UseExplicitEncodingFixCore.PRINTSTREAM.findOperations(compilationUnit, operations, nodesprocessed, cb);
+		}
 
 		if (dslActive) {
 			CompilationUnitRewriteOperation importCleanup=
@@ -165,6 +165,11 @@ public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp implements I
 		}
 
 		if (exceptionPlan != null) {
+			operations.addFirst(new CompilationUnitRewriteOperation() {
+				@Override public void rewriteAST(CompilationUnitRewrite rewrite, LinkedProposalModelCore model) {
+					CharsetConstructorMigration.install(rewrite, exceptionPlan);
+				}
+			});
 			operations.add(new CompilationUnitRewriteOperation() {
 				@Override public void rewriteAST(CompilationUnitRewrite rewrite, LinkedProposalModelCore model) throws CoreException {
 					exceptionPlan.apply(rewrite, new TextEditGroup("Adapt checked exceptions to Charset constructors")); //$NON-NLS-1$

@@ -138,6 +138,18 @@ public record JavaSourceRewritePlan(String unitName, String sourceSha256, int so
         if (source.length() != sourceLength || !hash(source).equals(sourceSha256)) throw new IllegalArgumentException("STALE_SOURCE_PLAN"); //$NON-NLS-1$
     }
 
+    static JavaSourceRewritePlan coordinated(CompilationUnit ast, String source, ASTNode envelope,
+            List<? extends ASTNode> anchors, TextEdit edit) {
+        var changes = new ArrayList<Change>();
+        flatten(edit, source, changes);
+        changes.sort(Comparator.comparingInt(Change::offset));
+        var plan = new JavaSourceRewritePlan(ast.getJavaElement() == null ? "Source.java" : ast.getJavaElement().getElementName(), //$NON-NLS-1$
+                hash(source), source.length(), envelope.getStartPosition(), envelope.getLength(),
+                anchors.stream().map(node -> captureNode(node, source)).distinct().toList(), List.of(), Map.of(), changes);
+        plan.resolve(ast, source);
+        return plan;
+    }
+
     /** Two precise edits: insert before the label chain, replace only the admitted expression. */
     static JavaSourceRewritePlan hoist(CompilationUnit ast, String source, Statement envelope,
             org.eclipse.jdt.core.dom.Expression expression, String declaration, String name) {
