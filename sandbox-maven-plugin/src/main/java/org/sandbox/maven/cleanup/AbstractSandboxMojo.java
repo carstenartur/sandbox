@@ -21,18 +21,25 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
+import org.apache.maven.artifact.DependencyResolutionRequiredException;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.project.MavenProject;
 
 /**
  * Base class for Sandbox cleanup Maven plugin goals.
  * Resolves the CLI tool and invokes it with the appropriate arguments.
  */
 public abstract class AbstractSandboxMojo extends AbstractMojo {
+
+	@Parameter(defaultValue = "${project}", readonly = true, required = true)
+	private MavenProject project;
 
 	/**
 	 * Version of the sandbox-cleanup-cli tool to use.
@@ -106,15 +113,32 @@ public abstract class AbstractSandboxMojo extends AbstractMojo {
 	@Override
 	public void execute() throws MojoExecutionException, MojoFailureException {
 		Path toolHome = resolveToolHome();
-		List<String> command = buildCommand(toolHome);
+		if (hasCallerWorkspace(System.getenv())) {
+			// The caller owns the existing workspace, including its imported projects and classpaths.
+			runCleanup(toolHome, new MavenCleanupProject(null, List.of(sourceDir.toPath().toAbsolutePath()), scope), null);
+			return;
+		}
+		try (var run = new CleanupRun()) {
+			var input = MavenCleanupProject.prepare(project, sourceDir.toPath(), scope, run.directory);
+			runCleanup(toolHome, input, run.directory.resolve("workspace"));
+		} catch (IOException | DependencyResolutionRequiredException e) {
+			throw new MojoExecutionException("Cannot prepare or close the cleanup workspace: " + e.getMessage(), e);
+		}
+	}
 
-		getLog().info("Running sandbox-cleanup in " + getMode() + " mode");
+	static boolean hasCallerWorkspace(Map<String, String> environment) {
+		return !environment.getOrDefault("SANDBOX_WORKSPACE", "").isEmpty()
+				|| !environment.getOrDefault("SANDBOX_CLEANUP_WORKSPACE", "").isEmpty();
+	}
+
+	private void runCleanup(Path toolHome, MavenCleanupProject input, Path workspace)
+			throws MojoExecutionException, MojoFailureException {
+		List<String> command = buildCommand(toolHome, input);
+		getLog().info("Running sandbox-cleanup in " + getMode() + " mode (Maven scope: " + scope + ")");
 		if (verbose) {
 			getLog().info("Command: " + String.join(" ", command));
 		}
-
-		int exitCode = invokeProcess(command);
-		handleExitCode(exitCode);
+		handleExitCode(invokeProcess(command, workspace));
 	}
 
 	/**
@@ -177,7 +201,7 @@ public abstract class AbstractSandboxMojo extends AbstractMojo {
 	/**
 	 * Build the command line for invoking the tool.
 	 */
-	private List<String> buildCommand(Path toolHome) {
+	private List<String> buildCommand(Path toolHome, MavenCleanupProject input) {
 		List<String> cmd = new ArrayList<>();
 		Path launcher = toolHome.resolve("bin/sandbox-cleanup");
 		cmd.add(launcher.toString());
@@ -188,9 +212,13 @@ public abstract class AbstractSandboxMojo extends AbstractMojo {
 		cmd.add("--mode");
 		cmd.add(getMode());
 
-		if (scope != null && !scope.isEmpty()) {
+		if (input.directory() != null) {
+			cmd.add("--import-project");
+			cmd.add(input.directory().toString());
+		}
+		if (input.cliScope() != null && !input.cliScope().isEmpty()) {
 			cmd.add("--scope");
-			cmd.add(scope);
+			cmd.add(input.cliScope());
 		}
 
 		if (patchFile != null) {
@@ -207,8 +235,10 @@ public abstract class AbstractSandboxMojo extends AbstractMojo {
 			cmd.add("--verbose");
 		}
 
-		cmd.add("--source");
-		cmd.add(sourceDir.getAbsolutePath());
+		for (Path source : input.sources()) {
+			cmd.add("--source");
+			cmd.add(source.toString());
+		}
 
 		return cmd;
 	}
@@ -216,15 +246,42 @@ public abstract class AbstractSandboxMojo extends AbstractMojo {
 	/**
 	 * Invoke the tool as a subprocess and return the exit code.
 	 */
-	private int invokeProcess(List<String> command) throws MojoExecutionException {
+	private int invokeProcess(List<String> command, Path workspace) throws MojoExecutionException {
 		try {
 			ProcessBuilder pb = new ProcessBuilder(command);
 			pb.inheritIO();
-			pb.directory(sourceDir);
+			pb.directory(sourceDir.isDirectory() ? sourceDir : project.getBasedir());
+			if (workspace != null) {
+				pb.environment().put("SANDBOX_WORKSPACE", workspace.toString());
+			}
 			Process process = pb.start();
-			return process.waitFor();
-		} catch (IOException | InterruptedException e) {
+			try {
+				return process.waitFor();
+			} catch (InterruptedException e) {
+				process.destroyForcibly().onExit().join();
+				Thread.currentThread().interrupt();
+				throw new MojoExecutionException("Interrupted while running cleanup", e);
+			}
+		} catch (IOException e) {
 			throw new MojoExecutionException("Failed to execute cleanup tool", e);
+		}
+	}
+
+	private static final class CleanupRun implements AutoCloseable {
+		final Path directory;
+
+		CleanupRun() throws IOException {
+			directory = Files.createTempDirectory("sandbox-maven-cleanup-");
+		}
+
+		@Override
+		public void close() throws IOException {
+			// Files.walk does not follow symbolic links, including any created by Eclipse.
+			try (var paths = Files.walk(directory)) {
+				for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
+					Files.delete(path);
+				}
+			}
 		}
 	}
 

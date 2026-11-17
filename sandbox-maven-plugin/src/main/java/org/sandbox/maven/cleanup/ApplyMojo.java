@@ -16,13 +16,14 @@ package org.sandbox.maven.cleanup;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 
 /**
  * Apply goal: runs cleanup in apply mode (modifies files).
  *
  * Usage: {@code mvn sandbox:apply}
  */
-@Mojo(name = "apply")
+@Mojo(requiresDependencyResolution = ResolutionScope.TEST, name = "apply")
 public class ApplyMojo extends AbstractSandboxMojo {
 
 	@Override

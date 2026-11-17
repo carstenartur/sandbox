@@ -15,6 +15,7 @@ package org.sandbox.maven.cleanup;
 
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 
 /**
  * Check goal: runs cleanup in check mode (dry-run).
@@ -22,7 +23,7 @@ import org.apache.maven.plugins.annotations.Mojo;
  *
  * Usage: {@code mvn sandbox:check}
  */
-@Mojo(name = "check", defaultPhase = LifecyclePhase.VERIFY)
+@Mojo(requiresDependencyResolution = ResolutionScope.TEST, name = "check", defaultPhase = LifecyclePhase.VERIFY)
 public class CheckMojo extends AbstractSandboxMojo {
 
 	@Override
