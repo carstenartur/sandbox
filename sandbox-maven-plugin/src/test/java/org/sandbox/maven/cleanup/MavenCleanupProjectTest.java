@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -98,13 +99,13 @@ class MavenCleanupProjectTest {
 	void respectsNativeProjectMetadataAndCallerWorkspaceSettings() throws Exception {
 		var project = new MavenProject();
 		initialize(project, temporary);
-		Files.writeString(temporary.resolve(".project"), "existing metadata");
+		Files.writeString(temporary.resolve(".project"), "existing metadata", StandardCharsets.UTF_8);
 		Path run = Files.createDirectory(temporary.resolve("run"));
 		var input = MavenCleanupProject.prepare(project, temporary, "test", run);
 		assertEquals(temporary, input.directory());
 		assertEquals(List.of(temporary), input.sources());
 		assertEquals("test", input.cliScope());
-		assertEquals("existing metadata", Files.readString(temporary.resolve(".project")));
+		assertEquals("existing metadata", Files.readString(temporary.resolve(".project"), StandardCharsets.UTF_8));
 		assertTrue(AbstractSandboxMojo.hasCallerWorkspace(Map.of("SANDBOX_WORKSPACE", "/configured")));
 		assertTrue(AbstractSandboxMojo.hasCallerWorkspace(Map.of("SANDBOX_CLEANUP_WORKSPACE", "/legacy")));
 		assertFalse(AbstractSandboxMojo.hasCallerWorkspace(Map.of("SANDBOX_WORKSPACE", "")));
