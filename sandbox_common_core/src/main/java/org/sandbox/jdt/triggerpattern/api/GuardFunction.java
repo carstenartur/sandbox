@@ -17,9 +17,8 @@ package org.sandbox.jdt.triggerpattern.api;
  * Functional interface for guard functions that constrain pattern matches.
  * 
  * <p>A guard function evaluates a condition against a {@link GuardContext} and
- * optional arguments. Guard functions are registered in the
- * {@link org.sandbox.jdt.triggerpattern.internal.GuardRegistry} and referenced
- * by name from guard expressions.</p>
+ * optional arguments. The Eclipse plugin registers guard functions by name
+ * so that guard expressions can reference them.</p>
  * 
  * <p>Example usage:</p>
  * <pre>

@@ -1,9 +1,11 @@
-# Sandbox 1.3.9 — release notes
+# Sandbox 1.3.10 — release notes
 
-Eclipse Marketplace installations of Sandbox 1.3.8 could load the AST API JAR from 1.3.2. Those releases used the same OSGi bundle version for different JARs. Sandbox 1.3.9 gives the bundle its own version. Existing users can update Sandbox through Eclipse. [#1837](https://github.com/carstenartur/sandbox/issues/1837) · [#1856](https://github.com/carstenartur/sandbox/pull/1856)
+The mathematics cleanup now uses Regelsuche 0.5.3 from Maven Central. Eclipse installations include the SDK and its runtime dependencies. The Sandbox release workflow adds Central publication for the AST API, JDT adapter, functional converter core, common core and Maven plug-in under `io.github.carstenartur`. [#1919](https://github.com/carstenartur/sandbox/pull/1919)
 
-- Container Analysis shows which properties a migration preserves and which still require investigation. [#1854](https://github.com/carstenartur/sandbox/pull/1854)
-- The mathematics cleanup recognizes additional counted sums and byte-field inversion patterns. Its qualification now checks generated Java with stricter compiler diagnostics and exercises the updated Regelsuche SDK. [#1843](https://github.com/carstenartur/sandbox/pull/1843) · [#1844](https://github.com/carstenartur/sandbox/pull/1844) · [#1845](https://github.com/carstenartur/sandbox/pull/1845) · [#1846](https://github.com/carstenartur/sandbox/pull/1846) · [#1847](https://github.com/carstenartur/sandbox/pull/1847) · [#1848](https://github.com/carstenartur/sandbox/pull/1848)
-- Both JGit Storage Hibernate consumers use 0.12.1. The author report preserves exact repository identity. [#1829](https://github.com/carstenartur/sandbox/pull/1829) · [#1849](https://github.com/carstenartur/sandbox/pull/1849)
+- The encoding cleanup preserves `PrintStream` and its auto-flush setting when it selects a constructor that accepts a `Charset`. File and path constructors retain their original checked-exception contracts. [#1917](https://github.com/carstenartur/sandbox/pull/1917)
+- The mathematics cleanup can reuse one modular inverse across two verified polynomial denominators. It can also generate primitive matrix operations for supported `int` and `long` recurrences, preserving Java overflow behavior. [#1913](https://github.com/carstenartur/sandbox/pull/1913) · [#1910](https://github.com/carstenartur/sandbox/pull/1910)
+- Two opt-in container cleanups convert locally scoped parallel arrays to records and repeated list scans to map lookups when the record key is stable. [#1897](https://github.com/carstenartur/sandbox/pull/1897)
+- JUnit migration can update a suite, its JUnit 4 members and the managed test dependencies together in supported standalone Maven projects. [#1907](https://github.com/carstenartur/sandbox/pull/1907)
+- The README now links directly to the advisory Java duplication report and shows its current count alongside the build status badges. [#1916](https://github.com/carstenartur/sandbox/pull/1916) · [#1918](https://github.com/carstenartur/sandbox/pull/1918)
 
-[Changes since 1.3.8](https://github.com/carstenartur/sandbox/compare/v1.3.8...v1.3.9)
+[Previous release notes for 1.3.9](https://github.com/carstenartur/sandbox/blob/v1.3.9/release_notes.md)

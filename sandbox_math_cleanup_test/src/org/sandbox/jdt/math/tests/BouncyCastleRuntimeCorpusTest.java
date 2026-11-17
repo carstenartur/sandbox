@@ -105,7 +105,9 @@ class BouncyCastleRuntimeCorpusTest {
             var jar = OptimizationGoal.class.getProtectionDomain().getCodeSource().getLocation();
             sdkHash = digest(Files.readAllBytes(Path.of(jar.toURI())));
         } else {
-            try (var input = installed.getEntry("lib/regelsuche-optimization-sdk.jar").openStream()) {
+            var entry = Objects.requireNonNull(installed.getEntry("lib/regelsuche-optimization-sdk.jar"),
+                    "The mathematics bundle must contain the released SDK");
+            try (var input = entry.openStream()) {
                 sdkHash = digest(input.readAllBytes());
             }
         }

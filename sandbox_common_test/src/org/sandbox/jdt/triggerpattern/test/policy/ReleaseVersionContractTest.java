@@ -44,7 +44,7 @@ public class ReleaseVersionContractTest {
 	private static final List<Transition> RECOVERY_TRANSITIONS = List.of(
 			new Transition("Create missing next-development pull request", "NEXT_SNAPSHOT"));
 	private static final List<String> STANDALONE_POMS = List.of(
-			"sandbox_cleanup_cli_dist/pom.xml", "sandbox-maven-plugin/pom.xml", "sandbox_oomph/pom.xml");
+			"sandbox_cleanup_cli_dist/pom.xml", "sandbox_oomph/pom.xml");
 	private static final List<Transition> TRANSITIONS = List.of(
 			new Transition("Set and verify stable project version", "RELEASE_VERSION"),
 			new Transition("Prepare next development iteration pull request", "NEXT_SNAPSHOT"));
@@ -185,6 +185,12 @@ public class ReleaseVersionContractTest {
 		String step = workflowStep(workflow, transition.step());
 		int verification = step.indexOf("actual=$(./mvnw");
 		assertTrue(verification >= 0, "Missing version verification in " + transition.step());
+		Matcher tycho = Pattern.compile("(?m)^[ \\t]*" + Pattern.quote("./mvnw org.eclipse.tycho:tycho-versions-plugin:\"$tycho_version\":set-version")
+				+ "[ \\t]+\\\\\\r?\\n[ \\t]*" + Pattern.quote("-DnewVersion=\"$" + transition.variable() + "\"")
+				+ "[ \\t]+-P([^\\s]+)[ \\t]*$").matcher(step);
+		assertTrue(tycho.find() && tycho.end() < verification, "Missing Tycho version transition in " + transition.step());
+		assertTrue(List.of(tycho.group(1).split(",")).contains("maven-plugin"),
+				"Tycho must update the cleanup Maven plugin parent in " + transition.step());
 		for (String pom : STANDALONE_POMS) {
 			Matcher command = versionCommand(pom, transition.variable()).matcher(step);
 			assertTrue(command.find(), transition.step() + " must update " + pom);

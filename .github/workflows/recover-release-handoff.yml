@@ -156,8 +156,6 @@ jobs:
             -DnewVersion="$NEXT_SNAPSHOT" -Pbenchmark,jacoco,maven-plugin
           ./mvnw -f sandbox_cleanup_cli_dist/pom.xml versions:set \
             -DnewVersion="$NEXT_SNAPSHOT" -DgenerateBackupPoms=false
-          ./mvnw -f sandbox-maven-plugin/pom.xml versions:set \
-            -DnewVersion="$NEXT_SNAPSHOT" -DgenerateBackupPoms=false
           ./mvnw -f sandbox_oomph/pom.xml versions:set \
             -DnewVersion="$NEXT_SNAPSHOT" -DgenerateBackupPoms=false
           sed -i "s/next.release.version=.*/next.release.version=${NEXT_RELEASE}/" \
