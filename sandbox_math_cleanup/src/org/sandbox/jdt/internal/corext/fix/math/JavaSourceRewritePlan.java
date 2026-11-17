@@ -169,6 +169,25 @@ public record JavaSourceRewritePlan(String unitName, String sourceSha256, int so
         return plan;
     }
 
+    /** Replace specific statements within an otherwise untouched source envelope. */
+    static JavaSourceRewritePlan replaceStatements(CompilationUnit ast, String source, List<? extends Statement> statements,
+            List<String> replacements) {
+        int start = statements.getFirst().getStartPosition();
+        var last = statements.getLast();
+        int length = last.getStartPosition() + last.getLength() - start;
+        var anchors = new ArrayList<Node>();
+        var changes = new ArrayList<Change>();
+        for (int i = 0; i < statements.size(); i++) {
+            Node node = captureNode(statements.get(i), source);
+            anchors.add(node);
+            changes.add(new Change(node.offset(), node.length(), node.textSha256(), replacements.get(i)));
+        }
+        var plan = new JavaSourceRewritePlan(ast.getJavaElement() == null ? "Source.java" : ast.getJavaElement().getElementName(), //$NON-NLS-1$
+                hash(source), source.length(), start, length, anchors, List.of(), Map.of(), changes);
+        plan.resolve(ast, source);
+        return plan;
+    }
+
     static JavaSourceRewritePlan capture(CompilationUnit ast, String source, String unitName, JavaComputationRegion region,
             List<Statement> barriers, TextEdit edit, String prefix) {
         var nodes = new LinkedHashMap<String, Node>();

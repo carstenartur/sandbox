@@ -515,3 +515,25 @@ if an instance escapes during construction. The source pass checks the generated
 bindings and exact edit envelope before submitting one coordinated Preview,
 Apply and Undo. The constructor work is amortized over calls, so the source
 receipt makes no measured latency or timing claim.
+
+## Bounded byte-array prefixes
+
+The explicit cleanup can preallocate a byte-array result for a local prefix
+initialized by `clone`, appended to at the end of a loop and returned through
+`copyOfRange(prefix, 0, length)`. The requested `int` length is stable and has
+an upper bound of 65,535 at the first allocation. Other uses of the growing
+prefix, observable static receivers, and comments inside replaced statements
+are admission boundaries.
+
+Sandbox verifies the resolved source bodies of the three utility methods and
+of the checked range-length helper, including their Java platform bindings and
+inert utility-class initialization. The existing source dependency checkpoint
+covers those definitions through Apply. The edit changes three statements and
+keeps the loop header and block producers in place. The new array holds the
+first `min(logicalLength, result.length)` bytes as blocks arrive and its
+remaining bytes are zero-filled. A logical length of `-1` tracks an all-null
+prefix. Overflow throws during the append, and the original range helper
+handles negative output lengths and all-null prefixes after the last block.
+The allocation and copy reduction assumes sufficient heap. The source adapter
+recompiles the complete edit and checks the generated call bindings before
+exposing it through the existing Apply and Undo flow.
