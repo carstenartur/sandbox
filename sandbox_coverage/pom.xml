@@ -57,7 +57,7 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.sandbox</groupId>
+			<groupId>io.github.carstenartur</groupId>
 			<artifactId>sandbox-functional-converter-core</artifactId>
 			<scope>compile</scope>
 		</dependency>
@@ -192,17 +192,17 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.sandbox</groupId>
+			<groupId>io.github.carstenartur</groupId>
 			<artifactId>sandbox-ast-api</artifactId>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.sandbox</groupId>
+			<groupId>io.github.carstenartur</groupId>
 			<artifactId>sandbox-ast-api-jdt</artifactId>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.sandbox</groupId>
+			<groupId>io.github.carstenartur</groupId>
 			<artifactId>sandbox_common_core</artifactId>
 			<scope>compile</scope>
 		</dependency>

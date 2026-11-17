@@ -13,7 +13,7 @@
 	<packaging>eclipse-plugin</packaging>
 	<dependencies>
 		<dependency>
-			<groupId>org.sandbox</groupId>
+			<groupId>io.github.carstenartur</groupId>
 			<artifactId>sandbox-functional-converter-core</artifactId>
 		</dependency>
 	</dependencies>

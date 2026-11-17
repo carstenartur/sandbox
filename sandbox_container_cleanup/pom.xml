@@ -13,7 +13,7 @@
 	<packaging>eclipse-plugin</packaging>
 	<dependencies>
 		<dependency>
-			<groupId>org.sandbox</groupId>
+			<groupId>io.github.carstenartur</groupId>
 			<artifactId>sandbox_common_core</artifactId>
 			<!-- PDE supplies the bundles imported by Common Core. -->
 			<exclusions>

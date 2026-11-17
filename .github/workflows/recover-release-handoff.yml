@@ -153,7 +153,7 @@ jobs:
           tycho_version=$(./mvnw -q -DforceStdout help:evaluate \
             -Dexpression=tycho-version | tail -n 1)
           ./mvnw org.eclipse.tycho:tycho-versions-plugin:"$tycho_version":set-version \
-            -DnewVersion="$NEXT_SNAPSHOT" -Pbenchmark,jacoco
+            -DnewVersion="$NEXT_SNAPSHOT" -Pbenchmark,jacoco,maven-plugin
           ./mvnw -f sandbox_cleanup_cli_dist/pom.xml versions:set \
             -DnewVersion="$NEXT_SNAPSHOT" -DgenerateBackupPoms=false
           ./mvnw -f sandbox-maven-plugin/pom.xml versions:set \

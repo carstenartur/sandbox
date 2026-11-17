@@ -112,7 +112,8 @@ class JdtMathQualificationTest {
         try (var checkout = Git.open(Path.of(".").toFile())) {
             assertEquals(property("productCommit"), checkout.getRepository().resolve("HEAD").name(), "Product and source checkout must have the same commit");
         }
-        String sdk = hash(Path.of("sandbox_math_cleanup/lib/regelsuche-optimization-sdk.jar"));
+        String sdk = hash(Path.of(de.regelsuche.sdk.optimization.ComputationOptimizer.class.getProtectionDomain()
+                .getCodeSource().getLocation().toURI()));
         try (var jar = new JarFile(adapter.toFile()); var embedded = jar.getInputStream(jar.getJarEntry("lib/regelsuche-optimization-sdk.jar"))) {
             assertEquals(sdk, HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(embedded.readAllBytes())));
         }

@@ -97,7 +97,7 @@ final class MathematicsHelpScreenshots {
         Path root= SandboxCheckout.locate("sandbox.repository.root"); //$NON-NLS-1$
         Path output= SandboxCheckout.locate("sandbox.help.screenshot.output").resolve("sandbox_math_cleanup_help/images"); //$NON-NLS-1$ //$NON-NLS-2$
         var receipt= JsonParser.parseString(Files.readString(root.resolve("sandbox_math_cleanup/lib/qualification.json"))).getAsJsonObject(); //$NON-NLS-1$
-        var sdkQualification= new SdkQualification(receipt.get("standaloneJarSha256").getAsString(), receipt.get("sourceRevision").getAsString()); //$NON-NLS-1$ //$NON-NLS-2$
+        var sdkQualification= new SdkQualification(receipt.get("jarSha256").getAsString(), receipt.get("sourceRevision").getAsString()); //$NON-NLS-1$ //$NON-NLS-2$
         assertTrue(sdkQualification.jarSha256().matches("[0-9a-f]{64}")); //$NON-NLS-1$
         assertTrue(sdkQualification.sourceRevision().matches("[0-9a-f]{40}")); //$NON-NLS-1$
         try (var directories= Files.list(root.resolve("sandbox_eclipse_help_swtbot_test/fixtures/mathematics"))) { //$NON-NLS-1$

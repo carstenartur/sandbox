@@ -11,6 +11,7 @@
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 	
+	<groupId>io.github.carstenartur</groupId>
 	<artifactId>sandbox-ast-api-jdt</artifactId>
 	<packaging>jar</packaging>
 	
@@ -18,6 +19,7 @@
 	<description>Bridge module converting Eclipse JDT AST nodes to sandbox-ast-api fluent types</description>
 	
 	<properties>
+		<central.skipPublishing>false</central.skipPublishing>
 		<!-- Disable Tycho for this plain jar module (parent uses tycho-maven-plugin with extensions=true) -->
 		<tycho.mode>maven</tycho.mode>
 	</properties>
@@ -25,7 +27,7 @@
 	<dependencies>
 		<!-- Sandbox AST API (fluent types) -->
 		<dependency>
-			<groupId>org.sandbox</groupId>
+			<groupId>io.github.carstenartur</groupId>
 			<artifactId>sandbox-ast-api</artifactId>
 			<version>${project.version}</version>
 		</dependency>

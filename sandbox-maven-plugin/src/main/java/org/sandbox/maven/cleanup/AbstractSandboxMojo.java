@@ -37,7 +37,7 @@ public abstract class AbstractSandboxMojo extends AbstractMojo {
 	/**
 	 * Version of the sandbox-cleanup-cli tool to use.
 	 */
-	@Parameter(property = "sandbox.toolVersion", defaultValue = "1.2.6-SNAPSHOT")
+	@Parameter(property = "sandbox.toolVersion", defaultValue = "${plugin.version}")
 	protected String toolVersion;
 
 	/**

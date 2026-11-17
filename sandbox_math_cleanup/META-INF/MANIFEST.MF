@@ -8,7 +8,17 @@ Bundle-RequiredExecutionEnvironment: JavaSE-25
 Bundle-ActivationPolicy: lazy
 Bundle-Activator: org.sandbox.jdt.internal.ui.fix.MathematicalPlugin
 Bundle-ClassPath: .,
- lib/regelsuche-optimization-sdk.jar
+ lib/regelsuche-optimization-sdk.jar,
+ lib/regelsuche-core.jar,
+ lib/regelsuche-egraph.jar,
+ lib/regelsuche-search.jar,
+ lib/regelsuche-validation.jar,
+ lib/regelsuche-math-algorithms.jar,
+ lib/jackson-annotations.jar,
+ lib/jackson-core.jar,
+ lib/jackson-databind.jar,
+ lib/jackson-dataformat-yaml.jar,
+ lib/snakeyaml.jar
 Require-Bundle: org.sandbox.functional.core,
  sandbox_functional_converter;resolution:=optional,
  org.eclipse.core.filebuffers,

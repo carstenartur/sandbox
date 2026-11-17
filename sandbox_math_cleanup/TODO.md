@@ -14,5 +14,5 @@
 - Keep underflow detection unsupported until a tested tiny-and-inexact event
   detector and a versioned policy are available.
 - Keep unsupported source regions and numerical combinations diagnostic-only.
-- Replace the vendored, qualified SDK archive only after reproducing its
-  consumer result and updating its exact source revision, hashes and notices.
+- When updating the Regelsuche SDK release, verify its Maven coordinates,
+  source revision and checksum, then rerun the consumer qualification.

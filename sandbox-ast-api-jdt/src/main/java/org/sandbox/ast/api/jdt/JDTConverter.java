@@ -168,13 +168,12 @@ public final class JDTConverter {
 	 * <p>This is a convenience shortcut for the common pattern of checking
 	 * if an expression is a SimpleName and getting its identifier string.</p>
 	 * 
-	 * <p>Equivalent to:
+	 * <p>Equivalent to:</p>
 	 * <pre>
 	 * JDTConverter.convertExpression(expression)
 	 *     .flatMap(ASTExpr::asSimpleName)
 	 *     .map(SimpleNameExpr::identifier)
 	 * </pre>
-	 * </p>
 	 *
 	 * @param expression the JDT expression to check (may be {@code null})
 	 * @return the identifier if expression is a SimpleName, otherwise empty

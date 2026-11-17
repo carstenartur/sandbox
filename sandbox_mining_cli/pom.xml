@@ -25,7 +25,7 @@
 	<dependencies>
 		<!-- Sandbox Common Core (Engine, Parser, Matcher) -->
 		<dependency>
-			<groupId>org.sandbox</groupId>
+			<groupId>io.github.carstenartur</groupId>
 			<artifactId>sandbox_common_core</artifactId>
 		</dependency>
 		

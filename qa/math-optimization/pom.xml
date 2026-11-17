@@ -3,13 +3,13 @@
  <name>Standalone qualification of the production mathematics core</name>
  <properties><maven.compiler.release>25</maven.compiler.release><project.build.sourceEncoding>UTF-8</project.build.sourceEncoding><repo>${project.basedir}/../..</repo><bc.binary>${settings.localRepository}/org/bouncycastle/bcprov-jdk18on/1.85.2/bcprov-jdk18on-1.85.2.jar</bc.binary><bc.sources>${settings.localRepository}/org/bouncycastle/bcprov-jdk18on/1.85.2/bcprov-jdk18on-1.85.2-sources.jar</bc.sources><bc.sources.sha256>b37ac84b1d5435ab7b8d166c16ab9f75e09f68f8ec50479bae433939b241b03f</bc.sources.sha256></properties>
  <dependencies>
-  <dependency><groupId>local</groupId><artifactId>qualified-sdk</artifactId><version>1</version><scope>system</scope><systemPath>${repo}/sandbox_math_cleanup/lib/regelsuche-optimization-sdk.jar</systemPath></dependency>
+  <dependency><groupId>io.github.carstenartur</groupId><artifactId>regelsuche-optimization-sdk</artifactId><version>0.5.3</version></dependency>
   <dependency><groupId>org.eclipse.jdt</groupId><artifactId>org.eclipse.jdt.core</artifactId><version>3.47.0</version></dependency>
   <dependency><groupId>org.eclipse.platform</groupId><artifactId>org.eclipse.text</artifactId><version>3.14.700</version></dependency>
   <dependency><groupId>org.eclipse.jgit</groupId><artifactId>org.eclipse.jgit</artifactId><version>7.8.0.202609011348-r</version></dependency>
   <dependency><groupId>org.openjdk.jmh</groupId><artifactId>jmh-core</artifactId><version>1.37</version></dependency>
   <dependency><groupId>org.openjdk.jmh</groupId><artifactId>jmh-generator-annprocess</artifactId><version>1.37</version></dependency>
-  <dependency><groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-databind</artifactId><version>2.21.7</version></dependency>
+  <dependency><groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-databind</artifactId><version>2.23.0</version></dependency>
   <dependency><groupId>com.google.code.gson</groupId><artifactId>gson</artifactId><version>2.13.2</version><scope>test</scope></dependency>
   <dependency><groupId>org.eclipse.platform</groupId><artifactId>org.eclipse.swt.gtk.linux.x86_64</artifactId><version>3.135.0</version><scope>test</scope></dependency>
   <dependency><groupId>org.eclipse.platform</groupId><artifactId>org.eclipse.swt.gtk.linux.x86_64</artifactId><version>3.135.0</version><classifier>sources</classifier><scope>test</scope></dependency>

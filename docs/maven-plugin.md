@@ -5,18 +5,17 @@ Maven project.
 
 ## Quick Start
 
-Add the plugin to your `pom.xml`:
+Set `sandbox.version` to the Sandbox release published on Maven Central and add the plugin to your `pom.xml`. Maven downloads the matching CLI distribution from GitHub Releases on first use.
 
 ```xml
 <build>
     <plugins>
         <plugin>
-            <groupId>org.sandbox</groupId>
+            <groupId>io.github.carstenartur</groupId>
             <artifactId>sandbox-maven-plugin</artifactId>
-            <version>1.2.6-SNAPSHOT</version>
+            <version>${sandbox.version}</version>
             <configuration>
                 <configFile>${project.basedir}/cleanup.properties</configFile>
-                <toolVersion>1.2.6-SNAPSHOT</toolVersion>
             </configuration>
         </plugin>
     </plugins>
@@ -57,7 +56,7 @@ mvn sandbox:diff -Dsandbox.configFile=cleanup.properties
 | Parameter            | Property                | Default                                | Description                                              |
 |----------------------|-------------------------|----------------------------------------|----------------------------------------------------------|
 | `configFile`         | `sandbox.configFile`    | —                                      | Cleanup configuration file (required)                    |
-| `toolVersion`        | `sandbox.toolVersion`   | `1.2.6-SNAPSHOT`                       | Version of the CLI tool to use                           |
+| `toolVersion`        | `sandbox.toolVersion`   | Plugin version                         | Version of the CLI tool to use                           |
 | `toolSource`         | `sandbox.toolSource`    | Auto-download from GitHub              | URL or local path to tool distribution                   |
 | `scope`              | `sandbox.scope`         | `both`                                 | Scope filter: `main`, `test`, `both`                     |
 | `sourceDir`          | `sandbox.sourceDir`     | `${project.basedir}`                   | Source directory to process                               |
@@ -73,9 +72,9 @@ mvn sandbox:diff -Dsandbox.configFile=cleanup.properties
 
 ```xml
 <plugin>
-    <groupId>org.sandbox</groupId>
+    <groupId>io.github.carstenartur</groupId>
     <artifactId>sandbox-maven-plugin</artifactId>
-    <version>1.2.6-SNAPSHOT</version>
+    <version>${sandbox.version}</version>
     <executions>
         <execution>
             <id>cleanup-check</id>

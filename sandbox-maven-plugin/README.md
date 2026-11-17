@@ -18,20 +18,18 @@ The plugin resolves the `sandbox-cleanup-cli` tool distribution (from GitHub Rel
 
 ## Configuration
 
-Add to your `pom.xml`:
+Set `sandbox.version` to a Sandbox release published on Maven Central and add the plugin to your `pom.xml`.
 
 ```xml
 <plugin>
-  <groupId>org.sandbox</groupId>
+  <groupId>io.github.carstenartur</groupId>
   <artifactId>sandbox-maven-plugin</artifactId>
-  <version>1.3.2-SNAPSHOT</version>
+  <version>${sandbox.version}</version>
   <configuration>
     <!-- Required: plugin config file -->
-    <configFile>${project.basedir}/.sandbox-config.yml</configFile>
-    <!-- Optional: override CLI release version -->
-    <!-- <toolVersion>1.3.2-SNAPSHOT</toolVersion> -->
-    <!-- Optional: local path or URL to tool distribution archive -->
-    <!-- <toolSource>/path/to/sandbox-cleanup-cli-1.2.6-SNAPSHOT-dist.tar.gz</toolSource> -->
+    <configFile>${project.basedir}/cleanup.properties</configFile>
+    <!-- Optional: path to an extracted CLI distribution -->
+    <!-- <toolSource>/path/to/sandbox-cleanup-cli</toolSource> -->
   </configuration>
 </plugin>
 ```

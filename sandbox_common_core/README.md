@@ -60,11 +60,14 @@ mvn install -pl sandbox_common_core -DskipTests
 ## Usage as Dependency
 
 ### Maven (plain JAR)
+
+Set `sandbox.version` to a [published Sandbox release](https://repo.maven.apache.org/maven2/io/github/carstenartur/sandbox_common_core/).
+
 ```xml
 <dependency>
-    <groupId>org.sandbox</groupId>
+    <groupId>io.github.carstenartur</groupId>
     <artifactId>sandbox_common_core</artifactId>
-    <version>${project.version}</version>
+    <version>${sandbox.version}</version>
 </dependency>
 ```
 
