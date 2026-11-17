@@ -681,12 +681,12 @@
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
-				<groupId>org.sandbox</groupId>
+				<groupId>io.github.carstenartur</groupId>
 				<artifactId>sandbox-mining-cli</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
-				<groupId>org.sandbox</groupId>
+				<groupId>io.github.carstenartur</groupId>
 				<artifactId>sandbox-mining-core</artifactId>
 				<version>${project.version}</version>
 			</dependency>
