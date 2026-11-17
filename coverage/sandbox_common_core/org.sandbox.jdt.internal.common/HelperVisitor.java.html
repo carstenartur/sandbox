@@ -1398,17 +1398,16 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	/**
 	 *
 	 * @param typeof
-	 * @param class1
 	 * @param bs
 	 * @return old BiPredicate assigned for nodetype
 	 */
 	public BiPredicate&lt;? extends ASTNode, E&gt; addVariableDeclarationStatement(Class&lt;?&gt; typeof,
 			BiPredicate&lt;VariableDeclarationStatement, E&gt; bs) {
-<span class="fc" id="L1407">		VisitorConfigData config = VisitorConfigData.builder()</span>
-<span class="fc" id="L1408">				.typeof(typeof)</span>
-<span class="fc" id="L1409">				.build();</span>
-<span class="fc" id="L1410">		predicatedata.put(VisitorEnum.VariableDeclarationStatement, config);</span>
-<span class="fc" id="L1411">		return predicatemap.put(VisitorEnum.VariableDeclarationStatement, bs);</span>
+<span class="fc" id="L1406">		VisitorConfigData config = VisitorConfigData.builder()</span>
+<span class="fc" id="L1407">				.typeof(typeof)</span>
+<span class="fc" id="L1408">				.build();</span>
+<span class="fc" id="L1409">		predicatedata.put(VisitorEnum.VariableDeclarationStatement, config);</span>
+<span class="fc" id="L1410">		return predicatemap.put(VisitorEnum.VariableDeclarationStatement, bs);</span>
 	}
 
 	/**
@@ -1418,7 +1417,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public BiPredicate&lt;? extends ASTNode, E&gt; addVariableDeclarationFragment(
 			BiPredicate&lt;VariableDeclarationFragment, E&gt; bs) {
-<span class="fc" id="L1421">		return predicatemap.put(VisitorEnum.VariableDeclarationFragment, bs);</span>
+<span class="fc" id="L1420">		return predicatemap.put(VisitorEnum.VariableDeclarationFragment, bs);</span>
 	}
 
 	/**
@@ -1427,7 +1426,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiPredicate assigned for nodetype
 	 */
 	public BiPredicate&lt;? extends ASTNode, E&gt; addWhileStatement(BiPredicate&lt;WhileStatement, E&gt; bs) {
-<span class="fc" id="L1430">		return predicatemap.put(VisitorEnum.WhileStatement, bs);</span>
+<span class="fc" id="L1429">		return predicatemap.put(VisitorEnum.WhileStatement, bs);</span>
 	}
 
 	/**
@@ -1436,7 +1435,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiPredicate assigned for nodetype
 	 */
 	public BiPredicate&lt;? extends ASTNode, E&gt; addWildcardType(BiPredicate&lt;WildcardType, E&gt; bs) {
-<span class="nc" id="L1439">		return predicatemap.put(VisitorEnum.WildcardType, bs);</span>
+<span class="nc" id="L1438">		return predicatemap.put(VisitorEnum.WildcardType, bs);</span>
 	}
 
 	/**
@@ -1445,7 +1444,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiPredicate assigned for nodetype
 	 */
 	public BiPredicate&lt;? extends ASTNode, E&gt; addYieldStatement(BiPredicate&lt;YieldStatement, E&gt; bs) {
-<span class="nc" id="L1448">		return predicatemap.put(VisitorEnum.YieldStatement, bs);</span>
+<span class="nc" id="L1447">		return predicatemap.put(VisitorEnum.YieldStatement, bs);</span>
 	}
 
 	/**
@@ -1454,7 +1453,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addAnnotationTypeDeclaration(BiConsumer&lt;AnnotationTypeDeclaration, E&gt; bc) {
-<span class="nc" id="L1457">		return consumermap.put(VisitorEnum.AnnotationTypeDeclaration, bc);</span>
+<span class="nc" id="L1456">		return consumermap.put(VisitorEnum.AnnotationTypeDeclaration, bc);</span>
 	}
 
 	/**
@@ -1464,7 +1463,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addAnnotationTypeMemberDeclaration(
 			BiConsumer&lt;AnnotationTypeMemberDeclaration, E&gt; bc) {
-<span class="nc" id="L1467">		return consumermap.put(VisitorEnum.AnnotationTypeMemberDeclaration, bc);</span>
+<span class="nc" id="L1466">		return consumermap.put(VisitorEnum.AnnotationTypeMemberDeclaration, bc);</span>
 	}
 
 	/**
@@ -1473,7 +1472,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addAnonymousClassDeclaration(BiConsumer&lt;AnonymousClassDeclaration, E&gt; bc) {
-<span class="nc" id="L1476">		return consumermap.put(VisitorEnum.AnonymousClassDeclaration, bc);</span>
+<span class="nc" id="L1475">		return consumermap.put(VisitorEnum.AnonymousClassDeclaration, bc);</span>
 	}
 
 	/**
@@ -1482,7 +1481,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addArrayAccess(BiConsumer&lt;ArrayAccess, E&gt; bc) {
-<span class="nc" id="L1485">		return consumermap.put(VisitorEnum.ArrayAccess, bc);</span>
+<span class="nc" id="L1484">		return consumermap.put(VisitorEnum.ArrayAccess, bc);</span>
 	}
 
 	/**
@@ -1491,7 +1490,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addArrayCreation(BiConsumer&lt;ArrayCreation, E&gt; bc) {
-<span class="nc" id="L1494">		return consumermap.put(VisitorEnum.ArrayCreation, bc);</span>
+<span class="nc" id="L1493">		return consumermap.put(VisitorEnum.ArrayCreation, bc);</span>
 	}
 
 	/**
@@ -1500,7 +1499,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addArrayInitializer(BiConsumer&lt;ArrayInitializer, E&gt; bc) {
-<span class="nc" id="L1503">		return consumermap.put(VisitorEnum.ArrayInitializer, bc);</span>
+<span class="nc" id="L1502">		return consumermap.put(VisitorEnum.ArrayInitializer, bc);</span>
 	}
 
 	/**
@@ -1509,7 +1508,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addArrayType(BiConsumer&lt;ArrayType, E&gt; bc) {
-<span class="nc" id="L1512">		return consumermap.put(VisitorEnum.ArrayType, bc);</span>
+<span class="nc" id="L1511">		return consumermap.put(VisitorEnum.ArrayType, bc);</span>
 	}
 
 	/**
@@ -1518,7 +1517,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addAssertStatement(BiConsumer&lt;AssertStatement, E&gt; bc) {
-<span class="nc" id="L1521">		return consumermap.put(VisitorEnum.AssertStatement, bc);</span>
+<span class="nc" id="L1520">		return consumermap.put(VisitorEnum.AssertStatement, bc);</span>
 	}
 
 	/**
@@ -1527,7 +1526,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addAssignment(BiConsumer&lt;Assignment, E&gt; bc) {
-<span class="nc" id="L1530">		return consumermap.put(VisitorEnum.Assignment, bc);</span>
+<span class="nc" id="L1529">		return consumermap.put(VisitorEnum.Assignment, bc);</span>
 	}
 
 	/**
@@ -1536,7 +1535,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addBlock(BiConsumer&lt;Block, E&gt; bc) {
-<span class="nc" id="L1539">		return consumermap.put(VisitorEnum.Block, bc);</span>
+<span class="nc" id="L1538">		return consumermap.put(VisitorEnum.Block, bc);</span>
 	}
 
 	/**
@@ -1545,7 +1544,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addBlockComment(BiConsumer&lt;BlockComment, E&gt; bc) {
-<span class="nc" id="L1548">		return consumermap.put(VisitorEnum.BlockComment, bc);</span>
+<span class="nc" id="L1547">		return consumermap.put(VisitorEnum.BlockComment, bc);</span>
 	}
 
 	/**
@@ -1554,7 +1553,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addBooleanLiteral(BiConsumer&lt;BooleanLiteral, E&gt; bc) {
-<span class="nc" id="L1557">		return consumermap.put(VisitorEnum.BooleanLiteral, bc);</span>
+<span class="nc" id="L1556">		return consumermap.put(VisitorEnum.BooleanLiteral, bc);</span>
 	}
 
 	/**
@@ -1563,7 +1562,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addBreakStatement(BiConsumer&lt;BreakStatement, E&gt; bc) {
-<span class="nc" id="L1566">		return consumermap.put(VisitorEnum.BreakStatement, bc);</span>
+<span class="nc" id="L1565">		return consumermap.put(VisitorEnum.BreakStatement, bc);</span>
 	}
 
 	/**
@@ -1572,7 +1571,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addCastExpression(BiConsumer&lt;CastExpression, E&gt; bc) {
-<span class="nc" id="L1575">		return consumermap.put(VisitorEnum.CastExpression, bc);</span>
+<span class="nc" id="L1574">		return consumermap.put(VisitorEnum.CastExpression, bc);</span>
 	}
 
 	/**
@@ -1581,7 +1580,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addCatchClause(BiConsumer&lt;CatchClause, E&gt; bc) {
-<span class="nc" id="L1584">		return consumermap.put(VisitorEnum.CatchClause, bc);</span>
+<span class="nc" id="L1583">		return consumermap.put(VisitorEnum.CatchClause, bc);</span>
 	}
 
 	/**
@@ -1590,7 +1589,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addCharacterLiteral(BiConsumer&lt;CharacterLiteral, E&gt; bc) {
-<span class="nc" id="L1593">		return consumermap.put(VisitorEnum.CharacterLiteral, bc);</span>
+<span class="nc" id="L1592">		return consumermap.put(VisitorEnum.CharacterLiteral, bc);</span>
 	}
 
 	/**
@@ -1599,7 +1598,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addClassInstanceCreation(BiConsumer&lt;ClassInstanceCreation, E&gt; bc) {
-<span class="nc" id="L1602">		return consumermap.put(VisitorEnum.ClassInstanceCreation, bc);</span>
+<span class="nc" id="L1601">		return consumermap.put(VisitorEnum.ClassInstanceCreation, bc);</span>
 	}
 
 	/**
@@ -1608,7 +1607,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addCompilationUnit(BiConsumer&lt;CompilationUnit, E&gt; bc) {
-<span class="nc" id="L1611">		return consumermap.put(VisitorEnum.CompilationUnit, bc);</span>
+<span class="nc" id="L1610">		return consumermap.put(VisitorEnum.CompilationUnit, bc);</span>
 	}
 
 	/**
@@ -1617,7 +1616,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addConditionalExpression(BiConsumer&lt;ConditionalExpression, E&gt; bc) {
-<span class="nc" id="L1620">		return consumermap.put(VisitorEnum.ConditionalExpression, bc);</span>
+<span class="nc" id="L1619">		return consumermap.put(VisitorEnum.ConditionalExpression, bc);</span>
 	}
 
 	/**
@@ -1626,7 +1625,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addConstructorInvocation(BiConsumer&lt;ConstructorInvocation, E&gt; bc) {
-<span class="nc" id="L1629">		return consumermap.put(VisitorEnum.ConstructorInvocation, bc);</span>
+<span class="nc" id="L1628">		return consumermap.put(VisitorEnum.ConstructorInvocation, bc);</span>
 	}
 
 	/**
@@ -1635,7 +1634,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addContinueStatement(BiConsumer&lt;ContinueStatement, E&gt; bc) {
-<span class="nc" id="L1638">		return consumermap.put(VisitorEnum.ContinueStatement, bc);</span>
+<span class="nc" id="L1637">		return consumermap.put(VisitorEnum.ContinueStatement, bc);</span>
 	}
 
 	/**
@@ -1644,7 +1643,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addCreationReference(BiConsumer&lt;CreationReference, E&gt; bc) {
-<span class="nc" id="L1647">		return consumermap.put(VisitorEnum.CreationReference, bc);</span>
+<span class="nc" id="L1646">		return consumermap.put(VisitorEnum.CreationReference, bc);</span>
 	}
 
 	/**
@@ -1653,7 +1652,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addDimension(BiConsumer&lt;Dimension, E&gt; bc) {
-<span class="nc" id="L1656">		return consumermap.put(VisitorEnum.Dimension, bc);</span>
+<span class="nc" id="L1655">		return consumermap.put(VisitorEnum.Dimension, bc);</span>
 	}
 
 	/**
@@ -1662,7 +1661,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addDoStatement(BiConsumer&lt;DoStatement, E&gt; bc) {
-<span class="nc" id="L1665">		return consumermap.put(VisitorEnum.DoStatement, bc);</span>
+<span class="nc" id="L1664">		return consumermap.put(VisitorEnum.DoStatement, bc);</span>
 	}
 
 	/**
@@ -1671,7 +1670,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addEmptyStatement(BiConsumer&lt;EmptyStatement, E&gt; bc) {
-<span class="nc" id="L1674">		return consumermap.put(VisitorEnum.EmptyStatement, bc);</span>
+<span class="nc" id="L1673">		return consumermap.put(VisitorEnum.EmptyStatement, bc);</span>
 	}
 
 	/**
@@ -1680,7 +1679,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addEnhancedForStatement(BiConsumer&lt;EnhancedForStatement, E&gt; bc) {
-<span class="nc" id="L1683">		return consumermap.put(VisitorEnum.EnhancedForStatement, bc);</span>
+<span class="nc" id="L1682">		return consumermap.put(VisitorEnum.EnhancedForStatement, bc);</span>
 	}
 
 	/**
@@ -1689,7 +1688,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addEnumConstantDeclaration(BiConsumer&lt;EnumConstantDeclaration, E&gt; bc) {
-<span class="nc" id="L1692">		return consumermap.put(VisitorEnum.EnumConstantDeclaration, bc);</span>
+<span class="nc" id="L1691">		return consumermap.put(VisitorEnum.EnumConstantDeclaration, bc);</span>
 	}
 
 	/**
@@ -1698,7 +1697,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addEnumDeclaration(BiConsumer&lt;EnumDeclaration, E&gt; bc) {
-<span class="nc" id="L1701">		return consumermap.put(VisitorEnum.EnumDeclaration, bc);</span>
+<span class="nc" id="L1700">		return consumermap.put(VisitorEnum.EnumDeclaration, bc);</span>
 	}
 
 	/**
@@ -1707,7 +1706,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addExportsDirective(BiConsumer&lt;ExportsDirective, E&gt; bc) {
-<span class="nc" id="L1710">		return consumermap.put(VisitorEnum.ExportsDirective, bc);</span>
+<span class="nc" id="L1709">		return consumermap.put(VisitorEnum.ExportsDirective, bc);</span>
 	}
 
 	/**
@@ -1716,7 +1715,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addExpressionMethodReference(BiConsumer&lt;ExpressionMethodReference, E&gt; bc) {
-<span class="nc" id="L1719">		return consumermap.put(VisitorEnum.ExpressionMethodReference, bc);</span>
+<span class="nc" id="L1718">		return consumermap.put(VisitorEnum.ExpressionMethodReference, bc);</span>
 	}
 
 	/**
@@ -1725,7 +1724,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addExpressionStatement(BiConsumer&lt;ExpressionStatement, E&gt; bc) {
-<span class="nc" id="L1728">		return consumermap.put(VisitorEnum.ExpressionStatement, bc);</span>
+<span class="nc" id="L1727">		return consumermap.put(VisitorEnum.ExpressionStatement, bc);</span>
 	}
 
 	/**
@@ -1734,7 +1733,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addFieldAccess(BiConsumer&lt;FieldAccess, E&gt; bc) {
-<span class="nc" id="L1737">		return consumermap.put(VisitorEnum.FieldAccess, bc);</span>
+<span class="nc" id="L1736">		return consumermap.put(VisitorEnum.FieldAccess, bc);</span>
 	}
 
 	/**
@@ -1743,7 +1742,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addFieldDeclaration(BiConsumer&lt;FieldDeclaration, E&gt; bc) {
-<span class="nc" id="L1746">		return consumermap.put(VisitorEnum.FieldDeclaration, bc);</span>
+<span class="nc" id="L1745">		return consumermap.put(VisitorEnum.FieldDeclaration, bc);</span>
 	}
 
 	/**
@@ -1752,7 +1751,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addForStatement(BiConsumer&lt;ForStatement, E&gt; bc) {
-<span class="nc" id="L1755">		return consumermap.put(VisitorEnum.ForStatement, bc);</span>
+<span class="nc" id="L1754">		return consumermap.put(VisitorEnum.ForStatement, bc);</span>
 	}
 
 	/**
@@ -1761,7 +1760,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addIfStatement(BiConsumer&lt;IfStatement, E&gt; bc) {
-<span class="nc" id="L1764">		return consumermap.put(VisitorEnum.IfStatement, bc);</span>
+<span class="nc" id="L1763">		return consumermap.put(VisitorEnum.IfStatement, bc);</span>
 	}
 
 	/**
@@ -1770,7 +1769,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addImportDeclaration(BiConsumer&lt;ImportDeclaration, E&gt; bc) {
-<span class="nc" id="L1773">		return consumermap.put(VisitorEnum.ImportDeclaration, bc);</span>
+<span class="nc" id="L1772">		return consumermap.put(VisitorEnum.ImportDeclaration, bc);</span>
 	}
 
 	/**
@@ -1779,7 +1778,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addInfixExpression(BiConsumer&lt;InfixExpression, E&gt; bc) {
-<span class="nc" id="L1782">		return consumermap.put(VisitorEnum.InfixExpression, bc);</span>
+<span class="nc" id="L1781">		return consumermap.put(VisitorEnum.InfixExpression, bc);</span>
 	}
 
 	/**
@@ -1788,7 +1787,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addInitializer(BiConsumer&lt;Initializer, E&gt; bc) {
-<span class="nc" id="L1791">		return consumermap.put(VisitorEnum.Initializer, bc);</span>
+<span class="nc" id="L1790">		return consumermap.put(VisitorEnum.Initializer, bc);</span>
 	}
 
 	/**
@@ -1797,7 +1796,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addInstanceofExpression(BiConsumer&lt;InstanceofExpression, E&gt; bc) {
-<span class="nc" id="L1800">		return consumermap.put(VisitorEnum.InstanceofExpression, bc);</span>
+<span class="nc" id="L1799">		return consumermap.put(VisitorEnum.InstanceofExpression, bc);</span>
 	}
 
 	/**
@@ -1806,7 +1805,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addIntersectionType(BiConsumer&lt;IntersectionType, E&gt; bc) {
-<span class="nc" id="L1809">		return consumermap.put(VisitorEnum.IntersectionType, bc);</span>
+<span class="nc" id="L1808">		return consumermap.put(VisitorEnum.IntersectionType, bc);</span>
 	}
 
 	/**
@@ -1815,7 +1814,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addJavadoc(BiConsumer&lt;Javadoc, E&gt; bc) {
-<span class="nc" id="L1818">		return consumermap.put(VisitorEnum.Javadoc, bc);</span>
+<span class="nc" id="L1817">		return consumermap.put(VisitorEnum.Javadoc, bc);</span>
 	}
 
 	/**
@@ -1824,7 +1823,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addLabeledStatement(BiConsumer&lt;LabeledStatement, E&gt; bc) {
-<span class="nc" id="L1827">		return consumermap.put(VisitorEnum.LabeledStatement, bc);</span>
+<span class="nc" id="L1826">		return consumermap.put(VisitorEnum.LabeledStatement, bc);</span>
 	}
 
 	/**
@@ -1833,7 +1832,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addLambdaExpression(BiConsumer&lt;LambdaExpression, E&gt; bc) {
-<span class="nc" id="L1836">		return consumermap.put(VisitorEnum.LambdaExpression, bc);</span>
+<span class="nc" id="L1835">		return consumermap.put(VisitorEnum.LambdaExpression, bc);</span>
 	}
 
 	/**
@@ -1842,7 +1841,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addLineComment(BiConsumer&lt;LineComment, E&gt; bc) {
-<span class="nc" id="L1845">		return consumermap.put(VisitorEnum.LineComment, bc);</span>
+<span class="nc" id="L1844">		return consumermap.put(VisitorEnum.LineComment, bc);</span>
 	}
 
 	/**
@@ -1851,7 +1850,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addMarkerAnnotation(BiConsumer&lt;MarkerAnnotation, E&gt; bc) {
-<span class="nc" id="L1854">		return consumermap.put(VisitorEnum.MarkerAnnotation, bc);</span>
+<span class="nc" id="L1853">		return consumermap.put(VisitorEnum.MarkerAnnotation, bc);</span>
 	}
 
 	/**
@@ -1860,7 +1859,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addMemberRef(BiConsumer&lt;MemberRef, E&gt; bc) {
-<span class="nc" id="L1863">		return consumermap.put(VisitorEnum.MemberRef, bc);</span>
+<span class="nc" id="L1862">		return consumermap.put(VisitorEnum.MemberRef, bc);</span>
 	}
 
 	/**
@@ -1869,7 +1868,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addMemberValuePair(BiConsumer&lt;MemberValuePair, E&gt; bc) {
-<span class="nc" id="L1872">		return consumermap.put(VisitorEnum.MemberValuePair, bc);</span>
+<span class="nc" id="L1871">		return consumermap.put(VisitorEnum.MemberValuePair, bc);</span>
 	}
 
 	/**
@@ -1878,7 +1877,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addMethodRef(BiConsumer&lt;MethodRef, E&gt; bc) {
-<span class="nc" id="L1881">		return consumermap.put(VisitorEnum.MethodRef, bc);</span>
+<span class="nc" id="L1880">		return consumermap.put(VisitorEnum.MethodRef, bc);</span>
 	}
 
 	/**
@@ -1887,7 +1886,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addMethodRefParameter(BiConsumer&lt;MethodRefParameter, E&gt; bc) {
-<span class="nc" id="L1890">		return consumermap.put(VisitorEnum.MethodRefParameter, bc);</span>
+<span class="nc" id="L1889">		return consumermap.put(VisitorEnum.MethodRefParameter, bc);</span>
 	}
 
 	/**
@@ -1896,7 +1895,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addMethodDeclaration(BiConsumer&lt;MethodDeclaration, E&gt; bc) {
-<span class="nc" id="L1899">		return consumermap.put(VisitorEnum.MethodDeclaration, bc);</span>
+<span class="nc" id="L1898">		return consumermap.put(VisitorEnum.MethodDeclaration, bc);</span>
 	}
 
 	/**
@@ -1905,7 +1904,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addMethodInvocation(BiConsumer&lt;MethodInvocation, E&gt; bc) {
-<span class="fc" id="L1908">		return consumermap.put(VisitorEnum.MethodInvocation, bc);</span>
+<span class="fc" id="L1907">		return consumermap.put(VisitorEnum.MethodInvocation, bc);</span>
 	}
 
 	/**
@@ -1915,10 +1914,10 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addMethodInvocation(String methodname, BiConsumer&lt;MethodInvocation, E&gt; bc) {
-<span class="nc" id="L1918">		this.consumerdata.put(VisitorEnum.MethodInvocation, VisitorConfigData.builder()</span>
-<span class="nc" id="L1919">				.methodName(methodname)</span>
-<span class="nc" id="L1920">				.build());</span>
-<span class="nc" id="L1921">		return consumermap.put(VisitorEnum.MethodInvocation, bc);</span>
+<span class="nc" id="L1917">		this.consumerdata.put(VisitorEnum.MethodInvocation, VisitorConfigData.builder()</span>
+<span class="nc" id="L1918">				.methodName(methodname)</span>
+<span class="nc" id="L1919">				.build());</span>
+<span class="nc" id="L1920">		return consumermap.put(VisitorEnum.MethodInvocation, bc);</span>
 	}
 
 	/**
@@ -1927,7 +1926,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addModifier(BiConsumer&lt;Modifier, E&gt; bc) {
-<span class="nc" id="L1930">		return consumermap.put(VisitorEnum.Modifier, bc);</span>
+<span class="nc" id="L1929">		return consumermap.put(VisitorEnum.Modifier, bc);</span>
 	}
 
 	/**
@@ -1936,7 +1935,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addModuleDeclaration(BiConsumer&lt;ModuleDeclaration, E&gt; bc) {
-<span class="nc" id="L1939">		return consumermap.put(VisitorEnum.ModuleDeclaration, bc);</span>
+<span class="nc" id="L1938">		return consumermap.put(VisitorEnum.ModuleDeclaration, bc);</span>
 	}
 
 	/**
@@ -1945,7 +1944,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addModuleModifier(BiConsumer&lt;ModuleModifier, E&gt; bc) {
-<span class="nc" id="L1948">		return consumermap.put(VisitorEnum.ModuleModifier, bc);</span>
+<span class="nc" id="L1947">		return consumermap.put(VisitorEnum.ModuleModifier, bc);</span>
 	}
 
 	/**
@@ -1954,7 +1953,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addNameQualifiedType(BiConsumer&lt;NameQualifiedType, E&gt; bc) {
-<span class="nc" id="L1957">		return consumermap.put(VisitorEnum.NameQualifiedType, bc);</span>
+<span class="nc" id="L1956">		return consumermap.put(VisitorEnum.NameQualifiedType, bc);</span>
 	}
 
 	/**
@@ -1963,7 +1962,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addNormalAnnotation(BiConsumer&lt;NormalAnnotation, E&gt; bc) {
-<span class="nc" id="L1966">		return consumermap.put(VisitorEnum.NormalAnnotation, bc);</span>
+<span class="nc" id="L1965">		return consumermap.put(VisitorEnum.NormalAnnotation, bc);</span>
 	}
 
 	/**
@@ -1972,7 +1971,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addNullLiteral(BiConsumer&lt;NullLiteral, E&gt; bc) {
-<span class="nc" id="L1975">		return consumermap.put(VisitorEnum.NullLiteral, bc);</span>
+<span class="nc" id="L1974">		return consumermap.put(VisitorEnum.NullLiteral, bc);</span>
 	}
 
 	/**
@@ -1981,7 +1980,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addNumberLiteral(BiConsumer&lt;NumberLiteral, E&gt; bc) {
-<span class="nc" id="L1984">		return consumermap.put(VisitorEnum.NumberLiteral, bc);</span>
+<span class="nc" id="L1983">		return consumermap.put(VisitorEnum.NumberLiteral, bc);</span>
 	}
 
 	/**
@@ -1990,7 +1989,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addOpensDirective(BiConsumer&lt;OpensDirective, E&gt; bc) {
-<span class="nc" id="L1993">		return consumermap.put(VisitorEnum.OpensDirective, bc);</span>
+<span class="nc" id="L1992">		return consumermap.put(VisitorEnum.OpensDirective, bc);</span>
 	}
 
 	/**
@@ -1999,7 +1998,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addPackageDeclaration(BiConsumer&lt;PackageDeclaration, E&gt; bc) {
-<span class="nc" id="L2002">		return consumermap.put(VisitorEnum.PackageDeclaration, bc);</span>
+<span class="nc" id="L2001">		return consumermap.put(VisitorEnum.PackageDeclaration, bc);</span>
 	}
 
 	/**
@@ -2008,7 +2007,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addParameterizedType(BiConsumer&lt;ParameterizedType, E&gt; bc) {
-<span class="nc" id="L2011">		return consumermap.put(VisitorEnum.ParameterizedType, bc);</span>
+<span class="nc" id="L2010">		return consumermap.put(VisitorEnum.ParameterizedType, bc);</span>
 	}
 
 	/**
@@ -2017,7 +2016,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addParenthesizedExpression(BiConsumer&lt;ParenthesizedExpression, E&gt; bc) {
-<span class="nc" id="L2020">		return consumermap.put(VisitorEnum.ParenthesizedExpression, bc);</span>
+<span class="nc" id="L2019">		return consumermap.put(VisitorEnum.ParenthesizedExpression, bc);</span>
 	}
 
 	/**
@@ -2027,7 +2026,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addPatternInstanceofExpression(
 			BiConsumer&lt;PatternInstanceofExpression, E&gt; bc) {
-<span class="nc" id="L2030">		return consumermap.put(VisitorEnum.PatternInstanceofExpression, bc);</span>
+<span class="nc" id="L2029">		return consumermap.put(VisitorEnum.PatternInstanceofExpression, bc);</span>
 	}
 
 	/**
@@ -2036,7 +2035,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addPostfixExpression(BiConsumer&lt;PostfixExpression, E&gt; bc) {
-<span class="nc" id="L2039">		return consumermap.put(VisitorEnum.PostfixExpression, bc);</span>
+<span class="nc" id="L2038">		return consumermap.put(VisitorEnum.PostfixExpression, bc);</span>
 	}
 
 	/**
@@ -2045,7 +2044,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addPrefixExpression(BiConsumer&lt;PrefixExpression, E&gt; bc) {
-<span class="nc" id="L2048">		return consumermap.put(VisitorEnum.PrefixExpression, bc);</span>
+<span class="nc" id="L2047">		return consumermap.put(VisitorEnum.PrefixExpression, bc);</span>
 	}
 
 	/**
@@ -2054,7 +2053,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addProvidesDirective(BiConsumer&lt;ProvidesDirective, E&gt; bc) {
-<span class="nc" id="L2057">		return consumermap.put(VisitorEnum.ProvidesDirective, bc);</span>
+<span class="nc" id="L2056">		return consumermap.put(VisitorEnum.ProvidesDirective, bc);</span>
 	}
 
 	/**
@@ -2063,7 +2062,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addPrimitiveType(BiConsumer&lt;PrimitiveType, E&gt; bc) {
-<span class="nc" id="L2066">		return consumermap.put(VisitorEnum.PrimitiveType, bc);</span>
+<span class="nc" id="L2065">		return consumermap.put(VisitorEnum.PrimitiveType, bc);</span>
 	}
 
 	/**
@@ -2072,7 +2071,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addQualifiedName(BiConsumer&lt;QualifiedName, E&gt; bc) {
-<span class="nc" id="L2075">		return consumermap.put(VisitorEnum.QualifiedName, bc);</span>
+<span class="nc" id="L2074">		return consumermap.put(VisitorEnum.QualifiedName, bc);</span>
 	}
 
 	/**
@@ -2081,7 +2080,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addQualifiedType(BiConsumer&lt;QualifiedType, E&gt; bc) {
-<span class="nc" id="L2084">		return consumermap.put(VisitorEnum.QualifiedType, bc);</span>
+<span class="nc" id="L2083">		return consumermap.put(VisitorEnum.QualifiedType, bc);</span>
 	}
 
 	/**
@@ -2089,7 +2088,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addModuleQualifiedName(BiConsumer&lt;ModuleQualifiedName, E&gt; bc) {
-<span class="nc" id="L2092">		return consumermap.put(VisitorEnum.ModuleQualifiedName, bc);</span>
+<span class="nc" id="L2091">		return consumermap.put(VisitorEnum.ModuleQualifiedName, bc);</span>
 	}
 
 	/**
@@ -2099,7 +2098,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 
 	public BiConsumer&lt;? extends ASTNode, E&gt; addRequiresDirective(BiConsumer&lt;RequiresDirective, E&gt; bc) {
-<span class="nc" id="L2102">		return consumermap.put(VisitorEnum.RequiresDirective, bc);</span>
+<span class="nc" id="L2101">		return consumermap.put(VisitorEnum.RequiresDirective, bc);</span>
 	}
 
 	/**
@@ -2108,7 +2107,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addRecordDeclaration(BiConsumer&lt;RecordDeclaration, E&gt; bc) {
-<span class="nc" id="L2111">		return consumermap.put(VisitorEnum.RecordDeclaration, bc);</span>
+<span class="nc" id="L2110">		return consumermap.put(VisitorEnum.RecordDeclaration, bc);</span>
 	}
 
 	/**
@@ -2117,7 +2116,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addReturnStatement(BiConsumer&lt;ReturnStatement, E&gt; bc) {
-<span class="nc" id="L2120">		return consumermap.put(VisitorEnum.ReturnStatement, bc);</span>
+<span class="nc" id="L2119">		return consumermap.put(VisitorEnum.ReturnStatement, bc);</span>
 	}
 
 	/**
@@ -2126,7 +2125,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addSimpleName(BiConsumer&lt;SimpleName, E&gt; bc) {
-<span class="nc" id="L2129">		return consumermap.put(VisitorEnum.SimpleName, bc);</span>
+<span class="nc" id="L2128">		return consumermap.put(VisitorEnum.SimpleName, bc);</span>
 	}
 
 	/**
@@ -2135,7 +2134,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addSimpleType(BiConsumer&lt;SimpleType, E&gt; bc) {
-<span class="nc" id="L2138">		return consumermap.put(VisitorEnum.SimpleType, bc);</span>
+<span class="nc" id="L2137">		return consumermap.put(VisitorEnum.SimpleType, bc);</span>
 	}
 
 	/**
@@ -2144,7 +2143,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addSingleMemberAnnotation(BiConsumer&lt;SingleMemberAnnotation, E&gt; bc) {
-<span class="nc" id="L2147">		return consumermap.put(VisitorEnum.SingleMemberAnnotation, bc);</span>
+<span class="nc" id="L2146">		return consumermap.put(VisitorEnum.SingleMemberAnnotation, bc);</span>
 	}
 
 	/**
@@ -2153,7 +2152,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addSingleVariableDeclaration(BiConsumer&lt;SingleVariableDeclaration, E&gt; bc) {
-<span class="nc" id="L2156">		return consumermap.put(VisitorEnum.SingleVariableDeclaration, bc);</span>
+<span class="nc" id="L2155">		return consumermap.put(VisitorEnum.SingleVariableDeclaration, bc);</span>
 	}
 
 	/**
@@ -2162,7 +2161,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addStringLiteral(BiConsumer&lt;StringLiteral, E&gt; bc) {
-<span class="nc" id="L2165">		return consumermap.put(VisitorEnum.StringLiteral, bc);</span>
+<span class="nc" id="L2164">		return consumermap.put(VisitorEnum.StringLiteral, bc);</span>
 	}
 
 	/**
@@ -2172,7 +2171,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addSuperConstructorInvocation(
 			BiConsumer&lt;SuperConstructorInvocation, E&gt; bc) {
-<span class="nc" id="L2175">		return consumermap.put(VisitorEnum.SuperConstructorInvocation, bc);</span>
+<span class="nc" id="L2174">		return consumermap.put(VisitorEnum.SuperConstructorInvocation, bc);</span>
 	}
 
 	/**
@@ -2181,7 +2180,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addSuperFieldAccess(BiConsumer&lt;SuperFieldAccess, E&gt; bc) {
-<span class="nc" id="L2184">		return consumermap.put(VisitorEnum.SuperFieldAccess, bc);</span>
+<span class="nc" id="L2183">		return consumermap.put(VisitorEnum.SuperFieldAccess, bc);</span>
 	}
 
 	/**
@@ -2190,7 +2189,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addSuperMethodInvocation(BiConsumer&lt;SuperMethodInvocation, E&gt; bc) {
-<span class="nc" id="L2193">		return consumermap.put(VisitorEnum.SuperMethodInvocation, bc);</span>
+<span class="nc" id="L2192">		return consumermap.put(VisitorEnum.SuperMethodInvocation, bc);</span>
 	}
 
 	/**
@@ -2199,7 +2198,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addSuperMethodReference(BiConsumer&lt;SuperMethodReference, E&gt; bc) {
-<span class="nc" id="L2202">		return consumermap.put(VisitorEnum.SuperMethodReference, bc);</span>
+<span class="nc" id="L2201">		return consumermap.put(VisitorEnum.SuperMethodReference, bc);</span>
 	}
 
 	/**
@@ -2208,7 +2207,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addSwitchCase(BiConsumer&lt;SwitchCase, E&gt; bc) {
-<span class="nc" id="L2211">		return consumermap.put(VisitorEnum.SwitchCase, bc);</span>
+<span class="nc" id="L2210">		return consumermap.put(VisitorEnum.SwitchCase, bc);</span>
 	}
 
 	/**
@@ -2217,7 +2216,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addSwitchExpression(BiConsumer&lt;SwitchExpression, E&gt; bc) {
-<span class="nc" id="L2220">		return consumermap.put(VisitorEnum.SwitchExpression, bc);</span>
+<span class="nc" id="L2219">		return consumermap.put(VisitorEnum.SwitchExpression, bc);</span>
 	}
 
 	/**
@@ -2226,7 +2225,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addSwitchStatement(BiConsumer&lt;SwitchStatement, E&gt; bc) {
-<span class="nc" id="L2229">		return consumermap.put(VisitorEnum.SwitchStatement, bc);</span>
+<span class="nc" id="L2228">		return consumermap.put(VisitorEnum.SwitchStatement, bc);</span>
 	}
 
 	/**
@@ -2235,7 +2234,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addSynchronizedStatement(BiConsumer&lt;SynchronizedStatement, E&gt; bc) {
-<span class="nc" id="L2238">		return consumermap.put(VisitorEnum.SynchronizedStatement, bc);</span>
+<span class="nc" id="L2237">		return consumermap.put(VisitorEnum.SynchronizedStatement, bc);</span>
 	}
 
 	/**
@@ -2244,7 +2243,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addTagElement(BiConsumer&lt;TagElement, E&gt; bc) {
-<span class="nc" id="L2247">		return consumermap.put(VisitorEnum.TagElement, bc);</span>
+<span class="nc" id="L2246">		return consumermap.put(VisitorEnum.TagElement, bc);</span>
 	}
 
 	/**
@@ -2253,7 +2252,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addTextBlock(BiConsumer&lt;TextBlock, E&gt; bc) {
-<span class="nc" id="L2256">		return consumermap.put(VisitorEnum.TextBlock, bc);</span>
+<span class="nc" id="L2255">		return consumermap.put(VisitorEnum.TextBlock, bc);</span>
 	}
 
 	/**
@@ -2262,7 +2261,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addTextElement(BiConsumer&lt;TextElement, E&gt; bc) {
-<span class="nc" id="L2265">		return consumermap.put(VisitorEnum.TextElement, bc);</span>
+<span class="nc" id="L2264">		return consumermap.put(VisitorEnum.TextElement, bc);</span>
 	}
 
 	/**
@@ -2271,7 +2270,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addThisExpression(BiConsumer&lt;ThisExpression, E&gt; bc) {
-<span class="nc" id="L2274">		return consumermap.put(VisitorEnum.ThisExpression, bc);</span>
+<span class="nc" id="L2273">		return consumermap.put(VisitorEnum.ThisExpression, bc);</span>
 	}
 
 	/**
@@ -2280,7 +2279,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addThrowStatement(BiConsumer&lt;ThrowStatement, E&gt; bc) {
-<span class="nc" id="L2283">		return consumermap.put(VisitorEnum.ThrowStatement, bc);</span>
+<span class="nc" id="L2282">		return consumermap.put(VisitorEnum.ThrowStatement, bc);</span>
 	}
 
 	/**
@@ -2289,7 +2288,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addTryStatement(BiConsumer&lt;TryStatement, E&gt; bc) {
-<span class="nc" id="L2292">		return consumermap.put(VisitorEnum.TryStatement, bc);</span>
+<span class="nc" id="L2291">		return consumermap.put(VisitorEnum.TryStatement, bc);</span>
 	}
 
 	/**
@@ -2298,7 +2297,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addTypeDeclaration(BiConsumer&lt;TypeDeclaration, E&gt; bc) {
-<span class="nc" id="L2301">		return consumermap.put(VisitorEnum.TypeDeclaration, bc);</span>
+<span class="nc" id="L2300">		return consumermap.put(VisitorEnum.TypeDeclaration, bc);</span>
 	}
 
 	/**
@@ -2307,7 +2306,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addTypeDeclarationStatement(BiConsumer&lt;TypeDeclarationStatement, E&gt; bc) {
-<span class="nc" id="L2310">		return consumermap.put(VisitorEnum.TypeDeclarationStatement, bc);</span>
+<span class="nc" id="L2309">		return consumermap.put(VisitorEnum.TypeDeclarationStatement, bc);</span>
 	}
 
 	/**
@@ -2316,7 +2315,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addTypeLiteral(BiConsumer&lt;TypeLiteral, E&gt; bc) {
-<span class="nc" id="L2319">		return consumermap.put(VisitorEnum.TypeLiteral, bc);</span>
+<span class="nc" id="L2318">		return consumermap.put(VisitorEnum.TypeLiteral, bc);</span>
 	}
 
 	/**
@@ -2325,7 +2324,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addTypeMethodReference(BiConsumer&lt;TypeMethodReference, E&gt; bc) {
-<span class="nc" id="L2328">		return consumermap.put(VisitorEnum.TypeMethodReference, bc);</span>
+<span class="nc" id="L2327">		return consumermap.put(VisitorEnum.TypeMethodReference, bc);</span>
 	}
 
 	/**
@@ -2334,7 +2333,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addTypeParameter(BiConsumer&lt;TypeParameter, E&gt; bc) {
-<span class="nc" id="L2337">		return consumermap.put(VisitorEnum.TypeParameter, bc);</span>
+<span class="nc" id="L2336">		return consumermap.put(VisitorEnum.TypeParameter, bc);</span>
 	}
 
 	/**
@@ -2343,7 +2342,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addUnionType(BiConsumer&lt;UnionType, E&gt; bc) {
-<span class="nc" id="L2346">		return consumermap.put(VisitorEnum.UnionType, bc);</span>
+<span class="nc" id="L2345">		return consumermap.put(VisitorEnum.UnionType, bc);</span>
 	}
 
 	/**
@@ -2352,7 +2351,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addUsesDirective(BiConsumer&lt;UsesDirective, E&gt; bc) {
-<span class="nc" id="L2355">		return consumermap.put(VisitorEnum.UsesDirective, bc);</span>
+<span class="nc" id="L2354">		return consumermap.put(VisitorEnum.UsesDirective, bc);</span>
 	}
 
 	/**
@@ -2362,7 +2361,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addVariableDeclarationExpression(
 			BiConsumer&lt;VariableDeclarationExpression, E&gt; bc) {
-<span class="nc" id="L2365">		return consumermap.put(VisitorEnum.VariableDeclarationExpression, bc);</span>
+<span class="nc" id="L2364">		return consumermap.put(VisitorEnum.VariableDeclarationExpression, bc);</span>
 	}
 
 	/**
@@ -2372,23 +2371,22 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addVariableDeclarationStatement(
 			BiConsumer&lt;VariableDeclarationStatement, E&gt; bc) {
-<span class="nc" id="L2375">		return consumermap.put(VisitorEnum.VariableDeclarationStatement, bc);</span>
+<span class="nc" id="L2374">		return consumermap.put(VisitorEnum.VariableDeclarationStatement, bc);</span>
 	}
 
 	/**
 	 *
 	 * @param typeof
-	 * @param class1
 	 * @param bc
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addVariableDeclarationStatement(Class&lt;?&gt; typeof,
 			BiConsumer&lt;VariableDeclarationStatement, E&gt; bc) {
-<span class="nc" id="L2387">		VisitorConfigData config = VisitorConfigData.builder()</span>
-<span class="nc" id="L2388">				.typeof(typeof)</span>
-<span class="nc" id="L2389">				.build();</span>
-<span class="nc" id="L2390">		consumerdata.put(VisitorEnum.VariableDeclarationStatement, config);</span>
-<span class="nc" id="L2391">		return consumermap.put(VisitorEnum.VariableDeclarationStatement, bc);</span>
+<span class="nc" id="L2385">		VisitorConfigData config = VisitorConfigData.builder()</span>
+<span class="nc" id="L2386">				.typeof(typeof)</span>
+<span class="nc" id="L2387">				.build();</span>
+<span class="nc" id="L2388">		consumerdata.put(VisitorEnum.VariableDeclarationStatement, config);</span>
+<span class="nc" id="L2389">		return consumermap.put(VisitorEnum.VariableDeclarationStatement, bc);</span>
 	}
 
 	/**
@@ -2398,7 +2396,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addVariableDeclarationFragment(
 			BiConsumer&lt;VariableDeclarationFragment, E&gt; bc) {
-<span class="nc" id="L2401">		return consumermap.put(VisitorEnum.VariableDeclarationFragment, bc);</span>
+<span class="nc" id="L2399">		return consumermap.put(VisitorEnum.VariableDeclarationFragment, bc);</span>
 	}
 
 	/**
@@ -2407,7 +2405,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addWhileStatement(BiConsumer&lt;WhileStatement, E&gt; bc) {
-<span class="fc" id="L2410">		return consumermap.put(VisitorEnum.WhileStatement, bc);</span>
+<span class="fc" id="L2408">		return consumermap.put(VisitorEnum.WhileStatement, bc);</span>
 	}
 
 	/**
@@ -2416,7 +2414,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addWildcardType(BiConsumer&lt;WildcardType, E&gt; bc) {
-<span class="nc" id="L2419">		return consumermap.put(VisitorEnum.WildcardType, bc);</span>
+<span class="nc" id="L2417">		return consumermap.put(VisitorEnum.WildcardType, bc);</span>
 	}
 
 	/**
@@ -2425,7 +2423,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiConsumer assigned for nodetype
 	 */
 	public BiConsumer&lt;? extends ASTNode, E&gt; addYieldStatement(BiConsumer&lt;YieldStatement, E&gt; bc) {
-<span class="nc" id="L2428">		return consumermap.put(VisitorEnum.YieldStatement, bc);</span>
+<span class="nc" id="L2426">		return consumermap.put(VisitorEnum.YieldStatement, bc);</span>
 	}
 
 
@@ -2437,9 +2435,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public void addAnnotationTypeDeclaration(BiPredicate&lt;AnnotationTypeDeclaration, E&gt; bs,
 			BiConsumer&lt;AnnotationTypeDeclaration, E&gt; bc) {
-<span class="nc" id="L2440">		predicatemap.put(VisitorEnum.AnnotationTypeDeclaration, bs);</span>
-<span class="nc" id="L2441">		consumermap.put(VisitorEnum.AnnotationTypeDeclaration, bc);</span>
-<span class="nc" id="L2442">	}</span>
+<span class="nc" id="L2438">		predicatemap.put(VisitorEnum.AnnotationTypeDeclaration, bs);</span>
+<span class="nc" id="L2439">		consumermap.put(VisitorEnum.AnnotationTypeDeclaration, bc);</span>
+<span class="nc" id="L2440">	}</span>
 
 	/**
 	 *
@@ -2448,9 +2446,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public void addAnnotationTypeMemberDeclaration(BiPredicate&lt;AnnotationTypeMemberDeclaration, E&gt; bs,
 			BiConsumer&lt;AnnotationTypeMemberDeclaration, E&gt; bc) {
-<span class="nc" id="L2451">		predicatemap.put(VisitorEnum.AnnotationTypeMemberDeclaration, bs);</span>
-<span class="nc" id="L2452">		consumermap.put(VisitorEnum.AnnotationTypeMemberDeclaration, bc);</span>
-<span class="nc" id="L2453">	}</span>
+<span class="nc" id="L2449">		predicatemap.put(VisitorEnum.AnnotationTypeMemberDeclaration, bs);</span>
+<span class="nc" id="L2450">		consumermap.put(VisitorEnum.AnnotationTypeMemberDeclaration, bc);</span>
+<span class="nc" id="L2451">	}</span>
 
 	/**
 	 *
@@ -2459,9 +2457,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public void addAnonymousClassDeclaration(BiPredicate&lt;AnonymousClassDeclaration, E&gt; bs,
 			BiConsumer&lt;AnonymousClassDeclaration, E&gt; bc) {
-<span class="nc" id="L2462">		predicatemap.put(VisitorEnum.AnonymousClassDeclaration, bs);</span>
-<span class="nc" id="L2463">		consumermap.put(VisitorEnum.AnonymousClassDeclaration, bc);</span>
-<span class="nc" id="L2464">	}</span>
+<span class="nc" id="L2460">		predicatemap.put(VisitorEnum.AnonymousClassDeclaration, bs);</span>
+<span class="nc" id="L2461">		consumermap.put(VisitorEnum.AnonymousClassDeclaration, bc);</span>
+<span class="nc" id="L2462">	}</span>
 
 	/**
 	 *
@@ -2469,9 +2467,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addArrayAccess(BiPredicate&lt;ArrayAccess, E&gt; bs, BiConsumer&lt;ArrayAccess, E&gt; bc) {
-<span class="nc" id="L2472">		predicatemap.put(VisitorEnum.ArrayAccess, bs);</span>
-<span class="nc" id="L2473">		consumermap.put(VisitorEnum.ArrayAccess, bc);</span>
-<span class="nc" id="L2474">	}</span>
+<span class="nc" id="L2470">		predicatemap.put(VisitorEnum.ArrayAccess, bs);</span>
+<span class="nc" id="L2471">		consumermap.put(VisitorEnum.ArrayAccess, bc);</span>
+<span class="nc" id="L2472">	}</span>
 
 	/**
 	 *
@@ -2479,9 +2477,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addArrayCreation(BiPredicate&lt;ArrayCreation, E&gt; bs, BiConsumer&lt;ArrayCreation, E&gt; bc) {
-<span class="nc" id="L2482">		predicatemap.put(VisitorEnum.ArrayCreation, bs);</span>
-<span class="nc" id="L2483">		consumermap.put(VisitorEnum.ArrayCreation, bc);</span>
-<span class="nc" id="L2484">	}</span>
+<span class="nc" id="L2480">		predicatemap.put(VisitorEnum.ArrayCreation, bs);</span>
+<span class="nc" id="L2481">		consumermap.put(VisitorEnum.ArrayCreation, bc);</span>
+<span class="nc" id="L2482">	}</span>
 
 	/**
 	 *
@@ -2489,9 +2487,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addArrayInitializer(BiPredicate&lt;ArrayInitializer, E&gt; bs, BiConsumer&lt;ArrayInitializer, E&gt; bc) {
-<span class="nc" id="L2492">		predicatemap.put(VisitorEnum.ArrayInitializer, bs);</span>
-<span class="nc" id="L2493">		consumermap.put(VisitorEnum.ArrayInitializer, bc);</span>
-<span class="nc" id="L2494">	}</span>
+<span class="nc" id="L2490">		predicatemap.put(VisitorEnum.ArrayInitializer, bs);</span>
+<span class="nc" id="L2491">		consumermap.put(VisitorEnum.ArrayInitializer, bc);</span>
+<span class="nc" id="L2492">	}</span>
 
 	/**
 	 *
@@ -2499,9 +2497,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addArrayType(BiPredicate&lt;ArrayType, E&gt; bs, BiConsumer&lt;ArrayType, E&gt; bc) {
-<span class="nc" id="L2502">		predicatemap.put(VisitorEnum.ArrayType, bs);</span>
-<span class="nc" id="L2503">		consumermap.put(VisitorEnum.ArrayType, bc);</span>
-<span class="nc" id="L2504">	}</span>
+<span class="nc" id="L2500">		predicatemap.put(VisitorEnum.ArrayType, bs);</span>
+<span class="nc" id="L2501">		consumermap.put(VisitorEnum.ArrayType, bc);</span>
+<span class="nc" id="L2502">	}</span>
 
 	/**
 	 *
@@ -2509,9 +2507,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addAssertStatement(BiPredicate&lt;AssertStatement, E&gt; bs, BiConsumer&lt;AssertStatement, E&gt; bc) {
-<span class="nc" id="L2512">		predicatemap.put(VisitorEnum.AssertStatement, bs);</span>
-<span class="nc" id="L2513">		consumermap.put(VisitorEnum.AssertStatement, bc);</span>
-<span class="nc" id="L2514">	}</span>
+<span class="nc" id="L2510">		predicatemap.put(VisitorEnum.AssertStatement, bs);</span>
+<span class="nc" id="L2511">		consumermap.put(VisitorEnum.AssertStatement, bc);</span>
+<span class="nc" id="L2512">	}</span>
 
 	/**
 	 *
@@ -2519,9 +2517,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addAssignment(BiPredicate&lt;Assignment, E&gt; bs, BiConsumer&lt;Assignment, E&gt; bc) {
-<span class="nc" id="L2522">		predicatemap.put(VisitorEnum.Assignment, bs);</span>
-<span class="nc" id="L2523">		consumermap.put(VisitorEnum.Assignment, bc);</span>
-<span class="nc" id="L2524">	}</span>
+<span class="nc" id="L2520">		predicatemap.put(VisitorEnum.Assignment, bs);</span>
+<span class="nc" id="L2521">		consumermap.put(VisitorEnum.Assignment, bc);</span>
+<span class="nc" id="L2522">	}</span>
 
 	/**
 	 *
@@ -2529,9 +2527,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addBlock(BiPredicate&lt;Block, E&gt; bs, BiConsumer&lt;Block, E&gt; bc) {
-<span class="nc" id="L2532">		predicatemap.put(VisitorEnum.Block, bs);</span>
-<span class="nc" id="L2533">		consumermap.put(VisitorEnum.Block, bc);</span>
-<span class="nc" id="L2534">	}</span>
+<span class="nc" id="L2530">		predicatemap.put(VisitorEnum.Block, bs);</span>
+<span class="nc" id="L2531">		consumermap.put(VisitorEnum.Block, bc);</span>
+<span class="nc" id="L2532">	}</span>
 
 	/**
 	 *
@@ -2539,9 +2537,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addBlockComment(BiPredicate&lt;BlockComment, E&gt; bs, BiConsumer&lt;BlockComment, E&gt; bc) {
-<span class="nc" id="L2542">		predicatemap.put(VisitorEnum.BlockComment, bs);</span>
-<span class="nc" id="L2543">		consumermap.put(VisitorEnum.BlockComment, bc);</span>
-<span class="nc" id="L2544">	}</span>
+<span class="nc" id="L2540">		predicatemap.put(VisitorEnum.BlockComment, bs);</span>
+<span class="nc" id="L2541">		consumermap.put(VisitorEnum.BlockComment, bc);</span>
+<span class="nc" id="L2542">	}</span>
 
 	/**
 	 *
@@ -2549,9 +2547,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addBooleanLiteral(BiPredicate&lt;BooleanLiteral, E&gt; bs, BiConsumer&lt;BooleanLiteral, E&gt; bc) {
-<span class="nc" id="L2552">		predicatemap.put(VisitorEnum.BooleanLiteral, bs);</span>
-<span class="nc" id="L2553">		consumermap.put(VisitorEnum.BooleanLiteral, bc);</span>
-<span class="nc" id="L2554">	}</span>
+<span class="nc" id="L2550">		predicatemap.put(VisitorEnum.BooleanLiteral, bs);</span>
+<span class="nc" id="L2551">		consumermap.put(VisitorEnum.BooleanLiteral, bc);</span>
+<span class="nc" id="L2552">	}</span>
 
 	/**
 	 *
@@ -2559,9 +2557,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addBreakStatement(BiPredicate&lt;BreakStatement, E&gt; bs, BiConsumer&lt;BreakStatement, E&gt; bc) {
-<span class="nc" id="L2562">		predicatemap.put(VisitorEnum.BreakStatement, bs);</span>
-<span class="nc" id="L2563">		consumermap.put(VisitorEnum.BreakStatement, bc);</span>
-<span class="nc" id="L2564">	}</span>
+<span class="nc" id="L2560">		predicatemap.put(VisitorEnum.BreakStatement, bs);</span>
+<span class="nc" id="L2561">		consumermap.put(VisitorEnum.BreakStatement, bc);</span>
+<span class="nc" id="L2562">	}</span>
 
 	/**
 	 *
@@ -2569,9 +2567,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addCastExpression(BiPredicate&lt;CastExpression, E&gt; bs, BiConsumer&lt;CastExpression, E&gt; bc) {
-<span class="nc" id="L2572">		predicatemap.put(VisitorEnum.CastExpression, bs);</span>
-<span class="nc" id="L2573">		consumermap.put(VisitorEnum.CastExpression, bc);</span>
-<span class="nc" id="L2574">	}</span>
+<span class="nc" id="L2570">		predicatemap.put(VisitorEnum.CastExpression, bs);</span>
+<span class="nc" id="L2571">		consumermap.put(VisitorEnum.CastExpression, bc);</span>
+<span class="nc" id="L2572">	}</span>
 
 	/**
 	 *
@@ -2579,9 +2577,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addCatchClause(BiPredicate&lt;CatchClause, E&gt; bs, BiConsumer&lt;CatchClause, E&gt; bc) {
-<span class="nc" id="L2582">		predicatemap.put(VisitorEnum.CatchClause, bs);</span>
-<span class="nc" id="L2583">		consumermap.put(VisitorEnum.CatchClause, bc);</span>
-<span class="nc" id="L2584">	}</span>
+<span class="nc" id="L2580">		predicatemap.put(VisitorEnum.CatchClause, bs);</span>
+<span class="nc" id="L2581">		consumermap.put(VisitorEnum.CatchClause, bc);</span>
+<span class="nc" id="L2582">	}</span>
 
 	/**
 	 *
@@ -2589,9 +2587,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addCharacterLiteral(BiPredicate&lt;CharacterLiteral, E&gt; bs, BiConsumer&lt;CharacterLiteral, E&gt; bc) {
-<span class="nc" id="L2592">		predicatemap.put(VisitorEnum.CharacterLiteral, bs);</span>
-<span class="nc" id="L2593">		consumermap.put(VisitorEnum.CharacterLiteral, bc);</span>
-<span class="nc" id="L2594">	}</span>
+<span class="nc" id="L2590">		predicatemap.put(VisitorEnum.CharacterLiteral, bs);</span>
+<span class="nc" id="L2591">		consumermap.put(VisitorEnum.CharacterLiteral, bc);</span>
+<span class="nc" id="L2592">	}</span>
 
 	/**
 	 *
@@ -2600,9 +2598,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public void addClassInstanceCreation(BiPredicate&lt;ClassInstanceCreation, E&gt; bs,
 			BiConsumer&lt;ClassInstanceCreation, E&gt; bc) {
-<span class="nc" id="L2603">		predicatemap.put(VisitorEnum.ClassInstanceCreation, bs);</span>
-<span class="nc" id="L2604">		consumermap.put(VisitorEnum.ClassInstanceCreation, bc);</span>
-<span class="nc" id="L2605">	}</span>
+<span class="nc" id="L2601">		predicatemap.put(VisitorEnum.ClassInstanceCreation, bs);</span>
+<span class="nc" id="L2602">		consumermap.put(VisitorEnum.ClassInstanceCreation, bc);</span>
+<span class="nc" id="L2603">	}</span>
 
 	/**
 	 *
@@ -2610,9 +2608,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addCompilationUnit(BiPredicate&lt;CompilationUnit, E&gt; bs, BiConsumer&lt;CompilationUnit, E&gt; bc) {
-<span class="nc" id="L2613">		predicatemap.put(VisitorEnum.CompilationUnit, bs);</span>
-<span class="nc" id="L2614">		consumermap.put(VisitorEnum.CompilationUnit, bc);</span>
-<span class="nc" id="L2615">	}</span>
+<span class="nc" id="L2611">		predicatemap.put(VisitorEnum.CompilationUnit, bs);</span>
+<span class="nc" id="L2612">		consumermap.put(VisitorEnum.CompilationUnit, bc);</span>
+<span class="nc" id="L2613">	}</span>
 
 	/**
 	 *
@@ -2621,9 +2619,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public void addConditionalExpression(BiPredicate&lt;ConditionalExpression, E&gt; bs,
 			BiConsumer&lt;ConditionalExpression, E&gt; bc) {
-<span class="nc" id="L2624">		predicatemap.put(VisitorEnum.ConditionalExpression, bs);</span>
-<span class="nc" id="L2625">		consumermap.put(VisitorEnum.ConditionalExpression, bc);</span>
-<span class="nc" id="L2626">	}</span>
+<span class="nc" id="L2622">		predicatemap.put(VisitorEnum.ConditionalExpression, bs);</span>
+<span class="nc" id="L2623">		consumermap.put(VisitorEnum.ConditionalExpression, bc);</span>
+<span class="nc" id="L2624">	}</span>
 
 	/**
 	 *
@@ -2632,9 +2630,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public void addConstructorInvocation(BiPredicate&lt;ConstructorInvocation, E&gt; bs,
 			BiConsumer&lt;ConstructorInvocation, E&gt; bc) {
-<span class="nc" id="L2635">		predicatemap.put(VisitorEnum.ConstructorInvocation, bs);</span>
-<span class="nc" id="L2636">		consumermap.put(VisitorEnum.ConstructorInvocation, bc);</span>
-<span class="nc" id="L2637">	}</span>
+<span class="nc" id="L2633">		predicatemap.put(VisitorEnum.ConstructorInvocation, bs);</span>
+<span class="nc" id="L2634">		consumermap.put(VisitorEnum.ConstructorInvocation, bc);</span>
+<span class="nc" id="L2635">	}</span>
 
 	/**
 	 *
@@ -2642,9 +2640,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addContinueStatement(BiPredicate&lt;ContinueStatement, E&gt; bs, BiConsumer&lt;ContinueStatement, E&gt; bc) {
-<span class="nc" id="L2645">		predicatemap.put(VisitorEnum.ContinueStatement, bs);</span>
-<span class="nc" id="L2646">		consumermap.put(VisitorEnum.ContinueStatement, bc);</span>
-<span class="nc" id="L2647">	}</span>
+<span class="nc" id="L2643">		predicatemap.put(VisitorEnum.ContinueStatement, bs);</span>
+<span class="nc" id="L2644">		consumermap.put(VisitorEnum.ContinueStatement, bc);</span>
+<span class="nc" id="L2645">	}</span>
 
 	/**
 	 *
@@ -2652,9 +2650,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addCreationReference(BiPredicate&lt;CreationReference, E&gt; bs, BiConsumer&lt;CreationReference, E&gt; bc) {
-<span class="nc" id="L2655">		predicatemap.put(VisitorEnum.CreationReference, bs);</span>
-<span class="nc" id="L2656">		consumermap.put(VisitorEnum.CreationReference, bc);</span>
-<span class="nc" id="L2657">	}</span>
+<span class="nc" id="L2653">		predicatemap.put(VisitorEnum.CreationReference, bs);</span>
+<span class="nc" id="L2654">		consumermap.put(VisitorEnum.CreationReference, bc);</span>
+<span class="nc" id="L2655">	}</span>
 
 	/**
 	 *
@@ -2662,9 +2660,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addDimension(BiPredicate&lt;Dimension, E&gt; bs, BiConsumer&lt;Dimension, E&gt; bc) {
-<span class="nc" id="L2665">		predicatemap.put(VisitorEnum.Dimension, bs);</span>
-<span class="nc" id="L2666">		consumermap.put(VisitorEnum.Dimension, bc);</span>
-<span class="nc" id="L2667">	}</span>
+<span class="nc" id="L2663">		predicatemap.put(VisitorEnum.Dimension, bs);</span>
+<span class="nc" id="L2664">		consumermap.put(VisitorEnum.Dimension, bc);</span>
+<span class="nc" id="L2665">	}</span>
 
 	/**
 	 *
@@ -2672,9 +2670,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addDoStatement(BiPredicate&lt;DoStatement, E&gt; bs, BiConsumer&lt;DoStatement, E&gt; bc) {
-<span class="nc" id="L2675">		predicatemap.put(VisitorEnum.DoStatement, bs);</span>
-<span class="nc" id="L2676">		consumermap.put(VisitorEnum.DoStatement, bc);</span>
-<span class="nc" id="L2677">	}</span>
+<span class="nc" id="L2673">		predicatemap.put(VisitorEnum.DoStatement, bs);</span>
+<span class="nc" id="L2674">		consumermap.put(VisitorEnum.DoStatement, bc);</span>
+<span class="nc" id="L2675">	}</span>
 
 	/**
 	 *
@@ -2682,9 +2680,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addEmptyStatement(BiPredicate&lt;EmptyStatement, E&gt; bs, BiConsumer&lt;EmptyStatement, E&gt; bc) {
-<span class="nc" id="L2685">		predicatemap.put(VisitorEnum.EmptyStatement, bs);</span>
-<span class="nc" id="L2686">		consumermap.put(VisitorEnum.EmptyStatement, bc);</span>
-<span class="nc" id="L2687">	}</span>
+<span class="nc" id="L2683">		predicatemap.put(VisitorEnum.EmptyStatement, bs);</span>
+<span class="nc" id="L2684">		consumermap.put(VisitorEnum.EmptyStatement, bc);</span>
+<span class="nc" id="L2685">	}</span>
 
 	/**
 	 *
@@ -2693,9 +2691,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public void addEnhancedForStatement(BiPredicate&lt;EnhancedForStatement, E&gt; bs,
 			BiConsumer&lt;EnhancedForStatement, E&gt; bc) {
-<span class="fc" id="L2696">		predicatemap.put(VisitorEnum.EnhancedForStatement, bs);</span>
-<span class="fc" id="L2697">		consumermap.put(VisitorEnum.EnhancedForStatement, bc);</span>
-<span class="fc" id="L2698">	}</span>
+<span class="fc" id="L2694">		predicatemap.put(VisitorEnum.EnhancedForStatement, bs);</span>
+<span class="fc" id="L2695">		consumermap.put(VisitorEnum.EnhancedForStatement, bc);</span>
+<span class="fc" id="L2696">	}</span>
 
 	/**
 	 *
@@ -2704,9 +2702,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public void addEnumConstantDeclaration(BiPredicate&lt;EnumConstantDeclaration, E&gt; bs,
 			BiConsumer&lt;EnumConstantDeclaration, E&gt; bc) {
-<span class="nc" id="L2707">		predicatemap.put(VisitorEnum.EnumConstantDeclaration, bs);</span>
-<span class="nc" id="L2708">		consumermap.put(VisitorEnum.EnumConstantDeclaration, bc);</span>
-<span class="nc" id="L2709">	}</span>
+<span class="nc" id="L2705">		predicatemap.put(VisitorEnum.EnumConstantDeclaration, bs);</span>
+<span class="nc" id="L2706">		consumermap.put(VisitorEnum.EnumConstantDeclaration, bc);</span>
+<span class="nc" id="L2707">	}</span>
 
 	/**
 	 *
@@ -2714,9 +2712,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addEnumDeclaration(BiPredicate&lt;EnumDeclaration, E&gt; bs, BiConsumer&lt;EnumDeclaration, E&gt; bc) {
-<span class="nc" id="L2717">		predicatemap.put(VisitorEnum.EnumDeclaration, bs);</span>
-<span class="nc" id="L2718">		consumermap.put(VisitorEnum.EnumDeclaration, bc);</span>
-<span class="nc" id="L2719">	}</span>
+<span class="nc" id="L2715">		predicatemap.put(VisitorEnum.EnumDeclaration, bs);</span>
+<span class="nc" id="L2716">		consumermap.put(VisitorEnum.EnumDeclaration, bc);</span>
+<span class="nc" id="L2717">	}</span>
 
 	/**
 	 *
@@ -2724,9 +2722,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addExportsDirective(BiPredicate&lt;ExportsDirective, E&gt; bs, BiConsumer&lt;ExportsDirective, E&gt; bc) {
-<span class="nc" id="L2727">		predicatemap.put(VisitorEnum.ExportsDirective, bs);</span>
-<span class="nc" id="L2728">		consumermap.put(VisitorEnum.ExportsDirective, bc);</span>
-<span class="nc" id="L2729">	}</span>
+<span class="nc" id="L2725">		predicatemap.put(VisitorEnum.ExportsDirective, bs);</span>
+<span class="nc" id="L2726">		consumermap.put(VisitorEnum.ExportsDirective, bc);</span>
+<span class="nc" id="L2727">	}</span>
 
 	/**
 	 *
@@ -2735,9 +2733,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public void addExpressionMethodReference(BiPredicate&lt;ExpressionMethodReference, E&gt; bs,
 			BiConsumer&lt;ExpressionMethodReference, E&gt; bc) {
-<span class="nc" id="L2738">		predicatemap.put(VisitorEnum.ExpressionMethodReference, bs);</span>
-<span class="nc" id="L2739">		consumermap.put(VisitorEnum.ExpressionMethodReference, bc);</span>
-<span class="nc" id="L2740">	}</span>
+<span class="nc" id="L2736">		predicatemap.put(VisitorEnum.ExpressionMethodReference, bs);</span>
+<span class="nc" id="L2737">		consumermap.put(VisitorEnum.ExpressionMethodReference, bc);</span>
+<span class="nc" id="L2738">	}</span>
 
 	/**
 	 *
@@ -2745,9 +2743,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addExpressionStatement(BiPredicate&lt;ExpressionStatement, E&gt; bs, BiConsumer&lt;ExpressionStatement, E&gt; bc) {
-<span class="nc" id="L2748">		predicatemap.put(VisitorEnum.ExpressionStatement, bs);</span>
-<span class="nc" id="L2749">		consumermap.put(VisitorEnum.ExpressionStatement, bc);</span>
-<span class="nc" id="L2750">	}</span>
+<span class="nc" id="L2746">		predicatemap.put(VisitorEnum.ExpressionStatement, bs);</span>
+<span class="nc" id="L2747">		consumermap.put(VisitorEnum.ExpressionStatement, bc);</span>
+<span class="nc" id="L2748">	}</span>
 
 	/**
 	 *
@@ -2755,9 +2753,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addFieldAccess(BiPredicate&lt;FieldAccess, E&gt; bs, BiConsumer&lt;FieldAccess, E&gt; bc) {
-<span class="nc" id="L2758">		predicatemap.put(VisitorEnum.FieldAccess, bs);</span>
-<span class="nc" id="L2759">		consumermap.put(VisitorEnum.FieldAccess, bc);</span>
-<span class="nc" id="L2760">	}</span>
+<span class="nc" id="L2756">		predicatemap.put(VisitorEnum.FieldAccess, bs);</span>
+<span class="nc" id="L2757">		consumermap.put(VisitorEnum.FieldAccess, bc);</span>
+<span class="nc" id="L2758">	}</span>
 
 	/**
 	 *
@@ -2765,9 +2763,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addFieldDeclaration(BiPredicate&lt;FieldDeclaration, E&gt; bs, BiConsumer&lt;FieldDeclaration, E&gt; bc) {
-<span class="nc" id="L2768">		predicatemap.put(VisitorEnum.FieldDeclaration, bs);</span>
-<span class="nc" id="L2769">		consumermap.put(VisitorEnum.FieldDeclaration, bc);</span>
-<span class="nc" id="L2770">	}</span>
+<span class="nc" id="L2766">		predicatemap.put(VisitorEnum.FieldDeclaration, bs);</span>
+<span class="nc" id="L2767">		consumermap.put(VisitorEnum.FieldDeclaration, bc);</span>
+<span class="nc" id="L2768">	}</span>
 
 	/**
 	 *
@@ -2775,9 +2773,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addForStatement(BiPredicate&lt;ForStatement, E&gt; bs, BiConsumer&lt;ForStatement, E&gt; bc) {
-<span class="nc" id="L2778">		predicatemap.put(VisitorEnum.ForStatement, bs);</span>
-<span class="nc" id="L2779">		consumermap.put(VisitorEnum.ForStatement, bc);</span>
-<span class="nc" id="L2780">	}</span>
+<span class="nc" id="L2776">		predicatemap.put(VisitorEnum.ForStatement, bs);</span>
+<span class="nc" id="L2777">		consumermap.put(VisitorEnum.ForStatement, bc);</span>
+<span class="nc" id="L2778">	}</span>
 
 	/**
 	 *
@@ -2785,9 +2783,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addIfStatement(BiPredicate&lt;IfStatement, E&gt; bs, BiConsumer&lt;IfStatement, E&gt; bc) {
-<span class="nc" id="L2788">		predicatemap.put(VisitorEnum.IfStatement, bs);</span>
-<span class="nc" id="L2789">		consumermap.put(VisitorEnum.IfStatement, bc);</span>
-<span class="nc" id="L2790">	}</span>
+<span class="nc" id="L2786">		predicatemap.put(VisitorEnum.IfStatement, bs);</span>
+<span class="nc" id="L2787">		consumermap.put(VisitorEnum.IfStatement, bc);</span>
+<span class="nc" id="L2788">	}</span>
 
 	/**
 	 *
@@ -2795,9 +2793,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addImportDeclaration(BiPredicate&lt;ImportDeclaration, E&gt; bs, BiConsumer&lt;ImportDeclaration, E&gt; bc) {
-<span class="nc" id="L2798">		predicatemap.put(VisitorEnum.ImportDeclaration, bs);</span>
-<span class="nc" id="L2799">		consumermap.put(VisitorEnum.ImportDeclaration, bc);</span>
-<span class="nc" id="L2800">	}</span>
+<span class="nc" id="L2796">		predicatemap.put(VisitorEnum.ImportDeclaration, bs);</span>
+<span class="nc" id="L2797">		consumermap.put(VisitorEnum.ImportDeclaration, bc);</span>
+<span class="nc" id="L2798">	}</span>
 
 	/**
 	 *
@@ -2805,9 +2803,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addInfixExpression(BiPredicate&lt;InfixExpression, E&gt; bs, BiConsumer&lt;InfixExpression, E&gt; bc) {
-<span class="nc" id="L2808">		predicatemap.put(VisitorEnum.InfixExpression, bs);</span>
-<span class="nc" id="L2809">		consumermap.put(VisitorEnum.InfixExpression, bc);</span>
-<span class="nc" id="L2810">	}</span>
+<span class="nc" id="L2806">		predicatemap.put(VisitorEnum.InfixExpression, bs);</span>
+<span class="nc" id="L2807">		consumermap.put(VisitorEnum.InfixExpression, bc);</span>
+<span class="nc" id="L2808">	}</span>
 
 	/**
 	 *
@@ -2815,9 +2813,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addInitializer(BiPredicate&lt;Initializer, E&gt; bs, BiConsumer&lt;Initializer, E&gt; bc) {
-<span class="nc" id="L2818">		predicatemap.put(VisitorEnum.Initializer, bs);</span>
-<span class="nc" id="L2819">		consumermap.put(VisitorEnum.Initializer, bc);</span>
-<span class="nc" id="L2820">	}</span>
+<span class="nc" id="L2816">		predicatemap.put(VisitorEnum.Initializer, bs);</span>
+<span class="nc" id="L2817">		consumermap.put(VisitorEnum.Initializer, bc);</span>
+<span class="nc" id="L2818">	}</span>
 
 	/**
 	 *
@@ -2826,9 +2824,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public void addInstanceofExpression(BiPredicate&lt;InstanceofExpression, E&gt; bs,
 			BiConsumer&lt;InstanceofExpression, E&gt; bc) {
-<span class="nc" id="L2829">		predicatemap.put(VisitorEnum.InstanceofExpression, bs);</span>
-<span class="nc" id="L2830">		consumermap.put(VisitorEnum.InstanceofExpression, bc);</span>
-<span class="nc" id="L2831">	}</span>
+<span class="nc" id="L2827">		predicatemap.put(VisitorEnum.InstanceofExpression, bs);</span>
+<span class="nc" id="L2828">		consumermap.put(VisitorEnum.InstanceofExpression, bc);</span>
+<span class="nc" id="L2829">	}</span>
 
 	/**
 	 *
@@ -2836,9 +2834,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addIntersectionType(BiPredicate&lt;IntersectionType, E&gt; bs, BiConsumer&lt;IntersectionType, E&gt; bc) {
-<span class="nc" id="L2839">		predicatemap.put(VisitorEnum.IntersectionType, bs);</span>
-<span class="nc" id="L2840">		consumermap.put(VisitorEnum.IntersectionType, bc);</span>
-<span class="nc" id="L2841">	}</span>
+<span class="nc" id="L2837">		predicatemap.put(VisitorEnum.IntersectionType, bs);</span>
+<span class="nc" id="L2838">		consumermap.put(VisitorEnum.IntersectionType, bc);</span>
+<span class="nc" id="L2839">	}</span>
 
 	/**
 	 *
@@ -2846,9 +2844,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addJavadoc(BiPredicate&lt;Javadoc, E&gt; bs, BiConsumer&lt;Javadoc, E&gt; bc) {
-<span class="nc" id="L2849">		predicatemap.put(VisitorEnum.Javadoc, bs);</span>
-<span class="nc" id="L2850">		consumermap.put(VisitorEnum.Javadoc, bc);</span>
-<span class="nc" id="L2851">	}</span>
+<span class="nc" id="L2847">		predicatemap.put(VisitorEnum.Javadoc, bs);</span>
+<span class="nc" id="L2848">		consumermap.put(VisitorEnum.Javadoc, bc);</span>
+<span class="nc" id="L2849">	}</span>
 
 	/**
 	 *
@@ -2856,9 +2854,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addLabeledStatement(BiPredicate&lt;LabeledStatement, E&gt; bs, BiConsumer&lt;LabeledStatement, E&gt; bc) {
-<span class="nc" id="L2859">		predicatemap.put(VisitorEnum.LabeledStatement, bs);</span>
-<span class="nc" id="L2860">		consumermap.put(VisitorEnum.LabeledStatement, bc);</span>
-<span class="nc" id="L2861">	}</span>
+<span class="nc" id="L2857">		predicatemap.put(VisitorEnum.LabeledStatement, bs);</span>
+<span class="nc" id="L2858">		consumermap.put(VisitorEnum.LabeledStatement, bc);</span>
+<span class="nc" id="L2859">	}</span>
 
 	/**
 	 *
@@ -2866,9 +2864,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addLambdaExpression(BiPredicate&lt;LambdaExpression, E&gt; bs, BiConsumer&lt;LambdaExpression, E&gt; bc) {
-<span class="nc" id="L2869">		predicatemap.put(VisitorEnum.LambdaExpression, bs);</span>
-<span class="nc" id="L2870">		consumermap.put(VisitorEnum.LambdaExpression, bc);</span>
-<span class="nc" id="L2871">	}</span>
+<span class="nc" id="L2867">		predicatemap.put(VisitorEnum.LambdaExpression, bs);</span>
+<span class="nc" id="L2868">		consumermap.put(VisitorEnum.LambdaExpression, bc);</span>
+<span class="nc" id="L2869">	}</span>
 
 	/**
 	 *
@@ -2876,9 +2874,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addLineComment(BiPredicate&lt;LineComment, E&gt; bs, BiConsumer&lt;LineComment, E&gt; bc) {
-<span class="nc" id="L2879">		predicatemap.put(VisitorEnum.LineComment, bs);</span>
-<span class="nc" id="L2880">		consumermap.put(VisitorEnum.LineComment, bc);</span>
-<span class="nc" id="L2881">	}</span>
+<span class="nc" id="L2877">		predicatemap.put(VisitorEnum.LineComment, bs);</span>
+<span class="nc" id="L2878">		consumermap.put(VisitorEnum.LineComment, bc);</span>
+<span class="nc" id="L2879">	}</span>
 
 	/**
 	 *
@@ -2886,9 +2884,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addMarkerAnnotation(BiPredicate&lt;MarkerAnnotation, E&gt; bs, BiConsumer&lt;MarkerAnnotation, E&gt; bc) {
-<span class="nc" id="L2889">		predicatemap.put(VisitorEnum.MarkerAnnotation, bs);</span>
-<span class="nc" id="L2890">		consumermap.put(VisitorEnum.MarkerAnnotation, bc);</span>
-<span class="nc" id="L2891">	}</span>
+<span class="nc" id="L2887">		predicatemap.put(VisitorEnum.MarkerAnnotation, bs);</span>
+<span class="nc" id="L2888">		consumermap.put(VisitorEnum.MarkerAnnotation, bc);</span>
+<span class="nc" id="L2889">	}</span>
 
 	/**
 	 *
@@ -2896,9 +2894,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addMemberRef(BiPredicate&lt;MemberRef, E&gt; bs, BiConsumer&lt;MemberRef, E&gt; bc) {
-<span class="nc" id="L2899">		predicatemap.put(VisitorEnum.MemberRef, bs);</span>
-<span class="nc" id="L2900">		consumermap.put(VisitorEnum.MemberRef, bc);</span>
-<span class="nc" id="L2901">	}</span>
+<span class="nc" id="L2897">		predicatemap.put(VisitorEnum.MemberRef, bs);</span>
+<span class="nc" id="L2898">		consumermap.put(VisitorEnum.MemberRef, bc);</span>
+<span class="nc" id="L2899">	}</span>
 
 	/**
 	 *
@@ -2906,9 +2904,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addMemberValuePair(BiPredicate&lt;MemberValuePair, E&gt; bs, BiConsumer&lt;MemberValuePair, E&gt; bc) {
-<span class="nc" id="L2909">		predicatemap.put(VisitorEnum.MemberValuePair, bs);</span>
-<span class="nc" id="L2910">		consumermap.put(VisitorEnum.MemberValuePair, bc);</span>
-<span class="nc" id="L2911">	}</span>
+<span class="nc" id="L2907">		predicatemap.put(VisitorEnum.MemberValuePair, bs);</span>
+<span class="nc" id="L2908">		consumermap.put(VisitorEnum.MemberValuePair, bc);</span>
+<span class="nc" id="L2909">	}</span>
 
 	/**
 	 *
@@ -2916,9 +2914,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addMethodRef(BiPredicate&lt;MethodRef, E&gt; bs, BiConsumer&lt;MethodRef, E&gt; bc) {
-<span class="nc" id="L2919">		predicatemap.put(VisitorEnum.MethodRef, bs);</span>
-<span class="nc" id="L2920">		consumermap.put(VisitorEnum.MethodRef, bc);</span>
-<span class="nc" id="L2921">	}</span>
+<span class="nc" id="L2917">		predicatemap.put(VisitorEnum.MethodRef, bs);</span>
+<span class="nc" id="L2918">		consumermap.put(VisitorEnum.MethodRef, bc);</span>
+<span class="nc" id="L2919">	}</span>
 
 	/**
 	 *
@@ -2926,9 +2924,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addMethodRefParameter(BiPredicate&lt;MethodRefParameter, E&gt; bs, BiConsumer&lt;MethodRefParameter, E&gt; bc) {
-<span class="nc" id="L2929">		predicatemap.put(VisitorEnum.MethodRefParameter, bs);</span>
-<span class="nc" id="L2930">		consumermap.put(VisitorEnum.MethodRefParameter, bc);</span>
-<span class="nc" id="L2931">	}</span>
+<span class="nc" id="L2927">		predicatemap.put(VisitorEnum.MethodRefParameter, bs);</span>
+<span class="nc" id="L2928">		consumermap.put(VisitorEnum.MethodRefParameter, bc);</span>
+<span class="nc" id="L2929">	}</span>
 
 	/**
 	 *
@@ -2936,9 +2934,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addMethodDeclaration(BiPredicate&lt;MethodDeclaration, E&gt; bs, BiConsumer&lt;MethodDeclaration, E&gt; bc) {
-<span class="nc" id="L2939">		predicatemap.put(VisitorEnum.MethodDeclaration, bs);</span>
-<span class="nc" id="L2940">		consumermap.put(VisitorEnum.MethodDeclaration, bc);</span>
-<span class="nc" id="L2941">	}</span>
+<span class="nc" id="L2937">		predicatemap.put(VisitorEnum.MethodDeclaration, bs);</span>
+<span class="nc" id="L2938">		consumermap.put(VisitorEnum.MethodDeclaration, bc);</span>
+<span class="nc" id="L2939">	}</span>
 
 	/**
 	 *
@@ -2948,33 +2946,32 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public void addMethodInvocation(String methodname, BiPredicate&lt;MethodInvocation, E&gt; bs,
 			BiConsumer&lt;MethodInvocation, E&gt; bc) {
-<span class="nc" id="L2951">		VisitorConfigData config = VisitorConfigData.builder()</span>
-<span class="nc" id="L2952">				.methodName(methodname)</span>
-<span class="nc" id="L2953">				.build();</span>
-<span class="nc" id="L2954">		predicatedata.put(VisitorEnum.MethodInvocation, config);</span>
-<span class="nc" id="L2955">		predicatemap.put(VisitorEnum.MethodInvocation, bs);</span>
-<span class="nc" id="L2956">		consumerdata.put(VisitorEnum.MethodInvocation, config);</span>
-<span class="nc" id="L2957">		consumermap.put(VisitorEnum.MethodInvocation, bc);</span>
-<span class="nc" id="L2958">	}</span>
+<span class="nc" id="L2949">		VisitorConfigData config = VisitorConfigData.builder()</span>
+<span class="nc" id="L2950">				.methodName(methodname)</span>
+<span class="nc" id="L2951">				.build();</span>
+<span class="nc" id="L2952">		predicatedata.put(VisitorEnum.MethodInvocation, config);</span>
+<span class="nc" id="L2953">		predicatemap.put(VisitorEnum.MethodInvocation, bs);</span>
+<span class="nc" id="L2954">		consumerdata.put(VisitorEnum.MethodInvocation, config);</span>
+<span class="nc" id="L2955">		consumermap.put(VisitorEnum.MethodInvocation, bc);</span>
+<span class="nc" id="L2956">	}</span>
 
 	/**
 	 * @param typeof
-	 * @param methodof
 	 * @param methodname
 	 * @param bs
 	 * @param bc
 	 */
 	public void addMethodInvocation(Class&lt;?&gt; typeof, String methodname, BiPredicate&lt;MethodInvocation, E&gt; bs,
 			BiConsumer&lt;MethodInvocation, E&gt; bc) {
-<span class="nc" id="L2969">		VisitorConfigData config = VisitorConfigData.builder()</span>
-<span class="nc" id="L2970">				.methodName(methodname)</span>
-<span class="nc" id="L2971">				.typeof(typeof)</span>
-<span class="nc" id="L2972">				.build();</span>
-<span class="nc" id="L2973">		predicatedata.put(VisitorEnum.MethodInvocation, config);</span>
-<span class="nc" id="L2974">		predicatemap.put(VisitorEnum.MethodInvocation, bs);</span>
-<span class="nc" id="L2975">		consumerdata.put(VisitorEnum.MethodInvocation, config);</span>
-<span class="nc" id="L2976">		consumermap.put(VisitorEnum.MethodInvocation, bc);</span>
-<span class="nc" id="L2977">	}</span>
+<span class="nc" id="L2966">		VisitorConfigData config = VisitorConfigData.builder()</span>
+<span class="nc" id="L2967">				.methodName(methodname)</span>
+<span class="nc" id="L2968">				.typeof(typeof)</span>
+<span class="nc" id="L2969">				.build();</span>
+<span class="nc" id="L2970">		predicatedata.put(VisitorEnum.MethodInvocation, config);</span>
+<span class="nc" id="L2971">		predicatemap.put(VisitorEnum.MethodInvocation, bs);</span>
+<span class="nc" id="L2972">		consumerdata.put(VisitorEnum.MethodInvocation, config);</span>
+<span class="nc" id="L2973">		consumermap.put(VisitorEnum.MethodInvocation, bc);</span>
+<span class="nc" id="L2974">	}</span>
 
 	/**
 	 *
@@ -2982,9 +2979,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addMethodInvocation(BiPredicate&lt;MethodInvocation, E&gt; bs, BiConsumer&lt;MethodInvocation, E&gt; bc) {
-<span class="nc" id="L2985">		predicatemap.put(VisitorEnum.MethodInvocation, bs);</span>
-<span class="nc" id="L2986">		consumermap.put(VisitorEnum.MethodInvocation, bc);</span>
-<span class="nc" id="L2987">	}</span>
+<span class="nc" id="L2982">		predicatemap.put(VisitorEnum.MethodInvocation, bs);</span>
+<span class="nc" id="L2983">		consumermap.put(VisitorEnum.MethodInvocation, bc);</span>
+<span class="nc" id="L2984">	}</span>
 
 	/**
 	 *
@@ -2992,9 +2989,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addModifier(BiPredicate&lt;Modifier, E&gt; bs, BiConsumer&lt;Modifier, E&gt; bc) {
-<span class="nc" id="L2995">		predicatemap.put(VisitorEnum.Modifier, bs);</span>
-<span class="nc" id="L2996">		consumermap.put(VisitorEnum.Modifier, bc);</span>
-<span class="nc" id="L2997">	}</span>
+<span class="nc" id="L2992">		predicatemap.put(VisitorEnum.Modifier, bs);</span>
+<span class="nc" id="L2993">		consumermap.put(VisitorEnum.Modifier, bc);</span>
+<span class="nc" id="L2994">	}</span>
 
 	/**
 	 *
@@ -3002,9 +2999,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addModuleDeclaration(BiPredicate&lt;ModuleDeclaration, E&gt; bs, BiConsumer&lt;ModuleDeclaration, E&gt; bc) {
-<span class="nc" id="L3005">		predicatemap.put(VisitorEnum.ModuleDeclaration, bs);</span>
-<span class="nc" id="L3006">		consumermap.put(VisitorEnum.ModuleDeclaration, bc);</span>
-<span class="nc" id="L3007">	}</span>
+<span class="nc" id="L3002">		predicatemap.put(VisitorEnum.ModuleDeclaration, bs);</span>
+<span class="nc" id="L3003">		consumermap.put(VisitorEnum.ModuleDeclaration, bc);</span>
+<span class="nc" id="L3004">	}</span>
 
 	/**
 	 *
@@ -3012,9 +3009,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addModuleModifier(BiPredicate&lt;ModuleModifier, E&gt; bs, BiConsumer&lt;ModuleModifier, E&gt; bc) {
-<span class="nc" id="L3015">		predicatemap.put(VisitorEnum.ModuleModifier, bs);</span>
-<span class="nc" id="L3016">		consumermap.put(VisitorEnum.ModuleModifier, bc);</span>
-<span class="nc" id="L3017">	}</span>
+<span class="nc" id="L3012">		predicatemap.put(VisitorEnum.ModuleModifier, bs);</span>
+<span class="nc" id="L3013">		consumermap.put(VisitorEnum.ModuleModifier, bc);</span>
+<span class="nc" id="L3014">	}</span>
 
 	/**
 	 *
@@ -3022,9 +3019,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addNameQualifiedType(BiPredicate&lt;NameQualifiedType, E&gt; bs, BiConsumer&lt;NameQualifiedType, E&gt; bc) {
-<span class="nc" id="L3025">		predicatemap.put(VisitorEnum.NameQualifiedType, bs);</span>
-<span class="nc" id="L3026">		consumermap.put(VisitorEnum.NameQualifiedType, bc);</span>
-<span class="nc" id="L3027">	}</span>
+<span class="nc" id="L3022">		predicatemap.put(VisitorEnum.NameQualifiedType, bs);</span>
+<span class="nc" id="L3023">		consumermap.put(VisitorEnum.NameQualifiedType, bc);</span>
+<span class="nc" id="L3024">	}</span>
 
 	/**
 	 *
@@ -3032,9 +3029,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addNormalAnnotation(BiPredicate&lt;NormalAnnotation, E&gt; bs, BiConsumer&lt;NormalAnnotation, E&gt; bc) {
-<span class="nc" id="L3035">		predicatemap.put(VisitorEnum.NormalAnnotation, bs);</span>
-<span class="nc" id="L3036">		consumermap.put(VisitorEnum.NormalAnnotation, bc);</span>
-<span class="nc" id="L3037">	}</span>
+<span class="nc" id="L3032">		predicatemap.put(VisitorEnum.NormalAnnotation, bs);</span>
+<span class="nc" id="L3033">		consumermap.put(VisitorEnum.NormalAnnotation, bc);</span>
+<span class="nc" id="L3034">	}</span>
 
 	/**
 	 *
@@ -3042,9 +3039,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addNullLiteral(BiPredicate&lt;NullLiteral, E&gt; bs, BiConsumer&lt;NullLiteral, E&gt; bc) {
-<span class="nc" id="L3045">		predicatemap.put(VisitorEnum.NullLiteral, bs);</span>
-<span class="nc" id="L3046">		consumermap.put(VisitorEnum.NullLiteral, bc);</span>
-<span class="nc" id="L3047">	}</span>
+<span class="nc" id="L3042">		predicatemap.put(VisitorEnum.NullLiteral, bs);</span>
+<span class="nc" id="L3043">		consumermap.put(VisitorEnum.NullLiteral, bc);</span>
+<span class="nc" id="L3044">	}</span>
 
 	/**
 	 *
@@ -3052,9 +3049,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addNumberLiteral(BiPredicate&lt;NumberLiteral, E&gt; bs, BiConsumer&lt;NumberLiteral, E&gt; bc) {
-<span class="nc" id="L3055">		predicatemap.put(VisitorEnum.NumberLiteral, bs);</span>
-<span class="nc" id="L3056">		consumermap.put(VisitorEnum.NumberLiteral, bc);</span>
-<span class="nc" id="L3057">	}</span>
+<span class="nc" id="L3052">		predicatemap.put(VisitorEnum.NumberLiteral, bs);</span>
+<span class="nc" id="L3053">		consumermap.put(VisitorEnum.NumberLiteral, bc);</span>
+<span class="nc" id="L3054">	}</span>
 
 	/**
 	 *
@@ -3062,9 +3059,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addOpensDirective(BiPredicate&lt;OpensDirective, E&gt; bs, BiConsumer&lt;OpensDirective, E&gt; bc) {
-<span class="nc" id="L3065">		predicatemap.put(VisitorEnum.OpensDirective, bs);</span>
-<span class="nc" id="L3066">		consumermap.put(VisitorEnum.OpensDirective, bc);</span>
-<span class="nc" id="L3067">	}</span>
+<span class="nc" id="L3062">		predicatemap.put(VisitorEnum.OpensDirective, bs);</span>
+<span class="nc" id="L3063">		consumermap.put(VisitorEnum.OpensDirective, bc);</span>
+<span class="nc" id="L3064">	}</span>
 
 	/**
 	 *
@@ -3072,9 +3069,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addPackageDeclaration(BiPredicate&lt;PackageDeclaration, E&gt; bs, BiConsumer&lt;PackageDeclaration, E&gt; bc) {
-<span class="nc" id="L3075">		predicatemap.put(VisitorEnum.PackageDeclaration, bs);</span>
-<span class="nc" id="L3076">		consumermap.put(VisitorEnum.PackageDeclaration, bc);</span>
-<span class="nc" id="L3077">	}</span>
+<span class="nc" id="L3072">		predicatemap.put(VisitorEnum.PackageDeclaration, bs);</span>
+<span class="nc" id="L3073">		consumermap.put(VisitorEnum.PackageDeclaration, bc);</span>
+<span class="nc" id="L3074">	}</span>
 
 	/**
 	 *
@@ -3082,9 +3079,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addParameterizedType(BiPredicate&lt;ParameterizedType, E&gt; bs, BiConsumer&lt;ParameterizedType, E&gt; bc) {
-<span class="nc" id="L3085">		predicatemap.put(VisitorEnum.ParameterizedType, bs);</span>
-<span class="nc" id="L3086">		consumermap.put(VisitorEnum.ParameterizedType, bc);</span>
-<span class="nc" id="L3087">	}</span>
+<span class="nc" id="L3082">		predicatemap.put(VisitorEnum.ParameterizedType, bs);</span>
+<span class="nc" id="L3083">		consumermap.put(VisitorEnum.ParameterizedType, bc);</span>
+<span class="nc" id="L3084">	}</span>
 
 	/**
 	 *
@@ -3093,9 +3090,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public void addParenthesizedExpression(BiPredicate&lt;ParenthesizedExpression, E&gt; bs,
 			BiConsumer&lt;ParenthesizedExpression, E&gt; bc) {
-<span class="nc" id="L3096">		predicatemap.put(VisitorEnum.ParenthesizedExpression, bs);</span>
-<span class="nc" id="L3097">		consumermap.put(VisitorEnum.ParenthesizedExpression, bc);</span>
-<span class="nc" id="L3098">	}</span>
+<span class="nc" id="L3093">		predicatemap.put(VisitorEnum.ParenthesizedExpression, bs);</span>
+<span class="nc" id="L3094">		consumermap.put(VisitorEnum.ParenthesizedExpression, bc);</span>
+<span class="nc" id="L3095">	}</span>
 
 	/**
 	 *
@@ -3104,9 +3101,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public void addPatternInstanceofExpression(BiPredicate&lt;PatternInstanceofExpression, E&gt; bs,
 			BiConsumer&lt;PatternInstanceofExpression, E&gt; bc) {
-<span class="nc" id="L3107">		predicatemap.put(VisitorEnum.PatternInstanceofExpression, bs);</span>
-<span class="nc" id="L3108">		consumermap.put(VisitorEnum.PatternInstanceofExpression, bc);</span>
-<span class="nc" id="L3109">	}</span>
+<span class="nc" id="L3104">		predicatemap.put(VisitorEnum.PatternInstanceofExpression, bs);</span>
+<span class="nc" id="L3105">		consumermap.put(VisitorEnum.PatternInstanceofExpression, bc);</span>
+<span class="nc" id="L3106">	}</span>
 
 	/**
 	 *
@@ -3114,9 +3111,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addPostfixExpression(BiPredicate&lt;PostfixExpression, E&gt; bs, BiConsumer&lt;PostfixExpression, E&gt; bc) {
-<span class="nc" id="L3117">		predicatemap.put(VisitorEnum.PostfixExpression, bs);</span>
-<span class="nc" id="L3118">		consumermap.put(VisitorEnum.PostfixExpression, bc);</span>
-<span class="nc" id="L3119">	}</span>
+<span class="nc" id="L3114">		predicatemap.put(VisitorEnum.PostfixExpression, bs);</span>
+<span class="nc" id="L3115">		consumermap.put(VisitorEnum.PostfixExpression, bc);</span>
+<span class="nc" id="L3116">	}</span>
 
 	/**
 	 *
@@ -3124,9 +3121,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addPrefixExpression(BiPredicate&lt;PrefixExpression, E&gt; bs, BiConsumer&lt;PrefixExpression, E&gt; bc) {
-<span class="nc" id="L3127">		predicatemap.put(VisitorEnum.PrefixExpression, bs);</span>
-<span class="nc" id="L3128">		consumermap.put(VisitorEnum.PrefixExpression, bc);</span>
-<span class="nc" id="L3129">	}</span>
+<span class="nc" id="L3124">		predicatemap.put(VisitorEnum.PrefixExpression, bs);</span>
+<span class="nc" id="L3125">		consumermap.put(VisitorEnum.PrefixExpression, bc);</span>
+<span class="nc" id="L3126">	}</span>
 
 	/**
 	 *
@@ -3134,9 +3131,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addProvidesDirective(BiPredicate&lt;ProvidesDirective, E&gt; bs, BiConsumer&lt;ProvidesDirective, E&gt; bc) {
-<span class="nc" id="L3137">		predicatemap.put(VisitorEnum.ProvidesDirective, bs);</span>
-<span class="nc" id="L3138">		consumermap.put(VisitorEnum.ProvidesDirective, bc);</span>
-<span class="nc" id="L3139">	}</span>
+<span class="nc" id="L3134">		predicatemap.put(VisitorEnum.ProvidesDirective, bs);</span>
+<span class="nc" id="L3135">		consumermap.put(VisitorEnum.ProvidesDirective, bc);</span>
+<span class="nc" id="L3136">	}</span>
 
 	/**
 	 *
@@ -3144,9 +3141,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addPrimitiveType(BiPredicate&lt;PrimitiveType, E&gt; bs, BiConsumer&lt;PrimitiveType, E&gt; bc) {
-<span class="nc" id="L3147">		predicatemap.put(VisitorEnum.PrimitiveType, bs);</span>
-<span class="nc" id="L3148">		consumermap.put(VisitorEnum.PrimitiveType, bc);</span>
-<span class="nc" id="L3149">	}</span>
+<span class="nc" id="L3144">		predicatemap.put(VisitorEnum.PrimitiveType, bs);</span>
+<span class="nc" id="L3145">		consumermap.put(VisitorEnum.PrimitiveType, bc);</span>
+<span class="nc" id="L3146">	}</span>
 
 	/**
 	 *
@@ -3154,9 +3151,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addQualifiedName(BiPredicate&lt;QualifiedName, E&gt; bs, BiConsumer&lt;QualifiedName, E&gt; bc) {
-<span class="nc" id="L3157">		predicatemap.put(VisitorEnum.QualifiedName, bs);</span>
-<span class="nc" id="L3158">		consumermap.put(VisitorEnum.QualifiedName, bc);</span>
-<span class="nc" id="L3159">	}</span>
+<span class="nc" id="L3154">		predicatemap.put(VisitorEnum.QualifiedName, bs);</span>
+<span class="nc" id="L3155">		consumermap.put(VisitorEnum.QualifiedName, bc);</span>
+<span class="nc" id="L3156">	}</span>
 
 	/**
 	 *
@@ -3164,9 +3161,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addQualifiedType(BiPredicate&lt;QualifiedType, E&gt; bs, BiConsumer&lt;QualifiedType, E&gt; bc) {
-<span class="nc" id="L3167">		predicatemap.put(VisitorEnum.QualifiedType, bs);</span>
-<span class="nc" id="L3168">		consumermap.put(VisitorEnum.QualifiedType, bc);</span>
-<span class="nc" id="L3169">	}</span>
+<span class="nc" id="L3164">		predicatemap.put(VisitorEnum.QualifiedType, bs);</span>
+<span class="nc" id="L3165">		consumermap.put(VisitorEnum.QualifiedType, bc);</span>
+<span class="nc" id="L3166">	}</span>
 
 	/**
 	 * @param bs
@@ -3174,9 +3171,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public void addModuleQualifiedName(BiPredicate&lt;ModuleQualifiedName, E&gt; bs,
 			BiConsumer&lt;ModuleQualifiedName, E&gt; bc) {
-<span class="nc" id="L3177">		predicatemap.put(VisitorEnum.ModuleQualifiedName, bs);</span>
-<span class="nc" id="L3178">		consumermap.put(VisitorEnum.ModuleQualifiedName, bc);</span>
-<span class="nc" id="L3179">	}</span>
+<span class="nc" id="L3174">		predicatemap.put(VisitorEnum.ModuleQualifiedName, bs);</span>
+<span class="nc" id="L3175">		consumermap.put(VisitorEnum.ModuleQualifiedName, bc);</span>
+<span class="nc" id="L3176">	}</span>
 
 	/**
 	 *
@@ -3185,9 +3182,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 
 	public void addRequiresDirective(BiPredicate&lt;RequiresDirective, E&gt; bs, BiConsumer&lt;RequiresDirective, E&gt; bc) {
-<span class="nc" id="L3188">		predicatemap.put(VisitorEnum.RequiresDirective, bs);</span>
-<span class="nc" id="L3189">		consumermap.put(VisitorEnum.RequiresDirective, bc);</span>
-<span class="nc" id="L3190">	}</span>
+<span class="nc" id="L3185">		predicatemap.put(VisitorEnum.RequiresDirective, bs);</span>
+<span class="nc" id="L3186">		consumermap.put(VisitorEnum.RequiresDirective, bc);</span>
+<span class="nc" id="L3187">	}</span>
 
 	/**
 	 *
@@ -3195,9 +3192,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addRecordDeclaration(BiPredicate&lt;RecordDeclaration, E&gt; bs, BiConsumer&lt;RecordDeclaration, E&gt; bc) {
-<span class="nc" id="L3198">		predicatemap.put(VisitorEnum.RecordDeclaration, bs);</span>
-<span class="nc" id="L3199">		consumermap.put(VisitorEnum.RecordDeclaration, bc);</span>
-<span class="nc" id="L3200">	}</span>
+<span class="nc" id="L3195">		predicatemap.put(VisitorEnum.RecordDeclaration, bs);</span>
+<span class="nc" id="L3196">		consumermap.put(VisitorEnum.RecordDeclaration, bc);</span>
+<span class="nc" id="L3197">	}</span>
 
 	/**
 	 *
@@ -3205,9 +3202,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addReturnStatement(BiPredicate&lt;ReturnStatement, E&gt; bs, BiConsumer&lt;ReturnStatement, E&gt; bc) {
-<span class="nc" id="L3208">		predicatemap.put(VisitorEnum.ReturnStatement, bs);</span>
-<span class="nc" id="L3209">		consumermap.put(VisitorEnum.ReturnStatement, bc);</span>
-<span class="nc" id="L3210">	}</span>
+<span class="nc" id="L3205">		predicatemap.put(VisitorEnum.ReturnStatement, bs);</span>
+<span class="nc" id="L3206">		consumermap.put(VisitorEnum.ReturnStatement, bc);</span>
+<span class="nc" id="L3207">	}</span>
 
 	/**
 	 *
@@ -3215,9 +3212,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addSimpleName(BiPredicate&lt;SimpleName, E&gt; bs, BiConsumer&lt;SimpleName, E&gt; bc) {
-<span class="nc" id="L3218">		predicatemap.put(VisitorEnum.SimpleName, bs);</span>
-<span class="nc" id="L3219">		consumermap.put(VisitorEnum.SimpleName, bc);</span>
-<span class="nc" id="L3220">	}</span>
+<span class="nc" id="L3215">		predicatemap.put(VisitorEnum.SimpleName, bs);</span>
+<span class="nc" id="L3216">		consumermap.put(VisitorEnum.SimpleName, bc);</span>
+<span class="nc" id="L3217">	}</span>
 
 	/**
 	 *
@@ -3225,9 +3222,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addSimpleType(BiPredicate&lt;SimpleType, E&gt; bs, BiConsumer&lt;SimpleType, E&gt; bc) {
-<span class="nc" id="L3228">		predicatemap.put(VisitorEnum.SimpleType, bs);</span>
-<span class="nc" id="L3229">		consumermap.put(VisitorEnum.SimpleType, bc);</span>
-<span class="nc" id="L3230">	}</span>
+<span class="nc" id="L3225">		predicatemap.put(VisitorEnum.SimpleType, bs);</span>
+<span class="nc" id="L3226">		consumermap.put(VisitorEnum.SimpleType, bc);</span>
+<span class="nc" id="L3227">	}</span>
 
 	/**
 	 *
@@ -3236,9 +3233,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public void addSingleMemberAnnotation(BiPredicate&lt;SingleMemberAnnotation, E&gt; bs,
 			BiConsumer&lt;SingleMemberAnnotation, E&gt; bc) {
-<span class="nc" id="L3239">		predicatemap.put(VisitorEnum.SingleMemberAnnotation, bs);</span>
-<span class="nc" id="L3240">		consumermap.put(VisitorEnum.SingleMemberAnnotation, bc);</span>
-<span class="nc" id="L3241">	}</span>
+<span class="nc" id="L3236">		predicatemap.put(VisitorEnum.SingleMemberAnnotation, bs);</span>
+<span class="nc" id="L3237">		consumermap.put(VisitorEnum.SingleMemberAnnotation, bc);</span>
+<span class="nc" id="L3238">	}</span>
 
 	/**
 	 *
@@ -3247,9 +3244,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public void addSingleVariableDeclaration(BiPredicate&lt;SingleVariableDeclaration, E&gt; bs,
 			BiConsumer&lt;SingleVariableDeclaration, E&gt; bc) {
-<span class="nc" id="L3250">		predicatemap.put(VisitorEnum.SingleVariableDeclaration, bs);</span>
-<span class="nc" id="L3251">		consumermap.put(VisitorEnum.SingleVariableDeclaration, bc);</span>
-<span class="nc" id="L3252">	}</span>
+<span class="nc" id="L3247">		predicatemap.put(VisitorEnum.SingleVariableDeclaration, bs);</span>
+<span class="nc" id="L3248">		consumermap.put(VisitorEnum.SingleVariableDeclaration, bc);</span>
+<span class="nc" id="L3249">	}</span>
 
 	/**
 	 *
@@ -3257,9 +3254,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addStringLiteral(BiPredicate&lt;StringLiteral, E&gt; bs, BiConsumer&lt;StringLiteral, E&gt; bc) {
-<span class="nc" id="L3260">		predicatemap.put(VisitorEnum.StringLiteral, bs);</span>
-<span class="nc" id="L3261">		consumermap.put(VisitorEnum.StringLiteral, bc);</span>
-<span class="nc" id="L3262">	}</span>
+<span class="nc" id="L3257">		predicatemap.put(VisitorEnum.StringLiteral, bs);</span>
+<span class="nc" id="L3258">		consumermap.put(VisitorEnum.StringLiteral, bc);</span>
+<span class="nc" id="L3259">	}</span>
 
 	/**
 	 *
@@ -3268,9 +3265,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public void addSuperConstructorInvocation(BiPredicate&lt;SuperConstructorInvocation, E&gt; bs,
 			BiConsumer&lt;SuperConstructorInvocation, E&gt; bc) {
-<span class="nc" id="L3271">		predicatemap.put(VisitorEnum.SuperConstructorInvocation, bs);</span>
-<span class="nc" id="L3272">		consumermap.put(VisitorEnum.SuperConstructorInvocation, bc);</span>
-<span class="nc" id="L3273">	}</span>
+<span class="nc" id="L3268">		predicatemap.put(VisitorEnum.SuperConstructorInvocation, bs);</span>
+<span class="nc" id="L3269">		consumermap.put(VisitorEnum.SuperConstructorInvocation, bc);</span>
+<span class="nc" id="L3270">	}</span>
 
 	/**
 	 *
@@ -3278,9 +3275,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addSuperFieldAccess(BiPredicate&lt;SuperFieldAccess, E&gt; bs, BiConsumer&lt;SuperFieldAccess, E&gt; bc) {
-<span class="nc" id="L3281">		predicatemap.put(VisitorEnum.SuperFieldAccess, bs);</span>
-<span class="nc" id="L3282">		consumermap.put(VisitorEnum.SuperFieldAccess, bc);</span>
-<span class="nc" id="L3283">	}</span>
+<span class="nc" id="L3278">		predicatemap.put(VisitorEnum.SuperFieldAccess, bs);</span>
+<span class="nc" id="L3279">		consumermap.put(VisitorEnum.SuperFieldAccess, bc);</span>
+<span class="nc" id="L3280">	}</span>
 
 	/**
 	 *
@@ -3289,9 +3286,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public void addSuperMethodInvocation(BiPredicate&lt;SuperMethodInvocation, E&gt; bs,
 			BiConsumer&lt;SuperMethodInvocation, E&gt; bc) {
-<span class="nc" id="L3292">		predicatemap.put(VisitorEnum.SuperMethodInvocation, bs);</span>
-<span class="nc" id="L3293">		consumermap.put(VisitorEnum.SuperMethodInvocation, bc);</span>
-<span class="nc" id="L3294">	}</span>
+<span class="nc" id="L3289">		predicatemap.put(VisitorEnum.SuperMethodInvocation, bs);</span>
+<span class="nc" id="L3290">		consumermap.put(VisitorEnum.SuperMethodInvocation, bc);</span>
+<span class="nc" id="L3291">	}</span>
 
 	/**
 	 *
@@ -3300,9 +3297,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public void addSuperMethodReference(BiPredicate&lt;SuperMethodReference, E&gt; bs,
 			BiConsumer&lt;SuperMethodReference, E&gt; bc) {
-<span class="nc" id="L3303">		predicatemap.put(VisitorEnum.SuperMethodReference, bs);</span>
-<span class="nc" id="L3304">		consumermap.put(VisitorEnum.SuperMethodReference, bc);</span>
-<span class="nc" id="L3305">	}</span>
+<span class="nc" id="L3300">		predicatemap.put(VisitorEnum.SuperMethodReference, bs);</span>
+<span class="nc" id="L3301">		consumermap.put(VisitorEnum.SuperMethodReference, bc);</span>
+<span class="nc" id="L3302">	}</span>
 
 	/**
 	 *
@@ -3310,9 +3307,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addSwitchCase(BiPredicate&lt;SwitchCase, E&gt; bs, BiConsumer&lt;SwitchCase, E&gt; bc) {
-<span class="nc" id="L3313">		predicatemap.put(VisitorEnum.SwitchCase, bs);</span>
-<span class="nc" id="L3314">		consumermap.put(VisitorEnum.SwitchCase, bc);</span>
-<span class="nc" id="L3315">	}</span>
+<span class="nc" id="L3310">		predicatemap.put(VisitorEnum.SwitchCase, bs);</span>
+<span class="nc" id="L3311">		consumermap.put(VisitorEnum.SwitchCase, bc);</span>
+<span class="nc" id="L3312">	}</span>
 
 	/**
 	 *
@@ -3320,9 +3317,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addSwitchExpression(BiPredicate&lt;SwitchExpression, E&gt; bs, BiConsumer&lt;SwitchExpression, E&gt; bc) {
-<span class="nc" id="L3323">		predicatemap.put(VisitorEnum.SwitchExpression, bs);</span>
-<span class="nc" id="L3324">		consumermap.put(VisitorEnum.SwitchExpression, bc);</span>
-<span class="nc" id="L3325">	}</span>
+<span class="nc" id="L3320">		predicatemap.put(VisitorEnum.SwitchExpression, bs);</span>
+<span class="nc" id="L3321">		consumermap.put(VisitorEnum.SwitchExpression, bc);</span>
+<span class="nc" id="L3322">	}</span>
 
 	/**
 	 *
@@ -3330,9 +3327,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addSwitchStatement(BiPredicate&lt;SwitchStatement, E&gt; bs, BiConsumer&lt;SwitchStatement, E&gt; bc) {
-<span class="nc" id="L3333">		predicatemap.put(VisitorEnum.SwitchStatement, bs);</span>
-<span class="nc" id="L3334">		consumermap.put(VisitorEnum.SwitchStatement, bc);</span>
-<span class="nc" id="L3335">	}</span>
+<span class="nc" id="L3330">		predicatemap.put(VisitorEnum.SwitchStatement, bs);</span>
+<span class="nc" id="L3331">		consumermap.put(VisitorEnum.SwitchStatement, bc);</span>
+<span class="nc" id="L3332">	}</span>
 
 	/**
 	 *
@@ -3341,9 +3338,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public void addSynchronizedStatement(BiPredicate&lt;SynchronizedStatement, E&gt; bs,
 			BiConsumer&lt;SynchronizedStatement, E&gt; bc) {
-<span class="nc" id="L3344">		predicatemap.put(VisitorEnum.SynchronizedStatement, bs);</span>
-<span class="nc" id="L3345">		consumermap.put(VisitorEnum.SynchronizedStatement, bc);</span>
-<span class="nc" id="L3346">	}</span>
+<span class="nc" id="L3341">		predicatemap.put(VisitorEnum.SynchronizedStatement, bs);</span>
+<span class="nc" id="L3342">		consumermap.put(VisitorEnum.SynchronizedStatement, bc);</span>
+<span class="nc" id="L3343">	}</span>
 
 	/**
 	 *
@@ -3351,9 +3348,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addTagElement(BiPredicate&lt;TagElement, E&gt; bs, BiConsumer&lt;TagElement, E&gt; bc) {
-<span class="nc" id="L3354">		predicatemap.put(VisitorEnum.TagElement, bs);</span>
-<span class="nc" id="L3355">		consumermap.put(VisitorEnum.TagElement, bc);</span>
-<span class="nc" id="L3356">	}</span>
+<span class="nc" id="L3351">		predicatemap.put(VisitorEnum.TagElement, bs);</span>
+<span class="nc" id="L3352">		consumermap.put(VisitorEnum.TagElement, bc);</span>
+<span class="nc" id="L3353">	}</span>
 
 	/**
 	 *
@@ -3361,9 +3358,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addTextBlock(BiPredicate&lt;TextBlock, E&gt; bs, BiConsumer&lt;TextBlock, E&gt; bc) {
-<span class="nc" id="L3364">		predicatemap.put(VisitorEnum.TextBlock, bs);</span>
-<span class="nc" id="L3365">		consumermap.put(VisitorEnum.TextBlock, bc);</span>
-<span class="nc" id="L3366">	}</span>
+<span class="nc" id="L3361">		predicatemap.put(VisitorEnum.TextBlock, bs);</span>
+<span class="nc" id="L3362">		consumermap.put(VisitorEnum.TextBlock, bc);</span>
+<span class="nc" id="L3363">	}</span>
 
 	/**
 	 *
@@ -3371,9 +3368,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addTextElement(BiPredicate&lt;TextElement, E&gt; bs, BiConsumer&lt;TextElement, E&gt; bc) {
-<span class="nc" id="L3374">		predicatemap.put(VisitorEnum.TextElement, bs);</span>
-<span class="nc" id="L3375">		consumermap.put(VisitorEnum.TextElement, bc);</span>
-<span class="nc" id="L3376">	}</span>
+<span class="nc" id="L3371">		predicatemap.put(VisitorEnum.TextElement, bs);</span>
+<span class="nc" id="L3372">		consumermap.put(VisitorEnum.TextElement, bc);</span>
+<span class="nc" id="L3373">	}</span>
 
 	/**
 	 *
@@ -3381,9 +3378,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addThisExpression(BiPredicate&lt;ThisExpression, E&gt; bs, BiConsumer&lt;ThisExpression, E&gt; bc) {
-<span class="nc" id="L3384">		predicatemap.put(VisitorEnum.ThisExpression, bs);</span>
-<span class="nc" id="L3385">		consumermap.put(VisitorEnum.ThisExpression, bc);</span>
-<span class="nc" id="L3386">	}</span>
+<span class="nc" id="L3381">		predicatemap.put(VisitorEnum.ThisExpression, bs);</span>
+<span class="nc" id="L3382">		consumermap.put(VisitorEnum.ThisExpression, bc);</span>
+<span class="nc" id="L3383">	}</span>
 
 	/**
 	 *
@@ -3391,9 +3388,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addThrowStatement(BiPredicate&lt;ThrowStatement, E&gt; bs, BiConsumer&lt;ThrowStatement, E&gt; bc) {
-<span class="nc" id="L3394">		predicatemap.put(VisitorEnum.ThrowStatement, bs);</span>
-<span class="nc" id="L3395">		consumermap.put(VisitorEnum.ThrowStatement, bc);</span>
-<span class="nc" id="L3396">	}</span>
+<span class="nc" id="L3391">		predicatemap.put(VisitorEnum.ThrowStatement, bs);</span>
+<span class="nc" id="L3392">		consumermap.put(VisitorEnum.ThrowStatement, bc);</span>
+<span class="nc" id="L3393">	}</span>
 
 	/**
 	 *
@@ -3401,9 +3398,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addTryStatement(BiPredicate&lt;TryStatement, E&gt; bs, BiConsumer&lt;TryStatement, E&gt; bc) {
-<span class="nc" id="L3404">		predicatemap.put(VisitorEnum.TryStatement, bs);</span>
-<span class="nc" id="L3405">		consumermap.put(VisitorEnum.TryStatement, bc);</span>
-<span class="nc" id="L3406">	}</span>
+<span class="nc" id="L3401">		predicatemap.put(VisitorEnum.TryStatement, bs);</span>
+<span class="nc" id="L3402">		consumermap.put(VisitorEnum.TryStatement, bc);</span>
+<span class="nc" id="L3403">	}</span>
 
 	/**
 	 *
@@ -3411,9 +3408,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addTypeDeclaration(BiPredicate&lt;TypeDeclaration, E&gt; bs, BiConsumer&lt;TypeDeclaration, E&gt; bc) {
-<span class="nc" id="L3414">		predicatemap.put(VisitorEnum.TypeDeclaration, bs);</span>
-<span class="nc" id="L3415">		consumermap.put(VisitorEnum.TypeDeclaration, bc);</span>
-<span class="nc" id="L3416">	}</span>
+<span class="nc" id="L3411">		predicatemap.put(VisitorEnum.TypeDeclaration, bs);</span>
+<span class="nc" id="L3412">		consumermap.put(VisitorEnum.TypeDeclaration, bc);</span>
+<span class="nc" id="L3413">	}</span>
 
 	/**
 	 *
@@ -3422,9 +3419,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public void addTypeDeclarationStatement(BiPredicate&lt;TypeDeclarationStatement, E&gt; bs,
 			BiConsumer&lt;TypeDeclarationStatement, E&gt; bc) {
-<span class="nc" id="L3425">		predicatemap.put(VisitorEnum.TypeDeclarationStatement, bs);</span>
-<span class="nc" id="L3426">		consumermap.put(VisitorEnum.TypeDeclarationStatement, bc);</span>
-<span class="nc" id="L3427">	}</span>
+<span class="nc" id="L3422">		predicatemap.put(VisitorEnum.TypeDeclarationStatement, bs);</span>
+<span class="nc" id="L3423">		consumermap.put(VisitorEnum.TypeDeclarationStatement, bc);</span>
+<span class="nc" id="L3424">	}</span>
 
 	/**
 	 *
@@ -3432,9 +3429,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addTypeLiteral(BiPredicate&lt;TypeLiteral, E&gt; bs, BiConsumer&lt;TypeLiteral, E&gt; bc) {
-<span class="nc" id="L3435">		predicatemap.put(VisitorEnum.TypeLiteral, bs);</span>
-<span class="nc" id="L3436">		consumermap.put(VisitorEnum.TypeLiteral, bc);</span>
-<span class="nc" id="L3437">	}</span>
+<span class="nc" id="L3432">		predicatemap.put(VisitorEnum.TypeLiteral, bs);</span>
+<span class="nc" id="L3433">		consumermap.put(VisitorEnum.TypeLiteral, bc);</span>
+<span class="nc" id="L3434">	}</span>
 
 	/**
 	 *
@@ -3442,9 +3439,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addTypeMethodReference(BiPredicate&lt;TypeMethodReference, E&gt; bs, BiConsumer&lt;TypeMethodReference, E&gt; bc) {
-<span class="nc" id="L3445">		predicatemap.put(VisitorEnum.TypeMethodReference, bs);</span>
-<span class="nc" id="L3446">		consumermap.put(VisitorEnum.TypeMethodReference, bc);</span>
-<span class="nc" id="L3447">	}</span>
+<span class="nc" id="L3442">		predicatemap.put(VisitorEnum.TypeMethodReference, bs);</span>
+<span class="nc" id="L3443">		consumermap.put(VisitorEnum.TypeMethodReference, bc);</span>
+<span class="nc" id="L3444">	}</span>
 
 	/**
 	 *
@@ -3452,9 +3449,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addTypeParameter(BiPredicate&lt;TypeParameter, E&gt; bs, BiConsumer&lt;TypeParameter, E&gt; bc) {
-<span class="nc" id="L3455">		predicatemap.put(VisitorEnum.TypeParameter, bs);</span>
-<span class="nc" id="L3456">		consumermap.put(VisitorEnum.TypeParameter, bc);</span>
-<span class="nc" id="L3457">	}</span>
+<span class="nc" id="L3452">		predicatemap.put(VisitorEnum.TypeParameter, bs);</span>
+<span class="nc" id="L3453">		consumermap.put(VisitorEnum.TypeParameter, bc);</span>
+<span class="nc" id="L3454">	}</span>
 
 	/**
 	 *
@@ -3462,9 +3459,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addUnionType(BiPredicate&lt;UnionType, E&gt; bs, BiConsumer&lt;UnionType, E&gt; bc) {
-<span class="nc" id="L3465">		predicatemap.put(VisitorEnum.UnionType, bs);</span>
-<span class="nc" id="L3466">		consumermap.put(VisitorEnum.UnionType, bc);</span>
-<span class="nc" id="L3467">	}</span>
+<span class="nc" id="L3462">		predicatemap.put(VisitorEnum.UnionType, bs);</span>
+<span class="nc" id="L3463">		consumermap.put(VisitorEnum.UnionType, bc);</span>
+<span class="nc" id="L3464">	}</span>
 
 	/**
 	 *
@@ -3472,9 +3469,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addUsesDirective(BiPredicate&lt;UsesDirective, E&gt; bs, BiConsumer&lt;UsesDirective, E&gt; bc) {
-<span class="nc" id="L3475">		predicatemap.put(VisitorEnum.UsesDirective, bs);</span>
-<span class="nc" id="L3476">		consumermap.put(VisitorEnum.UsesDirective, bc);</span>
-<span class="nc" id="L3477">	}</span>
+<span class="nc" id="L3472">		predicatemap.put(VisitorEnum.UsesDirective, bs);</span>
+<span class="nc" id="L3473">		consumermap.put(VisitorEnum.UsesDirective, bc);</span>
+<span class="nc" id="L3474">	}</span>
 
 	/**
 	 *
@@ -3483,9 +3480,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public void addVariableDeclarationExpression(BiPredicate&lt;VariableDeclarationExpression, E&gt; bs,
 			BiConsumer&lt;VariableDeclarationExpression, E&gt; bc) {
-<span class="nc" id="L3486">		predicatemap.put(VisitorEnum.VariableDeclarationExpression, bs);</span>
-<span class="nc" id="L3487">		consumermap.put(VisitorEnum.VariableDeclarationExpression, bc);</span>
-<span class="nc" id="L3488">	}</span>
+<span class="nc" id="L3483">		predicatemap.put(VisitorEnum.VariableDeclarationExpression, bs);</span>
+<span class="nc" id="L3484">		consumermap.put(VisitorEnum.VariableDeclarationExpression, bc);</span>
+<span class="nc" id="L3485">	}</span>
 
 	/**
 	 *
@@ -3494,27 +3491,26 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public void addVariableDeclarationStatement(BiPredicate&lt;VariableDeclarationStatement, E&gt; bs,
 			BiConsumer&lt;VariableDeclarationStatement, E&gt; bc) {
-<span class="nc" id="L3497">		predicatemap.put(VisitorEnum.VariableDeclarationStatement, bs);</span>
-<span class="nc" id="L3498">		consumermap.put(VisitorEnum.VariableDeclarationStatement, bc);</span>
-<span class="nc" id="L3499">	}</span>
+<span class="nc" id="L3494">		predicatemap.put(VisitorEnum.VariableDeclarationStatement, bs);</span>
+<span class="nc" id="L3495">		consumermap.put(VisitorEnum.VariableDeclarationStatement, bc);</span>
+<span class="nc" id="L3496">	}</span>
 
 	/**
 	 *
 	 * @param typeof
-	 * @param class1
 	 * @param bs
 	 * @param bc
 	 */
 	public void addVariableDeclarationStatement(Class&lt;?&gt; typeof, BiPredicate&lt;VariableDeclarationStatement, E&gt; bs,
 			BiConsumer&lt;VariableDeclarationStatement, E&gt; bc) {
-<span class="nc" id="L3510">		VisitorConfigData config = VisitorConfigData.builder()</span>
-<span class="nc" id="L3511">				.typeof(typeof)</span>
-<span class="nc" id="L3512">				.build();</span>
-<span class="nc" id="L3513">		predicatedata.put(VisitorEnum.VariableDeclarationStatement, config);</span>
-<span class="nc" id="L3514">		consumerdata.put(VisitorEnum.VariableDeclarationStatement, config);</span>
-<span class="nc" id="L3515">		predicatemap.put(VisitorEnum.VariableDeclarationStatement, bs);</span>
-<span class="nc" id="L3516">		consumermap.put(VisitorEnum.VariableDeclarationStatement, bc);</span>
-<span class="nc" id="L3517">	}</span>
+<span class="nc" id="L3506">		VisitorConfigData config = VisitorConfigData.builder()</span>
+<span class="nc" id="L3507">				.typeof(typeof)</span>
+<span class="nc" id="L3508">				.build();</span>
+<span class="nc" id="L3509">		predicatedata.put(VisitorEnum.VariableDeclarationStatement, config);</span>
+<span class="nc" id="L3510">		consumerdata.put(VisitorEnum.VariableDeclarationStatement, config);</span>
+<span class="nc" id="L3511">		predicatemap.put(VisitorEnum.VariableDeclarationStatement, bs);</span>
+<span class="nc" id="L3512">		consumermap.put(VisitorEnum.VariableDeclarationStatement, bc);</span>
+<span class="nc" id="L3513">	}</span>
 
 	/**
 	 *
@@ -3523,9 +3519,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 */
 	public void addVariableDeclarationFragment(BiPredicate&lt;VariableDeclarationFragment, E&gt; bs,
 			BiConsumer&lt;VariableDeclarationFragment, E&gt; bc) {
-<span class="nc" id="L3526">		predicatemap.put(VisitorEnum.VariableDeclarationFragment, bs);</span>
-<span class="nc" id="L3527">		consumermap.put(VisitorEnum.VariableDeclarationFragment, bc);</span>
-<span class="nc" id="L3528">	}</span>
+<span class="nc" id="L3522">		predicatemap.put(VisitorEnum.VariableDeclarationFragment, bs);</span>
+<span class="nc" id="L3523">		consumermap.put(VisitorEnum.VariableDeclarationFragment, bc);</span>
+<span class="nc" id="L3524">	}</span>
 
 	/**
 	 *
@@ -3533,9 +3529,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addWhileStatement(BiPredicate&lt;WhileStatement, E&gt; bs, BiConsumer&lt;WhileStatement, E&gt; bc) {
-<span class="nc" id="L3536">		predicatemap.put(VisitorEnum.WhileStatement, bs);</span>
-<span class="nc" id="L3537">		consumermap.put(VisitorEnum.WhileStatement, bc);</span>
-<span class="nc" id="L3538">	}</span>
+<span class="nc" id="L3532">		predicatemap.put(VisitorEnum.WhileStatement, bs);</span>
+<span class="nc" id="L3533">		consumermap.put(VisitorEnum.WhileStatement, bc);</span>
+<span class="nc" id="L3534">	}</span>
 
 	/**
 	 *
@@ -3543,9 +3539,9 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addWildcardType(BiPredicate&lt;WildcardType, E&gt; bs, BiConsumer&lt;WildcardType, E&gt; bc) {
-<span class="nc" id="L3546">		predicatemap.put(VisitorEnum.WildcardType, bs);</span>
-<span class="nc" id="L3547">		consumermap.put(VisitorEnum.WildcardType, bc);</span>
-<span class="nc" id="L3548">	}</span>
+<span class="nc" id="L3542">		predicatemap.put(VisitorEnum.WildcardType, bs);</span>
+<span class="nc" id="L3543">		consumermap.put(VisitorEnum.WildcardType, bc);</span>
+<span class="nc" id="L3544">	}</span>
 
 	/**
 	 *
@@ -3553,20 +3549,20 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @param bc
 	 */
 	public void addYieldStatement(BiPredicate&lt;YieldStatement, E&gt; bs, BiConsumer&lt;YieldStatement, E&gt; bc) {
-<span class="nc" id="L3556">		predicatemap.put(VisitorEnum.YieldStatement, bs);</span>
-<span class="nc" id="L3557">		consumermap.put(VisitorEnum.YieldStatement, bc);</span>
-<span class="nc" id="L3558">	}</span>
+<span class="nc" id="L3552">		predicatemap.put(VisitorEnum.YieldStatement, bs);</span>
+<span class="nc" id="L3553">		consumermap.put(VisitorEnum.YieldStatement, bc);</span>
+<span class="nc" id="L3554">	}</span>
 
 
 	/**
 	 *
 	 */
 	public void clear() {
-<span class="nc" id="L3565">		this.consumermap.clear();</span>
-<span class="nc" id="L3566">		this.consumerdata.clear();</span>
-<span class="nc" id="L3567">		this.predicatemap.clear();</span>
-<span class="nc" id="L3568">		this.predicatedata.clear();</span>
-<span class="nc" id="L3569">	}</span>
+<span class="nc" id="L3561">		this.consumermap.clear();</span>
+<span class="nc" id="L3562">		this.consumerdata.clear();</span>
+<span class="nc" id="L3563">		this.predicatemap.clear();</span>
+<span class="nc" id="L3564">		this.predicatedata.clear();</span>
+<span class="nc" id="L3565">	}</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

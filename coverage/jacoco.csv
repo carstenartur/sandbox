@@ -236,7 +236,7 @@ sandbox_coverage/sandbox_cleanup_application,org.sandbox.jdt.core.cleanupapp,Pro
 sandbox_coverage/sandbox_cleanup_application,org.sandbox.jdt.core.cleanupapp,CodeCleanupApplicationWrapper.WorkspaceRuleHandoff,14,79,6,6,2,22,6,3,0,3
 sandbox_coverage/sandbox_cleanup_application,org.sandbox.jdt.core.cleanupapp,HeadlessProjectWideCodeCleanupApplication,37,0,4,0,11,0,5,0,3,0
 sandbox_coverage/sandbox_cleanup_application,org.sandbox.jdt.core.cleanupapp,CompilationUnitProjectGrouper.Input,0,17,0,0,0,4,0,1,0,1
-sandbox_coverage/sandbox_cleanup_application,org.sandbox.jdt.core.cleanupapp,VintageDeploymentPlan,59,1094,97,175,25,163,96,54,0,14
+sandbox_coverage/sandbox_cleanup_application,org.sandbox.jdt.core.cleanupapp,VintageDeploymentPlan,58,1095,96,176,24,164,95,55,0,14
 sandbox_coverage/sandbox_cleanup_application,org.sandbox.jdt.core.cleanupapp,CodeCleanupApplication.CleanupMode,0,34,0,0,0,7,0,1,0,1
 sandbox_coverage/sandbox_cleanup_application,org.sandbox.jdt.core.cleanupapp,ProjectWideCodeCleanupApplication.ResourceSnapshot,0,15,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox_cleanup_application,org.sandbox.jdt.core.cleanupapp,ScopeFilteringCodeCleanupApplicationWrapper.RequestedScope,0,44,0,0,0,2,0,1,0,1
