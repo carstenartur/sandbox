@@ -5,6 +5,7 @@
 package org.sandbox.maven.cleanup;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -137,8 +138,8 @@ record MavenCleanupProject(Path directory, List<Path> sources, String cliScope) 
 			entry(classpath, "lib", path.toRealPath().toString(), !compile.contains(library));
 		}
 		entry(classpath, "output", ".sandbox-classes", false);
-		Files.writeString(directory.resolve(".project"), description.toString());
-		Files.writeString(directory.resolve(".classpath"), classpath.toString());
+		Files.writeString(directory.resolve(".project"), description.toString(), StandardCharsets.UTF_8);
+		Files.writeString(directory.resolve(".classpath"), classpath.toString(), StandardCharsets.UTF_8);
 		writeCompilerPreferences(project, directory, scope, roots);
 	}
 

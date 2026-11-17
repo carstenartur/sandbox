@@ -4,6 +4,7 @@ package org.sandbox.maven.cleanup;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
@@ -24,23 +25,24 @@ class MavenEclipseMetadataTest {
 	@Test
 	void requiresAJavaProjectAndUsableClasspathBeforeNativeImport() throws Exception {
 		assertFalse(MavenEclipseMetadata.canImportDirectly(base));
-		Files.writeString(base.resolve(".project"), "<projectDescription><natures/></projectDescription>");
+		Files.writeString(base.resolve(".project"), "<projectDescription><natures/></projectDescription>",
+				StandardCharsets.UTF_8);
 		classpath(base, SOURCE);
 		assertFalse(MavenEclipseMetadata.canImportDirectly(base));
-		Files.writeString(base.resolve(".project"), JAVA);
+		Files.writeString(base.resolve(".project"), JAVA, StandardCharsets.UTF_8);
 		classpath(base, "");
 		assertFalse(MavenEclipseMetadata.canImportDirectly(base));
 		classpath(base, SOURCE);
 		assertTrue(MavenEclipseMetadata.canImportDirectly(base));
 		classpath(base, SOURCE + M2E);
 		assertFalse(MavenEclipseMetadata.canImportDirectly(base));
-		Files.writeString(base.resolve(".classpath"), "<!DOCTYPE classpath><classpath/>");
+		Files.writeString(base.resolve(".classpath"), "<!DOCTYPE classpath><classpath/>", StandardCharsets.UTF_8);
 		assertThrows(IOException.class, () -> MavenEclipseMetadata.canImportDirectly(base));
 	}
 
 	@Test
 	void preservesM2eFiltersJreLibrariesAndPreferencesInTheTemporaryProject() throws Exception {
-		Files.writeString(base.resolve(".project"), JAVA);
+		Files.writeString(base.resolve(".project"), JAVA, StandardCharsets.UTF_8);
 		Path library = Files.createFile(base.resolve("extra.jar"));
 		String classpath = """
 				<classpathentry kind="src" path="src/main/java" excluding="ignore/**" output="target/classes">
@@ -54,12 +56,14 @@ class MavenEclipseMetadataTest {
 		Files.writeString(originalSettings.resolve("org.eclipse.jdt.core.prefs"), """
 				org.eclipse.jdt.core.compiler.problem.forbiddenReference=warning
 				org.eclipse.jdt.core.compiler.source=11
-				""");
-		Files.writeString(originalSettings.resolve("org.eclipse.core.resources.prefs"), "encoding//src/main/java=UTF-8\n");
+				""", StandardCharsets.UTF_8);
+		Files.writeString(originalSettings.resolve("org.eclipse.core.resources.prefs"),
+				"encoding//src/main/java=UTF-8\n", StandardCharsets.UTF_8);
 
 		Path generated = Files.createDirectory(base.resolve("generated"));
 		Path settings = Files.createDirectory(generated.resolve(".settings"));
-		Files.writeString(settings.resolve("org.eclipse.jdt.core.prefs"), "org.eclipse.jdt.core.compiler.source=17\n");
+		Files.writeString(settings.resolve("org.eclipse.jdt.core.prefs"), "org.eclipse.jdt.core.compiler.source=17\n",
+				StandardCharsets.UTF_8);
 		String prefix = base.getFileName() + "/";
 		classpath(generated, "<classpathentry kind='src' path='" + prefix + "src/main/java'/>"
 				+ "<classpathentry kind='con' path='" + JRE + "'/>"
@@ -81,25 +85,26 @@ class MavenEclipseMetadataTest {
 		assertEquals("warning", prefs.getProperty("org.eclipse.jdt.core.compiler.problem.forbiddenReference"));
 		try (var in = Files.newInputStream(settings.resolve("org.eclipse.core.resources.prefs"))) { prefs.load(in); }
 		assertEquals("UTF-8", prefs.getProperty("encoding//" + prefix + "src/main/java"));
-		assertEquals("<classpath>" + classpath + "</classpath>", Files.readString(base.resolve(".classpath")));
+		assertEquals("<classpath>" + classpath + "</classpath>", Files.readString(base.resolve(".classpath"), StandardCharsets.UTF_8));
 	}
 
 	@Test
 	void keepsEclipseLanguageSettingsWhenMavenSuppliesNoExplicitLanguageLevel() throws Exception {
-		Files.writeString(base.resolve(".project"), JAVA);
+		Files.writeString(base.resolve(".project"), JAVA, StandardCharsets.UTF_8);
 		Path generated = Files.createDirectory(base.resolve("generated"));
 		Files.createDirectory(base.resolve(".settings"));
 		Files.createDirectory(generated.resolve(".settings"));
 		String prefs = ".settings/org.eclipse.jdt.core.prefs";
-		Files.writeString(base.resolve(prefs), "org.eclipse.jdt.core.compiler.source=11\n");
-		Files.writeString(generated.resolve(prefs), "org.eclipse.jdt.core.compiler.source=1.8\n");
+		Files.writeString(base.resolve(prefs), "org.eclipse.jdt.core.compiler.source=11\n", StandardCharsets.UTF_8);
+		Files.writeString(generated.resolve(prefs), "org.eclipse.jdt.core.compiler.source=1.8\n",
+				StandardCharsets.UTF_8);
 		MavenEclipseMetadata.preserve(base, generated, base, false);
-		assertTrue(Files.readString(generated.resolve(prefs)).contains("org.eclipse.jdt.core.compiler.source=11"));
+		assertTrue(Files.readString(generated.resolve(prefs), StandardCharsets.UTF_8).contains("org.eclipse.jdt.core.compiler.source=11"));
 	}
 
 	@Test
 	void reportsUnresolvedIdeClasspathInsteadOfDroppingIt() throws Exception {
-		Files.writeString(base.resolve(".project"), JAVA);
+		Files.writeString(base.resolve(".project"), JAVA, StandardCharsets.UTF_8);
 		classpath(base, SOURCE + M2E + "<classpathentry kind='con' path='custom.ide.container'/>");
 		Path generated = Files.createDirectory(base.resolve("generated"));
 		classpath(generated, SOURCE);
@@ -109,6 +114,6 @@ class MavenEclipseMetadataTest {
 	}
 
 	private static void classpath(Path dir, String entries) throws IOException {
-		Files.writeString(dir.resolve(".classpath"), "<classpath>" + entries + "</classpath>");
+		Files.writeString(dir.resolve(".classpath"), ("<classpath>" + entries + "</classpath>"), StandardCharsets.UTF_8);
 	}
 }

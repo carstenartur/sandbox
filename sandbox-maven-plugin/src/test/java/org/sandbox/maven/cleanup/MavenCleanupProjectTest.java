@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -100,9 +101,11 @@ class MavenCleanupProjectTest {
 		var project = new MavenProject();
 		initialize(project, temporary);
 		String description = "<projectDescription><name>Original</name><natures><nature>org.eclipse.jdt.core.javanature</nature></natures></projectDescription>";
-		Files.writeString(temporary.resolve(".project"), description);
+		Files.writeString(temporary.resolve(".project"), description, StandardCharsets.UTF_8);
 		Files.createDirectory(temporary.resolve("src"));
-		Files.writeString(temporary.resolve(".classpath"), "<classpath><classpathentry kind='src' path='src'/><classpathentry kind='output' path='bin'/></classpath>");
+		Files.writeString(temporary.resolve(".classpath"),
+				"<classpath><classpathentry kind='src' path='src'/><classpathentry kind='output' path='bin'/></classpath>",
+				StandardCharsets.UTF_8);
 		Path run = Files.createDirectory(temporary.resolve("run"));
 		var input = MavenCleanupProject.prepare(project, temporary, "test", run, false, includeTests -> {
 			throw new AssertionError("A native Eclipse project must use its existing classpath");
@@ -110,7 +113,7 @@ class MavenCleanupProjectTest {
 		assertEquals(temporary, input.directory());
 		assertEquals(List.of(temporary), input.sources());
 		assertEquals("test", input.cliScope());
-		assertEquals(description, Files.readString(temporary.resolve(".project")));
+		assertEquals(description, Files.readString(temporary.resolve(".project"), StandardCharsets.UTF_8));
 		assertTrue(AbstractSandboxMojo.hasCallerWorkspace(Map.of("SANDBOX_WORKSPACE", "/configured")));
 		assertTrue(AbstractSandboxMojo.hasCallerWorkspace(Map.of("SANDBOX_CLEANUP_WORKSPACE", "/legacy")));
 		assertFalse(AbstractSandboxMojo.hasCallerWorkspace(Map.of("SANDBOX_WORKSPACE", "")));
