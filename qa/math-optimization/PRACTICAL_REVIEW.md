@@ -63,7 +63,7 @@ code motion, or activate mathematical mode implicitly.
 
 `run-project.sh` uses the actual production adapter and the advisory report code.
 It needs **Java 25** and a classpath file containing the freshly built mathematics
-classes/plugin, the pinned standalone SDK JAR, JDT/runtime dependencies and
+classes/plugin, the Maven-resolved Regelsuche SDK and its runtime libraries, JDT/runtime dependencies and
 Jackson. Use the same classpath exported by the existing standalone harness or
 native build; do not substitute a different SDK. The runner records the loaded
 code origins, all classpath JAR/class hashes and checks them again at completion.

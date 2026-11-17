@@ -11,6 +11,7 @@
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 	
+	<groupId>io.github.carstenartur</groupId>
 	<artifactId>sandbox_common_core</artifactId>
 	<packaging>jar</packaging>
 	
@@ -18,6 +19,7 @@
 	<description>Eclipse-independent common core module for sandbox utilities</description>
 	
 	<properties>
+		<central.skipPublishing>false</central.skipPublishing>
 		<!-- Disable Tycho for this plain jar module (parent uses tycho-maven-plugin with extensions=true) -->
 		<tycho.mode>maven</tycho.mode>
 	</properties>

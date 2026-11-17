@@ -61,6 +61,8 @@ jobs:
     name: Build, verify and publish stable release
     runs-on: ubuntu-latest
     timeout-minutes: 180
+    outputs:
+      release_commit: ${{ steps.publish_release.outputs.release_commit }}
     env:
       MAVEN_OPTS: -Djava.awt.headless=true
     steps:
@@ -181,15 +183,24 @@ jobs:
             echo "SKIP_TESTS=$skip_tests"
           } >> "$GITHUB_ENV"
 
+      - name: Check Central publishing credentials
+        if: env.DRY_RUN != 'true'
+        env:
+          HAS_CENTRAL_TOKEN: ${{ secrets.CENTRAL_USERNAME != '' && secrets.CENTRAL_PASSWORD != '' }}
+          HAS_SIGNING_KEY: ${{ secrets.MAVEN_GPG_KEY != '' }}
+        run: |
+          if [[ "$HAS_CENTRAL_TOKEN" != true || "$HAS_SIGNING_KEY" != true ]]; then
+            echo '::error::Configure CENTRAL_USERNAME, CENTRAL_PASSWORD and MAVEN_GPG_KEY in the Sandbox repository before publishing.'
+            exit 1
+          fi
+
       - name: Set and verify stable project version
         run: |
           set -euo pipefail
           tycho_version=$(./mvnw -q -DforceStdout help:evaluate -Dexpression=tycho-version | tail -n 1)
           ./mvnw org.eclipse.tycho:tycho-versions-plugin:"$tycho_version":set-version \
-            -DnewVersion="$RELEASE_VERSION" -Pbenchmark,jacoco
+            -DnewVersion="$RELEASE_VERSION" -Pbenchmark,jacoco,maven-plugin
           ./mvnw -f sandbox_cleanup_cli_dist/pom.xml versions:set \
-            -DnewVersion="$RELEASE_VERSION" -DgenerateBackupPoms=false
-          ./mvnw -f sandbox-maven-plugin/pom.xml versions:set \
             -DnewVersion="$RELEASE_VERSION" -DgenerateBackupPoms=false
           ./mvnw -f sandbox_oomph/pom.xml versions:set \
             -DnewVersion="$RELEASE_VERSION" -DgenerateBackupPoms=false
@@ -241,6 +252,11 @@ jobs:
             -Dtycho.localArtifacts=ignore \
             clean verify "${test_args[@]}" 2>&1 \
             | tee "$release_log"
+
+      - name: Verify Maven Central artifacts
+        run: |
+          ./mvnw -B -ntp -f maven-central/pom.xml -Pcentral-release -Dtycho.mode=maven \
+            -Dgpg.skip=true -DskipTests="$SKIP_TESTS" verify
 
       - name: Create and inspect immutable source archives
         run: |
@@ -502,6 +518,7 @@ jobs:
           PY
           gh release upload "v${RELEASE_VERSION}" \
             target/distribution-verification/release-evidence.json --clobber
+          echo "release_commit=$RELEASE_COMMIT" >> "$GITHUB_OUTPUT"
 
       - name: Roll back failed pre-publication state
         if: failure() && env.DRY_RUN != 'true' && steps.deploy_release_site.outcome == 'success' && steps.publish_release.outcome != 'success'
@@ -536,10 +553,8 @@ jobs:
           git checkout -b "$branch" "$RELEASE_COMMIT"
           tycho_version=$(./mvnw -q -DforceStdout help:evaluate -Dexpression=tycho-version | tail -n 1)
           ./mvnw org.eclipse.tycho:tycho-versions-plugin:"$tycho_version":set-version \
-            -DnewVersion="$NEXT_SNAPSHOT" -Pbenchmark,jacoco
+            -DnewVersion="$NEXT_SNAPSHOT" -Pbenchmark,jacoco,maven-plugin
           ./mvnw -f sandbox_cleanup_cli_dist/pom.xml versions:set \
-            -DnewVersion="$NEXT_SNAPSHOT" -DgenerateBackupPoms=false
-          ./mvnw -f sandbox-maven-plugin/pom.xml versions:set \
             -DnewVersion="$NEXT_SNAPSHOT" -DgenerateBackupPoms=false
           ./mvnw -f sandbox_oomph/pom.xml versions:set \
             -DnewVersion="$NEXT_SNAPSHOT" -DgenerateBackupPoms=false
@@ -597,3 +612,40 @@ jobs:
           gh issue create \
             --title "Release ${RELEASE_VERSION}: verify Marketplace and Zenodo" \
             --body "$body" --label release
+
+  publish_maven_central:
+    name: Publish Maven artifacts to Central
+    needs: release
+    # A post-publication handoff failure must not suppress the verified release.
+    if: ${{ !cancelled() && needs.release.outputs.release_commit != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    permissions:
+      contents: read
+    steps:
+      - name: Check out verified release commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.release.outputs.release_commit }}
+          persist-credentials: false
+
+      - name: Configure Maven Central
+        uses: actions/setup-java@v6
+        with:
+          java-version: '25'
+          distribution: temurin
+          cache: maven
+          server-id: central
+          server-username: CENTRAL_USERNAME
+          server-password: CENTRAL_PASSWORD
+
+      - name: Sign and publish Maven artifacts
+        env:
+          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
+          MAVEN_GPG_KEY: ${{ secrets.MAVEN_GPG_KEY }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+        run: |
+          ./mvnw -B -ntp -f maven-central/pom.xml -Pcentral-release -Dtycho.mode=maven \
+            -Dproject.build.outputTimestamp="$(git show -s --format=%ct HEAD)" \
+            -Dcentral.ignorePublishedComponents=true -Dcentral.skipUpload=false deploy

@@ -90,6 +90,7 @@ __pycache__/
 *.pyc
 *.pyo
 .tycho-consumer-pom.xml
+.flattened-pom.xml
 
 # Workflow runtime directories
 gh-pages-repo/

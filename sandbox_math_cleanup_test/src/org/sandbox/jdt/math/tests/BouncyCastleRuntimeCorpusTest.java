@@ -99,8 +99,19 @@ class BouncyCastleRuntimeCorpusTest {
         Path sdk = root.resolve("sandbox_math_cleanup/lib");
         var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
         var qualification = mapper.readTree(sdk.resolve("qualification.json").toFile());
-        String sdkHash = digest(Files.readAllBytes(sdk.resolve("regelsuche-optimization-sdk.jar")));
-        assertEquals(qualification.required("standaloneJarSha256").asText(), sdkHash, "Qualified SDK artifact");
+        String sdkHash;
+        var installed = FrameworkUtil.getBundle(OptimizationGoal.class);
+        if (installed == null) {
+            var jar = OptimizationGoal.class.getProtectionDomain().getCodeSource().getLocation();
+            sdkHash = digest(Files.readAllBytes(Path.of(jar.toURI())));
+        } else {
+            var entry = Objects.requireNonNull(installed.getEntry("lib/regelsuche-optimization-sdk.jar"),
+                    "The mathematics bundle must contain the released SDK");
+            try (var input = entry.openStream()) {
+                sdkHash = digest(input.readAllBytes());
+            }
+        }
+        assertEquals(qualification.required("jarSha256").asText(), sdkHash, "Qualified SDK artifact");
         String sdkSourceRevision = qualification.required("sourceRevision").asText();
         Path directory = root.resolve("sandbox_eclipse_help_swtbot_test/fixtures/mathematics");
         Path gallery = root.resolve("sandbox_math_cleanup_help/images");

@@ -24,7 +24,7 @@
 	<dependencies>
 		<!-- Dependency on sandbox_common_core (plain Maven JAR, core utilities) -->
 		<dependency>
-			<groupId>org.sandbox</groupId>
+			<groupId>io.github.carstenartur</groupId>
 			<artifactId>sandbox_common_core</artifactId>
 		</dependency>
 		

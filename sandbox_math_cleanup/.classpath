@@ -7,6 +7,16 @@
 	</classpathentry>
 	<classpathentry kind="con" path="org.eclipse.pde.core.requiredPlugins"/>
 	<classpathentry kind="lib" path="lib/regelsuche-optimization-sdk.jar" exported="true"/>
+	<classpathentry kind="lib" path="lib/regelsuche-core.jar" exported="true"/>
+	<classpathentry kind="lib" path="lib/regelsuche-egraph.jar" exported="true"/>
+	<classpathentry kind="lib" path="lib/regelsuche-search.jar" exported="true"/>
+	<classpathentry kind="lib" path="lib/regelsuche-validation.jar" exported="true"/>
+	<classpathentry kind="lib" path="lib/regelsuche-math-algorithms.jar" exported="true"/>
+	<classpathentry kind="lib" path="lib/jackson-annotations.jar" exported="true"/>
+	<classpathentry kind="lib" path="lib/jackson-core.jar" exported="true"/>
+	<classpathentry kind="lib" path="lib/jackson-databind.jar" exported="true"/>
+	<classpathentry kind="lib" path="lib/jackson-dataformat-yaml.jar" exported="true"/>
+	<classpathentry kind="lib" path="lib/snakeyaml.jar" exported="true"/>
 	<classpathentry kind="src" output="target/classes" path="src">
 		<attributes>
 			<attribute name="optional" value="true"/>

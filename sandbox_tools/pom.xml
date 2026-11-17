@@ -14,11 +14,11 @@
 	<!-- Make the OSGi AST dependencies available to Maven analysis tools as well. -->
 	<dependencies>
 		<dependency>
-			<groupId>org.sandbox</groupId>
+			<groupId>io.github.carstenartur</groupId>
 			<artifactId>sandbox-ast-api</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.sandbox</groupId>
+			<groupId>io.github.carstenartur</groupId>
 			<artifactId>sandbox-ast-api-jdt</artifactId>
 		</dependency>
 	</dependencies>

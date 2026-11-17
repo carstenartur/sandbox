@@ -13,7 +13,7 @@
 	<packaging>eclipse-plugin</packaging>
 	<dependencies>
 		<dependency>
-			<groupId>org.sandbox</groupId>
+			<groupId>io.github.carstenartur</groupId>
 			<artifactId>sandbox_common_core</artifactId>
 			<!-- PDE supplies Common Core's imported bundles from the Eclipse target.
 			     Keep their Maven copies out of the plug-in's workspace classpath. -->

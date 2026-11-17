@@ -1,8 +1,16 @@
 # Pinned Regelsuche optimization SDK
 
-## Qualified snapshot for polynomial denominators and projective handoffs
+The mathematics plug-in and headless QA use
+[`io.github.carstenartur:regelsuche-optimization-sdk:0.5.3`](https://central.sonatype.com/artifact/io.github.carstenartur/regelsuche-optimization-sdk/0.5.3).
+Maven resolves the SDK and its runtime dependencies. The plug-in's
+`generate-resources` step copies these JARs into `lib/` for its private
+OSGi bundle classpath. Eclipse m2e runs the same step on project configuration.
+The packaged plug-in works offline. [qualification.json](qualification.json)
+records the released SDK JAR's checksum and source commit.
 
-The standalone JAR and its receipt come from
+## Previous qualified snapshot for polynomial denominators and projective handoffs
+
+The standalone JAR and its [receipt](qualification-2026-11-16-polynomial-denominators.json) came from
 [SDK transfer run 43952122987](https://github.com/carstenartur/sandbox/actions/runs/43952122987)
 for Regelsuche main commit `51564131a16609f496eca18d7dc4347c8ca6d054`.
 The receipt version is `0.5.3-issue1657-51564131a166`. The JAR SHA-256 is

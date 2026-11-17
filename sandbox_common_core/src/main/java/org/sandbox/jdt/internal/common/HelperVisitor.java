@@ -1398,7 +1398,6 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	/**
 	 *
 	 * @param typeof
-	 * @param class1
 	 * @param bs
 	 * @return old BiPredicate assigned for nodetype
 	 */
@@ -2378,7 +2377,6 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	/**
 	 *
 	 * @param typeof
-	 * @param class1
 	 * @param bc
 	 * @return old BiConsumer assigned for nodetype
 	 */
@@ -2959,7 +2957,6 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 
 	/**
 	 * @param typeof
-	 * @param methodof
 	 * @param methodname
 	 * @param bs
 	 * @param bc
@@ -3501,7 +3498,6 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	/**
 	 *
 	 * @param typeof
-	 * @param class1
 	 * @param bs
 	 * @param bc
 	 */

@@ -76,8 +76,8 @@ Preview/Apply/Undo; transferred tail bodies and verified numerical fallbacks are
 protected. Source or profile drift invalidates the prepared change. See
 [tail contracts and boundaries](TAIL_RECURSION.md) and the
 [native configuration guide](../sandbox_math_cleanup_help/html/cleanup.html#tail-recursion).
-The [SDK provenance](lib/README.md) identifies the Regelsuche 0.5.2 artifact
-bundled with the plug-in.
+Maven resolves Regelsuche 0.5.3 and embeds its runtime libraries in the plug-in.
+The [SDK provenance](lib/README.md) records the release coordinates and checksum.
 
 ### Verified whole-task rewrites
 

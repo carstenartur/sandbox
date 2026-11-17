@@ -35,12 +35,12 @@ public class LibStandardNames {
 	public static final String METHOD_DEFAULT_CHARSET= "defaultCharset"; //$NON-NLS-1$
 	
 	/**
-	 * Method name for {@link java.io.File#getSeparator()}
+	 * Method name for {@link java.nio.file.FileSystem#getSeparator()}
 	 */
 	public static final String METHOD_GET_SEPARATOR= "getSeparator"; //$NON-NLS-1$
 	
 	/**
-	 * Method name for {@link java.io.File#getPathSeparator()}
+	 * Method name matched for path separator accessors.
 	 */
 	public static final String METHOD_GET_PATH_SEPARATOR= "getPathSeparator"; //$NON-NLS-1$
 	

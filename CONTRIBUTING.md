@@ -89,7 +89,12 @@ Dated QA records describe their historical baseline and must not be rewritten as
 
 ## Release process
 
-Maintainers publish versioned releases through **Actions → Release Workflow**. The workflow performs the release build, verifies the public p2 repository, creates the release tag and GitHub Release only after successful publication, and then advances the development version. See [.github/workflows/README.md](.github/workflows/README.md#detailed-release-process) for the exact inputs and evidence contract.
+Maintainers publish versioned releases through **Actions → Release Workflow**.
+The workflow publishes the Eclipse p2 repository and GitHub Release, deploys
+the reusable libraries and cleanup Maven plugin to Maven Central, and opens
+the next development version pull request. The
+[release procedure](.github/workflows/README.md#detailed-release-process)
+lists the Actions secrets, published Maven coordinates and recovery steps.
 
 ## Reporting issues
 

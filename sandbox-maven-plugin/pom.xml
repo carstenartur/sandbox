@@ -4,9 +4,14 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>org.sandbox</groupId>
+	<parent>
+		<groupId>org.sandbox</groupId>
+		<artifactId>central</artifactId>
+		<version>1.3.10-SNAPSHOT</version>
+		<relativePath>../pom.xml</relativePath>
+	</parent>
+	<groupId>io.github.carstenartur</groupId>
 	<artifactId>sandbox-maven-plugin</artifactId>
-	<version>1.3.10-SNAPSHOT</version>
 	<packaging>maven-plugin</packaging>
 	<name>Sandbox Cleanup Maven Plugin</name>
 	<description>
@@ -15,10 +20,12 @@
 	</description>
 
 	<properties>
+		<central.skipPublishing>false</central.skipPublishing>
+		<tycho.mode>maven</tycho.mode>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.source>25</maven.compiler.source>
 		<maven.compiler.target>25</maven.compiler.target>
-		<maven-plugin-api.version>3.10.0</maven-plugin-api.version>
+		<maven-plugin-api.version>3.9.0</maven-plugin-api.version>
 		<maven-plugin-annotations.version>3.16.0</maven-plugin-annotations.version>
 	</properties>
 
@@ -60,26 +67,4 @@
 			</plugin>
 		</plugins>
 	</build>
-	<profiles>
-		<profile>
-			<id>m2e-jar-plugin</id>
-			<activation>
-				<property>
-					<name>m2e.version</name>
-				</property>
-			</activation>
-			<!-- This standalone project does not inherit the reactor's m2e profile. -->
-			<build>
-				<pluginManagement>
-					<plugins>
-						<plugin>
-							<groupId>org.apache.maven.plugins</groupId>
-							<artifactId>maven-jar-plugin</artifactId>
-							<version>3.4.2</version>
-						</plugin>
-					</plugins>
-				</pluginManagement>
-			</build>
-		</profile>
-	</profiles>
 </project>

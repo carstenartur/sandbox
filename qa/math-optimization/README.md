@@ -233,8 +233,8 @@ generated-CU validation receive the same filename and source/classpath context.
 
 ## Reproduce
 
-Use JDK 25 and a colon-separated absolute classpath file containing the vendored
-SDK jar, JDT/platform/Text dependencies, JUnit Platform Console, JGit and its
+Use JDK 25 and a colon-separated absolute classpath file containing the published
+Regelsuche optimization SDK and its transitive dependencies, JDT/platform/Text dependencies, JUnit Platform Console, JGit and its
 dependencies, JMH 1.37 core/annotation processor, jopt-simple and commons-math3.
 This harness compiles the repository's core and shared JGit fixture sources. It
 does not build or load a sibling optimizer development checkout.

@@ -38,6 +38,11 @@ final class MathematicalArtifacts {
     try(InputStream input=jar.getInputStream(packagedSdk)) {
      if(!Arrays.equals(sdk,input.readAllBytes())) throw new IOException("Loaded SDK entry differs from packaged adapter JAR");
     }
+    for(var dependency:jar.stream().filter(item->item.getName().startsWith("lib/regelsuche-") && item.getName().endsWith(".jar")).toList()) {
+     try(InputStream input=jar.getInputStream(dependency)) {
+      verifySdkClasses(loader, dependency.getName(), input);
+     }
+    }
     for(var entry:jar.stream().filter(item->item.getName().endsWith(".class") && item.getName().startsWith("org/sandbox/")).toList()) {
      byte[] packaged;try(InputStream input=jar.getInputStream(entry)) { packaged=input.readAllBytes(); }
      verifyResource(loader,entry.getName(),packaged);matchedClasses.add(entry.getName());
@@ -45,17 +50,19 @@ final class MathematicalArtifacts {
    }
    if(matchedClasses.isEmpty()) throw new IOException("No adapter classes were available for qualification");
    verifyResource(loader,"lib/regelsuche-optimization-sdk.jar",sdk);
-   int sdkClasses=0;
-   try(ZipInputStream zip=new ZipInputStream(new java.io.ByteArrayInputStream(sdk))) {
-    for(var entry=zip.getNextEntry();entry!=null;entry=zip.getNextEntry()) {
-     if(entry.getName().startsWith("de/regelsuche/") && entry.getName().endsWith(".class")) {
-      verifyResource(loader,entry.getName(),zip.readAllBytes());sdkClasses++;
-     }
-    }
-   }
-   if(sdkClasses==0) throw new IOException("No SDK classes were available for qualification");
   }
   return new Receipt(MathematicalEnvironment.digest(sdk),MathematicalEnvironment.digest(Files.readAllBytes(archive)),"sha256-jar-bytes",archive.toString(),List.copyOf(matchedClasses));
+ }
+ private static void verifySdkClasses(ClassLoader loader, String artifact, InputStream input) throws IOException {
+  int sdkClasses=0;
+  try(ZipInputStream zip=new ZipInputStream(input)) {
+   for(var entry=zip.getNextEntry();entry!=null;entry=zip.getNextEntry()) {
+    if(entry.getName().startsWith("de/regelsuche/") && entry.getName().endsWith(".class")) {
+     verifyResource(loader,entry.getName(),zip.readAllBytes());sdkClasses++;
+    }
+   }
+  }
+  if(sdkClasses==0) throw new IOException("No Regelsuche classes in " + artifact);
  }
  private static void verifyResource(ClassLoader loader,String name,byte[] expected) throws IOException {
   Class<?> loaded=null;

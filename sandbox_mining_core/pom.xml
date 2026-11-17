@@ -25,7 +25,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
 <dependencies>
 <!-- Sandbox Common Core (HintFileParser) -->
 <dependency>
-<groupId>org.sandbox</groupId>
+<groupId>io.github.carstenartur</groupId>
 <artifactId>sandbox_common_core</artifactId>
 </dependency>
 
