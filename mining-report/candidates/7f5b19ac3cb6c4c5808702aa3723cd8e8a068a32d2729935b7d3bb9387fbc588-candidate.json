@@ -20,7 +20,7 @@
     "successful": false,
     "stage": "AFTER_REWRITE",
     "message": "Transformed source is invalid: Java compile error at line 14: $ConstructorType cannot be resolved to a type",
-    "verifiedAt": "2026-11-16T02:22:20.144303485Z",
+    "verifiedAt": "2026-11-17T03:02:34.111103330Z",
     "verifierVersion": "9",
     "matches": 1,
     "replacements": 1
