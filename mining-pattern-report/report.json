@@ -1,6 +1,6 @@
 {
   "summary": {
-    "totalMatches": 455,
+    "totalMatches": 457,
     "repositories": {
       "eclipse.jdt.core": {
         "files": 227,
@@ -33,8 +33,8 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 2009,
-        "matches": 185,
+        "files": 2025,
+        "matches": 187,
         "rules": 12
       }
     }
@@ -2479,6 +2479,14 @@
     {
       "repository": "sandbox",
       "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaStructuralRewritePlan.java",
+      "line": 127,
+      "matchedCode": "Arrays.asList(other.getRequiredProjectNames()).contains(project.getElementName())"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java",
       "line": 273,
@@ -2944,6 +2952,14 @@
       "repository": "sandbox",
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
+      "file": "sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/math/JavaByteArrayPrefixTest.java",
+      "line": 219,
+      "matchedCode": "block.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
       "file": "sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/math/JavaArrayStoreTest.java",
       "line": 71,
       "matchedCode": "a.clone()"
@@ -3113,7 +3129,7 @@
       "hintFile": "arrays",
       "rule": "arrays.aslist-contains.review",
       "file": "sandbox_eclipse_help_swtbot_test/src/org/sandbox/jdt/ui/helper/views/MathematicsHelpScreenshots.java",
-      "line": 323,
+      "line": 332,
       "matchedCode": "Arrays.asList(labels).contains(control.getText().replace(\"&\",\"\"))"
     },
     {
@@ -3681,7 +3697,7 @@
       "hintFile": "modernize-java9",
       "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
       "file": "sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/ui/fix/UseExplicitEncodingCleanUpCore.java",
-      "line": 204,
+      "line": 209,
       "matchedCode": "computeFixSet().stream().map(UseExplicitEncodingFixCore::toString).collect(Collectors.toList())"
     },
     {

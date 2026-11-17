@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-11-16
+# Refactoring Mining Report — 2026-11-17
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -9,7 +9,7 @@
 | eclipse.platform | 311 | 71 | 4 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
-| sandbox | 2009 | 185 | 12 |
+| sandbox | 2025 | 187 | 12 |
 
 ## Details
 ### eclipse.jdt.core
@@ -419,6 +419,7 @@
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CleanupPatchLifecycleTest.java:475` — `arguments.clone()`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CleanupPatchLifecycleTest.java:482` — `arguments.clone()`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapperPersistedClasspathTest.java:120` — `arguments.clone()`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/math/JavaByteArrayPrefixTest.java:219` — `block.clone()`
 - `sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/math/JavaArrayStoreTest.java:71` — `a.clone()`
 - `sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/math/JavaArrayStoreTest.java:71` — `b.clone()`
 - `sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/math/JavaFieldInversionTest.java:140` — `bytes.clone()`
@@ -441,6 +442,17 @@
 - `.github/probes/patched-jdt-ui/src/org/sandbox/jdt/ui/probe/ScopeExpansionProbeApplication.java:312` — `compilationUnits.clone()`
 - `sandbox_eclipse_help_swtbot_test/src/org/sandbox/jdt/ui/helper/views/CleanupSourceSnapshot.java:29` — `Objects.requireNonNull(bytes).clone()`
 
+#### Rule: `arrays` → `arrays.aslist-contains.review`
+- `sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaStructuralRewritePlan.java:127` — `Arrays.asList(other.getRequiredProjectNames()).contains(project.getElementNam...`
+- `org/eclipse/jdt/internal/corext/dom/ASTNodes.java:1591` — `Arrays.asList(additionalExpectedOperators).contains(actualOperator)`
+- `org/eclipse/jdt/internal/corext/dom/ASTNodes.java:3301` — `Arrays.asList(fieldNames).contains(node.getName().getIdentifier())`
+- `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java:42` — `Arrays.asList(filtered).contains("test")`
+- `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java:66` — `Arrays.asList(filtered).contains("--source")`
+- `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java:139` — `Arrays.asList(values).contains(expected.toFile().getPath())`
+- `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java:144` — `Arrays.asList(values).contains(unexpected.toFile().getPath())`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/ui/fix/MathematicalWorkbenchSWTBotTest.java:456` — `Arrays.asList(labels).contains(control.getText().replace("&",""))`
+- `sandbox_eclipse_help_swtbot_test/src/org/sandbox/jdt/ui/helper/views/MathematicsHelpScreenshots.java:332` — `Arrays.asList(labels).contains(control.getText().replace("&",""))`
+
 #### Rule: `arrays` → `arrays.arraycopy-full-copy.review`
 - `sandbox_test_commons/src/org/sandbox/jdt/ui/tests/quickfix/rules/AbstractEclipseJava.java:452` — `System.arraycopy(prevNatures,0,newNatures,0,prevNatures.length)`
 - `sandbox_test_commons/src/org/sandbox/jdt/ui/tests/quickfix/rules/EclipseBundleClasspath.java:134` — `System.arraycopy(current,0,updated,0,current.length)`
@@ -449,16 +461,6 @@
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/HintFileStore.java:366` — `System.arraycopy(BUNDLED_LIBRARIES,0,result,0,BUNDLED_LIBRARIES.length)`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/cleanup/multifile/api/LineDelimiterPreserver.java:182` — `System.arraycopy(bom,0,result,0,bom.length)`
 - `sandbox_common/src/org/sandbox/jdt/triggerpattern/editor/SandboxHintSourceViewerConfiguration.java:122` — `System.arraycopy(defaults,0,result,0,defaults.length)`
-
-#### Rule: `arrays` → `arrays.aslist-contains.review`
-- `org/eclipse/jdt/internal/corext/dom/ASTNodes.java:1591` — `Arrays.asList(additionalExpectedOperators).contains(actualOperator)`
-- `org/eclipse/jdt/internal/corext/dom/ASTNodes.java:3301` — `Arrays.asList(fieldNames).contains(node.getName().getIdentifier())`
-- `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java:42` — `Arrays.asList(filtered).contains("test")`
-- `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java:66` — `Arrays.asList(filtered).contains("--source")`
-- `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java:139` — `Arrays.asList(values).contains(expected.toFile().getPath())`
-- `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java:144` — `Arrays.asList(values).contains(unexpected.toFile().getPath())`
-- `sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/ui/fix/MathematicalWorkbenchSWTBotTest.java:456` — `Arrays.asList(labels).contains(control.getText().replace("&",""))`
-- `sandbox_eclipse_help_swtbot_test/src/org/sandbox/jdt/ui/helper/views/MathematicsHelpScreenshots.java:323` — `Arrays.asList(labels).contains(control.getText().replace("&",""))`
 
 #### Rule: `string-equals` → `string-equals.null-or-empty.review`
 - `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java:528` — `units == null || units.isEmpty()`
@@ -532,7 +534,7 @@
 - `sandbox_tools/src/org/sandbox/jdt/internal/ui/fix/UseIteratorToForLoopCleanUpCore.java:87` — `computeFixSet().stream().map(UseIteratorToForLoopFixCore::toString).collect(C...`
 - `sandbox_int_to_enum/src/org/sandbox/jdt/internal/ui/fix/IntToEnumCleanUpCore.java:213` — `computeFixSet().stream().map(IntToEnumFixCore::toString).collect(Collectors.t...`
 - `sandbox_platform_helper/src/org/sandbox/jdt/internal/ui/fix/SimplifyPlatformStatusCleanUpCore.java:89` — `computeFixSet().stream().map(SimplifyPlatformStatusFixCore::toString).collect...`
-- `sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/ui/fix/UseExplicitEncodingCleanUpCore.java:204` — `computeFixSet().stream().map(UseExplicitEncodingFixCore::toString).collect(Co...`
+- `sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/ui/fix/UseExplicitEncodingCleanUpCore.java:209` — `computeFixSet().stream().map(UseExplicitEncodingFixCore::toString).collect(Co...`
 - `sandbox_use_general_type/src/org/sandbox/jdt/internal/ui/fix/UseGeneralTypeCleanUpCore.java:83` — `computeFixSet().stream().map(UseGeneralTypeFixCore::toString).collect(Collect...`
 
 #### Rule: `modernize-java9` → `modernize-java9.optional-ternary.to-orelse`
