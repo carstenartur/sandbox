@@ -5536,9 +5536,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "lastProcessedCommit": "8690dc0100e0f54129dcb1a77ce1923e33de9f80",
-      "lastProcessedDate": "2026-11-17T03:00:59.152470095Z",
-      "totalProcessed": 1087,
+      "lastProcessedCommit": "8df9c3dc9026fe757138317c5b076e25dd683481",
+      "lastProcessedDate": "2026-11-18T02:42:39.586773930Z",
+      "totalProcessed": 1151,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -6134,6 +6134,51 @@
           "deferredAt": "2026-11-17T02:59:06.626222348Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "9cabab095ea19a9d134bcb3770f5f9ebbaa8a586",
+          "message": "Bug 326063 - org.eclipse.debug.core.IExpressionManager.getExpressions() is not thread safe that it causes java.lang.Arra",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-18T02:36:36.227445175Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "069c1724663ee8083dc73571b2efcffe2bf83512",
+          "message": "Bug 324100 -  Top index not maintained properly in variables / registers view",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-18T02:37:10.492800966Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "c430a195e2308070424637613332c6e29b4887d4",
+          "message": "Bug 326917 - [Fiexible Hierarchy] View state is not saved correctly when top view element is deep in a tree hierarchy.",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-18T02:38:09.773885882Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "56833f7e0e7e4d03c26a68f875a43d00bab5735d",
+          "message": "Fixed ugly formatting.",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-18T02:40:32.243979544Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ea95e4f4fda1d968ce7f7af0d8b9e3139bebd77c",
+          "message": "Fixed bug 154784: [breakpoints] Undo support for deleting and toggling (off) breakpoints",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-18T02:42:15.689391998Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -6193,10 +6238,11 @@
         "Idiomatic Collection Usage": 1,
         "String API modernization": 1,
         "String Optimization": 1,
-        "Java Modernization": 1
+        "Java Modernization": 1,
+        "Method Call Renaming": 1
       },
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 54668
+  "globalTotalProcessed": 54732
 }
