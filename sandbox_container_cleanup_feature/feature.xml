@@ -7,7 +7,7 @@
 
 	<description>%description</description>
 	<copyright>%copyright</copyright>
-	<license url="%licenseURL">%license</license>
+	<license url="https://www.eclipse.org/legal/epl-2.0/">%license</license>
 
 	<requires>
 		<import plugin="sandbox_common_core"/>

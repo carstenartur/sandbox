@@ -9,10 +9,12 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.test.policy;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashSet;
@@ -103,6 +105,24 @@ public class SandboxAggregateFeatureTest {
         assertTrue(build.contains("feature.xml"));
         assertTrue(build.contains("feature.properties"));
         assertTrue(Files.isRegularFile(root.resolve(AGGREGATE + "/feature.properties")));
+    }
+
+    @Test
+    public void featureLicenseLocationsAreAbsoluteHttpsUris() throws Exception {
+        Path root = root();
+        Set<String> features = new LinkedHashSet<>(components(root));
+        features.add(AGGREGATE);
+        for (String feature : features) {
+            List<Element> licenses = children(xml(root.resolve(feature + "/feature.xml")), "license");
+            assertFalse(licenses.isEmpty(), feature + " must declare its installation license");
+            for (Element license : licenses) {
+                // p2 publishes this attribute literally; it does not resolve a properties token as a URL.
+                String location = license.getAttribute("url");
+                URI uri = assertDoesNotThrow(() -> URI.create(location), feature + ": " + location);
+                assertTrue(uri.isAbsolute() && "https".equalsIgnoreCase(uri.getScheme())
+                        && uri.getHost() != null, feature + " must publish a usable HTTPS license URI: " + location);
+            }
+        }
     }
 
     private static Element aggregate(Path root) throws Exception {

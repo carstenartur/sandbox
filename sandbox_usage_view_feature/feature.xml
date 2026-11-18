@@ -10,7 +10,7 @@
       JavaHelper View for Eclipse
    </description>
 
-   <license url="%licenseURL">
+   <license url="https://www.eclipse.org/legal/epl-2.0/">
       %license
    </license>
 
