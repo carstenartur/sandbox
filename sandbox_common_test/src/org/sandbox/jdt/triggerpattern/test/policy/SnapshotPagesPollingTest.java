@@ -46,6 +46,8 @@ class SnapshotPagesPollingTest {
         write(staged, "snapshots/latest/plugins/current.jar", "new snapshot");
         write(staged, "snapshots/compositeContent.xml", "new content metadata");
         write(staged, "snapshots/compositeArtifacts.xml", "new artifact metadata");
+        String compositeIndex = Files.readString(root().resolve(".github/pages/p2-composite.index"));
+        write(staged, "snapshots/p2.index", compositeIndex);
         write(staged, "index.html", "new dashboard");
         var publish = new ProcessBuilder("bash", "-c", inlineBlock(root(), "Deploy snapshot and dashboard", "run", 8))
                 .directory(checkout.toFile());
@@ -59,6 +61,7 @@ class SnapshotPagesPollingTest {
         assertEquals("new snapshot", Files.readString(published.resolve("snapshots/latest/plugins/current.jar")));
         assertEquals("new content metadata", Files.readString(published.resolve("snapshots/compositeContent.xml")));
         assertEquals("new artifact metadata", Files.readString(published.resolve("snapshots/compositeArtifacts.xml")));
+        assertEquals(compositeIndex, Files.readString(published.resolve("snapshots/p2.index")));
         assertEquals("new dashboard", Files.readString(published.resolve("index.html")));
         assertEquals("stable", Files.readString(published.resolve("releases/1.3.7/plugins/stable.jar")));
         assertEquals("coverage", Files.readString(published.resolve("coverage/index.html")));

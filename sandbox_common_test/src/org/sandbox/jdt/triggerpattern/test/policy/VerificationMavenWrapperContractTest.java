@@ -54,7 +54,9 @@ class VerificationMavenWrapperContractTest {
                         "          ./mvnw\n"),
                 new Invocation("patched-jdt-ui-atomic-help-screenshot.yml",
                         "Build, verify and provision the pinned LTK runtime through Maven",
-                        "./mvnw -B -ntp -Dsandbox.tycho.linux-only=true"));
+                        "./mvnw -B -ntp -Dsandbox.tycho.linux-only=true"),
+                new Invocation("upstream-jdt-migration-qa.yml", "Validate the JDT UI corpus and Maven runner contract",
+                        "./mvnw --batch-mode --no-transfer-progress"));
     }
 
     @ParameterizedTest
@@ -78,7 +80,8 @@ class VerificationMavenWrapperContractTest {
 
     @ParameterizedTest
     @ValueSource(strings = { "codacy.yml", "codeql.yml", "distribution-smoke.yml", "publish-cleanup-image.yml",
-            "eclipse-help-screenshots.yml", "patched-jdt-ui-atomic-help-screenshot.yml", "patched-jdt-ui-bundle.yml" })
+            "eclipse-help-screenshots.yml", "patched-jdt-ui-atomic-help-screenshot.yml", "patched-jdt-ui-bundle.yml",
+            "upstream-jdt-migration-qa.yml" })
     void wrapperChangesTriggerVerification(String file) throws IOException {
         String workflow = workflow(file);
         int pathLists = switch (file) {
