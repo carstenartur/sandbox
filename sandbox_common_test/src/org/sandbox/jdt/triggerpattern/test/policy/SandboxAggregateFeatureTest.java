@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashSet;
@@ -101,7 +102,7 @@ public class SandboxAggregateFeatureTest {
         String version = text(xml(root.resolve("pom.xml")), "version");
         assertEquals(version, text(children(pom, "parent").getFirst(), "version"));
         assertEquals(version.replace("-SNAPSHOT", ".qualifier"), aggregate(root).getAttribute("version"));
-        String build = Files.readString(root.resolve(AGGREGATE + "/build.properties"));
+        String build = Files.readString(root.resolve(AGGREGATE + "/build.properties"), StandardCharsets.UTF_8);
         assertTrue(build.contains("feature.xml"));
         assertTrue(build.contains("feature.properties"));
         assertTrue(Files.isRegularFile(root.resolve(AGGREGATE + "/feature.properties")));
