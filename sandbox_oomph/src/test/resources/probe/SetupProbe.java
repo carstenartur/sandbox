@@ -866,9 +866,8 @@ public class SetupProbe implements IApplication {
                 .collect(Collectors.toCollection(TreeSet::new));
         if (!errors.isEmpty()) {
             System.out.println("Workspace automatic refresh: "
-                    + org.eclipse.core.runtime.preferences.InstanceScope.INSTANCE
-                            .getNode(ResourcesPlugin.PI_RESOURCES)
-                            .getBoolean(ResourcesPlugin.PREF_AUTO_REFRESH, false));
+                    + org.eclipse.core.runtime.Platform.getPreferencesService()
+                            .getBoolean(ResourcesPlugin.PI_RESOURCES, ResourcesPlugin.PREF_AUTO_REFRESH, false, null));
             var mathSdkLibrary = workspace.getRoot().getProject("sandbox_math_cleanup")
                     .getFile("lib/regelsuche-optimization-sdk.jar");
             var mathSdkLocation = mathSdkLibrary.getLocation();
