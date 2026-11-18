@@ -12,6 +12,9 @@ on:
       - 'sandbox_common_test/**'
       - 'sandbox_junit_cleanup/**'
       - 'sandbox_junit_cleanup_test/**'
+      - 'mvnw'
+      - 'mvnw.cmd'
+      - '.mvn/**'
       - '.github/workflows/upstream-jdt-migration-qa.yml'
   workflow_dispatch:
     inputs:
@@ -63,6 +66,9 @@ jobs:
           java-version: '25'
           cache: maven
 
+      - name: Verify pinned Maven Wrapper
+        run: ./mvnw --batch-mode --no-transfer-progress --version
+
       - name: Validate Oomph and JDT Core evidence comparators
         env:
           PYTHONDONTWRITEBYTECODE: '1'
@@ -71,7 +77,7 @@ jobs:
 
       - name: Validate the JDT UI corpus and Maven runner contract
         run: >-
-          mvn --batch-mode --no-transfer-progress
+          ./mvnw --batch-mode --no-transfer-progress
           -Dsandbox.tycho.linux-only=true
           -Dspotbugs.skip=true
           -Dtest='JdtUiCorpus*Test'
