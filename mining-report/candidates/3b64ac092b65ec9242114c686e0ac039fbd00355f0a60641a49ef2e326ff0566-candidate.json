@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "3b64ac092b65ec9242114c686e0ac039fbd00355f0a60641a49ef2e326ff0566",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "dispose($event)\n\u003d\u003e treeCursorDispose($event)\n;;",
+  "beforeExample": "class MyEvent {}\nclass MyClass {\n    void dispose(MyEvent event) { System.out.println(\"Disposing old method\"); }\n    // The new method must exist for compilation, even if it\u0027s the target of a rename.\n    void treeCursorDispose(MyEvent event) { System.out.println(\"Disposing new method\"); }\n\n    void handleEvent(MyEvent event) {\n        // Simplified context, focusing on the method call\n        dispose(event); // This is the target match\n    }\n}",
+  "afterExample": "class MyEvent {}\nclass MyClass {\n    void dispose(MyEvent event) { System.out.println(\"Disposing old method\"); }\n    void treeCursorDispose(MyEvent event) { System.out.println(\"Disposing new method\"); }\n\n    void handleEvent(MyEvent event) {\n        treeCursorDispose(event); // This is the result of the transformation\n    }\n}",
+  "negativeExample": "class OtherObject {\n    // A \u0027dispose\u0027 method with a different signature or context\n    void dispose() { System.out.println(\"Other object dispose (no args)\"); }\n}\n\nclass AnotherClass {\n    void someMethod() {\n        OtherObject obj \u003d new OtherObject();\n        obj.dispose(); // This should NOT be changed because it has no arguments, not matching \u0027dispose($event)\u0027\n    }\n}",
+  "targetHintFile": "refactor.sandbox-hint",
+  "sourceCommit": "b1eec7fc0cd88da46c535f59e10a1a75954d36c5",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "sourceEvidence": {
+    "path": "org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/viewers/model/TreeCursor.java",
+    "before": "\t\t\t\t\tdispose(event);",
+    "after": "\t\t\t\t\t\ttreeCursorDispose(event);",
+    "diffHunk": "diff --git a/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/viewers/model/TreeCursor.java b/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/viewers/model/TreeCursor.java\nindex 0aeb59a..baf8516 100644\n--- a/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/viewers/model/TreeCursor.java\n+++ b/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/viewers/model/TreeCursor.java\n@@ -193,20 +193,20 @@\n \t\tpublic void handleEvent(Event event) {\n \t\t\tswitch (event.type) {\n \t\t\t\tcase SWT.Dispose :\n-\t\t\t\t\tdispose(event);\n+\t\t\t\t\t\ttreeCursorDispose(event);\n \t\t\t\t\tbreak;\n \t\t\t\tcase SWT.FocusIn :\n \t\t\t\tcase SWT.FocusOut :\n \t\t\t\t\tredraw();\n \t\t\t\t\tbreak;\n \t\t\t\tcase SWT.KeyDown :\n-\t\t\t\t\tkeyDown(event);\n+\t\t\t\t\t\ttreeCursorKeyDown(event);\n \t\t\t\t\tbreak;\n \t\t\t\tcase SWT.Paint :\n-\t\t\t\t\tpaint(event);\n+\t\t\t\t\t\ttreeCursorPaint(event);\n \t\t\t\t\tbreak;\n \t\t\t\tcase SWT.Traverse :\n-\t\t\t\t\ttraverse(event);\n+\t\t\t\t\t\ttreeCursorTraverse(event);\n \t\t\t\t\tbreak;\n \t\t\t}\n \t\t}\n"
+  },
+  "category": "Method Call Renaming",
+  "sourceVersion": "21",
+  "status": "READY_FOR_REVIEW",
+  "discoveredAt": "2026-11-18T02:41:45.747053362Z",
+  "ruleFingerprint": "sha256:4e2b046e85c6fd1b4d6f69fa97117bfc576c0a7d900cc83bec2abef363ef2729",
+  "behaviorFingerprint": "sha256:ff83e5b9064d565fcd21ecea9d7469ea980bb5642454eec4d8e6fea81b583728",
+  "verification": {
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Example rewrite verified; semantic review still required",
+    "verifiedAt": "2026-11-18T02:43:03.743364401Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-11-18T02:43:03.743993035Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-11-18T02:43:03.744013657Z"
+    }
+  ]
+}

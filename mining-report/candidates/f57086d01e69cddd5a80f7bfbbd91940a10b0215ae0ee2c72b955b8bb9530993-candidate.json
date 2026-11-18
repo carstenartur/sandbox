@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 26: Type mismatch: cannot convert from AdvancedQuickAssistProcessor.InfixExpression.Operator to InfixExpression.Operator",
-    "verifiedAt": "2026-11-17T03:02:27.544316967Z",
+    "verifiedAt": "2026-11-18T02:42:54.958196099Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
