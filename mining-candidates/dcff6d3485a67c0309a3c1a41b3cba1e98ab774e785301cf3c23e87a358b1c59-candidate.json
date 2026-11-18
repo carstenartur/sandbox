@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 12: Type mismatch: cannot convert from String[] to IPath[]",
-    "verifiedAt": "2026-11-17T03:02:28.971819241Z",
+    "verifiedAt": "2026-11-18T02:42:56.278165472Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
