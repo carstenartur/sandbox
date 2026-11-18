@@ -865,6 +865,37 @@ public class SetupProbe implements IApplication {
                 .map(m -> m.getResource().getFullPath() + ": " + m.getAttribute(IMarker.MESSAGE, ""))
                 .collect(Collectors.toCollection(TreeSet::new));
         if (!errors.isEmpty()) {
+            System.out.println("Workspace automatic refresh: "
+                    + org.eclipse.core.runtime.Platform.getPreferencesService()
+                            .getBoolean(ResourcesPlugin.PI_RESOURCES, ResourcesPlugin.PREF_AUTO_REFRESH, false, null));
+            var mathSdkLibrary = workspace.getRoot().getProject("sandbox_math_cleanup")
+                    .getFile("lib/regelsuche-optimization-sdk.jar");
+            var mathSdkLocation = mathSdkLibrary.getLocation();
+            System.out.println("Expected mathematics SDK " + mathSdkLibrary.getFullPath()
+                    + ": resource=" + mathSdkLibrary.exists() + ", localFile="
+                    + (mathSdkLocation != null && Files.isRegularFile(mathSdkLocation.toFile().toPath())));
+            for (String name : List.of("sandbox_math_cleanup", "sandbox_math_cleanup_test")) {
+                var mathProject = JavaCore.create(workspace.getRoot().getProject(name));
+                System.out.println("Mathematics raw classpath " + name + ": "
+                        + Arrays.toString(mathProject.getRawClasspath()));
+                System.out.println("Mathematics resolved classpath " + name + ": "
+                        + Arrays.toString(mathProject.getResolvedClasspath(true)));
+                for (var entry : mathProject.getRawClasspath()) {
+                    if (entry.getEntryKind() == org.eclipse.jdt.core.IClasspathEntry.CPE_LIBRARY) {
+                        var resource = workspace.getRoot().getFile(entry.getPath());
+                        var location = resource.getLocation();
+                        System.out.println("Mathematics library " + resource.getFullPath()
+                                + ": resource=" + resource.exists() + ", localFile="
+                                + (location != null && Files.isRegularFile(location.toFile().toPath())));
+                    }
+                }
+                for (String typeName : List.of("de.regelsuche.sdk.optimization.NumericKind",
+                        "de.regelsuche.sdk.optimization.NumericOperation")) {
+                    var type = mathProject.findType(typeName);
+                    System.out.println("Mathematics type " + name + ": " + typeName + " -> "
+                            + (type == null ? null : type.getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT).getPath()));
+                }
+            }
             for (String name : List.of("sandbox-ast-api", "sandbox-functional-converter-core", "sandbox_common_core",
                     "sandbox_tools", "sandbox_use_general_type")) {
                 var imported = workspace.getRoot().getProject(name);
