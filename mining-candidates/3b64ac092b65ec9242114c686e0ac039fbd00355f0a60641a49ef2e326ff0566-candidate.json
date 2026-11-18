@@ -18,8 +18,9 @@
   },
   "category": "Method Call Renaming",
   "sourceVersion": "21",
-  "status": "READY_FOR_REVIEW",
+  "status": "REJECTED",
   "discoveredAt": "2026-11-18T02:41:45.747053362Z",
+  "rejectionReason": "Rejected as an unsafe, project-specific method rename. The complete source commit https://github.com/eclipse-platform/eclipse.platform.debug/commit/b1eec7fc0cd88da46c535f59e10a1a75954d36c5 renames TreeCursor method declarations and their calls together (dispose, keyDown, paint and traverse). This DSL changes arbitrary one-argument dispose calls without checking the receiver binding, target availability or equivalent behavior, and leaves declarations unchanged. Its own positive example is a counterexample: calling handleEvent prints \u0027Disposing old method\u0027 before and \u0027Disposing new method\u0027 afterward. Where treeCursorDispose is absent, the rewrite fails to compile. The negative example checks only arity and misses unrelated single-argument dispose methods. A binding-aware Rename refactoring handles the original coordinated rename; this proposal is unsuitable as a reusable behavior-preserving cleanup and will not be promoted.",
   "ruleFingerprint": "sha256:4e2b046e85c6fd1b4d6f69fa97117bfc576c0a7d900cc83bec2abef363ef2729",
   "behaviorFingerprint": "sha256:ff83e5b9064d565fcd21ecea9d7469ea980bb5642454eec4d8e6fea81b583728",
   "verification": {
@@ -45,6 +46,13 @@
       "actor": "CandidateVerificationCli",
       "reason": "All deterministic candidate gates passed",
       "occurredAt": "2026-11-18T02:43:03.744013657Z"
+    },
+    {
+      "from": "READY_FOR_REVIEW",
+      "to": "REJECTED",
+      "actor": "carstenartur",
+      "reason": "Rejected as an unsafe, project-specific method rename. The complete source commit https://github.com/eclipse-platform/eclipse.platform.debug/commit/b1eec7fc0cd88da46c535f59e10a1a75954d36c5 renames TreeCursor method declarations and their calls together (dispose, keyDown, paint and traverse). This DSL changes arbitrary one-argument dispose calls without checking the receiver binding, target availability or equivalent behavior, and leaves declarations unchanged. Its own positive example is a counterexample: calling handleEvent prints \u0027Disposing old method\u0027 before and \u0027Disposing new method\u0027 afterward. Where treeCursorDispose is absent, the rewrite fails to compile. The negative example checks only arity and misses unrelated single-argument dispose methods. A binding-aware Rename refactoring handles the original coordinated rename; this proposal is unsuitable as a reusable behavior-preserving cleanup and will not be promoted.",
+      "occurredAt": "2026-11-18T04:14:01.517430264Z"
     }
   ]
 }
