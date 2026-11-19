@@ -20,7 +20,7 @@
     "successful": false,
     "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 1: The import org.eclipse.jface.resource cannot be resolved",
-    "verifiedAt": "2026-11-18T02:42:53.343167491Z",
+    "verifiedAt": "2026-11-19T02:23:20.848640394Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
