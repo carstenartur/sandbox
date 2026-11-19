@@ -5536,9 +5536,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "lastProcessedCommit": "8df9c3dc9026fe757138317c5b076e25dd683481",
-      "lastProcessedDate": "2026-11-18T02:42:39.586773930Z",
-      "totalProcessed": 1151,
+      "lastProcessedCommit": "52a7179f749eee503973209f024e02122d3d7d0c",
+      "lastProcessedDate": "2026-11-19T02:23:07.698714635Z",
+      "totalProcessed": 1215,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -6179,6 +6179,42 @@
           "deferredAt": "2026-11-18T02:42:15.689391998Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "f334a610a3f823299ddb2cd3a8fd85f95a34ac41",
+          "message": "Fixed deprecation warning.",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-19T02:15:07.496048773Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b64be5557f75b7857a34e58e86a7b2a9d6ad126b",
+          "message": "Bug 328297 - need a way to initialize the width of columns, similar to initialzie the columns in IColumnPresentation",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-19T02:17:27.368047229Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "753e53ccf699ef4b0900ca09780b682804fcbd13",
+          "message": "Removed unused build notes, as we no longer update or use them",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-19T02:21:12.083682268Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "cbbafc030ab4f59fa260c6de46a53145673f827a",
+          "message": "Bug 343308 - some tests timeout while running via XVnc on the Mac Hudson slaves - Changed Display.sleep() calls to Threa",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-19T02:22:10.489513606Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -6239,10 +6275,12 @@
         "String API modernization": 1,
         "String Optimization": 1,
         "Java Modernization": 1,
-        "Method Call Renaming": 1
+        "Method Call Renaming": 1,
+        "Constant Usage": 1,
+        "API modernization": 1
       },
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 54732
+  "globalTotalProcessed": 54796
 }
