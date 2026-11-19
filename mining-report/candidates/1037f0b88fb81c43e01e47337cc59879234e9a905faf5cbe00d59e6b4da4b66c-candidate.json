@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "1037f0b88fb81c43e01e47337cc59879234e9a905faf5cbe00d59e6b4da4b66c",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new org.eclipse.core.runtime.preferences.InstanceScope()\n\u003d\u003e\norg.eclipse.core.runtime.preferences.InstanceScope.INSTANCE\n;;",
+  "beforeExample": "import org.eclipse.core.runtime.preferences.IEclipsePreferences;\nimport org.eclipse.core.runtime.preferences.InstanceScope;\n\npublic class MyPreferencesUser {\n    void registerListener() {\n        IEclipsePreferences prefs \u003d new InstanceScope().getNode(\"my.plugin.id\");\n        System.out.println(prefs.name());\n    }\n}",
+  "afterExample": "import org.eclipse.core.runtime.preferences.IEclipsePreferences;\nimport org.eclipse.core.runtime.preferences.InstanceScope;\n\npublic class MyPreferencesUser {\n    void registerListener() {\n        IEclipsePreferences prefs \u003d InstanceScope.INSTANCE.getNode(\"my.plugin.id\");\n        System.out.println(prefs.name());\n    }\n}",
+  "negativeExample": "import org.eclipse.core.runtime.preferences.IEclipsePreferences;\nimport org.eclipse.core.runtime.preferences.InstanceScope;\n\npublic class MyPreferencesUser {\n    void registerListener() {\n        // Not a constructor call, should not match\n        System.out.println(InstanceScope.class.getName());\n\n        // Another constructor, should not match\n        Object obj \u003d new Object();\n    }\n}",
+  "targetHintFile": "api-modernization.sandbox-hint",
+  "sourceCommit": "0484472d9fefb7a685e043947551d72c4476b31a",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "sourceEvidence": {
+    "path": "org.eclipse.core.variables/src/org/eclipse/core/internal/variables/StringVariableManager.java",
+    "before": "new InstanceScope().getNode(VariablesPlugin.PI_CORE_VARIABLES).addPreferenceChangeListener(this);",
+    "after": "InstanceScope.INSTANCE.getNode(VariablesPlugin.PI_CORE_VARIABLES).addPreferenceChangeListener(this);",
+    "diffHunk": "diff --git a/org.eclipse.core.variables/src/org/eclipse/core/internal/variables/StringVariableManager.java b/org.eclipse.core.variables/src/org/eclipse/core/internal/variables/StringVariableManager.java\nindex e015008..c847de6 100644\n--- a/org.eclipse.core.variables/src/org/eclipse/core/internal/variables/StringVariableManager.java\n+++ b/org.eclipse.core.variables/src/org/eclipse/core/internal/variables/StringVariableManager.java\n@@ -205,7 +205,7 @@\n \t\t\tloadContributedValueVariables();\n \t\t\tloadPersistedValueVariables();\n \t\t\tloadDynamicVariables();\n-\t\t\tnew InstanceScope().getNode(VariablesPlugin.PI_CORE_VARIABLES).addPreferenceChangeListener(this);\n+\t\t\tInstanceScope.INSTANCE.getNode(VariablesPlugin.PI_CORE_VARIABLES).addPreferenceChangeListener(this);\n \t\t\tfInternalChange \u003d false;\n \t\t}\n \t}\n"
+  },
+  "category": "API modernization",
+  "summary": "Replaces the deprecated constructor `new InstanceScope()` with the static field `InstanceScope.INSTANCE`.",
+  "sourceVersion": "8",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-19T02:22:10.429751629Z",
+  "ruleFingerprint": "sha256:48b7a5fc857f05658ee3c2b95752e5659d537beed32f594395e84f62651e598b",
+  "behaviorFingerprint": "sha256:653320536d2aa5b148de3220af207c2c3894fae0b85f24350f53f19cc1d52b20",
+  "verification": {
+    "successful": false,
+    "stage": "AFTER_REWRITE",
+    "message": "Transformed syntax tree does not equal afterExample",
+    "verifiedAt": "2026-11-19T02:23:33.095285089Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": []
+}

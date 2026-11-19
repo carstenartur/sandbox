@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "AFTER_PARSE",
     "message": "Java compile error at line 6: The method getPackageText() of type NewPackageWizardPage must override or implement a supertype method",
-    "verifiedAt": "2026-11-18T02:42:52.758637234Z",
+    "verifiedAt": "2026-11-19T02:23:20.221201843Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0

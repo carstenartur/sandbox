@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "eeff6f68409a6b2955aaae0368808e46c8b476ea894a6c6f48e2517782b54e34",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$var.getAttribute($attr, \"\")\n\u003d\u003e\n$var.getAttribute($attr, org.eclipse.core.externaltools.internal.IExternalToolConstants.EMPTY_STRING)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.core.runtime.CoreException;\n\npublic class TestClass {\n    public void testMethod(ILaunchConfiguration configuration) {\n        String buildKindString \u003d null;\n        try {\n            buildKindString \u003d configuration.getAttribute(org.eclipse.core.externaltools.internal.IExternalToolConstants.ATTR_RUN_BUILD_KINDS, \"\");\n        } catch (CoreException e) {\n            // handle exception\n        }\n    }\n}\n\n// Dummy dependencies for compilation\ninterface ILaunchConfiguration {\n    String getAttribute(String key, String defaultValue) throws CoreException;\n}\ninterface IExternalToolConstants {\n    String ATTR_RUN_BUILD_KINDS \u003d \"attr.run.build.kinds\";\n    String EMPTY_STRING \u003d \"\";\n}\nclass CoreException extends Exception {}",
+  "afterExample": "package test;\n\nimport org.eclipse.core.runtime.CoreException;\n\npublic class TestClass {\n    public void testMethod(ILaunchConfiguration configuration) {\n        String buildKindString \u003d null;\n        try {\n            buildKindString \u003d configuration.getAttribute(org.eclipse.core.externaltools.internal.IExternalToolConstants.ATTR_RUN_BUILD_KINDS, org.eclipse.core.externaltools.internal.IExternalToolConstants.EMPTY_STRING);\n        } catch (CoreException e) {\n            // handle exception\n        }\n    }\n}\n\n// Dummy dependencies for compilation\ninterface ILaunchConfiguration {\n    String getAttribute(String key, String defaultValue) throws CoreException;\n}\ninterface IExternalToolConstants {\n    String ATTR_RUN_BUILD_KINDS \u003d \"attr.run.build.kinds\";\n    String EMPTY_STRING \u003d \"\";\n}\nclass CoreException extends Exception {}",
+  "negativeExample": "package test;\n\nimport org.eclipse.core.runtime.CoreException;\n\npublic class TestClass {\n    public void testMethod(ILaunchConfiguration configuration) {\n        String buildKindString \u003d null;\n        try {\n            // Default value is an integer, not a string\n            int count \u003d configuration.getAttribute(\"some.count\", 0);\n            \n            // Default value is a variable, not a literal empty string\n            String defaultVal \u003d getEmptyString();\n            buildKindString \u003d configuration.getAttribute(org.eclipse.core.externaltools.internal.IExternalToolConstants.ATTR_RUN_BUILD_KINDS, defaultVal);\n        } catch (CoreException e) {\n            // handle exception\n        }\n    }\n\n    private String getEmptyString() { return \"\"; }\n}\n\n// Dummy dependencies for compilation\ninterface ILaunchConfiguration {\n    String getAttribute(String key, String defaultValue) throws CoreException;\n    int getAttribute(String key, int defaultValue) throws CoreException;\n}\ninterface IExternalToolConstants {\n    String ATTR_RUN_BUILD_KINDS \u003d \"attr.run.build.kinds\";\n    String EMPTY_STRING \u003d \"\";\n}\nclass CoreException extends Exception {}",
+  "targetHintFile": "constant-replacement.sandbox-hint",
+  "sourceCommit": "7b9df4346d5066d82b499d08791cd59144c1bab9",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "sourceEvidence": {
+    "path": "org.eclipse.ui.externaltools/External Tools Base/org/eclipse/ui/externaltools/internal/launchConfigurations/ExternalToolsBuilderTab.java",
+    "before": "buildKindString\u003d configuration.getAttribute(IExternalToolConstants.ATTR_RUN_BUILD_KINDS, \"\"); //$NON-NLS-1$",
+    "after": "buildKindString\u003d configuration.getAttribute(IExternalToolConstants.ATTR_RUN_BUILD_KINDS, IExternalToolConstants.EMPTY_STRING);",
+    "diffHunk": "diff --git a/org.eclipse.ui.externaltools/External Tools Base/org/eclipse/ui/externaltools/internal/launchConfigurations/ExternalToolsBuilderTab.java b/org.eclipse.ui.externaltools/External Tools Base/org/eclipse/ui/externaltools/internal/launchConfigurations/ExternalToolsBuilderTab.java\nindex 004f080..2b53abf 100644\n--- a/org.eclipse.ui.externaltools/External Tools Base/org/eclipse/ui/externaltools/internal/launchConfigurations/ExternalToolsBuilderTab.java\n+++ b/org.eclipse.ui.externaltools/External Tools Base/org/eclipse/ui/externaltools/internal/launchConfigurations/ExternalToolsBuilderTab.java\n@@ -319,7 +319,7 @@\n \t\tString buildKindString\u003d null;\n \t\tString buildScope\u003d null;\n \t\ttry {\n-\t\t\tbuildKindString\u003d configuration.getAttribute(IExternalToolConstants.ATTR_RUN_BUILD_KINDS, \"\"); //$NON-NLS-1$\n+\t\t\tbuildKindString\u003d configuration.getAttribute(IExternalToolConstants.ATTR_RUN_BUILD_KINDS, IExternalToolConstants.EMPTY_STRING);\n \t\t\tbuildScope\u003d configuration.getAttribute(IExternalToolConstants.ATTR_BUILDER_SCOPE, (String)null);\n \t\t} catch (CoreException e) {\n \t\t}\n"
+  },
+  "category": "Constant Usage",
+  "summary": "Replaces the literal empty string `\"\"` with `IExternalToolConstants.EMPTY_STRING` when used as the default value argument in `getAttribute` method calls, ensuring consistent usage of a shared constant.",
+  "sourceVersion": "8",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-19T02:17:27.258750091Z",
+  "ruleFingerprint": "sha256:cd586c575d49e77eac7d0e8a726b908e89f0f63625389df42dc3d7788429a291",
+  "behaviorFingerprint": "sha256:489e25a8e6ddd1d2c703903b3e91b47ada4860bb1e64ab4b9e58579293b687cb",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.core.runtime.CoreException conflicts with a type defined in the same file",
+    "verifiedAt": "2026-11-19T02:23:33.064109441Z",
+    "verifierVersion": "9",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
