@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 3: The import org.eclipse.jface.text.TabsToSpacesConverter cannot be resolved",
-    "verifiedAt": "2026-11-19T02:23:16.520397053Z",
+    "verifiedAt": "2026-11-20T02:23:00.623598788Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
