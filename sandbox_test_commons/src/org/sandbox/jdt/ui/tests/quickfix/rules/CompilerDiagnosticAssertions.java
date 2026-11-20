@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -132,6 +133,32 @@ public final class CompilerDiagnosticAssertions {
 
 		public void assertNoNewDiagnostics() {
 			assertNoNewCompilerDiagnostics(units, before);
+		}
+
+		/** Checks the complete current scope; newly created units have an empty baseline. */
+		public void assertNoNewDiagnostics(ICompilationUnit... currentUnits) {
+			assertNoNewCompilerDiagnostics(currentUnits, before);
+		}
+
+		/** Number of error occurrences in the complete original compilation units. */
+		public long baselineErrors() {
+			return before.values().stream().flatMap(problems -> problems.entrySet().stream())
+					.filter(entry -> entry.getKey().error()).mapToLong(Map.Entry::getValue).sum();
+		}
+
+		/** Number of warning occurrences with all optional diagnostics enabled. */
+		public long baselineWarnings() {
+			return before.values().stream().flatMap(problems -> problems.entrySet().stream())
+					.filter(entry -> !entry.getKey().error()).mapToLong(Map.Entry::getValue).sum();
+		}
+
+		/** Error identities for diagnosing an incomplete upstream project baseline. */
+		public List<String> baselineErrorDetails() {
+			return before.entrySet().stream().flatMap(unit -> unit.getValue().entrySet().stream()
+					.filter(problem -> problem.getKey().error())
+					.map(problem -> unit.getKey().getPath().toPortableString() + " id=" + problem.getKey().id() //$NON-NLS-1$
+							+ " arguments=" + problem.getKey().arguments() + " occurrences=" + problem.getValue())) //$NON-NLS-1$ //$NON-NLS-2$
+					.sorted().toList();
 		}
 
 		public void assertRestored() {
