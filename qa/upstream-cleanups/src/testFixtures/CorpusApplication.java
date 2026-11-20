@@ -194,6 +194,7 @@ public final class CorpusApplication implements IApplication {
         }
         var projects = new ArrayList<IJavaProject>();
         var excluded = new ArrayList<String>();
+        var selectedClasspaths = new ArrayList<String>();
         var workspace = ResourcesPlugin.getWorkspace();
         for (Path directory : directories.stream().sorted().toList()) {
             Path projectFile = directory.resolve(".project");
@@ -202,6 +203,17 @@ public final class CorpusApplication implements IApplication {
             if (family.equals("swt") && (name.endsWith(".win32") || name.endsWith(".cocoa"))) {
                 excluded.add(checkout.relativize(directory) + "\tRequires its native target platform; this run uses Linux GTK");
                 continue;
+            }
+            if (family.equals("swt") && name.equals("org.eclipse.swt.opengl.examples")
+                    && !Files.exists(directory.resolve("META-INF/MANIFEST.MF"))) {
+                excluded.add(checkout.relativize(directory)
+                        + "\tLegacy example outside the upstream reactor; requires org.eclipse.opengl 0.5.0, absent from the pinned platform");
+                continue;
+            }
+            Path gtkClasspath = directory.resolve(".classpath_gtk");
+            if (family.equals("swt") && !Files.exists(directory.resolve(".classpath")) && Files.isRegularFile(gtkClasspath)) {
+                Files.copy(gtkClasspath, directory.resolve(".classpath"));
+                selectedClasspaths.add(checkout.relativize(gtkClasspath) + "\t" + checkout.relativize(directory.resolve(".classpath")));
             }
             var description = workspace.loadProjectDescription(org.eclipse.core.runtime.Path.fromOSString(projectFile.toString()));
             if (!Arrays.asList(description.getNatureIds()).contains(JavaCore.NATURE_ID)) continue;
@@ -218,6 +230,7 @@ public final class CorpusApplication implements IApplication {
             projects.add(JavaCore.create(project));
         }
         Files.write(output.resolve("excluded-projects.tsv"), excluded, StandardCharsets.UTF_8);
+        Files.write(output.resolve("selected-classpaths.tsv"), selectedClasspaths, StandardCharsets.UTF_8);
         return projects;
     }
 

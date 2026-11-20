@@ -21,6 +21,11 @@ source exclusions and linked SWT GTK source folders. Compiler-test resources
 containing deliberately invalid Java are not invented source roots. The SWT
 job uses Linux GTK; native Cocoa and Windows projects are listed separately in
 the evidence and are not claimed as qualified by that job.
+For snippets, the job selects the repository's own `.classpath_gtk`, retaining
+its platform-specific exclusions and recording that selection. The historical
+OpenGL example is explicitly excluded: it is outside the upstream reactor and
+requires the unavailable `org.eclipse.opengl` 0.5.0 bundle. That project is not
+represented as a successful compiler qualification.
 
 Before importing projects, the corpus installs the actual upstream test-support
 bundles into its private runtime copy. Exact installable-unit versions and the
