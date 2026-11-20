@@ -288,6 +288,8 @@ public final class MathematicalAnalysis {
                compilerOptions, environment, replacements, evidence, diagnostics, valueWork);
          sourceContext.takeWork(); // Source dependencies were charged through valueWork.
       }
+      JavaMontgomeryDotOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
+            compilerOptions, environment, replacements, evidence, diagnostics, valueWork);
       JavaRationalDenominatorOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
             compilerOptions, environment, replacements, evidence, diagnostics, valueWork);
       JavaQuadraticDenominatorOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
@@ -938,12 +940,14 @@ public final class MathematicalAnalysis {
                remainingWork-=valueWork.used-beforePowerReplay;
             }
             if (evidence.stream().anyMatch(region -> JavaRationalDenominatorOptimizer.isRegion(region)
-                  || JavaQuadraticDenominatorOptimizer.isRegion(region))) {
+                  || JavaQuadraticDenominatorOptimizer.isRegion(region) || region.montgomeryDot() != null)) {
                valueWork.charge(Math.max(0, valueWork.remaining() - Math.max(0, remainingWork)));
                long beforeDenominatorReplay = valueWork.used;
                var allEdits = new ArrayList<>(replacements);
                allEdits.addAll(analysis.documentation());
                for (var region : evidence) {
+                  if (region.montgomeryDot() != null)
+                     JavaMontgomeryDotOptimizer.replay(combinedAst, region.montgomeryDot(), options, valueWork);
                   if (JavaRationalDenominatorOptimizer.isRegion(region))
                      JavaRationalDenominatorOptimizer.verifyCombined(combinedAst, combined.get(), region, allEdits, valueWork);
                   if (JavaQuadraticDenominatorOptimizer.isRegion(region))
@@ -1479,7 +1483,15 @@ public final class MathematicalAnalysis {
       String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,
       LoopSchedulingEvidence scheduling, FiniteSumEvidence finiteSum, RuntimeIterationEvidence runtimeIteration,
       SourceNumericBranchEvidence sourceNumericBranch, FixedPowerEvidence fixedPower, ValueInverseEvidence valueInverse,
-      FieldInversionEvidence fieldInversion, ConstructorGuardEvidence constructorGuard) {
+      FieldInversionEvidence fieldInversion, ConstructorGuardEvidence constructorGuard, MontgomeryDotEvidence montgomeryDot) {
+      public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
+            String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,
+            LoopSchedulingEvidence scheduling, FiniteSumEvidence finiteSum, RuntimeIterationEvidence runtimeIteration,
+            SourceNumericBranchEvidence sourceNumericBranch, FixedPowerEvidence fixedPower, ValueInverseEvidence valueInverse,
+            FieldInversionEvidence fieldInversion, ConstructorGuardEvidence constructorGuard) {
+         this(offset, length, proof, cost, original, replacement, explanation, sourcePlan, scheduling, finiteSum,
+               runtimeIteration, sourceNumericBranch, fixedPower, valueInverse, fieldInversion, constructorGuard, null);
+      }
       public VerifiedRegion {
          if (sourcePlan != null) sourcePlan.requireEnvelope(offset, length, original, replacement);
          if (explanation != null && !proof.equals(explanation.verified().proof())) {

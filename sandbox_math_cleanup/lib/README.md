@@ -1,12 +1,13 @@
 # Pinned Regelsuche optimization SDK
 
-The mathematics plug-in and headless QA use
-[`io.github.carstenartur:regelsuche-optimization-sdk:0.5.3`](https://central.sonatype.com/artifact/io.github.carstenartur/regelsuche-optimization-sdk/0.5.3).
-Maven resolves the SDK and its runtime dependencies. The plug-in's
-`generate-resources` step copies these JARs into `lib/` for its private
-OSGi bundle classpath. Eclipse m2e runs the same step on project configuration.
-The packaged plug-in works offline. [qualification.json](qualification.json)
-records the released SDK JAR's checksum and source commit.
+The plug-in and headless QA target `io.github.carstenartur:regelsuche-optimization-sdk:0.5.4`.
+This branch awaits the Maven Central release and its qualification in Sandbox.
+For development, install the matching snapshot locally and pass
+`-Dregelsuche.version=0.5.4-SNAPSHOT` to Maven. The plug-in's
+`generate-resources` step copies the resolved runtime JARs into its private
+OSGi bundle classpath under `lib/`. Eclipse m2e runs the same step on project
+configuration. The current receipt records the previously qualified 0.5.3 release.
+[SDK receipt](qualification.json) · [0.5.4 release handoff](../../docs/math-montgomery-release-handoff.md)
 
 ## Previous qualified snapshot for polynomial denominators and projective handoffs
 

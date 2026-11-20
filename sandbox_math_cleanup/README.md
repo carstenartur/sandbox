@@ -60,6 +60,26 @@ overflow behavior and BigInteger result identity. **Select All does not grant
 that consent.** Review the [safety profiles](../sandbox_math_cleanup_help/html/cleanup.html#safety)
 and generated contracts before accepting a change.
 
+### Canonical Montgomery dot products
+
+With mathematical opt-in, Preserve Java, Lower estimated runtime, and the short,
+int and long numeric kinds enabled, a fixed-count loop over two `short[]`
+parameters in a static method can delay its signed 32-bit Montgomery reductions
+until the return. Static entry already triggers initialization of the reducer owner.
+For example, seven calls reducing individual products become one call reducing
+the long sum. The original method must immediately return
+`Math.floorMod(total, q)`. The reducer must resolve to an unsynchronized static
+method in the same class with the checked signed low-word implementation.
+The modulus and inverse are read from integer literals. Regelsuche checks bounds
+for both schedules and the modular identity. Sandbox checks both parsed source
+forms, including the left-to-right array reads, and retains a typed certificate.
+The optimization adds no data-dependent branches.
+
+The Bouncy Castle ML-DSA and ML-KEM matrix methods write to a supplied output.
+For these methods the analysis reports `MONTGOMERY_CALLER_PROOF_REQUIRED`.
+Their caller-owned storage, input ranges, exception order, and eventual
+observation require an interprocedural proof.
+
 ### Explicit tail conversion and optional style conversion
 
 The independent **Convert verified tail recursion (accept changed stack behavior)**
@@ -76,8 +96,11 @@ Preview/Apply/Undo; transferred tail bodies and verified numerical fallbacks are
 protected. Source or profile drift invalidates the prepared change. See
 [tail contracts and boundaries](TAIL_RECURSION.md) and the
 [native configuration guide](../sandbox_math_cleanup_help/html/cleanup.html#tail-recursion).
-Maven resolves Regelsuche 0.5.3 and embeds its runtime libraries in the plug-in.
-The [SDK provenance](lib/README.md) records the release coordinates and checksum.
+
+This branch requires Regelsuche 0.5.4 and is awaiting its publication to Maven
+Central and qualification in Sandbox. For development, a locally installed SDK
+can be tested with `-Dregelsuche.version=0.5.4-SNAPSHOT`. The
+[release handoff](../docs/math-montgomery-release-handoff.md) lists the outstanding checks.
 
 ### Verified whole-task rewrites
 
