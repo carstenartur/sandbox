@@ -111,6 +111,24 @@ selection and full Nat256-addition optimization remain outside the supported fra
 
 ## Current implementation and qualification
 
+The current packaged dependency is
+`io.github.carstenartur:regelsuche-optimization-sdk:0.5.3`; its exact JAR and
+source identity are recorded in [lib/qualification.json](lib/qualification.json).
+Newer Regelsuche source capabilities, including Hall/Hunter certificates,
+Bernstein/Gram positivity and Montgomery planning, require a later SDK build
+and their own Java-source integration and consumer qualification. Their
+presence in the Regelsuche core does not add a Sandbox cleanup automatically.
+
+The [16 November archive scan](../qa/math-optimization/PRACTICAL_REVIEW.md#bouncy-castle-1852-archive-scan-on-16-november-2026)
+records **126 strict** and **134 mathematical** regions at Sandbox `ea460537`.
+The **146/147** counts below belong to the separately pinned 31 October
+qualification. These runs use different source/SDK checkpoints; subtracting
+their totals is not a controlled regression or improvement measurement.
+Compare accepted source spans, exact dependencies and profiles before making
+such a claim. The historical evidence remains attached to each dated report.
+
+### Qualification at the 31 October checkpoint
+
 The [2026-10-31 qualification](../docs/superpowers/plans/2026-10-31-java-mathematics-context-qualification.md)
 records the exact local code revision, SDK, matched corpus inputs and integration
 boundaries. The [Java context reference](JAVA_CONTEXTS.md) describes delivered

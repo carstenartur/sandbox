@@ -155,6 +155,13 @@ also showed inconsistent differences. The candidate stays experimental.
 
 ## Bouncy Castle 1.85.2 archive scan on 16 November 2026
 
+This is a dated source qualification, distinct from the 31 October 146/147
+scan summarized in the [plug-in README](../../sandbox_math_cleanup/README.md#qualification-at-the-31-october-checkpoint).
+The totals alone cannot establish a regression: source revision, SDK build,
+profiles and retained spans must be compared under one controlled setup.
+The current packaged dependency is separately recorded in the
+[SDK receipt](../../sandbox_math_cleanup/lib/qualification.json).
+
 Sandbox `ea460537` parsed 3,126 of 3,136 source entries. Ten multi-release
 and module entries reported binding errors. The strict profile accepted 126
 regions in 55 files, and the mathematical profile accepted 134 in 62 files.
