@@ -154,7 +154,7 @@ class PinnedJdtXmlCorpusTest {
 			receipt.setProperty("cases.executed", Integer.toString(counts[1])); //$NON-NLS-1$
 			receipt.setProperty("cases.changed", Integer.toString(counts[2])); //$NON-NLS-1$
 			Files.write(output.resolve("inventory.tsv"), inventory, StandardCharsets.UTF_8); //$NON-NLS-1$
-			try (var writer= Files.newBufferedWriter(output.resolve("receipt.properties"))) { //$NON-NLS-1$
+			try (var writer= Files.newBufferedWriter(output.resolve("receipt.properties"), StandardCharsets.UTF_8)) { //$NON-NLS-1$
 				receipt.store(writer, "Actual XMLCleanupService workspace executions"); //$NON-NLS-1$
 			}
 			for (IProject project : projects.values()) {
@@ -209,7 +209,7 @@ class PinnedJdtXmlCorpusTest {
 		Properties encodings= new Properties();
 		Path preferences= project.resolve(".settings/org.eclipse.core.resources.prefs"); //$NON-NLS-1$
 		if (Files.isRegularFile(preferences)) {
-			try (var reader= Files.newBufferedReader(preferences)) {
+			try (var reader= Files.newBufferedReader(preferences, StandardCharsets.UTF_8)) {
 				encodings.load(reader);
 			}
 		}
