@@ -8,6 +8,13 @@ OSGi bundle classpath. Eclipse m2e runs the same step on project configuration.
 The packaged plug-in works offline. [qualification.json](qualification.json)
 records the released SDK JAR's checksum and source commit.
 
+This receipt qualifies the packaged 0.5.3 dependency. Source-only methods
+added later in Regelsuche, including finite Hall/Hunter and proof-DAG APIs,
+rational positivity certificates and Montgomery schedule planning, are not
+present in this pinned release. Exposing a future method in a cleanup also
+requires Java-source effect checks and a separately replayed consumer test.
+Keep this release receipt unchanged until that dependency is actually upgraded.
+
 ## Previous qualified snapshot for polynomial denominators and projective handoffs
 
 The standalone JAR and its [receipt](qualification-2026-11-16-polynomial-denominators.json) came from
