@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "c7a4cb5bd22f2ef716106e5983dc33f8b48ee6924f7a16c84a8893f2d56bbe47",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "for ($Type $var \u003d $init; $var \u003c $array.length; $update)\n\u003d\u003e\nfor ($Type $var \u003d $init; $array !\u003d null \u0026\u0026 $var \u003c $array.length; $update)\n;;",
+  "beforeExample": "class TestClass {\n    Object[] columnProperties;\n    public TestClass(Object[] props) {\n        this.columnProperties \u003d props;\n    }\n    public void process() {\n        // This is the line that should match\n        for (int i \u003d 0; i \u003c columnProperties.length; i++) {\n            System.out.println(columnProperties[i]);\n        }\n    }\n}",
+  "afterExample": "class TestClass {\n    Object[] columnProperties;\n    public TestClass(Object[] props) {\n        this.columnProperties \u003d props;\n    }\n    public void process() {\n        // This is the expected transformation\n        for (int i \u003d 0; columnProperties !\u003d null \u0026\u0026 i \u003c columnProperties.length; i++) {\n            System.out.println(columnProperties[i]);\n        }\n    }\n}",
+  "negativeExample": "import java.util.List;\nimport java.util.Arrays;\n\nclass TestClass {\n    List\u003cObject\u003e items;\n    public TestClass(List\u003cObject\u003e list) {\n        this.items \u003d list;\n    }\n    public void process() {\n        // Should NOT match because it uses .size() (method call) instead of .length (array field)\n        for (int i \u003d 0; i \u003c items.size(); i++) {\n            System.out.println(items.get(i));\n        }\n    }\n}",
+  "targetHintFile": "null-safety.sandbox-hint",
+  "sourceCommit": "809b468b3a0e74116d5c07e656fdbebfe03100cd",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "sourceEvidence": {
+    "path": "org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/actions/expressions/EditWatchExpressinInPlaceAction.java",
+    "before": "        for (int i \u003d 0; i \u003c columnProperties.length; i++) {",
+    "after": "        for (int i \u003d 0; columnProperties !\u003d null \u0026\u0026 i \u003c columnProperties.length; i++) {",
+    "diffHunk": "diff --git a/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/actions/expressions/EditWatchExpressinInPlaceAction.java b/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/actions/expressions/EditWatchExpressinInPlaceAction.java\nindex 1b09da3..fffbdd2 100644\n--- a/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/actions/expressions/EditWatchExpressinInPlaceAction.java\n+++ b/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/actions/expressions/EditWatchExpressinInPlaceAction.java\n@@ -56,26 +56,25 @@\n             return;\n         }\n \n-\n         // Always edit multi-line expressions in dialog.  Otherwise try to find the expression \n         // column and activate cell editor there.\n         int expressionColumn \u003d getExpressionColumnIndex();\n-        if (expressionColumn !\u003d -1 || isWatchExpressionWithNewLine()) {\n+        IWatchExpression[] expressions \u003d fEditActionDelegate.getSelectedExpressions();\n+        if (expressionColumn !\u003d -1 \u0026\u0026 !isWatchExpressionWithNewLine(expressions)) {\n             fViewer.editElement(selelection.getFirstElement(), expressionColumn);\n-        } else {\n+        } else if (expressions.length \u003d\u003d 1) {\n             fEditActionDelegate.run(this);\n         }\n     }\n     \n-    private boolean isWatchExpressionWithNewLine() {\n-        IWatchExpression[] expressions \u003d fEditActionDelegate.getSelectedExpressions();\n+    private boolean isWatchExpressionWithNewLine(IWatchExpression[] expressions) {\n         return expressions.length \u003d\u003d 1 \u0026\u0026 \n-            expressions[0].getExpressionText().indexOf(\u0027\\n\u0027) \u003d\u003d -1;\n+            expressions[0].getExpressionText().indexOf(\u0027\\n\u0027) !\u003d -1;\n     }\n     \n     private int getExpressionColumnIndex() {\n         Object[] columnProperties \u003d fViewer.getColumnProperties();\n-        for (int i \u003d 0; i \u003c columnProperties.length; i++) {\n+        for (int i \u003d 0; columnProperties !\u003d null \u0026\u0026 i \u003c columnProperties.length; i++) {\n             if (VariableColumnPresentation.COLUMN_VARIABLE_NAME.equals(columnProperties[i])) {\n                 return i;\n             }\n"
+  },
+  "category": "Null Safety",
+  "summary": "Adds a null check to array reference in for loop condition.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-20T02:18:51.562400634Z",
+  "ruleFingerprint": "sha256:54922cde56a5bcd79f7cf5359390e70f6b7fb31b4ee3e64ce9c2d89d2e499060",
+  "behaviorFingerprint": "sha256:f5b892190155272da17eb8218c91d48774697d51e9dd954ea5f563fe58150f24",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-11-20T02:23:11.374193599Z",
+    "verifierVersion": "9",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "NEGATIVE_MATCH",
     "message": "Negative example unexpectedly matched 1 time(s)",
-    "verifiedAt": "2026-11-19T02:23:23.930110431Z",
+    "verifiedAt": "2026-11-20T02:23:05.301537777Z",
     "verifierVersion": "9",
     "matches": 1,
     "replacements": 1

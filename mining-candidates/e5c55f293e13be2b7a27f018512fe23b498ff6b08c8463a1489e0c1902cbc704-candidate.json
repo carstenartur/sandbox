@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "AFTER_REWRITE",
     "message": "Transformed source is invalid: Java compile error at line 16: The method getLineNumber() is undefined for the type JavaElementLine",
-    "verifiedAt": "2026-11-19T02:23:24.886729247Z",
+    "verifiedAt": "2026-11-20T02:23:05.944858849Z",
     "verifierVersion": "9",
     "matches": 1,
     "replacements": 1

@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "AFTER_PARSE",
     "message": "Java compile error at line 14: The method addPreferenceChangeListener(IEclipsePreferences.IPreferenceChangeListener) in the type IEclipsePreferences is not applicable for the arguments (MyClass)",
-    "verifiedAt": "2026-11-19T02:23:25.741300716Z",
+    "verifiedAt": "2026-11-20T02:23:06.523715366Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0

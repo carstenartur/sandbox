@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "33cbe809573285d333ca2ca4a33f39a37a670b58735302a18690098a92c07e88",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$list.toString()\n:: instanceof($list, \"java.util.List\")\n\u003d\u003e $list.size() \u003d\u003d 1 ? $list.get(0).toString() : $list.toString()\n;;",
+  "beforeExample": "import java.util.Arrays;\nimport java.util.List;\n\nclass SWTFactory {\n    static void createLabel(Object parent, String text, int i) {}\n}\n\nclass Test {\n    List\u003cString\u003e fmodes;\n    void method() {\n        fmodes \u003d Arrays.asList(\"Run\");\n        SWTFactory.createLabel(null, fmodes.toString() + \":\", 1);\n    }\n}",
+  "afterExample": "import java.util.Arrays;\nimport java.util.List;\n\nclass SWTFactory {\n    static void createLabel(Object parent, String text, int i) {}\n}\n\nclass Test {\n    List\u003cString\u003e fmodes;\n    void method() {\n        fmodes \u003d Arrays.asList(\"Run\");\n        SWTFactory.createLabel(null, (fmodes.size() \u003d\u003d 1 ? fmodes.get(0).toString() : fmodes.toString()) + \":\", 1);\n    }\n}",
+  "negativeExample": "import java.util.Arrays;\nimport java.util.HashSet;\nimport java.util.Set;\n\nclass SWTFactory {\n    static void createLabel(Object parent, String text, int i) {}\n}\n\nclass Test {\n    Set\u003cString\u003e fmodesSet; \n    void method() {\n        fmodesSet \u003d new HashSet\u003c\u003e(Arrays.asList(\"Run\"));\n        SWTFactory.createLabel(null, fmodesSet.toString() + \":\", 1);\n    }\n}",
+  "targetHintFile": "string.sandbox-hint",
+  "sourceCommit": "bbcd99a0bd3a04f25d41811271464ef4ad972501",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "sourceEvidence": {
+    "path": "org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/preferences/LaunchPerspectivePreferencePage.java",
+    "before": "\t\t\t\tSWTFactory.createLabel(parent, fmodes.toString()+\":\", 1); //$NON-NLS-1$",
+    "after": "\t\t\t\tString modeString\u003d fmodes.size() \u003d\u003d 1 ? fmodes.get(0).toString() : fmodes.toString();\n\t\t\t\tSWTFactory.createLabel(parent, modeString + \":\", 1); //$NON-NLS-1$",
+    "diffHunk": "diff --git a/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/preferences/LaunchPerspectivePreferencePage.java b/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/preferences/LaunchPerspectivePreferencePage.java\nindex 3783607..de908a6 100644\n--- a/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/preferences/LaunchPerspectivePreferencePage.java\n+++ b/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/preferences/LaunchPerspectivePreferencePage.java\n@@ -360,7 +364,8 @@\n \t\t\tfmodes \u003d LaunchConfigurationPresentationManager.getDefault().getLaunchModeNames(smodes);\n \t\t\tif(!fmodes.isEmpty()) {\n \t\t\t\t//add the mode set and create a combo\n-\t\t\t\tSWTFactory.createLabel(parent, fmodes.toString()+\":\", 1); //$NON-NLS-1$\n+\t\t\t\tString modeString\u003d fmodes.size() \u003d\u003d 1 ? fmodes.get(0).toString() : fmodes.toString();\n+\t\t\t\tSWTFactory.createLabel(parent, modeString + \":\", 1); //$NON-NLS-1$\n \t\t\t\tcombo \u003d SWTFactory.createCombo(parent, SWT.READ_ONLY, 1, fgPerspectiveLabels);\n \t\t\t\tString text \u003d getComboSelection(smodes);\n \t\t\t\tif(text !\u003d null) {\n"
+  },
+  "category": "Code Style",
+  "summary": "Replace List.toString() with conditional logic to prevent \u0027[]\u0027 for single-element lists, improving string representation for display.",
+  "sourceVersion": "8",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-20T02:21:19.705193885Z",
+  "ruleFingerprint": "sha256:3f507e21b804ac74c5c5922c63a83ed0108bebc64e441487f254dbbaca5fcd51",
+  "behaviorFingerprint": "sha256:f47e7d905c7357466c9b6919eadebc8b07bd85cb8f361319b0010d7e84471d53",
+  "verification": {
+    "successful": false,
+    "stage": "AFTER_REWRITE",
+    "message": "Transformed syntax tree does not equal afterExample",
+    "verifiedAt": "2026-11-20T02:23:11.403422091Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": []
+}
