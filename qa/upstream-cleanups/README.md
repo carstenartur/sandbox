@@ -22,6 +22,12 @@ containing deliberately invalid Java are not invented source roots. The SWT
 job uses Linux GTK; native Cocoa and Windows projects are listed separately in
 the evidence and are not claimed as qualified by that job.
 
+Before importing projects, the corpus installs the actual upstream test-support
+bundles into its private runtime copy. Exact installable-unit versions and the
+fixed Eclipse 4.41 repository are recorded with the director command and log;
+the product alone does not supply the required performance, text and UI test
+libraries. Their transitive dependencies are resolved by p2.
+
 ## Execute
 
 Use Java 25. The inexpensive source/profile contract is:

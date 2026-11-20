@@ -153,6 +153,12 @@ jobs:
           distribution: temurin
           cache: maven
           cache-dependency-path: sandbox/pom.xml
+      - name: Record bootstrap dependency availability
+        run: |
+          curl --silent --show-error --head --max-time 60 \
+            https://repo.maven.apache.org/maven2/org/eclipse/tycho/tycho-maven-plugin/5.0.4/tycho-maven-plugin-5.0.4.jar
+          curl --silent --show-error --head --max-time 60 \
+            https://repo.maven.apache.org/maven2/org/junit/junit-bom/6.1.3/junit-bom-6.1.3.pom
       - name: Materialize the product from this checkout
         working-directory: sandbox
         shell: bash
@@ -160,7 +166,7 @@ jobs:
           set -euo pipefail
           mkdir -p ../jdt-product
           git rev-parse HEAD > ../jdt-product/source-commit.txt
-          ./mvnw --batch-mode --no-transfer-progress -Pproduct \
+          ./mvnw --batch-mode --no-transfer-progress --errors --show-version -Pproduct \
             -Dsandbox.tycho.linux-only=true \
             -DskipTests -Dspotbugs.skip=true -Dtycho.localArtifacts=ignore \
             clean package 2>&1 | tee ../jdt-product/build.log

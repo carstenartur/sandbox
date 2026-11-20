@@ -119,6 +119,7 @@ class UpstreamCleanupTest {
         Files.writeString(output.resolve("source-identity.txt"), remote + "\nrefs/tags/R4_41\n" + commit + "\n");
         Files.writeString(output.resolve("product-commit.txt"), productCommit + "\n");
         copyTree(Path.of(required("product")).toRealPath(), runtime);
+        provisionUpstreamTestSupport(runtime, output);
         copyTree(FIXTURES, output.resolve("helper-inputs"));
         compileHelper(runtime, output);
         Path checkout = output.resolve("upstream");
@@ -136,6 +137,41 @@ class UpstreamCleanupTest {
             } finally {
                 // Preserve the last actual files, including partial failures, before the JGit fixture deletes them.
                 copyTree(checkout, output.resolve("last-checkout"));
+            }
+        }
+    }
+
+    private static void provisionUpstreamTestSupport(Path runtime, Path output) throws Exception {
+        // The shipped SDK does not contain the upstream projects' test-only bundles.
+        // Resolve their real transitive dependencies from the same fixed Eclipse release.
+        String repository = "https://download.eclipse.org/eclipse/updates/4.41/R-4.41-202608281142/";
+        String units = String.join(",",
+                "org.eclipse.test.feature.group/3.9.800.v20260619-0701",
+                "org.eclipse.text.tests/3.15.0.v20260604-1153",
+                "org.eclipse.jface.text.tests/3.14.200.v20260814-0956",
+                "org.eclipse.core.filebuffers.tests/3.14.100.v20260421-1151",
+                "org.eclipse.unittest.ui/1.2.200.v20260603-0511");
+        String profile = properties(runtime.resolve("configuration/config.ini")).getProperty("eclipse.p2.profile");
+        assertNotNull(profile, "The actual product must have a p2 profile");
+        List<String> command = List.of(runtime.resolve("eclipse").toString(), "--launcher.suppressErrors",
+                "-nosplash", "-consoleLog", "-vm", Path.of(System.getProperty("java.home"), "bin", "java").toString(),
+                "-data", output.resolve("test-support-workspace").toString(),
+                "-application", "org.eclipse.equinox.p2.director", "-repository", repository,
+                "-installIU", units, "-destination", runtime.toString(), "-bundlepool", runtime.toString(),
+                "-profile", profile, "-roaming", "-vmargs", "-Xmx1g",
+                "-Declipse.p2.mirrors=false");
+        Files.write(output.resolve("test-support-command.txt"), command);
+        Process process = new ProcessBuilder(command).directory(runtime.toFile()).redirectErrorStream(true)
+                .redirectOutput(output.resolve("test-support.log").toFile()).start();
+        try {
+            assertTrue(process.waitFor(20, TimeUnit.MINUTES), "Upstream test support provisioning timed out");
+            Files.writeString(output.resolve("test-support-exit-code.txt"), Integer.toString(process.exitValue()));
+            assertEquals(0, process.exitValue(), "Upstream test support could not be provisioned; see test-support.log");
+        } finally {
+            if (process.isAlive()) {
+                process.descendants().forEach(ProcessHandle::destroyForcibly);
+                process.destroyForcibly();
+                process.waitFor(10, TimeUnit.SECONDS);
             }
         }
     }
