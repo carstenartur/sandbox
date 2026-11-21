@@ -253,43 +253,46 @@ public final class CompilerDiagnosticAssertions {
 		// fixture itself uses a lenient workspace profile. Keep project errors and its language level.
 <span class="fc bfc" id="L254" title="All 2 branches covered.">		options.replaceAll((key, severity) -&gt; key.startsWith(JavaCore.PLUGIN_ID + &quot;.compiler.problem.&quot;) //$NON-NLS-1$</span>
 <span class="fc bfc" id="L255" title="All 4 branches covered.">				&amp;&amp; (JavaCore.IGNORE.equals(severity) || JavaCore.INFO.equals(severity)) ? JavaCore.WARNING : severity);</span>
-<span class="fc" id="L256">		parser.setCompilerOptions(options);</span>
-<span class="fc" id="L257">		parser.setResolveBindings(true);</span>
-<span class="fc" id="L258">		CompilationUnit root= (CompilationUnit) parser.createAST(null);</span>
-<span class="fc" id="L259">		return Arrays.stream(root.getProblems())</span>
-<span class="pc bpc" id="L260" title="1 of 4 branches missed.">				.filter(problem -&gt; problem.isError() || problem.isWarning())</span>
-<span class="fc" id="L261">				.collect(Collectors.groupingBy(problem -&gt; CompilerProblemKey.of(problem, root), LinkedHashMap::new, Collectors.counting()));</span>
+		// Compare the complete multiset: truncation can hide regressions or expose
+		// previously omitted warnings after a cleanup removes an earlier problem.
+<span class="fc" id="L258">		options.put(JavaCore.COMPILER_PB_MAX_PER_UNIT, &quot;0&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L259">		parser.setCompilerOptions(options);</span>
+<span class="fc" id="L260">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L261">		CompilationUnit root= (CompilationUnit) parser.createAST(null);</span>
+<span class="fc" id="L262">		return Arrays.stream(root.getProblems())</span>
+<span class="pc bpc" id="L263" title="1 of 4 branches missed.">				.filter(problem -&gt; problem.isError() || problem.isWarning())</span>
+<span class="fc" id="L264">				.collect(Collectors.groupingBy(problem -&gt; CompilerProblemKey.of(problem, root), LinkedHashMap::new, Collectors.counting()));</span>
 	}
 
 	static void assertNoNewCompilerDiagnostics(ICompilationUnit[] units,
 			Map&lt;ICompilationUnit, Map&lt;CompilerProblemKey, Long&gt;&gt; before) {
-<span class="fc" id="L266">		StringBuilder differences= new StringBuilder();</span>
-<span class="fc bfc" id="L267" title="All 2 branches covered.">		for (ICompilationUnit unit : units) {</span>
-<span class="fc" id="L268">			Map&lt;CompilerProblemKey, Long&gt; baseline= before.getOrDefault(unit, Map.of());</span>
-<span class="fc" id="L269">			Map&lt;CompilerProblemKey, Long&gt; after= compilerDiagnostics(unit);</span>
-<span class="fc bfc" id="L270" title="All 2 branches covered.">			for (Map.Entry&lt;CompilerProblemKey, Long&gt; entry : after.entrySet()) {</span>
-<span class="fc" id="L271">				CompilerProblemKey key= entry.getKey();</span>
-<span class="fc" id="L272">				long previous= baseline.getOrDefault(key, 0L);</span>
-<span class="pc bpc" id="L273" title="1 of 6 branches missed.">				if (previous == 0 &amp;&amp; key.junit4Arguments() != null &amp;&amp; !key.arguments().equals(key.junit4Arguments())) {</span>
+<span class="fc" id="L269">		StringBuilder differences= new StringBuilder();</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">		for (ICompilationUnit unit : units) {</span>
+<span class="fc" id="L271">			Map&lt;CompilerProblemKey, Long&gt; baseline= before.getOrDefault(unit, Map.of());</span>
+<span class="fc" id="L272">			Map&lt;CompilerProblemKey, Long&gt; after= compilerDiagnostics(unit);</span>
+<span class="fc bfc" id="L273" title="All 2 branches covered.">			for (Map.Entry&lt;CompilerProblemKey, Long&gt; entry : after.entrySet()) {</span>
+<span class="fc" id="L274">				CompilerProblemKey key= entry.getKey();</span>
+<span class="fc" id="L275">				long previous= baseline.getOrDefault(key, 0L);</span>
+<span class="pc bpc" id="L276" title="1 of 6 branches missed.">				if (previous == 0 &amp;&amp; key.junit4Arguments() != null &amp;&amp; !key.arguments().equals(key.junit4Arguments())) {</span>
 					// Credit a pre-existing missing super call only across one unambiguous JUnit migration.
-<span class="fc" id="L275">					CompilerProblemKey legacy= new CompilerProblemKey(key.error(), key.id(), key.junit4Arguments(), key.junit4Arguments());</span>
-<span class="fc bfc" id="L276" title="All 2 branches covered.">					if (baseline.containsKey(legacy) &amp;&amp; after.keySet().stream()</span>
-<span class="pc bpc" id="L277" title="1 of 2 branches missed.">							.filter(candidate -&gt; key.junit4Arguments().equals(candidate.junit4Arguments())).count() == 1) {</span>
-<span class="fc" id="L278">						previous= baseline.get(legacy);</span>
+<span class="fc" id="L278">					CompilerProblemKey legacy= new CompilerProblemKey(key.error(), key.id(), key.junit4Arguments(), key.junit4Arguments());</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">					if (baseline.containsKey(legacy) &amp;&amp; after.keySet().stream()</span>
+<span class="pc bpc" id="L280" title="1 of 2 branches missed.">							.filter(candidate -&gt; key.junit4Arguments().equals(candidate.junit4Arguments())).count() == 1) {</span>
+<span class="fc" id="L281">						previous= baseline.get(legacy);</span>
 					}
 				}
-<span class="fc bfc" id="L281" title="All 2 branches covered.">				if (entry.getValue() &gt; previous) {</span>
-<span class="fc" id="L282">					CompilerProblemKey problem= entry.getKey();</span>
-<span class="fc" id="L283">					differences.append(unit.getElementName() + &quot; gained compiler diagnostic: &quot; + problem.severity() //$NON-NLS-1$</span>
-<span class="fc" id="L284">							+ &quot; id=&quot; + problem.id() + &quot; arguments=&quot; + problem.arguments() //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L285">							+ &quot; before=&quot; + previous + &quot; after=&quot; + entry.getValue()).append('\n'); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L284" title="All 2 branches covered.">				if (entry.getValue() &gt; previous) {</span>
+<span class="fc" id="L285">					CompilerProblemKey problem= entry.getKey();</span>
+<span class="fc" id="L286">					differences.append(unit.getElementName() + &quot; gained compiler diagnostic: &quot; + problem.severity() //$NON-NLS-1$</span>
+<span class="fc" id="L287">							+ &quot; id=&quot; + problem.id() + &quot; arguments=&quot; + problem.arguments() //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L288">							+ &quot; before=&quot; + previous + &quot; after=&quot; + entry.getValue()).append('\n'); //$NON-NLS-1$ //$NON-NLS-2$</span>
 				}
 			}
 		}
-<span class="fc bfc" id="L289" title="All 2 branches covered.">		if (!differences.isEmpty()) {</span>
-<span class="nc" id="L290">			fail(differences.toString());</span>
+<span class="fc bfc" id="L292" title="All 2 branches covered.">		if (!differences.isEmpty()) {</span>
+<span class="nc" id="L293">			fail(differences.toString());</span>
 		}
-<span class="fc" id="L292">	}</span>
+<span class="fc" id="L295">	}</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
