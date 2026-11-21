@@ -582,11 +582,12 @@ sandbox_coverage/sandbox_jface_cleanup,org.sandbox.jdt.internal.ui.fix,JFaceClea
 sandbox_coverage/sandbox_jface_cleanup,org.sandbox.jdt.internal.corext.fix.helper,MissingSuperDisposePlugin,66,40,7,9,24,8,6,5,2,1
 sandbox_coverage/sandbox_jface_cleanup,org.sandbox.jdt.internal.corext.fix.helper,ViewerSorterPlugin.SorterHolder,0,13,0,0,0,3,0,1,0,1
 sandbox_coverage/sandbox_jface_cleanup,org.sandbox.jdt.internal.corext.fix.helper,ImageDataProviderPlugin.ImageDataHolder,0,3,0,0,0,1,0,1,0,1
+sandbox_coverage/sandbox_jface_cleanup,org.sandbox.jdt.internal.corext.fix.helper,ViewerSorterPlugin.new ASTVisitor() {...},7,95,2,26,2,16,2,16,0,4
 sandbox_coverage/sandbox_jface_cleanup,org.sandbox.jdt.internal.corext.fix.helper,AbstractTool,0,16,0,0,0,4,0,4,0,4
 sandbox_coverage/sandbox_jface_cleanup,org.sandbox.jdt.internal.corext.fix.helper,JFacePlugin,228,1157,76,116,66,283,65,54,2,21
 sandbox_coverage/sandbox_jface_cleanup,org.sandbox.jdt.internal.corext.fix.helper,JFacePlugin.MonitorHolder,0,23,0,0,0,5,0,1,0,1
 sandbox_coverage/sandbox_jface_cleanup,org.sandbox.jdt.internal.corext.fix.helper,JFacePlugin.FlagMappingResult,0,12,0,0,0,1,0,1,0,1
-sandbox_coverage/sandbox_jface_cleanup,org.sandbox.jdt.internal.corext.fix.helper,ViewerSorterPlugin,274,561,132,82,80,146,94,35,4,18
+sandbox_coverage/sandbox_jface_cleanup,org.sandbox.jdt.internal.corext.fix.helper,ViewerSorterPlugin,270,603,125,99,80,152,88,49,4,21
 sandbox_coverage/sandbox_jface_cleanup,org.sandbox.jdt.internal.corext.fix.helper,ImageDataProviderPlugin,61,436,31,47,22,112,29,20,1,9
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.ui.preferences.cleanup,HelpAwareSandboxCodeTabPage,13,0,0,0,5,0,2,0,2,0
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.ui.preferences.cleanup,SandboxCodeTabPage,896,0,4,0,225,0,8,0,6,0
