@@ -74,6 +74,17 @@ class CompilerDiagnosticRegressionTest {
 	}
 
 	@Test
+	void newCompilationUnitsCannotHideCompilerErrors() throws Exception {
+		ICompilationUnit original= createUnit(source("System.out.println(1);")); //$NON-NLS-1$
+		var before= CompilerDiagnosticAssertions.capture(original);
+		ICompilationUnit added= createUnit("Added.java", source("Added", "missing();")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		AssertionError failure= assertThrows(AssertionError.class,
+				() -> before.assertNoNewDiagnostics(original, added));
+		assertTrue(failure.getMessage().contains("Added.java"), failure.getMessage()); //$NON-NLS-1$
+		assertTrue(failure.getMessage().contains("ERROR"), failure.getMessage()); //$NON-NLS-1$
+	}
+
+	@Test
 	void rejectsANewCompilerError() throws Exception {
 		String before= source("int value= 1; System.out.println(value);"); //$NON-NLS-1$
 		String after= source("int value= missing; System.out.println(value);"); //$NON-NLS-1$
