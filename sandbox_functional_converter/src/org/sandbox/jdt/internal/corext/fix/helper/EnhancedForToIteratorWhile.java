@@ -74,6 +74,11 @@ public class EnhancedForToIteratorWhile extends AbstractFunctionalCall<ASTNode> 
 				if (!IteratorLoopBindings.denotableIterator(typeBinding) || !JdtStreamExtractor.denotable(visited.getParameter().resolveBinding().getType())) {
 					return false;
 				}
+				// JDT treats enhanced-for resource variables as borrowed. An iterator.next()
+				// local creates a new ownership obligation and changes leak diagnostics.
+				if (Bindings.findTypeInHierarchy(visited.getParameter().resolveBinding().getType(), "java.lang.AutoCloseable") != null) { //$NON-NLS-1$
+					return false;
+				}
 				
 				operations.add(fixcore.rewrite(visited, new ReferenceHolder<>()));
 				nodesprocessed.add(visited);
