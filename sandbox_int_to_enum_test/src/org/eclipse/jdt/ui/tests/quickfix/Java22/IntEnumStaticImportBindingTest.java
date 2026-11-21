@@ -92,20 +92,20 @@ public class IntEnumStaticImportBindingTest {
 				class Owner {
 					static final int STATE_OPEN= 1;
 					static final int STATE_CLOSED= 2;
-					%svoid accept(int state) {
+					$modifier void accept(int state) {
 						if (state == STATE_OPEN) System.out.println(1);
 						else if (state == STATE_CLOSED) System.out.println(2);
 					}
 				}
-				""".formatted(modifier), false, null); //$NON-NLS-1$ //$NON-NLS-2$
+				""".replace("$modifier ", modifier), false, null); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	}
 
 	private ICompilationUnit client(String importedMember, String statements) throws CoreException {
 		return pack.createCompilationUnit("Client.java", """
 				package test;
-				import static %s;
-				class Client { void run() { %s } }
-				""".formatted(importedMember, statements), false, null); //$NON-NLS-1$ //$NON-NLS-2$
+				import static $member;
+				class Client { void run() { $statements } }
+				""".replace("$member", importedMember).replace("$statements", statements), false, null); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 	}
 
 	private void assertCandidates(ICompilationUnit[] units, int expected) throws CoreException {
