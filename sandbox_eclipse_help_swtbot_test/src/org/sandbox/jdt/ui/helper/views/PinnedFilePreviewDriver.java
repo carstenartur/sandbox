@@ -232,6 +232,121 @@ final class PinnedFilePreviewDriver {
     }
 
     static void capture(SWTBotShell shell, SWTWorkbenchBot bot, Path temp, Runnable positionComparison) {
+        Rectangle area = prepareCapture(shell, bot);
+        UIThreadRunnable.syncExec(shell.display, () -> {
+            // GTK can restore the compare viewer's first difference when the native window remaps.
+            // Position the real controls after that event and paint them before reading the screen.
+            positionComparison.run();
+            shell.display.update();
+            assertTrue(SWTUtils.captureScreenshot(temp.toString(), area));
+        });
+    }
+
+    /** Capture the published coordinated view only after both linked panes retain their positions. */
+    static void captureCoordinatedComparison(SWTBotShell shell, SWTWorkbenchBot bot, Path image,
+            String before, String after) {
+        Rectangle area = prepareCapture(shell, bot);
+        var positions = UIThreadRunnable.syncExec(shell.display, (Result<List<PanePosition>>) () -> {
+            var panes = visibleTextPanes(shell.widget);
+            var original = panes.stream().filter(pane -> pane.getText().contains(before)).toList();
+            var modified = panes.stream().filter(pane -> pane.getText().contains(after)).toList();
+            assertEquals(1, original.size(), "Expected one original comparison pane");
+            assertEquals(1, modified.size(), "Expected one modified comparison pane");
+            assertTrue(original.getFirst() != modified.getFirst(), "Expected two distinct source panes");
+            return List.of(PanePosition.forFragment(original.getFirst(), before),
+                    PanePosition.forFragment(modified.getFirst(), after));
+        });
+        bot.waitUntil(new DefaultCondition() {
+            private int stableObservations;
+            private String observed = "No viewport observation yet";
+            private String lastReset = "None";
+
+            @Override public boolean test() {
+                return UIThreadRunnable.syncExec(shell.display, (Result<Boolean>) () -> {
+                    shell.display.update();
+                    observed = positions.stream().map(PanePosition::describe).collect(Collectors.joining("; "));
+                    if (positions.stream().anyMatch(position -> !position.matches())) {
+                        stableObservations = 0;
+                        lastReset = observed;
+                        // A peer's viewport listener may adjust the first pane while the second scrolls.
+                        // Do not accept that adjusted position as a new target or take a screenshot yet.
+                        positions.getFirst().restore();
+                        positions.getLast().restore();
+                        positions.getFirst().restore();
+                        shell.display.update();
+                        return false;
+                    }
+                    // Returning to SWTBot between observations lets pending compare/GTK events run.
+                    // The second observation verifies the state after its final paint, without resetting it.
+                    if (++stableObservations < 2) {
+                        return false;
+                    }
+                    System.out.println("Coordinated capture positions: " + observed);
+                    assertTrue(SWTUtils.captureScreenshot(image.toString(), area), observed);
+                    return true;
+                });
+            }
+
+            @Override public String getFailureMessage() {
+                return "The coordinated compare viewport did not remain stable after UI dispatch. "
+                        + "Stable observations=" + stableObservations + "; last observed: " + observed
+                        + "; last reset: " + lastReset;
+            }
+        }, 5_000, 50);
+    }
+
+    private record PanePosition(StyledText pane, String source, String fragment, int fragmentLine,
+            int codeStart, int codeEnd, int requestedTopIndex, int topIndex, int topPixel,
+            int horizontalPixel, Rectangle clientArea) {
+        static PanePosition forFragment(StyledText pane, String fragment) {
+            String source = pane.getText();
+            int line = pane.getLineAtOffset(source.indexOf(fragment));
+            String content = pane.getLine(line);
+            int lineOffset = pane.getOffsetAtLine(line);
+            int codeStart = lineOffset + content.length() - content.stripLeading().length();
+            int codeEnd = lineOffset + content.stripTrailing().length() - 1;
+            int requested = Math.max(0, line - 2);
+            pane.setTopIndex(requested);
+            // Preserve vertical clamping before horizontal/peer scrolling can notify the compare viewer.
+            int topIndex = pane.getTopIndex();
+            int topPixel = pane.getTopPixel();
+            Rectangle client = pane.getClientArea();
+            Rectangle text = pane.getTextBounds(codeStart, codeEnd);
+            pane.setHorizontalPixel(Math.max(0, pane.getHorizontalPixel() + text.x - client.x - 8));
+            return new PanePosition(pane, source, fragment, line, codeStart, codeEnd, requested,
+                    topIndex, topPixel, pane.getHorizontalPixel(), client);
+        }
+
+        void restore() {
+            if (!pane.isDisposed()) {
+                pane.setTopIndex(requestedTopIndex);
+                pane.setHorizontalPixel(horizontalPixel);
+                pane.redraw();
+            }
+        }
+
+        boolean matches() {
+            if (pane.isDisposed() || !pane.isVisible() || !source.equals(pane.getText())
+                    || !clientArea.equals(pane.getClientArea()) || pane.getTopIndex() != topIndex
+                    || pane.getTopPixel() != topPixel || pane.getHorizontalPixel() != horizontalPixel) {
+                return false;
+            }
+            Rectangle text = pane.getTextBounds(codeStart, codeEnd);
+            return text.equals(text.intersection(clientArea));
+        }
+
+        String describe() {
+            if (pane.isDisposed()) {
+                return fragment + ": disposed";
+            }
+            return fragment + " line=" + fragmentLine + ", requestedTop=" + requestedTopIndex
+                    + ", expected(topIndex/topPixel/horizontal)=" + topIndex + "/" + topPixel + "/" + horizontalPixel
+                    + ", actual=" + pane.getTopIndex() + "/" + pane.getTopPixel() + "/" + pane.getHorizontalPixel()
+                    + ", firstVisibleLine=" + pane.getLine(pane.getTopIndex());
+        }
+    }
+
+    private static Rectangle prepareCapture(SWTBotShell shell, SWTWorkbenchBot bot) {
         var area = UIThreadRunnable.syncExec(shell.display, (Result<Rectangle>) () -> {
             Rectangle bounds = shell.display.map(shell.widget, null, shell.widget.getClientArea());
             assertEquals(bounds, bounds.intersection(shell.widget.getMonitor().getClientArea()));
@@ -253,13 +368,7 @@ final class PinnedFilePreviewDriver {
             shell.display.update();
         });
         bot.sleep(650);
-        UIThreadRunnable.syncExec(shell.display, () -> {
-            // GTK can restore the compare viewer's first difference when the native window remaps.
-            // Position the real controls after that event and paint them before reading the screen.
-            positionComparison.run();
-            shell.display.update();
-            assertTrue(SWTUtils.captureScreenshot(temp.toString(), area));
-        });
+        return area;
     }
 
     // Compare multiplicities. Source positions can shift when a cleanup introduces an import.
@@ -375,6 +484,22 @@ final class PinnedFilePreviewDriver {
     }
 
     static boolean showVisibleDiff(Shell shell, String before, String after, boolean entireLine) {
+        var panes = visibleTextPanes(shell);
+        for (StyledText original : panes) {
+            if (!showDiffFragment(original, before, entireLine)) {
+                continue;
+            }
+            for (StyledText modified : panes) {
+                if (modified != original && showDiffFragment(modified, after, entireLine)
+                        && showDiffFragment(original, before, entireLine)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static List<StyledText> visibleTextPanes(Shell shell) {
         var panes = new java.util.ArrayList<StyledText>();
         var controls = new ArrayDeque<Control>();
         controls.add(shell);
@@ -390,18 +515,7 @@ final class PinnedFilePreviewDriver {
                 java.util.Collections.addAll(controls, parent.getChildren());
             }
         }
-        for (StyledText original : panes) {
-            if (!showDiffFragment(original, before, entireLine)) {
-                continue;
-            }
-            for (StyledText modified : panes) {
-                if (modified != original && showDiffFragment(modified, after, entireLine)
-                        && showDiffFragment(original, before, entireLine)) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return panes;
     }
 
     private static boolean showDiffFragment(StyledText pane, String fragment, boolean entireLine) {
