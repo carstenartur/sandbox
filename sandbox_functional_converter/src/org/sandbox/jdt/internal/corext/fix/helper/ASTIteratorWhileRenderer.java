@@ -21,6 +21,8 @@ import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.codemanipulation.ContextSensitiveImportRewriteContext;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.dom.Bindings;
+import org.eclipse.jdt.internal.corext.dom.ASTNodeFactory;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.functional.core.model.LoopModel;
 import org.sandbox.functional.core.terminal.ForEachTerminal;
@@ -71,7 +73,8 @@ public class ASTIteratorWhileRenderer {
 		VariableDeclarationFragment iteratorFragment = ast.newVariableDeclarationFragment();
 		iteratorFragment.setName(ast.newSimpleName(iteratorName));
 		MethodInvocation iteratorCall = ast.newMethodInvocation();
-		iteratorCall.setExpression((Expression) rewrite.createCopyTarget(original.getExpression()));
+		iteratorCall.setExpression(ASTNodeFactory.parenthesizeIfNeeded(ast,
+				(Expression) rewrite.createCopyTarget(original.getExpression())));
 		iteratorCall.setName(ast.newSimpleName("iterator")); //$NON-NLS-1$
 		iteratorFragment.setInitializer(iteratorCall);
 		VariableDeclarationStatement iteratorDeclaration = ast.newVariableDeclarationStatement(iteratorFragment);

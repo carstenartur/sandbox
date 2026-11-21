@@ -415,8 +415,8 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
         return false;
     }
 
-    /** IntConsumer cannot propagate checked exceptions, even when the enclosing method can. */
-    private static final class CheckedBodyExceptions extends AbstractExceptionAnalyzer {
+    /** Stream callbacks cannot propagate checked exceptions, even when the enclosing method can. */
+    static final class CheckedBodyExceptions extends AbstractExceptionAnalyzer {
         private boolean uncertain;
 
         static boolean escape(Statement body) {
@@ -700,6 +700,9 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
                     lambda.setBody(rewrite.createCopyTarget(body));
                 } else {
                     Block block = ast.newBlock();
+                    // The enclosing for replacement keeps trailing comments in place.
+                    // Its copied unbraced body must stay within that exact source range.
+                    body.setProperty(ASTNodes.UNTOUCH_COMMENT, Boolean.TRUE);
                     block.statements().add(rewrite.createCopyTarget(body));
                     lambda.setBody(block);
                 }
