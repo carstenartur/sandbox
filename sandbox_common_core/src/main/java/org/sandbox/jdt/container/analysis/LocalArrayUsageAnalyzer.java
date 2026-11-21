@@ -76,7 +76,6 @@ import org.sandbox.jdt.container.api.UsageEvidence;
 import org.sandbox.jdt.container.api.UsageEvidence.Kind;
 import org.sandbox.jdt.internal.common.AstProcessing;
 import org.sandbox.jdt.internal.common.ImportNameBindings;
-import org.sandbox.jdt.internal.common.ReferenceHolder;
 
 /**
  * Classifies every binding-resolved use of one array candidate inside a compilation
@@ -108,12 +107,9 @@ public final class LocalArrayUsageAnalyzer {
 			return accumulator.toProfile();
 		}
 
-		ReferenceHolder<String, Object> traversalState= ReferenceHolder.create();
-		AstProcessing.independent(traversalState)
-				.on(SimpleName.class, (name, holder) -> {
-					classifyMatchingReference(name, seed.identity().bindingKey(), accumulator);
-					return true;
-				})
+		AstProcessing.independent()
+				.visit(SimpleName.class,
+						name -> classifyMatchingReference(name, seed.identity().bindingKey(), accumulator))
 				.build(compilationUnit);
 
 		if (!accumulator.bindingSeen()) {
