@@ -14,8 +14,13 @@
 package org.sandbox.jdt.internal.corext.fix.helper.lib;
 
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.eclipse.jdt.core.dom.ASTMatcher;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
 
@@ -45,13 +50,14 @@ public class CodeSequenceMatcher {
 		}
 		
 		VariableMapping mapping = new VariableMapping();
+		VariableMappingMatcher matcher = new VariableMappingMatcher(mapping);
 		
 		// Match each statement pair
 		for (int i = 0; i < targetSequence.size(); i++) {
 			Statement targetStmt = targetSequence.get(i);
 			Statement candidateStmt = candidateSequence.get(i);
 			
-			if (!matchStatement(targetStmt, candidateStmt, mapping)) {
+			if (!matchStatement(targetStmt, candidateStmt, matcher)) {
 				return null;
 			}
 		}
@@ -62,7 +68,7 @@ public class CodeSequenceMatcher {
 	/**
 	 * Match two statements with variable mapping
 	 */
-	private static boolean matchStatement(Statement target, Statement candidate, VariableMapping mapping) {
+	private static boolean matchStatement(Statement target, Statement candidate, VariableMappingMatcher matcher) {
 		if (target == null || candidate == null) {
 			return false;
 		}
@@ -98,7 +104,6 @@ public class CodeSequenceMatcher {
 			}
 			
 			// Match the return expression against the initializer expression
-			VariableMappingMatcher matcher = new VariableMappingMatcher(mapping);
 			return returnStmt.getExpression().subtreeMatch(matcher, fragment.getInitializer());
 		}
 		
@@ -108,7 +113,6 @@ public class CodeSequenceMatcher {
 		}
 		
 		// Use custom AST matcher that tracks variable mappings
-		VariableMappingMatcher matcher = new VariableMappingMatcher(mapping);
 		return target.subtreeMatch(matcher, candidate);
 	}
 	
@@ -117,6 +121,7 @@ public class CodeSequenceMatcher {
 	 */
 	private static class VariableMappingMatcher extends ASTMatcher {
 		private final VariableMapping mapping;
+		private final Map<String, String> bindings = new HashMap<>();
 		
 		public VariableMappingMatcher(VariableMapping mapping) {
 			this.mapping = mapping;
@@ -124,30 +129,35 @@ public class CodeSequenceMatcher {
 		
 		@Override
 		public boolean match(SimpleName node, Object other) {
-			if (!(other instanceof org.eclipse.jdt.core.dom.ASTNode)) {
+			IBinding target = node.resolveBinding();
+			if (target == null || target.isRecovered()) {
 				return false;
 			}
-			
-			String targetName = node.getIdentifier();
-			
-			// If other is also a SimpleName, do normal name mapping
-			if (other instanceof SimpleName) {
-				SimpleName otherName = (SimpleName) other;
-				String candidateName = otherName.getIdentifier();
-				return mapping.addMapping(targetName, candidateName);
+			if (other instanceof SimpleName name) {
+				IBinding candidate = name.resolveBinding();
+				if (candidate == null || candidate.isRecovered() || node.isDeclaration() != name.isDeclaration()) {
+					return false;
+				}
+				if (target instanceof IVariableBinding variable && !variable.isField()
+						&& candidate instanceof IVariableBinding otherVariable && !otherVariable.isField()) {
+					if (!variable.getType().isEqualTo(otherVariable.getType())) {
+						return false;
+					}
+					String previous = bindings.putIfAbsent(variable.getKey(), otherVariable.getKey());
+					return (previous == null || previous.equals(otherVariable.getKey()))
+							&& mapping.addMapping(node.getIdentifier(), name.getIdentifier());
+				}
+				// Method names, types and fields denote fixed symbols, never placeholders.
+				return target.isEqualTo(candidate);
 			}
-			
-			// If other is a complex expression (not a SimpleName), store it as an expression mapping
-			// This handles cases like: parameter 'a' matching expression 'u.getFirst()'
-			if (other instanceof org.eclipse.jdt.core.dom.Expression) {
-				org.eclipse.jdt.core.dom.Expression candidateExpr = (org.eclipse.jdt.core.dom.Expression) other;
-				mapping.addExpressionMapping(targetName, candidateExpr);
-				return true;
+			// Constants may be evaluated once at the call site. Arbitrary calls may not:
+			// parameter substitution otherwise changes evaluation count, order and exceptions.
+			if (target instanceof IVariableBinding variable && variable.isParameter()
+					&& !node.isDeclaration() && other instanceof Expression expression
+					&& expression.resolveConstantExpressionValue() != null
+					&& variable.getType().isEqualTo(expression.resolveTypeBinding())) {
+				return mapping.addExpressionMapping(node.getIdentifier(), expression);
 			}
-			
-			// For all other ASTNode kinds (e.g., Statement, Type, etc.) we intentionally do not
-			// create a mapping and report "no match" to avoid binding a SimpleName placeholder
-			// to structurally larger constructs.
 			return false;
 		}
 	}
