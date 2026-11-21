@@ -163,7 +163,7 @@ class MathematicalSelectedDependenciesTest {
         assertDependency(first, second);
         var cleanup = new MathematicalCleanUpCore(settings());
         assertFalse(cleanup.checkPreConditions(java, new ICompilationUnit[] { first, second }, MONITOR).hasError());
-        cleanup.checkPostConditions(MONITOR);
+        assertFalse(cleanup.checkPostConditions(MONITOR).hasError());
         var observed = new ObservedMathematics(cleanup);
         var refactoring = refactoring(observed, first);
         var status = refactoring.checkAllConditions(MONITOR);
