@@ -415,16 +415,12 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
      */
     public Expression renderDirectForEach(SourceDescriptor source, List<String> bodyStatements, 
                                            String variableName, boolean ordered) {
-        // For arrays, we must use Arrays.stream().forEach() since arrays don't have a forEach method
-        if (source.type() == SourceDescriptor.SourceType.ARRAY) {
-            Expression streamSource = renderSource(source);
-            return renderForEach(streamSource, bodyStatements, variableName, ordered);
-        }
-        
-        // For collections and iterables, use direct forEach
+        // Arrays need a stream receiver, but must retain the same original body
+        // as collections when the caller requests a conservative direct fallback.
+        boolean arraySource = source.type() == SourceDescriptor.SourceType.ARRAY;
         MethodInvocation forEachCall = ast.newMethodInvocation();
-        forEachCall.setExpression(createReceiverExpression(source.expression()));
-        forEachCall.setName(ast.newSimpleName(FOR_EACH_METHOD));
+        forEachCall.setExpression(arraySource ? renderSource(source) : createReceiverExpression(source.expression()));
+        forEachCall.setName(ast.newSimpleName(arraySource && ordered ? FOR_EACH_ORDERED_METHOD : FOR_EACH_METHOD));
         
         LambdaExpression lambda = ast.newLambdaExpression();
         VariableDeclarationFragment param = ast.newVariableDeclarationFragment();

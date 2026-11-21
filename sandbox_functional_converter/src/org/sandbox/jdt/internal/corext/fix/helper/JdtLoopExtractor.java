@@ -79,6 +79,7 @@ public class JdtLoopExtractor {
                 || analyzer.hasUnsupportedReturn()
                 || TraditionalForHandler.CheckedBodyExceptions.escape(body)
                 || analyzer.modifiesIteratedCollection()
+                || hasRawIterableSource(iterable)
                 || isConcurrentCollection;
         
         // Build model — mark as unconvertible if any patterns detected
@@ -130,6 +131,7 @@ public class JdtLoopExtractor {
                 || analyzer.hasUnsupportedReturn()
                 || TraditionalForHandler.CheckedBodyExceptions.escape(pattern.loopBody())
                 || analyzer.modifiesIteratedCollection()
+                || hasRawIterableSource(iterable)
                 || isConcurrentCollection;
 
         LoopModelBuilder builder = new LoopModelBuilder()
@@ -160,6 +162,13 @@ public class JdtLoopExtractor {
             return;
         }
         analyzeStatements(statements, builder, variableName, compilationUnit, false);
+    }
+
+    /** Raw forEach/stream consumers erase mapped types and add unchecked diagnostics. */
+    private static boolean hasRawIterableSource(Expression expression) {
+        ITypeBinding source = expression.resolveTypeBinding();
+        ITypeBinding iterable = source == null ? null : Bindings.findTypeInHierarchy(source, "java.lang.Iterable"); //$NON-NLS-1$
+        return iterable != null && iterable.isRawType();
     }
 
     private static String sourceElementType(Expression iterable, String fallback) {
@@ -955,6 +964,8 @@ public class JdtLoopExtractor {
         Expression expr = exprStmt.getExpression();
         
         if (expr instanceof Assignment assign) {
+            // String += includes null conversion and has no numeric sum method.
+            if ("java.lang.String".equals(typeName(assign.getLeftHandSide()))) return; //$NON-NLS-1$
             Assignment.Operator op = assign.getOperator();
             String accumVar = assign.getLeftHandSide().toString();
             String accumType = resolveReducerType(assign.getLeftHandSide());

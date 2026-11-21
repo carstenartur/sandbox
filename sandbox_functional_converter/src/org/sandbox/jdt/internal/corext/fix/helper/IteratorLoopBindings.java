@@ -61,6 +61,10 @@ final class IteratorLoopBindings {
 		if (source == null || source.isRecovered() || Bindings.findTypeInHierarchy(source, "java.lang.Iterable") == null) return null; //$NON-NLS-1$
 		VariableDeclarationFragment element = (VariableDeclarationFragment) item.fragments().get(0);
 		if (element.resolveBinding() == null || item.getType().isVar() && !JdtStreamExtractor.denotable(element.resolveBinding().getType())) return null;
+		ITypeBinding iterable = Bindings.findTypeInHierarchy(source, "java.lang.Iterable"); //$NON-NLS-1$
+		// A typed iterator may have come from an unchecked assignment of a raw list.
+		// Enhanced-for cannot assign that list's Object elements to its narrower variable.
+		if (iterable.isRawType() && !"java.lang.Object".equals(element.resolveBinding().getType().getQualifiedName())) return null; //$NON-NLS-1$
 		if (!(element.getInitializer() instanceof MethodInvocation next) || !next.arguments().isEmpty()
 				|| !"next".equals(next.getName().getIdentifier()) || !(next.getExpression() instanceof SimpleName nextReceiver)) return null; //$NON-NLS-1$
 		Expression condition = loop instanceof WhileStatement whileLoop ? whileLoop.getExpression() : ((ForStatement) loop).getExpression();

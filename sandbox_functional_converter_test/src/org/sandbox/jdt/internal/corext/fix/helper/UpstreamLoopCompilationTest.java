@@ -501,6 +501,109 @@ class UpstreamLoopCompilationTest {
         assertTrue(generated.contains("Preserve the reason for processing these values."), generated);
     }
 
+    @Test
+    void keepsRawCollectionPipelineElementTypes() throws Exception {
+        check("""
+                @SuppressWarnings("rawtypes")
+                public static void run(java.util.List values) {
+                    for (Object value : values) {
+                        String text = (String) value;
+                        System.out.println(text.trim());
+                    }
+                }
+                """, false);
+    }
+
+    @Test
+    void keepsRawIterableWithoutUncheckedConsumerWarning() throws Exception {
+        check("""
+                @SuppressWarnings("rawtypes")
+                public static void run(Iterable values) {
+                    for (Object value : values) System.out.println(value);
+                }
+                """, false);
+    }
+
+    @Test
+    void keepsTypedIteratorOverRawClassicForSource() throws Exception {
+        checkSource("""
+                package probe;
+                public class Sample {
+                    @SuppressWarnings("rawtypes")
+                    public static void run(java.util.List values) {
+                        for (java.util.Iterator<String> iterator = values.iterator(); iterator.hasNext();) {
+                            String value = iterator.next();
+                            System.out.println(value);
+                        }
+                    }
+                }
+                """, LoopTargetFormat.FOR_LOOP, false);
+    }
+
+    @Test
+    void keepsTypedIteratorOverRawWhileSource() throws Exception {
+        checkSource("""
+                package probe;
+                public class Sample {
+                    @SuppressWarnings("rawtypes")
+                    public static void run(java.util.List values) {
+                        java.util.Iterator<String> iterator = values.iterator();
+                        while (iterator.hasNext()) {
+                            String value = iterator.next();
+                            System.out.println(value);
+                        }
+                    }
+                }
+                """, LoopTargetFormat.FOR_LOOP, false);
+    }
+
+    @Test
+    void doesNotRenderStringConcatenationAsNumericSum() throws Exception {
+        String methods = """
+                public static String run(String[] values) {
+                    String result = "";
+                    for (String value : values) result += value;
+                    return result;
+                }
+                """;
+        String generated = check(methods, false);
+        assertExecution(methods, generated, "firstnulllast", String[].class, new String[] { "first", null, "last" });
+    }
+
+    @Test
+    void retainsCastPrecedenceForTerminalMatch() throws Exception {
+        String methods = """
+                public static boolean run(Object values) {
+                    for (Object value : (java.util.List<?>) values) {
+                        if (value == null) return true;
+                    }
+                    return false;
+                }
+                """;
+        String generated = check(methods, true);
+        assertExecution(methods, generated, true, Object.class, Arrays.asList("first", null));
+    }
+
+    @Test
+    void retainsSideEffectsBeforeMappedConditionalBody() throws Exception {
+        String methods = """
+                public static String run(String[] values) {
+                    StringBuilder result = new StringBuilder();
+                    for (String value : values) {
+                        result.append(value);
+                        String trace = value.trim();
+                        if (!trace.isEmpty()) {
+                            trace = trace.replace('a', 'b');
+                            result.append(trace);
+                        }
+                    }
+                    return result.toString();
+                }
+                """;
+        String generated = check(methods, true);
+        assertExecution(methods, generated, " a bcc", String[].class, new String[] { " a ", "c" });
+    }
+
     private String check(String methods, boolean expectedChange) throws Exception {
         String original = "package probe; public class Sample {\n" + methods + "}\n";
         return checkSource(original, LoopTargetFormat.STREAM, expectedChange);
