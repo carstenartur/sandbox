@@ -133,9 +133,50 @@ public class ConstantToEnumTypeTest {
 		verifyMigration(scenario, true, false);
 	}
 
+	static Stream<String> indexedBodies() {
+		return Stream.of("""
+				int[] values = { 31, 43 };
+				if (state == STATUS_A) return values[state];
+				else if (state == STATUS_B) return values[(state)] + 10;
+				return -1;
+				""", """
+				int[] values = { 31, 43 };
+				switch (state) {
+				case STATUS_A: return values[state];
+				case STATUS_B: return values[(state)] + 10;
+				default: return -1;
+				}
+				""", """
+				if (state == STATUS_B) return new int[] { 31, 43 }[state] + 10;
+				else if (state == STATUS_A) return new int[] { 31, 43 }[state];
+				return -1;
+				""");
+	}
+
+	@ParameterizedTest
+	@MethodSource("indexedBodies")
+	void privateOrdinalArrayIndex(String body) throws Exception {
+		String source= """
+				package test1;
+				public class Example {
+				    private static final int STATUS_A = 0, STATUS_B = 1;
+				    private static int process(int state) {
+				        BODY
+				    }
+				    public static String run() { return process(STATUS_A) + ":" + process(STATUS_B); }
+				}
+				""".replace("BODY", body);
+		String preview= verifyMigration(source, false, true);
+		assertTrue(preview.contains("state.ordinal()"), preview);
+	}
+
 	private void verifyMigration(Scenario scenario, boolean coordinated, boolean apply) throws Exception {
+		verifyMigration(scenario.source(coordinated), coordinated, apply);
+	}
+
+	private String verifyMigration(String source, boolean coordinated, boolean apply) throws Exception {
 		List<ICompilationUnit> units= new ArrayList<>();
-		units.add(unit("Example.java", scenario.source(coordinated)));
+		units.add(unit("Example.java", source));
 		if (coordinated) units.add(unit("Client.java", """
 				package test1;
 				public class Client {
@@ -151,7 +192,7 @@ public class ConstantToEnumTypeTest {
 		try {
 			for (ICompilationUnit unit : units) {
 				var fix= cleanup.createFix(new CleanUpContext(unit, parse(unit)));
-				assertNotNull(fix, scenario.toString());
+				assertNotNull(fix, source);
 				var change= fix.createChange(null);
 				String preview= change.getPreviewContent(null);
 				assertTrue(preview.contains("Status"));
@@ -161,7 +202,7 @@ public class ConstantToEnumTypeTest {
 			for (int i= 0; i < units.size(); i++) assertEquals(originals[i], units.get(i).getSource());
 			if (!apply) {
 				assertEquals(expected, execute(previews.toArray(String[]::new), coordinated, "preview"));
-				return;
+				return previews.get(0);
 			}
 			changes.initializeValidationData(null);
 			assertFalse(changes.isValid(null).hasFatalError());
@@ -181,12 +222,27 @@ public class ConstantToEnumTypeTest {
 				for (int i= 0; i < units.size(); i++) assertEquals(originals[i], units.get(i).getSource());
 			} finally { undo.dispose(); }
 		} finally { changes.dispose(); }
+		return previews.get(0);
 	}
 
 	static Stream<String> rejectedSources() {
 		Scenario strings= new Scenario("String", "\"a\"", "\"b\"");
 		String source= strings.source(false);
+		String indexed= new Scenario("int", "0", "1").source(false)
+				.replace("return 17;", "return new int[] {17, 29}[state];");
+		String table= indexed.replace("if (state == STATUS_A)", "int[] table = {17, 29}; if (state == STATUS_A)")
+				.replace("new int[] {17, 29}[state]", "table[state]");
 		return Stream.of(
+				table.replace("table[state]", "table[state]++"),
+				table.replace("return table[state];", "{ System.out.println(table); return table[state]; }"),
+				table.replace("int[] table = {17, 29};", "int[] table = external;")
+						.replace("public class Example {", "public class Example { public static int[] external;"),
+				indexed.replace("int STATUS_", "byte STATUS_").replace("process(int state)", "process(byte state)"),
+				indexed.replace("int STATUS_B = 1", "int STATUS_B = 2"),
+				indexed.replace("int STATUS_B = 1", "int STATUS_B = 0").replace("int STATUS_A = 0", "int STATUS_A = 1"),
+				indexed.replace("return 29;", "return state;"),
+				indexed.replace("[state]", "[state + 1]"),
+				indexed.replace("process(STATUS_B)", "process(3)"),
 				source.replace("public static String run()", "static Status other() { return new Status(); } public static String run()")
 						+ "\nclass Status {}\n",
 				source.replace("if (state == STATUS_A)", "int Status = 0; if (state == STATUS_A)"),
