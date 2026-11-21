@@ -4,11 +4,17 @@ package org.sandbox.qa.cleanup;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -17,10 +23,14 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.time.Duration;
 import java.util.List;
 import java.util.Properties;
 import java.util.TreeMap;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.BooleanSupplier;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
@@ -81,6 +91,28 @@ class UpstreamCleanupTest {
     @Test
     @EnabledIfSystemProperty(named = "sandbox.cleanup.product", matches = ".+")
     void actualCorpusHelperResolvesAndInventoriesInstalledCleanups(@TempDir Path temporary) throws Exception {
+        String expected = "BASELINE scope.ä units=1\nAPPLY scope.ä profile";
+        byte[] log = ("noise".repeat(5000) + "\nBASELINE scope.ä units=1\nwarning\nAPPLY scope.ä profile")
+                .getBytes(StandardCharsets.UTF_8);
+        var relayed = new ByteArrayOutputStream();
+        try (var input = new ByteArrayInputStream(log) {
+            @Override public synchronized int read(byte[] bytes, int offset, int length) {
+                return super.read(bytes, offset, Math.min(length, 3));
+            }
+        }; var live = new PrintStream(relayed, true, StandardCharsets.UTF_8) {
+            // Surefire decodes each write independently; splitting a UTF-8 character loses its identity.
+            @Override public void write(int value) { write(new byte[] {(byte) value}, 0, 1); }
+            @Override public void write(byte[] bytes, int offset, int length) {
+                byte[] decoded = new String(bytes, offset, length, StandardCharsets.UTF_8).getBytes(StandardCharsets.UTF_8);
+                super.write(decoded, 0, decoded.length);
+            }
+        }) {
+            relayProgress(input, () -> false, live);
+            assertEquals(expected, relayed.toString(StandardCharsets.UTF_8), "Relay progress across chunks, suppress noise, retain final partial lines");
+            assertThrows(IOException.class, () -> relayProgress(new InputStream() {
+                @Override public int read() throws IOException { throw new IOException("read failure"); }
+            }, () -> false, live));
+        }
         Path runtime = temporary.resolve("runtime");
         copyTree(Path.of(required("product")).toRealPath(), runtime);
         compileHelper(runtime, temporary);
@@ -91,6 +123,7 @@ class UpstreamCleanupTest {
         Properties receipt = properties(corpus.resolve("receipt.properties"));
         assertEquals("PASS", receipt.getProperty("status"), receipt.toString());
         assertEquals("25", receipt.getProperty("registrations"), "Incomplete installed cleanup registry");
+        assertEquals("PASS", receipt.getProperty("diagnostic.scope.regression"), "Dependent caller diagnostics must be checked");
     }
 
     @Test
@@ -181,21 +214,75 @@ class UpstreamCleanupTest {
         Path java = Path.of(System.getProperty("java.home"), "bin", "java");
         List<String> command = List.of(runtime.resolve("eclipse").toString(), "--launcher.suppressErrors", "-nosplash", "-clean", "-consoleLog",
                 "-vm", java.toString(), "-data", output.resolve("workspace").toString(), "-application", BUNDLE + ".run",
-                checkout.toString(), profiles.toString(), corpus.toString(), family, "-vmargs", "-Xmx4g");
+                checkout.toString(), profiles.toString(), corpus.toString(), family, "-vmargs",
+                family.equals("inventory") ? "-Xmx512m" : "-Xmx4g");
         Files.write(output.resolve("eclipse-command.txt"), command);
         Process process = new ProcessBuilder(command).directory(runtime.toFile()).redirectErrorStream(true)
                 .redirectOutput(output.resolve("eclipse.log").toFile()).start();
+        // Keep direct redirection: a failed progress reader cannot truncate or lose the full process log.
+        var progress = new CompletableFuture<Void>();
+        Thread reader = Thread.ofVirtual().name("cleanup-progress").start(() -> {
+            try (var log = Files.newInputStream(output.resolve("eclipse.log"))) {
+                relayProgress(log, process::isAlive, System.out);
+                progress.complete(null);
+            } catch (Throwable failure) {
+                progress.completeExceptionally(failure);
+            }
+        });
         try {
-            assertTrue(process.waitFor(timeoutMinutes, TimeUnit.MINUTES), "Cleanup process timed out; see " + output);
+            CompletableFuture.anyOf(process.onExit(), progress).get(timeoutMinutes, TimeUnit.MINUTES);
+            progress.get(10, TimeUnit.SECONDS); // Drain the final bytes and surface reader I/O failures.
             int exit = process.exitValue();
             Files.writeString(output.resolve("exit-code.txt"), Integer.toString(exit));
             return exit;
+        } catch (TimeoutException timeout) {
+            throw new AssertionError("Cleanup process or log reader timed out; see " + output, timeout);
         } finally {
-            if (process.isAlive()) {
-                process.descendants().forEach(ProcessHandle::destroyForcibly);
-                process.destroyForcibly();
-                process.waitFor(10, TimeUnit.SECONDS);
+            try {
+                if (process.isAlive()) {
+                    process.descendants().forEach(ProcessHandle::destroyForcibly);
+                    process.destroyForcibly();
+                    process.waitFor(10, TimeUnit.SECONDS);
+                }
+            } finally {
+                reader.interrupt();
+                assertTrue(reader.join(Duration.ofSeconds(10)), "Cleanup log reader did not stop");
             }
+        }
+    }
+
+    private static void relayProgress(InputStream log, BooleanSupplier processAlive, PrintStream live) throws IOException, InterruptedException {
+        byte[] buffer = new byte[8192], line = new byte[8192];
+        int length = 0;
+        boolean truncated = false;
+        while (true) {
+            boolean exited = !processAlive.getAsBoolean();
+            int count = log.read(buffer);
+            if (count < 0) {
+                if (exited) break; // Read once after observing exit, so the final write cannot race EOF.
+                Thread.sleep(100);
+                continue;
+            }
+            for (int i = 0; i < count; i++) {
+                byte value = buffer[i];
+                if (length < line.length) line[length++] = value;
+                else truncated = true;
+                if (value == '\n') {
+                    forwardProgress(line, length, truncated, live);
+                    length = 0;
+                    truncated = false;
+                }
+            }
+        }
+        if (length > 0) forwardProgress(line, length, truncated, live);
+    }
+
+    private static void forwardProgress(byte[] line, int length, boolean truncated, PrintStream live) throws IOException {
+        String text = new String(line, 0, length, StandardCharsets.UTF_8);
+        if (text.startsWith("BASELINE ") || text.startsWith("APPLY ")) {
+            live.print(text + (truncated ? " … [full line in eclipse.log]\n" : ""));
+            live.flush();
+            if (live.checkError()) throw new IOException("Cannot forward cleanup progress to Maven stdout");
         }
     }
 

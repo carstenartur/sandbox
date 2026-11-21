@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -24,6 +25,7 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
+import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragment;
@@ -74,6 +76,8 @@ public final class CorpusApplication implements IApplication {
             }
             Files.write(output.resolve("activated-cleanups.tsv"), activated, StandardCharsets.UTF_8);
             if (args[3].equals("inventory")) {
+                verifyCallerDiagnostics();
+                receipt.setProperty("diagnostic.scope.regression", "PASS");
                 receipt.setProperty("status", "PASS");
                 return IApplication.EXIT_OK;
             }
@@ -93,6 +97,11 @@ public final class CorpusApplication implements IApplication {
             List<IJavaProject> projects = importProjects(checkout, args[3]);
             assertFalse(projects.isEmpty(), "No upstream Java projects imported");
             JavaCore.initializeAfterLoad(monitor);
+            var dependencies = projectDependencies(projects);
+            Files.write(output.resolve("diagnostic-project-edges.tsv"), dependencies.entrySet().stream()
+                    .flatMap(entry -> entry.getValue().stream().map(required -> required.getElementName()
+                            + "\t" + entry.getKey().getElementName())).sorted().toList(), StandardCharsets.UTF_8);
+            receipt.setProperty("diagnostic.scope", "target-and-transitive-source-callers");
             long sourceCount = 0, executions = 0, changedFiles = 0;
             for (IJavaProject project : projects) {
                 ICompilationUnit[] units = units(project);
@@ -102,19 +111,18 @@ public final class CorpusApplication implements IApplication {
                 }
                 sourceCount += units.length;
                 Path projectOutput = Files.createDirectories(output.resolve(project.getElementName()));
-                Files.write(projectOutput.resolve("sources.txt"), Arrays.stream(units)
-                        .map(u -> u.getPath().toPortableString()).sorted().toList(), StandardCharsets.UTF_8);
-                Files.write(projectOutput.resolve("classpath.txt"), Arrays.stream(project.getResolvedClasspath(false))
-                        .map(Object::toString).toList(), StandardCharsets.UTF_8);
-                writeProperties(projectOutput.resolve("compiler-options.properties"), project.getOptions(true));
-                Map<Path, byte[]> original = snapshot(project, units);
-                System.out.println("BASELINE " + project.getElementName() + " units=" + units.length);
-                var diagnostics = CompilerDiagnosticAssertions.capture(units);
+                List<IJavaProject> scope = diagnosticProjects(project, dependencies);
+                List<ProjectState> original = capture(scope, project, projectOutput);
+                ICompilationUnit[] scopeUnits = units(scope);
+                System.out.println("BASELINE " + project.getElementName() + " units=" + units.length
+                        + " diagnostic.projects=" + scope.size() + " diagnostic.units=" + scopeUnits.length);
+                var diagnostics = CompilerDiagnosticAssertions.capture(scopeUnits);
                 Files.writeString(projectOutput.resolve("baseline-diagnostics.txt"),
-                        "errors=" + diagnostics.baselineErrors() + "\nwarnings=" + diagnostics.baselineWarnings() + "\n");
+                        "scope.projects=" + scope.size() + "\nscope.units=" + scopeUnits.length
+                        + "\nerrors=" + diagnostics.baselineErrors() + "\nwarnings=" + diagnostics.baselineWarnings() + "\n");
                 Files.write(projectOutput.resolve("baseline-errors.txt"), diagnostics.baselineErrorDetails(), StandardCharsets.UTF_8);
                 if (diagnostics.baselineErrors() != 0) {
-                    failures.add(project.getElementName() + ": original sources have " + diagnostics.baselineErrors()
+                    failures.add(project.getElementName() + ": target/caller original sources have " + diagnostics.baselineErrors()
                             + " compiler errors; resolve the upstream classpath before qualifying cleanups");
                     continue;
                 }
@@ -123,7 +131,6 @@ public final class CorpusApplication implements IApplication {
                     Path evidence = Files.createDirectories(projectOutput.resolve(name));
                     System.out.println("APPLY " + project.getElementName() + " " + name);
                     executions++;
-                    boolean changedSource = false;
                     try {
                         project.getProject().deleteMarkers(null, true, IResource.DEPTH_INFINITE);
                         var app = new ProjectWideCodeCleanupApplication();
@@ -131,8 +138,7 @@ public final class CorpusApplication implements IApplication {
                                 "--project", project.getElementName(), "--config", config.toString(),
                                 "--mode", "apply", "--report", evidence.resolve("apply.json").toString(),
                                 "--patch", evidence.resolve("changes.patch").toString() }));
-                        List<Path> changed = changed(project, original);
-                        changedSource = !changed.isEmpty();
+                        List<Path> changed = changed(original);
                         changedFiles += changed.size();
                         Files.write(evidence.resolve("changed-files.txt"), changed.stream().map(Path::toString).toList(), StandardCharsets.UTF_8);
                         for (Path file : changed) {
@@ -143,9 +149,10 @@ public final class CorpusApplication implements IApplication {
                         }
                         Files.write(evidence.resolve("markers.tsv"), markers(project.getProject()), StandardCharsets.UTF_8);
                         assertEquals(0, result, "Application failed; see apply.json");
+                        assertCompilerOptions(original);
                         // An unchanged source set has exactly the captured diagnostics. Marker-only
                         // inspections still run and retain their actual marker inventory above.
-                        if (!changed.isEmpty()) diagnostics.assertNoNewDiagnostics(units(project));
+                        if (!changed.isEmpty()) diagnostics.assertNoNewDiagnostics(units(scope));
                         Files.writeString(evidence.resolve("result.txt"), "PASS\n", StandardCharsets.UTF_8);
                     } catch (Exception | AssertionError problem) {
                         String failure = project.getElementName() + " / " + name + ": " + problem;
@@ -153,9 +160,11 @@ public final class CorpusApplication implements IApplication {
                         Files.writeString(evidence.resolve("result.txt"), "FAIL\n" + failure + "\n", StandardCharsets.UTF_8);
                         problem.printStackTrace(System.err);
                     } finally {
-                        restore(project, original);
-                        assertTrue(changed(project, original).isEmpty(), "Every profile must start with identical original bytes and source inventory");
-                        if (changedSource) diagnostics.assertRestored();
+                        boolean changedState = !changed(original).isEmpty();
+                        restore(original);
+                        assertTrue(changed(original).isEmpty(), "Every profile must restore target/caller bytes and source inventory");
+                        assertCompilerOptions(original);
+                        if (changedState) diagnostics.assertRestored();
                     }
                     receipt.setProperty("executions", Long.toString(executions));
                     receipt.setProperty("source.units", Long.toString(sourceCount));
@@ -254,6 +263,162 @@ public final class CorpusApplication implements IApplication {
         return result.toArray(ICompilationUnit[]::new);
     }
 
+    private static Map<IJavaProject, List<IJavaProject>> projectDependencies(List<IJavaProject> projects) throws Exception {
+        var byName = new TreeMap<String, IJavaProject>();
+        for (IJavaProject project : projects) byName.put(project.getElementName(), project);
+        var result = new LinkedHashMap<IJavaProject, List<IJavaProject>>();
+        for (IJavaProject project : projects) {
+            assertTrue(project.getProject().isAccessible(), "Inaccessible diagnostic project: " + project.getElementName());
+            var required = new ArrayList<IJavaProject>();
+            // PDE containers resolve source dependencies here; raw .classpath entries are insufficient.
+            for (IClasspathEntry entry : project.getResolvedClasspath(false)) {
+                if (entry.getEntryKind() != IClasspathEntry.CPE_PROJECT) continue;
+                IJavaProject dependency = byName.get(entry.getPath().segment(0));
+                assertNotNull(dependency, "Unqualified source-project dependency of " + project.getElementName() + ": " + entry.getPath());
+                required.add(dependency);
+            }
+            result.put(project, List.copyOf(required));
+        }
+        return result;
+    }
+
+    private static List<IJavaProject> diagnosticProjects(IJavaProject target, Map<IJavaProject, List<IJavaProject>> dependencies) {
+        var result = new LinkedHashSet<IJavaProject>();
+        result.add(target);
+        boolean expanded;
+        do {
+            expanded = false;
+            for (var entry : dependencies.entrySet())
+                if (entry.getValue().stream().anyMatch(result::contains)) expanded |= result.add(entry.getKey());
+        } while (expanded);
+        return result.stream().sorted(Comparator.comparing(IJavaProject::getElementName)).toList();
+    }
+
+    private static ICompilationUnit[] units(List<IJavaProject> projects) throws Exception {
+        var result = new ArrayList<ICompilationUnit>();
+        for (IJavaProject project : projects) result.addAll(Arrays.asList(units(project)));
+        return result.toArray(ICompilationUnit[]::new);
+    }
+
+    private void verifyCallerDiagnostics() throws Exception {
+        var workspace = ResourcesPlugin.getWorkspace();
+        var description = workspace.getDescription();
+        description.setAutoBuilding(false);
+        workspace.setDescription(description);
+        ensureJre();
+        IJavaProject api = fixtureProject("api", JavaCore.VERSION_17);
+        IJavaProject caller = fixtureProject("caller", JavaCore.VERSION_21, api);
+        caller.setOption(JavaCore.COMPILER_PB_UNUSED_LOCAL, JavaCore.ERROR);
+        IJavaProject leaf = fixtureProject("leaf", JavaCore.VERSION_21, caller);
+        IJavaProject unrelated = fixtureProject("unrelated", JavaCore.VERSION_17);
+        List<IJavaProject> projects = List.of(api, caller, leaf, unrelated);
+        var source = api.getPackageFragmentRoot(api.getProject().getFolder("src"))
+                .createPackageFragment("api", true, monitor).createCompilationUnit("Api.java",
+                        "package api; public class Api { public static int value() { return 1; } }", true, monitor);
+        caller.getPackageFragmentRoot(caller.getProject().getFolder("src"))
+                .createPackageFragment("caller", true, monitor).createCompilationUnit("Caller.java",
+                        "package caller; public class Caller { public int value() { return api.Api.value(); } }", true, monitor);
+        var leafPackage = leaf.getPackageFragmentRoot(leaf.getProject().getFolder("src"))
+                .createPackageFragment("leaf", true, monitor);
+        leafPackage.createCompilationUnit("Leaf.java",
+                "package leaf; public class Leaf { public int value() { return new caller.Caller().value(); } }", true, monitor);
+        unrelated.getPackageFragmentRoot(unrelated.getProject().getFolder("src"))
+                .createPackageFragment("unrelated", true, monitor).createCompilationUnit("Broken.java",
+                        "package unrelated; class Broken { Missing value; }", true, monitor);
+        JavaCore.initializeAfterLoad(monitor);
+        List<IJavaProject> scope = diagnosticProjects(api, projectDependencies(projects));
+        List<ProjectState> original = capture(scope, api, Files.createDirectories(output.resolve("caller-regression")));
+        var diagnostics = CompilerDiagnosticAssertions.capture(units(scope));
+        assertEquals(0, diagnostics.baselineErrors(), diagnostics.baselineErrorDetails().toString());
+        source.getBuffer().setContents("package api; public class Api { public static String value() { return null; } }");
+        source.save(monitor, true);
+        assertEquals(0, CompilerDiagnosticAssertions.capture(units(api)).baselineErrors(), "The API owner still compiles");
+        AssertionError failure = assertThrows(AssertionError.class, () -> diagnostics.assertNoNewDiagnostics(units(scope)),
+                "A changed API must be checked in its dependent caller project");
+        assertTrue(failure.getMessage().contains("Caller.java"), failure.getMessage());
+        restore(original);
+        diagnostics.assertRestored();
+        assertEquals(List.of(api, caller, leaf), scope, "Use reverse transitive dependencies, excluding unrelated projects");
+        assertTrue(CompilerDiagnosticAssertions.capture(units(unrelated)).baselineErrors() > 0);
+        leafPackage.createCompilationUnit("Added.java", "package leaf; class Added { Missing value; }", true, monitor);
+        assertThrows(AssertionError.class, () -> diagnostics.assertNoNewDiagnostics(units(scope)), "Check newly created caller CUs");
+        assertTrue(CompilerDiagnosticAssertions.capture(units(scope)).baselineErrors() > 0, "Caller errors must invalidate a baseline");
+        caller.setOption(JavaCore.COMPILER_PB_UNUSED_LOCAL, JavaCore.IGNORE);
+        assertThrows(AssertionError.class, () -> assertCompilerOptions(original), "Never lower caller diagnostics");
+        restore(original);
+        assertTrue(changed(original).isEmpty(), "Restore caller metadata and remove newly created CUs");
+        assertCompilerOptions(original);
+        diagnostics.assertRestored();
+        assertEquals(JavaCore.VERSION_17, api.getOption(JavaCore.COMPILER_SOURCE, true));
+        assertEquals(JavaCore.VERSION_21, caller.getOption(JavaCore.COMPILER_SOURCE, true));
+    }
+
+    private IJavaProject fixtureProject(String name, String version, IJavaProject... required) throws Exception {
+        IProject resource = ResourcesPlugin.getWorkspace().getRoot().getProject("scope." + name);
+        resource.create(monitor);
+        resource.open(monitor);
+        var description = resource.getDescription();
+        description.setNatureIds(new String[] {JavaCore.NATURE_ID});
+        resource.setDescription(description, monitor);
+        resource.getFolder("src").create(true, true, monitor);
+        resource.getFolder("bin").create(true, true, monitor);
+        IJavaProject project = JavaCore.create(resource);
+        var classpath = new ArrayList<IClasspathEntry>();
+        classpath.add(JavaCore.newSourceEntry(resource.getFolder("src").getFullPath()));
+        classpath.add(JavaCore.newContainerEntry(JavaRuntime.newDefaultJREContainerPath()));
+        for (IJavaProject dependency : required) classpath.add(JavaCore.newProjectEntry(dependency.getPath(), true));
+        project.setRawClasspath(classpath.toArray(IClasspathEntry[]::new), resource.getFolder("bin").getFullPath(), monitor);
+        var options = project.getOptions(false);
+        JavaCore.setComplianceOptions(version, options);
+        options.put(JavaCore.COMPILER_RELEASE, JavaCore.ENABLED);
+        project.setOptions(options);
+        return project;
+    }
+
+    private record ProjectState(IJavaProject project, Map<Path, byte[]> files,
+            Map<String, String> ownOptions, Map<String, String> effectiveOptions) { }
+
+    private static List<ProjectState> capture(List<IJavaProject> scope, IJavaProject target, Path output) throws Exception {
+        var result = new ArrayList<ProjectState>();
+        var inventory = new ArrayList<String>();
+        inventory.add("project\trole\tunits");
+        for (IJavaProject project : scope) {
+            ICompilationUnit[] units = units(project);
+            Path evidence = project.equals(target) ? output
+                    : Files.createDirectories(output.resolve("callers").resolve(project.getElementName()));
+            Files.write(evidence.resolve("sources.txt"), Arrays.stream(units)
+                    .map(u -> u.getPath().toPortableString()).toList(), StandardCharsets.UTF_8);
+            Files.write(evidence.resolve("classpath.txt"), Arrays.stream(project.getResolvedClasspath(false))
+                    .map(Object::toString).toList(), StandardCharsets.UTF_8);
+            writeProperties(evidence.resolve("compiler-options.properties"), project.getOptions(true));
+            inventory.add(project.getElementName() + "\t" + (project.equals(target) ? "target" : "caller") + "\t" + units.length);
+            result.add(new ProjectState(project, snapshot(project, units),
+                    Map.copyOf(project.getOptions(false)), Map.copyOf(project.getOptions(true))));
+        }
+        Files.write(output.resolve("diagnostic-scope.tsv"), inventory, StandardCharsets.UTF_8);
+        return result;
+    }
+
+    private static void assertCompilerOptions(List<ProjectState> scope) {
+        for (ProjectState state : scope) {
+            assertEquals(state.ownOptions(), state.project().getOptions(false), "Project options changed: " + state.project().getElementName());
+            assertEquals(state.effectiveOptions(), state.project().getOptions(true), "Effective options changed: " + state.project().getElementName());
+        }
+    }
+
+    private void restore(List<ProjectState> scope) throws Exception {
+        for (ProjectState state : scope) {
+            if (!state.ownOptions().equals(state.project().getOptions(false))) state.project().setOptions(state.ownOptions());
+            restore(state.project(), state.files());
+        }
+    }
+
+    private static List<Path> changed(List<ProjectState> scope) throws Exception {
+        var result = new ArrayList<Path>();
+        for (ProjectState state : scope) result.addAll(changed(state.project(), state.files()));
+        return result.stream().distinct().sorted().toList();
+    }
+
     private static Map<Path, byte[]> snapshot(IJavaProject project, ICompilationUnit[] units) throws Exception {
         Map<Path, byte[]> result = new LinkedHashMap<>();
         for (ICompilationUnit unit : units) {
@@ -261,7 +426,8 @@ public final class CorpusApplication implements IApplication {
             Path location = file.getLocation().toFile().toPath().toRealPath();
             result.put(location, Files.readAllBytes(location));
         }
-        for (String name : List.of(".classpath", ".project", "pom.xml", "build.properties", "META-INF/MANIFEST.MF")) {
+        for (String name : List.of(".classpath", ".project", "pom.xml", "build.properties", "META-INF/MANIFEST.MF",
+                ".settings/org.eclipse.jdt.core.prefs")) {
             IFile file = project.getProject().getFile(name);
             if (file.exists()) {
                 Path location = file.getLocation().toFile().toPath().toRealPath();

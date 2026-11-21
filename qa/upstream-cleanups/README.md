@@ -70,16 +70,31 @@ archive and source identity, and retains evidence even when qualification fails.
 Every profile starts with the original source and project metadata. Conflicting
 encoding, loop-target, and mathematical modes have separate profiles. The real
 application performs Apply and records its report and patch. The shared
-`CompilerDiagnosticAssertions` checks complete compilation units, including
-dependent callers in the selected project, with optional compiler warnings
-enabled and the original language level retained. Additional occurrences of an
-existing warning also fail. A project with compiler errors before cleanup is
-reported as an unresolved baseline and cannot provide a passing qualification.
+`CompilerDiagnosticAssertions` checks complete compilation units in the target
+and every transitively dependent imported source project. The reverse dependency
+closure comes from actual resolved `CPE_PROJECT` entries, including PDE container
+resolution; unrelated projects are outside that target's diagnostic scope.
+Each CU uses its own project's compiler options, with optional warnings enabled
+and the original language level, release setting and error severities retained.
+Additional occurrences of an existing warning also fail. An error in the original
+target or any scoped caller prevents qualification of that target. Newly added
+CUs are checked against an empty baseline. Compiler option changes fail, and
+sources, metadata and newly created CUs are restored across the complete scope
+before the next profile. Baseline state is retained only for the current target
+and its callers. Binary clients and source projects not imported into this
+family's workspace are not claimed as source-caller qualification.
 
 Evidence includes the exact source checkout, runtime, profile inputs, resolved
 classpath, compiler settings, source inventory, baseline diagnostic counts,
 per-profile patches and generated files, marker inventories, failures, and an
-incrementally written receipt. A green registry check or zero changed files
+incrementally written receipt. `diagnostic-project-edges.tsv` records dependency
+to consumer edges; each target's `diagnostic-scope.tsv` records its scoped projects
+and CU counts, and `callers/` retains each caller's source inventory, classpath and
+compiler settings. Baseline error identities identify their owning CU even when
+the error occurs in a caller. The display-free inventory test also exercises an
+actual API change across separate Java projects, transitive scope, new caller CUs
+and restoration of different project compiler options.
+A green registry check or zero changed files
 does not establish successful source qualification.
 
 This gate checks Java cleanup execution and compiler preservation. Complete
