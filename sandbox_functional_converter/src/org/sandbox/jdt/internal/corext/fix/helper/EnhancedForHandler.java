@@ -304,6 +304,7 @@ public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatem
             );
             
             if (streamExpression != null) {
+                renderer.preserveElementTypeImport(cuRewrite.getImportRemover());
                 ExpressionStatement newStatement = ast.newExpressionStatement(streamExpression);
                 rewrite.replace(visited, newStatement, group);
                 
@@ -321,6 +322,7 @@ public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatem
             Expression streamExpression = renderer.renderDirectForEach(
                     extracted.model.getSource(), java.util.List.of(), varName, terminal.ordered());
             if (streamExpression != null) {
+                renderer.preserveElementTypeImport(cuRewrite.getImportRemover());
                 rewrite.replace(visited, ast.newExpressionStatement(streamExpression), group);
                 if (extracted.model.getSource().type() == SourceDescriptor.SourceType.ARRAY) {
                     cuRewrite.getImportRewrite().addImport("java.util.Arrays"); //$NON-NLS-1$
@@ -354,6 +356,7 @@ public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatem
                     }
                 }
                 
+                renderer.preserveElementTypeImport(cuRewrite.getImportRemover());
                 rewrite.replace(visited, replacement, group);
                 if (directCollectFallback) {
                     if (extracted.model.getSource().type() == SourceDescriptor.SourceType.ARRAY) {
@@ -634,12 +637,11 @@ public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatem
             return false;
         }
         
-        // Source must be COLLECTION or ITERABLE
-        // Arrays don't have a forEach method, so they still need a stream-based forEach path
-        // and are intentionally handled outside of this direct-forEach optimization.
+        // The direct renderer preserves the original body and inserts Arrays.stream for arrays.
         SourceDescriptor.SourceType sourceType = model.getSource().type();
         return sourceType == SourceDescriptor.SourceType.COLLECTION 
-            || sourceType == SourceDescriptor.SourceType.ITERABLE;
+            || sourceType == SourceDescriptor.SourceType.ITERABLE
+            || sourceType == SourceDescriptor.SourceType.ARRAY;
     }
     
     private boolean isConvertible(LoopModel model) {

@@ -114,9 +114,11 @@ public class FunctionalLoopComplexPatternTest {
 				public Boolean test(List<Integer> ls) {
 					ls.forEach(a -> {
 						Integer l = new Integer(a.intValue());
-						if (l == null) {
-							String s = l.toString();
-							if (s != null) {
+						if(l==null)
+						{
+							String s=l.toString();
+							if(s!=null)
+							{
 								System.out.println(s);
 							}
 							System.out.println("cucu");
@@ -198,6 +200,7 @@ class MyTest {
 		ls.forEach(_ -> {
 			System.out.println();
 			System.out.println("");
+
 		});
 		System.out.println(i);
 		return false;
@@ -282,13 +285,14 @@ class JavaApplication1 {
 		int i = 0;
 		int j = 0;
 		strs.forEach(str -> {
-			int len1 = str.length();
+			int len1=str.length();
 			int len2 = str.length();
-			if (len1 % 2 == 0) {
+			if(len1%2==0){
 				len2++;
 				System.out.println(len2);
 				System.out.println();
 			}
+
 		});
 		return false;
 

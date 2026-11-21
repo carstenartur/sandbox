@@ -177,8 +177,8 @@ public class PinnedCoordinatedJUnitPreviewSWTBotTest {
             assertTrue(selected >= 0);
             table.select(selected);
             waitForDiff(bot, preview.shell(), "@Rule", "@RegisterExtension");
-            PinnedFilePreviewDriver.captureCoordinatedComparison(preview.shell(), bot, image,
-                    "@Rule", "@RegisterExtension");
+            PinnedFilePreviewDriver.capture(preview.shell(), bot, image, () ->
+                    PinnedFilePreviewDriver.showVisibleDiff(preview.shell().widget, "@Rule", "@RegisterExtension"));
             CleanupWizardDriver.clickButtonAsync(preview.shell(), "Finish");
             driver.waitForShellToClose(preview.shell(), "Clean Up wizard");
             Job.getJobManager().join(ClasspathComputer.class,

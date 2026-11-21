@@ -1037,6 +1037,40 @@ public class HelperVisitorFactory {
 	}
 
 	/**
+	 * Visits Javadoc snippet regions.
+	 *
+	 * @param <V> reference-holder key type
+	 * @param <T> reference-holder value type
+	 * @param node root of the traversal
+	 * @param dataholder shared reference holder
+	 * @param nodesprocessed nodes tracked by the visitor
+	 * @param predicate callback invoked on entry
+	 */
+	public static <V, T> void callJavaDocRegionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder,
+			Set<ASTNode> nodesprocessed, BiPredicate<JavaDocRegion, ReferenceHolder<V, T>> predicate) {
+		HelperVisitor<ReferenceHolder<V, T>, V, T> visitor= new HelperVisitor<>(nodesprocessed, dataholder);
+		visitor.addJavaDocRegion(predicate);
+		visitor.build(node);
+	}
+
+	/**
+	 * Visits external Javadoc snippet text.
+	 *
+	 * @param <V> reference-holder key type
+	 * @param <T> reference-holder value type
+	 * @param node root of the traversal
+	 * @param dataholder shared reference holder
+	 * @param nodesprocessed nodes tracked by the visitor
+	 * @param predicate callback invoked on entry
+	 */
+	public static <V, T> void callJavaDocTextElementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder,
+			Set<ASTNode> nodesprocessed, BiPredicate<JavaDocTextElement, ReferenceHolder<V, T>> predicate) {
+		HelperVisitor<ReferenceHolder<V, T>, V, T> visitor= new HelperVisitor<>(nodesprocessed, dataholder);
+		visitor.addJavaDocTextElement(predicate);
+		visitor.build(node);
+	}
+
+	/**
 	 *
 	 * @param <V>
 	 * @param <T>
@@ -1926,6 +1960,23 @@ public class HelperVisitorFactory {
 		HelperVisitor<ReferenceHolder<V, T>,V,T> hv= new HelperVisitor<>(nodesprocessed, dataholder);
 		hv.addTagElement(bs);
 		hv.build(node);
+	}
+
+	/**
+	 * Visits Javadoc snippet tag properties.
+	 *
+	 * @param <V> reference-holder key type
+	 * @param <T> reference-holder value type
+	 * @param node root of the traversal
+	 * @param dataholder shared reference holder
+	 * @param nodesprocessed nodes tracked by the visitor
+	 * @param predicate callback invoked on entry
+	 */
+	public static <V, T> void callTagPropertyVisitor(ASTNode node, ReferenceHolder<V, T> dataholder,
+			Set<ASTNode> nodesprocessed, BiPredicate<TagProperty, ReferenceHolder<V, T>> predicate) {
+		HelperVisitor<ReferenceHolder<V, T>, V, T> visitor= new HelperVisitor<>(nodesprocessed, dataholder);
+		visitor.addTagProperty(predicate);
+		visitor.build(node);
 	}
 
 	/**
@@ -2967,6 +3018,40 @@ public class HelperVisitorFactory {
 	}
 
 	/**
+	 * Runs exit callbacks for Javadoc snippet regions.
+	 *
+	 * @param <V> reference-holder key type
+	 * @param <T> reference-holder value type
+	 * @param node root of the traversal
+	 * @param dataholder shared reference holder
+	 * @param nodesprocessed nodes tracked by the visitor
+	 * @param consumer callback invoked on exit
+	 */
+	public static <V, T> void callJavaDocRegionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder,
+			Set<ASTNode> nodesprocessed, BiConsumer<JavaDocRegion, ReferenceHolder<V, T>> consumer) {
+		HelperVisitor<ReferenceHolder<V, T>, V, T> visitor= new HelperVisitor<>(nodesprocessed, dataholder);
+		visitor.addJavaDocRegion(consumer);
+		visitor.build(node);
+	}
+
+	/**
+	 * Runs exit callbacks for external Javadoc snippet text.
+	 *
+	 * @param <V> reference-holder key type
+	 * @param <T> reference-holder value type
+	 * @param node root of the traversal
+	 * @param dataholder shared reference holder
+	 * @param nodesprocessed nodes tracked by the visitor
+	 * @param consumer callback invoked on exit
+	 */
+	public static <V, T> void callJavaDocTextElementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder,
+			Set<ASTNode> nodesprocessed, BiConsumer<JavaDocTextElement, ReferenceHolder<V, T>> consumer) {
+		HelperVisitor<ReferenceHolder<V, T>, V, T> visitor= new HelperVisitor<>(nodesprocessed, dataholder);
+		visitor.addJavaDocTextElement(consumer);
+		visitor.build(node);
+	}
+
+	/**
 	 *
 	 * @param <V>
 	 * @param <T>
@@ -3732,6 +3817,23 @@ public class HelperVisitorFactory {
 		HelperVisitor<ReferenceHolder<V, T>,V,T> hv= new HelperVisitor<>(nodesprocessed, dataholder);
 		hv.addTagElement(bc);
 		hv.build(node);
+	}
+
+	/**
+	 * Runs exit callbacks for Javadoc snippet tag properties.
+	 *
+	 * @param <V> reference-holder key type
+	 * @param <T> reference-holder value type
+	 * @param node root of the traversal
+	 * @param dataholder shared reference holder
+	 * @param nodesprocessed nodes tracked by the visitor
+	 * @param consumer callback invoked on exit
+	 */
+	public static <V, T> void callTagPropertyVisitor(ASTNode node, ReferenceHolder<V, T> dataholder,
+			Set<ASTNode> nodesprocessed, BiConsumer<TagProperty, ReferenceHolder<V, T>> consumer) {
+		HelperVisitor<ReferenceHolder<V, T>, V, T> visitor= new HelperVisitor<>(nodesprocessed, dataholder);
+		visitor.addTagProperty(consumer);
+		visitor.build(node);
 	}
 
 	/**
@@ -4824,6 +4926,44 @@ public class HelperVisitorFactory {
 	}
 
 	/**
+	 * Runs entry and exit callbacks for Javadoc snippet regions.
+	 *
+	 * @param <V> reference-holder key type
+	 * @param <T> reference-holder value type
+	 * @param node root of the traversal
+	 * @param dataholder shared reference holder
+	 * @param nodesprocessed nodes tracked by the visitor
+	 * @param predicate callback invoked on entry
+	 * @param consumer callback invoked on exit
+	 */
+	public static <V, T> void callJavaDocRegionVisitor(ASTNode node, ReferenceHolder<V, T> dataholder,
+			Set<ASTNode> nodesprocessed, BiPredicate<JavaDocRegion, ReferenceHolder<V, T>> predicate,
+			BiConsumer<JavaDocRegion, ReferenceHolder<V, T>> consumer) {
+		HelperVisitor<ReferenceHolder<V, T>, V, T> visitor= new HelperVisitor<>(nodesprocessed, dataholder);
+		visitor.addJavaDocRegion(predicate, consumer);
+		visitor.build(node);
+	}
+
+	/**
+	 * Runs entry and exit callbacks for external Javadoc snippet text.
+	 *
+	 * @param <V> reference-holder key type
+	 * @param <T> reference-holder value type
+	 * @param node root of the traversal
+	 * @param dataholder shared reference holder
+	 * @param nodesprocessed nodes tracked by the visitor
+	 * @param predicate callback invoked on entry
+	 * @param consumer callback invoked on exit
+	 */
+	public static <V, T> void callJavaDocTextElementVisitor(ASTNode node, ReferenceHolder<V, T> dataholder,
+			Set<ASTNode> nodesprocessed, BiPredicate<JavaDocTextElement, ReferenceHolder<V, T>> predicate,
+			BiConsumer<JavaDocTextElement, ReferenceHolder<V, T>> consumer) {
+		HelperVisitor<ReferenceHolder<V, T>, V, T> visitor= new HelperVisitor<>(nodesprocessed, dataholder);
+		visitor.addJavaDocTextElement(predicate, consumer);
+		visitor.build(node);
+	}
+
+	/**
 	 *
 	 * @param <V>
 	 * @param <T>
@@ -5665,6 +5805,25 @@ public class HelperVisitorFactory {
 		HelperVisitor<ReferenceHolder<V, T>,V,T> hv= new HelperVisitor<>(nodesprocessed, dataholder);
 		hv.addTagElement(bs, bc);
 		hv.build(node);
+	}
+
+	/**
+	 * Runs entry and exit callbacks for Javadoc snippet tag properties.
+	 *
+	 * @param <V> reference-holder key type
+	 * @param <T> reference-holder value type
+	 * @param node root of the traversal
+	 * @param dataholder shared reference holder
+	 * @param nodesprocessed nodes tracked by the visitor
+	 * @param predicate callback invoked on entry
+	 * @param consumer callback invoked on exit
+	 */
+	public static <V, T> void callTagPropertyVisitor(ASTNode node, ReferenceHolder<V, T> dataholder,
+			Set<ASTNode> nodesprocessed, BiPredicate<TagProperty, ReferenceHolder<V, T>> predicate,
+			BiConsumer<TagProperty, ReferenceHolder<V, T>> consumer) {
+		HelperVisitor<ReferenceHolder<V, T>, V, T> visitor= new HelperVisitor<>(nodesprocessed, dataholder);
+		visitor.addTagProperty(predicate, consumer);
+		visitor.build(node);
 	}
 
 	/**

@@ -35,6 +35,7 @@ import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.sandbox.jdt.internal.common.ImportNameBindings;
 
 /** Binding proof for the individual add, remove and contains operations on a private JDK set. */
 public final class ConcurrentMembershipAnalyzer {
@@ -83,7 +84,7 @@ public final class ConcurrentMembershipAnalyzer {
 				unit.accept(new ASTVisitor() {
 					@Override
 					public boolean visit(SimpleName name) {
-						if (!name.isDeclaration() && name.resolveBinding() instanceof IVariableBinding binding
+						if (!name.isDeclaration() && ImportNameBindings.resolve(name) instanceof IVariableBinding binding
 								&& entry.getKey().equals(binding.getVariableDeclaration().getKey())) {
 							MethodInvocation operation= membershipOperation(name);
 							if (operation == null || !individualOperation(operation, owner)) {

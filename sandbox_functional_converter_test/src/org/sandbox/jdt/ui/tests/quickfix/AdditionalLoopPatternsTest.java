@@ -251,10 +251,8 @@ public class RuleChainBuilder {
 	private List<RuleEntry> getSortedEntries() {
 		List<RuleEntry> ruleEntries = new ArrayList<RuleEntry>(
 				methodRules.size() + testRules.size());
-		methodRules.forEach(
-				rule -> ruleEntries.add(new RuleEntry(rule, RuleEntry.TYPE_METHOD_RULE, orderValues.get(rule))));
-		testRules
-				.forEach(rule -> ruleEntries.add(new RuleEntry(rule, RuleEntry.TYPE_TEST_RULE, orderValues.get(rule))));
+		methodRules.forEach(rule -> ruleEntries.add(new RuleEntry(rule, RuleEntry.TYPE_METHOD_RULE, orderValues.get(rule))));
+		testRules.forEach(rule -> ruleEntries.add(new RuleEntry(rule, RuleEntry.TYPE_TEST_RULE, orderValues.get(rule))));
 		Collections.sort(ruleEntries, ENTRY_COMPARATOR);
 		return ruleEntries;
 	}
