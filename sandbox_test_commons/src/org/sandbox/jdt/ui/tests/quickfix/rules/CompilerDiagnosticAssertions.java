@@ -31,6 +31,7 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.NodeFinder;
@@ -46,6 +47,7 @@ public final class CompilerDiagnosticAssertions {
 	record CompilerProblemKey(boolean error, int id, String arguments, String junit4Arguments) {
 		static CompilerProblemKey of(IProblem problem, CompilationUnit root) {
 			String[] arguments= problem.getArguments();
+			arguments= unassignedResourceArguments(problem, root, arguments);
 			if ((problem.getID() == IProblem.MethodCanBeStatic || problem.getID() == IProblem.MethodCanBePotentiallyStatic)
 					&& arguments.length == 3 && hasUniqueMethodName(root, problem)) {
 				// Parameter types are part of the message even though the warning concerns
@@ -60,6 +62,59 @@ public final class CompilerDiagnosticAssertions {
 		String severity() {
 			return error ? "ERROR" : "WARNING"; //$NON-NLS-1$ //$NON-NLS-2$
 		}
+	}
+
+	private static String[] unassignedResourceArguments(IProblem problem, CompilationUnit root, String[] arguments) {
+		if (problem.getID() != IProblem.PotentiallyUnclosedCloseable || arguments.length != 1
+				|| !("<unassigned Closeable value>".equals(arguments[0]) //$NON-NLS-1$
+						|| arguments[0].matches("<unassigned Closeable value from line [1-9][0-9]*>"))) { //$NON-NLS-1$
+			return arguments;
+		}
+		int start= problem.getSourceStart();
+		int length= problem.getSourceEnd() - start + 1;
+		if (start < 0 || length <= 0) {
+			return arguments;
+		}
+		ASTNode node= NodeFinder.perform(root, start, length);
+		if (!(node instanceof Expression expression) || node.getStartPosition() != start || node.getLength() != length) {
+			return arguments;
+		}
+		var type= expression.resolveTypeBinding();
+		if (type == null || type.isRecovered() || Bindings.findTypeInHierarchy(type, "java.lang.AutoCloseable") == null) { //$NON-NLS-1$
+			return arguments;
+		}
+		StringBuilder path= new StringBuilder();
+		while (!(node instanceof MethodDeclaration)) {
+			ASTNode parent= node.getParent();
+			var property= node.getLocationInParent();
+			if (parent == null || property == null || (node.getFlags() & (ASTNode.MALFORMED | ASTNode.RECOVERED)) != 0) {
+				return arguments;
+			}
+			path.append('/').append(property.getId());
+			Object child= parent.getStructuralProperty(property);
+			if (property.isChildListProperty()) {
+				if (!(child instanceof List<?> children) || children.indexOf(node) < 0) {
+					return arguments;
+				}
+				path.append('[').append(children.indexOf(node)).append(']');
+			} else if (child != node) {
+				return arguments;
+			}
+			node= parent;
+		}
+		IMethodBinding method= ((MethodDeclaration) node).resolveBinding();
+		if ((node.getFlags() & (ASTNode.MALFORMED | ASTNode.RECOVERED)) != 0 || method == null || method.isRecovered()
+				|| method.getDeclaringClass() == null || method.getDeclaringClass().isRecovered()
+				|| method.getDeclaringClass().isLocal() || method.getDeclaringClass().isAnonymous()) {
+			return arguments;
+		}
+		String key= method.getMethodDeclaration().getKey();
+		if (key == null || key.isBlank()) {
+			return arguments;
+		}
+		// JDT embeds an absolute source line in this placeholder. Identify its exact
+		// resource expression instead, retaining separate occurrences and their counts.
+		return new String[] { "<unassigned Closeable value>", key, path.toString(), expression.toString() }; //$NON-NLS-1$
 	}
 
 	private static IMethodBinding declaringMethod(CompilationUnit root, IProblem problem) {

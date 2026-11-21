@@ -13,17 +13,21 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AnnotatableType;
 import org.eclipse.jdt.core.dom.CastExpression;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.SimpleName;
@@ -476,9 +480,58 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 			.build(compilationUnit);
 		
 		// If we found anything to replace, register the operation
-		if (!holder.typesToReplace.isEmpty() || !holder.methodNamesToReplace.isEmpty()) {
+		if ((!holder.typesToReplace.isEmpty() || !holder.methodNamesToReplace.isEmpty())
+				&& !requiresSorterContract(compilationUnit)) {
 			operations.add(fixcore.rewrite(dataholder));
 		}
+	}
+
+	/** Keep dependent types and imports together when a legacy member or override is still required. */
+	private static boolean requiresSorterContract(CompilationUnit compilationUnit) {
+		boolean[] required= { false };
+		compilationUnit.accept(new ASTVisitor() {
+			@Override
+			public boolean preVisit2(ASTNode node) {
+				return !required[0];
+			}
+
+			@Override
+			public boolean visit(SimpleName node) {
+				var binding= node.resolveBinding();
+				if (binding instanceof IVariableBinding field && field.isField()
+						&& isLegacyMemberOwner(field.getDeclaringClass())
+						|| binding instanceof IMethodBinding method && isLegacyMethod(method)) {
+					required[0]= true;
+				}
+				return !required[0];
+			}
+
+			@Override
+			public boolean visit(MethodDeclaration node) {
+				IMethodBinding method= node.resolveBinding();
+				if (method == null || method.isRecovered()) {
+					required[0]= true;
+					return false;
+				}
+				IMethodBinding inherited= Bindings.findOverriddenMethod(method, true);
+				if (inherited != null && (isLegacyMethod(inherited)
+						|| isViewerSorterType(method.getReturnType())
+						|| Arrays.stream(method.getParameterTypes()).anyMatch(ViewerSorterPlugin::isViewerSorterType))) {
+					required[0]= true;
+				}
+				return !required[0];
+			}
+		});
+		return required[0];
+	}
+
+	private static boolean isLegacyMethod(IMethodBinding method) {
+		return !method.isConstructor() && isLegacyMemberOwner(method.getDeclaringClass());
+	}
+
+	private static boolean isLegacyMemberOwner(ITypeBinding owner) {
+		// ViewerSorter declares collator/getCollator; ViewerComparator supplies the shared callbacks.
+		return owner != null && VIEWER_SORTER.equals(owner.getQualifiedName());
 	}
 
 	private static boolean hasExactComparatorResult(CastExpression cast, String replacement, SorterHolder holder) {

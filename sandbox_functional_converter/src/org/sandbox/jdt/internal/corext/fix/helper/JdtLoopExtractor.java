@@ -964,9 +964,10 @@ public class JdtLoopExtractor {
         Expression expr = exprStmt.getExpression();
         
         if (expr instanceof Assignment assign) {
-            // String += includes null conversion and has no numeric sum method.
-            if ("java.lang.String".equals(typeName(assign.getLeftHandSide()))) return; //$NON-NLS-1$
             Assignment.Operator op = assign.getOperator();
+            // String += includes null conversion and has no numeric sum method.
+            if (op == Assignment.Operator.PLUS_ASSIGN
+                    && "java.lang.String".equals(typeName(assign.getLeftHandSide()))) return; //$NON-NLS-1$
             String accumVar = assign.getLeftHandSide().toString();
             String accumType = resolveReducerType(assign.getLeftHandSide());
             
@@ -1109,28 +1110,22 @@ public class JdtLoopExtractor {
         }
         InfixExpression.Operator op = infix.getOperator();
         String accumType = resolveReducerType(infix.getLeftOperand());
+        // The two-argument String reduction needs String stream elements. Object
+        // and primitive values use Java's concatenation conversions in the loop.
+        if ("String".equals(accumType) //$NON-NLS-1$
+                && !"java.lang.String".equals(typeName(infix.getRightOperand()))) return; //$NON-NLS-1$
         
         if (!mapReductionValue(builder, infix.getRightOperand(), infix.getLeftOperand(), varName)) {
             return;
         }
         
         if (op == InfixExpression.Operator.PLUS) {
-            // For String types, check @NotNull annotation to decide between String::concat and lambda
-            if ("String".equals(accumType)) {
-                // Check if the accumulator variable has @NotNull annotation
-                boolean isNullSafe = org.sandbox.jdt.internal.corext.util.VariableResolver
-                    .hasNotNullAnnotation(infix, accumVar);
-                if (isNullSafe) {
-                    // @NotNull present: safe to use String::concat method reference
-                    builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
-                        accumVar, "String::concat", null,
-                        org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.STRING_CONCAT, accumVar));
-                } else {
-                    // No @NotNull: use null-safe lambda (a, b) -> a + b
-                    builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
-                        accumVar, "(a, b) -> a + b", null,
-                        org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM, accumVar));
-                }
+            if ("String".equals(accumType)) { //$NON-NLS-1$
+                // An annotation on the accumulator does not constrain source elements.
+                // Java concatenation preserves null conversion for both operands.
+                builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
+                    accumVar, "(a, b) -> a + b", null, //$NON-NLS-1$
+                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM, accumVar));
             } else {
                 builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
                     accumVar, accumType + "::sum", null,

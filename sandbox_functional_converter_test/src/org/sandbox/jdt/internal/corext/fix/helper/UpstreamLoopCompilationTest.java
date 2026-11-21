@@ -571,6 +571,50 @@ class UpstreamLoopCompilationTest {
     }
 
     @Test
+    void preservesStringAssignmentWithNullableElements() throws Exception {
+        String methods = """
+                public static String run(java.util.List<String> values) {
+                    String result = "";
+                    for (String value : values) result = result + value;
+                    return result;
+                }
+                """;
+        String generated = check(methods, true);
+        assertTrue(generated.contains(".reduce("), generated);
+        assertExecution(methods, generated, "firstnulllast", java.util.List.class, Arrays.asList("first", null, "last"));
+    }
+
+    @Test
+    void annotatedStringAccumulatorStillPreservesNullableElements() throws Exception {
+        String methods = """
+                @java.lang.annotation.Target(java.lang.annotation.ElementType.LOCAL_VARIABLE)
+                public @interface NonNull { }
+                public static String run(java.util.List<String> values) {
+                    @NonNull String result = "";
+                    for (String value : values) result = result + value;
+                    return result;
+                }
+                """;
+        String generated = check(methods, true);
+        assertTrue(generated.contains(".reduce("), generated);
+        assertExecution(methods, generated, "firstnulllast", java.util.List.class, Arrays.asList("first", null, "last"));
+        assertFalse(generated.contains("String::concat"), generated);
+    }
+
+    @Test
+    void retainsStringConcatenationOverNonStringStreamElements() throws Exception {
+        String methods = """
+                public static String run(java.util.List<Object> values) {
+                    String result = "";
+                    for (Object value : values) result = result + value;
+                    return result;
+                }
+                """;
+        String generated = check(methods, false);
+        assertExecution(methods, generated, "1nulllast", java.util.List.class, Arrays.asList(1, null, "last"));
+    }
+
+    @Test
     void retainsCastPrecedenceForTerminalMatch() throws Exception {
         String methods = """
                 public static boolean run(Object values) {
