@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor;
+import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.TransformationResult;
 import org.sandbox.jdt.triggerpattern.api.GuardFunction;
 import org.sandbox.jdt.triggerpattern.api.GuardFunctionResolverHolder;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
@@ -95,7 +96,7 @@ class MapViewHintSafetyTest {
 	void unresolvedMapBindingsDoNotAuthorizeARewrite() {
 		CompilationUnit unit= parse("class Sample { int size(java.util.Map<String, String> map) { return map.values().size(); } }", false);
 		assertTrue(new BatchTransformationProcessor(hints).process(unit, options()).stream()
-				.noneMatch(result -> result.hasReplacement()), "Unresolved bindings may explain a skipped hint, never authorize a rewrite");
+				.noneMatch(TransformationResult::hasReplacement), "Unresolved bindings may explain a skipped hint, never authorize a rewrite");
 	}
 
 	@Test
