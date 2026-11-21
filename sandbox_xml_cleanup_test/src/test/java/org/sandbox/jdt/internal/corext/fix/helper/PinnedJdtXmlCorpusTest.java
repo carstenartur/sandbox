@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -51,11 +52,21 @@ class PinnedJdtXmlCorpusTest {
 
 	private record Upstream(String repository, String commit) { }
 
+	private record CorpusResource(IFile copy, Path source, String relative, String project, byte[] original) { }
+
+	private static final class CorpusCounts {
+		int eligibleFiles;
+		int executedCases;
+		int changedCases;
+	}
+
 	private static final Map<String, Upstream> UPSTREAMS= Map.of(
 			"core", new Upstream("eclipse-jdt/eclipse.jdt.core", "6725c16c24d94c83302346dc384bb915a0f2fe1a"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			"ui", new Upstream("eclipse-jdt/eclipse.jdt.ui", "54bd63e6453a7eb5db0bfc1d60f17e9568095619"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			"swt", new Upstream("eclipse-platform/eclipse.platform.swt", "3e3b24b4691c4f18a7d5e22653fe28d4c47385d7")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	private static final String REF= "refs/tags/R4_41"; //$NON-NLS-1$
+	private static final Set<String> DESCRIPTOR_NAMES= Set.of("plugin.xml", "fragment.xml", "feature.xml"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	private static final boolean[] INDENT_OPTIONS= { false, true };
 	private final NullProgressMonitor monitor= new NullProgressMonitor();
 	@TempDir
 	Path temporary;
@@ -88,72 +99,28 @@ class PinnedJdtXmlCorpusTest {
 					.filter(path -> !repository.relativize(path).startsWith(".git")).sorted().toList(); //$NON-NLS-1$
 		}
 		Set<Path> projectRoots= paths.stream().filter(path -> ".project".equals(fileName(path))) //$NON-NLS-1$
-				.map(Path::getParent).collect(java.util.stream.Collectors.toSet());
+				.map(Path::getParent).collect(Collectors.toSet());
 		assertFalse(projectRoots.isEmpty(), "Upstream contains no Eclipse project metadata"); //$NON-NLS-1$
 		Map<Path, IProject> projects= new LinkedHashMap<>();
-		List<Executable> cases= new ArrayList<>();
 		List<String> inventory= new ArrayList<>(List.of("path\tproject\tmode\tbefore.sha256\tafter.sha256\tchanged\tstatus")); //$NON-NLS-1$
-		int[] counts= new int[3]; // eligible files, executed cases, changed cases
+		CorpusCounts counts= new CorpusCounts();
 		Properties receipt= new Properties();
 		receipt.setProperty("repository", upstream.repository); //$NON-NLS-1$
 		receipt.setProperty("ref", REF); //$NON-NLS-1$
 		receipt.setProperty("commit", upstream.commit); //$NON-NLS-1$
 		receipt.setProperty("status", "FAIL"); //$NON-NLS-1$ //$NON-NLS-2$
 		try {
-			for (Path source : paths) {
-				String name= fileName(source);
-				if (!(Set.of("plugin.xml", "fragment.xml", "feature.xml").contains(name) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-						|| name.endsWith(".exsd") || name.endsWith(".xsd"))) { //$NON-NLS-1$ //$NON-NLS-2$
-					continue;
-				}
-				Path owner= source.getParent();
-				while (owner != null && owner.startsWith(repository) && !projectRoots.contains(owner)) {
-					owner= owner.getParent();
-				}
-				String relative= repository.relativize(source).toString();
-				if (owner == null || !projectRoots.contains(owner)) {
-					inventory.add(relative + "\t-\t-\t-\t-\tfalse\tNO_ECLIPSE_PROJECT"); //$NON-NLS-1$
-					continue;
-				}
-				IProject project= projects.get(owner);
-				if (project == null) {
-					project= ResourcesPlugin.getWorkspace().getRoot().getProject("XmlCorpus-" + family + "-" + projects.size()); //$NON-NLS-1$ //$NON-NLS-2$
-					if (project.exists()) {
-						project.delete(true, true, monitor);
-					}
-					project.create(monitor);
-					project.open(monitor);
-					projects.put(owner, project);
-				}
-				IFile copy= project.getFile(owner.relativize(source).toString());
-				if (!new XMLCleanupService().isPDERelevantFile(copy)) {
-					inventory.add(relative + "\t" + repository.relativize(owner) + "\t-\t-\t-\tfalse\tOUTSIDE_PDE_SCOPE"); //$NON-NLS-1$ //$NON-NLS-2$
-					continue;
-				}
-				counts[0]++;
-				byte[] original= Files.readAllBytes(source);
-				createFile(copy, original, resourceCharset(owner, owner.relativize(source)));
-				write(output.resolve("original").resolve(relative), original); //$NON-NLS-1$
-				String projectPath= repository.relativize(owner).toString();
-				for (PdeSchemaTarget target : PdeSchemaTarget.values()) {
-					for (DocumentationPolicy documentation : DocumentationPolicy.values()) {
-						for (boolean indent : new boolean[] { false, true }) {
-							cases.add(() -> verifyFile(copy, source, relative, projectPath, original, output,
-									target, documentation, indent, inventory, counts));
-						}
-					}
-				}
-			}
-			assertTrue(counts[0] > 0, "The complete upstream inventory contains no eligible PDE XML"); //$NON-NLS-1$
+			List<Executable> cases= collectCases(family, repository, output, paths, projectRoots, projects, inventory, counts);
+			assertTrue(counts.eligibleFiles > 0, "The complete upstream inventory contains no eligible PDE XML"); //$NON-NLS-1$
 			assertAll(family + " R4_41 XML corpus", cases); //$NON-NLS-1$
-			assertEquals(counts[0] * 8, counts[1], "Every file must run all eight independent option combinations"); //$NON-NLS-1$
-			assertTrue(counts[2] > 0, "Corpus exercised no actual XML transformation"); //$NON-NLS-1$
+			assertEquals(counts.eligibleFiles * 8, counts.executedCases, "Every file must run all eight independent option combinations"); //$NON-NLS-1$
+			assertTrue(counts.changedCases > 0, "Corpus exercised no actual XML transformation"); //$NON-NLS-1$
 			receipt.setProperty("status", "PASS"); //$NON-NLS-1$ //$NON-NLS-2$
 		} finally {
 			receipt.setProperty("projects.discovered", Integer.toString(projectRoots.size())); //$NON-NLS-1$
-			receipt.setProperty("files.eligible", Integer.toString(counts[0])); //$NON-NLS-1$
-			receipt.setProperty("cases.executed", Integer.toString(counts[1])); //$NON-NLS-1$
-			receipt.setProperty("cases.changed", Integer.toString(counts[2])); //$NON-NLS-1$
+			receipt.setProperty("files.eligible", Integer.toString(counts.eligibleFiles)); //$NON-NLS-1$
+			receipt.setProperty("cases.executed", Integer.toString(counts.executedCases)); //$NON-NLS-1$
+			receipt.setProperty("cases.changed", Integer.toString(counts.changedCases)); //$NON-NLS-1$
 			Files.write(output.resolve("inventory.tsv"), inventory, StandardCharsets.UTF_8); //$NON-NLS-1$
 			try (var writer= Files.newBufferedWriter(output.resolve("receipt.properties"), StandardCharsets.UTF_8)) { //$NON-NLS-1$
 				receipt.store(writer, "Actual XMLCleanupService workspace executions"); //$NON-NLS-1$
@@ -164,14 +131,78 @@ class PinnedJdtXmlCorpusTest {
 		}
 	}
 
-	private void verifyFile(IFile copy, Path source, String relative, String project, byte[] original, Path output,
-			PdeSchemaTarget target, DocumentationPolicy documentation, boolean indent,
-			List<String> inventory, int[] counts) throws Throwable {
+	private List<Executable> collectCases(String family, Path repository, Path output, List<Path> paths,
+			Set<Path> projectRoots, Map<Path, IProject> projects, List<String> inventory, CorpusCounts counts) throws Exception {
+		XMLCleanupService scope= new XMLCleanupService();
+		List<Executable> cases= new ArrayList<>();
+		for (Path source : paths) {
+			String name= fileName(source);
+			if (!(DESCRIPTOR_NAMES.contains(name) || name.endsWith(".exsd") || name.endsWith(".xsd"))) { //$NON-NLS-1$ //$NON-NLS-2$
+				continue;
+			}
+			Path owner= source.getParent();
+			while (owner != null && owner.startsWith(repository) && !projectRoots.contains(owner)) {
+				owner= owner.getParent();
+			}
+			String relative= repository.relativize(source).toString();
+			if (owner == null || !projectRoots.contains(owner)) {
+				inventory.add(relative + "\t-\t-\t-\t-\tfalse\tNO_ECLIPSE_PROJECT"); //$NON-NLS-1$
+				continue;
+			}
+			IProject project= workspaceProject(family, owner, projects);
+			Path projectRelative= owner.relativize(source);
+			IFile copy= project.getFile(projectRelative.toString());
+			String projectPath= repository.relativize(owner).toString();
+			if (!scope.isPDERelevantFile(copy)) {
+				inventory.add(relative + "\t" + projectPath + "\t-\t-\t-\tfalse\tOUTSIDE_PDE_SCOPE"); //$NON-NLS-1$ //$NON-NLS-2$
+				continue;
+			}
+			counts.eligibleFiles++;
+			byte[] original= Files.readAllBytes(source);
+			createFile(copy, original, resourceCharset(owner, projectRelative));
+			write(output.resolve("original").resolve(relative), original); //$NON-NLS-1$
+			addOptionCases(new CorpusResource(copy, source, relative, projectPath, original), output, inventory, counts, cases);
+		}
+		return cases;
+	}
+
+	private IProject workspaceProject(String family, Path owner, Map<Path, IProject> projects) throws Exception {
+		IProject project= projects.get(owner);
+		if (project == null) {
+			project= ResourcesPlugin.getWorkspace().getRoot().getProject("XmlCorpus-" + family + "-" + projects.size()); //$NON-NLS-1$ //$NON-NLS-2$
+			if (project.exists()) {
+				project.delete(true, true, monitor);
+			}
+			project.create(monitor);
+			project.open(monitor);
+			projects.put(owner, project);
+		}
+		return project;
+	}
+
+	private void addOptionCases(CorpusResource resource, Path output, List<String> inventory, CorpusCounts counts,
+			List<Executable> cases) {
+		DocumentationPolicy[] policies= DocumentationPolicy.values();
+		for (PdeSchemaTarget target : PdeSchemaTarget.values()) {
+			for (DocumentationPolicy documentation : policies) {
+				for (boolean indent : INDENT_OPTIONS) {
+					cases.add(() -> verifyFile(resource, output, target, documentation, indent, inventory, counts));
+				}
+			}
+		}
+	}
+
+	private void verifyFile(CorpusResource resource, Path output, PdeSchemaTarget target,
+			DocumentationPolicy documentation, boolean indent, List<String> inventory, CorpusCounts counts) throws Throwable {
+		IFile copy= resource.copy();
+		Path source= resource.source();
+		String relative= resource.relative();
+		byte[] original= resource.original();
 		String mode= target.name() + "-" + documentation.name() + "-indent-" + indent; //$NON-NLS-1$ //$NON-NLS-2$
 		Path evidence= output.resolve(mode).resolve(relative);
 		boolean changed= false;
 		String status= "FAIL"; //$NON-NLS-1$
-		counts[1]++;
+		counts.executedCases++;
 		try {
 			copy.setContents(new ByteArrayInputStream(original), true, false, monitor);
 			XMLCleanupService service= new XMLCleanupService(target, documentation);
@@ -183,7 +214,7 @@ class PinnedJdtXmlCorpusTest {
 			write(evidence, after);
 			assertEquals(!Arrays.equals(original, after), changed, relative);
 			if (changed) {
-				counts[2]++;
+				counts.changedCases++;
 			}
 			PdeXmlCorpusAssertions.assertMeaning(before, XMLResourceSupport.read(copy).content(), target, documentation);
 			if (relative.endsWith(".exsd")) { //$NON-NLS-1$
@@ -201,7 +232,7 @@ class PinnedJdtXmlCorpusTest {
 		} finally {
 			byte[] after= bytes(copy);
 			write(evidence, after);
-			inventory.add(relative + "\t" + project + "\t" + mode + "\t" + sha(original) + "\t" + sha(after) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+			inventory.add(relative + "\t" + resource.project() + "\t" + mode + "\t" + sha(original) + "\t" + sha(after) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 					+ "\t" + changed + "\t" + status); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 	}

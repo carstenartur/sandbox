@@ -71,8 +71,9 @@ final class PdeXmlCorpusAssertions {
 			}
 		}
 		var nodes= root.getElementsByTagName("*"); //$NON-NLS-1$
-		List<Element> elements= new ArrayList<>();
-		for (int i= 0; i < nodes.getLength(); i++) {
+		int elementCount= nodes.getLength();
+		List<Element> elements= new ArrayList<>(elementCount);
+		for (int i= 0; i < elementCount; i++) {
 			elements.add((Element) nodes.item(i));
 		}
 		for (Element element : elements) {
@@ -115,10 +116,12 @@ final class PdeXmlCorpusAssertions {
 	}
 
 	private static Map<String, Object> model(Schema schema) {
-		Map<String, Object> result= new LinkedHashMap<>();
+		var elements= schema.getElements();
+		var sections= schema.getDocumentSections();
+		Map<String, Object> result= LinkedHashMap.newLinkedHashMap(1 + elements.length + sections.length);
 		result.put("schema", Arrays.asList(schema.getName(), schema.getPluginId(), schema.getPointId(), //$NON-NLS-1$
 				schema.getDescription(), schema.getSchemaVersion(), schema.isDeperecated(), schema.isInternal()));
-		for (var element : schema.getElements()) {
+		for (var element : elements) {
 			String key= "element:" + element.getName(); //$NON-NLS-1$
 			result.put(key, Arrays.asList(element.getDescription(), element.getLabelProperty(), element.getIconProperty(),
 					element.isDeprecated(), element.getMinOccurs(), element.getMaxOccurs()));
@@ -128,7 +131,6 @@ final class PdeXmlCorpusAssertions {
 						attribute.getBasedOn(), attribute.isTranslatable(), attribute.getUse(), attribute.getValue()));
 			}
 		}
-		var sections= schema.getDocumentSections();
 		for (int i= 0; i < sections.length; i++) {
 			var section= sections[i];
 			result.put("section:" + i, Arrays.asList(section.getSectionId(), section.getName(), section.getDescription())); //$NON-NLS-1$
