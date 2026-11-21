@@ -321,9 +321,10 @@ public class FunctionalLoopFilterMapTest {
 				public void test(List<Integer> ls) {
 					ls.forEach(a -> {
 						Integer l = new Integer(a.intValue());
-						if (l != null) {
+						if(l!=null)
+						{
 							String s = l.toString();
-							if (s != null)
+							if(s!=null)
 								System.out.println(s);
 							System.out.println("cucu");
 						}
