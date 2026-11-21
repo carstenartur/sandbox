@@ -50,6 +50,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.StringGetBytesExplicitEncoding
 import org.sandbox.jdt.internal.corext.fix.helper.URLDecoderDecodeExplicitEncoding;
 import org.sandbox.jdt.internal.corext.fix.helper.URLEncoderEncodeExplicitEncoding;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
+import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 
 public enum UseExplicitEncodingFixCore {
@@ -137,6 +138,9 @@ public enum UseExplicitEncodingFixCore {
 		return new CompilationUnitRewriteOperation() {
 			@Override
 			public void rewriteAST(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel) throws CoreException {
+				if (ExceptionCleanupHelper.isInRemovedCatch(visited, cuRewrite.getASTRewrite())) {
+					return;
+				}
 				TextEditGroup group= createTextEditGroup(Messages.format(MultiFixMessages.ExplicitEncodingCleanUp_description,new Object[] {UseExplicitEncodingFixCore.this.toString(), cb.toString()}), cuRewrite);
 				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(computer);
 				explicitencoding.rewrite(UseExplicitEncodingFixCore.this, visited, cuRewrite, group, cb, data);

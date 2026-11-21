@@ -7,6 +7,7 @@ on:
     paths:
       - 'sandbox-benchmarks/**'
       - 'qa/math-optimization/**'
+      - 'qa/upstream-cleanups/**'
       - 'sandbox_math_cleanup/**'
       - 'sandbox_math_cleanup_test/**'
       - 'sandbox-functional-converter-core/**'
@@ -21,6 +22,7 @@ on:
     paths:
       - 'sandbox-benchmarks/**'
       - 'qa/math-optimization/**'
+      - 'qa/upstream-cleanups/**'
       - 'sandbox_math_cleanup/**'
       - 'sandbox_math_cleanup_test/**'
       - 'sandbox-functional-converter-core/**'
@@ -32,6 +34,10 @@ on:
     inputs:
       jdt_upstream:
         description: Run complete pinned JDT Core/UI mathematics qualification
+        type: boolean
+        default: false
+      cleanup_upstream:
+        description: Run every registered cleanup on pinned Core/UI/SWT source corpora
         type: boolean
         default: false
 
@@ -119,16 +125,18 @@ jobs:
             upstream/swt/**/target/surefire-reports/
 
   jdt-product:
-    name: Build mathematics product for upstream JDT
+    name: Build product for upstream cleanup qualification
     concurrency:
       group: ${{ github.workflow }}-jdt-product-${{ github.ref }}
       cancel-in-progress: true
     if: >-
       (github.event.action != 'labeled' ||
-       github.event.label.name == 'math-upstream-qa') &&
-      (inputs.jdt_upstream == true ||
+       github.event.label.name == 'math-upstream-qa' ||
+       github.event.label.name == 'cleanup-upstream-qa') &&
+      (inputs.jdt_upstream == true || inputs.cleanup_upstream == true ||
        (github.event_name == 'pull_request' &&
-        contains(github.event.pull_request.labels.*.name, 'math-upstream-qa')))
+        (contains(github.event.pull_request.labels.*.name, 'math-upstream-qa') ||
+         contains(github.event.pull_request.labels.*.name, 'cleanup-upstream-qa'))))
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     permissions:
@@ -145,6 +153,12 @@ jobs:
           distribution: temurin
           cache: maven
           cache-dependency-path: sandbox/pom.xml
+      - name: Record bootstrap dependency availability
+        run: |
+          curl --silent --show-error --head --max-time 60 \
+            https://repo.maven.apache.org/maven2/org/eclipse/tycho/tycho-maven-plugin/5.0.4/tycho-maven-plugin-5.0.4.jar
+          curl --silent --show-error --head --max-time 60 \
+            https://repo.maven.apache.org/maven2/org/junit/junit-bom/6.1.3/junit-bom-6.1.3.pom
       - name: Materialize the product from this checkout
         working-directory: sandbox
         shell: bash
@@ -152,7 +166,7 @@ jobs:
           set -euo pipefail
           mkdir -p ../jdt-product
           git rev-parse HEAD > ../jdt-product/source-commit.txt
-          ./mvnw --batch-mode --no-transfer-progress -Pproduct \
+          ./mvnw --batch-mode --no-transfer-progress --errors --show-version -Pproduct \
             -Dsandbox.tycho.linux-only=true \
             -DskipTests -Dspotbugs.skip=true -Dtycho.localArtifacts=ignore \
             clean package 2>&1 | tee ../jdt-product/build.log
@@ -258,6 +272,71 @@ jobs:
           path: |
             jdt-evidence-${{ matrix.family }}/
             sandbox/qa/math-optimization/target/surefire-reports/
+
+  cleanup-corpus:
+    name: Pinned ${{ matrix.family }} all-cleanup corpus
+    needs: jdt-product
+    if: >-
+      (github.event.action != 'labeled' || github.event.label.name == 'cleanup-upstream-qa') &&
+      (inputs.cleanup_upstream == true ||
+       (github.event_name == 'pull_request' &&
+        contains(github.event.pull_request.labels.*.name, 'cleanup-upstream-qa')))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        family: [core, ui, swt]
+    permissions:
+      contents: read
+    env:
+      MAVEN_OPTS: -Declipse.p2.mirrors=false
+      SWT_GTK4: '0'
+      GDK_BACKEND: x11
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: sandbox
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+          cache-dependency-path: sandbox/qa/upstream-cleanups/pom.xml
+      - name: Install native display dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xvfb xauth dbus-daemon libgtk-3-0 libwebkit2gtk-4.1-0
+      - uses: actions/download-artifact@v8
+        with:
+          name: jdt-math-product
+          path: jdt-product
+      - name: Verify and unpack this run's product
+        run: |
+          cd jdt-product
+          sha256sum -c SHA256SUMS
+          mkdir eclipse
+          tar -xzf product.tar.gz -C eclipse
+      - name: Verify cleanup application and compiler diagnostic preservation
+        working-directory: sandbox
+        run: >-
+          dbus-run-session -- xvfb-run -a -s '-screen 0 1280x1024x24 -noreset'
+          ./mvnw --batch-mode --no-transfer-progress -f qa/upstream-cleanups/pom.xml
+          -Dsandbox.cleanup.family=${{ matrix.family }}
+          -Dsandbox.cleanup.product="$GITHUB_WORKSPACE/jdt-product/eclipse"
+          -Dsandbox.cleanup.productCommit="$(cat ../jdt-product/source-commit.txt)"
+          -Dsandbox.cleanup.output="$GITHUB_WORKSPACE/cleanup-evidence-${{ matrix.family }}"
+          test
+      - name: Retain corpus inputs, changes and diagnostics on every outcome
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: cleanup-corpus-${{ matrix.family }}
+          include-hidden-files: true
+          path: |
+            cleanup-evidence-${{ matrix.family }}/
+            sandbox/qa/upstream-cleanups/target/surefire-reports/
 
   benchmark:
     if: github.event.action != 'labeled'

@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Map;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,7 @@ import org.eclipse.core.runtime.CoreException;
 
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.compiler.IProblem;
 
 import org.eclipse.jdt.internal.corext.fix.CleanUpRefactoring;
 
@@ -71,6 +73,17 @@ class CompilerDiagnosticRegressionTest {
 		var failure= assertThrows(AssertionError.class, () -> context.performRefactoring(new ICompilationUnit[] { unit }, null));
 		assertTrue(failure.getMessage().contains("WARNING"), failure.getMessage());
 		assertEquals(JavaCore.IGNORE, context.getJavaProject().getOption(JavaCore.COMPILER_PB_UNUSED_LOCAL, true));
+	}
+
+	@Test
+	void newCompilationUnitsCannotHideCompilerErrors() throws Exception {
+		ICompilationUnit original= createUnit(source("System.out.println(1);")); //$NON-NLS-1$
+		var before= CompilerDiagnosticAssertions.capture(original);
+		ICompilationUnit added= createUnit("Added.java", source("Added", "missing();")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		AssertionError failure= assertThrows(AssertionError.class,
+				() -> before.assertNoNewDiagnostics(original, added));
+		assertTrue(failure.getMessage().contains("Added.java"), failure.getMessage()); //$NON-NLS-1$
+		assertTrue(failure.getMessage().contains("ERROR"), failure.getMessage()); //$NON-NLS-1$
 	}
 
 	@Test
@@ -185,6 +198,119 @@ class CompilerDiagnosticRegressionTest {
 
 		assertDoesNotThrow(() ->
 				context.assertRefactoringResultAsExpected(new ICompilationUnit[] { unit }, new String[] { after }, null));
+	}
+
+	@Test
+	void importInsertionPreservesAnExistingUnassignedResourceWarning() throws Exception {
+		String original= resourceSource();
+		String shifted= original.replace("import java.lang.ref.WeakReference;", //$NON-NLS-1$
+				"import java.lang.ref.WeakReference;\nimport java.util.zip.ZipFile;") //$NON-NLS-1$
+				.replace("WeakReference<java.util.zip.ZipFile>", "WeakReference<ZipFile>"); //$NON-NLS-1$ //$NON-NLS-2$
+		ICompilationUnit unit= createUnit(original);
+		assertResourceWarnings(unit, 2);
+		var options= context.getJavaProject().getOptions(false);
+		var baseline= CompilerDiagnosticAssertions.capture(unit);
+		try {
+			unit.getBuffer().setContents(shifted);
+			assertResourceWarnings(unit, 2);
+			assertDoesNotThrow(() -> {
+				baseline.assertNoNewDiagnostics();
+			});
+		} finally {
+			unit.getBuffer().setContents(original);
+			baseline.assertRestored();
+			assertEquals(options, context.getJavaProject().getOptions(false));
+		}
+	}
+
+	@Test
+	void anAdditionalUnassignedResourceWarningIsRejected() throws Exception {
+		String original= resourceSource();
+		String additional= original.replace("return !equal;", """
+				if (second.get() != null) {
+					return equal;
+				}
+				return !equal;
+				"""); //$NON-NLS-1$
+		assertResourceChangeRejected(original, additional, 4);
+	}
+
+	@Test
+	void anotherUnassignedResourceWithTheSameWarningCountIsRejected() throws Exception {
+		String original= resourceSource();
+		assertResourceChangeRejected(original, original.replace("first.get()", "second.get()"), 2); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	void movingAnUnassignedResourceWarningBetweenIdenticalExpressionsIsRejected() throws Exception {
+		String leaking= """
+				if (first.get() != null) {
+					return;
+				}
+				""";
+		String closed= """
+				try (java.util.zip.ZipFile file= first.get()) {
+					System.out.println(file.size());
+				}
+				""";
+		String original= resourceLocations(leaking, closed);
+		assertResourceChangeRejected(original, resourceLocations(closed, leaking), 2);
+	}
+
+	private void assertResourceChangeRejected(String original, String changed, long expectedWarnings) throws Exception {
+		ICompilationUnit unit= createUnit(original);
+		assertResourceWarnings(unit, 2);
+		var baseline= CompilerDiagnosticAssertions.capture(unit);
+		try {
+			unit.getBuffer().setContents(changed);
+			assertResourceWarnings(unit, expectedWarnings);
+			AssertionError failure= assertThrows(AssertionError.class, baseline::assertNoNewDiagnostics);
+			assertTrue(failure.getMessage().contains("id=" + IProblem.PotentiallyUnclosedCloseable), failure.getMessage()); //$NON-NLS-1$
+		} finally {
+			unit.getBuffer().setContents(original);
+			baseline.assertRestored();
+		}
+	}
+
+	private static void assertResourceWarnings(ICompilationUnit unit, long expected) {
+		var problems= CompilerDiagnosticAssertions.captureCompilerDiagnostics(new ICompilationUnit[] { unit }).get(unit);
+		assertTrue(problems.keySet().stream().noneMatch(CompilerDiagnosticAssertions.CompilerProblemKey::error), problems.toString());
+		long count= problems.entrySet().stream()
+				.filter(entry -> entry.getKey().id() == IProblem.PotentiallyUnclosedCloseable)
+				.mapToLong(Map.Entry::getValue).sum();
+		assertEquals(expected, count, problems.toString());
+	}
+
+	private static String resourceSource() {
+		return """
+				package test;
+				import java.lang.ref.WeakReference;
+				class Sample {
+					static boolean run(WeakReference<java.util.zip.ZipFile> first, WeakReference<java.util.zip.ZipFile> second) {
+						boolean equal= first == second;
+						if (first.get() != null) {
+							return equal;
+						}
+						return !equal;
+					}
+				}
+				""";
+	}
+
+	private static String resourceLocations(String firstBlock, String secondBlock) {
+		return """
+				package test;
+				import java.lang.ref.WeakReference;
+				class Sample {
+					static void run(WeakReference<java.util.zip.ZipFile> first, boolean chooseFirst) throws Exception {
+						if (chooseFirst) {
+							FIRST_BLOCK
+						} else {
+							SECOND_BLOCK
+						}
+					}
+				}
+				""".replace("FIRST_BLOCK", firstBlock).replace("SECOND_BLOCK", secondBlock); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	@Test

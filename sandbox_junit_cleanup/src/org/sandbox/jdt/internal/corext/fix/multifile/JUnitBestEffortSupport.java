@@ -74,6 +74,7 @@ import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.ParameterizedMigrationEligibility;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleExpectedExceptionJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.RuleExternalResourceJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleTemporayFolderJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RunWithMigrationEligibility;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.TestNameRefactorer;
@@ -385,6 +386,11 @@ public final class JUnitBestEffortSupport {
 					if (ruleKind != RuleKind.NONE) {
 						ITypeBinding resource= resourceTypeBinding(field);
 						if (extendsExternalResource(resource)) {
+							if (fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE) && resource.isAnonymous()
+									&& !RuleExternalResourceJUnitPlugin.isEligibleExternalResourceField(field)) {
+								addInheritedAnonymousRuleGaps(gaps, sourceTypesByKey, owner, field, resource);
+								return true;
+							}
 							String resourceKey= JUnitMigrationPlan.typeKey(resource);
 							String usageKey= resourceKey == null ? qualifiedName(resource) : resourceKey;
 							if (usageKey != null && !usageKey.isBlank()) {
@@ -428,6 +434,22 @@ public final class JUnitBestEffortSupport {
 			}
 		}
 		return new Analysis(new ArrayList<>(gaps.values()), mixedLifecycle);
+	}
+
+	private static void addInheritedAnonymousRuleGaps(Map<String, Gap> gaps, Map<String, SourceType> sourceTypes,
+			SourceType owner, FieldDeclaration field, ITypeBinding resource) {
+		String candidate= fieldCandidate("anonymous-external-resource", field); //$NON-NLS-1$
+		String reason= "INHERITED_ANONYMOUS_EXTERNAL_RESOURCE"; //$NON-NLS-1$
+		String explanation= "An anonymous rule inherits lifecycle or helper behavior from a custom ExternalResource superclass; copying only its body cannot preserve that contract."; //$NON-NLS-1$
+		String remediation= "Retain the JUnit 4 rule, or migrate its complete superclass contract to a Jupiter extension before changing the test lifecycle."; //$NON-NLS-1$
+		addGap(gaps, owner, candidate, reason, explanation, remediation);
+		// A selected source superclass must also retain before()/after() while the
+		// anonymous JUnit 4 consumer continues to invoke those inherited methods.
+		for (ITypeBinding current= resource.getSuperclass(); current != null
+				&& !ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(qualifiedName(current)); current= current.getSuperclass()) {
+			SourceType superclass= sourceTypes.get(JUnitMigrationPlan.typeKey(current));
+			if (superclass != null) addGap(gaps, superclass, candidate, reason, explanation, remediation);
+		}
 	}
 
 	/** Adds one idempotent marker operation for the supplied compilation-unit gaps. */

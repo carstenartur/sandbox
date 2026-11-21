@@ -42,7 +42,9 @@ import org.eclipse.jdt.core.dom.TypeLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+import org.eclipse.jdt.internal.corext.codemanipulation.ContextSensitiveImportRewriteContext;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.LibStandardNames;
@@ -117,23 +119,8 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 			return true; // Continue processing other nodes
 		}
 
-		// Get the condition expression (may be first or second argument depending on
-		// whether message is present)
-		Expression condition = null;
-
-		if (arguments.size() == 1) {
-			condition = (Expression) arguments.get(0);
-		} else if (arguments.size() == 2) {
-			// Check if first argument is String (message), otherwise it's condition
-			Expression firstArg = (Expression) arguments.get(0);
-			ITypeBinding firstArgType = firstArg.resolveTypeBinding();
-			if (firstArgType != null && "java.lang.String".equals(firstArgType.getQualifiedName())) {
-				// First arg is message, second is condition
-				condition = (Expression) arguments.get(1);
-			} else {
-				condition = firstArg;
-			}
-		}
+		// This helper only visits Jupiter assertions, whose condition comes first.
+		Expression condition= arguments.size() <= 2 ? (Expression) arguments.get(0) : null;
 
 		if (condition == null || !canOptimize(condition)) {
 			return true; // Continue processing other nodes
@@ -162,27 +149,9 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 			return true; // Continue processing other nodes
 		}
 
-		// Get first two arguments (they might be expected/actual or message/expected
-		// depending on JUnit version)
-		Expression first = (Expression) arguments.get(0);
-		Expression second = (Expression) arguments.get(1);
-
-		// Check if first argument is a String message (JUnit 4 style)
-		ITypeBinding firstType = first.resolveTypeBinding();
-		boolean firstIsMessage = firstType != null && "java.lang.String".equals(firstType.getQualifiedName());
-
-		Expression expectedParam;
-		Expression actualParam;
-
-		if (firstIsMessage && arguments.size() >= 3) {
-			// JUnit 4: message, expected, actual
-			expectedParam = (Expression) arguments.get(1);
-			actualParam = (Expression) arguments.get(2);
-		} else {
-			// JUnit 5: expected, actual [, message]
-			expectedParam = first;
-			actualParam = second;
-		}
+		// Jupiter keeps expected and actual first, including when expected is a String.
+		Expression expectedParam= (Expression) arguments.get(0);
+		Expression actualParam= (Expression) arguments.get(1);
 
 		// If expected is not constant but actual is constant, we need to swap
 		if (!isConstantExpression(expectedParam) && isConstantExpression(actualParam)) {
@@ -304,6 +273,31 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 	}
 
 	@Override
+	public void rewrite(JUnitCleanUpFixCore fixcore, ReferenceHolder<Integer, JunitHolder> hit,
+			CompilationUnitRewrite cuRewrite, TextEditGroup group) {
+		MethodInvocation invocation= hit.get(hit.size() - 1).getMethodInvocation();
+		super.rewrite(fixcore, hit, cuRewrite, group);
+		ASTRewrite rewrite= cuRewrite.getASTRewrite();
+		SimpleName replacement= (SimpleName) rewrite.get(invocation, MethodInvocation.NAME_PROPERTY);
+		if (invocation.getExpression() != null || replacement.getIdentifier().equals(invocation.getName().getIdentifier())) {
+			return;
+		}
+		ImportRewrite imports= cuRewrite.getImportRewrite();
+		String method= replacement.getIdentifier();
+		String reference= imports.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, method, false,
+				new ContextSensitiveImportRewriteContext(invocation, imports));
+		int separator= reference.lastIndexOf('.');
+		if (separator >= 0) {
+			rewrite.set(invocation, MethodInvocation.EXPRESSION_PROPERTY,
+					invocation.getAST().newName(reference.substring(0, separator)), group);
+		} else {
+			cuRewrite.getImportRemover().registerAddedStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, method, false);
+		}
+		// Retain the original static import when an unchanged call still uses it.
+		cuRewrite.getImportRemover().registerRemovedNode(invocation.getName());
+	}
+
+	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
 		if (!(junitHolder.getMinv() instanceof MethodInvocation)) {
@@ -328,23 +322,8 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 		// Handle assertTrue/assertFalse optimization
 		boolean isTrue = "assertTrue".equals(methodName);
 
-		// Get the condition and message
-		Expression condition = null;
-		Expression message = null;
-
-		if (arguments.size() == 1) {
-			condition = (Expression) arguments.get(0);
-		} else if (arguments.size() == 2) {
-			Expression firstArg = (Expression) arguments.get(0);
-			ITypeBinding firstArgType = firstArg.resolveTypeBinding();
-			if (firstArgType != null && "java.lang.String".equals(firstArgType.getQualifiedName())) {
-				message = firstArg;
-				condition = (Expression) arguments.get(1);
-			} else {
-				condition = firstArg;
-				message = (Expression) arguments.get(1);
-			}
-		}
+		Expression condition= (Expression) arguments.get(0);
+		Expression message= arguments.size() == 2 ? (Expression) arguments.get(1) : null;
 
 		if (condition == null) {
 			return;
@@ -394,13 +373,7 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 					rewriter.set(mi, MethodInvocation.NAME_PROPERTY, ast.newSimpleName(newMethodName), group);
 					ListRewrite argsRewrite = rewriter.getListRewrite(mi, MethodInvocation.ARGUMENTS_PROPERTY);
 
-					// Create new argument list
-					argsRewrite.remove((ASTNode) condition, group);
-					if (message != null) {
-						argsRewrite.insertLast(rewriter.createCopyTarget(nonNullExpr), group);
-					} else {
-						argsRewrite.insertFirst(rewriter.createCopyTarget(nonNullExpr), group);
-					}
+					argsRewrite.replace(condition, rewriter.createCopyTarget(nonNullExpr), group);
 				}
 			} else {
 				// Handle equality checks between non-null values
@@ -490,39 +463,16 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 			return;
 		}
 
-		Expression first = (Expression) arguments.get(0);
-		Expression second = (Expression) arguments.get(1);
-
-		// Check if first argument is a String message (JUnit 4 style)
-		ITypeBinding firstType = first.resolveTypeBinding();
-		boolean firstIsMessage = firstType != null && "java.lang.String".equals(firstType.getQualifiedName());
-
-		Expression expectedParam;
-		Expression actualParam;
-		int expectedIndex;
-		int actualIndex;
-
-		if (firstIsMessage && arguments.size() >= 3) {
-			// JUnit 4: message, expected, actual
-			expectedParam = (Expression) arguments.get(1);
-			actualParam = (Expression) arguments.get(2);
-			expectedIndex = 1;
-			actualIndex = 2;
-		} else {
-			// JUnit 5: expected, actual [, message]
-			expectedParam = first;
-			actualParam = second;
-			expectedIndex = 0;
-			actualIndex = 1;
-		}
+		Expression expectedParam= (Expression) arguments.get(0);
+		Expression actualParam= (Expression) arguments.get(1);
 
 		// If expected is not constant but actual is constant, swap them
 		if (!isConstantExpression(expectedParam) && isConstantExpression(actualParam)) {
 			ListRewrite argsRewrite = rewriter.getListRewrite(mi, MethodInvocation.ARGUMENTS_PROPERTY);
 			Expression newExpected = (Expression) rewriter.createCopyTarget(actualParam);
 			Expression newActual = (Expression) rewriter.createCopyTarget(expectedParam);
-			argsRewrite.replace((ASTNode) arguments.get(expectedIndex), newExpected, group);
-			argsRewrite.replace((ASTNode) arguments.get(actualIndex), newActual, group);
+			argsRewrite.replace(expectedParam, newExpected, group);
+			argsRewrite.replace(actualParam, newActual, group);
 		}
 	}
 
