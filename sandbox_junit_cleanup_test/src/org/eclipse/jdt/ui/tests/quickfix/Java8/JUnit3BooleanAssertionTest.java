@@ -43,8 +43,9 @@ import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.jdt.internal.corext.refactoring.nls.NLSElement;
+import org.eclipse.jdt.internal.corext.refactoring.nls.NLSScanner;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -53,6 +54,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
+import org.sandbox.jdt.triggerpattern.cleanup.NlsAwareCleanUpFix;
 import org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
 import org.sandbox.jdt.ui.tests.quickfix.rules.JUnitMigrationFixtureClasspath;
@@ -118,14 +120,125 @@ class JUnit3BooleanAssertionTest {
 
 	@ParameterizedTest
 	@MethodSource("evaluationSensitiveCalls") //$NON-NLS-1$
-	void preservesCallsWithoutAProvenPrimitiveRewrite(String call, String events) throws Exception {
+	void migratesPrimitiveCallsWithoutChangingEvaluation(String call, String events) throws Exception {
 		String original= source(call, true, ""); //$NON-NLS-1$
 		ICompilationUnit unit= unit(original);
-		assertEquals(original, applyAndUndo(unit, false, null, null, null));
-		Outcome outcome= execute(original, unit);
-		assertFalse(outcome.failed(), outcome.message());
-		assertEquals(events, outcome.events());
-		assertEquals(1, outcome.calls());
+		Outcome before= execute(original, unit);
+		boolean message= call.contains("message()") || call.contains("this.events") || call.contains("null,"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		String generated= applyAndUndo(unit, true, "assertTrue", "org.junit.jupiter.api.Assertions", //$NON-NLS-1$ //$NON-NLS-2$
+				message ? List.of("boolean", "java.lang.String") : List.of("boolean")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		assertFalse(before.failed(), before.message());
+		assertEquals(events, before.events());
+		assertEquals(1, before.calls());
+		assertEquals(before, execute(generated, unit));
+	}
+
+	static Stream<Arguments> dynamicMessages() {
+		return Stream.of(
+				Arguments.of("assertTrue(this.message(), this.next());", "message;actual;", false), //$NON-NLS-1$ //$NON-NLS-2$
+				Arguments.of("this.receiver().assertTrue(this.message(), this.next());", "receiver;message;actual;", false), //$NON-NLS-1$ //$NON-NLS-2$
+				Arguments.of("if (this.result) assertTrue(this.message(), this.next());", "message;actual;", false), //$NON-NLS-1$ //$NON-NLS-2$
+				Arguments.of("if (!this.result) assertTrue(this.message(), this.next());", "", false), //$NON-NLS-1$ //$NON-NLS-2$
+				Arguments.of("String junitMessage= \"keep\"; assertTrue(this.message(), this.next()); this.events += junitMessage;", "message;actual;keep", false), //$NON-NLS-1$ //$NON-NLS-2$
+				Arguments.of("this.throwingReceiver().assertTrue(this.message(), this.next());", "receiver;", true), //$NON-NLS-1$ //$NON-NLS-2$
+				Arguments.of("this.nullReceiver().assertTrue(this.message(), this.next());", "receiver;message;actual;", false)); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@ParameterizedTest
+	@MethodSource("dynamicMessages") //$NON-NLS-1$
+	void migratesMessagesAndReceiversAtTheirOriginalEvaluationPoint(String call, String events, boolean failed)
+			throws Exception {
+		String original= source(call, true, """
+				private junit.framework.TestCase throwingReceiver() {
+					this.events += "receiver;";
+					throw new AssertionError("receiver");
+				}
+				private junit.framework.TestCase nullReceiver() {
+					this.events += "receiver;";
+					return null;
+				}
+				""");
+		ICompilationUnit unit= unit(original);
+		Outcome before= execute(original, unit);
+		String generated= applyAndUndo(unit, true, "assertTrue", "org.junit.jupiter.api.Assertions", //$NON-NLS-1$ //$NON-NLS-2$
+				List.of("boolean", "java.lang.String")); //$NON-NLS-1$ //$NON-NLS-2$
+		assertEquals(events, before.events());
+		assertEquals(failed, before.failed());
+		assertEquals(before, execute(generated, unit));
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings= { "assertTrue(this.events, !this.next());", "assertEquals(this.events, false, this.next());" }) //$NON-NLS-1$ //$NON-NLS-2$
+	void snapshotsMutableMessagesBeforeActualEvaluation(String call) throws Exception {
+		String original= source("this.events= \"before;\"; " + call, true, ""); //$NON-NLS-1$ //$NON-NLS-2$
+		ICompilationUnit unit= unit(original);
+		Outcome before= execute(original, unit);
+		String generated= applyAndUndo(unit, true, call.startsWith("assertEquals") ? "assertFalse" : "assertTrue", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				"org.junit.jupiter.api.Assertions", List.of("boolean", "java.lang.String")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		Outcome after= execute(generated, unit);
+		assertTrue(before.failed());
+		assertTrue(after.failed());
+		assertEquals(before.events(), after.events());
+		assertEquals(before.calls(), after.calls());
+		assertTrue(before.message().startsWith("before;"), before.message()); //$NON-NLS-1$
+		assertTrue(after.message().startsWith("before;"), after.message()); //$NON-NLS-1$
+		assertFalse(after.message().contains("before;actual;"), after.message()); //$NON-NLS-1$
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings= {
+			"assertEquals(this.expected() || this.next(), !this.next());", //$NON-NLS-1$
+			"assertEquals(!this.next(), this.expected() ? this.next() : false);" }) //$NON-NLS-1$
+	void preservesBooleanOperandGroupingAndShortCircuitEvaluation(String call) throws Exception {
+		String original= source(call, true, ""); //$NON-NLS-1$
+		ICompilationUnit unit= unit(original);
+		Outcome before= execute(original, unit);
+		String generated= applyAndUndo(unit, true, "assertTrue", "org.junit.jupiter.api.Assertions", List.of("boolean")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		Outcome after= execute(generated, unit);
+		assertTrue(before.failed());
+		assertEquals(before.failed(), after.failed());
+		assertEquals(before.events(), after.events());
+		assertEquals(before.calls(), after.calls());
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings= { "message", "receiver", "both", "comment", "constant" }) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
+	void preservesNlsTagsWhenAnEvaluationMovesToAPrecedingStatement(String kind) throws Exception {
+		var originalOptions= context.getJavaProject().getOptions(false);
+		context.getJavaProject().setOption(JavaCore.COMPILER_PB_NON_NLS_STRING_LITERAL, JavaCore.WARNING);
+		try {
+			String call= switch (kind) {
+			case "message" -> "assertTrue(\"prefix \" + this.message(), this.next()); //$NON-NLS-1$\n"; //$NON-NLS-1$ //$NON-NLS-2$
+			case "comment" -> "assertTrue(/*why*/ \"prefix \" + this.message(), this.next()); //$NON-NLS-1$\n"; //$NON-NLS-1$ //$NON-NLS-2$
+			case "constant" -> "assertEquals(\"message\", \"value\", \"value\"); //$NON-NLS-1$\n"; //$NON-NLS-1$ //$NON-NLS-2$
+			case "receiver" -> "this.receiver(\"receiver;\").assertTrue(this.next()); //$NON-NLS-1$\n"; //$NON-NLS-1$ //$NON-NLS-2$
+			default -> "this.receiver(\"r\").assertTrue(\"m\" + this.message(), \"a\".equals(\"a\") && this.next()); //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ keep this note\n"; //$NON-NLS-1$
+			};
+			String original= source(call, true, """
+					private junit.framework.TestCase receiver(String marker) {
+						this.events += marker;
+						return null;
+					}
+					""");
+			ICompilationUnit unit= unit(original);
+			Outcome before= execute(original, unit);
+			String method= "constant".equals(kind) ? "assertEquals" : "assertTrue"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			String generated= applyAndUndo(unit, true, method, "org.junit.jupiter.api.Assertions", null); //$NON-NLS-1$
+			assertEquals(before, execute(generated, unit));
+			assertEquals(taggedLiterals(original), taggedLiterals(generated), generated);
+			if ("comment".equals(kind)) { //$NON-NLS-1$
+				assertTrue(generated.contains("/*why*/ \"prefix \""), generated); //$NON-NLS-1$
+				assertEquals(generated.indexOf("/*why*/"), generated.lastIndexOf("/*why*/")); //$NON-NLS-1$ //$NON-NLS-2$
+			}
+			if ("both".equals(kind)) assertTrue(generated.contains("keep this note"), generated); //$NON-NLS-1$ //$NON-NLS-2$
+		} finally {
+			context.getJavaProject().setOptions(originalOptions);
+		}
+	}
+
+	static List<String> taggedLiterals(String source) throws Exception {
+		return Arrays.stream(NLSScanner.scan(source)).flatMap(line -> Arrays.stream(line.getElements()))
+				.filter(NLSElement::hasTag).map(NLSElement::getValue).sorted().toList();
 	}
 
 	static Stream<Arguments> assertionReceivers() {
@@ -148,7 +261,7 @@ class JUnit3BooleanAssertionTest {
 
 	@ParameterizedTest
 	@MethodSource("assertionReceivers") //$NON-NLS-1$
-	void preservesUnprovenReceiverEvaluation(String call, String events, int calls, boolean failed) throws Exception {
+	void preservesReceiverEvaluationDuringMigration(String call, String events, int calls, boolean failed) throws Exception {
 		String original= source(call, true, """
 				private junit.framework.TestCase throwingReceiver() {
 					this.events += "receiver;";
@@ -176,7 +289,14 @@ class JUnit3BooleanAssertionTest {
 		assertEquals(failed, before.failed());
 		assertEquals(events, before.events());
 		assertEquals(calls, before.calls());
-		assertEquals(original, applyAndUndo(unit, false, null, null, null));
+		MethodInvocation assertion= legacyAssertions.getFirst();
+		if (assertion.getExpression() instanceof MethodInvocation) {
+			String generated= applyAndUndo(unit, true, assertion.getName().getIdentifier(),
+					"org.junit.jupiter.api.Assertions", null); //$NON-NLS-1$
+			assertEquals(before, execute(generated, unit));
+		} else {
+			assertEquals(original, applyAndUndo(unit, false, null, null, null));
+		}
 		assertEquals(before, execute(unit.getSource(), unit));
 	}
 
@@ -332,7 +452,7 @@ class JUnit3BooleanAssertionTest {
 		}
 		assertFalse(operations.isEmpty(), original);
 		Outcome originalExecution= expectMigration ? null : execute(original, unit);
-		var fix= new CompilationUnitRewriteOperationsFixCore("Migrate JUnit 3", before, //$NON-NLS-1$
+		var fix= new NlsAwareCleanUpFix("Migrate JUnit 3", before, //$NON-NLS-1$
 				operations.toArray(CompilationUnitRewriteOperationWithSourceRange[]::new));
 		var change= fix.createChange(null);
 		try {
@@ -351,7 +471,7 @@ class JUnit3BooleanAssertionTest {
 				MethodInvocation invocation= assertion(after, method);
 				var binding= invocation.resolveMethodBinding();
 				assertEquals(owner, binding.getDeclaringClass().getQualifiedName());
-				assertEquals(parameters, parameterTypes(binding));
+				if (parameters != null) assertEquals(parameters, parameterTypes(binding));
 				assertTrue(operations(after).isEmpty(), "Migration must be idempotent"); //$NON-NLS-1$
 				return unit.getSource();
 			} finally {

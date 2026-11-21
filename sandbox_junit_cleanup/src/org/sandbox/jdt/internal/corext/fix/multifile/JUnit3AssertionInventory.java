@@ -25,6 +25,7 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3AssertionRewriter;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3SemanticSupport;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.InvocationKind;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.InvocationMigration;
@@ -86,13 +87,22 @@ final class JUnit3AssertionInventory {
 					rejection[0]= "A JUnit 3 assertion call has no stable method binding key."; //$NON-NLS-1$
 					return false;
 				}
-				InvocationKind kind= JUnit3SemanticSupport.hasLeadingMessage(node, binding)
-						? InvocationKind.MESSAGE_FIRST
-						: InvocationKind.QUALIFY;
+				InvocationKind kind= kindOf(node);
+				if (kind == null) {
+					rejection[0]= "The assertion needs an evaluation-preserving rewrite outside the supported statement context."; //$NON-NLS-1$
+					return false;
+				}
 				invocations.add(new InvocationMigration(key, node.getStartPosition(), node.getLength(), kind));
 				return true;
 			}
 		});
 		return new Result(rejection[0], invocations);
+	}
+
+	static InvocationKind kindOf(MethodInvocation node) {
+		if (!JUnit3AssertionRewriter.supports(node)) return null;
+		if (JUnit3AssertionRewriter.needsEvaluationRewrite(node)) return InvocationKind.PRESERVE_EVALUATION;
+		return JUnit3SemanticSupport.hasLeadingMessage(node, node.resolveMethodBinding())
+				? InvocationKind.MESSAGE_FIRST : InvocationKind.QUALIFY;
 	}
 }

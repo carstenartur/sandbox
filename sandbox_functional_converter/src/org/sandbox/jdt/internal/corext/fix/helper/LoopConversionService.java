@@ -23,9 +23,11 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.jdt.core.ISourceRange;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Comment;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.ForStatement;
@@ -182,12 +184,34 @@ public final class LoopConversionService {
 					}
 				}
 				List<CompilationUnitRewriteOperation> safe = new ArrayList<>(operations);
-				safe.removeIf(operation -> operation instanceof LoopConversionOperation loop && hasErrors(loop.getAnchor()));
+				Set<Integer> taggedLines = nlsTaggedLines(unit);
+				safe.removeIf(operation -> operation instanceof LoopConversionOperation loop
+						&& (hasErrors(loop.getAnchor()) || taggedLines.stream().anyMatch(line -> line >= unit.getLineNumber(loop.getAnchor().getStartPosition())
+								&& line <= unit.getLineNumber(loop.getAnchor().getStartPosition() + loop.getAnchor().getLength() - 1))));
 				safe.sort(Comparator.comparingInt(operation -> operation instanceof LoopConversionOperation loop
 						? loop.getAnchor().getStartPosition() : 0));
 				return new Analysis(unit, safe, LoopVariableNames.usedNames(unit));
 			}
 		}
+	}
+
+	/** Generated lambda/loop line breaks cannot relocate numbered NLS tags safely. */
+	private static Set<Integer> nlsTaggedLines(CompilationUnit unit) {
+		Set<Integer> lines = new HashSet<>();
+		if (unit.getTypeRoot() == null) return lines;
+		try {
+			String source = unit.getTypeRoot().getSource();
+			for (Object item : unit.getCommentList()) {
+				Comment comment = (Comment) item;
+				int start = comment.getStartPosition();
+				if (comment.isLineComment() && source.substring(start, start + comment.getLength()).contains("$NON-NLS-")) { //$NON-NLS-1$
+					lines.add(unit.getLineNumber(start));
+				}
+			}
+		} catch (JavaModelException exception) {
+			throw new IllegalStateException("Cannot verify loop source comments", exception); //$NON-NLS-1$
+		}
+		return lines;
 	}
 
 	private static boolean isForEachStatement(ASTNode node) {
