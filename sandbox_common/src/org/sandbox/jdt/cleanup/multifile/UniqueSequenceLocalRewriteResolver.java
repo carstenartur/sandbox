@@ -45,6 +45,7 @@ import org.sandbox.jdt.container.api.ContainerUsageProfile.UniquenessRequirement
 import org.sandbox.jdt.container.api.TargetContainerContract.Mutability;
 import org.sandbox.jdt.container.api.UniqueSequenceLocalRewritePlan;
 import org.sandbox.jdt.container.api.UniqueSequenceLocalRewritePlan.EditKind;
+import org.sandbox.jdt.internal.common.ImportNameBindings;
 
 /** Re-resolves and verifies one local unique-sequence rewrite plan. */
 final class UniqueSequenceLocalRewriteResolver {
@@ -156,7 +157,7 @@ final class UniqueSequenceLocalRewriteResolver {
 		root.accept(new ASTVisitor() {
 			@Override
 			public boolean visit(SimpleName name) {
-				IVariableBinding binding= variableBinding(name.resolveBinding());
+				IVariableBinding binding= variableBinding(ImportNameBindings.resolve(name));
 				if (binding == null
 						|| !bindingKey.equals(binding.getVariableDeclaration().getKey())) {
 					return true;
