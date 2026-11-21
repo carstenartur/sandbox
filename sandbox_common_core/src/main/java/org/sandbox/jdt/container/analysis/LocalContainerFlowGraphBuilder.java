@@ -46,6 +46,7 @@ import org.sandbox.jdt.container.api.ContainerFlowGraph;
 import org.sandbox.jdt.container.api.ContainerFlowGraph.EdgeKind;
 import org.sandbox.jdt.container.api.ContainerFlowGraph.FlowNode;
 import org.sandbox.jdt.container.api.ContainerUsageProfile;
+import org.sandbox.jdt.internal.common.ImportNameBindings;
 
 /**
  * Discovers value-flow edges reachable from one container binding inside a compilation
@@ -344,7 +345,7 @@ public final class LocalContainerFlowGraphBuilder {
 		ASTNode parent= reference.getParent();
 		if (parent instanceof QualifiedName qualified
 				&& qualified.getName() == reference
-				&& hasBindingKey(qualified.resolveBinding(), bindingKey)) {
+				&& hasBindingKey(ImportNameBindings.resolve(qualified), bindingKey)) {
 			reference= qualified;
 		} else if (parent instanceof FieldAccess fieldAccess
 				&& fieldAccess.getName() == reference
