@@ -168,8 +168,19 @@ public enum UseFunctionalCallFixCore {
 <span class="fc bfc" id="L168" title="All 2 branches covered.">			if (Boolean.TRUE.equals(nodeWithComment.getProperty(ASTNodes.UNTOUCH_COMMENT))) {</span>
 <span class="fc" id="L169">				return new SourceRange(nodeWithComment.getStartPosition(), nodeWithComment.getLength());</span>
 			}
-<span class="fc" id="L171">			return super.computeSourceRange(nodeWithComment);</span>
+<span class="fc" id="L171">			SourceRange range= super.computeSourceRange(nodeWithComment);</span>
+			// A copied child must fit inside an exact replacement range. Keep comments
+			// within that range, including those between a loop header and its body.
+<span class="fc bfc" id="L174" title="All 2 branches covered.">			for (ASTNode parent= nodeWithComment.getParent(); parent != null; parent= parent.getParent()) {</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">				if (Boolean.TRUE.equals(parent.getProperty(ASTNodes.UNTOUCH_COMMENT))) {</span>
+<span class="fc" id="L176">					int start= Math.max(range.getStartPosition(), parent.getStartPosition());</span>
+<span class="fc" id="L177">					int end= Math.min(range.getStartPosition() + range.getLength(),</span>
+<span class="fc" id="L178">							parent.getStartPosition() + parent.getLength());</span>
+<span class="fc" id="L179">					range= new SourceRange(start, end - start);</span>
+				}
+			}
+<span class="fc" id="L182">			return range;</span>
 		}
-<span class="fc" id="L173">	};</span>
+<span class="fc" id="L184">	};</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

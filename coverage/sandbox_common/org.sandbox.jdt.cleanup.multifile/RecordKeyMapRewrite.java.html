@@ -53,6 +53,7 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 
 import org.sandbox.jdt.container.analysis.RecordKeyLookupAnalyzer;
 import org.sandbox.jdt.container.api.ContainerUsageProfile;
+import org.sandbox.jdt.internal.common.ImportNameBindings;
 import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 
 /** Converts a private first-match index whose complete content is determined during construction. */
@@ -65,291 +66,291 @@ final class RecordKeyMapRewrite extends CompilationUnitRewriteOperationWithSourc
 	private final List&lt;Insertion&gt; insertions;
 	private final List&lt;Scan&gt; scans;
 
-<span class="nc" id="L68">	private RecordKeyMapRewrite(FieldDeclaration field, VariableDeclarationFragment fragment, List&lt;Insertion&gt; insertions, List&lt;Scan&gt; scans) {</span>
-<span class="nc" id="L69">		this.field= field;</span>
-<span class="nc" id="L70">		this.fragment= fragment;</span>
-<span class="nc" id="L71">		this.insertions= List.copyOf(insertions);</span>
-<span class="nc" id="L72">		this.scans= List.copyOf(scans);</span>
-<span class="nc" id="L73">	}</span>
+<span class="nc" id="L69">	private RecordKeyMapRewrite(FieldDeclaration field, VariableDeclarationFragment fragment, List&lt;Insertion&gt; insertions, List&lt;Scan&gt; scans) {</span>
+<span class="nc" id="L70">		this.field= field;</span>
+<span class="nc" id="L71">		this.fragment= fragment;</span>
+<span class="nc" id="L72">		this.insertions= List.copyOf(insertions);</span>
+<span class="nc" id="L73">		this.scans= List.copyOf(scans);</span>
+<span class="nc" id="L74">	}</span>
 
 	static List&lt;RecordKeyMapRewrite&gt; find(CompilationUnit root) {
-<span class="nc bnc" id="L76" title="All 2 branches missed.">		if (java.util.Arrays.stream(root.getProblems()).anyMatch(problem -&gt; problem.isError())) {</span>
-<span class="nc" id="L77">			return List.of();</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">		if (java.util.Arrays.stream(root.getProblems()).anyMatch(problem -&gt; problem.isError())) {</span>
+<span class="nc" id="L78">			return List.of();</span>
 		}
-<span class="nc" id="L79">		List&lt;RecordKeyMapRewrite&gt; result= new ArrayList&lt;&gt;();</span>
-<span class="nc bnc" id="L80" title="All 2 branches missed.">		for (var profile : RecordKeyLookupAnalyzer.analyze(root, () -&gt; {})) {</span>
-<span class="nc" id="L81">			var operation= plan(root, profile);</span>
-<span class="nc bnc" id="L82" title="All 2 branches missed.">			if (operation != null) {</span>
-<span class="nc" id="L83">				result.add(operation);</span>
+<span class="nc" id="L80">		List&lt;RecordKeyMapRewrite&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">		for (var profile : RecordKeyLookupAnalyzer.analyze(root, () -&gt; {})) {</span>
+<span class="nc" id="L82">			var operation= plan(root, profile);</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">			if (operation != null) {</span>
+<span class="nc" id="L84">				result.add(operation);</span>
 			}
 		}
-<span class="nc" id="L86">		return result;</span>
+<span class="nc" id="L87">		return result;</span>
 	}
 
 	private static RecordKeyMapRewrite plan(CompilationUnit root, ContainerUsageProfile profile) {
-<span class="nc bnc" id="L90" title="All 2 branches missed.">		if (!(root.findDeclaringNode(profile.identity().bindingKey()) instanceof VariableDeclarationFragment fragment)</span>
-<span class="nc bnc" id="L91" title="All 4 branches missed.">				|| !(fragment.getParent() instanceof FieldDeclaration field) || field.fragments().size() != 1</span>
-<span class="nc bnc" id="L92" title="All 2 branches missed.">				|| !field.modifiers().stream().allMatch(Modifier.class::isInstance)</span>
-<span class="nc bnc" id="L93" title="All 6 branches missed.">				|| !(field.getParent() instanceof TypeDeclaration owner) || owner.getParent() != root || !Modifier.isFinal(owner.getModifiers())</span>
-<span class="nc bnc" id="L94" title="All 6 branches missed.">				|| owner.getSuperclassType() != null || !owner.superInterfaceTypes().isEmpty() || !owner.typeParameters().isEmpty()</span>
-<span class="nc bnc" id="L95" title="All 6 branches missed.">				|| !(field.getType() instanceof ParameterizedType type) || type.typeArguments().size() != 1 || fragment.resolveBinding() == null</span>
-<span class="nc bnc" id="L96" title="All 6 branches missed.">				|| !Modifier.isPrivate(field.getModifiers()) || !Modifier.isFinal(field.getModifiers()) || Modifier.isStatic(field.getModifiers())</span>
-<span class="nc bnc" id="L97" title="All 4 branches missed.">				|| fragment.resolveBinding().getAnnotations().length != 0 || owner.resolveBinding().getAnnotations().length != 0</span>
-<span class="nc bnc" id="L98" title="All 4 branches missed.">				|| owner.getFields().length != 1 || owner.bodyDeclarations().stream().anyMatch(Initializer.class::isInstance)</span>
-<span class="nc bnc" id="L99" title="All 2 branches missed.">				|| type.resolveBinding().getTypeAnnotations().length != 0</span>
-<span class="nc bnc" id="L100" title="All 6 branches missed.">				|| !(fragment.getInitializer() instanceof ClassInstanceCreation empty) || !empty.arguments().isEmpty() || empty.getAnonymousClassDeclaration() != null</span>
-<span class="nc bnc" id="L101" title="All 4 branches missed.">				|| empty.resolveTypeBinding() == null || !&quot;java.util.ArrayList&quot;.equals(empty.resolveTypeBinding().getErasure().getQualifiedName())) { //$NON-NLS-1$</span>
-<span class="nc" id="L102">			return null;</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">		if (!(root.findDeclaringNode(profile.identity().bindingKey()) instanceof VariableDeclarationFragment fragment)</span>
+<span class="nc bnc" id="L92" title="All 4 branches missed.">				|| !(fragment.getParent() instanceof FieldDeclaration field) || field.fragments().size() != 1</span>
+<span class="nc bnc" id="L93" title="All 2 branches missed.">				|| !field.modifiers().stream().allMatch(Modifier.class::isInstance)</span>
+<span class="nc bnc" id="L94" title="All 6 branches missed.">				|| !(field.getParent() instanceof TypeDeclaration owner) || owner.getParent() != root || !Modifier.isFinal(owner.getModifiers())</span>
+<span class="nc bnc" id="L95" title="All 6 branches missed.">				|| owner.getSuperclassType() != null || !owner.superInterfaceTypes().isEmpty() || !owner.typeParameters().isEmpty()</span>
+<span class="nc bnc" id="L96" title="All 6 branches missed.">				|| !(field.getType() instanceof ParameterizedType type) || type.typeArguments().size() != 1 || fragment.resolveBinding() == null</span>
+<span class="nc bnc" id="L97" title="All 6 branches missed.">				|| !Modifier.isPrivate(field.getModifiers()) || !Modifier.isFinal(field.getModifiers()) || Modifier.isStatic(field.getModifiers())</span>
+<span class="nc bnc" id="L98" title="All 4 branches missed.">				|| fragment.resolveBinding().getAnnotations().length != 0 || owner.resolveBinding().getAnnotations().length != 0</span>
+<span class="nc bnc" id="L99" title="All 4 branches missed.">				|| owner.getFields().length != 1 || owner.bodyDeclarations().stream().anyMatch(Initializer.class::isInstance)</span>
+<span class="nc bnc" id="L100" title="All 2 branches missed.">				|| type.resolveBinding().getTypeAnnotations().length != 0</span>
+<span class="nc bnc" id="L101" title="All 6 branches missed.">				|| !(fragment.getInitializer() instanceof ClassInstanceCreation empty) || !empty.arguments().isEmpty() || empty.getAnonymousClassDeclaration() != null</span>
+<span class="nc bnc" id="L102" title="All 4 branches missed.">				|| empty.resolveTypeBinding() == null || !&quot;java.util.ArrayList&quot;.equals(empty.resolveTypeBinding().getErasure().getQualifiedName())) { //$NON-NLS-1$</span>
+<span class="nc" id="L103">			return null;</span>
 		}
-<span class="nc" id="L104">		var element= fragment.resolveBinding().getType().getTypeArguments()[0];</span>
-<span class="nc bnc" id="L105" title="All 8 branches missed.">		if (!element.isRecord() || element.isParameterizedType() || element.getTypeAnnotations().length != 0 || !(root.findDeclaringNode(element) instanceof RecordDeclaration record)</span>
-<span class="nc bnc" id="L106" title="All 6 branches missed.">				|| record.getParent() != owner || !record.bodyDeclarations().isEmpty() || !record.typeParameters().isEmpty()</span>
-<span class="nc bnc" id="L107" title="All 4 branches missed.">				|| !record.superInterfaceTypes().isEmpty() || record.resolveBinding().getAnnotations().length != 0) {</span>
-<span class="nc" id="L108">			return null;</span>
+<span class="nc" id="L105">		var element= fragment.resolveBinding().getType().getTypeArguments()[0];</span>
+<span class="nc bnc" id="L106" title="All 8 branches missed.">		if (!element.isRecord() || element.isParameterizedType() || element.getTypeAnnotations().length != 0 || !(root.findDeclaringNode(element) instanceof RecordDeclaration record)</span>
+<span class="nc bnc" id="L107" title="All 6 branches missed.">				|| record.getParent() != owner || !record.bodyDeclarations().isEmpty() || !record.typeParameters().isEmpty()</span>
+<span class="nc bnc" id="L108" title="All 4 branches missed.">				|| !record.superInterfaceTypes().isEmpty() || record.resolveBinding().getAnnotations().length != 0) {</span>
+<span class="nc" id="L109">			return null;</span>
 		}
-<span class="nc" id="L110">		Set&lt;ASTNode&gt; admitted= new HashSet&lt;&gt;();</span>
-<span class="nc" id="L111">		admitted.add(fragment.getName());</span>
-<span class="nc" id="L112">		List&lt;Scan&gt; scans= new ArrayList&lt;&gt;();</span>
-<span class="nc" id="L113">		int keyIndex= -1;</span>
-<span class="nc bnc" id="L114" title="All 2 branches missed.">		for (var observation : profile.evidence()) {</span>
-<span class="nc bnc" id="L115" title="All 2 branches missed.">			if (!(NodeFinder.perform(root, observation.sourceStart(), observation.sourceLength()) instanceof EnhancedForStatement loop)</span>
-<span class="nc bnc" id="L116" title="All 4 branches missed.">					|| !(loop.getParent() instanceof Block body) || !(body.getParent() instanceof MethodDeclaration method)</span>
-<span class="nc bnc" id="L117" title="All 8 branches missed.">					|| method.getParent() != owner || method.getBody() != body || body.statements().size() != 2 || body.statements().getFirst() != loop</span>
-<span class="nc bnc" id="L118" title="All 4 branches missed.">					|| !(body.statements().getLast() instanceof ReturnStatement fallback) || !(fallback.getExpression() instanceof NullLiteral)</span>
-<span class="nc bnc" id="L119" title="All 4 branches missed.">					|| !(single(loop.getBody()) instanceof IfStatement branch) || !(branch.getExpression() instanceof MethodInvocation equals)</span>
-<span class="nc bnc" id="L120" title="All 4 branches missed.">					|| !(equals.getExpression() instanceof SimpleName query) || !(equals.arguments().getFirst() instanceof MethodInvocation accessor)</span>
-<span class="nc bnc" id="L121" title="All 4 branches missed.">					|| method.parameters().size() != 1 || !(method.parameters().getFirst() instanceof SingleVariableDeclaration parameter)</span>
-<span class="nc bnc" id="L122" title="All 4 branches missed.">					|| parameter.resolveBinding() == null || !parameter.resolveBinding().isEqualTo(query.resolveBinding())</span>
-<span class="nc bnc" id="L123" title="All 2 branches missed.">					|| !&quot;java.lang.String&quot;.equals(parameter.resolveBinding().getType().getQualifiedName())) { //$NON-NLS-1$</span>
-<span class="nc" id="L124">				return null;</span>
+<span class="nc" id="L111">		Set&lt;ASTNode&gt; admitted= new HashSet&lt;&gt;();</span>
+<span class="nc" id="L112">		admitted.add(fragment.getName());</span>
+<span class="nc" id="L113">		List&lt;Scan&gt; scans= new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L114">		int keyIndex= -1;</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">		for (var observation : profile.evidence()) {</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">			if (!(NodeFinder.perform(root, observation.sourceStart(), observation.sourceLength()) instanceof EnhancedForStatement loop)</span>
+<span class="nc bnc" id="L117" title="All 4 branches missed.">					|| !(loop.getParent() instanceof Block body) || !(body.getParent() instanceof MethodDeclaration method)</span>
+<span class="nc bnc" id="L118" title="All 8 branches missed.">					|| method.getParent() != owner || method.getBody() != body || body.statements().size() != 2 || body.statements().getFirst() != loop</span>
+<span class="nc bnc" id="L119" title="All 4 branches missed.">					|| !(body.statements().getLast() instanceof ReturnStatement fallback) || !(fallback.getExpression() instanceof NullLiteral)</span>
+<span class="nc bnc" id="L120" title="All 4 branches missed.">					|| !(single(loop.getBody()) instanceof IfStatement branch) || !(branch.getExpression() instanceof MethodInvocation equals)</span>
+<span class="nc bnc" id="L121" title="All 4 branches missed.">					|| !(equals.getExpression() instanceof SimpleName query) || !(equals.arguments().getFirst() instanceof MethodInvocation accessor)</span>
+<span class="nc bnc" id="L122" title="All 4 branches missed.">					|| method.parameters().size() != 1 || !(method.parameters().getFirst() instanceof SingleVariableDeclaration parameter)</span>
+<span class="nc bnc" id="L123" title="All 4 branches missed.">					|| parameter.resolveBinding() == null || !parameter.resolveBinding().isEqualTo(query.resolveBinding())</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">					|| !&quot;java.lang.String&quot;.equals(parameter.resolveBinding().getType().getQualifiedName())) { //$NON-NLS-1$</span>
+<span class="nc" id="L125">				return null;</span>
 			}
-<span class="nc" id="L126">			int component= componentIndex(record, accessor.getName().getIdentifier());</span>
-<span class="nc bnc" id="L127" title="All 6 branches missed.">			if (component &lt; 0 || (keyIndex &gt;= 0 &amp;&amp; keyIndex != component)) {</span>
-<span class="nc" id="L128">				return null;</span>
+<span class="nc" id="L127">			int component= componentIndex(record, accessor.getName().getIdentifier());</span>
+<span class="nc bnc" id="L128" title="All 6 branches missed.">			if (component &lt; 0 || (keyIndex &gt;= 0 &amp;&amp; keyIndex != component)) {</span>
+<span class="nc" id="L129">				return null;</span>
 			}
-<span class="nc" id="L130">			keyIndex= component;</span>
-<span class="nc bnc" id="L131" title="All 2 branches missed.">			if (includesComments(root, loop)) {</span>
-<span class="nc" id="L132">				return null;</span>
+<span class="nc" id="L131">			keyIndex= component;</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">			if (includesComments(root, loop)) {</span>
+<span class="nc" id="L133">				return null;</span>
 			}
-<span class="nc" id="L134">			admitted.add(referenceName(loop.getExpression()));</span>
-<span class="nc" id="L135">			scans.add(new Scan(loop, query));</span>
+<span class="nc" id="L135">			admitted.add(referenceName(loop.getExpression()));</span>
+<span class="nc" id="L136">			scans.add(new Scan(loop, query));</span>
 		}
-<span class="nc bnc" id="L137" title="All 2 branches missed.">		if (keyIndex &lt; 0) {</span>
-<span class="nc" id="L138">			return null;</span>
+<span class="nc bnc" id="L138" title="All 2 branches missed.">		if (keyIndex &lt; 0) {</span>
+<span class="nc" id="L139">			return null;</span>
 		}
-<span class="nc" id="L140">		var inserts= construction(owner, fragment.resolveBinding(), element, keyIndex,</span>
-<span class="nc" id="L141">				((SingleVariableDeclaration) record.recordComponents().get(keyIndex)).getName().getIdentifier(), admitted);</span>
-<span class="nc bnc" id="L142" title="All 6 branches missed.">		if (inserts == null || inserts.isEmpty() || !allUsesAdmitted(root, fragment.resolveBinding(), admitted)</span>
-<span class="nc bnc" id="L143" title="All 4 branches missed.">				|| includesComments(root, field.getType()) || includesComments(root, empty)) {</span>
-<span class="nc" id="L144">			return null;</span>
+<span class="nc" id="L141">		var inserts= construction(owner, fragment.resolveBinding(), element, keyIndex,</span>
+<span class="nc" id="L142">				((SingleVariableDeclaration) record.recordComponents().get(keyIndex)).getName().getIdentifier(), admitted);</span>
+<span class="nc bnc" id="L143" title="All 6 branches missed.">		if (inserts == null || inserts.isEmpty() || !allUsesAdmitted(root, fragment.resolveBinding(), admitted)</span>
+<span class="nc bnc" id="L144" title="All 4 branches missed.">				|| includesComments(root, field.getType()) || includesComments(root, empty)) {</span>
+<span class="nc" id="L145">			return null;</span>
 		}
-<span class="nc" id="L146">		return new RecordKeyMapRewrite(field, fragment, inserts, scans);</span>
+<span class="nc" id="L147">		return new RecordKeyMapRewrite(field, fragment, inserts, scans);</span>
 	}
 
 	private static List&lt;Insertion&gt; construction(TypeDeclaration owner, IVariableBinding field,
 			ITypeBinding record, int keyIndex, String accessor, Set&lt;ASTNode&gt; admitted) {
-<span class="nc" id="L151">		List&lt;Insertion&gt; insertions= new ArrayList&lt;&gt;();</span>
-<span class="nc bnc" id="L152" title="All 2 branches missed.">		for (MethodDeclaration method : owner.getMethods()) {</span>
-<span class="nc bnc" id="L153" title="All 6 branches missed.">			if (method.isConstructor() &amp;&amp; (method.getBody() == null || !constructionStatements(method.getBody(), field, record, keyIndex, accessor, admitted, insertions))) {</span>
-<span class="nc" id="L154">				return null;</span>
+<span class="nc" id="L152">		List&lt;Insertion&gt; insertions= new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">		for (MethodDeclaration method : owner.getMethods()) {</span>
+<span class="nc bnc" id="L154" title="All 6 branches missed.">			if (method.isConstructor() &amp;&amp; (method.getBody() == null || !constructionStatements(method.getBody(), field, record, keyIndex, accessor, admitted, insertions))) {</span>
+<span class="nc" id="L155">				return null;</span>
 			}
 		}
-<span class="nc" id="L157">		return insertions;</span>
+<span class="nc" id="L158">		return insertions;</span>
 	}
 
 	/** Before publication only conditional inserts of fresh records with inert constructor arguments are allowed. */
 	private static boolean constructionStatements(Statement statement, IVariableBinding field, ITypeBinding record,
 			int keyIndex, String accessor, Set&lt;ASTNode&gt; admitted, List&lt;Insertion&gt; insertions) {
-<span class="nc bnc" id="L163" title="All 2 branches missed.">		if (statement instanceof Block block) {</span>
-<span class="nc bnc" id="L164" title="All 2 branches missed.">			for (Object child : block.statements()) {</span>
-<span class="nc bnc" id="L165" title="All 2 branches missed.">				if (!constructionStatements((Statement) child, field, record, keyIndex, accessor, admitted, insertions)) {</span>
-<span class="nc" id="L166">					return false;</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">		if (statement instanceof Block block) {</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">			for (Object child : block.statements()) {</span>
+<span class="nc bnc" id="L166" title="All 2 branches missed.">				if (!constructionStatements((Statement) child, field, record, keyIndex, accessor, admitted, insertions)) {</span>
+<span class="nc" id="L167">					return false;</span>
 				}
 			}
-<span class="nc" id="L169">			return true;</span>
+<span class="nc" id="L170">			return true;</span>
 		}
-<span class="nc bnc" id="L171" title="All 4 branches missed.">		if (statement instanceof IfStatement branch &amp;&amp; branch.getExpression() instanceof SimpleName name</span>
-<span class="nc bnc" id="L172" title="All 6 branches missed.">				&amp;&amp; name.resolveBinding() instanceof IVariableBinding flag &amp;&amp; flag.isParameter() &amp;&amp; flag.getType().isPrimitive()) {</span>
-<span class="nc bnc" id="L173" title="All 2 branches missed.">			return constructionStatements(branch.getThenStatement(), field, record, keyIndex, accessor, admitted, insertions)</span>
-<span class="nc bnc" id="L174" title="All 4 branches missed.">					&amp;&amp; (branch.getElseStatement() == null || constructionStatements(branch.getElseStatement(), field, record, keyIndex, accessor, admitted, insertions));</span>
+<span class="nc bnc" id="L172" title="All 4 branches missed.">		if (statement instanceof IfStatement branch &amp;&amp; branch.getExpression() instanceof SimpleName name</span>
+<span class="nc bnc" id="L173" title="All 6 branches missed.">				&amp;&amp; name.resolveBinding() instanceof IVariableBinding flag &amp;&amp; flag.isParameter() &amp;&amp; flag.getType().isPrimitive()) {</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">			return constructionStatements(branch.getThenStatement(), field, record, keyIndex, accessor, admitted, insertions)</span>
+<span class="nc bnc" id="L175" title="All 4 branches missed.">					&amp;&amp; (branch.getElseStatement() == null || constructionStatements(branch.getElseStatement(), field, record, keyIndex, accessor, admitted, insertions));</span>
 		}
-<span class="nc bnc" id="L176" title="All 4 branches missed.">		if (!(statement instanceof ExpressionStatement expr) || !(expr.getExpression() instanceof MethodInvocation add)</span>
-<span class="nc bnc" id="L177" title="All 4 branches missed.">				|| !(referenceName(add.getExpression()) instanceof SimpleName name) || !field.isEqualTo(name.resolveBinding())</span>
-<span class="nc bnc" id="L178" title="All 6 branches missed.">				|| add.resolveMethodBinding() == null || !&quot;add&quot;.equals(add.getName().getIdentifier()) || add.arguments().size() != 1 //$NON-NLS-1$</span>
-<span class="nc bnc" id="L179" title="All 4 branches missed.">				|| !(add.arguments().getFirst() instanceof ClassInstanceCreation row) || row.getAnonymousClassDeclaration() != null</span>
-<span class="nc bnc" id="L180" title="All 6 branches missed.">				|| !record.isEqualTo(row.resolveTypeBinding()) || row.resolveConstructorBinding() == null || row.arguments().size() &lt;= keyIndex) {</span>
-<span class="nc" id="L181">			return false;</span>
+<span class="nc bnc" id="L177" title="All 4 branches missed.">		if (!(statement instanceof ExpressionStatement expr) || !(expr.getExpression() instanceof MethodInvocation add)</span>
+<span class="nc bnc" id="L178" title="All 4 branches missed.">				|| !(referenceName(add.getExpression()) instanceof SimpleName name) || !field.isEqualTo(name.resolveBinding())</span>
+<span class="nc bnc" id="L179" title="All 6 branches missed.">				|| add.resolveMethodBinding() == null || !&quot;add&quot;.equals(add.getName().getIdentifier()) || add.arguments().size() != 1 //$NON-NLS-1$</span>
+<span class="nc bnc" id="L180" title="All 4 branches missed.">				|| !(add.arguments().getFirst() instanceof ClassInstanceCreation row) || row.getAnonymousClassDeclaration() != null</span>
+<span class="nc bnc" id="L181" title="All 6 branches missed.">				|| !record.isEqualTo(row.resolveTypeBinding()) || row.resolveConstructorBinding() == null || row.arguments().size() &lt;= keyIndex) {</span>
+<span class="nc" id="L182">			return false;</span>
 		}
-<span class="nc bnc" id="L183" title="All 2 branches missed.">		for (Object value : row.arguments()) {</span>
-<span class="nc bnc" id="L184" title="All 4 branches missed.">			if (!(value instanceof Expression argument) || !inertValue(argument)) {</span>
-<span class="nc" id="L185">				return false;</span>
+<span class="nc bnc" id="L184" title="All 2 branches missed.">		for (Object value : row.arguments()) {</span>
+<span class="nc bnc" id="L185" title="All 4 branches missed.">			if (!(value instanceof Expression argument) || !inertValue(argument)) {</span>
+<span class="nc" id="L186">				return false;</span>
 			}
 		}
-<span class="nc" id="L188">		admitted.add(name);</span>
-<span class="nc" id="L189">		Expression key= (Expression) row.arguments().get(keyIndex);</span>
-<span class="nc bnc" id="L190" title="All 4 branches missed.">		if (key.getNodeType() == ASTNode.STRING_LITERAL &amp;&amp; includesComments((CompilationUnit) add.getRoot(), statement)) {</span>
-<span class="nc" id="L191">			return false;</span>
+<span class="nc" id="L189">		admitted.add(name);</span>
+<span class="nc" id="L190">		Expression key= (Expression) row.arguments().get(keyIndex);</span>
+<span class="nc bnc" id="L191" title="All 4 branches missed.">		if (key.getNodeType() == ASTNode.STRING_LITERAL &amp;&amp; includesComments((CompilationUnit) add.getRoot(), statement)) {</span>
+<span class="nc" id="L192">			return false;</span>
 		}
-<span class="nc" id="L193">		insertions.add(new Insertion(add, key, accessor));</span>
-<span class="nc" id="L194">		return true;</span>
+<span class="nc" id="L194">		insertions.add(new Insertion(add, key, accessor));</span>
+<span class="nc" id="L195">		return true;</span>
 	}
 
 	private static boolean inertValue(Expression value) {
-<span class="nc bnc" id="L198" title="All 3 branches missed.">		return switch (value.getNodeType()) {</span>
+<span class="nc bnc" id="L199" title="All 3 branches missed.">		return switch (value.getNodeType()) {</span>
 			case ASTNode.NULL_LITERAL, ASTNode.STRING_LITERAL, ASTNode.NUMBER_LITERAL,
-<span class="nc" id="L200">					ASTNode.BOOLEAN_LITERAL, ASTNode.CHARACTER_LITERAL -&gt; true;</span>
-<span class="nc bnc" id="L201" title="All 4 branches missed.">			case ASTNode.SIMPLE_NAME -&gt; ((SimpleName) value).resolveBinding() instanceof IVariableBinding binding &amp;&amp; binding.isParameter();</span>
-<span class="nc" id="L202">			default -&gt; false;</span>
+<span class="nc" id="L201">					ASTNode.BOOLEAN_LITERAL, ASTNode.CHARACTER_LITERAL -&gt; true;</span>
+<span class="nc bnc" id="L202" title="All 4 branches missed.">			case ASTNode.SIMPLE_NAME -&gt; ((SimpleName) value).resolveBinding() instanceof IVariableBinding binding &amp;&amp; binding.isParameter();</span>
+<span class="nc" id="L203">			default -&gt; false;</span>
 		};
 	}
 
 	private static boolean allUsesAdmitted(CompilationUnit root, IVariableBinding field, Set&lt;ASTNode&gt; admitted) {
-<span class="nc" id="L207">		boolean[] safe= { true };</span>
-<span class="nc" id="L208">		root.accept(new ASTVisitor() {</span>
+<span class="nc" id="L208">		boolean[] safe= { true };</span>
+<span class="nc" id="L209">		root.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(MethodDeclaration method) {
-<span class="nc bnc" id="L211" title="All 2 branches missed.">				if (Modifier.isNative(method.getModifiers())) {</span>
-<span class="nc" id="L212">					safe[0]= false;</span>
+<span class="nc bnc" id="L212" title="All 2 branches missed.">				if (Modifier.isNative(method.getModifiers())) {</span>
+<span class="nc" id="L213">					safe[0]= false;</span>
 				}
-<span class="nc" id="L214">				return safe[0];</span>
+<span class="nc" id="L215">				return safe[0];</span>
 			}
 
 			@Override
 			public boolean visit(SimpleName name) {
-<span class="nc" id="L219">				var binding= name.resolveBinding();</span>
-<span class="nc bnc" id="L220" title="All 6 branches missed.">				if (binding instanceof IVariableBinding var &amp;&amp; field.isEqualTo(var) &amp;&amp; !admitted.contains(name)) {</span>
-<span class="nc" id="L221">					safe[0]= false;</span>
+<span class="nc" id="L220">				var binding= ImportNameBindings.resolve(name);</span>
+<span class="nc bnc" id="L221" title="All 6 branches missed.">				if (binding instanceof IVariableBinding var &amp;&amp; field.isEqualTo(var) &amp;&amp; !admitted.contains(name)) {</span>
+<span class="nc" id="L222">					safe[0]= false;</span>
 				}
-<span class="nc bnc" id="L223" title="All 4 branches missed.">				if (binding instanceof IMethodBinding method &amp;&amp; method.getDeclaringClass() != null) {</span>
-<span class="nc" id="L224">					String type= method.getDeclaringClass().getErasure().getQualifiedName();</span>
-<span class="nc bnc" id="L225" title="All 6 branches missed.">					if (&quot;java.lang.Class&quot;.equals(type) || type.startsWith(&quot;java.lang.reflect.&quot;) || type.startsWith(&quot;java.lang.invoke.&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
-<span class="nc" id="L226">						safe[0]= false;</span>
+<span class="nc bnc" id="L224" title="All 4 branches missed.">				if (binding instanceof IMethodBinding method &amp;&amp; method.getDeclaringClass() != null) {</span>
+<span class="nc" id="L225">					String type= method.getDeclaringClass().getErasure().getQualifiedName();</span>
+<span class="nc bnc" id="L226" title="All 6 branches missed.">					if (&quot;java.lang.Class&quot;.equals(type) || type.startsWith(&quot;java.lang.reflect.&quot;) || type.startsWith(&quot;java.lang.invoke.&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="nc" id="L227">						safe[0]= false;</span>
 					}
 				}
-<span class="nc" id="L229">				return safe[0];</span>
+<span class="nc" id="L230">				return safe[0];</span>
 			}
 		});
-<span class="nc" id="L232">		return safe[0];</span>
+<span class="nc" id="L233">		return safe[0];</span>
 	}
 
 	private static boolean includesComments(CompilationUnit root, ASTNode node) {
-<span class="nc" id="L236">		int start= root.getExtendedStartPosition(node);</span>
-<span class="nc" id="L237">		int end= start + root.getExtendedLength(node);</span>
-<span class="nc bnc" id="L238" title="All 2 branches missed.">		for (Object entry : root.getCommentList()) {</span>
-<span class="nc" id="L239">			var comment= (ASTNode) entry;</span>
-<span class="nc bnc" id="L240" title="All 4 branches missed.">			if (comment.getStartPosition() &lt; end &amp;&amp; start &lt; comment.getStartPosition() + comment.getLength()) {</span>
-<span class="nc" id="L241">				return true;</span>
+<span class="nc" id="L237">		int start= root.getExtendedStartPosition(node);</span>
+<span class="nc" id="L238">		int end= start + root.getExtendedLength(node);</span>
+<span class="nc bnc" id="L239" title="All 2 branches missed.">		for (Object entry : root.getCommentList()) {</span>
+<span class="nc" id="L240">			var comment= (ASTNode) entry;</span>
+<span class="nc bnc" id="L241" title="All 4 branches missed.">			if (comment.getStartPosition() &lt; end &amp;&amp; start &lt; comment.getStartPosition() + comment.getLength()) {</span>
+<span class="nc" id="L242">				return true;</span>
 			}
 		}
-<span class="nc" id="L244">		return false;</span>
+<span class="nc" id="L245">		return false;</span>
 	}
 
 	private static ASTNode referenceName(Expression expression) {
-<span class="nc bnc" id="L248" title="All 2 branches missed.">		if (expression instanceof FieldAccess field) {</span>
-<span class="nc" id="L249">			return field.getName();</span>
+<span class="nc bnc" id="L249" title="All 2 branches missed.">		if (expression instanceof FieldAccess field) {</span>
+<span class="nc" id="L250">			return field.getName();</span>
 		}
-<span class="nc" id="L251">		return expression;</span>
+<span class="nc" id="L252">		return expression;</span>
 	}
 
 	private static int componentIndex(RecordDeclaration record, String name) {
-<span class="nc bnc" id="L255" title="All 2 branches missed.">		for (int i= 0; i &lt; record.recordComponents().size(); i++) {</span>
-<span class="nc bnc" id="L256" title="All 2 branches missed.">			if (((SingleVariableDeclaration) record.recordComponents().get(i)).getName().getIdentifier().equals(name)) {</span>
-<span class="nc" id="L257">				return i;</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">		for (int i= 0; i &lt; record.recordComponents().size(); i++) {</span>
+<span class="nc bnc" id="L257" title="All 2 branches missed.">			if (((SingleVariableDeclaration) record.recordComponents().get(i)).getName().getIdentifier().equals(name)) {</span>
+<span class="nc" id="L258">				return i;</span>
 			}
 		}
-<span class="nc" id="L260">		return -1;</span>
+<span class="nc" id="L261">		return -1;</span>
 	}
 
 	private static Statement single(Statement statement) {
-<span class="nc bnc" id="L264" title="All 4 branches missed.">		return statement instanceof Block block &amp;&amp; block.statements().size() == 1 ? (Statement) block.statements().getFirst() : statement;</span>
+<span class="nc bnc" id="L265" title="All 4 branches missed.">		return statement instanceof Block block &amp;&amp; block.statements().size() == 1 ? (Statement) block.statements().getFirst() : statement;</span>
 	}
 
 	@Override
 	public void rewriteASTInternal(CompilationUnitRewrite cu, LinkedProposalModelCore model) {
-<span class="nc" id="L269">		var ast= cu.getRoot().getAST();</span>
-<span class="nc" id="L270">		var rewrite= cu.getASTRewrite();</span>
-<span class="nc" id="L271">		var group= createTextEditGroup(DESCRIPTION, cu);</span>
-<span class="nc" id="L272">		var imports= cu.getImportRewrite();</span>
-<span class="nc" id="L273">		var context= new ContextSensitiveImportRewriteContext(field, imports);</span>
-<span class="nc" id="L274">		var map= ast.newParameterizedType(ast.newSimpleType(ast.newName(imports.addImport(&quot;java.util.Map&quot;, context)))); //$NON-NLS-1$</span>
-<span class="nc" id="L275">		map.typeArguments().add(ast.newSimpleType(ast.newName(imports.addImport(&quot;java.lang.String&quot;, context)))); //$NON-NLS-1$</span>
-<span class="nc" id="L276">		map.typeArguments().add(ASTNode.copySubtree(ast, (Type) ((ParameterizedType) field.getType()).typeArguments().getFirst()));</span>
-<span class="nc" id="L277">		cu.getImportRemover().registerRemovedNode(((ParameterizedType) field.getType()).getType());</span>
-<span class="nc" id="L278">		rewrite.replace(field.getType(), map, group);</span>
-<span class="nc" id="L279">		var creation= ast.newClassInstanceCreation();</span>
-<span class="nc" id="L280">		creation.setType(ast.newParameterizedType(ast.newSimpleType(ast.newName(imports.addImport(&quot;java.util.LinkedHashMap&quot;, context))))); //$NON-NLS-1$</span>
-<span class="nc" id="L281">		cu.getImportRemover().registerRemovedNode(fragment.getInitializer());</span>
-<span class="nc" id="L282">		rewrite.replace(fragment.getInitializer(), creation, group);</span>
-<span class="nc bnc" id="L283" title="All 2 branches missed.">		for (var insertion : insertions) {</span>
-<span class="nc" id="L284">			var call= insertion.add();</span>
-<span class="nc bnc" id="L285" title="All 2 branches missed.">			if (insertion.key().getNodeType() == ASTNode.STRING_LITERAL) {</span>
-<span class="nc" id="L286">				insertRecordWithLiteralKey(cu, insertion, group);</span>
-<span class="nc" id="L287">				continue;</span>
+<span class="nc" id="L270">		var ast= cu.getRoot().getAST();</span>
+<span class="nc" id="L271">		var rewrite= cu.getASTRewrite();</span>
+<span class="nc" id="L272">		var group= createTextEditGroup(DESCRIPTION, cu);</span>
+<span class="nc" id="L273">		var imports= cu.getImportRewrite();</span>
+<span class="nc" id="L274">		var context= new ContextSensitiveImportRewriteContext(field, imports);</span>
+<span class="nc" id="L275">		var map= ast.newParameterizedType(ast.newSimpleType(ast.newName(imports.addImport(&quot;java.util.Map&quot;, context)))); //$NON-NLS-1$</span>
+<span class="nc" id="L276">		map.typeArguments().add(ast.newSimpleType(ast.newName(imports.addImport(&quot;java.lang.String&quot;, context)))); //$NON-NLS-1$</span>
+<span class="nc" id="L277">		map.typeArguments().add(ASTNode.copySubtree(ast, (Type) ((ParameterizedType) field.getType()).typeArguments().getFirst()));</span>
+<span class="nc" id="L278">		cu.getImportRemover().registerRemovedNode(((ParameterizedType) field.getType()).getType());</span>
+<span class="nc" id="L279">		rewrite.replace(field.getType(), map, group);</span>
+<span class="nc" id="L280">		var creation= ast.newClassInstanceCreation();</span>
+<span class="nc" id="L281">		creation.setType(ast.newParameterizedType(ast.newSimpleType(ast.newName(imports.addImport(&quot;java.util.LinkedHashMap&quot;, context))))); //$NON-NLS-1$</span>
+<span class="nc" id="L282">		cu.getImportRemover().registerRemovedNode(fragment.getInitializer());</span>
+<span class="nc" id="L283">		rewrite.replace(fragment.getInitializer(), creation, group);</span>
+<span class="nc bnc" id="L284" title="All 2 branches missed.">		for (var insertion : insertions) {</span>
+<span class="nc" id="L285">			var call= insertion.add();</span>
+<span class="nc bnc" id="L286" title="All 2 branches missed.">			if (insertion.key().getNodeType() == ASTNode.STRING_LITERAL) {</span>
+<span class="nc" id="L287">				insertRecordWithLiteralKey(cu, insertion, group);</span>
+<span class="nc" id="L288">				continue;</span>
 			}
-<span class="nc" id="L289">			rewrite.set(call, MethodInvocation.NAME_PROPERTY, ast.newSimpleName(&quot;putIfAbsent&quot;), group); //$NON-NLS-1$</span>
-<span class="nc" id="L290">			rewrite.getListRewrite(call, MethodInvocation.ARGUMENTS_PROPERTY).insertFirst(ASTNode.copySubtree(ast, insertion.key()), group);</span>
+<span class="nc" id="L290">			rewrite.set(call, MethodInvocation.NAME_PROPERTY, ast.newSimpleName(&quot;putIfAbsent&quot;), group); //$NON-NLS-1$</span>
+<span class="nc" id="L291">			rewrite.getListRewrite(call, MethodInvocation.ARGUMENTS_PROPERTY).insertFirst(ASTNode.copySubtree(ast, insertion.key()), group);</span>
 		}
-<span class="nc bnc" id="L292" title="All 2 branches missed.">		for (var scan : scans) {</span>
-<span class="nc" id="L293">			var fieldRead= scan.loop().getExpression();</span>
-<span class="nc" id="L294">			var lookup= ast.newMethodInvocation();</span>
-<span class="nc" id="L295">			lookup.setExpression((Expression) ASTNode.copySubtree(ast, fieldRead));</span>
-<span class="nc" id="L296">			lookup.setName(ast.newSimpleName(&quot;get&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L297">			var checked= ast.newMethodInvocation();</span>
-<span class="nc" id="L298">			checked.setExpression(ast.newName(imports.addImport(&quot;java.util.Objects&quot;, new ContextSensitiveImportRewriteContext(scan.loop(), imports)))); //$NON-NLS-1$</span>
-<span class="nc" id="L299">			checked.setName(ast.newSimpleName(&quot;requireNonNull&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L300">			checked.arguments().add(ASTNode.copySubtree(ast, scan.query()));</span>
-<span class="nc" id="L301">			lookup.arguments().add(checked);</span>
-<span class="nc" id="L302">			var empty= ast.newMethodInvocation();</span>
-<span class="nc" id="L303">			var qualifiedField= ast.newFieldAccess();</span>
-<span class="nc" id="L304">			qualifiedField.setExpression(ast.newThisExpression());</span>
-<span class="nc" id="L305">			qualifiedField.setName(ast.newSimpleName(fragment.getName().getIdentifier()));</span>
-<span class="nc" id="L306">			empty.setExpression(qualifiedField);</span>
-<span class="nc" id="L307">			empty.setName(ast.newSimpleName(&quot;isEmpty&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L308">			var guard= ast.newIfStatement();</span>
-<span class="nc" id="L309">			guard.setExpression(empty);</span>
-<span class="nc" id="L310">			var whenEmpty= ast.newReturnStatement();</span>
-<span class="nc" id="L311">			whenEmpty.setExpression(ast.newNullLiteral());</span>
-<span class="nc" id="L312">			guard.setThenStatement(whenEmpty);</span>
-<span class="nc" id="L313">			rewrite.replace(scan.loop(), guard, group);</span>
-<span class="nc" id="L314">			var body= (Block) scan.loop().getParent();</span>
-<span class="nc" id="L315">			rewrite.replace(((ReturnStatement) body.statements().getLast()).getExpression(), lookup, group);</span>
+<span class="nc bnc" id="L293" title="All 2 branches missed.">		for (var scan : scans) {</span>
+<span class="nc" id="L294">			var fieldRead= scan.loop().getExpression();</span>
+<span class="nc" id="L295">			var lookup= ast.newMethodInvocation();</span>
+<span class="nc" id="L296">			lookup.setExpression((Expression) ASTNode.copySubtree(ast, fieldRead));</span>
+<span class="nc" id="L297">			lookup.setName(ast.newSimpleName(&quot;get&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L298">			var checked= ast.newMethodInvocation();</span>
+<span class="nc" id="L299">			checked.setExpression(ast.newName(imports.addImport(&quot;java.util.Objects&quot;, new ContextSensitiveImportRewriteContext(scan.loop(), imports)))); //$NON-NLS-1$</span>
+<span class="nc" id="L300">			checked.setName(ast.newSimpleName(&quot;requireNonNull&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L301">			checked.arguments().add(ASTNode.copySubtree(ast, scan.query()));</span>
+<span class="nc" id="L302">			lookup.arguments().add(checked);</span>
+<span class="nc" id="L303">			var empty= ast.newMethodInvocation();</span>
+<span class="nc" id="L304">			var qualifiedField= ast.newFieldAccess();</span>
+<span class="nc" id="L305">			qualifiedField.setExpression(ast.newThisExpression());</span>
+<span class="nc" id="L306">			qualifiedField.setName(ast.newSimpleName(fragment.getName().getIdentifier()));</span>
+<span class="nc" id="L307">			empty.setExpression(qualifiedField);</span>
+<span class="nc" id="L308">			empty.setName(ast.newSimpleName(&quot;isEmpty&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L309">			var guard= ast.newIfStatement();</span>
+<span class="nc" id="L310">			guard.setExpression(empty);</span>
+<span class="nc" id="L311">			var whenEmpty= ast.newReturnStatement();</span>
+<span class="nc" id="L312">			whenEmpty.setExpression(ast.newNullLiteral());</span>
+<span class="nc" id="L313">			guard.setThenStatement(whenEmpty);</span>
+<span class="nc" id="L314">			rewrite.replace(scan.loop(), guard, group);</span>
+<span class="nc" id="L315">			var body= (Block) scan.loop().getParent();</span>
+<span class="nc" id="L316">			rewrite.replace(((ReturnStatement) body.statements().getLast()).getExpression(), lookup, group);</span>
 		}
-<span class="nc" id="L317">	}</span>
+<span class="nc" id="L318">	}</span>
 
 	/** Evaluates the record once and uses its generated accessor, retaining the single key literal. */
 	private void insertRecordWithLiteralKey(CompilationUnitRewrite cu, Insertion insertion, TextEditGroup group) {
-<span class="nc" id="L321">		var ast= cu.getRoot().getAST();</span>
-<span class="nc" id="L322">		var rewrite= cu.getASTRewrite();</span>
-<span class="nc" id="L323">		var call= insertion.add();</span>
-<span class="nc" id="L324">		var row= (ClassInstanceCreation) call.arguments().getFirst();</span>
-<span class="nc" id="L325">		var entry= ast.newVariableDeclarationFragment();</span>
-<span class="nc" id="L326">		var used= ASTNavigationUtils.getUsedVariableNames(call);</span>
-<span class="nc" id="L327">		String name= &quot;entry&quot;; //$NON-NLS-1$</span>
-<span class="nc bnc" id="L328" title="All 4 branches missed.">		for (int n= 2; used.contains(name) || name.equals(fragment.getName().getIdentifier()); n++) {</span>
-<span class="nc" id="L329">			name= &quot;entry&quot; + n; //$NON-NLS-1$</span>
+<span class="nc" id="L322">		var ast= cu.getRoot().getAST();</span>
+<span class="nc" id="L323">		var rewrite= cu.getASTRewrite();</span>
+<span class="nc" id="L324">		var call= insertion.add();</span>
+<span class="nc" id="L325">		var row= (ClassInstanceCreation) call.arguments().getFirst();</span>
+<span class="nc" id="L326">		var entry= ast.newVariableDeclarationFragment();</span>
+<span class="nc" id="L327">		var used= ASTNavigationUtils.getUsedVariableNames(call);</span>
+<span class="nc" id="L328">		String name= &quot;entry&quot;; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L329" title="All 4 branches missed.">		for (int n= 2; used.contains(name) || name.equals(fragment.getName().getIdentifier()); n++) {</span>
+<span class="nc" id="L330">			name= &quot;entry&quot; + n; //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L331">		entry.setName(ast.newSimpleName(name));</span>
-<span class="nc" id="L332">		entry.setInitializer((Expression) rewrite.createMoveTarget(row));</span>
-<span class="nc" id="L333">		var declaration= ast.newVariableDeclarationStatement(entry);</span>
-<span class="nc" id="L334">		declaration.setType((Type) ASTNode.copySubtree(ast, row.getType()));</span>
-<span class="nc" id="L335">		declaration.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.FINAL_KEYWORD));</span>
-<span class="nc" id="L336">		var key= ast.newMethodInvocation();</span>
-<span class="nc" id="L337">		key.setExpression(ast.newSimpleName(name));</span>
-<span class="nc" id="L338">		key.setName(ast.newSimpleName(insertion.accessor()));</span>
-<span class="nc" id="L339">		var put= ast.newMethodInvocation();</span>
-<span class="nc" id="L340">		put.setExpression((Expression) ASTNode.copySubtree(ast, call.getExpression()));</span>
-<span class="nc" id="L341">		put.setName(ast.newSimpleName(&quot;putIfAbsent&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L342">		put.arguments().add(key);</span>
-<span class="nc" id="L343">		put.arguments().add(ast.newSimpleName(name));</span>
-<span class="nc" id="L344">		var block= ast.newBlock();</span>
-<span class="nc" id="L345">		block.statements().add(declaration);</span>
-<span class="nc" id="L346">		block.statements().add(ast.newExpressionStatement(put));</span>
-<span class="nc" id="L347">		rewrite.replace(call.getParent(), block, group);</span>
-<span class="nc" id="L348">	}</span>
+<span class="nc" id="L332">		entry.setName(ast.newSimpleName(name));</span>
+<span class="nc" id="L333">		entry.setInitializer((Expression) rewrite.createMoveTarget(row));</span>
+<span class="nc" id="L334">		var declaration= ast.newVariableDeclarationStatement(entry);</span>
+<span class="nc" id="L335">		declaration.setType((Type) ASTNode.copySubtree(ast, row.getType()));</span>
+<span class="nc" id="L336">		declaration.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.FINAL_KEYWORD));</span>
+<span class="nc" id="L337">		var key= ast.newMethodInvocation();</span>
+<span class="nc" id="L338">		key.setExpression(ast.newSimpleName(name));</span>
+<span class="nc" id="L339">		key.setName(ast.newSimpleName(insertion.accessor()));</span>
+<span class="nc" id="L340">		var put= ast.newMethodInvocation();</span>
+<span class="nc" id="L341">		put.setExpression((Expression) ASTNode.copySubtree(ast, call.getExpression()));</span>
+<span class="nc" id="L342">		put.setName(ast.newSimpleName(&quot;putIfAbsent&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L343">		put.arguments().add(key);</span>
+<span class="nc" id="L344">		put.arguments().add(ast.newSimpleName(name));</span>
+<span class="nc" id="L345">		var block= ast.newBlock();</span>
+<span class="nc" id="L346">		block.statements().add(declaration);</span>
+<span class="nc" id="L347">		block.statements().add(ast.newExpressionStatement(put));</span>
+<span class="nc" id="L348">		rewrite.replace(call.getParent(), block, group);</span>
+<span class="nc" id="L349">	}</span>
 
 	@Override
 	public String getAdditionalInfo() {
-<span class="nc" id="L352">		return DESCRIPTION;</span>
+<span class="nc" id="L353">		return DESCRIPTION;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

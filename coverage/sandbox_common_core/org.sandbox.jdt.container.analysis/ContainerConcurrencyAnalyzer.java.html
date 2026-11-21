@@ -84,6 +84,7 @@ import org.sandbox.jdt.container.api.ContainerUsageProfile.UniquenessRequirement
 import org.sandbox.jdt.container.api.ContainerUsageProfile.WorkloadShape;
 import org.sandbox.jdt.container.api.TargetContainerContract.Mutability;
 import org.sandbox.jdt.container.api.TargetContainerContract;
+import org.sandbox.jdt.internal.common.ImportNameBindings;
 
 /** Binding-indexed field observations and closed, diagnostic-only FIFO and pending-work protocols. */
 public final class ContainerConcurrencyAnalyzer {
@@ -93,519 +94,519 @@ public final class ContainerConcurrencyAnalyzer {
 	private static final String SET= &quot;java.util.Set&quot;; //$NON-NLS-1$
 	private static final String STRING= &quot;java.lang.String&quot;; //$NON-NLS-1$
 
-<span class="fc" id="L96">	private static final Set&lt;String&gt; WRITE_METHODS= Set.of(&quot;add&quot;, &quot;addAll&quot;, &quot;remove&quot;, &quot;removeAll&quot;, &quot;retainAll&quot;, &quot;clear&quot;, &quot;set&quot;, &quot;put&quot;, &quot;offer&quot;, &quot;getAndSet&quot;, &quot;compareAndSet&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$ //$NON-NLS-10$ //$NON-NLS-11$</span>
-<span class="fc" id="L97">	private static final Set&lt;String&gt; READ_METHODS= Set.of(&quot;contains&quot;, &quot;containsAll&quot;, &quot;get&quot;, &quot;indexOf&quot;, &quot;lastIndexOf&quot;, &quot;isEmpty&quot;, &quot;size&quot;, &quot;toArray&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$</span>
+<span class="fc" id="L97">	private static final Set&lt;String&gt; WRITE_METHODS= Set.of(&quot;add&quot;, &quot;addAll&quot;, &quot;remove&quot;, &quot;removeAll&quot;, &quot;retainAll&quot;, &quot;clear&quot;, &quot;set&quot;, &quot;put&quot;, &quot;offer&quot;, &quot;getAndSet&quot;, &quot;compareAndSet&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$ //$NON-NLS-10$ //$NON-NLS-11$</span>
+<span class="fc" id="L98">	private static final Set&lt;String&gt; READ_METHODS= Set.of(&quot;contains&quot;, &quot;containsAll&quot;, &quot;get&quot;, &quot;indexOf&quot;, &quot;lastIndexOf&quot;, &quot;isEmpty&quot;, &quot;size&quot;, &quot;toArray&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$</span>
 
-<span class="fc" id="L99">	private record Field(VariableDeclarationFragment declaration, IVariableBinding binding, SynchronizationKind kind,</span>
+<span class="fc" id="L100">	private record Field(VariableDeclarationFragment declaration, IVariableBinding binding, SynchronizationKind kind,</span>
 			List&lt;SimpleName&gt; references) {}
-<span class="fc" id="L101">	private record Lock(String key, String label, SynchronizationKind kind) {}</span>
+<span class="fc" id="L102">	private record Lock(String key, String label, SynchronizationKind kind) {}</span>
 
 	/** Returns one assessment per field; every evidence range belongs to the supplied compilation unit. */
 	public static List&lt;ConcurrencyProtocolAssessment&gt; analyze(CompilationUnit root, Runnable checkCanceled) {
-<span class="fc" id="L105">		return analyze(root, checkCanceled, List.of());</span>
+<span class="fc" id="L106">		return analyze(root, checkCanceled, List.of());</span>
 	}
 
 	/** Omits observations already presented by the specialized drain, iteration and publication analyzers. */
 	public static List&lt;ConcurrencyProtocolAssessment&gt; analyze(CompilationUnit root, Runnable checkCanceled,
 			Collection&lt;? extends ConcurrencyProtocolAssessment&gt; prior) {
-<span class="fc" id="L111">		Map&lt;String, Field&gt; fields= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L112">		root.accept(new ASTVisitor() {</span>
+<span class="fc" id="L112">		Map&lt;String, Field&gt; fields= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L113">		root.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(FieldDeclaration member) {
-<span class="fc" id="L115">				checkCanceled.run();</span>
-<span class="fc bfc" id="L116" title="All 2 branches covered.">				for (Object raw : member.fragments()) {</span>
-<span class="fc" id="L117">					var variable= (VariableDeclarationFragment) raw;</span>
-<span class="fc" id="L118">					var binding= variable.resolveBinding();</span>
-<span class="pc bpc" id="L119" title="2 of 6 branches missed.">					if (binding != null &amp;&amp; !binding.isRecovered() &amp;&amp; binding.getKey() != null) {</span>
-<span class="fc" id="L120">						var kind= candidate(variable, binding);</span>
-<span class="fc bfc" id="L121" title="All 2 branches covered.">						if (kind != null) {</span>
-<span class="fc" id="L122">							fields.put(binding.getKey(), new Field(variable, binding, kind, new ArrayList&lt;&gt;()));</span>
+<span class="fc" id="L116">				checkCanceled.run();</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">				for (Object raw : member.fragments()) {</span>
+<span class="fc" id="L118">					var variable= (VariableDeclarationFragment) raw;</span>
+<span class="fc" id="L119">					var binding= variable.resolveBinding();</span>
+<span class="pc bpc" id="L120" title="2 of 6 branches missed.">					if (binding != null &amp;&amp; !binding.isRecovered() &amp;&amp; binding.getKey() != null) {</span>
+<span class="fc" id="L121">						var kind= candidate(variable, binding);</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">						if (kind != null) {</span>
+<span class="fc" id="L123">							fields.put(binding.getKey(), new Field(variable, binding, kind, new ArrayList&lt;&gt;()));</span>
 						}
 					}
-<span class="fc" id="L125">				}</span>
-<span class="fc" id="L126">				return true;</span>
+<span class="fc" id="L126">				}</span>
+<span class="fc" id="L127">				return true;</span>
 			}
 		});
-<span class="fc bfc" id="L129" title="All 2 branches covered.">		if (fields.isEmpty()) {</span>
-<span class="fc" id="L130">			return List.of();</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">		if (fields.isEmpty()) {</span>
+<span class="fc" id="L131">			return List.of();</span>
 		}
-<span class="fc" id="L132">		root.accept(new ASTVisitor() {</span>
+<span class="fc" id="L133">		root.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(MethodDeclaration method) {
-<span class="fc" id="L135">				checkCanceled.run();</span>
-<span class="fc" id="L136">				return true;</span>
+<span class="fc" id="L136">				checkCanceled.run();</span>
+<span class="fc" id="L137">				return true;</span>
 			}
 			@Override
 			public boolean visit(SimpleName name) {
-<span class="fc bfc" id="L140" title="All 6 branches covered.">				if (!name.isDeclaration() &amp;&amp; name.resolveBinding() instanceof IVariableBinding binding &amp;&amp; binding.isField()) {</span>
-<span class="fc" id="L141">					Field field= fields.get(binding.getVariableDeclaration().getKey());</span>
-<span class="fc bfc" id="L142" title="All 2 branches covered.">					if (field != null) {</span>
-<span class="fc" id="L143">						field.references().add(name);</span>
+<span class="fc bfc" id="L141" title="All 6 branches covered.">				if (!name.isDeclaration() &amp;&amp; ImportNameBindings.resolve(name) instanceof IVariableBinding binding &amp;&amp; binding.isField()) {</span>
+<span class="fc" id="L142">					Field field= fields.get(binding.getVariableDeclaration().getKey());</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">					if (field != null) {</span>
+<span class="fc" id="L144">						field.references().add(name);</span>
 					}
 				}
-<span class="fc" id="L146">				return true;</span>
+<span class="fc" id="L147">				return true;</span>
 			}
 		});
-<span class="fc" id="L149">		var output= new ArrayList&lt;ConcurrencyProtocolAssessment&gt;();</span>
-<span class="fc bfc" id="L150" title="All 6 branches covered.">		var membership= fields.values().stream().anyMatch(f -&gt; f.kind() == SynchronizationKind.SYNCHRONIZED_WRAPPER &amp;&amp; isType(f.binding().getType(), SET))</span>
-<span class="fc" id="L151">				? ConcurrentMembershipAnalyzer.analyze(root) : Map.&lt;String, ConcurrentMembershipAnalyzer.Field&gt;of();</span>
-<span class="pc bpc" id="L152" title="1 of 6 branches missed.">		var listeners= fields.values().stream().anyMatch(f -&gt; f.kind() == SynchronizationKind.NONE &amp;&amp; isType(f.binding().getType(), LIST)</span>
-<span class="pc bpc" id="L153" title="1 of 4 branches missed.">				&amp;&amp; f.binding().getType().getTypeArguments().length == 1 &amp;&amp; isType(f.binding().getType().getTypeArguments()[0], &quot;java.lang.Runnable&quot;)) //$NON-NLS-1$</span>
-<span class="fc" id="L154">				? ListenerSnapshotAnalyzer.analyze(root) : Map.&lt;String, ListenerSnapshotAnalyzer.Observed&gt;of();</span>
-<span class="fc bfc" id="L155" title="All 2 branches covered.">		for (Field field : fields.values()) {</span>
-<span class="fc" id="L156">			checkCanceled.run();</span>
-<span class="fc" id="L157">			var detected= assess(root, field, membership.get(field.binding().getKey()), listeners.get(field.binding().getKey()));</span>
-<span class="fc bfc" id="L158" title="All 2 branches covered.">			if (detected instanceof DiagnosticOnly diagnostic) {</span>
-<span class="fc" id="L159">				var existing= prior.stream().filter(report -&gt; report.protocol().identity().stableId().equals(field.binding().getKey())).toList();</span>
-<span class="fc bfc" id="L160" title="All 2 branches covered.">				if (existing.stream().anyMatch(RetainExistingLocking.class::isInstance)) {</span>
-<span class="fc" id="L161">					continue;</span>
+<span class="fc" id="L150">		var output= new ArrayList&lt;ConcurrencyProtocolAssessment&gt;();</span>
+<span class="fc bfc" id="L151" title="All 6 branches covered.">		var membership= fields.values().stream().anyMatch(f -&gt; f.kind() == SynchronizationKind.SYNCHRONIZED_WRAPPER &amp;&amp; isType(f.binding().getType(), SET))</span>
+<span class="fc" id="L152">				? ConcurrentMembershipAnalyzer.analyze(root) : Map.&lt;String, ConcurrentMembershipAnalyzer.Field&gt;of();</span>
+<span class="pc bpc" id="L153" title="1 of 6 branches missed.">		var listeners= fields.values().stream().anyMatch(f -&gt; f.kind() == SynchronizationKind.NONE &amp;&amp; isType(f.binding().getType(), LIST)</span>
+<span class="pc bpc" id="L154" title="1 of 4 branches missed.">				&amp;&amp; f.binding().getType().getTypeArguments().length == 1 &amp;&amp; isType(f.binding().getType().getTypeArguments()[0], &quot;java.lang.Runnable&quot;)) //$NON-NLS-1$</span>
+<span class="fc" id="L155">				? ListenerSnapshotAnalyzer.analyze(root) : Map.&lt;String, ListenerSnapshotAnalyzer.Observed&gt;of();</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">		for (Field field : fields.values()) {</span>
+<span class="fc" id="L157">			checkCanceled.run();</span>
+<span class="fc" id="L158">			var detected= assess(root, field, membership.get(field.binding().getKey()), listeners.get(field.binding().getKey()));</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">			if (detected instanceof DiagnosticOnly diagnostic) {</span>
+<span class="fc" id="L160">				var existing= prior.stream().filter(report -&gt; report.protocol().identity().stableId().equals(field.binding().getKey())).toList();</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">				if (existing.stream().anyMatch(RetainExistingLocking.class::isInstance)) {</span>
+<span class="fc" id="L162">					continue;</span>
 				}
-<span class="fc" id="L163">				var protocol= diagnostic.protocol();</span>
-<span class="fc" id="L164">				var unique= protocol.evidence().stream().filter(candidate -&gt; existing.stream().flatMap(report -&gt; report.protocol().evidence().stream())</span>
-<span class="fc bfc" id="L165" title="All 2 branches covered.">						.noneMatch(done -&gt; done.sourceStart() &lt;= candidate.sourceStart()</span>
-<span class="fc bfc" id="L166" title="All 2 branches covered.">								&amp;&amp; done.sourceStart() + done.sourceLength() &gt;= candidate.sourceStart() + candidate.sourceLength())).toList();</span>
-<span class="fc bfc" id="L167" title="All 2 branches covered.">				if (!unique.isEmpty()) {</span>
-<span class="fc" id="L168">					output.add(new DiagnosticOnly(new ConcurrencyProtocol(protocol.identity(), protocol.summary(), protocol.reentrancy(),</span>
-<span class="fc" id="L169">							protocol.completeness(), unique), diagnostic.severity(), diagnostic.explanations()));</span>
+<span class="fc" id="L164">				var protocol= diagnostic.protocol();</span>
+<span class="fc" id="L165">				var unique= protocol.evidence().stream().filter(candidate -&gt; existing.stream().flatMap(report -&gt; report.protocol().evidence().stream())</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">						.noneMatch(done -&gt; done.sourceStart() &lt;= candidate.sourceStart()</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">								&amp;&amp; done.sourceStart() + done.sourceLength() &gt;= candidate.sourceStart() + candidate.sourceLength())).toList();</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">				if (!unique.isEmpty()) {</span>
+<span class="fc" id="L169">					output.add(new DiagnosticOnly(new ConcurrencyProtocol(protocol.identity(), protocol.summary(), protocol.reentrancy(),</span>
+<span class="fc" id="L170">							protocol.completeness(), unique), diagnostic.severity(), diagnostic.explanations()));</span>
 				}
-<span class="fc bfc" id="L171" title="All 2 branches covered.">			} else if (detected != null) {</span>
-<span class="fc" id="L172">				output.add(detected);</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">			} else if (detected != null) {</span>
+<span class="fc" id="L173">				output.add(detected);</span>
 			}
-<span class="fc" id="L174">		}</span>
-<span class="fc" id="L175">		return List.copyOf(output);</span>
+<span class="fc" id="L175">		}</span>
+<span class="fc" id="L176">		return List.copyOf(output);</span>
 	}
 
 	private static SynchronizationKind candidate(VariableDeclarationFragment declaration, IVariableBinding binding) {
-<span class="fc" id="L179">		var type= binding.getType();</span>
-<span class="pc bpc" id="L180" title="2 of 6 branches missed.">		if (Modifier.isVolatile(binding.getModifiers()) &amp;&amp; type.isArray() &amp;&amp; !type.getElementType().isPrimitive()) {</span>
-<span class="fc" id="L181">			return SynchronizationKind.VOLATILE_SNAPSHOT;</span>
+<span class="fc" id="L180">		var type= binding.getType();</span>
+<span class="pc bpc" id="L181" title="2 of 6 branches missed.">		if (Modifier.isVolatile(binding.getModifiers()) &amp;&amp; type.isArray() &amp;&amp; !type.getElementType().isPrimitive()) {</span>
+<span class="fc" id="L182">			return SynchronizationKind.VOLATILE_SNAPSHOT;</span>
 		}
-<span class="pc bpc" id="L183" title="1 of 4 branches missed.">		if (isType(type, &quot;java.util.concurrent.atomic.AtomicReference&quot;) &amp;&amp; type.getTypeArguments().length == 1 //$NON-NLS-1$</span>
-<span class="pc bpc" id="L184" title="2 of 4 branches missed.">				&amp;&amp; (type.getTypeArguments()[0].isArray() || collection(type.getTypeArguments()[0]))) { //$NON-NLS-1$</span>
-<span class="fc" id="L185">			return SynchronizationKind.ATOMIC_REFERENCE;</span>
+<span class="pc bpc" id="L184" title="1 of 4 branches missed.">		if (isType(type, &quot;java.util.concurrent.atomic.AtomicReference&quot;) &amp;&amp; type.getTypeArguments().length == 1 //$NON-NLS-1$</span>
+<span class="pc bpc" id="L185" title="2 of 4 branches missed.">				&amp;&amp; (type.getTypeArguments()[0].isArray() || collection(type.getTypeArguments()[0]))) { //$NON-NLS-1$</span>
+<span class="fc" id="L186">			return SynchronizationKind.ATOMIC_REFERENCE;</span>
 		}
-<span class="pc bpc" id="L187" title="1 of 4 branches missed.">		if (type.getErasure().getQualifiedName().startsWith(&quot;java.util.concurrent.&quot;) &amp;&amp; !type.isFromSource() //$NON-NLS-1$</span>
-<span class="pc bpc" id="L188" title="1 of 2 branches missed.">				&amp;&amp; !type.getErasure().getQualifiedName().startsWith(&quot;java.util.concurrent.locks.&quot;)) { //$NON-NLS-1$</span>
-<span class="nc bnc" id="L189" title="All 2 branches missed.">			return collection(type) ? SynchronizationKind.CONCURRENT_COLLECTION : null;</span>
+<span class="pc bpc" id="L188" title="1 of 4 branches missed.">		if (type.getErasure().getQualifiedName().startsWith(&quot;java.util.concurrent.&quot;) &amp;&amp; !type.isFromSource() //$NON-NLS-1$</span>
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">				&amp;&amp; !type.getErasure().getQualifiedName().startsWith(&quot;java.util.concurrent.locks.&quot;)) { //$NON-NLS-1$</span>
+<span class="nc bnc" id="L190" title="All 2 branches missed.">			return collection(type) ? SynchronizationKind.CONCURRENT_COLLECTION : null;</span>
 		}
-<span class="pc bpc" id="L191" title="1 of 4 branches missed.">		if (declaration.getInitializer() instanceof MethodInvocation wrapper &amp;&amp; wrapper.resolveMethodBinding() != null</span>
-<span class="fc bfc" id="L192" title="All 2 branches covered.">				&amp;&amp; isType(wrapper.resolveMethodBinding().getDeclaringClass(), &quot;java.util.Collections&quot;) //$NON-NLS-1$</span>
-<span class="pc bpc" id="L193" title="1 of 2 branches missed.">				&amp;&amp; Set.of(&quot;synchronizedList&quot;, &quot;synchronizedSet&quot;, &quot;synchronizedMap&quot;).contains(wrapper.getName().getIdentifier())) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
-<span class="fc" id="L194">			return SynchronizationKind.SYNCHRONIZED_WRAPPER;</span>
+<span class="pc bpc" id="L192" title="1 of 4 branches missed.">		if (declaration.getInitializer() instanceof MethodInvocation wrapper &amp;&amp; wrapper.resolveMethodBinding() != null</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">				&amp;&amp; isType(wrapper.resolveMethodBinding().getDeclaringClass(), &quot;java.util.Collections&quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">				&amp;&amp; Set.of(&quot;synchronizedList&quot;, &quot;synchronizedSet&quot;, &quot;synchronizedMap&quot;).contains(wrapper.getName().getIdentifier())) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc" id="L195">			return SynchronizationKind.SYNCHRONIZED_WRAPPER;</span>
 		}
-<span class="fc bfc" id="L196" title="All 2 branches covered.">		return collection(type) ? SynchronizationKind.NONE : null;</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">		return collection(type) ? SynchronizationKind.NONE : null;</span>
 	}
 
 	private static boolean collection(ITypeBinding type) {
-<span class="pc bpc" id="L200" title="1 of 4 branches missed.">		if (type == null || type.isRecovered()) {</span>
-<span class="fc" id="L201">			return false;</span>
+<span class="pc bpc" id="L201" title="1 of 4 branches missed.">		if (type == null || type.isRecovered()) {</span>
+<span class="fc" id="L202">			return false;</span>
 		}
-<span class="pc bpc" id="L203" title="1 of 4 branches missed.">		if (isType(type, &quot;java.util.Collection&quot;) || isType(type, &quot;java.util.Map&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L204">			return true;</span>
+<span class="pc bpc" id="L204" title="1 of 4 branches missed.">		if (isType(type, &quot;java.util.Collection&quot;) || isType(type, &quot;java.util.Map&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L205">			return true;</span>
 		}
-<span class="pc bpc" id="L206" title="1 of 4 branches missed.">		return Arrays.stream(type.getInterfaces()).anyMatch(ContainerConcurrencyAnalyzer::collection) || collection(type.getSuperclass());</span>
+<span class="pc bpc" id="L207" title="1 of 4 branches missed.">		return Arrays.stream(type.getInterfaces()).anyMatch(ContainerConcurrencyAnalyzer::collection) || collection(type.getSuperclass());</span>
 	}
 
 	private static ConcurrencyProtocolAssessment assess(CompilationUnit root, Field field, ConcurrentMembershipAnalyzer.Field membership,
 			ListenerSnapshotAnalyzer.Observed listener) {
-<span class="fc" id="L211">		var evidence= new ArrayList&lt;Evidence&gt;();</span>
-<span class="fc" id="L212">		var uses= observeFieldUses(field, evidence);</span>
+<span class="fc" id="L212">		var evidence= new ArrayList&lt;Evidence&gt;();</span>
+<span class="fc" id="L213">		var uses= observeFieldUses(field, evidence);</span>
 
-<span class="pc bpc" id="L214" title="1 of 6 branches missed.">		if (evidence.isEmpty() || field.kind() == SynchronizationKind.NONE &amp;&amp; !uses.hasLock()) {</span>
-<span class="fc" id="L215">			return null;</span>
+<span class="pc bpc" id="L215" title="1 of 6 branches missed.">		if (evidence.isEmpty() || field.kind() == SynchronizationKind.NONE &amp;&amp; !uses.hasLock()) {</span>
+<span class="fc" id="L216">			return null;</span>
 		}
-<span class="fc bfc" id="L217" title="All 4 branches covered.">		var kind= field.kind() == SynchronizationKind.NONE ? (uses.explicit() ? SynchronizationKind.EXPLICIT_LOCK : SynchronizationKind.INTRINSIC_LOCK) : field.kind();</span>
-<span class="fc" id="L218">		var identity= new ContainerIdentity(field.binding().getKey(), field.binding().getName(), field.declaration().getName().getStartPosition(),</span>
-<span class="fc" id="L219">				field.declaration().getName().getLength());</span>
-<span class="fc bfc" id="L220" title="All 4 branches covered.">		if (field.kind() == SynchronizationKind.SYNCHRONIZED_WRAPPER &amp;&amp; uses.onlyLockedTraversal()</span>
-<span class="pc bpc" id="L221" title="1 of 2 branches missed.">				&amp;&amp; closedTraversal(root, field)) {</span>
-<span class="fc" id="L222">			var profile= new ConcurrencyProfile(ThreadExposure.UNKNOWN, kind, IterationSemantics.EXTERNALLY_LOCKED, AtomicityRequirement.TRANSACTION, WorkloadShape.UNKNOWN);</span>
-<span class="fc" id="L223">			return new RetainExistingLocking(new ConcurrencyProtocol(identity, profile, ReentrancyContract.NO_CALLBACKS_OBSERVED, AnalysisCompleteness.LOCAL_USAGE_COMPLETE, evidence),</span>
-<span class="pc bpc" id="L224" title="1 of 2 branches missed.">					List.of(uses.offered() ? &quot;All traversals hold the wrapper's own monitor. Individual appends acquire that monitor; no alias escapes and traversal invokes no callbacks.&quot; //$NON-NLS-1$</span>
-<span class="nc" id="L225">							: &quot;All traversals hold the wrapper's own monitor; the private backing collection has no escaping reference, mutation or callback.&quot;)); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L218" title="All 4 branches covered.">		var kind= field.kind() == SynchronizationKind.NONE ? (uses.explicit() ? SynchronizationKind.EXPLICIT_LOCK : SynchronizationKind.INTRINSIC_LOCK) : field.kind();</span>
+<span class="fc" id="L219">		var identity= new ContainerIdentity(field.binding().getKey(), field.binding().getName(), field.declaration().getName().getStartPosition(),</span>
+<span class="fc" id="L220">				field.declaration().getName().getLength());</span>
+<span class="fc bfc" id="L221" title="All 4 branches covered.">		if (field.kind() == SynchronizationKind.SYNCHRONIZED_WRAPPER &amp;&amp; uses.onlyLockedTraversal()</span>
+<span class="pc bpc" id="L222" title="1 of 2 branches missed.">				&amp;&amp; closedTraversal(root, field)) {</span>
+<span class="fc" id="L223">			var profile= new ConcurrencyProfile(ThreadExposure.UNKNOWN, kind, IterationSemantics.EXTERNALLY_LOCKED, AtomicityRequirement.TRANSACTION, WorkloadShape.UNKNOWN);</span>
+<span class="fc" id="L224">			return new RetainExistingLocking(new ConcurrencyProtocol(identity, profile, ReentrancyContract.NO_CALLBACKS_OBSERVED, AnalysisCompleteness.LOCAL_USAGE_COMPLETE, evidence),</span>
+<span class="pc bpc" id="L225" title="1 of 2 branches missed.">					List.of(uses.offered() ? &quot;All traversals hold the wrapper's own monitor. Individual appends acquire that monitor; no alias escapes and traversal invokes no callbacks.&quot; //$NON-NLS-1$</span>
+<span class="nc" id="L226">							: &quot;All traversals hold the wrapper's own monitor; the private backing collection has no escaping reference, mutation or callback.&quot;)); //$NON-NLS-1$</span>
 		}
-<span class="fc bfc" id="L227" title="All 4 branches covered.">		var callbacks= evidence.stream().anyMatch(e -&gt; e.kind() == EvidenceKind.CALLBACK_UNDER_LOCK) ? ReentrancyContract.CALLBACKS_UNDER_LOCK</span>
-<span class="fc bfc" id="L228" title="All 4 branches covered.">				: evidence.stream().anyMatch(e -&gt; e.kind() == EvidenceKind.CALLBACK_OUTSIDE_LOCK) ? ReentrancyContract.CALLBACKS_OUTSIDE_LOCK : ReentrancyContract.UNKNOWN;</span>
-<span class="fc" id="L229">		var strategy= uses.strategy();</span>
-<span class="fc bfc" id="L230" title="All 4 branches covered.">		if (strategy != null &amp;&amp; closedProtocol(root, field, strategy)) {</span>
-<span class="fc" id="L231">			return producerConsumerRecommendation(identity, kind, evidence, strategy);</span>
+<span class="fc bfc" id="L228" title="All 4 branches covered.">		var callbacks= evidence.stream().anyMatch(e -&gt; e.kind() == EvidenceKind.CALLBACK_UNDER_LOCK) ? ReentrancyContract.CALLBACKS_UNDER_LOCK</span>
+<span class="fc bfc" id="L229" title="All 4 branches covered.">				: evidence.stream().anyMatch(e -&gt; e.kind() == EvidenceKind.CALLBACK_OUTSIDE_LOCK) ? ReentrancyContract.CALLBACKS_OUTSIDE_LOCK : ReentrancyContract.UNKNOWN;</span>
+<span class="fc" id="L230">		var strategy= uses.strategy();</span>
+<span class="fc bfc" id="L231" title="All 4 branches covered.">		if (strategy != null &amp;&amp; closedProtocol(root, field, strategy)) {</span>
+<span class="fc" id="L232">			return producerConsumerRecommendation(identity, kind, evidence, strategy);</span>
 		}
-<span class="fc bfc" id="L233" title="All 8 branches covered.">		if ((membership != null &amp;&amp; membership.rejection().isEmpty()) || (listener != null &amp;&amp; listener.plan().rejection().isEmpty())) {</span>
-<span class="fc" id="L234">			return closedMigrationRecommendation(identity, kind, evidence, listener);</span>
+<span class="fc bfc" id="L234" title="All 8 branches covered.">		if ((membership != null &amp;&amp; membership.rejection().isEmpty()) || (listener != null &amp;&amp; listener.plan().rejection().isEmpty())) {</span>
+<span class="fc" id="L235">			return closedMigrationRecommendation(identity, kind, evidence, listener);</span>
 		}
 
-<span class="fc" id="L237">		String reason= &quot;Inspect lock identities across all accesses, snapshot ownership, callback reentrancy and external aliases. Preserve observable order, duplicate handling and null behavior. Frequency and external thread boundaries are unknown.&quot;; //$NON-NLS-1$</span>
-<span class="fc bfc" id="L238" title="All 2 branches covered.">		if (strategy != null) {</span>
-<span class="fc" id="L239">			reason= &quot;Verify the common monitor across check/remove or copy/clear, nonblocking behavior, producer arguments and all escapes before choosing a concurrent target.&quot;; //$NON-NLS-1$</span>
-<span class="fc" id="L240">			evidence.add(at(EvidenceKind.UNRESOLVED_BOUNDARY, &quot;&quot;, reason, field.declaration().getName())); //$NON-NLS-1$</span>
+<span class="fc" id="L238">		String reason= &quot;Inspect lock identities across all accesses, snapshot ownership, callback reentrancy and external aliases. Preserve observable order, duplicate handling and null behavior. Frequency and external thread boundaries are unknown.&quot;; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L239" title="All 2 branches covered.">		if (strategy != null) {</span>
+<span class="fc" id="L240">			reason= &quot;Verify the common monitor across check/remove or copy/clear, nonblocking behavior, producer arguments and all escapes before choosing a concurrent target.&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L241">			evidence.add(at(EvidenceKind.UNRESOLVED_BOUNDARY, &quot;&quot;, reason, field.declaration().getName())); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L242">		evidence.sort(Comparator.comparingInt(Evidence::sourceStart));</span>
-<span class="fc" id="L243">		var profile= new ConcurrencyProfile(ThreadExposure.UNKNOWN, kind, IterationSemantics.UNKNOWN,</span>
-<span class="fc bfc" id="L244" title="All 4 branches covered.">				strategy == null ? AtomicityRequirement.UNKNOWN : strategy == Strategy.CONCURRENT_QUEUE ? AtomicityRequirement.CHECK_THEN_ACT : AtomicityRequirement.DRAIN,</span>
+<span class="fc" id="L243">		evidence.sort(Comparator.comparingInt(Evidence::sourceStart));</span>
+<span class="fc" id="L244">		var profile= new ConcurrencyProfile(ThreadExposure.UNKNOWN, kind, IterationSemantics.UNKNOWN,</span>
+<span class="fc bfc" id="L245" title="All 4 branches covered.">				strategy == null ? AtomicityRequirement.UNKNOWN : strategy == Strategy.CONCURRENT_QUEUE ? AtomicityRequirement.CHECK_THEN_ACT : AtomicityRequirement.DRAIN,</span>
 				WorkloadShape.UNKNOWN);
-<span class="fc" id="L246">		return new DiagnosticOnly(new ConcurrencyProtocol(identity, profile, callbacks, AnalysisCompleteness.LOCAL_SEED, evidence),</span>
-<span class="fc" id="L247">				Severity.INFO, List.of(reason));</span>
+<span class="fc" id="L247">		return new DiagnosticOnly(new ConcurrencyProtocol(identity, profile, callbacks, AnalysisCompleteness.LOCAL_SEED, evidence),</span>
+<span class="fc" id="L248">				Severity.INFO, List.of(reason));</span>
 	}
 
-<span class="fc" id="L250">	private record FieldUses(boolean hasLock, boolean explicit, boolean onlyLockedTraversal, boolean offered, Strategy strategy) {}</span>
+<span class="fc" id="L251">	private record FieldUses(boolean hasLock, boolean explicit, boolean onlyLockedTraversal, boolean offered, Strategy strategy) {}</span>
 
 	private static FieldUses observeFieldUses(Field field, List&lt;Evidence&gt; evidence) {
-<span class="fc" id="L253">		boolean hasLock= false;</span>
-<span class="fc" id="L254">		boolean explicit= false;</span>
-<span class="fc" id="L255">		boolean fifo= false;</span>
-<span class="fc" id="L256">		boolean batch= isType(field.binding().getType(), SET);</span>
-<span class="fc" id="L257">		boolean hasClear= false;</span>
-<span class="fc" id="L258">		boolean traversed= false;</span>
-<span class="fc" id="L259">		boolean onlyLockedTraversal= true;</span>
-<span class="fc" id="L260">		boolean offered= false;</span>
-<span class="fc bfc" id="L261" title="All 2 branches covered.">		for (var name : field.references()) {</span>
-<span class="fc" id="L262">			Expression ref= reference(name);</span>
-<span class="fc" id="L263">			Lock lock= enclosingLock(ref);</span>
-<span class="fc bfc" id="L264" title="All 2 branches covered.">			hasLock |= lock != null;</span>
-<span class="fc bfc" id="L265" title="All 4 branches covered.">			explicit |= lock != null &amp;&amp; lock.kind() == SynchronizationKind.EXPLICIT_LOCK;</span>
-<span class="pc bpc" id="L266" title="1 of 4 branches missed.">			if (ref.getParent() instanceof SynchronizedStatement used &amp;&amp; used.getExpression() == ref) {</span>
-<span class="fc" id="L267">				continue;</span>
+<span class="fc" id="L254">		boolean hasLock= false;</span>
+<span class="fc" id="L255">		boolean explicit= false;</span>
+<span class="fc" id="L256">		boolean fifo= false;</span>
+<span class="fc" id="L257">		boolean batch= isType(field.binding().getType(), SET);</span>
+<span class="fc" id="L258">		boolean hasClear= false;</span>
+<span class="fc" id="L259">		boolean traversed= false;</span>
+<span class="fc" id="L260">		boolean onlyLockedTraversal= true;</span>
+<span class="fc" id="L261">		boolean offered= false;</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">		for (var name : field.references()) {</span>
+<span class="fc" id="L263">			Expression ref= reference(name);</span>
+<span class="fc" id="L264">			Lock lock= enclosingLock(ref);</span>
+<span class="fc bfc" id="L265" title="All 2 branches covered.">			hasLock |= lock != null;</span>
+<span class="fc bfc" id="L266" title="All 4 branches covered.">			explicit |= lock != null &amp;&amp; lock.kind() == SynchronizationKind.EXPLICIT_LOCK;</span>
+<span class="pc bpc" id="L267" title="1 of 4 branches missed.">			if (ref.getParent() instanceof SynchronizedStatement used &amp;&amp; used.getExpression() == ref) {</span>
+<span class="fc" id="L268">				continue;</span>
 			}
-<span class="fc bfc" id="L269" title="All 4 branches covered.">			boolean ownerLock= lock != null &amp;&amp; lock.key().equals(field.binding().getKey());</span>
-<span class="pc bpc" id="L270" title="1 of 4 branches missed.">			if (ref.getParent() instanceof EnhancedForStatement loop &amp;&amp; loop.getExpression() == ref) {</span>
-<span class="fc" id="L271">				traversed= true;</span>
-<span class="pc bpc" id="L272" title="1 of 4 branches missed.">				onlyLockedTraversal &amp;= ownerLock &amp;&amp; simpleTraversal(loop);</span>
-<span class="fc bfc" id="L273" title="All 6 branches covered.">			} else if (ref.getParent() instanceof MethodInvocation write &amp;&amp; write.getExpression() == ref &amp;&amp; plainAppend(write, field)) {</span>
-<span class="fc" id="L274">				offered= true;</span>
+<span class="fc bfc" id="L270" title="All 4 branches covered.">			boolean ownerLock= lock != null &amp;&amp; lock.key().equals(field.binding().getKey());</span>
+<span class="pc bpc" id="L271" title="1 of 4 branches missed.">			if (ref.getParent() instanceof EnhancedForStatement loop &amp;&amp; loop.getExpression() == ref) {</span>
+<span class="fc" id="L272">				traversed= true;</span>
+<span class="pc bpc" id="L273" title="1 of 4 branches missed.">				onlyLockedTraversal &amp;= ownerLock &amp;&amp; simpleTraversal(loop);</span>
+<span class="fc bfc" id="L274" title="All 6 branches covered.">			} else if (ref.getParent() instanceof MethodInvocation write &amp;&amp; write.getExpression() == ref &amp;&amp; plainAppend(write, field)) {</span>
+<span class="fc" id="L275">				offered= true;</span>
 			} else {
-<span class="fc" id="L276">				onlyLockedTraversal= false;</span>
+<span class="fc" id="L277">				onlyLockedTraversal= false;</span>
 			}
-<span class="fc bfc" id="L278" title="All 4 branches covered.">			if (ref.getParent() instanceof MethodInvocation op &amp;&amp; op.getExpression() == ref) {</span>
-<span class="fc" id="L279">				fifo |= frontRemove(op);</span>
-<span class="fc" id="L280">				hasClear |= &quot;clear&quot;.equals(op.getName().getIdentifier()); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L279" title="All 4 branches covered.">			if (ref.getParent() instanceof MethodInvocation op &amp;&amp; op.getExpression() == ref) {</span>
+<span class="fc" id="L280">				fifo |= frontRemove(op);</span>
+<span class="fc" id="L281">				hasClear |= &quot;clear&quot;.equals(op.getName().getIdentifier()); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L282">			observeAccess(field, ref, lock, evidence);</span>
-<span class="fc" id="L283">		}</span>
-<span class="fc bfc" id="L284" title="All 6 branches covered.">		var strategy= fifo ? Strategy.CONCURRENT_QUEUE : batch &amp;&amp; hasClear ? Strategy.PURPOSE_SPECIFIC_ABSTRACTION : null;</span>
-<span class="fc bfc" id="L285" title="All 4 branches covered.">		return new FieldUses(hasLock, explicit, traversed &amp;&amp; onlyLockedTraversal, offered, strategy);</span>
+<span class="fc" id="L283">			observeAccess(field, ref, lock, evidence);</span>
+<span class="fc" id="L284">		}</span>
+<span class="fc bfc" id="L285" title="All 6 branches covered.">		var strategy= fifo ? Strategy.CONCURRENT_QUEUE : batch &amp;&amp; hasClear ? Strategy.PURPOSE_SPECIFIC_ABSTRACTION : null;</span>
+<span class="fc bfc" id="L286" title="All 4 branches covered.">		return new FieldUses(hasLock, explicit, traversed &amp;&amp; onlyLockedTraversal, offered, strategy);</span>
 	}
 
 	private static RecommendedMigration producerConsumerRecommendation(ContainerIdentity identity, SynchronizationKind kind,
 			List&lt;Evidence&gt; evidence, Strategy strategy) {
-<span class="fc bfc" id="L290" title="All 2 branches covered.">		boolean queue= strategy == Strategy.CONCURRENT_QUEUE;</span>
-<span class="fc bfc" id="L291" title="All 2 branches covered.">		String reason= queue ? &quot;Non-null tail insertions and a single locked empty-test/head removal implement FIFO without waiting, aliases, callbacks or size-based synchronization. A poll-based queue preserves order and duplicates.&quot; //$NON-NLS-1$</span>
-<span class="fc" id="L292">				: &quot;An atomic drain must copy and clear under the same monitor. A project-local pending-work abstraction can preserve first registration order and uniqueness, including null; separate concurrent clear and iteration can lose offers.&quot;; //$NON-NLS-1$</span>
-<span class="fc" id="L293">		var profile= new ConcurrencyProfile(ThreadExposure.UNKNOWN, kind, IterationSemantics.EXTERNALLY_LOCKED,</span>
-<span class="fc bfc" id="L294" title="All 2 branches covered.">				queue ? AtomicityRequirement.CHECK_THEN_ACT : AtomicityRequirement.DRAIN, WorkloadShape.PRODUCER_CONSUMER);</span>
-<span class="fc" id="L295">		var protocol= new ConcurrencyProtocol(identity, profile, ReentrancyContract.NO_CALLBACKS_OBSERVED, AnalysisCompleteness.LOCAL_USAGE_COMPLETE, evidence);</span>
-<span class="fc bfc" id="L296" title="All 2 branches covered.">		var target= new TargetContainerContract(queue ? ContainerShape.DEQUE : ContainerShape.CUSTOM_BUFFER, OrderRequirement.ENCOUNTER,</span>
-<span class="fc bfc" id="L297" title="All 2 branches covered.">				queue ? UniquenessRequirement.DUPLICATES_ALLOWED : UniquenessRequirement.REQUIRED, Mutability.MUTABLE,</span>
-<span class="fc bfc" id="L298" title="All 2 branches covered.">				queue ? NullContract.REJECTED : NullContract.ALLOWED, reason);</span>
-<span class="fc" id="L299">		return new RecommendedMigration(protocol, target, strategy, Confidence.HIGH, List.of(reason));</span>
+<span class="fc bfc" id="L291" title="All 2 branches covered.">		boolean queue= strategy == Strategy.CONCURRENT_QUEUE;</span>
+<span class="fc bfc" id="L292" title="All 2 branches covered.">		String reason= queue ? &quot;Non-null tail insertions and a single locked empty-test/head removal implement FIFO without waiting, aliases, callbacks or size-based synchronization. A poll-based queue preserves order and duplicates.&quot; //$NON-NLS-1$</span>
+<span class="fc" id="L293">				: &quot;An atomic drain must copy and clear under the same monitor. A project-local pending-work abstraction can preserve first registration order and uniqueness, including null; separate concurrent clear and iteration can lose offers.&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L294">		var profile= new ConcurrencyProfile(ThreadExposure.UNKNOWN, kind, IterationSemantics.EXTERNALLY_LOCKED,</span>
+<span class="fc bfc" id="L295" title="All 2 branches covered.">				queue ? AtomicityRequirement.CHECK_THEN_ACT : AtomicityRequirement.DRAIN, WorkloadShape.PRODUCER_CONSUMER);</span>
+<span class="fc" id="L296">		var protocol= new ConcurrencyProtocol(identity, profile, ReentrancyContract.NO_CALLBACKS_OBSERVED, AnalysisCompleteness.LOCAL_USAGE_COMPLETE, evidence);</span>
+<span class="fc bfc" id="L297" title="All 2 branches covered.">		var target= new TargetContainerContract(queue ? ContainerShape.DEQUE : ContainerShape.CUSTOM_BUFFER, OrderRequirement.ENCOUNTER,</span>
+<span class="fc bfc" id="L298" title="All 2 branches covered.">				queue ? UniquenessRequirement.DUPLICATES_ALLOWED : UniquenessRequirement.REQUIRED, Mutability.MUTABLE,</span>
+<span class="fc bfc" id="L299" title="All 2 branches covered.">				queue ? NullContract.REJECTED : NullContract.ALLOWED, reason);</span>
+<span class="fc" id="L300">		return new RecommendedMigration(protocol, target, strategy, Confidence.HIGH, List.of(reason));</span>
 	}
 
 	private static RecommendedMigration closedMigrationRecommendation(ContainerIdentity identity, SynchronizationKind kind,
 			List&lt;Evidence&gt; evidence, ListenerSnapshotAnalyzer.Observed listener) {
-<span class="fc bfc" id="L304" title="All 2 branches covered.">		boolean registrations= listener != null;</span>
-<span class="fc bfc" id="L305" title="All 2 branches covered.">		if (registrations) {</span>
-<span class="fc bfc" id="L306" title="All 2 branches covered.">			for (var notification : listener.notifications()) {</span>
-<span class="fc" id="L307">				evidence.add(at(EvidenceKind.CALLBACK_OUTSIDE_LOCK, &quot;&quot;, &quot;Notification traverses the detached array outside the registration monitor.&quot;, notification.loop())); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L308">			}</span>
+<span class="fc bfc" id="L305" title="All 2 branches covered.">		boolean registrations= listener != null;</span>
+<span class="fc bfc" id="L306" title="All 2 branches covered.">		if (registrations) {</span>
+<span class="fc bfc" id="L307" title="All 2 branches covered.">			for (var notification : listener.notifications()) {</span>
+<span class="fc" id="L308">				evidence.add(at(EvidenceKind.CALLBACK_OUTSIDE_LOCK, &quot;&quot;, &quot;Notification traverses the detached array outside the registration monitor.&quot;, notification.loop())); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L309">			}</span>
 		}
-<span class="fc bfc" id="L310" title="All 2 branches covered.">		String proof= registrations</span>
-<span class="fc" id="L311">				? &quot;Registrations append under one monitor, including duplicates and null. Each notification copies the complete ordered registry before invoking callbacks outside the lock. Reentrant registration affects the next dispatch. Copy-on-write moves allocation to each registration; assess write frequency.&quot; //$NON-NLS-1$</span>
-<span class="fc" id="L312">				: &quot;Every reference is one non-null String membership operation. No external lock, compound check, iteration, callback, order observation or snapshot escapes. ConcurrentHashMap.newKeySet preserves the operation result and duplicate policy.&quot;; //$NON-NLS-1$</span>
-<span class="fc bfc" id="L313" title="All 2 branches covered.">		var profile= new ConcurrencyProfile(registrations ? ThreadExposure.CALLBACK_SHARED : ThreadExposure.UNKNOWN, kind,</span>
-<span class="fc bfc" id="L314" title="All 2 branches covered.">				registrations ? IterationSemantics.IMMUTABLE_SNAPSHOT : IterationSemantics.UNKNOWN, AtomicityRequirement.INDIVIDUAL_OPERATIONS, WorkloadShape.UNKNOWN);</span>
-<span class="fc bfc" id="L315" title="All 2 branches covered.">		var protocol= new ConcurrencyProtocol(identity, profile, registrations ? ReentrancyContract.CALLBACKS_OUTSIDE_LOCK : ReentrancyContract.NO_CALLBACKS_OBSERVED,</span>
+<span class="fc bfc" id="L311" title="All 2 branches covered.">		String proof= registrations</span>
+<span class="fc" id="L312">				? &quot;Registrations append under one monitor, including duplicates and null. Each notification copies the complete ordered registry before invoking callbacks outside the lock. Reentrant registration affects the next dispatch. Copy-on-write moves allocation to each registration; assess write frequency.&quot; //$NON-NLS-1$</span>
+<span class="fc" id="L313">				: &quot;Every reference is one non-null String membership operation. No external lock, compound check, iteration, callback, order observation or snapshot escapes. ConcurrentHashMap.newKeySet preserves the operation result and duplicate policy.&quot;; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L314" title="All 2 branches covered.">		var profile= new ConcurrencyProfile(registrations ? ThreadExposure.CALLBACK_SHARED : ThreadExposure.UNKNOWN, kind,</span>
+<span class="fc bfc" id="L315" title="All 2 branches covered.">				registrations ? IterationSemantics.IMMUTABLE_SNAPSHOT : IterationSemantics.UNKNOWN, AtomicityRequirement.INDIVIDUAL_OPERATIONS, WorkloadShape.UNKNOWN);</span>
+<span class="fc bfc" id="L316" title="All 2 branches covered.">		var protocol= new ConcurrencyProtocol(identity, profile, registrations ? ReentrancyContract.CALLBACKS_OUTSIDE_LOCK : ReentrancyContract.NO_CALLBACKS_OBSERVED,</span>
 				AnalysisCompleteness.LOCAL_USAGE_COMPLETE, evidence);
-<span class="fc bfc" id="L317" title="All 2 branches covered.">		var target= new TargetContainerContract(registrations ? ContainerShape.LIST : ContainerShape.SET,</span>
-<span class="fc bfc" id="L318" title="All 4 branches covered.">				registrations ? OrderRequirement.ENCOUNTER : OrderRequirement.NONE, registrations ? UniquenessRequirement.DUPLICATES_ALLOWED : UniquenessRequirement.REQUIRED,</span>
-<span class="fc bfc" id="L319" title="All 2 branches covered.">				Mutability.MUTABLE, registrations ? NullContract.ALLOWED : NullContract.REJECTED, proof);</span>
-<span class="fc bfc" id="L320" title="All 2 branches covered.">		return new RecommendedMigration(protocol, target, registrations ? Strategy.COPY_ON_WRITE_SEQUENCE : Strategy.CONCURRENT_MEMBERSHIP_SET, Confidence.HIGH, List.of(proof));</span>
+<span class="fc bfc" id="L318" title="All 2 branches covered.">		var target= new TargetContainerContract(registrations ? ContainerShape.LIST : ContainerShape.SET,</span>
+<span class="fc bfc" id="L319" title="All 4 branches covered.">				registrations ? OrderRequirement.ENCOUNTER : OrderRequirement.NONE, registrations ? UniquenessRequirement.DUPLICATES_ALLOWED : UniquenessRequirement.REQUIRED,</span>
+<span class="fc bfc" id="L320" title="All 2 branches covered.">				Mutability.MUTABLE, registrations ? NullContract.ALLOWED : NullContract.REJECTED, proof);</span>
+<span class="fc bfc" id="L321" title="All 2 branches covered.">		return new RecommendedMigration(protocol, target, registrations ? Strategy.COPY_ON_WRITE_SEQUENCE : Strategy.CONCURRENT_MEMBERSHIP_SET, Confidence.HIGH, List.of(proof));</span>
 	}
 
 	private static void observeAccess(Field field, Expression ref, Lock lock, List&lt;Evidence&gt; evidence) {
-<span class="fc bfc" id="L324" title="All 4 branches covered.">		if (ref.getParent() instanceof MethodInvocation op &amp;&amp; op.getExpression() == ref) {</span>
-<span class="fc" id="L325">			String method= op.getName().getIdentifier();</span>
-<span class="fc" id="L326">			var kind= classifyCall(op);</span>
-<span class="fc bfc" id="L327" title="All 2 branches covered.">			if (kind == EvidenceKind.UNRESOLVED_BOUNDARY) {</span>
-<span class="pc bpc" id="L328" title="1 of 2 branches missed.">				evidence.add(at(kind, lock == null ? &quot;&quot; : lock.key(), &quot;Iterator, stream, callback or unclassified operation needs a separate lifetime and locking proof.&quot;, op)); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc bfc" id="L329" title="All 4 branches covered.">			} else if (lock == null &amp;&amp; field.kind() == SynchronizationKind.SYNCHRONIZED_WRAPPER) {</span>
-<span class="fc" id="L330">				evidence.add(at(kind, field.binding().getKey(), &quot;The wrapper synchronizes the individual call to &quot; + method + &quot;.&quot;, op)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L325" title="All 4 branches covered.">		if (ref.getParent() instanceof MethodInvocation op &amp;&amp; op.getExpression() == ref) {</span>
+<span class="fc" id="L326">			String method= op.getName().getIdentifier();</span>
+<span class="fc" id="L327">			var kind= classifyCall(op);</span>
+<span class="fc bfc" id="L328" title="All 2 branches covered.">			if (kind == EvidenceKind.UNRESOLVED_BOUNDARY) {</span>
+<span class="pc bpc" id="L329" title="1 of 2 branches missed.">				evidence.add(at(kind, lock == null ? &quot;&quot; : lock.key(), &quot;Iterator, stream, callback or unclassified operation needs a separate lifetime and locking proof.&quot;, op)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L330" title="All 4 branches covered.">			} else if (lock == null &amp;&amp; field.kind() == SynchronizationKind.SYNCHRONIZED_WRAPPER) {</span>
+<span class="fc" id="L331">				evidence.add(at(kind, field.binding().getKey(), &quot;The wrapper synchronizes the individual call to &quot; + method + &quot;.&quot;, op)); //$NON-NLS-1$ //$NON-NLS-2$</span>
 			} else {
-<span class="fc" id="L332">				addAccess(evidence, lock, kind, &quot;Call to &quot; + method, op); //$NON-NLS-1$</span>
+<span class="fc" id="L333">				addAccess(evidence, lock, kind, &quot;Call to &quot; + method, op); //$NON-NLS-1$</span>
 			}
-<span class="pc bpc" id="L334" title="1 of 4 branches missed.">		} else if (ref.getParent() instanceof EnhancedForStatement loop &amp;&amp; loop.getExpression() == ref) {</span>
-<span class="fc" id="L335">			addAccess(evidence, lock, EvidenceKind.LOCKED_ITERATION, &quot;Encounter-order traversal&quot;, ref); //$NON-NLS-1$</span>
-<span class="fc" id="L336">			observeCallbacks(loop, evidence);</span>
-<span class="fc bfc" id="L337" title="All 2 branches covered.">		} else if (ref.getParent() instanceof ReturnStatement) {</span>
-<span class="fc" id="L338">			evidence.add(at(EvidenceKind.LIVE_WRAPPER_RETURN, &quot;&quot;, &quot;The field value escapes to its caller; inspect aliases and external mutation.&quot;, ref)); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="pc bpc" id="L339" title="1 of 4 branches missed.">		} else if (ref.getParent() instanceof Assignment write &amp;&amp; write.getLeftHandSide() == ref</span>
-<span class="pc bpc" id="L340" title="1 of 2 branches missed.">				&amp;&amp; field.kind() == SynchronizationKind.VOLATILE_SNAPSHOT) {</span>
-<span class="fc" id="L341">			evidence.add(at(EvidenceKind.SNAPSHOT_PUBLICATION, &quot;&quot;, &quot;Volatile replacement publishes the array reference. Verify ownership and later element writes.&quot;, write)); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="pc bpc" id="L342" title="1 of 4 branches missed.">		} else if (ref.getParent() instanceof ClassInstanceCreation copy &amp;&amp; copy.arguments().contains(ref)) {</span>
-<span class="fc" id="L343">			addAccess(evidence, lock, EvidenceKind.LOCKED_READ, &quot;Collection passed to the copy constructor&quot;, copy); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L335" title="1 of 4 branches missed.">		} else if (ref.getParent() instanceof EnhancedForStatement loop &amp;&amp; loop.getExpression() == ref) {</span>
+<span class="fc" id="L336">			addAccess(evidence, lock, EvidenceKind.LOCKED_ITERATION, &quot;Encounter-order traversal&quot;, ref); //$NON-NLS-1$</span>
+<span class="fc" id="L337">			observeCallbacks(loop, evidence);</span>
+<span class="fc bfc" id="L338" title="All 2 branches covered.">		} else if (ref.getParent() instanceof ReturnStatement) {</span>
+<span class="fc" id="L339">			evidence.add(at(EvidenceKind.LIVE_WRAPPER_RETURN, &quot;&quot;, &quot;The field value escapes to its caller; inspect aliases and external mutation.&quot;, ref)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L340" title="1 of 4 branches missed.">		} else if (ref.getParent() instanceof Assignment write &amp;&amp; write.getLeftHandSide() == ref</span>
+<span class="pc bpc" id="L341" title="1 of 2 branches missed.">				&amp;&amp; field.kind() == SynchronizationKind.VOLATILE_SNAPSHOT) {</span>
+<span class="fc" id="L342">			evidence.add(at(EvidenceKind.SNAPSHOT_PUBLICATION, &quot;&quot;, &quot;Volatile replacement publishes the array reference. Verify ownership and later element writes.&quot;, write)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L343" title="1 of 4 branches missed.">		} else if (ref.getParent() instanceof ClassInstanceCreation copy &amp;&amp; copy.arguments().contains(ref)) {</span>
+<span class="fc" id="L344">			addAccess(evidence, lock, EvidenceKind.LOCKED_READ, &quot;Collection passed to the copy constructor&quot;, copy); //$NON-NLS-1$</span>
 		} else {
-<span class="fc" id="L345">			evidence.add(at(EvidenceKind.UNRESOLVED_BOUNDARY, &quot;&quot;, &quot;Inspect this alias, callback or published value before changing its protocol.&quot;, ref)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L346">			evidence.add(at(EvidenceKind.UNRESOLVED_BOUNDARY, &quot;&quot;, &quot;Inspect this alias, callback or published value before changing its protocol.&quot;, ref)); //$NON-NLS-1$ //$NON-NLS-2$</span>
 		}
-<span class="fc" id="L347">	}</span>
+<span class="fc" id="L348">	}</span>
 
 	private static boolean closedTraversal(CompilationUnit root, Field field) {
-<span class="pc bpc" id="L350" title="2 of 4 branches missed.">		return Modifier.isPrivate(field.binding().getModifiers()) &amp;&amp; Modifier.isFinal(field.binding().getModifiers())</span>
-<span class="pc bpc" id="L351" title="2 of 4 branches missed.">				&amp;&amp; field.declaration().getParent().getParent() instanceof TypeDeclaration owner &amp;&amp; Modifier.isFinal(owner.getModifiers())</span>
-<span class="pc bpc" id="L352" title="2 of 4 branches missed.">				&amp;&amp; closedOwner(root, field, owner) &amp;&amp; field.declaration().getInitializer() instanceof MethodInvocation wrapper</span>
-<span class="pc bpc" id="L353" title="2 of 4 branches missed.">				&amp;&amp; wrapper.arguments().size() == 1 &amp;&amp; wrapper.arguments().getFirst() instanceof ClassInstanceCreation fresh</span>
-<span class="pc bpc" id="L354" title="3 of 6 branches missed.">				&amp;&amp; fresh.getAnonymousClassDeclaration() == null &amp;&amp; fresh.arguments().isEmpty() &amp;&amp; isType(fresh.resolveTypeBinding(), &quot;java.util.ArrayList&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L351" title="2 of 4 branches missed.">		return Modifier.isPrivate(field.binding().getModifiers()) &amp;&amp; Modifier.isFinal(field.binding().getModifiers())</span>
+<span class="pc bpc" id="L352" title="2 of 4 branches missed.">				&amp;&amp; field.declaration().getParent().getParent() instanceof TypeDeclaration owner &amp;&amp; Modifier.isFinal(owner.getModifiers())</span>
+<span class="pc bpc" id="L353" title="2 of 4 branches missed.">				&amp;&amp; closedOwner(root, field, owner) &amp;&amp; field.declaration().getInitializer() instanceof MethodInvocation wrapper</span>
+<span class="pc bpc" id="L354" title="2 of 4 branches missed.">				&amp;&amp; wrapper.arguments().size() == 1 &amp;&amp; wrapper.arguments().getFirst() instanceof ClassInstanceCreation fresh</span>
+<span class="pc bpc" id="L355" title="3 of 6 branches missed.">				&amp;&amp; fresh.getAnonymousClassDeclaration() == null &amp;&amp; fresh.arguments().isEmpty() &amp;&amp; isType(fresh.resolveTypeBinding(), &quot;java.util.ArrayList&quot;); //$NON-NLS-1$</span>
 	}
 
 	private static boolean plainAppend(MethodInvocation write, Field field) {
-<span class="pc bpc" id="L358" title="1 of 4 branches missed.">		return &quot;add&quot;.equals(write.getName().getIdentifier()) &amp;&amp; write.arguments().size() == 1 //$NON-NLS-1$</span>
-<span class="pc bpc" id="L359" title="1 of 4 branches missed.">				&amp;&amp; write.resolveMethodBinding() != null &amp;&amp; isType(write.resolveMethodBinding().getDeclaringClass(), LIST)</span>
-<span class="pc bpc" id="L360" title="1 of 4 branches missed.">				&amp;&amp; write.getParent() instanceof ExpressionStatement statement &amp;&amp; statement.getParent() instanceof Block body</span>
-<span class="fc bfc" id="L361" title="All 4 branches covered.">				&amp;&amp; body.statements().size() == 1 &amp;&amp; body.getParent() instanceof MethodDeclaration method</span>
-<span class="pc bpc" id="L362" title="1 of 2 branches missed.">				&amp;&amp; method.getParent() == field.declaration().getParent().getParent()</span>
-<span class="fc bfc" id="L363" title="All 2 branches covered.">				&amp;&amp; validProducer(method, (Expression) write.arguments().getFirst(), Strategy.PURPOSE_SPECIFIC_ABSTRACTION);</span>
+<span class="pc bpc" id="L359" title="1 of 4 branches missed.">		return &quot;add&quot;.equals(write.getName().getIdentifier()) &amp;&amp; write.arguments().size() == 1 //$NON-NLS-1$</span>
+<span class="pc bpc" id="L360" title="1 of 4 branches missed.">				&amp;&amp; write.resolveMethodBinding() != null &amp;&amp; isType(write.resolveMethodBinding().getDeclaringClass(), LIST)</span>
+<span class="pc bpc" id="L361" title="1 of 4 branches missed.">				&amp;&amp; write.getParent() instanceof ExpressionStatement statement &amp;&amp; statement.getParent() instanceof Block body</span>
+<span class="fc bfc" id="L362" title="All 4 branches covered.">				&amp;&amp; body.statements().size() == 1 &amp;&amp; body.getParent() instanceof MethodDeclaration method</span>
+<span class="pc bpc" id="L363" title="1 of 2 branches missed.">				&amp;&amp; method.getParent() == field.declaration().getParent().getParent()</span>
+<span class="fc bfc" id="L364" title="All 2 branches covered.">				&amp;&amp; validProducer(method, (Expression) write.arguments().getFirst(), Strategy.PURPOSE_SPECIFIC_ABSTRACTION);</span>
 	}
 
 	private static boolean simpleTraversal(EnhancedForStatement loop) {
 		// Calls can execute arbitrary code even when their body contains no collection reference.
-<span class="fc" id="L368">		boolean[] simple= {true};</span>
-<span class="fc" id="L369">		loop.getBody().accept(new ASTVisitor() {</span>
+<span class="fc" id="L369">		boolean[] simple= {true};</span>
+<span class="fc" id="L370">		loop.getBody().accept(new ASTVisitor() {</span>
 			@Override
 			public boolean preVisit2(ASTNode node) {
-<span class="pc bpc" id="L372" title="2 of 10 branches missed.">				if (!(node instanceof Block || node instanceof EmptyStatement || node instanceof ExpressionStatement</span>
-<span class="pc bpc" id="L373" title="1 of 2 branches missed.">						|| node instanceof PostfixExpression || node instanceof SimpleName name &amp;&amp; name.resolveBinding() instanceof IVariableBinding variable</span>
-<span class="pc bpc" id="L374" title="2 of 4 branches missed.">								&amp;&amp; !variable.isField() &amp;&amp; variable.getType().isPrimitive())) {</span>
-<span class="nc" id="L375">					simple[0]= false;</span>
+<span class="pc bpc" id="L373" title="2 of 10 branches missed.">				if (!(node instanceof Block || node instanceof EmptyStatement || node instanceof ExpressionStatement</span>
+<span class="pc bpc" id="L374" title="1 of 2 branches missed.">						|| node instanceof PostfixExpression || node instanceof SimpleName name &amp;&amp; name.resolveBinding() instanceof IVariableBinding variable</span>
+<span class="pc bpc" id="L375" title="2 of 4 branches missed.">								&amp;&amp; !variable.isField() &amp;&amp; variable.getType().isPrimitive())) {</span>
+<span class="nc" id="L376">					simple[0]= false;</span>
 				}
-<span class="fc" id="L377">				return simple[0];</span>
+<span class="fc" id="L378">				return simple[0];</span>
 			}
 		});
-<span class="fc" id="L380">		return simple[0];</span>
+<span class="fc" id="L381">		return simple[0];</span>
 	}
 
 	private static EvidenceKind classifyCall(MethodInvocation call) {
-<span class="fc" id="L384">		var method= call.resolveMethodBinding();</span>
-<span class="pc bpc" id="L385" title="3 of 6 branches missed.">		if (method == null || method.isRecovered() || method.getMethodDeclaration().getDeclaringClass().isFromSource()) {</span>
-<span class="nc" id="L386">			return EvidenceKind.UNRESOLVED_BOUNDARY;</span>
+<span class="fc" id="L385">		var method= call.resolveMethodBinding();</span>
+<span class="pc bpc" id="L386" title="3 of 6 branches missed.">		if (method == null || method.isRecovered() || method.getMethodDeclaration().getDeclaringClass().isFromSource()) {</span>
+<span class="nc" id="L387">			return EvidenceKind.UNRESOLVED_BOUNDARY;</span>
 		}
-<span class="fc" id="L388">		String name= method.getName();</span>
-<span class="fc bfc" id="L389" title="All 2 branches covered.">		if (WRITE_METHODS.contains(name)) {</span>
-<span class="fc" id="L390">			return EvidenceKind.LOCKED_WRITE;</span>
+<span class="fc" id="L389">		String name= method.getName();</span>
+<span class="fc bfc" id="L390" title="All 2 branches covered.">		if (WRITE_METHODS.contains(name)) {</span>
+<span class="fc" id="L391">			return EvidenceKind.LOCKED_WRITE;</span>
 		}
-<span class="fc bfc" id="L392" title="All 2 branches covered.">		return READ_METHODS.contains(name) ? EvidenceKind.LOCKED_READ : EvidenceKind.UNRESOLVED_BOUNDARY;</span>
+<span class="fc bfc" id="L393" title="All 2 branches covered.">		return READ_METHODS.contains(name) ? EvidenceKind.LOCKED_READ : EvidenceKind.UNRESOLVED_BOUNDARY;</span>
 	}
 
 	private static boolean frontRemove(MethodInvocation op) {
-<span class="pc bpc" id="L396" title="1 of 4 branches missed.">		return &quot;remove&quot;.equals(op.getName().getIdentifier()) &amp;&amp; op.arguments().size() == 1 //$NON-NLS-1$</span>
-<span class="pc bpc" id="L397" title="2 of 4 branches missed.">				&amp;&amp; op.arguments().getFirst() instanceof NumberLiteral zero &amp;&amp; &quot;0&quot;.equals(zero.getToken()) //$NON-NLS-1$</span>
-<span class="pc bpc" id="L398" title="2 of 4 branches missed.">				&amp;&amp; op.resolveMethodBinding() != null &amp;&amp; isType(op.resolveMethodBinding().getDeclaringClass(), LIST)</span>
-<span class="pc bpc" id="L399" title="1 of 2 branches missed.">				&amp;&amp; op.resolveMethodBinding().getParameterTypes()[0].isPrimitive();</span>
+<span class="pc bpc" id="L397" title="1 of 4 branches missed.">		return &quot;remove&quot;.equals(op.getName().getIdentifier()) &amp;&amp; op.arguments().size() == 1 //$NON-NLS-1$</span>
+<span class="pc bpc" id="L398" title="2 of 4 branches missed.">				&amp;&amp; op.arguments().getFirst() instanceof NumberLiteral zero &amp;&amp; &quot;0&quot;.equals(zero.getToken()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L399" title="2 of 4 branches missed.">				&amp;&amp; op.resolveMethodBinding() != null &amp;&amp; isType(op.resolveMethodBinding().getDeclaringClass(), LIST)</span>
+<span class="pc bpc" id="L400" title="1 of 2 branches missed.">				&amp;&amp; op.resolveMethodBinding().getParameterTypes()[0].isPrimitive();</span>
 	}
 
 	private static Expression reference(SimpleName name) {
-<span class="pc bpc" id="L403" title="1 of 4 branches missed.">		if (name.getParent() instanceof FieldAccess access &amp;&amp; access.getName() == name) {</span>
-<span class="fc" id="L404">			return access;</span>
+<span class="pc bpc" id="L404" title="1 of 4 branches missed.">		if (name.getParent() instanceof FieldAccess access &amp;&amp; access.getName() == name) {</span>
+<span class="fc" id="L405">			return access;</span>
 		}
-<span class="pc bpc" id="L406" title="1 of 4 branches missed.">		if (name.getParent() instanceof QualifiedName qualified &amp;&amp; qualified.getName() == name) {</span>
-<span class="nc" id="L407">			return qualified;</span>
+<span class="pc bpc" id="L407" title="1 of 4 branches missed.">		if (name.getParent() instanceof QualifiedName qualified &amp;&amp; qualified.getName() == name) {</span>
+<span class="nc" id="L408">			return qualified;</span>
 		}
-<span class="fc" id="L409">		return name;</span>
+<span class="fc" id="L410">		return name;</span>
 	}
 
 	private static void addAccess(List&lt;Evidence&gt; evidence, Lock lock, EvidenceKind lockedKind, String action, ASTNode site) {
-<span class="fc bfc" id="L413" title="All 2 branches covered.">		evidence.add(lock == null</span>
-<span class="fc" id="L414">				? at(EvidenceKind.UNRESOLVED_BOUNDARY, &quot;&quot;, action + &quot; without a proven enclosing lock. Verify publication and access semantics.&quot;, site) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L415">				: at(lockedKind, lock.key(), action + &quot; under &quot; + lock.label() + &quot;.&quot;, site)); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L416">	}</span>
+<span class="fc bfc" id="L414" title="All 2 branches covered.">		evidence.add(lock == null</span>
+<span class="fc" id="L415">				? at(EvidenceKind.UNRESOLVED_BOUNDARY, &quot;&quot;, action + &quot; without a proven enclosing lock. Verify publication and access semantics.&quot;, site) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L416">				: at(lockedKind, lock.key(), action + &quot; under &quot; + lock.label() + &quot;.&quot;, site)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L417">	}</span>
 
 	private static Evidence at(EvidenceKind kind, String key, String message, ASTNode node) {
-<span class="fc" id="L419">		return new Evidence(kind, key, message, node.getStartPosition(), node.getLength());</span>
+<span class="fc" id="L420">		return new Evidence(kind, key, message, node.getStartPosition(), node.getLength());</span>
 	}
 
 	private static void observeCallbacks(EnhancedForStatement loop, List&lt;Evidence&gt; evidence) {
-<span class="fc" id="L423">		var element= loop.getParameter().resolveBinding();</span>
-<span class="fc" id="L424">		loop.getBody().accept(new ASTVisitor() {</span>
+<span class="fc" id="L424">		var element= loop.getParameter().resolveBinding();</span>
+<span class="fc" id="L425">		loop.getBody().accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(MethodInvocation call) {
-<span class="pc bpc" id="L427" title="1 of 4 branches missed.">				if (element != null &amp;&amp; variableBinding(call.getExpression()).filter(element::isEqualTo).isPresent()) {</span>
-<span class="fc" id="L428">					var lock= enclosingLock(call);</span>
-<span class="fc bfc" id="L429" title="All 2 branches covered.">					evidence.add(at(lock == null ? EvidenceKind.CALLBACK_OUTSIDE_LOCK : EvidenceKind.CALLBACK_UNDER_LOCK,</span>
-<span class="fc bfc" id="L430" title="All 4 branches covered.">							lock == null ? &quot;&quot; : lock.key(), &quot;Element callback under &quot; + (lock == null ? &quot;no proven monitor&quot; : lock.label()) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="pc bpc" id="L428" title="1 of 4 branches missed.">				if (element != null &amp;&amp; variableBinding(call.getExpression()).filter(element::isEqualTo).isPresent()) {</span>
+<span class="fc" id="L429">					var lock= enclosingLock(call);</span>
+<span class="fc bfc" id="L430" title="All 2 branches covered.">					evidence.add(at(lock == null ? EvidenceKind.CALLBACK_OUTSIDE_LOCK : EvidenceKind.CALLBACK_UNDER_LOCK,</span>
+<span class="fc bfc" id="L431" title="All 4 branches covered.">							lock == null ? &quot;&quot; : lock.key(), &quot;Element callback under &quot; + (lock == null ? &quot;no proven monitor&quot; : lock.label()) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
 									+ &quot;. Inspect whether registration can change reentrantly.&quot;, call)); //$NON-NLS-1$
 				}
-<span class="fc" id="L433">				return true;</span>
+<span class="fc" id="L434">				return true;</span>
 			}
 		});
-<span class="fc" id="L436">	}</span>
+<span class="fc" id="L437">	}</span>
 
 	private static Lock enclosingLock(ASTNode site) {
-<span class="pc bpc" id="L439" title="1 of 2 branches missed.">		for (ASTNode parent= site.getParent(); parent != null; parent= parent.getParent()) {</span>
-<span class="fc bfc" id="L440" title="All 4 branches covered.">			if (parent instanceof SynchronizedStatement monitor &amp;&amp; !inside(site, monitor.getExpression())) {</span>
-<span class="fc" id="L441">				return lock(monitor.getExpression(), SynchronizationKind.INTRINSIC_LOCK);</span>
+<span class="pc bpc" id="L440" title="1 of 2 branches missed.">		for (ASTNode parent= site.getParent(); parent != null; parent= parent.getParent()) {</span>
+<span class="fc bfc" id="L441" title="All 4 branches covered.">			if (parent instanceof SynchronizedStatement monitor &amp;&amp; !inside(site, monitor.getExpression())) {</span>
+<span class="fc" id="L442">				return lock(monitor.getExpression(), SynchronizationKind.INTRINSIC_LOCK);</span>
 			}
-<span class="pc bpc" id="L443" title="1 of 4 branches missed.">			if (parent instanceof TryStatement attempt &amp;&amp; inside(site, attempt.getBody())) {</span>
-<span class="fc" id="L444">				Lock guard= explicitLock(attempt);</span>
-<span class="fc bfc" id="L445" title="All 2 branches covered.">				if (guard != null) {</span>
-<span class="fc" id="L446">					return guard;</span>
+<span class="pc bpc" id="L444" title="1 of 4 branches missed.">			if (parent instanceof TryStatement attempt &amp;&amp; inside(site, attempt.getBody())) {</span>
+<span class="fc" id="L445">				Lock guard= explicitLock(attempt);</span>
+<span class="fc bfc" id="L446" title="All 2 branches covered.">				if (guard != null) {</span>
+<span class="fc" id="L447">					return guard;</span>
 				}
 			}
-<span class="fc bfc" id="L449" title="All 2 branches covered.">			if (parent instanceof MethodDeclaration method) {</span>
-<span class="pc bpc" id="L450" title="3 of 4 branches missed.">				if (Modifier.isSynchronized(method.getModifiers()) &amp;&amp; method.resolveBinding() != null) {</span>
-<span class="nc" id="L451">					var owner= method.resolveBinding().getDeclaringClass();</span>
-<span class="nc" id="L452">					boolean statik= Modifier.isStatic(method.getModifiers());</span>
-<span class="nc bnc" id="L453" title="All 4 branches missed.">					return new Lock(owner.getKey() + (statik ? &quot;.class&quot; : &quot;.this&quot;), statik ? owner.getName() + &quot;.class&quot; : &quot;this&quot;, SynchronizationKind.INTRINSIC_LOCK); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="fc bfc" id="L450" title="All 2 branches covered.">			if (parent instanceof MethodDeclaration method) {</span>
+<span class="pc bpc" id="L451" title="3 of 4 branches missed.">				if (Modifier.isSynchronized(method.getModifiers()) &amp;&amp; method.resolveBinding() != null) {</span>
+<span class="nc" id="L452">					var owner= method.resolveBinding().getDeclaringClass();</span>
+<span class="nc" id="L453">					boolean statik= Modifier.isStatic(method.getModifiers());</span>
+<span class="nc bnc" id="L454" title="All 4 branches missed.">					return new Lock(owner.getKey() + (statik ? &quot;.class&quot; : &quot;.this&quot;), statik ? owner.getName() + &quot;.class&quot; : &quot;this&quot;, SynchronizationKind.INTRINSIC_LOCK); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
 				}
 				break;
 			}
-<span class="pc bpc" id="L457" title="2 of 6 branches missed.">			if (parent instanceof LambdaExpression || parent instanceof AbstractTypeDeclaration || parent instanceof AnonymousClassDeclaration) {</span>
-<span class="nc" id="L458">				break;</span>
+<span class="pc bpc" id="L458" title="2 of 6 branches missed.">			if (parent instanceof LambdaExpression || parent instanceof AbstractTypeDeclaration || parent instanceof AnonymousClassDeclaration) {</span>
+<span class="nc" id="L459">				break;</span>
 			}
 		}
-<span class="fc" id="L461">		return null;</span>
+<span class="fc" id="L462">		return null;</span>
 	}
 
 	private static boolean inside(ASTNode node, ASTNode ancestor) {
-<span class="fc bfc" id="L465" title="All 2 branches covered.">		for (ASTNode current= node; current != null; current= current.getParent()) {</span>
-<span class="fc bfc" id="L466" title="All 2 branches covered.">			if (current == ancestor) {</span>
-<span class="fc" id="L467">				return true;</span>
+<span class="fc bfc" id="L466" title="All 2 branches covered.">		for (ASTNode current= node; current != null; current= current.getParent()) {</span>
+<span class="fc bfc" id="L467" title="All 2 branches covered.">			if (current == ancestor) {</span>
+<span class="fc" id="L468">				return true;</span>
 			}
 		}
-<span class="fc" id="L470">		return false;</span>
+<span class="fc" id="L471">		return false;</span>
 	}
 
 	private static Lock lock(Expression expr, SynchronizationKind kind) {
-<span class="pc bpc" id="L474" title="1 of 4 branches missed.">		if (unwrap(expr) instanceof ThisExpression self &amp;&amp; self.resolveTypeBinding() != null) {</span>
-<span class="fc" id="L475">			return new Lock(self.resolveTypeBinding().getKey() + &quot;.this&quot;, self.toString(), kind); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L475" title="1 of 4 branches missed.">		if (unwrap(expr) instanceof ThisExpression self &amp;&amp; self.resolveTypeBinding() != null) {</span>
+<span class="fc" id="L476">			return new Lock(self.resolveTypeBinding().getKey() + &quot;.this&quot;, self.toString(), kind); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L477">		var binding= variableBinding(expr).orElse(null);</span>
+<span class="fc" id="L478">		var binding= variableBinding(expr).orElse(null);</span>
 		// Distinct receivers of obj.field and reassigned lock variables are not the same monitor.
-<span class="pc bpc" id="L479" title="1 of 6 branches missed.">		boolean current= unwrap(expr) instanceof SimpleName || unwrap(expr) instanceof FieldAccess access &amp;&amp; access.getExpression() instanceof ThisExpression;</span>
-<span class="pc bpc" id="L480" title="3 of 10 branches missed.">		return binding != null &amp;&amp; current &amp;&amp; (Modifier.isFinal(binding.getModifiers()) || !binding.isField() &amp;&amp; binding.isEffectivelyFinal())</span>
-<span class="fc" id="L481">				? new Lock(binding.getVariableDeclaration().getKey(), expr.toString(), kind) : null;</span>
+<span class="pc bpc" id="L480" title="1 of 6 branches missed.">		boolean current= unwrap(expr) instanceof SimpleName || unwrap(expr) instanceof FieldAccess access &amp;&amp; access.getExpression() instanceof ThisExpression;</span>
+<span class="pc bpc" id="L481" title="3 of 10 branches missed.">		return binding != null &amp;&amp; current &amp;&amp; (Modifier.isFinal(binding.getModifiers()) || !binding.isField() &amp;&amp; binding.isEffectivelyFinal())</span>
+<span class="fc" id="L482">				? new Lock(binding.getVariableDeclaration().getKey(), expr.toString(), kind) : null;</span>
 	}
 
 	private static Lock explicitLock(TryStatement attempt) {
-<span class="pc bpc" id="L485" title="3 of 6 branches missed.">		if (!(attempt.getParent() instanceof Block body) || attempt.getFinally() == null || attempt.getFinally().statements().size() != 1) {</span>
-<span class="nc" id="L486">			return null;</span>
+<span class="pc bpc" id="L486" title="3 of 6 branches missed.">		if (!(attempt.getParent() instanceof Block body) || attempt.getFinally() == null || attempt.getFinally().statements().size() != 1) {</span>
+<span class="nc" id="L487">			return null;</span>
 		}
-<span class="fc" id="L488">		int i= body.statements().indexOf(attempt);</span>
-<span class="pc bpc" id="L489" title="1 of 2 branches missed.">		if (i &lt; 1) {</span>
-<span class="nc" id="L490">			return null;</span>
+<span class="fc" id="L489">		int i= body.statements().indexOf(attempt);</span>
+<span class="pc bpc" id="L490" title="1 of 2 branches missed.">		if (i &lt; 1) {</span>
+<span class="nc" id="L491">			return null;</span>
 		}
-<span class="fc" id="L492">		Expression acquired= lockReceiver(body.statements().get(i - 1), &quot;lock&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L493">		Expression released= lockReceiver(attempt.getFinally().statements().getFirst(), &quot;unlock&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L494" title="4 of 8 branches missed.">		if (acquired == null || released == null || !attempt.catchClauses().isEmpty() || !attempt.resources().isEmpty()) {</span>
-<span class="nc" id="L495">			return null;</span>
+<span class="fc" id="L493">		Expression acquired= lockReceiver(body.statements().get(i - 1), &quot;lock&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L494">		Expression released= lockReceiver(attempt.getFinally().statements().getFirst(), &quot;unlock&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L495" title="4 of 8 branches missed.">		if (acquired == null || released == null || !attempt.catchClauses().isEmpty() || !attempt.resources().isEmpty()) {</span>
+<span class="nc" id="L496">			return null;</span>
 		}
-<span class="fc" id="L497">		Lock guard= lock(acquired, SynchronizationKind.EXPLICIT_LOCK);</span>
-<span class="fc" id="L498">		Lock release= lock(released, SynchronizationKind.EXPLICIT_LOCK);</span>
-<span class="pc bpc" id="L499" title="2 of 6 branches missed.">		if (guard == null || release == null || !guard.key().equals(release.key())) {</span>
-<span class="fc" id="L500">			return null;</span>
+<span class="fc" id="L498">		Lock guard= lock(acquired, SynchronizationKind.EXPLICIT_LOCK);</span>
+<span class="fc" id="L499">		Lock release= lock(released, SynchronizationKind.EXPLICIT_LOCK);</span>
+<span class="pc bpc" id="L500" title="2 of 6 branches missed.">		if (guard == null || release == null || !guard.key().equals(release.key())) {</span>
+<span class="fc" id="L501">			return null;</span>
 		}
-<span class="fc" id="L502">		var binding= variableBinding(acquired).orElseThrow();</span>
+<span class="fc" id="L503">		var binding= variableBinding(acquired).orElseThrow();</span>
 		// Only the directly paired lock/try/finally proves the lexical critical section.
 		// An early unlock or an alias in the try body invalidates that proof.
-<span class="fc" id="L505">		boolean[] usedInBody= { false };</span>
-<span class="fc" id="L506">		attempt.getBody().accept(new ASTVisitor() {</span>
+<span class="fc" id="L506">		boolean[] usedInBody= { false };</span>
+<span class="fc" id="L507">		attempt.getBody().accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(SimpleName name) {
-<span class="fc" id="L509">				usedInBody[0] |= binding.isEqualTo(name.resolveBinding());</span>
-<span class="pc bpc" id="L510" title="1 of 2 branches missed.">				return !usedInBody[0];</span>
+<span class="fc" id="L510">				usedInBody[0] |= binding.isEqualTo(name.resolveBinding());</span>
+<span class="pc bpc" id="L511" title="1 of 2 branches missed.">				return !usedInBody[0];</span>
 			}
 		});
-<span class="pc bpc" id="L513" title="1 of 2 branches missed.">		return usedInBody[0] ? null : guard;</span>
+<span class="pc bpc" id="L514" title="1 of 2 branches missed.">		return usedInBody[0] ? null : guard;</span>
 	}
 
 	private static Expression lockReceiver(Object statement, String method) {
-<span class="pc bpc" id="L517" title="3 of 6 branches missed.">		if (statement instanceof ExpressionStatement s &amp;&amp; s.getExpression() instanceof MethodInvocation call &amp;&amp; call.arguments().isEmpty()</span>
-<span class="pc bpc" id="L518" title="2 of 4 branches missed.">				&amp;&amp; method.equals(call.getName().getIdentifier()) &amp;&amp; call.resolveMethodBinding() != null</span>
-<span class="fc bfc" id="L519" title="All 2 branches covered.">				&amp;&amp; (isType(call.resolveMethodBinding().getDeclaringClass(), &quot;java.util.concurrent.locks.Lock&quot;) //$NON-NLS-1$</span>
-<span class="pc bpc" id="L520" title="1 of 2 branches missed.">						|| isType(call.resolveMethodBinding().getDeclaringClass(), &quot;java.util.concurrent.locks.ReentrantLock&quot;))) { //$NON-NLS-1$</span>
-<span class="fc" id="L521">			return call.getExpression();</span>
+<span class="pc bpc" id="L518" title="3 of 6 branches missed.">		if (statement instanceof ExpressionStatement s &amp;&amp; s.getExpression() instanceof MethodInvocation call &amp;&amp; call.arguments().isEmpty()</span>
+<span class="pc bpc" id="L519" title="2 of 4 branches missed.">				&amp;&amp; method.equals(call.getName().getIdentifier()) &amp;&amp; call.resolveMethodBinding() != null</span>
+<span class="fc bfc" id="L520" title="All 2 branches covered.">				&amp;&amp; (isType(call.resolveMethodBinding().getDeclaringClass(), &quot;java.util.concurrent.locks.Lock&quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L521" title="1 of 2 branches missed.">						|| isType(call.resolveMethodBinding().getDeclaringClass(), &quot;java.util.concurrent.locks.ReentrantLock&quot;))) { //$NON-NLS-1$</span>
+<span class="fc" id="L522">			return call.getExpression();</span>
 		}
-<span class="nc" id="L523">		return null;</span>
+<span class="nc" id="L524">		return null;</span>
 	}
 
 	private static boolean closedProtocol(CompilationUnit root, Field field, Strategy strategy) {
-<span class="fc" id="L527">		var binding= field.binding();</span>
-<span class="pc bpc" id="L528" title="2 of 4 branches missed.">		if (field.kind() != SynchronizationKind.SYNCHRONIZED_WRAPPER || !Modifier.isPrivate(binding.getModifiers())</span>
-<span class="pc bpc" id="L529" title="3 of 6 branches missed.">				|| !Modifier.isFinal(binding.getModifiers()) || Modifier.isStatic(binding.getModifiers()) || binding.getAnnotations().length != 0</span>
-<span class="pc bpc" id="L530" title="2 of 4 branches missed.">				|| binding.getType().getTypeArguments().length != 1 || !isType(binding.getType().getTypeArguments()[0], STRING)</span>
-<span class="pc bpc" id="L531" title="2 of 4 branches missed.">				|| !(field.declaration().getParent().getParent() instanceof TypeDeclaration owner) || !owner.isPackageMemberTypeDeclaration()</span>
-<span class="pc bpc" id="L532" title="3 of 6 branches missed.">				|| !Modifier.isFinal(owner.getModifiers()) || owner.getSuperclassType() != null || !owner.superInterfaceTypes().isEmpty()</span>
-<span class="pc bpc" id="L533" title="1 of 2 branches missed.">				|| !closedOwner(root, field, owner)</span>
-<span class="pc bpc" id="L534" title="2 of 4 branches missed.">				|| !(field.declaration().getInitializer() instanceof MethodInvocation wrapper) || wrapper.arguments().size() != 1</span>
-<span class="pc bpc" id="L535" title="2 of 4 branches missed.">				|| !(wrapper.arguments().getFirst() instanceof ClassInstanceCreation backing) || !backing.arguments().isEmpty()</span>
-<span class="pc bpc" id="L536" title="1 of 2 branches missed.">				|| backing.getAnonymousClassDeclaration() != null</span>
-<span class="pc bpc" id="L537" title="1 of 4 branches missed.">				|| !isType(backing.resolveTypeBinding(), strategy == Strategy.CONCURRENT_QUEUE ? &quot;java.util.ArrayList&quot; : &quot;java.util.LinkedHashSet&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L538">			return false;</span>
+<span class="fc" id="L528">		var binding= field.binding();</span>
+<span class="pc bpc" id="L529" title="2 of 4 branches missed.">		if (field.kind() != SynchronizationKind.SYNCHRONIZED_WRAPPER || !Modifier.isPrivate(binding.getModifiers())</span>
+<span class="pc bpc" id="L530" title="3 of 6 branches missed.">				|| !Modifier.isFinal(binding.getModifiers()) || Modifier.isStatic(binding.getModifiers()) || binding.getAnnotations().length != 0</span>
+<span class="pc bpc" id="L531" title="2 of 4 branches missed.">				|| binding.getType().getTypeArguments().length != 1 || !isType(binding.getType().getTypeArguments()[0], STRING)</span>
+<span class="pc bpc" id="L532" title="2 of 4 branches missed.">				|| !(field.declaration().getParent().getParent() instanceof TypeDeclaration owner) || !owner.isPackageMemberTypeDeclaration()</span>
+<span class="pc bpc" id="L533" title="3 of 6 branches missed.">				|| !Modifier.isFinal(owner.getModifiers()) || owner.getSuperclassType() != null || !owner.superInterfaceTypes().isEmpty()</span>
+<span class="pc bpc" id="L534" title="1 of 2 branches missed.">				|| !closedOwner(root, field, owner)</span>
+<span class="pc bpc" id="L535" title="2 of 4 branches missed.">				|| !(field.declaration().getInitializer() instanceof MethodInvocation wrapper) || wrapper.arguments().size() != 1</span>
+<span class="pc bpc" id="L536" title="2 of 4 branches missed.">				|| !(wrapper.arguments().getFirst() instanceof ClassInstanceCreation backing) || !backing.arguments().isEmpty()</span>
+<span class="pc bpc" id="L537" title="1 of 2 branches missed.">				|| backing.getAnonymousClassDeclaration() != null</span>
+<span class="pc bpc" id="L538" title="1 of 4 branches missed.">				|| !isType(backing.resolveTypeBinding(), strategy == Strategy.CONCURRENT_QUEUE ? &quot;java.util.ArrayList&quot; : &quot;java.util.LinkedHashSet&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L539">			return false;</span>
 		}
-<span class="fc" id="L540">		var covered= new HashSet&lt;SimpleName&gt;();</span>
-<span class="fc" id="L541">		boolean produced= false;</span>
-<span class="fc" id="L542">		boolean consumed= false;</span>
-<span class="fc bfc" id="L543" title="All 2 branches covered.">		for (MethodDeclaration method : owner.getMethods()) {</span>
-<span class="pc bpc" id="L544" title="3 of 6 branches missed.">			if (method.getBody() == null || method.getBody().statements().size() != 1 || Modifier.isSynchronized(method.getModifiers())) {</span>
-<span class="nc" id="L545">				continue;</span>
+<span class="fc" id="L541">		var covered= new HashSet&lt;SimpleName&gt;();</span>
+<span class="fc" id="L542">		boolean produced= false;</span>
+<span class="fc" id="L543">		boolean consumed= false;</span>
+<span class="fc bfc" id="L544" title="All 2 branches covered.">		for (MethodDeclaration method : owner.getMethods()) {</span>
+<span class="pc bpc" id="L545" title="3 of 6 branches missed.">			if (method.getBody() == null || method.getBody().statements().size() != 1 || Modifier.isSynchronized(method.getModifiers())) {</span>
+<span class="nc" id="L546">				continue;</span>
 			}
-<span class="fc" id="L547">			Object stmt= method.getBody().statements().getFirst();</span>
-<span class="pc bpc" id="L548" title="1 of 4 branches missed.">			if (stmt instanceof ExpressionStatement write &amp;&amp; write.getExpression() instanceof MethodInvocation add</span>
-<span class="pc bpc" id="L549" title="3 of 6 branches missed.">					&amp;&amp; &quot;add&quot;.equals(add.getName().getIdentifier()) &amp;&amp; add.arguments().size() == 1 &amp;&amp; add.getExpression() instanceof SimpleName name //$NON-NLS-1$</span>
-<span class="fc bfc" id="L550" title="All 4 branches covered.">					&amp;&amp; binding.isEqualTo(name.resolveBinding()) &amp;&amp; validProducer(method, (Expression) add.arguments().getFirst(), strategy)) {</span>
-<span class="fc" id="L551">				covered.add(name);</span>
-<span class="fc" id="L552">				produced= true;</span>
+<span class="fc" id="L548">			Object stmt= method.getBody().statements().getFirst();</span>
+<span class="pc bpc" id="L549" title="1 of 4 branches missed.">			if (stmt instanceof ExpressionStatement write &amp;&amp; write.getExpression() instanceof MethodInvocation add</span>
+<span class="pc bpc" id="L550" title="3 of 6 branches missed.">					&amp;&amp; &quot;add&quot;.equals(add.getName().getIdentifier()) &amp;&amp; add.arguments().size() == 1 &amp;&amp; add.getExpression() instanceof SimpleName name //$NON-NLS-1$</span>
+<span class="fc bfc" id="L551" title="All 4 branches covered.">					&amp;&amp; binding.isEqualTo(name.resolveBinding()) &amp;&amp; validProducer(method, (Expression) add.arguments().getFirst(), strategy)) {</span>
+<span class="fc" id="L552">				covered.add(name);</span>
+<span class="fc" id="L553">				produced= true;</span>
 			}
-<span class="fc bfc" id="L554" title="All 6 branches covered.">			if (stmt instanceof SynchronizedStatement lock &amp;&amp; lock.getExpression() instanceof SimpleName monitor &amp;&amp; binding.isEqualTo(monitor.resolveBinding())</span>
-<span class="fc bfc" id="L555" title="All 2 branches covered.">					&amp;&amp; consumer(lock.getBody(), binding, strategy, covered)) {</span>
-<span class="fc" id="L556">				covered.add(monitor);</span>
-<span class="fc" id="L557">				consumed= true;</span>
+<span class="fc bfc" id="L555" title="All 6 branches covered.">			if (stmt instanceof SynchronizedStatement lock &amp;&amp; lock.getExpression() instanceof SimpleName monitor &amp;&amp; binding.isEqualTo(monitor.resolveBinding())</span>
+<span class="fc bfc" id="L556" title="All 2 branches covered.">					&amp;&amp; consumer(lock.getBody(), binding, strategy, covered)) {</span>
+<span class="fc" id="L557">				covered.add(monitor);</span>
+<span class="fc" id="L558">				consumed= true;</span>
 			}
 		}
-<span class="fc bfc" id="L560" title="All 6 branches covered.">		return produced &amp;&amp; consumed &amp;&amp; covered.equals(Set.copyOf(field.references()));</span>
+<span class="fc bfc" id="L561" title="All 6 branches covered.">		return produced &amp;&amp; consumed &amp;&amp; covered.equals(Set.copyOf(field.references()));</span>
 	}
 
 	private static boolean closedOwner(CompilationUnit root, Field field, TypeDeclaration owner) {
-<span class="pc bpc" id="L564" title="3 of 6 branches missed.">		return owner.isPackageMemberTypeDeclaration() &amp;&amp; owner.getSuperclassType() == null &amp;&amp; owner.superInterfaceTypes().isEmpty()</span>
-<span class="pc bpc" id="L565" title="2 of 4 branches missed.">				&amp;&amp; field.binding().getAnnotations().length == 0 &amp;&amp; field.binding().getDeclaringClass().getAnnotations().length == 0</span>
-<span class="pc bpc" id="L566" title="1 of 2 branches missed.">				&amp;&amp; Arrays.stream(owner.getMethods()).noneMatch(method -&gt; Modifier.isNative(method.getModifiers()))</span>
-<span class="pc bpc" id="L567" title="1 of 2 branches missed.">				&amp;&amp; Arrays.stream(root.getProblems()).noneMatch(IProblem::isError);</span>
+<span class="pc bpc" id="L565" title="3 of 6 branches missed.">		return owner.isPackageMemberTypeDeclaration() &amp;&amp; owner.getSuperclassType() == null &amp;&amp; owner.superInterfaceTypes().isEmpty()</span>
+<span class="pc bpc" id="L566" title="2 of 4 branches missed.">				&amp;&amp; field.binding().getAnnotations().length == 0 &amp;&amp; field.binding().getDeclaringClass().getAnnotations().length == 0</span>
+<span class="pc bpc" id="L567" title="1 of 2 branches missed.">				&amp;&amp; Arrays.stream(owner.getMethods()).noneMatch(method -&gt; Modifier.isNative(method.getModifiers()))</span>
+<span class="pc bpc" id="L568" title="1 of 2 branches missed.">				&amp;&amp; Arrays.stream(root.getProblems()).noneMatch(IProblem::isError);</span>
 	}
 
 	private static boolean validProducer(MethodDeclaration method, Expression argument, Strategy strategy) {
-<span class="pc bpc" id="L571" title="3 of 6 branches missed.">		if (method.parameters().size() != 1 || !(method.parameters().getFirst() instanceof SingleVariableDeclaration parameter) || parameter.resolveBinding() == null) {</span>
-<span class="nc" id="L572">			return false;</span>
+<span class="pc bpc" id="L572" title="3 of 6 branches missed.">		if (method.parameters().size() != 1 || !(method.parameters().getFirst() instanceof SingleVariableDeclaration parameter) || parameter.resolveBinding() == null) {</span>
+<span class="nc" id="L573">			return false;</span>
 		}
-<span class="fc bfc" id="L574" title="All 2 branches covered.">		if (strategy == Strategy.CONCURRENT_QUEUE) {</span>
-<span class="pc bpc" id="L575" title="2 of 6 branches missed.">			if (!(argument instanceof MethodInvocation guard) || guard.arguments().size() != 1 || guard.resolveMethodBinding() == null</span>
-<span class="pc bpc" id="L576" title="2 of 4 branches missed.">					|| !isType(guard.resolveMethodBinding().getDeclaringClass(), &quot;java.util.Objects&quot;) || !&quot;requireNonNull&quot;.equals(guard.getName().getIdentifier())) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L577">				return false;</span>
+<span class="fc bfc" id="L575" title="All 2 branches covered.">		if (strategy == Strategy.CONCURRENT_QUEUE) {</span>
+<span class="pc bpc" id="L576" title="2 of 6 branches missed.">			if (!(argument instanceof MethodInvocation guard) || guard.arguments().size() != 1 || guard.resolveMethodBinding() == null</span>
+<span class="pc bpc" id="L577" title="2 of 4 branches missed.">					|| !isType(guard.resolveMethodBinding().getDeclaringClass(), &quot;java.util.Objects&quot;) || !&quot;requireNonNull&quot;.equals(guard.getName().getIdentifier())) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L578">				return false;</span>
 			}
-<span class="fc" id="L579">			argument= (Expression) guard.arguments().getFirst();</span>
+<span class="fc" id="L580">			argument= (Expression) guard.arguments().getFirst();</span>
 		}
-<span class="pc bpc" id="L581" title="1 of 4 branches missed.">		return argument instanceof SimpleName value &amp;&amp; parameter.resolveBinding().isEqualTo(value.resolveBinding());</span>
+<span class="pc bpc" id="L582" title="1 of 4 branches missed.">		return argument instanceof SimpleName value &amp;&amp; parameter.resolveBinding().isEqualTo(value.resolveBinding());</span>
 	}
 
 	private static boolean consumer(Block body, IVariableBinding field, Strategy strategy, Set&lt;SimpleName&gt; covered) {
-<span class="fc bfc" id="L585" title="All 2 branches covered.">		if (strategy == Strategy.CONCURRENT_QUEUE) {</span>
-<span class="pc bpc" id="L586" title="2 of 4 branches missed.">			if (body.statements().size() != 1 || !(body.statements().getFirst() instanceof ReturnStatement result)</span>
-<span class="pc bpc" id="L587" title="2 of 4 branches missed.">					|| !(result.getExpression() instanceof ConditionalExpression take) || !(take.getExpression() instanceof MethodInvocation empty)</span>
-<span class="pc bpc" id="L588" title="3 of 6 branches missed.">					|| !empty.arguments().isEmpty() || !&quot;isEmpty&quot;.equals(empty.getName().getIdentifier()) || !(take.getThenExpression() instanceof NullLiteral) //$NON-NLS-1$</span>
-<span class="pc bpc" id="L589" title="2 of 4 branches missed.">					|| !(take.getElseExpression() instanceof MethodInvocation remove) || !frontRemove(remove)</span>
-<span class="pc bpc" id="L590" title="2 of 4 branches missed.">					|| !(empty.getExpression() instanceof SimpleName check) || !field.isEqualTo(check.resolveBinding())</span>
-<span class="pc bpc" id="L591" title="2 of 4 branches missed.">					|| !(remove.getExpression() instanceof SimpleName pop) || !field.isEqualTo(pop.resolveBinding())) {</span>
-<span class="nc" id="L592">				return false;</span>
+<span class="fc bfc" id="L586" title="All 2 branches covered.">		if (strategy == Strategy.CONCURRENT_QUEUE) {</span>
+<span class="pc bpc" id="L587" title="2 of 4 branches missed.">			if (body.statements().size() != 1 || !(body.statements().getFirst() instanceof ReturnStatement result)</span>
+<span class="pc bpc" id="L588" title="2 of 4 branches missed.">					|| !(result.getExpression() instanceof ConditionalExpression take) || !(take.getExpression() instanceof MethodInvocation empty)</span>
+<span class="pc bpc" id="L589" title="3 of 6 branches missed.">					|| !empty.arguments().isEmpty() || !&quot;isEmpty&quot;.equals(empty.getName().getIdentifier()) || !(take.getThenExpression() instanceof NullLiteral) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L590" title="2 of 4 branches missed.">					|| !(take.getElseExpression() instanceof MethodInvocation remove) || !frontRemove(remove)</span>
+<span class="pc bpc" id="L591" title="2 of 4 branches missed.">					|| !(empty.getExpression() instanceof SimpleName check) || !field.isEqualTo(check.resolveBinding())</span>
+<span class="pc bpc" id="L592" title="2 of 4 branches missed.">					|| !(remove.getExpression() instanceof SimpleName pop) || !field.isEqualTo(pop.resolveBinding())) {</span>
+<span class="nc" id="L593">				return false;</span>
 			}
-<span class="fc" id="L594">			covered.addAll(List.of(check, pop));</span>
-<span class="fc" id="L595">			return true;</span>
+<span class="fc" id="L595">			covered.addAll(List.of(check, pop));</span>
+<span class="fc" id="L596">			return true;</span>
 		}
-<span class="pc bpc" id="L597" title="2 of 6 branches missed.">		if (body.statements().size() != 3 || !(body.statements().getFirst() instanceof VariableDeclarationStatement save) || save.fragments().size() != 1</span>
-<span class="pc bpc" id="L598" title="2 of 4 branches missed.">				|| !(save.fragments().getFirst() instanceof VariableDeclarationFragment snapshot) || !(snapshot.getInitializer() instanceof ClassInstanceCreation copy)</span>
-<span class="pc bpc" id="L599" title="2 of 6 branches missed.">				|| !isType(copy.resolveTypeBinding(), &quot;java.util.LinkedHashSet&quot;) || copy.getAnonymousClassDeclaration() != null || copy.arguments().size() != 1 //$NON-NLS-1$</span>
-<span class="pc bpc" id="L600" title="2 of 4 branches missed.">				|| !(copy.arguments().getFirst() instanceof SimpleName source) || !field.isEqualTo(source.resolveBinding())</span>
-<span class="pc bpc" id="L601" title="2 of 4 branches missed.">				|| !(body.statements().get(1) instanceof ExpressionStatement second) || !(second.getExpression() instanceof MethodInvocation clear)</span>
-<span class="pc bpc" id="L602" title="3 of 6 branches missed.">				|| !&quot;clear&quot;.equals(clear.getName().getIdentifier()) || !clear.arguments().isEmpty() || !(clear.getExpression() instanceof SimpleName destination) //$NON-NLS-1$</span>
-<span class="pc bpc" id="L603" title="2 of 4 branches missed.">				|| !field.isEqualTo(destination.resolveBinding()) || !(body.statements().getLast() instanceof ReturnStatement returned)</span>
-<span class="pc bpc" id="L604" title="2 of 4 branches missed.">				|| !(returned.getExpression() instanceof SimpleName result) || !snapshot.resolveBinding().isEqualTo(result.resolveBinding())) {</span>
-<span class="fc" id="L605">			return false;</span>
+<span class="pc bpc" id="L598" title="2 of 6 branches missed.">		if (body.statements().size() != 3 || !(body.statements().getFirst() instanceof VariableDeclarationStatement save) || save.fragments().size() != 1</span>
+<span class="pc bpc" id="L599" title="2 of 4 branches missed.">				|| !(save.fragments().getFirst() instanceof VariableDeclarationFragment snapshot) || !(snapshot.getInitializer() instanceof ClassInstanceCreation copy)</span>
+<span class="pc bpc" id="L600" title="2 of 6 branches missed.">				|| !isType(copy.resolveTypeBinding(), &quot;java.util.LinkedHashSet&quot;) || copy.getAnonymousClassDeclaration() != null || copy.arguments().size() != 1 //$NON-NLS-1$</span>
+<span class="pc bpc" id="L601" title="2 of 4 branches missed.">				|| !(copy.arguments().getFirst() instanceof SimpleName source) || !field.isEqualTo(source.resolveBinding())</span>
+<span class="pc bpc" id="L602" title="2 of 4 branches missed.">				|| !(body.statements().get(1) instanceof ExpressionStatement second) || !(second.getExpression() instanceof MethodInvocation clear)</span>
+<span class="pc bpc" id="L603" title="3 of 6 branches missed.">				|| !&quot;clear&quot;.equals(clear.getName().getIdentifier()) || !clear.arguments().isEmpty() || !(clear.getExpression() instanceof SimpleName destination) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L604" title="2 of 4 branches missed.">				|| !field.isEqualTo(destination.resolveBinding()) || !(body.statements().getLast() instanceof ReturnStatement returned)</span>
+<span class="pc bpc" id="L605" title="2 of 4 branches missed.">				|| !(returned.getExpression() instanceof SimpleName result) || !snapshot.resolveBinding().isEqualTo(result.resolveBinding())) {</span>
+<span class="fc" id="L606">			return false;</span>
 		}
-<span class="fc" id="L607">		covered.addAll(List.of(source, destination));</span>
-<span class="fc" id="L608">		return true;</span>
+<span class="fc" id="L608">		covered.addAll(List.of(source, destination));</span>
+<span class="fc" id="L609">		return true;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -407,11 +407,11 @@
 <tr class="b">
 <td>org/sandbox/jdt/container/analysis/LocalArrayUsageAnalyzer.java</td>
 <td>Sandbox Common Core</td>
-<td>404</td></tr>
+<td>405</td></tr>
 <tr class="a">
 <td>org/sandbox/jdt/container/analysis/LocalContainerFlowGraphBuilder.java</td>
 <td>Sandbox Common Core</td>
-<td>333</td></tr>
+<td>334</td></tr>
 <tr class="b">
 <td colspan="3">
 <pre>}
@@ -428,7 +428,7 @@
 		ASTNode parent= reference.getParent();
 		if (parent instanceof QualifiedName qualified
 				&amp;&amp; qualified.getName() == reference
-				&amp;&amp; hasBindingKey(qualified.resolveBinding(), bindingKey)) {
+				&amp;&amp; hasBindingKey(ImportNameBindings.resolve(qualified), bindingKey)) {
 			reference= qualified;
 		} else if (parent instanceof FieldAccess fieldAccess
 				&amp;&amp; fieldAccess.getName() == reference
@@ -1511,7 +1511,7 @@
 <tr class="a">
 <td>org/sandbox/jdt/container/analysis/LocalArrayUsageAnalyzer.java</td>
 <td>Sandbox Common Core</td>
-<td>490</td></tr>
+<td>491</td></tr>
 <tr class="b">
 <td colspan="3">
 <pre>}
@@ -2424,11 +2424,11 @@
 <tr class="b">
 <td>org/sandbox/jdt/internal/corext/fix/helper/JFacePlugin.java</td>
 <td>Sandbox jface cleanup</td>
-<td>509</td></tr>
+<td>512</td></tr>
 <tr class="a">
 <td>org/sandbox/jdt/internal/corext/fix/helper/JFacePlugin.java</td>
 <td>Sandbox jface cleanup</td>
-<td>563</td></tr>
+<td>566</td></tr>
 <tr class="b">
 <td colspan="3">
 <pre>ASTNodes.getUnparenthesedExpression((Expression) arguments.get(0))));
@@ -2946,34 +2946,6 @@
 <th>Project</th>
 <th>Line</th></tr>
 <tr class="b">
-<td>org/sandbox/jdt/container/cleanup/internal/corext/fix/ClosedSourceContainerMigrationCoordinator.java</td>
-<td>Sandbox Container Cleanup</td>
-<td>505</td></tr>
-<tr class="a">
-<td>org/sandbox/jdt/internal/corext/fix/multifile/JUnitSharedHelperScopeDetector.java</td>
-<td>Sandbox junit cleanup</td>
-<td>562</td></tr>
-<tr class="b">
-<td colspan="3">
-<pre>static Map&lt;String, CompilationUnit&gt; parse(IJavaProject project,
-			List&lt;ICompilationUnit&gt; units, IProgressMonitor monitor) {
-		Map&lt;String, CompilationUnit&gt; roots= new LinkedHashMap&lt;&gt;();
-		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);
-		parser.setProject(project);
-		parser.setResolveBindings(true);
-		parser.setBindingsRecovery(IASTSharedValues.SHARED_BINDING_RECOVERY);
-		parser.setStatementsRecovery(IASTSharedValues.SHARED_AST_STATEMENT_RECOVERY);
-		parser.setCompilerOptions(RefactoringASTParser.getCompilerOptions(project));
-		parser.createASTs(units.toArray(ICompilationUnit[]::new), new String[0], new ASTRequestor() {
-			@Override
-			public void acceptAST(ICompilationUnit source, CompilationUnit ast) {
-				roots.put(primaryHandle(source), ast);</pre></td></tr></table>
-<table class="table table-striped">
-<tr class="a">
-<th>File</th>
-<th>Project</th>
-<th>Line</th></tr>
-<tr class="b">
 <td>org/sandbox/jdt/triggerpattern/cleanup/PlanAwareHintFileFixCore.java</td>
 <td>Sandbox common</td>
 <td>156</td></tr>
@@ -3034,6 +3006,33 @@
 		MethodInvocation isEmptyCall = ast.newMethodInvocation();
 		isEmptyCall.setExpression((Expression) ASTNode.copySubtree(ast, listExpression));
 		isEmptyCall.setName(ast.newSimpleName(&quot;isEmpty&quot;)); //$NON-NLS-1$</pre></td></tr></table>
+<table class="table table-striped">
+<tr class="a">
+<th>File</th>
+<th>Project</th>
+<th>Line</th></tr>
+<tr class="b">
+<td>org/sandbox/jdt/container/cleanup/internal/corext/fix/ClosedSourceContainerMigrationCoordinator.java</td>
+<td>Sandbox Container Cleanup</td>
+<td>506</td></tr>
+<tr class="a">
+<td>org/sandbox/jdt/internal/corext/fix/multifile/JUnitSharedHelperScopeDetector.java</td>
+<td>Sandbox junit cleanup</td>
+<td>562</td></tr>
+<tr class="b">
+<td colspan="3">
+<pre>static Map&lt;String, CompilationUnit&gt; parse(IJavaProject project,
+			List&lt;ICompilationUnit&gt; units, IProgressMonitor monitor) {
+		Map&lt;String, CompilationUnit&gt; roots= new LinkedHashMap&lt;&gt;();
+		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);
+		parser.setProject(project);
+		parser.setResolveBindings(true);
+		parser.setBindingsRecovery(IASTSharedValues.SHARED_BINDING_RECOVERY);
+		parser.setStatementsRecovery(IASTSharedValues.SHARED_AST_STATEMENT_RECOVERY);
+		parser.setCompilerOptions(RefactoringASTParser.getCompilerOptions(project));
+		parser.createASTs(units.toArray(ICompilationUnit[]::new), new String[0], new ASTRequestor() {
+			@Override
+			public void acceptAST(ICompilationUnit source, CompilationUnit ast) {</pre></td></tr></table>
 <table class="table table-striped">
 <tr class="a">
 <th>File</th>
@@ -3571,7 +3570,7 @@
 <tr class="a">
 <td>org/sandbox/jdt/container/analysis/LocalArrayUsageAnalyzer.java</td>
 <td>Sandbox Common Core</td>
-<td>471</td></tr>
+<td>472</td></tr>
 <tr class="b">
 <td colspan="3">
 <pre>return Optional.of(new GrowthSeed(array, growthAssignment, binding, elementDomain));

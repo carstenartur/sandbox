@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ImportNameBindings.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.common</a> &gt; <span class="el_source">ImportNameBindings.java</span></div><h1>ImportNameBindings.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.common;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
+import org.eclipse.jdt.core.dom.Name;
+
+/** Preserves static import bindings before a batch parser releases source dependency scopes. */
+public final class ImportNameBindings {
+
+<span class="fc" id="L23">	private static final String PROPERTY= ImportNameBindings.class.getName();</span>
+
+	private ImportNameBindings() {
+	}
+
+	/**
+	 * Call from {@code ASTRequestor.acceptAST}, while source dependency methods can
+	 * still be resolved. A snapshot, including an unresolved result, belongs only
+	 * to this AST; subsequent reference scans must not repeat that resolution.
+	 */
+	public static void capture(CompilationUnit root) {
+<span class="nc bnc" id="L34" title="All 2 branches missed.">		for (Object value : root.imports()) {</span>
+<span class="nc" id="L35">			ImportDeclaration declaration= (ImportDeclaration) value;</span>
+<span class="nc bnc" id="L36" title="All 4 branches missed.">			if (!declaration.isStatic() || declaration.isOnDemand()) {</span>
+<span class="nc" id="L37">				continue;</span>
+			}
+<span class="nc" id="L39">			declaration.accept(new ASTVisitor() {</span>
+				@Override
+				public void preVisit(ASTNode node) {
+<span class="nc bnc" id="L42" title="All 2 branches missed.">					if (node instanceof Name name) {</span>
+<span class="nc" id="L43">						name.setProperty(PROPERTY, new Snapshot(name.resolveBinding()));</span>
+					}
+<span class="nc" id="L45">				}</span>
+			});
+<span class="nc" id="L47">		}</span>
+<span class="nc" id="L48">	}</span>
+
+	/** Resolves ordinary references normally and retains captured import identities, including null. */
+	public static IBinding resolve(Name name) {
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">		return name.getProperty(PROPERTY) instanceof Snapshot snapshot ? snapshot.binding() : name.resolveBinding();</span>
+	}
+
+<span class="nc" id="L55">	private record Snapshot(IBinding binding) {</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -38,6 +38,7 @@ import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.sandbox.jdt.container.api.ClosedSourceReturnMigrationPlan.Consumer;
 import org.sandbox.jdt.container.api.ClosedSourceReturnMigrationPlan.FunctionTarget;
 import org.sandbox.jdt.container.api.ClosedSourceReturnMigrationPlan.Range;
+import org.sandbox.jdt.internal.common.ImportNameBindings;
 
 /** Binding proof for direct return of an append-array and length-only callers. */
 public final class ClosedReturnArrayUses {
@@ -45,115 +46,115 @@ public final class ClosedReturnArrayUses {
 	}
 
 	public static Optional&lt;Range&gt; producer(CompilationUnit root, String methodKey, String localKey) {
-<span class="nc bnc" id="L48" title="All 2 branches missed.">		if (Arrays.stream(root.getProblems()).anyMatch(IProblem::isError)</span>
-<span class="nc bnc" id="L49" title="All 2 branches missed.">				|| !(root.findDeclaringNode(methodKey) instanceof MethodDeclaration method)</span>
-<span class="nc bnc" id="L50" title="All 4 branches missed.">				|| !(method.getParent() instanceof TypeDeclaration owner) || owner.getParent() != root</span>
-<span class="nc bnc" id="L51" title="All 4 branches missed.">				|| !Modifier.isFinal(owner.getModifiers()) || !Modifier.isStatic(method.getModifiers())</span>
-<span class="nc bnc" id="L52" title="All 6 branches missed.">				|| Modifier.isPublic(owner.getModifiers()) &amp;&amp; (Modifier.isPublic(method.getModifiers()) || Modifier.isProtected(method.getModifiers()))</span>
-<span class="nc bnc" id="L53" title="All 4 branches missed.">				|| !owner.superInterfaceTypes().isEmpty() || owner.getSuperclassType() != null</span>
-<span class="nc bnc" id="L54" title="All 4 branches missed.">				|| owner.resolveBinding() == null || owner.resolveBinding().getAnnotations().length != 0</span>
-<span class="nc bnc" id="L55" title="All 4 branches missed.">				|| !(method.getReturnType2() instanceof ArrayType array) || !method.extraDimensions().isEmpty()</span>
-<span class="nc bnc" id="L56" title="All 4 branches missed.">				|| method.resolveBinding() == null || method.resolveBinding().getAnnotations().length != 0</span>
-<span class="nc bnc" id="L57" title="All 4 branches missed.">				|| method.resolveBinding().isGenericMethod() || method.getBody() == null</span>
-<span class="nc bnc" id="L58" title="All 4 branches missed.">				|| method.getBody().statements().isEmpty() || !(method.getBody().statements().getLast() instanceof ReturnStatement end)</span>
-<span class="nc bnc" id="L59" title="All 4 branches missed.">				|| !(end.getExpression() instanceof SimpleName value) || !(value.resolveBinding() instanceof IVariableBinding binding)</span>
-<span class="nc bnc" id="L60" title="All 8 branches missed.">				|| binding.getType() == null || !binding.getType().isArray() || binding.getType().getTypeAnnotations().length != 0 || binding.getType().getElementType().getTypeAnnotations().length != 0</span>
-<span class="nc bnc" id="L61" title="All 4 branches missed.">				|| !localKey.equals(binding.getVariableDeclaration().getKey()) || !LocalArrayUsageAnalyzer.isFinalArrayPublication(value)</span>
-<span class="nc bnc" id="L62" title="All 4 branches missed.">				|| array.resolveBinding().getTypeAnnotations().length != 0 || array.resolveBinding().getElementType().getTypeAnnotations().length != 0) {</span>
-<span class="nc" id="L63">			return Optional.empty();</span>
+<span class="nc bnc" id="L49" title="All 2 branches missed.">		if (Arrays.stream(root.getProblems()).anyMatch(IProblem::isError)</span>
+<span class="nc bnc" id="L50" title="All 2 branches missed.">				|| !(root.findDeclaringNode(methodKey) instanceof MethodDeclaration method)</span>
+<span class="nc bnc" id="L51" title="All 4 branches missed.">				|| !(method.getParent() instanceof TypeDeclaration owner) || owner.getParent() != root</span>
+<span class="nc bnc" id="L52" title="All 4 branches missed.">				|| !Modifier.isFinal(owner.getModifiers()) || !Modifier.isStatic(method.getModifiers())</span>
+<span class="nc bnc" id="L53" title="All 6 branches missed.">				|| Modifier.isPublic(owner.getModifiers()) &amp;&amp; (Modifier.isPublic(method.getModifiers()) || Modifier.isProtected(method.getModifiers()))</span>
+<span class="nc bnc" id="L54" title="All 4 branches missed.">				|| !owner.superInterfaceTypes().isEmpty() || owner.getSuperclassType() != null</span>
+<span class="nc bnc" id="L55" title="All 4 branches missed.">				|| owner.resolveBinding() == null || owner.resolveBinding().getAnnotations().length != 0</span>
+<span class="nc bnc" id="L56" title="All 4 branches missed.">				|| !(method.getReturnType2() instanceof ArrayType array) || !method.extraDimensions().isEmpty()</span>
+<span class="nc bnc" id="L57" title="All 4 branches missed.">				|| method.resolveBinding() == null || method.resolveBinding().getAnnotations().length != 0</span>
+<span class="nc bnc" id="L58" title="All 4 branches missed.">				|| method.resolveBinding().isGenericMethod() || method.getBody() == null</span>
+<span class="nc bnc" id="L59" title="All 4 branches missed.">				|| method.getBody().statements().isEmpty() || !(method.getBody().statements().getLast() instanceof ReturnStatement end)</span>
+<span class="nc bnc" id="L60" title="All 4 branches missed.">				|| !(end.getExpression() instanceof SimpleName value) || !(value.resolveBinding() instanceof IVariableBinding binding)</span>
+<span class="nc bnc" id="L61" title="All 8 branches missed.">				|| binding.getType() == null || !binding.getType().isArray() || binding.getType().getTypeAnnotations().length != 0 || binding.getType().getElementType().getTypeAnnotations().length != 0</span>
+<span class="nc bnc" id="L62" title="All 4 branches missed.">				|| !localKey.equals(binding.getVariableDeclaration().getKey()) || !LocalArrayUsageAnalyzer.isFinalArrayPublication(value)</span>
+<span class="nc bnc" id="L63" title="All 4 branches missed.">				|| array.resolveBinding().getTypeAnnotations().length != 0 || array.resolveBinding().getElementType().getTypeAnnotations().length != 0) {</span>
+<span class="nc" id="L64">			return Optional.empty();</span>
 		}
-<span class="nc" id="L65">		return Optional.of(range(array));</span>
+<span class="nc" id="L66">		return Optional.of(range(array));</span>
 	}
 
 	/** Inspects every result reference, rejects reflection and unresolved/unsupported uses in this source unit. */
 	public static Optional&lt;List&lt;Consumer&gt;&gt; consumers(CompilationUnit root, String unitHandle, String methodKey) {
-<span class="nc bnc" id="L70" title="All 2 branches missed.">		if (Arrays.stream(root.getProblems()).anyMatch(IProblem::isError)) {</span>
-<span class="nc" id="L71">			return Optional.empty();</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">		if (Arrays.stream(root.getProblems()).anyMatch(IProblem::isError)) {</span>
+<span class="nc" id="L72">			return Optional.empty();</span>
 		}
-<span class="nc" id="L73">		List&lt;Consumer&gt; result= new ArrayList&lt;&gt;();</span>
-<span class="nc" id="L74">		boolean[] valid= { true };</span>
-<span class="nc" id="L75">		root.accept(new ASTVisitor() {</span>
+<span class="nc" id="L74">		List&lt;Consumer&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L75">		boolean[] valid= { true };</span>
+<span class="nc" id="L76">		root.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(MethodDeclaration method) {
-<span class="nc bnc" id="L78" title="All 2 branches missed.">				if (Modifier.isNative(method.getModifiers())) {</span>
-<span class="nc" id="L79">					valid[0]= false;</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">				if (Modifier.isNative(method.getModifiers())) {</span>
+<span class="nc" id="L80">					valid[0]= false;</span>
 				}
-<span class="nc" id="L81">				return valid[0];</span>
+<span class="nc" id="L82">				return valid[0];</span>
 			}
 
 			@Override
 			public boolean visit(SimpleName name) {
-<span class="nc bnc" id="L86" title="All 4 branches missed.">				if (!(name.resolveBinding() instanceof IMethodBinding resolved) || resolved.isRecovered()) {</span>
-<span class="nc" id="L87">					return true;</span>
+<span class="nc bnc" id="L87" title="All 4 branches missed.">				if (!(ImportNameBindings.resolve(name) instanceof IMethodBinding resolved) || resolved.isRecovered()) {</span>
+<span class="nc" id="L88">					return true;</span>
 				}
-<span class="nc" id="L89">				var method= resolved.getMethodDeclaration();</span>
-<span class="nc bnc" id="L90" title="All 4 branches missed.">				if (!methodKey.equals(method.getKey()) || name.getParent() instanceof MethodDeclaration) {</span>
-<span class="nc" id="L91">					return true;</span>
+<span class="nc" id="L90">				var method= resolved.getMethodDeclaration();</span>
+<span class="nc bnc" id="L91" title="All 4 branches missed.">				if (!methodKey.equals(method.getKey()) || name.getParent() instanceof MethodDeclaration) {</span>
+<span class="nc" id="L92">					return true;</span>
 				}
-<span class="nc bnc" id="L93" title="All 2 branches missed.">				if (name.getParent() instanceof Expression expression) {</span>
-<span class="nc" id="L94">					var function= ClosedReturnFunctionUses.find(expression, method);</span>
-<span class="nc bnc" id="L95" title="All 2 branches missed.">					if (function.isPresent()) {</span>
-<span class="nc bnc" id="L96" title="All 2 branches missed.">						for (var application : function.get().calls()) {</span>
-<span class="nc" id="L97">							var consumer= consumer(unitHandle, application, method.getReturnType(), Optional.of(function.get().target()));</span>
-<span class="nc bnc" id="L98" title="All 2 branches missed.">							if (consumer.isEmpty()) {</span>
-<span class="nc" id="L99">								valid[0]= false;</span>
-<span class="nc" id="L100">								return false;</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">				if (name.getParent() instanceof Expression expression) {</span>
+<span class="nc" id="L95">					var function= ClosedReturnFunctionUses.find(expression, method);</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">					if (function.isPresent()) {</span>
+<span class="nc bnc" id="L97" title="All 2 branches missed.">						for (var application : function.get().calls()) {</span>
+<span class="nc" id="L98">							var consumer= consumer(unitHandle, application, method.getReturnType(), Optional.of(function.get().target()));</span>
+<span class="nc bnc" id="L99" title="All 2 branches missed.">							if (consumer.isEmpty()) {</span>
+<span class="nc" id="L100">								valid[0]= false;</span>
+<span class="nc" id="L101">								return false;</span>
 							}
-<span class="nc" id="L102">							result.add(consumer.get());</span>
-<span class="nc" id="L103">						}</span>
-<span class="nc" id="L104">						return true;</span>
+<span class="nc" id="L103">							result.add(consumer.get());</span>
+<span class="nc" id="L104">						}</span>
+<span class="nc" id="L105">						return true;</span>
 					}
 				}
-<span class="nc bnc" id="L107" title="All 4 branches missed.">				if (!(name.getParent() instanceof MethodInvocation call) || call.getName() != name) {</span>
-<span class="nc" id="L108">					valid[0]= false;</span>
-<span class="nc" id="L109">					return false;</span>
+<span class="nc bnc" id="L108" title="All 4 branches missed.">				if (!(name.getParent() instanceof MethodInvocation call) || call.getName() != name) {</span>
+<span class="nc" id="L109">					valid[0]= false;</span>
+<span class="nc" id="L110">					return false;</span>
 				}
-<span class="nc" id="L111">				var consumer= consumer(unitHandle, call, method.getReturnType(), Optional.empty());</span>
-<span class="nc bnc" id="L112" title="All 2 branches missed.">				if (consumer.isEmpty()) {</span>
-<span class="nc" id="L113">					valid[0]= false;</span>
-<span class="nc" id="L114">					return false;</span>
+<span class="nc" id="L112">				var consumer= consumer(unitHandle, call, method.getReturnType(), Optional.empty());</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">				if (consumer.isEmpty()) {</span>
+<span class="nc" id="L114">					valid[0]= false;</span>
+<span class="nc" id="L115">					return false;</span>
 				}
-<span class="nc" id="L116">				result.add(consumer.get());</span>
-<span class="nc" id="L117">				return true;</span>
+<span class="nc" id="L117">				result.add(consumer.get());</span>
+<span class="nc" id="L118">				return true;</span>
 			}
 		});
-<span class="nc" id="L120">		result.sort(Comparator.comparingInt(consumer -&gt; consumer.call().start()));</span>
-<span class="nc bnc" id="L121" title="All 2 branches missed.">		return valid[0] ? Optional.of(List.copyOf(result)) : Optional.empty();</span>
+<span class="nc" id="L121">		result.sort(Comparator.comparingInt(consumer -&gt; consumer.call().start()));</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">		return valid[0] ? Optional.of(List.copyOf(result)) : Optional.empty();</span>
 	}
 
 	private static Optional&lt;Consumer&gt; consumer(String unitHandle, MethodInvocation call, ITypeBinding returned,
 			Optional&lt;FunctionTarget&gt; function) {
-<span class="nc bnc" id="L126" title="All 4 branches missed.">		if (!(call.getParent() instanceof VariableDeclarationFragment fragment) || fragment.getInitializer() != call</span>
-<span class="nc bnc" id="L127" title="All 4 branches missed.">				|| !(fragment.getParent() instanceof VariableDeclarationStatement declaration) || declaration.fragments().size() != 1</span>
-<span class="nc bnc" id="L128" title="All 4 branches missed.">				|| !fragment.extraDimensions().isEmpty() || !(declaration.getType() instanceof ArrayType type)</span>
-<span class="nc bnc" id="L129" title="All 4 branches missed.">				|| fragment.resolveBinding() == null || !returned.isEqualTo(fragment.resolveBinding().getType())</span>
-<span class="nc bnc" id="L130" title="All 4 branches missed.">				|| type.resolveBinding().getTypeAnnotations().length != 0 || type.resolveBinding().getElementType().getTypeAnnotations().length != 0) {</span>
-<span class="nc" id="L131">			return Optional.empty();</span>
+<span class="nc bnc" id="L127" title="All 4 branches missed.">		if (!(call.getParent() instanceof VariableDeclarationFragment fragment) || fragment.getInitializer() != call</span>
+<span class="nc bnc" id="L128" title="All 4 branches missed.">				|| !(fragment.getParent() instanceof VariableDeclarationStatement declaration) || declaration.fragments().size() != 1</span>
+<span class="nc bnc" id="L129" title="All 4 branches missed.">				|| !fragment.extraDimensions().isEmpty() || !(declaration.getType() instanceof ArrayType type)</span>
+<span class="nc bnc" id="L130" title="All 4 branches missed.">				|| fragment.resolveBinding() == null || !returned.isEqualTo(fragment.resolveBinding().getType())</span>
+<span class="nc bnc" id="L131" title="All 4 branches missed.">				|| type.resolveBinding().getTypeAnnotations().length != 0 || type.resolveBinding().getElementType().getTypeAnnotations().length != 0) {</span>
+<span class="nc" id="L132">			return Optional.empty();</span>
 		}
-<span class="nc" id="L133">		List&lt;Range&gt; lengths= new ArrayList&lt;&gt;();</span>
-<span class="nc" id="L134">		boolean[] valid= { true };</span>
-<span class="nc" id="L135">		String key= fragment.resolveBinding().getVariableDeclaration().getKey();</span>
-<span class="nc" id="L136">		declaration.getParent().accept(new ASTVisitor() {</span>
+<span class="nc" id="L134">		List&lt;Range&gt; lengths= new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L135">		boolean[] valid= { true };</span>
+<span class="nc" id="L136">		String key= fragment.resolveBinding().getVariableDeclaration().getKey();</span>
+<span class="nc" id="L137">		declaration.getParent().accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(SimpleName reference) {
-<span class="nc bnc" id="L139" title="All 4 branches missed.">				if (reference == fragment.getName() || !(reference.resolveBinding() instanceof IVariableBinding used)</span>
-<span class="nc bnc" id="L140" title="All 2 branches missed.">						|| !key.equals(used.getVariableDeclaration().getKey())) {</span>
-<span class="nc" id="L141">					return true;</span>
+<span class="nc bnc" id="L140" title="All 4 branches missed.">				if (reference == fragment.getName() || !(reference.resolveBinding() instanceof IVariableBinding used)</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">						|| !key.equals(used.getVariableDeclaration().getKey())) {</span>
+<span class="nc" id="L142">					return true;</span>
 				}
-<span class="nc bnc" id="L143" title="All 4 branches missed.">				if (reference.getParent() instanceof QualifiedName length &amp;&amp; length.getQualifier() == reference</span>
-<span class="nc bnc" id="L144" title="All 2 branches missed.">						&amp;&amp; &quot;length&quot;.equals(length.getName().getIdentifier())) { //$NON-NLS-1$</span>
-<span class="nc" id="L145">					lengths.add(range(length));</span>
+<span class="nc bnc" id="L144" title="All 4 branches missed.">				if (reference.getParent() instanceof QualifiedName length &amp;&amp; length.getQualifier() == reference</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">						&amp;&amp; &quot;length&quot;.equals(length.getName().getIdentifier())) { //$NON-NLS-1$</span>
+<span class="nc" id="L146">					lengths.add(range(length));</span>
 				} else {
-<span class="nc" id="L147">					valid[0]= false;</span>
+<span class="nc" id="L148">					valid[0]= false;</span>
 				}
-<span class="nc" id="L149">				return true;</span>
+<span class="nc" id="L150">				return true;</span>
 			}
 		});
-<span class="nc bnc" id="L152" title="All 2 branches missed.">		return valid[0] ? Optional.of(new Consumer(unitHandle, key, range(type), range(call), lengths, function)) : Optional.empty();</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">		return valid[0] ? Optional.of(new Consumer(unitHandle, key, range(type), range(call), lengths, function)) : Optional.empty();</span>
 	}
 
 	private static Range range(ASTNode node) {
-<span class="nc" id="L156">		return new Range(node.getStartPosition(), node.getLength());</span>
+<span class="nc" id="L157">		return new Range(node.getStartPosition(), node.getLength());</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
