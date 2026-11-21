@@ -2262,7 +2262,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callSwitchStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="fc" id="L2265">		return callSwitchStatementVisitor(bs, null);</span>
+<span class="nc" id="L2265">		return callSwitchStatementVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2273,8 +2273,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callSwitchStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="fc" id="L2276">		nodetypelist.put(VisitorEnum.SwitchStatement, new NodeHolder(bs, navigate));</span>
-<span class="fc" id="L2277">		return this;</span>
+<span class="nc" id="L2276">		nodetypelist.put(VisitorEnum.SwitchStatement, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L2277">		return this;</span>
 	}
 
 	/**

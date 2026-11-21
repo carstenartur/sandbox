@@ -13,13 +13,10 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -28,14 +25,9 @@ import org.eclipse.jdt.core.dom.EnumConstantDeclaration;
 import org.eclipse.jdt.core.dom.EnumDeclaration;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
-import org.eclipse.jdt.core.dom.IBinding;
-import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.Javadoc;
-import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.Modifier;
-import org.eclipse.jdt.core.dom.PrimitiveType;
 import org.eclipse.jdt.core.dom.SimpleName;
-import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.SwitchCase;
 import org.eclipse.jdt.core.dom.SwitchStatement;
 import org.eclipse.jdt.core.dom.TagElement;
@@ -48,289 +40,137 @@ import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.jdt.internal.common.AstProcessorBuilder;
+import org.sandbox.jdt.internal.common.AstProcessing;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.IntToEnumFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.IntToEnumHelper.IntConstantHolder;
 
 /**
- * Helper class for converting switch statements using int constants to use enums.
- *
- * &lt;p&gt;This handles the case where a switch statement already exists with int constant
- * case labels. The transformation:&lt;/p&gt;
- * &lt;ol&gt;
- * &lt;li&gt;Detects static final int constant declarations with a common underscore-delimited prefix&lt;/li&gt;
- * &lt;li&gt;Finds switch statements that use these constants as case labels&lt;/li&gt;
- * &lt;li&gt;Verifies the switch selector is a method parameter (so the type can be updated)&lt;/li&gt;
- * &lt;li&gt;Verifies constants are not referenced outside the switch (to avoid broken references)&lt;/li&gt;
- * &lt;li&gt;Generates an enum type from the constant names&lt;/li&gt;
- * &lt;li&gt;Replaces the int constants in switch cases with enum values&lt;/li&gt;
- * &lt;li&gt;Removes the old int constant field declarations&lt;/li&gt;
- * &lt;li&gt;Updates the method parameter type from int to the enum type&lt;/li&gt;
- * &lt;/ol&gt;
+ * Converts an existing int switch only after the shared single-unit analysis
+ * proves a private constant domain, private method, all parameter uses and callers.
+ * Case bodies and fall-through order are preserved; accepted callers receive the
+ * corresponding enum values together with the parameter type change.
  */
-<span class="fc" id="L72">public class SwitchIntToEnumHelper extends AbstractTool&lt;ReferenceHolder&lt;Integer, IntConstantHolder&gt;&gt; {</span>
+<span class="fc" id="L54">public class SwitchIntToEnumHelper extends AbstractTool&lt;ReferenceHolder&lt;Integer, IntConstantHolder&gt;&gt; {</span>
 
 	@Override
 	public void find(IntToEnumFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
-
-<span class="fc" id="L78">		ReferenceHolder&lt;String, Object&gt; findHolder = ReferenceHolder.create();</span>
-<span class="fc" id="L79">		AstProcessorBuilder.with(findHolder)</span>
-<span class="fc" id="L80">			.onSwitchStatement((node, h) -&gt; {</span>
-<span class="pc bpc" id="L81" title="1 of 2 branches missed.">				if (nodesprocessed.contains(node)) {</span>
-<span class="nc" id="L82">					return true;</span>
-				}
-
-				// Only process if the switch selector is a method parameter (so we can update its type)
-<span class="fc" id="L86">				Expression switchExpr = node.getExpression();</span>
-<span class="pc bpc" id="L87" title="1 of 2 branches missed.">				if (!(switchExpr instanceof SimpleName switchName)) {</span>
-<span class="nc" id="L88">					return true;</span>
-				}
-<span class="fc" id="L90">				MethodDeclaration method = findEnclosingMethod(node);</span>
-<span class="pc bpc" id="L91" title="1 of 4 branches missed.">				if (method == null || !isMethodParameter(method, switchName.getIdentifier())) {</span>
-<span class="fc" id="L92">					return true;</span>
-				}
-
-				// Collect constants from the same enclosing type as the switch
-<span class="fc" id="L96">				TypeDeclaration enclosingType = findEnclosingType(node);</span>
-<span class="pc bpc" id="L97" title="1 of 2 branches missed.">				if (enclosingType == null) {</span>
-<span class="nc" id="L98">					return true;</span>
-				}
-<span class="fc" id="L100">				Map&lt;String, FieldDeclaration&gt; intConstants = collectIntConstants(enclosingType);</span>
-<span class="fc bfc" id="L101" title="All 2 branches covered.">				if (intConstants.size() &lt; 2) {</span>
-<span class="fc" id="L102">					return true;</span>
-				}
-
-				// Find case labels that reference collected constants (SimpleName only)
-<span class="fc" id="L106">				List&lt;String&gt; usedConstants = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L107">				Map&lt;String, FieldDeclaration&gt; usedFields = new LinkedHashMap&lt;&gt;();</span>
-
-<span class="fc bfc" id="L109" title="All 2 branches covered.">				for (Object stmt : node.statements()) {</span>
-<span class="fc bfc" id="L110" title="All 4 branches covered.">					if (stmt instanceof SwitchCase switchCase &amp;&amp; !switchCase.isDefault()) {</span>
-<span class="fc bfc" id="L111" title="All 2 branches covered.">						for (Object expr : switchCase.expressions()) {</span>
-<span class="pc bpc" id="L112" title="1 of 2 branches missed.">							if (expr instanceof SimpleName sn) {</span>
-<span class="fc" id="L113">								String constName = sn.getIdentifier();</span>
-<span class="pc bpc" id="L114" title="1 of 2 branches missed.">								if (intConstants.containsKey(constName)) {</span>
-<span class="fc" id="L115">									usedConstants.add(constName);</span>
-<span class="fc" id="L116">									usedFields.put(constName, intConstants.get(constName));</span>
-								}
-							}
-						}
-					}
-				}
-
-<span class="pc bpc" id="L123" title="1 of 2 branches missed.">				if (usedConstants.size() &lt; 2) {</span>
-<span class="nc" id="L124">					return true;</span>
-				}
-
-<span class="fc" id="L127">				String prefix = findCommonPrefix(usedConstants);</span>
-<span class="fc bfc" id="L128" title="All 2 branches covered.">				if (prefix == null) {</span>
-<span class="fc" id="L129">					return true;</span>
-				}
-
-				// Validate all derived enum constant names are valid Java identifiers
-<span class="fc bfc" id="L133" title="All 2 branches covered.">				for (String constName : usedConstants) {</span>
-<span class="fc" id="L134">					String enumValueName = constName.substring(prefix.length());</span>
-<span class="pc bpc" id="L135" title="2 of 4 branches missed.">					if (enumValueName.isEmpty() || !Character.isJavaIdentifierStart(enumValueName.charAt(0))) {</span>
-<span class="nc" id="L136">						return true;</span>
-					}
-				}
-
-				// Verify constants are not referenced outside the switch statement
-<span class="fc bfc" id="L141" title="All 2 branches covered.">				if (hasReferencesOutsideSwitch(compilationUnit, usedFields.keySet(), node)) {</span>
-<span class="fc" id="L142">					return true;</span>
-				}
-
-<span class="fc" id="L145">				IntConstantHolder holder = new IntConstantHolder();</span>
-<span class="fc" id="L146">				holder.switchStatement = node;</span>
-<span class="fc" id="L147">				holder.constantFields.putAll(usedFields);</span>
-<span class="fc" id="L148">				holder.constantNames.addAll(usedConstants);</span>
-<span class="fc" id="L149">				holder.comparedVariable = switchName.getIdentifier();</span>
-<span class="fc" id="L150">				holder.nodesProcessed = nodesprocessed;</span>
-
-<span class="fc" id="L152">				ReferenceHolder&lt;Integer, IntConstantHolder&gt; dataholder = new ReferenceHolder&lt;&gt;();</span>
-<span class="fc" id="L153">				dataholder.put(0, holder);</span>
-<span class="fc" id="L154">				operations.add(fixcore.rewrite(dataholder));</span>
-<span class="fc" id="L155">				nodesprocessed.add(node);</span>
-
-<span class="fc" id="L157">				return true;</span>
-			})
-<span class="fc" id="L159">			.build(compilationUnit);</span>
-<span class="fc" id="L160">	}</span>
-
-	/**
-	 * Collect static final int field declarations from the given type declaration.
-	 */
-	private static Map&lt;String, FieldDeclaration&gt; collectIntConstants(TypeDeclaration typeDecl) {
-<span class="fc" id="L166">		Map&lt;String, FieldDeclaration&gt; intConstants = new LinkedHashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L167" title="All 2 branches covered.">		for (FieldDeclaration field : typeDecl.getFields()) {</span>
-<span class="fc" id="L168">			int modifiers = field.getModifiers();</span>
-<span class="pc bpc" id="L169" title="2 of 4 branches missed.">			if (Modifier.isStatic(modifiers) &amp;&amp; Modifier.isFinal(modifiers)) {</span>
-<span class="fc" id="L170">				Type type = field.getType();</span>
-<span class="pc bpc" id="L171" title="1 of 2 branches missed.">				if (type.isPrimitiveType()</span>
-<span class="pc bpc" id="L172" title="1 of 2 branches missed.">						&amp;&amp; ((PrimitiveType) type).getPrimitiveTypeCode() == PrimitiveType.INT) {</span>
-<span class="fc bfc" id="L173" title="All 2 branches covered.">					for (Object fragment : field.fragments()) {</span>
-<span class="fc" id="L174">						VariableDeclarationFragment vdf = (VariableDeclarationFragment) fragment;</span>
-<span class="fc" id="L175">						intConstants.put(vdf.getName().getIdentifier(), field);</span>
-					}
-				}
+<span class="fc" id="L59">		AstProcessing.independent().visit(SwitchStatement.class, node -&gt; {</span>
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">			if (nodesprocessed.contains(node)) {</span>
+<span class="nc" id="L61">				return;</span>
 			}
-		}
-<span class="fc" id="L180">		return intConstants;</span>
-	}
-
-	/**
-	 * Check if the given variable name is a parameter of the method.
-	 */
-	private static boolean isMethodParameter(MethodDeclaration method, String varName) {
-<span class="fc bfc" id="L187" title="All 2 branches covered.">		for (Object param : method.parameters()) {</span>
-<span class="fc" id="L188">			SingleVariableDeclaration svd = (SingleVariableDeclaration) param;</span>
-<span class="pc bpc" id="L189" title="1 of 2 branches missed.">			if (svd.getName().getIdentifier().equals(varName)) {</span>
-<span class="fc" id="L190">				return true;</span>
+<span class="fc" id="L63">			IntConstantHolder holder = IntToEnumHelper.createSwitchCandidate(compilationUnit, node);</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">			if (holder == null) {</span>
+<span class="fc" id="L65">				return;</span>
 			}
-		}
-<span class="fc" id="L193">		return false;</span>
-	}
-
-	/**
-	 * Check if any of the named constants are referenced outside the given switch statement.
-	 * Returns true if there are external references (meaning we should NOT transform).
-	 */
-	private static boolean hasReferencesOutsideSwitch(CompilationUnit cu, Set&lt;String&gt; constantNames,
-			SwitchStatement switchStatement) {
-<span class="fc" id="L202">		AtomicBoolean hasExternalRef = new AtomicBoolean(false);</span>
-<span class="fc" id="L203">		ReferenceHolder&lt;String, Object&gt; refHolder = ReferenceHolder.create();</span>
-<span class="fc" id="L204">		AstProcessorBuilder.with(refHolder)</span>
-<span class="fc" id="L205">			.onSimpleName((node, h) -&gt; {</span>
-<span class="fc bfc" id="L206" title="All 2 branches covered.">				if (hasExternalRef.get()) {</span>
-<span class="fc" id="L207">					return false;</span>
-				}
-<span class="fc bfc" id="L209" title="All 2 branches covered.">				if (!constantNames.contains(node.getIdentifier())) {</span>
-<span class="fc" id="L210">					return true;</span>
-				}
-<span class="fc" id="L212">				IBinding binding = node.resolveBinding();</span>
-<span class="pc bpc" id="L213" title="2 of 4 branches missed.">				if (!(binding instanceof IVariableBinding vb) || !vb.isField()) {</span>
-<span class="nc" id="L214">					return true;</span>
-				}
-				// Check if this reference is inside the switch statement or in a field declaration
-<span class="fc" id="L217">				ASTNode parent = node.getParent();</span>
-<span class="fc bfc" id="L218" title="All 2 branches covered.">				while (parent != null) {</span>
-<span class="fc bfc" id="L219" title="All 2 branches covered.">					if (parent == switchStatement) {</span>
-<span class="fc" id="L220">						return true; // inside the switch - OK</span>
-					}
-<span class="fc bfc" id="L222" title="All 2 branches covered.">					if (parent instanceof FieldDeclaration) {</span>
-<span class="fc" id="L223">						return true; // in the field declaration itself - OK</span>
-					}
-<span class="fc" id="L225">					parent = parent.getParent();</span>
-				}
-				// Reference found outside the switch statement
-<span class="fc" id="L228">				hasExternalRef.set(true);</span>
-<span class="fc" id="L229">				return false;</span>
-			})
-<span class="fc" id="L231">			.build(cu);</span>
-<span class="fc" id="L232">		return hasExternalRef.get();</span>
-	}
+<span class="fc" id="L67">			holder.nodesProcessed = nodesprocessed;</span>
+<span class="fc" id="L68">			ReferenceHolder&lt;Integer, IntConstantHolder&gt; dataholder = new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L69">			dataholder.put(0, holder);</span>
+<span class="fc" id="L70">			operations.add(fixcore.rewrite(dataholder));</span>
+<span class="fc" id="L71">			nodesprocessed.add(node);</span>
+<span class="fc" id="L72">		}).build(compilationUnit);</span>
+<span class="fc" id="L73">	}</span>
 
 	@SuppressWarnings(&quot;unchecked&quot;)
 	@Override
 	public void rewrite(IntToEnumFixCore fixCore, ReferenceHolder&lt;Integer, IntConstantHolder&gt; holder,
 			CompilationUnitRewrite cuRewrite, TextEditGroup group) {
 
-<span class="fc bfc" id="L240" title="All 2 branches covered.">		for (IntConstantHolder data : holder.values()) {</span>
-<span class="pc bpc" id="L241" title="1 of 2 branches missed.">			if (data.switchStatement == null) {</span>
-<span class="nc" id="L242">				continue;</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">		for (IntConstantHolder data : holder.values()) {</span>
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">			if (data.switchStatement == null) {</span>
+<span class="nc" id="L82">				continue;</span>
 			}
 
-<span class="fc" id="L245">			AST ast = cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L246">			ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L85">			AST ast = cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L86">			ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
 
-<span class="fc" id="L248">			String prefix = findCommonPrefix(data.constantNames);</span>
-<span class="pc bpc" id="L249" title="1 of 2 branches missed.">			if (prefix == null) {</span>
-<span class="nc" id="L250">				continue;</span>
+<span class="fc" id="L88">			String prefix = findCommonPrefix(data.constantNames);</span>
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">			if (prefix == null) {</span>
+<span class="nc" id="L90">				continue;</span>
 			}
 
-<span class="fc" id="L253">			String enumName = prefixToEnumName(prefix);</span>
+<span class="fc" id="L93">			String enumName = prefixToEnumName(prefix);</span>
 
 			// 1. Create enum declaration
-<span class="fc" id="L256">			EnumDeclaration enumDecl = ast.newEnumDeclaration();</span>
-<span class="fc" id="L257">			enumDecl.setName(ast.newSimpleName(enumName));</span>
-<span class="fc" id="L258">			Javadoc doc = ast.newJavadoc();</span>
-<span class="fc" id="L259">			TagElement tag = ast.newTagElement();</span>
-<span class="fc" id="L260">			TextElement text = ast.newTextElement();</span>
-<span class="fc" id="L261">			text.setText(&quot;Values accepted by the &quot; + data.comparedVariable + &quot; switch.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L262">			tag.fragments().add(text);</span>
-<span class="fc" id="L263">			doc.tags().add(tag);</span>
-<span class="fc" id="L264">			enumDecl.setJavadoc(doc);</span>
-<span class="fc" id="L265">			enumDecl.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.PUBLIC_KEYWORD));</span>
+<span class="fc" id="L96">			EnumDeclaration enumDecl = ast.newEnumDeclaration();</span>
+<span class="fc" id="L97">			enumDecl.setName(ast.newSimpleName(enumName));</span>
+<span class="fc" id="L98">			Javadoc doc = ast.newJavadoc();</span>
+<span class="fc" id="L99">			TagElement tag = ast.newTagElement();</span>
+<span class="fc" id="L100">			TextElement text = ast.newTextElement();</span>
+<span class="fc" id="L101">			text.setText(&quot;Values accepted by the &quot; + data.comparedVariable + &quot; switch.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L102">			tag.fragments().add(text);</span>
+<span class="fc" id="L103">			doc.tags().add(tag);</span>
+<span class="fc" id="L104">			enumDecl.setJavadoc(doc);</span>
+<span class="fc" id="L105">			enumDecl.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.PRIVATE_KEYWORD));</span>
 
-<span class="fc bfc" id="L267" title="All 2 branches covered.">			for (String constName : data.constantNames) {</span>
-<span class="fc" id="L268">				EnumConstantDeclaration enumConst = ast.newEnumConstantDeclaration();</span>
-<span class="fc" id="L269">				String enumValueName = constName.substring(prefix.length());</span>
-<span class="fc" id="L270">				enumConst.setName(ast.newSimpleName(enumValueName));</span>
-<span class="fc" id="L271">				Javadoc original = data.constantFields.get(constName).getJavadoc();</span>
-<span class="fc bfc" id="L272" title="All 2 branches covered.">				if (original != null) {</span>
-<span class="fc" id="L273">					enumConst.setJavadoc((Javadoc) ASTNode.copySubtree(ast, original));</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">			for (String constName : data.constantNames) {</span>
+<span class="fc" id="L108">				EnumConstantDeclaration enumConst = ast.newEnumConstantDeclaration();</span>
+<span class="fc" id="L109">				String enumValueName = constName.substring(prefix.length());</span>
+<span class="fc" id="L110">				enumConst.setName(ast.newSimpleName(enumValueName));</span>
+<span class="fc" id="L111">				Javadoc original = data.constantFields.get(constName).getJavadoc();</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">				if (original != null) {</span>
+<span class="fc" id="L113">					enumConst.setJavadoc((Javadoc) ASTNode.copySubtree(ast, original));</span>
 				}
-<span class="fc" id="L275">				enumDecl.enumConstants().add(enumConst);</span>
+<span class="fc" id="L115">				enumDecl.enumConstants().add(enumConst);</span>
 			}
 
 			// 2. Find the enclosing TypeDeclaration
-<span class="fc" id="L279">			TypeDeclaration typeDecl = findEnclosingType(data.switchStatement);</span>
-<span class="pc bpc" id="L280" title="1 of 2 branches missed.">			if (typeDecl == null) {</span>
-<span class="nc" id="L281">				continue;</span>
+<span class="fc" id="L119">			TypeDeclaration typeDecl = data.enclosingType;</span>
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">			if (typeDecl == null) {</span>
+<span class="nc" id="L121">				continue;</span>
 			}
 
-<span class="fc" id="L284">			ListRewrite bodyRewrite = rewrite.getListRewrite(typeDecl, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);</span>
+<span class="fc" id="L124">			ListRewrite bodyRewrite = rewrite.getListRewrite(typeDecl, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);</span>
 
 			// 3. Insert enum before the first constant field being removed
-<span class="fc" id="L287">			FieldDeclaration firstField = data.constantFields.values().iterator().next();</span>
-<span class="fc" id="L288">			bodyRewrite.insertBefore(enumDecl, firstField, group);</span>
+<span class="fc" id="L127">			FieldDeclaration firstField = data.constantFields.values().iterator().next();</span>
+<span class="fc" id="L128">			bodyRewrite.insertBefore(enumDecl, firstField, group);</span>
 
 			// 4. Remove old int constant field declarations
-<span class="fc" id="L291">			Set&lt;FieldDeclaration&gt; fieldsToRemove = new HashSet&lt;&gt;(data.constantFields.values());</span>
-<span class="fc bfc" id="L292" title="All 2 branches covered.">			for (FieldDeclaration field : fieldsToRemove) {</span>
-<span class="fc" id="L293">				List&lt;?&gt; fragments = field.fragments();</span>
-<span class="fc" id="L294">				boolean allFragmentsRemoved = true;</span>
-<span class="fc bfc" id="L295" title="All 2 branches covered.">				for (Object frag : fragments) {</span>
-<span class="fc" id="L296">					VariableDeclarationFragment vdf = (VariableDeclarationFragment) frag;</span>
-<span class="pc bpc" id="L297" title="1 of 2 branches missed.">					if (!data.constantFields.containsKey(vdf.getName().getIdentifier())) {</span>
-<span class="nc" id="L298">						allFragmentsRemoved = false;</span>
-<span class="nc" id="L299">						break;</span>
+<span class="fc" id="L131">			Set&lt;FieldDeclaration&gt; fieldsToRemove = new HashSet&lt;&gt;(data.constantFields.values());</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">			for (FieldDeclaration field : fieldsToRemove) {</span>
+<span class="fc" id="L133">				List&lt;?&gt; fragments = field.fragments();</span>
+<span class="fc" id="L134">				boolean allFragmentsRemoved = true;</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">				for (Object frag : fragments) {</span>
+<span class="fc" id="L136">					VariableDeclarationFragment vdf = (VariableDeclarationFragment) frag;</span>
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">					if (!data.constantFields.containsKey(vdf.getName().getIdentifier())) {</span>
+<span class="nc" id="L138">						allFragmentsRemoved = false;</span>
+<span class="nc" id="L139">						break;</span>
 					}
 				}
-<span class="pc bpc" id="L302" title="1 of 2 branches missed.">				if (allFragmentsRemoved) {</span>
-<span class="fc" id="L303">					bodyRewrite.remove(field, group);</span>
-<span class="fc" id="L304">				} else {</span>
-<span class="nc" id="L305">					ListRewrite fragRewrite = rewrite.getListRewrite(field, FieldDeclaration.FRAGMENTS_PROPERTY);</span>
-<span class="nc bnc" id="L306" title="All 2 branches missed.">					for (Object frag : fragments) {</span>
-<span class="nc" id="L307">						VariableDeclarationFragment vdf = (VariableDeclarationFragment) frag;</span>
-<span class="nc bnc" id="L308" title="All 2 branches missed.">						if (data.constantFields.containsKey(vdf.getName().getIdentifier())) {</span>
-<span class="nc" id="L309">							fragRewrite.remove(vdf, group);</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">				if (allFragmentsRemoved) {</span>
+<span class="fc" id="L143">					bodyRewrite.remove(field, group);</span>
+<span class="fc" id="L144">				} else {</span>
+<span class="nc" id="L145">					ListRewrite fragRewrite = rewrite.getListRewrite(field, FieldDeclaration.FRAGMENTS_PROPERTY);</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">					for (Object frag : fragments) {</span>
+<span class="nc" id="L147">						VariableDeclarationFragment vdf = (VariableDeclarationFragment) frag;</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">						if (data.constantFields.containsKey(vdf.getName().getIdentifier())) {</span>
+<span class="nc" id="L149">							fragRewrite.remove(vdf, group);</span>
 						}
 					}
 				}
 			}
 
 			// 5. Update switch case labels to enum values
-<span class="fc" id="L316">			SwitchCase firstCase = null;</span>
-<span class="fc" id="L317">			boolean hasDefault = false;</span>
-<span class="fc bfc" id="L318" title="All 2 branches covered.">			for (Object stmt : data.switchStatement.statements()) {</span>
-<span class="fc bfc" id="L319" title="All 2 branches covered.">				if (stmt instanceof SwitchCase switchCase) {</span>
-<span class="fc bfc" id="L320" title="All 2 branches covered.">					if (firstCase == null) {</span>
-<span class="fc" id="L321">						firstCase = switchCase;</span>
+<span class="fc" id="L156">			SwitchCase firstCase = null;</span>
+<span class="fc" id="L157">			boolean hasDefault = false;</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">			for (Object stmt : data.switchStatement.statements()) {</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">				if (stmt instanceof SwitchCase switchCase) {</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">					if (firstCase == null) {</span>
+<span class="fc" id="L161">						firstCase = switchCase;</span>
 					}
-<span class="fc bfc" id="L323" title="All 2 branches covered.">					if (switchCase.isDefault()) {</span>
-<span class="fc" id="L324">						hasDefault = true;</span>
-<span class="fc" id="L325">						continue;</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">					if (switchCase.isDefault()) {</span>
+<span class="fc" id="L164">						hasDefault = true;</span>
+<span class="fc" id="L165">						continue;</span>
 					}
-<span class="fc bfc" id="L327" title="All 2 branches covered.">					for (Object expr : switchCase.expressions()) {</span>
-<span class="pc bpc" id="L328" title="1 of 2 branches missed.">						if (expr instanceof SimpleName sn) {</span>
-<span class="fc" id="L329">							String constName = sn.getIdentifier();</span>
-<span class="pc bpc" id="L330" title="1 of 2 branches missed.">							if (data.constantFields.containsKey(constName)) {</span>
-<span class="fc" id="L331">								String enumValueName = constName.substring(prefix.length());</span>
-<span class="fc" id="L332">								SimpleName newName = ast.newSimpleName(enumValueName);</span>
-<span class="fc" id="L333">								rewrite.replace(sn, newName, group);</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">					for (Object expr : switchCase.expressions()) {</span>
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">						if (expr instanceof SimpleName sn) {</span>
+<span class="fc" id="L169">							String constName = sn.getIdentifier();</span>
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">							if (data.constantFields.containsKey(constName)) {</span>
+<span class="fc" id="L171">								String enumValueName = constName.substring(prefix.length());</span>
+<span class="fc" id="L172">								SimpleName newName = ast.newSimpleName(enumValueName);</span>
+<span class="fc" id="L173">								rewrite.replace(sn, newName, group);</span>
 							}
 						}
 					}
@@ -339,115 +179,91 @@ import org.sandbox.jdt.internal.corext.fix.helper.IntToEnumHelper.IntConstantHol
 
 			// Previously an unmatched int left the switch without executing a case.
 			// Insert its equivalent first so existing fall-through paths keep their targets.
-<span class="pc bpc" id="L342" title="1 of 4 branches missed.">			if (!hasDefault &amp;&amp; firstCase != null) {</span>
-<span class="fc" id="L343">				SwitchCase fallback = ast.newSwitchCase();</span>
-<span class="fc" id="L344">				fallback.setSwitchLabeledRule(firstCase.isSwitchLabeledRule());</span>
-<span class="fc" id="L345">				ListRewrite statements = rewrite.getListRewrite(data.switchStatement, SwitchStatement.STATEMENTS_PROPERTY);</span>
-<span class="fc" id="L346">				statements.insertFirst(fallback, group);</span>
-<span class="fc bfc" id="L347" title="All 2 branches covered.">				ASTNode body = firstCase.isSwitchLabeledRule()</span>
-<span class="fc" id="L348">						? rewrite.createStringPlaceholder(&quot;{ /* No matching constant. */ }&quot;, ASTNode.BLOCK) //$NON-NLS-1$</span>
-<span class="fc" id="L349">						: ast.newBreakStatement();</span>
-<span class="fc" id="L350">				statements.insertAfter(body, fallback, group);</span>
+<span class="pc bpc" id="L182" title="1 of 4 branches missed.">			if (!hasDefault &amp;&amp; firstCase != null) {</span>
+<span class="fc" id="L183">				SwitchCase fallback = ast.newSwitchCase();</span>
+<span class="fc" id="L184">				fallback.setSwitchLabeledRule(firstCase.isSwitchLabeledRule());</span>
+<span class="fc" id="L185">				ListRewrite statements = rewrite.getListRewrite(data.switchStatement, SwitchStatement.STATEMENTS_PROPERTY);</span>
+<span class="fc" id="L186">				statements.insertFirst(fallback, group);</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">				ASTNode body = firstCase.isSwitchLabeledRule()</span>
+<span class="fc" id="L188">						? rewrite.createStringPlaceholder(&quot;{ /* No matching constant. */ }&quot;, ASTNode.BLOCK) //$NON-NLS-1$</span>
+<span class="fc" id="L189">						: ast.newBreakStatement();</span>
+<span class="fc" id="L190">				statements.insertAfter(body, fallback, group);</span>
 			}
 
-			// 6. Update method parameter type from int to enum
-<span class="fc" id="L354">			MethodDeclaration method = findEnclosingMethod(data.switchStatement);</span>
-<span class="pc bpc" id="L355" title="2 of 4 branches missed.">			if (method != null &amp;&amp; data.comparedVariable != null) {</span>
-<span class="fc bfc" id="L356" title="All 2 branches covered.">				for (Object param : method.parameters()) {</span>
-<span class="fc" id="L357">					SingleVariableDeclaration svd = (SingleVariableDeclaration) param;</span>
-<span class="pc bpc" id="L358" title="1 of 2 branches missed.">					if (svd.getName().getIdentifier().equals(data.comparedVariable)) {</span>
-<span class="fc" id="L359">						Type newType = ast.newSimpleType(ast.newSimpleName(enumName));</span>
-<span class="fc" id="L360">						rewrite.replace(svd.getType(), newType, group);</span>
-					}
+			// 6. Update the proven parameter and every accepted local call site.
+<span class="fc" id="L194">			Type newType = ast.newSimpleType(ast.newSimpleName(enumName));</span>
+<span class="fc" id="L195">			rewrite.replace(data.parameter.getType(), newType, group);</span>
+<span class="fc bfc" id="L196" title="All 2 branches covered.">			for (Map.Entry&lt;Expression, String&gt; reference : data.constantReferences.entrySet()) {</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">				if (!(reference.getKey().getParent() instanceof SwitchCase)) {</span>
+<span class="fc" id="L198">					String constant = reference.getValue().substring(prefix.length());</span>
+<span class="fc" id="L199">					rewrite.replace(reference.getKey(), ast.newName(enumName + &quot;.&quot; + constant), group); //$NON-NLS-1$</span>
 				}
 			}
 		}
-<span class="fc" id="L365">	}</span>
+<span class="fc" id="L203">	}</span>
 
 	/**
 	 * Find the longest common prefix of all constant names, ending at an underscore boundary.
 	 * Returns null if no valid underscore-delimited prefix is found.
 	 */
 	static String findCommonPrefix(List&lt;String&gt; names) {
-<span class="pc bpc" id="L372" title="2 of 4 branches missed.">		if (names == null || names.isEmpty()) {</span>
-<span class="nc" id="L373">			return null;</span>
+<span class="pc bpc" id="L210" title="2 of 4 branches missed.">		if (names == null || names.isEmpty()) {</span>
+<span class="nc" id="L211">			return null;</span>
 		}
-<span class="fc" id="L375">		String first = names.get(0);</span>
-<span class="fc" id="L376">		int prefixEnd = first.length();</span>
-<span class="fc bfc" id="L377" title="All 2 branches covered.">		for (String name : names) {</span>
-<span class="fc" id="L378">			prefixEnd = Math.min(prefixEnd, name.length());</span>
-<span class="fc bfc" id="L379" title="All 2 branches covered.">			for (int i = 0; i &lt; prefixEnd; i++) {</span>
-<span class="fc bfc" id="L380" title="All 2 branches covered.">				if (first.charAt(i) != name.charAt(i)) {</span>
-<span class="fc" id="L381">					prefixEnd = i;</span>
-<span class="fc" id="L382">					break;</span>
+<span class="fc" id="L213">		String first = names.get(0);</span>
+<span class="fc" id="L214">		int prefixEnd = first.length();</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">		for (String name : names) {</span>
+<span class="fc" id="L216">			prefixEnd = Math.min(prefixEnd, name.length());</span>
+<span class="fc bfc" id="L217" title="All 2 branches covered.">			for (int i = 0; i &lt; prefixEnd; i++) {</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">				if (first.charAt(i) != name.charAt(i)) {</span>
+<span class="fc" id="L219">					prefixEnd = i;</span>
+<span class="fc" id="L220">					break;</span>
 				}
 			}
 		}
-<span class="fc" id="L386">		String prefix = first.substring(0, prefixEnd);</span>
+<span class="fc" id="L224">		String prefix = first.substring(0, prefixEnd);</span>
 		// Trim to last underscore for a clean prefix boundary.
 		// If there is no underscore (or only at position 0), we do not
 		// consider this a valid prefix according to the architecture
 		// contract (which requires underscore-delimited prefixes).
-<span class="fc" id="L391">		int lastUnderscore = prefix.lastIndexOf('_');</span>
-<span class="fc bfc" id="L392" title="All 2 branches covered.">		if (lastUnderscore &gt; 0) {</span>
-<span class="fc" id="L393">			return prefix.substring(0, lastUnderscore + 1);</span>
+<span class="fc" id="L229">		int lastUnderscore = prefix.lastIndexOf('_');</span>
+<span class="pc bpc" id="L230" title="1 of 2 branches missed.">		if (lastUnderscore &gt; 0) {</span>
+<span class="fc" id="L231">			return prefix.substring(0, lastUnderscore + 1);</span>
 		}
-<span class="fc" id="L395">		return null;</span>
+<span class="nc" id="L233">		return null;</span>
 	}
 
 	/**
 	 * Convert a constant prefix like &quot;STATUS_&quot; to an enum name like &quot;Status&quot;.
 	 */
 	static String prefixToEnumName(String prefix) {
-<span class="pc bpc" id="L402" title="1 of 2 branches missed.">		if (prefix.endsWith(&quot;_&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L403">			prefix = prefix.substring(0, prefix.length() - 1);</span>
+<span class="pc bpc" id="L240" title="1 of 2 branches missed.">		if (prefix.endsWith(&quot;_&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L241">			prefix = prefix.substring(0, prefix.length() - 1);</span>
 		}
-<span class="fc" id="L405">		StringBuilder sb = new StringBuilder();</span>
-<span class="fc" id="L406">		boolean capitalizeNext = true;</span>
-<span class="fc bfc" id="L407" title="All 2 branches covered.">		for (char c : prefix.toLowerCase().toCharArray()) {</span>
-<span class="pc bpc" id="L408" title="1 of 2 branches missed.">			if (c == '_') {</span>
-<span class="nc" id="L409">				capitalizeNext = true;</span>
-<span class="nc" id="L410">			} else {</span>
-<span class="fc bfc" id="L411" title="All 2 branches covered.">				if (capitalizeNext) {</span>
-<span class="fc" id="L412">					sb.append(Character.toUpperCase(c));</span>
-<span class="fc" id="L413">					capitalizeNext = false;</span>
-<span class="fc" id="L414">				} else {</span>
-<span class="fc" id="L415">					sb.append(c);</span>
+<span class="fc" id="L243">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L244">		boolean capitalizeNext = true;</span>
+<span class="fc bfc" id="L245" title="All 2 branches covered.">		for (char c : prefix.toLowerCase().toCharArray()) {</span>
+<span class="pc bpc" id="L246" title="1 of 2 branches missed.">			if (c == '_') {</span>
+<span class="nc" id="L247">				capitalizeNext = true;</span>
+<span class="nc" id="L248">			} else {</span>
+<span class="fc bfc" id="L249" title="All 2 branches covered.">				if (capitalizeNext) {</span>
+<span class="fc" id="L250">					sb.append(Character.toUpperCase(c));</span>
+<span class="fc" id="L251">					capitalizeNext = false;</span>
+<span class="fc" id="L252">				} else {</span>
+<span class="fc" id="L253">					sb.append(c);</span>
 				}
 			}
 		}
-<span class="fc" id="L419">		return sb.toString();</span>
-	}
-
-	private static TypeDeclaration findEnclosingType(ASTNode node) {
-<span class="fc" id="L423">		ASTNode parent = node.getParent();</span>
-<span class="pc bpc" id="L424" title="1 of 2 branches missed.">		while (parent != null) {</span>
-<span class="fc bfc" id="L425" title="All 2 branches covered.">			if (parent instanceof TypeDeclaration typeDecl) {</span>
-<span class="fc" id="L426">				return typeDecl;</span>
-			}
-<span class="fc" id="L428">			parent = parent.getParent();</span>
-		}
-<span class="nc" id="L430">		return null;</span>
-	}
-
-	private static MethodDeclaration findEnclosingMethod(ASTNode node) {
-<span class="fc" id="L434">		ASTNode parent = node.getParent();</span>
-<span class="pc bpc" id="L435" title="1 of 2 branches missed.">		while (parent != null) {</span>
-<span class="fc bfc" id="L436" title="All 2 branches covered.">			if (parent instanceof MethodDeclaration methodDecl) {</span>
-<span class="fc" id="L437">				return methodDecl;</span>
-			}
-<span class="fc" id="L439">			parent = parent.getParent();</span>
-		}
-<span class="nc" id="L441">		return null;</span>
+<span class="fc" id="L257">		return sb.toString();</span>
 	}
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L446" title="All 2 branches missed.">		if (!afterRefactoring) {</span>
-<span class="nc" id="L447">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L262" title="All 2 branches missed.">		if (!afterRefactoring) {</span>
+<span class="nc" id="L263">			return &quot;&quot;&quot;</span>
 					// Before:
-					public static final int STATUS_PENDING = 0;
-					public static final int STATUS_APPROVED = 1;
+					private static final int STATUS_PENDING = 0;
+					private static final int STATUS_APPROVED = 1;
 
 					switch (status) {
 					    case STATUS_PENDING:
@@ -459,10 +275,10 @@ import org.sandbox.jdt.internal.corext.fix.helper.IntToEnumHelper.IntConstantHol
 					}
 					&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L462">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L278">		return &quot;&quot;&quot;</span>
 				// After:
 				/** Values accepted by the status switch. */
-				public enum Status {
+				private enum Status {
 				    PENDING, APPROVED
 				}
 

@@ -1120,8 +1120,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onSwitchStatement(BiPredicate&lt;SwitchStatement, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="fc" id="L1123">		processor.callSwitchStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((SwitchStatement) node, holder));</span>
-<span class="fc" id="L1124">		return this;</span>
+<span class="nc" id="L1123">		processor.callSwitchStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((SwitchStatement) node, holder));</span>
+<span class="nc" id="L1124">		return this;</span>
 	}
 	
 	/**

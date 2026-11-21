@@ -2244,44 +2244,6 @@
 <th>Project</th>
 <th>Line</th></tr>
 <tr class="b">
-<td>org/sandbox/jdt/internal/corext/fix/multifile/IntEnumMultiFilePlanner.java</td>
-<td>Sandbox int to enum</td>
-<td>200</td></tr>
-<tr class="a">
-<td>org/sandbox/jdt/internal/corext/fix/multifile/JUnitMultiFilePlanner.java</td>
-<td>Sandbox junit cleanup</td>
-<td>293</td></tr>
-<tr class="b">
-<td colspan="3">
-<pre>&quot;The selected compilation units do not contain every required declaration and caller.&quot;, false); //$NON-NLS-1$
-		return new MultiFileCleanUpDiagnostics(CLEANUP_ID, scope, candidates);
-	}
-
-	private static Map&lt;String, CompilationUnit&gt; parse(IJavaProject project, ICompilationUnit[] units,
-			IProgressMonitor monitor) {
-		Map&lt;String, CompilationUnit&gt; roots= new LinkedHashMap&lt;&gt;();
-		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);
-		parser.setProject(project);
-		parser.setResolveBindings(true);
-		parser.setBindingsRecovery(IASTSharedValues.SHARED_BINDING_RECOVERY);
-		parser.setStatementsRecovery(IASTSharedValues.SHARED_AST_STATEMENT_RECOVERY);
-		parser.setCompilerOptions(RefactoringASTParser.getCompilerOptions(project));
-		parser.createASTs(units, new String[0], new ASTRequestor() {
-			@Override
-			public void acceptAST(ICompilationUnit source, CompilationUnit ast) {
-				roots.put(source.getPrimary().getHandleIdentifier(), ast);
-			}
-		}, monitor);
-		return roots;
-	}
-
-	private static List&lt;CandidateBuilder&gt; discoverCandidates(Map&lt;String, CompilationUnit&gt; roots,</pre></td></tr></table>
-<table class="table table-striped">
-<tr class="a">
-<th>File</th>
-<th>Project</th>
-<th>Line</th></tr>
-<tr class="b">
 <td>org/sandbox/jdt/triggerpattern/llm/GeminiClient.java</td>
 <td>Sandbox Common Core</td>
 <td>680</td></tr>
@@ -2555,20 +2517,16 @@
 <th>Project</th>
 <th>Line</th></tr>
 <tr class="b">
-<td>org/sandbox/jdt/internal/corext/fix/multifile/IntEnumMultiFilePlanner.java</td>
-<td>Sandbox int to enum</td>
-<td>201</td></tr>
-<tr class="a">
 <td>org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java</td>
 <td>Sandbox junit cleanup</td>
 <td>578</td></tr>
-<tr class="b">
+<tr class="a">
 <td>org/sandbox/jdt/internal/corext/fix/multifile/JUnitMultiFilePlanner.java</td>
 <td>Sandbox junit cleanup</td>
 <td>295</td></tr>
-<tr class="a">
+<tr class="b">
 <td colspan="3">
-<pre>return new MultiFileCleanUpDiagnostics(CLEANUP_ID, scope, candidates);
+<pre>&amp;&amp; gap.targetTypeName().equals(sourceTypeName(type));
 	}
 
 	private static Map&lt;String, CompilationUnit&gt; parse(IJavaProject project, ICompilationUnit[] units,
@@ -2589,7 +2547,7 @@
 		return roots;
 	}
 
-	private static List&lt;CandidateBuilder&gt; discoverCandidates(Map&lt;String, CompilationUnit&gt; roots,</pre></td></tr></table>
+	private static SourceType sourceType(String handle, TypeDeclaration type) {</pre></td></tr></table>
 <table class="table table-striped">
 <tr class="a">
 <th>File</th>
