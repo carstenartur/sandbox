@@ -16,6 +16,7 @@ package org.sandbox.jdt.ui.tests.quickfix.rules;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -31,6 +32,8 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
@@ -83,27 +86,12 @@ public final class CompilerDiagnosticAssertions {
 		if (type == null || type.isRecovered() || Bindings.findTypeInHierarchy(type, "java.lang.AutoCloseable") == null) { //$NON-NLS-1$
 			return arguments;
 		}
-		StringBuilder path= new StringBuilder();
-		while (!(node instanceof MethodDeclaration)) {
-			ASTNode parent= node.getParent();
-			var property= node.getLocationInParent();
-			if (parent == null || property == null || (node.getFlags() & (ASTNode.MALFORMED | ASTNode.RECOVERED)) != 0) {
-				return arguments;
-			}
-			path.append('/').append(property.getId());
-			Object child= parent.getStructuralProperty(property);
-			if (property.isChildListProperty()) {
-				if (!(child instanceof List<?> children) || children.indexOf(node) < 0) {
-					return arguments;
-				}
-				path.append('[').append(children.indexOf(node)).append(']');
-			} else if (child != node) {
-				return arguments;
-			}
-			node= parent;
+		ResourceLocation location= resourceLocation(expression);
+		if (location == null) {
+			return arguments;
 		}
-		IMethodBinding method= ((MethodDeclaration) node).resolveBinding();
-		if ((node.getFlags() & (ASTNode.MALFORMED | ASTNode.RECOVERED)) != 0 || method == null || method.isRecovered()
+		IMethodBinding method= location.method().resolveBinding();
+		if (method == null || method.isRecovered()
 				|| method.getDeclaringClass() == null || method.getDeclaringClass().isRecovered()
 				|| method.getDeclaringClass().isLocal() || method.getDeclaringClass().isAnonymous()) {
 			return arguments;
@@ -112,9 +100,54 @@ public final class CompilerDiagnosticAssertions {
 		if (key == null || key.isBlank()) {
 			return arguments;
 		}
-		// JDT embeds an absolute source line in this placeholder. Identify its exact
-		// resource expression instead, retaining separate occurrences and their counts.
-		return new String[] { "<unassigned Closeable value>", key, path.toString(), expression.toString() }; //$NON-NLS-1$
+		String source= expression.toString();
+		List<Expression> occurrences= new ArrayList<>();
+		location.method().accept(new ASTVisitor() {
+			@Override
+			public boolean preVisit2(ASTNode candidate) {
+				if (candidate.getNodeType() == expression.getNodeType() && candidate instanceof Expression other
+						&& source.equals(other.toString()) && location.equals(resourceLocation(other))) {
+					occurrences.add(other);
+				}
+				return true;
+			}
+		});
+		// An unrelated statement can be inserted before this expression. Preserve its
+		// structural role and ordinal among identical occurrences instead of that index.
+		// The total count also prevents deleted occurrences from crediting a new one.
+		return new String[] { "<unassigned Closeable value>", key, location.path(), source, //$NON-NLS-1$
+				occurrences.indexOf(expression) + "/" + occurrences.size() }; //$NON-NLS-1$
+	}
+
+	private record ResourceLocation(MethodDeclaration method, String path) {
+	}
+
+	private static ResourceLocation resourceLocation(ASTNode node) {
+		StringBuilder path= new StringBuilder();
+		while (!(node instanceof MethodDeclaration)) {
+			ASTNode parent= node.getParent();
+			var property= node.getLocationInParent();
+			if (parent == null || property == null || (node.getFlags() & (ASTNode.MALFORMED | ASTNode.RECOVERED)) != 0) {
+				return null;
+			}
+			path.append('/').append(property.getId());
+			Object child= parent.getStructuralProperty(property);
+			if (property.isChildListProperty()) {
+				if (!(child instanceof List<?> children) || children.indexOf(node) < 0) {
+					return null;
+				}
+				if (property != Block.STATEMENTS_PROPERTY) {
+					path.append('[').append(children.indexOf(node)).append(']');
+				}
+			} else if (child != node) {
+				return null;
+			}
+			node= parent;
+		}
+		if ((node.getFlags() & (ASTNode.MALFORMED | ASTNode.RECOVERED)) != 0) {
+			return null;
+		}
+		return new ResourceLocation((MethodDeclaration) node, path.toString());
 	}
 
 	private static IMethodBinding declaringMethod(CompilationUnit root, IProblem problem) {

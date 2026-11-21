@@ -213,6 +213,66 @@ class CompilerDiagnosticRegressionTest {
 	}
 
 	@Test
+	void statementInsertionPreservesAnExistingUnassignedResourceWarning() throws Exception {
+		String original= resourceSource();
+		String shifted= original.replace("boolean equal= first == second;", //$NON-NLS-1$
+				"System.out.println(first == second);\nboolean equal= first == second;"); //$NON-NLS-1$
+		assertResourceChangePreserved(original, shifted);
+	}
+
+	@Test
+	void iteratorLoopSetupPreservesAnExistingUnassignedResourceWarning() throws Exception {
+		String original= resourceSource()
+				.replace("boolean equal= first == second;", //$NON-NLS-1$
+						"for (Object value : java.util.List.of(first, second)) { System.out.println(value); }\n" //$NON-NLS-1$
+								+ "boolean equal= first == second;"); //$NON-NLS-1$
+		String changed= original.replace(
+				"for (Object value : java.util.List.of(first, second)) { System.out.println(value); }", //$NON-NLS-1$
+				"java.util.Iterator<?> values= java.util.List.of(first, second).iterator();\n" //$NON-NLS-1$
+						+ "while (values.hasNext()) { Object value= values.next(); System.out.println(value); }"); //$NON-NLS-1$
+		assertResourceChangePreserved(original, changed);
+	}
+
+	private void assertResourceChangePreserved(String original, String changed) throws Exception {
+		ICompilationUnit unit= createUnit(original);
+		assertResourceWarnings(unit, 2);
+		var options= context.getJavaProject().getOptions(false);
+		var baseline= CompilerDiagnosticAssertions.capture(unit);
+		try {
+			unit.getBuffer().setContents(changed);
+			assertResourceWarnings(unit, 2);
+			assertDoesNotThrow(() -> {
+				baseline.assertNoNewDiagnostics();
+			});
+		} finally {
+			unit.getBuffer().setContents(original);
+			baseline.assertRestored();
+			assertEquals(options, context.getJavaProject().getOptions(false));
+		}
+	}
+
+	@Test
+	void iteratorLoopPreservesAnExistingResourceWarningInsideItsBody() throws Exception {
+		String original= """
+				package test;
+				import java.lang.ref.WeakReference;
+				class Sample {
+					static void run(java.util.List<WeakReference<java.util.zip.ZipFile>> values) {
+						for (WeakReference<java.util.zip.ZipFile> value : values) {
+							if (value.get() != null) {
+								return;
+							}
+						}
+					}
+				}
+				""";
+		String changed= original.replace("for (WeakReference<java.util.zip.ZipFile> value : values) {", //$NON-NLS-1$
+				"java.util.Iterator<WeakReference<java.util.zip.ZipFile>> iterator= values.iterator();\n" //$NON-NLS-1$
+						+ "while (iterator.hasNext()) {\nWeakReference<java.util.zip.ZipFile> value= iterator.next();"); //$NON-NLS-1$
+		assertResourceChangePreserved(original, changed);
+	}
+
+	@Test
 	void anAdditionalUnassignedResourceWarningIsRejected() throws Exception {
 		String original= resourceSource();
 		String additional= original.replace("return !equal;", """
@@ -228,6 +288,23 @@ class CompilerDiagnosticRegressionTest {
 	void anotherUnassignedResourceWithTheSameWarningCountIsRejected() throws Exception {
 		String original= resourceSource();
 		assertResourceChangeRejected(original, original.replace("first.get()", "second.get()"), 2); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	void movingAResourceWarningBetweenIdenticalStructuralRolesIsRejected() throws Exception {
+		String original= """
+				package test;
+				import java.lang.ref.WeakReference;
+				class Sample {
+					static void run(WeakReference<java.util.zip.ZipFile> first) throws Exception {
+						first.get().size();
+						first.get().close();
+					}
+				}
+				""";
+		String changed= original.replace(".size();", ".TEMP();") //$NON-NLS-1$ //$NON-NLS-2$
+				.replace(".close();", ".size();").replace(".TEMP();", ".close();"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+		assertResourceChangeRejected(original, changed, 1, 1);
 	}
 
 	@Test
@@ -247,8 +324,13 @@ class CompilerDiagnosticRegressionTest {
 	}
 
 	private void assertResourceChangeRejected(String original, String changed, long expectedWarnings) throws Exception {
+		assertResourceChangeRejected(original, changed, 2, expectedWarnings);
+	}
+
+	private void assertResourceChangeRejected(String original, String changed, long originalWarnings,
+			long expectedWarnings) throws Exception {
 		ICompilationUnit unit= createUnit(original);
-		assertResourceWarnings(unit, 2);
+		assertResourceWarnings(unit, originalWarnings);
 		var baseline= CompilerDiagnosticAssertions.capture(unit);
 		try {
 			unit.getBuffer().setContents(changed);
