@@ -1,19 +1,19 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-20T23:22:10.522761+00:00",
+  "generated_at": "2026-11-21T08:13:10.864655+00:00",
   "repository": "carstenartur/sandbox",
-  "commit_sha": "daefef7c27f42a48ad9f88d55bba041bf9563688",
-  "commit_url": "https://github.com/carstenartur/sandbox/commit/daefef7c27f42a48ad9f88d55bba041bf9563688",
+  "commit_sha": "cba1cd41a7b9bc63c0bc82561203e47f817e2f92",
+  "commit_url": "https://github.com/carstenartur/sandbox/commit/cba1cd41a7b9bc63c0bc82561203e47f817e2f92",
   "ref": "refs/heads/main",
   "event_name": "workflow_run",
   "provenance_workflow": {
     "name": "Post-merge Build Provenance",
-    "run_id": "44836236670",
-    "run_number": "3301",
+    "run_id": "44883810783",
+    "run_number": "3302",
     "run_attempt": "1",
-    "run_url": "https://github.com/carstenartur/sandbox/actions/runs/44836236670",
-    "source_java_ci_run_id": "44800961813",
-    "source_java_ci_run_url": "https://github.com/carstenartur/sandbox/actions/runs/44800961813"
+    "run_url": "https://github.com/carstenartur/sandbox/actions/runs/44883810783",
+    "source_java_ci_run_id": "44882221374",
+    "source_java_ci_run_url": "https://github.com/carstenartur/sandbox/actions/runs/44882221374"
   },
   "toolchain": {
     "project_version": "1.3.11-SNAPSHOT",
@@ -46,16 +46,16 @@
   "tests": {
     "inventory": {
       "total_modules": 19,
-      "total_tests": 3848,
-      "enabled_tests": 3818,
+      "total_tests": 3850,
+      "enabled_tests": 3820,
       "disabled_tests": 30
     },
     "executed": {
-      "tests": 7250,
+      "tests": 7252,
       "failures": 0,
       "errors": 0,
       "skipped": 12,
-      "report_files": 763
+      "report_files": 764
     }
   },
   "artifacts": {
@@ -67,69 +67,69 @@
   },
   "related_workflows": [
     {
-      "id": 44800961813,
+      "id": 44882221374,
       "name": "Java CI with Maven",
       "event": "push",
-      "head_sha": "daefef7c27f42a48ad9f88d55bba041bf9563688",
+      "head_sha": "cba1cd41a7b9bc63c0bc82561203e47f817e2f92",
       "status": "completed",
       "conclusion": "success",
-      "run_number": 9263,
-      "run_attempt": 2,
-      "created_at": "2026-11-20T19:18:54Z",
-      "updated_at": "2026-11-20T23:21:46Z",
-      "html_url": "https://github.com/carstenartur/sandbox/actions/runs/44800961813"
+      "run_number": 9331,
+      "run_attempt": 1,
+      "created_at": "2026-11-21T07:52:14Z",
+      "updated_at": "2026-11-21T08:12:47Z",
+      "html_url": "https://github.com/carstenartur/sandbox/actions/runs/44882221374"
     },
     {
-      "id": 44800961976,
+      "id": 44882221429,
       "name": "Core Module Build",
       "event": "push",
-      "head_sha": "daefef7c27f42a48ad9f88d55bba041bf9563688",
+      "head_sha": "cba1cd41a7b9bc63c0bc82561203e47f817e2f92",
       "status": "completed",
       "conclusion": "success",
-      "run_number": 3019,
+      "run_number": 3028,
       "run_attempt": 1,
-      "created_at": "2026-11-20T19:18:54Z",
-      "updated_at": "2026-11-20T19:20:33Z",
-      "html_url": "https://github.com/carstenartur/sandbox/actions/runs/44800961976"
+      "created_at": "2026-11-21T07:52:14Z",
+      "updated_at": "2026-11-21T07:54:39Z",
+      "html_url": "https://github.com/carstenartur/sandbox/actions/runs/44882221429"
     },
     {
-      "id": 44800961827,
+      "id": 44882221484,
       "name": "CodeQL",
       "event": "push",
-      "head_sha": "daefef7c27f42a48ad9f88d55bba041bf9563688",
+      "head_sha": "cba1cd41a7b9bc63c0bc82561203e47f817e2f92",
       "status": "completed",
       "conclusion": "success",
-      "run_number": 9058,
+      "run_number": 9126,
       "run_attempt": 1,
-      "created_at": "2026-11-20T19:18:54Z",
-      "updated_at": "2026-11-20T19:38:02Z",
-      "html_url": "https://github.com/carstenartur/sandbox/actions/runs/44800961827"
+      "created_at": "2026-11-21T07:52:14Z",
+      "updated_at": "2026-11-21T08:06:52Z",
+      "html_url": "https://github.com/carstenartur/sandbox/actions/runs/44882221484"
     },
     {
-      "id": 44800961625,
+      "id": 44882221392,
       "name": "Codacy Security Scan",
       "event": "push",
-      "head_sha": "daefef7c27f42a48ad9f88d55bba041bf9563688",
+      "head_sha": "cba1cd41a7b9bc63c0bc82561203e47f817e2f92",
       "status": "completed",
       "conclusion": "success",
-      "run_number": 8915,
-      "run_attempt": 2,
-      "created_at": "2026-11-20T19:18:54Z",
-      "updated_at": "2026-11-20T23:13:23Z",
-      "html_url": "https://github.com/carstenartur/sandbox/actions/runs/44800961625"
+      "run_number": 8983,
+      "run_attempt": 1,
+      "created_at": "2026-11-21T07:52:14Z",
+      "updated_at": "2026-11-21T08:01:44Z",
+      "html_url": "https://github.com/carstenartur/sandbox/actions/runs/44882221392"
     },
     {
-      "id": 44800961787,
+      "id": 44882221394,
       "name": "Test Source Inventory",
       "event": "push",
-      "head_sha": "daefef7c27f42a48ad9f88d55bba041bf9563688",
+      "head_sha": "cba1cd41a7b9bc63c0bc82561203e47f817e2f92",
       "status": "completed",
       "conclusion": "success",
-      "run_number": 7525,
+      "run_number": 7594,
       "run_attempt": 1,
-      "created_at": "2026-11-20T19:18:54Z",
-      "updated_at": "2026-11-20T19:19:08Z",
-      "html_url": "https://github.com/carstenartur/sandbox/actions/runs/44800961787"
+      "created_at": "2026-11-21T07:52:14Z",
+      "updated_at": "2026-11-21T07:52:26Z",
+      "html_url": "https://github.com/carstenartur/sandbox/actions/runs/44882221394"
     }
   ],
   "patched_jdt_ui": {
