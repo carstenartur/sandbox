@@ -325,8 +325,15 @@ job's JUnit report together with these artifacts.
 On the same JDT UI pin, the two encoding profiles target `JavaCompareUtilities.java`.
 The fallback after a caller-specified, unsupported encoding selects either the platform
 default or UTF-8. The committed Help images compare those two policies. The complete
-`FormatterProfileStore`, `History` and `AbstractSpellDictionary` sources must be unchanged
-by both profiles. The screenshot job retains the two policy reports, patches and sidecars.
+`FormatterProfileStore` source is a separate positive case: both profiles retain the concrete
+`FileReader` type and add its Java 11+ Charset argument. KEEP selects
+`Charset.defaultCharset()`; the explicit UTF-8 policy selects `StandardCharsets.UTF_8`.
+The existing `IOException` catch covers the Charset constructor. Its own `reader.json`
+and `reader.patch` must describe exactly this file and the expected complete-source diff.
+`History` and `AbstractSpellDictionary` remain strict negative controls: both sources
+must be unchanged, with no changed files and an empty controls patch. All check-mode
+sources must still match the pinned Git blobs. The screenshot job retains these reports
+alongside the unchanged `JavaCompareUtilities` preview, policy patches and sidecars.
 
 ### Replay the Platform Status preview in the retained JDT workspace
 
