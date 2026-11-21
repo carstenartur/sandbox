@@ -26,6 +26,7 @@ import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.sandbox.jdt.internal.common.AstProcessing;
+import org.sandbox.jdt.internal.common.ImportNameBindings;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 
 /** Deterministic binding and reference index for one compilation unit. */
@@ -116,7 +117,7 @@ final class ContainerFlowIndex {
 			Map<String, List<SimpleName>> references,
 			Map<String, Integer> parameterIndices,
 			String unitHandle) {
-		IBinding resolved= name.resolveBinding();
+		IBinding resolved= ImportNameBindings.resolve(name);
 		if (!(resolved instanceof IVariableBinding variable)) {
 			return;
 		}
