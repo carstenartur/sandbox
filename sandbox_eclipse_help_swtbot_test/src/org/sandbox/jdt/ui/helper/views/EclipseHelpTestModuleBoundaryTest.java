@@ -65,6 +65,7 @@ public class EclipseHelpTestModuleBoundaryTest {
 			"PinnedEncodingInventory.java", //$NON-NLS-1$
 			"PinnedEncodingPreviewSWTBotTest.java", //$NON-NLS-1$
 			"PinnedFilePreviewDriver.java", //$NON-NLS-1$
+			"PinnedFilePreviewPositionTest.java", //$NON-NLS-1$
 			"PinnedCoordinatedJUnitPreviewSWTBotTest.java", //$NON-NLS-1$
 			"PinnedJUnitPreviewSWTBotTest.java", //$NON-NLS-1$
 			"PinnedStatusPreviewSWTBotTest.java", //$NON-NLS-1$
