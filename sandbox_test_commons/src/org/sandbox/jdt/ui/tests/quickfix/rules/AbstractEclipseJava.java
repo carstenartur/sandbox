@@ -307,7 +307,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	}
 
 	/**
-	 * Disables all cleanup options in the current profile.
+	 * Disables boolean cleanup options and restores the other registry defaults.
 	 * <p>
 	 * This provides a clean slate for tests to selectively enable specific cleanup options.
 	 * </p>
@@ -316,8 +316,12 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 */
 	protected void disableAll() throws CoreException {
 		final Map<String, String> settings = cleanUpProfile.getSettings();
-		JavaPlugin.getDefault().getCleanUpRegistry().getDefaultOptions(DEFAULT_CLEAN_UP_OPTIONS).getKeys()
-		.forEach(a -> settings.put(a, CleanUpOptions.FALSE));
+		final CleanUpOptions defaults = JavaPlugin.getDefault().getCleanUpRegistry().getDefaultOptions(DEFAULT_CLEAN_UP_OPTIONS);
+		for (String key : defaults.getKeys()) {
+			final String value = defaults.getValue(key);
+			settings.put(key, CleanUpOptions.TRUE.equals(value) || CleanUpOptions.FALSE.equals(value)
+					? CleanUpOptions.FALSE : value);
+		}
 		commitProfile();
 	}
 
