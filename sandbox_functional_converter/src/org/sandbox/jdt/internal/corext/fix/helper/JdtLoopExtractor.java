@@ -77,6 +77,8 @@ public class JdtLoopExtractor {
                 || analyzer.hasSynchronized()
                 || analyzer.hasNestedLoop()
                 || analyzer.hasUnsupportedReturn()
+                || analyzer.hasEscapingYield()
+                || hasUnsupportedArrayStreamSource(iterable)
                 || TraditionalForHandler.CheckedBodyExceptions.escape(body)
                 || analyzer.modifiesIteratedCollection()
                 || hasRawIterableSource(iterable)
@@ -97,6 +99,17 @@ public class JdtLoopExtractor {
         
         LoopModel model = builder.build();
         return new ExtractedLoop(model, body);
+    }
+
+    private boolean hasUnsupportedArrayStreamSource(Expression expression) {
+        ITypeBinding type = expression.resolveTypeBinding();
+        if (type == null || !type.isArray() || !type.getComponentType().isPrimitive()) {
+            return false;
+        }
+        return switch (type.getComponentType().getName()) {
+            case "int", "long", "double" -> false; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+            default -> true;
+        };
     }
     
 
@@ -306,6 +319,11 @@ public class JdtLoopExtractor {
         if (containsUnconvertibleStatements(statements)) {
             return; // No terminal → NOT_CONVERTIBLE
         }
+
+        if (body.getParent() instanceof EnhancedForStatement loop && requiresIntactLambdaBody(loop, compilationUnit)) {
+            addSimpleForEachTerminal(statements, builder);
+            return;
+        }
         
         // Decompose multiple declarations only when every initializer consumes
         // the current pipeline value without referring back to an earlier one.
@@ -325,6 +343,40 @@ public class JdtLoopExtractor {
         
         // Try to analyze the statements into operations + terminal
         analyzeStatements(statements, builder, varName, compilationUnit, false);
+    }
+
+    private boolean requiresIntactLambdaBody(EnhancedForStatement loop, CompilationUnit compilationUnit) {
+        IVariableBinding element = loop.getParameter().resolveBinding();
+        if (element != null && !Modifier.isFinal(element.getModifiers()) && !element.isEffectivelyFinal()) {
+            return true; // A mutable loop local must not become a mutable lambda parameter.
+        }
+        java.util.Set<String> fields = new java.util.HashSet<>();
+        if (compilationUnit != null) {
+            for (IBinding binding : new org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer(compilationUnit)
+                    .getDeclarationsInScope(loop.getStartPosition(),
+                            org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer.VARIABLES
+                            | org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer.CHECK_VISIBILITY)) {
+                if (binding instanceof IVariableBinding field && field.isField()) fields.add(field.getName());
+            }
+        }
+        if (fields.contains(loop.getParameter().getName().getIdentifier())) return true;
+        boolean[] intact = { false };
+        loop.getBody().accept(new ASTVisitor() {
+            @Override public boolean visit(LambdaExpression node) { return false; }
+            @Override public boolean visit(AnonymousClassDeclaration node) { return false; }
+            @Override public boolean visit(TypeDeclaration node) { return false; }
+            @Override public boolean visit(TypePattern node) { intact[0] = true; return false; }
+            @Override public boolean visit(VariableDeclarationStatement node) {
+                for (Object modifier : node.modifiers()) {
+                    if (modifier instanceof Annotation) intact[0] = true;
+                }
+                for (Object item : node.fragments()) {
+                    if (fields.contains(((VariableDeclarationFragment) item).getName().getIdentifier())) intact[0] = true;
+                }
+                return !intact[0];
+            }
+        });
+        return intact[0];
     }
     
     /**
@@ -508,6 +560,19 @@ public class JdtLoopExtractor {
                     VariableDeclarationFragment frag = fragments.get(0);
                     Expression init = frag.getInitializer();
                     if (init != null) {
+                        if (i == statements.size() - 2
+                                && varDecl.getType() instanceof PrimitiveType primitive
+                                && primitive.getPrimitiveTypeCode() == PrimitiveType.BOOLEAN
+                                && statements.get(i + 1) instanceof IfStatement match
+                                && match.getElseStatement() == null && isEarlyReturnIf(match, statements)
+                                && ASTNodes.isSameLocalVariable(frag.getName(), match.getExpression())) {
+                            Statement branch = match.getThenStatement();
+                            if (branch instanceof Block block) branch = (Statement) block.statements().get(0);
+                            boolean returnsTrue = ((BooleanLiteral) ((ReturnStatement) branch).getExpression()).booleanValue();
+                            if (returnsTrue) builder.anyMatch(init.toString());
+                            else builder.noneMatch(init.toString());
+                            return;
+                        }
                         String newVarName = frag.getName().getIdentifier();
                         String mapExpr = init.toString();
                         ITypeBinding declared = frag.resolveBinding() != null ? frag.resolveBinding().getType() : null;
@@ -772,7 +837,10 @@ public class JdtLoopExtractor {
             Expression expr = exprStmt.getExpression();
             if (expr instanceof MethodInvocation mi) {
                 String methodName = mi.getName().getIdentifier();
-                return "add".equals(methodName) && mi.arguments().size() == 1; //$NON-NLS-1$
+                // Only a named accumulator can be merged into its declaration. A getter or
+                // field expression must remain evaluated by the ordinary per-element callback.
+                return "add".equals(methodName) && mi.arguments().size() == 1 //$NON-NLS-1$
+                        && mi.getExpression() instanceof SimpleName;
             }
         }
         return false;
@@ -1298,6 +1366,7 @@ public class JdtLoopExtractor {
         private boolean hasUnsupportedReturn = false;
         private boolean hasIfElse = false;
         private boolean modifiesIteratedCollection = false;
+        private boolean hasEscapingYield;
         private final Expression iteratedExpression;
         private final Statement body;
 
@@ -1337,6 +1406,15 @@ public class JdtLoopExtractor {
             // A boolean literal is safe only in the exact terminal-if shape modeled
             // by analyzeStatements, never in an intermediate map or forEach callback.
             if (!isMatchTerminalReturn(node)) hasUnsupportedReturn = true;
+            return false;
+        }
+
+        @Override
+        public boolean visit(YieldStatement node) {
+            for (ASTNode parent = node; parent != null && parent != body; parent = parent.getParent()) {
+                if (parent instanceof SwitchExpression) return true;
+            }
+            hasEscapingYield = true;
             return false;
         }
 
@@ -1428,6 +1506,7 @@ public class JdtLoopExtractor {
         public boolean hasSynchronized() { return hasSynchronized; }
         public boolean hasNestedLoop() { return hasNestedLoop; }
         public boolean hasUnsupportedReturn() { return hasUnsupportedReturn; }
+        public boolean hasEscapingYield() { return hasEscapingYield; }
         public boolean hasIfElse() { return hasIfElse; }
         public boolean modifiesIteratedCollection() { return modifiesIteratedCollection; }
         

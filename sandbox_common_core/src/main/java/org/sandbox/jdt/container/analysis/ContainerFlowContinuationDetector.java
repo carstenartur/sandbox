@@ -72,6 +72,7 @@ import org.sandbox.jdt.container.api.ResolvedContainerFlowSearchPlan.TargetKind;
 import org.sandbox.jdt.container.api.UsageEvidence;
 import org.sandbox.jdt.container.api.UsageEvidence.Kind;
 import org.sandbox.jdt.internal.common.AstProcessing;
+import org.sandbox.jdt.internal.common.ImportNameBindings;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 
 /**
@@ -157,7 +158,7 @@ public final class ContainerFlowContinuationDetector {
 			SimpleName name,
 			TargetIndex targets,
 			Accumulator result) {
-		if (!(name.resolveBinding() instanceof IVariableBinding binding)) {
+		if (!(ImportNameBindings.resolve(name) instanceof IVariableBinding binding)) {
 			return;
 		}
 		IVariableBinding declaration= binding.getVariableDeclaration();
