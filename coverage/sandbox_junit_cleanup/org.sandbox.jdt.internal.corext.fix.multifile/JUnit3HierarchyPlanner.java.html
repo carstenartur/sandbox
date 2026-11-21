@@ -199,7 +199,7 @@ final class JUnit3HierarchyPlanner {
 
 	private static boolean directlyExtendsTestCase(SourceType type) {
 <span class="fc" id="L201">		ITypeBinding superclass= type.binding().getSuperclass();</span>
-<span class="pc bpc" id="L202" title="1 of 4 branches missed.">		return superclass != null &amp;&amp; JUNIT3_TEST_CASE.equals(superclass.getErasure().getQualifiedName());</span>
+<span class="fc bfc" id="L202" title="All 4 branches covered.">		return superclass != null &amp;&amp; JUNIT3_TEST_CASE.equals(superclass.getErasure().getQualifiedName());</span>
 	}
 
 	private static List&lt;SourceType&gt; hierarchy(SourceType root, Collection&lt;SourceType&gt; allTypes) {

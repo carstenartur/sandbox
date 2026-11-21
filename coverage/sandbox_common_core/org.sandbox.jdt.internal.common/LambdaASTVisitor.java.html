@@ -1016,10 +1016,10 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public boolean visit(SuperMethodReference node) {
-<span class="nc bnc" id="L1019" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.SuperMethodReference)) {</span>
+<span class="pc bpc" id="L1019" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.SuperMethodReference)) {</span>
 <span class="nc" id="L1020">			return this.helperVisitor.testPredicate(VisitorEnum.SuperMethodReference, node);</span>
 		}
-<span class="nc" id="L1022">		return true;</span>
+<span class="fc" id="L1022">		return true;</span>
 	}
 
 	@Override
@@ -1843,10 +1843,10 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public void endVisit(SuperMethodReference node) {
-<span class="nc bnc" id="L1846" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.SuperMethodReference)) {</span>
+<span class="pc bpc" id="L1846" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.SuperMethodReference)) {</span>
 <span class="nc" id="L1847">			this.helperVisitor.acceptConsumer(VisitorEnum.SuperMethodReference, node);</span>
 		}
-<span class="nc" id="L1849">	}</span>
+<span class="fc" id="L1849">	}</span>
 
 	@Override
 	public void endVisit(SwitchCase node) {
