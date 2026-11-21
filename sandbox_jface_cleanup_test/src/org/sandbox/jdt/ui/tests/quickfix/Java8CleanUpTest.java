@@ -663,6 +663,34 @@ public class Test {
 	}
 
 	enum NOJFaceCleanupCases {
+		BeginTaskWithoutChild(
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+public class Test {
+	public void work(IProgressMonitor monitor) {
+		monitor.beginTask("Generating", 100);
+		monitor.worked(100);
+		monitor.done();
+	}
+}
+"""), //$NON-NLS-1$
+		AnonymousProgressCallback(
+"""
+package test;
+import java.util.function.IntConsumer;
+import org.eclipse.core.runtime.IProgressMonitor;
+public class Test {
+	public IntConsumer totalUpdater(IProgressMonitor monitor) {
+		return new IntConsumer() {
+			@Override
+			public void accept(int total) {
+				monitor.beginTask("Generating", total);
+			}
+		};
+	}
+}
+"""), //$NON-NLS-1$
 NOCase(
 """
 package test;
