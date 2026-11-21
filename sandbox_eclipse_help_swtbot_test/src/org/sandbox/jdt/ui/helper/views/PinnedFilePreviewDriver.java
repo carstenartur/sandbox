@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -281,9 +282,13 @@ final class PinnedFilePreviewDriver {
     }
 
     static boolean positionComparisonForCapture(Shell shell, BooleanSupplier positionComparison) {
+        return positionComparisonForCapture(shell, positionComparison, shell.getDisplay()::update);
+    }
+
+    static boolean positionComparisonForCapture(Shell shell, BooleanSupplier positionComparison, Runnable updateDisplay) {
         boolean positioned = positionComparison.getAsBoolean();
         var requested = previewViewports(shell);
-        shell.getDisplay().update();
+        updateDisplay.run();
         return positioned && requested.equals(previewViewports(shell));
     }
 
@@ -409,14 +414,19 @@ final class PinnedFilePreviewDriver {
     }
 
     static boolean showVisibleDiff(Shell shell, String before, String after, boolean entireLine) {
+        return showVisibleDiff(shell, before, after, entireLine, StyledText::update);
+    }
+
+    static boolean showVisibleDiff(Shell shell, String before, String after, boolean entireLine,
+            Consumer<StyledText> updatePane) {
         var panes = visibleSourcePanes(shell);
         for (StyledText original : panes) {
-            if (!showDiffFragment(original, before, entireLine)) {
+            if (!showDiffFragment(original, before, entireLine, updatePane)) {
                 continue;
             }
             for (StyledText modified : panes) {
-                if (modified != original && showDiffFragment(modified, after, entireLine)
-                        && showDiffFragment(original, before, entireLine)) {
+                if (modified != original && showDiffFragment(modified, after, entireLine, updatePane)
+                        && showDiffFragment(original, before, entireLine, updatePane)) {
                     return true;
                 }
             }
@@ -443,7 +453,8 @@ final class PinnedFilePreviewDriver {
         return panes;
     }
 
-    private static boolean showDiffFragment(StyledText pane, String fragment, boolean entireLine) {
+    private static boolean showDiffFragment(StyledText pane, String fragment, boolean entireLine,
+            Consumer<StyledText> updatePane) {
         int start = pane.getText().indexOf(fragment);
         if (start < 0) {
             return false;
@@ -463,7 +474,7 @@ final class PinnedFilePreviewDriver {
         }
         int expectedHorizontalPixel = pane.getHorizontalPixel();
         pane.redraw();
-        pane.update();
+        updatePane.accept(pane);
         text = pane.getTextBounds(codeStart, codeEnd);
         return pane.getTopPixel() == expectedTopPixel && pane.getHorizontalPixel() == expectedHorizontalPixel
                 && text.equals(text.intersection(pane.getClientArea()));

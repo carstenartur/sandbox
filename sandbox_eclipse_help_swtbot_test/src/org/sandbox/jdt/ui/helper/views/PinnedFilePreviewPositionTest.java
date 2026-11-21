@@ -14,6 +14,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.function.BooleanSupplier;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.layout.FillLayout;
@@ -35,7 +37,9 @@ class PinnedFilePreviewPositionTest {
                 StyledText original = sourcePane(shell, "@Rule");
                 sourcePane(shell, "@RegisterExtension");
                 boolean[] restored = { false };
+                int[] paints = { 0 };
                 original.addPaintListener(event -> {
+                    paints[0]++;
                     if (original.getTopIndex() > 0) {
                         // Native compare repaint can restore its initially selected difference.
                         original.setTopIndex(0);
@@ -46,9 +50,17 @@ class PinnedFilePreviewPositionTest {
                 shell.layout(true, true);
                 shell.update();
 
-                assertFalse(PinnedFilePreviewDriver.showVisibleDiff(shell, "@Rule", "@RegisterExtension"),
+                int[] updates = { 0 };
+                assertFalse(PinnedFilePreviewDriver.showVisibleDiff(shell, "@Rule", "@RegisterExtension", true, pane -> {
+                    updates[0]++;
+                    pane.update();
+                    awaitRepaint(shell.getDisplay(), () -> restored[0], "The source pane must repaint and restore its scroll position");
+                }),
                         "A fragment visible at a different scroll position is not the requested capture");
+                assertEquals(1, updates[0], "The negative case must probe a single repaint boundary");
+                assertTrue(paints[0] > 0, "The regression must receive a native Paint event");
                 assertTrue(restored[0], "The regression must exercise a real repaint and scroll change");
+                assertEquals(0, original.getTopIndex());
             } finally {
                 shell.dispose();
             }
@@ -67,7 +79,9 @@ class PinnedFilePreviewPositionTest {
                 Canvas latePaint = new Canvas(shell, SWT.NONE);
                 boolean[] restoreRequested = { false };
                 boolean[] restored = { false };
+                int[] paints = { 0 };
                 latePaint.addPaintListener(event -> {
+                    paints[0]++;
                     if (restoreRequested[0]) {
                         original.setTopIndex(0);
                         restoreRequested[0] = false;
@@ -78,14 +92,24 @@ class PinnedFilePreviewPositionTest {
                 shell.layout(true, true);
                 shell.update();
 
+                int[] positions = { 0 };
+                int[] updates = { 0 };
                 assertFalse(PinnedFilePreviewDriver.positionComparisonForCapture(shell, () -> {
+                    positions[0]++;
                     boolean positioned = PinnedFilePreviewDriver.showVisibleDiff(shell, "@Rule", "@RegisterExtension");
                     assertTrue(positioned, "The requested annotations must be positioned before the later paint");
                     assertTrue(original.getTopIndex() > 0);
                     restoreRequested[0] = true;
                     latePaint.redraw();
                     return positioned;
+                }, () -> {
+                    updates[0]++;
+                    shell.getDisplay().update();
+                    awaitRepaint(shell.getDisplay(), () -> restored[0], "The later display paint must restore the old scroll position");
                 }), "A later paint cannot restore an old stable viewport and still pass capture readiness");
+                assertEquals(1, positions[0], "The negative case must position the comparison once");
+                assertEquals(1, updates[0], "The negative case must probe a single display update boundary");
+                assertTrue(paints[0] > 0, "The negative case must receive a native Paint event");
                 assertTrue(restored[0], "The negative case must exercise the later display paint");
                 assertEquals(0, original.getTopIndex());
                 assertTrue(PinnedFilePreviewDriver.positionComparisonForCapture(shell, () ->
@@ -95,6 +119,24 @@ class PinnedFilePreviewPositionTest {
                 shell.dispose();
             }
         });
+    }
+
+    private static void awaitRepaint(Display display, BooleanSupplier observed, String failureMessage) {
+        // SWT update() may defer native painting, notably on GTK. Only the test pumps
+        // events at the guarded boundary; production capture waits across UI turns.
+        boolean[] timedOut = { false };
+        Runnable deadline = () -> timedOut[0] = true;
+        display.timerExec(5_000, deadline);
+        try {
+            while (!observed.getAsBoolean() && !timedOut[0]) {
+                if (!display.readAndDispatch()) {
+                    display.sleep();
+                }
+            }
+            assertTrue(observed.getAsBoolean(), failureMessage);
+        } finally {
+            display.timerExec(-1, deadline);
+        }
     }
 
     private static StyledText sourcePane(Shell shell, String annotation) {
