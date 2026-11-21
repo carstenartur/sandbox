@@ -106,10 +106,7 @@ public class CSSPreferencePage extends FieldEditorPreferencePage implements IWor
 
 	@Override
 	public void init(IWorkbench workbench) {
-<span class="nc" id="L109">		getPreferenceStore().setDefault(CSSPreferenceConstants.ENABLE_PRETTIER, true);</span>
-<span class="nc" id="L110">		getPreferenceStore().setDefault(CSSPreferenceConstants.ENABLE_STYLELINT, true);</span>
-<span class="nc" id="L111">		getPreferenceStore().setDefault(CSSPreferenceConstants.PRETTIER_OPTIONS, &quot;{}&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L112">		getPreferenceStore().setDefault(CSSPreferenceConstants.STYLELINT_CONFIG, &quot;&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L113">	}</span>
+		// Defaults are initialized independently of opening this page.
+<span class="nc" id="L110">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
