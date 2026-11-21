@@ -5536,9 +5536,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "lastProcessedCommit": "875e97919cee69efa44b21b08bd318653e4b7d9a",
-      "lastProcessedDate": "2026-11-20T02:22:54.456977038Z",
-      "totalProcessed": 1279,
+      "lastProcessedCommit": "85b1247c16c5f44a0e9b199068a7bf23a5041c31",
+      "lastProcessedDate": "2026-11-21T03:27:51.187427722Z",
+      "totalProcessed": 1351,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -6215,6 +6215,60 @@
           "deferredAt": "2026-11-19T02:22:10.489513606Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "720f9a16ef8703e119f9f1f5bd84a8789b1e91d3",
+          "message": "Bug 367105 - [debug view] An empty Debug view has an enabled \"Find...\" context menu action",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-21T03:20:24.416985387Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "d1d5476fcc2cadd0ee6ff5e5f235f0a8df842287",
+          "message": "Bug 370604 - Use new dynamic tracing options",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-21T03:21:37.676803328Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "aa357e78b41e87b7d414d1a7d0b8b7db0dfce011",
+          "message": "Bug 369856 - [bp] Allows clients to create and extend toggle breakpoint actions",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-21T03:21:52.072584108Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "64678065cd9fed43d2a1141912ece7672ca192c6",
+          "message": "Bug 344023 - [var] Need a way to override Find action of Variables view and its derived classes",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-21T03:25:04.323031348Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "9ab20e2ccd28123e2a275ddb8340a65f2e7ba6fd",
+          "message": "Bug 227877 - [launch] RelaunchLastAction should *not* be internal",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-21T03:25:04.325472165Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "85b1247c16c5f44a0e9b199068a7bf23a5041c31",
+          "message": "[nobug] fix missing NLS warnings + make NLS setting an error",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-21T03:27:19.503640724Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -6282,5 +6336,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 54860
+  "globalTotalProcessed": 54932
 }
