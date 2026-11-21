@@ -12,7 +12,10 @@ package org.sandbox.jdt.internal.common;
 
 import java.util.Objects;
 
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.Javadoc;
 
 /**
  * Entry point for AST processing whose execution model is explicit at the call site.
@@ -21,6 +24,12 @@ import org.eclipse.jdt.core.dom.ASTNode;
  * stage searches only the scope selected by the preceding stage. In contrast,
  * {@link #independent(ReferenceHolder)} registers visitors that each inspect the
  * complete root passed to {@code build(...)}.&lt;/p&gt;
+ *
+ * &lt;p&gt;Both classic and Java 23+ Markdown documentation comments are represented
+ * by {@link Javadoc}. When using an {@link ASTParser} directly, enable
+ * {@link JavaCore#COMPILER_DOC_COMMENT_SUPPORT} to parse the comment contents.
+ * Use a Java 23 or later source and AST level to process Markdown documentation
+ * and use {@link Javadoc#isMarkdown()} to distinguish the formats.&lt;/p&gt;
  */
 public final class AstProcessing {
 
@@ -30,26 +39,26 @@ public final class AstProcessing {
 
 	/** Creates an ordered, scoped semantic processing pipeline. */
 	public static &lt;V, T&gt; ScopedAstProcessorBuilder&lt;V, T&gt; scoped(ReferenceHolder&lt;V, T&gt; holder) {
-<span class="fc" id="L33">		return new ScopedAstProcessorBuilder&lt;&gt;(Objects.requireNonNull(holder, &quot;holder&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L42">		return new ScopedAstProcessorBuilder&lt;&gt;(Objects.requireNonNull(holder, &quot;holder&quot;)); //$NON-NLS-1$</span>
 	}
 
 	/** Creates a group of visitors that each inspect the complete configured root. */
 	public static &lt;V, T&gt; IndependentAstProcessorBuilder&lt;V, T&gt; independent(ReferenceHolder&lt;V, T&gt; holder) {
-<span class="fc" id="L38">		return new IndependentAstProcessorBuilder&lt;&gt;(Objects.requireNonNull(holder, &quot;holder&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L47">		return new IndependentAstProcessorBuilder&lt;&gt;(Objects.requireNonNull(holder, &quot;holder&quot;)); //$NON-NLS-1$</span>
 	}
 
 	/** Creates independent visitors when callbacks need no shared reference holder. */
 	public static IndependentAstProcessorBuilder&lt;Void, Void&gt; independent() {
-<span class="fc" id="L43">		return independent(ReferenceHolder.create());</span>
+<span class="fc" id="L52">		return independent(ReferenceHolder.create());</span>
 	}
 
 	static VisitorEnum visitorType(Class&lt;? extends ASTNode&gt; nodeType) {
-<span class="fc" id="L47">		Objects.requireNonNull(nodeType, &quot;nodeType&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L56">		Objects.requireNonNull(nodeType, &quot;nodeType&quot;); //$NON-NLS-1$</span>
 		try {
-<span class="fc" id="L49">			return VisitorEnum.valueOf(nodeType.getSimpleName());</span>
-<span class="nc" id="L50">		} catch (IllegalArgumentException exception) {</span>
-<span class="nc" id="L51">			throw new IllegalArgumentException(</span>
-<span class="nc" id="L52">					&quot;No HelperVisitor dispatch is available for &quot; + nodeType.getName(), exception); //$NON-NLS-1$</span>
+<span class="fc" id="L58">			return VisitorEnum.valueOf(nodeType.getSimpleName());</span>
+<span class="nc" id="L59">		} catch (IllegalArgumentException exception) {</span>
+<span class="nc" id="L60">			throw new IllegalArgumentException(</span>
+<span class="nc" id="L61">					&quot;No HelperVisitor dispatch is available for &quot; + nodeType.getName(), exception); //$NON-NLS-1$</span>
 		}
 	}
 }

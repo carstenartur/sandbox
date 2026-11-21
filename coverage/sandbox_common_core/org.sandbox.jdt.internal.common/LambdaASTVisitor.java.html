@@ -527,148 +527,164 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public boolean visit(Javadoc node) {
-<span class="pc bpc" id="L530" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.Javadoc)) {</span>
-<span class="nc" id="L531">			return this.helperVisitor.testPredicate(VisitorEnum.Javadoc, node);</span>
+<span class="fc bfc" id="L530" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.Javadoc)) {</span>
+<span class="fc" id="L531">			return this.helperVisitor.testPredicate(VisitorEnum.Javadoc, node);</span>
 		}
 <span class="fc" id="L533">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(LabeledStatement node) {
-<span class="pc bpc" id="L538" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.LabeledStatement)) {</span>
-<span class="nc" id="L539">			return this.helperVisitor.testPredicate(VisitorEnum.LabeledStatement, node);</span>
+	public boolean visit(JavaDocRegion node) {
+<span class="fc bfc" id="L538" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.JavaDocRegion)) {</span>
+<span class="fc" id="L539">			return this.helperVisitor.testPredicate(VisitorEnum.JavaDocRegion, node);</span>
 		}
-<span class="fc" id="L541">		return true;</span>
+<span class="fc" id="L541">		return super.visit(node);</span>
+	}
+
+	@Override
+	public boolean visit(JavaDocTextElement node) {
+<span class="pc bpc" id="L546" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.JavaDocTextElement)) {</span>
+<span class="fc" id="L547">			return this.helperVisitor.testPredicate(VisitorEnum.JavaDocTextElement, node);</span>
+		}
+<span class="nc" id="L549">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(LabeledStatement node) {
+<span class="pc bpc" id="L554" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.LabeledStatement)) {</span>
+<span class="nc" id="L555">			return this.helperVisitor.testPredicate(VisitorEnum.LabeledStatement, node);</span>
+		}
+<span class="fc" id="L557">		return true;</span>
 	}
 
 	@Override
 	public boolean visit(LambdaExpression node) {
-<span class="pc bpc" id="L546" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.LambdaExpression)) {</span>
-<span class="nc" id="L547">			return this.helperVisitor.testPredicate(VisitorEnum.LambdaExpression, node);</span>
+<span class="pc bpc" id="L562" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.LambdaExpression)) {</span>
+<span class="nc" id="L563">			return this.helperVisitor.testPredicate(VisitorEnum.LambdaExpression, node);</span>
 		}
-<span class="fc" id="L549">		return true;</span>
+<span class="fc" id="L565">		return true;</span>
 	}
 
 	@Override
 	public boolean visit(LineComment node) {
-<span class="nc bnc" id="L554" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.LineComment)) {</span>
-<span class="nc" id="L555">			return this.helperVisitor.testPredicate(VisitorEnum.LineComment, node);</span>
+<span class="nc bnc" id="L570" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.LineComment)) {</span>
+<span class="nc" id="L571">			return this.helperVisitor.testPredicate(VisitorEnum.LineComment, node);</span>
 		}
-<span class="nc" id="L557">		return true;</span>
+<span class="nc" id="L573">		return true;</span>
 	}
 
 	@Override
 	public boolean visit(MarkerAnnotation node) {
-<span class="fc bfc" id="L562" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.MarkerAnnotation)) {</span>
-<span class="fc" id="L563">			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.MarkerAnnotation);</span>
-<span class="pc bpc" id="L564" title="1 of 2 branches missed.">			if(config != null) {</span>
-<span class="fc" id="L565">				String data = config.getAnnotationName();</span>
-<span class="fc" id="L566">				String fullyQualifiedName = resolveAnnotationName(node);</span>
-<span class="pc bpc" id="L567" title="1 of 4 branches missed.">				if ((data!= null) &amp;&amp; !fullyQualifiedName.equals(data)) {</span>
-<span class="fc" id="L568">					return true;</span>
+<span class="fc bfc" id="L578" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.MarkerAnnotation)) {</span>
+<span class="fc" id="L579">			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.MarkerAnnotation);</span>
+<span class="pc bpc" id="L580" title="1 of 2 branches missed.">			if(config != null) {</span>
+<span class="fc" id="L581">				String data = config.getAnnotationName();</span>
+<span class="fc" id="L582">				String fullyQualifiedName = resolveAnnotationName(node);</span>
+<span class="pc bpc" id="L583" title="1 of 4 branches missed.">				if ((data!= null) &amp;&amp; !fullyQualifiedName.equals(data)) {</span>
+<span class="fc" id="L584">					return true;</span>
 				}
 			}
-<span class="fc" id="L571">			return this.helperVisitor.testPredicate(VisitorEnum.MarkerAnnotation, node);</span>
-		}
-<span class="fc" id="L573">		return true;</span>
-	}
-
-	@Override
-	public boolean visit(MemberRef node) {
-<span class="pc bpc" id="L578" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.MemberRef)) {</span>
-<span class="nc" id="L579">			return this.helperVisitor.testPredicate(VisitorEnum.MemberRef, node);</span>
-		}
-<span class="fc" id="L581">		return true;</span>
-	}
-
-	@Override
-	public boolean visit(MemberValuePair node) {
-<span class="pc bpc" id="L586" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.MemberValuePair)) {</span>
-<span class="nc" id="L587">			return this.helperVisitor.testPredicate(VisitorEnum.MemberValuePair, node);</span>
+<span class="fc" id="L587">			return this.helperVisitor.testPredicate(VisitorEnum.MarkerAnnotation, node);</span>
 		}
 <span class="fc" id="L589">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(MethodRef node) {
-<span class="nc bnc" id="L594" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.MethodRef)) {</span>
-<span class="nc" id="L595">			return this.helperVisitor.testPredicate(VisitorEnum.MethodRef, node);</span>
+	public boolean visit(MemberRef node) {
+<span class="fc bfc" id="L594" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.MemberRef)) {</span>
+<span class="fc" id="L595">			return this.helperVisitor.testPredicate(VisitorEnum.MemberRef, node);</span>
 		}
-<span class="nc" id="L597">		return true;</span>
+<span class="fc" id="L597">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(MemberValuePair node) {
+<span class="pc bpc" id="L602" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.MemberValuePair)) {</span>
+<span class="nc" id="L603">			return this.helperVisitor.testPredicate(VisitorEnum.MemberValuePair, node);</span>
+		}
+<span class="fc" id="L605">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(MethodRef node) {
+<span class="fc bfc" id="L610" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.MethodRef)) {</span>
+<span class="fc" id="L611">			return this.helperVisitor.testPredicate(VisitorEnum.MethodRef, node);</span>
+		}
+<span class="fc" id="L613">		return true;</span>
 	}
 
 	@Override
 	public boolean visit(MethodRefParameter node) {
-<span class="nc bnc" id="L602" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.MethodRefParameter)) {</span>
-<span class="nc" id="L603">			return this.helperVisitor.testPredicate(VisitorEnum.MethodRefParameter, node);</span>
+<span class="pc bpc" id="L618" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.MethodRefParameter)) {</span>
+<span class="nc" id="L619">			return this.helperVisitor.testPredicate(VisitorEnum.MethodRefParameter, node);</span>
 		}
-<span class="nc" id="L605">		return true;</span>
+<span class="fc" id="L621">		return true;</span>
 	}
 
 	@Override
 	public boolean visit(MethodDeclaration node) {
-<span class="fc bfc" id="L610" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.MethodDeclaration)) {</span>
-<span class="fc" id="L611">			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.MethodDeclaration);</span>
-<span class="fc bfc" id="L612" title="All 2 branches covered.">			if(config != null) {</span>
-<span class="fc" id="L613">				String methodName = config.getMethodName();</span>
-<span class="pc bpc" id="L614" title="2 of 4 branches missed.">				if(methodName != null &amp;&amp; !node.getName().getIdentifier().equals(methodName)) {</span>
-<span class="nc" id="L615">					return true;</span>
+<span class="fc bfc" id="L626" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.MethodDeclaration)) {</span>
+<span class="fc" id="L627">			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.MethodDeclaration);</span>
+<span class="fc bfc" id="L628" title="All 2 branches covered.">			if(config != null) {</span>
+<span class="fc" id="L629">				String methodName = config.getMethodName();</span>
+<span class="pc bpc" id="L630" title="2 of 4 branches missed.">				if(methodName != null &amp;&amp; !node.getName().getIdentifier().equals(methodName)) {</span>
+<span class="nc" id="L631">					return true;</span>
 				}
 			}
-<span class="fc" id="L618">			return this.helperVisitor.testPredicate(VisitorEnum.MethodDeclaration, node);</span>
+<span class="fc" id="L634">			return this.helperVisitor.testPredicate(VisitorEnum.MethodDeclaration, node);</span>
 		}
-<span class="fc" id="L620">		return true;</span>
+<span class="fc" id="L636">		return true;</span>
 	}
 
 	@Override
 	public boolean visit(MethodInvocation node) {
-<span class="fc bfc" id="L625" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.MethodInvocation)) {</span>
-<span class="fc" id="L626">			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.MethodInvocation);</span>
-<span class="fc bfc" id="L627" title="All 2 branches covered.">			if(config != null) {</span>
-<span class="fc" id="L628">				String data = config.getMethodName();</span>
-<span class="pc bpc" id="L629" title="1 of 4 branches missed.">				if ((data!= null) &amp;&amp; !node.getName().getIdentifier().equals(data)) {</span>
-<span class="fc" id="L630">					return true;</span>
+<span class="fc bfc" id="L641" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.MethodInvocation)) {</span>
+<span class="fc" id="L642">			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.MethodInvocation);</span>
+<span class="fc bfc" id="L643" title="All 2 branches covered.">			if(config != null) {</span>
+<span class="fc" id="L644">				String data = config.getMethodName();</span>
+<span class="pc bpc" id="L645" title="1 of 4 branches missed.">				if ((data!= null) &amp;&amp; !node.getName().getIdentifier().equals(data)) {</span>
+<span class="fc" id="L646">					return true;</span>
 				}
-<span class="fc" id="L632">				Class&lt;?&gt; typeof = config.getTypeof();</span>
-<span class="fc" id="L633">				String typeofByName = config.getTypeofByName();</span>
-<span class="fc" id="L634">				String canonicaltype = null;</span>
-<span class="fc bfc" id="L635" title="All 2 branches covered.">				if(typeof != null) {</span>
-<span class="fc" id="L636">					canonicaltype = typeof.getCanonicalName();</span>
-<span class="fc bfc" id="L637" title="All 2 branches covered.">				} else if(typeofByName != null) {</span>
-<span class="fc" id="L638">					canonicaltype = typeofByName;</span>
+<span class="fc" id="L648">				Class&lt;?&gt; typeof = config.getTypeof();</span>
+<span class="fc" id="L649">				String typeofByName = config.getTypeofByName();</span>
+<span class="fc" id="L650">				String canonicaltype = null;</span>
+<span class="fc bfc" id="L651" title="All 2 branches covered.">				if(typeof != null) {</span>
+<span class="fc" id="L652">					canonicaltype = typeof.getCanonicalName();</span>
+<span class="fc bfc" id="L653" title="All 2 branches covered.">				} else if(typeofByName != null) {</span>
+<span class="fc" id="L654">					canonicaltype = typeofByName;</span>
 				}
-<span class="fc bfc" id="L640" title="All 2 branches covered.">				if(canonicaltype != null) {</span>
-<span class="fc" id="L641">					String[] parameterTypesQualifiedNames = config.getParamTypeNames();</span>
-<span class="pc bpc" id="L642" title="1 of 2 branches missed.">					if(parameterTypesQualifiedNames==null) {</span>
-<span class="fc bfc" id="L643" title="All 2 branches covered.">						if (!usesGivenSignature(node, canonicaltype, data)) {</span>
-<span class="fc" id="L644">							return true;</span>
+<span class="fc bfc" id="L656" title="All 2 branches covered.">				if(canonicaltype != null) {</span>
+<span class="fc" id="L657">					String[] parameterTypesQualifiedNames = config.getParamTypeNames();</span>
+<span class="pc bpc" id="L658" title="1 of 2 branches missed.">					if(parameterTypesQualifiedNames==null) {</span>
+<span class="fc bfc" id="L659" title="All 2 branches covered.">						if (!usesGivenSignature(node, canonicaltype, data)) {</span>
+<span class="fc" id="L660">							return true;</span>
 						}
 					} else
-<span class="nc bnc" id="L647" title="All 2 branches missed.">						if (!usesGivenSignatureWithParams(node, canonicaltype, data, parameterTypesQualifiedNames)) {</span>
-<span class="nc" id="L648">							return true;</span>
+<span class="nc bnc" id="L663" title="All 2 branches missed.">						if (!usesGivenSignatureWithParams(node, canonicaltype, data, parameterTypesQualifiedNames)) {</span>
+<span class="nc" id="L664">							return true;</span>
 						}
 				}
 			}
-<span class="fc" id="L652">			return this.helperVisitor.testPredicate(VisitorEnum.MethodInvocation, node);</span>
+<span class="fc" id="L668">			return this.helperVisitor.testPredicate(VisitorEnum.MethodInvocation, node);</span>
 		}
-<span class="fc" id="L654">		return true;</span>
+<span class="fc" id="L670">		return true;</span>
 	}
 
 	private static boolean usesGivenSignature(MethodInvocation node, String canonicaltype, String methodName) {
-<span class="fc" id="L658">		IMethodBinding methodBinding= node.resolveMethodBinding();</span>
-<span class="fc bfc" id="L659" title="All 2 branches covered.">		if(methodBinding==null) {</span>
-<span class="pc bpc" id="L660" title="1 of 2 branches missed.">			if(!methodName.equals(node.getName().getIdentifier())){</span>
-<span class="nc" id="L661">				return false;</span>
+<span class="fc" id="L674">		IMethodBinding methodBinding= node.resolveMethodBinding();</span>
+<span class="fc bfc" id="L675" title="All 2 branches covered.">		if(methodBinding==null) {</span>
+<span class="pc bpc" id="L676" title="1 of 2 branches missed.">			if(!methodName.equals(node.getName().getIdentifier())){</span>
+<span class="nc" id="L677">				return false;</span>
 			}
 		} else {
-<span class="pc bpc" id="L664" title="1 of 2 branches missed.">			if(!methodName.equals(methodBinding.getName())){</span>
-<span class="nc" id="L665">				return false;</span>
+<span class="pc bpc" id="L680" title="1 of 2 branches missed.">			if(!methodName.equals(methodBinding.getName())){</span>
+<span class="nc" id="L681">				return false;</span>
 			}
 		}
-<span class="fc bfc" id="L668" title="All 2 branches covered.">		if(isClassQualifiedNameMatching(node,canonicaltype)){</span>
-<span class="fc" id="L669">			return true;</span>
+<span class="fc bfc" id="L684" title="All 2 branches covered.">		if(isClassQualifiedNameMatching(node,canonicaltype)){</span>
+<span class="fc" id="L685">			return true;</span>
 		}
-<span class="fc" id="L671">		return false;</span>
+<span class="fc" id="L687">		return false;</span>
 	}
 
 	/**
@@ -677,24 +693,24 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 	 * dependency on org.eclipse.jdt.ui.
 	 */
 	private static boolean usesGivenSignatureWithParams(MethodInvocation node, String typeQualifiedName, String methodName, String... parameterTypesQualifiedNames) {
-<span class="nc" id="L680">		IMethodBinding methodBinding = node.resolveMethodBinding();</span>
-<span class="nc bnc" id="L681" title="All 2 branches missed.">		if (methodBinding == null) {</span>
-<span class="nc" id="L682">			return false;</span>
+<span class="nc" id="L696">		IMethodBinding methodBinding = node.resolveMethodBinding();</span>
+<span class="nc bnc" id="L697" title="All 2 branches missed.">		if (methodBinding == null) {</span>
+<span class="nc" id="L698">			return false;</span>
 		}
-<span class="nc bnc" id="L684" title="All 2 branches missed.">		if (!methodName.equals(methodBinding.getName())) {</span>
-<span class="nc" id="L685">			return false;</span>
+<span class="nc bnc" id="L700" title="All 2 branches missed.">		if (!methodName.equals(methodBinding.getName())) {</span>
+<span class="nc" id="L701">			return false;</span>
 		}
-<span class="nc" id="L687">		ITypeBinding[] parameterTypes = methodBinding.getParameterTypes();</span>
-<span class="nc bnc" id="L688" title="All 2 branches missed.">		if (parameterTypes.length != parameterTypesQualifiedNames.length) {</span>
-<span class="nc" id="L689">			return false;</span>
+<span class="nc" id="L703">		ITypeBinding[] parameterTypes = methodBinding.getParameterTypes();</span>
+<span class="nc bnc" id="L704" title="All 2 branches missed.">		if (parameterTypes.length != parameterTypesQualifiedNames.length) {</span>
+<span class="nc" id="L705">			return false;</span>
 		}
-<span class="nc bnc" id="L691" title="All 2 branches missed.">		for (int i = 0; i &lt; parameterTypes.length; i++) {</span>
-<span class="nc" id="L692">			ITypeBinding paramType = parameterTypes[i].getErasure();</span>
-<span class="nc bnc" id="L693" title="All 2 branches missed.">			if (!parameterTypesQualifiedNames[i].equals(paramType.getQualifiedName())) {</span>
-<span class="nc" id="L694">				return false;</span>
+<span class="nc bnc" id="L707" title="All 2 branches missed.">		for (int i = 0; i &lt; parameterTypes.length; i++) {</span>
+<span class="nc" id="L708">			ITypeBinding paramType = parameterTypes[i].getErasure();</span>
+<span class="nc bnc" id="L709" title="All 2 branches missed.">			if (!parameterTypesQualifiedNames[i].equals(paramType.getQualifiedName())) {</span>
+<span class="nc" id="L710">				return false;</span>
 			}
 		}
-<span class="nc" id="L697">		return isClassQualifiedNameMatching(node, typeQualifiedName);</span>
+<span class="nc" id="L713">		return isClassQualifiedNameMatching(node, typeQualifiedName);</span>
 	}
 
 	/**
@@ -703,29 +719,29 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 	 * @return result
 	 */
 	public static boolean isClassQualifiedNameMatching(MethodInvocation methodInvocation, String qualifiedName) {
-<span class="fc" id="L706">		Expression expression = methodInvocation.getExpression();</span>
-<span class="fc bfc" id="L707" title="All 2 branches covered.">		if (expression != null) {</span>
-<span class="fc" id="L708">			ITypeBinding typeBinding = expression.resolveTypeBinding();</span>
-<span class="fc bfc" id="L709" title="All 2 branches covered.">			if (typeBinding != null) {</span>
-<span class="fc bfc" id="L710" title="All 2 branches covered.">				if (!typeBinding.isRecovered()) {</span>
-<span class="fc" id="L711">					return qualifiedName.equals(typeBinding.getQualifiedName());</span>
+<span class="fc" id="L722">		Expression expression = methodInvocation.getExpression();</span>
+<span class="fc bfc" id="L723" title="All 2 branches covered.">		if (expression != null) {</span>
+<span class="fc" id="L724">			ITypeBinding typeBinding = expression.resolveTypeBinding();</span>
+<span class="fc bfc" id="L725" title="All 2 branches covered.">			if (typeBinding != null) {</span>
+<span class="fc bfc" id="L726" title="All 2 branches covered.">				if (!typeBinding.isRecovered()) {</span>
+<span class="fc" id="L727">					return qualifiedName.equals(typeBinding.getQualifiedName());</span>
 				}
-<span class="pc bpc" id="L713" title="1 of 2 branches missed.">				if (expression instanceof SimpleName) {</span>
-<span class="fc" id="L714">					String startswith=typeBinding.toString().substring(9);</span>
-<span class="fc" id="L715">					startswith=startswith.substring(0, startswith.length()-1);</span>
-<span class="fc" id="L716">					return qualifiedName.endsWith(startswith);</span>
+<span class="pc bpc" id="L729" title="1 of 2 branches missed.">				if (expression instanceof SimpleName) {</span>
+<span class="fc" id="L730">					String startswith=typeBinding.toString().substring(9);</span>
+<span class="fc" id="L731">					startswith=startswith.substring(0, startswith.length()-1);</span>
+<span class="fc" id="L732">					return qualifiedName.endsWith(startswith);</span>
 				}
 			}
-<span class="fc" id="L719">		} else {</span>
-<span class="fc" id="L720">			IMethodBinding methodBinding = methodInvocation.resolveMethodBinding();</span>
-<span class="fc bfc" id="L721" title="All 2 branches covered.">			if (methodBinding != null) {</span>
-<span class="fc" id="L722">				ITypeBinding declaringClass = methodBinding.getDeclaringClass();</span>
-<span class="pc bpc" id="L723" title="1 of 2 branches missed.">				if (declaringClass != null) {</span>
-<span class="fc" id="L724">					return qualifiedName.equals(declaringClass.getQualifiedName());</span>
+<span class="fc" id="L735">		} else {</span>
+<span class="fc" id="L736">			IMethodBinding methodBinding = methodInvocation.resolveMethodBinding();</span>
+<span class="fc bfc" id="L737" title="All 2 branches covered.">			if (methodBinding != null) {</span>
+<span class="fc" id="L738">				ITypeBinding declaringClass = methodBinding.getDeclaringClass();</span>
+<span class="pc bpc" id="L739" title="1 of 2 branches missed.">				if (declaringClass != null) {</span>
+<span class="fc" id="L740">					return qualifiedName.equals(declaringClass.getQualifiedName());</span>
 				}
 			}
 		}
-<span class="fc" id="L728">		return false;</span>
+<span class="fc" id="L744">		return false;</span>
 	}
 
 	/**
@@ -737,170 +753,170 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 	 * @return true if the type matches, false otherwise
 	 */
 	private static boolean isTypeMatching(ITypeBinding typeBinding, String qualifiedName) {
-<span class="pc bpc" id="L740" title="2 of 4 branches missed.">		if (typeBinding == null || qualifiedName == null) {</span>
-<span class="nc" id="L741">			return false;</span>
+<span class="pc bpc" id="L756" title="2 of 4 branches missed.">		if (typeBinding == null || qualifiedName == null) {</span>
+<span class="nc" id="L757">			return false;</span>
 		}
 		// For generic types, use erasure to get the raw type
-<span class="fc" id="L744">		ITypeBinding erasedType = typeBinding.getErasure();</span>
+<span class="fc" id="L760">		ITypeBinding erasedType = typeBinding.getErasure();</span>
 		// Check for exact match or simple name match
-<span class="fc bfc" id="L746" title="All 2 branches covered.">		if (qualifiedName.equals(erasedType.getQualifiedName()) || </span>
-<span class="pc bpc" id="L747" title="1 of 2 branches missed.">		    qualifiedName.equals(erasedType.getName())) {</span>
-<span class="fc" id="L748">			return true;</span>
+<span class="fc bfc" id="L762" title="All 2 branches covered.">		if (qualifiedName.equals(erasedType.getQualifiedName()) || </span>
+<span class="pc bpc" id="L763" title="1 of 2 branches missed.">		    qualifiedName.equals(erasedType.getName())) {</span>
+<span class="fc" id="L764">			return true;</span>
 		}
 		// Check superclasses and interfaces
-<span class="fc" id="L751">		return isExternalResource(erasedType, qualifiedName);</span>
+<span class="fc" id="L767">		return isExternalResource(erasedType, qualifiedName);</span>
 	}
 
 	@Override
 	public boolean visit(Modifier node) {
-<span class="fc bfc" id="L756" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.Modifier)) {</span>
-<span class="fc" id="L757">			return this.helperVisitor.testPredicate(VisitorEnum.Modifier, node);</span>
+<span class="fc bfc" id="L772" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.Modifier)) {</span>
+<span class="fc" id="L773">			return this.helperVisitor.testPredicate(VisitorEnum.Modifier, node);</span>
 		}
-<span class="fc" id="L759">		return true;</span>
+<span class="fc" id="L775">		return true;</span>
 	}
 
 	@Override
 	public boolean visit(ModuleDeclaration node) {
-<span class="nc bnc" id="L764" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.ModuleDeclaration)) {</span>
-<span class="nc" id="L765">			return this.helperVisitor.testPredicate(VisitorEnum.ModuleDeclaration, node);</span>
-		}
-<span class="nc" id="L767">		return true;</span>
-	}
-
-	@Override
-	public boolean visit(ModuleModifier node) {
-<span class="nc bnc" id="L772" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.ModuleModifier)) {</span>
-<span class="nc" id="L773">			return this.helperVisitor.testPredicate(VisitorEnum.ModuleModifier, node);</span>
-		}
-<span class="nc" id="L775">		return true;</span>
-	}
-
-	@Override
-	public boolean visit(NameQualifiedType node) {
-<span class="nc bnc" id="L780" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.NameQualifiedType)) {</span>
-<span class="nc" id="L781">			return this.helperVisitor.testPredicate(VisitorEnum.NameQualifiedType, node);</span>
+<span class="nc bnc" id="L780" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.ModuleDeclaration)) {</span>
+<span class="nc" id="L781">			return this.helperVisitor.testPredicate(VisitorEnum.ModuleDeclaration, node);</span>
 		}
 <span class="nc" id="L783">		return true;</span>
 	}
 
 	@Override
+	public boolean visit(ModuleModifier node) {
+<span class="nc bnc" id="L788" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.ModuleModifier)) {</span>
+<span class="nc" id="L789">			return this.helperVisitor.testPredicate(VisitorEnum.ModuleModifier, node);</span>
+		}
+<span class="nc" id="L791">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(NameQualifiedType node) {
+<span class="nc bnc" id="L796" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.NameQualifiedType)) {</span>
+<span class="nc" id="L797">			return this.helperVisitor.testPredicate(VisitorEnum.NameQualifiedType, node);</span>
+		}
+<span class="nc" id="L799">		return true;</span>
+	}
+
+	@Override
 	public boolean visit(NormalAnnotation node) {
-<span class="pc bpc" id="L788" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.NormalAnnotation)) {</span>
-<span class="nc" id="L789">			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.NormalAnnotation);</span>
-<span class="nc bnc" id="L790" title="All 2 branches missed.">			if(config != null) {</span>
-<span class="nc" id="L791">				String data = config.getAnnotationName();</span>
-<span class="nc" id="L792">				String fullyQualifiedName = resolveAnnotationName(node);</span>
-<span class="nc bnc" id="L793" title="All 4 branches missed.">				if ((data!= null) &amp;&amp; !fullyQualifiedName.equals(data)) {</span>
-<span class="nc" id="L794">					return true;</span>
+<span class="pc bpc" id="L804" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.NormalAnnotation)) {</span>
+<span class="nc" id="L805">			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.NormalAnnotation);</span>
+<span class="nc bnc" id="L806" title="All 2 branches missed.">			if(config != null) {</span>
+<span class="nc" id="L807">				String data = config.getAnnotationName();</span>
+<span class="nc" id="L808">				String fullyQualifiedName = resolveAnnotationName(node);</span>
+<span class="nc bnc" id="L809" title="All 4 branches missed.">				if ((data!= null) &amp;&amp; !fullyQualifiedName.equals(data)) {</span>
+<span class="nc" id="L810">					return true;</span>
 				}
 			}
-<span class="nc" id="L797">			return this.helperVisitor.testPredicate(VisitorEnum.NormalAnnotation, node);</span>
-		}
-<span class="fc" id="L799">		return true;</span>
-	}
-
-	@Override
-	public boolean visit(NullLiteral node) {
-<span class="fc bfc" id="L804" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.NullLiteral)) {</span>
-<span class="fc" id="L805">			return this.helperVisitor.testPredicate(VisitorEnum.NullLiteral, node);</span>
-		}
-<span class="fc" id="L807">		return true;</span>
-	}
-
-	@Override
-	public boolean visit(NumberLiteral node) {
-<span class="pc bpc" id="L812" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.NumberLiteral)) {</span>
-<span class="nc" id="L813">			return this.helperVisitor.testPredicate(VisitorEnum.NumberLiteral, node);</span>
+<span class="nc" id="L813">			return this.helperVisitor.testPredicate(VisitorEnum.NormalAnnotation, node);</span>
 		}
 <span class="fc" id="L815">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(OpensDirective node) {
-<span class="nc bnc" id="L820" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.OpensDirective)) {</span>
-<span class="nc" id="L821">			return this.helperVisitor.testPredicate(VisitorEnum.OpensDirective, node);</span>
+	public boolean visit(NullLiteral node) {
+<span class="fc bfc" id="L820" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.NullLiteral)) {</span>
+<span class="fc" id="L821">			return this.helperVisitor.testPredicate(VisitorEnum.NullLiteral, node);</span>
 		}
-<span class="nc" id="L823">		return true;</span>
+<span class="fc" id="L823">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(PackageDeclaration node) {
-<span class="fc bfc" id="L828" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.PackageDeclaration)) {</span>
-<span class="fc" id="L829">			return this.helperVisitor.testPredicate(VisitorEnum.PackageDeclaration, node);</span>
+	public boolean visit(NumberLiteral node) {
+<span class="pc bpc" id="L828" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.NumberLiteral)) {</span>
+<span class="nc" id="L829">			return this.helperVisitor.testPredicate(VisitorEnum.NumberLiteral, node);</span>
 		}
 <span class="fc" id="L831">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(ParameterizedType node) {
-<span class="fc bfc" id="L836" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.ParameterizedType)) {</span>
-<span class="fc" id="L837">			return this.helperVisitor.testPredicate(VisitorEnum.ParameterizedType, node);</span>
+	public boolean visit(OpensDirective node) {
+<span class="nc bnc" id="L836" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.OpensDirective)) {</span>
+<span class="nc" id="L837">			return this.helperVisitor.testPredicate(VisitorEnum.OpensDirective, node);</span>
 		}
-<span class="fc" id="L839">		return true;</span>
+<span class="nc" id="L839">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(ParenthesizedExpression node) {
-<span class="pc bpc" id="L844" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.ParenthesizedExpression)) {</span>
-<span class="nc" id="L845">			return this.helperVisitor.testPredicate(VisitorEnum.ParenthesizedExpression, node);</span>
+	public boolean visit(PackageDeclaration node) {
+<span class="fc bfc" id="L844" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.PackageDeclaration)) {</span>
+<span class="fc" id="L845">			return this.helperVisitor.testPredicate(VisitorEnum.PackageDeclaration, node);</span>
 		}
 <span class="fc" id="L847">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(PatternInstanceofExpression node) {
-<span class="pc bpc" id="L852" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.PatternInstanceofExpression)) {</span>
-<span class="nc" id="L853">			return this.helperVisitor.testPredicate(VisitorEnum.PatternInstanceofExpression, node);</span>
+	public boolean visit(ParameterizedType node) {
+<span class="fc bfc" id="L852" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.ParameterizedType)) {</span>
+<span class="fc" id="L853">			return this.helperVisitor.testPredicate(VisitorEnum.ParameterizedType, node);</span>
 		}
 <span class="fc" id="L855">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(PostfixExpression node) {
-<span class="pc bpc" id="L860" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.PostfixExpression)) {</span>
-<span class="nc" id="L861">			return this.helperVisitor.testPredicate(VisitorEnum.PostfixExpression, node);</span>
+	public boolean visit(ParenthesizedExpression node) {
+<span class="pc bpc" id="L860" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.ParenthesizedExpression)) {</span>
+<span class="nc" id="L861">			return this.helperVisitor.testPredicate(VisitorEnum.ParenthesizedExpression, node);</span>
 		}
 <span class="fc" id="L863">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(PrefixExpression node) {
-<span class="pc bpc" id="L868" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.PrefixExpression)) {</span>
-<span class="nc" id="L869">			return this.helperVisitor.testPredicate(VisitorEnum.PrefixExpression, node);</span>
+	public boolean visit(PatternInstanceofExpression node) {
+<span class="pc bpc" id="L868" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.PatternInstanceofExpression)) {</span>
+<span class="nc" id="L869">			return this.helperVisitor.testPredicate(VisitorEnum.PatternInstanceofExpression, node);</span>
 		}
 <span class="fc" id="L871">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(ProvidesDirective node) {
-<span class="nc bnc" id="L876" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.ProvidesDirective)) {</span>
-<span class="nc" id="L877">			return this.helperVisitor.testPredicate(VisitorEnum.ProvidesDirective, node);</span>
+	public boolean visit(PostfixExpression node) {
+<span class="pc bpc" id="L876" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.PostfixExpression)) {</span>
+<span class="nc" id="L877">			return this.helperVisitor.testPredicate(VisitorEnum.PostfixExpression, node);</span>
 		}
-<span class="nc" id="L879">		return true;</span>
+<span class="fc" id="L879">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(PrimitiveType node) {
-<span class="fc bfc" id="L884" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.PrimitiveType)) {</span>
-<span class="fc" id="L885">			return this.helperVisitor.testPredicate(VisitorEnum.PrimitiveType, node);</span>
+	public boolean visit(PrefixExpression node) {
+<span class="pc bpc" id="L884" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.PrefixExpression)) {</span>
+<span class="nc" id="L885">			return this.helperVisitor.testPredicate(VisitorEnum.PrefixExpression, node);</span>
 		}
 <span class="fc" id="L887">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(QualifiedName node) {
-<span class="fc bfc" id="L892" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.QualifiedName)) {</span>
-<span class="fc" id="L893">			return this.helperVisitor.testPredicate(VisitorEnum.QualifiedName, node);</span>
+	public boolean visit(ProvidesDirective node) {
+<span class="nc bnc" id="L892" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.ProvidesDirective)) {</span>
+<span class="nc" id="L893">			return this.helperVisitor.testPredicate(VisitorEnum.ProvidesDirective, node);</span>
 		}
-<span class="fc" id="L895">		return true;</span>
+<span class="nc" id="L895">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(PrimitiveType node) {
+<span class="fc bfc" id="L900" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.PrimitiveType)) {</span>
+<span class="fc" id="L901">			return this.helperVisitor.testPredicate(VisitorEnum.PrimitiveType, node);</span>
+		}
+<span class="fc" id="L903">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(QualifiedName node) {
+<span class="fc bfc" id="L908" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.QualifiedName)) {</span>
+<span class="fc" id="L909">			return this.helperVisitor.testPredicate(VisitorEnum.QualifiedName, node);</span>
+		}
+<span class="fc" id="L911">		return true;</span>
 	}
 
 	@Override
 	public boolean visit(QualifiedType node) {
-<span class="nc bnc" id="L900" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.QualifiedType)) {</span>
-<span class="nc" id="L901">			return this.helperVisitor.testPredicate(VisitorEnum.QualifiedType, node);</span>
+<span class="nc bnc" id="L916" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.QualifiedType)) {</span>
+<span class="nc" id="L917">			return this.helperVisitor.testPredicate(VisitorEnum.QualifiedType, node);</span>
 		}
-<span class="nc" id="L903">		return true;</span>
+<span class="nc" id="L919">		return true;</span>
 	}
 
 //	@Override
@@ -913,1114 +929,1143 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public boolean visit(RequiresDirective node) {
-<span class="nc bnc" id="L916" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.RequiresDirective)) {</span>
-<span class="nc" id="L917">			return this.helperVisitor.testPredicate(VisitorEnum.RequiresDirective, node);</span>
+<span class="nc bnc" id="L932" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.RequiresDirective)) {</span>
+<span class="nc" id="L933">			return this.helperVisitor.testPredicate(VisitorEnum.RequiresDirective, node);</span>
 		}
-<span class="nc" id="L919">		return true;</span>
+<span class="nc" id="L935">		return true;</span>
 	}
 
 	@Override
 	public boolean visit(RecordDeclaration node) {
-<span class="pc bpc" id="L924" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.RecordDeclaration)) {</span>
-<span class="nc" id="L925">			return this.helperVisitor.testPredicate(VisitorEnum.RecordDeclaration, node);</span>
-		}
-<span class="fc" id="L927">		return true;</span>
-	}
-
-	@Override
-	public boolean visit(ReturnStatement node) {
-<span class="fc bfc" id="L932" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.ReturnStatement)) {</span>
-<span class="fc" id="L933">			return this.helperVisitor.testPredicate(VisitorEnum.ReturnStatement, node);</span>
-		}
-<span class="fc" id="L935">		return true;</span>
-	}
-
-	@Override
-	public boolean visit(SimpleName node) {
-<span class="fc bfc" id="L940" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.SimpleName)) {</span>
-<span class="fc" id="L941">			return this.helperVisitor.testPredicate(VisitorEnum.SimpleName, node);</span>
+<span class="pc bpc" id="L940" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.RecordDeclaration)) {</span>
+<span class="nc" id="L941">			return this.helperVisitor.testPredicate(VisitorEnum.RecordDeclaration, node);</span>
 		}
 <span class="fc" id="L943">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(SimpleType node) {
-<span class="fc bfc" id="L948" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.SimpleType)) {</span>
-<span class="fc" id="L949">			return this.helperVisitor.testPredicate(VisitorEnum.SimpleType, node);</span>
+	public boolean visit(ReturnStatement node) {
+<span class="fc bfc" id="L948" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.ReturnStatement)) {</span>
+<span class="fc" id="L949">			return this.helperVisitor.testPredicate(VisitorEnum.ReturnStatement, node);</span>
 		}
 <span class="fc" id="L951">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(SingleMemberAnnotation node) {
-<span class="fc bfc" id="L956" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.SingleMemberAnnotation)) {</span>
-<span class="fc" id="L957">			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.SingleMemberAnnotation);</span>
-<span class="pc bpc" id="L958" title="1 of 2 branches missed.">			if(config != null) {</span>
-<span class="fc" id="L959">				String data = config.getAnnotationName();</span>
-<span class="fc" id="L960">				String fullyQualifiedName = resolveAnnotationName(node);</span>
-<span class="pc bpc" id="L961" title="1 of 4 branches missed.">				if ((data!= null) &amp;&amp; !fullyQualifiedName.equals(data)) {</span>
-<span class="fc" id="L962">					return true;</span>
-				}
-			}
-<span class="fc" id="L965">			return this.helperVisitor.testPredicate(VisitorEnum.SingleMemberAnnotation, node);</span>
+	public boolean visit(SimpleName node) {
+<span class="fc bfc" id="L956" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.SimpleName)) {</span>
+<span class="fc" id="L957">			return this.helperVisitor.testPredicate(VisitorEnum.SimpleName, node);</span>
+		}
+<span class="fc" id="L959">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(SimpleType node) {
+<span class="fc bfc" id="L964" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.SimpleType)) {</span>
+<span class="fc" id="L965">			return this.helperVisitor.testPredicate(VisitorEnum.SimpleType, node);</span>
 		}
 <span class="fc" id="L967">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(SingleVariableDeclaration node) {
-<span class="fc bfc" id="L972" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.SingleVariableDeclaration)) {</span>
-<span class="fc" id="L973">			return this.helperVisitor.testPredicate(VisitorEnum.SingleVariableDeclaration, node);</span>
-		}
-<span class="fc" id="L975">		return true;</span>
-	}
-
-	@Override
-	public boolean visit(StringLiteral node) {
-<span class="pc bpc" id="L980" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.StringLiteral)) {</span>
-<span class="nc" id="L981">			return this.helperVisitor.testPredicate(VisitorEnum.StringLiteral, node);</span>
+	public boolean visit(SingleMemberAnnotation node) {
+<span class="fc bfc" id="L972" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.SingleMemberAnnotation)) {</span>
+<span class="fc" id="L973">			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.SingleMemberAnnotation);</span>
+<span class="pc bpc" id="L974" title="1 of 2 branches missed.">			if(config != null) {</span>
+<span class="fc" id="L975">				String data = config.getAnnotationName();</span>
+<span class="fc" id="L976">				String fullyQualifiedName = resolveAnnotationName(node);</span>
+<span class="pc bpc" id="L977" title="1 of 4 branches missed.">				if ((data!= null) &amp;&amp; !fullyQualifiedName.equals(data)) {</span>
+<span class="fc" id="L978">					return true;</span>
+				}
+			}
+<span class="fc" id="L981">			return this.helperVisitor.testPredicate(VisitorEnum.SingleMemberAnnotation, node);</span>
 		}
 <span class="fc" id="L983">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(SuperConstructorInvocation node) {
-<span class="pc bpc" id="L988" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.SuperConstructorInvocation)) {</span>
-<span class="nc" id="L989">			return this.helperVisitor.testPredicate(VisitorEnum.SuperConstructorInvocation, node);</span>
+	public boolean visit(SingleVariableDeclaration node) {
+<span class="fc bfc" id="L988" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.SingleVariableDeclaration)) {</span>
+<span class="fc" id="L989">			return this.helperVisitor.testPredicate(VisitorEnum.SingleVariableDeclaration, node);</span>
 		}
 <span class="fc" id="L991">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(SuperFieldAccess node) {
-<span class="nc bnc" id="L996" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.SuperFieldAccess)) {</span>
-<span class="nc" id="L997">			return this.helperVisitor.testPredicate(VisitorEnum.SuperFieldAccess, node);</span>
+	public boolean visit(StringLiteral node) {
+<span class="pc bpc" id="L996" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.StringLiteral)) {</span>
+<span class="nc" id="L997">			return this.helperVisitor.testPredicate(VisitorEnum.StringLiteral, node);</span>
 		}
-<span class="nc" id="L999">		return true;</span>
+<span class="fc" id="L999">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(SuperConstructorInvocation node) {
+<span class="pc bpc" id="L1004" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.SuperConstructorInvocation)) {</span>
+<span class="nc" id="L1005">			return this.helperVisitor.testPredicate(VisitorEnum.SuperConstructorInvocation, node);</span>
+		}
+<span class="fc" id="L1007">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(SuperFieldAccess node) {
+<span class="nc bnc" id="L1012" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.SuperFieldAccess)) {</span>
+<span class="nc" id="L1013">			return this.helperVisitor.testPredicate(VisitorEnum.SuperFieldAccess, node);</span>
+		}
+<span class="nc" id="L1015">		return true;</span>
 	}
 
 	@Override
 	public boolean visit(SuperMethodInvocation node) {
-<span class="fc bfc" id="L1004" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.SuperMethodInvocation)) {</span>
-<span class="fc" id="L1005">			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.SuperMethodInvocation);</span>
-<span class="fc bfc" id="L1006" title="All 2 branches covered.">			if(config != null) {</span>
-<span class="fc" id="L1007">				String methodName = config.getMethodName();</span>
-<span class="pc bpc" id="L1008" title="1 of 4 branches missed.">				if(methodName != null &amp;&amp; !node.getName().getIdentifier().equals(methodName)) {</span>
-<span class="fc" id="L1009">					return true;</span>
+<span class="fc bfc" id="L1020" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.SuperMethodInvocation)) {</span>
+<span class="fc" id="L1021">			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.SuperMethodInvocation);</span>
+<span class="fc bfc" id="L1022" title="All 2 branches covered.">			if(config != null) {</span>
+<span class="fc" id="L1023">				String methodName = config.getMethodName();</span>
+<span class="pc bpc" id="L1024" title="1 of 4 branches missed.">				if(methodName != null &amp;&amp; !node.getName().getIdentifier().equals(methodName)) {</span>
+<span class="fc" id="L1025">					return true;</span>
 				}
 			}
-<span class="fc" id="L1012">			return this.helperVisitor.testPredicate(VisitorEnum.SuperMethodInvocation, node);</span>
-		}
-<span class="fc" id="L1014">		return true;</span>
-	}
-
-	@Override
-	public boolean visit(SuperMethodReference node) {
-<span class="pc bpc" id="L1019" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.SuperMethodReference)) {</span>
-<span class="nc" id="L1020">			return this.helperVisitor.testPredicate(VisitorEnum.SuperMethodReference, node);</span>
-		}
-<span class="fc" id="L1022">		return true;</span>
-	}
-
-	@Override
-	public boolean visit(SwitchCase node) {
-<span class="pc bpc" id="L1027" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.SwitchCase)) {</span>
-<span class="nc" id="L1028">			return this.helperVisitor.testPredicate(VisitorEnum.SwitchCase, node);</span>
+<span class="fc" id="L1028">			return this.helperVisitor.testPredicate(VisitorEnum.SuperMethodInvocation, node);</span>
 		}
 <span class="fc" id="L1030">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(SwitchExpression node) {
-<span class="pc bpc" id="L1035" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.SwitchExpression)) {</span>
-<span class="nc" id="L1036">			return this.helperVisitor.testPredicate(VisitorEnum.SwitchExpression, node);</span>
+	public boolean visit(SuperMethodReference node) {
+<span class="pc bpc" id="L1035" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.SuperMethodReference)) {</span>
+<span class="nc" id="L1036">			return this.helperVisitor.testPredicate(VisitorEnum.SuperMethodReference, node);</span>
 		}
 <span class="fc" id="L1038">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(SwitchStatement node) {
-<span class="fc bfc" id="L1043" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.SwitchStatement)) {</span>
-<span class="fc" id="L1044">			return this.helperVisitor.testPredicate(VisitorEnum.SwitchStatement, node);</span>
+	public boolean visit(SwitchCase node) {
+<span class="pc bpc" id="L1043" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.SwitchCase)) {</span>
+<span class="nc" id="L1044">			return this.helperVisitor.testPredicate(VisitorEnum.SwitchCase, node);</span>
 		}
 <span class="fc" id="L1046">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(SynchronizedStatement node) {
-<span class="pc bpc" id="L1051" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.SynchronizedStatement)) {</span>
-<span class="nc" id="L1052">			return this.helperVisitor.testPredicate(VisitorEnum.SynchronizedStatement, node);</span>
+	public boolean visit(SwitchExpression node) {
+<span class="pc bpc" id="L1051" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.SwitchExpression)) {</span>
+<span class="nc" id="L1052">			return this.helperVisitor.testPredicate(VisitorEnum.SwitchExpression, node);</span>
 		}
 <span class="fc" id="L1054">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(TagElement node) {
-<span class="pc bpc" id="L1059" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.TagElement)) {</span>
-<span class="nc" id="L1060">			return this.helperVisitor.testPredicate(VisitorEnum.TagElement, node);</span>
+	public boolean visit(SwitchStatement node) {
+<span class="fc bfc" id="L1059" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.SwitchStatement)) {</span>
+<span class="fc" id="L1060">			return this.helperVisitor.testPredicate(VisitorEnum.SwitchStatement, node);</span>
 		}
 <span class="fc" id="L1062">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(TextBlock node) {
-<span class="nc bnc" id="L1067" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.TextBlock)) {</span>
-<span class="nc" id="L1068">			return this.helperVisitor.testPredicate(VisitorEnum.TextBlock, node);</span>
+	public boolean visit(SynchronizedStatement node) {
+<span class="pc bpc" id="L1067" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.SynchronizedStatement)) {</span>
+<span class="nc" id="L1068">			return this.helperVisitor.testPredicate(VisitorEnum.SynchronizedStatement, node);</span>
 		}
-<span class="nc" id="L1070">		return true;</span>
+<span class="fc" id="L1070">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(TextElement node) {
-<span class="pc bpc" id="L1075" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.TextElement)) {</span>
-<span class="nc" id="L1076">			return this.helperVisitor.testPredicate(VisitorEnum.TextElement, node);</span>
+	public boolean visit(TagElement node) {
+<span class="fc bfc" id="L1075" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.TagElement)) {</span>
+<span class="fc" id="L1076">			return this.helperVisitor.testPredicate(VisitorEnum.TagElement, node);</span>
 		}
 <span class="fc" id="L1078">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(ThisExpression node) {
-<span class="pc bpc" id="L1083" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.ThisExpression)) {</span>
-<span class="nc" id="L1084">			return this.helperVisitor.testPredicate(VisitorEnum.ThisExpression, node);</span>
+	public boolean visit(TagProperty node) {
+<span class="fc bfc" id="L1083" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.TagProperty)) {</span>
+<span class="fc" id="L1084">			return this.helperVisitor.testPredicate(VisitorEnum.TagProperty, node);</span>
 		}
 <span class="fc" id="L1086">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(ThrowStatement node) {
-<span class="pc bpc" id="L1091" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.ThrowStatement)) {</span>
-<span class="nc" id="L1092">			return this.helperVisitor.testPredicate(VisitorEnum.ThrowStatement, node);</span>
+	public boolean visit(TextBlock node) {
+<span class="nc bnc" id="L1091" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.TextBlock)) {</span>
+<span class="nc" id="L1092">			return this.helperVisitor.testPredicate(VisitorEnum.TextBlock, node);</span>
 		}
-<span class="fc" id="L1094">		return true;</span>
+<span class="nc" id="L1094">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(TryStatement node) {
-<span class="pc bpc" id="L1099" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.TryStatement)) {</span>
-<span class="nc" id="L1100">			return this.helperVisitor.testPredicate(VisitorEnum.TryStatement, node);</span>
+	public boolean visit(TextElement node) {
+<span class="fc bfc" id="L1099" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.TextElement)) {</span>
+<span class="fc" id="L1100">			return this.helperVisitor.testPredicate(VisitorEnum.TextElement, node);</span>
 		}
 <span class="fc" id="L1102">		return true;</span>
 	}
 
 	@Override
+	public boolean visit(ThisExpression node) {
+<span class="pc bpc" id="L1107" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.ThisExpression)) {</span>
+<span class="nc" id="L1108">			return this.helperVisitor.testPredicate(VisitorEnum.ThisExpression, node);</span>
+		}
+<span class="fc" id="L1110">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(ThrowStatement node) {
+<span class="pc bpc" id="L1115" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.ThrowStatement)) {</span>
+<span class="nc" id="L1116">			return this.helperVisitor.testPredicate(VisitorEnum.ThrowStatement, node);</span>
+		}
+<span class="fc" id="L1118">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(TryStatement node) {
+<span class="pc bpc" id="L1123" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.TryStatement)) {</span>
+<span class="nc" id="L1124">			return this.helperVisitor.testPredicate(VisitorEnum.TryStatement, node);</span>
+		}
+<span class="fc" id="L1126">		return true;</span>
+	}
+
+	@Override
 	public boolean visit(TypeDeclaration node) {
-<span class="fc bfc" id="L1107" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.TypeDeclaration)) {</span>
-<span class="fc" id="L1108">			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.TypeDeclaration);</span>
-<span class="fc bfc" id="L1109" title="All 2 branches covered.">			if(config != null) {</span>
-<span class="fc" id="L1110">				String typeName = config.getTypeName();</span>
-<span class="pc bpc" id="L1111" title="1 of 4 branches missed.">				if(typeName != null &amp;&amp; !node.getName().getIdentifier().equals(typeName)) {</span>
-<span class="nc" id="L1112">					return true;</span>
+<span class="fc bfc" id="L1131" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.TypeDeclaration)) {</span>
+<span class="fc" id="L1132">			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.TypeDeclaration);</span>
+<span class="fc bfc" id="L1133" title="All 2 branches covered.">			if(config != null) {</span>
+<span class="fc" id="L1134">				String typeName = config.getTypeName();</span>
+<span class="pc bpc" id="L1135" title="1 of 4 branches missed.">				if(typeName != null &amp;&amp; !node.getName().getIdentifier().equals(typeName)) {</span>
+<span class="nc" id="L1136">					return true;</span>
 				}
-<span class="fc" id="L1114">				String superclassname = config.getSuperClassName();</span>
-<span class="fc bfc" id="L1115" title="All 2 branches covered.">				if(superclassname != null) {</span>
-<span class="fc" id="L1116">					boolean bothmatch=false;</span>
-<span class="fc" id="L1117">					ITypeBinding binding = node.resolveBinding();</span>
-<span class="fc bfc" id="L1118" title="All 2 branches covered.">					if (isExternalResource(binding,superclassname)) {</span>
-<span class="fc" id="L1119">						bothmatch=true;</span>
+<span class="fc" id="L1138">				String superclassname = config.getSuperClassName();</span>
+<span class="fc bfc" id="L1139" title="All 2 branches covered.">				if(superclassname != null) {</span>
+<span class="fc" id="L1140">					boolean bothmatch=false;</span>
+<span class="fc" id="L1141">					ITypeBinding binding = node.resolveBinding();</span>
+<span class="fc bfc" id="L1142" title="All 2 branches covered.">					if (isExternalResource(binding,superclassname)) {</span>
+<span class="fc" id="L1143">						bothmatch=true;</span>
 					}
-<span class="fc bfc" id="L1121" title="All 2 branches covered.">					if(!bothmatch) {</span>
-<span class="fc" id="L1122">						return true;</span>
+<span class="fc bfc" id="L1145" title="All 2 branches covered.">					if(!bothmatch) {</span>
+<span class="fc" id="L1146">						return true;</span>
 					}
 				}
 			}
-<span class="fc" id="L1126">			return this.helperVisitor.testPredicate(VisitorEnum.TypeDeclaration, node);</span>
+<span class="fc" id="L1150">			return this.helperVisitor.testPredicate(VisitorEnum.TypeDeclaration, node);</span>
 		}
-<span class="fc" id="L1128">		return true;</span>
+<span class="fc" id="L1152">		return true;</span>
 	}
 
 	@Override
 	public boolean visit(TypeDeclarationStatement node) {
-<span class="pc bpc" id="L1133" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.TypeDeclarationStatement)) {</span>
-<span class="nc" id="L1134">			return this.helperVisitor.testPredicate(VisitorEnum.TypeDeclarationStatement, node);</span>
-		}
-<span class="fc" id="L1136">		return true;</span>
-	}
-
-	@Override
-	public boolean visit(TypeLiteral node) {
-<span class="pc bpc" id="L1141" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.TypeLiteral)) {</span>
-<span class="nc" id="L1142">			return this.helperVisitor.testPredicate(VisitorEnum.TypeLiteral, node);</span>
-		}
-<span class="fc" id="L1144">		return true;</span>
-	}
-
-	@Override
-	public boolean visit(TypeMethodReference node) {
-<span class="nc bnc" id="L1149" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.TypeMethodReference)) {</span>
-<span class="nc" id="L1150">			return this.helperVisitor.testPredicate(VisitorEnum.TypeMethodReference, node);</span>
-		}
-<span class="nc" id="L1152">		return true;</span>
-	}
-
-	@Override
-	public boolean visit(TypeParameter node) {
-<span class="pc bpc" id="L1157" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.TypeParameter)) {</span>
-<span class="nc" id="L1158">			return this.helperVisitor.testPredicate(VisitorEnum.TypeParameter, node);</span>
+<span class="pc bpc" id="L1157" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.TypeDeclarationStatement)) {</span>
+<span class="nc" id="L1158">			return this.helperVisitor.testPredicate(VisitorEnum.TypeDeclarationStatement, node);</span>
 		}
 <span class="fc" id="L1160">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(UnionType node) {
-<span class="pc bpc" id="L1165" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.UnionType)) {</span>
-<span class="nc" id="L1166">			return this.helperVisitor.testPredicate(VisitorEnum.UnionType, node);</span>
+	public boolean visit(TypeLiteral node) {
+<span class="pc bpc" id="L1165" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.TypeLiteral)) {</span>
+<span class="nc" id="L1166">			return this.helperVisitor.testPredicate(VisitorEnum.TypeLiteral, node);</span>
 		}
 <span class="fc" id="L1168">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(UsesDirective node) {
-<span class="nc bnc" id="L1173" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.UsesDirective)) {</span>
-<span class="nc" id="L1174">			return this.helperVisitor.testPredicate(VisitorEnum.UsesDirective, node);</span>
+	public boolean visit(TypeMethodReference node) {
+<span class="nc bnc" id="L1173" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.TypeMethodReference)) {</span>
+<span class="nc" id="L1174">			return this.helperVisitor.testPredicate(VisitorEnum.TypeMethodReference, node);</span>
 		}
 <span class="nc" id="L1176">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(VariableDeclarationExpression node) {
-<span class="pc bpc" id="L1181" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.VariableDeclarationExpression)) {</span>
-<span class="nc" id="L1182">			return this.helperVisitor.testPredicate(VisitorEnum.VariableDeclarationExpression, node);</span>
+	public boolean visit(TypeParameter node) {
+<span class="pc bpc" id="L1181" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.TypeParameter)) {</span>
+<span class="nc" id="L1182">			return this.helperVisitor.testPredicate(VisitorEnum.TypeParameter, node);</span>
 		}
 <span class="fc" id="L1184">		return true;</span>
 	}
 
 	@Override
+	public boolean visit(UnionType node) {
+<span class="pc bpc" id="L1189" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.UnionType)) {</span>
+<span class="nc" id="L1190">			return this.helperVisitor.testPredicate(VisitorEnum.UnionType, node);</span>
+		}
+<span class="fc" id="L1192">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(UsesDirective node) {
+<span class="nc bnc" id="L1197" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.UsesDirective)) {</span>
+<span class="nc" id="L1198">			return this.helperVisitor.testPredicate(VisitorEnum.UsesDirective, node);</span>
+		}
+<span class="nc" id="L1200">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(VariableDeclarationExpression node) {
+<span class="pc bpc" id="L1205" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.VariableDeclarationExpression)) {</span>
+<span class="nc" id="L1206">			return this.helperVisitor.testPredicate(VisitorEnum.VariableDeclarationExpression, node);</span>
+		}
+<span class="fc" id="L1208">		return true;</span>
+	}
+
+	@Override
 	public boolean visit(VariableDeclarationStatement node) {
-<span class="fc bfc" id="L1189" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.VariableDeclarationStatement)) {</span>
-<span class="fc" id="L1190">			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.VariableDeclarationStatement);</span>
-<span class="fc bfc" id="L1191" title="All 2 branches covered.">			if(config != null) {</span>
-<span class="fc" id="L1192">				Class&lt;?&gt; data = config.getTypeof();</span>
-<span class="pc bpc" id="L1193" title="1 of 2 branches missed.">				if (data!= null) {</span>
-<span class="fc" id="L1194">					VariableDeclarationFragment bli = (VariableDeclarationFragment) node.fragments().get(0);</span>
-<span class="fc" id="L1195">					IVariableBinding resolveBinding = bli.resolveBinding();</span>
-<span class="pc bpc" id="L1196" title="1 of 2 branches missed.">					if(resolveBinding!=null) {</span>
-<span class="fc" id="L1197">						String qualifiedName = resolveBinding.getType().getErasure().getQualifiedName();</span>
-<span class="fc bfc" id="L1198" title="All 2 branches covered.">						if (!data.getCanonicalName().equals(qualifiedName)) {</span>
-<span class="fc" id="L1199">							return true;</span>
+<span class="fc bfc" id="L1213" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.VariableDeclarationStatement)) {</span>
+<span class="fc" id="L1214">			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.VariableDeclarationStatement);</span>
+<span class="fc bfc" id="L1215" title="All 2 branches covered.">			if(config != null) {</span>
+<span class="fc" id="L1216">				Class&lt;?&gt; data = config.getTypeof();</span>
+<span class="pc bpc" id="L1217" title="1 of 2 branches missed.">				if (data!= null) {</span>
+<span class="fc" id="L1218">					VariableDeclarationFragment bli = (VariableDeclarationFragment) node.fragments().get(0);</span>
+<span class="fc" id="L1219">					IVariableBinding resolveBinding = bli.resolveBinding();</span>
+<span class="pc bpc" id="L1220" title="1 of 2 branches missed.">					if(resolveBinding!=null) {</span>
+<span class="fc" id="L1221">						String qualifiedName = resolveBinding.getType().getErasure().getQualifiedName();</span>
+<span class="fc bfc" id="L1222" title="All 2 branches covered.">						if (!data.getCanonicalName().equals(qualifiedName)) {</span>
+<span class="fc" id="L1223">							return true;</span>
 						}
 					}
 				}
 			}
-<span class="fc" id="L1204">			return this.helperVisitor.testPredicate(VisitorEnum.VariableDeclarationStatement, node);</span>
-		}
-<span class="fc" id="L1206">		return true;</span>
-	}
-
-	@Override
-	public boolean visit(VariableDeclarationFragment node) {
-<span class="fc bfc" id="L1211" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.VariableDeclarationFragment)) {</span>
-<span class="fc" id="L1212">			return this.helperVisitor.testPredicate(VisitorEnum.VariableDeclarationFragment, node);</span>
-		}
-<span class="fc" id="L1214">		return true;</span>
-	}
-
-	@Override
-	public boolean visit(WhileStatement node) {
-<span class="fc bfc" id="L1219" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.WhileStatement)) {</span>
-<span class="fc" id="L1220">			return this.helperVisitor.testPredicate(VisitorEnum.WhileStatement, node);</span>
-		}
-<span class="fc" id="L1222">		return true;</span>
-	}
-
-	@Override
-	public boolean visit(WildcardType node) {
-<span class="pc bpc" id="L1227" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.WildcardType)) {</span>
-<span class="nc" id="L1228">			return this.helperVisitor.testPredicate(VisitorEnum.WildcardType, node);</span>
+<span class="fc" id="L1228">			return this.helperVisitor.testPredicate(VisitorEnum.VariableDeclarationStatement, node);</span>
 		}
 <span class="fc" id="L1230">		return true;</span>
 	}
 
 	@Override
-	public boolean visit(YieldStatement node) {
-<span class="pc bpc" id="L1235" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.YieldStatement)) {</span>
-<span class="nc" id="L1236">			return this.helperVisitor.testPredicate(VisitorEnum.YieldStatement, node);</span>
+	public boolean visit(VariableDeclarationFragment node) {
+<span class="fc bfc" id="L1235" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.VariableDeclarationFragment)) {</span>
+<span class="fc" id="L1236">			return this.helperVisitor.testPredicate(VisitorEnum.VariableDeclarationFragment, node);</span>
 		}
 <span class="fc" id="L1238">		return true;</span>
 	}
 
 	@Override
-	public void endVisit(AnnotationTypeDeclaration node) {
-<span class="pc bpc" id="L1243" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.AnnotationTypeDeclaration)) {</span>
-<span class="nc" id="L1244">			this.helperVisitor.acceptConsumer(VisitorEnum.AnnotationTypeDeclaration, node);</span>
+	public boolean visit(WhileStatement node) {
+<span class="fc bfc" id="L1243" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.WhileStatement)) {</span>
+<span class="fc" id="L1244">			return this.helperVisitor.testPredicate(VisitorEnum.WhileStatement, node);</span>
 		}
-<span class="fc" id="L1246">	}</span>
+<span class="fc" id="L1246">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(WildcardType node) {
+<span class="pc bpc" id="L1251" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.WildcardType)) {</span>
+<span class="nc" id="L1252">			return this.helperVisitor.testPredicate(VisitorEnum.WildcardType, node);</span>
+		}
+<span class="fc" id="L1254">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(YieldStatement node) {
+<span class="pc bpc" id="L1259" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.YieldStatement)) {</span>
+<span class="nc" id="L1260">			return this.helperVisitor.testPredicate(VisitorEnum.YieldStatement, node);</span>
+		}
+<span class="fc" id="L1262">		return true;</span>
+	}
+
+	@Override
+	public void endVisit(AnnotationTypeDeclaration node) {
+<span class="pc bpc" id="L1267" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.AnnotationTypeDeclaration)) {</span>
+<span class="nc" id="L1268">			this.helperVisitor.acceptConsumer(VisitorEnum.AnnotationTypeDeclaration, node);</span>
+		}
+<span class="fc" id="L1270">	}</span>
 
 	@Override
 	public void endVisit(AnnotationTypeMemberDeclaration node) {
-<span class="nc bnc" id="L1250" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.AnnotationTypeMemberDeclaration)) {</span>
-<span class="nc" id="L1251">			this.helperVisitor.acceptConsumer(VisitorEnum.AnnotationTypeMemberDeclaration, node);</span>
+<span class="nc bnc" id="L1274" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.AnnotationTypeMemberDeclaration)) {</span>
+<span class="nc" id="L1275">			this.helperVisitor.acceptConsumer(VisitorEnum.AnnotationTypeMemberDeclaration, node);</span>
 		}
-<span class="nc" id="L1253">	}</span>
+<span class="nc" id="L1277">	}</span>
 
 	@Override
 	public void endVisit(AnonymousClassDeclaration node) {
-<span class="pc bpc" id="L1257" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.AnonymousClassDeclaration)) {</span>
-<span class="nc" id="L1258">			this.helperVisitor.acceptConsumer(VisitorEnum.AnonymousClassDeclaration, node);</span>
+<span class="pc bpc" id="L1281" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.AnonymousClassDeclaration)) {</span>
+<span class="nc" id="L1282">			this.helperVisitor.acceptConsumer(VisitorEnum.AnonymousClassDeclaration, node);</span>
 		}
-<span class="fc" id="L1260">	}</span>
+<span class="fc" id="L1284">	}</span>
 
 	@Override
 	public void endVisit(ArrayAccess node) {
-<span class="pc bpc" id="L1264" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ArrayAccess)) {</span>
-<span class="nc" id="L1265">			this.helperVisitor.acceptConsumer(VisitorEnum.ArrayAccess, node);</span>
+<span class="pc bpc" id="L1288" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ArrayAccess)) {</span>
+<span class="nc" id="L1289">			this.helperVisitor.acceptConsumer(VisitorEnum.ArrayAccess, node);</span>
 		}
-<span class="fc" id="L1267">	}</span>
+<span class="fc" id="L1291">	}</span>
 
 	@Override
 	public void endVisit(ArrayCreation node) {
-<span class="pc bpc" id="L1271" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ArrayCreation)) {</span>
-<span class="nc" id="L1272">			this.helperVisitor.acceptConsumer(VisitorEnum.ArrayCreation, node);</span>
+<span class="pc bpc" id="L1295" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ArrayCreation)) {</span>
+<span class="nc" id="L1296">			this.helperVisitor.acceptConsumer(VisitorEnum.ArrayCreation, node);</span>
 		}
-<span class="fc" id="L1274">	}</span>
+<span class="fc" id="L1298">	}</span>
 
 	@Override
 	public void endVisit(ArrayInitializer node) {
-<span class="pc bpc" id="L1278" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ArrayInitializer)) {</span>
-<span class="nc" id="L1279">			this.helperVisitor.acceptConsumer(VisitorEnum.ArrayInitializer, node);</span>
+<span class="pc bpc" id="L1302" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ArrayInitializer)) {</span>
+<span class="nc" id="L1303">			this.helperVisitor.acceptConsumer(VisitorEnum.ArrayInitializer, node);</span>
 		}
-<span class="fc" id="L1281">	}</span>
+<span class="fc" id="L1305">	}</span>
 
 	@Override
 	public void endVisit(ArrayType node) {
-<span class="pc bpc" id="L1285" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ArrayType)) {</span>
-<span class="nc" id="L1286">			this.helperVisitor.acceptConsumer(VisitorEnum.ArrayType, node);</span>
+<span class="pc bpc" id="L1309" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ArrayType)) {</span>
+<span class="nc" id="L1310">			this.helperVisitor.acceptConsumer(VisitorEnum.ArrayType, node);</span>
 		}
-<span class="fc" id="L1288">	}</span>
+<span class="fc" id="L1312">	}</span>
 
 	@Override
 	public void endVisit(AssertStatement node) {
-<span class="nc bnc" id="L1292" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.AssertStatement)) {</span>
-<span class="nc" id="L1293">			this.helperVisitor.acceptConsumer(VisitorEnum.AssertStatement, node);</span>
+<span class="nc bnc" id="L1316" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.AssertStatement)) {</span>
+<span class="nc" id="L1317">			this.helperVisitor.acceptConsumer(VisitorEnum.AssertStatement, node);</span>
 		}
-<span class="nc" id="L1295">	}</span>
+<span class="nc" id="L1319">	}</span>
 
 	@Override
 	public void endVisit(Assignment node) {
-<span class="pc bpc" id="L1299" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.Assignment)) {</span>
-<span class="nc" id="L1300">			this.helperVisitor.acceptConsumer(VisitorEnum.Assignment, node);</span>
+<span class="pc bpc" id="L1323" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.Assignment)) {</span>
+<span class="nc" id="L1324">			this.helperVisitor.acceptConsumer(VisitorEnum.Assignment, node);</span>
 		}
-<span class="fc" id="L1302">	}</span>
+<span class="fc" id="L1326">	}</span>
 
 	@Override
 	public void endVisit(Block node) {
-<span class="fc bfc" id="L1306" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.Block)) {</span>
-<span class="fc" id="L1307">			this.helperVisitor.acceptConsumer(VisitorEnum.Block, node);</span>
+<span class="fc bfc" id="L1330" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.Block)) {</span>
+<span class="fc" id="L1331">			this.helperVisitor.acceptConsumer(VisitorEnum.Block, node);</span>
 		}
-<span class="fc" id="L1309">	}</span>
+<span class="fc" id="L1333">	}</span>
 
 	@Override
 	public void endVisit(BlockComment node) {
-<span class="nc bnc" id="L1313" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.BlockComment)) {</span>
-<span class="nc" id="L1314">			this.helperVisitor.acceptConsumer(VisitorEnum.BlockComment, node);</span>
+<span class="nc bnc" id="L1337" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.BlockComment)) {</span>
+<span class="nc" id="L1338">			this.helperVisitor.acceptConsumer(VisitorEnum.BlockComment, node);</span>
 		}
-<span class="nc" id="L1316">	}</span>
+<span class="nc" id="L1340">	}</span>
 
 	@Override
 	public void endVisit(BooleanLiteral node) {
-<span class="pc bpc" id="L1320" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.BooleanLiteral)) {</span>
-<span class="nc" id="L1321">			this.helperVisitor.acceptConsumer(VisitorEnum.BooleanLiteral, node);</span>
+<span class="pc bpc" id="L1344" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.BooleanLiteral)) {</span>
+<span class="nc" id="L1345">			this.helperVisitor.acceptConsumer(VisitorEnum.BooleanLiteral, node);</span>
 		}
-<span class="fc" id="L1323">	}</span>
+<span class="fc" id="L1347">	}</span>
 
 	@Override
 	public void endVisit(BreakStatement node) {
-<span class="pc bpc" id="L1327" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.BreakStatement)) {</span>
-<span class="nc" id="L1328">			this.helperVisitor.acceptConsumer(VisitorEnum.BreakStatement, node);</span>
+<span class="pc bpc" id="L1351" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.BreakStatement)) {</span>
+<span class="nc" id="L1352">			this.helperVisitor.acceptConsumer(VisitorEnum.BreakStatement, node);</span>
 		}
-<span class="fc" id="L1330">	}</span>
+<span class="fc" id="L1354">	}</span>
 
 	@Override
 	public void endVisit(CastExpression node) {
-<span class="pc bpc" id="L1334" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.CastExpression)) {</span>
-<span class="nc" id="L1335">			this.helperVisitor.acceptConsumer(VisitorEnum.CastExpression, node);</span>
+<span class="pc bpc" id="L1358" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.CastExpression)) {</span>
+<span class="nc" id="L1359">			this.helperVisitor.acceptConsumer(VisitorEnum.CastExpression, node);</span>
 		}
-<span class="fc" id="L1337">	}</span>
+<span class="fc" id="L1361">	}</span>
 
 	@Override
 	public void endVisit(CatchClause node) {
-<span class="pc bpc" id="L1341" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.CatchClause)) {</span>
-<span class="nc" id="L1342">			this.helperVisitor.acceptConsumer(VisitorEnum.CatchClause, node);</span>
+<span class="pc bpc" id="L1365" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.CatchClause)) {</span>
+<span class="nc" id="L1366">			this.helperVisitor.acceptConsumer(VisitorEnum.CatchClause, node);</span>
 		}
-<span class="fc" id="L1344">	}</span>
+<span class="fc" id="L1368">	}</span>
 
 	@Override
 	public void endVisit(CharacterLiteral node) {
-<span class="pc bpc" id="L1348" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.CharacterLiteral)) {</span>
-<span class="nc" id="L1349">			this.helperVisitor.acceptConsumer(VisitorEnum.CharacterLiteral, node);</span>
+<span class="pc bpc" id="L1372" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.CharacterLiteral)) {</span>
+<span class="nc" id="L1373">			this.helperVisitor.acceptConsumer(VisitorEnum.CharacterLiteral, node);</span>
 		}
-<span class="fc" id="L1351">	}</span>
+<span class="fc" id="L1375">	}</span>
 
 	@Override
 	public void endVisit(ClassInstanceCreation node) {
-<span class="pc bpc" id="L1355" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ClassInstanceCreation)) {</span>
-<span class="nc" id="L1356">			this.helperVisitor.acceptConsumer(VisitorEnum.ClassInstanceCreation, node);</span>
+<span class="pc bpc" id="L1379" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ClassInstanceCreation)) {</span>
+<span class="nc" id="L1380">			this.helperVisitor.acceptConsumer(VisitorEnum.ClassInstanceCreation, node);</span>
 		}
-<span class="fc" id="L1358">	}</span>
+<span class="fc" id="L1382">	}</span>
 
 	@Override
 	public void endVisit(CompilationUnit node) {
-<span class="fc bfc" id="L1362" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.CompilationUnit)) {</span>
-<span class="fc" id="L1363">			this.helperVisitor.acceptConsumer(VisitorEnum.CompilationUnit, node);</span>
+<span class="fc bfc" id="L1386" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.CompilationUnit)) {</span>
+<span class="fc" id="L1387">			this.helperVisitor.acceptConsumer(VisitorEnum.CompilationUnit, node);</span>
 		}
-<span class="fc" id="L1365">	}</span>
+<span class="fc" id="L1389">	}</span>
 
 	@Override
 	public void endVisit(ConditionalExpression node) {
-<span class="pc bpc" id="L1369" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ConditionalExpression)) {</span>
-<span class="nc" id="L1370">			this.helperVisitor.acceptConsumer(VisitorEnum.ConditionalExpression, node);</span>
+<span class="pc bpc" id="L1393" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ConditionalExpression)) {</span>
+<span class="nc" id="L1394">			this.helperVisitor.acceptConsumer(VisitorEnum.ConditionalExpression, node);</span>
 		}
-<span class="fc" id="L1372">	}</span>
+<span class="fc" id="L1396">	}</span>
 
 	@Override
 	public void endVisit(ConstructorInvocation node) {
-<span class="nc bnc" id="L1376" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ConstructorInvocation)) {</span>
-<span class="nc" id="L1377">			this.helperVisitor.acceptConsumer(VisitorEnum.ConstructorInvocation, node);</span>
+<span class="nc bnc" id="L1400" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ConstructorInvocation)) {</span>
+<span class="nc" id="L1401">			this.helperVisitor.acceptConsumer(VisitorEnum.ConstructorInvocation, node);</span>
 		}
-<span class="nc" id="L1379">	}</span>
+<span class="nc" id="L1403">	}</span>
 
 	@Override
 	public void endVisit(ContinueStatement node) {
-<span class="pc bpc" id="L1383" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ContinueStatement)) {</span>
-<span class="nc" id="L1384">			this.helperVisitor.acceptConsumer(VisitorEnum.ContinueStatement, node);</span>
+<span class="pc bpc" id="L1407" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ContinueStatement)) {</span>
+<span class="nc" id="L1408">			this.helperVisitor.acceptConsumer(VisitorEnum.ContinueStatement, node);</span>
 		}
-<span class="fc" id="L1386">	}</span>
+<span class="fc" id="L1410">	}</span>
 
 	@Override
 	public void endVisit(CreationReference node) {
-<span class="pc bpc" id="L1390" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.CreationReference)) {</span>
-<span class="nc" id="L1391">			this.helperVisitor.acceptConsumer(VisitorEnum.CreationReference, node);</span>
+<span class="pc bpc" id="L1414" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.CreationReference)) {</span>
+<span class="nc" id="L1415">			this.helperVisitor.acceptConsumer(VisitorEnum.CreationReference, node);</span>
 		}
-<span class="fc" id="L1393">	}</span>
+<span class="fc" id="L1417">	}</span>
 
 	@Override
 	public void endVisit(Dimension node) {
-<span class="pc bpc" id="L1397" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.Dimension)) {</span>
-<span class="nc" id="L1398">			this.helperVisitor.acceptConsumer(VisitorEnum.Dimension, node);</span>
+<span class="pc bpc" id="L1421" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.Dimension)) {</span>
+<span class="nc" id="L1422">			this.helperVisitor.acceptConsumer(VisitorEnum.Dimension, node);</span>
 		}
-<span class="fc" id="L1400">	}</span>
+<span class="fc" id="L1424">	}</span>
 
 	@Override
 	public void endVisit(DoStatement node) {
-<span class="pc bpc" id="L1404" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.DoStatement)) {</span>
-<span class="nc" id="L1405">			this.helperVisitor.acceptConsumer(VisitorEnum.DoStatement, node);</span>
+<span class="pc bpc" id="L1428" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.DoStatement)) {</span>
+<span class="nc" id="L1429">			this.helperVisitor.acceptConsumer(VisitorEnum.DoStatement, node);</span>
 		}
-<span class="fc" id="L1407">	}</span>
+<span class="fc" id="L1431">	}</span>
 
 	@Override
 	public void endVisit(EmptyStatement node) {
-<span class="nc bnc" id="L1411" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.EmptyStatement)) {</span>
-<span class="nc" id="L1412">			this.helperVisitor.acceptConsumer(VisitorEnum.EmptyStatement, node);</span>
+<span class="nc bnc" id="L1435" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.EmptyStatement)) {</span>
+<span class="nc" id="L1436">			this.helperVisitor.acceptConsumer(VisitorEnum.EmptyStatement, node);</span>
 		}
-<span class="nc" id="L1414">	}</span>
+<span class="nc" id="L1438">	}</span>
 
 	@Override
 	public void endVisit(EnhancedForStatement node) {
-<span class="fc bfc" id="L1418" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.EnhancedForStatement)) {</span>
-<span class="fc" id="L1419">			this.helperVisitor.acceptConsumer(VisitorEnum.EnhancedForStatement, node);</span>
+<span class="fc bfc" id="L1442" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.EnhancedForStatement)) {</span>
+<span class="fc" id="L1443">			this.helperVisitor.acceptConsumer(VisitorEnum.EnhancedForStatement, node);</span>
 		}
-<span class="fc" id="L1421">	}</span>
+<span class="fc" id="L1445">	}</span>
 
 	@Override
 	public void endVisit(EnumConstantDeclaration node) {
-<span class="pc bpc" id="L1425" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.EnumConstantDeclaration)) {</span>
-<span class="nc" id="L1426">			this.helperVisitor.acceptConsumer(VisitorEnum.EnumConstantDeclaration, node);</span>
+<span class="pc bpc" id="L1449" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.EnumConstantDeclaration)) {</span>
+<span class="nc" id="L1450">			this.helperVisitor.acceptConsumer(VisitorEnum.EnumConstantDeclaration, node);</span>
 		}
-<span class="fc" id="L1428">	}</span>
+<span class="fc" id="L1452">	}</span>
 
 	@Override
 	public void endVisit(EnumDeclaration node) {
-<span class="pc bpc" id="L1432" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.EnumDeclaration)) {</span>
-<span class="nc" id="L1433">			this.helperVisitor.acceptConsumer(VisitorEnum.EnumDeclaration, node);</span>
+<span class="pc bpc" id="L1456" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.EnumDeclaration)) {</span>
+<span class="nc" id="L1457">			this.helperVisitor.acceptConsumer(VisitorEnum.EnumDeclaration, node);</span>
 		}
-<span class="fc" id="L1435">	}</span>
+<span class="fc" id="L1459">	}</span>
 
 	@Override
 	public void endVisit(ExportsDirective node) {
-<span class="nc bnc" id="L1439" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ExportsDirective)) {</span>
-<span class="nc" id="L1440">			this.helperVisitor.acceptConsumer(VisitorEnum.ExportsDirective, node);</span>
+<span class="nc bnc" id="L1463" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ExportsDirective)) {</span>
+<span class="nc" id="L1464">			this.helperVisitor.acceptConsumer(VisitorEnum.ExportsDirective, node);</span>
 		}
-<span class="nc" id="L1442">	}</span>
+<span class="nc" id="L1466">	}</span>
 
 	@Override
 	public void endVisit(ExpressionMethodReference node) {
-<span class="pc bpc" id="L1446" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ExpressionMethodReference)) {</span>
-<span class="nc" id="L1447">			this.helperVisitor.acceptConsumer(VisitorEnum.ExpressionMethodReference, node);</span>
+<span class="pc bpc" id="L1470" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ExpressionMethodReference)) {</span>
+<span class="nc" id="L1471">			this.helperVisitor.acceptConsumer(VisitorEnum.ExpressionMethodReference, node);</span>
 		}
-<span class="fc" id="L1449">	}</span>
+<span class="fc" id="L1473">	}</span>
 
 	@Override
 	public void endVisit(ExpressionStatement node) {
-<span class="fc bfc" id="L1453" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ExpressionStatement)) {</span>
-<span class="fc" id="L1454">			this.helperVisitor.acceptConsumer(VisitorEnum.ExpressionStatement, node);</span>
+<span class="fc bfc" id="L1477" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ExpressionStatement)) {</span>
+<span class="fc" id="L1478">			this.helperVisitor.acceptConsumer(VisitorEnum.ExpressionStatement, node);</span>
 		}
-<span class="fc" id="L1456">	}</span>
+<span class="fc" id="L1480">	}</span>
 
 	@Override
 	public void endVisit(FieldAccess node) {
-<span class="pc bpc" id="L1460" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.FieldAccess)) {</span>
-<span class="nc" id="L1461">			this.helperVisitor.acceptConsumer(VisitorEnum.FieldAccess, node);</span>
+<span class="pc bpc" id="L1484" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.FieldAccess)) {</span>
+<span class="nc" id="L1485">			this.helperVisitor.acceptConsumer(VisitorEnum.FieldAccess, node);</span>
 		}
-<span class="fc" id="L1463">	}</span>
+<span class="fc" id="L1487">	}</span>
 
 	@Override
 	public void endVisit(FieldDeclaration node) {
-<span class="fc bfc" id="L1467" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.FieldDeclaration)) {</span>
-<span class="fc" id="L1468">			this.helperVisitor.acceptConsumer(VisitorEnum.FieldDeclaration, node);</span>
+<span class="fc bfc" id="L1491" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.FieldDeclaration)) {</span>
+<span class="fc" id="L1492">			this.helperVisitor.acceptConsumer(VisitorEnum.FieldDeclaration, node);</span>
 		}
-<span class="fc" id="L1470">	}</span>
+<span class="fc" id="L1494">	}</span>
 
 	@Override
 	public void endVisit(ForStatement node) {
-<span class="pc bpc" id="L1474" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ForStatement)) {</span>
-<span class="nc" id="L1475">			this.helperVisitor.acceptConsumer(VisitorEnum.ForStatement, node);</span>
+<span class="pc bpc" id="L1498" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ForStatement)) {</span>
+<span class="nc" id="L1499">			this.helperVisitor.acceptConsumer(VisitorEnum.ForStatement, node);</span>
 		}
-<span class="fc" id="L1477">	}</span>
+<span class="fc" id="L1501">	}</span>
 
 	@Override
 	public void endVisit(IfStatement node) {
-<span class="pc bpc" id="L1481" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.IfStatement)) {</span>
-<span class="nc" id="L1482">			this.helperVisitor.acceptConsumer(VisitorEnum.IfStatement, node);</span>
+<span class="pc bpc" id="L1505" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.IfStatement)) {</span>
+<span class="nc" id="L1506">			this.helperVisitor.acceptConsumer(VisitorEnum.IfStatement, node);</span>
 		}
-<span class="fc" id="L1484">	}</span>
+<span class="fc" id="L1508">	}</span>
 
 	@Override
 	public void endVisit(ImportDeclaration node) {
-<span class="fc bfc" id="L1488" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ImportDeclaration)) {</span>
-<span class="fc" id="L1489">			this.helperVisitor.acceptConsumer(VisitorEnum.ImportDeclaration, node);</span>
+<span class="fc bfc" id="L1512" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ImportDeclaration)) {</span>
+<span class="fc" id="L1513">			this.helperVisitor.acceptConsumer(VisitorEnum.ImportDeclaration, node);</span>
 		}
-<span class="fc" id="L1491">	}</span>
+<span class="fc" id="L1515">	}</span>
 
 	@Override
 	public void endVisit(InfixExpression node) {
-<span class="pc bpc" id="L1495" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.InfixExpression)) {</span>
-<span class="nc" id="L1496">			this.helperVisitor.acceptConsumer(VisitorEnum.InfixExpression, node);</span>
+<span class="pc bpc" id="L1519" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.InfixExpression)) {</span>
+<span class="nc" id="L1520">			this.helperVisitor.acceptConsumer(VisitorEnum.InfixExpression, node);</span>
 		}
-<span class="fc" id="L1498">	}</span>
+<span class="fc" id="L1522">	}</span>
 
 	@Override
 	public void endVisit(Initializer node) {
-<span class="pc bpc" id="L1502" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.Initializer)) {</span>
-<span class="nc" id="L1503">			this.helperVisitor.acceptConsumer(VisitorEnum.Initializer, node);</span>
+<span class="pc bpc" id="L1526" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.Initializer)) {</span>
+<span class="nc" id="L1527">			this.helperVisitor.acceptConsumer(VisitorEnum.Initializer, node);</span>
 		}
-<span class="fc" id="L1505">	}</span>
+<span class="fc" id="L1529">	}</span>
 
 	@Override
 	public void endVisit(InstanceofExpression node) {
-<span class="pc bpc" id="L1509" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.InstanceofExpression)) {</span>
-<span class="nc" id="L1510">			this.helperVisitor.acceptConsumer(VisitorEnum.InstanceofExpression, node);</span>
+<span class="pc bpc" id="L1533" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.InstanceofExpression)) {</span>
+<span class="nc" id="L1534">			this.helperVisitor.acceptConsumer(VisitorEnum.InstanceofExpression, node);</span>
 		}
-<span class="fc" id="L1512">	}</span>
+<span class="fc" id="L1536">	}</span>
 
 	@Override
 	public void endVisit(IntersectionType node) {
-<span class="nc bnc" id="L1516" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.IntersectionType)) {</span>
-<span class="nc" id="L1517">			this.helperVisitor.acceptConsumer(VisitorEnum.IntersectionType, node);</span>
+<span class="nc bnc" id="L1540" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.IntersectionType)) {</span>
+<span class="nc" id="L1541">			this.helperVisitor.acceptConsumer(VisitorEnum.IntersectionType, node);</span>
 		}
-<span class="nc" id="L1519">	}</span>
+<span class="nc" id="L1543">	}</span>
 
 	@Override
 	public void endVisit(Javadoc node) {
-<span class="pc bpc" id="L1523" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.Javadoc)) {</span>
-<span class="nc" id="L1524">			this.helperVisitor.acceptConsumer(VisitorEnum.Javadoc, node);</span>
+<span class="pc bpc" id="L1547" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.Javadoc)) {</span>
+<span class="nc" id="L1548">			this.helperVisitor.acceptConsumer(VisitorEnum.Javadoc, node);</span>
 		}
-<span class="fc" id="L1526">	}</span>
+<span class="fc" id="L1550">	}</span>
+
+	@Override
+	public void endVisit(JavaDocRegion node) {
+<span class="fc bfc" id="L1554" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.JavaDocRegion)) {</span>
+<span class="fc" id="L1555">			this.helperVisitor.acceptConsumer(VisitorEnum.JavaDocRegion, node);</span>
+		}
+<span class="fc" id="L1557">	}</span>
+
+	@Override
+	public void endVisit(JavaDocTextElement node) {
+<span class="fc bfc" id="L1561" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.JavaDocTextElement)) {</span>
+<span class="fc" id="L1562">			this.helperVisitor.acceptConsumer(VisitorEnum.JavaDocTextElement, node);</span>
+		}
+<span class="fc" id="L1564">	}</span>
 
 	@Override
 	public void endVisit(LabeledStatement node) {
-<span class="pc bpc" id="L1530" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.LabeledStatement)) {</span>
-<span class="nc" id="L1531">			this.helperVisitor.acceptConsumer(VisitorEnum.LabeledStatement, node);</span>
+<span class="pc bpc" id="L1568" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.LabeledStatement)) {</span>
+<span class="nc" id="L1569">			this.helperVisitor.acceptConsumer(VisitorEnum.LabeledStatement, node);</span>
 		}
-<span class="fc" id="L1533">	}</span>
+<span class="fc" id="L1571">	}</span>
 
 	@Override
 	public void endVisit(LambdaExpression node) {
-<span class="pc bpc" id="L1537" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.LambdaExpression)) {</span>
-<span class="nc" id="L1538">			this.helperVisitor.acceptConsumer(VisitorEnum.LambdaExpression, node);</span>
+<span class="pc bpc" id="L1575" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.LambdaExpression)) {</span>
+<span class="nc" id="L1576">			this.helperVisitor.acceptConsumer(VisitorEnum.LambdaExpression, node);</span>
 		}
-<span class="fc" id="L1540">	}</span>
+<span class="fc" id="L1578">	}</span>
 
 	@Override
 	public void endVisit(LineComment node) {
-<span class="nc bnc" id="L1544" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.LineComment)) {</span>
-<span class="nc" id="L1545">			this.helperVisitor.acceptConsumer(VisitorEnum.LineComment, node);</span>
+<span class="nc bnc" id="L1582" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.LineComment)) {</span>
+<span class="nc" id="L1583">			this.helperVisitor.acceptConsumer(VisitorEnum.LineComment, node);</span>
 		}
-<span class="nc" id="L1547">	}</span>
+<span class="nc" id="L1585">	}</span>
 
 	@Override
 	public void endVisit(MarkerAnnotation node) {
-<span class="pc bpc" id="L1551" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.MarkerAnnotation)) {</span>
-<span class="nc" id="L1552">			VisitorConfigData config = this.helperVisitor.getConsumerData().get(VisitorEnum.MarkerAnnotation);</span>
-<span class="nc bnc" id="L1553" title="All 2 branches missed.">			if(config != null) {</span>
-<span class="nc" id="L1554">				String data = config.getAnnotationName();</span>
-<span class="nc" id="L1555">				String fullyQualifiedName = resolveAnnotationName(node);</span>
-<span class="nc bnc" id="L1556" title="All 4 branches missed.">				if ((data!= null) &amp;&amp; !fullyQualifiedName.equals(data)) {</span>
-<span class="nc" id="L1557">					return;</span>
+<span class="pc bpc" id="L1589" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.MarkerAnnotation)) {</span>
+<span class="nc" id="L1590">			VisitorConfigData config = this.helperVisitor.getConsumerData().get(VisitorEnum.MarkerAnnotation);</span>
+<span class="nc bnc" id="L1591" title="All 2 branches missed.">			if(config != null) {</span>
+<span class="nc" id="L1592">				String data = config.getAnnotationName();</span>
+<span class="nc" id="L1593">				String fullyQualifiedName = resolveAnnotationName(node);</span>
+<span class="nc bnc" id="L1594" title="All 4 branches missed.">				if ((data!= null) &amp;&amp; !fullyQualifiedName.equals(data)) {</span>
+<span class="nc" id="L1595">					return;</span>
 				}
 			}
-<span class="nc" id="L1560">			this.helperVisitor.acceptConsumer(VisitorEnum.MarkerAnnotation, node);</span>
+<span class="nc" id="L1598">			this.helperVisitor.acceptConsumer(VisitorEnum.MarkerAnnotation, node);</span>
 		}
-<span class="fc" id="L1562">	}</span>
+<span class="fc" id="L1600">	}</span>
 
 	@Override
 	public void endVisit(MemberRef node) {
-<span class="pc bpc" id="L1566" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.MemberRef)) {</span>
-<span class="nc" id="L1567">			this.helperVisitor.acceptConsumer(VisitorEnum.MemberRef, node);</span>
+<span class="pc bpc" id="L1604" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.MemberRef)) {</span>
+<span class="nc" id="L1605">			this.helperVisitor.acceptConsumer(VisitorEnum.MemberRef, node);</span>
 		}
-<span class="fc" id="L1569">	}</span>
+<span class="fc" id="L1607">	}</span>
 
 	@Override
 	public void endVisit(MemberValuePair node) {
-<span class="pc bpc" id="L1573" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.MemberValuePair)) {</span>
-<span class="nc" id="L1574">			this.helperVisitor.acceptConsumer(VisitorEnum.MemberValuePair, node);</span>
+<span class="pc bpc" id="L1611" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.MemberValuePair)) {</span>
+<span class="nc" id="L1612">			this.helperVisitor.acceptConsumer(VisitorEnum.MemberValuePair, node);</span>
 		}
-<span class="fc" id="L1576">	}</span>
+<span class="fc" id="L1614">	}</span>
 
 	@Override
 	public void endVisit(MethodRef node) {
-<span class="nc bnc" id="L1580" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.MethodRef)) {</span>
-<span class="nc" id="L1581">			this.helperVisitor.acceptConsumer(VisitorEnum.MethodRef, node);</span>
+<span class="pc bpc" id="L1618" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.MethodRef)) {</span>
+<span class="nc" id="L1619">			this.helperVisitor.acceptConsumer(VisitorEnum.MethodRef, node);</span>
 		}
-<span class="nc" id="L1583">	}</span>
+<span class="fc" id="L1621">	}</span>
 
 	@Override
 	public void endVisit(MethodRefParameter node) {
-<span class="nc bnc" id="L1587" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.MethodRefParameter)) {</span>
-<span class="nc" id="L1588">			this.helperVisitor.acceptConsumer(VisitorEnum.MethodRefParameter, node);</span>
+<span class="pc bpc" id="L1625" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.MethodRefParameter)) {</span>
+<span class="nc" id="L1626">			this.helperVisitor.acceptConsumer(VisitorEnum.MethodRefParameter, node);</span>
 		}
-<span class="nc" id="L1590">	}</span>
+<span class="fc" id="L1628">	}</span>
 
 	@Override
 	public void endVisit(MethodDeclaration node) {
-<span class="fc bfc" id="L1594" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.MethodDeclaration)) {</span>
-<span class="fc" id="L1595">			this.helperVisitor.acceptConsumer(VisitorEnum.MethodDeclaration, node);</span>
+<span class="fc bfc" id="L1632" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.MethodDeclaration)) {</span>
+<span class="fc" id="L1633">			this.helperVisitor.acceptConsumer(VisitorEnum.MethodDeclaration, node);</span>
 		}
-<span class="fc" id="L1597">	}</span>
+<span class="fc" id="L1635">	}</span>
 
 	@Override
 	public void endVisit(MethodInvocation node) {
-<span class="fc bfc" id="L1601" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.MethodInvocation)) {</span>
-<span class="fc" id="L1602">			VisitorConfigData config = this.helperVisitor.getConsumerData().get(VisitorEnum.MethodInvocation);</span>
-<span class="pc bpc" id="L1603" title="1 of 2 branches missed.">			if(config != null) {</span>
-<span class="nc" id="L1604">				String data = config.getMethodName();</span>
-<span class="nc bnc" id="L1605" title="All 4 branches missed.">				if ((data!= null) &amp;&amp; !node.getName().getIdentifier().equals(data)) {</span>
-<span class="nc" id="L1606">					return;</span>
+<span class="fc bfc" id="L1639" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.MethodInvocation)) {</span>
+<span class="fc" id="L1640">			VisitorConfigData config = this.helperVisitor.getConsumerData().get(VisitorEnum.MethodInvocation);</span>
+<span class="pc bpc" id="L1641" title="1 of 2 branches missed.">			if(config != null) {</span>
+<span class="nc" id="L1642">				String data = config.getMethodName();</span>
+<span class="nc bnc" id="L1643" title="All 4 branches missed.">				if ((data!= null) &amp;&amp; !node.getName().getIdentifier().equals(data)) {</span>
+<span class="nc" id="L1644">					return;</span>
 				}
-<span class="nc" id="L1608">				Class&lt;?&gt; typeof = config.getTypeof();</span>
-<span class="nc" id="L1609">				String typeofByName = config.getTypeofByName();</span>
-<span class="nc" id="L1610">				String canonicaltype = null;</span>
-<span class="nc bnc" id="L1611" title="All 2 branches missed.">				if(typeof != null) {</span>
-<span class="nc" id="L1612">					canonicaltype = typeof.getCanonicalName();</span>
-<span class="nc bnc" id="L1613" title="All 2 branches missed.">				} else if(typeofByName != null) {</span>
-<span class="nc" id="L1614">					canonicaltype = typeofByName;</span>
+<span class="nc" id="L1646">				Class&lt;?&gt; typeof = config.getTypeof();</span>
+<span class="nc" id="L1647">				String typeofByName = config.getTypeofByName();</span>
+<span class="nc" id="L1648">				String canonicaltype = null;</span>
+<span class="nc bnc" id="L1649" title="All 2 branches missed.">				if(typeof != null) {</span>
+<span class="nc" id="L1650">					canonicaltype = typeof.getCanonicalName();</span>
+<span class="nc bnc" id="L1651" title="All 2 branches missed.">				} else if(typeofByName != null) {</span>
+<span class="nc" id="L1652">					canonicaltype = typeofByName;</span>
 				}
-<span class="nc bnc" id="L1616" title="All 2 branches missed.">				if(canonicaltype != null) {</span>
-<span class="nc bnc" id="L1617" title="All 2 branches missed.">					if (!usesGivenSignature(node, canonicaltype, data)) {</span>
-<span class="nc" id="L1618">						return;</span>
+<span class="nc bnc" id="L1654" title="All 2 branches missed.">				if(canonicaltype != null) {</span>
+<span class="nc bnc" id="L1655" title="All 2 branches missed.">					if (!usesGivenSignature(node, canonicaltype, data)) {</span>
+<span class="nc" id="L1656">						return;</span>
 					}
 				}
 			}
-<span class="fc" id="L1622">			this.helperVisitor.acceptConsumer(VisitorEnum.MethodInvocation, node);</span>
+<span class="fc" id="L1660">			this.helperVisitor.acceptConsumer(VisitorEnum.MethodInvocation, node);</span>
 		}
-<span class="fc" id="L1624">	}</span>
+<span class="fc" id="L1662">	}</span>
 
 	@Override
 	public void endVisit(Modifier node) {
-<span class="fc bfc" id="L1628" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.Modifier)) {</span>
-<span class="fc" id="L1629">			this.helperVisitor.acceptConsumer(VisitorEnum.Modifier, node);</span>
+<span class="fc bfc" id="L1666" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.Modifier)) {</span>
+<span class="fc" id="L1667">			this.helperVisitor.acceptConsumer(VisitorEnum.Modifier, node);</span>
 		}
-<span class="fc" id="L1631">	}</span>
+<span class="fc" id="L1669">	}</span>
 
 	@Override
 	public void endVisit(ModuleDeclaration node) {
-<span class="nc bnc" id="L1635" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ModuleDeclaration)) {</span>
-<span class="nc" id="L1636">			this.helperVisitor.acceptConsumer(VisitorEnum.ModuleDeclaration, node);</span>
+<span class="nc bnc" id="L1673" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ModuleDeclaration)) {</span>
+<span class="nc" id="L1674">			this.helperVisitor.acceptConsumer(VisitorEnum.ModuleDeclaration, node);</span>
 		}
-<span class="nc" id="L1638">	}</span>
+<span class="nc" id="L1676">	}</span>
 
 	@Override
 	public void endVisit(ModuleModifier node) {
-<span class="nc bnc" id="L1642" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ModuleModifier)) {</span>
-<span class="nc" id="L1643">			this.helperVisitor.acceptConsumer(VisitorEnum.ModuleModifier, node);</span>
+<span class="nc bnc" id="L1680" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ModuleModifier)) {</span>
+<span class="nc" id="L1681">			this.helperVisitor.acceptConsumer(VisitorEnum.ModuleModifier, node);</span>
 		}
-<span class="nc" id="L1645">	}</span>
+<span class="nc" id="L1683">	}</span>
 
 	@Override
 	public void endVisit(NameQualifiedType node) {
-<span class="nc bnc" id="L1649" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.NameQualifiedType)) {</span>
-<span class="nc" id="L1650">			this.helperVisitor.acceptConsumer(VisitorEnum.NameQualifiedType, node);</span>
+<span class="nc bnc" id="L1687" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.NameQualifiedType)) {</span>
+<span class="nc" id="L1688">			this.helperVisitor.acceptConsumer(VisitorEnum.NameQualifiedType, node);</span>
 		}
-<span class="nc" id="L1652">	}</span>
+<span class="nc" id="L1690">	}</span>
 
 	@Override
 	public void endVisit(NormalAnnotation node) {
-<span class="pc bpc" id="L1656" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.NormalAnnotation)) {</span>
-<span class="nc" id="L1657">			VisitorConfigData config = this.helperVisitor.getConsumerData().get(VisitorEnum.NormalAnnotation);</span>
-<span class="nc bnc" id="L1658" title="All 2 branches missed.">			if(config != null) {</span>
-<span class="nc" id="L1659">				String data = config.getAnnotationName();</span>
-<span class="nc" id="L1660">				String fullyQualifiedName = resolveAnnotationName(node);</span>
-<span class="nc bnc" id="L1661" title="All 4 branches missed.">				if ((data!= null) &amp;&amp; !fullyQualifiedName.equals(data)) {</span>
-<span class="nc" id="L1662">					return;</span>
+<span class="pc bpc" id="L1694" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.NormalAnnotation)) {</span>
+<span class="nc" id="L1695">			VisitorConfigData config = this.helperVisitor.getConsumerData().get(VisitorEnum.NormalAnnotation);</span>
+<span class="nc bnc" id="L1696" title="All 2 branches missed.">			if(config != null) {</span>
+<span class="nc" id="L1697">				String data = config.getAnnotationName();</span>
+<span class="nc" id="L1698">				String fullyQualifiedName = resolveAnnotationName(node);</span>
+<span class="nc bnc" id="L1699" title="All 4 branches missed.">				if ((data!= null) &amp;&amp; !fullyQualifiedName.equals(data)) {</span>
+<span class="nc" id="L1700">					return;</span>
 				}
 			}
-<span class="nc" id="L1665">			this.helperVisitor.acceptConsumer(VisitorEnum.NormalAnnotation, node);</span>
+<span class="nc" id="L1703">			this.helperVisitor.acceptConsumer(VisitorEnum.NormalAnnotation, node);</span>
 		}
-<span class="fc" id="L1667">	}</span>
+<span class="fc" id="L1705">	}</span>
 
 	@Override
 	public void endVisit(NullLiteral node) {
-<span class="fc bfc" id="L1671" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.NullLiteral)) {</span>
-<span class="fc" id="L1672">			this.helperVisitor.acceptConsumer(VisitorEnum.NullLiteral, node);</span>
+<span class="fc bfc" id="L1709" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.NullLiteral)) {</span>
+<span class="fc" id="L1710">			this.helperVisitor.acceptConsumer(VisitorEnum.NullLiteral, node);</span>
 		}
-<span class="fc" id="L1674">	}</span>
+<span class="fc" id="L1712">	}</span>
 
 	@Override
 	public void endVisit(NumberLiteral node) {
-<span class="pc bpc" id="L1678" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.NumberLiteral)) {</span>
-<span class="nc" id="L1679">			this.helperVisitor.acceptConsumer(VisitorEnum.NumberLiteral, node);</span>
+<span class="pc bpc" id="L1716" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.NumberLiteral)) {</span>
+<span class="nc" id="L1717">			this.helperVisitor.acceptConsumer(VisitorEnum.NumberLiteral, node);</span>
 		}
-<span class="fc" id="L1681">	}</span>
+<span class="fc" id="L1719">	}</span>
 
 	@Override
 	public void endVisit(OpensDirective node) {
-<span class="nc bnc" id="L1685" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.OpensDirective)) {</span>
-<span class="nc" id="L1686">			this.helperVisitor.acceptConsumer(VisitorEnum.OpensDirective, node);</span>
+<span class="nc bnc" id="L1723" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.OpensDirective)) {</span>
+<span class="nc" id="L1724">			this.helperVisitor.acceptConsumer(VisitorEnum.OpensDirective, node);</span>
 		}
-<span class="nc" id="L1688">	}</span>
+<span class="nc" id="L1726">	}</span>
 
 	@Override
 	public void endVisit(PackageDeclaration node) {
-<span class="fc bfc" id="L1692" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.PackageDeclaration)) {</span>
-<span class="fc" id="L1693">			this.helperVisitor.acceptConsumer(VisitorEnum.PackageDeclaration, node);</span>
+<span class="fc bfc" id="L1730" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.PackageDeclaration)) {</span>
+<span class="fc" id="L1731">			this.helperVisitor.acceptConsumer(VisitorEnum.PackageDeclaration, node);</span>
 		}
-<span class="fc" id="L1695">	}</span>
+<span class="fc" id="L1733">	}</span>
 
 	@Override
 	public void endVisit(ParameterizedType node) {
-<span class="fc bfc" id="L1699" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ParameterizedType)) {</span>
-<span class="fc" id="L1700">			this.helperVisitor.acceptConsumer(VisitorEnum.ParameterizedType, node);</span>
+<span class="fc bfc" id="L1737" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ParameterizedType)) {</span>
+<span class="fc" id="L1738">			this.helperVisitor.acceptConsumer(VisitorEnum.ParameterizedType, node);</span>
 		}
-<span class="fc" id="L1702">	}</span>
+<span class="fc" id="L1740">	}</span>
 
 	@Override
 	public void endVisit(ParenthesizedExpression node) {
-<span class="pc bpc" id="L1706" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ParenthesizedExpression)) {</span>
-<span class="nc" id="L1707">			this.helperVisitor.acceptConsumer(VisitorEnum.ParenthesizedExpression, node);</span>
+<span class="pc bpc" id="L1744" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ParenthesizedExpression)) {</span>
+<span class="nc" id="L1745">			this.helperVisitor.acceptConsumer(VisitorEnum.ParenthesizedExpression, node);</span>
 		}
-<span class="fc" id="L1709">	}</span>
+<span class="fc" id="L1747">	}</span>
 
 	@Override
 	public void endVisit(PatternInstanceofExpression node) {
-<span class="pc bpc" id="L1713" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.PatternInstanceofExpression)) {</span>
-<span class="nc" id="L1714">			this.helperVisitor.acceptConsumer(VisitorEnum.PatternInstanceofExpression, node);</span>
+<span class="pc bpc" id="L1751" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.PatternInstanceofExpression)) {</span>
+<span class="nc" id="L1752">			this.helperVisitor.acceptConsumer(VisitorEnum.PatternInstanceofExpression, node);</span>
 		}
-<span class="fc" id="L1716">	}</span>
+<span class="fc" id="L1754">	}</span>
 
 	@Override
 	public void endVisit(PostfixExpression node) {
-<span class="pc bpc" id="L1720" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.PostfixExpression)) {</span>
-<span class="nc" id="L1721">			this.helperVisitor.acceptConsumer(VisitorEnum.PostfixExpression, node);</span>
+<span class="pc bpc" id="L1758" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.PostfixExpression)) {</span>
+<span class="nc" id="L1759">			this.helperVisitor.acceptConsumer(VisitorEnum.PostfixExpression, node);</span>
 		}
-<span class="fc" id="L1723">	}</span>
+<span class="fc" id="L1761">	}</span>
 
 	@Override
 	public void endVisit(PrefixExpression node) {
-<span class="pc bpc" id="L1727" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.PrefixExpression)) {</span>
-<span class="nc" id="L1728">			this.helperVisitor.acceptConsumer(VisitorEnum.PrefixExpression, node);</span>
+<span class="pc bpc" id="L1765" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.PrefixExpression)) {</span>
+<span class="nc" id="L1766">			this.helperVisitor.acceptConsumer(VisitorEnum.PrefixExpression, node);</span>
 		}
-<span class="fc" id="L1730">	}</span>
+<span class="fc" id="L1768">	}</span>
 
 	@Override
 	public void endVisit(ProvidesDirective node) {
-<span class="nc bnc" id="L1734" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ProvidesDirective)) {</span>
-<span class="nc" id="L1735">			this.helperVisitor.acceptConsumer(VisitorEnum.ProvidesDirective, node);</span>
+<span class="nc bnc" id="L1772" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ProvidesDirective)) {</span>
+<span class="nc" id="L1773">			this.helperVisitor.acceptConsumer(VisitorEnum.ProvidesDirective, node);</span>
 		}
-<span class="nc" id="L1737">	}</span>
+<span class="nc" id="L1775">	}</span>
 
 	@Override
 	public void endVisit(PrimitiveType node) {
-<span class="fc bfc" id="L1741" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.PrimitiveType)) {</span>
-<span class="fc" id="L1742">			this.helperVisitor.acceptConsumer(VisitorEnum.PrimitiveType, node);</span>
+<span class="fc bfc" id="L1779" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.PrimitiveType)) {</span>
+<span class="fc" id="L1780">			this.helperVisitor.acceptConsumer(VisitorEnum.PrimitiveType, node);</span>
 		}
-<span class="fc" id="L1744">	}</span>
+<span class="fc" id="L1782">	}</span>
 
 	@Override
 	public void endVisit(QualifiedName node) {
-<span class="fc bfc" id="L1748" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.QualifiedName)) {</span>
-<span class="fc" id="L1749">			this.helperVisitor.acceptConsumer(VisitorEnum.QualifiedName, node);</span>
+<span class="fc bfc" id="L1786" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.QualifiedName)) {</span>
+<span class="fc" id="L1787">			this.helperVisitor.acceptConsumer(VisitorEnum.QualifiedName, node);</span>
 		}
-<span class="fc" id="L1751">	}</span>
+<span class="fc" id="L1789">	}</span>
 
 	@Override
 	public void endVisit(QualifiedType node) {
-<span class="nc bnc" id="L1755" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.QualifiedType)) {</span>
-<span class="nc" id="L1756">			this.helperVisitor.acceptConsumer(VisitorEnum.QualifiedType, node);</span>
+<span class="nc bnc" id="L1793" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.QualifiedType)) {</span>
+<span class="nc" id="L1794">			this.helperVisitor.acceptConsumer(VisitorEnum.QualifiedType, node);</span>
 		}
-<span class="nc" id="L1758">	}</span>
+<span class="nc" id="L1796">	}</span>
 
 	@Override
 	public void endVisit(ModuleQualifiedName node) {
-<span class="nc bnc" id="L1762" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ModuleQualifiedName)) {</span>
-<span class="nc" id="L1763">			this.helperVisitor.acceptConsumer(VisitorEnum.ModuleQualifiedName, node);</span>
+<span class="nc bnc" id="L1800" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ModuleQualifiedName)) {</span>
+<span class="nc" id="L1801">			this.helperVisitor.acceptConsumer(VisitorEnum.ModuleQualifiedName, node);</span>
 		}
-<span class="nc" id="L1765">	}</span>
+<span class="nc" id="L1803">	}</span>
 
 	@Override
 	public void endVisit(RequiresDirective node) {
-<span class="nc bnc" id="L1769" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.RequiresDirective)) {</span>
-<span class="nc" id="L1770">			this.helperVisitor.acceptConsumer(VisitorEnum.RequiresDirective, node);</span>
+<span class="nc bnc" id="L1807" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.RequiresDirective)) {</span>
+<span class="nc" id="L1808">			this.helperVisitor.acceptConsumer(VisitorEnum.RequiresDirective, node);</span>
 		}
-<span class="nc" id="L1772">	}</span>
+<span class="nc" id="L1810">	}</span>
 
 	@Override
 	public void endVisit(RecordDeclaration node) {
-<span class="pc bpc" id="L1776" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.RecordDeclaration)) {</span>
-<span class="nc" id="L1777">			this.helperVisitor.acceptConsumer(VisitorEnum.RecordDeclaration, node);</span>
+<span class="pc bpc" id="L1814" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.RecordDeclaration)) {</span>
+<span class="nc" id="L1815">			this.helperVisitor.acceptConsumer(VisitorEnum.RecordDeclaration, node);</span>
 		}
-<span class="fc" id="L1779">	}</span>
+<span class="fc" id="L1817">	}</span>
 
 	@Override
 	public void endVisit(ReturnStatement node) {
-<span class="pc bpc" id="L1783" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ReturnStatement)) {</span>
-<span class="nc" id="L1784">			this.helperVisitor.acceptConsumer(VisitorEnum.ReturnStatement, node);</span>
+<span class="pc bpc" id="L1821" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ReturnStatement)) {</span>
+<span class="nc" id="L1822">			this.helperVisitor.acceptConsumer(VisitorEnum.ReturnStatement, node);</span>
 		}
-<span class="fc" id="L1786">	}</span>
+<span class="fc" id="L1824">	}</span>
 
 	@Override
 	public void endVisit(SimpleName node) {
-<span class="fc bfc" id="L1790" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.SimpleName)) {</span>
-<span class="fc" id="L1791">			this.helperVisitor.acceptConsumer(VisitorEnum.SimpleName, node);</span>
+<span class="fc bfc" id="L1828" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.SimpleName)) {</span>
+<span class="fc" id="L1829">			this.helperVisitor.acceptConsumer(VisitorEnum.SimpleName, node);</span>
 		}
-<span class="fc" id="L1793">	}</span>
+<span class="fc" id="L1831">	}</span>
 
 	@Override
 	public void endVisit(SimpleType node) {
-<span class="fc bfc" id="L1797" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.SimpleType)) {</span>
-<span class="fc" id="L1798">			this.helperVisitor.acceptConsumer(VisitorEnum.SimpleType, node);</span>
+<span class="fc bfc" id="L1835" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.SimpleType)) {</span>
+<span class="fc" id="L1836">			this.helperVisitor.acceptConsumer(VisitorEnum.SimpleType, node);</span>
 		}
-<span class="fc" id="L1800">	}</span>
+<span class="fc" id="L1838">	}</span>
 
 	@Override
 	public void endVisit(SingleMemberAnnotation node) {
-<span class="pc bpc" id="L1804" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.SingleMemberAnnotation)) {</span>
-<span class="nc" id="L1805">			this.helperVisitor.acceptConsumer(VisitorEnum.SingleMemberAnnotation, node);</span>
+<span class="pc bpc" id="L1842" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.SingleMemberAnnotation)) {</span>
+<span class="nc" id="L1843">			this.helperVisitor.acceptConsumer(VisitorEnum.SingleMemberAnnotation, node);</span>
 		}
-<span class="fc" id="L1807">	}</span>
+<span class="fc" id="L1845">	}</span>
 
 	@Override
 	public void endVisit(SingleVariableDeclaration node) {
-<span class="fc bfc" id="L1811" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.SingleVariableDeclaration)) {</span>
-<span class="fc" id="L1812">			this.helperVisitor.acceptConsumer(VisitorEnum.SingleVariableDeclaration, node);</span>
+<span class="fc bfc" id="L1849" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.SingleVariableDeclaration)) {</span>
+<span class="fc" id="L1850">			this.helperVisitor.acceptConsumer(VisitorEnum.SingleVariableDeclaration, node);</span>
 		}
-<span class="fc" id="L1814">	}</span>
+<span class="fc" id="L1852">	}</span>
 
 	@Override
 	public void endVisit(StringLiteral node) {
-<span class="pc bpc" id="L1818" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.StringLiteral)) {</span>
-<span class="nc" id="L1819">			this.helperVisitor.acceptConsumer(VisitorEnum.StringLiteral, node);</span>
+<span class="pc bpc" id="L1856" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.StringLiteral)) {</span>
+<span class="nc" id="L1857">			this.helperVisitor.acceptConsumer(VisitorEnum.StringLiteral, node);</span>
 		}
-<span class="fc" id="L1821">	}</span>
+<span class="fc" id="L1859">	}</span>
 
 	@Override
 	public void endVisit(SuperConstructorInvocation node) {
-<span class="pc bpc" id="L1825" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.SuperConstructorInvocation)) {</span>
-<span class="nc" id="L1826">			this.helperVisitor.acceptConsumer(VisitorEnum.SuperConstructorInvocation, node);</span>
+<span class="pc bpc" id="L1863" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.SuperConstructorInvocation)) {</span>
+<span class="nc" id="L1864">			this.helperVisitor.acceptConsumer(VisitorEnum.SuperConstructorInvocation, node);</span>
 		}
-<span class="fc" id="L1828">	}</span>
+<span class="fc" id="L1866">	}</span>
 
 	@Override
 	public void endVisit(SuperFieldAccess node) {
-<span class="nc bnc" id="L1832" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.SuperFieldAccess)) {</span>
-<span class="nc" id="L1833">			this.helperVisitor.acceptConsumer(VisitorEnum.SuperFieldAccess, node);</span>
+<span class="nc bnc" id="L1870" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.SuperFieldAccess)) {</span>
+<span class="nc" id="L1871">			this.helperVisitor.acceptConsumer(VisitorEnum.SuperFieldAccess, node);</span>
 		}
-<span class="nc" id="L1835">	}</span>
+<span class="nc" id="L1873">	}</span>
 
 	@Override
 	public void endVisit(SuperMethodInvocation node) {
-<span class="pc bpc" id="L1839" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.SuperMethodInvocation)) {</span>
-<span class="nc" id="L1840">			this.helperVisitor.acceptConsumer(VisitorEnum.SuperMethodInvocation, node);</span>
+<span class="pc bpc" id="L1877" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.SuperMethodInvocation)) {</span>
+<span class="nc" id="L1878">			this.helperVisitor.acceptConsumer(VisitorEnum.SuperMethodInvocation, node);</span>
 		}
-<span class="fc" id="L1842">	}</span>
+<span class="fc" id="L1880">	}</span>
 
 	@Override
 	public void endVisit(SuperMethodReference node) {
-<span class="pc bpc" id="L1846" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.SuperMethodReference)) {</span>
-<span class="nc" id="L1847">			this.helperVisitor.acceptConsumer(VisitorEnum.SuperMethodReference, node);</span>
+<span class="pc bpc" id="L1884" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.SuperMethodReference)) {</span>
+<span class="nc" id="L1885">			this.helperVisitor.acceptConsumer(VisitorEnum.SuperMethodReference, node);</span>
 		}
-<span class="fc" id="L1849">	}</span>
+<span class="fc" id="L1887">	}</span>
 
 	@Override
 	public void endVisit(SwitchCase node) {
-<span class="pc bpc" id="L1853" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.SwitchCase)) {</span>
-<span class="nc" id="L1854">			this.helperVisitor.acceptConsumer(VisitorEnum.SwitchCase, node);</span>
+<span class="pc bpc" id="L1891" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.SwitchCase)) {</span>
+<span class="nc" id="L1892">			this.helperVisitor.acceptConsumer(VisitorEnum.SwitchCase, node);</span>
 		}
-<span class="fc" id="L1856">	}</span>
+<span class="fc" id="L1894">	}</span>
 
 	@Override
 	public void endVisit(SwitchExpression node) {
-<span class="pc bpc" id="L1860" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.SwitchExpression)) {</span>
-<span class="nc" id="L1861">			this.helperVisitor.acceptConsumer(VisitorEnum.SwitchExpression, node);</span>
+<span class="pc bpc" id="L1898" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.SwitchExpression)) {</span>
+<span class="nc" id="L1899">			this.helperVisitor.acceptConsumer(VisitorEnum.SwitchExpression, node);</span>
 		}
-<span class="fc" id="L1863">	}</span>
+<span class="fc" id="L1901">	}</span>
 
 	@Override
 	public void endVisit(SwitchStatement node) {
-<span class="pc bpc" id="L1867" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.SwitchStatement)) {</span>
-<span class="nc" id="L1868">			this.helperVisitor.acceptConsumer(VisitorEnum.SwitchStatement, node);</span>
+<span class="pc bpc" id="L1905" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.SwitchStatement)) {</span>
+<span class="nc" id="L1906">			this.helperVisitor.acceptConsumer(VisitorEnum.SwitchStatement, node);</span>
 		}
-<span class="fc" id="L1870">	}</span>
+<span class="fc" id="L1908">	}</span>
 
 	@Override
 	public void endVisit(SynchronizedStatement node) {
-<span class="pc bpc" id="L1874" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.SynchronizedStatement)) {</span>
-<span class="nc" id="L1875">			this.helperVisitor.acceptConsumer(VisitorEnum.SynchronizedStatement, node);</span>
+<span class="pc bpc" id="L1912" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.SynchronizedStatement)) {</span>
+<span class="nc" id="L1913">			this.helperVisitor.acceptConsumer(VisitorEnum.SynchronizedStatement, node);</span>
 		}
-<span class="fc" id="L1877">	}</span>
+<span class="fc" id="L1915">	}</span>
 
 	@Override
 	public void endVisit(TagElement node) {
-<span class="pc bpc" id="L1881" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.TagElement)) {</span>
-<span class="nc" id="L1882">			this.helperVisitor.acceptConsumer(VisitorEnum.TagElement, node);</span>
+<span class="pc bpc" id="L1919" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.TagElement)) {</span>
+<span class="nc" id="L1920">			this.helperVisitor.acceptConsumer(VisitorEnum.TagElement, node);</span>
 		}
-<span class="fc" id="L1884">	}</span>
+<span class="fc" id="L1922">	}</span>
+
+	@Override
+	public void endVisit(TagProperty node) {
+<span class="fc bfc" id="L1926" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.TagProperty)) {</span>
+<span class="fc" id="L1927">			this.helperVisitor.acceptConsumer(VisitorEnum.TagProperty, node);</span>
+		}
+<span class="fc" id="L1929">	}</span>
 
 	@Override
 	public void endVisit(TextBlock node) {
-<span class="nc bnc" id="L1888" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.TextBlock)) {</span>
-<span class="nc" id="L1889">			this.helperVisitor.acceptConsumer(VisitorEnum.TextBlock, node);</span>
+<span class="nc bnc" id="L1933" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.TextBlock)) {</span>
+<span class="nc" id="L1934">			this.helperVisitor.acceptConsumer(VisitorEnum.TextBlock, node);</span>
 		}
-<span class="nc" id="L1891">	}</span>
+<span class="nc" id="L1936">	}</span>
 
 	@Override
 	public void endVisit(TextElement node) {
-<span class="pc bpc" id="L1895" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.TextElement)) {</span>
-<span class="nc" id="L1896">			this.helperVisitor.acceptConsumer(VisitorEnum.TextElement, node);</span>
+<span class="pc bpc" id="L1940" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.TextElement)) {</span>
+<span class="nc" id="L1941">			this.helperVisitor.acceptConsumer(VisitorEnum.TextElement, node);</span>
 		}
-<span class="fc" id="L1898">	}</span>
+<span class="fc" id="L1943">	}</span>
 
 	@Override
 	public void endVisit(ThisExpression node) {
-<span class="pc bpc" id="L1902" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ThisExpression)) {</span>
-<span class="nc" id="L1903">			this.helperVisitor.acceptConsumer(VisitorEnum.ThisExpression, node);</span>
+<span class="pc bpc" id="L1947" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ThisExpression)) {</span>
+<span class="nc" id="L1948">			this.helperVisitor.acceptConsumer(VisitorEnum.ThisExpression, node);</span>
 		}
-<span class="fc" id="L1905">	}</span>
+<span class="fc" id="L1950">	}</span>
 
 	@Override
 	public void endVisit(ThrowStatement node) {
-<span class="pc bpc" id="L1909" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ThrowStatement)) {</span>
-<span class="nc" id="L1910">			this.helperVisitor.acceptConsumer(VisitorEnum.ThrowStatement, node);</span>
+<span class="pc bpc" id="L1954" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.ThrowStatement)) {</span>
+<span class="nc" id="L1955">			this.helperVisitor.acceptConsumer(VisitorEnum.ThrowStatement, node);</span>
 		}
-<span class="fc" id="L1912">	}</span>
+<span class="fc" id="L1957">	}</span>
 
 	@Override
 	public void endVisit(TryStatement node) {
-<span class="pc bpc" id="L1916" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.TryStatement)) {</span>
-<span class="nc" id="L1917">			this.helperVisitor.acceptConsumer(VisitorEnum.TryStatement, node);</span>
+<span class="pc bpc" id="L1961" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.TryStatement)) {</span>
+<span class="nc" id="L1962">			this.helperVisitor.acceptConsumer(VisitorEnum.TryStatement, node);</span>
 		}
-<span class="fc" id="L1919">	}</span>
+<span class="fc" id="L1964">	}</span>
 
 	@Override
 	public void endVisit(TypeDeclaration node) {
-<span class="fc bfc" id="L1923" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.TypeDeclaration)) {</span>
-<span class="fc" id="L1924">			this.helperVisitor.acceptConsumer(VisitorEnum.TypeDeclaration, node);</span>
+<span class="fc bfc" id="L1968" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.TypeDeclaration)) {</span>
+<span class="fc" id="L1969">			this.helperVisitor.acceptConsumer(VisitorEnum.TypeDeclaration, node);</span>
 		}
-<span class="fc" id="L1926">	}</span>
+<span class="fc" id="L1971">	}</span>
 
 	@Override
 	public void endVisit(TypeDeclarationStatement node) {
-<span class="pc bpc" id="L1930" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.TypeDeclarationStatement)) {</span>
-<span class="nc" id="L1931">			this.helperVisitor.acceptConsumer(VisitorEnum.TypeDeclarationStatement, node);</span>
+<span class="pc bpc" id="L1975" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.TypeDeclarationStatement)) {</span>
+<span class="nc" id="L1976">			this.helperVisitor.acceptConsumer(VisitorEnum.TypeDeclarationStatement, node);</span>
 		}
-<span class="fc" id="L1933">	}</span>
+<span class="fc" id="L1978">	}</span>
 
 	@Override
 	public void endVisit(TypeLiteral node) {
-<span class="pc bpc" id="L1937" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.TypeLiteral)) {</span>
-<span class="nc" id="L1938">			this.helperVisitor.acceptConsumer(VisitorEnum.TypeLiteral, node);</span>
+<span class="pc bpc" id="L1982" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.TypeLiteral)) {</span>
+<span class="nc" id="L1983">			this.helperVisitor.acceptConsumer(VisitorEnum.TypeLiteral, node);</span>
 		}
-<span class="fc" id="L1940">	}</span>
+<span class="fc" id="L1985">	}</span>
 
 	@Override
 	public void endVisit(TypeMethodReference node) {
-<span class="nc bnc" id="L1944" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.TypeMethodReference)) {</span>
-<span class="nc" id="L1945">			this.helperVisitor.acceptConsumer(VisitorEnum.TypeMethodReference, node);</span>
+<span class="nc bnc" id="L1989" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.TypeMethodReference)) {</span>
+<span class="nc" id="L1990">			this.helperVisitor.acceptConsumer(VisitorEnum.TypeMethodReference, node);</span>
 		}
-<span class="nc" id="L1947">	}</span>
+<span class="nc" id="L1992">	}</span>
 
 	@Override
 	public void endVisit(TypeParameter node) {
-<span class="pc bpc" id="L1951" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.TypeParameter)) {</span>
-<span class="nc" id="L1952">			this.helperVisitor.acceptConsumer(VisitorEnum.TypeParameter, node);</span>
+<span class="pc bpc" id="L1996" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.TypeParameter)) {</span>
+<span class="nc" id="L1997">			this.helperVisitor.acceptConsumer(VisitorEnum.TypeParameter, node);</span>
 		}
-<span class="fc" id="L1954">	}</span>
+<span class="fc" id="L1999">	}</span>
 
 	@Override
 	public void endVisit(UnionType node) {
-<span class="pc bpc" id="L1958" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.UnionType)) {</span>
-<span class="nc" id="L1959">			this.helperVisitor.acceptConsumer(VisitorEnum.UnionType, node);</span>
+<span class="pc bpc" id="L2003" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.UnionType)) {</span>
+<span class="nc" id="L2004">			this.helperVisitor.acceptConsumer(VisitorEnum.UnionType, node);</span>
 		}
-<span class="fc" id="L1961">	}</span>
+<span class="fc" id="L2006">	}</span>
 
 	@Override
 	public void endVisit(UsesDirective node) {
-<span class="nc bnc" id="L1965" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.UsesDirective)) {</span>
-<span class="nc" id="L1966">			this.helperVisitor.acceptConsumer(VisitorEnum.UsesDirective, node);</span>
+<span class="nc bnc" id="L2010" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.UsesDirective)) {</span>
+<span class="nc" id="L2011">			this.helperVisitor.acceptConsumer(VisitorEnum.UsesDirective, node);</span>
 		}
-<span class="nc" id="L1968">	}</span>
+<span class="nc" id="L2013">	}</span>
 
 	@Override
 	public void endVisit(VariableDeclarationExpression node) {
-<span class="pc bpc" id="L1972" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.VariableDeclarationExpression)) {</span>
-<span class="nc" id="L1973">			this.helperVisitor.acceptConsumer(VisitorEnum.VariableDeclarationExpression, node);</span>
+<span class="pc bpc" id="L2017" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.VariableDeclarationExpression)) {</span>
+<span class="nc" id="L2018">			this.helperVisitor.acceptConsumer(VisitorEnum.VariableDeclarationExpression, node);</span>
 		}
-<span class="fc" id="L1975">	}</span>
+<span class="fc" id="L2020">	}</span>
 
 	@Override
 	public void endVisit(VariableDeclarationStatement node) {
-<span class="fc bfc" id="L1979" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.VariableDeclarationStatement)) {</span>
-<span class="fc" id="L1980">			VisitorConfigData config = this.helperVisitor.getConsumerData().get(VisitorEnum.VariableDeclarationStatement);</span>
-<span class="pc bpc" id="L1981" title="1 of 2 branches missed.">			if(config != null) {</span>
-<span class="nc" id="L1982">				Class&lt;?&gt; data = config.getTypeof();</span>
-<span class="nc bnc" id="L1983" title="All 2 branches missed.">				if (data!= null) {</span>
-<span class="nc" id="L1984">					VariableDeclarationFragment bli = (VariableDeclarationFragment) node.fragments().get(0);</span>
-<span class="nc" id="L1985">					IVariableBinding resolveBinding = bli.resolveBinding();</span>
-<span class="nc bnc" id="L1986" title="All 2 branches missed.">					if(resolveBinding!=null) {</span>
-<span class="nc" id="L1987">						String qualifiedName = resolveBinding.getType().getErasure().getQualifiedName();</span>
-<span class="nc bnc" id="L1988" title="All 2 branches missed.">						if (!data.getCanonicalName().equals(qualifiedName)) {</span>
-<span class="nc" id="L1989">							return;</span>
+<span class="fc bfc" id="L2024" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.VariableDeclarationStatement)) {</span>
+<span class="fc" id="L2025">			VisitorConfigData config = this.helperVisitor.getConsumerData().get(VisitorEnum.VariableDeclarationStatement);</span>
+<span class="pc bpc" id="L2026" title="1 of 2 branches missed.">			if(config != null) {</span>
+<span class="nc" id="L2027">				Class&lt;?&gt; data = config.getTypeof();</span>
+<span class="nc bnc" id="L2028" title="All 2 branches missed.">				if (data!= null) {</span>
+<span class="nc" id="L2029">					VariableDeclarationFragment bli = (VariableDeclarationFragment) node.fragments().get(0);</span>
+<span class="nc" id="L2030">					IVariableBinding resolveBinding = bli.resolveBinding();</span>
+<span class="nc bnc" id="L2031" title="All 2 branches missed.">					if(resolveBinding!=null) {</span>
+<span class="nc" id="L2032">						String qualifiedName = resolveBinding.getType().getErasure().getQualifiedName();</span>
+<span class="nc bnc" id="L2033" title="All 2 branches missed.">						if (!data.getCanonicalName().equals(qualifiedName)) {</span>
+<span class="nc" id="L2034">							return;</span>
 						}
 					}
 				}
 			}
-<span class="fc" id="L1994">			this.helperVisitor.acceptConsumer(VisitorEnum.VariableDeclarationStatement, node);</span>
+<span class="fc" id="L2039">			this.helperVisitor.acceptConsumer(VisitorEnum.VariableDeclarationStatement, node);</span>
 		}
-<span class="fc" id="L1996">	}</span>
+<span class="fc" id="L2041">	}</span>
 
 	@Override
 	public void endVisit(VariableDeclarationFragment node) {
-<span class="fc bfc" id="L2000" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.VariableDeclarationFragment)) {</span>
-<span class="fc" id="L2001">			this.helperVisitor.acceptConsumer(VisitorEnum.VariableDeclarationFragment, node);</span>
+<span class="fc bfc" id="L2045" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.VariableDeclarationFragment)) {</span>
+<span class="fc" id="L2046">			this.helperVisitor.acceptConsumer(VisitorEnum.VariableDeclarationFragment, node);</span>
 		}
-<span class="fc" id="L2003">	}</span>
+<span class="fc" id="L2048">	}</span>
 
 	@Override
 	public void endVisit(WhileStatement node) {
-<span class="fc bfc" id="L2007" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.WhileStatement)) {</span>
-<span class="fc" id="L2008">			this.helperVisitor.acceptConsumer(VisitorEnum.WhileStatement, node);</span>
+<span class="fc bfc" id="L2052" title="All 2 branches covered.">		if (this.helperVisitor.hasConsumer(VisitorEnum.WhileStatement)) {</span>
+<span class="fc" id="L2053">			this.helperVisitor.acceptConsumer(VisitorEnum.WhileStatement, node);</span>
 		}
-<span class="fc" id="L2010">	}</span>
+<span class="fc" id="L2055">	}</span>
 
 	@Override
 	public void endVisit(WildcardType node) {
-<span class="pc bpc" id="L2014" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.WildcardType)) {</span>
-<span class="nc" id="L2015">			this.helperVisitor.acceptConsumer(VisitorEnum.WildcardType, node);</span>
+<span class="pc bpc" id="L2059" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.WildcardType)) {</span>
+<span class="nc" id="L2060">			this.helperVisitor.acceptConsumer(VisitorEnum.WildcardType, node);</span>
 		}
-<span class="fc" id="L2017">	}</span>
+<span class="fc" id="L2062">	}</span>
 
 	@Override
 	public void endVisit(YieldStatement node) {
-<span class="pc bpc" id="L2021" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.YieldStatement)) {</span>
-<span class="nc" id="L2022">			this.helperVisitor.acceptConsumer(VisitorEnum.YieldStatement, node);</span>
+<span class="pc bpc" id="L2066" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.YieldStatement)) {</span>
+<span class="nc" id="L2067">			this.helperVisitor.acceptConsumer(VisitorEnum.YieldStatement, node);</span>
 		}
-<span class="fc" id="L2024">	}</span>
+<span class="fc" id="L2069">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

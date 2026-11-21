@@ -669,13 +669,22 @@ import org.eclipse.jdt.core.dom.ASTNode;
 	 * Visitor for {@link org.eclipse.jdt.core.dom.YieldStatement} nodes.
 	 * Represents yield statements in switch expressions (Java 14+).
 	 */
-<span class="fc" id="L672">	YieldStatement(ASTNode.YIELD_STATEMENT);</span>
+<span class="fc" id="L672">	YieldStatement(ASTNode.YIELD_STATEMENT),</span>
+
+	/** Visits Javadoc snippet regions. */
+<span class="fc" id="L675">	JavaDocRegion(ASTNode.JAVADOC_REGION),</span>
+
+	/** Visits external Javadoc snippet text. */
+<span class="fc" id="L678">	JavaDocTextElement(ASTNode.JAVADOC_TEXT_ELEMENT),</span>
+
+	/** Visits Javadoc snippet tag properties. */
+<span class="fc" id="L681">	TagProperty(ASTNode.TAG_PROPERTY);</span>
 
 	private final int nodetype;
 
-<span class="fc" id="L676">	VisitorEnum(int nodetype) {</span>
-<span class="fc" id="L677">		this.nodetype = nodetype;</span>
-<span class="fc" id="L678">	}</span>
+<span class="fc" id="L685">	VisitorEnum(int nodetype) {</span>
+<span class="fc" id="L686">		this.nodetype = nodetype;</span>
+<span class="fc" id="L687">	}</span>
 
 	/**
 	 * Returns the ASTNode type constant for this visitor enum value.
@@ -683,7 +692,7 @@ import org.eclipse.jdt.core.dom.ASTNode;
 	 * @return the ASTNode type constant (e.g., {@link ASTNode#METHOD_INVOCATION})
 	 */
 	public int getValue() {
-<span class="fc" id="L686">		return nodetype;</span>
+<span class="fc" id="L695">		return nodetype;</span>
 	}
 
 	/**
@@ -692,14 +701,14 @@ import org.eclipse.jdt.core.dom.ASTNode;
 	 * @return a sequential stream of all enum values
 	 */
 	public static Stream&lt;VisitorEnum&gt; stream() {
-<span class="fc" id="L695">		return Stream.of(VisitorEnum.values());</span>
+<span class="fc" id="L704">		return Stream.of(VisitorEnum.values());</span>
 	}
 
 	/**
 	 * Lookup map from ASTNode type constant to VisitorEnum value for O(1) reverse lookups.
 	 */
-<span class="fc" id="L701">	private static final Map&lt;Integer, VisitorEnum&gt; values = Arrays.stream(values())</span>
-<span class="fc" id="L702">			.collect(Collectors.toMap(VisitorEnum::getValue, Function.identity()));</span>
+<span class="fc" id="L710">	private static final Map&lt;Integer, VisitorEnum&gt; values = Arrays.stream(values())</span>
+<span class="fc" id="L711">			.collect(Collectors.toMap(VisitorEnum::getValue, Function.identity()));</span>
 
 	/**
 	 * Returns the VisitorEnum value for the given ASTNode type constant.
@@ -708,7 +717,7 @@ import org.eclipse.jdt.core.dom.ASTNode;
 	 * @return the corresponding VisitorEnum value, or {@code null} if not found
 	 */
 	public static VisitorEnum fromNodetype(final int nodetype) {
-<span class="fc" id="L711">		return values.get(nodetype);</span>
+<span class="fc" id="L720">		return values.get(nodetype);</span>
 	}
 
 	/**
@@ -718,7 +727,7 @@ import org.eclipse.jdt.core.dom.ASTNode;
 	 * @return the corresponding VisitorEnum value, or {@code null} if not found
 	 */
 	public static VisitorEnum fromNode(ASTNode node) {
-<span class="fc" id="L721">		return fromNodetype(node.getNodeType());</span>
+<span class="fc" id="L730">		return fromNodetype(node.getNodeType());</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
