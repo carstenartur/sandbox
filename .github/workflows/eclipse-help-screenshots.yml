@@ -123,6 +123,7 @@ jobs:
           -e
           -V
           --batch-mode
+          --update-snapshots
           -Dsandbox.tycho.linux-only=true
           -Dspotbugs.skip=true
           -Dtycho.localArtifacts=ignore

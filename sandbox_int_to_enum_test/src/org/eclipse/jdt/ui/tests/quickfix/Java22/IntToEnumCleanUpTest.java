@@ -231,11 +231,16 @@ public class IntToEnumCleanUpTest {
 				package test1;
 				
 				public class E3 {
-				    public static final int STATUS_PENDING = 0;
-				    public static final int STATUS_APPROVED = 1;
-				    public static final int STATUS_REJECTED = 2;
+				    private static final int STATUS_PENDING = 0;
+				    private static final int STATUS_APPROVED = 1;
+				    private static final int STATUS_REJECTED = 2;
 				
-				    public void process(int status) {
+				    public void run() {
+				        process(STATUS_PENDING);
+				        process(STATUS_REJECTED);
+				    }
+
+				    private void process(int status) {
 				        switch (status) {
 				        case STATUS_PENDING:
 				            System.out.println("Pending");
@@ -259,11 +264,16 @@ public class IntToEnumCleanUpTest {
 				+ "    /**\n"
 				+ "\t * Values accepted by the status switch.\n"
 				+ "\t */\n"
-				+ "\tpublic enum Status {\n"
+				+ "\tprivate enum Status {\n"
 				+ "\t\tPENDING, APPROVED, REJECTED\n"
 				+ "\t}\n"
 				+ "\n"
-				+ "\tpublic void process(Status status) {\n"
+				+ "\tpublic void run() {\n"
+				+ "        process(Status.PENDING);\n"
+				+ "        process(Status.REJECTED);\n"
+				+ "    }\n"
+				+ "\n"
+				+ "    private void process(Status status) {\n"
 				+ "        switch (status) {\n"
 				+ "        default :\n"
 				+ "\t\t\t\tbreak;\n"
@@ -291,9 +301,10 @@ public class IntToEnumCleanUpTest {
 				package test1;
 				public class E {
 					/** A pending item. */
-					public static final int STATUS_PENDING = 0;
-					public static final int STATUS_DONE = 1;
-					public void process(int status) {
+					private static final int STATUS_PENDING = 0;
+					private static final int STATUS_DONE = 1;
+					public void run() { process(STATUS_PENDING); process(STATUS_DONE); }
+					private void process(int status) {
 						switch (status) {
 						case STATUS_PENDING -> System.out.println("pending");
 						case STATUS_DONE -> System.out.println("done");
@@ -320,7 +331,7 @@ public class IntToEnumCleanUpTest {
 				String result = unit.getSource();
 				assertTrue(result.contains("Values accepted by the status switch."), result);
 				assertTrue(result.contains("A pending item."), result);
-				assertTrue(result.contains("public enum Status"), result);
+				assertTrue(result.contains("private enum Status"), result);
 				assertTrue(result.contains("case PENDING ->"), result);
 				assertEquals(1, result.split("default\\s*->", -1).length - 1, result);
 				if (explicitDefault) {

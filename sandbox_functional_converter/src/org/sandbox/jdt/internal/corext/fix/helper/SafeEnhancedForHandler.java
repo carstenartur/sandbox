@@ -18,18 +18,20 @@ import org.eclipse.core.runtime.CoreException;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.Block;
-import org.eclipse.jdt.core.dom.Comment;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -40,6 +42,7 @@ import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.functional.core.model.LoopMetadata;
 import org.sandbox.functional.core.model.LoopModel;
 import org.sandbox.functional.core.model.SourceDescriptor;
+import org.sandbox.functional.core.operation.MapOp;
 import org.sandbox.functional.core.terminal.CollectTerminal;
 import org.sandbox.functional.core.terminal.ReduceTerminal;
 import org.sandbox.functional.core.transformer.LoopModelTransformer;
@@ -103,17 +106,50 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 			CompilationUnitRewrite cuRewrite, TextEditGroup group,
 			ReferenceHolder<ASTNode, Object> data) throws CoreException {
 		JdtLoopExtractor.ExtractedLoop extracted= (JdtLoopExtractor.ExtractedLoop) data.get(visited);
+		boolean retainsBody= isExistingArrayCollect(visited, extracted);
 		if (isExistingArrayCollect(visited, extracted)) {
-			rewriteExistingArrayCollect(visited, cuRewrite, group);
-			return;
-		}
-		if (extracted != null
+			rewriteExistingArrayCollect(visited, extracted, cuRewrite, group);
+		} else if (extracted != null
 				&& extracted.model.getTerminal() instanceof CollectTerminal terminal
 				&& terminal.hasCollectionFactory()) {
+			retainsBody= !isVariableReferencedAfter(visited, findFreshAccumulator(visited, terminal.targetVariable()));
 			rewriteFreshCollect(visited, extracted, cuRewrite, group);
-			return;
+		} else {
+			super.rewrite(fixCore, visited, cuRewrite, group, data);
+			retainsBody= extracted != null && extracted.model.getTerminal() instanceof CollectTerminal;
 		}
-		super.rewrite(fixCore, visited, cuRewrite, group, data);
+		// The inferred lambda parameter no longer names the enhanced-for variable type.
+		IVariableBinding element= visited.getParameter().resolveBinding();
+		if (element == null || Modifier.isFinal(element.getModifiers()) || element.isEffectivelyFinal()) {
+			cuRewrite.getImportRemover().registerRemovedNode(visited.getParameter().getType());
+		}
+		if (!retainsBody && extracted != null) registerEliminatedMappedTypes(visited, extracted.model, cuRewrite);
+		cuRewrite.getImportRemover().applyRemoves(cuRewrite.getImportRewrite());
+		IteratorImportCleanup.removeUnusedPackageImports(cuRewrite);
+		LoopImportPreservation.retainOnDemandTypeBindings(cuRewrite);
+	}
+
+	private void registerEliminatedMappedTypes(EnhancedForStatement loop, LoopModel model,
+			CompilationUnitRewrite cuRewrite) {
+		List<MapOp> maps= model.getOperations().stream().filter(MapOp.class::isInstance).map(MapOp.class::cast).toList();
+		// A side-effect pipeline may use the original-body fallback in the base handler.
+		if (maps.stream().anyMatch(MapOp::isSideEffect)) return;
+		loop.getBody().accept(new ASTVisitor() {
+			@Override public boolean visit(LambdaExpression node) { return false; }
+			@Override public boolean visit(AnonymousClassDeclaration node) { return false; }
+			@Override public boolean visit(TypeDeclaration node) { return false; }
+			@Override public boolean visit(VariableDeclarationStatement node) {
+				if (node.fragments().size() == 1) {
+					VariableDeclarationFragment fragment= (VariableDeclarationFragment) node.fragments().get(0);
+					if (fragment.getInitializer() != null && maps.stream().anyMatch(map ->
+							fragment.getName().getIdentifier().equals(map.outputVariableName())
+							&& fragment.getInitializer().toString().equals(map.expression()))) {
+						cuRewrite.getImportRemover().registerRemovedNode(node.getType());
+					}
+				}
+				return true;
+			}
+		});
 	}
 
 	private boolean visitLoop(EnhancedForStatement loop, ReferenceHolder<String, Object> treeHolder,
@@ -231,45 +267,17 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 		};
 	}
 
-	@SuppressWarnings("unchecked")
 	private void rewriteExistingArrayCollect(EnhancedForStatement loop,
-			CompilationUnitRewrite cuRewrite, TextEditGroup group) {
+			JdtLoopExtractor.ExtractedLoop extracted, CompilationUnitRewrite cuRewrite, TextEditGroup group) {
 		AST ast= cuRewrite.getRoot().getAST();
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
-
-		MethodInvocation stream= ast.newMethodInvocation();
+		ASTStreamRenderer renderer= new ASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(), loop.getBody());
+		Expression forEach= renderer.renderDirectForEach(extracted.model.getSource(), List.of(),
+				loop.getParameter().getName().getIdentifier(), true);
+		renderer.preserveElementTypeImport(cuRewrite.getImportRemover());
 		String arraysReference= cuRewrite.getImportRewrite().addImport("java.util.Arrays"); //$NON-NLS-1$
+		MethodInvocation stream= (MethodInvocation) ((MethodInvocation) forEach).getExpression();
 		stream.setExpression(ast.newName(arraysReference));
-		stream.setName(ast.newSimpleName("stream")); //$NON-NLS-1$
-		stream.arguments().add(ASTNode.copySubtree(ast, loop.getExpression()));
-
-		MethodInvocation forEach= ast.newMethodInvocation();
-		forEach.setExpression(stream);
-		forEach.setName(ast.newSimpleName("forEachOrdered")); //$NON-NLS-1$
-
-		LambdaExpression lambda= ast.newLambdaExpression();
-		VariableDeclarationFragment parameter= ast.newVariableDeclarationFragment();
-		parameter.setName(ast.newSimpleName(loop.getParameter().getName().getIdentifier()));
-		lambda.parameters().add(parameter);
-		lambda.setParentheses(false);
-
-		Statement originalBody= loop.getBody();
-		if (originalBody instanceof Block block) {
-			ExpressionStatement expressionStatement= singleExpressionWithoutComments(block, cuRewrite.getRoot());
-			if (expressionStatement != null) {
-				lambda.setBody(rewrite.createCopyTarget(expressionStatement.getExpression()));
-			} else {
-				lambda.setBody(rewrite.createCopyTarget(block));
-			}
-		} else if (originalBody instanceof ExpressionStatement expressionStatement) {
-			lambda.setBody(rewrite.createCopyTarget(expressionStatement.getExpression()));
-		} else {
-			Block lambdaBody= ast.newBlock();
-			lambdaBody.statements().add(rewrite.createCopyTarget(originalBody));
-			lambda.setBody(lambdaBody);
-		}
-
-		forEach.arguments().add(lambda);
 		rewrite.replace(loop, ast.newExpressionStatement(forEach), group);
 	}
 
@@ -293,6 +301,7 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 			ASTStreamRenderer renderer= new ASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(), extracted.originalBody);
 			String variableName= model.getElement() != null ? model.getElement().variableName() : "item"; //$NON-NLS-1$
 			Expression directForEach= renderer.renderDirectForEach(model.getSource(), java.util.List.of(), variableName, true);
+			renderer.preserveElementTypeImport(cuRewrite.getImportRemover());
 			rewrite.replace(loop, ast.newExpressionStatement(directForEach), group);
 			return;
 		}
@@ -305,10 +314,15 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 		if (streamExpression == null) {
 			return;
 		}
+		renderer.preserveElementTypeImport(cuRewrite.getImportRemover());
 
 		VariableDeclarationStatement replacement= createMergedDeclaration(ast, accumulator, streamExpression);
 		rewrite.remove(accumulator, group);
 		cuRewrite.getImportRemover().registerRemovedNode(accumulator);
+		cuRewrite.getImportRemover().registerRetainedNode(accumulator.getType());
+		for (Object modifier : accumulator.modifiers()) {
+			cuRewrite.getImportRemover().registerRetainedNode((ASTNode) modifier);
+		}
 		cuRewrite.getImportRemover().applyRemoves(cuRewrite.getImportRewrite());
 		rewrite.replace(loop, replacement, group);
 		addRequiredImports(cuRewrite, model);
@@ -375,24 +389,6 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 				break;
 		}
 		cuRewrite.getImportRewrite().addImport("java.util.stream.Collectors"); //$NON-NLS-1$
-	}
-
-	@SuppressWarnings("unchecked")
-	private ExpressionStatement singleExpressionWithoutComments(Block block, CompilationUnit compilationUnit) {
-		List<Statement> statements= block.statements();
-		if (statements.size() != 1 || !(statements.get(0) instanceof ExpressionStatement expressionStatement)) {
-			return null;
-		}
-		int blockStart= block.getStartPosition();
-		int blockEnd= blockStart + block.getLength();
-		List<Comment> comments= compilationUnit.getCommentList();
-		for (Comment comment : comments) {
-			int commentStart= comment.getStartPosition();
-			if (commentStart > blockStart && commentStart < blockEnd) {
-				return null;
-			}
-		}
-		return expressionStatement;
 	}
 
 	private Set<String> liftedAccumulatorNames(EnhancedForStatement loop, LoopModel model) {
