@@ -12,8 +12,10 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -30,7 +32,11 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.BodyDeclaration;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.ConditionalExpression;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionMethodReference;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
@@ -39,13 +45,16 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.NodeFinder;
 import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.PrimitiveType;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.SuperMethodInvocation;
+import org.eclipse.jdt.core.dom.ThisExpression;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.TypeLiteral;
+import org.eclipse.jdt.core.dom.TypeMethodReference;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
@@ -55,6 +64,8 @@ import org.eclipse.jdt.core.search.SearchMatch;
 import org.eclipse.jdt.core.search.SearchParticipant;
 import org.eclipse.jdt.core.search.SearchPattern;
 import org.eclipse.jdt.core.search.SearchRequestor;
+import org.eclipse.jdt.core.manipulation.ImportReferencesCollector;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
 
@@ -243,11 +254,38 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 
 	private boolean hasUnsupportedTestCaseUsage(TypeDeclaration node) {
 		boolean[] unsupported= { false };
+		ITypeBinding owner= node.resolveBinding();
 		node.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(ThisExpression expression) {
+				if (isOwnInstance(expression, owner)) {
+					unsupported[0]|= requiresLegacyContract(ASTNodes.getTargetType(expression));
+				}
+				return !unsupported[0];
+			}
+
+			@Override
+			public boolean visit(ExpressionMethodReference reference) {
+				unsupported[0]|= isSelfSuiteReference(reference.resolveMethodBinding(), owner);
+				return !unsupported[0];
+			}
+
+			@Override
+			public boolean visit(TypeMethodReference reference) {
+				unsupported[0]|= isSelfSuiteReference(reference.resolveMethodBinding(), owner);
+				return !unsupported[0];
+			}
+
 			@Override
 			public boolean visit(SuperMethodInvocation invocation) {
 				unsupported[0]|= !JUnit3LegacyShape.isRedundantLifecycleSuperCall(invocation);
 				return false;
+			}
+
+			@Override
+			public boolean visit(ClassInstanceCreation creation) {
+				unsupported[0]|= requiresLegacyArguments(creation.resolveConstructorBinding(), creation.arguments(), owner);
+				return !unsupported[0];
 			}
 
 			@Override
@@ -258,6 +296,8 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 					unsupported[0]|= CUSTOM_EXECUTION_METHODS.contains(name);
 					return !unsupported[0];
 				}
+				unsupported[0]|= isSelfSuiteReference(methodBinding, owner);
+				unsupported[0]|= requiresLegacyArguments(methodBinding, invocation.arguments(), owner);
 				ITypeBinding declaringClass= methodBinding.getDeclaringClass();
 				String declaringName= declaringClass == null ? "" //$NON-NLS-1$
 						: declaringClass.getErasure().getQualifiedName();
@@ -269,6 +309,55 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 			}
 		});
 		return unsupported[0];
+	}
+
+	private static boolean requiresLegacyArguments(IMethodBinding method, List<?> arguments, ITypeBinding owner) {
+		if (method == null) return false;
+		// Inferred parameters can have the test's own type even though the method
+		// or constructor declaration still requires T extends TestCase (or Test).
+		ITypeBinding[] parameters= method.getMethodDeclaration().getParameterTypes();
+		for (int index= 0; index < arguments.size() && parameters.length != 0; index++) {
+			ITypeBinding parameter= parameters[Math.min(index, parameters.length - 1)];
+			if (method.isVarargs() && index >= parameters.length - 1) {
+				parameter= parameter.getComponentType();
+			}
+			if (isOwnInstance((Expression) arguments.get(index), owner) && requiresLegacyContract(parameter)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static boolean requiresLegacyContract(ITypeBinding type) {
+		return requiresLegacyContract(type, new HashSet<>());
+	}
+
+	private static boolean requiresLegacyContract(ITypeBinding type, Set<String> visited) {
+		if (type == null || !visited.add(type.getKey())) return false;
+		String name= type.getErasure().getQualifiedName();
+		if (JUNIT3_TEST_CASE.equals(name) || JUNIT3_ASSERT.equals(name) || JUnit3SuiteModel.JUNIT3_TEST.equals(name)) {
+			return true;
+		}
+		// Erasure retains only the first upper bound. A capture's lower bound is
+		// available through its wildcard rather than getTypeBounds().
+		return requiresLegacyContract(type.getBound(), visited)
+				|| requiresLegacyContract(type.getWildcard(), visited)
+				|| Arrays.stream(type.getTypeBounds()).anyMatch(bound -> requiresLegacyContract(bound, visited));
+	}
+
+	private static boolean isOwnInstance(Expression expression, ITypeBinding owner) {
+		if (expression instanceof ParenthesizedExpression parenthesized) {
+			return isOwnInstance(parenthesized.getExpression(), owner);
+		}
+		if (expression instanceof ConditionalExpression conditional) {
+			return isOwnInstance(conditional.getThenExpression(), owner) || isOwnInstance(conditional.getElseExpression(), owner);
+		}
+		return expression instanceof ThisExpression && owner != null && owner.isEqualTo(expression.resolveTypeBinding());
+	}
+
+	private static boolean isSelfSuiteReference(IMethodBinding method, ITypeBinding owner) {
+		return method != null && "suite".equals(method.getName()) && owner != null //$NON-NLS-1$
+				&& owner.isEqualTo(method.getDeclaringClass());
 	}
 
 	private boolean hasJUnitAnnotation(BodyDeclaration declaration) {
@@ -316,6 +405,9 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 			importRewriter.removeImport(JUnit3SuiteModel.JUNIT3_TEST);
 			importRewriter.removeImport(JUnit3SuiteModel.JUNIT3_TEST_SUITE);
 		}
+		if (!needsLegacyFrameworkImport(node)) {
+			importRewriter.removeImport("junit.framework.*"); //$NON-NLS-1$
+		}
 
 		List<MethodDeclaration> orderedTests= orderedTestMethods(node);
 		if (orderedTests.size() > 1) {
@@ -346,6 +438,30 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 				rewriteAssertions(method, rewriter, ast, group, importRewriter);
 			}
 		}
+	}
+
+	private static boolean needsLegacyFrameworkImport(TypeDeclaration owner) {
+		CompilationUnit root= (CompilationUnit) owner.getRoot();
+		List<SimpleName> references= new ArrayList<>();
+		ImportReferencesCollector.collect(root, root.getJavaElement().getJavaProject(), null, references, null);
+		for (SimpleName reference : references) {
+			if (!(reference.resolveBinding() instanceof ITypeBinding type) || type.getPackage() == null
+					|| !"junit.framework".equals(type.getPackage().getName())) { //$NON-NLS-1$
+				continue;
+			}
+			boolean removed= false;
+			for (ASTNode current= reference; current != null && current != owner; current= current.getParent()) {
+				if (current == owner.getSuperclassType()
+						|| current instanceof MethodDeclaration method && method.getParent() == owner
+								&& (method.isConstructor() && JUnit3LegacyShape.isRemovableConstructor(method)
+										|| JUnit3SuiteModel.isSuiteBuilder(method) && JUnit3LegacyShape.isSelfSuite(method, owner))) {
+					removed= true;
+					break;
+				}
+			}
+			if (!removed) return true;
+		}
+		return false;
 	}
 
 	private void addTestMethodOrder(TypeDeclaration type, ASTRewrite rewrite, AST ast,
