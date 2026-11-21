@@ -29,6 +29,7 @@ import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 
@@ -86,7 +87,7 @@ class PinnedJdtXmlCorpusTest {
 			paths= walk.filter(Files::isRegularFile)
 					.filter(path -> !repository.relativize(path).startsWith(".git")).sorted().toList(); //$NON-NLS-1$
 		}
-		Set<Path> projectRoots= paths.stream().filter(path -> path.getFileName().toString().equals(".project")) //$NON-NLS-1$
+		Set<Path> projectRoots= paths.stream().filter(path -> fileName(path).equals(".project")) //$NON-NLS-1$
 				.map(Path::getParent).collect(java.util.stream.Collectors.toSet());
 		assertFalse(projectRoots.isEmpty(), "Upstream contains no Eclipse project metadata"); //$NON-NLS-1$
 		Map<Path, IProject> projects= new LinkedHashMap<>();
@@ -100,7 +101,7 @@ class PinnedJdtXmlCorpusTest {
 		receipt.setProperty("status", "FAIL"); //$NON-NLS-1$ //$NON-NLS-2$
 		try {
 			for (Path source : paths) {
-				String name= source.getFileName().toString();
+				String name= fileName(source);
 				if (!(Set.of("plugin.xml", "fragment.xml", "feature.xml").contains(name) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 						|| name.endsWith(".exsd") || name.endsWith(".xsd"))) { //$NON-NLS-1$ //$NON-NLS-2$
 					continue;
@@ -154,7 +155,7 @@ class PinnedJdtXmlCorpusTest {
 			receipt.setProperty("cases.executed", Integer.toString(counts[1])); //$NON-NLS-1$
 			receipt.setProperty("cases.changed", Integer.toString(counts[2])); //$NON-NLS-1$
 			Files.write(output.resolve("inventory.tsv"), inventory, StandardCharsets.UTF_8); //$NON-NLS-1$
-			try (var writer= Files.newBufferedWriter(output.resolve("receipt.properties"))) { //$NON-NLS-1$
+			try (var writer= Files.newBufferedWriter(output.resolve("receipt.properties"), StandardCharsets.UTF_8)) { //$NON-NLS-1$
 				receipt.store(writer, "Actual XMLCleanupService workspace executions"); //$NON-NLS-1$
 			}
 			for (IProject project : projects.values()) {
@@ -209,7 +210,7 @@ class PinnedJdtXmlCorpusTest {
 		Properties encodings= new Properties();
 		Path preferences= project.resolve(".settings/org.eclipse.core.resources.prefs"); //$NON-NLS-1$
 		if (Files.isRegularFile(preferences)) {
-			try (var reader= Files.newBufferedReader(preferences)) {
+			try (var reader= Files.newBufferedReader(preferences, StandardCharsets.UTF_8)) {
 				encodings.load(reader);
 			}
 		}
@@ -244,8 +245,12 @@ class PinnedJdtXmlCorpusTest {
 	}
 
 	private static void write(Path path, byte[] bytes) throws Exception {
-		Files.createDirectories(path.getParent());
+		Files.createDirectories(Objects.requireNonNull(path.getParent(), "Evidence path must have a parent: " + path)); //$NON-NLS-1$
 		Files.write(path, bytes);
+	}
+
+	private static String fileName(Path path) {
+		return Objects.requireNonNull(path.getFileName(), "Corpus file path must have a name: " + path).toString(); //$NON-NLS-1$
 	}
 
 	private static String sha(byte[] bytes) throws Exception {
