@@ -554,6 +554,7 @@ public class JdtLoopExtractor {
                 
                 // Reduce: += , ++, *=, count = count + 1, etc.
                 if (isReducePattern(stmt)) {
+                    if (!isIndependentReduction((ExpressionStatement) stmt)) return;
                     addReduceTerminal(stmt, builder, currentVarName);
                     return; // terminal set
                 }
@@ -877,6 +878,47 @@ public class JdtLoopExtractor {
         return binding instanceof IVariableBinding variableBinding && !variableBinding.isField();
     }
 
+    /** A lifted accumulator must not also be read by a filter, map or side effect. */
+    private static boolean isIndependentReduction(ExpressionStatement statement) {
+        Expression expression = statement.getExpression();
+        Expression target;
+        java.util.Set<ASTNode> removedReads = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+        if (expression instanceof Assignment assignment) {
+            target = assignment.getLeftHandSide();
+            if (assignment.getOperator() == Assignment.Operator.ASSIGN) {
+                if (assignment.getRightHandSide() instanceof InfixExpression infix) {
+                    removedReads.add(infix.getLeftOperand());
+                } else if (assignment.getRightHandSide() instanceof MethodInvocation call && !call.arguments().isEmpty()) {
+                    for (Object argument : call.arguments()) {
+                        Expression value = (Expression) argument;
+                        if (ASTNodes.isSameLocalVariable(target, value)) removedReads.add(ASTNodes.getUnparenthesedExpression(value));
+                    }
+                }
+            }
+        } else if (expression instanceof PostfixExpression postfix) {
+            target = postfix.getOperand();
+        } else if (expression instanceof PrefixExpression prefix) {
+            target = prefix.getOperand();
+        } else {
+            return false;
+        }
+        if (!(target instanceof SimpleName name) || !(name.resolveBinding() instanceof IVariableBinding variable)) return false;
+        removedReads.add(target);
+        ASTNode loop = statement.getParent();
+        while (loop != null && !(loop instanceof EnhancedForStatement || loop instanceof ForStatement || loop instanceof WhileStatement)) {
+            loop = loop.getParent();
+        }
+        if (loop == null) return false;
+        boolean[] observed = { false };
+        loop.accept(new ASTVisitor() {
+            @Override public boolean visit(SimpleName reference) {
+                if (variable.isEqualTo(reference.resolveBinding()) && !removedReads.contains(reference)) observed[0] = true;
+                return true;
+            }
+        });
+        return !observed[0];
+    }
+
     private static String typeName(Expression expression) {
         ITypeBinding type = expression.resolveTypeBinding();
         return type == null ? null : type.getQualifiedName();
@@ -948,9 +990,15 @@ public class JdtLoopExtractor {
             String accumType = resolveReducerType(postfix.getOperand());
             String mapValue = isLongType(accumType) ? "1L" : "1"; //$NON-NLS-1$ //$NON-NLS-2$
             builder.map(mapValue, typeName(postfix.getOperand()));
-            builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
-                accumVar, accumType + "::sum", null,
-                org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.COUNT, accumVar));
+            if (postfix.getOperator() == PostfixExpression.Operator.INCREMENT) {
+                builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
+                    accumVar, accumType + "::sum", null,
+                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.COUNT, accumVar));
+            } else {
+                builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
+                    accumVar, "(a, b) -> a - b", null, //$NON-NLS-1$
+                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM, accumVar));
+            }
         } else if (expr instanceof PrefixExpression prefix) {
             String accumVar = prefix.getOperand().toString();
             String accumType = resolveReducerType(prefix.getOperand());
@@ -1005,7 +1053,13 @@ public class JdtLoopExtractor {
         if (rhs instanceof MethodInvocation mi) {
             String methodName = mi.getName().getIdentifier();
             Expression expr = mi.getExpression();
-            if (expr instanceof SimpleName sn && "Math".equals(sn.getIdentifier())) {
+            IMethodBinding method = mi.resolveMethodBinding();
+            if (expr instanceof SimpleName sn && "Math".equals(sn.getIdentifier()) //$NON-NLS-1$
+                    && sn.resolveBinding() instanceof ITypeBinding receiver && !receiver.isRecovered()
+                    && "java.lang.Math".equals(receiver.getQualifiedName()) //$NON-NLS-1$
+                    && method != null && !method.isRecovered() && Modifier.isStatic(method.getModifiers())
+                    && method.getDeclaringClass() != null && !method.getDeclaringClass().isRecovered()
+                    && "java.lang.Math".equals(method.getDeclaringClass().getQualifiedName())) { //$NON-NLS-1$
                 return ("max".equals(methodName) || "min".equals(methodName)) && mi.arguments().size() == 2; //$NON-NLS-1$ //$NON-NLS-2$
             }
         }
@@ -1038,6 +1092,10 @@ public class JdtLoopExtractor {
     
     private void addInfixReduceTerminal(InfixExpression infix, LoopModelBuilder builder, 
                                          String varName, String accumVar) {
+        // The model below represents exactly one right-hand operand.
+        if (infix.hasExtendedOperands()) {
+            return;
+        }
         InfixExpression.Operator op = infix.getOperator();
         String accumType = resolveReducerType(infix.getLeftOperand());
         

@@ -700,6 +700,9 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
                     lambda.setBody(rewrite.createCopyTarget(body));
                 } else {
                     Block block = ast.newBlock();
+                    // The enclosing for replacement keeps trailing comments in place.
+                    // Its copied unbraced body must stay within that exact source range.
+                    body.setProperty(ASTNodes.UNTOUCH_COMMENT, Boolean.TRUE);
                     block.statements().add(rewrite.createCopyTarget(body));
                     lambda.setBody(block);
                 }
