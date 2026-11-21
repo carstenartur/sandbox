@@ -216,7 +216,7 @@ public class LoopBodyScopeScanner {
 		// Check if node is part of increment/decrement expression
 <span class="fc bfc" id="L217" title="All 2 branches covered.">		if (node.getParent() instanceof PostfixExpression postfix) {</span>
 <span class="fc" id="L218">			PostfixExpression.Operator op = postfix.getOperator();</span>
-<span class="pc bpc" id="L219" title="3 of 4 branches missed.">			if (op == PostfixExpression.Operator.INCREMENT || op == PostfixExpression.Operator.DECREMENT) {</span>
+<span class="pc bpc" id="L219" title="1 of 4 branches missed.">			if (op == PostfixExpression.Operator.INCREMENT || op == PostfixExpression.Operator.DECREMENT) {</span>
 <span class="fc" id="L220">				return true;</span>
 			}
 		}

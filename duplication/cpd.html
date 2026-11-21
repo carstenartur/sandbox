@@ -1223,44 +1223,6 @@
 <th>Project</th>
 <th>Line</th></tr>
 <tr class="b">
-<td>org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java</td>
-<td>Sandbox functional converter</td>
-<td>838</td></tr>
-<tr class="a">
-<td>org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java</td>
-<td>Sandbox functional converter</td>
-<td>891</td></tr>
-<tr class="b">
-<td colspan="3">
-<pre>filterCall.setName(ast.newSimpleName(FILTER_METHOD));
-        
-        LambdaExpression lambda = ast.newLambdaExpression();
-        VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
-        param.setName(ast.newSimpleName(variableName));
-        lambda.parameters().add(param);
-        lambda.setParentheses(false);
-        
-        Block block = ast.newBlock();
-        
-        // Parse the body string (comments + return) into AST statements
-        org.eclipse.jdt.core.dom.ASTParser parser = org.eclipse.jdt.core.dom.ASTParser.newParser(AST.getJLSLatest());
-        parser.setKind(org.eclipse.jdt.core.dom.ASTParser.K_STATEMENTS);
-        parser.setSource(bodyStr.toString().toCharArray());
-        ASTNode parsed = parser.createAST(null);
-        if (parsed instanceof Block parsedBlock) {
-            for (Object s : parsedBlock.statements()) {
-                block.statements().add(ASTNode.copySubtree(ast, (ASTNode) s));
-            }
-        } else {
-            // Fallback: just add return statement without comments
-            ReturnStatement returnStmt = ast.newReturnStatement();
-            returnStmt.setExpression(createExpression(filterOp.expression()));</pre></td></tr></table>
-<table class="table table-striped">
-<tr class="a">
-<th>File</th>
-<th>Project</th>
-<th>Line</th></tr>
-<tr class="b">
 <td>org/sandbox/jdt/internal/corext/fix/helper/ByteArrayOutputStreamExplicitEncoding.java</td>
 <td>Sandbox encoding quickfix</td>
 <td>109</td></tr>
@@ -2734,7 +2696,7 @@
 <tr class="a">
 <td>org/sandbox/jdt/internal/corext/fix/helper/SafeEnhancedForHandler.java</td>
 <td>Sandbox functional converter</td>
-<td>315</td></tr>
+<td>329</td></tr>
 <tr class="b">
 <td colspan="3">
 <pre>}

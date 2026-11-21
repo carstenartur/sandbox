@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>LoopImportPreservation.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">LoopImportPreservation.java</span></div><h1>LoopImportPreservation.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials are made available under the terms
+ * of the Eclipse Public License 2.0 which accompanies this distribution, and is
+ * available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite.ImportRewriteContext;
+import org.eclipse.jdt.core.manipulation.ImportReferencesCollector;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+
+/** Keeps existing wildcard-bound names unambiguous when a stream import becomes a wildcard. */
+final class LoopImportPreservation {
+
+	private LoopImportPreservation() {
+	}
+
+	static void retainOnDemandTypeBindings(CompilationUnitRewrite rewrite) throws JavaModelException {
+<span class="fc" id="L33">		Set&lt;String&gt; addedPackages= new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L34" title="All 2 branches covered.">		for (String added : rewrite.getImportRewrite().getAddedImports()) {</span>
+<span class="fc" id="L35">			int separator= added.lastIndexOf('.');</span>
+<span class="pc bpc" id="L36" title="1 of 2 branches missed.">			if (separator &gt; 0) addedPackages.add(added.substring(0, separator));</span>
+		}
+<span class="fc bfc" id="L38" title="All 2 branches covered.">		if (addedPackages.isEmpty()) return;</span>
+<span class="fc" id="L39">		Set&lt;String&gt; originalPackages= new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">		for (Object item : rewrite.getRoot().imports()) {</span>
+<span class="fc" id="L41">			ImportDeclaration declaration= (ImportDeclaration) item;</span>
+<span class="pc bpc" id="L42" title="1 of 4 branches missed.">			if (!declaration.isStatic() &amp;&amp; declaration.isOnDemand()) {</span>
+<span class="fc" id="L43">				originalPackages.add(declaration.getName().getFullyQualifiedName());</span>
+			}
+		}
+<span class="fc bfc" id="L46" title="All 2 branches covered.">		if (originalPackages.isEmpty()) return;</span>
+<span class="fc" id="L47">		Set&lt;String&gt; removedTypes= new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">		for (IBinding binding : rewrite.getImportRemover().getImportsToRemove()) {</span>
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">			if (binding instanceof ITypeBinding type) removedTypes.add(type.getTypeDeclaration().getQualifiedName());</span>
+		}
+<span class="fc" id="L51">		List&lt;SimpleName&gt; references= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L52">		ImportReferencesCollector.collect(rewrite.getRoot(), rewrite.getCu().getJavaProject(),</span>
+<span class="fc" id="L53">				null, references, new ArrayList&lt;&gt;());</span>
+<span class="fc" id="L54">		Set&lt;String&gt; considered= new HashSet&lt;&gt;();</span>
+<span class="fc" id="L55">		Set&lt;String&gt; pinnedPackages= new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">		for (SimpleName reference : references) {</span>
+<span class="pc bpc" id="L57" title="2 of 4 branches missed.">			if (!(reference.resolveBinding() instanceof ITypeBinding type) || type.isRecovered()</span>
+<span class="pc bpc" id="L58" title="1 of 4 branches missed.">					|| type.getPackage() == null || !originalPackages.contains(type.getPackage().getName())) continue;</span>
+<span class="fc" id="L59">			String name= type.getTypeDeclaration().getQualifiedName();</span>
+<span class="fc bfc" id="L60" title="All 4 branches covered.">			if (removedTypes.contains(name) || !considered.add(name)) continue;</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">			for (String addedPackage : addedPackages) {</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">				if (!addedPackage.equals(type.getPackage().getName())</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">						&amp;&amp; rewrite.getCu().getJavaProject().findType(addedPackage + '.' + reference.getIdentifier()) != null) {</span>
+<span class="fc" id="L64">					rewrite.getImportRewrite().addImport(name, new ImportRewriteContext() {</span>
+						@Override
+						public int findInContext(String qualifier, String simpleName, int kind) {
+<span class="fc" id="L67">							return RES_NAME_UNKNOWN_NEEDS_EXPLICIT_IMPORT;</span>
+						}
+					});
+<span class="fc" id="L70">					pinnedPackages.add(type.getPackage().getName());</span>
+<span class="fc" id="L71">					break;</span>
+				}
+			}
+		}
+<span class="fc bfc" id="L75" title="All 2 branches covered.">		if (pinnedPackages.isEmpty()) return;</span>
+<span class="fc" id="L76">		Set&lt;String&gt; explicitTypes= new HashSet&lt;&gt;(List.of(rewrite.getImportRewrite().getAddedImports()));</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">		for (Object item : rewrite.getRoot().imports()) {</span>
+<span class="fc" id="L78">			ImportDeclaration declaration= (ImportDeclaration) item;</span>
+<span class="pc bpc" id="L79" title="2 of 4 branches missed.">			if (!declaration.isStatic() &amp;&amp; !declaration.isOnDemand()) {</span>
+<span class="nc" id="L80">				explicitTypes.add(declaration.getName().getFullyQualifiedName());</span>
+			}
+		}
+<span class="fc bfc" id="L83" title="All 2 branches covered.">		for (SimpleName reference : references) {</span>
+<span class="pc bpc" id="L84" title="2 of 4 branches missed.">			if (!(reference.resolveBinding() instanceof ITypeBinding type) || type.isRecovered()) return;</span>
+<span class="fc" id="L85">			String name= type.getTypeDeclaration().getQualifiedName();</span>
+<span class="pc bpc" id="L86" title="2 of 6 branches missed.">			if (!removedTypes.contains(name) &amp;&amp; !explicitTypes.contains(name) &amp;&amp; type.getPackage() != null) {</span>
+<span class="fc" id="L87">				pinnedPackages.remove(type.getPackage().getName());</span>
+			}
+		}
+<span class="fc bfc" id="L90" title="All 2 branches covered.">		for (String unusedPackage : pinnedPackages) {</span>
+<span class="fc" id="L91">			rewrite.getImportRewrite().removeImport(unusedPackage + &quot;.*&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L93">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

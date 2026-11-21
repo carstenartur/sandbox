@@ -78,17 +78,22 @@ import org.sandbox.jdt.internal.corext.fix.helper.IteratorPatternDetector.Iterat
 <span class="fc" id="L78">				previous, pattern.collectionExpression(), (VariableDeclarationStatement) element.getParent(), rewrite.getImportRewrite(), group);</span>
 <span class="fc bfc" id="L79" title="All 2 branches covered.">		if (previous != null) {</span>
 <span class="fc" id="L80">			rewrite.getImportRemover().registerRemovedNode(previous);</span>
-<span class="fc" id="L81">			rewrite.getImportRemover().applyRemoves(rewrite.getImportRewrite());</span>
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">		} else if (loop instanceof ForStatement forLoop) {</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">			for (Object initializer : forLoop.initializers()) {</span>
+<span class="fc" id="L83">				rewrite.getImportRemover().registerRemovedNode((ASTNode) initializer);</span>
+			}
 		}
-<span class="fc" id="L83">	}</span>
+<span class="fc" id="L86">		rewrite.getImportRemover().applyRemoves(rewrite.getImportRewrite());</span>
+<span class="fc" id="L87">		IteratorImportCleanup.removeUnusedPackageImports(rewrite);</span>
+<span class="fc" id="L88">	}</span>
 
 	@Override
 	public String getPreview(boolean after) {
-<span class="pc bpc" id="L87" title="1 of 2 branches missed.">		return after ? &quot;&quot;&quot;</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">		return after ? &quot;&quot;&quot;</span>
 				for (String item : items) {
 					System.out.println(item);
 				}
-<span class="pc" id="L91">				&quot;&quot;&quot; : &quot;&quot;&quot;</span>
+<span class="pc" id="L96">				&quot;&quot;&quot; : &quot;&quot;&quot;</span>
 				Iterator&lt;String&gt; it = items.iterator();
 				while (it.hasNext()) {
 					String item = it.next();

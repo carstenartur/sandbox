@@ -21,6 +21,8 @@ import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.codemanipulation.ContextSensitiveImportRewriteContext;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.dom.Bindings;
+import org.eclipse.jdt.internal.corext.dom.ASTNodeFactory;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.functional.core.model.LoopModel;
 import org.sandbox.functional.core.terminal.ForEachTerminal;
@@ -51,105 +53,106 @@ public class ASTIteratorWhileRenderer {
 	private final AST ast;
 	private final ASTRewrite rewrite;
 
-<span class="fc" id="L54">	public ASTIteratorWhileRenderer(AST ast, ASTRewrite rewrite) {</span>
-<span class="fc" id="L55">		this.ast = ast;</span>
-<span class="fc" id="L56">		this.rewrite = rewrite;</span>
-<span class="fc" id="L57">	}</span>
+<span class="fc" id="L56">	public ASTIteratorWhileRenderer(AST ast, ASTRewrite rewrite) {</span>
+<span class="fc" id="L57">		this.ast = ast;</span>
+<span class="fc" id="L58">		this.rewrite = rewrite;</span>
+<span class="fc" id="L59">	}</span>
 
 	/** Lowers ULR filter/map/forEach operations using their original JDT attachments. */
 	public void renderPipeline(LoopModel model, JdtStreamContext context, ImportRewrite imports, TextEditGroup group) {
-<span class="fc" id="L61">		new ASTImperativeLoopRenderer(rewrite, imports, group).render(model, context, true);</span>
-<span class="fc" id="L62">	}</span>
+<span class="fc" id="L63">		new ASTImperativeLoopRenderer(rewrite, imports, group).render(model, context, true);</span>
+<span class="fc" id="L64">	}</span>
 
 	/** Preserve the iterator's actual generic type and the loop variable's conversions. */
 	@SuppressWarnings(&quot;unchecked&quot;)
 	public void renderEnhancedFor(LoopModel model, EnhancedForStatement original, ImportRewrite imports, TextEditGroup group) {
-<span class="fc" id="L67">		reserveIteratorName(original);</span>
-<span class="fc" id="L68">		var importContext = new ContextSensitiveImportRewriteContext((CompilationUnit) original.getRoot(), original.getStartPosition(), imports);</span>
-<span class="fc" id="L69">		ITypeBinding iterable = Bindings.findTypeInHierarchy(original.getExpression().resolveTypeBinding(), &quot;java.lang.Iterable&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L70">		ITypeBinding iterator = Bindings.findMethodInHierarchy(iterable, &quot;iterator&quot;, new String[0]).getReturnType(); //$NON-NLS-1$</span>
-<span class="fc" id="L71">		VariableDeclarationFragment iteratorFragment = ast.newVariableDeclarationFragment();</span>
-<span class="fc" id="L72">		iteratorFragment.setName(ast.newSimpleName(iteratorName));</span>
-<span class="fc" id="L73">		MethodInvocation iteratorCall = ast.newMethodInvocation();</span>
-<span class="fc" id="L74">		iteratorCall.setExpression((Expression) rewrite.createCopyTarget(original.getExpression()));</span>
-<span class="fc" id="L75">		iteratorCall.setName(ast.newSimpleName(&quot;iterator&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L76">		iteratorFragment.setInitializer(iteratorCall);</span>
-<span class="fc" id="L77">		VariableDeclarationStatement iteratorDeclaration = ast.newVariableDeclarationStatement(iteratorFragment);</span>
-<span class="fc" id="L78">		Type iteratorType = imports.addImport(iterator, ast, importContext);</span>
-<span class="fc bfc" id="L79" title="All 2 branches covered.">		if (iterator.isRawType()) {</span>
+<span class="fc" id="L69">		reserveIteratorName(original);</span>
+<span class="fc" id="L70">		var importContext = new ContextSensitiveImportRewriteContext((CompilationUnit) original.getRoot(), original.getStartPosition(), imports);</span>
+<span class="fc" id="L71">		ITypeBinding iterable = Bindings.findTypeInHierarchy(original.getExpression().resolveTypeBinding(), &quot;java.lang.Iterable&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L72">		ITypeBinding iterator = Bindings.findMethodInHierarchy(iterable, &quot;iterator&quot;, new String[0]).getReturnType(); //$NON-NLS-1$</span>
+<span class="fc" id="L73">		VariableDeclarationFragment iteratorFragment = ast.newVariableDeclarationFragment();</span>
+<span class="fc" id="L74">		iteratorFragment.setName(ast.newSimpleName(iteratorName));</span>
+<span class="fc" id="L75">		MethodInvocation iteratorCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L76">		iteratorCall.setExpression(ASTNodeFactory.parenthesizeIfNeeded(ast,</span>
+<span class="fc" id="L77">				(Expression) rewrite.createCopyTarget(original.getExpression())));</span>
+<span class="fc" id="L78">		iteratorCall.setName(ast.newSimpleName(&quot;iterator&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L79">		iteratorFragment.setInitializer(iteratorCall);</span>
+<span class="fc" id="L80">		VariableDeclarationStatement iteratorDeclaration = ast.newVariableDeclarationStatement(iteratorFragment);</span>
+<span class="fc" id="L81">		Type iteratorType = imports.addImport(iterator, ast, importContext);</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">		if (iterator.isRawType()) {</span>
 			// A raw Iterable supplies Objects. Iterator&lt;?&gt; preserves that contract without introducing a raw declaration.
-<span class="fc" id="L81">			ParameterizedType wildcardIterator = ast.newParameterizedType(iteratorType);</span>
-<span class="fc" id="L82">			wildcardIterator.typeArguments().add(ast.newWildcardType());</span>
-<span class="fc" id="L83">			iteratorType = wildcardIterator;</span>
+<span class="fc" id="L84">			ParameterizedType wildcardIterator = ast.newParameterizedType(iteratorType);</span>
+<span class="fc" id="L85">			wildcardIterator.typeArguments().add(ast.newWildcardType());</span>
+<span class="fc" id="L86">			iteratorType = wildcardIterator;</span>
 		}
-<span class="fc" id="L85">		iteratorDeclaration.setType(iteratorType);</span>
+<span class="fc" id="L88">		iteratorDeclaration.setType(iteratorType);</span>
 
-<span class="fc" id="L87">		SingleVariableDeclaration parameter = original.getParameter();</span>
-<span class="fc" id="L88">		VariableDeclarationFragment element = ast.newVariableDeclarationFragment();</span>
-<span class="fc" id="L89">		element.setName(ast.newSimpleName(model.getElement().variableName()));</span>
-<span class="fc bfc" id="L90" title="All 2 branches covered.">		for (Object dimension : parameter.extraDimensions()) {</span>
-<span class="fc" id="L91">			element.extraDimensions().add(rewrite.createCopyTarget((Dimension) dimension));</span>
+<span class="fc" id="L90">		SingleVariableDeclaration parameter = original.getParameter();</span>
+<span class="fc" id="L91">		VariableDeclarationFragment element = ast.newVariableDeclarationFragment();</span>
+<span class="fc" id="L92">		element.setName(ast.newSimpleName(model.getElement().variableName()));</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">		for (Object dimension : parameter.extraDimensions()) {</span>
+<span class="fc" id="L94">			element.extraDimensions().add(rewrite.createCopyTarget((Dimension) dimension));</span>
 		}
-<span class="fc" id="L93">		MethodInvocation next = ast.newMethodInvocation();</span>
-<span class="fc" id="L94">		next.setExpression(ast.newSimpleName(iteratorName));</span>
-<span class="fc" id="L95">		next.setName(ast.newSimpleName(&quot;next&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L96">		Expression value = next;</span>
-<span class="pc bpc" id="L97" title="1 of 4 branches missed.">		if (parameter.resolveBinding().getType().isPrimitive() &amp;&amp; iterable.getTypeArguments().length == 1) {</span>
-<span class="fc" id="L98">			String primitive = Bindings.getUnboxedTypeName(iterable.getTypeArguments()[0].getErasure().getQualifiedName());</span>
-<span class="pc bpc" id="L99" title="1 of 2 branches missed.">			if (primitive != null) {</span>
+<span class="fc" id="L96">		MethodInvocation next = ast.newMethodInvocation();</span>
+<span class="fc" id="L97">		next.setExpression(ast.newSimpleName(iteratorName));</span>
+<span class="fc" id="L98">		next.setName(ast.newSimpleName(&quot;next&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L99">		Expression value = next;</span>
+<span class="pc bpc" id="L100" title="1 of 4 branches missed.">		if (parameter.resolveBinding().getType().isPrimitive() &amp;&amp; iterable.getTypeArguments().length == 1) {</span>
+<span class="fc" id="L101">			String primitive = Bindings.getUnboxedTypeName(iterable.getTypeArguments()[0].getErasure().getQualifiedName());</span>
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">			if (primitive != null) {</span>
 				// Unbox the source wrapper before assignment performs the original primitive widening.
-<span class="fc" id="L101">				var unbox = ast.newMethodInvocation();</span>
-<span class="fc" id="L102">				unbox.setExpression(next);</span>
-<span class="fc" id="L103">				unbox.setName(ast.newSimpleName(primitive + &quot;Value&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L104">				value = unbox;</span>
+<span class="fc" id="L104">				var unbox = ast.newMethodInvocation();</span>
+<span class="fc" id="L105">				unbox.setExpression(next);</span>
+<span class="fc" id="L106">				unbox.setName(ast.newSimpleName(primitive + &quot;Value&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L107">				value = unbox;</span>
 			}
 		}
-<span class="fc" id="L107">		element.setInitializer(value);</span>
-<span class="fc" id="L108">		VariableDeclarationStatement declaration = ast.newVariableDeclarationStatement(element);</span>
-<span class="fc bfc" id="L109" title="All 2 branches covered.">		declaration.setType(parameter.getType().isVar() ? imports.addImport(parameter.resolveBinding().getType(), ast, importContext)</span>
-<span class="fc" id="L110">				: (Type) rewrite.createCopyTarget(parameter.getType()));</span>
-<span class="fc bfc" id="L111" title="All 2 branches covered.">		for (Object modifier : parameter.modifiers()) {</span>
-<span class="fc" id="L112">			declaration.modifiers().add(rewrite.createCopyTarget((ASTNode) modifier));</span>
+<span class="fc" id="L110">		element.setInitializer(value);</span>
+<span class="fc" id="L111">		VariableDeclarationStatement declaration = ast.newVariableDeclarationStatement(element);</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">		declaration.setType(parameter.getType().isVar() ? imports.addImport(parameter.resolveBinding().getType(), ast, importContext)</span>
+<span class="fc" id="L113">				: (Type) rewrite.createCopyTarget(parameter.getType()));</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">		for (Object modifier : parameter.modifiers()) {</span>
+<span class="fc" id="L115">			declaration.modifiers().add(rewrite.createCopyTarget((ASTNode) modifier));</span>
 		}
-<span class="fc" id="L114">		WhileStatement loop = ast.newWhileStatement();</span>
-<span class="fc" id="L115">		MethodInvocation hasNext = ast.newMethodInvocation();</span>
-<span class="fc" id="L116">		hasNext.setExpression(ast.newSimpleName(iteratorName));</span>
-<span class="fc" id="L117">		hasNext.setName(ast.newSimpleName(&quot;hasNext&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L118">		loop.setExpression(hasNext);</span>
-<span class="fc bfc" id="L119" title="All 2 branches covered.">		if (original.getBody() instanceof Block block) {</span>
-<span class="fc" id="L120">			rewrite.getListRewrite(block, Block.STATEMENTS_PROPERTY).insertFirst(declaration, group);</span>
-<span class="fc" id="L121">			loop.setBody((Statement) rewrite.createCopyTarget(block));</span>
-<span class="fc" id="L122">		} else {</span>
-<span class="fc" id="L123">			Block body = ast.newBlock();</span>
-<span class="fc" id="L124">			body.statements().add(declaration);</span>
-<span class="fc" id="L125">			body.statements().add(rewrite.createCopyTarget(original.getBody()));</span>
-<span class="fc" id="L126">			loop.setBody(body);</span>
+<span class="fc" id="L117">		WhileStatement loop = ast.newWhileStatement();</span>
+<span class="fc" id="L118">		MethodInvocation hasNext = ast.newMethodInvocation();</span>
+<span class="fc" id="L119">		hasNext.setExpression(ast.newSimpleName(iteratorName));</span>
+<span class="fc" id="L120">		hasNext.setName(ast.newSimpleName(&quot;hasNext&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L121">		loop.setExpression(hasNext);</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">		if (original.getBody() instanceof Block block) {</span>
+<span class="fc" id="L123">			rewrite.getListRewrite(block, Block.STATEMENTS_PROPERTY).insertFirst(declaration, group);</span>
+<span class="fc" id="L124">			loop.setBody((Statement) rewrite.createCopyTarget(block));</span>
+<span class="fc" id="L125">		} else {</span>
+<span class="fc" id="L126">			Block body = ast.newBlock();</span>
+<span class="fc" id="L127">			body.statements().add(declaration);</span>
+<span class="fc" id="L128">			body.statements().add(rewrite.createCopyTarget(original.getBody()));</span>
+<span class="fc" id="L129">			loop.setBody(body);</span>
 		}
-<span class="fc" id="L128">		Statement anchor = original;</span>
-<span class="fc" id="L129">		Statement replacement = loop;</span>
-<span class="fc bfc" id="L130" title="All 2 branches covered.">		while (anchor.getParent() instanceof LabeledStatement label) {</span>
-<span class="fc" id="L131">			LabeledStatement copied = ast.newLabeledStatement();</span>
-<span class="fc" id="L132">			copied.setLabel((SimpleName) rewrite.createCopyTarget(label.getLabel()));</span>
-<span class="fc" id="L133">			copied.setBody(replacement);</span>
-<span class="fc" id="L134">			replacement = copied;</span>
-<span class="fc" id="L135">			anchor = label;</span>
+<span class="fc" id="L131">		Statement anchor = original;</span>
+<span class="fc" id="L132">		Statement replacement = loop;</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">		while (anchor.getParent() instanceof LabeledStatement label) {</span>
+<span class="fc" id="L134">			LabeledStatement copied = ast.newLabeledStatement();</span>
+<span class="fc" id="L135">			copied.setLabel((SimpleName) rewrite.createCopyTarget(label.getLabel()));</span>
+<span class="fc" id="L136">			copied.setBody(replacement);</span>
+<span class="fc" id="L137">			replacement = copied;</span>
+<span class="fc" id="L138">			anchor = label;</span>
 		}
-<span class="fc" id="L137">		anchor.setProperty(ASTNodes.UNTOUCH_COMMENT, Boolean.TRUE);</span>
-<span class="fc bfc" id="L138" title="All 2 branches covered.">		if (anchor.getParent() instanceof Block block) {</span>
-<span class="fc" id="L139">			var list = rewrite.getListRewrite(block, Block.STATEMENTS_PROPERTY);</span>
-<span class="fc" id="L140">			list.insertBefore(iteratorDeclaration, anchor, group);</span>
-<span class="fc" id="L141">			list.replace(anchor, replacement, group);</span>
-<span class="fc" id="L142">		} else {</span>
-<span class="fc" id="L143">			Block block = ast.newBlock();</span>
-<span class="fc" id="L144">			block.statements().add(iteratorDeclaration);</span>
-<span class="fc" id="L145">			block.statements().add(replacement);</span>
-<span class="fc" id="L146">			rewrite.replace(anchor, block, group);</span>
+<span class="fc" id="L140">		anchor.setProperty(ASTNodes.UNTOUCH_COMMENT, Boolean.TRUE);</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">		if (anchor.getParent() instanceof Block block) {</span>
+<span class="fc" id="L142">			var list = rewrite.getListRewrite(block, Block.STATEMENTS_PROPERTY);</span>
+<span class="fc" id="L143">			list.insertBefore(iteratorDeclaration, anchor, group);</span>
+<span class="fc" id="L144">			list.replace(anchor, replacement, group);</span>
+<span class="fc" id="L145">		} else {</span>
+<span class="fc" id="L146">			Block block = ast.newBlock();</span>
+<span class="fc" id="L147">			block.statements().add(iteratorDeclaration);</span>
+<span class="fc" id="L148">			block.statements().add(replacement);</span>
+<span class="fc" id="L149">			rewrite.replace(anchor, block, group);</span>
 		}
-<span class="fc" id="L148">	}</span>
+<span class="fc" id="L151">	}</span>
 
 	private void reserveIteratorName(Statement originalStatement) {
-<span class="fc" id="L151">		iteratorName = LoopVariableNames.fresh(&quot;it&quot;, LoopVariableNames.usedNames(originalStatement)); //$NON-NLS-1$</span>
-<span class="fc" id="L152">	}</span>
+<span class="fc" id="L154">		iteratorName = LoopVariableNames.fresh(&quot;it&quot;, LoopVariableNames.usedNames(originalStatement)); //$NON-NLS-1$</span>
+<span class="fc" id="L155">	}</span>
 
 	/**
 	 * Renders the given LoopModel as an iterator-while loop, replacing the original statement.
@@ -160,20 +163,20 @@ public class ASTIteratorWhileRenderer {
 	 * @param group the text edit group
 	 */
 	public void render(LoopModel model, Statement originalStatement, Statement originalBody, TextEditGroup group) {
-<span class="nc" id="L163">		reserveIteratorName(originalStatement);</span>
-<span class="nc" id="L164">		String elementType = model.getElement().typeName();</span>
-<span class="nc" id="L165">		String elementName = model.getElement().variableName();</span>
-<span class="nc" id="L166">		String collectionExpr = model.getSource().expression();</span>
+<span class="nc" id="L166">		reserveIteratorName(originalStatement);</span>
+<span class="nc" id="L167">		String elementType = model.getElement().typeName();</span>
+<span class="nc" id="L168">		String elementName = model.getElement().variableName();</span>
+<span class="nc" id="L169">		String collectionExpr = model.getSource().expression();</span>
 
 		// Create Iterator&lt;T&gt; it = collection.iterator();
-<span class="nc" id="L169">		VariableDeclarationStatement iteratorDecl = createIteratorDeclaration(elementType, collectionExpr);</span>
+<span class="nc" id="L172">		VariableDeclarationStatement iteratorDecl = createIteratorDeclaration(elementType, collectionExpr);</span>
 
 		// Create while (it.hasNext()) { T item = it.next(); body... }
-<span class="nc" id="L172">		WhileStatement whileStmt = createWhileStatement(elementType, elementName, originalBody);</span>
+<span class="nc" id="L175">		WhileStatement whileStmt = createWhileStatement(elementType, elementName, originalBody);</span>
 
 		// Replace the original statement with iterator decl + while
-<span class="nc" id="L175">		replaceWithIteratorAndWhile(originalStatement, iteratorDecl, whileStmt, group);</span>
-<span class="nc" id="L176">	}</span>
+<span class="nc" id="L178">		replaceWithIteratorAndWhile(originalStatement, iteratorDecl, whileStmt, group);</span>
+<span class="nc" id="L179">	}</span>
 
 	/**
 	 * Renders the given LoopModel as an iterator-while loop using string-based body statements.
@@ -184,20 +187,20 @@ public class ASTIteratorWhileRenderer {
 	 * @param group the text edit group
 	 */
 	public void renderFromModel(LoopModel model, Statement originalStatement, TextEditGroup group) {
-<span class="nc" id="L187">		reserveIteratorName(originalStatement);</span>
-<span class="nc" id="L188">		String elementType = model.getElement().typeName();</span>
-<span class="nc" id="L189">		String elementName = model.getElement().variableName();</span>
-<span class="nc" id="L190">		String collectionExpr = model.getSource().expression();</span>
+<span class="nc" id="L190">		reserveIteratorName(originalStatement);</span>
+<span class="nc" id="L191">		String elementType = model.getElement().typeName();</span>
+<span class="nc" id="L192">		String elementName = model.getElement().variableName();</span>
+<span class="nc" id="L193">		String collectionExpr = model.getSource().expression();</span>
 
 		// Create Iterator&lt;T&gt; it = collection.iterator();
-<span class="nc" id="L193">		VariableDeclarationStatement iteratorDecl = createIteratorDeclaration(elementType, collectionExpr);</span>
+<span class="nc" id="L196">		VariableDeclarationStatement iteratorDecl = createIteratorDeclaration(elementType, collectionExpr);</span>
 
 		// Create while statement with body from model terminal
-<span class="nc" id="L196">		WhileStatement whileStmt = createWhileStatementFromModel(elementType, elementName, model);</span>
+<span class="nc" id="L199">		WhileStatement whileStmt = createWhileStatementFromModel(elementType, elementName, model);</span>
 
 		// Replace the original statement with iterator decl + while
-<span class="nc" id="L199">		replaceWithIteratorAndWhile(originalStatement, iteratorDecl, whileStmt, group);</span>
-<span class="nc" id="L200">	}</span>
+<span class="nc" id="L202">		replaceWithIteratorAndWhile(originalStatement, iteratorDecl, whileStmt, group);</span>
+<span class="nc" id="L203">	}</span>
 
 	/**
 	 * Renders the given LoopModel as an iterator-while loop with body from AST statement nodes.
@@ -211,38 +214,38 @@ public class ASTIteratorWhileRenderer {
 	@SuppressWarnings(&quot;unchecked&quot;)
 	public void renderWithBodyStatements(LoopModel model, Statement originalStatement,
 			java.util.List&lt;Statement&gt; bodyStatements, TextEditGroup group) {
-<span class="nc" id="L214">		reserveIteratorName(originalStatement);</span>
-<span class="nc" id="L215">		String elementType = model.getElement().typeName();</span>
-<span class="nc" id="L216">		String elementName = model.getElement().variableName();</span>
-<span class="nc" id="L217">		String collectionExpr = model.getSource().expression();</span>
+<span class="nc" id="L217">		reserveIteratorName(originalStatement);</span>
+<span class="nc" id="L218">		String elementType = model.getElement().typeName();</span>
+<span class="nc" id="L219">		String elementName = model.getElement().variableName();</span>
+<span class="nc" id="L220">		String collectionExpr = model.getSource().expression();</span>
 
 		// Create Iterator&lt;T&gt; it = collection.iterator();
-<span class="nc" id="L220">		VariableDeclarationStatement iteratorDecl = createIteratorDeclaration(elementType, collectionExpr);</span>
+<span class="nc" id="L223">		VariableDeclarationStatement iteratorDecl = createIteratorDeclaration(elementType, collectionExpr);</span>
 
 		// Create while statement with body from provided statements
-<span class="nc" id="L223">		MethodInvocation hasNextCall = ast.newMethodInvocation();</span>
-<span class="nc" id="L224">		hasNextCall.setExpression(ast.newSimpleName(iteratorName));</span>
-<span class="nc" id="L225">		hasNextCall.setName(ast.newSimpleName(&quot;hasNext&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L226">		MethodInvocation hasNextCall = ast.newMethodInvocation();</span>
+<span class="nc" id="L227">		hasNextCall.setExpression(ast.newSimpleName(iteratorName));</span>
+<span class="nc" id="L228">		hasNextCall.setName(ast.newSimpleName(&quot;hasNext&quot;)); //$NON-NLS-1$</span>
 
-<span class="nc" id="L227">		WhileStatement whileStmt = ast.newWhileStatement();</span>
-<span class="nc" id="L228">		whileStmt.setExpression(hasNextCall);</span>
+<span class="nc" id="L230">		WhileStatement whileStmt = ast.newWhileStatement();</span>
+<span class="nc" id="L231">		whileStmt.setExpression(hasNextCall);</span>
 
-<span class="nc" id="L230">		Block whileBody = ast.newBlock();</span>
-<span class="nc" id="L231">		whileBody.statements().add(createItemDeclaration(elementType, elementName));</span>
+<span class="nc" id="L233">		Block whileBody = ast.newBlock();</span>
+<span class="nc" id="L234">		whileBody.statements().add(createItemDeclaration(elementType, elementName));</span>
 
-<span class="nc bnc" id="L233" title="All 2 branches missed.">		for (Statement stmt : bodyStatements) {</span>
-<span class="nc bnc" id="L234" title="All 2 branches missed.">			if (stmt.getParent() != null) {</span>
-<span class="nc" id="L235">				whileBody.statements().add(rewrite.createCopyTarget(stmt));</span>
-<span class="nc" id="L236">			} else {</span>
-<span class="nc" id="L237">				whileBody.statements().add(stmt);</span>
+<span class="nc bnc" id="L236" title="All 2 branches missed.">		for (Statement stmt : bodyStatements) {</span>
+<span class="nc bnc" id="L237" title="All 2 branches missed.">			if (stmt.getParent() != null) {</span>
+<span class="nc" id="L238">				whileBody.statements().add(rewrite.createCopyTarget(stmt));</span>
+<span class="nc" id="L239">			} else {</span>
+<span class="nc" id="L240">				whileBody.statements().add(stmt);</span>
 			}
 		}
 
-<span class="nc" id="L241">		whileStmt.setBody(whileBody);</span>
+<span class="nc" id="L244">		whileStmt.setBody(whileBody);</span>
 
 		// Replace the original statement with iterator decl + while
-<span class="nc" id="L244">		replaceWithIteratorAndWhile(originalStatement, iteratorDecl, whileStmt, group);</span>
-<span class="nc" id="L245">	}</span>
+<span class="nc" id="L247">		replaceWithIteratorAndWhile(originalStatement, iteratorDecl, whileStmt, group);</span>
+<span class="nc" id="L248">	}</span>
 
 	/**
 	 * Replaces the original statement with an iterator declaration followed by a while-loop.
@@ -251,111 +254,111 @@ public class ASTIteratorWhileRenderer {
 	@SuppressWarnings(&quot;unchecked&quot;)
 	private void replaceWithIteratorAndWhile(Statement originalStatement,
 			VariableDeclarationStatement iteratorDecl, WhileStatement whileStmt, TextEditGroup group) {
-<span class="nc" id="L254">		ASTNode parent = originalStatement.getParent();</span>
-<span class="nc bnc" id="L255" title="All 2 branches missed.">		if (parent instanceof Block parentBlock) {</span>
-<span class="nc" id="L256">			ListRewrite listRewrite = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);</span>
-<span class="nc" id="L257">			listRewrite.insertBefore(iteratorDecl, originalStatement, group);</span>
-<span class="nc" id="L258">			listRewrite.replace(originalStatement, whileStmt, group);</span>
-<span class="nc" id="L259">		} else {</span>
-<span class="nc" id="L260">			Block newBlock = ast.newBlock();</span>
-<span class="nc" id="L261">			newBlock.statements().add(iteratorDecl);</span>
-<span class="nc" id="L262">			newBlock.statements().add(whileStmt);</span>
-<span class="nc" id="L263">			rewrite.replace(originalStatement, newBlock, group);</span>
+<span class="nc" id="L257">		ASTNode parent = originalStatement.getParent();</span>
+<span class="nc bnc" id="L258" title="All 2 branches missed.">		if (parent instanceof Block parentBlock) {</span>
+<span class="nc" id="L259">			ListRewrite listRewrite = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);</span>
+<span class="nc" id="L260">			listRewrite.insertBefore(iteratorDecl, originalStatement, group);</span>
+<span class="nc" id="L261">			listRewrite.replace(originalStatement, whileStmt, group);</span>
+<span class="nc" id="L262">		} else {</span>
+<span class="nc" id="L263">			Block newBlock = ast.newBlock();</span>
+<span class="nc" id="L264">			newBlock.statements().add(iteratorDecl);</span>
+<span class="nc" id="L265">			newBlock.statements().add(whileStmt);</span>
+<span class="nc" id="L266">			rewrite.replace(originalStatement, newBlock, group);</span>
 		}
-<span class="nc" id="L265">	}</span>
+<span class="nc" id="L268">	}</span>
 
 	@SuppressWarnings(&quot;unchecked&quot;)
 	private VariableDeclarationStatement createIteratorDeclaration(String elementType, String collectionExpr) {
 		// Iterator&lt;T&gt;
-<span class="nc" id="L270">		ParameterizedType iteratorType = ast.newParameterizedType(ast.newSimpleType(ast.newName(&quot;Iterator&quot;))); //$NON-NLS-1$</span>
-<span class="nc" id="L271">		iteratorType.typeArguments().add(ast.newSimpleType(ast.newName(elementType)));</span>
+<span class="nc" id="L273">		ParameterizedType iteratorType = ast.newParameterizedType(ast.newSimpleType(ast.newName(&quot;Iterator&quot;))); //$NON-NLS-1$</span>
+<span class="nc" id="L274">		iteratorType.typeArguments().add(ast.newSimpleType(ast.newName(elementType)));</span>
 
 		// it = collection.iterator()
-<span class="nc" id="L274">		VariableDeclarationFragment fragment = ast.newVariableDeclarationFragment();</span>
-<span class="nc" id="L275">		fragment.setName(ast.newSimpleName(iteratorName));</span>
+<span class="nc" id="L277">		VariableDeclarationFragment fragment = ast.newVariableDeclarationFragment();</span>
+<span class="nc" id="L278">		fragment.setName(ast.newSimpleName(iteratorName));</span>
 
-<span class="nc" id="L277">		MethodInvocation iteratorCall = ast.newMethodInvocation();</span>
-<span class="nc" id="L278">		iteratorCall.setExpression(createExpression(collectionExpr));</span>
-<span class="nc" id="L279">		iteratorCall.setName(ast.newSimpleName(&quot;iterator&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L280">		fragment.setInitializer(iteratorCall);</span>
+<span class="nc" id="L280">		MethodInvocation iteratorCall = ast.newMethodInvocation();</span>
+<span class="nc" id="L281">		iteratorCall.setExpression(createExpression(collectionExpr));</span>
+<span class="nc" id="L282">		iteratorCall.setName(ast.newSimpleName(&quot;iterator&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L283">		fragment.setInitializer(iteratorCall);</span>
 
-<span class="nc" id="L282">		VariableDeclarationStatement decl = ast.newVariableDeclarationStatement(fragment);</span>
-<span class="nc" id="L283">		decl.setType(iteratorType);</span>
-<span class="nc" id="L284">		return decl;</span>
+<span class="nc" id="L285">		VariableDeclarationStatement decl = ast.newVariableDeclarationStatement(fragment);</span>
+<span class="nc" id="L286">		decl.setType(iteratorType);</span>
+<span class="nc" id="L287">		return decl;</span>
 	}
 
 	@SuppressWarnings(&quot;unchecked&quot;)
 	private WhileStatement createWhileStatement(String elementType, String elementName, Statement originalBody) {
 		// while (it.hasNext())
-<span class="nc" id="L290">		MethodInvocation hasNextCall = ast.newMethodInvocation();</span>
-<span class="nc" id="L291">		hasNextCall.setExpression(ast.newSimpleName(iteratorName));</span>
-<span class="nc" id="L292">		hasNextCall.setName(ast.newSimpleName(&quot;hasNext&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L293">		MethodInvocation hasNextCall = ast.newMethodInvocation();</span>
+<span class="nc" id="L294">		hasNextCall.setExpression(ast.newSimpleName(iteratorName));</span>
+<span class="nc" id="L295">		hasNextCall.setName(ast.newSimpleName(&quot;hasNext&quot;)); //$NON-NLS-1$</span>
 
-<span class="nc" id="L294">		WhileStatement whileStmt = ast.newWhileStatement();</span>
-<span class="nc" id="L295">		whileStmt.setExpression(hasNextCall);</span>
+<span class="nc" id="L297">		WhileStatement whileStmt = ast.newWhileStatement();</span>
+<span class="nc" id="L298">		whileStmt.setExpression(hasNextCall);</span>
 
 		// T item = it.next();
-<span class="nc" id="L298">		Block whileBody = ast.newBlock();</span>
-<span class="nc" id="L299">		whileBody.statements().add(createItemDeclaration(elementType, elementName));</span>
+<span class="nc" id="L301">		Block whileBody = ast.newBlock();</span>
+<span class="nc" id="L302">		whileBody.statements().add(createItemDeclaration(elementType, elementName));</span>
 
 		// Copy original body statements, preserving comments via createCopyTarget
-<span class="nc bnc" id="L302" title="All 2 branches missed.">		if (originalBody instanceof Block origBlock) {</span>
-<span class="nc bnc" id="L303" title="All 2 branches missed.">			for (Object stmt : origBlock.statements()) {</span>
-<span class="nc" id="L304">				whileBody.statements().add(rewrite.createCopyTarget((Statement) stmt));</span>
+<span class="nc bnc" id="L305" title="All 2 branches missed.">		if (originalBody instanceof Block origBlock) {</span>
+<span class="nc bnc" id="L306" title="All 2 branches missed.">			for (Object stmt : origBlock.statements()) {</span>
+<span class="nc" id="L307">				whileBody.statements().add(rewrite.createCopyTarget((Statement) stmt));</span>
 			}
-<span class="nc" id="L306">		} else {</span>
-<span class="nc" id="L307">			whileBody.statements().add(rewrite.createCopyTarget(originalBody));</span>
+<span class="nc" id="L309">		} else {</span>
+<span class="nc" id="L310">			whileBody.statements().add(rewrite.createCopyTarget(originalBody));</span>
 		}
 
-<span class="nc" id="L310">		whileStmt.setBody(whileBody);</span>
-<span class="nc" id="L311">		return whileStmt;</span>
+<span class="nc" id="L313">		whileStmt.setBody(whileBody);</span>
+<span class="nc" id="L314">		return whileStmt;</span>
 	}
 
 	@SuppressWarnings(&quot;unchecked&quot;)
 	private WhileStatement createWhileStatementFromModel(String elementType, String elementName, LoopModel model) {
 		// while (it.hasNext())
-<span class="nc" id="L317">		MethodInvocation hasNextCall = ast.newMethodInvocation();</span>
-<span class="nc" id="L318">		hasNextCall.setExpression(ast.newSimpleName(iteratorName));</span>
-<span class="nc" id="L319">		hasNextCall.setName(ast.newSimpleName(&quot;hasNext&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L320">		MethodInvocation hasNextCall = ast.newMethodInvocation();</span>
+<span class="nc" id="L321">		hasNextCall.setExpression(ast.newSimpleName(iteratorName));</span>
+<span class="nc" id="L322">		hasNextCall.setName(ast.newSimpleName(&quot;hasNext&quot;)); //$NON-NLS-1$</span>
 
-<span class="nc" id="L321">		WhileStatement whileStmt = ast.newWhileStatement();</span>
-<span class="nc" id="L322">		whileStmt.setExpression(hasNextCall);</span>
+<span class="nc" id="L324">		WhileStatement whileStmt = ast.newWhileStatement();</span>
+<span class="nc" id="L325">		whileStmt.setExpression(hasNextCall);</span>
 
 		// T item = it.next();
-<span class="nc" id="L325">		Block whileBody = ast.newBlock();</span>
-<span class="nc" id="L326">		whileBody.statements().add(createItemDeclaration(elementType, elementName));</span>
+<span class="nc" id="L328">		Block whileBody = ast.newBlock();</span>
+<span class="nc" id="L329">		whileBody.statements().add(createItemDeclaration(elementType, elementName));</span>
 
 		// Add body from model terminal
-<span class="nc bnc" id="L329" title="All 2 branches missed.">		if (model.getTerminal() instanceof ForEachTerminal forEachTerminal) {</span>
-<span class="nc" id="L330">			List&lt;String&gt; bodyStatements = forEachTerminal.bodyStatements();</span>
-<span class="nc bnc" id="L331" title="All 2 branches missed.">			for (String stmtStr : bodyStatements) {</span>
-<span class="nc bnc" id="L332" title="All 2 branches missed.">				String withSemicolon = stmtStr.endsWith(&quot;;&quot;) ? stmtStr : stmtStr + &quot;;&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L333">				ASTNode parsedStmt = rewrite.createStringPlaceholder(withSemicolon, ASTNode.EXPRESSION_STATEMENT);</span>
-<span class="nc" id="L334">				whileBody.statements().add(parsedStmt);</span>
+<span class="nc bnc" id="L332" title="All 2 branches missed.">		if (model.getTerminal() instanceof ForEachTerminal forEachTerminal) {</span>
+<span class="nc" id="L333">			List&lt;String&gt; bodyStatements = forEachTerminal.bodyStatements();</span>
+<span class="nc bnc" id="L334" title="All 2 branches missed.">			for (String stmtStr : bodyStatements) {</span>
+<span class="nc bnc" id="L335" title="All 2 branches missed.">				String withSemicolon = stmtStr.endsWith(&quot;;&quot;) ? stmtStr : stmtStr + &quot;;&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L336">				ASTNode parsedStmt = rewrite.createStringPlaceholder(withSemicolon, ASTNode.EXPRESSION_STATEMENT);</span>
+<span class="nc" id="L337">				whileBody.statements().add(parsedStmt);</span>
 			}
 		}
 
-<span class="nc" id="L338">		whileStmt.setBody(whileBody);</span>
-<span class="nc" id="L339">		return whileStmt;</span>
+<span class="nc" id="L341">		whileStmt.setBody(whileBody);</span>
+<span class="nc" id="L342">		return whileStmt;</span>
 	}
 
 	private VariableDeclarationStatement createItemDeclaration(String elementType, String elementName) {
 		// T item = it.next();
-<span class="nc" id="L344">		MethodInvocation nextCall = ast.newMethodInvocation();</span>
-<span class="nc" id="L345">		nextCall.setExpression(ast.newSimpleName(iteratorName));</span>
-<span class="nc" id="L346">		nextCall.setName(ast.newSimpleName(&quot;next&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L347">		MethodInvocation nextCall = ast.newMethodInvocation();</span>
+<span class="nc" id="L348">		nextCall.setExpression(ast.newSimpleName(iteratorName));</span>
+<span class="nc" id="L349">		nextCall.setName(ast.newSimpleName(&quot;next&quot;)); //$NON-NLS-1$</span>
 
-<span class="nc" id="L348">		VariableDeclarationFragment fragment = ast.newVariableDeclarationFragment();</span>
-<span class="nc" id="L349">		fragment.setName(ast.newSimpleName(elementName));</span>
-<span class="nc" id="L350">		fragment.setInitializer(nextCall);</span>
+<span class="nc" id="L351">		VariableDeclarationFragment fragment = ast.newVariableDeclarationFragment();</span>
+<span class="nc" id="L352">		fragment.setName(ast.newSimpleName(elementName));</span>
+<span class="nc" id="L353">		fragment.setInitializer(nextCall);</span>
 
-<span class="nc" id="L352">		VariableDeclarationStatement decl = ast.newVariableDeclarationStatement(fragment);</span>
-<span class="nc" id="L353">		decl.setType(ast.newSimpleType(ast.newName(elementType)));</span>
-<span class="nc" id="L354">		return decl;</span>
+<span class="nc" id="L355">		VariableDeclarationStatement decl = ast.newVariableDeclarationStatement(fragment);</span>
+<span class="nc" id="L356">		decl.setType(ast.newSimpleType(ast.newName(elementType)));</span>
+<span class="nc" id="L357">		return decl;</span>
 	}
 
 	private Expression createExpression(String expressionStr) {
-<span class="nc" id="L358">		return ExpressionHelper.createExpression(ast, rewrite, expressionStr);</span>
+<span class="nc" id="L361">		return ExpressionHelper.createExpression(ast, rewrite, expressionStr);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

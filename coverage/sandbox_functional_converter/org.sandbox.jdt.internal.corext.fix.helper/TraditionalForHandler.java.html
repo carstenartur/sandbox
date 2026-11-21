@@ -415,8 +415,8 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 <span class="fc" id="L415">        return false;</span>
     }
 
-    /** IntConsumer cannot propagate checked exceptions, even when the enclosing method can. */
-    private static final class CheckedBodyExceptions extends AbstractExceptionAnalyzer {
+    /** Stream callbacks cannot propagate checked exceptions, even when the enclosing method can. */
+<span class="fc" id="L419">    static final class CheckedBodyExceptions extends AbstractExceptionAnalyzer {</span>
         private boolean uncertain;
 
         static boolean escape(Statement body) {
@@ -696,75 +696,78 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
                 }
 <span class="fc bfc" id="L697" title="All 2 branches covered.">                if (body instanceof ExpressionStatement statement) {</span>
 <span class="fc" id="L698">                    lambda.setBody(rewrite.createCopyTarget(statement.getExpression()));</span>
-<span class="pc bpc" id="L699" title="1 of 2 branches missed.">                } else if (body instanceof Block) {</span>
+<span class="fc bfc" id="L699" title="All 2 branches covered.">                } else if (body instanceof Block) {</span>
 <span class="fc" id="L700">                    lambda.setBody(rewrite.createCopyTarget(body));</span>
 <span class="fc" id="L701">                } else {</span>
-<span class="nc" id="L702">                    Block block = ast.newBlock();</span>
-<span class="nc" id="L703">                    block.statements().add(rewrite.createCopyTarget(body));</span>
-<span class="nc" id="L704">                    lambda.setBody(block);</span>
+<span class="fc" id="L702">                    Block block = ast.newBlock();</span>
+                    // The enclosing for replacement keeps trailing comments in place.
+                    // Its copied unbraced body must stay within that exact source range.
+<span class="fc" id="L705">                    body.setProperty(ASTNodes.UNTOUCH_COMMENT, Boolean.TRUE);</span>
+<span class="fc" id="L706">                    block.statements().add(rewrite.createCopyTarget(body));</span>
+<span class="fc" id="L707">                    lambda.setBody(block);</span>
                 }
-<span class="fc" id="L706">                call.arguments().add(lambda);</span>
-<span class="fc" id="L707">                return call;</span>
+<span class="fc" id="L709">                call.arguments().add(lambda);</span>
+<span class="fc" id="L710">                return call;</span>
             }
         };
         
         // Transform using LoopModelTransformer
-<span class="fc" id="L712">        LoopModelTransformer&lt;Expression&gt; transformer = new LoopModelTransformer&lt;&gt;(renderer);</span>
-<span class="fc" id="L713">        Expression streamExpression = transformer.transform(model);</span>
+<span class="fc" id="L715">        LoopModelTransformer&lt;Expression&gt; transformer = new LoopModelTransformer&lt;&gt;(renderer);</span>
+<span class="fc" id="L716">        Expression streamExpression = transformer.transform(model);</span>
         
-<span class="pc bpc" id="L715" title="1 of 2 branches missed.">        if (streamExpression != null) {</span>
+<span class="pc bpc" id="L718" title="1 of 2 branches missed.">        if (streamExpression != null) {</span>
             // Wrap in ExpressionStatement
-<span class="fc" id="L717">            ExpressionStatement newStatement = ast.newExpressionStatement(streamExpression);</span>
-<span class="fc" id="L718">            visited.setProperty(ASTNodes.UNTOUCH_COMMENT, Boolean.TRUE);</span>
-<span class="fc" id="L719">            rewrite.replace(visited, newStatement, group);</span>
+<span class="fc" id="L720">            ExpressionStatement newStatement = ast.newExpressionStatement(streamExpression);</span>
+<span class="fc" id="L721">            visited.setProperty(ASTNodes.UNTOUCH_COMMENT, Boolean.TRUE);</span>
+<span class="fc" id="L722">            rewrite.replace(visited, newStatement, group);</span>
             
         }
-<span class="fc" id="L722">    }</span>
+<span class="fc" id="L725">    }</span>
     
     /**
      * Builds a LoopModel from the analyzed ForLoopPattern.
      */
     private LoopModel buildLoopModel(ForLoopPattern pattern, String streamType) {
         // Get start and end expressions as strings
-<span class="fc" id="L729">        String startStr = pattern.startExpr().toString();</span>
-<span class="fc" id="L730">        String endStr = pattern.endExpr().toString();</span>
+<span class="fc" id="L732">        String startStr = pattern.startExpr().toString();</span>
+<span class="fc" id="L733">        String endStr = pattern.endExpr().toString();</span>
         
         // Adjust end expression for inclusive range (i &lt;= end)
-<span class="fc bfc" id="L733" title="All 2 branches covered.">        if (pattern.inclusive()) {</span>
+<span class="fc bfc" id="L736" title="All 2 branches covered.">        if (pattern.inclusive()) {</span>
             // For i &lt;= end, we need IntStream.range(start, (end) + 1)
             // Parenthesize end expression to preserve operator precedence
-<span class="fc" id="L736">            endStr = &quot;(&quot; + endStr + &quot;) + 1&quot;;</span>
+<span class="fc" id="L739">            endStr = &quot;(&quot; + endStr + &quot;) + 1&quot;;</span>
         }
         
         // Build EXPLICIT_RANGE source descriptor
-<span class="fc" id="L740">        String rangeExpression = startStr + &quot;,&quot; + endStr;</span>
-<span class="fc" id="L741">        SourceDescriptor source = new SourceDescriptor(</span>
-<span class="fc" id="L742">            SourceDescriptor.SourceType.EXPLICIT_RANGE,</span>
-<span class="fc" id="L743">            rangeExpression,</span>
-<span class="fc" id="L744">            &quot;int&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L743">        String rangeExpression = startStr + &quot;,&quot; + endStr;</span>
+<span class="fc" id="L744">        SourceDescriptor source = new SourceDescriptor(</span>
+<span class="fc" id="L745">            SourceDescriptor.SourceType.EXPLICIT_RANGE,</span>
+<span class="fc" id="L746">            rangeExpression,</span>
+<span class="fc" id="L747">            &quot;int&quot;, //$NON-NLS-1$</span>
             // A complete factory preserves commas inside initializer calls.
-<span class="fc" id="L746">            streamType + &quot;.range(&quot; + rangeExpression + &quot;)&quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L749">            streamType + &quot;.range(&quot; + rangeExpression + &quot;)&quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
         );
         
         // Build element descriptor for the loop variable
-<span class="fc" id="L750">        ElementDescriptor element = new ElementDescriptor(</span>
-<span class="fc" id="L751">            pattern.loopVarName(),</span>
-<span class="fc" id="L752">            &quot;int&quot;,</span>
-<span class="fc" id="L753">            false // not a collection element</span>
+<span class="fc" id="L753">        ElementDescriptor element = new ElementDescriptor(</span>
+<span class="fc" id="L754">            pattern.loopVarName(),</span>
+<span class="fc" id="L755">            &quot;int&quot;,</span>
+<span class="fc" id="L756">            false // not a collection element</span>
         );
         
         // Extract body statements and convert to strings
-<span class="fc" id="L757">        List&lt;String&gt; bodyStatements = extractBodyStatementsAsStrings(pattern.body());</span>
+<span class="fc" id="L760">        List&lt;String&gt; bodyStatements = extractBodyStatementsAsStrings(pattern.body());</span>
         
         // Build ForEachTerminal
-<span class="fc" id="L760">        ForEachTerminal terminal = new ForEachTerminal(bodyStatements, false); // uses forEach (not forEachOrdered)</span>
+<span class="fc" id="L763">        ForEachTerminal terminal = new ForEachTerminal(bodyStatements, false); // uses forEach (not forEachOrdered)</span>
         
         // Build and return LoopModel
-<span class="fc" id="L763">        return new LoopModelBuilder()</span>
-<span class="fc" id="L764">            .source(source)</span>
-<span class="fc" id="L765">            .element(element)</span>
-<span class="fc" id="L766">            .terminal(terminal)</span>
-<span class="fc" id="L767">            .build();</span>
+<span class="fc" id="L766">        return new LoopModelBuilder()</span>
+<span class="fc" id="L767">            .source(source)</span>
+<span class="fc" id="L768">            .element(element)</span>
+<span class="fc" id="L769">            .terminal(terminal)</span>
+<span class="fc" id="L770">            .build();</span>
     }
     
     /**
@@ -776,15 +779,15 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
      */
     @SuppressWarnings(&quot;unchecked&quot;)
     private List&lt;String&gt; extractBodyStatementsAsStrings(Statement body) {
-<span class="fc" id="L779">        return ExpressionHelper.bodyStatementsToStrings(body);</span>
+<span class="fc" id="L782">        return ExpressionHelper.bodyStatementsToStrings(body);</span>
     }
     
     @Override
     public String getPreview(boolean afterRefactoring) {
-<span class="fc bfc" id="L784" title="All 2 branches covered.">        if (afterRefactoring) {</span>
-<span class="fc" id="L785">            return &quot;IntStream.range(0, 10).forEach(i -&gt; System.out.println(i));\n&quot;;</span>
+<span class="fc bfc" id="L787" title="All 2 branches covered.">        if (afterRefactoring) {</span>
+<span class="fc" id="L788">            return &quot;IntStream.range(0, 10).forEach(i -&gt; System.out.println(i));\n&quot;;</span>
         }
-<span class="fc" id="L787">        return &quot;for (int i = 0; i &lt; 10; i++)\n    System.out.println(i);\n&quot;;</span>
+<span class="fc" id="L790">        return &quot;for (int i = 0; i &lt; 10; i++)\n    System.out.println(i);\n&quot;;</span>
     }
     
     /**
