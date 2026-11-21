@@ -92,6 +92,36 @@ public class UseGeneralTypeBindingSafetyTest {
 				.createCompilationUnit(name, source, false, null);
 	}
 
+	@Test
+	void inheritedPrivateTypeAnnotationsAreNotCopiedIntoTheCaller() throws Exception {
+		ICompilationUnit declaration = context.getSourceFolder().createPackageFragment("api", false, null) //$NON-NLS-1$
+				.createCompilationUnit("Types.java", """
+						package api;
+						public class Types {
+						    @java.lang.annotation.Target(java.lang.annotation.ElementType.TYPE_USE) private @interface Identity { }
+						    public static class Base<T> { public T get() { return null; } }
+						    public static class Child<T> extends Base<@Identity T> { }
+						}
+						""", false, null); //$NON-NLS-1$
+		ICompilationUnit caller = create("Caller.java", """
+				package test;
+				import api.Types;
+				import java.util.HashMap;
+				public class Caller {
+				    public void run(Types.Child<String> input) {
+				        Types.Child<String> candidate = input;
+				        candidate.get();
+				        HashMap<String, Integer> values = new HashMap<>();
+				        values.size();
+				    }
+				}
+				"""); //$NON-NLS-1$
+		String output = applyAndUndo(caller, declaration, caller);
+		assertTrue(output.contains("Types.Child<String> candidate"), output); //$NON-NLS-1$
+		assertFalse(output.contains("Identity"), output); //$NON-NLS-1$
+		assertFalse(output.contains("HashMap<String, Integer> values"), output); //$NON-NLS-1$
+	}
+
 	private static String applyAndUndo(ICompilationUnit unit, ICompilationUnit... scope) throws Exception {
 		for (ICompilationUnit checked : scope) {
 			for (var problem : parse(checked).getProblems()) assertFalse(problem.isError(), problem::getMessage);

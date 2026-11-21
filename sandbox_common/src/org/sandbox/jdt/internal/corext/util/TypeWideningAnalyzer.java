@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -166,7 +167,8 @@ public final class TypeWideningAnalyzer {
 				}
 
 				ITypeBinding typeBinding = type.resolveBinding();
-				if (typeBinding == null || typeBinding.isRecovered() || typeBinding.isPrimitive() || typeBinding.isArray()) {
+				if (typeBinding == null || typeBinding.isRecovered() || typeBinding.isPrimitive() || typeBinding.isArray()
+						|| hasTypeAnnotations(typeBinding)) {
 					return true;
 				}
 
@@ -174,6 +176,9 @@ public final class TypeWideningAnalyzer {
 					VariableDeclarationFragment fragment = (VariableDeclarationFragment) fragObj;
 					IVariableBinding varBinding = fragment.resolveBinding();
 					if (varBinding == null || varBinding.isRecovered() || varBinding.isField() || varBinding.isParameter()) {
+						continue;
+					}
+					if (hasTypeAnnotations(varBinding.getType())) {
 						continue;
 					}
 
@@ -310,6 +315,29 @@ public final class TypeWideningAnalyzer {
 		}
 		for (ITypeBinding iface : type.getInterfaces()) {
 			if (isSubtypeOf(iface, name)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static boolean hasTypeAnnotations(ITypeBinding type) {
+		return hasTypeAnnotations(type, Collections.newSetFromMap(new IdentityHashMap<>()));
+	}
+
+	private static boolean hasTypeAnnotations(ITypeBinding type, Set<ITypeBinding> seen) {
+		if (type == null || !seen.add(type)) {
+			return false;
+		}
+		// ImportRewrite reproduces annotations embedded in a supertype binding,
+		// including private/library-internal annotations absent from the local declaration.
+		if (type.getTypeAnnotations().length != 0 || hasTypeAnnotations(type.getComponentType(), seen)
+				|| hasTypeAnnotations(type.getBound(), seen) || hasTypeAnnotations(type.getWildcard(), seen)
+				|| hasTypeAnnotations(type.getDeclaringClass(), seen)) {
+			return true;
+		}
+		for (ITypeBinding argument : type.getTypeArguments()) {
+			if (hasTypeAnnotations(argument, seen)) {
 				return true;
 			}
 		}
@@ -480,6 +508,7 @@ public final class TypeWideningAnalyzer {
 	private static boolean declaresAllMembers(ITypeBinding originalType, ITypeBinding candidateType,
 			Set<IMethodBinding> usedMethods, Set<IVariableBinding> usedFields, String sourcePackage) {
 		if (originalType == null || candidateType == null || candidateType.isRecovered()
+				|| hasTypeAnnotations(candidateType)
 				|| !isTypeAccessible(candidateType, sourcePackage)
 				|| (candidateType.isDeprecated() && !originalType.isDeprecated())) {
 			return false;

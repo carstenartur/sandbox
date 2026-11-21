@@ -96,6 +96,22 @@ class TypeWideningAnalyzerTest {
 						    static class Child extends Base { public int count = 2; }
 						    int run() { Child candidate = new Child(); return candidate.count; }
 						}
+						"""),
+				Arguments.of("inherited type argument annotation", """
+						class Sample {
+						    @java.lang.annotation.Target(java.lang.annotation.ElementType.TYPE_USE) @interface Mark { }
+						    static class Base<T> { public T get() { return null; } }
+						    static class Child<T> extends Base<@Mark T> { }
+						    void run(Child<String> input) { Child<String> candidate = input; candidate.get(); }
+						}
+						"""),
+				Arguments.of("explicit local type annotation", """
+						class Sample {
+						    @java.lang.annotation.Target(java.lang.annotation.ElementType.TYPE_USE) @interface Mark { }
+						    static class Base { public void ping() { } }
+						    static class Child extends Base { }
+						    void run() { @Mark Child candidate = new Child(); candidate.ping(); }
+						}
 						"""));
 	}
 
