@@ -104,161 +104,139 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 <span class="fc" id="L104">		Accumulator result= new Accumulator(requiredText(</span>
 				compilationUnitHandle, &quot;compilationUnitHandle&quot;)); //$NON-NLS-1$
 
-<span class="fc" id="L107">		AstProcessing.independent(ReferenceHolder.&lt;String, Object&gt;create())</span>
-<span class="fc" id="L108">				.on(SimpleName.class, (name, holder) -&gt; {</span>
-<span class="fc" id="L109">					inspectField(name, targets, result);</span>
-<span class="fc" id="L110">					return true;</span>
-				})
-<span class="fc" id="L112">				.on(MethodDeclaration.class, (method, holder) -&gt; {</span>
-<span class="fc" id="L113">					inspectMethodDeclaration(method, targets, result);</span>
-<span class="fc" id="L114">					return true;</span>
-				})
-<span class="fc" id="L116">				.on(MethodInvocation.class, (invocation, holder) -&gt; {</span>
-<span class="fc" id="L117">					inspectExpressionCall(invocation, invocation.resolveMethodBinding(),</span>
-<span class="fc" id="L118">							invocation.arguments(), targets, result);</span>
-<span class="fc" id="L119">					return true;</span>
-				})
-<span class="fc" id="L121">				.on(ClassInstanceCreation.class, (creation, holder) -&gt; {</span>
-<span class="fc" id="L122">					inspectExpressionCall(creation, creation.resolveConstructorBinding(),</span>
-<span class="fc" id="L123">							creation.arguments(), targets, result);</span>
-<span class="fc" id="L124">					return true;</span>
-				})
-<span class="fc" id="L126">				.on(ConstructorInvocation.class, (invocation, holder) -&gt; {</span>
-<span class="nc" id="L127">					inspectStatementCall(invocation, invocation.resolveConstructorBinding(),</span>
-<span class="nc" id="L128">							invocation.arguments(), targets, result);</span>
-<span class="nc" id="L129">					return true;</span>
-				})
-<span class="fc" id="L131">				.on(SuperConstructorInvocation.class, (invocation, holder) -&gt; {</span>
-<span class="nc" id="L132">					inspectStatementCall(invocation, invocation.resolveConstructorBinding(),</span>
-<span class="nc" id="L133">							invocation.arguments(), targets, result);</span>
-<span class="nc" id="L134">					return true;</span>
-				})
-<span class="fc" id="L136">				.on(ExpressionMethodReference.class, (reference, holder) -&gt; {</span>
-<span class="fc" id="L137">					inspectMethodReference(reference, reference.resolveMethodBinding(), targets, result);</span>
-<span class="fc" id="L138">					return true;</span>
-				})
-<span class="fc" id="L140">				.on(TypeMethodReference.class, (reference, holder) -&gt; {</span>
-<span class="nc" id="L141">					inspectMethodReference(reference, reference.resolveMethodBinding(), targets, result);</span>
-<span class="nc" id="L142">					return true;</span>
-				})
-<span class="fc" id="L144">				.on(SuperMethodReference.class, (reference, holder) -&gt; {</span>
-<span class="nc" id="L145">					inspectMethodReference(reference, reference.resolveMethodBinding(), targets, result);</span>
-<span class="nc" id="L146">					return true;</span>
-				})
-<span class="fc" id="L148">				.on(CreationReference.class, (reference, holder) -&gt; {</span>
-<span class="nc" id="L149">					inspectMethodReference(reference, reference.resolveMethodBinding(), targets, result);</span>
-<span class="nc" id="L150">					return true;</span>
-				})
-<span class="fc" id="L152">				.build(compilationUnit);</span>
+<span class="fc" id="L107">		AstProcessing.independent()</span>
+<span class="fc" id="L108">				.visit(SimpleName.class, name -&gt; inspectField(name, targets, result))</span>
+<span class="fc" id="L109">				.visit(MethodDeclaration.class, method -&gt; inspectMethodDeclaration(method, targets, result))</span>
+<span class="fc" id="L110">				.visit(MethodInvocation.class, invocation -&gt;</span>
+<span class="fc" id="L111">						inspectExpressionCall(invocation, invocation.resolveMethodBinding(),</span>
+<span class="fc" id="L112">								invocation.arguments(), targets, result))</span>
+<span class="fc" id="L113">				.visit(ClassInstanceCreation.class, creation -&gt;</span>
+<span class="fc" id="L114">						inspectExpressionCall(creation, creation.resolveConstructorBinding(),</span>
+<span class="fc" id="L115">								creation.arguments(), targets, result))</span>
+<span class="fc" id="L116">				.visit(ConstructorInvocation.class, invocation -&gt;</span>
+<span class="nc" id="L117">						inspectStatementCall(invocation, invocation.resolveConstructorBinding(),</span>
+<span class="nc" id="L118">								invocation.arguments(), targets, result))</span>
+<span class="fc" id="L119">				.visit(SuperConstructorInvocation.class, invocation -&gt;</span>
+<span class="nc" id="L120">						inspectStatementCall(invocation, invocation.resolveConstructorBinding(),</span>
+<span class="nc" id="L121">								invocation.arguments(), targets, result))</span>
+<span class="fc" id="L122">				.visit(ExpressionMethodReference.class, reference -&gt;</span>
+<span class="fc" id="L123">						inspectMethodReference(reference, reference.resolveMethodBinding(), targets, result))</span>
+<span class="fc" id="L124">				.visit(TypeMethodReference.class, reference -&gt;</span>
+<span class="nc" id="L125">						inspectMethodReference(reference, reference.resolveMethodBinding(), targets, result))</span>
+<span class="fc" id="L126">				.visit(SuperMethodReference.class, reference -&gt;</span>
+<span class="nc" id="L127">						inspectMethodReference(reference, reference.resolveMethodBinding(), targets, result))</span>
+<span class="fc" id="L128">				.visit(CreationReference.class, reference -&gt;</span>
+<span class="nc" id="L129">						inspectMethodReference(reference, reference.resolveMethodBinding(), targets, result))</span>
+<span class="fc" id="L130">				.build(compilationUnit);</span>
 
-<span class="fc" id="L154">		return result.toPlan();</span>
+<span class="fc" id="L132">		return result.toPlan();</span>
 	}
 
 	private static void inspectField(
 			SimpleName name,
 			TargetIndex targets,
 			Accumulator result) {
-<span class="fc bfc" id="L161" title="All 2 branches covered.">		if (!(ImportNameBindings.resolve(name) instanceof IVariableBinding binding)) {</span>
-<span class="fc" id="L162">			return;</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">		if (!(ImportNameBindings.resolve(name) instanceof IVariableBinding binding)) {</span>
+<span class="fc" id="L140">			return;</span>
 		}
-<span class="fc" id="L164">		IVariableBinding declaration= binding.getVariableDeclaration();</span>
-<span class="fc bfc" id="L165" title="All 2 branches covered.">		if (!declaration.isField()) {</span>
-<span class="fc" id="L166">			return;</span>
+<span class="fc" id="L142">		IVariableBinding declaration= binding.getVariableDeclaration();</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">		if (!declaration.isField()) {</span>
+<span class="fc" id="L144">			return;</span>
 		}
-<span class="fc" id="L168">		String handle= javaElementHandle(declaration.getJavaElement());</span>
-<span class="fc bfc" id="L169" title="All 2 branches covered.">		for (ResolvedSearchTarget target : targets.fields(handle)) {</span>
-<span class="fc" id="L170">			result.addRoot(target, ContinuationKind.FIELD, Relationship.SAME_NODE, null,</span>
+<span class="fc" id="L146">		String handle= javaElementHandle(declaration.getJavaElement());</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">		for (ResolvedSearchTarget target : targets.fields(handle)) {</span>
+<span class="fc" id="L148">			result.addRoot(target, ContinuationKind.FIELD, Relationship.SAME_NODE, null,</span>
 					declaration, name,
 					&quot;Continue container flow from the exact field binding.&quot;); //$NON-NLS-1$
-<span class="fc" id="L173">		}</span>
-<span class="fc" id="L174">	}</span>
+<span class="fc" id="L151">		}</span>
+<span class="fc" id="L152">	}</span>
 
 	private static void inspectMethodDeclaration(
 			MethodDeclaration method,
 			TargetIndex targets,
 			Accumulator result) {
-<span class="fc" id="L180">		String handle= javaElementHandle(method.resolveBinding());</span>
-<span class="fc bfc" id="L181" title="All 2 branches covered.">		for (ResolvedSearchTarget target : targets.methods(handle)) {</span>
-<span class="fc bfc" id="L182" title="All 2 branches covered.">			if (target.searchKind() == SearchKind.METHOD_CALLERS) {</span>
-<span class="fc" id="L183">				continue;</span>
+<span class="fc" id="L158">		String handle= javaElementHandle(method.resolveBinding());</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">		for (ResolvedSearchTarget target : targets.methods(handle)) {</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">			if (target.searchKind() == SearchKind.METHOD_CALLERS) {</span>
+<span class="fc" id="L161">				continue;</span>
 			}
-<span class="fc bfc" id="L185" title="All 2 branches covered.">			if (target.signatureIndex() &gt;= 0) {</span>
-<span class="fc" id="L186">				inspectParameter(method, target, result);</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">			if (target.signatureIndex() &gt;= 0) {</span>
+<span class="fc" id="L164">				inspectParameter(method, target, result);</span>
 			} else {
-<span class="fc" id="L188">				inspectReturns(method, target, result);</span>
+<span class="fc" id="L166">				inspectReturns(method, target, result);</span>
 			}
-<span class="fc" id="L190">		}</span>
-<span class="fc" id="L191">	}</span>
+<span class="fc" id="L168">		}</span>
+<span class="fc" id="L169">	}</span>
 
 	private static void inspectParameter(
 			MethodDeclaration method,
 			ResolvedSearchTarget target,
 			Accumulator result) {
-<span class="fc" id="L197">		int index= target.signatureIndex();</span>
-<span class="pc bpc" id="L198" title="2 of 4 branches missed.">		if (index &lt; 0 || index &gt;= method.parameters().size()) {</span>
-<span class="nc" id="L199">			result.addDiagnostic(DiagnosticKind.INVALID_SIGNATURE_INDEX, target, method,</span>
+<span class="fc" id="L175">		int index= target.signatureIndex();</span>
+<span class="pc bpc" id="L176" title="2 of 4 branches missed.">		if (index &lt; 0 || index &gt;= method.parameters().size()) {</span>
+<span class="nc" id="L177">			result.addDiagnostic(DiagnosticKind.INVALID_SIGNATURE_INDEX, target, method,</span>
 					&quot;The resolved method does not contain parameter index &quot; + index + '.'); //$NON-NLS-1$
-<span class="nc" id="L201">			return;</span>
+<span class="nc" id="L179">			return;</span>
 		}
-<span class="fc" id="L203">		SingleVariableDeclaration parameter=</span>
-<span class="fc" id="L204">				(SingleVariableDeclaration) method.parameters().get(index);</span>
-<span class="fc" id="L205">		IVariableBinding binding= parameter.resolveBinding();</span>
-<span class="pc bpc" id="L206" title="1 of 2 branches missed.">		if (binding == null) {</span>
-<span class="nc" id="L207">			result.addDiagnostic(DiagnosticKind.UNRESOLVED_BINDING, target, parameter,</span>
+<span class="fc" id="L181">		SingleVariableDeclaration parameter=</span>
+<span class="fc" id="L182">				(SingleVariableDeclaration) method.parameters().get(index);</span>
+<span class="fc" id="L183">		IVariableBinding binding= parameter.resolveBinding();</span>
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">		if (binding == null) {</span>
+<span class="nc" id="L185">			result.addDiagnostic(DiagnosticKind.UNRESOLVED_BINDING, target, parameter,</span>
 					&quot;The requested method parameter binding could not be resolved.&quot;); //$NON-NLS-1$
-<span class="nc" id="L209">			return;</span>
+<span class="nc" id="L187">			return;</span>
 		}
-<span class="fc" id="L211">		result.addRoot(target, ContinuationKind.PARAMETER_DECLARATION,</span>
-<span class="fc" id="L212">				Relationship.SAME_NODE, null, binding.getVariableDeclaration(),</span>
-<span class="fc" id="L213">				parameter.getName(),</span>
+<span class="fc" id="L189">		result.addRoot(target, ContinuationKind.PARAMETER_DECLARATION,</span>
+<span class="fc" id="L190">				Relationship.SAME_NODE, null, binding.getVariableDeclaration(),</span>
+<span class="fc" id="L191">				parameter.getName(),</span>
 				&quot;Continue container flow from the exact method parameter position.&quot;); //$NON-NLS-1$
-<span class="fc" id="L215">	}</span>
+<span class="fc" id="L193">	}</span>
 
 	private static void inspectReturns(
 			MethodDeclaration method,
 			ResolvedSearchTarget target,
 			Accumulator result) {
-<span class="pc bpc" id="L221" title="1 of 2 branches missed.">		if (method.getBody() == null) {</span>
-<span class="nc" id="L222">			return;</span>
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">		if (method.getBody() == null) {</span>
+<span class="nc" id="L200">			return;</span>
 		}
-<span class="fc" id="L224">		AstProcessing.independent(ReferenceHolder.&lt;String, Object&gt;create())</span>
-<span class="fc" id="L225">				.on(ReturnStatement.class, (statement, holder) -&gt; {</span>
-<span class="fc bfc" id="L226" title="All 2 branches covered.">					if (!belongsToMethod(statement, method)) {</span>
-<span class="fc" id="L227">						return false;</span>
+<span class="fc" id="L202">		AstProcessing.independent(ReferenceHolder.&lt;String, Object&gt;create())</span>
+<span class="fc" id="L203">				.on(ReturnStatement.class, (statement, holder) -&gt; {</span>
+<span class="fc bfc" id="L204" title="All 2 branches covered.">					if (!belongsToMethod(statement, method)) {</span>
+<span class="fc" id="L205">						return false;</span>
 					}
-<span class="fc" id="L229">					Expression expression= statement.getExpression();</span>
-<span class="pc bpc" id="L230" title="1 of 2 branches missed.">					if (expression == null) {</span>
-<span class="nc" id="L231">						return false;</span>
+<span class="fc" id="L207">					Expression expression= statement.getExpression();</span>
+<span class="pc bpc" id="L208" title="1 of 2 branches missed.">					if (expression == null) {</span>
+<span class="nc" id="L209">						return false;</span>
 					}
-<span class="fc" id="L233">					Optional&lt;IVariableBinding&gt; returned= variableBinding(expression);</span>
-<span class="fc bfc" id="L234" title="All 2 branches covered.">					if (returned.isEmpty()) {</span>
-<span class="fc" id="L235">						result.addDiagnostic(DiagnosticKind.UNSUPPORTED_RETURN_EXPRESSION,</span>
+<span class="fc" id="L211">					Optional&lt;IVariableBinding&gt; returned= variableBinding(expression);</span>
+<span class="fc bfc" id="L212" title="All 2 branches covered.">					if (returned.isEmpty()) {</span>
+<span class="fc" id="L213">						result.addDiagnostic(DiagnosticKind.UNSUPPORTED_RETURN_EXPRESSION,</span>
 								target, expression,
 								&quot;The method returns a non-variable expression that requires &quot; //$NON-NLS-1$
 										+ &quot;a dedicated semantic migration rule.&quot;); //$NON-NLS-1$
-<span class="fc" id="L239">						return false;</span>
+<span class="fc" id="L217">						return false;</span>
 					}
-<span class="fc" id="L241">					result.addRoot(target, ContinuationKind.RETURN_EXPRESSION,</span>
+<span class="fc" id="L219">					result.addRoot(target, ContinuationKind.RETURN_EXPRESSION,</span>
 							Relationship.ROOT_TO_BOUNDARY, EdgeKind.RETURN_TO_METHOD,
-<span class="fc" id="L243">							returned.get().getVariableDeclaration(), expression,</span>
+<span class="fc" id="L221">							returned.get().getVariableDeclaration(), expression,</span>
 							&quot;Continue container flow from a variable returned by the method.&quot;); //$NON-NLS-1$
-<span class="fc" id="L245">					return false;</span>
+<span class="fc" id="L223">					return false;</span>
 				})
-<span class="fc" id="L247">				.build(method.getBody());</span>
-<span class="fc" id="L248">	}</span>
+<span class="fc" id="L225">				.build(method.getBody());</span>
+<span class="fc" id="L226">	}</span>
 
 	private static boolean belongsToMethod(ReturnStatement statement, MethodDeclaration method) {
-<span class="fc" id="L251">		ASTNode current= statement.getParent();</span>
-<span class="pc bpc" id="L252" title="1 of 2 branches missed.">		while (current != null) {</span>
-<span class="fc bfc" id="L253" title="All 2 branches covered.">			if (current instanceof LambdaExpression) {</span>
-<span class="fc" id="L254">				return false;</span>
+<span class="fc" id="L229">		ASTNode current= statement.getParent();</span>
+<span class="pc bpc" id="L230" title="1 of 2 branches missed.">		while (current != null) {</span>
+<span class="fc bfc" id="L231" title="All 2 branches covered.">			if (current instanceof LambdaExpression) {</span>
+<span class="fc" id="L232">				return false;</span>
 			}
-<span class="fc bfc" id="L256" title="All 2 branches covered.">			if (current instanceof MethodDeclaration declaration) {</span>
-<span class="pc bpc" id="L257" title="1 of 2 branches missed.">				return declaration == method;</span>
+<span class="fc bfc" id="L234" title="All 2 branches covered.">			if (current instanceof MethodDeclaration declaration) {</span>
+<span class="pc bpc" id="L235" title="1 of 2 branches missed.">				return declaration == method;</span>
 			}
-<span class="fc" id="L259">			current= current.getParent();</span>
+<span class="fc" id="L237">			current= current.getParent();</span>
 		}
-<span class="nc" id="L261">		return false;</span>
+<span class="nc" id="L239">		return false;</span>
 	}
 
 	private static void inspectExpressionCall(
@@ -267,17 +245,17 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 			List&lt;?&gt; arguments,
 			TargetIndex targets,
 			Accumulator result) {
-<span class="fc bfc" id="L270" title="All 2 branches covered.">		for (ResolvedSearchTarget target : targets.methods(javaElementHandle(binding))) {</span>
-<span class="fc bfc" id="L271" title="All 2 branches covered.">			if (target.searchKind() != SearchKind.METHOD_CALLERS) {</span>
-<span class="fc" id="L272">				continue;</span>
+<span class="fc bfc" id="L248" title="All 2 branches covered.">		for (ResolvedSearchTarget target : targets.methods(javaElementHandle(binding))) {</span>
+<span class="fc bfc" id="L249" title="All 2 branches covered.">			if (target.searchKind() != SearchKind.METHOD_CALLERS) {</span>
+<span class="fc" id="L250">				continue;</span>
 			}
-<span class="fc bfc" id="L274" title="All 2 branches covered.">			if (target.signatureIndex() &gt;= 0) {</span>
-<span class="fc" id="L275">				inspectArguments(invocation, binding, arguments, target, result);</span>
+<span class="fc bfc" id="L252" title="All 2 branches covered.">			if (target.signatureIndex() &gt;= 0) {</span>
+<span class="fc" id="L253">				inspectArguments(invocation, binding, arguments, target, result);</span>
 			} else {
-<span class="fc" id="L277">				inspectResultOrFunction(invocation, binding, target, result);</span>
+<span class="fc" id="L255">				inspectResultOrFunction(invocation, binding, target, result);</span>
 			}
-<span class="fc" id="L279">		}</span>
-<span class="fc" id="L280">	}</span>
+<span class="fc" id="L257">		}</span>
+<span class="fc" id="L258">	}</span>
 
 	private static void inspectStatementCall(
 			ASTNode invocation,
@@ -285,13 +263,13 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 			List&lt;?&gt; arguments,
 			TargetIndex targets,
 			Accumulator result) {
-<span class="nc bnc" id="L288" title="All 2 branches missed.">		for (ResolvedSearchTarget target : targets.methods(javaElementHandle(binding))) {</span>
-<span class="nc bnc" id="L289" title="All 2 branches missed.">			if (target.searchKind() == SearchKind.METHOD_CALLERS</span>
-<span class="nc bnc" id="L290" title="All 2 branches missed.">					&amp;&amp; target.signatureIndex() &gt;= 0) {</span>
-<span class="nc" id="L291">				inspectArguments(invocation, binding, arguments, target, result);</span>
+<span class="nc bnc" id="L266" title="All 2 branches missed.">		for (ResolvedSearchTarget target : targets.methods(javaElementHandle(binding))) {</span>
+<span class="nc bnc" id="L267" title="All 2 branches missed.">			if (target.searchKind() == SearchKind.METHOD_CALLERS</span>
+<span class="nc bnc" id="L268" title="All 2 branches missed.">					&amp;&amp; target.signatureIndex() &gt;= 0) {</span>
+<span class="nc" id="L269">				inspectArguments(invocation, binding, arguments, target, result);</span>
 			}
-<span class="nc" id="L293">		}</span>
-<span class="nc" id="L294">	}</span>
+<span class="nc" id="L271">		}</span>
+<span class="nc" id="L272">	}</span>
 
 	private static void inspectArguments(
 			ASTNode invocation,
@@ -299,153 +277,153 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 			List&lt;?&gt; arguments,
 			ResolvedSearchTarget target,
 			Accumulator result) {
-<span class="pc bpc" id="L302" title="1 of 2 branches missed.">		if (binding == null) {</span>
-<span class="nc" id="L303">			result.addDiagnostic(DiagnosticKind.UNRESOLVED_BINDING, target, invocation,</span>
+<span class="pc bpc" id="L280" title="1 of 2 branches missed.">		if (binding == null) {</span>
+<span class="nc" id="L281">			result.addDiagnostic(DiagnosticKind.UNRESOLVED_BINDING, target, invocation,</span>
 					&quot;The call binding could not be resolved.&quot;); //$NON-NLS-1$
-<span class="nc" id="L305">			return;</span>
+<span class="nc" id="L283">			return;</span>
 		}
-<span class="fc" id="L307">		boolean matched= false;</span>
-<span class="fc bfc" id="L308" title="All 2 branches covered.">		for (int argumentIndex= 0; argumentIndex &lt; arguments.size(); argumentIndex++) {</span>
-<span class="pc bpc" id="L309" title="1 of 2 branches missed.">			if (parameterIndex(binding, argumentIndex) != target.signatureIndex()) {</span>
-<span class="nc" id="L310">				continue;</span>
+<span class="fc" id="L285">		boolean matched= false;</span>
+<span class="fc bfc" id="L286" title="All 2 branches covered.">		for (int argumentIndex= 0; argumentIndex &lt; arguments.size(); argumentIndex++) {</span>
+<span class="pc bpc" id="L287" title="1 of 2 branches missed.">			if (parameterIndex(binding, argumentIndex) != target.signatureIndex()) {</span>
+<span class="nc" id="L288">				continue;</span>
 			}
-<span class="fc" id="L312">			matched= true;</span>
-<span class="fc" id="L313">			Expression argument= (Expression) arguments.get(argumentIndex);</span>
-<span class="fc" id="L314">			Optional&lt;IVariableBinding&gt; variable= variableBinding(argument);</span>
-<span class="fc bfc" id="L315" title="All 2 branches covered.">			if (variable.isEmpty()) {</span>
-<span class="fc" id="L316">				result.addDiagnostic(DiagnosticKind.UNSUPPORTED_ARGUMENT, target, argument,</span>
+<span class="fc" id="L290">			matched= true;</span>
+<span class="fc" id="L291">			Expression argument= (Expression) arguments.get(argumentIndex);</span>
+<span class="fc" id="L292">			Optional&lt;IVariableBinding&gt; variable= variableBinding(argument);</span>
+<span class="fc bfc" id="L293" title="All 2 branches covered.">			if (variable.isEmpty()) {</span>
+<span class="fc" id="L294">				result.addDiagnostic(DiagnosticKind.UNSUPPORTED_ARGUMENT, target, argument,</span>
 						&quot;The call passes a non-variable argument that requires a &quot; //$NON-NLS-1$
 								+ &quot;dedicated semantic migration rule.&quot;); //$NON-NLS-1$
-<span class="fc" id="L319">				continue;</span>
+<span class="fc" id="L297">				continue;</span>
 			}
-<span class="fc" id="L321">			result.addRoot(target, ContinuationKind.CALL_ARGUMENT,</span>
+<span class="fc" id="L299">			result.addRoot(target, ContinuationKind.CALL_ARGUMENT,</span>
 					Relationship.ROOT_TO_BOUNDARY, EdgeKind.ARGUMENT_TO_PARAMETER,
-<span class="fc" id="L323">					variable.get().getVariableDeclaration(), argument,</span>
+<span class="fc" id="L301">					variable.get().getVariableDeclaration(), argument,</span>
 					&quot;Continue container flow from the variable passed to the parameter.&quot;); //$NON-NLS-1$
 		}
-<span class="pc bpc" id="L326" title="1 of 2 branches missed.">		if (!matched) {</span>
-<span class="nc" id="L327">			result.addDiagnostic(DiagnosticKind.INVALID_SIGNATURE_INDEX, target, invocation,</span>
+<span class="pc bpc" id="L304" title="1 of 2 branches missed.">		if (!matched) {</span>
+<span class="nc" id="L305">			result.addDiagnostic(DiagnosticKind.INVALID_SIGNATURE_INDEX, target, invocation,</span>
 					&quot;The call contains no argument for parameter index &quot; //$NON-NLS-1$
-<span class="nc" id="L329">							+ target.signatureIndex() + '.');</span>
+<span class="nc" id="L307">							+ target.signatureIndex() + '.');</span>
 		}
-<span class="fc" id="L331">	}</span>
+<span class="fc" id="L309">	}</span>
 
 	private static void inspectReturnConsumer(
 			Expression invocation,
 			ResolvedSearchTarget target,
 			Accumulator result) {
-<span class="fc" id="L337">		Expression complete= transparentParent(invocation);</span>
-<span class="fc" id="L338">		ASTNode parent= complete.getParent();</span>
-<span class="fc bfc" id="L339" title="All 2 branches covered.">		if (parent instanceof VariableDeclarationFragment fragment</span>
-<span class="pc bpc" id="L340" title="1 of 2 branches missed.">				&amp;&amp; fragment.getInitializer() == complete) {</span>
-<span class="fc" id="L341">			IVariableBinding binding= fragment.resolveBinding();</span>
-<span class="pc bpc" id="L342" title="1 of 2 branches missed.">			if (binding == null) {</span>
-<span class="nc" id="L343">				result.addDiagnostic(DiagnosticKind.UNRESOLVED_BINDING, target, fragment,</span>
+<span class="fc" id="L315">		Expression complete= transparentParent(invocation);</span>
+<span class="fc" id="L316">		ASTNode parent= complete.getParent();</span>
+<span class="fc bfc" id="L317" title="All 2 branches covered.">		if (parent instanceof VariableDeclarationFragment fragment</span>
+<span class="pc bpc" id="L318" title="1 of 2 branches missed.">				&amp;&amp; fragment.getInitializer() == complete) {</span>
+<span class="fc" id="L319">			IVariableBinding binding= fragment.resolveBinding();</span>
+<span class="pc bpc" id="L320" title="1 of 2 branches missed.">			if (binding == null) {</span>
+<span class="nc" id="L321">				result.addDiagnostic(DiagnosticKind.UNRESOLVED_BINDING, target, fragment,</span>
 						&quot;The variable receiving the method result could not be resolved.&quot;); //$NON-NLS-1$
-<span class="nc" id="L345">				return;</span>
+<span class="nc" id="L323">				return;</span>
 			}
-<span class="fc" id="L347">			result.addRoot(target, ContinuationKind.RETURN_CONSUMER,</span>
+<span class="fc" id="L325">			result.addRoot(target, ContinuationKind.RETURN_CONSUMER,</span>
 					Relationship.BOUNDARY_TO_ROOT, EdgeKind.INITIALIZER,
-<span class="fc" id="L349">					binding.getVariableDeclaration(), fragment.getName(),</span>
+<span class="fc" id="L327">					binding.getVariableDeclaration(), fragment.getName(),</span>
 					&quot;Continue container flow from the variable initialized by the result.&quot;); //$NON-NLS-1$
-<span class="fc" id="L351">			return;</span>
+<span class="fc" id="L329">			return;</span>
 		}
-<span class="pc bpc" id="L353" title="1 of 2 branches missed.">		if (parent instanceof Assignment assignment</span>
-<span class="nc bnc" id="L354" title="All 2 branches missed.">				&amp;&amp; assignment.getOperator() == Assignment.Operator.ASSIGN</span>
-<span class="nc bnc" id="L355" title="All 2 branches missed.">				&amp;&amp; assignment.getRightHandSide() == complete) {</span>
-<span class="nc" id="L356">			Optional&lt;IVariableBinding&gt; binding= variableBinding(assignment.getLeftHandSide());</span>
-<span class="nc bnc" id="L357" title="All 2 branches missed.">			if (binding.isEmpty()) {</span>
-<span class="nc" id="L358">				result.addDiagnostic(DiagnosticKind.UNRESOLVED_BINDING, target, assignment,</span>
+<span class="pc bpc" id="L331" title="1 of 2 branches missed.">		if (parent instanceof Assignment assignment</span>
+<span class="nc bnc" id="L332" title="All 2 branches missed.">				&amp;&amp; assignment.getOperator() == Assignment.Operator.ASSIGN</span>
+<span class="nc bnc" id="L333" title="All 2 branches missed.">				&amp;&amp; assignment.getRightHandSide() == complete) {</span>
+<span class="nc" id="L334">			Optional&lt;IVariableBinding&gt; binding= variableBinding(assignment.getLeftHandSide());</span>
+<span class="nc bnc" id="L335" title="All 2 branches missed.">			if (binding.isEmpty()) {</span>
+<span class="nc" id="L336">				result.addDiagnostic(DiagnosticKind.UNRESOLVED_BINDING, target, assignment,</span>
 						&quot;The assignment target receiving the result could not be resolved.&quot;); //$NON-NLS-1$
-<span class="nc" id="L360">				return;</span>
+<span class="nc" id="L338">				return;</span>
 			}
-<span class="nc" id="L362">			result.addRoot(target, ContinuationKind.RETURN_CONSUMER,</span>
+<span class="nc" id="L340">			result.addRoot(target, ContinuationKind.RETURN_CONSUMER,</span>
 					Relationship.BOUNDARY_TO_ROOT, EdgeKind.ASSIGNMENT,
-<span class="nc" id="L364">					binding.get().getVariableDeclaration(), assignment.getLeftHandSide(),</span>
+<span class="nc" id="L342">					binding.get().getVariableDeclaration(), assignment.getLeftHandSide(),</span>
 					&quot;Continue container flow from the variable assigned the method result.&quot;); //$NON-NLS-1$
-<span class="nc" id="L366">			return;</span>
+<span class="nc" id="L344">			return;</span>
 		}
-<span class="pc bpc" id="L368" title="1 of 2 branches missed.">		if (parent instanceof ExpressionStatement) {</span>
-<span class="nc" id="L369">			return;</span>
+<span class="pc bpc" id="L346" title="1 of 2 branches missed.">		if (parent instanceof ExpressionStatement) {</span>
+<span class="nc" id="L347">			return;</span>
 		}
-<span class="fc" id="L371">		result.addDiagnostic(DiagnosticKind.UNSUPPORTED_RETURN_CONSUMER, target, complete,</span>
+<span class="fc" id="L349">		result.addDiagnostic(DiagnosticKind.UNSUPPORTED_RETURN_CONSUMER, target, complete,</span>
 				&quot;The method result is consumed by an unsupported expression shape.&quot;); //$NON-NLS-1$
-<span class="fc" id="L373">	}</span>
+<span class="fc" id="L351">	}</span>
 
 	private static void inspectResultOrFunction(Expression invocation, IMethodBinding binding, ResolvedSearchTarget target,
 			Accumulator result) {
-<span class="pc bpc" id="L377" title="1 of 2 branches missed.">		if (invocation.getParent() instanceof LambdaExpression) {</span>
-<span class="nc" id="L378">			var function= ClosedReturnFunctionUses.find(invocation, binding);</span>
-<span class="nc bnc" id="L379" title="All 2 branches missed.">			if (function.isPresent()) {</span>
-<span class="nc" id="L380">				function.get().calls().forEach(call -&gt; inspectReturnConsumer(call, target, result));</span>
-<span class="nc" id="L381">				return;</span>
+<span class="pc bpc" id="L355" title="1 of 2 branches missed.">		if (invocation.getParent() instanceof LambdaExpression) {</span>
+<span class="nc" id="L356">			var function= ClosedReturnFunctionUses.find(invocation, binding);</span>
+<span class="nc bnc" id="L357" title="All 2 branches missed.">			if (function.isPresent()) {</span>
+<span class="nc" id="L358">				function.get().calls().forEach(call -&gt; inspectReturnConsumer(call, target, result));</span>
+<span class="nc" id="L359">				return;</span>
 			}
 		}
-<span class="fc" id="L384">		inspectReturnConsumer(invocation, target, result);</span>
-<span class="fc" id="L385">	}</span>
+<span class="fc" id="L362">		inspectReturnConsumer(invocation, target, result);</span>
+<span class="fc" id="L363">	}</span>
 
 	private static void inspectMethodReference(
 			ASTNode reference,
 			IMethodBinding binding,
 			TargetIndex targets,
 			Accumulator result) {
-<span class="fc bfc" id="L392" title="All 2 branches covered.">		for (ResolvedSearchTarget target : targets.methods(javaElementHandle(binding))) {</span>
-<span class="pc bpc" id="L393" title="3 of 4 branches missed.">			if (target.signatureIndex() &lt; 0 &amp;&amp; reference instanceof MethodReference methodReference) {</span>
-<span class="nc" id="L394">				var function= ClosedReturnFunctionUses.find(methodReference, binding);</span>
-<span class="nc bnc" id="L395" title="All 2 branches missed.">				if (function.isPresent()) {</span>
-<span class="nc bnc" id="L396" title="All 2 branches missed.">					if (target.searchKind() == SearchKind.METHOD_CALLERS) {</span>
-<span class="nc" id="L397">						function.get().calls().forEach(call -&gt; inspectReturnConsumer(call, target, result));</span>
+<span class="fc bfc" id="L370" title="All 2 branches covered.">		for (ResolvedSearchTarget target : targets.methods(javaElementHandle(binding))) {</span>
+<span class="pc bpc" id="L371" title="3 of 4 branches missed.">			if (target.signatureIndex() &lt; 0 &amp;&amp; reference instanceof MethodReference methodReference) {</span>
+<span class="nc" id="L372">				var function= ClosedReturnFunctionUses.find(methodReference, binding);</span>
+<span class="nc bnc" id="L373" title="All 2 branches missed.">				if (function.isPresent()) {</span>
+<span class="nc bnc" id="L374" title="All 2 branches missed.">					if (target.searchKind() == SearchKind.METHOD_CALLERS) {</span>
+<span class="nc" id="L375">						function.get().calls().forEach(call -&gt; inspectReturnConsumer(call, target, result));</span>
 					}
 					continue;
 				}
 			}
-<span class="fc" id="L402">			result.addDiagnostic(DiagnosticKind.METHOD_REFERENCE, target, reference,</span>
+<span class="fc" id="L380">			result.addDiagnostic(DiagnosticKind.METHOD_REFERENCE, target, reference,</span>
 					&quot;A method reference participates in the migrated signature and &quot; //$NON-NLS-1$
 							+ &quot;requires dedicated target-type analysis.&quot;); //$NON-NLS-1$
-<span class="fc" id="L405">		}</span>
-<span class="fc" id="L406">	}</span>
+<span class="fc" id="L383">		}</span>
+<span class="fc" id="L384">	}</span>
 
 	private static int parameterIndex(IMethodBinding method, int argumentIndex) {
-<span class="fc" id="L409">		int parameterCount= method.getParameterTypes().length;</span>
-<span class="pc bpc" id="L410" title="5 of 6 branches missed.">		if (method.isVarargs() &amp;&amp; parameterCount &gt; 0 &amp;&amp; argumentIndex &gt;= parameterCount - 1) {</span>
-<span class="nc" id="L411">			return parameterCount - 1;</span>
+<span class="fc" id="L387">		int parameterCount= method.getParameterTypes().length;</span>
+<span class="pc bpc" id="L388" title="5 of 6 branches missed.">		if (method.isVarargs() &amp;&amp; parameterCount &gt; 0 &amp;&amp; argumentIndex &gt;= parameterCount - 1) {</span>
+<span class="nc" id="L389">			return parameterCount - 1;</span>
 		}
-<span class="fc" id="L413">		return argumentIndex;</span>
+<span class="fc" id="L391">		return argumentIndex;</span>
 	}
 
 	private static Expression transparentParent(Expression expression) {
-<span class="fc" id="L417">		Expression current= expression;</span>
-<span class="pc bpc" id="L418" title="1 of 2 branches missed.">		while (current.getParent() instanceof ParenthesizedExpression parenthesized) {</span>
-<span class="nc" id="L419">			current= parenthesized;</span>
+<span class="fc" id="L395">		Expression current= expression;</span>
+<span class="pc bpc" id="L396" title="1 of 2 branches missed.">		while (current.getParent() instanceof ParenthesizedExpression parenthesized) {</span>
+<span class="nc" id="L397">			current= parenthesized;</span>
 		}
-<span class="fc" id="L421">		return current;</span>
+<span class="fc" id="L399">		return current;</span>
 	}
 
 	private static String compilationUnitHandle(CompilationUnit compilationUnit) {
-<span class="fc" id="L425">		IJavaElement element= compilationUnit.getJavaElement();</span>
-<span class="pc bpc" id="L426" title="1 of 2 branches missed.">		return element == null</span>
-<span class="nc" id="L427">				? &quot;in-memory-compilation-unit&quot; //$NON-NLS-1$</span>
-<span class="fc" id="L428">				: requiredText(element.getHandleIdentifier(), &quot;compilationUnitHandle&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L403">		IJavaElement element= compilationUnit.getJavaElement();</span>
+<span class="pc bpc" id="L404" title="1 of 2 branches missed.">		return element == null</span>
+<span class="nc" id="L405">				? &quot;in-memory-compilation-unit&quot; //$NON-NLS-1$</span>
+<span class="fc" id="L406">				: requiredText(element.getHandleIdentifier(), &quot;compilationUnitHandle&quot;); //$NON-NLS-1$</span>
 	}
 
 	private static String javaElementHandle(IMethodBinding binding) {
-<span class="pc bpc" id="L432" title="1 of 2 branches missed.">		return binding == null</span>
-<span class="nc" id="L433">				? &quot;&quot; //$NON-NLS-1$</span>
-<span class="fc" id="L434">				: javaElementHandle(binding.getMethodDeclaration().getJavaElement());</span>
+<span class="pc bpc" id="L410" title="1 of 2 branches missed.">		return binding == null</span>
+<span class="nc" id="L411">				? &quot;&quot; //$NON-NLS-1$</span>
+<span class="fc" id="L412">				: javaElementHandle(binding.getMethodDeclaration().getJavaElement());</span>
 	}
 
 	private static String javaElementHandle(IJavaElement element) {
-<span class="pc bpc" id="L438" title="1 of 4 branches missed.">		return element == null || element.getHandleIdentifier() == null</span>
-<span class="fc" id="L439">				? &quot;&quot; //$NON-NLS-1$</span>
-<span class="fc" id="L440">				: element.getHandleIdentifier();</span>
+<span class="pc bpc" id="L416" title="1 of 4 branches missed.">		return element == null || element.getHandleIdentifier() == null</span>
+<span class="fc" id="L417">				? &quot;&quot; //$NON-NLS-1$</span>
+<span class="fc" id="L418">				: element.getHandleIdentifier();</span>
 	}
 
 	private static String requiredText(String value, String fieldName) {
-<span class="fc" id="L444">		String text= Objects.requireNonNull(value, fieldName).strip();</span>
-<span class="pc bpc" id="L445" title="1 of 2 branches missed.">		if (text.isEmpty()) {</span>
-<span class="nc" id="L446">			throw new IllegalArgumentException(fieldName + &quot; must not be empty&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L422">		String text= Objects.requireNonNull(value, fieldName).strip();</span>
+<span class="pc bpc" id="L423" title="1 of 2 branches missed.">		if (text.isEmpty()) {</span>
+<span class="nc" id="L424">			throw new IllegalArgumentException(fieldName + &quot; must not be empty&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L448">		return text;</span>
+<span class="fc" id="L426">		return text;</span>
 	}
 
 	private static final class TargetIndex {
@@ -455,49 +433,49 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 
 		private TargetIndex(
 				Map&lt;String, List&lt;ResolvedSearchTarget&gt;&gt; fieldsByHandle,
-<span class="fc" id="L458">				Map&lt;String, List&lt;ResolvedSearchTarget&gt;&gt; methodsByHandle) {</span>
-<span class="fc" id="L459">			this.fieldsByHandle= fieldsByHandle;</span>
-<span class="fc" id="L460">			this.methodsByHandle= methodsByHandle;</span>
-<span class="fc" id="L461">		}</span>
+<span class="fc" id="L436">				Map&lt;String, List&lt;ResolvedSearchTarget&gt;&gt; methodsByHandle) {</span>
+<span class="fc" id="L437">			this.fieldsByHandle= fieldsByHandle;</span>
+<span class="fc" id="L438">			this.methodsByHandle= methodsByHandle;</span>
+<span class="fc" id="L439">		}</span>
 
 		static TargetIndex create(ResolvedContainerFlowSearchPlan plan) {
-<span class="fc" id="L464">			Map&lt;String, List&lt;ResolvedSearchTarget&gt;&gt; fields= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L465">			Map&lt;String, List&lt;ResolvedSearchTarget&gt;&gt; methods= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L466" title="All 2 branches covered.">			for (ResolvedSearchTarget target : plan.targets()) {</span>
+<span class="fc" id="L442">			Map&lt;String, List&lt;ResolvedSearchTarget&gt;&gt; fields= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L443">			Map&lt;String, List&lt;ResolvedSearchTarget&gt;&gt; methods= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L444" title="All 2 branches covered.">			for (ResolvedSearchTarget target : plan.targets()) {</span>
 				Map&lt;String, List&lt;ResolvedSearchTarget&gt;&gt; selected=
-<span class="fc bfc" id="L468" title="All 2 branches covered.">						target.targetKind() == TargetKind.FIELD ? fields : methods;</span>
-<span class="fc" id="L469">				selected.computeIfAbsent(target.javaElementHandle(), ignored -&gt; new ArrayList&lt;&gt;())</span>
-<span class="fc" id="L470">						.add(target);</span>
-<span class="fc" id="L471">			}</span>
-<span class="fc" id="L472">			return new TargetIndex(immutableLists(fields), immutableLists(methods));</span>
+<span class="fc bfc" id="L446" title="All 2 branches covered.">						target.targetKind() == TargetKind.FIELD ? fields : methods;</span>
+<span class="fc" id="L447">				selected.computeIfAbsent(target.javaElementHandle(), ignored -&gt; new ArrayList&lt;&gt;())</span>
+<span class="fc" id="L448">						.add(target);</span>
+<span class="fc" id="L449">			}</span>
+<span class="fc" id="L450">			return new TargetIndex(immutableLists(fields), immutableLists(methods));</span>
 		}
 
 		List&lt;ResolvedSearchTarget&gt; fields(String handle) {
-<span class="fc" id="L476">			return fieldsByHandle.getOrDefault(handle, List.of());</span>
+<span class="fc" id="L454">			return fieldsByHandle.getOrDefault(handle, List.of());</span>
 		}
 
 		List&lt;ResolvedSearchTarget&gt; methods(String handle) {
-<span class="fc" id="L480">			return methodsByHandle.getOrDefault(handle, List.of());</span>
+<span class="fc" id="L458">			return methodsByHandle.getOrDefault(handle, List.of());</span>
 		}
 
 		private static Map&lt;String, List&lt;ResolvedSearchTarget&gt;&gt; immutableLists(
 				Map&lt;String, List&lt;ResolvedSearchTarget&gt;&gt; source) {
-<span class="fc" id="L485">			Map&lt;String, List&lt;ResolvedSearchTarget&gt;&gt; result= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L486">			source.forEach((key, value) -&gt; result.put(key, List.copyOf(value)));</span>
-<span class="fc" id="L487">			return Map.copyOf(result);</span>
+<span class="fc" id="L463">			Map&lt;String, List&lt;ResolvedSearchTarget&gt;&gt; result= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L464">			source.forEach((key, value) -&gt; result.put(key, List.copyOf(value)));</span>
+<span class="fc" id="L465">			return Map.copyOf(result);</span>
 		}
 	}
 
 	private static final class Accumulator {
 
 		private final String compilationUnitHandle;
-<span class="fc" id="L494">		private final Map&lt;String, ContinuationRoot&gt; rootsByKey= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L495">		private final Map&lt;String, ContinuationDiagnostic&gt; diagnosticsByKey=</span>
+<span class="fc" id="L472">		private final Map&lt;String, ContinuationRoot&gt; rootsByKey= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L473">		private final Map&lt;String, ContinuationDiagnostic&gt; diagnosticsByKey=</span>
 				new LinkedHashMap&lt;&gt;();
 
-<span class="fc" id="L498">		Accumulator(String compilationUnitHandle) {</span>
-<span class="fc" id="L499">			this.compilationUnitHandle= compilationUnitHandle;</span>
-<span class="fc" id="L500">		}</span>
+<span class="fc" id="L476">		Accumulator(String compilationUnitHandle) {</span>
+<span class="fc" id="L477">			this.compilationUnitHandle= compilationUnitHandle;</span>
+<span class="fc" id="L478">		}</span>
 
 		void addRoot(
 				ResolvedSearchTarget target,
@@ -507,68 +485,68 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 				IVariableBinding binding,
 				ASTNode anchor,
 				String summary) {
-<span class="fc" id="L510">			IVariableBinding declaration= binding.getVariableDeclaration();</span>
-<span class="fc" id="L511">			ITypeBinding type= declaration.getType();</span>
-<span class="pc bpc" id="L512" title="2 of 4 branches missed.">			if (type == null || !type.isArray()) {</span>
-<span class="nc" id="L513">				addDiagnostic(DiagnosticKind.NON_ARRAY_VALUE, target, anchor,</span>
+<span class="fc" id="L488">			IVariableBinding declaration= binding.getVariableDeclaration();</span>
+<span class="fc" id="L489">			ITypeBinding type= declaration.getType();</span>
+<span class="pc bpc" id="L490" title="2 of 4 branches missed.">			if (type == null || !type.isArray()) {</span>
+<span class="nc" id="L491">				addDiagnostic(DiagnosticKind.NON_ARRAY_VALUE, target, anchor,</span>
 						&quot;The resolved continuation value is not an array.&quot;); //$NON-NLS-1$
-<span class="nc" id="L515">				return;</span>
+<span class="nc" id="L493">				return;</span>
 			}
-<span class="fc" id="L517">			String bindingKey= declaration.getKey();</span>
-<span class="pc bpc" id="L518" title="2 of 4 branches missed.">			if (bindingKey == null || bindingKey.isBlank()) {</span>
-<span class="nc" id="L519">				addDiagnostic(DiagnosticKind.UNRESOLVED_BINDING, target, anchor,</span>
+<span class="fc" id="L495">			String bindingKey= declaration.getKey();</span>
+<span class="pc bpc" id="L496" title="2 of 4 branches missed.">			if (bindingKey == null || bindingKey.isBlank()) {</span>
+<span class="nc" id="L497">				addDiagnostic(DiagnosticKind.UNRESOLVED_BINDING, target, anchor,</span>
 						&quot;The continuation variable has no stable binding key.&quot;); //$NON-NLS-1$
-<span class="nc" id="L521">				return;</span>
+<span class="nc" id="L499">				return;</span>
 			}
 
-<span class="fc" id="L524">			ContinuationRoot root= new ContinuationRoot(</span>
-<span class="fc" id="L525">					target.sourceNodeId(), kind, relationship, transferKind,</span>
-<span class="fc" id="L526">					compilationUnitHandle, target.javaElementHandle(),</span>
-<span class="fc" id="L527">					profile(declaration, anchor, summary));</span>
-<span class="fc" id="L528">			rootsByKey.putIfAbsent(root.stableKey(), root);</span>
-<span class="fc" id="L529">		}</span>
+<span class="fc" id="L502">			ContinuationRoot root= new ContinuationRoot(</span>
+<span class="fc" id="L503">					target.sourceNodeId(), kind, relationship, transferKind,</span>
+<span class="fc" id="L504">					compilationUnitHandle, target.javaElementHandle(),</span>
+<span class="fc" id="L505">					profile(declaration, anchor, summary));</span>
+<span class="fc" id="L506">			rootsByKey.putIfAbsent(root.stableKey(), root);</span>
+<span class="fc" id="L507">		}</span>
 
 		void addDiagnostic(
 				DiagnosticKind kind,
 				ResolvedSearchTarget target,
 				ASTNode node,
 				String message) {
-<span class="fc" id="L536">			ContinuationDiagnostic diagnostic= new ContinuationDiagnostic(</span>
-<span class="fc" id="L537">					kind, compilationUnitHandle, target.javaElementHandle(), message,</span>
-<span class="fc" id="L538">					node.getStartPosition(), node.getLength());</span>
-<span class="fc" id="L539">			String key= kind + &quot;|&quot; + target.stableKey() + '|' + node.getStartPosition(); //$NON-NLS-1$</span>
-<span class="fc" id="L540">			diagnosticsByKey.putIfAbsent(key, diagnostic);</span>
-<span class="fc" id="L541">		}</span>
+<span class="fc" id="L514">			ContinuationDiagnostic diagnostic= new ContinuationDiagnostic(</span>
+<span class="fc" id="L515">					kind, compilationUnitHandle, target.javaElementHandle(), message,</span>
+<span class="fc" id="L516">					node.getStartPosition(), node.getLength());</span>
+<span class="fc" id="L517">			String key= kind + &quot;|&quot; + target.stableKey() + '|' + node.getStartPosition(); //$NON-NLS-1$</span>
+<span class="fc" id="L518">			diagnosticsByKey.putIfAbsent(key, diagnostic);</span>
+<span class="fc" id="L519">		}</span>
 
 		ContainerFlowContinuationPlan toPlan() {
-<span class="fc" id="L544">			List&lt;ContinuationRoot&gt; roots= new ArrayList&lt;&gt;(rootsByKey.values());</span>
-<span class="fc" id="L545">			roots.sort(Comparator</span>
-<span class="fc" id="L546">					.comparingInt((ContinuationRoot root) -&gt; root.profile().identity().sourceStart())</span>
-<span class="fc" id="L547">					.thenComparing(ContinuationRoot::stableKey));</span>
-<span class="fc" id="L548">			List&lt;ContinuationDiagnostic&gt; diagnostics=</span>
-<span class="fc" id="L549">					new ArrayList&lt;&gt;(diagnosticsByKey.values());</span>
-<span class="fc" id="L550">			diagnostics.sort(Comparator</span>
-<span class="fc" id="L551">					.comparingInt(ContinuationDiagnostic::sourceStart)</span>
-<span class="fc" id="L552">					.thenComparing(ContinuationDiagnostic::message));</span>
-<span class="fc" id="L553">			return new ContainerFlowContinuationPlan(roots, diagnostics);</span>
+<span class="fc" id="L522">			List&lt;ContinuationRoot&gt; roots= new ArrayList&lt;&gt;(rootsByKey.values());</span>
+<span class="fc" id="L523">			roots.sort(Comparator</span>
+<span class="fc" id="L524">					.comparingInt((ContinuationRoot root) -&gt; root.profile().identity().sourceStart())</span>
+<span class="fc" id="L525">					.thenComparing(ContinuationRoot::stableKey));</span>
+<span class="fc" id="L526">			List&lt;ContinuationDiagnostic&gt; diagnostics=</span>
+<span class="fc" id="L527">					new ArrayList&lt;&gt;(diagnosticsByKey.values());</span>
+<span class="fc" id="L528">			diagnostics.sort(Comparator</span>
+<span class="fc" id="L529">					.comparingInt(ContinuationDiagnostic::sourceStart)</span>
+<span class="fc" id="L530">					.thenComparing(ContinuationDiagnostic::message));</span>
+<span class="fc" id="L531">			return new ContainerFlowContinuationPlan(roots, diagnostics);</span>
 		}
 
 		private static ContainerUsageProfile profile(
 				IVariableBinding binding,
 				ASTNode anchor,
 				String summary) {
-<span class="fc" id="L560">			ITypeBinding component= binding.getType().getComponentType();</span>
-<span class="pc bpc" id="L561" title="1 of 2 branches missed.">			ElementDomain domain= component == null</span>
-<span class="nc" id="L562">					? ElementDomain.UNKNOWN</span>
-<span class="pc bpc" id="L563" title="1 of 2 branches missed.">					: component.isPrimitive()</span>
-<span class="nc" id="L564">							? ElementDomain.PRIMITIVE</span>
-<span class="pc bpc" id="L565" title="1 of 2 branches missed.">							: component.isEnum() ? ElementDomain.ENUM : ElementDomain.REFERENCE;</span>
-<span class="fc bfc" id="L566" title="All 2 branches covered.">			EscapeLevel escape= binding.isField()</span>
-<span class="fc" id="L567">					? EscapeLevel.FIELD</span>
-<span class="fc bfc" id="L568" title="All 2 branches covered.">					: binding.isParameter() ? EscapeLevel.METHOD_BOUNDARY : EscapeLevel.LOCAL;</span>
-<span class="fc" id="L569">			return new ContainerUsageProfile(</span>
-<span class="fc" id="L570">					new ContainerIdentity(binding.getKey(), binding.getName(),</span>
-<span class="fc" id="L571">							anchor.getStartPosition(), anchor.getLength()),</span>
+<span class="fc" id="L538">			ITypeBinding component= binding.getType().getComponentType();</span>
+<span class="pc bpc" id="L539" title="1 of 2 branches missed.">			ElementDomain domain= component == null</span>
+<span class="nc" id="L540">					? ElementDomain.UNKNOWN</span>
+<span class="pc bpc" id="L541" title="1 of 2 branches missed.">					: component.isPrimitive()</span>
+<span class="nc" id="L542">							? ElementDomain.PRIMITIVE</span>
+<span class="pc bpc" id="L543" title="1 of 2 branches missed.">							: component.isEnum() ? ElementDomain.ENUM : ElementDomain.REFERENCE;</span>
+<span class="fc bfc" id="L544" title="All 2 branches covered.">			EscapeLevel escape= binding.isField()</span>
+<span class="fc" id="L545">					? EscapeLevel.FIELD</span>
+<span class="fc bfc" id="L546" title="All 2 branches covered.">					: binding.isParameter() ? EscapeLevel.METHOD_BOUNDARY : EscapeLevel.LOCAL;</span>
+<span class="fc" id="L547">			return new ContainerUsageProfile(</span>
+<span class="fc" id="L548">					new ContainerIdentity(binding.getKey(), binding.getName(),</span>
+<span class="fc" id="L549">							anchor.getStartPosition(), anchor.getLength()),</span>
 					ContainerShape.ARRAY,
 					domain,
 					new AccessProfile(false, false, false, false, false, false, false),
@@ -578,10 +556,10 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 					NullContract.UNKNOWN,
 					AliasingContract.UNKNOWN,
 					escape,
-<span class="fc" id="L581">					ConcurrencyProfile.unknown(),</span>
+<span class="fc" id="L559">					ConcurrencyProfile.unknown(),</span>
 					AnalysisCompleteness.LOCAL_SEED,
-<span class="fc" id="L583">					List.of(new UsageEvidence(Kind.FLOW_CONTINUATION_ROOT, summary,</span>
-<span class="fc" id="L584">							anchor.getStartPosition(), anchor.getLength())));</span>
+<span class="fc" id="L561">					List.of(new UsageEvidence(Kind.FLOW_CONTINUATION_ROOT, summary,</span>
+<span class="fc" id="L562">							anchor.getStartPosition(), anchor.getLength())));</span>
 		}
 	}
 }

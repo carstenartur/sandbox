@@ -166,11 +166,11 @@ public class MethodReuseCleanUpCore extends AbstractCleanUp {
 <span class="pc bpc" id="L166" title="1 of 2 branches missed.">		if (configured != null) {</span>
 			try {
 <span class="fc" id="L168">				return RepeatedCodeSequenceExtractor.normalizeMinimum(Integer.parseInt(configured));</span>
-<span class="fc" id="L169">			} catch (NumberFormatException exception) {</span>
+<span class="nc" id="L169">			} catch (NumberFormatException exception) {</span>
 				// Fall through to the documented default.
 			}
 		}
-<span class="fc" id="L173">		return RepeatedCodeSequenceExtractor.DEFAULT_MINIMUM_STATEMENTS;</span>
+<span class="nc" id="L173">		return RepeatedCodeSequenceExtractor.DEFAULT_MINIMUM_STATEMENTS;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

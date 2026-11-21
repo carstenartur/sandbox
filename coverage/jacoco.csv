@@ -827,7 +827,7 @@ sandbox_coverage/sandbox_method_reuse,org.sandbox.jdt.internal.ui.preferences.cl
 sandbox_coverage/sandbox_method_reuse,org.sandbox.jdt.internal.corext.fix,MethodReuseCleanUpFixCore,8,42,0,0,2,10,1,5,1,5
 sandbox_coverage/sandbox_method_reuse,org.sandbox.jdt.internal.corext.fix,MethodReuseCleanUpFixCore.new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation() {...},0,34,0,0,0,7,0,2,0,2
 sandbox_coverage/sandbox_method_reuse,org.sandbox.jdt.internal.ui.fix,MultiFixMessages,3,4,0,0,1,2,1,1,1,1
-sandbox_coverage/sandbox_method_reuse,org.sandbox.jdt.internal.ui.fix,MethodReuseCleanUpCore,17,172,7,25,5,45,7,18,0,9
+sandbox_coverage/sandbox_method_reuse,org.sandbox.jdt.internal.ui.fix,MethodReuseCleanUpCore,20,169,7,25,7,43,7,18,0,9
 sandbox_coverage/sandbox_method_reuse,org.sandbox.jdt.internal.ui.fix,MethodReuseCleanUp,0,11,0,0,0,4,0,2,0,2
 sandbox_coverage/sandbox_method_reuse,org.sandbox.jdt.internal.corext.fix.helper.lib,SideEffectAnalyzer,78,0,18,0,26,0,15,0,6,0
 sandbox_coverage/sandbox_method_reuse,org.sandbox.jdt.internal.corext.fix.helper.lib,VariableMapping,20,86,2,6,3,16,4,9,2,7
@@ -1504,15 +1504,15 @@ sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,Containe
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerFlowGraphAccumulator,60,490,16,42,11,116,16,39,1,24
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerFlowIndex.MethodInfo,0,9,0,0,0,3,0,1,0,1
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerAstFacts,38,222,16,32,5,45,15,17,0,8
-sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerFlowIndex,4,272,7,21,2,61,7,23,0,16
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerFlowIndex,4,269,7,21,2,58,7,23,0,16
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ListenerSnapshotAnalyzer.Observed,0,21,0,0,0,4,0,1,0,1
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ParallelArrayRecordAnalyzer.new ASTVisitor() {...},0,163,5,25,0,19,5,14,0,4
-sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerFlowContinuationDetector,235,542,46,58,55,143,42,43,8,25
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerFlowContinuationDetector,230,536,46,58,50,136,42,43,8,25
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ListenerSnapshotAnalyzer,30,521,71,85,5,62,69,19,0,10
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerConcurrencyAnalyzer.FieldUses,0,18,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,LocalUniqueSequenceAnalyzer.new ASTVisitor() {...},0,24,0,0,0,4,0,2,0,2
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,LocalUniqueSequenceAnalyzer.new ASTVisitor() {...},0,24,0,2,0,4,0,3,0,2
-sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,LocalArrayUsageAnalyzer,178,1165,142,224,32,217,133,82,2,30
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,LocalArrayUsageAnalyzer,178,1161,142,224,32,215,133,82,2,30
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerRuleRegistry,7,214,1,1,1,27,1,11,0,11
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ClosedSourceRecommendationRefiner,195,0,36,0,41,0,26,0,8,0
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,LosslessArrayLengthBridge.new ASTVisitor() {...},124,0,28,0,16,0,17,0,3,0
@@ -1805,7 +1805,7 @@ sandbox_coverage/sandbox_test_commons,org.sandbox.jdt.ui.tests.quickfix.rules,Co
 sandbox_coverage/sandbox_test_commons,org.sandbox.jdt.ui.tests.quickfix.rules,EclipseJava8,0,5,0,0,0,2,0,1,0,1
 sandbox_coverage/sandbox_test_commons,org.sandbox.jdt.ui.tests.quickfix.rules,EclipseJava9,0,5,0,0,0,2,0,1,0,1
 sandbox_coverage/sandbox_test_commons,org.sandbox.jdt.ui.tests.quickfix.rules,CompilerDiagnosticAssertions.new ASTVisitor() {...},0,46,1,7,0,5,1,5,0,2
-sandbox_coverage/sandbox_test_commons,org.sandbox.jdt.ui.tests.quickfix.rules,AbstractEclipseJava,522,1149,89,71,118,261,65,67,8,44
+sandbox_coverage/sandbox_test_commons,org.sandbox.jdt.ui.tests.quickfix.rules,AbstractEclipseJava,522,1172,89,77,118,264,65,69,8,43
 sandbox_coverage/sandbox_test_commons,org.sandbox.jdt.ui.tests.quickfix.rules,CompilerDiagnosticRegressionTest.DiagnosticHarness,6,42,1,3,1,9,1,4,0,3
 sandbox_coverage/sandbox_test_commons,org.sandbox.jdt.ui.tests.quickfix.rules,CompilerDiagnosticAssertions.ResourceLocation,0,9,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox_test_commons,org.sandbox.jdt.ui.tests.quickfix.rules,CompilerDiagnosticAssertions.CompilerProblemKey,0,73,1,11,0,10,1,8,0,3
