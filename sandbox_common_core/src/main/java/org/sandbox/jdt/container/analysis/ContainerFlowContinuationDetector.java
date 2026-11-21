@@ -104,51 +104,29 @@ public final class ContainerFlowContinuationDetector {
 		Accumulator result= new Accumulator(requiredText(
 				compilationUnitHandle, "compilationUnitHandle")); //$NON-NLS-1$
 
-		AstProcessing.independent(ReferenceHolder.<String, Object>create())
-				.on(SimpleName.class, (name, holder) -> {
-					inspectField(name, targets, result);
-					return true;
-				})
-				.on(MethodDeclaration.class, (method, holder) -> {
-					inspectMethodDeclaration(method, targets, result);
-					return true;
-				})
-				.on(MethodInvocation.class, (invocation, holder) -> {
-					inspectExpressionCall(invocation, invocation.resolveMethodBinding(),
-							invocation.arguments(), targets, result);
-					return true;
-				})
-				.on(ClassInstanceCreation.class, (creation, holder) -> {
-					inspectExpressionCall(creation, creation.resolveConstructorBinding(),
-							creation.arguments(), targets, result);
-					return true;
-				})
-				.on(ConstructorInvocation.class, (invocation, holder) -> {
-					inspectStatementCall(invocation, invocation.resolveConstructorBinding(),
-							invocation.arguments(), targets, result);
-					return true;
-				})
-				.on(SuperConstructorInvocation.class, (invocation, holder) -> {
-					inspectStatementCall(invocation, invocation.resolveConstructorBinding(),
-							invocation.arguments(), targets, result);
-					return true;
-				})
-				.on(ExpressionMethodReference.class, (reference, holder) -> {
-					inspectMethodReference(reference, reference.resolveMethodBinding(), targets, result);
-					return true;
-				})
-				.on(TypeMethodReference.class, (reference, holder) -> {
-					inspectMethodReference(reference, reference.resolveMethodBinding(), targets, result);
-					return true;
-				})
-				.on(SuperMethodReference.class, (reference, holder) -> {
-					inspectMethodReference(reference, reference.resolveMethodBinding(), targets, result);
-					return true;
-				})
-				.on(CreationReference.class, (reference, holder) -> {
-					inspectMethodReference(reference, reference.resolveMethodBinding(), targets, result);
-					return true;
-				})
+		AstProcessing.independent()
+				.visit(SimpleName.class, name -> inspectField(name, targets, result))
+				.visit(MethodDeclaration.class, method -> inspectMethodDeclaration(method, targets, result))
+				.visit(MethodInvocation.class, invocation ->
+						inspectExpressionCall(invocation, invocation.resolveMethodBinding(),
+								invocation.arguments(), targets, result))
+				.visit(ClassInstanceCreation.class, creation ->
+						inspectExpressionCall(creation, creation.resolveConstructorBinding(),
+								creation.arguments(), targets, result))
+				.visit(ConstructorInvocation.class, invocation ->
+						inspectStatementCall(invocation, invocation.resolveConstructorBinding(),
+								invocation.arguments(), targets, result))
+				.visit(SuperConstructorInvocation.class, invocation ->
+						inspectStatementCall(invocation, invocation.resolveConstructorBinding(),
+								invocation.arguments(), targets, result))
+				.visit(ExpressionMethodReference.class, reference ->
+						inspectMethodReference(reference, reference.resolveMethodBinding(), targets, result))
+				.visit(TypeMethodReference.class, reference ->
+						inspectMethodReference(reference, reference.resolveMethodBinding(), targets, result))
+				.visit(SuperMethodReference.class, reference ->
+						inspectMethodReference(reference, reference.resolveMethodBinding(), targets, result))
+				.visit(CreationReference.class, reference ->
+						inspectMethodReference(reference, reference.resolveMethodBinding(), targets, result))
 				.build(compilationUnit);
 
 		return result.toPlan();

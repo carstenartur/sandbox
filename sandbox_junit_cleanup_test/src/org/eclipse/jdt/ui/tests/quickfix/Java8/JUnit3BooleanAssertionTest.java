@@ -9,6 +9,7 @@
  *******************************************************************************/
 package org.eclipse.jdt.ui.tests.quickfix.Java8;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -41,19 +42,22 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
 import org.sandbox.jdt.ui.tests.quickfix.rules.JUnitMigrationFixtureClasspath;
 
-/** Primitive overloads from the pinned compiler annotation-processing tests. */
+/** Legacy assertion evaluation and primitive overloads from the pinned tests. */
 class JUnit3BooleanAssertionTest {
 
 	@RegisterExtension
@@ -124,6 +128,97 @@ class JUnit3BooleanAssertionTest {
 		assertEquals(1, outcome.calls());
 	}
 
+	static Stream<Arguments> assertionReceivers() {
+		return Stream.of(
+				Arguments.of("this.receiver().assertTrue(this.next());", "receiver;actual;", 1, false), //$NON-NLS-1$ //$NON-NLS-2$
+				Arguments.of("this.receiver().assertFalse(!this.next());", "receiver;actual;", 1, false), //$NON-NLS-1$ //$NON-NLS-2$
+				Arguments.of("this.receiver().assertNull(this.next() ? null : this);", "receiver;actual;", 1, false), //$NON-NLS-1$ //$NON-NLS-2$
+				Arguments.of("this.receiver().assertNotNull(this.next() ? this : null);", "receiver;actual;", 1, false), //$NON-NLS-1$ //$NON-NLS-2$
+				Arguments.of("this.receiver().assertSame(this, this.next() ? this : null);", "receiver;actual;", 1, false), //$NON-NLS-1$ //$NON-NLS-2$
+				Arguments.of("this.receiver().assertNotSame(this, this.next() ? new Object() : this);", "receiver;actual;", 1, false), //$NON-NLS-1$ //$NON-NLS-2$
+				Arguments.of("this.receiver().assertEquals(1, this.next() ? 1 : 0);", "receiver;actual;", 1, false), //$NON-NLS-1$ //$NON-NLS-2$
+				Arguments.of("this.receiver().assertEquals(Boolean.TRUE, this.nextBoxed());", "receiver;actual;", 1, false), //$NON-NLS-1$ //$NON-NLS-2$
+				Arguments.of("this.receiver().fail(this.message());", "receiver;message;", 0, true), //$NON-NLS-1$ //$NON-NLS-2$
+				Arguments.of("(this.next() ? this.receiver() : null).assertTrue(this.next());", "actual;receiver;actual;", 2, false), //$NON-NLS-1$ //$NON-NLS-2$
+				Arguments.of("((junit.framework.TestCase) this.receiver()).assertTrue(this.next());", "receiver;actual;", 1, false), //$NON-NLS-1$ //$NON-NLS-2$
+				Arguments.of("this.throwingReceiver().assertTrue(this.next());", "receiver;", 0, true), //$NON-NLS-1$ //$NON-NLS-2$
+				Arguments.of("junit.framework.TestCase receiver= this.receiver(); receiver.assertTrue(this.next());", "receiver;actual;", 1, false), //$NON-NLS-1$ //$NON-NLS-2$
+				Arguments.of("new Receiver(this).assertTrue(this.next());", "receiver;actual;", 1, false)); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@ParameterizedTest
+	@MethodSource("assertionReceivers") //$NON-NLS-1$
+	void preservesUnprovenReceiverEvaluation(String call, String events, int calls, boolean failed) throws Exception {
+		String original= source(call, true, """
+				private junit.framework.TestCase throwingReceiver() {
+					this.events += "receiver;";
+					throw new AssertionError("receiver");
+				}
+				private static class Receiver extends junit.framework.TestCase {
+					private Receiver(Example owner) { owner.events += "receiver;"; }
+				}
+				""");
+		ICompilationUnit unit= unit(original);
+		List<MethodInvocation> legacyAssertions= new ArrayList<>();
+		parse(unit).accept(new ASTVisitor() {
+			@Override
+			public boolean visit(MethodInvocation invocation) {
+				var binding= invocation.resolveMethodBinding();
+				if (binding != null && !binding.isRecovered() && Set.of("junit.framework.Assert", "junit.framework.TestCase") //$NON-NLS-1$ //$NON-NLS-2$
+						.contains(binding.getDeclaringClass().getQualifiedName())) {
+					legacyAssertions.add(invocation);
+				}
+				return true;
+			}
+		});
+		assertEquals(1, legacyAssertions.size(), original);
+		Outcome before= execute(original, unit);
+		assertEquals(failed, before.failed());
+		assertEquals(events, before.events());
+		assertEquals(calls, before.calls());
+		assertEquals(original, applyAndUndo(unit, false, null, null, null));
+		assertEquals(before, execute(unit.getSource(), unit));
+	}
+
+	static Stream<String> safeInstanceQualifiers() {
+		return Stream.of("this.", "Example.this."); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@ParameterizedTest
+	@MethodSource("safeInstanceQualifiers") //$NON-NLS-1$
+	void migratesSafeInstanceQualifiers(String qualifier) throws Exception {
+		String original= source(qualifier + "assertTrue(this.next());", true, ""); //$NON-NLS-1$ //$NON-NLS-2$
+		ICompilationUnit unit= unit(original);
+		Outcome before= execute(original, unit);
+		String generated= applyAndUndo(unit, true, "assertTrue", "org.junit.jupiter.api.Assertions", List.of("boolean")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		assertEquals(before, execute(generated, unit));
+	}
+
+	@Test
+	void preservesCustomAssertionReceiverEvaluation() throws Exception {
+		String original= source("this.customReceiver().assertTrue(this.next());", false, //$NON-NLS-1$
+				"""
+				private Example customReceiver() {
+					this.events += "receiver;";
+					return this;
+				}
+				/**
+				 * Checks this fixture's custom assertion contract.
+				 * @param condition the condition to check
+				 */
+				public static void assertTrue(boolean condition) {
+					if (!condition) throw new AssertionError("custom");
+				}
+				""");
+		ICompilationUnit unit= unit(original);
+		Outcome before= execute(original, unit);
+		assertTrue(before.failed());
+		assertEquals("receiver;actual;", before.events()); //$NON-NLS-1$
+		assertEquals(1, before.calls());
+		String generated= applyAndUndo(unit, true, "assertTrue", "test.Example", List.of("boolean")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		assertEquals(before, execute(generated, unit));
+	}
+
 	static Stream<Arguments> otherOverloads() {
 		return Stream.of(
 				Arguments.of("assertEquals(Boolean.TRUE, this.nextBoxed());", "", //$NON-NLS-1$ //$NON-NLS-2$
@@ -156,6 +251,67 @@ class JUnit3BooleanAssertionTest {
 		assertEquals(before.events(), after.events());
 	}
 
+	static Stream<Arguments> customAssertionDocumentation() {
+		return Stream.of(
+				Arguments.of("", "boolean", "assertEquals(true, this.next());", true), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				Arguments.of("/** Checks equality. */", "boolean", "assertEquals(true, this.next());", true), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				Arguments.of("", "Boolean", "assertEquals(Boolean.TRUE, this.nextBoxed());", false)); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	}
+
+	@ParameterizedTest
+	@MethodSource("customAssertionDocumentation") //$NON-NLS-1$
+	void preservesCustomAssertionDocumentationContracts(String documentation, String parameterType,
+			String call, boolean hidesLegacyMethod) throws Exception {
+		verifyCustomAssertionDocumentation(documentation, parameterType, call, hidesLegacyMethod);
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings= { "@throws", "@exception" }) //$NON-NLS-1$ //$NON-NLS-2$
+	void preservesCustomAssertionTagOrderContract(String exceptionTag) throws Exception {
+		String documentation= """
+				/**
+				 * Checks equality.
+				 * $exceptionTag RuntimeException if evaluation fails
+				 * @param expected the expected value
+				 * @param actual the actual value
+				 */
+				""".replace("$exceptionTag", exceptionTag); //$NON-NLS-1$
+		verifyCustomAssertionDocumentation(documentation, "boolean", "assertEquals(true, this.next());", true); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	private void verifyCustomAssertionDocumentation(String documentation, String parameterType,
+			String call, boolean hidesLegacyMethod) throws Exception {
+		String declaration= """
+				$documentation
+				public static void assertEquals($type expected, $type actual) {
+					if (expected != actual) throw new AssertionError("custom");
+				}
+				""".replace("$documentation", documentation).replace("$type", parameterType).stripLeading(); //$NON-NLS-1$ //$NON-NLS-2$
+		String original= source(call, false, declaration);
+		ICompilationUnit unit= unit(original);
+		var binding= assertion(parse(unit), "assertEquals").resolveMethodBinding(); //$NON-NLS-1$
+		assertEquals("test.Example", binding.getDeclaringClass().getQualifiedName()); //$NON-NLS-1$
+		assertTrue(Modifier.isStatic(binding.getModifiers()));
+		var legacyAssert= binding.getDeclaringClass().getSuperclass().getSuperclass();
+		assertEquals("junit.framework.Assert", legacyAssert.getQualifiedName()); //$NON-NLS-1$
+		assertFalse(legacyAssert.isRecovered());
+		var inherited= Arrays.stream(legacyAssert.getDeclaredMethods())
+				.filter(method -> "assertEquals".equals(method.getName()) //$NON-NLS-1$
+						&& parameterTypes(method).equals(List.of("boolean", "boolean"))) //$NON-NLS-1$ //$NON-NLS-2$
+				.findFirst().orElseThrow();
+		assertFalse(inherited.isRecovered());
+		assertTrue(Modifier.isStatic(inherited.getModifiers()));
+		assertEquals(hidesLegacyMethod, binding.isSubsignature(inherited));
+		assertFalse(binding.overrides(inherited), "Static hiding is not an instance override"); //$NON-NLS-1$
+		Outcome before= execute(original, unit);
+		assertTrue(before.failed());
+		assertEquals("custom", before.message()); //$NON-NLS-1$
+		assertEquals("actual;", before.events()); //$NON-NLS-1$
+		assertEquals(1, before.calls());
+		String generated= applyAndUndo(unit, !hidesLegacyMethod, "assertEquals", "test.Example", parameterTypes(binding)); //$NON-NLS-1$ //$NON-NLS-2$
+		assertEquals(before, execute(generated, unit));
+	}
+
 	private ICompilationUnit unit(String source) throws Exception {
 		return JUnitMigrationFixtureClasspath.createJUnit3And5Root(context)
 				.createPackageFragment("test", false, null) //$NON-NLS-1$
@@ -169,13 +325,13 @@ class JUnit3BooleanAssertionTest {
 		var options= context.getJavaProject().getOptions(false);
 		var diagnostics= CompilerDiagnosticAssertions.capture(unit);
 		var operations= operations(before);
-		if (!expectMigration) {
-			assertTrue(operations.isEmpty(), original);
+		if (!expectMigration && operations.isEmpty()) {
 			diagnostics.assertRestored();
 			assertEquals(options, context.getJavaProject().getOptions(false));
 			return unit.getSource();
 		}
 		assertFalse(operations.isEmpty(), original);
+		Outcome originalExecution= expectMigration ? null : execute(original, unit);
 		var fix= new CompilationUnitRewriteOperationsFixCore("Migrate JUnit 3", before, //$NON-NLS-1$
 				operations.toArray(CompilationUnitRewriteOperationWithSourceRange[]::new));
 		var change= fix.createChange(null);
@@ -184,6 +340,12 @@ class JUnit3BooleanAssertionTest {
 			var undo= change.perform(new NullProgressMonitor());
 			assertNotNull(undo);
 			try {
+				if (!expectMigration) {
+					assertAll("Unproven assertion evaluation must retain the original class", //$NON-NLS-1$
+							() -> assertEquals(originalExecution, execute(unit.getSource(), unit)),
+							diagnostics::assertNoNewDiagnostics,
+							() -> assertEquals(original, unit.getSource()));
+				}
 				diagnostics.assertNoNewDiagnostics();
 				CompilationUnit after= parse(unit);
 				MethodInvocation invocation= assertion(after, method);
