@@ -14,6 +14,7 @@ import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -29,7 +30,9 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.BodyDeclaration;
+import org.eclipse.jdt.core.dom.Comment;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
@@ -44,6 +47,7 @@ import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.TryStatement;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.TypeLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -56,6 +60,7 @@ import org.eclipse.jdt.core.search.SearchParticipant;
 import org.eclipse.jdt.core.search.SearchPattern;
 import org.eclipse.jdt.core.search.SearchRequestor;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.jdt.internal.corext.refactoring.util.TightSourceRangeComputer;
 import org.eclipse.text.edits.TextEditGroup;
 
 import org.sandbox.jdt.internal.common.AstProcessorBuilder;
@@ -374,16 +379,64 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 
 	private void removeRedundantLifecycleSuperCalls(MethodDeclaration method, ASTRewrite rewriter,
 			TextEditGroup group) {
+		Set<Block> affectedFinalizers= new HashSet<>();
 		method.accept(new ASTVisitor() {
 			@Override
 			public boolean visit(SuperMethodInvocation invocation) {
 				if (JUnit3LegacyShape.isRedundantLifecycleSuperCall(invocation)
 						&& invocation.getParent() instanceof org.eclipse.jdt.core.dom.ExpressionStatement statement) {
+					if (rewriter.getExtendedSourceRangeComputer() instanceof TightSourceRangeComputer ranges) {
+						ranges.addTightSourceNode(statement);
+					}
 					rewriter.remove(statement, group);
+					if (statement.getParent() instanceof Block block
+							&& block.getParent() instanceof TryStatement owner && owner.getFinally() == block) {
+						affectedFinalizers.add(block);
+					}
 				}
 				return false;
 			}
+
+			@Override
+			public void endVisit(TryStatement statement) {
+				Block finalizer= statement.getFinally();
+				if (finalizer == null || !affectedFinalizers.contains(finalizer)
+						|| !rewriter.getListRewrite(finalizer, Block.STATEMENTS_PROPERTY).getRewrittenList().isEmpty()
+						|| containsRetainedComment(finalizer)) {
+					return;
+				}
+				if (statement.resources().isEmpty() && statement.catchClauses().isEmpty()) {
+					// Keep the body block: its locals must not leak into the enclosing scope.
+					rewriter.replace(statement, rewriter.createMoveTarget(statement.getBody()), group);
+				} else {
+					rewriter.remove(finalizer, group);
+				}
+			}
 		});
+	}
+
+	private static boolean containsRetainedComment(Block block) {
+		if (block.getRoot() instanceof CompilationUnit root) {
+			for (Object value : root.getCommentList()) {
+				if (value instanceof Comment comment && comment.getStartPosition() > block.getStartPosition()
+						&& comment.getStartPosition() < block.getStartPosition() + block.getLength()
+						&& !isInsideRemovedStatement(comment, block)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	private static boolean isInsideRemovedStatement(Comment comment, Block block) {
+		// The rewritten statement list is empty, so comments inside these ranges disappear too.
+		for (Object value : block.statements()) {
+			if (value instanceof ASTNode statement && comment.getStartPosition() >= statement.getStartPosition()
+					&& comment.getStartPosition() + comment.getLength() <= statement.getStartPosition() + statement.getLength()) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private void rewriteAssertions(MethodDeclaration method, ASTRewrite rewriter, AST ast,
