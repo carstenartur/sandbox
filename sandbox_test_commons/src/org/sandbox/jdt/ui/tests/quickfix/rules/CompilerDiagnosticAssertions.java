@@ -16,8 +16,10 @@ package org.sandbox.jdt.ui.tests.quickfix.rules;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -30,6 +32,9 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.NodeFinder;
@@ -45,6 +50,7 @@ public final class CompilerDiagnosticAssertions {
 	record CompilerProblemKey(boolean error, int id, String arguments, String junit4Arguments) {
 		static CompilerProblemKey of(IProblem problem, CompilationUnit root) {
 			String[] arguments= problem.getArguments();
+			arguments= unassignedResourceArguments(problem, root, arguments);
 			if ((problem.getID() == IProblem.MethodCanBeStatic || problem.getID() == IProblem.MethodCanBePotentiallyStatic)
 					&& arguments.length == 3 && hasUniqueMethodName(root, problem)) {
 				// Parameter types are part of the message even though the warning concerns
@@ -59,6 +65,89 @@ public final class CompilerDiagnosticAssertions {
 		String severity() {
 			return error ? "ERROR" : "WARNING"; //$NON-NLS-1$ //$NON-NLS-2$
 		}
+	}
+
+	private static String[] unassignedResourceArguments(IProblem problem, CompilationUnit root, String[] arguments) {
+		if (problem.getID() != IProblem.PotentiallyUnclosedCloseable || arguments.length != 1
+				|| !("<unassigned Closeable value>".equals(arguments[0]) //$NON-NLS-1$
+						|| arguments[0].matches("<unassigned Closeable value from line [1-9][0-9]*>"))) { //$NON-NLS-1$
+			return arguments;
+		}
+		int start= problem.getSourceStart();
+		int length= problem.getSourceEnd() - start + 1;
+		if (start < 0 || length <= 0) {
+			return arguments;
+		}
+		ASTNode node= NodeFinder.perform(root, start, length);
+		if (!(node instanceof Expression expression) || node.getStartPosition() != start || node.getLength() != length) {
+			return arguments;
+		}
+		var type= expression.resolveTypeBinding();
+		if (type == null || type.isRecovered() || Bindings.findTypeInHierarchy(type, "java.lang.AutoCloseable") == null) { //$NON-NLS-1$
+			return arguments;
+		}
+		ResourceLocation location= resourceLocation(expression);
+		if (location == null) {
+			return arguments;
+		}
+		IMethodBinding method= location.method().resolveBinding();
+		if (method == null || method.isRecovered()
+				|| method.getDeclaringClass() == null || method.getDeclaringClass().isRecovered()
+				|| method.getDeclaringClass().isLocal() || method.getDeclaringClass().isAnonymous()) {
+			return arguments;
+		}
+		String key= method.getMethodDeclaration().getKey();
+		if (key == null || key.isBlank()) {
+			return arguments;
+		}
+		String source= expression.toString();
+		List<Expression> occurrences= new ArrayList<>();
+		location.method().accept(new ASTVisitor() {
+			@Override
+			public boolean preVisit2(ASTNode candidate) {
+				if (candidate.getNodeType() == expression.getNodeType() && candidate instanceof Expression other
+						&& source.equals(other.toString()) && location.equals(resourceLocation(other))) {
+					occurrences.add(other);
+				}
+				return true;
+			}
+		});
+		// An unrelated statement can be inserted before this expression. Preserve its
+		// structural role and ordinal among identical occurrences instead of that index.
+		// The total count also prevents deleted occurrences from crediting a new one.
+		return new String[] { "<unassigned Closeable value>", key, location.path(), source, //$NON-NLS-1$
+				occurrences.indexOf(expression) + "/" + occurrences.size() }; //$NON-NLS-1$
+	}
+
+	private record ResourceLocation(MethodDeclaration method, String path) {
+	}
+
+	private static ResourceLocation resourceLocation(ASTNode node) {
+		StringBuilder path= new StringBuilder();
+		while (!(node instanceof MethodDeclaration)) {
+			ASTNode parent= node.getParent();
+			var property= node.getLocationInParent();
+			if (parent == null || property == null || (node.getFlags() & (ASTNode.MALFORMED | ASTNode.RECOVERED)) != 0) {
+				return null;
+			}
+			path.append('/').append(property.getId());
+			Object child= parent.getStructuralProperty(property);
+			if (property.isChildListProperty()) {
+				if (!(child instanceof List<?> children) || children.indexOf(node) < 0) {
+					return null;
+				}
+				if (property != Block.STATEMENTS_PROPERTY) {
+					path.append('[').append(children.indexOf(node)).append(']');
+				}
+			} else if (child != node) {
+				return null;
+			}
+			node= parent;
+		}
+		if ((node.getFlags() & (ASTNode.MALFORMED | ASTNode.RECOVERED)) != 0) {
+			return null;
+		}
+		return new ResourceLocation((MethodDeclaration) node, path.toString());
 	}
 
 	private static IMethodBinding declaringMethod(CompilationUnit root, IProblem problem) {
