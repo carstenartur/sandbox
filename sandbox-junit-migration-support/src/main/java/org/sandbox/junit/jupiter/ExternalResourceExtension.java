@@ -54,29 +54,39 @@ public final class ExternalResourceExtension {
 		}
 	}
 
-	private static void startForJupiter(Hooks hooks, ExtensionContext context) throws Exception {
-		try {
-			hooks.start(context);
-		} catch (Exception | Error failure) {
-			throw failure;
-		} catch (Throwable failure) {
-			// JUnit 4 allows any Throwable, including instances outside Exception and Error.
-			throw originalFailure(failure);
-		}
-	}
-
+	// JUnit 4 allows any Throwable, including instances outside Exception and Error.
 	@SuppressWarnings("unchecked")
-	private static <E extends Throwable> RuntimeException originalFailure(Throwable failure) throws E {
+	private static <E extends Throwable> void rethrowOriginalFailure(Throwable failure) throws E {
 		throw (E) failure;
 	}
 
 	private record PerTest(Hooks hooks) implements BeforeEachCallback, AfterEachCallback {
-		@Override public void beforeEach(ExtensionContext context) throws Exception { startForJupiter(hooks, context); }
+		@Override
+		public void beforeEach(ExtensionContext context) throws Exception {
+			try {
+				hooks.start(context);
+			} catch (Exception | Error failure) {
+				throw failure;
+			} catch (Throwable failure) {
+				ExternalResourceExtension.<Exception>rethrowOriginalFailure(failure);
+			}
+		}
+
 		@Override public void afterEach(ExtensionContext context) { hooks.finish(context); }
 	}
 
 	private record PerClass(Hooks hooks) implements BeforeAllCallback, AfterAllCallback {
-		@Override public void beforeAll(ExtensionContext context) throws Exception { startForJupiter(hooks, context); }
+		@Override
+		public void beforeAll(ExtensionContext context) throws Exception {
+			try {
+				hooks.start(context);
+			} catch (Exception | Error failure) {
+				throw failure;
+			} catch (Throwable failure) {
+				ExternalResourceExtension.<Exception>rethrowOriginalFailure(failure);
+			}
+		}
+
 		@Override public void afterAll(ExtensionContext context) { hooks.finish(context); }
 	}
 }
