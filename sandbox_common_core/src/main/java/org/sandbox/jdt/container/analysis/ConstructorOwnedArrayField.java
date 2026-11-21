@@ -44,6 +44,7 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 
 import org.sandbox.jdt.container.api.ContainerParameterRewritePlan.EditKind;
 import org.sandbox.jdt.container.api.ContainerParameterRewritePlan.ParameterEdit;
+import org.sandbox.jdt.internal.common.ImportNameBindings;
 
 /** Proves the complete, same-unit ownership transfer and the field operations it permits. */
 public record ConstructorOwnedArrayField(String bindingKey, List<ParameterEdit> edits) {
@@ -143,7 +144,7 @@ public record ConstructorOwnedArrayField(String bindingKey, List<ParameterEdit> 
 
 			@Override
 			public boolean visit(SimpleName name) {
-				IBinding binding= name.resolveBinding();
+				IBinding binding= ImportNameBindings.resolve(name);
 				if (binding == null && name.getIdentifier().equals(field.getName())) {
 					valid[0]= false;
 				}

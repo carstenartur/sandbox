@@ -106,9 +106,6 @@ public class CSSPreferencePage extends FieldEditorPreferencePage implements IWor
 
 	@Override
 	public void init(IWorkbench workbench) {
-		getPreferenceStore().setDefault(CSSPreferenceConstants.ENABLE_PRETTIER, true);
-		getPreferenceStore().setDefault(CSSPreferenceConstants.ENABLE_STYLELINT, true);
-		getPreferenceStore().setDefault(CSSPreferenceConstants.PRETTIER_OPTIONS, "{}"); //$NON-NLS-1$
-		getPreferenceStore().setDefault(CSSPreferenceConstants.STYLELINT_CONFIG, ""); //$NON-NLS-1$
+		// Defaults are initialized independently of opening this page.
 	}
 }

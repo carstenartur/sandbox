@@ -52,6 +52,7 @@ import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.sandbox.jdt.container.analysis.LocalArrayUsageAnalyzer;
 import org.sandbox.jdt.container.api.ContainerLocalRewritePlan;
 import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.EditKind;
+import org.sandbox.jdt.internal.common.ImportNameBindings;
 
 /** Binding-based, fail-closed resolution of a local container rewrite plan. */
 final class ContainerLocalRewriteResolver {
@@ -190,7 +191,7 @@ final class ContainerLocalRewriteResolver {
 			root.accept(new ASTVisitor() {
 				@Override
 				public boolean visit(SimpleName node) {
-					IVariableBinding binding= variableBinding(node.resolveBinding());
+					IVariableBinding binding= variableBinding(ImportNameBindings.resolve(node));
 					if (binding == null
 							|| !bindingKey.equals(binding.getVariableDeclaration().getKey())) {
 						return true;
