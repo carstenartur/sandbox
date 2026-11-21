@@ -53,6 +53,7 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 
 import org.sandbox.jdt.container.analysis.RecordKeyLookupAnalyzer;
 import org.sandbox.jdt.container.api.ContainerUsageProfile;
+import org.sandbox.jdt.internal.common.ImportNameBindings;
 import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 
 /** Converts a private first-match index whose complete content is determined during construction. */
@@ -216,7 +217,7 @@ final class RecordKeyMapRewrite extends CompilationUnitRewriteOperationWithSourc
 
 			@Override
 			public boolean visit(SimpleName name) {
-				var binding= name.resolveBinding();
+				var binding= ImportNameBindings.resolve(name);
 				if (binding instanceof IVariableBinding var && field.isEqualTo(var) && !admitted.contains(name)) {
 					safe[0]= false;
 				}
