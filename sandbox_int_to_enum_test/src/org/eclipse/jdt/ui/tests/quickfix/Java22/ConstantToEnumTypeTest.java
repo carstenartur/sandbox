@@ -23,6 +23,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.jar.JarEntry;
+import java.util.jar.JarOutputStream;
 import java.util.stream.Stream;
 
 import javax.tools.ToolProvider;
@@ -32,9 +34,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
@@ -165,9 +169,56 @@ public class ConstantToEnumTypeTest {
 				    }
 				    public static String run() { return process(STATUS_A) + ":" + process(STATUS_B); }
 				}
+				class Example$Unrelated {}
 				""".replace("BODY", body);
 		String preview= verifyMigration(source, false, true);
 		assertTrue(preview.contains("state.ordinal()"), preview);
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings= {"same unit", "primary", "secondary", "unsaved secondary", "binary", "member"})
+	void skipsLocalTableMigrationWhenExistingTypeOwnsTheEnumBinaryName(String location) throws Exception {
+		String alias= "class Example$Status {}";
+		String source= new Scenario("int", "0", "1").source(false)
+				.replace("return 17;", "return new int[] { 17, 29 }[state];");
+		if ("same unit".equals(location)) {
+			source+= "\n" + alias;
+		} else if ("member".equals(location)) {
+			source= source.replace("class Example {",
+					"class Example { static class Inner$Status {} static class Inner {") + "}";
+		} else if ("binary".equals(location)) {
+			addBinaryAlias();
+		} else if ("unsaved secondary".equals(location)) {
+			var sibling= unit("Other.java", "package test1; class Other {}");
+			sibling.getBuffer().setContents("package test1; class Other {} " + alias);
+			assertTrue(sibling.hasUnsavedChanges());
+		} else {
+			String name= "primary".equals(location) ? "Example$Status.java" : "Other.java";
+			unit(name, "package test1; " + alias);
+		}
+		ICompilationUnit owner= unit("Example.java", source);
+		var cleanup= cleanup(false);
+		cleanup.checkPreConditions(context.getJavaProject(), new ICompilationUnit[] { owner }, null);
+		assertNull(cleanup.createFix(new CleanUpContext(owner, parse(owner))),
+				"The existing type already owns the proposed enum class file");
+		assertEquals(source, owner.getSource());
+	}
+
+	private void addBinaryAlias() throws Exception {
+		Path file= temporary.resolve("Example$Status.java");
+		Files.writeString(file, "package test1; public class Example$Status {}");
+		assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null,
+				"--release", "22", "-d", temporary.toString(), file.toString()));
+		String entry= "test1/Example$Status.class";
+		Path library= temporary.resolve("existing-domain.jar");
+		try (var jar= new JarOutputStream(Files.newOutputStream(library))) {
+			jar.putNextEntry(new JarEntry(entry));
+			Files.copy(temporary.resolve(entry), jar);
+		}
+		var project= context.getJavaProject();
+		List<IClasspathEntry> classpath= new ArrayList<>(List.of(project.getRawClasspath()));
+		classpath.add(JavaCore.newLibraryEntry(org.eclipse.core.runtime.IPath.fromOSString(library.toString()), null, null));
+		project.setRawClasspath(classpath.toArray(IClasspathEntry[]::new), null);
 	}
 
 	private void verifyMigration(Scenario scenario, boolean coordinated, boolean apply) throws Exception {
