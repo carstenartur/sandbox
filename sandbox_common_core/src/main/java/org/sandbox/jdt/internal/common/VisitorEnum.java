@@ -669,7 +669,16 @@ public enum VisitorEnum {
 	 * Visitor for {@link org.eclipse.jdt.core.dom.YieldStatement} nodes.
 	 * Represents yield statements in switch expressions (Java 14+).
 	 */
-	YieldStatement(ASTNode.YIELD_STATEMENT);
+	YieldStatement(ASTNode.YIELD_STATEMENT),
+
+	/** Visits Javadoc snippet regions. */
+	JavaDocRegion(ASTNode.JAVADOC_REGION),
+
+	/** Visits external Javadoc snippet text. */
+	JavaDocTextElement(ASTNode.JAVADOC_TEXT_ELEMENT),
+
+	/** Visits Javadoc snippet tag properties. */
+	TagProperty(ASTNode.TAG_PROPERTY);
 
 	private final int nodetype;
 

@@ -12,7 +12,10 @@ package org.sandbox.jdt.internal.common;
 
 import java.util.Objects;
 
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.Javadoc;
 
 /**
  * Entry point for AST processing whose execution model is explicit at the call site.
@@ -21,6 +24,12 @@ import org.eclipse.jdt.core.dom.ASTNode;
  * stage searches only the scope selected by the preceding stage. In contrast,
  * {@link #independent(ReferenceHolder)} registers visitors that each inspect the
  * complete root passed to {@code build(...)}.</p>
+ *
+ * <p>Both classic and Java 23+ Markdown documentation comments are represented
+ * by {@link Javadoc}. When using an {@link ASTParser} directly, enable
+ * {@link JavaCore#COMPILER_DOC_COMMENT_SUPPORT} to parse the comment contents.
+ * Use a Java 23 or later source and AST level to process Markdown documentation
+ * and use {@link Javadoc#isMarkdown()} to distinguish the formats.</p>
  */
 public final class AstProcessing {
 
