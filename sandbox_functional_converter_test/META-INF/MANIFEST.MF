@@ -6,7 +6,8 @@ Bundle-Vendor: sandbox
 Bundle-Version: 1.3.11.qualifier
 Fragment-Host: sandbox_functional_converter
 Bundle-RequiredExecutionEnvironment: JavaSE-25
-Require-Bundle: sandbox_test_commons
+Require-Bundle: sandbox_test_commons,
+ org.eclipse.jdt.launching
 Bundle-ActivationPolicy: lazy
 Eclipse-BundleShape: dir
 Eclipse-BuddyPolicy: global

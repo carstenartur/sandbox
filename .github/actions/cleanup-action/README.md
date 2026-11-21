@@ -53,7 +53,7 @@ Three pre-configured cleanup profiles are provided in `.github/cleanup-profiles/
 - Remove unnecessary code (casts, unused variables)
 - Add missing annotations
 - Lambda conversion
-- Basic sandbox cleanups
+- Remove unnecessary array creation and replace StringBuffer with StringBuilder
 
 **Use when**: You want balanced code quality improvements (recommended).
 
@@ -62,9 +62,17 @@ Three pre-configured cleanup profiles are provided in `.github/cleanup-profiles/
 - Qualify static member accesses
 - Remove trailing whitespace
 - Enhanced for-loop conversion
-- All sandbox-specific cleanups (encoding, platform helper, JUnit, etc.)
+- Sandbox loop conversion to streams
+- Type-safe charset APIs that preserve the original encoding behavior
+- Eclipse Platform status factory methods
+- Strict JUnit 3/4 to Jupiter migration
 
 **Use when**: You want comprehensive code modernization.
+
+This profile selects these cleanup families; it is not an all-features profile.
+Mathematics, container-contract migrations, and other optional refactorings need
+their own explicit configuration. JUnit migrations still require the target
+project's Jupiter dependencies and complete related source scope.
 
 ## Example Workflows
 
@@ -159,12 +167,20 @@ Common options:
 See `sandbox_common/src/org/sandbox/jdt/internal/corext/fix2/MYCleanUpConstants.java` for sandbox constants.
 
 Sandbox options:
-- `REMOVE_UNNECESSARY_ARRAY_CREATION` - Remove unnecessary array creation
-- `USE_STRINGBUILDER` - Use StringBuilder instead of StringBuffer
-- `USEFUNCTIONALLOOP_CLEANUP` - Convert loops to functional style
-- `encoding.strategy` - Apply explicit UTF-8 encoding
-- `PLATFORM_HELPER_CLEANUP` - Modernize Eclipse Platform API usage
-- `JUNIT_CLEANUP` - Migrate JUnit 3/4 to JUnit 5
+- `cleanup.loop_conversion.enabled` - Enable loop conversion; select the output
+  with `cleanup.loop_conversion.target_format` (`stream`, `enhanced_for`, or
+  `iterator_while`) and the corresponding `cleanup.loop_conversion.from.*` options
+- `cleanup.explicit_encoding` - Enable type-safe charset modernization; select
+  one encoding strategy, such as `cleanup.explicit_encoding_keep_behavior`
+- `cleanup.simplify_status_creation` - Modernize Eclipse Platform status creation
+- `cleanup.junitcleanup` and `cleanup.junit3cleanup` - Enable JUnit 4 and JUnit 3
+  migration; also select the required `cleanup.junitcleanup_4_*` and
+  `cleanup.junitcleanup_3_test` operations
+
+The former Sandbox array-creation and StringBuffer cleanups are now built into
+Eclipse JDT: use `cleanup.remove_unnecessary_array_creation` and
+`cleanup.stringbuffer_to_stringbuilder`. Java constant names such as
+`REMOVE_UNNECESSARY_ARRAY_CREATION` are not profile option IDs.
 
 ## Performance Considerations
 

@@ -32,7 +32,7 @@ new java.lang.String($bytes, $off, $len, "${CHARSET}") :: sourceVersionGE(7)
 
 // === String.getBytes(String) ===
 
-$s.getBytes("${CHARSET}") :: sourceVersionGE(7)
+$s.getBytes("${CHARSET}") :: sourceVersionGE(7), subtypeOf($s, "java.lang.String")
 => $s.getBytes(java.nio.charset.StandardCharsets.${CHARSET_CONSTANT})
 ;;
 
@@ -134,11 +134,11 @@ java.net.URLDecoder.decode($s, "${CHARSET}") :: sourceVersionGE(10)
 
 // === String.getBytes() — no argument ===
 
-$s.getBytes() :: sourceVersionGE(7), mode(ENFORCE_UTF8)
+$s.getBytes() :: sourceVersionGE(7), mode(ENFORCE_UTF8), subtypeOf($s, "java.lang.String")
 => $s.getBytes(java.nio.charset.StandardCharsets.UTF_8)
 ;;
 
-$s.getBytes() :: sourceVersionGE(7), mode(KEEP_BEHAVIOR)
+$s.getBytes() :: sourceVersionGE(7), mode(KEEP_BEHAVIOR), subtypeOf($s, "java.lang.String")
 => $s.getBytes(java.nio.charset.Charset.defaultCharset())
 ;;
 

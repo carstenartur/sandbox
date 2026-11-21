@@ -114,6 +114,10 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 			return;
 		}
 		super.rewrite(fixCore, visited, cuRewrite, group, data);
+		// The inferred lambda parameter no longer names the enhanced-for variable type.
+		cuRewrite.getImportRemover().registerRemovedNode(visited.getParameter().getType());
+		cuRewrite.getImportRemover().applyRemoves(cuRewrite.getImportRewrite());
+		IteratorImportCleanup.removeUnusedPackageImports(cuRewrite);
 	}
 
 	private boolean visitLoop(EnhancedForStatement loop, ReferenceHolder<String, Object> treeHolder,

@@ -24,7 +24,7 @@ $str.indexOf($sub) < 0 :: stringIndexOfContainsSafe()
 => !$str.contains($sub)
 ;;
 
-$x.length() > 0
+$x.length() > 0 :: instanceof($x, "java.lang.String")
 => !$x.isEmpty()
 ;;
 

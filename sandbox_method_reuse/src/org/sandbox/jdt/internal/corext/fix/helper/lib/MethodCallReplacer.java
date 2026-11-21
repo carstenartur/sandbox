@@ -43,7 +43,7 @@ public class MethodCallReplacer {
 	 * @return A method invocation node
 	 */
 	public static MethodInvocation createMethodCall(AST ast, MethodDeclaration targetMethod, VariableMapping variableMapping) {
-		if (ast == null || targetMethod == null || variableMapping == null) {
+		if (ast == null || !canCreateMethodCall(targetMethod, variableMapping)) {
 			return null;
 		}
 		
@@ -81,11 +81,6 @@ public class MethodCallReplacer {
 					Expression argExpr = (Expression) org.eclipse.jdt.core.dom.ASTNode.copySubtree(ast, candidateExpr);
 					arguments.add(argExpr);
 					continue;
-				} else if (exprMappings != null && exprMappings.containsKey(paramName)) {
-					// An expression mapping exists but the mapped expression is null - treat as mapping error
-					SimpleName arg = ast.newSimpleName("/* mapping error */");
-					arguments.add(arg);
-					continue;
 				}
 			}
 			
@@ -94,11 +89,6 @@ public class MethodCallReplacer {
 			if (inlineName != null) {
 				// Create a simple name reference for the inline variable
 				SimpleName arg = ast.newSimpleName(inlineName);
-				arguments.add(arg);
-			} else {
-				// This shouldn't happen if matching worked correctly
-				// but we handle it gracefully
-				SimpleName arg = ast.newSimpleName("/* mapping error */");
 				arguments.add(arg);
 			}
 		}
@@ -162,7 +152,7 @@ public class MethodCallReplacer {
 		// Check that all parameters have a mapping
 		for (SingleVariableDeclaration param : parameters) {
 			String paramName = param.getName().getIdentifier();
-			if (!mappings.containsKey(paramName)) {
+			if (!mappings.containsKey(paramName) && variableMapping.getCandidateExpression(paramName) == null) {
 				return false;
 			}
 		}

@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ASTMatcher;
 
 /**
  * Represents a one-to-one mapping between variable names in the target code and
@@ -36,6 +37,9 @@ public class VariableMapping {
 	 * @return true if mapping is consistent, false if conflict
 	 */
 	public boolean addMapping(String targetName, String candidateName) {
+		if (targetToExpression.containsKey(targetName)) {
+			return false;
+		}
 		// Check if we already have a mapping for this target name
 		if (targetToCandidate.containsKey(targetName)) {
 			// Verify consistency: same target name must always map to same candidate name
@@ -59,16 +63,18 @@ public class VariableMapping {
 	 * Used when the candidate uses a complex expression (like a method call) 
 	 * where the target uses a simple variable
 	 * 
-	 * Note: This method does not perform bidirectional consistency checking like addMapping.
-	 * Callers are responsible for ensuring expression mappings don't conflict with existing
-	 * name mappings. If a simple name mapping already exists for the target name, it will
-	 * be overridden by the expression mapping.
+	 * An existing mapping must describe the same expression; mixed name/expression
+	 * mappings are rejected instead of silently overwriting the earlier occurrence.
 	 * 
 	 * @param targetName Variable name in target code
 	 * @param candidateExpr Expression in candidate code
 	 */
-	public void addExpressionMapping(String targetName, Expression candidateExpr) {
-		targetToExpression.put(targetName, candidateExpr);
+	public boolean addExpressionMapping(String targetName, Expression candidateExpr) {
+		if (candidateExpr == null || targetToCandidate.containsKey(targetName)) {
+			return false;
+		}
+		Expression previous = targetToExpression.putIfAbsent(targetName, candidateExpr);
+		return previous == null || previous.subtreeMatch(new ASTMatcher(), candidateExpr);
 	}
 	
 	/**

@@ -162,6 +162,54 @@ class CleanupPatchLifecycleTest {
 		assertArrayEquals(cleaned, read(source), "patch must reproduce the actual CLI cleanup bytes"); //$NON-NLS-1$
 	}
 
+	@ParameterizedTest
+	@ValueSource(strings = { "check", "apply" }) //$NON-NLS-1$ //$NON-NLS-2$
+	void projectWideHonorsConfiguredMethodReuseMinimum(String mode) throws Exception {
+		IFile source= createSource("src/test/Repeated.java", //$NON-NLS-1$
+				"""
+				package test;
+				public class Repeated {
+					public void first(String value) {
+						String text = value.trim();
+						text = text.toLowerCase();
+						System.out.println(text);
+					}
+					public void second(String input) {
+						String text = input.trim();
+						text = text.toLowerCase();
+						System.out.println(text);
+					}
+				}
+				"""); //$NON-NLS-1$
+		byte[] original= read(source);
+		Path patch= temporaryDirectory.resolve("minimum.patch"); //$NON-NLS-1$
+		Path report= temporaryDirectory.resolve("minimum-report.json"); //$NON-NLS-1$
+		Path config= writeConfig("""
+				cleanup.method_reuse=true
+				cleanup.method_reuse.minimum_statements=3
+				"""); //$NON-NLS-1$
+		var application= new ProjectWideCodeCleanupApplication();
+
+		Object candidateResult= application.start(new TestApplicationContext(
+				"--project", project.getName(), "--config", config.toString(), "--report", report.toString(), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				"--patch", patch.toString(), "--mode", "check")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		assertEquals(2, candidateResult, Files.readString(report));
+		assertTrue(Files.readString(patch).contains("extractedSequence")); //$NON-NLS-1$
+		assertArrayEquals(original, read(source));
+
+		Files.writeString(config, """
+				cleanup.method_reuse=true
+				cleanup.method_reuse.minimum_statements=4
+				""", StandardCharsets.UTF_8); //$NON-NLS-1$
+		Object result= application.start(new TestApplicationContext(
+				"--project", project.getName(), "--config", config.toString(), "--report", report.toString(), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				"--patch", patch.toString(), "--mode", mode)); //$NON-NLS-1$ //$NON-NLS-2$
+
+		assertEquals(0, result, Files.readString(report));
+		assertArrayEquals(original, read(source), "Three statements must not meet a four-statement minimum"); //$NON-NLS-1$
+		assertArrayEquals(new byte[0], Files.readAllBytes(patch));
+	}
+
 	private void runGitApply(Path patch, boolean checkOnly) throws Exception {
 		// Verify patch bytes, independently of the runner's checkout conversion policy.
 		ProcessBuilder builder= checkOnly

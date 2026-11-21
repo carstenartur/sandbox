@@ -78,8 +78,13 @@ public class IteratorWhileToEnhancedFor extends AbstractFunctionalCall<ASTNode> 
 				previous, pattern.collectionExpression(), (VariableDeclarationStatement) element.getParent(), rewrite.getImportRewrite(), group);
 		if (previous != null) {
 			rewrite.getImportRemover().registerRemovedNode(previous);
-			rewrite.getImportRemover().applyRemoves(rewrite.getImportRewrite());
+		} else if (loop instanceof ForStatement forLoop) {
+			for (Object initializer : forLoop.initializers()) {
+				rewrite.getImportRemover().registerRemovedNode((ASTNode) initializer);
+			}
 		}
+		rewrite.getImportRemover().applyRemoves(rewrite.getImportRewrite());
+		IteratorImportCleanup.removeUnusedPackageImports(rewrite);
 	}
 
 	@Override

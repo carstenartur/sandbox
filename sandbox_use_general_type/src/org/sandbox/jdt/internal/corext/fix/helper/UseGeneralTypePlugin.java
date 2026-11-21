@@ -13,10 +13,14 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -26,6 +30,9 @@ import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.internal.core.JavaProject;
+import org.eclipse.jdt.internal.core.SearchableEnvironment;
+import org.eclipse.jdt.internal.corext.codemanipulation.ContextSensitiveImportRewriteContext;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
@@ -90,6 +97,24 @@ public class UseGeneralTypePlugin {
 		if (analysisResults.isEmpty()) {
 			return;
 		}
+		if (!(compilationUnit.getJavaElement() instanceof ICompilationUnit unit)
+				|| !(unit.getJavaProject() instanceof JavaProject project)) {
+			return;
+		}
+		try {
+			var access = new ProjectTypeAccess(project, unit);
+			try {
+				analysisResults.values().removeIf(result -> !access.permits(result.getWidestType(), new HashSet<>()));
+			} finally {
+				access.cleanup();
+			}
+		} catch (JavaModelException exception) {
+			// Keep the declaration when its replacement's project access cannot be established.
+			return;
+		}
+		if (analysisResults.isEmpty()) {
+			return;
+		}
 
 		// Collect VariableDeclarationStatement info needed for rewriting
 		ReferenceHolder<String, StatementInfo> statementsByKey = new ReferenceHolder<>();
@@ -139,6 +164,48 @@ public class UseGeneralTypePlugin {
 		}
 	}
 
+	/** Queries the same combined classpath access rules that JDT applies to a new source reference. */
+	private static final class ProjectTypeAccess extends SearchableEnvironment {
+		private final Map<String, Boolean> unrestricted = new HashMap<>();
+
+		ProjectTypeAccess(JavaProject project, ICompilationUnit unit) throws JavaModelException {
+			super(project, unit.getOwner(), false, JavaProject.NO_RELEASE);
+			// Check both discouraged and forbidden references without changing compiler preferences.
+			checkAccessRestrictions = true;
+		}
+
+		boolean permits(ITypeBinding binding, Set<ITypeBinding> visited) {
+			if (binding == null || binding.isRecovered()) {
+				return false;
+			}
+			if (!visited.add(binding) || binding.isPrimitive() || binding.isTypeVariable()) {
+				return true;
+			}
+			if (binding.isArray()) {
+				return permits(binding.getComponentType(), visited);
+			}
+			if (binding.isWildcardType()) {
+				return binding.getBound() == null || permits(binding.getBound(), visited);
+			}
+			if (binding.isCapture()) {
+				return permits(binding.getWildcard(), visited);
+			}
+			if (!(binding.getTypeDeclaration().getJavaElement() instanceof IType type)
+					|| !unrestricted.computeIfAbsent(type.getHandleIdentifier(), key -> {
+						var answer = find(type.getTypeQualifiedName('.'), type.getPackageFragment().getElementName(), null);
+						return answer != null && answer.getAccessRestriction() == null;
+					})) {
+				return false;
+			}
+			for (ITypeBinding argument : binding.getTypeArguments()) {
+				if (!permits(argument, visited)) {
+					return false;
+				}
+			}
+			return binding.getDeclaringClass() == null || permits(binding.getDeclaringClass(), visited);
+		}
+	}
+
 	/**
 	 * Helper class to store variable declaration statement information needed for rewriting.
 	 */
@@ -164,7 +231,9 @@ public class UseGeneralTypePlugin {
 			}
 			
 			Type oldType = typeHolder.variableDeclarationStatement.getType();
-			Type newType = cuRewrite.getImportRewrite().addImport(typeHolder.widenedType, ast);
+			var imports = cuRewrite.getImportRewrite();
+			var context = new ContextSensitiveImportRewriteContext(oldType, imports);
+			Type newType = imports.addImport(typeHolder.widenedType, ast, context);
 
 			// Let JDT remove the old import only when no surviving reference
 			// needs it. Replacing the declaration alone can create an unused import.

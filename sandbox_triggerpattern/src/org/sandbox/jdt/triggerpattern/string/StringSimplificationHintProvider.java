@@ -21,6 +21,7 @@ import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodeFactory;
 import org.eclipse.jdt.ui.text.java.IJavaCompletionProposal;
 import org.eclipse.jdt.ui.text.java.correction.ASTRewriteCorrectionProposal;
 import org.eclipse.swt.graphics.Image;
@@ -65,6 +66,9 @@ public class StringSimplificationHintProvider {
 	@Hint(displayName = "Replace with String.valueOf()", 
 	      description = "Replaces empty string concatenation with String.valueOf() for clarity")
 	public static IJavaCompletionProposal replaceEmptyStringConcatenation(HintContext ctx) {
+		if (!StringSimplificationFixCore.isSafeStringValueOfArgument(ctx.getMatch())) {
+			return null;
+		}
 		ASTNode matchedNode = ctx.getMatch().getMatchedNode();
 
 		if (!(matchedNode instanceof InfixExpression)) {
@@ -117,6 +121,9 @@ public class StringSimplificationHintProvider {
 	@Hint(displayName = "Replace with String.valueOf()", 
 	      description = "Replaces concatenation with empty string with String.valueOf() for clarity")
 	public static IJavaCompletionProposal replaceTrailingEmptyString(HintContext ctx) {
+		if (!StringSimplificationFixCore.isSafeStringValueOfArgument(ctx.getMatch())) {
+			return null;
+		}
 		ASTNode matchedNode = ctx.getMatch().getMatchedNode();
 
 		if (!(matchedNode instanceof InfixExpression)) {
@@ -169,6 +176,9 @@ public class StringSimplificationHintProvider {
 	@Hint(displayName = "Use isEmpty()", 
 	      description = "Replaces length() == 0 check with isEmpty() for better readability")
 	public static IJavaCompletionProposal replaceStringLengthCheck(HintContext ctx) {
+		if (!StringSimplificationFixCore.isSafeStringEmptinessCheck(ctx.getMatch())) {
+			return null;
+		}
 		ASTNode matchedNode = ctx.getMatch().getMatchedNode();
 
 		if (!(matchedNode instanceof InfixExpression)) {
@@ -220,6 +230,9 @@ public class StringSimplificationHintProvider {
 	@Hint(displayName = "Use isEmpty()", 
 	      description = "Replaces equals(\"\") check with isEmpty() for better performance")
 	public static IJavaCompletionProposal replaceEqualsEmptyString(HintContext ctx) {
+		if (!StringSimplificationFixCore.isSafeStringEmptinessCheck(ctx.getMatch())) {
+			return null;
+		}
 		ASTNode matchedNode = ctx.getMatch().getMatchedNode();
 
 		if (!(matchedNode instanceof MethodInvocation)) {
@@ -271,6 +284,9 @@ public class StringSimplificationHintProvider {
 	@Hint(displayName = "Simplify boolean comparison", 
 	      description = "Removes redundant comparison with true")
 	public static IJavaCompletionProposal simplifyBooleanComparisonTrue(HintContext ctx) {
+		if (!StringSimplificationFixCore.isSafeBooleanValue(ctx.getMatch(), "$x")) { //$NON-NLS-1$
+			return null;
+		}
 		ASTNode matchedNode = ctx.getMatch().getMatchedNode();
 
 		if (!(matchedNode instanceof InfixExpression)) {
@@ -319,6 +335,9 @@ public class StringSimplificationHintProvider {
 	@Hint(displayName = "Simplify boolean comparison", 
 	      description = "Replaces comparison with false with negation operator")
 	public static IJavaCompletionProposal simplifyBooleanComparisonFalse(HintContext ctx) {
+		if (!StringSimplificationFixCore.isSafeBooleanValue(ctx.getMatch(), "$x")) { //$NON-NLS-1$
+			return null;
+		}
 		ASTNode matchedNode = ctx.getMatch().getMatchedNode();
 
 		if (!(matchedNode instanceof InfixExpression)) {
@@ -337,9 +356,7 @@ public class StringSimplificationHintProvider {
 
 		// Create the replacement: !boolExpression
 		AST ast = ctx.getASTRewrite().getAST();
-		PrefixExpression negation = ast.newPrefixExpression();
-		negation.setOperator(PrefixExpression.Operator.NOT);
-		negation.setOperand((Expression) ASTNode.copySubtree(ast, boolExpression));
+		Expression negation = ASTNodeFactory.not(ast, (Expression) ASTNode.copySubtree(ast, boolExpression));
 
 		// Apply the rewrite
 		ctx.getASTRewrite().replace(infixExpr, negation, null);
@@ -369,6 +386,9 @@ public class StringSimplificationHintProvider {
 	@Hint(displayName = "Simplify ternary boolean", 
 	      description = "Replaces redundant ternary expression with condition itself")
 	public static IJavaCompletionProposal simplifyTernaryBooleanTrueFalse(HintContext ctx) {
+		if (!StringSimplificationFixCore.isSafeBooleanValue(ctx.getMatch(), "$cond")) { //$NON-NLS-1$
+			return null;
+		}
 		ASTNode matchedNode = ctx.getMatch().getMatchedNode();
 
 		if (!(matchedNode instanceof ConditionalExpression)) {
@@ -417,6 +437,9 @@ public class StringSimplificationHintProvider {
 	@Hint(displayName = "Simplify ternary boolean", 
 	      description = "Replaces inverted ternary expression with negated condition")
 	public static IJavaCompletionProposal simplifyTernaryBooleanFalseTrue(HintContext ctx) {
+		if (!StringSimplificationFixCore.isSafeBooleanValue(ctx.getMatch(), "$cond")) { //$NON-NLS-1$
+			return null;
+		}
 		ASTNode matchedNode = ctx.getMatch().getMatchedNode();
 
 		if (!(matchedNode instanceof ConditionalExpression)) {
@@ -435,9 +458,7 @@ public class StringSimplificationHintProvider {
 
 		// Create the replacement: !condition
 		AST ast = ctx.getASTRewrite().getAST();
-		PrefixExpression negation = ast.newPrefixExpression();
-		negation.setOperator(PrefixExpression.Operator.NOT);
-		negation.setOperand((Expression) ASTNode.copySubtree(ast, condition));
+		Expression negation = ASTNodeFactory.not(ast, (Expression) ASTNode.copySubtree(ast, condition));
 
 		// Apply the rewrite
 		ctx.getASTRewrite().replace(ternary, negation, null);
@@ -633,6 +654,9 @@ public class StringSimplificationHintProvider {
 	@Hint(displayName = "Simplify String.format", 
 	      description = "Replaces String.format with simple %s with String.valueOf() for better performance")
 	public static IJavaCompletionProposal simplifyStringFormat(HintContext ctx) {
+		if (!StringSimplificationFixCore.isSafeStringFormat(ctx.getMatch())) {
+			return null;
+		}
 		ASTNode matchedNode = ctx.getMatch().getMatchedNode();
 
 		if (!(matchedNode instanceof MethodInvocation)) {
@@ -758,6 +782,9 @@ public class StringSimplificationHintProvider {
 	@Hint(displayName = "Use Objects.requireNonNullElse", 
 	      description = "Replaces null-check ternary with Objects.requireNonNullElse() (Java 9+)")
 	public static IJavaCompletionProposal useRequireNonNullElse(HintContext ctx) {
+		if (!StringSimplificationFixCore.isSafeNullFallback(ctx.getMatch())) {
+			return null;
+		}
 		ASTNode matchedNode = ctx.getMatch().getMatchedNode();
 
 		if (!(matchedNode instanceof ConditionalExpression)) {
