@@ -90,7 +90,9 @@ class CompilerDiagnosticLimitTest {
 		ICompilationUnit unit= unit(original);
 		var baseline= CompilerDiagnosticAssertions.capture(unit);
 		unit.getBuffer().setContents(source("int second= 2;"));
-		assertDoesNotThrow(baseline::assertNoNewDiagnostics);
+		assertDoesNotThrow(() -> {
+			baseline.assertNoNewDiagnostics();
+		});
 		unit.getBuffer().setContents(original);
 		baseline.assertRestored();
 		assertEquals("1", project.getOption(JavaCore.COMPILER_PB_MAX_PER_UNIT, true));
