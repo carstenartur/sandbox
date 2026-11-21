@@ -20,7 +20,7 @@
     "successful": false,
     "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 3: The import org.eclipse.jface.internal cannot be resolved",
-    "verifiedAt": "2026-11-20T02:23:10.267958928Z",
+    "verifiedAt": "2026-11-21T03:28:11.469234889Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
