@@ -252,9 +252,32 @@ public final class PublicEnumAdapter {
 	/** Example shown when public adapters are explicitly enabled in the cleanup profile. */
 	public static String preview() {
 		return """
+				// Public API adapter example
+				public final class Service {
+				    public static final int PRIORITY_NORMAL = 10;
+				    public static final int PRIORITY_HIGH = 40;
 
-				public void processValue(Status enumValue) {
-					this.process(enumValue.legacyValue());
+				    public void setPriority(int priority) {
+				        // Existing implementation
+				    }
+
+				    public enum Priority {
+				        NORMAL(Service.PRIORITY_NORMAL), HIGH(Service.PRIORITY_HIGH);
+
+				        private final int value;
+
+				        Priority(int rawValue) {
+				            this.value = rawValue;
+				        }
+
+				        public int legacyValue() {
+				            return this.value;
+				        }
+				    }
+
+				    public void setPriorityValue(Priority enumValue) {
+				        this.setPriority(enumValue.legacyValue());
+				    }
 				}
 				"""; //$NON-NLS-1$
 	}

@@ -38,6 +38,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import org.sandbox.jdt.cleanup.multifile.CleanUpImpact;
+import org.sandbox.jdt.internal.corext.fix.helper.PublicEnumAdapter;
 import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumMigrationMode;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.internal.ui.preferences.cleanup.DefaultCleanUpOptionsInitializer;
@@ -92,6 +93,22 @@ class PublicEnumAdapterTest {
 		assertTrue(mode.implemented());
 		var cleanup= new IntToEnumCleanUp(Map.of(MYCleanUpConstants.INT_TO_ENUM_CLEANUP, "true", OPTION, "true"));
 		assertTrue(List.of(cleanup.getStepDescriptions()).contains(mode.previewStatement()));
+	}
+
+	@Test
+	void publicAdapterProfilePreviewShowsLegacyAndTypedCalls() throws Exception {
+		var cleanup= new IntToEnumCleanUp(Map.of(MYCleanUpConstants.INT_TO_ENUM_CLEANUP, "true", OPTION, "true"));
+		String example= PublicEnumAdapter.preview();
+		compile(temporary, "Service", example);
+		compile(temporary, "PreviewClient", """
+				class PreviewClient {
+				    void configure(Service service) {
+				        service.setPriority(Service.PRIORITY_HIGH);
+				        service.setPriorityValue(Service.Priority.HIGH);
+				    }
+				}
+				""");
+		assertTrue(cleanup.getPreview().startsWith(example), cleanup.getPreview());
 	}
 
 	@ParameterizedTest

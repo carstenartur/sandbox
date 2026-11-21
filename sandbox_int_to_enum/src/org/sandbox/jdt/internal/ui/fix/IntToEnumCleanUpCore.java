@@ -232,11 +232,11 @@ public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp<IntEnu
 	@Override
 	public String getPreview() {
 		StringBuilder sb= new StringBuilder();
+		if (isEnabled(INT_TO_ENUM_CLEANUP) && isEnabled(PUBLIC_VALUE_ADAPTER)) {
+			sb.append(PublicEnumAdapter.preview()).append('\n');
+		}
 		EnumSet<IntToEnumFixCore> computeFixSet= computeFixSet();
 		EnumSet.allOf(IntToEnumFixCore.class).forEach(e -> sb.append(e.getPreview(computeFixSet.contains(e))));
-		if (isEnabled(INT_TO_ENUM_CLEANUP) && isEnabled(PUBLIC_VALUE_ADAPTER)) {
-			sb.append(PublicEnumAdapter.preview());
-		}
 		return sb.toString();
 	}
 
