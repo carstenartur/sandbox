@@ -3,6 +3,7 @@ package org.eclipse.jdt.ui.tests.quickfix;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -88,6 +89,172 @@ public class UseGeneralTypeBindingSafetyTest {
 				Arguments.of("Base", IAccessRule.K_NON_ACCESSIBLE), //$NON-NLS-1$
 				Arguments.of("Hidden", IAccessRule.K_DISCOURAGED), //$NON-NLS-1$
 				Arguments.of("Hidden", IAccessRule.K_NON_ACCESSIBLE)); //$NON-NLS-1$
+	}
+
+	@Test
+	void importedTypeArgumentsSurviveReplacementOfTheirOnlyReference() throws Exception {
+		ICompilationUnit unit = create("Owner.java", """
+				package test;
+				import java.math.BigDecimal;
+				import java.util.ArrayList;
+				class Owner {
+				    public int size() {
+				        ArrayList<BigDecimal> values = new ArrayList<>();
+				        return values.size();
+				    }
+				}
+				"""); //$NON-NLS-1$
+		String output = applyAndUndo(unit, unit);
+		assertTrue(output.contains("List<BigDecimal> values"), output); //$NON-NLS-1$
+		assertTrue(output.contains("import java.math.BigDecimal;"), output); //$NON-NLS-1$
+	}
+
+	@Test
+	void oneReplacementCanReuseTheImportRemovedByAnotherReplacement() throws Exception {
+		ICompilationUnit unit = create("Owner.java", """
+				package test;
+				import java.util.ArrayList;
+				import java.util.List;
+				class Owner {
+				    public void run() {
+				        List<String> first = new ArrayList<>();
+				        first.size();
+				        ArrayList<String> second = new ArrayList<>();
+				        second.get(0);
+				    }
+				}
+				"""); //$NON-NLS-1$
+		String output = applyAndUndo(unit, unit);
+		assertTrue(output.contains("Collection<String> first"), output); //$NON-NLS-1$
+		assertTrue(output.contains("List<String> second"), output); //$NON-NLS-1$
+	}
+
+	@Test
+	void qualifiedTypesDoNotIntroduceConflictingWildcardImports() throws Exception {
+		new ProjectScope(context.getJavaProject().getProject()).getNode(JavaUI.ID_PLUGIN)
+				.putInt(PreferenceConstants.ORGIMPORTS_ONDEMANDTHRESHOLD, 1);
+		var first = context.getSourceFolder().createPackageFragment("first", false, null); //$NON-NLS-1$
+		var second = context.getSourceFolder().createPackageFragment("second", false, null); //$NON-NLS-1$
+		var layout = first.createCompilationUnit("Layout.java", """
+				package first;
+				public class Layout { public void arrange() { } }
+				""", false, null); //$NON-NLS-1$
+		var conflict = second.createCompilationUnit("Layout.java", """
+				package second;
+				public class Layout { }
+				""", false, null); //$NON-NLS-1$
+		var container = second.createCompilationUnit("Container.java", """
+				package second;
+				public class Container { public void arrange() { } }
+				""", false, null); //$NON-NLS-1$
+		var frame = second.createCompilationUnit("Frame.java", """
+				package second;
+				public class Frame extends Container { }
+				""", false, null); //$NON-NLS-1$
+		ICompilationUnit unit = create("Owner.java", """
+				package test;
+				import first.*;
+				class Owner {
+				    public void run() {
+				        Layout layout = new Layout();
+				        layout.arrange();
+				        second.Frame frame = new second.Frame();
+				        frame.arrange();
+				    }
+				}
+				"""); //$NON-NLS-1$
+		String output = applyAndUndo(unit, layout, conflict, container, frame, unit);
+		assertTrue(output.contains("Container frame"), output); //$NON-NLS-1$
+	}
+
+	@Test
+	void rawDeclarationsAndRawSupertypesDoNotGainDifferentWarnings() throws Exception {
+		context.getJavaProject().setOption(JavaCore.COMPILER_PB_RAW_TYPE_REFERENCE, JavaCore.WARNING);
+		ICompilationUnit unit = create("Owner.java", """
+				package test;
+				import java.util.ArrayList;
+				import java.util.HashMap;
+				class Owner {
+				    @SuppressWarnings("rawtypes")
+				    static class LegacyList extends ArrayList { }
+				    public void run() {
+				        HashMap raw = new HashMap();
+				        raw.size();
+				        LegacyList legacy = new LegacyList();
+				        legacy.size();
+				        HashMap<String, Integer> safe = new HashMap<>();
+				        safe.size();
+				    }
+				}
+				"""); //$NON-NLS-1$
+		String output = applyAndUndo(unit, unit);
+		assertTrue(output.contains("HashMap raw"), output); //$NON-NLS-1$
+		assertTrue(output.contains("LegacyList legacy"), output); //$NON-NLS-1$
+		assertTrue(output.contains("Map<String, Integer> safe"), output); //$NON-NLS-1$
+	}
+
+	@Test
+	void suppressedRestrictedTypeReferencesRemainMeaningful() throws Exception {
+		var pack = dependency.getSourceFolder().createPackageFragment("api", false, null); //$NON-NLS-1$
+		var base = pack.createCompilationUnit("Base.java", """
+				package api;
+				public class Base { public void act() { } }
+				""", false, null); //$NON-NLS-1$
+		var child = pack.createCompilationUnit("Child.java", """
+				package api;
+				public class Child extends Base { }
+				""", false, null); //$NON-NLS-1$
+		AbstractEclipseJava.addToClasspath(context.getJavaProject(), JavaCore.newProjectEntry(
+				dependency.getJavaProject().getPath(),
+				new IAccessRule[] { JavaCore.newAccessRule(new Path("api/Child"), IAccessRule.K_DISCOURAGED) }, //$NON-NLS-1$
+				true, new IClasspathAttribute[0], false));
+		context.getJavaProject().setOption(JavaCore.COMPILER_PB_DISCOURAGED_REFERENCE, JavaCore.WARNING);
+		context.getJavaProject().setOption(JavaCore.COMPILER_PB_UNUSED_WARNING_TOKEN, JavaCore.WARNING);
+		ICompilationUnit unit = create("Owner.java", """
+				package test;
+				import java.util.HashMap;
+				class Owner {
+				    @SuppressWarnings("restriction")
+				    public void run() {
+				        api.Child candidate = null;
+				        if (candidate != null) candidate.act();
+				        HashMap<String, Integer> safe = new HashMap<>();
+				        safe.size();
+				    }
+				}
+				"""); //$NON-NLS-1$
+		String output = applyAndUndo(unit, base, child, unit);
+		assertTrue(output.contains("api.Child candidate"), output); //$NON-NLS-1$
+		assertTrue(output.contains("Map<String, Integer> safe"), output); //$NON-NLS-1$
+	}
+
+	@Test
+	void equalsArgumentsKeepTheirReceiverTypeContract() throws Exception {
+		context.getJavaProject().setOption(JavaCore.COMPILER_PB_UNLIKELY_EQUALS_ARGUMENT_TYPE, JavaCore.WARNING);
+		ICompilationUnit unit = create("Owner.java", """
+				package test;
+				import java.util.HashMap;
+				class Owner {
+				    interface Contract { }
+				    static class Base { }
+				    static class Child extends Base implements Contract {
+				        @Override public boolean equals(Object other) { return this == other; }
+				        @Override public int hashCode() { return 1; }
+				    }
+				    public void run(Contract other) {
+				        Child candidate = new Child();
+				        candidate.equals(other);
+				        Child compatible = new Child();
+				        compatible.equals(new Child());
+				        HashMap<String, Integer> safe = new HashMap<>();
+				        safe.size();
+				    }
+				}
+				"""); //$NON-NLS-1$
+		String output = applyAndUndo(unit, unit);
+		assertTrue(output.contains("Child candidate"), output); //$NON-NLS-1$
+		assertTrue(output.contains("Base compatible"), output); //$NON-NLS-1$
+		assertTrue(output.contains("Map<String, Integer> safe"), output); //$NON-NLS-1$
 	}
 
 	@Test
@@ -181,7 +348,9 @@ public class UseGeneralTypeBindingSafetyTest {
 	}
 
 	private static String applyAndUndo(ICompilationUnit unit, ICompilationUnit... scope) throws Exception {
+		Map<String, Map<String, String>> options = new HashMap<>();
 		for (ICompilationUnit checked : scope) {
+			options.put(checked.getJavaProject().getHandleIdentifier(), checked.getJavaProject().getOptions(false));
 			for (var problem : parse(checked).getProblems()) assertFalse(problem.isError(), problem::getMessage);
 		}
 		var before = CompilerDiagnosticAssertions.capture(scope);
@@ -201,6 +370,9 @@ public class UseGeneralTypeBindingSafetyTest {
 				undo.perform(monitor);
 				assertEquals(original, unit.getSource());
 				before.assertRestored();
+				for (ICompilationUnit checked : scope) {
+					assertEquals(options.get(checked.getJavaProject().getHandleIdentifier()), checked.getJavaProject().getOptions(false));
+				}
 				return result;
 			} finally {
 				undo.dispose();
@@ -215,6 +387,9 @@ public class UseGeneralTypeBindingSafetyTest {
 		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
 		parser.setSource(unit);
 		parser.setResolveBindings(true);
+		var options = unit.getJavaProject().getOptions(true);
+		options.put(JavaCore.COMPILER_PB_MAX_PER_UNIT, "0"); //$NON-NLS-1$
+		parser.setCompilerOptions(options);
 		return (CompilationUnit) parser.createAST(null);
 	}
 }

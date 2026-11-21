@@ -123,6 +123,7 @@ public final class TypeWideningAnalyzer {
 	private static class VariableInfo {
 		Set<IMethodBinding> usedMethods = new HashSet<>();
 		Set<IVariableBinding> usedFields = new HashSet<>();
+		Set<ITypeBinding> equalsArguments = new HashSet<>();
 		List<Expression> assignedValues = new ArrayList<>();
 		boolean needsIterable;
 		boolean hasUnsafeUsage;
@@ -168,6 +169,7 @@ public final class TypeWideningAnalyzer {
 
 				ITypeBinding typeBinding = type.resolveBinding();
 				if (typeBinding == null || typeBinding.isRecovered() || typeBinding.isPrimitive() || typeBinding.isArray()
+						|| typeBinding.isRawType()
 						|| hasTypeAnnotations(typeBinding)) {
 					return true;
 				}
@@ -231,6 +233,8 @@ public final class TypeWideningAnalyzer {
 
 			if (widenedType != null && !widenedType.getQualifiedName().equals(declInfo.typeBinding.getQualifiedName())) {
 				if ((usageInfo.needsIterable && !isSubtypeOf(widenedType, "java.lang.Iterable")) //$NON-NLS-1$
+						|| usageInfo.equalsArguments.stream().anyMatch(argument -> !argument.isAssignmentCompatible(widenedType)
+								&& !widenedType.isAssignmentCompatible(argument))
 						|| makesCastRedundant(declInfo.initializer, widenedType)
 						|| usageInfo.assignedValues.stream().anyMatch(value -> makesCastRedundant(value, widenedType))) {
 					continue;
@@ -260,6 +264,16 @@ public final class TypeWideningAnalyzer {
 		if (parent instanceof MethodInvocation invocation && invocation.getExpression() == expression) {
 			IMethodBinding method = invocation.resolveMethodBinding();
 			if (method != null && !method.isRecovered()) {
+				if ("equals".equals(method.getName()) && method.getParameterTypes().length == 1 //$NON-NLS-1$
+						&& "java.lang.Object".equals(method.getParameterTypes()[0].getQualifiedName()) //$NON-NLS-1$
+						&& invocation.arguments().size() == 1) {
+					ITypeBinding argument = ((Expression) invocation.arguments().getFirst()).resolveTypeBinding();
+					if (argument == null || argument.isRecovered()) {
+						info.hasUnsafeUsage = true;
+						return;
+					}
+					info.equalsArguments.add(argument);
+				}
 				info.usedMethods.add(method);
 				return;
 			}
@@ -507,7 +521,7 @@ public final class TypeWideningAnalyzer {
 	 */
 	private static boolean declaresAllMembers(ITypeBinding originalType, ITypeBinding candidateType,
 			Set<IMethodBinding> usedMethods, Set<IVariableBinding> usedFields, String sourcePackage) {
-		if (originalType == null || candidateType == null || candidateType.isRecovered()
+		if (originalType == null || candidateType == null || candidateType.isRecovered() || candidateType.isRawType()
 				|| hasTypeAnnotations(candidateType)
 				|| !isTypeAccessible(candidateType, sourcePackage)
 				|| (candidateType.isDeprecated() && !originalType.isDeprecated())) {

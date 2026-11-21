@@ -75,6 +75,7 @@ import org.sandbox.jdt.container.api.ContainerUsageProfile.WorkloadShape;
 import org.sandbox.jdt.container.api.UsageEvidence;
 import org.sandbox.jdt.container.api.UsageEvidence.Kind;
 import org.sandbox.jdt.internal.common.AstProcessing;
+import org.sandbox.jdt.internal.common.ImportNameBindings;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 
 /**
@@ -135,7 +136,7 @@ public final class LocalArrayUsageAnalyzer {
 			SimpleName name,
 			String targetBindingKey,
 			Accumulator accumulator) {
-		IBinding resolved= name.resolveBinding();
+		IBinding resolved= ImportNameBindings.resolve(name);
 		if (!(resolved instanceof IVariableBinding variable)
 				|| !targetBindingKey.equals(variable.getVariableDeclaration().getKey())) {
 			return;
@@ -415,7 +416,7 @@ public final class LocalArrayUsageAnalyzer {
 		ASTNode parent= reference.getParent();
 		if (parent instanceof QualifiedName qualified
 				&& qualified.getName() == reference
-				&& hasBindingKey(qualified.resolveBinding(), bindingKey)) {
+				&& hasBindingKey(ImportNameBindings.resolve(qualified), bindingKey)) {
 			reference= qualified;
 		} else if (parent instanceof FieldAccess fieldAccess
 				&& fieldAccess.getName() == reference
