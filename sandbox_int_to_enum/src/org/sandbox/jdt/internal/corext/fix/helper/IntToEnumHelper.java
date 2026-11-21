@@ -27,6 +27,8 @@ import javax.lang.model.SourceVersion;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnumConstantDeclaration;
 import org.eclipse.jdt.core.dom.EnumDeclaration;
@@ -308,8 +310,9 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 					return false;
 				}
 				IMethodBinding binding = node.resolveMethodBinding();
-				if ((binding == null || !candidate.methodBinding.isEqualTo(binding.getMethodDeclaration()))
-						&& !isSafelyRecoverableLocalInvocation(node, candidate)) {
+				if (binding != null && !binding.isRecovered()
+						? !candidate.methodBinding.isEqualTo(binding.getMethodDeclaration())
+						: !isSafelyRecoverableLocalInvocation(node, candidate)) {
 					return true;
 				}
 				if (candidate.parameterIndex >= node.arguments().size()) {
@@ -365,6 +368,10 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 			Map<String, ConstantInfo> enumConstants) {
 		Expression unwrapped = unparenthesize(argument);
 		if (!(unwrapped instanceof SimpleName simpleName)) {
+			return null;
+		}
+		IBinding binding = simpleName.resolveBinding();
+		if (binding != null && !binding.isRecovered()) {
 			return null;
 		}
 		ConstantInfo match = null;
@@ -634,6 +641,9 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 			if (current instanceof MethodDeclaration methodDeclaration) {
 				return methodDeclaration;
 			}
+			if (current instanceof AbstractTypeDeclaration || current instanceof AnonymousClassDeclaration) {
+				return null;
+			}
 			current = current.getParent();
 		}
 		return null;
@@ -644,6 +654,9 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 		while (current != null) {
 			if (current instanceof TypeDeclaration typeDeclaration) {
 				return typeDeclaration;
+			}
+			if (current instanceof AbstractTypeDeclaration || current instanceof AnonymousClassDeclaration) {
+				return null;
 			}
 			current = current.getParent();
 		}

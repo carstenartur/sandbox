@@ -54,6 +54,36 @@ class SwitchIntToEnumSafetyTest {
 						"public void run() { process(99); }"), false),
 				Arguments.of("constant-retained-as-an-integer-field", candidate("", "", "private", "",
 						"private final int original= STATUS_PENDING;\npublic int original() { return this.original; }"), false),
+				Arguments.of("anonymous-initializer-calls-a-different-method", candidate("", "", "private", "", """
+						public Object run() {
+							process(STATUS_PENDING);
+							return new Object() {
+								int process(int value) { return value; }
+								int result= process(STATUS_DONE);
+							};
+						}
+						"""), false),
+				Arguments.of("anonymous-method-and-constant-are-independent", candidate("", "", "private", "", """
+						public Object run() {
+							process(STATUS_PENDING); process(STATUS_DONE);
+							return new Object() {
+								static final int STATUS_DONE= 99;
+								int process(int value) { return value; }
+								int result= process(STATUS_DONE);
+							};
+						}
+						"""), true),
+				Arguments.of("local-record-method-and-constant-are-independent", candidate("", "", "private", "", """
+						public Object run() {
+							process(STATUS_PENDING); process(STATUS_DONE);
+							record Local(int value) {
+								static final int STATUS_DONE= 99;
+								static int process(int value) { return value; }
+								static int result= process(STATUS_DONE);
+							}
+							return new Local(1);
+						}
+						"""), true),
 				Arguments.of("closed-private-domain-and-callers", candidate("", "", "private", "",
 						"public void run() { process(STATUS_PENDING); process(STATUS_DONE); }"), true));
 	}
