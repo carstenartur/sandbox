@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.jar.Manifest;
 
 import org.eclipse.core.resources.IFile;
@@ -82,11 +83,6 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 
 	private static final String MAVEN_POM= "pom.xml"; //$NON-NLS-1$
 	private static final String PDE_MANIFEST= "META-INF/MANIFEST.MF"; //$NON-NLS-1$
-	private static final String JUNIT_ISOLATED_TYPE=
-			"org.junit.jupiter.api.parallel.Isolated"; //$NON-NLS-1$
-	private static final String JUNIT_PARALLEL_PACKAGE=
-			"org.junit.jupiter.api.parallel"; //$NON-NLS-1$
-
 	private enum Mode {
 		CHECK,
 		APPLY
@@ -416,33 +412,36 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 		}
 		ResourceSnapshot descriptor= resources.getFirst();
 		boolean pde= PDE_MANIFEST.equals(descriptor.relativePath());
-		boolean isolatedIntroduced= false;
+		Set<String> jupiterPackages= new TreeSet<>();
 		boolean suiteIntroduced= false;
 		for (SourceSnapshot source : sources) {
 			byte[] after= Files.readAllBytes(source.path());
 			if (Arrays.equals(source.before(), after)) {
 				continue;
 			}
-			isolatedIntroduced |= pde && !contains(source.before(), JUNIT_ISOLATED_TYPE) && contains(after, JUNIT_ISOLATED_TYPE);
 			Charset charset= Charset.forName(source.file().getCharset());
+			String original= new String(source.before(), charset);
 			String updated= new String(after, charset);
+			if (pde) {
+				jupiterPackages.addAll(JupiterDependencies.introducedPackages(original, updated, options));
+			}
 			if (PlatformSuiteDependencies.usesSuite(updated, options)
-					&& !PlatformSuiteDependencies.usesSuite(new String(source.before(), charset), options)) {
+					&& !PlatformSuiteDependencies.usesSuite(original, options)) {
 				if (!pde && !source.relativePath().startsWith("src/test/java/")) { //$NON-NLS-1$
 					throw new IOException("Cannot add a test-scoped Suite dependency for " + source.relativePath()); //$NON-NLS-1$
 				}
 				suiteIntroduced= true;
 			}
 		}
-		if (!isolatedIntroduced && !suiteIntroduced) {
+		if (jupiterPackages.isEmpty() && !suiteIntroduced) {
 			return;
 		}
 		if (descriptor.file().isLinked(IResource.CHECK_ANCESTORS) || Files.isSymbolicLink(descriptor.path())) {
 			throw new IOException("Cannot update a linked project descriptor: " + descriptor.relativePath()); //$NON-NLS-1$
 		}
 		byte[] updated= descriptor.before();
-		if (isolatedIntroduced) {
-			updated= PdeManifestImportUpdater.addImport(updated, JUNIT_PARALLEL_PACKAGE);
+		for (String packageName : jupiterPackages) {
+			updated= PdeManifestImportUpdater.addImport(updated, packageName);
 		}
 		if (suiteIntroduced) {
 			if (pde) {
@@ -494,10 +493,6 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 				Files.write(resource.path(), entry.getValue());
 			}
 		}
-	}
-
-	private static boolean contains(byte[] content, String token) {
-		return new String(content, StandardCharsets.UTF_8).contains(token);
 	}
 
 	private static void refresh(List<SourceSnapshot> sources, List<ResourceSnapshot> resources,
