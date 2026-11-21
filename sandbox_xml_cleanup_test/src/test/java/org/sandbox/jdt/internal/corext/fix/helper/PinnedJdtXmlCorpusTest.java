@@ -87,7 +87,7 @@ class PinnedJdtXmlCorpusTest {
 			paths= walk.filter(Files::isRegularFile)
 					.filter(path -> !repository.relativize(path).startsWith(".git")).sorted().toList(); //$NON-NLS-1$
 		}
-		Set<Path> projectRoots= paths.stream().filter(path -> fileName(path).equals(".project")) //$NON-NLS-1$
+		Set<Path> projectRoots= paths.stream().filter(path -> ".project".equals(fileName(path))) //$NON-NLS-1$
 				.map(Path::getParent).collect(java.util.stream.Collectors.toSet());
 		assertFalse(projectRoots.isEmpty(), "Upstream contains no Eclipse project metadata"); //$NON-NLS-1$
 		Map<Path, IProject> projects= new LinkedHashMap<>();
