@@ -79,17 +79,18 @@ public class JUnit3QualifiedAssertionTest {
 		String original= """
 				package test;
 				import junit.framework.TestCase;
-				%s
+				$imports
 				public class Example extends TestCase {
 					public void testValue() {
-						%sassertEquals("message", 2, 1 + 1);
+						$qualifier assertEquals("message", 2, 1 + 1);
 					}
-					%s
-					%s
+					$collision
+					$retain
 				}
-				""".formatted(imports, qualifier,
-				collision ? "static class Assertions { static void assertEquals(int e, int a, String m) {} }" : "", //$NON-NLS-1$ //$NON-NLS-2$
-				retainImport ? "public Class<?> assertionType() { return Assert.class; }" : ""); //$NON-NLS-1$ //$NON-NLS-2$
+				""".replace("$imports", imports).replace("$qualifier ", qualifier) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				.replace("$collision", collision //$NON-NLS-1$
+						? "static class Assertions { static void assertEquals(int e, int a, String m) {} }" : "") //$NON-NLS-1$ //$NON-NLS-2$
+				.replace("$retain", retainImport ? "public Class<?> assertionType() { return Assert.class; }" : ""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		ICompilationUnit unit= pack.createCompilationUnit("Example.java", original, false, null); //$NON-NLS-1$
 		CompilationUnit before= parse(unit);
 		assertTrue(Arrays.stream(before.getProblems()).noneMatch(problem -> problem.isError()),
