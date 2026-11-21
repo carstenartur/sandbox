@@ -683,6 +683,28 @@ public final class AstProcessorBuilder<V, T> {
 		processor.callJavadocVisitor((BiPredicate<ASTNode, ReferenceHolder<V, T>>) (node, holder) -> predicate.test((Javadoc) node, holder));
 		return this;
 	}
+
+	/**
+	 * Registers a visitor for Javadoc snippet regions.
+	 *
+	 * @param predicate callback for the matching node
+	 * @return this builder
+	 */
+	public AstProcessorBuilder<V, T> onJavaDocRegion(BiPredicate<JavaDocRegion, ReferenceHolder<V, T>> predicate) {
+		processor.callJavaDocRegionVisitor((node, holder) -> predicate.test((JavaDocRegion) node, holder));
+		return this;
+	}
+
+	/**
+	 * Registers a visitor for external Javadoc snippet text.
+	 *
+	 * @param predicate callback for the matching node
+	 * @return this builder
+	 */
+	public AstProcessorBuilder<V, T> onJavaDocTextElement(BiPredicate<JavaDocTextElement, ReferenceHolder<V, T>> predicate) {
+		processor.callJavaDocTextElementVisitor((node, holder) -> predicate.test((JavaDocTextElement) node, holder));
+		return this;
+	}
 	
 	/**
 	 * Registers a visitor for LabeledStatement nodes.
@@ -1143,6 +1165,17 @@ public final class AstProcessorBuilder<V, T> {
 	 */
 	public AstProcessorBuilder<V, T> onTagElement(BiPredicate<TagElement, ReferenceHolder<V, T>> predicate) {
 		processor.callTagElementVisitor((BiPredicate<ASTNode, ReferenceHolder<V, T>>) (node, holder) -> predicate.test((TagElement) node, holder));
+		return this;
+	}
+
+	/**
+	 * Registers a visitor for Javadoc snippet tag properties.
+	 *
+	 * @param predicate callback for the matching node
+	 * @return this builder
+	 */
+	public AstProcessorBuilder<V, T> onTagProperty(BiPredicate<TagProperty, ReferenceHolder<V, T>> predicate) {
+		processor.callTagPropertyVisitor((node, holder) -> predicate.test((TagProperty) node, holder));
 		return this;
 	}
 	
