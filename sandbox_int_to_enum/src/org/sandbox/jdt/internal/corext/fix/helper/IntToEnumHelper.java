@@ -45,6 +45,7 @@ import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.SwitchCase;
 import org.eclipse.jdt.core.dom.SwitchStatement;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
@@ -64,7 +65,7 @@ import org.sandbox.jdt.internal.corext.fix.IntToEnumFixCore;
  * <p>The detector deliberately accepts only candidates whose complete data flow
  * can be proven inside the current compilation unit. In particular, constants
  * and the migrated method must be private, every use of the state parameter must
- * be one of the recognised equality comparisons, and every call site must pass
+ * be one of the recognised equality comparisons or the switch selector, and every call site must pass
  * one of the recognised constants. This keeps the ordinary single-file cleanup
  * safe while coordinated package-scoped migrations use the separate project-wide
  * planner.</p>
@@ -191,6 +192,50 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 			current = current.getElseStatement() instanceof IfStatement next ? next : null;
 		}
 
+		candidate.holder.ifStatement = root;
+		return validateCandidate(compilationUnit, method, enclosingType, candidate, usedNames, constantsByBinding);
+	}
+
+	/** Applies the same closed-domain contract to an existing int switch. */
+	static IntConstantHolder createSwitchCandidate(CompilationUnit compilationUnit, SwitchStatement statement) {
+		MethodDeclaration method = findEnclosingMethod(statement);
+		TypeDeclaration enclosingType = findEnclosingType(statement);
+		if (method == null || enclosingType == null || !Modifier.isPrivate(method.getModifiers())
+				|| !(statement.getExpression() instanceof SimpleName selector)) {
+			return null;
+		}
+		IVariableBinding parameter = resolveVariable(selector);
+		if (parameter == null || !parameter.getType().isPrimitive() || !"int".equals(parameter.getType().getName())) { //$NON-NLS-1$
+			return null;
+		}
+		Map<String, ConstantInfo> constantsByBinding = collectPrivateConstants(enclosingType);
+		Candidate candidate = new Candidate();
+		candidate.stateBinding = parameter;
+		candidate.stateReferences.add(selector);
+		candidate.holder.switchStatement = statement;
+		Set<String> usedNames = new LinkedHashSet<>();
+		for (Object child : statement.statements()) {
+			if (child instanceof SwitchCase switchCase && !switchCase.isDefault()) {
+				for (Object label : switchCase.expressions()) {
+					if (!(label instanceof SimpleName name)) {
+						return null;
+					}
+					ConstantInfo constant = resolveConstant(name, constantsByBinding);
+					if (constant == null || !usedNames.add(constant.name)) {
+						return null;
+					}
+					candidate.holder.constantReferences.put(name, constant.name);
+				}
+			}
+		}
+		Candidate validated = validateCandidate(compilationUnit, method, enclosingType, candidate,
+				usedNames, constantsByBinding);
+		return validated == null ? null : validated.holder;
+	}
+
+	private static Candidate validateCandidate(CompilationUnit compilationUnit, MethodDeclaration method,
+			TypeDeclaration enclosingType, Candidate candidate, Set<String> usedNames,
+			Map<String, ConstantInfo> constantsByBinding) {
 		if (usedNames.size() < 2) {
 			return null;
 		}
@@ -237,7 +282,6 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 			return null;
 		}
 
-		candidate.holder.ifStatement = root;
 		candidate.holder.method = method;
 		candidate.holder.parameter = parameter;
 		candidate.holder.enclosingType = enclosingType;
