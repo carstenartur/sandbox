@@ -123,6 +123,21 @@ assertEquals(expected, actual, "Values must match");
 
 ## Supported Features
 
+### Qualified JUnit 4 annotations
+
+The declarative annotation migrations recognize imported and fully qualified
+JUnit 4 `@Test` markers, `@Before`, `@After`, `@BeforeClass`, `@AfterClass`,
+and `@Ignore`. Both `@org.junit.Ignore("reason")` and
+`@org.junit.Ignore(value = "reason")` retain the reason on the Jupiter
+`@Disabled` annotation. The cleanup verifies the resolved source annotation
+type. A qualified source annotation produces a qualified destination, including
+in classes that declare their own `Test` or `Disabled` type.
+
+Custom handlers for constructs such as `@Test(timeout = …)` and `@RunWith(…)`
+continue to use the spelling declared by their individual patterns. Extending
+a custom handler to another spelling requires checking how it resolves each
+generated type at the rewrite site.
+
 ### Test Class Structure
 - ✅ Remove `extends TestCase` inheritance
 - ✅ Add `@Test` annotations to test methods
