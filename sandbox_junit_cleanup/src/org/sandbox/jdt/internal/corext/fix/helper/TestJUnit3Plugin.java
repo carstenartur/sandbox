@@ -40,7 +40,6 @@ import org.eclipse.jdt.core.dom.NodeFinder;
 import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.PrimitiveType;
-import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 import org.eclipse.jdt.core.dom.Type;
@@ -55,7 +54,9 @@ import org.eclipse.jdt.core.search.SearchMatch;
 import org.eclipse.jdt.core.search.SearchParticipant;
 import org.eclipse.jdt.core.search.SearchPattern;
 import org.eclipse.jdt.core.search.SearchRequestor;
+import org.eclipse.jdt.internal.corext.codemanipulation.ContextSensitiveImportRewriteContext;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
 
 import org.sandbox.jdt.internal.common.AstProcessorBuilder;
@@ -299,6 +300,26 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 	}
 
 	@Override
+	public void rewrite(JUnitCleanUpFixCore fixcore, ReferenceHolder<Integer, JunitHolder> hit,
+			CompilationUnitRewrite cuRewrite, TextEditGroup group) {
+		TypeDeclaration declaration= hit.get(hit.size() - 1).getTypeDeclaration();
+		super.rewrite(fixcore, hit, cuRewrite, group);
+		declaration.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(MethodInvocation invocation) {
+				if (cuRewrite.getASTRewrite().get(invocation, MethodInvocation.EXPRESSION_PROPERTY)
+						!= invocation.getExpression()) {
+					// Remove an old qualifier import only when no unchanged reference needs it.
+					cuRewrite.getImportRemover().registerRemovedNode(invocation.getExpression() == null
+							? invocation.getName() : invocation.getExpression());
+					cuRewrite.getImportRemover().registerAddedImport(ORG_JUNIT_JUPITER_API_ASSERTIONS);
+				}
+				return true;
+			}
+		});
+	}
+
+	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
 		TypeDeclaration node= junitHolder.getTypeDeclaration();
@@ -400,23 +421,13 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 					}
 					if (junitAssertion) {
 						reorderParameters(node, rewriter, group, ONEPARAM_ASSERTIONS, TWOPARAM_ASSERTIONS);
-						if (node.getExpression() != null) {
-							rewriter.set(node.getExpression(), SimpleName.IDENTIFIER_PROPERTY, "Assertions", group); //$NON-NLS-1$
-						} else {
-							rewriter.set(node, MethodInvocation.EXPRESSION_PROPERTY,
-									ast.newSimpleName("Assertions"), group); //$NON-NLS-1$
-						}
-						addImportForAssertion(node.getName().getIdentifier(), importRewriter);
+						String assertionType= importRewriter.addImport(ORG_JUNIT_JUPITER_API_ASSERTIONS,
+								new ContextSensitiveImportRewriteContext(node, importRewriter));
+						rewriter.set(node, MethodInvocation.EXPRESSION_PROPERTY, ast.newName(assertionType), group);
 					}
 					return true;
 				})
 				.build(method);
-	}
-
-	private void addImportForAssertion(String assertionMethod, ImportRewrite importRewriter) {
-		if (KNOWN_JUNIT3_ASSERTION_METHODS.contains(assertionMethod)) {
-			importRewriter.addImport(ORG_JUNIT_JUPITER_API_ASSERTIONS);
-		}
 	}
 
 	private boolean isVoidReturnType(MethodDeclaration method) {
