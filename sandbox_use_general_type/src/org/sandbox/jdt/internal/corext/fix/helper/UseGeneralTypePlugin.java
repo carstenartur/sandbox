@@ -26,6 +26,7 @@ import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.internal.corext.codemanipulation.ContextSensitiveImportRewriteContext;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
@@ -164,7 +165,9 @@ public class UseGeneralTypePlugin {
 			}
 			
 			Type oldType = typeHolder.variableDeclarationStatement.getType();
-			Type newType = cuRewrite.getImportRewrite().addImport(typeHolder.widenedType, ast);
+			var imports = cuRewrite.getImportRewrite();
+			var context = new ContextSensitiveImportRewriteContext(oldType, imports);
+			Type newType = imports.addImport(typeHolder.widenedType, ast, context);
 
 			// Let JDT remove the old import only when no surviving reference
 			// needs it. Replacing the declaration alone can create an unused import.
