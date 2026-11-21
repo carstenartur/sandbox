@@ -38,6 +38,7 @@ import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.sandbox.jdt.container.api.ClosedSourceReturnMigrationPlan.Consumer;
 import org.sandbox.jdt.container.api.ClosedSourceReturnMigrationPlan.FunctionTarget;
 import org.sandbox.jdt.container.api.ClosedSourceReturnMigrationPlan.Range;
+import org.sandbox.jdt.internal.common.ImportNameBindings;
 
 /** Binding proof for direct return of an append-array and length-only callers. */
 public final class ClosedReturnArrayUses {
@@ -83,7 +84,7 @@ public final class ClosedReturnArrayUses {
 
 			@Override
 			public boolean visit(SimpleName name) {
-				if (!(name.resolveBinding() instanceof IMethodBinding resolved) || resolved.isRecovered()) {
+				if (!(ImportNameBindings.resolve(name) instanceof IMethodBinding resolved) || resolved.isRecovered()) {
 					return true;
 				}
 				var method= resolved.getMethodDeclaration();

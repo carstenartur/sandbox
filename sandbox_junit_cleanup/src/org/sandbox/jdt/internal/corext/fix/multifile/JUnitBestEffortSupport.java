@@ -57,6 +57,8 @@ import org.eclipse.jdt.core.dom.Javadoc;
 import org.eclipse.jdt.core.dom.MemberValuePair;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.NormalAnnotation;
+import org.eclipse.jdt.core.dom.RecordDeclaration;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.TagElement;
@@ -74,7 +76,6 @@ import org.eclipse.jdt.internal.corext.refactoring.util.RefactoringASTParser;
 import org.eclipse.text.edits.TextEditGroup;
 
 import org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits;
-import org.sandbox.jdt.cleanup.multifile.RelatedCompilationUnitSearch;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.ParameterizedMigrationEligibility;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleExpectedExceptionJUnitPlugin;
@@ -451,6 +452,7 @@ public final class JUnitBestEffortSupport {
 			Map<String, Gap> gaps, IProgressMonitor monitor) throws CoreException {
 		List<ICompilationUnit> selected= Arrays.asList(units);
 		List<IJavaProject> projects= JavaProjectCompilationUnits.owningProjects(selected);
+		ExternalResourceReferenceSearch references= new ExternalResourceReferenceSearch(projects, selected);
 		Map<String, Set<IJavaElement>> exposures= resourceExposures(roots, sourceTypes);
 		Set<String> blocked= new LinkedHashSet<>();
 		for (SourceType type : sourceTypes.values()) {
@@ -469,8 +471,7 @@ public final class JUnitBestEffortSupport {
 			// Mixed type/member OR patterns can turn accurate JDT matches into
 			// inaccurate ones. Prove each binding-derived target independently.
 			for (IJavaElement target : contract) {
-				if (target == null || !RelatedCompilationUnitSearch.findReferences(projects,
-						List.of(target), selected, selected, monitor).complete()) {
+				if (target == null || !references.allReferencesSelected(target, monitor)) {
 					blocked.add(type.bindingKey());
 					break;
 				}
@@ -530,6 +531,16 @@ public final class JUnitBestEffortSupport {
 					if (variable.getParent() instanceof FieldDeclaration field) {
 						var binding= variable.resolveBinding();
 						addExposure(binding == null ? field.getType().resolveBinding() : binding.getType(),
+								binding == null ? null : binding.getJavaElement());
+					}
+					return true;
+				}
+
+				@Override
+				public boolean visit(SingleVariableDeclaration variable) {
+					if (variable.getParent() instanceof RecordDeclaration) {
+						var binding= variable.resolveBinding();
+						addExposure(binding == null ? variable.getType().resolveBinding() : binding.getType(),
 								binding == null ? null : binding.getJavaElement());
 					}
 					return true;
