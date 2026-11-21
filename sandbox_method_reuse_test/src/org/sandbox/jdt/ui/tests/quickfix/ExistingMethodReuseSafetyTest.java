@@ -212,7 +212,7 @@ public class ExistingMethodReuseSafetyTest {
 						System.out.println(value + 1);
 					}
 				}
-				""".formatted(write);
+				""".replace("%1$s", write); //$NON-NLS-1$
 		assertEquals(source, rewrite(source));
 	}
 
