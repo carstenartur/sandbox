@@ -19,14 +19,16 @@ import java.util.Set;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
-import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
@@ -133,10 +135,12 @@ public enum IntToEnumFixCore {
 		}
 
 		Set<String> constantNames = new HashSet<>(holder.constantNames);
+		IMethodBinding target = holder.method.resolveBinding();
 		holder.enclosingType.accept(new ASTVisitor() {
 			@Override
-			public boolean visit(TypeDeclaration type) {
-				return type == holder.enclosingType;
+			public boolean preVisit2(ASTNode node) {
+				return node == holder.enclosingType
+						|| !(node instanceof AbstractTypeDeclaration || node instanceof AnonymousClassDeclaration);
 			}
 
 			@Override
@@ -144,6 +148,11 @@ public enum IntToEnumFixCore {
 				if (invocation.getExpression() != null
 						|| !invocation.getName().getIdentifier().equals(methodName)
 						|| invocation.arguments().size() != 1) {
+					return true;
+				}
+				IMethodBinding binding = invocation.resolveMethodBinding();
+				if (binding != null && !binding.isRecovered()
+						&& (target == null || !target.getMethodDeclaration().isEqualTo(binding.getMethodDeclaration()))) {
 					return true;
 				}
 				MethodDeclaration caller = findEnclosingMethod(invocation);
@@ -199,6 +208,9 @@ public enum IntToEnumFixCore {
 		while (current != null) {
 			if (current instanceof MethodDeclaration method) {
 				return method;
+			}
+			if (current instanceof AbstractTypeDeclaration || current instanceof AnonymousClassDeclaration) {
+				return null;
 			}
 			current = current.getParent();
 		}
