@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?eclipse version="3.4"?>
 <plugin>
+    <extension point="org.eclipse.core.runtime.preferences">
+        <initializer class="org.sandbox.jdt.internal.css.preferences.CSSPreferenceInitializer"/>
+    </extension>
     <!-- Popup menu action for CSS files -->
     <extension point="org.eclipse.ui.popupMenus">
         <objectContribution
