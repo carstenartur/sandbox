@@ -84,6 +84,7 @@ import org.sandbox.jdt.container.api.ContainerUsageProfile.UniquenessRequirement
 import org.sandbox.jdt.container.api.ContainerUsageProfile.WorkloadShape;
 import org.sandbox.jdt.container.api.TargetContainerContract.Mutability;
 import org.sandbox.jdt.container.api.TargetContainerContract;
+import org.sandbox.jdt.internal.common.ImportNameBindings;
 
 /** Binding-indexed field observations and closed, diagnostic-only FIFO and pending-work protocols. */
 public final class ContainerConcurrencyAnalyzer {
@@ -137,7 +138,7 @@ public final class ContainerConcurrencyAnalyzer {
 			}
 			@Override
 			public boolean visit(SimpleName name) {
-				if (!name.isDeclaration() && name.resolveBinding() instanceof IVariableBinding binding && binding.isField()) {
+				if (!name.isDeclaration() && ImportNameBindings.resolve(name) instanceof IVariableBinding binding && binding.isField()) {
 					Field field= fields.get(binding.getVariableDeclaration().getKey());
 					if (field != null) {
 						field.references().add(name);

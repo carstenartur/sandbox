@@ -30,18 +30,22 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.BodyDeclaration;
+import org.eclipse.jdt.core.dom.BooleanLiteral;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.NodeFinder;
 import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.PrimitiveType;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.SuperMethodInvocation;
+import org.eclipse.jdt.core.dom.ThisExpression;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.TypeLiteral;
@@ -266,6 +270,11 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 						&& !KNOWN_JUNIT3_ASSERTION_METHODS.contains(name)) {
 					unsupported[0]= true;
 				}
+				if (isPrimitiveBooleanEquality(methodBinding) && !canRewriteBooleanEquality(invocation)) {
+					// Jupiter has no primitive boolean assertEquals overload. Retain the
+					// legacy class if avoiding boxing would change argument evaluation.
+					unsupported[0]= true;
+				}
 				return !unsupported[0];
 			}
 		});
@@ -420,7 +429,11 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 						junitAssertion= KNOWN_JUNIT3_ASSERTION_METHODS.contains(node.getName().getIdentifier());
 					}
 					if (junitAssertion) {
-						reorderParameters(node, rewriter, group, ONEPARAM_ASSERTIONS, TWOPARAM_ASSERTIONS);
+						if (isPrimitiveBooleanEquality(node.resolveMethodBinding())) {
+							rewriteBooleanEquality(node, rewriter, ast, group);
+						} else {
+							reorderParameters(node, rewriter, group, ONEPARAM_ASSERTIONS, TWOPARAM_ASSERTIONS);
+						}
 						String assertionType= importRewriter.addImport(ORG_JUNIT_JUPITER_API_ASSERTIONS,
 								new ContextSensitiveImportRewriteContext(node, importRewriter));
 						rewriter.set(node, MethodInvocation.EXPRESSION_PROPERTY, ast.newName(assertionType), group);
@@ -428,6 +441,55 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 					return true;
 				})
 				.build(method);
+	}
+
+	private static boolean isPrimitiveBooleanEquality(IMethodBinding binding) {
+		if (binding == null || binding.isRecovered() || !"assertEquals".equals(binding.getName())) { //$NON-NLS-1$
+			return false;
+		}
+		IMethodBinding declaration= binding.getMethodDeclaration();
+		ITypeBinding owner= declaration.getDeclaringClass();
+		if (declaration.isRecovered() || owner == null || owner.isRecovered()
+				|| !(JUNIT3_ASSERT.equals(owner.getQualifiedName()) || JUNIT3_TEST_CASE.equals(owner.getQualifiedName()))) {
+			return false;
+		}
+		ITypeBinding[] parameters= declaration.getParameterTypes();
+		return (parameters.length == 2
+				|| parameters.length == 3 && "java.lang.String".equals(parameters[0].getQualifiedName())) //$NON-NLS-1$
+				&& "boolean".equals(parameters[parameters.length - 2].getQualifiedName()) //$NON-NLS-1$
+				&& "boolean".equals(parameters[parameters.length - 1].getQualifiedName()); //$NON-NLS-1$
+	}
+
+	private static boolean canRewriteBooleanEquality(MethodInvocation invocation) {
+		List<?> arguments= invocation.arguments();
+		if ((arguments.size() != 2 && arguments.size() != 3)
+				|| !(arguments.get(arguments.size() - 2) instanceof BooleanLiteral)) {
+			return false;
+		}
+		Expression receiver= invocation.getExpression();
+		if (receiver != null && !(receiver instanceof ThisExpression)
+				&& !(receiver instanceof Name name && name.resolveBinding() instanceof ITypeBinding type && !type.isRecovered())) {
+			return false;
+		}
+		// Only a compile-time String can move after the actual value without
+		// changing side effects, exceptions, or the message captured before it.
+		return arguments.size() == 2 || ((Expression) arguments.getFirst()).resolveConstantExpressionValue() instanceof String;
+	}
+
+	private static void rewriteBooleanEquality(MethodInvocation invocation, ASTRewrite rewrite, AST ast,
+			TextEditGroup group) {
+		List<?> arguments= invocation.arguments();
+		Expression expected= (Expression) arguments.get(arguments.size() - 2);
+		BooleanLiteral literal= (BooleanLiteral) expected;
+		rewrite.set(invocation, MethodInvocation.NAME_PROPERTY,
+				ast.newSimpleName(literal.booleanValue() ? "assertTrue" : "assertFalse"), group); //$NON-NLS-1$ //$NON-NLS-2$
+		ListRewrite rewrittenArguments= rewrite.getListRewrite(invocation, MethodInvocation.ARGUMENTS_PROPERTY);
+		rewrittenArguments.remove(expected, group);
+		if (arguments.size() == 3) {
+			Expression message= (Expression) arguments.getFirst();
+			rewrittenArguments.remove(message, group);
+			rewrittenArguments.insertLast(ASTNode.copySubtree(ast, message), group);
+		}
 	}
 
 	private boolean isVoidReturnType(MethodDeclaration method) {
