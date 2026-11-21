@@ -7,10 +7,12 @@ package org.sandbox.junit.jupiter;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.eclipse.jdt.internal.junit.runner.ITestReference;
 import org.eclipse.jdt.internal.junit5.runner.JUnit5TestLoader;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.RepeatedTest;
@@ -98,7 +100,7 @@ public class InheritedTestsFilterTest {
 		var loader= new JUnit5TestLoader();
 		var references= loader.loadTests(new Class<?>[] { Selected.class, Vintage.class },
 				null, null, null, new String[2][], null, null);
-		assertEquals(List.of(2, 2), List.of(references[0].countTestCases(), references[1].countTestCases()));
+		assertEquals(List.of(2, 2), Arrays.stream(references).map(ITestReference::countTestCases).toList());
 	}
 
 	private static void assertPlanAndRun(Class<?> fixture, Set<String> methods, long executions) {

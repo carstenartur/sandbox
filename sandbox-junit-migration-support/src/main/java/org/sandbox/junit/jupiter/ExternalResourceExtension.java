@@ -42,12 +42,8 @@ public final class ExternalResourceExtension {
 			return context.getStore(ExtensionContext.Namespace.create(this, context.getUniqueId()));
 		}
 
-		void start(ExtensionContext context) throws Exception {
-			try {
-				before.execute();
-			} catch (Throwable failure) {
-				throw originalFailure(failure);
-			}
+		void start(ExtensionContext context) throws Throwable {
+			before.execute();
 			store(context).put("started", Boolean.TRUE);
 		}
 
@@ -58,19 +54,29 @@ public final class ExternalResourceExtension {
 		}
 	}
 
-	// JUnit 4 allows before() to throw any Throwable. Preserve even failures outside Exception/Error.
+	private static void startForJupiter(Hooks hooks, ExtensionContext context) throws Exception {
+		try {
+			hooks.start(context);
+		} catch (Exception | Error failure) {
+			throw failure;
+		} catch (Throwable failure) {
+			// JUnit 4 allows any Throwable, including instances outside Exception and Error.
+			throw originalFailure(failure);
+		}
+	}
+
 	@SuppressWarnings("unchecked")
 	private static <E extends Throwable> RuntimeException originalFailure(Throwable failure) throws E {
 		throw (E) failure;
 	}
 
 	private record PerTest(Hooks hooks) implements BeforeEachCallback, AfterEachCallback {
-		@Override public void beforeEach(ExtensionContext context) throws Exception { hooks.start(context); }
+		@Override public void beforeEach(ExtensionContext context) throws Exception { startForJupiter(hooks, context); }
 		@Override public void afterEach(ExtensionContext context) { hooks.finish(context); }
 	}
 
 	private record PerClass(Hooks hooks) implements BeforeAllCallback, AfterAllCallback {
-		@Override public void beforeAll(ExtensionContext context) throws Exception { hooks.start(context); }
+		@Override public void beforeAll(ExtensionContext context) throws Exception { startForJupiter(hooks, context); }
 		@Override public void afterAll(ExtensionContext context) { hooks.finish(context); }
 	}
 }
