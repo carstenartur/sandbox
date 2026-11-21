@@ -90,6 +90,8 @@ assertEquals("Values must match", expected, actual);
 assertEquals(expected, actual, "Values must match");
 ```
 
+For incremental adoption of shared JUnit 4 rules and JDT UI-style inherited-test filtering, see the [staged JUnit migration support](../sandbox-junit-migration-support/README.md).
+
 ## Migration Summary
 
 ### JUnit 3 Transformations

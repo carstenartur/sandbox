@@ -1,0 +1,14 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Sandbox JUnit migration support PDE tests
+Bundle-SymbolicName: sandbox_junit_migration_support_test
+Bundle-Version: 1.3.11.qualifier
+Bundle-RequiredExecutionEnvironment: JavaSE-25
+Require-Bundle: org.eclipse.jdt.junit.runtime,
+ org.eclipse.jdt.junit5.runtime,
+ org.eclipse.pde.junit.runtime,
+ org.junit
+Import-Package: org.junit.jupiter.api;version="[5.14,6)",
+ org.junit.platform.launcher;version="[1.14,2)",
+ org.osgi.framework,
+ org.sandbox.junit.jupiter
