@@ -233,6 +233,9 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 			}, s -> ASTNodes.getTypedAncestor(s, Block.class))
 			.build(compilationUnit);
 		
+		// Introduce a SubMonitor local only when a child construction will use it.
+		dataholder.values().removeIf(monitor -> monitor.setofcic.isEmpty());
+
 		// Add operations for beginTask-associated monitors
 		if (!dataholder.isEmpty()) {
 			operations.add(fixcore.rewrite(dataholder));
