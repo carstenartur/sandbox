@@ -206,7 +206,7 @@ public class ConstantToEnumTypeTest {
 
 	private void addBinaryAlias() throws Exception {
 		Path file= temporary.resolve("Example$Status.java");
-		Files.writeString(file, "package test1; public class Example$Status {}");
+		Files.writeString(file, "package test1; public class Example$Status {}", StandardCharsets.UTF_8);
 		assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null,
 				"--release", "22", "-d", temporary.toString(), file.toString()));
 		String entry= "test1/Example$Status.class";
