@@ -37,6 +37,12 @@ This is the only implemented automatic mode. It requires:
 
 The migration is `PROJECT_CLOSED`: it preserves the behaviour of the proven source flow but makes no source- or binary-compatibility promise to external clients.
 
+#### `PUBLIC_VALUE_ADAPTER_OPT_IN`
+
+An explicit cleanup profile may add a public nested enum and a distinctly named public method to a final class. Each enum constant stores the existing public compile-time int or String constant. Its `legacyValue()` returns that exact value. For example, `processValue(Status)` calls the unchanged `process(int)` or `process(String)`. Existing binaries keep the original method descriptor, switch labels remain compile-time constants, and calls with null or unknown values follow the original method body.
+
+This single-unit `COMPATIBILITY_MANAGED` edit is off by default and absent from save-action profiles. Its first implementation accepts a one-parameter, void, non-static public method with a complete directly compared constant group. Final owners avoid introducing an override in an unknown subclass. Serializable owners, locally ambiguous names and aliases are excluded. External consumers combining wildcard static imports must check for conflicts with the proposed nested type name. The edit introduces no deprecation annotations. The wider numeric adapter and external representation policy below remains a separate mode.
+
 #### `NUMERIC_ADAPTER_OPT_IN`
 
 This future `COMPATIBILITY_MANAGED` mode is not executable yet. Before it may be enabled it must provide:

@@ -62,7 +62,15 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				CleanUpMessages.IntToEnumTabPage_CheckboxName_ProjectWide,
 				IntToEnumCleanUpOptions.PROJECT_WIDE,
 				FALSE_TRUE);
-		registerSlavePreference(intToEnum, new CheckboxPreference[] { projectWide });
+		if (isSaveAction()) {
+			registerSlavePreference(intToEnum, new CheckboxPreference[] { projectWide });
+		} else {
+			intent(intToEnumGroup);
+			CheckboxPreference adapter= createCheckboxPref(intToEnumGroup, numColumns - 1,
+					CleanUpMessages.IntToEnumTabPage_CheckboxName_PublicAdapter,
+					IntToEnumCleanUpOptions.PUBLIC_VALUE_ADAPTER, FALSE_TRUE);
+			registerSlavePreference(intToEnum, new CheckboxPreference[] { projectWide, adapter });
+		}
 
 		intent(intToEnumGroup);
 		registerPreference(intToEnum);

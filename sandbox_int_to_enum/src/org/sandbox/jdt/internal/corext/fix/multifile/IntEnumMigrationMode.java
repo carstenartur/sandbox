@@ -15,15 +15,18 @@ import org.sandbox.jdt.cleanup.multifile.CleanUpImpact;
 /**
  * Compatibility contract for constant-domain to enum migrations.
  *
- * <p>Only {@link #CLOSED_FLOW_AUTOMATIC} is currently executable. The other
- * modes make future compatibility work explicit without weakening the current
- * conservative detector.</p>
+ * <p>Closed-source migration and additive public entries have distinct contracts.
+ * Persistence and protocol migrations require a separate policy.</p>
  */
 public enum IntEnumMigrationMode {
 
 	/** Package-private source flow whose complete declaration/caller closure is proven. */
 	CLOSED_FLOW_AUTOMATIC(CleanUpImpact.PROJECT_CLOSED, true, false,
 			"Closed source flow: all declarations and callers are migrated atomically; no public, persisted or wire identity is claimed."), //$NON-NLS-1$
+
+	/** Additive public source API with explicit legacy int or String values. */
+	PUBLIC_VALUE_ADAPTER_OPT_IN(CleanUpImpact.COMPATIBILITY_MANAGED, true, true,
+			"Compatibility-managed public API: retain legacy constants and methods and add a named enum-valued entry."), //$NON-NLS-1$
 
 	/** Public or externally represented numeric identity with explicit adapters. */
 	NUMERIC_ADAPTER_OPT_IN(CleanUpImpact.COMPATIBILITY_MANAGED, false, true,

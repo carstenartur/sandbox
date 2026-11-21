@@ -4,10 +4,11 @@
 
 This Eclipse plugin detects legacy Java code in which integral or String constants represent a closed set of states and migrates provably safe cases to an enum. Its bundle and existing cleanup profile IDs retain the historical `int_to_enum` name.
 
-The implementation has three deliberately separated capabilities:
+The implementation has four capabilities:
 
 - **Local if/else state detection** — binding-based migration when the complete state flow is contained in one compilation unit.
 - **Project-wide coordinated migration** — a narrow package-scoped method/caller migration that requires a proven closed source scope.
+- **Additive public API adapters** — an explicit option adds named enum-valued entries while retaining public int or String fields and their original methods.
 - **Integer switch migration** — the existing experimental prototype for switch statements.
 
 Local cleanup does not automatically request project sources. Complete-project analysis is an explicit, disabled-by-default option because it can inspect and modify additional files and is materially more expensive.
@@ -97,7 +98,7 @@ The cleanup deliberately preserves the existing control flow. Replacing an if/el
 
 ## Cases currently rejected
 
-The implemented detectors do not yet migrate:
+The closed-flow detectors skip the following cases:
 
 - public or protected constants and method signatures;
 - parameters passed arbitrary expressions, null, or runtime strings rather than recognised constants;
@@ -109,6 +110,12 @@ The implemented detectors do not yet migrate:
 - existing nested types that conflict with the generated enum name.
 
 A rejected candidate is left unchanged.
+
+## Public API adapters
+
+In an explicit cleanup profile, enable **Add enum-valued methods and keep legacy public APIs**. For a public final class with `STATUS_A`, `STATUS_B` and a public `process(int)` method, new clients can call `service.processValue(Service.Status.B)`. Each enum constant retains its readable name and its explicit original value through `legacyValue()`. Strings use the same mapping. The new method requires a non-null enum value. Existing clients still use the original constants and methods, including the original handling of null, non-interned strings and unknown values.
+
+The option supports a single-parameter instance method returning void, with no declared exceptions or method type parameters. An if/else-if chain must compare that parameter with every public compile-time constant of one underscore-prefixed group. The adapter requires distinct values and free names for both new members. Serializable owners and overlapping domains are skipped. A new public nested type can conflict with another type imported through an external client’s wildcard static imports. Review the proposed names in the native preview. The method and enum are inserted and undone together. No save-action option is registered.
 
 ## Project-wide coordinated migration
 
