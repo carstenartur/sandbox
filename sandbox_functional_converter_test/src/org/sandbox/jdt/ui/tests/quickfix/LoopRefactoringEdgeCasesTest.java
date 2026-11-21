@@ -311,7 +311,7 @@ class MyTest {
 				import java.util.*;
 				class MyTest {
 					public void process(List<? extends Number> numbers) {
-						numbers.forEach(num -> System.out.println(num));
+						numbers.forEach((Number num) -> System.out.println(num));
 					}
 				}
 				""";

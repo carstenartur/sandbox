@@ -26,10 +26,12 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.ParameterizedType;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite.ImportRewriteContext;
 import org.eclipse.jdt.internal.core.JavaProject;
 import org.eclipse.jdt.internal.core.SearchableEnvironment;
 import org.eclipse.jdt.internal.corext.codemanipulation.ContextSensitiveImportRewriteContext;
@@ -104,7 +106,10 @@ public class UseGeneralTypePlugin {
 		try {
 			var access = new ProjectTypeAccess(project, unit);
 			try {
-				analysisResults.values().removeIf(result -> !access.permits(result.getWidestType(), new HashSet<>()));
+				// Keep restricted references: removing the only one can make an
+				// existing @SuppressWarnings("restriction") unnecessary.
+				analysisResults.values().removeIf(result -> !access.permits(result.getCurrentType(), new HashSet<>())
+						|| !access.permits(result.getWidestType(), new HashSet<>()));
 			} finally {
 				access.cleanup();
 			}
@@ -232,8 +237,30 @@ public class UseGeneralTypePlugin {
 			
 			Type oldType = typeHolder.variableDeclarationStatement.getType();
 			var imports = cuRewrite.getImportRewrite();
-			var context = new ContextSensitiveImportRewriteContext(oldType, imports);
+			var lexicalContext = new ContextSensitiveImportRewriteContext(oldType, imports);
+			ImportRewriteContext context = lexicalContext;
+			Type oldBase = oldType instanceof ParameterizedType parameterized ? parameterized.getType() : oldType;
+			boolean qualified = oldBase.toString().indexOf('.') >= 0
+					&& oldBase.toString().equals(typeHolder.currentType.getErasure().getQualifiedName());
+			if (qualified) {
+				// Preserve intentional qualification. Importing a new package on demand
+				// can make existing wildcard-imported names ambiguous (for example SWT/AWT).
+				context = new ImportRewriteContext() {
+					@Override
+					public int findInContext(String qualifier, String name, int kind) {
+						return kind == KIND_TYPE && (qualifier + '.' + name).equals(typeHolder.widenedType.getErasure().getQualifiedName())
+								? RES_NAME_CONFLICT : lexicalContext.findInContext(qualifier, name, kind);
+					}
+				};
+			}
 			Type newType = imports.addImport(typeHolder.widenedType, ast, context);
+			if (!qualified) {
+				cuRewrite.getImportRemover().registerAddedImports(newType);
+			} else if (newType instanceof ParameterizedType parameterized) {
+				for (Object argument : parameterized.typeArguments()) {
+					cuRewrite.getImportRemover().registerAddedImports((Type) argument);
+				}
+			}
 
 			// Let JDT remove the old import only when no surviving reference
 			// needs it. Replacing the declaration alone can create an unused import.

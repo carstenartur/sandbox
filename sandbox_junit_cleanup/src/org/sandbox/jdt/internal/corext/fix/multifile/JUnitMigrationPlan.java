@@ -12,6 +12,7 @@ package org.sandbox.jdt.internal.corext.fix.multifile;
 
 import static org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.ROLE_AFTER_EACH;
 import static org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.ROLE_ASSERTION_MESSAGE_FIRST;
+import static org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.ROLE_ASSERTION_PRESERVE_EVALUATION;
 import static org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.ROLE_ASSERTION_QUALIFY;
 import static org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.ROLE_BEFORE_EACH;
 import static org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.ROLE_HIERARCHY_TYPE;
@@ -20,6 +21,7 @@ import static org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigra
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -46,8 +48,11 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 
 import org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3AssertionRewriter;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.InvocationKind;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.InvocationMigration;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.MethodKind;
@@ -221,7 +226,8 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 			@Override
 			public boolean visit(MethodInvocation node) {
 				NodeKey key= NodeKey.from(node);
-				if (key != null && expectedInvocations.containsKey(key)) {
+				if (key != null && expectedInvocations.containsKey(key)
+						&& JUnit3AssertionInventory.kindOf(node) == expectedInvocations.get(key).kind()) {
 					resolvedInvocations.put(key, node);
 				}
 				return true;
@@ -236,6 +242,13 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 
 		SemanticRewritePlan plan= hierarchyPlan(plannedTypes);
 		Set<NodeKey> expectedHintTargets= new LinkedHashSet<>(plan.rolesByNode().keySet());
+		List<MethodInvocation> evaluationSensitive= new ArrayList<>();
+		for (var entry : expectedInvocations.entrySet()) {
+			if (entry.getValue().kind() == InvocationKind.PRESERVE_EVALUATION) {
+				expectedHintTargets.remove(entry.getKey());
+				evaluationSensitive.add(resolvedInvocations.get(entry.getKey()));
+			}
+		}
 		for (TypeMigration planned : plannedTypes) {
 			if (!planned.removeTestCaseSuperclass()) {
 				expectedHintTargets.remove(NodeKey.type(planned.typeBindingKey()));
@@ -255,6 +268,19 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 			throw new CoreException(new Status(IStatus.ERROR, "sandbox_junit_cleanup", //$NON-NLS-1$
 					"The plan-aware JUnit hint program covered " + covered + " but expected " //$NON-NLS-1$ //$NON-NLS-2$
 							+ expectedHintTargets));
+		}
+		if (!evaluationSensitive.isEmpty()) {
+			operations.add(new CompilationUnitRewriteOperationWithSourceRange() {
+				@Override
+				public void rewriteASTInternal(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
+					var group= createTextEditGroup("Preserve JUnit assertion evaluation order", cuRewrite); //$NON-NLS-1$
+					var assertions= new JUnit3AssertionRewriter(root);
+					for (MethodInvocation invocation : evaluationSensitive) {
+						assertions.rewrite(invocation, cuRewrite.getASTRewrite(), cuRewrite.getImportRewrite(), group);
+						JUnit3AssertionRewriter.registerQualifierChange(invocation, cuRewrite);
+					}
+				}
+			});
 		}
 	}
 
@@ -282,8 +308,11 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 			for (InvocationMigration invocation : planned.invocations()) {
 				NodeKey key= NodeKey.invocation(invocation.methodBindingKey(), invocation.sourceStart(),
 						invocation.sourceLength());
-				plan.add(key, invocation.kind() == InvocationKind.MESSAGE_FIRST
-						? ROLE_ASSERTION_MESSAGE_FIRST : ROLE_ASSERTION_QUALIFY);
+				plan.add(key, switch (invocation.kind()) {
+				case MESSAGE_FIRST -> ROLE_ASSERTION_MESSAGE_FIRST;
+				case QUALIFY -> ROLE_ASSERTION_QUALIFY;
+				case PRESERVE_EVALUATION -> ROLE_ASSERTION_PRESERVE_EVALUATION;
+				});
 			}
 		}
 		return plan.build();

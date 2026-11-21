@@ -169,7 +169,7 @@ class JUnit3ConsumerContractTest {
 				.toArray(IClasspathEntry[]::new), null);
 		assertNull(project.findType("org.junit.jupiter.api.Test"));
 		Path resources= Path.of("testresources", "upstream-junit3");
-		String original= Files.readString(resources.resolve("SimpleTest.java"), StandardCharsets.UTF_8);
+		String original= Files.readString(resources.resolve("SimpleTest.java.txt"), StandardCharsets.UTF_8);
 		Properties properties= new Properties();
 		try (var reader= Files.newBufferedReader(resources.resolve("junit-strict.properties"), StandardCharsets.UTF_8)) {
 			properties.load(reader);

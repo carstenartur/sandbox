@@ -648,9 +648,375 @@ class UpstreamLoopCompilationTest {
         assertExecution(methods, generated, " a bcc", String[].class, new String[] { " a ", "c" });
     }
 
+    @Test
+    void retainsByteArrayWithoutAnArraysStreamOverload() throws Exception {
+        check("""
+                public static void run(byte[] values) {
+                    for (byte value : values) System.out.println(value);
+                }
+                """, false);
+    }
+
+    @Test
+    void retainsCharArrayWithoutAnArraysStreamOverload() throws Exception {
+        check("""
+                public static void run(char[] values) {
+                    for (char value : values) System.out.println(value);
+                }
+                """, false);
+    }
+
+    @Test
+    void retainsConcreteCollectionTypeImportWhenMergingItsInitializer() throws Exception {
+        checkStableSource("""
+                package probe;
+                import java.util.HashSet;
+                public class Sample {
+                    public static java.util.Set<String> run(String[] values) {
+                        HashSet<String> result = new HashSet<>();
+                        for (String value : values) result.add(value.trim());
+                        return result;
+                    }
+                }
+                """);
+    }
+
+    @Test
+    void retainsCollectionInterfaceImportWhenMergingItsInitializer() throws Exception {
+        checkStableSource("""
+                package probe;
+                import java.util.List;
+                public class Sample {
+                    public static Object run(String[] values) {
+                        List<String> result = new java.util.ArrayList<>();
+                        for (String value : values) result.add(value.trim());
+                        return result;
+                    }
+                }
+                """);
+    }
+
+    @Test
+    void removesImportUsedOnlyByTheEliminatedMappedLocalType() throws Exception {
+        project.setOption(JavaCore.COMPILER_PB_UNUSED_IMPORT, JavaCore.ERROR);
+        checkStableSource("""
+                package probe;
+                import java.util.Map.Entry;
+                public class Sample {
+                    public static void run(java.util.Map<String, String> values) {
+                        for (String key : values.keySet()) {
+                            Entry<String, String> entry = java.util.Map.entry(key, values.get(key));
+                            System.out.println(entry.getKey());
+                        }
+                    }
+                }
+                """);
+    }
+
+    @Test
+    void addedArraysImportDoesNotMakeExistingWildcardTypeAmbiguous() throws Exception {
+        new org.eclipse.core.resources.ProjectScope(resource).getNode(JavaPlugin.getPluginId())
+                .put(org.eclipse.jdt.ui.PreferenceConstants.ORGIMPORTS_ONDEMANDTHRESHOLD, "1");
+        checkStableSource("""
+                package probe;
+                import java.awt.*;
+                public class Sample {
+                    private List list;
+                    public void run(String[] values) {
+                        for (String value : values) list.add(value);
+                    }
+                }
+                """);
+    }
+
+    @Test
+    void preservesCollectionGetterEvaluationInEachIteration() throws Exception {
+        String methods = """
+                private static final java.util.List<String> result = new java.util.ArrayList<>();
+                private static int calls;
+                private static java.util.List<String> target() { calls++; return result; }
+                public static String run(java.util.List<String> values) {
+                    for (String value : values) target().add(value);
+                    return calls + ":" + String.join(",", result);
+                }
+                """;
+        String generated = checkStable(methods);
+        assertExecution(methods, generated, "2:a,b", java.util.List.class, java.util.List.of("a", "b"));
+    }
+
+    @Test
+    void retainsYieldTargetInTheEnclosingSwitchExpression() throws Exception {
+        String methods = """
+                public static int run(String[] values) {
+                    return switch (values.length) {
+                        default -> {
+                            for (String value : values) {
+                                if (value.isEmpty()) yield 1;
+                            }
+                            yield 2;
+                        }
+                    };
+                }
+                public static int runDirect(String[] values) {
+                    return switch (values.length) {
+                        default -> {
+                            for (String value : values) yield value.length();
+                            yield 2;
+                        }
+                    };
+                }
+                """;
+        String generated = check(methods, false);
+        assertExecution(methods, generated, 1, String[].class, new String[] { "a", "" });
+    }
+
+    @Test
+    void keepsPatternVariableInTheCallbackThatDeclaresIt() throws Exception {
+        String methods = """
+                public static String run(Object[] values) {
+                    StringBuilder result = new StringBuilder();
+                    for (Object value : values) {
+                        if (value instanceof String text) result.append(text);
+                    }
+                    return result.toString();
+                }
+                """;
+        String generated = checkStable(methods);
+        assertExecution(methods, generated, "ab", Object[].class, new Object[] { "a", 42, "b" });
+    }
+
+    @Test
+    void retainsContinueSemanticsForAnExistingCollectionAccumulator() throws Exception {
+        String methods = """
+                public static String run(String[] values) {
+                    java.util.List<String> result = new java.util.ArrayList<>(java.util.List.of("start"));
+                    for (String value : values) {
+                        if (value.isEmpty()) continue;
+                        result.add(value);
+                    }
+                    return String.join(",", result);
+                }
+                """;
+        String generated = checkStable(methods);
+        assertExecution(methods, generated, "start,a,b", String[].class, new String[] { "a", "", "b" });
+    }
+
+    @Test
+    void retainsDocumentedEmptyBlockInCopiedCallbackBody() throws Exception {
+        project.setOption(JavaCore.COMPILER_PB_UNDOCUMENTED_EMPTY_BLOCK, JavaCore.WARNING);
+        String methods = """
+                public static String run(String[] values) {
+                    StringBuilder result = new StringBuilder();
+                    for (String value : values) {
+                        if (value.isEmpty()) {
+                            // An empty item intentionally contributes nothing.
+                        } else {
+                            result.append(value);
+                        }
+                    }
+                    return result.toString();
+                }
+                """;
+        String generated = checkStable(methods);
+        assertExecution(methods, generated, "ab", String[].class, new String[] { "a", "", "b" });
+    }
+
+    @Test
+    void multilineCommentDoesNotEraseFilterPredicate() throws Exception {
+        String methods = """
+                public static String run(String[] values) {
+                    StringBuilder result = new StringBuilder();
+                    for (String value : values) {
+                        if (!value.isEmpty()) {
+                            /* Keep both lines of this explanation.
+                             * The accepted value is appended exactly once. */
+                            result.append(value);
+                        }
+                    }
+                    return result.toString();
+                }
+                """;
+        String generated = checkStable(methods);
+        assertExecution(methods, generated, "ab", String[].class, new String[] { "a", "", "b" });
+        assertTrue(generated.contains("The accepted value is appended exactly once."), generated);
+    }
+
+    @Test
+    void preservesLocalAssignmentWithoutIntroducingParameterAssignmentWarning() throws Exception {
+        project.setOption(JavaCore.COMPILER_PB_PARAMETER_ASSIGNMENT, JavaCore.WARNING);
+        String methods = """
+                public static String run(String[] values) {
+                    StringBuilder result = new StringBuilder();
+                    for (String value : values) {
+                        if (!value.isEmpty()) value = value.trim();
+                        result.append(value);
+                    }
+                    return result.toString();
+                }
+                """;
+        String generated = checkStable(methods);
+        assertExecution(methods, generated, "ab", String[].class, new String[] { " a ", "", "b" });
+    }
+
+    @Test
+    void arrayLambdaParameterDoesNotAddFieldHidingWarning() throws Exception {
+        project.setOption(JavaCore.COMPILER_PB_LOCAL_VARIABLE_HIDING, JavaCore.WARNING);
+        checkStable("""
+                private String font;
+                public void run(String[] fonts) {
+                    for (String font : fonts) System.out.println(font);
+                }
+                """);
+    }
+
+    @Test
+    void preservesAnnotationOnMappedLocalDeclaration() throws Exception {
+        checkStable("""
+                public static java.util.Set<Class<? extends Number>> run(Class<?>[] classes) {
+                    java.util.Set<Class<? extends Number>> result = new java.util.HashSet<>();
+                    for (Class<?> type : classes) {
+                        @SuppressWarnings("unchecked")
+                        Class<? extends Number> number = (Class<? extends Number>) type;
+                        result.add(number);
+                    }
+                    return result;
+                }
+                """);
+    }
+
+    @Test
+    void booleanMatchDoesNotAddBoxingAndUnboxing() throws Exception {
+        project.setOption(JavaCore.COMPILER_PB_AUTOBOXING, JavaCore.WARNING);
+        String methods = """
+                public static boolean run(String[] values) {
+                    for (String value : values) {
+                        boolean empty = value.isEmpty();
+                        if (empty) return true;
+                    }
+                    return false;
+                }
+                """;
+        String generated = checkStable(methods);
+        assertExecution(methods, generated, true, String[].class, new String[] { "a", "" });
+    }
+
+    @Test
+    void mappedLocalKeepsItsScopeWhenItsNameHidesAField() throws Exception {
+        project.setOption(JavaCore.COMPILER_PB_LOCAL_VARIABLE_HIDING, JavaCore.WARNING);
+        checkStable("""
+                private int[] lines;
+                public void run(java.util.List<String> values) {
+                    for (String value : values) {
+                        int[] lines = value.codePoints().toArray();
+                        if (lines.length > 0) System.out.println(lines[0]);
+                    }
+                }
+                """);
+    }
+
+    @Test
+    void wildcardSourceKeepsDeclaredElementTypeForCastDiagnostics() throws Exception {
+        project.setOption(JavaCore.COMPILER_PB_UNNECESSARY_TYPE_CHECK, JavaCore.WARNING);
+        checkStable("""
+                public void run(java.util.List<? extends Number> values) {
+                    for (Number value : values) {
+                        if (value instanceof Integer) System.out.println(((Integer) value).intValue());
+                    }
+                }
+                """);
+    }
+
+    @Test
+    void wildcardElementSourceKeepsInheritedMethodCastDiagnostics() throws Exception {
+        project.setOption(JavaCore.COMPILER_PB_UNNECESSARY_TYPE_CHECK, JavaCore.WARNING);
+        checkStableSource("""
+                package probe;
+                import javax.lang.model.element.Element;
+                import javax.lang.model.element.TypeParameterElement;
+                public class Sample {
+                    public void run(java.util.Set<? extends Element> values) {
+                        for (Element value : values) {
+                            if (value instanceof TypeParameterElement) {
+                                System.out.println(((TypeParameterElement) value).getSimpleName());
+                            }
+                        }
+                    }
+                }
+                """);
+    }
+
+    @Test
+    void keepsDeclaredLoopElementTypeForOverloadResolution() throws Exception {
+        String methods = """
+                public static String kind(Number value) { return "number"; }
+                public static String kind(Integer value) { return "integer"; }
+                public static String run(java.util.List<Integer> values) {
+                    StringBuilder result = new StringBuilder();
+                    for (Number value : values) result.append(kind(value));
+                    return result.toString();
+                }
+                """;
+        String generated = checkStable(methods);
+        assertExecution(methods, generated, "numbernumber", java.util.List.class, java.util.List.of(1, 2));
+    }
+
+    @Test
+    void mutableLoopLocalRetainsTrailingArrayDimensions() throws Exception {
+        project.setOption(JavaCore.COMPILER_PB_PARAMETER_ASSIGNMENT, JavaCore.WARNING);
+        String methods = """
+                public static String run(String[][] values) {
+                    StringBuilder result = new StringBuilder();
+                    for (String value[] : values) {
+                        value = new String[] { value[0].trim() };
+                        result.append(value[0]);
+                    }
+                    return result.toString();
+                }
+                """;
+        String generated = checkStable(methods);
+        assertExecution(methods, generated, "ab", String[][].class, new String[][] { { " a " }, { "b" } });
+    }
+
+    @Test
+    void booleanMatchRetainsItsPredicateComment() throws Exception {
+        project.setOption(JavaCore.COMPILER_PB_AUTOBOXING, JavaCore.WARNING);
+        String methods = """
+                public static String run(String[] values) {
+                    return any(values) + ":" + none(values);
+                }
+                private static boolean any(String[] values) {
+                    for (String value : values) {
+                        boolean empty = /* Keep the any-match rationale. */ value.isEmpty();
+                        if (empty) return true;
+                    }
+                    return false;
+                }
+                private static boolean none(String[] values) {
+                    for (String value : values) {
+                        boolean empty = /* Keep the none-match rationale. */ value.isEmpty();
+                        if (empty) return false;
+                    }
+                    return true;
+                }
+                """;
+        String generated = checkStable(methods);
+        assertTrue(generated.contains("Keep the any-match rationale."), generated);
+        assertTrue(generated.contains("Keep the none-match rationale."), generated);
+        assertExecution(methods, generated, "true:false", String[].class, new String[] { "a", "" });
+        assertExecution(methods, generated, "false:true", String[].class, new String[0]);
+    }
+
     private String check(String methods, boolean expectedChange) throws Exception {
         String original = "package probe; public class Sample {\n" + methods + "}\n";
         return checkSource(original, LoopTargetFormat.STREAM, expectedChange);
+    }
+
+    private String checkStable(String methods) throws Exception {
+        return checkStableSource("package probe; public class Sample {\n" + methods + "}\n");
+    }
+
+    private String checkStableSource(String source) throws Exception {
+        return checkSource(source, LoopTargetFormat.STREAM, true, true);
     }
 
     private void assertExecution(String methods, String generated, Object expected,
@@ -675,6 +1041,11 @@ class UpstreamLoopCompilationTest {
     }
 
     private String checkSource(String original, LoopTargetFormat target, boolean expectedChange) throws Exception {
+        return checkSource(original, target, expectedChange, false);
+    }
+
+    private String checkSource(String original, LoopTargetFormat target, boolean expectedChange,
+            boolean idempotent) throws Exception {
         ICompilationUnit unit = project.getPackageFragmentRoot(resource.getFolder("src"))
                 .createPackageFragment("probe", false, null).createCompilationUnit("Sample.java", original, false, null);
         var diagnostics = CompilerDiagnosticAssertions.capture(unit);
@@ -696,11 +1067,26 @@ class UpstreamLoopCompilationTest {
         try {
             String generated = unit.getSource();
             assertNotEquals(original, generated);
-            diagnostics.assertNoNewDiagnostics();
+            try {
+                diagnostics.assertNoNewDiagnostics();
+            } catch (AssertionError failure) {
+                throw new AssertionError("Original diagnostic keys: " + Arrays.stream(root.getProblems())
+                        .map(problem -> problem.getID() + ":" + Arrays.toString(problem.getArguments())).toList()
+                        + "\nGenerated source:\n" + generated, failure);
+            }
             assertTrue(expectedChange, "Keep unsupported semantics and source contracts unchanged");
+            if (idempotent) {
+                parser.setSource(unit);
+                parser.setResolveBindings(true);
+                var secondRoot = (CompilationUnit) parser.createAST(null);
+                assertNull(LoopConversionService.analyze(secondRoot, LoopConversionService.handlers(target))
+                        .createFix("Repeated conversion"), "Converted single-loop source must be stable");
+                assertEquals(generated, unit.getSource());
+            }
             return generated;
         } finally {
             undo.perform(null);
+            assertEquals(original, unit.getSource(), "Undo must restore the exact original source");
             diagnostics.assertRestored();
         }
     }
