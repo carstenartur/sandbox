@@ -176,6 +176,35 @@ public class ConstantToEnumTypeTest {
 	}
 
 	@ParameterizedTest
+	@MethodSource("indexedBodies")
+	void nestedOwnerKeepsQualifiedEnumAtEnclosingAndSiblingCallSites(String body) throws Exception {
+		String source= """
+				package test1;
+				public class Example {
+				    static class Base { enum Status { A } }
+				    static class Owner {
+				        private static final int STATUS_A = 0, STATUS_B = 1;
+				        private static int process(int state) {
+				            BODY
+				        }
+				        static class Child extends Base {
+				            static int call() { return process(STATUS_A); }
+				        }
+				    }
+				    static class Caller {
+				        enum Status { B }
+				        static int call() { return Owner.process(Example.Owner.STATUS_B); }
+				    }
+				    public static String run() {
+				        return Owner.process(Owner.STATUS_A) + ":" + Caller.call() + ":" + Owner.Child.call();
+				    }
+				}
+				""".replace("BODY", body);
+		String preview= verifyMigration(source, false, true);
+		assertEquals("31:53:31", execute(new String[] { preview }, false, "preview"));
+	}
+
+	@ParameterizedTest
 	@ValueSource(strings= {"same unit", "primary", "secondary", "unsaved secondary", "binary", "member"})
 	void skipsLocalTableMigrationWhenExistingTypeOwnsTheEnumBinaryName(String location) throws Exception {
 		String alias= "class Example$Status {}";
@@ -294,6 +323,11 @@ public class ConstantToEnumTypeTest {
 				indexed.replace("return 29;", "return state;"),
 				indexed.replace("[state]", "[state + 1]"),
 				indexed.replace("process(STATUS_B)", "process(3)"),
+				indexed.replace("public static String run()", """
+						static class Caller extends Base {
+						    static int call(int Example, int test1) { return Example + test1 + process(STATUS_A); }
+						}
+						public static String run()""") + "\nclass Base { enum Status { A } }\n",
 				source.replace("public static String run()", "static Status other() { return new Status(); } public static String run()")
 						+ "\nclass Status {}\n",
 				source.replace("if (state == STATUS_A)", "int Status = 0; if (state == STATUS_A)"),

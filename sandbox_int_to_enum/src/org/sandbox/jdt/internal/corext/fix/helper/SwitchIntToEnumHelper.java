@@ -15,7 +15,6 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
@@ -23,7 +22,6 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnumConstantDeclaration;
 import org.eclipse.jdt.core.dom.EnumDeclaration;
-import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.Javadoc;
 import org.eclipse.jdt.core.dom.Modifier;
@@ -194,12 +192,7 @@ public class SwitchIntToEnumHelper extends AbstractTool<ReferenceHolder<Integer,
 			Type newType = ast.newSimpleType(ast.newSimpleName(enumName));
 			rewrite.replace(data.parameter.getType(), newType, group);
 			PrivateEnumLookup.rewriteIndexes(data.ordinalIndexes, rewrite, group);
-			for (Map.Entry<Expression, String> reference : data.constantReferences.entrySet()) {
-				if (!(reference.getKey().getParent() instanceof SwitchCase)) {
-					String constant = reference.getValue().substring(prefix.length());
-					rewrite.replace(reference.getKey(), ast.newName(enumName + "." + constant), group); //$NON-NLS-1$
-				}
-			}
+			IntToEnumHelper.rewriteConstantReferences(data, prefix, enumName, rewrite, group);
 		}
 	}
 
