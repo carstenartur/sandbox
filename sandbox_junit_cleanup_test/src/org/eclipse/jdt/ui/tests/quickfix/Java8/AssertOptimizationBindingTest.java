@@ -112,14 +112,15 @@ public class AssertOptimizationBindingTest {
 	private ICompilationUnit unit(String importedMethod, String invocation, String extraMember) throws CoreException {
 		String source= """
 				package test;
-				import static org.junit.jupiter.api.Assertions.%s;
+				import static org.junit.jupiter.api.Assertions.$method;
 				public class Example {
 					void run(Object left, Object right, int value, boolean condition) {
-						%s;
+						$invocation;
 					}
-					%s
+					$member
 				}
-				""".formatted(importedMethod, invocation, extraMember); //$NON-NLS-1$
+				""".replace("$method", importedMethod).replace("$invocation", invocation) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				.replace("$member", extraMember); //$NON-NLS-1$
 		return pack.createCompilationUnit("Example.java", source, false, null); //$NON-NLS-1$
 	}
 
