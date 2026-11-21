@@ -62,7 +62,7 @@ public class JdtLoopExtractor {
         boolean isFinal = Modifier.isFinal(parameter.getModifiers());
         
         // Analyze metadata — track truly unconvertible control flow and patterns.
-        LoopBodyAnalyzer analyzer = new LoopBodyAnalyzer(iterable);
+        LoopBodyAnalyzer analyzer = new LoopBodyAnalyzer(iterable, body);
         body.accept(analyzer);
         
         // Issue #670: Check if the iterated collection is a concurrent collection type
@@ -76,7 +76,8 @@ public class JdtLoopExtractor {
                 || analyzer.hasTryCatch()
                 || analyzer.hasSynchronized()
                 || analyzer.hasNestedLoop()
-                || analyzer.hasVoidReturn()
+                || analyzer.hasUnsupportedReturn()
+                || TraditionalForHandler.CheckedBodyExceptions.escape(body)
                 || analyzer.modifiesIteratedCollection()
                 || isConcurrentCollection;
         
@@ -118,7 +119,7 @@ public class JdtLoopExtractor {
         String elementType = parsedBody.elementType();
         String variableName = parsedBody.elementVariableName();
 
-        LoopBodyAnalyzer analyzer = new LoopBodyAnalyzer(iterable);
+        LoopBodyAnalyzer analyzer = new LoopBodyAnalyzer(iterable, pattern.loopBody());
         pattern.loopBody().accept(analyzer);
         boolean isConcurrentCollection = checkConcurrentCollection(iterable);
         boolean hasUnconvertiblePatterns = analyzer.hasBreak()
@@ -126,7 +127,8 @@ public class JdtLoopExtractor {
                 || analyzer.hasTryCatch()
                 || analyzer.hasSynchronized()
                 || analyzer.hasNestedLoop()
-                || analyzer.hasVoidReturn()
+                || analyzer.hasUnsupportedReturn()
+                || TraditionalForHandler.CheckedBodyExceptions.escape(pattern.loopBody())
                 || analyzer.modifiesIteratedCollection()
                 || isConcurrentCollection;
 
@@ -148,7 +150,7 @@ public class JdtLoopExtractor {
             return;
         }
         int varDeclCount = countVariableDeclarations(statements);
-        if (varDeclCount > 1
+        if (varDeclCount > 0
                 && !isLinearVariableDeclarationChain(statements, variableName)) {
             addSimpleForEachTerminal(statements, builder);
             return;
@@ -299,7 +301,7 @@ public class JdtLoopExtractor {
         // Decompose multiple declarations only when every initializer consumes
         // the current pipeline value without referring back to an earlier one.
         int varDeclCount = countVariableDeclarations(statements);
-        if (varDeclCount > 1
+        if (varDeclCount > 0
                 && !isLinearVariableDeclarationChain(statements, varName)) {
             addSimpleForEachTerminal(statements, builder);
             return;
@@ -384,7 +386,7 @@ public class JdtLoopExtractor {
             currentVariableName = fragment.getName().getIdentifier();
             declarationCount++;
         }
-        return declarationCount > 1;
+        return declarationCount > 0;
     }
 
     private boolean referencesAnyVariable(ASTNode node,
@@ -412,6 +414,18 @@ public class JdtLoopExtractor {
      * Used when the body is too complex to decompose into map/filter chains.
      */
     private void addSimpleForEachTerminal(java.util.List<Statement> statements, LoopModelBuilder builder) {
+        // A fallback retains the body intact. It must not strand loop control in a lambda
+        // or turn a return from the enclosing method into a return from the callback.
+        boolean[] transfersControl = { false };
+        ASTVisitor visitor = new ASTVisitor() {
+            @Override public boolean visit(LambdaExpression node) { return false; }
+            @Override public boolean visit(AnonymousClassDeclaration node) { return false; }
+            @Override public boolean visit(TypeDeclaration node) { return false; }
+            @Override public boolean visit(ReturnStatement node) { transfersControl[0] = true; return false; }
+            @Override public boolean visit(ContinueStatement node) { transfersControl[0] = true; return false; }
+        };
+        for (Statement statement : statements) statement.accept(visitor);
+        if (transfersControl[0]) return;
         java.util.List<String> bodyStmts = new java.util.ArrayList<>();
         for (Statement stmt : statements) {
             String stmtStr = stmt.toString();
@@ -1217,13 +1231,15 @@ public class JdtLoopExtractor {
         private boolean hasTryCatch = false;
         private boolean hasSynchronized = false;
         private boolean hasNestedLoop = false;
-        private boolean hasVoidReturn = false;
+        private boolean hasUnsupportedReturn = false;
         private boolean hasIfElse = false;
         private boolean modifiesIteratedCollection = false;
         private final Expression iteratedExpression;
+        private final Statement body;
 
-        LoopBodyAnalyzer(Expression iteratedExpression) {
+        LoopBodyAnalyzer(Expression iteratedExpression, Statement body) {
             this.iteratedExpression = CollectionModificationDetector.normalizeIteratedExpression(iteratedExpression);
+            this.body = body;
         }
         
         @Override
@@ -1254,13 +1270,44 @@ public class JdtLoopExtractor {
         
         @Override
         public boolean visit(ReturnStatement node) {
-            // Void return exits the enclosing method, not the loop
-            // This cannot be converted to stream operations
-            if (node.getExpression() == null) {
-                hasVoidReturn = true;
+            // A boolean literal is safe only in the exact terminal-if shape modeled
+            // by analyzeStatements, never in an intermediate map or forEach callback.
+            if (!isMatchTerminalReturn(node)) hasUnsupportedReturn = true;
+            return false;
+        }
+
+        private boolean isMatchTerminalReturn(ReturnStatement node) {
+            if (!(node.getExpression() instanceof BooleanLiteral)) return false;
+            ASTNode branch = node;
+            if (branch.getParent() instanceof Block block) {
+                if (block.statements().size() != 1) return false;
+                branch = block;
             }
-            // Note: boolean returns (return true/false) are potentially convertible
-            // as match patterns — handled separately in analyzeStatements()
+            if (!(branch.getParent() instanceof IfStatement match)
+                    || match.getThenStatement() != branch || match.getElseStatement() != null) return false;
+            ASTNode current = match;
+            while (current != body) {
+                ASTNode parent = current.getParent();
+                if (parent instanceof Block block
+                        && block.statements().get(block.statements().size() - 1) == current) {
+                    current = block;
+                } else if (parent instanceof IfStatement guard
+                        && guard.getThenStatement() == current && guard.getElseStatement() == null) {
+                    current = guard;
+                } else {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        @Override public boolean visit(LambdaExpression node) { return false; }
+        @Override public boolean visit(AnonymousClassDeclaration node) { return false; }
+        @Override public boolean visit(TypeDeclaration node) { return false; }
+
+        @Override
+        public boolean visit(EnhancedForStatement node) {
+            hasNestedLoop = true;
             return false;
         }
         
@@ -1316,7 +1363,7 @@ public class JdtLoopExtractor {
         public boolean hasTryCatch() { return hasTryCatch; }
         public boolean hasSynchronized() { return hasSynchronized; }
         public boolean hasNestedLoop() { return hasNestedLoop; }
-        public boolean hasVoidReturn() { return hasVoidReturn; }
+        public boolean hasUnsupportedReturn() { return hasUnsupportedReturn; }
         public boolean hasIfElse() { return hasIfElse; }
         public boolean modifiesIteratedCollection() { return modifiesIteratedCollection; }
         

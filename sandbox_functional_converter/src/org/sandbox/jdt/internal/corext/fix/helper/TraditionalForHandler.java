@@ -415,8 +415,8 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
         return false;
     }
 
-    /** IntConsumer cannot propagate checked exceptions, even when the enclosing method can. */
-    private static final class CheckedBodyExceptions extends AbstractExceptionAnalyzer {
+    /** Stream callbacks cannot propagate checked exceptions, even when the enclosing method can. */
+    static final class CheckedBodyExceptions extends AbstractExceptionAnalyzer {
         private boolean uncertain;
 
         static boolean escape(Statement body) {

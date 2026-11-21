@@ -70,7 +70,7 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
             case COLLECTION:
                 // collection.stream()
                 MethodInvocation streamCall = ast.newMethodInvocation();
-                streamCall.setExpression(createExpression(source.expression()));
+                streamCall.setExpression(createReceiverExpression(source.expression()));
                 streamCall.setName(ast.newSimpleName(STREAM_METHOD));
                 return streamCall;
                 
@@ -89,7 +89,7 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
                 streamSupport.setName(ast.newSimpleName(STREAM_METHOD));
                 
                 MethodInvocation spliterator = ast.newMethodInvocation();
-                spliterator.setExpression(createExpression(source.expression()));
+                spliterator.setExpression(createReceiverExpression(source.expression()));
                 spliterator.setName(ast.newSimpleName(SPLITERATOR_METHOD));
                 
                 streamSupport.arguments().add(spliterator);
@@ -350,18 +350,8 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         // not the full original loop body (which would include statements already converted
         // to filter/map operations, causing duplication)
         String parameterName = effectiveParameterName(variableName, bodyStatements);
-        if (bodyStatements.size() == 1) {
-            Expression bodyExpr = createExpression(bodyStatements.get(0));
-            setLambdaParameterName(param, parameterName);
-            lambda.setBody(bodyExpr);
-        } else {
-            Block lambdaBlock = ast.newBlock();
-            for (String stmt : bodyStatements) {
-                lambdaBlock.statements().add(createStatement(stmt));
-            }
-            setLambdaParameterName(param, parameterName);
-            lambda.setBody(lambdaBlock);
-        }
+        setLambdaParameterName(param, parameterName);
+        lambda.setBody(createLambdaBody(bodyStatements));
         
         forEachCall.arguments().add(lambda);
         return forEachCall;
@@ -433,7 +423,7 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         
         // For collections and iterables, use direct forEach
         MethodInvocation forEachCall = ast.newMethodInvocation();
-        forEachCall.setExpression(createExpression(source.expression()));
+        forEachCall.setExpression(createReceiverExpression(source.expression()));
         forEachCall.setName(ast.newSimpleName(FOR_EACH_METHOD));
         
         LambdaExpression lambda = ast.newLambdaExpression();
@@ -466,18 +456,8 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         } else {
             // Test/fallback path: Use bodyStatements strings (for unit tests)
             String parameterName = effectiveParameterName(variableName, bodyStatements);
-            if (bodyStatements.size() == 1) {
-                Expression bodyExpr = createExpression(bodyStatements.get(0));
-                setLambdaParameterName(param, parameterName);
-                lambda.setBody(bodyExpr);
-            } else {
-                Block lambdaBlock = ast.newBlock();
-                for (String stmt : bodyStatements) {
-                    lambdaBlock.statements().add(createStatement(stmt));
-                }
-                setLambdaParameterName(param, parameterName);
-                lambda.setBody(lambdaBlock);
-            }
+            setLambdaParameterName(param, parameterName);
+            lambda.setBody(createLambdaBody(bodyStatements));
         }
         
         forEachCall.arguments().add(lambda);
@@ -674,6 +654,30 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
     }
     
     // Helper methods
+
+    /** A single statement is not necessarily a Java expression (for example, if/else). */
+    private ASTNode createLambdaBody(List<String> statements) {
+        Block block = ast.newBlock();
+        for (String statement : statements) block.statements().add(createStatement(statement));
+        if (block.statements().size() == 1
+                && block.statements().get(0) instanceof ExpressionStatement expression) {
+            return ASTNode.copySubtree(ast, expression.getExpression());
+        }
+        return block;
+    }
+
+    /** Preserve the precedence of a cast, conditional or other compound receiver. */
+    private Expression createReceiverExpression(String text) {
+        Expression expression = createExpression(text);
+        if (expression instanceof CastExpression || expression instanceof ConditionalExpression
+                || expression instanceof Assignment || expression instanceof InfixExpression
+                || expression instanceof LambdaExpression || expression instanceof MethodReference) {
+            ParenthesizedExpression receiver = ast.newParenthesizedExpression();
+            receiver.setExpression(expression);
+            return receiver;
+        }
+        return expression;
+    }
     
     private LambdaExpression createLambda(String paramName, String bodyExpression) {
         Expression body = createExpression(bodyExpression);
