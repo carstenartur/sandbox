@@ -40,6 +40,7 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.sandbox.jdt.container.analysis.UniqueSequencePattern;
 import org.sandbox.jdt.container.cleanup.internal.corext.fix.ClosedUniqueSequenceFlow.Edit;
 import org.sandbox.jdt.container.cleanup.internal.corext.fix.ClosedUniqueSequenceFlow.Kind;
+import org.sandbox.jdt.internal.common.ImportNameBindings;
 
 /** Closes the registry field before passing its detached, ordered snapshots to the signature planner. */
 final class LockedRegistrySnapshot {
@@ -112,7 +113,7 @@ final class LockedRegistrySnapshot {
 		root.accept(new ASTVisitor() {
 			@Override
 			public boolean visit(SimpleName name) {
-				if (!name.isDeclaration() && field.isEqualTo(name.resolveBinding())) {
+				if (!name.isDeclaration() && field.isEqualTo(ImportNameBindings.resolve(name))) {
 					actual.add(name);
 				}
 				return true;
