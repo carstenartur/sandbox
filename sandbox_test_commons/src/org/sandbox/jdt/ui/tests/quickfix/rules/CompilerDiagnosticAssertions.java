@@ -253,6 +253,9 @@ public final class CompilerDiagnosticAssertions {
 		// fixture itself uses a lenient workspace profile. Keep project errors and its language level.
 		options.replaceAll((key, severity) -> key.startsWith(JavaCore.PLUGIN_ID + ".compiler.problem.") //$NON-NLS-1$
 				&& (JavaCore.IGNORE.equals(severity) || JavaCore.INFO.equals(severity)) ? JavaCore.WARNING : severity);
+		// Compare the complete multiset: truncation can hide regressions or expose
+		// previously omitted warnings after a cleanup removes an earlier problem.
+		options.put(JavaCore.COMPILER_PB_MAX_PER_UNIT, "0"); //$NON-NLS-1$
 		parser.setCompilerOptions(options);
 		parser.setResolveBindings(true);
 		CompilationUnit root= (CompilationUnit) parser.createAST(null);
