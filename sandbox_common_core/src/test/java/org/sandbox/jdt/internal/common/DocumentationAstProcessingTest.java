@@ -21,8 +21,10 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -59,7 +61,7 @@ class DocumentationAstProcessingTest {
 				.visit(MemberRef.class, ref -> fields.add(ref.getName().getIdentifier()))
 				.build(unit);
 
-		assertEquals(List.of(false, true), formats);
+		assertEquals(List.of(Boolean.FALSE, Boolean.TRUE), formats);
 		assertTrue(tags.contains(TagElement.TAG_LINK));
 		assertTrue(tags.contains(TagElement.TAG_PARAM));
 		assertTrue(text.stream().anyMatch(part -> part.contains("Classic prose")));
@@ -76,7 +78,7 @@ class DocumentationAstProcessingTest {
 		AstProcessing.scoped(ReferenceHolder.create())
 				.find(MethodDeclaration.class, method -> "markdown".equals(method.getName().getIdentifier()),
 						(method, state) -> { }, MethodDeclaration::getJavadoc)
-				.thenWithTraversal(Javadoc.class, Javadoc::isMarkdown, (doc, state) -> SKIP_CHILDREN, doc -> doc)
+				.thenWithTraversal(Javadoc.class, Javadoc::isMarkdown, (doc, state) -> SKIP_CHILDREN, Function.identity())
 				.then(MethodRef.class, ref -> true, (ref, state) -> methods.add(ref.getName().getIdentifier()))
 				.build(unit);
 
@@ -96,7 +98,7 @@ class DocumentationAstProcessingTest {
 				.visit(MethodRef.class, ref -> methods.add(ref.getName().getIdentifier()))
 				.build(unit);
 
-		assertEquals(List.of(true), formats);
+		assertEquals(List.of(Boolean.TRUE), formats);
 		assertEquals(List.of("classic", "markdown"), methods);
 	}
 
@@ -270,7 +272,7 @@ class DocumentationAstProcessingTest {
 		parser.setCompilerOptions(options);
 		parser.setSource(source.toCharArray());
 		CompilationUnit unit= (CompilationUnit) parser.createAST(null);
-		assertFalse(Arrays.stream(unit.getProblems()).anyMatch(problem -> problem.isError()),
+		assertFalse(Arrays.stream(unit.getProblems()).anyMatch(IProblem::isError),
 				() -> Arrays.toString(unit.getProblems()));
 		return unit;
 	}
