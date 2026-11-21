@@ -11,6 +11,7 @@
 package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -24,6 +25,8 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubMonitor;
 
+import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.text.Document;
 import org.eclipse.ltk.core.refactoring.Change;
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 
@@ -72,12 +75,12 @@ public final class RepeatedCodeSequenceExtractor {
 	private record PreparedExtraction(ExtractMethodRefactoring refactoring, String ownerName,
 			int score, int statementCount, int duplicateCount, int sourceOffset) {
 
-		ICleanUpFix toCleanUpFix() {
+		ICleanUpFix toCleanUpFix(String source) {
 			return monitor -> {
 				SubMonitor progress= SubMonitor.convert(monitor, 3);
 				CompilationUnitChange change= extract(refactoring, progress.split(1));
 				if (ownerName != null && canMakeGeneratedMethodStatic(change, ownerName,
-						refactoring.getMethodName(), progress.split(1))) {
+						refactoring.getMethodName(), source, progress.split(1))) {
 					// Extract Method uses this modifier mask to build the declaration and calculate type parameters.
 					refactoring.setVisibility(Modifier.PRIVATE | Modifier.STATIC);
 					try {
@@ -101,12 +104,13 @@ public final class RepeatedCodeSequenceExtractor {
 	}
 
 	private static boolean canMakeGeneratedMethodStatic(CompilationUnitChange change, String ownerName,
-			String methodName, IProgressMonitor monitor) throws CoreException {
+			String methodName, String source, IProgressMonitor monitor) throws CoreException {
 		ICompilationUnit unit= change.getCompilationUnit();
 		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
 		parser.setProject(unit.getJavaProject());
 		parser.setUnitName(unit.getPath().toPortableString());
-		parser.setSource(change.getPreviewContent(monitor).toCharArray());
+		parser.setSource(previewSource(change, source).toCharArray());
+		parser.setWorkingCopyOwner(unit.getOwner());
 		var options= unit.getOptions(true);
 		options.put(JavaCore.COMPILER_PB_MISSING_STATIC_ON_METHOD, JavaCore.WARNING);
 		options.put(JavaCore.COMPILER_PB_POTENTIALLY_MISSING_STATIC_ON_METHOD, JavaCore.WARNING);
@@ -150,6 +154,7 @@ public final class RepeatedCodeSequenceExtractor {
 		if (unit == null || root == null) {
 			return null;
 		}
+		String source= unit.getSource();
 		int minimumStatements= normalizeMinimum(configuredMinimum);
 		List<List<Candidate>> groups= candidateGroups(root, minimumStatements);
 		PreparedExtraction best= null;
@@ -157,7 +162,7 @@ public final class RepeatedCodeSequenceExtractor {
 		for (List<Candidate> group : groups) {
 			for (Candidate candidate : group) {
 				if (checks++ >= MAX_REFACTORING_CHECKS) {
-					return best == null ? null : best.toCleanUpFix();
+					return validatedFix(best, unit, source);
 				}
 				if (!hasJdtDuplicate(candidate)) {
 					continue;
@@ -171,7 +176,71 @@ public final class RepeatedCodeSequenceExtractor {
 				// JDT determines each candidate's actual duplicate set.
 			}
 		}
-		return best == null ? null : best.toCleanUpFix();
+		return validatedFix(best, unit, source);
+	}
+
+
+	private record ProblemKey(boolean error, int id, List<String> arguments) {
+	}
+
+	private static ICleanUpFix validatedFix(PreparedExtraction extraction, ICompilationUnit unit,
+			String source) throws CoreException {
+		if (extraction == null) {
+			return null;
+		}
+		ICleanUpFix fix= extraction.toCleanUpFix(source);
+		CompilationUnitChange change= fix.createChange(new NullProgressMonitor());
+		try {
+			Map<ProblemKey, Integer> before= compilerProblems(unit, source);
+			Map<ProblemKey, Integer> after= compilerProblems(unit, previewSource(change, source));
+			for (var problem : after.entrySet()) {
+				if (problem.getValue() > before.getOrDefault(problem.getKey(), 0)) {
+					// JDT's semantic checks can accept duplicate replacements which fail
+					// compilation or introduce diagnostics in the complete generated unit.
+					return null;
+				}
+			}
+			return fix;
+		} finally {
+			change.dispose();
+		}
+	}
+
+	private static String previewSource(CompilationUnitChange change, String source) throws CoreException {
+		// Cleanup fixpoint rounds use private working copies. TextChange's resource
+		// preview can read an older file-buffer document instead of that exact source.
+		Document document= new Document(source);
+		try {
+			change.getEdit().copy().apply(document);
+		} catch (BadLocationException exception) {
+			throw new CoreException(Status.error("Cannot preview repeated sequence extraction", exception)); //$NON-NLS-1$
+		}
+		return document.get();
+	}
+
+	private static Map<ProblemKey, Integer> compilerProblems(ICompilationUnit unit, String source) {
+		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
+		parser.setProject(unit.getJavaProject());
+		parser.setUnitName(unit.getPath().toPortableString());
+		parser.setSource(source.toCharArray());
+		parser.setWorkingCopyOwner(unit.getOwner());
+		var options= unit.getOptions(true);
+		// Check optional warnings in the preview without changing project preferences.
+		// A later warning-profile change must not expose diagnostics introduced here.
+		options.replaceAll((key, severity) -> key.startsWith(JavaCore.PLUGIN_ID + ".compiler.problem.") //$NON-NLS-1$
+				&& (JavaCore.IGNORE.equals(severity) || JavaCore.INFO.equals(severity)) ? JavaCore.WARNING : severity);
+		options.put(JavaCore.COMPILER_PB_MAX_PER_UNIT, "0"); //$NON-NLS-1$
+		parser.setCompilerOptions(options);
+		parser.setResolveBindings(true);
+		CompilationUnit root= (CompilationUnit) parser.createAST(null);
+		Map<ProblemKey, Integer> problems= new LinkedHashMap<>();
+		for (IProblem problem : root.getProblems()) {
+			if (problem.isError() || problem.isWarning()) {
+				ProblemKey key= new ProblemKey(problem.isError(), problem.getID(), Arrays.asList(problem.getArguments()));
+				problems.merge(key, 1, Integer::sum);
+			}
+		}
+		return problems;
 	}
 
 	/** Normalizes profile values to a conservative supported range. */
