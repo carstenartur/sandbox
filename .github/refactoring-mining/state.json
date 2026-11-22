@@ -5536,9 +5536,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "lastProcessedCommit": "85b1247c16c5f44a0e9b199068a7bf23a5041c31",
-      "lastProcessedDate": "2026-11-21T03:27:51.187427722Z",
-      "totalProcessed": 1351,
+      "lastProcessedCommit": "05be2519c00be901ef1067b044790fa07dc9871e",
+      "lastProcessedDate": "2026-11-22T02:23:51.133643459Z",
+      "totalProcessed": 1415,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -6269,6 +6269,24 @@
           "deferredAt": "2026-11-21T03:27:19.503640724Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "62b504e71eb1a4be4649ec9bb698e74ad213211e",
+          "message": "Bug 384460 - Provide Breakpoint Serialization/Deserialization API",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-22T02:20:07.001429120Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "37978528c6f546dbacda8aaa7c9b284e602b5b44",
+          "message": "Bug 387504 - Bugs in program argument parsing (compared to command line)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-22T02:21:21.192391848Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -6281,7 +6299,7 @@
       ],
       "categoryHitCounts": {
         "API Misuse": 1,
-        "API Modernization": 9,
+        "API Modernization": 10,
         "API Migration": 4,
         "Collections Modernization": 1,
         "Lambda Conversion": 1,
@@ -6336,5 +6354,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 54932
+  "globalTotalProcessed": 54996
 }
