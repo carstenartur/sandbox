@@ -16,8 +16,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -50,7 +48,21 @@ import org.sandbox.jdt.triggerpattern.test.policy.PinnedGitRepository;
 /** Every eligible XML resource in every actual Eclipse project at the R4_41 pins. */
 class PinnedJdtXmlCorpusTest {
 
-	private record Upstream(String repository, String commit) { }
+	private enum Upstream {
+		CORE("core", "eclipse-jdt/eclipse.jdt.core", "6725c16c24d94c83302346dc384bb915a0f2fe1a"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		UI("ui", "eclipse-jdt/eclipse.jdt.ui", "54bd63e6453a7eb5db0bfc1d60f17e9568095619"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		SWT("swt", "eclipse-platform/eclipse.platform.swt", "3e3b24b4691c4f18a7d5e22653fe28d4c47385d7"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+
+		private final String family;
+		private final String repository;
+		private final String commit;
+
+		Upstream(String family, String repository, String commit) {
+			this.family= family;
+			this.repository= repository;
+			this.commit= commit;
+		}
+	}
 
 	private record CorpusResource(IFile copy, Path source, String relative, String project, byte[] original) { }
 
@@ -60,10 +72,6 @@ class PinnedJdtXmlCorpusTest {
 		int changedCases;
 	}
 
-	private static final Map<String, Upstream> UPSTREAMS= Map.of(
-			"core", new Upstream("eclipse-jdt/eclipse.jdt.core", "6725c16c24d94c83302346dc384bb915a0f2fe1a"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-			"ui", new Upstream("eclipse-jdt/eclipse.jdt.ui", "54bd63e6453a7eb5db0bfc1d60f17e9568095619"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-			"swt", new Upstream("eclipse-platform/eclipse.platform.swt", "3e3b24b4691c4f18a7d5e22653fe28d4c47385d7")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	private static final String REF= "refs/tags/R4_41"; //$NON-NLS-1$
 	private static final Set<String> DESCRIPTOR_NAMES= Set.of("plugin.xml", "fragment.xml", "feature.xml"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	private static final boolean[] INDENT_OPTIONS= { false, true };
@@ -73,17 +81,23 @@ class PinnedJdtXmlCorpusTest {
 
 	@Test
 	void verifiesEveryEligibleResourceWithEveryOptionCombination() throws Exception {
-		String family= System.getProperty("sandbox.xml.corpus.family", "").trim(); //$NON-NLS-1$ //$NON-NLS-2$
-		if (family.isEmpty()) {
+		String requestedFamily= System.getProperty("sandbox.xml.corpus.family", "").trim(); //$NON-NLS-1$ //$NON-NLS-2$
+		if (requestedFamily.isEmpty()) {
 			assertFalse(Boolean.getBoolean("sandbox.xml.corpus.required"), "Required XML corpus family is missing"); //$NON-NLS-1$ //$NON-NLS-2$
 			Assumptions.abort("Enable pde-xml-upstream-corpus and select core, ui or swt"); //$NON-NLS-1$
 		}
-		assertTrue(UPSTREAMS.containsKey(family), () -> "Unknown XML corpus family: " + family); //$NON-NLS-1$
-		Upstream upstream= UPSTREAMS.get(family);
+		Upstream upstream= Arrays.stream(Upstream.values()).filter(candidate -> requestedFamily.equals(candidate.family)).findFirst()
+				.orElseThrow(() -> new AssertionError("Unknown XML corpus family: " + requestedFamily)); //$NON-NLS-1$
+		String family= upstream.family;
 		Path outputRoot= Path.of(System.getProperty("sandbox.xml.corpus.output", "target/xml-upstream-corpus")) //$NON-NLS-1$ //$NON-NLS-2$
 				.toAbsolutePath();
 		Files.createDirectories(outputRoot);
-		Path output= Files.createTempDirectory(outputRoot, family + "-"); //$NON-NLS-1$
+		String prefix= switch (upstream) {
+		case CORE -> "core-"; //$NON-NLS-1$
+		case UI -> "ui-"; //$NON-NLS-1$
+		case SWT -> "swt-"; //$NON-NLS-1$
+		};
+		Path output= Files.createTempDirectory(outputRoot, prefix);
 		System.out.println("XML corpus evidence: " + output); //$NON-NLS-1$
 		URI remote= URI.create("https://github.com/" + upstream.repository + ".git"); //$NON-NLS-1$ //$NON-NLS-2$
 		try (PinnedGitRepository fixture= PinnedGitRepository.cloneAt(temporary.resolve(family), remote, REF, upstream.commit)) {
@@ -225,9 +239,8 @@ class PinnedJdtXmlCorpusTest {
 			assertArrayEquals(original, Files.readAllBytes(source), "Upstream fixture was modified: " + relative); //$NON-NLS-1$
 			status= "PASS"; //$NON-NLS-1$
 		} catch (Throwable failure) {
-			StringWriter details= new StringWriter();
-			failure.printStackTrace(new PrintWriter(details));
-			write(Path.of(evidence + ".failure.txt"), details.toString().getBytes(StandardCharsets.UTF_8)); //$NON-NLS-1$
+			String summary= failure.getClass().getName() + "\nSee the JUnit report for the stack trace.\n"; //$NON-NLS-1$
+			write(Path.of(evidence + ".failure.txt"), summary.getBytes(StandardCharsets.UTF_8)); //$NON-NLS-1$
 			throw new AssertionError(relative + " [" + mode + "]", failure); //$NON-NLS-1$ //$NON-NLS-2$
 		} finally {
 			byte[] after= bytes(copy);

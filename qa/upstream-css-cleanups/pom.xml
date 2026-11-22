@@ -1,0 +1,60 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.sandbox.qa</groupId><artifactId>upstream-css-cleanups</artifactId><version>1.0.0-SNAPSHOT</version>
+  <name>Pinned upstream CSS cleanup qualification</name>
+  <properties>
+    <maven.compiler.release>25</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <repo>${project.basedir}/../..</repo>
+    <css.tools>${project.build.directory}/node-tools</css.tools>
+    <css.frontend>${project.build.directory}/frontend</css.frontend>
+    <argLine>-Xmx512m -XX:-UsePerfData</argLine>
+  </properties>
+  <dependencies>
+    <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><version>6.1.3</version><scope>test</scope></dependency>
+    <dependency><groupId>org.eclipse.jgit</groupId><artifactId>org.eclipse.jgit</artifactId><version>7.8.0.202609011348-r</version><scope>test</scope></dependency>
+  </dependencies>
+  <build>
+    <testSourceDirectory>${repo}</testSourceDirectory>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId><artifactId>maven-resources-plugin</artifactId><version>3.5.0</version>
+        <executions><execution><id>stage-pinned-css-tools</id><phase>generate-test-resources</phase><goals><goal>copy-resources</goal></goals>
+          <configuration><outputDirectory>${css.tools}</outputDirectory><changeDetection>content</changeDetection>
+            <resources><resource><directory>${repo}/sandbox_css_cleanup_test</directory><filtering>false</filtering>
+              <includes><include>package.json</include><include>package-lock.json</include></includes>
+            </resource></resources>
+          </configuration>
+        </execution></executions>
+      </plugin>
+      <plugin>
+        <groupId>com.github.eirslett</groupId><artifactId>frontend-maven-plugin</artifactId><version>2.0.2</version>
+        <configuration><workingDirectory>${css.tools}</workingDirectory><installDirectory>${css.frontend}</installDirectory></configuration>
+        <executions>
+          <execution><id>install-node-and-npm</id><phase>generate-test-resources</phase><goals><goal>install-node-and-npm</goal></goals>
+            <configuration><nodeVersion>v24.19.0</nodeVersion><npmVersion>11.17.0</npmVersion></configuration>
+          </execution>
+          <execution><id>install-css-tools</id><phase>generate-test-resources</phase><goals><goal>npm</goal></goals>
+            <configuration><arguments>ci --ignore-scripts --no-audit --no-fund</arguments></configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>3.16.0</version>
+        <configuration><testIncludes>
+          <testInclude>qa/upstream-css-cleanups/src/test/java/**/*.java</testInclude>
+          <testInclude>sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/PinnedGitRepository.java</testInclude>
+        </testIncludes></configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId><version>3.6.0</version>
+        <configuration><workingDirectory>${repo}</workingDirectory><systemPropertyVariables>
+          <sandbox.css.repo>${repo}</sandbox.css.repo>
+          <sandbox.css.node.installDirectory>${css.frontend}</sandbox.css.node.installDirectory>
+          <sandbox.css.node.modulesDirectory>${css.tools}/node_modules</sandbox.css.node.modulesDirectory>
+        </systemPropertyVariables></configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

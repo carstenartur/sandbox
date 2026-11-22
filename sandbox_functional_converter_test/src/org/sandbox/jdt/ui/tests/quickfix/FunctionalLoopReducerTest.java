@@ -268,7 +268,7 @@ String expected = """
 				public static void main( String[] args) {
 					List<Integer> ints=new ArrayList<>();
 					long len=0L;
-					len = ints.stream().mapToLong(_ -> 1L).reduce(len, Long::sum);
+					len = ints.stream().mapToInt(boxedValue -> boxedValue.intValue()).mapToLong(_ -> 1L).reduce(len, Long::sum);
 
 				}
 				}""";

@@ -67,6 +67,10 @@ This preserves JDT's handling of bindings, arguments, return values, static cont
 
 The plugin must not copy `ExtractMethodAnalyzer`, `SnippetFinder`, parameter inference, or method-generation logic into Sandbox.
 
+After selecting a candidate, the cleanup compiles its complete preview with the same language level and project classpath as the input. It rejects the extraction if any error or warning identity increases in multiplicity. Optional warning severities are enabled only for this comparison; project preferences stay unchanged. This also catches invalid duplicate output mappings and warnings introduced by newly generated parameters. Valid extractions still use JDT's unmodified change.
+
+Preview edits are applied to a temporary document containing the exact current compilation-unit source. During later cleanup fixpoint rounds that source can be a private working copy whose content differs from the saved file. Reading a resource-backed preview in that situation would use obsolete offsets.
+
 ## One extraction per pass
 
 Independent Extract Method changes are computed against a particular source snapshot. Composing several independently prepared changes can make later offsets and semantic assumptions stale. The cleanup therefore selects one best group per compilation unit and pass and lets JDT replace all duplicates of that group. Another Cleanup run may process a remaining independent group.
