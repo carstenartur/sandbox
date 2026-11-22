@@ -508,7 +508,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed design documentation.
 ## Current Limitations
 
 - No operation merging (consecutive filters/maps remain separate operations)
-- No collect() support (only forEach, reduce, anyMatch, noneMatch, allMatch)
+- Eligible collection additions can use `collect()`. When earlier operations read or add to the destination, conversion keeps its initialization and the original body in `forEach`.
 - No parallel streams
 - No labeled break/continue (rejected for safety)
 - No exception throwing in loops
