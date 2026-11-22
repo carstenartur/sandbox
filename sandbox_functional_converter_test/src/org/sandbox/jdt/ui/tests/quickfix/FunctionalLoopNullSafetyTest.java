@@ -23,6 +23,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
+import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseBundleClasspath;
 
 /** Tests null-safety and lambda-capture boundaries of functional loop conversion. */
 @DisplayName("Functional Loop Null Safety Tests")
@@ -36,17 +37,18 @@ public class FunctionalLoopNullSafetyTest {
 	class StringConcatReducerTests {
 
 		@Test
-		@DisplayName("String concat with @NotNull accumulator uses String::concat")
-		void test_StringConcat_WithNotNullAccumulator() throws CoreException {
+		@DisplayName("String concat with @NonNull accumulator preserves nullable elements")
+		void test_StringConcat_WithNonNullAccumulator() throws CoreException {
+			EclipseBundleClasspath.addBundles(context.getJavaProject(), "org.eclipse.jdt.annotation"); //$NON-NLS-1$
 			String input = """
 					package test1;
 
 					import java.util.List;
-					import org.eclipse.jdt.annotation.NotNull;
+					import org.eclipse.jdt.annotation.NonNull;
 
 					class MyTest {
-						public String concat(@NotNull List<String> items) {
-							@NotNull String result = "";
+						public String concat(@NonNull List<String> items) {
+							@NonNull String result = "";
 							for (String item : items) {
 								result = result + item;
 							}
@@ -57,12 +59,12 @@ public class FunctionalLoopNullSafetyTest {
 					package test1;
 
 					import java.util.List;
-					import org.eclipse.jdt.annotation.NotNull;
+					import org.eclipse.jdt.annotation.NonNull;
 
 					class MyTest {
-						public String concat(@NotNull List<String> items) {
-							@NotNull String result = "";
-							result = items.stream().reduce(result, String::concat);
+						public String concat(@NonNull List<String> items) {
+							@NonNull String result = "";
+							result = items.stream().reduce(result, (a, b) -> a + b);
 							return result;
 						}
 					}""";
