@@ -37,15 +37,16 @@ public class MethodCallReplacer {
 	/**
 	 * Create a method invocation that replaces an inline code sequence
 	 * 
-	 * @param ast The AST to use for creating new nodes
+	 * @param rewrite The rewrite used to retain source comments in copied arguments
 	 * @param targetMethod The method to call
 	 * @param variableMapping The mapping from method parameters to inline expressions
 	 * @return A method invocation node
 	 */
-	public static MethodInvocation createMethodCall(AST ast, MethodDeclaration targetMethod, VariableMapping variableMapping) {
-		if (ast == null || !canCreateMethodCall(targetMethod, variableMapping)) {
+	public static MethodInvocation createMethodCall(ASTRewrite rewrite, MethodDeclaration targetMethod, VariableMapping variableMapping) {
+		if (rewrite == null || !canCreateMethodCall(targetMethod, variableMapping)) {
 			return null;
 		}
+		AST ast= rewrite.getAST();
 		
 		MethodInvocation methodCall = ast.newMethodInvocation();
 		
@@ -54,7 +55,7 @@ public class MethodCallReplacer {
 		methodCall.setName(methodName);
 		
 		// Create arguments based on parameter mapping
-		List<Expression> arguments = createArguments(ast, targetMethod, variableMapping);
+		List<Expression> arguments = createArguments(rewrite, targetMethod, variableMapping);
 		methodCall.arguments().addAll(arguments);
 		
 		return methodCall;
@@ -63,7 +64,8 @@ public class MethodCallReplacer {
 	/**
 	 * Create the argument list for the method call
 	 */
-	private static List<Expression> createArguments(AST ast, MethodDeclaration targetMethod, VariableMapping variableMapping) {
+	private static List<Expression> createArguments(ASTRewrite rewrite, MethodDeclaration targetMethod, VariableMapping variableMapping) {
+		AST ast= rewrite.getAST();
 		List<Expression> arguments = new ArrayList<>();
 		Map<String, String> nameMappings = variableMapping.getMappings();
 		Map<String, org.eclipse.jdt.core.dom.Expression> exprMappings = variableMapping.getExpressionMappings();
@@ -78,7 +80,7 @@ public class MethodCallReplacer {
 				org.eclipse.jdt.core.dom.Expression candidateExpr = exprMappings.get(paramName);
 				if (candidateExpr != null) {
 					// Copy the expression from the candidate code
-					Expression argExpr = (Expression) org.eclipse.jdt.core.dom.ASTNode.copySubtree(ast, candidateExpr);
+					Expression argExpr = (Expression) rewrite.createCopyTarget(candidateExpr);
 					arguments.add(argExpr);
 					continue;
 				}
