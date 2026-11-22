@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 1: The import org.eclipse.swt cannot be resolved",
-    "verifiedAt": "2026-11-21T03:28:10.614289256Z",
+    "verifiedAt": "2026-11-22T02:24:13.652626018Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0

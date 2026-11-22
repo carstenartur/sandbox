@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "6275796b1ab6ecd62799706870b4ed2ec21ec6b984d073238adc60d87b86c046",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.debug.core.DebugPlugin.getUniqueIdentifier()\n\u003d\u003e\norg.eclipse.debug.core.DebugPlugin.PI_DEBUG_CORE\n;;",
+  "beforeExample": "package test;\n\n// Assume org.eclipse.debug.core.DebugPlugin class exists with these members for this example\nclass DebugPlugin {\n    public static String getUniqueIdentifier() { return \"org.eclipse.debug.core\"; }\n    public static final String PI_DEBUG_CORE \u003d \"org.eclipse.debug.core\";\n}\n\npublic class MyConstants {\n    public static final String PREF_DELETE_CONFIGS_ON_PROJECT_DELETE \u003d DebugPlugin.getUniqueIdentifier() + \".PREF_DELETE_CONFIGS_ON_PROJECT_DELETE\";\n    public static final String ATTR_BREAKPOINT_IS_DELETED \u003d DebugPlugin.getUniqueIdentifier() + \".breakpointIsDeleted\";\n}",
+  "afterExample": "package test;\n\n// Assume org.eclipse.debug.core.DebugPlugin class exists with these members for this example\nclass DebugPlugin {\n    public static String getUniqueIdentifier() { return \"org.eclipse.debug.core\"; }\n    public static final String PI_DEBUG_CORE \u003d \"org.eclipse.debug.core\";\n}\n\npublic class MyConstants {\n    public static final String PREF_DELETE_CONFIGS_ON_PROJECT_DELETE \u003d org.eclipse.debug.core.DebugPlugin.PI_DEBUG_CORE + \".PREF_DELETE_CONFIGS_ON_PROJECT_DELETE\";\n    public static final String ATTR_BREAKPOINT_IS_DELETED \u003d DebugPlugin.getUniqueIdentifier() + \".breakpointIsDeleted\";\n}",
+  "negativeExample": "package test;\n\n// Assume org.eclipse.debug.core.DebugPlugin class exists with these members for this example\nclass DebugPlugin {\n    public static String getUniqueIdentifier() { return \"org.eclipse.debug.core\"; }\n    public static final String PI_DEBUG_CORE \u003d \"org.eclipse.debug.core\";\n    public String getAnotherIdentifier() { return \"another.id\"; }\n}\n\npublic class MyOtherConstants {\n    public static final String OTHER_PREF_VALUE \u003d DebugPlugin.PI_DEBUG_CORE + \".some.other.pref\"; // Already uses the constant, should not match.\n    private DebugPlugin instance \u003d new DebugPlugin();\n    public String localMethodCall() {\n        return instance.getAnotherIdentifier(); // Different method call, should not match.\n    }\n}",
+  "targetHintFile": "api-modernization.sandbox-hint",
+  "sourceCommit": "94b0c8b7da7e2ff4d1cfb63e61b50535f7ed3197",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "sourceEvidence": {
+    "path": "org.eclipse.debug.core/core/org/eclipse/debug/core/DebugPlugin.java",
+    "before": "\tpublic static final String PREF_DELETE_CONFIGS_ON_PROJECT_DELETE \u003d DebugPlugin.getUniqueIdentifier() + \".PREF_DELETE_CONFIGS_ON_PROJECT_DELETE\"; //$NON-NLS-1$",
+    "after": "\tpublic static final String PREF_DELETE_CONFIGS_ON_PROJECT_DELETE \u003d PI_DEBUG_CORE + \".PREF_DELETE_CONFIGS_ON_PROJECT_DELETE\"; //$NON-NLS-1$",
+    "diffHunk": "diff --git a/org.eclipse.debug.core/core/org/eclipse/debug/core/DebugPlugin.java b/org.eclipse.debug.core/core/org/eclipse/debug/core/DebugPlugin.java\nindex 3ba41eb..463920b 100644\n--- a/org.eclipse.debug.core/core/org/eclipse/debug/core/DebugPlugin.java\n+++ b/org.eclipse.debug.core/core/org/eclipse/debug/core/DebugPlugin.java\n@@ -284,7 +284,7 @@\n \t * \n \t * @since 3.7\n \t */\n-\tpublic static final String PREF_DELETE_CONFIGS_ON_PROJECT_DELETE \u003d DebugPlugin.getUniqueIdentifier() + \".PREF_DELETE_CONFIGS_ON_PROJECT_DELETE\"; //$NON-NLS-1$\n+\tpublic static final String PREF_DELETE_CONFIGS_ON_PROJECT_DELETE \u003d PI_DEBUG_CORE + \".PREF_DELETE_CONFIGS_ON_PROJECT_DELETE\"; //$NON-NLS-1$\n \n \t/**\n \t * Deleted breakpoint marker attribute (value\n"
+  },
+  "category": "API Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-22T02:19:26.424395990Z",
+  "ruleFingerprint": "sha256:2ac6a3b945f4a1de74264f13b58e34158fbe2c71aa0d169826a71fff390becb7",
+  "behaviorFingerprint": "sha256:1abdf1d6d64f3e14d89069039609bdfbb5da4a11a1093c104f5238918cd1c28f",
+  "verification": {
+    "successful": false,
+    "stage": "AFTER_PARSE",
+    "message": "Java compile error at line 10: org.eclipse.debug cannot be resolved to a variable",
+    "verifiedAt": "2026-11-22T02:24:16.905770163Z",
+    "verifierVersion": "9",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

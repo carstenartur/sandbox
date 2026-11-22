@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "AFTER_REWRITE",
     "message": "Transformed syntax tree does not equal afterExample",
-    "verifiedAt": "2026-11-21T03:28:10.440142869Z",
+    "verifiedAt": "2026-11-22T02:24:13.342044180Z",
     "verifierVersion": "9",
     "matches": 1,
     "replacements": 1
