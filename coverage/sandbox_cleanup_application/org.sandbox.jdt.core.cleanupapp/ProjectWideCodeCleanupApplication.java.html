@@ -198,7 +198,7 @@ import org.sandbox.jdt.internal.common.PdeManifestImportUpdater;
 <span class="fc" id="L198">			e.printStackTrace(System.err);</span>
 		}
 
-<span class="pc bpc" id="L201" title="1 of 2 branches missed.">		if (arguments.patch() != null) {</span>
+<span class="fc bfc" id="L201" title="All 2 branches covered.">		if (arguments.patch() != null) {</span>
 			try {
 <span class="fc" id="L203">				writePatch(arguments.patch(), changed);</span>
 <span class="pc" id="L204">			} catch (IOException e) {</span>
@@ -272,7 +272,7 @@ import org.sandbox.jdt.internal.common.PdeManifestImportUpdater;
 <span class="fc" id="L272">		return new Arguments(project,</span>
 <span class="pc bpc" id="L273" title="1 of 2 branches missed.">				projectLocation == null ? null : projectLocation.toAbsolutePath().normalize(),</span>
 <span class="fc" id="L274">				configuration.toAbsolutePath().normalize(), report.toAbsolutePath().normalize(),</span>
-<span class="pc bpc" id="L275" title="1 of 2 branches missed.">				patch == null ? null : patch.toAbsolutePath().normalize(), mode, List.copyOf(pdeDeployments));</span>
+<span class="fc bfc" id="L275" title="All 2 branches covered.">				patch == null ? null : patch.toAbsolutePath().normalize(), mode, List.copyOf(pdeDeployments));</span>
 	}
 
 	private static String requiredValue(String[] values, int index, String option) {
