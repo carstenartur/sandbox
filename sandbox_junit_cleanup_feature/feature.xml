@@ -21,7 +21,7 @@
    </license>
 
    <url>
-      <update label="sandbox" url="https://github.com/carstenartur/sandbox/raw/main"/>
+      <update label="sandbox" url="https://carstenartur.github.io/sandbox/releases/"/>
    </url>
 
    <requires>

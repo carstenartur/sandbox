@@ -27,7 +27,7 @@
   },
   "cleanupProfile": "junit4-to-jupiter.properties",
   "profileSha256": "db130cfe692ac797db90ea1161cb8828d43d929b4dae733fd900e612eb785aa8",
-  "strictMigrationPatchSha256": "93dc9e01c88b33202287bbb8fda97a55e4c3171c38bcd6d69762d750a6a01d9d",
+  "strictMigrationPatchSha256": "0a9f0042e6e00e28022366db6fd2a853c198b04a50fe62742d5c04334c164e42",
   "baselineSha256": {
     "META-INF/MANIFEST.MF": "76c3f92aad12e0ad50a142d8aa729fef1d6e50ff1498d740511920bc465c9dba",
     "ui/org/eclipse/jdt/junit/tests/TestRunSessionSerializationTests3.java": "08fee85c32e1dd5170ea78224dd576655fca5a2546602d4647233a40f7d42862",
@@ -48,7 +48,7 @@
     "META-INF/MANIFEST.MF": "37eca75139d581772226f0a6d4a895255508c22bddb80b605488ab7ebdf8b531",
     "ui/org/eclipse/jdt/junit/tests/TestRunSessionSerializationTests3.java": "3d4d8bb0f4f55014cc181418495ae247bc1f3bf5f0b35c18ac8f7fc321d8a31a",
     "ui/org/eclipse/jdt/junit/tests/TestRunSessionSerializationTests4.java": "37965b42ef1ae014b7df128c58101da61ce5d81e9703eb40c6dfdc1f692b0166",
-    "ui/org/eclipse/jdt/ui/tests/core/rules/JUnitWorkspaceTestSetup.java": "2f829e24144ab6828b25e76ec7a70b5eb763e230a7c120ad88eda0fe624f3ebe"
+    "ui/org/eclipse/jdt/ui/tests/core/rules/JUnitWorkspaceTestSetup.java": "36c37a3d1909d29e8c1650049210fb91d47451535b70ba9b3b3fd297c26c79bf"
   },
   "screenshotSha256": "02217bd8cfa6ab50c4576266d93756d37da044e89710fe24d2a6358fc310ddc6"
 }

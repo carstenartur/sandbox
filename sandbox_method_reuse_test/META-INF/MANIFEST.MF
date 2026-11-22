@@ -6,7 +6,13 @@ Bundle-Vendor: sandbox
 Bundle-Version: 1.3.11.qualifier
 Fragment-Host: sandbox_method_reuse
 Bundle-RequiredExecutionEnvironment: JavaSE-25
-Require-Bundle: sandbox_test_commons
+Require-Bundle: sandbox_test_commons,
+ org.eclipse.core.resources,
+ org.eclipse.jdt.core,
+ org.eclipse.jdt.ui,
+ org.eclipse.jdt.launching,
+ org.eclipse.ltk.core.refactoring,
+ org.eclipse.core.filebuffers
 Bundle-ActivationPolicy: lazy
 Eclipse-BundleShape: dir
 Eclipse-BuddyPolicy: global

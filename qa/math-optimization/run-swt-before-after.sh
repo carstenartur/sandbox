@@ -56,7 +56,7 @@ run_upstream() {
   mkdir -p "$destination"
   local -a command=(
     dbus-run-session -- xvfb-run -a -s '-screen 0 1024x768x24 -noreset'
-    "$MAVEN" --batch-mode --no-transfer-progress --no-snapshot-updates
+    "$MAVEN" --batch-mode --errors --no-transfer-progress --no-snapshot-updates
     -f "$REACTOR" "-Dswt.source=$(basename "$SWT_CHECKOUT")"
     -Pbuild-individual-bundles -DforkCount=1 -DskipNativeTests=false
     -Dtycho.baseline.replace=none --fail-at-end clean verify
