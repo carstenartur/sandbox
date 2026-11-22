@@ -39,6 +39,7 @@ import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MemberValuePair;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.NormalAnnotation;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SimpleType;
@@ -566,6 +567,9 @@ public class HintFileFixCore {
 				Expression newNode = parseExpression(shortenedReplacement, cuRewrite);
 				if (newNode != null) {
 					ASTNode copy = ASTNode.copySubtree(ast, newNode);
+					if (insertStringGetBytesArgument(matchedNode, copy, cuRewrite, group)) {
+						return;
+					}
 					int oldCount = countStringLiterals(matchedNode);
 					int newCount = countStringLiterals(copy);
                     if (CharsetConstructorMigration.rewriteExpression(matchedNode, copy, replacement, cuRewrite, group)) {
@@ -773,6 +777,32 @@ public class HintFileFixCore {
 
 		private static Block parseStatements(String source, CompilationUnitRewrite cuRewrite) {
 			return parseBody(source, cuRewrite);
+		}
+
+		/** Preserve retained literal positions when only a getBytes argument is added. */
+		private static boolean insertStringGetBytesArgument(ASTNode matchedNode, ASTNode replacement,
+				CompilationUnitRewrite cuRewrite, TextEditGroup group) {
+			if (!(matchedNode instanceof MethodInvocation original)
+					|| !(replacement instanceof MethodInvocation updated)
+					|| !"getBytes".equals(original.getName().getIdentifier()) //$NON-NLS-1$
+					|| !original.getName().getIdentifier().equals(updated.getName().getIdentifier())
+					|| !original.arguments().isEmpty() || updated.arguments().size() != 1
+					|| !original.typeArguments().isEmpty() || !updated.typeArguments().isEmpty()
+					|| original.getExpression() == null || updated.getExpression() == null
+					|| !original.getExpression().subtreeMatch(new ASTMatcher(), updated.getExpression())) {
+				return false;
+			}
+			var binding= original.resolveMethodBinding();
+			if (binding == null || binding.isRecovered() || binding.getDeclaringClass() == null
+					|| binding.getDeclaringClass().isRecovered()
+					|| !"java.lang.String".equals(binding.getDeclaringClass().getQualifiedName()) //$NON-NLS-1$
+					|| binding.getParameterTypes().length != 0) {
+				return false;
+			}
+			ASTNode argument= (ASTNode) updated.arguments().getFirst();
+			cuRewrite.getASTRewrite().getListRewrite(original, MethodInvocation.ARGUMENTS_PROPERTY)
+					.insertLast(ASTNode.copySubtree(original.getAST(), argument), group);
+			return true;
 		}
 
 		private static Expression parseExpression(String source, CompilationUnitRewrite cuRewrite) {
