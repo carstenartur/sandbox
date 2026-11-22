@@ -1226,6 +1226,52 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	}
 
 	/**
+	 * Registers a visitor for Javadoc snippet regions.
+	 *
+	 * @param predicate callback for the matching node
+	 * @return this processor
+	 */
+	public ASTProcessor<E, V, T> callJavaDocRegionVisitor(BiPredicate<ASTNode, E> predicate) {
+		return callVisitor(VisitorEnum.JavaDocRegion, predicate);
+	}
+
+	/**
+	 * Registers a visitor and selects the scope for the next stage.
+	 *
+	 * @param predicate callback for the matching node
+	 * @param navigate function that selects the next scope
+	 * @return this processor
+	 */
+	public ASTProcessor<E, V, T> callJavaDocRegionVisitor(BiPredicate<ASTNode, E> predicate,
+			Function<ASTNode, ASTNode> navigate) {
+		nodetypelist.put(VisitorEnum.JavaDocRegion, new NodeHolder(predicate, navigate));
+		return this;
+	}
+
+	/**
+	 * Registers a visitor for external Javadoc snippet text.
+	 *
+	 * @param predicate callback for the matching node
+	 * @return this processor
+	 */
+	public ASTProcessor<E, V, T> callJavaDocTextElementVisitor(BiPredicate<ASTNode, E> predicate) {
+		return callVisitor(VisitorEnum.JavaDocTextElement, predicate);
+	}
+
+	/**
+	 * Registers a visitor and selects the scope for the next stage.
+	 *
+	 * @param predicate callback for the matching node
+	 * @param navigate function that selects the next scope
+	 * @return this processor
+	 */
+	public ASTProcessor<E, V, T> callJavaDocTextElementVisitor(BiPredicate<ASTNode, E> predicate,
+			Function<ASTNode, ASTNode> navigate) {
+		nodetypelist.put(VisitorEnum.JavaDocTextElement, new NodeHolder(predicate, navigate));
+		return this;
+	}
+
+	/**
 	 *
 	 * @param bs
 	 * @return a reference to this object.
@@ -2316,6 +2362,29 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	public ASTProcessor<E, V, T> callTagElementVisitor(BiPredicate<ASTNode, E> bs,
 			Function<ASTNode, ASTNode> navigate) {
 		nodetypelist.put(VisitorEnum.TagElement, new NodeHolder(bs, navigate));
+		return this;
+	}
+
+	/**
+	 * Registers a visitor for Javadoc snippet tag properties.
+	 *
+	 * @param predicate callback for the matching node
+	 * @return this processor
+	 */
+	public ASTProcessor<E, V, T> callTagPropertyVisitor(BiPredicate<ASTNode, E> predicate) {
+		return callVisitor(VisitorEnum.TagProperty, predicate);
+	}
+
+	/**
+	 * Registers a visitor and selects the scope for the next stage.
+	 *
+	 * @param predicate callback for the matching node
+	 * @param navigate function that selects the next scope
+	 * @return this processor
+	 */
+	public ASTProcessor<E, V, T> callTagPropertyVisitor(BiPredicate<ASTNode, E> predicate,
+			Function<ASTNode, ASTNode> navigate) {
+		nodetypelist.put(VisitorEnum.TagProperty, new NodeHolder(predicate, navigate));
 		return this;
 	}
 
