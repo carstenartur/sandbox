@@ -136,6 +136,25 @@ class StatusDiagnosticPreservationTest {
 				new Scenario("factory-constant", true,
 						"private static final String ID=\"test.bundle\"; public static Object run(){return new Status(IStatus.ERROR,ID,IStatus.OK,\"value\",null);}",
 						true, "StringID=", "Status.error(\"value\")"),
+				new Scenario("factory-nls-removed", true,
+						"""
+						public static Object run() {
+						    String message="value"; //$NON-NLS-1$
+						    return new Status(IStatus.ERROR,"test.bundle",IStatus.OK,message,null); //$NON-NLS-1$
+						}
+						""",
+						true, "newStatus(", "Status.error(message)"),
+				new Scenario("factory-nls-retained", true,
+						"""
+						public static Object run(){return new Status(IStatus.ERROR,"test.bundle",IStatus.OK,"value",null);} //$NON-NLS-1$ //$NON-NLS-2$ explanation
+						""",
+						true, "$NON-NLS-2$", "//$NON-NLS-1$explanation"),
+				new Scenario("factory-nls-constant", true,
+						"""
+						private static final String ID="test.bundle"; //$NON-NLS-1$ plugin identity
+						public static Object run(){return new Status(IStatus.ERROR,ID,IStatus.OK,"value",null);} //$NON-NLS-1$
+						""",
+						true, "StringID=", "//pluginidentity"),
 				new Scenario("factory-multi-local", true,
 						"public static Object run(){ IStatus unused=new Status(IStatus.ERROR,\"test.bundle\",IStatus.OK,\"first\",null), used=new Status(IStatus.ERROR,\"other.bundle\",IStatus.OK,\"second\",null); return used;}",
 						true, "", "\"second\""),
@@ -185,6 +204,7 @@ class StatusDiagnosticPreservationTest {
 		JavaCore.setComplianceOptions(JavaCore.VERSION_9, options);
 		options.put(JavaCore.COMPILER_PB_UNUSED_PRIVATE_MEMBER, JavaCore.WARNING);
 		options.put(JavaCore.COMPILER_PB_UNUSED_LOCAL, JavaCore.WARNING);
+		options.put(JavaCore.COMPILER_PB_NON_NLS_STRING_LITERAL, JavaCore.WARNING);
 		javaProject.setOptions(options);
 		var sourceRoot = javaProject.getPackageFragmentRoot(folder);
 		// Model exactly the API of the target project, not the installed host bundle.
@@ -259,6 +279,9 @@ class StatusDiagnosticPreservationTest {
 		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
 		parser.setSource(unit);
 		parser.setResolveBindings(true);
+		var options = unit.getJavaProject().getOptions(true);
+		options.put(JavaCore.COMPILER_PB_MAX_PER_UNIT, "0");
+		parser.setCompilerOptions(options);
 		return (CompilationUnit) parser.createAST(null);
 	}
 

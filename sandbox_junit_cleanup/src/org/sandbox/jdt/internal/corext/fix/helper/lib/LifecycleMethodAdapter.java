@@ -17,9 +17,11 @@ import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
 import java.util.List;
 
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
@@ -73,6 +75,14 @@ public final class LifecycleMethodAdapter {
 		ImportRewrite importRewriteToUse= getImportRewrite(node, ast, importRewrite);
 
 		setPublicVisibilityIfProtected(method, rewriteToUse, ast, group);
+		boolean documentOverrides= node.getRoot() instanceof CompilationUnit root && root.getJavaElement() != null
+				&& JavaCore.ENABLED.equals(root.getJavaElement().getJavaProject()
+						.getOption(JavaCore.COMPILER_PB_MISSING_JAVADOC_COMMENTS_OVERRIDING, true));
+		if (documentOverrides && Modifier.isProtected(method.getModifiers()) && method.getJavadoc() == null) {
+			// The newly public method implements the documented Jupiter callback contract.
+			rewriteToUse.set(method, MethodDeclaration.JAVADOC_PROPERTY,
+					rewriteToUse.createStringPlaceholder("/** {@inheritDoc} */", ASTNode.JAVADOC), group); //$NON-NLS-1$
+		}
 		adaptSuperLifecycleCalls(oldMethodName, newMethodName, method, rewriteToUse, ast, group,
 				directlyExtendsExternalResource(node));
 		replaceThrowsThrowableWithException(method, rewriteToUse, ast, group);

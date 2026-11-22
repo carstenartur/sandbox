@@ -28,26 +28,25 @@ import org.eclipse.core.runtime.CoreException;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
-import org.eclipse.jdt.internal.ui.fix.MapCleanUpOptions;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 
 import org.sandbox.jdt.internal.corext.fix.MethodReuseCleanUpFixCore;
+import org.sandbox.jdt.internal.corext.fix.helper.MethodReuseNlsFix;
 import org.sandbox.jdt.internal.corext.fix.helper.RepeatedCodeSequenceExtractor;
 
 /** Cleanup for extracting repeated sequences or reusing an existing method. */
 public class MethodReuseCleanUpCore extends AbstractCleanUp {
 
-	private Map<String, String> optionsMap;
+	// Keep the supplied options live: the cleanup dialog may update them after preview.
+	private CleanUpOptions currentOptions;
 
 	public MethodReuseCleanUpCore(final Map<String, String> options) {
 		super(options);
-		optionsMap= options;
 	}
 
 	public MethodReuseCleanUpCore() {
@@ -56,9 +55,7 @@ public class MethodReuseCleanUpCore extends AbstractCleanUp {
 	@Override
 	public void setOptions(CleanUpOptions options) {
 		super.setOptions(options);
-		if (options instanceof MapCleanUpOptions mapOptions) {
-			optionsMap= mapOptions.getMap();
-		}
+		currentOptions= options;
 	}
 
 	@Override
@@ -95,8 +92,10 @@ public class MethodReuseCleanUpCore extends AbstractCleanUp {
 		if (operations.isEmpty()) {
 			return null;
 		}
-		return new CompilationUnitRewriteOperationsFixCore("Method Reuse Cleanup", //$NON-NLS-1$
+		ICleanUpFix inline= MethodReuseNlsFix.create("Method Reuse Cleanup", //$NON-NLS-1$
 				compilationUnit, operations.toArray(new CompilationUnitRewriteOperation[0]));
+		return RepeatedCodeSequenceExtractor.validateFix(inline, context.getCompilationUnit(),
+				context.getCompilationUnit().getSource());
 	}
 
 	@Override
@@ -162,7 +161,8 @@ public class MethodReuseCleanUpCore extends AbstractCleanUp {
 	}
 
 	private int getMinimumStatements() {
-		String configured= optionsMap == null ? null : optionsMap.get(MINIMUM_STATEMENTS);
+		String configured= currentOptions != null && currentOptions.getKeys().contains(MINIMUM_STATEMENTS)
+				? currentOptions.getValue(MINIMUM_STATEMENTS) : null;
 		if (configured != null) {
 			try {
 				return RepeatedCodeSequenceExtractor.normalizeMinimum(Integer.parseInt(configured));
