@@ -26,7 +26,8 @@ is discovery evidence only. Runtime regression coverage qualifies the supported 
 execute their migrated tests. Each additional recipe needs its own discovery plan and runtime-equivalence policy.</p>
 <p>Mixed <code>@Rule</code>/<code>@ClassRule</code> use remains outside automatic migration. The separate staged
 support jar permits manual <code>perTest</code> and <code>perClass</code> registrations while retaining fixture
-instances. It requires a Java 25 test runtime and explicit dependency and service wiring; it does not migrate
-custom rule wrappers automatically.</p>
+instances. The jar targets Java 21 for consumer tests. The Sandbox build and native PDE tests require Java 25.
+Set up the dependency and any required PDE service registration explicitly. Custom rule wrappers require
+manual migration.</p>
 </body>
 </html>

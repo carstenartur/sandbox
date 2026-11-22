@@ -36,13 +36,13 @@ project's Jupiter `ParameterizedClass` and reports `PARAMETERIZED_CLASS_READY`.
 source/binding revalidation and the native runtime regression comparison when
 changing this path; source discovery alone must not authorize a new strategy.
 
-The separate `sandbox-junit-migration-support` jar targets Java 25, including the
-consumer test runtime. Its `ExternalResourceExtension.perTest` and `perClass`
-factories support manual hook registration at instance and static scope. Retain
-the original fixture instances and inherited setup. The automatic cleanup still
-rejects incompatible mixed rule scopes. Consumer dependencies, PDE service
-registration and arbitrary `ExternalResource.apply` overrides are not supplied
-automatically; follow the support module README.
+The separate `sandbox-junit-migration-support` jar targets Java 21 for consumer
+test runtimes. The Sandbox build and native PDE tests require Java 25. Its
+`ExternalResourceExtension.perTest` and `perClass` factories support manual hook
+registration at instance and static scope. Retain the original fixture instances
+and inherited setup. The automatic cleanup still rejects incompatible mixed rule
+scopes. Use the support module README to provision dependencies and PDE service
+registration. Migrate arbitrary `ExternalResource.apply` overrides manually.
 
 ## TriggerPattern DSL (.sandbox-hint files)
 
