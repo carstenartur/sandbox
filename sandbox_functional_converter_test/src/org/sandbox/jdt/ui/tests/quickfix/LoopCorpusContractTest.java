@@ -43,6 +43,46 @@ class LoopCorpusContractTest {
 
 	static Stream<Arguments> contracts() {
 		return Stream.of(
+				Arguments.of("conditional collector retains preceding additions", "[plain.color, plain.bold, plain.italic, plain.strike, plain.underline, semantic.color, semantic.bold, semantic.italic, semantic.strike, semantic.underline, semantic.enable]", "", """
+						public static String run() {
+							ArrayList<String> overlayKeys = new ArrayList<>();
+							for (CharSequence item : List.<CharSequence>of("plain", new StringBuilder("semantic"))) {
+								overlayKeys.add(item + ".color");
+								overlayKeys.add(item + ".bold");
+								overlayKeys.add(item + ".italic");
+								overlayKeys.add(item + ".strike");
+								overlayKeys.add(item + ".underline");
+								if (item instanceof StringBuilder)
+									overlayKeys.add(item + ".enable");
+							}
+							return overlayKeys.toString();
+						}
+						"""),
+				Arguments.of("mapped collector retains preceding additions", "[first.color, first.bold, first.italic, first.strike, first.underline, second.color, second.bold, second.italic, second.strike, second.underline]", "", """
+						public static String run() {
+							String[][] colors = { { "First", "first" }, { "Second", "second" } };
+							ArrayList<String> overlayKeys = new ArrayList<>();
+							for (String[] color : colors) {
+								String colorKey = color[1];
+								overlayKeys.add(colorKey + ".color");
+								overlayKeys.add(colorKey + ".bold");
+								overlayKeys.add(colorKey + ".italic");
+								overlayKeys.add(colorKey + ".strike");
+								overlayKeys.add(colorKey + ".underline");
+							}
+							return overlayKeys.toString();
+						}
+						"""),
+				Arguments.of("mapped collector reads the current destination", "[0:a, 1:b]", "", """
+						public static String run() {
+							ArrayList<String> overlayKeys = new ArrayList<>();
+							for (String item : List.of("a", "b")) {
+								String colorKey = overlayKeys.size() + ":" + item;
+								overlayKeys.add(colorKey);
+							}
+							return overlayKeys.toString();
+						}
+						"""),
 				Arguments.of("commented collector", "[a, bb]", "", """
 						public static String run() {
 							List<String> result = new ArrayList<>();
@@ -283,6 +323,44 @@ class LoopCorpusContractTest {
 		assertNotEquals(original, converted, "The useful loop conversion must remain available: " + name);
 		original.lines().map(String::strip).filter(line -> line.startsWith("//"))
 				.forEach(comment -> assertTrue(converted.contains(comment), converted));
+		assertEquals(expected, StreamChainToLoopTest.executeSource(converted, temporary.resolve("after")), converted);
+	}
+
+	static Stream<Arguments> collectorBindingControls() {
+		return Stream.of(
+				Arguments.of("same-spelled field", "Shadow.overlayKeys.get(0) + item"),
+				Arguments.of("shadowed local in an anonymous method", """
+						new Shadow() {
+							String map(String value) {
+								List<String> overlayKeys = List.of("prefix:");
+								return overlayKeys.get(0) + value;
+							}
+						}.map(item)
+						"""));
+	}
+
+	@ParameterizedTest(name = "{0}")
+	@MethodSource("collectorBindingControls")
+	void distinctBindingsKeepCollectionConversion(String name, String initializer) throws Exception {
+		String original= """
+				package test1;
+				import java.util.*;
+				public class Example {
+					static class Shadow { static final List<String> overlayKeys = List.of("prefix:"); }
+					public static String run() {
+						ArrayList<String> overlayKeys = new ArrayList<>();
+						for (String item : List.of("a", "b")) {
+							String value = MAPPED_VALUE;
+							overlayKeys.add(value);
+						}
+						return overlayKeys.toString();
+					}
+				}
+				""".replace("MAPPED_VALUE", initializer);
+		String expected= "[prefix:a, prefix:b]";
+		assertEquals(expected, StreamChainToLoopTest.executeSource(original, temporary.resolve("before")), name);
+		String converted= context.convert(original);
+		assertTrue(converted.contains(".collect("), "The independent destination must remain a collector: " + converted);
 		assertEquals(expected, StreamChainToLoopTest.executeSource(converted, temporary.resolve("after")), converted);
 	}
 
