@@ -864,7 +864,9 @@ public class FunctionalLoopNestedAndEdgeCaseTest {
 						private String item = "default";
 						
 						public void process(List<String> items) {
-							items.forEach(item1 -> System.out.println(item1));
+							items.forEach(item1 -> {
+								System.out.println(item1);  // Uses loop variable, not field
+							});
 						}
 					}""";
 

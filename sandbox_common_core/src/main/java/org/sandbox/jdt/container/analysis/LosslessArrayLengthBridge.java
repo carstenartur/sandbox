@@ -29,6 +29,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 
 import org.sandbox.jdt.container.api.ClosedSourceParameterMigrationPlan;
 import org.sandbox.jdt.container.api.LosslessParameterBridgePlan;
+import org.sandbox.jdt.internal.common.ImportNameBindings;
 
 /** Java overload resolution, signature and behavioral proof for an array-length bridge. */
 public final class LosslessArrayLengthBridge {
@@ -130,7 +131,7 @@ public final class LosslessArrayLengthBridge {
 
 			@Override
 			public boolean visit(SimpleName name) {
-				if (!(name.resolveBinding() instanceof IMethodBinding resolved) || resolved.isRecovered()) {
+				if (!(ImportNameBindings.resolve(name) instanceof IMethodBinding resolved) || resolved.isRecovered()) {
 					return true;
 				}
 				var called= resolved.getMethodDeclaration();

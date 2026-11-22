@@ -62,7 +62,7 @@ public class JdtLoopExtractor {
         boolean isFinal = Modifier.isFinal(parameter.getModifiers());
         
         // Analyze metadata — track truly unconvertible control flow and patterns.
-        LoopBodyAnalyzer analyzer = new LoopBodyAnalyzer(iterable);
+        LoopBodyAnalyzer analyzer = new LoopBodyAnalyzer(iterable, body);
         body.accept(analyzer);
         
         // Issue #670: Check if the iterated collection is a concurrent collection type
@@ -76,8 +76,12 @@ public class JdtLoopExtractor {
                 || analyzer.hasTryCatch()
                 || analyzer.hasSynchronized()
                 || analyzer.hasNestedLoop()
-                || analyzer.hasVoidReturn()
+                || analyzer.hasUnsupportedReturn()
+                || analyzer.hasEscapingYield()
+                || hasUnsupportedArrayStreamSource(iterable)
+                || TraditionalForHandler.CheckedBodyExceptions.escape(body)
                 || analyzer.modifiesIteratedCollection()
+                || hasRawIterableSource(iterable)
                 || isConcurrentCollection;
         
         // Build model — mark as unconvertible if any patterns detected
@@ -95,6 +99,17 @@ public class JdtLoopExtractor {
         
         LoopModel model = builder.build();
         return new ExtractedLoop(model, body);
+    }
+
+    private boolean hasUnsupportedArrayStreamSource(Expression expression) {
+        ITypeBinding type = expression.resolveTypeBinding();
+        if (type == null || !type.isArray() || !type.getComponentType().isPrimitive()) {
+            return false;
+        }
+        return switch (type.getComponentType().getName()) {
+            case "int", "long", "double" -> false; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+            default -> true;
+        };
     }
     
 
@@ -118,7 +133,7 @@ public class JdtLoopExtractor {
         String elementType = parsedBody.elementType();
         String variableName = parsedBody.elementVariableName();
 
-        LoopBodyAnalyzer analyzer = new LoopBodyAnalyzer(iterable);
+        LoopBodyAnalyzer analyzer = new LoopBodyAnalyzer(iterable, pattern.loopBody());
         pattern.loopBody().accept(analyzer);
         boolean isConcurrentCollection = checkConcurrentCollection(iterable);
         boolean hasUnconvertiblePatterns = analyzer.hasBreak()
@@ -126,8 +141,10 @@ public class JdtLoopExtractor {
                 || analyzer.hasTryCatch()
                 || analyzer.hasSynchronized()
                 || analyzer.hasNestedLoop()
-                || analyzer.hasVoidReturn()
+                || analyzer.hasUnsupportedReturn()
+                || TraditionalForHandler.CheckedBodyExceptions.escape(pattern.loopBody())
                 || analyzer.modifiesIteratedCollection()
+                || hasRawIterableSource(iterable)
                 || isConcurrentCollection;
 
         LoopModelBuilder builder = new LoopModelBuilder()
@@ -148,7 +165,7 @@ public class JdtLoopExtractor {
             return;
         }
         int varDeclCount = countVariableDeclarations(statements);
-        if (varDeclCount > 1
+        if (varDeclCount > 0
                 && !isLinearVariableDeclarationChain(statements, variableName)) {
             addSimpleForEachTerminal(statements, builder);
             return;
@@ -158,6 +175,13 @@ public class JdtLoopExtractor {
             return;
         }
         analyzeStatements(statements, builder, variableName, compilationUnit, false);
+    }
+
+    /** Raw forEach/stream consumers erase mapped types and add unchecked diagnostics. */
+    private static boolean hasRawIterableSource(Expression expression) {
+        ITypeBinding source = expression.resolveTypeBinding();
+        ITypeBinding iterable = source == null ? null : Bindings.findTypeInHierarchy(source, "java.lang.Iterable"); //$NON-NLS-1$
+        return iterable != null && iterable.isRawType();
     }
 
     private static String sourceElementType(Expression iterable, String fallback) {
@@ -295,11 +319,16 @@ public class JdtLoopExtractor {
         if (containsUnconvertibleStatements(statements)) {
             return; // No terminal → NOT_CONVERTIBLE
         }
+
+        if (body.getParent() instanceof EnhancedForStatement loop && requiresIntactLambdaBody(loop, compilationUnit)) {
+            addSimpleForEachTerminal(statements, builder);
+            return;
+        }
         
         // Decompose multiple declarations only when every initializer consumes
         // the current pipeline value without referring back to an earlier one.
         int varDeclCount = countVariableDeclarations(statements);
-        if (varDeclCount > 1
+        if (varDeclCount > 0
                 && !isLinearVariableDeclarationChain(statements, varName)) {
             addSimpleForEachTerminal(statements, builder);
             return;
@@ -314,6 +343,40 @@ public class JdtLoopExtractor {
         
         // Try to analyze the statements into operations + terminal
         analyzeStatements(statements, builder, varName, compilationUnit, false);
+    }
+
+    private boolean requiresIntactLambdaBody(EnhancedForStatement loop, CompilationUnit compilationUnit) {
+        IVariableBinding element = loop.getParameter().resolveBinding();
+        if (element != null && !Modifier.isFinal(element.getModifiers()) && !element.isEffectivelyFinal()) {
+            return true; // A mutable loop local must not become a mutable lambda parameter.
+        }
+        java.util.Set<String> fields = new java.util.HashSet<>();
+        if (compilationUnit != null) {
+            for (IBinding binding : new org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer(compilationUnit)
+                    .getDeclarationsInScope(loop.getStartPosition(),
+                            org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer.VARIABLES
+                            | org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer.CHECK_VISIBILITY)) {
+                if (binding instanceof IVariableBinding field && field.isField()) fields.add(field.getName());
+            }
+        }
+        if (fields.contains(loop.getParameter().getName().getIdentifier())) return true;
+        boolean[] intact = { false };
+        loop.getBody().accept(new ASTVisitor() {
+            @Override public boolean visit(LambdaExpression node) { return false; }
+            @Override public boolean visit(AnonymousClassDeclaration node) { return false; }
+            @Override public boolean visit(TypeDeclaration node) { return false; }
+            @Override public boolean visit(TypePattern node) { intact[0] = true; return false; }
+            @Override public boolean visit(VariableDeclarationStatement node) {
+                for (Object modifier : node.modifiers()) {
+                    if (modifier instanceof Annotation) intact[0] = true;
+                }
+                for (Object item : node.fragments()) {
+                    if (fields.contains(((VariableDeclarationFragment) item).getName().getIdentifier())) intact[0] = true;
+                }
+                return !intact[0];
+            }
+        });
+        return intact[0];
     }
     
     /**
@@ -384,7 +447,7 @@ public class JdtLoopExtractor {
             currentVariableName = fragment.getName().getIdentifier();
             declarationCount++;
         }
-        return declarationCount > 1;
+        return declarationCount > 0;
     }
 
     private boolean referencesAnyVariable(ASTNode node,
@@ -412,6 +475,18 @@ public class JdtLoopExtractor {
      * Used when the body is too complex to decompose into map/filter chains.
      */
     private void addSimpleForEachTerminal(java.util.List<Statement> statements, LoopModelBuilder builder) {
+        // A fallback retains the body intact. It must not strand loop control in a lambda
+        // or turn a return from the enclosing method into a return from the callback.
+        boolean[] transfersControl = { false };
+        ASTVisitor visitor = new ASTVisitor() {
+            @Override public boolean visit(LambdaExpression node) { return false; }
+            @Override public boolean visit(AnonymousClassDeclaration node) { return false; }
+            @Override public boolean visit(TypeDeclaration node) { return false; }
+            @Override public boolean visit(ReturnStatement node) { transfersControl[0] = true; return false; }
+            @Override public boolean visit(ContinueStatement node) { transfersControl[0] = true; return false; }
+        };
+        for (Statement statement : statements) statement.accept(visitor);
+        if (transfersControl[0]) return;
         java.util.List<String> bodyStmts = new java.util.ArrayList<>();
         for (Statement stmt : statements) {
             String stmtStr = stmt.toString();
@@ -485,6 +560,19 @@ public class JdtLoopExtractor {
                     VariableDeclarationFragment frag = fragments.get(0);
                     Expression init = frag.getInitializer();
                     if (init != null) {
+                        if (i == statements.size() - 2
+                                && varDecl.getType() instanceof PrimitiveType primitive
+                                && primitive.getPrimitiveTypeCode() == PrimitiveType.BOOLEAN
+                                && statements.get(i + 1) instanceof IfStatement match
+                                && match.getElseStatement() == null && isEarlyReturnIf(match, statements)
+                                && ASTNodes.isSameLocalVariable(frag.getName(), match.getExpression())) {
+                            Statement branch = match.getThenStatement();
+                            if (branch instanceof Block block) branch = (Statement) block.statements().get(0);
+                            boolean returnsTrue = ((BooleanLiteral) ((ReturnStatement) branch).getExpression()).booleanValue();
+                            if (returnsTrue) builder.anyMatch(init.toString());
+                            else builder.noneMatch(init.toString());
+                            return;
+                        }
                         String newVarName = frag.getName().getIdentifier();
                         String mapExpr = init.toString();
                         ITypeBinding declared = frag.resolveBinding() != null ? frag.resolveBinding().getType() : null;
@@ -540,6 +628,7 @@ public class JdtLoopExtractor {
                 
                 // Reduce: += , ++, *=, count = count + 1, etc.
                 if (isReducePattern(stmt)) {
+                    if (!isIndependentReduction((ExpressionStatement) stmt)) return;
                     addReduceTerminal(stmt, builder, currentVarName);
                     return; // terminal set
                 }
@@ -748,7 +837,10 @@ public class JdtLoopExtractor {
             Expression expr = exprStmt.getExpression();
             if (expr instanceof MethodInvocation mi) {
                 String methodName = mi.getName().getIdentifier();
-                return "add".equals(methodName) && mi.arguments().size() == 1; //$NON-NLS-1$
+                // Only a named accumulator can be merged into its declaration. A getter or
+                // field expression must remain evaluated by the ordinary per-element callback.
+                return "add".equals(methodName) && mi.arguments().size() == 1 //$NON-NLS-1$
+                        && mi.getExpression() instanceof SimpleName;
             }
         }
         return false;
@@ -863,6 +955,47 @@ public class JdtLoopExtractor {
         return binding instanceof IVariableBinding variableBinding && !variableBinding.isField();
     }
 
+    /** A lifted accumulator must not also be read by a filter, map or side effect. */
+    private static boolean isIndependentReduction(ExpressionStatement statement) {
+        Expression expression = statement.getExpression();
+        Expression target;
+        java.util.Set<ASTNode> removedReads = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+        if (expression instanceof Assignment assignment) {
+            target = assignment.getLeftHandSide();
+            if (assignment.getOperator() == Assignment.Operator.ASSIGN) {
+                if (assignment.getRightHandSide() instanceof InfixExpression infix) {
+                    removedReads.add(infix.getLeftOperand());
+                } else if (assignment.getRightHandSide() instanceof MethodInvocation call && !call.arguments().isEmpty()) {
+                    for (Object argument : call.arguments()) {
+                        Expression value = (Expression) argument;
+                        if (ASTNodes.isSameLocalVariable(target, value)) removedReads.add(ASTNodes.getUnparenthesedExpression(value));
+                    }
+                }
+            }
+        } else if (expression instanceof PostfixExpression postfix) {
+            target = postfix.getOperand();
+        } else if (expression instanceof PrefixExpression prefix) {
+            target = prefix.getOperand();
+        } else {
+            return false;
+        }
+        if (!(target instanceof SimpleName name) || !(name.resolveBinding() instanceof IVariableBinding variable)) return false;
+        removedReads.add(target);
+        ASTNode loop = statement.getParent();
+        while (loop != null && !(loop instanceof EnhancedForStatement || loop instanceof ForStatement || loop instanceof WhileStatement)) {
+            loop = loop.getParent();
+        }
+        if (loop == null) return false;
+        boolean[] observed = { false };
+        loop.accept(new ASTVisitor() {
+            @Override public boolean visit(SimpleName reference) {
+                if (variable.isEqualTo(reference.resolveBinding()) && !removedReads.contains(reference)) observed[0] = true;
+                return true;
+            }
+        });
+        return !observed[0];
+    }
+
     private static String typeName(Expression expression) {
         ITypeBinding type = expression.resolveTypeBinding();
         return type == null ? null : type.getQualifiedName();
@@ -900,6 +1033,9 @@ public class JdtLoopExtractor {
         
         if (expr instanceof Assignment assign) {
             Assignment.Operator op = assign.getOperator();
+            // String += includes null conversion and has no numeric sum method.
+            if (op == Assignment.Operator.PLUS_ASSIGN
+                    && "java.lang.String".equals(typeName(assign.getLeftHandSide()))) return; //$NON-NLS-1$
             String accumVar = assign.getLeftHandSide().toString();
             String accumType = resolveReducerType(assign.getLeftHandSide());
             
@@ -934,9 +1070,15 @@ public class JdtLoopExtractor {
             String accumType = resolveReducerType(postfix.getOperand());
             String mapValue = isLongType(accumType) ? "1L" : "1"; //$NON-NLS-1$ //$NON-NLS-2$
             builder.map(mapValue, typeName(postfix.getOperand()));
-            builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
-                accumVar, accumType + "::sum", null,
-                org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.COUNT, accumVar));
+            if (postfix.getOperator() == PostfixExpression.Operator.INCREMENT) {
+                builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
+                    accumVar, accumType + "::sum", null,
+                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.COUNT, accumVar));
+            } else {
+                builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
+                    accumVar, "(a, b) -> a - b", null, //$NON-NLS-1$
+                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM, accumVar));
+            }
         } else if (expr instanceof PrefixExpression prefix) {
             String accumVar = prefix.getOperand().toString();
             String accumType = resolveReducerType(prefix.getOperand());
@@ -991,7 +1133,13 @@ public class JdtLoopExtractor {
         if (rhs instanceof MethodInvocation mi) {
             String methodName = mi.getName().getIdentifier();
             Expression expr = mi.getExpression();
-            if (expr instanceof SimpleName sn && "Math".equals(sn.getIdentifier())) {
+            IMethodBinding method = mi.resolveMethodBinding();
+            if (expr instanceof SimpleName sn && "Math".equals(sn.getIdentifier()) //$NON-NLS-1$
+                    && sn.resolveBinding() instanceof ITypeBinding receiver && !receiver.isRecovered()
+                    && "java.lang.Math".equals(receiver.getQualifiedName()) //$NON-NLS-1$
+                    && method != null && !method.isRecovered() && Modifier.isStatic(method.getModifiers())
+                    && method.getDeclaringClass() != null && !method.getDeclaringClass().isRecovered()
+                    && "java.lang.Math".equals(method.getDeclaringClass().getQualifiedName())) { //$NON-NLS-1$
                 return ("max".equals(methodName) || "min".equals(methodName)) && mi.arguments().size() == 2; //$NON-NLS-1$ //$NON-NLS-2$
             }
         }
@@ -1024,30 +1172,28 @@ public class JdtLoopExtractor {
     
     private void addInfixReduceTerminal(InfixExpression infix, LoopModelBuilder builder, 
                                          String varName, String accumVar) {
+        // The model below represents exactly one right-hand operand.
+        if (infix.hasExtendedOperands()) {
+            return;
+        }
         InfixExpression.Operator op = infix.getOperator();
         String accumType = resolveReducerType(infix.getLeftOperand());
+        // The two-argument String reduction needs String stream elements. Object
+        // and primitive values use Java's concatenation conversions in the loop.
+        if ("String".equals(accumType) //$NON-NLS-1$
+                && !"java.lang.String".equals(typeName(infix.getRightOperand()))) return; //$NON-NLS-1$
         
         if (!mapReductionValue(builder, infix.getRightOperand(), infix.getLeftOperand(), varName)) {
             return;
         }
         
         if (op == InfixExpression.Operator.PLUS) {
-            // For String types, check @NotNull annotation to decide between String::concat and lambda
-            if ("String".equals(accumType)) {
-                // Check if the accumulator variable has @NotNull annotation
-                boolean isNullSafe = org.sandbox.jdt.internal.corext.util.VariableResolver
-                    .hasNotNullAnnotation(infix, accumVar);
-                if (isNullSafe) {
-                    // @NotNull present: safe to use String::concat method reference
-                    builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
-                        accumVar, "String::concat", null,
-                        org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.STRING_CONCAT, accumVar));
-                } else {
-                    // No @NotNull: use null-safe lambda (a, b) -> a + b
-                    builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
-                        accumVar, "(a, b) -> a + b", null,
-                        org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM, accumVar));
-                }
+            if ("String".equals(accumType)) { //$NON-NLS-1$
+                // An annotation on the accumulator does not constrain source elements.
+                // Java concatenation preserves null conversion for both operands.
+                builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
+                    accumVar, "(a, b) -> a + b", null, //$NON-NLS-1$
+                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM, accumVar));
             } else {
                 builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
                     accumVar, accumType + "::sum", null,
@@ -1217,13 +1363,16 @@ public class JdtLoopExtractor {
         private boolean hasTryCatch = false;
         private boolean hasSynchronized = false;
         private boolean hasNestedLoop = false;
-        private boolean hasVoidReturn = false;
+        private boolean hasUnsupportedReturn = false;
         private boolean hasIfElse = false;
         private boolean modifiesIteratedCollection = false;
+        private boolean hasEscapingYield;
         private final Expression iteratedExpression;
+        private final Statement body;
 
-        LoopBodyAnalyzer(Expression iteratedExpression) {
+        LoopBodyAnalyzer(Expression iteratedExpression, Statement body) {
             this.iteratedExpression = CollectionModificationDetector.normalizeIteratedExpression(iteratedExpression);
+            this.body = body;
         }
         
         @Override
@@ -1254,13 +1403,53 @@ public class JdtLoopExtractor {
         
         @Override
         public boolean visit(ReturnStatement node) {
-            // Void return exits the enclosing method, not the loop
-            // This cannot be converted to stream operations
-            if (node.getExpression() == null) {
-                hasVoidReturn = true;
+            // A boolean literal is safe only in the exact terminal-if shape modeled
+            // by analyzeStatements, never in an intermediate map or forEach callback.
+            if (!isMatchTerminalReturn(node)) hasUnsupportedReturn = true;
+            return false;
+        }
+
+        @Override
+        public boolean visit(YieldStatement node) {
+            for (ASTNode parent = node; parent != null && parent != body; parent = parent.getParent()) {
+                if (parent instanceof SwitchExpression) return true;
             }
-            // Note: boolean returns (return true/false) are potentially convertible
-            // as match patterns — handled separately in analyzeStatements()
+            hasEscapingYield = true;
+            return false;
+        }
+
+        private boolean isMatchTerminalReturn(ReturnStatement node) {
+            if (!(node.getExpression() instanceof BooleanLiteral)) return false;
+            ASTNode branch = node;
+            if (branch.getParent() instanceof Block block) {
+                if (block.statements().size() != 1) return false;
+                branch = block;
+            }
+            if (!(branch.getParent() instanceof IfStatement match)
+                    || match.getThenStatement() != branch || match.getElseStatement() != null) return false;
+            ASTNode current = match;
+            while (current != body) {
+                ASTNode parent = current.getParent();
+                if (parent instanceof Block block
+                        && block.statements().get(block.statements().size() - 1) == current) {
+                    current = block;
+                } else if (parent instanceof IfStatement guard
+                        && guard.getThenStatement() == current && guard.getElseStatement() == null) {
+                    current = guard;
+                } else {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        @Override public boolean visit(LambdaExpression node) { return false; }
+        @Override public boolean visit(AnonymousClassDeclaration node) { return false; }
+        @Override public boolean visit(TypeDeclaration node) { return false; }
+
+        @Override
+        public boolean visit(EnhancedForStatement node) {
+            hasNestedLoop = true;
             return false;
         }
         
@@ -1316,7 +1505,8 @@ public class JdtLoopExtractor {
         public boolean hasTryCatch() { return hasTryCatch; }
         public boolean hasSynchronized() { return hasSynchronized; }
         public boolean hasNestedLoop() { return hasNestedLoop; }
-        public boolean hasVoidReturn() { return hasVoidReturn; }
+        public boolean hasUnsupportedReturn() { return hasUnsupportedReturn; }
+        public boolean hasEscapingYield() { return hasEscapingYield; }
         public boolean hasIfElse() { return hasIfElse; }
         public boolean modifiesIteratedCollection() { return modifiesIteratedCollection; }
         
