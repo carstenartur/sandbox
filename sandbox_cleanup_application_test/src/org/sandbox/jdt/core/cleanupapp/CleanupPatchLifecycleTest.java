@@ -16,29 +16,40 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
 import org.eclipse.jdt.core.IClasspathEntry;
+import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.JavaCore;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+
 import org.osgi.framework.Bundle;
+
+import org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions;
 
 class CleanupPatchLifecycleTest {
 
@@ -148,6 +159,112 @@ class CleanupPatchLifecycleTest {
 
 		assertEquals(Integer.valueOf(CodeCleanupApplication.EXIT_OK), secondResult);
 		assertArrayEquals(new byte[0], Files.readAllBytes(patch));
+	}
+
+	private record TestHierarchy(IFile base, IFile child, IFile suite, IFile independent, IFile discovery,
+			IFile descriptor, IClasspathEntry[] classpath, Path config) {
+		CompilerDiagnosticAssertions.Snapshot diagnostics() {
+			return CompilerDiagnosticAssertions.capture(Stream.of(base, child, suite, independent, discovery)
+					.map(JavaCore::createCompilationUnitFrom).toArray(ICompilationUnit[]::new));
+		}
+	}
+
+	private TestHierarchy createTestHierarchy() throws Exception {
+		var classpath= junitClasspath();
+		IFile base= createSource("src/sample/Base.java", """
+				package sample;
+				import org.junit.Test;
+				public abstract class Base { @Test public void inherited() {} }
+				""");
+		IFile child= createSource("src/sample/Child.java", """
+				package sample;
+				import org.junit.Test;
+				public class Child extends Base { @Test public void child() {} }
+				""");
+		IFile suite= createSource("src/sample/All.java", """
+				package sample;
+				@org.junit.runner.RunWith(org.junit.runners.Suite.class)
+				@org.junit.runners.Suite.SuiteClasses(Child.class)
+				public class All {}
+				""");
+		IFile independent= createSource("src/sample/Independent.java", """
+				package sample;
+				import org.junit.Test;
+				public class Independent { @Test public void independent() {} }
+				""");
+		IFile discovery= createSource("src/check/Discovery.java", """
+				package check;
+				import org.junit.runner.Request;
+				import org.junit.platform.engine.discovery.DiscoverySelectors;
+				import org.junit.platform.launcher.TestIdentifier;
+				import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
+				import org.junit.platform.launcher.core.LauncherFactory;
+				public class Discovery {
+					public static long count(boolean migrated) throws NoSuchMethodException {
+						var member = sample.Independent.class;
+						long independent = member.getDeclaredMethod("independent").isAnnotationPresent(org.junit.Test.class)
+								? Request.aClass(member).getRunner().testCount() : discovered(member, "junit-jupiter");
+						return independent + (migrated ? discovered(sample.All.class, "junit-platform-suite")
+								: Request.aClass(sample.All.class).getRunner().testCount());
+					}
+					private static long discovered(Class<?> test, String engine) {
+						var request = LauncherDiscoveryRequestBuilder.request()
+								.selectors(DiscoverySelectors.selectClass(test))
+								.filters(org.junit.platform.launcher.EngineFilter.includeEngines(engine)).build();
+						return LauncherFactory.create().discover(request).countTestIdentifiers(TestIdentifier::isTest);
+					}
+				}
+				""");
+		IFile descriptor= createSource("META-INF/MANIFEST.MF", "Manifest-Version: 1.0\r\nBundle-SymbolicName: tests\r\n");
+		Path config= writeConfig("cleanup.junitcleanup=true\ncleanup.junitcleanup_4_test=true\ncleanup.junitcleanup_4_runwith=true\n");
+		return new TestHierarchy(base, child, suite, independent, discovery, descriptor, classpath, config);
+	}
+
+	@Test
+	void wholeProjectMigrationPreservesDiscoveredTestCount() throws Exception {
+		var hierarchy= createTestHierarchy();
+		var diagnostics= hierarchy.diagnostics();
+		assertEquals(3, discoverTestMethods(false));
+		assertEquals(0, new ProjectWideCodeCleanupApplication().start(new TestApplicationContext(
+				"--project", project.getName(), "--config", hierarchy.config().toString(), "--mode", "apply",
+				"--report", temporaryDirectory.resolve("suite-apply.json").toString())));
+		assertArrayEquals(hierarchy.classpath(), JavaCore.create(project).getRawClasspath());
+		assertTrue(new String(read(hierarchy.descriptor()), StandardCharsets.UTF_8).contains("org.junit.platform.suite.api"));
+		diagnostics.assertNoNewDiagnostics();
+		assertEquals(3, discoverTestMethods(true));
+	}
+
+	private IClasspathEntry[] junitClasspath() throws Exception {
+		var javaProject= JavaCore.create(project);
+		var options= javaProject.getOptions(false);
+		JavaCore.setComplianceOptions(JavaCore.VERSION_17, options);
+		javaProject.setOptions(options);
+		var initialClasspath= new IClasspathEntry[] {
+				JavaCore.newSourceEntry(project.getFullPath().append("src")),
+				JavaCore.newContainerEntry(new org.eclipse.core.runtime.Path("org.eclipse.jdt.launching.JRE_CONTAINER")),
+				JavaCore.newContainerEntry(new org.eclipse.core.runtime.Path("org.eclipse.jdt.junit.JUNIT_CONTAINER/4")),
+				JavaCore.newContainerEntry(new org.eclipse.core.runtime.Path("org.eclipse.jdt.junit.JUNIT_CONTAINER/5"))
+		};
+		javaProject.setRawClasspath(initialClasspath, project.getFullPath().append("bin"), monitor);
+		return javaProject.getRawClasspath();
+	}
+
+	private long discoverTestMethods(boolean migratedHierarchy) throws Exception {
+		project.build(IncrementalProjectBuilder.FULL_BUILD, monitor);
+		var urls= new ArrayList<URL>();
+		urls.add(project.getFolder("bin").getLocation().toFile().toURI().toURL());
+		for (IClasspathEntry entry : JavaCore.create(project).getResolvedClasspath(true)) {
+			if (entry.getEntryKind() == IClasspathEntry.CPE_LIBRARY) urls.add(entry.getPath().toFile().toURI().toURL());
+		}
+		// The fixture uses its resolved JDT libraries, independent of Tycho's provider version.
+		var thread= Thread.currentThread();
+		var previous= thread.getContextClassLoader();
+		try (var loader= new URLClassLoader(urls.toArray(URL[]::new), ClassLoader.getPlatformClassLoader())) {
+			thread.setContextClassLoader(loader);
+			return (Long) loader.loadClass("check.Discovery").getMethod("count", boolean.class).invoke(null, migratedHierarchy);
+		} finally {
+			thread.setContextClassLoader(previous);
+		}
 	}
 
 	private void assertPatchRoundTrip(IFile source, byte[] original, Path patch) throws Exception {
