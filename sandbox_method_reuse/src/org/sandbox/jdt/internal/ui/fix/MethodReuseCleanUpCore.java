@@ -28,7 +28,6 @@ import org.eclipse.core.runtime.CoreException;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
@@ -37,6 +36,7 @@ import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 
 import org.sandbox.jdt.internal.corext.fix.MethodReuseCleanUpFixCore;
+import org.sandbox.jdt.internal.corext.fix.helper.MethodReuseNlsFix;
 import org.sandbox.jdt.internal.corext.fix.helper.RepeatedCodeSequenceExtractor;
 
 /** Cleanup for extracting repeated sequences or reusing an existing method. */
@@ -92,8 +92,10 @@ public class MethodReuseCleanUpCore extends AbstractCleanUp {
 		if (operations.isEmpty()) {
 			return null;
 		}
-		return new CompilationUnitRewriteOperationsFixCore("Method Reuse Cleanup", //$NON-NLS-1$
+		ICleanUpFix inline= MethodReuseNlsFix.create("Method Reuse Cleanup", //$NON-NLS-1$
 				compilationUnit, operations.toArray(new CompilationUnitRewriteOperation[0]));
+		return RepeatedCodeSequenceExtractor.validateFix(inline, context.getCompilationUnit(),
+				context.getCompilationUnit().getSource());
 	}
 
 	@Override

@@ -40,9 +40,11 @@ import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.NodeFinder;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.refactoring.CompilationUnitChange;
 import org.eclipse.jdt.internal.corext.refactoring.code.ExtractMethodRefactoring;
@@ -188,7 +190,11 @@ public final class RepeatedCodeSequenceExtractor {
 		if (extraction == null) {
 			return null;
 		}
-		ICleanUpFix fix= extraction.toCleanUpFix(source);
+		return validateFix(extraction.toCleanUpFix(source), unit, source);
+	}
+
+	/** Checks both extraction and existing-method delegation against the complete source unit. */
+	public static ICleanUpFix validateFix(ICleanUpFix fix, ICompilationUnit unit, String source) throws CoreException {
 		CompilationUnitChange change= fix.createChange(new NullProgressMonitor());
 		try {
 			Map<ProblemKey, Integer> before= compilerProblems(unit, source);
@@ -236,11 +242,41 @@ public final class RepeatedCodeSequenceExtractor {
 		Map<ProblemKey, Integer> problems= new LinkedHashMap<>();
 		for (IProblem problem : root.getProblems()) {
 			if (problem.isError() || problem.isWarning()) {
-				ProblemKey key= new ProblemKey(problem.isError(), problem.getID(), Arrays.asList(problem.getArguments()));
+				ProblemKey key= new ProblemKey(problem.isError(), problem.getID(), problemArguments(problem, root));
 				problems.merge(key, 1, Integer::sum);
 			}
 		}
 		return problems;
+	}
+
+	private static List<String> problemArguments(IProblem problem, CompilationUnit root) {
+		String[] arguments= problem.getArguments();
+		if (problem.getID() == IProblem.PotentiallyUnclosedCloseable && arguments.length == 1
+				&& ("<unassigned Closeable value>".equals(arguments[0]) //$NON-NLS-1$
+						|| arguments[0].matches("<unassigned Closeable value from line [1-9][0-9]*>"))) { //$NON-NLS-1$
+			int start= problem.getSourceStart();
+			int length= problem.getSourceEnd() - start + 1;
+			if (start >= 0 && length > 0
+					&& NodeFinder.perform(root, start, length) instanceof Expression expression
+					&& expression.getStartPosition() == start && expression.getLength() == length) {
+				ASTNode owner= expression;
+				while (owner != null && !(owner instanceof MethodDeclaration)) owner= owner.getParent();
+				if (owner != null) {
+					var method= ((MethodDeclaration) owner).resolveBinding();
+					if (method != null && !method.isRecovered() && method.getDeclaringClass() != null
+							&& !method.getDeclaringClass().isRecovered() && !method.getDeclaringClass().isLocal()
+							&& !method.getDeclaringClass().isAnonymous()) {
+						String key= method.getMethodDeclaration().getKey();
+						if (key != null && !key.isBlank()) {
+							// Existing leaks in callers cannot credit a new leak in an extracted
+							// helper. Source-line shifts alone do not change resource identity.
+							return List.of("<unassigned Closeable value>", key, expression.toString()); //$NON-NLS-1$
+						}
+					}
+				}
+			}
+		}
+		return Arrays.asList(arguments);
 	}
 
 	/** Normalizes profile values to a conservative supported range. */

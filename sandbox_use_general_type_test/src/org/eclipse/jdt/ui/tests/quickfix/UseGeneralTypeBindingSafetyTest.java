@@ -29,6 +29,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.internal.ui.fix.UseGeneralTypeCleanUpCore;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
@@ -106,6 +107,46 @@ public class UseGeneralTypeBindingSafetyTest {
 				"""); //$NON-NLS-1$
 		String output = applyAndUndo(unit, unit);
 		assertTrue(output.contains("List<BigDecimal> values"), output); //$NON-NLS-1$
+		assertTrue(output.contains("import java.math.BigDecimal;"), output); //$NON-NLS-1$
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void qualifiedReplacementOnlyRetainsImportsWithSurvivingUses(boolean oldTypeStillUsed) throws Exception {
+		context.getJavaProject().setOption(JavaCore.COMPILER_PB_UNUSED_IMPORT, JavaCore.ERROR);
+		var api = context.getSourceFolder().createPackageFragment("api", false, null); //$NON-NLS-1$
+		var implementation = context.getSourceFolder().createPackageFragment("implementation", false, null); //$NON-NLS-1$
+		var base = api.createCompilationUnit("Registry.java", """
+				package api;
+				public class Registry<T> { public T get() { return null; } }
+				""", false, null); //$NON-NLS-1$
+		var child = implementation.createCompilationUnit("Registry.java", """
+				package implementation;
+				public class Registry<T> extends api.Registry<T> { }
+				""", false, null); //$NON-NLS-1$
+		var factory = implementation.createCompilationUnit("Factory.java", """
+				package implementation;
+				public class Factory {
+				    public static Registry<java.math.BigDecimal> create() { return new Registry<>(); }
+				}
+				""", false, null); //$NON-NLS-1$
+		String retainedUse = oldTypeStillUsed
+				? "public boolean accepts(Registry<?> value) { return value == null; }" : ""; //$NON-NLS-1$ //$NON-NLS-2$
+		ICompilationUnit unit = create("Owner.java", """
+				package test;
+				import java.math.BigDecimal;
+				import implementation.Registry;
+				class Owner {
+				    public int size() {
+				        Registry<BigDecimal> candidate = implementation.Factory.create();
+				        return candidate.get().scale();
+				    }
+				    RETAINED_USE
+				}
+				""".replace("RETAINED_USE", retainedUse)); //$NON-NLS-1$ //$NON-NLS-2$
+		String output = applyAndUndo(unit, base, child, factory, unit);
+		assertTrue(output.contains("api.Registry<BigDecimal> candidate"), output); //$NON-NLS-1$
+		assertEquals(oldTypeStillUsed, output.contains("import implementation.Registry;"), output); //$NON-NLS-1$
 		assertTrue(output.contains("import java.math.BigDecimal;"), output); //$NON-NLS-1$
 	}
 

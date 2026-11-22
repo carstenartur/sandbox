@@ -254,7 +254,11 @@ public class UseGeneralTypePlugin {
 				};
 			}
 			Type newType = imports.addImport(typeHolder.widenedType, ast, context);
-			if (!qualified) {
+			Type newBase = newType instanceof ParameterizedType parameterized ? parameterized.getType() : newType;
+			// ImportRemover protects simple names even for qualified nodes. A
+			// qualification forced by a name clash must not retain the old import.
+			boolean qualifiedReplacement = newBase.toString().equals(typeHolder.widenedType.getErasure().getQualifiedName());
+			if (!qualifiedReplacement) {
 				cuRewrite.getImportRemover().registerAddedImports(newType);
 			} else if (newType instanceof ParameterizedType parameterized) {
 				for (Object argument : parameterized.typeArguments()) {

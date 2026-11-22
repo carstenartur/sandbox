@@ -20,12 +20,15 @@ import java.util.Set;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.TextBlock;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -42,6 +45,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.InlineCodeSequenceFinder;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.InlineCodeSequenceFinder.InlineSequenceMatch;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.MethodCallReplacer;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.VariableMapping;
+import org.sandbox.jdt.triggerpattern.cleanup.EncodingSourceRewrite;
 
 /**
  * Plugin for detecting and replacing inline code sequences with method calls
@@ -120,18 +124,23 @@ public class InlineSequencesPlugin extends AbstractMethodReuse<MethodDeclaration
 		}
 		
 		List<Statement> statementsToReplace = match.getMatchingStatements();
-		if (!statementsToReplace.isEmpty()) {
-			rangeComputer.addTightSourceNode(statementsToReplace.get(0));
-		}
+		statementsToReplace.forEach(rangeComputer::addTightSourceNode);
 		rewrite.setTargetSourceRangeComputer(rangeComputer);
 		
 		// Create the method invocation
 		VariableMapping variableMapping = match.getVariableMapping();
-		MethodInvocation methodCall = MethodCallReplacer.createMethodCall(ast, targetMethod, variableMapping);
+		MethodInvocation methodCall = MethodCallReplacer.createMethodCall(rewrite, targetMethod, variableMapping);
 		
 		if (methodCall == null) {
 			return;
 		}
+		MethodReuseNlsFix.record(cuRewrite, targetMethod, methodCall, statementsToReplace, variableMapping);
+		for (Statement statement : statementsToReplace) statement.accept(new ASTVisitor() {
+			@Override
+			public void preVisit(ASTNode node) {
+				if (node instanceof StringLiteral || node instanceof TextBlock) EncodingSourceRewrite.record(cuRewrite, node);
+			}
+		});
 		
 		// Determine how to replace based on the target method's return type
 		replaceStatementsWithMethodCall(rewrite, ast, targetMethod, methodCall, statementsToReplace, group);

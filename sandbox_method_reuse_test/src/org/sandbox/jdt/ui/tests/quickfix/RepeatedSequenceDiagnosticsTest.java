@@ -15,6 +15,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.core.resources.IProject;
@@ -25,9 +27,13 @@ import org.eclipse.jdt.core.WorkingCopyOwner;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.internal.corext.refactoring.nls.NLSElement;
+import org.eclipse.jdt.internal.corext.refactoring.nls.NLSScanner;
 import org.eclipse.jdt.internal.ui.JavaPlugin;
 import org.eclipse.jdt.launching.IVMInstall;
 import org.eclipse.jdt.launching.JavaRuntime;
+import org.eclipse.jdt.ui.cleanup.CleanUpContext;
+import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.jface.text.Document;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,7 +41,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.sandbox.jdt.internal.corext.fix.helper.RepeatedCodeSequenceExtractor;
+import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
+import org.sandbox.jdt.internal.ui.fix.MethodReuseCleanUpCore;
 import org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions;
 
 /** Compilation contracts reduced from complete pinned SWT and JDT source units. */
@@ -211,6 +220,174 @@ class RepeatedSequenceDiagnosticsTest {
 		assertEquals(source, unit.getSource());
 		assertEquals(preferences, project.getOptions(false));
 		diagnostics.assertRestored();
+	}
+
+	@Test
+	void removesNlsMarkersForLiteralsEliminatedByDelegation() throws Exception {
+		String source= """
+				package test1;
+				public final class Sample {
+					public String first() { return ""; } //$NON-NLS-1$
+					public String second() { return ""; } //$NON-NLS-1$
+				}
+				""";
+		String result= performCleanup(source, MYCleanUpConstants.METHOD_REUSE_INLINE_SEQUENCES, true);
+		assertTrue(result.contains("return first();"), result);
+	}
+
+	@Test
+	void retainsNlsMarkersWhenDelegationMovesLiteralArguments() throws Exception {
+		String source= """
+				package test1;
+				public final class Sample {
+					private static void append(StringBuilder buffer, String key, String first, String second) {
+						append(buffer, key, new String[] { first, second });
+					}
+					private static void append(StringBuilder buffer, String key, String[] names) {
+						for (String name : names) buffer.append(key).append(name);
+					}
+					public static void update(StringBuilder buffer, String first, String second) {
+						append(buffer,
+							"key", //$NON-NLS-1$ Stable preference key.
+							new String[] { first, second });
+					}
+				}
+				""";
+		String result= performCleanup(source, MYCleanUpConstants.METHOD_REUSE_INLINE_SEQUENCES, true);
+		assertFalse(result.substring(result.indexOf("public static void update")).contains("new String[]"), result);
+		assertTrue(result.contains("Stable preference key."), result);
+	}
+
+	@Test
+	void relocatesNlsMarkersFromTwoStatementsAndRetainsExplanations() throws Exception {
+		String source= """
+				package test1;
+				public final class Sample {
+					private static void append(StringBuilder buffer, String first, String second) {
+						buffer.append(first);
+						buffer.append(second);
+					}
+					public static void update(StringBuilder buffer) {
+						buffer.append("left"); //$NON-NLS-1$ First component.
+						buffer.append("right"); //$NON-NLS-1$ Second component.
+					}
+				}
+				""";
+		String result= performCleanup(source, MYCleanUpConstants.METHOD_REUSE_INLINE_SEQUENCES, true);
+		assertTrue(result.substring(result.indexOf("public static void update")).contains("append(buffer,"), result);
+		assertTrue(result.contains("First component."), result);
+		assertTrue(result.contains("Second component."), result);
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans= { true, false })
+	void keepsNlsIntentForMovedAndUnchangedLiteralsOnTheSameLine(boolean tagFirst) throws Exception {
+		String source= """
+				package test1;
+				public final class Sample {
+					private static void append(StringBuilder buffer, String first, String second) {
+						buffer.append(first);
+						buffer.append(second);
+					}
+					public static void update(StringBuilder buffer) {
+						buffer.append("left"); buffer.append("right"); buffer.append("tail".length()); LEFT_TAG //$NON-NLS-2$ //$NON-NLS-3$ Keep length.
+					}
+				}
+				""".replace("LEFT_TAG", tagFirst ? "//$NON-NLS-1$" : "");
+		String result= performCleanup(source, MYCleanUpConstants.METHOD_REUSE_INLINE_SEQUENCES, true);
+		Set<String> tagged= Arrays.stream(NLSScanner.scan(result)).flatMap(line -> Arrays.stream(line.getElements()))
+				.filter(NLSElement::hasTag).map(NLSElement::getValue).collect(Collectors.toSet());
+		assertEquals(tagFirst ? Set.of("\"left\"", "\"right\"", "\"tail\"") : Set.of("\"right\"", "\"tail\""), tagged);
+		assertTrue(result.contains("Keep length."), result);
+	}
+
+	@Test
+	void retainsTheDirectSuperCallRequiredByAnOverride() throws Exception {
+		String source= """
+				package test1;
+				class Parent { public void changed() {} }
+				public final class Sample extends Parent {
+					private void notifyChange() { super.changed(); }
+					@Override public void changed() { super.changed(); }
+					public void update() { notifyChange(); }
+				}
+				""";
+		String result= performCleanup(source, MYCleanUpConstants.METHOD_REUSE_INLINE_SEQUENCES, false);
+		assertTrue(result.substring(result.indexOf("@Override")).contains("super.changed();"), result);
+	}
+
+	@Test
+	void doesNotCreditOldResourceWarningsAgainstAnExtractedMethod() throws Exception {
+		String source= """
+				package test1;
+				public final class Sample {
+					private static class Logger extends Thread {
+						final StringBuilder buffer = new StringBuilder();
+						Logger(java.io.InputStream input) { buffer.append(input); }
+					}
+					public static String first(Process process) throws InterruptedException {
+						try {
+							Logger error = new Logger(process.getErrorStream());
+							Logger output = new Logger(process.getInputStream());
+							error.start();
+							output.start();
+							process.waitFor();
+							error.join();
+							output.join();
+							String result = error.buffer.toString();
+							if (result.isEmpty()) result = output.buffer.toString();
+							return result.trim();
+						} finally { process.destroy(); }
+					}
+					public static String second(Process process) throws InterruptedException {
+						try {
+							Logger error = new Logger(process.getErrorStream());
+							Logger output = new Logger(process.getInputStream());
+							error.start();
+							output.start();
+							process.waitFor();
+							error.join();
+							output.join();
+							String result = error.buffer.toString();
+							if (result.isEmpty()) result = output.buffer.toString();
+							return result.toLowerCase();
+						} finally { process.destroy(); }
+					}
+				}
+				""";
+		performCleanup(source, MYCleanUpConstants.METHOD_REUSE_CLEANUP, false);
+	}
+
+	private String performCleanup(String source, String option, boolean requireChange) throws Exception {
+		var unit= project.getPackageFragmentRoot(resource.getFolder("src"))
+				.createPackageFragment("test1", false, null).createCompilationUnit("Sample.java", source, false, null);
+		var parser= ASTParser.newParser(AST.getJLSLatest());
+		parser.setSource(unit);
+		parser.setResolveBindings(true);
+		var root= (CompilationUnit) parser.createAST(null);
+		assertFalse(Arrays.stream(root.getProblems()).anyMatch(problem -> problem.isError()),
+				Arrays.toString(root.getProblems()));
+		Map<String, String> preferences= Map.copyOf(project.getOptions(false));
+		var diagnostics= CompilerDiagnosticAssertions.capture(unit);
+		var cleanup= new MethodReuseCleanUpCore(Map.of(option, CleanUpOptions.TRUE));
+		var fix= cleanup.createFix(new CleanUpContext(unit, root));
+		if (requireChange) assertNotNull(fix, "Safe delegation must remain available");
+		if (fix == null) return source;
+		var change= fix.createChange(null);
+		var undo= change.perform(null);
+		try {
+			diagnostics.assertNoNewDiagnostics();
+			return unit.getSource();
+		} finally {
+			assertNotNull(undo);
+			var redo= undo.perform(null);
+			if (redo != null) redo.dispose();
+			undo.dispose();
+			change.dispose();
+			assertEquals(source, unit.getSource());
+			assertEquals(preferences, project.getOptions(false));
+			diagnostics.assertRestored();
+		}
 	}
 
 	@Test
