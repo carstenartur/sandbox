@@ -292,6 +292,7 @@ run_tests() {
     bash "$SCRIPT_DIR/run-jdt-ui-release-build.sh"
     "$JDT_UI" "$OUTPUT/tmp/release-build" "$MAVEN_BIN"
     --batch-mode
+    --errors
     --no-transfer-progress
     -U
     -DskipTests=false
