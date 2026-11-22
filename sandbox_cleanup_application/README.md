@@ -252,10 +252,19 @@ relative to the selected bundle. If a selected descriptor cannot be interpreted,
 the application restores every changed participant.
 
 Review the complete patch, planning diagnostics and the project's normal tests.
-The runner can also add the required Jupiter parallel-package import to an
-existing PDE manifest when a migration introduces `@Isolated`. Its project
-scope does not broaden the [supported migration shapes](../sandbox_junit_cleanup/MIGRATION_CAPABILITIES.md)
-or supply an arbitrary Maven/Gradle dependency resolver. The default CLI and
+The project-wide runner also adds `Import-Package` entries to an existing PDE
+manifest for modeled Jupiter API packages newly referenced by changed Java
+sources. This includes ordinary and static imports, wildcard imports and fully
+qualified references, such as extension, parallel and parameter-provider APIs.
+Existing Jupiter references alone do not trigger descriptor repair; comments,
+strings and unrelated packages are ignored. The manifest joins the same
+check/apply transaction as the Java changes.
+
+These PDE imports do not install the required bundles into a target or add
+arbitrary Maven/Gradle dependencies. The separately documented Platform Suite
+dependency and deployment paths retain their own applicability contracts.
+Project scope does not broaden the [supported migration shapes](../sandbox_junit_cleanup/MIGRATION_CAPABILITIES.md).
+The default CLI and
 cleanup-review action continue to use the per-compilation-unit application.
 See the [upstream JDT QA workflow](../qa/upstream-jdt/README.md) for reproducible
 before/after evidence recipes.
