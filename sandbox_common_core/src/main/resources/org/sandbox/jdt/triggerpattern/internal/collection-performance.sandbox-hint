@@ -9,37 +9,37 @@
 
 @id: collection-performance.map-keyset-size.to-map-size
 @severity: info
-$map.keySet().size()
+$map.keySet().size() :: mapViewOperationSafe()
 => $map.size()
 ;;
 
 @id: collection-performance.map-values-size.to-map-size
 @severity: info
-$map.values().size()
+$map.values().size() :: mapViewOperationSafe()
 => $map.size()
 ;;
 
 @id: collection-performance.map-keyset-isempty.to-map-isempty
 @severity: info
-$map.keySet().isEmpty()
+$map.keySet().isEmpty() :: mapViewOperationSafe()
 => $map.isEmpty()
 ;;
 
 @id: collection-performance.map-values-isempty.to-map-isempty
 @severity: info
-$map.values().isEmpty()
+$map.values().isEmpty() :: mapViewOperationSafe()
 => $map.isEmpty()
 ;;
 
 @id: collection-performance.map-keyset-clear.to-map-clear
 @severity: info
-$map.keySet().clear()
+$map.keySet().clear() :: mapViewOperationSafe()
 => $map.clear()
 ;;
 
 @id: collection-performance.map-values-clear.to-map-clear
 @severity: info
-$map.values().clear()
+$map.values().clear() :: mapViewOperationSafe()
 => $map.clear()
 ;;
 

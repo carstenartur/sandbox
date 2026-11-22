@@ -122,9 +122,10 @@ The normal Maven/Tycho reactor validates bundle metadata and feature resolution.
 
 ## Mathematics source gallery
 
-The Mathematics Help TOC includes four native before/after previews of
+The Mathematics Help TOC includes five native before/after previews of
 runtime-dependent calculations in complete, unchanged Bouncy Castle production
-classes. See `sandbox_eclipse_help_swtbot_test/fixtures/mathematics/README.md` for
+classes: four bitwise examples and one BigInteger modular square requiring
+explicit mathematical consent. See `sandbox_eclipse_help_swtbot_test/fixtures/mathematics/README.md` for
 the pinned source-archive identity, provenance and licensing. The old constant-only
 examples are withdrawn; source names and expected fixture outputs do not select
 optimizer rules. These examples are regression evidence, not measured throughput

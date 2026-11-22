@@ -248,6 +248,13 @@ automatic BigInteger interpretation. Unsupported regions stay unchanged.</td></t
 summaries, heap/alias analysis and arbitrary algorithm rewrites remain unsupported. A region must satisfy the extractor's explicit local
 binding, effect and value-semantics checks. External user-defined field constants are rejected because their defining source is not part of the local proof.</td></tr>
 </tbody></table>
+<p id="selected-source-dependencies">For ordinary Mathematics cleanup with tail conversion
+and combined Functional Converter disabled, a recorded source dependency on another
+selected Java file defers the dependent file's mathematical change. The diagnostic is
+<code>MATHEMATICS_SELECTED_SOURCE_DEPENDENCY</code>. This also applies when the selected
+helper has no mathematical replacement of its own. Other selected files with independent
+candidates remain eligible. Finish edits to the helper files, then run Mathematics
+on the caller alone.</p>
 <p>BigInteger helper expansion uses the original helper body as input to
 Regelsuche. For example, a helper returning
 <code>value.modPow(BigInteger.TWO, modulus)</code> can expose a modular square
@@ -268,9 +275,11 @@ edited remains unchanged and limits generated syntax and APIs. Unknown or
 unqualified target contracts are rejected.</p>
 
 <h2 id="examples">Examples and counterexamples</h2>
-<p><a href="examples.html"><strong>Four real before/after screenshots of
+<p><a href="examples.html"><strong>Five real before/after screenshots of
 runtime-dependent Bouncy Castle calculations</strong></a> show the actual Eclipse
 cleanup preview, complete pinned production inputs and the required settings.
+Four show bitwise calculations; the fifth shows a BigInteger modular square with
+explicit mathematical consent, receiver guards and the original fallback.
 They replace the former constant-only examples. Expected fixture results are test
 data, never inputs to mathematical candidate generation.</p>
 <p>An eligible shape uses a known BigInteger factory and value-only observations:</p>

@@ -13,9 +13,6 @@ exclude_paths:
   - "p2/**"
   - "build/**"
   - "generated/**"
-  - "sandbox1.2.1/**"
-  - "plugins/**"
-  - "features/**"
   # Exclude testresources directory containing binary JAR files (prevents charset errors)
   - "**/testresources/**"
   # Exclude all binary file types
