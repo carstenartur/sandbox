@@ -26,7 +26,7 @@ import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.sandbox.jdt.internal.common.AstProcessing;
-import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.sandbox.jdt.internal.common.ImportNameBindings;
 
 /** Deterministic binding and reference index for one compilation unit. */
 final class ContainerFlowIndex {
@@ -55,15 +55,10 @@ final class ContainerFlowIndex {
 		IJavaElement javaElement= compilationUnit.getJavaElement();
 		String unitHandle= javaElement == null ? "" : javaElement.getHandleIdentifier(); //$NON-NLS-1$
 
-		AstProcessing.independent(ReferenceHolder.<String, Object>create())
-				.on(MethodDeclaration.class, (method, holder) -> {
-					indexMethod(method, methods, parameterIndices);
-					return true;
-				})
-				.on(SimpleName.class, (name, holder) -> {
-					indexVariable(name, bindings, references, parameterIndices, unitHandle);
-					return true;
-				})
+		AstProcessing.independent()
+				.visit(MethodDeclaration.class, method -> indexMethod(method, methods, parameterIndices))
+				.visit(SimpleName.class,
+						name -> indexVariable(name, bindings, references, parameterIndices, unitHandle))
 				.build(compilationUnit);
 
 		return new ContainerFlowIndex(bindings, references, methods, unitHandle);
@@ -116,7 +111,7 @@ final class ContainerFlowIndex {
 			Map<String, List<SimpleName>> references,
 			Map<String, Integer> parameterIndices,
 			String unitHandle) {
-		IBinding resolved= name.resolveBinding();
+		IBinding resolved= ImportNameBindings.resolve(name);
 		if (!(resolved instanceof IVariableBinding variable)) {
 			return;
 		}

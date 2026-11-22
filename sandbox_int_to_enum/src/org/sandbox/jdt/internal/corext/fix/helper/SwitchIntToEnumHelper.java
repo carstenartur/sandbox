@@ -13,13 +13,10 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -28,14 +25,9 @@ import org.eclipse.jdt.core.dom.EnumConstantDeclaration;
 import org.eclipse.jdt.core.dom.EnumDeclaration;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
-import org.eclipse.jdt.core.dom.IBinding;
-import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.Javadoc;
-import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.Modifier;
-import org.eclipse.jdt.core.dom.PrimitiveType;
 import org.eclipse.jdt.core.dom.SimpleName;
-import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.SwitchCase;
 import org.eclipse.jdt.core.dom.SwitchStatement;
 import org.eclipse.jdt.core.dom.TagElement;
@@ -48,188 +40,36 @@ import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.jdt.internal.common.AstProcessorBuilder;
+import org.sandbox.jdt.internal.common.AstProcessing;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.IntToEnumFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.IntToEnumHelper.IntConstantHolder;
 
 /**
- * Helper class for converting switch statements using int constants to use enums.
- *
- * <p>This handles the case where a switch statement already exists with int constant
- * case labels. The transformation:</p>
- * <ol>
- * <li>Detects static final int constant declarations with a common underscore-delimited prefix</li>
- * <li>Finds switch statements that use these constants as case labels</li>
- * <li>Verifies the switch selector is a method parameter (so the type can be updated)</li>
- * <li>Verifies constants are not referenced outside the switch (to avoid broken references)</li>
- * <li>Generates an enum type from the constant names</li>
- * <li>Replaces the int constants in switch cases with enum values</li>
- * <li>Removes the old int constant field declarations</li>
- * <li>Updates the method parameter type from int to the enum type</li>
- * </ol>
+ * Converts an existing int switch only after the shared single-unit analysis
+ * proves a private constant domain, private method, all parameter uses and callers.
+ * Case bodies and fall-through order are preserved; accepted callers receive the
+ * corresponding enum values together with the parameter type change.
  */
 public class SwitchIntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntConstantHolder>> {
 
 	@Override
 	public void find(IntToEnumFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-
-		ReferenceHolder<String, Object> findHolder = ReferenceHolder.create();
-		AstProcessorBuilder.with(findHolder)
-			.onSwitchStatement((node, h) -> {
-				if (nodesprocessed.contains(node)) {
-					return true;
-				}
-
-				// Only process if the switch selector is a method parameter (so we can update its type)
-				Expression switchExpr = node.getExpression();
-				if (!(switchExpr instanceof SimpleName switchName)) {
-					return true;
-				}
-				MethodDeclaration method = findEnclosingMethod(node);
-				if (method == null || !isMethodParameter(method, switchName.getIdentifier())) {
-					return true;
-				}
-
-				// Collect constants from the same enclosing type as the switch
-				TypeDeclaration enclosingType = findEnclosingType(node);
-				if (enclosingType == null) {
-					return true;
-				}
-				Map<String, FieldDeclaration> intConstants = collectIntConstants(enclosingType);
-				if (intConstants.size() < 2) {
-					return true;
-				}
-
-				// Find case labels that reference collected constants (SimpleName only)
-				List<String> usedConstants = new ArrayList<>();
-				Map<String, FieldDeclaration> usedFields = new LinkedHashMap<>();
-
-				for (Object stmt : node.statements()) {
-					if (stmt instanceof SwitchCase switchCase && !switchCase.isDefault()) {
-						for (Object expr : switchCase.expressions()) {
-							if (expr instanceof SimpleName sn) {
-								String constName = sn.getIdentifier();
-								if (intConstants.containsKey(constName)) {
-									usedConstants.add(constName);
-									usedFields.put(constName, intConstants.get(constName));
-								}
-							}
-						}
-					}
-				}
-
-				if (usedConstants.size() < 2) {
-					return true;
-				}
-
-				String prefix = findCommonPrefix(usedConstants);
-				if (prefix == null) {
-					return true;
-				}
-
-				// Validate all derived enum constant names are valid Java identifiers
-				for (String constName : usedConstants) {
-					String enumValueName = constName.substring(prefix.length());
-					if (enumValueName.isEmpty() || !Character.isJavaIdentifierStart(enumValueName.charAt(0))) {
-						return true;
-					}
-				}
-
-				// Verify constants are not referenced outside the switch statement
-				if (hasReferencesOutsideSwitch(compilationUnit, usedFields.keySet(), node)) {
-					return true;
-				}
-
-				IntConstantHolder holder = new IntConstantHolder();
-				holder.switchStatement = node;
-				holder.constantFields.putAll(usedFields);
-				holder.constantNames.addAll(usedConstants);
-				holder.comparedVariable = switchName.getIdentifier();
-				holder.nodesProcessed = nodesprocessed;
-
-				ReferenceHolder<Integer, IntConstantHolder> dataholder = new ReferenceHolder<>();
-				dataholder.put(0, holder);
-				operations.add(fixcore.rewrite(dataholder));
-				nodesprocessed.add(node);
-
-				return true;
-			})
-			.build(compilationUnit);
-	}
-
-	/**
-	 * Collect static final int field declarations from the given type declaration.
-	 */
-	private static Map<String, FieldDeclaration> collectIntConstants(TypeDeclaration typeDecl) {
-		Map<String, FieldDeclaration> intConstants = new LinkedHashMap<>();
-		for (FieldDeclaration field : typeDecl.getFields()) {
-			int modifiers = field.getModifiers();
-			if (Modifier.isStatic(modifiers) && Modifier.isFinal(modifiers)) {
-				Type type = field.getType();
-				if (type.isPrimitiveType()
-						&& ((PrimitiveType) type).getPrimitiveTypeCode() == PrimitiveType.INT) {
-					for (Object fragment : field.fragments()) {
-						VariableDeclarationFragment vdf = (VariableDeclarationFragment) fragment;
-						intConstants.put(vdf.getName().getIdentifier(), field);
-					}
-				}
+		AstProcessing.independent().visit(SwitchStatement.class, node -> {
+			if (nodesprocessed.contains(node)) {
+				return;
 			}
-		}
-		return intConstants;
-	}
-
-	/**
-	 * Check if the given variable name is a parameter of the method.
-	 */
-	private static boolean isMethodParameter(MethodDeclaration method, String varName) {
-		for (Object param : method.parameters()) {
-			SingleVariableDeclaration svd = (SingleVariableDeclaration) param;
-			if (svd.getName().getIdentifier().equals(varName)) {
-				return true;
+			IntConstantHolder holder = IntToEnumHelper.createSwitchCandidate(compilationUnit, node);
+			if (holder == null) {
+				return;
 			}
-		}
-		return false;
-	}
-
-	/**
-	 * Check if any of the named constants are referenced outside the given switch statement.
-	 * Returns true if there are external references (meaning we should NOT transform).
-	 */
-	private static boolean hasReferencesOutsideSwitch(CompilationUnit cu, Set<String> constantNames,
-			SwitchStatement switchStatement) {
-		AtomicBoolean hasExternalRef = new AtomicBoolean(false);
-		ReferenceHolder<String, Object> refHolder = ReferenceHolder.create();
-		AstProcessorBuilder.with(refHolder)
-			.onSimpleName((node, h) -> {
-				if (hasExternalRef.get()) {
-					return false;
-				}
-				if (!constantNames.contains(node.getIdentifier())) {
-					return true;
-				}
-				IBinding binding = node.resolveBinding();
-				if (!(binding instanceof IVariableBinding vb) || !vb.isField()) {
-					return true;
-				}
-				// Check if this reference is inside the switch statement or in a field declaration
-				ASTNode parent = node.getParent();
-				while (parent != null) {
-					if (parent == switchStatement) {
-						return true; // inside the switch - OK
-					}
-					if (parent instanceof FieldDeclaration) {
-						return true; // in the field declaration itself - OK
-					}
-					parent = parent.getParent();
-				}
-				// Reference found outside the switch statement
-				hasExternalRef.set(true);
-				return false;
-			})
-			.build(cu);
-		return hasExternalRef.get();
+			holder.nodesProcessed = nodesprocessed;
+			ReferenceHolder<Integer, IntConstantHolder> dataholder = new ReferenceHolder<>();
+			dataholder.put(0, holder);
+			operations.add(fixcore.rewrite(dataholder));
+			nodesprocessed.add(node);
+		}).build(compilationUnit);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -262,7 +102,7 @@ public class SwitchIntToEnumHelper extends AbstractTool<ReferenceHolder<Integer,
 			tag.fragments().add(text);
 			doc.tags().add(tag);
 			enumDecl.setJavadoc(doc);
-			enumDecl.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.PUBLIC_KEYWORD));
+			enumDecl.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.PRIVATE_KEYWORD));
 
 			for (String constName : data.constantNames) {
 				EnumConstantDeclaration enumConst = ast.newEnumConstantDeclaration();
@@ -276,7 +116,7 @@ public class SwitchIntToEnumHelper extends AbstractTool<ReferenceHolder<Integer,
 			}
 
 			// 2. Find the enclosing TypeDeclaration
-			TypeDeclaration typeDecl = findEnclosingType(data.switchStatement);
+			TypeDeclaration typeDecl = data.enclosingType;
 			if (typeDecl == null) {
 				continue;
 			}
@@ -350,15 +190,13 @@ public class SwitchIntToEnumHelper extends AbstractTool<ReferenceHolder<Integer,
 				statements.insertAfter(body, fallback, group);
 			}
 
-			// 6. Update method parameter type from int to enum
-			MethodDeclaration method = findEnclosingMethod(data.switchStatement);
-			if (method != null && data.comparedVariable != null) {
-				for (Object param : method.parameters()) {
-					SingleVariableDeclaration svd = (SingleVariableDeclaration) param;
-					if (svd.getName().getIdentifier().equals(data.comparedVariable)) {
-						Type newType = ast.newSimpleType(ast.newSimpleName(enumName));
-						rewrite.replace(svd.getType(), newType, group);
-					}
+			// 6. Update the proven parameter and every accepted local call site.
+			Type newType = ast.newSimpleType(ast.newSimpleName(enumName));
+			rewrite.replace(data.parameter.getType(), newType, group);
+			for (Map.Entry<Expression, String> reference : data.constantReferences.entrySet()) {
+				if (!(reference.getKey().getParent() instanceof SwitchCase)) {
+					String constant = reference.getValue().substring(prefix.length());
+					rewrite.replace(reference.getKey(), ast.newName(enumName + "." + constant), group); //$NON-NLS-1$
 				}
 			}
 		}
@@ -419,35 +257,13 @@ public class SwitchIntToEnumHelper extends AbstractTool<ReferenceHolder<Integer,
 		return sb.toString();
 	}
 
-	private static TypeDeclaration findEnclosingType(ASTNode node) {
-		ASTNode parent = node.getParent();
-		while (parent != null) {
-			if (parent instanceof TypeDeclaration typeDecl) {
-				return typeDecl;
-			}
-			parent = parent.getParent();
-		}
-		return null;
-	}
-
-	private static MethodDeclaration findEnclosingMethod(ASTNode node) {
-		ASTNode parent = node.getParent();
-		while (parent != null) {
-			if (parent instanceof MethodDeclaration methodDecl) {
-				return methodDecl;
-			}
-			parent = parent.getParent();
-		}
-		return null;
-	}
-
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (!afterRefactoring) {
 			return """
 					// Before:
-					public static final int STATUS_PENDING = 0;
-					public static final int STATUS_APPROVED = 1;
+					private static final int STATUS_PENDING = 0;
+					private static final int STATUS_APPROVED = 1;
 
 					switch (status) {
 					    case STATUS_PENDING:
@@ -462,7 +278,7 @@ public class SwitchIntToEnumHelper extends AbstractTool<ReferenceHolder<Integer,
 		return """
 				// After:
 				/** Values accepted by the status switch. */
-				public enum Status {
+				private enum Status {
 				    PENDING, APPROVED
 				}
 

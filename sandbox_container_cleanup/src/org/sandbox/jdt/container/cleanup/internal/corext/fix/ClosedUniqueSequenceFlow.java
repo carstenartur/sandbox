@@ -60,6 +60,7 @@ import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 
 import org.sandbox.jdt.container.analysis.LocalUniqueSequenceAnalyzer;
 import org.sandbox.jdt.container.analysis.UniqueSequencePattern;
+import org.sandbox.jdt.internal.common.ImportNameBindings;
 
 /** Per-AST proof of the guarded builder, its direct callers and optional read-only parameter boundaries. */
 public final class ClosedUniqueSequenceFlow {
@@ -118,7 +119,7 @@ public final class ClosedUniqueSequenceFlow {
 		}
 		List<Edit> edits= new ArrayList<>(uses.edits);
 		boolean closed= names(root, name -> {
-			if (!(name.resolveBinding() instanceof IMethodBinding binding)) {
+			if (!(ImportNameBindings.resolve(name) instanceof IMethodBinding binding)) {
 				return true;
 			}
 			IMethod method= model(binding);
@@ -269,7 +270,7 @@ public final class ClosedUniqueSequenceFlow {
 
 		boolean scan(CompilationUnit root, IMethod producer) {
 			return names(root, name -> {
-				if (!(name.resolveBinding() instanceof IMethodBinding binding) || !producer.equals(model(binding))
+				if (!(ImportNameBindings.resolve(name) instanceof IMethodBinding binding) || !producer.equals(model(binding))
 						|| name.getParent() instanceof MethodDeclaration declaration && declaration.getName() == name) {
 					return true;
 				}
