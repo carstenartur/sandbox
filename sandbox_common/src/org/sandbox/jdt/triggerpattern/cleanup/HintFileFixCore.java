@@ -14,6 +14,7 @@
 package org.sandbox.jdt.triggerpattern.cleanup;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -167,7 +168,7 @@ public class HintFileFixCore {
 			BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile, resolvedRules);
 			List<TransformationResult> results = processor.process(compilationUnit);
 
-			for (TransformationResult result : results) {
+			for (TransformationResult result : outsideCatchBodiesFirst(results)) {
 				if (result.hasReplacement()) {
 					if (isNonWidenableDeclaration(result, compilationUnit)) {
 						continue;
@@ -252,7 +253,7 @@ public class HintFileFixCore {
 		BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile, resolvedRules);
 		List<TransformationResult> results = processor.process(compilationUnit, compilerOptions);
 
-		for (TransformationResult result : results) {
+		for (TransformationResult result : outsideCatchBodiesFirst(results)) {
 			if (result.hasReplacement()) {
 				if (isNonWidenableDeclaration(result, compilationUnit)) {
 					continue;
@@ -289,11 +290,28 @@ public class HintFileFixCore {
 	public static void findOperationsFromHint(CompilationUnit compilationUnit,
 			HintFile hintFile, Set<CompilationUnitRewriteOperation> operations) {
 		GuardRegistry.getInstance();
-		for (TransformationResult result : new BatchTransformationProcessor(hintFile).process(compilationUnit)) {
+		for (TransformationResult result : outsideCatchBodiesFirst(new BatchTransformationProcessor(hintFile).process(compilationUnit))) {
 			if (result.hasReplacement() && !isNonWidenableDeclaration(result, compilationUnit)) {
 				addRewriteOperation(compilationUnit, result, operations);
 			}
 		}
+	}
+
+	private static List<TransformationResult> outsideCatchBodiesFirst(List<TransformationResult> results) {
+		// Matches are grouped by rule. Finish possible handler removals before any
+		// rule adds imports or edits in a handler; preserve rule order at each depth.
+		return results.stream().sorted(Comparator.comparingInt(result -> catchDepth(result.match().getMatchedNode())))
+				.toList();
+	}
+
+	private static int catchDepth(ASTNode node) {
+		int depth= 0;
+		for (ASTNode current= node; current != null; current= current.getParent()) {
+			if (current instanceof CatchClause) {
+				depth++;
+			}
+		}
+		return depth;
 	}
 
 	/** Declines unsupported or recovered text before constructing an empty cleanup fix. */
@@ -446,7 +464,8 @@ public class HintFileFixCore {
 			ASTNode matchedNode = result.match().getMatchedNode();
 			String replacement = result.replacement();
 
-			if (matchedNode == null || replacement == null) {
+			if (matchedNode == null || replacement == null
+					|| ExceptionCleanupHelper.isInRemovedCatch(matchedNode, rewrite)) {
 				return;
 			}
 			boolean sequence= result.rule().sourcePattern().getKind() == PatternKind.STATEMENT_SEQUENCE;
