@@ -53,9 +53,16 @@ void $name($params$) :: methodNameMatches($name, "test.*") && !isStatic($name) &
 When using standalone `ASTParser`, types not on classpath produce **recovered** bindings:
 - `isRecovered() == true` but `getQualifiedName()` returns "" or unreliable name
 - **ALWAYS check** `binding != null && !binding.isRecovered()` before trusting
-- Fall back to source-level names: `annotation.getTypeName().getFullyQualifiedName()`
+- Use `annotation.getTypeName().getFullyQualifiedName()` only where the visitor's own contract permits source-name discovery; spelling is not a substitute for required semantic binding evidence.
 
 Affects: `LambdaASTVisitor.java` — all annotation visit/endVisit methods and field type matching.
+
+Typed declarative annotation patterns require the resolved JUnit source type;
+foreign or recovered annotations cannot authorize an executable match. A
+qualified source annotation keeps the rule's qualified Jupiter destination.
+Keep `QualifiedJUnitAnnotationTest` checks for destination bindings, local name
+collisions, diagnostics and Undo. Custom handlers that emit their own types and
+imports retain their declared input spellings until separately qualified.
 
 ## ThrowingRunnable → Executable Migration
 
