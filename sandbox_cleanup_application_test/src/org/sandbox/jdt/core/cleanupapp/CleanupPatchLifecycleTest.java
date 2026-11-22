@@ -193,8 +193,8 @@ class CleanupPatchLifecycleTest {
 		Object candidateResult= application.start(new TestApplicationContext(
 				"--project", project.getName(), "--config", config.toString(), "--report", report.toString(), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				"--patch", patch.toString(), "--mode", "check")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		assertEquals(2, candidateResult, Files.readString(report));
-		assertTrue(Files.readString(patch).contains("extractedSequence")); //$NON-NLS-1$
+		assertEquals(2, candidateResult, Files.readString(report, StandardCharsets.UTF_8));
+		assertTrue(Files.readString(patch, StandardCharsets.UTF_8).contains("extractedSequence")); //$NON-NLS-1$
 		assertArrayEquals(original, read(source));
 
 		Files.writeString(config, """
@@ -205,7 +205,7 @@ class CleanupPatchLifecycleTest {
 				"--project", project.getName(), "--config", config.toString(), "--report", report.toString(), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				"--patch", patch.toString(), "--mode", mode)); //$NON-NLS-1$ //$NON-NLS-2$
 
-		assertEquals(0, result, Files.readString(report));
+		assertEquals(0, result, Files.readString(report, StandardCharsets.UTF_8));
 		assertArrayEquals(original, read(source), "Three statements must not meet a four-statement minimum"); //$NON-NLS-1$
 		assertArrayEquals(new byte[0], Files.readAllBytes(patch));
 	}
@@ -264,12 +264,12 @@ class CleanupPatchLifecycleTest {
 		assertEquals(Integer.valueOf(2), app.start(new TestApplicationContext(args)));
 		assertArrayEquals(originalSource, read(source));
 		assertArrayEquals(originalDescriptor, read(descriptor));
-		String predicted= Files.readString(patch);
+		String predicted= Files.readString(patch, StandardCharsets.UTF_8);
 		assertTrue(predicted.contains(expectedDependency), predicted);
 		assertTrue(predicted.contains(descriptorPath), predicted);
 		args[args.length - 1]= "apply";
 		assertEquals(Integer.valueOf(0), app.start(new TestApplicationContext(args)));
-		assertEquals(predicted, Files.readString(patch));
+		assertEquals(predicted, Files.readString(patch, StandardCharsets.UTF_8));
 		assertTrue(new String(read(descriptor), StandardCharsets.UTF_8).contains(expectedDependency));
 		assertTrue(new String(read(source), StandardCharsets.UTF_8).contains("org.junit.platform.suite.api.Suite"));
 		if (maven) {
@@ -280,7 +280,7 @@ class CleanupPatchLifecycleTest {
 			assertEquals(Integer.valueOf(1), app.start(new TestApplicationContext(args)));
 			assertArrayEquals(originalSource, read(source));
 			assertEquals(unmanaged, new String(read(descriptor), StandardCharsets.UTF_8));
-			assertTrue(Files.readString(report).contains("Cannot plan the JUnit Platform Suite dependency"));
+			assertTrue(Files.readString(report, StandardCharsets.UTF_8).contains("Cannot plan the JUnit Platform Suite dependency"));
 		}
 	}
 
@@ -353,11 +353,11 @@ class CleanupPatchLifecycleTest {
 		assertEquals(2, app.start(new TestApplicationContext(args)));
 		assertArrayEquals(beforePom, read(pom));
 		assertArrayEquals(beforeSuite, read(suite));
-		String predicted= Files.readString(patch);
+		String predicted= Files.readString(patch, StandardCharsets.UTF_8);
 		args[args.length - 1]= "apply";
 		assertEquals(0, app.start(new TestApplicationContext(args)));
-		assertEquals(predicted, Files.readString(patch));
-		String after= Files.readString(pom.getLocation().toFile().toPath());
+		assertEquals(predicted, Files.readString(patch, StandardCharsets.UTF_8));
+		String after= Files.readString(pom.getLocation().toFile().toPath(), StandardCharsets.UTF_8);
 		assertTrue(after.contains("junit-platform-suite"));
 		assertEquals(!scope.equals("closed"), after.contains("<artifactId>junit-vintage-engine</artifactId>"), after);
 		assertEquals(!scope.equals("closed"), after.contains("<artifactId>junit</artifactId>"), after);
@@ -440,7 +440,7 @@ class CleanupPatchLifecycleTest {
 				"--pde-deployment", target.getFullPath().toPortableString(), "--mode", "check" };
 		var app= new ProjectWideCodeCleanupApplication();
 		assertEquals(2, app.start(new TestApplicationContext(args)));
-		String predicted= Files.readString(patch);
+		String predicted= Files.readString(patch, StandardCharsets.UTF_8);
 		for (IFile file : tracked) {
 			assertArrayEquals(original.get(file), read(file));
 			String path= sibling ? file.getFullPath().makeRelative().toPortableString() : file.getProjectRelativePath().toPortableString();
@@ -448,7 +448,7 @@ class CleanupPatchLifecycleTest {
 		}
 		args[args.length - 1]= "apply";
 		assertEquals(0, app.start(new TestApplicationContext(args)));
-		assertEquals(predicted, Files.readString(patch));
+		assertEquals(predicted, Files.readString(patch, StandardCharsets.UTF_8));
 		if (!sibling) {
 			PdeDeploymentReplay.export(original);
 		}
@@ -462,7 +462,7 @@ class CleanupPatchLifecycleTest {
 				.contains("id=\"junit-platform-suite-engine\" version=\"1.14.4\""));
 		args[args.length - 1]= "check";
 		assertEquals(0, app.start(new TestApplicationContext(args)));
-		assertEquals("", Files.readString(patch));
+		assertEquals("", Files.readString(patch, StandardCharsets.UTF_8));
 
 		// An explicitly pinned target cannot authorize adding unconstrained suite units.
 		for (IFile file : tracked) {
@@ -473,7 +473,7 @@ class CleanupPatchLifecycleTest {
 		target.setContents(new ByteArrayInputStream(pinned.getBytes(StandardCharsets.UTF_8)), true, false, monitor);
 		args[args.length - 1]= "apply";
 		assertEquals(1, app.start(new TestApplicationContext(args)));
-		assertTrue(Files.readString(report).contains("unpinned Vintage unit"));
+		assertTrue(Files.readString(report, StandardCharsets.UTF_8).contains("unpinned Vintage unit"));
 		for (IFile file : tracked) {
 			assertArrayEquals(file.equals(target) ? pinned.getBytes(StandardCharsets.UTF_8) : original.get(file), read(file));
 		}
@@ -482,7 +482,7 @@ class CleanupPatchLifecycleTest {
 				.replace("id=\"junit-platform-launcher\" version=\"1.14.4\"", "id=\"junit-platform-launcher\" version=\"0.0.0\"");
 		target.setContents(new ByteArrayInputStream(unpinned.getBytes(StandardCharsets.UTF_8)), true, false, monitor);
 		assertEquals(1, app.start(new TestApplicationContext(args)));
-		assertTrue(Files.readString(report).contains("launcher release version"));
+		assertTrue(Files.readString(report, StandardCharsets.UTF_8).contains("launcher release version"));
 		for (IFile file : tracked) {
 			assertArrayEquals(file.equals(target) ? unpinned.getBytes(StandardCharsets.UTF_8) : original.get(file), read(file));
 		}
