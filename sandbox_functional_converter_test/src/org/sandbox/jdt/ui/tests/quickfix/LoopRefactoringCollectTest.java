@@ -720,7 +720,7 @@ public class LoopRefactoringCollectTest {
 						List<Integer> result = new ArrayList<>();
 						items.forEach(item -> {
 							result.add(item);
-							System.out.println("Current size: " + result.size());
+							System.out.println("Current size: " + result.size());  // Read during iteration
 						});
 					}
 				}

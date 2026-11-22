@@ -742,6 +742,26 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	}
 
 	/**
+	 * Registers a callback for Javadoc snippet regions.
+	 *
+	 * @param predicate callback invoked on entry
+	 * @return the previously registered callback
+	 */
+	public BiPredicate<? extends ASTNode, E> addJavaDocRegion(BiPredicate<JavaDocRegion, E> predicate) {
+		return add(VisitorEnum.JavaDocRegion, predicate);
+	}
+
+	/**
+	 * Registers a callback for external Javadoc snippet text.
+	 *
+	 * @param predicate callback invoked on entry
+	 * @return the previously registered callback
+	 */
+	public BiPredicate<? extends ASTNode, E> addJavaDocTextElement(BiPredicate<JavaDocTextElement, E> predicate) {
+		return add(VisitorEnum.JavaDocTextElement, predicate);
+	}
+
+	/**
 	 *
 	 * @param bs
 	 * @return old BiPredicate assigned for nodetype
@@ -1254,6 +1274,16 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	 */
 	public BiPredicate<? extends ASTNode, E> addTagElement(BiPredicate<TagElement, E> bs) {
 		return predicatemap.put(VisitorEnum.TagElement, bs);
+	}
+
+	/**
+	 * Registers a callback for Javadoc snippet tag properties.
+	 *
+	 * @param predicate callback invoked on entry
+	 * @return the previously registered callback
+	 */
+	public BiPredicate<? extends ASTNode, E> addTagProperty(BiPredicate<TagProperty, E> predicate) {
+		return add(VisitorEnum.TagProperty, predicate);
 	}
 
 	/**
@@ -1818,6 +1848,26 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	}
 
 	/**
+	 * Registers an end callback for Javadoc snippet regions.
+	 *
+	 * @param consumer callback invoked on exit
+	 * @return the previously registered callback
+	 */
+	public BiConsumer<? extends ASTNode, E> addJavaDocRegion(BiConsumer<JavaDocRegion, E> consumer) {
+		return addEnd(VisitorEnum.JavaDocRegion, consumer);
+	}
+
+	/**
+	 * Registers an end callback for external Javadoc snippet text.
+	 *
+	 * @param consumer callback invoked on exit
+	 * @return the previously registered callback
+	 */
+	public BiConsumer<? extends ASTNode, E> addJavaDocTextElement(BiConsumer<JavaDocTextElement, E> consumer) {
+		return addEnd(VisitorEnum.JavaDocTextElement, consumer);
+	}
+
+	/**
 	 *
 	 * @param bc
 	 * @return old BiConsumer assigned for nodetype
@@ -2244,6 +2294,16 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	 */
 	public BiConsumer<? extends ASTNode, E> addTagElement(BiConsumer<TagElement, E> bc) {
 		return consumermap.put(VisitorEnum.TagElement, bc);
+	}
+
+	/**
+	 * Registers an end callback for Javadoc snippet tag properties.
+	 *
+	 * @param consumer callback invoked on exit
+	 * @return the previously registered callback
+	 */
+	public BiConsumer<? extends ASTNode, E> addTagProperty(BiConsumer<TagProperty, E> consumer) {
+		return addEnd(VisitorEnum.TagProperty, consumer);
 	}
 
 	/**
@@ -2849,6 +2909,28 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	}
 
 	/**
+	 * Registers entry and exit callbacks for Javadoc snippet regions.
+	 *
+	 * @param predicate callback invoked on entry
+	 * @param consumer callback invoked on exit
+	 */
+	public void addJavaDocRegion(BiPredicate<JavaDocRegion, E> predicate, BiConsumer<JavaDocRegion, E> consumer) {
+		addJavaDocRegion(predicate);
+		addJavaDocRegion(consumer);
+	}
+
+	/**
+	 * Registers entry and exit callbacks for external Javadoc snippet text.
+	 *
+	 * @param predicate callback invoked on entry
+	 * @param consumer callback invoked on exit
+	 */
+	public void addJavaDocTextElement(BiPredicate<JavaDocTextElement, E> predicate, BiConsumer<JavaDocTextElement, E> consumer) {
+		addJavaDocTextElement(predicate);
+		addJavaDocTextElement(consumer);
+	}
+
+	/**
 	 *
 	 * @param bs
 	 * @param bc
@@ -3350,6 +3432,17 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	public void addTagElement(BiPredicate<TagElement, E> bs, BiConsumer<TagElement, E> bc) {
 		predicatemap.put(VisitorEnum.TagElement, bs);
 		consumermap.put(VisitorEnum.TagElement, bc);
+	}
+
+	/**
+	 * Registers entry and exit callbacks for Javadoc snippet tag properties.
+	 *
+	 * @param predicate callback invoked on entry
+	 * @param consumer callback invoked on exit
+	 */
+	public void addTagProperty(BiPredicate<TagProperty, E> predicate, BiConsumer<TagProperty, E> consumer) {
+		addTagProperty(predicate);
+		addTagProperty(consumer);
 	}
 
 	/**

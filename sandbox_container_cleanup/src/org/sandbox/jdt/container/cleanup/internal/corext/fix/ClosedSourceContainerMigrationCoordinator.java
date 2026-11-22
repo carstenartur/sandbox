@@ -85,6 +85,7 @@ import org.sandbox.jdt.container.api.ContainerRecommendation;
 import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan;
 import org.sandbox.jdt.container.api.ContainerUsageProfile;
 import org.sandbox.jdt.container.api.ResolvedContainerFlowSearchPlan;
+import org.sandbox.jdt.internal.common.ImportNameBindings;
 
 /**
  * Bridges the existing semantic container-analysis layers to the Eclipse cleanup
@@ -514,6 +515,7 @@ final class ClosedSourceContainerMigrationCoordinator {
 		parser.createASTs(units.toArray(ICompilationUnit[]::new), new String[0], new ASTRequestor() {
 			@Override
 			public void acceptAST(ICompilationUnit source, CompilationUnit ast) {
+				ImportNameBindings.capture(ast);
 				roots.put(primaryHandle(source), ast);
 			}
 		}, monitor);

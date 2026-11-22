@@ -57,6 +57,7 @@ import org.sandbox.jdt.container.api.ContainerUsageProfile.IterationSemantics;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.SynchronizationKind;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.ThreadExposure;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.WorkloadShape;
+import org.sandbox.jdt.internal.common.ImportNameBindings;
 
 /** Proves the common monitor shared by individual appends and copy-and-clear batch drains. */
 final class SynchronizedListDrainAnalyzer {
@@ -104,7 +105,7 @@ final class SynchronizedListDrainAnalyzer {
 		unit.accept(new ASTVisitor() {
 			@Override
 			public boolean visit(SimpleName name) {
-				if (name.isDeclaration() || !(name.resolveBinding() instanceof IVariableBinding reference)
+				if (name.isDeclaration() || !(ImportNameBindings.resolve(name) instanceof IVariableBinding reference)
 						|| !field.isEqualTo(reference.getVariableDeclaration())) {
 					return true;
 				}
