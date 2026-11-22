@@ -10,6 +10,7 @@
 package org.sandbox.jdt.internal.corext.fix.multifile;
 
 import java.io.ByteArrayInputStream;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -153,7 +154,7 @@ final class ExternalResourceReferenceSearch {
 		// Attached JDK source can report a lambda parameter as an inaccurate field
 		// match. Require both the actual bytecode and its lexical declaration to
 		// disprove that reference; an unknown or real binary caller still blocks.
-		var reader= ToolFactory.createDefaultClassFileReader(new ByteArrayInputStream(binary.getBytes()),
+		var reader= ToolFactory.createDefaultClassFileReader(new ByteArrayInputStream(binary.getBytes(Charset.defaultCharset())),
 				IClassFileReader.CONSTANT_POOL);
 		if (reader == null) return false;
 		var pool= reader.getConstantPool();
