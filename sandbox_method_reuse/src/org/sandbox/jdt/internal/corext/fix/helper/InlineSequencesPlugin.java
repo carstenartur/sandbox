@@ -14,19 +14,21 @@
 package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.List;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.TextBlock;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -43,6 +45,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.InlineCodeSequenceFinder;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.InlineCodeSequenceFinder.InlineSequenceMatch;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.MethodCallReplacer;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.VariableMapping;
+import org.sandbox.jdt.triggerpattern.cleanup.EncodingSourceRewrite;
 
 /**
  * Plugin for detecting and replacing inline code sequences with method calls
@@ -60,9 +63,14 @@ public class InlineSequencesPlugin extends AbstractMethodReuse<MethodDeclaration
 		
 		// Use HelperVisitor to visit all methods in the compilation unit
 		ReferenceHolder<Integer, Object> dataholder = new ReferenceHolder<>();
+		Set<MethodDeclaration> reusedMethods = new HashSet<>();
+		Set<MethodDeclaration> rewrittenMethods = new HashSet<>();
 		
 		HelperVisitorFactory.callMethodDeclarationVisitor(compilationUnit, dataholder, nodesprocessed,
 				(node, holder) -> {
+					if (rewrittenMethods.contains(node)) {
+						return false;
+					}
 					// Search for inline sequences matching this method
 					List<InlineSequenceMatch> matches = InlineCodeSequenceFinder.findInlineSequences(compilationUnit, node);
 					
@@ -72,7 +80,8 @@ public class InlineSequencesPlugin extends AbstractMethodReuse<MethodDeclaration
 						if (matchingStatements.isEmpty()) {
 							continue;
 						}
-						if (!nodesprocessed.contains(matchingStatements.get(0))) {
+						if (!reusedMethods.contains(match.getContainingMethod())
+								&& matchingStatements.stream().noneMatch(nodesprocessed::contains)) {
 							// Create a ReferenceHolder to store both the method and the match
 							ReferenceHolder<Integer, Object> matchHolder = new ReferenceHolder<>();
 							matchHolder.put(0, node);
@@ -80,6 +89,10 @@ public class InlineSequencesPlugin extends AbstractMethodReuse<MethodDeclaration
 							ops.add(fixCore.rewrite(matchHolder));
 							// Mark all statements in the match as processed
 							matchingStatements.forEach(nodesprocessed::add);
+							// A reused body must remain intact: rewriting both duplicate methods
+							// into calls to one another would introduce infinite recursion.
+							reusedMethods.add(node);
+							rewrittenMethods.add(match.getContainingMethod());
 						}
 					}
 					return false;
@@ -111,18 +124,23 @@ public class InlineSequencesPlugin extends AbstractMethodReuse<MethodDeclaration
 		}
 		
 		List<Statement> statementsToReplace = match.getMatchingStatements();
-		if (!statementsToReplace.isEmpty()) {
-			rangeComputer.addTightSourceNode(statementsToReplace.get(0));
-		}
+		statementsToReplace.forEach(rangeComputer::addTightSourceNode);
 		rewrite.setTargetSourceRangeComputer(rangeComputer);
 		
 		// Create the method invocation
 		VariableMapping variableMapping = match.getVariableMapping();
-		MethodInvocation methodCall = MethodCallReplacer.createMethodCall(ast, targetMethod, variableMapping);
+		MethodInvocation methodCall = MethodCallReplacer.createMethodCall(rewrite, targetMethod, variableMapping);
 		
 		if (methodCall == null) {
 			return;
 		}
+		MethodReuseNlsFix.record(cuRewrite, targetMethod, methodCall, statementsToReplace, variableMapping);
+		for (Statement statement : statementsToReplace) statement.accept(new ASTVisitor() {
+			@Override
+			public void preVisit(ASTNode node) {
+				if (node instanceof StringLiteral || node instanceof TextBlock) EncodingSourceRewrite.record(cuRewrite, node);
+			}
+		});
 		
 		// Determine how to replace based on the target method's return type
 		replaceStatementsWithMethodCall(rewrite, ast, targetMethod, methodCall, statementsToReplace, group);
@@ -153,56 +171,22 @@ public class InlineSequencesPlugin extends AbstractMethodReuse<MethodDeclaration
 		// If so, we need to handle variable declaration specially
 		boolean targetReturnsValue = methodReturnsValue(targetMethod);
 		Statement lastInlineStatement = statementsToReplace.get(statementsToReplace.size() - 1);
-		
+		Statement replacement;
 		if (targetReturnsValue && lastInlineStatement instanceof VariableDeclarationStatement) {
-			// The last statement is a variable declaration that corresponds to the return value
-			// Replace it with a variable declaration using the method call
-			VariableDeclarationStatement varDecl = (VariableDeclarationStatement) lastInlineStatement;
-			
-			// Defensive check: ensure there is at least one fragment before accessing index 0
-			if (varDecl.fragments().isEmpty()) {
-				// Fallback to simple replacement with a method call expression
-				ExpressionStatement expressionStatement = ast.newExpressionStatement((Expression) ASTNode.copySubtree(ast, methodCall));
-				listRewrite.replace(firstStatement, expressionStatement, group);
-				
-				// Remove remaining statements
-				for (int i = 1; i < statementsToReplace.size(); i++) {
-					listRewrite.remove(statementsToReplace.get(i), group);
-				}
-				return;
-			}
-			
-			VariableDeclarationFragment fragment = (VariableDeclarationFragment) varDecl.fragments().get(0);
-			
-			// Create new variable declaration with method call as initializer
-			VariableDeclarationFragment newFragment = ast.newVariableDeclarationFragment();
-			newFragment.setName(ast.newSimpleName(fragment.getName().getIdentifier()));
-			newFragment.setInitializer((Expression) ASTNode.copySubtree(ast, methodCall));
-			
-			VariableDeclarationStatement newVarDecl = ast.newVariableDeclarationStatement(newFragment);
-			newVarDecl.setType((org.eclipse.jdt.core.dom.Type) ASTNode.copySubtree(ast, varDecl.getType()));
-			
-			// Replace the first statement with the new variable declaration
-			listRewrite.replace(firstStatement, newVarDecl, group);
-			
-			// Remove intermediate statements (but not the last one which we're effectively replacing)
-			for (int i = 1; i < statementsToReplace.size() - 1; i++) {
-				listRewrite.remove(statementsToReplace.get(i), group);
-			}
-			
-			// Remove the last statement
-			if (statementsToReplace.size() > 1) {
-				listRewrite.remove(lastInlineStatement, group);
-			}
+			// Keep final/annotations and fragment dimensions such as "String result[]".
+			VariableDeclarationStatement declaration = (VariableDeclarationStatement) ASTNode.copySubtree(ast, lastInlineStatement);
+			((VariableDeclarationFragment) declaration.fragments().get(0)).setInitializer(methodCall);
+			replacement = declaration;
+		} else if (targetReturnsValue && lastInlineStatement instanceof ReturnStatement) {
+			ReturnStatement result = ast.newReturnStatement();
+			result.setExpression(methodCall);
+			replacement = result;
 		} else {
-			// Simple case: just replace with expression statement
-			ExpressionStatement expressionStatement = ast.newExpressionStatement((Expression) ASTNode.copySubtree(ast, methodCall));
-			listRewrite.replace(firstStatement, expressionStatement, group);
-			
-			// Remove remaining statements
-			for (int i = 1; i < statementsToReplace.size(); i++) {
-				listRewrite.remove(statementsToReplace.get(i), group);
-			}
+			replacement = ast.newExpressionStatement(methodCall);
+		}
+		listRewrite.replace(firstStatement, replacement, group);
+		for (int i = 1; i < statementsToReplace.size(); i++) {
+			listRewrite.remove(statementsToReplace.get(i), group);
 		}
 	}
 

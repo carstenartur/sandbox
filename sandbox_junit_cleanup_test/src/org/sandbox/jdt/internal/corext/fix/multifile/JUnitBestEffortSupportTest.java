@@ -205,7 +205,7 @@ public class JUnitBestEffortSupportTest {
 		assertTrue(analysis.toJson("").contains("\"manualCompletionRequired\":false")); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
-	private Analysis analyze(EnumSet<JUnitCleanUpFixCore> fixes, ICompilationUnit... units) {
+	private Analysis analyze(EnumSet<JUnitCleanUpFixCore> fixes, ICompilationUnit... units) throws CoreException {
 		return JUnitBestEffortSupport.analyze(context.getJavaProject(), units, fixes, null);
 	}
 

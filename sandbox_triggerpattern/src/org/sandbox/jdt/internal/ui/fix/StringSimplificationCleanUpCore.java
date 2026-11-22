@@ -30,6 +30,7 @@ import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 import org.sandbox.jdt.internal.corext.fix.StringSimplificationFixCore;
+import org.sandbox.jdt.triggerpattern.cleanup.NlsAwareCleanUpFix;
 
 /**
  * CleanUp for string simplification using TriggerPattern hints.
@@ -80,7 +81,7 @@ public class StringSimplificationCleanUpCore extends AbstractCleanUp {
 		
 		CompilationUnitRewriteOperation[] array = operations.toArray(
 				new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]);
-		return new CompilationUnitRewriteOperationsFixCore(
+		return new NlsAwareCleanUpFix(
 				"Simplify string concatenation", //$NON-NLS-1$
 				compilationUnit, 
 				array);

@@ -56,6 +56,22 @@ class JdtStringCleanupContractTest {
 	}
 
 	@Test
+	void nonEmptyLengthChecksRequireTheStringReceiverBinding() {
+		assertCompilesAndNoRewrite(substring,
+				"class Test { boolean m(java.io.File file) { return file.length() > 0; } }"); //$NON-NLS-1$
+		assertCompilesAndNoRewrite(substring, """
+				class Test {
+				  static class Lookalike { int length() { return 1; } boolean isEmpty() { return true; } }
+				  boolean m(Lookalike value) { return value.length() > 0; }
+				}
+				"""); //$NON-NLS-1$
+		String source= "class Test { boolean m(String text) { return text.length() > 0; } }"; //$NON-NLS-1$
+		assertTrue(process(substring, source, "11", false).isEmpty()); //$NON-NLS-1$
+		assertRewrite(substring, source,
+				"class Test { boolean m(String text) { return !text.isEmpty(); } }"); //$NON-NLS-1$
+	}
+
+	@Test
 	void indexOfComparisonsRequireTheStringOverload() {
 		assertIndexOfComparison(">= 0", ""); //$NON-NLS-1$ //$NON-NLS-2$
 		assertIndexOfComparison("!= -1", ""); //$NON-NLS-1$ //$NON-NLS-2$
