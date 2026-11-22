@@ -419,7 +419,7 @@ public abstract class AbstractPatternCleanupPlugin<H> {
         
         // Create the new annotation with fallback logic
         Annotation newAnnotation = createReplacementAnnotation(
-                ast, rewriter, replacementInfo, oldAnnotation, value);
+                ast, rewriter, replacementInfo, oldAnnotation, value, rewriteRule);
         
         // Replace the old annotation with the new one
         ASTNodes.replaceButKeepComment(rewriter, oldAnnotation, newAnnotation, group);
@@ -452,7 +452,7 @@ public abstract class AbstractPatternCleanupPlugin<H> {
         
         // Create the new annotation with fallback logic
         Annotation newAnnotation = createReplacementAnnotation(
-                ast, rewriter, replacementInfo, oldAnnotation, value);
+                ast, rewriter, replacementInfo, oldAnnotation, value, rewriteRule);
         
         // Replace the old annotation with the new one
         ASTNodes.replaceButKeepComment(rewriter, oldAnnotation, newAnnotation, group);
@@ -479,10 +479,12 @@ public abstract class AbstractPatternCleanupPlugin<H> {
      * @return the new annotation to replace the old one
      */
     private Annotation createReplacementAnnotation(AST ast, ASTRewrite rewriter,
-            AnnotationReplacementInfo replacementInfo, Annotation oldAnnotation, Expression value) {
+            AnnotationReplacementInfo replacementInfo, Annotation oldAnnotation, Expression value, RewriteRule rewriteRule) {
+        String annotationName = usesQualifiedTarget(oldAnnotation, rewriteRule)
+                ? rewriteRule.targetQualifiedType() : replacementInfo.annotationName;
         
         if (!replacementInfo.hasPlaceholders()) {
-            return AnnotationUtils.createMarkerAnnotation(ast, replacementInfo.annotationName);
+            return AnnotationUtils.createMarkerAnnotation(ast, annotationName);
         }
         
         // Fallback: if no binding is found, reuse the value from existing annotation
@@ -498,15 +500,20 @@ public abstract class AbstractPatternCleanupPlugin<H> {
         
         if (value != null) {
             SingleMemberAnnotation singleMemberAnnotation = ast.newSingleMemberAnnotation();
-            singleMemberAnnotation.setTypeName(ast.newSimpleName(replacementInfo.annotationName));
+            singleMemberAnnotation.setTypeName(ast.newName(annotationName));
             singleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, value));
             return singleMemberAnnotation;
         }
         
         // No value found - create MarkerAnnotation instead of broken SingleMemberAnnotation
-        return AnnotationUtils.createMarkerAnnotation(ast, replacementInfo.annotationName);
+        return AnnotationUtils.createMarkerAnnotation(ast, annotationName);
     }
     
+    private static boolean usesQualifiedTarget(ASTNode original, RewriteRule rule) {
+        return original instanceof Annotation annotation && annotation.getTypeName().isQualifiedName()
+                && !rule.targetQualifiedType().isEmpty();
+    }
+
     /**
      * Extracts the "value" member from a NormalAnnotation.
      * 
@@ -587,7 +594,7 @@ public abstract class AbstractPatternCleanupPlugin<H> {
                 ImportRemover remover = currentCuRewrite.getImportRemover();
                 remover.registerRemovedNode(removedNode);
                 remover.applyRemoves(importRewriter);
-            } else {
+            } else if (!usesQualifiedTarget(removedNode, rewriteRule)) {
                 // Fallback: direct removal from @CleanupPattern.qualifiedType
                 CleanupPattern cleanupPattern = getCleanupPatternAnnotation();
                 if (cleanupPattern != null && !cleanupPattern.qualifiedType().isEmpty()) {
@@ -602,7 +609,9 @@ public abstract class AbstractPatternCleanupPlugin<H> {
         // --- Import addition ---
         // Priority: targetQualifiedType > addImports > auto-detect from replaceWith
         if (!rewriteRule.targetQualifiedType().isEmpty()) {
-            importRewriter.addImport(rewriteRule.targetQualifiedType());
+            if (!usesQualifiedTarget(removedNode, rewriteRule)) {
+                importRewriter.addImport(rewriteRule.targetQualifiedType());
+            }
         } else if (rewriteRule.addImports().length == 0) {
             ImportDirective detected = ImportDirective.detectFromPattern(rewriteRule.replaceWith());
             for (String importToAdd : detected.getAddImports()) {

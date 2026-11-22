@@ -13,6 +13,19 @@
    <p>The cleanup requires resolvable JUnit types and only rewrites patterns for which a supported Jupiter equivalent has been implemented.
       Project-wide constructs are planned before per-file edits so a fixture, its hierarchy, and all rule users can be evaluated together.</p>
 
+   <h2>Imported and qualified annotations</h2>
+   <p>Declarative JUnit 4 migrations recognize imported and fully qualified <code>@Test</code> markers,
+      <code>@Before</code>, <code>@After</code>, <code>@BeforeClass</code>, <code>@AfterClass</code> and
+      <code>@Ignore</code>. The original annotation must resolve to the expected JUnit 4 type; a same-named
+      application annotation or an unresolved source annotation is not sufficient. Make the target Jupiter
+      API available in the selected project before migration.</p>
+   <p>A qualified source produces a qualified Jupiter annotation, so a local <code>Test</code> or
+      <code>Disabled</code> declaration does not capture the generated name. Both the single-value and named
+      <code>value</code> forms of <code>@Ignore</code> retain their reason on <code>@Disabled</code>.</p>
+   <p>Custom handlers such as <code>@Test(timeout = ...)</code> and <code>@RunWith(...)</code> retain the
+      source spellings supported by their own patterns. The declarative annotation support does not extend
+      those handlers to every fully qualified spelling.</p>
+
    <h2>Strict safety model</h2>
    <p>Strict mode is fail closed. A missing source type, unresolved binding, custom runner, unsupported matcher, external reference,
       or incompatible lifecycle prevents the affected coordinated migration. The cleanup does not manufacture an extension whose behavior

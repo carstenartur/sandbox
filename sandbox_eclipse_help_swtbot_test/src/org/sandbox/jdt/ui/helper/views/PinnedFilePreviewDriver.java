@@ -258,9 +258,10 @@ final class PinnedFilePreviewDriver {
         bot.sleep(650);
         bot.waitUntil(new DefaultCondition() {
             private List<PreviewViewport> previous;
+            private byte[] previousImage;
 
-            @Override public boolean test() {
-                return UIThreadRunnable.syncExec(shell.display, (Result<Boolean>) () -> {
+            @Override public boolean test() throws Exception {
+                boolean captured = UIThreadRunnable.syncExec(shell.display, (Result<Boolean>) () -> {
                     // Native remapping and compare painting can restore the initial difference.
                     // Require the requested position to survive painting and another UI turn.
                     var before = previewViewports(shell.widget);
@@ -273,10 +274,20 @@ final class PinnedFilePreviewDriver {
                     }
                     return settled;
                 });
+                if (!captured) {
+                    previousImage = null;
+                    return false;
+                }
+                // Compare connectors can still repaint without changing a source viewport.
+                // Consecutive SWTBot polls allow queued native painting to run between captures.
+                byte[] currentImage = Files.readAllBytes(temp);
+                boolean stable = previousImage != null && MessageDigest.isEqual(previousImage, currentImage);
+                previousImage = currentImage;
+                return stable;
             }
 
             @Override public String getFailureMessage() {
-                return "The requested comparison position did not settle after native window remapping";
+                return "The requested comparison position and native painting did not settle after window remapping";
             }
         });
     }
