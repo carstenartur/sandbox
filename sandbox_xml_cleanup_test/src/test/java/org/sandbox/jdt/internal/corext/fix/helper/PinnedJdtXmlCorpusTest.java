@@ -62,6 +62,18 @@ class PinnedJdtXmlCorpusTest {
 			this.repository= repository;
 			this.commit= commit;
 		}
+
+		String family() {
+			return family;
+		}
+
+		String repository() {
+			return repository;
+		}
+
+		String commit() {
+			return commit;
+		}
 	}
 
 	private record CorpusResource(IFile copy, Path source, String relative, String project, byte[] original) { }
@@ -86,9 +98,9 @@ class PinnedJdtXmlCorpusTest {
 			assertFalse(Boolean.getBoolean("sandbox.xml.corpus.required"), "Required XML corpus family is missing"); //$NON-NLS-1$ //$NON-NLS-2$
 			Assumptions.abort("Enable pde-xml-upstream-corpus and select core, ui or swt"); //$NON-NLS-1$
 		}
-		Upstream upstream= Arrays.stream(Upstream.values()).filter(candidate -> requestedFamily.equals(candidate.family)).findFirst()
+		Upstream upstream= Arrays.stream(Upstream.values()).filter(candidate -> requestedFamily.equals(candidate.family())).findFirst()
 				.orElseThrow(() -> new AssertionError("Unknown XML corpus family: " + requestedFamily)); //$NON-NLS-1$
-		String family= upstream.family;
+		String family= upstream.family();
 		Path outputRoot= Path.of(System.getProperty("sandbox.xml.corpus.output", "target/xml-upstream-corpus")) //$NON-NLS-1$ //$NON-NLS-2$
 				.toAbsolutePath();
 		Files.createDirectories(outputRoot);
@@ -99,9 +111,9 @@ class PinnedJdtXmlCorpusTest {
 		};
 		Path output= Files.createTempDirectory(outputRoot, prefix);
 		System.out.println("XML corpus evidence: " + output); //$NON-NLS-1$
-		URI remote= URI.create("https://github.com/" + upstream.repository + ".git"); //$NON-NLS-1$ //$NON-NLS-2$
-		try (PinnedGitRepository fixture= PinnedGitRepository.cloneAt(temporary.resolve(family), remote, REF, upstream.commit)) {
-			assertEquals(upstream.commit, fixture.headCommit());
+		URI remote= URI.create("https://github.com/" + upstream.repository() + ".git"); //$NON-NLS-1$ //$NON-NLS-2$
+		try (PinnedGitRepository fixture= PinnedGitRepository.cloneAt(temporary.resolve(family), remote, REF, upstream.commit())) {
+			assertEquals(upstream.commit(), fixture.headCommit());
 			verifyRepository(family, fixture.directory(), output, upstream);
 		}
 	}
@@ -119,9 +131,9 @@ class PinnedJdtXmlCorpusTest {
 		List<String> inventory= new ArrayList<>(List.of("path\tproject\tmode\tbefore.sha256\tafter.sha256\tchanged\tstatus")); //$NON-NLS-1$
 		CorpusCounts counts= new CorpusCounts();
 		Properties receipt= new Properties();
-		receipt.setProperty("repository", upstream.repository); //$NON-NLS-1$
+		receipt.setProperty("repository", upstream.repository()); //$NON-NLS-1$
 		receipt.setProperty("ref", REF); //$NON-NLS-1$
-		receipt.setProperty("commit", upstream.commit); //$NON-NLS-1$
+		receipt.setProperty("commit", upstream.commit()); //$NON-NLS-1$
 		receipt.setProperty("status", "FAIL"); //$NON-NLS-1$ //$NON-NLS-2$
 		try {
 			List<Executable> cases= collectCases(family, repository, output, paths, projectRoots, projects, inventory, counts);

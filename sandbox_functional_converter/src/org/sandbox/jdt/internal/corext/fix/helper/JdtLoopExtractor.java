@@ -411,8 +411,9 @@ public class JdtLoopExtractor {
         SimpleName target = (SimpleName) add.getExpression();
         if (!(target.resolveBinding() instanceof IVariableBinding binding)) return false;
         for (SimpleName use : LinkedNodeFinder.findByBinding(body, binding)) {
-            if (use.getParent() instanceof MethodInvocation call && call.getExpression() == use
-                    && "add".equals(call.getName().getIdentifier()) && call.arguments().size() == 1) continue; //$NON-NLS-1$
+            // Only the terminal add receiver disappears into collect; other
+            // destination uses must keep the initialized collection in scope.
+            if (use == target) continue;
             return true;
         }
         return false;

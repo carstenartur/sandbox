@@ -13,19 +13,28 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.ParameterizedType;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite.ImportRewriteContext;
+import org.eclipse.jdt.internal.core.JavaProject;
+import org.eclipse.jdt.internal.core.SearchableEnvironment;
+import org.eclipse.jdt.internal.corext.codemanipulation.ContextSensitiveImportRewriteContext;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
@@ -90,6 +99,27 @@ public class UseGeneralTypePlugin {
 		if (analysisResults.isEmpty()) {
 			return;
 		}
+		if (!(compilationUnit.getJavaElement() instanceof ICompilationUnit unit)
+				|| !(unit.getJavaProject() instanceof JavaProject project)) {
+			return;
+		}
+		try {
+			var access = new ProjectTypeAccess(project, unit);
+			try {
+				// Keep restricted references: removing the only one can make an
+				// existing @SuppressWarnings("restriction") unnecessary.
+				analysisResults.values().removeIf(result -> !access.permits(result.getCurrentType(), new HashSet<>())
+						|| !access.permits(result.getWidestType(), new HashSet<>()));
+			} finally {
+				access.cleanup();
+			}
+		} catch (JavaModelException exception) {
+			// Keep the declaration when its replacement's project access cannot be established.
+			return;
+		}
+		if (analysisResults.isEmpty()) {
+			return;
+		}
 
 		// Collect VariableDeclarationStatement info needed for rewriting
 		ReferenceHolder<String, StatementInfo> statementsByKey = new ReferenceHolder<>();
@@ -139,6 +169,48 @@ public class UseGeneralTypePlugin {
 		}
 	}
 
+	/** Queries the same combined classpath access rules that JDT applies to a new source reference. */
+	private static final class ProjectTypeAccess extends SearchableEnvironment {
+		private final Map<String, Boolean> unrestricted = new HashMap<>();
+
+		ProjectTypeAccess(JavaProject project, ICompilationUnit unit) throws JavaModelException {
+			super(project, unit.getOwner(), false, JavaProject.NO_RELEASE);
+			// Check both discouraged and forbidden references without changing compiler preferences.
+			checkAccessRestrictions = true;
+		}
+
+		boolean permits(ITypeBinding binding, Set<ITypeBinding> visited) {
+			if (binding == null || binding.isRecovered()) {
+				return false;
+			}
+			if (!visited.add(binding) || binding.isPrimitive() || binding.isTypeVariable()) {
+				return true;
+			}
+			if (binding.isArray()) {
+				return permits(binding.getComponentType(), visited);
+			}
+			if (binding.isWildcardType()) {
+				return binding.getBound() == null || permits(binding.getBound(), visited);
+			}
+			if (binding.isCapture()) {
+				return permits(binding.getWildcard(), visited);
+			}
+			if (!(binding.getTypeDeclaration().getJavaElement() instanceof IType type)
+					|| !unrestricted.computeIfAbsent(type.getHandleIdentifier(), key -> {
+						var answer = find(type.getTypeQualifiedName('.'), type.getPackageFragment().getElementName(), null);
+						return answer != null && answer.getAccessRestriction() == null;
+					})) {
+				return false;
+			}
+			for (ITypeBinding argument : binding.getTypeArguments()) {
+				if (!permits(argument, visited)) {
+					return false;
+				}
+			}
+			return binding.getDeclaringClass() == null || permits(binding.getDeclaringClass(), visited);
+		}
+	}
+
 	/**
 	 * Helper class to store variable declaration statement information needed for rewriting.
 	 */
@@ -164,7 +236,35 @@ public class UseGeneralTypePlugin {
 			}
 			
 			Type oldType = typeHolder.variableDeclarationStatement.getType();
-			Type newType = cuRewrite.getImportRewrite().addImport(typeHolder.widenedType, ast);
+			var imports = cuRewrite.getImportRewrite();
+			var lexicalContext = new ContextSensitiveImportRewriteContext(oldType, imports);
+			ImportRewriteContext context = lexicalContext;
+			Type oldBase = oldType instanceof ParameterizedType parameterized ? parameterized.getType() : oldType;
+			boolean qualified = oldBase.toString().indexOf('.') >= 0
+					&& oldBase.toString().equals(typeHolder.currentType.getErasure().getQualifiedName());
+			if (qualified) {
+				// Preserve intentional qualification. Importing a new package on demand
+				// can make existing wildcard-imported names ambiguous (for example SWT/AWT).
+				context = new ImportRewriteContext() {
+					@Override
+					public int findInContext(String qualifier, String name, int kind) {
+						return kind == KIND_TYPE && (qualifier + '.' + name).equals(typeHolder.widenedType.getErasure().getQualifiedName())
+								? RES_NAME_CONFLICT : lexicalContext.findInContext(qualifier, name, kind);
+					}
+				};
+			}
+			Type newType = imports.addImport(typeHolder.widenedType, ast, context);
+			Type newBase = newType instanceof ParameterizedType parameterized ? parameterized.getType() : newType;
+			// ImportRemover protects simple names even for qualified nodes. A
+			// qualification forced by a name clash must not retain the old import.
+			boolean qualifiedReplacement = newBase.toString().equals(typeHolder.widenedType.getErasure().getQualifiedName());
+			if (!qualifiedReplacement) {
+				cuRewrite.getImportRemover().registerAddedImports(newType);
+			} else if (newType instanceof ParameterizedType parameterized) {
+				for (Object argument : parameterized.typeArguments()) {
+					cuRewrite.getImportRemover().registerAddedImports((Type) argument);
+				}
+			}
 
 			// Let JDT remove the old import only when no surviving reference
 			// needs it. Replacing the declaration alone can create an unused import.

@@ -14,6 +14,7 @@
 package org.sandbox.jdt.triggerpattern.cleanup;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +40,7 @@ import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MemberValuePair;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.NormalAnnotation;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SimpleType;
@@ -166,7 +168,7 @@ public class HintFileFixCore {
 			BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile, resolvedRules);
 			List<TransformationResult> results = processor.process(compilationUnit);
 
-			for (TransformationResult result : results) {
+			for (TransformationResult result : outsideCatchBodiesFirst(results)) {
 				if (result.hasReplacement()) {
 					if (isNonWidenableDeclaration(result, compilationUnit)) {
 						continue;
@@ -251,7 +253,7 @@ public class HintFileFixCore {
 		BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile, resolvedRules);
 		List<TransformationResult> results = processor.process(compilationUnit, compilerOptions);
 
-		for (TransformationResult result : results) {
+		for (TransformationResult result : outsideCatchBodiesFirst(results)) {
 			if (result.hasReplacement()) {
 				if (isNonWidenableDeclaration(result, compilationUnit)) {
 					continue;
@@ -288,11 +290,28 @@ public class HintFileFixCore {
 	public static void findOperationsFromHint(CompilationUnit compilationUnit,
 			HintFile hintFile, Set<CompilationUnitRewriteOperation> operations) {
 		GuardRegistry.getInstance();
-		for (TransformationResult result : new BatchTransformationProcessor(hintFile).process(compilationUnit)) {
+		for (TransformationResult result : outsideCatchBodiesFirst(new BatchTransformationProcessor(hintFile).process(compilationUnit))) {
 			if (result.hasReplacement() && !isNonWidenableDeclaration(result, compilationUnit)) {
 				addRewriteOperation(compilationUnit, result, operations);
 			}
 		}
+	}
+
+	private static List<TransformationResult> outsideCatchBodiesFirst(List<TransformationResult> results) {
+		// Matches are grouped by rule. Finish possible handler removals before any
+		// rule adds imports or edits in a handler; preserve rule order at each depth.
+		return results.stream().sorted(Comparator.comparingInt(result -> catchDepth(result.match().getMatchedNode())))
+				.toList();
+	}
+
+	private static int catchDepth(ASTNode node) {
+		int depth= 0;
+		for (ASTNode current= node; current != null; current= current.getParent()) {
+			if (current instanceof CatchClause) {
+				depth++;
+			}
+		}
+		return depth;
 	}
 
 	/** Declines unsupported or recovered text before constructing an empty cleanup fix. */
@@ -445,7 +464,8 @@ public class HintFileFixCore {
 			ASTNode matchedNode = result.match().getMatchedNode();
 			String replacement = result.replacement();
 
-			if (matchedNode == null || replacement == null) {
+			if (matchedNode == null || replacement == null
+					|| ExceptionCleanupHelper.isInRemovedCatch(matchedNode, rewrite)) {
 				return;
 			}
 			boolean sequence= result.rule().sourcePattern().getKind() == PatternKind.STATEMENT_SEQUENCE;
@@ -566,6 +586,9 @@ public class HintFileFixCore {
 				Expression newNode = parseExpression(shortenedReplacement, cuRewrite);
 				if (newNode != null) {
 					ASTNode copy = ASTNode.copySubtree(ast, newNode);
+					if (insertStringGetBytesArgument(matchedNode, copy, cuRewrite, group)) {
+						return;
+					}
 					int oldCount = countStringLiterals(matchedNode);
 					int newCount = countStringLiterals(copy);
                     if (CharsetConstructorMigration.rewriteExpression(matchedNode, copy, replacement, cuRewrite, group)) {
@@ -773,6 +796,32 @@ public class HintFileFixCore {
 
 		private static Block parseStatements(String source, CompilationUnitRewrite cuRewrite) {
 			return parseBody(source, cuRewrite);
+		}
+
+		/** Preserve retained literal positions when only a getBytes argument is added. */
+		private static boolean insertStringGetBytesArgument(ASTNode matchedNode, ASTNode replacement,
+				CompilationUnitRewrite cuRewrite, TextEditGroup group) {
+			if (!(matchedNode instanceof MethodInvocation original)
+					|| !(replacement instanceof MethodInvocation updated)
+					|| !"getBytes".equals(original.getName().getIdentifier()) //$NON-NLS-1$
+					|| !original.getName().getIdentifier().equals(updated.getName().getIdentifier())
+					|| !original.arguments().isEmpty() || updated.arguments().size() != 1
+					|| !original.typeArguments().isEmpty() || !updated.typeArguments().isEmpty()
+					|| original.getExpression() == null || updated.getExpression() == null
+					|| !original.getExpression().subtreeMatch(new ASTMatcher(), updated.getExpression())) {
+				return false;
+			}
+			var binding= original.resolveMethodBinding();
+			if (binding == null || binding.isRecovered() || binding.getDeclaringClass() == null
+					|| binding.getDeclaringClass().isRecovered()
+					|| !"java.lang.String".equals(binding.getDeclaringClass().getQualifiedName()) //$NON-NLS-1$
+					|| binding.getParameterTypes().length != 0) {
+				return false;
+			}
+			ASTNode argument= (ASTNode) updated.arguments().getFirst();
+			cuRewrite.getASTRewrite().getListRewrite(original, MethodInvocation.ARGUMENTS_PROPERTY)
+					.insertLast(ASTNode.copySubtree(original.getAST(), argument), group);
+			return true;
 		}
 
 		private static Expression parseExpression(String source, CompilationUnitRewrite cuRewrite) {

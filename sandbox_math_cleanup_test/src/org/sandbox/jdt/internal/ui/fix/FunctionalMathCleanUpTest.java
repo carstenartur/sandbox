@@ -395,6 +395,34 @@ class FunctionalMathCleanUpTest {
         assertNull(cleanup.createFix(new CleanUpContext(unit,parse(unit))));assertEquals(SOURCE,unit.getSource());
         assertTrue(cleanup.checkPostConditions(MONITOR).toString().contains("COMBINED_BUDGET_EXCEEDED"));
     }
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings={"Verify original mathematics", "Convert remaining loops"})
+    void expiredCombinedDeadlineKeepsTheUnitAndReportsAWarning(String delayedPhase) throws Exception {
+        String source="class Sample { void show(java.util.List<String> values) { for(String value:values) System.out.println(value); } }";
+        var unit=unit(source);var ast=parse(unit);
+        var diagnostics=org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions.capture(unit);
+        var settings=options();settings.put(MathCleanUpOptions.TIMEOUT_SECONDS,"1");
+        var delayed=new java.util.concurrent.atomic.AtomicBoolean();
+        var monitor=new NullProgressMonitor() {
+            @Override public void subTask(String name) {
+                if(name.equals(delayedPhase) && delayed.compareAndSet(false,true)) {
+                    try { Thread.sleep(Duration.ofMillis(1200)); }
+                    catch(InterruptedException interrupted) {
+                        Thread.currentThread().interrupt();throw new OperationCanceledException();
+                    }
+                }
+            }
+        };
+        var cleanup=new MathematicalCleanUpCore(settings);
+        assertFalse(cleanup.checkPreConditions(java,new ICompilationUnit[]{unit},monitor).hasFatalError());
+        assertNull(cleanup.createFix(new CleanUpContext(unit,ast)));
+        assertTrue(delayed.get(),"The requested analysis phase must actually run");
+        assertFalse(monitor.isCanceled(),"A per-file deadline is not caller cancellation");
+        var status=cleanup.checkPostConditions(MONITOR);
+        assertTrue(status.hasWarning(),status.toString());assertFalse(status.hasFatalError(),status.toString());
+        assertTrue(status.toString().contains("COMBINED_TIMEOUT_EXCEEDED"),status.toString());
+        assertEquals(source,unit.getSource());diagnostics.assertRestored();
+    }
     @Test void dependencyChangesAfterPrivateCopiesAreDiscardedStillInvalidatePreview() throws Exception {
         var pack=java.getPackageFragmentRoot(project.getFolder("src")).getPackageFragment("");
         var helper=pack.createCompilationUnit("Helper.java","class Helper { static int add(int x,int y){ return x+y; } }",true,MONITOR);

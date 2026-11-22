@@ -76,6 +76,30 @@ The type is **NOT changed** when:
 - Variable is passed as a method argument, returned, or used as an assignment value outside the supported receiver-use analysis
 - The widened type would lose access to a method/field actually used on the variable
 
+## Binding and Use-site Checks
+
+The analyzer considers single-variable local declaration statements with resolved
+bindings. Arrays, raw or type-annotated declarations, recovered bindings and
+unsupported roles such as constructor arguments, aliases or method references
+prevent widening.
+
+Supported roles include receiver method/field access, comparisons with `null`,
+standalone simple reassignment to the variable, and enhanced-for iteration when
+the replacement remains `Iterable`. At least one method or field use is required.
+
+Candidate types must retain the resolved member contracts:
+
+- Method parameter/return types and accessibility are checked; a replacement must not add a checked exception beyond the original resolved call's contract.
+- Field accesses retain the same declaration and type, and static method calls retain the same method declaration.
+- A new type or method must not introduce deprecation where the original was not deprecated; raw/annotated supertypes and classpath-restricted types are excluded.
+
+Widening must also preserve the type relationship required by an `equals`
+receiver use and must not make an initializer or reassignment cast redundant.
+Existing classpath-restricted references are retained, including references whose
+removal could make a suppression unnecessary. Rewrites use the candidate's
+resolved generic arguments and the surrounding import context; the old type
+import is removed only when no surviving use needs it.
+
 ## Usage
 
 1. **Enable the cleanup**:
