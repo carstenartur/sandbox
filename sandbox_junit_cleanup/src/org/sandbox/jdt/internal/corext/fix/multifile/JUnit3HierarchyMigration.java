@@ -22,6 +22,7 @@ public record JUnit3HierarchyMigration(String rootTypeName, List<TypeMigration> 
 	public static final String ROLE_AFTER_EACH= "JUNIT3_AFTER_EACH"; //$NON-NLS-1$
 	public static final String ROLE_ASSERTION_QUALIFY= "JUNIT3_ASSERTION_QUALIFY"; //$NON-NLS-1$
 	public static final String ROLE_ASSERTION_MESSAGE_FIRST= "JUNIT3_ASSERTION_MESSAGE_FIRST"; //$NON-NLS-1$
+	public static final String ROLE_ASSERTION_PRESERVE_EVALUATION= "JUNIT3_ASSERTION_PRESERVE_EVALUATION"; //$NON-NLS-1$
 
 	public JUnit3HierarchyMigration {
 		types= List.copyOf(types);
@@ -70,6 +71,7 @@ public record JUnit3HierarchyMigration(String rootTypeName, List<TypeMigration> 
 
 	public enum InvocationKind {
 		QUALIFY,
-		MESSAGE_FIRST
+		MESSAGE_FIRST,
+		PRESERVE_EVALUATION
 	}
 }
