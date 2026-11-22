@@ -61,19 +61,23 @@
    </ul>
 
    <h2>Known limitations</h2>
-   <p>Parameterized source planning recognizes selected local and inherited providers,
-      editable static provider delegates, constructor parameters, and ordered field injection.
-      It rejects incomplete scopes, ambiguous indices and unproven argument conversions.
-      A discovered component is reported as <code>FOUND</code> with reason
-      <code>PARAMETERIZED_RUNTIME_VERIFICATION_REQUIRED</code>. This is planning evidence,
-      not an applied migration: the coordinated target still needs a JDT runtime comparison
-      of test identities, multiplicity, display names and results. The existing narrow local
-      Parameterized rewrite has a separate applicability contract.</p>
+   <p>Coordinated Parameterized migration supports a closed constant-row component with proven local or
+      inherited providers, editable static delegates, constructor parameters, and ordered field injection.
+      Enable the Parameterized migration and provide Jupiter's <code>ParameterizedClass</code> in the selected
+      project. An executable component reports <code>PARAMETERIZED_CLASS_READY</code>; its sources and
+      bindings are revalidated before rewriting. Incomplete scopes, ambiguous indices, unproven conversions
+      and unsupported execution hooks remain rejection cases.</p>
+   <p>A <code>FOUND</code> component with <code>PARAMETERIZED_RUNTIME_VERIFICATION_REQUIRED</code> records
+      discovery only and does not authorize Apply. The coordinated strategy has JDT runtime regression
+      coverage for test identities, multiplicity, display names and results; run the affected project's tests
+      to verify its migration. The narrow local Parameterized rewrite retains its separate applicability contract.</p>
    <ul>
       <li>Adding or updating the JUnit Jupiter dependency is a build-system task and is not inferred blindly.</li>
       <li>Custom JUnit 4 runners and arbitrary Rules may need dedicated migrations.</li>
-      <li>Parameterized field injection and custom providers require an explicit argument-source design.</li>
-      <li>A fixture used as both <code>@Rule</code> and <code>@ClassRule</code> must be split into separate lifecycle extensions.</li>
+      <li>Parameterized providers and injection outside the supported closed contract require manual completion.</li>
+      <li>Automatic cleanup rejects a fixture used at incompatible rule scopes. The
+          <a href="usage.html#staged-migration">manual staged bridge</a> can retain its implementation and
+          consumer instances through separate per-test and per-class registrations.</li>
       <li>The migrated test suite must be executed; source-level conversion alone cannot validate test semantics.</li>
    </ul>
 
