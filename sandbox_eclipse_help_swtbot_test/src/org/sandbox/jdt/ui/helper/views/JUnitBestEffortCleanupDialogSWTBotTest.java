@@ -61,23 +61,7 @@ public class JUnitBestEffortCleanupDialogSWTBotTest {
 
 	@Test
 	public void bestEffortMigrationIsVisibleExplicitAndDisabledByDefault() {
-		workbenchShell().activate();
-		// Use the same workbench command on platforms with different menu locations.
-		Display.getDefault().asyncExec(() -> {
-			try {
-				PlatformUI.getWorkbench().getService(IHandlerService.class)
-						.executeCommand(IWorkbenchCommandConstants.WINDOW_PREFERENCES, null);
-			} catch (Exception failure) {
-				preferenceFailure.compareAndSet(null, failure);
-			}
-		});
-
-		SWTBotShell preferences= bot.shell("Preferences").activate(); //$NON-NLS-1$
-		selectPreferencePath(preferences.bot().tree(), "Java", "Code Style", "Clean Up"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		clickButton(preferences, "Edit...", "Edit…"); //$NON-NLS-1$ //$NON-NLS-2$
-
-		SWTBotShell profileDialog= bot.activeShell();
-		profileDialog.bot().tabItem(JUNIT_TAB).activate();
+		SWTBotShell profileDialog= openJUnitProfile();
 		SWTBotCheckBox bestEffort= profileDialog.bot().checkBox(BEST_EFFORT_LABEL);
 
 		assertTrue(bestEffort.isVisible(),
@@ -105,7 +89,38 @@ public class JUnitBestEffortCleanupDialogSWTBotTest {
 		assertFalse(bestEffort.isChecked(), "Re-enabling migration must retain the opt-out"); //$NON-NLS-1$
 		bestEffort.setFocus();
 		clickButton(profileDialog, "Cancel"); //$NON-NLS-1$
-		clickButton(preferences, "Cancel"); //$NON-NLS-1$
+		clickButton(bot.shell("Preferences"), "Cancel"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void documentationCaptureShowsTheCompleteBestEffortPolicy() {
+		SWTBotShell profileDialog= openJUnitProfile();
+		profileDialog.bot().checkBox(MIGRATION_LABEL).select();
+		FocusedCleanupConfigurationScreenshots.prepareForScreenshot(bot, profileDialog, JUNIT_TAB);
+		SWTBotCheckBox bestEffort= profileDialog.bot().checkBox(BEST_EFFORT_LABEL);
+		String problem= UIThreadRunnable.syncExec(profileDialog.display,
+				(Result<String>) () -> CodePatternsScreenshotVisibility.checkboxProblem(bestEffort.widget));
+		assertTrue(problem.isEmpty(), () -> "The documentation must show the complete best-effort policy, " //$NON-NLS-1$
+				+ "including its manual-repair qualification: " + problem); //$NON-NLS-1$
+	}
+
+	private SWTBotShell openJUnitProfile() {
+		workbenchShell().activate();
+		// Use the same workbench command on platforms with different menu locations.
+		Display.getDefault().asyncExec(() -> {
+			try {
+				PlatformUI.getWorkbench().getService(IHandlerService.class)
+						.executeCommand(IWorkbenchCommandConstants.WINDOW_PREFERENCES, null);
+			} catch (Exception failure) {
+				preferenceFailure.compareAndSet(null, failure);
+			}
+		});
+		SWTBotShell preferences= bot.shell("Preferences").activate(); //$NON-NLS-1$
+		selectPreferencePath(preferences.bot().tree(), "Java", "Code Style", "Clean Up"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		clickButton(preferences, "Edit...", "Edit…"); //$NON-NLS-1$ //$NON-NLS-2$
+		SWTBotShell profileDialog= bot.activeShell();
+		profileDialog.bot().tabItem(JUNIT_TAB).activate();
+		return profileDialog;
 	}
 
 	private static SWTBotShell workbenchShell() {

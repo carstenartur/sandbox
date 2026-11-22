@@ -6,7 +6,7 @@
 
 ## Context
 
-A local syntax cleanup and a coordinated signature/type migration do not make the same safety claim. The integer-to-enum cleanup currently supports only package-private source domains whose declarations, comparisons and callers can be proven closed in the selected Java source scope. Future requests include public APIs, persisted values, command-line values and wire protocols; those representations cannot be treated as ordinary source-only cleanups.
+A local syntax cleanup and a coordinated signature/type migration do not make the same safety claim. The integer-to-enum cleanup supports local private and coordinated package-private source domains whose declarations, comparisons and callers can be proven closed. A separate explicit mode adds enum-valued public entries while retaining the legacy fields and methods. Persisted values, command-line values and wire protocols still require their own representation policy.
 
 ## Decision
 
@@ -25,7 +25,7 @@ Only `LOCAL_SAFE` is eligible for an ordinary save action. All other levels requ
 
 #### `CLOSED_FLOW_AUTOMATIC`
 
-This is the only implemented automatic mode. It requires:
+This automatic mode rewrites a proven closed source flow. Its coordinated form requires:
 
 - package-private constants and candidate method;
 - distinct constant values;

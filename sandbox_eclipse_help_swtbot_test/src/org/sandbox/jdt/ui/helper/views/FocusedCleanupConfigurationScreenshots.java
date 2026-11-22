@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.ui.helper.views;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -20,6 +21,9 @@ import java.util.Deque;
 import java.util.List;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.SashForm;
+import org.eclipse.swt.custom.ScrolledComposite;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
@@ -46,6 +50,8 @@ final class FocusedCleanupConfigurationScreenshots {
 	private record CleanupTab(String label, String helpBundle, String fileName) {
 	}
 
+	private static final String JUNIT_TAB= "JUnit Migration (Sandbox)"; //$NON-NLS-1$
+
 	private static final List<CleanupTab> TABS= List.of(
 			new CleanupTab("Explicit Encoding (Sandbox)", "sandbox_encoding_quickfix_help", //$NON-NLS-1$ //$NON-NLS-2$
 					"explicit-encoding-cleanup.png"), //$NON-NLS-1$
@@ -55,7 +61,7 @@ final class FocusedCleanupConfigurationScreenshots {
 					"int-to-enum-cleanup.png"), //$NON-NLS-1$
 			new CleanupTab("JFace Cleanup (Sandbox)", "sandbox_jface_cleanup_help", //$NON-NLS-1$ //$NON-NLS-2$
 					"jface-cleanup.png"), //$NON-NLS-1$
-			new CleanupTab("JUnit Migration (Sandbox)", "sandbox_junit_cleanup_help", //$NON-NLS-1$ //$NON-NLS-2$
+			new CleanupTab(JUNIT_TAB, "sandbox_junit_cleanup_help", //$NON-NLS-1$
 					"junit-migration-cleanup.png"), //$NON-NLS-1$
 			new CleanupTab("Method Reuse (Sandbox)", "sandbox_method_reuse_help", //$NON-NLS-1$ //$NON-NLS-2$
 					"method-reuse-cleanup.png"), //$NON-NLS-1$
@@ -66,6 +72,8 @@ final class FocusedCleanupConfigurationScreenshots {
 
 	private static final int SCREENSHOT_CLIENT_WIDTH= 1280;
 	private static final int SCREENSHOT_CLIENT_HEIGHT= 900;
+	private static final String BEST_EFFORT_LABEL=
+			"Best effort: migrate every proven construct and add @todo scaffolds for unresolved gaps (manual repair may be required)"; //$NON-NLS-1$
 	private static final String OUTPUT_PROPERTY= "sandbox.help.screenshot.output"; //$NON-NLS-1$
 
 	private FocusedCleanupConfigurationScreenshots() {
@@ -80,7 +88,7 @@ final class FocusedCleanupConfigurationScreenshots {
 		clickButton(preferences, "Edit...", "Edit…"); //$NON-NLS-1$ //$NON-NLS-2$
 
 		SWTBotShell profileDialog= bot.activeShell();
-		prepareForScreenshot(bot, profileDialog);
+		profileDialog.bot().textWithLabel("Profile name:").setText("Sandbox Help Preview"); //$NON-NLS-1$ //$NON-NLS-2$
 		for (CleanupTab tab : TABS) {
 			clickButton(profileDialog, "Deselect All"); //$NON-NLS-1$
 			profileDialog.bot().tabItem(tab.label()).activate();
@@ -88,6 +96,10 @@ final class FocusedCleanupConfigurationScreenshots {
 			int selected= selectVisibleCleanupCheckboxes(bot, profileDialog);
 			assertTrue(selected > 0, () -> "No enabled cleanup option was selected for " + tab.label()); //$NON-NLS-1$
 			bot.sleep(500);
+			prepareForScreenshot(bot, profileDialog, tab.label());
+			assertEquals("Sandbox Help Preview", profileDialog.bot().textWithLabel("Profile name:").getText()); //$NON-NLS-1$ //$NON-NLS-2$
+			assertTrue(profileDialog.bot().button("OK").isEnabled(), //$NON-NLS-1$
+					"The documentation profile must be valid and confirmable before capture"); //$NON-NLS-1$
 			capture(profileDialog, outputRoot, tab.helpBundle(), tab.fileName());
 			System.out.println("[help-screenshots] Captured focused enabled cleanup tab: " + tab.label()); //$NON-NLS-1$
 		}
@@ -193,7 +205,7 @@ final class FocusedCleanupConfigurationScreenshots {
 		});
 	}
 
-	private static void prepareForScreenshot(SWTWorkbenchBot bot, SWTBotShell shell) {
+	static void prepareForScreenshot(SWTWorkbenchBot bot, SWTBotShell shell, String tabLabel) {
 		UIThreadRunnable.syncExec(shell.display, new VoidResult() {
 			@Override
 			public void run() {
@@ -203,8 +215,41 @@ final class FocusedCleanupConfigurationScreenshots {
 				shell.widget.layout(true, true);
 			}
 		});
+		if (JUNIT_TAB.equals(tabLabel)) {
+			Button bestEffort= shell.bot().checkBox(BEST_EFFORT_LABEL).widget;
+			UIThreadRunnable.syncExec(shell.display, (VoidResult) () -> showCompleteJUnitPolicy(bestEffort));
+		}
 		shell.activate();
 		bot.sleep(500);
+	}
+
+	/** Keeps the native preview width while giving the long JUnit policy its measured space. */
+	private static void showCompleteJUnitPolicy(Button button) {
+		ScrolledComposite options= null;
+		Control optionsPane= button;
+		while (!(optionsPane.getParent() instanceof SashForm)) {
+			optionsPane= optionsPane.getParent();
+			if (optionsPane instanceof ScrolledComposite scrolled) {
+				options= scrolled;
+			}
+			assertTrue(optionsPane != null, "JUnit options must belong to the native preview split"); //$NON-NLS-1$
+		}
+		assertTrue(options != null, "JUnit options must have a native scroll viewport"); //$NON-NLS-1$
+		SashForm split= (SashForm) optionsPane.getParent();
+		Point preferred= button.computeSize(SWT.DEFAULT, SWT.DEFAULT);
+		Point origin= button.getDisplay().map(button, options, 0, 0);
+		int overflow= origin.x + preferred.x - options.getClientArea().width;
+		if (overflow > 0) {
+			int extraWidth= overflow + split.getSashWidth();
+			int optionsWidth= optionsPane.getSize().x + extraWidth;
+			int previewWidth= split.getClientArea().width - optionsPane.getSize().x - split.getSashWidth();
+			Point size= button.getShell().getSize();
+			button.getShell().setSize(size.x + extraWidth, size.y);
+			split.setWeights(optionsWidth, previewWidth);
+			button.getShell().layout(true, true);
+		}
+		String problem= CodePatternsScreenshotVisibility.checkboxProblem(button);
+		assertTrue(problem.isEmpty(), () -> "JUnit screenshot clips the best-effort policy: " + problem); //$NON-NLS-1$
 	}
 
 	private static void capture(SWTBotShell shell, Path outputRoot, String helpBundle, String fileName)
@@ -219,6 +264,10 @@ final class FocusedCleanupConfigurationScreenshots {
 				return shell.widget.getDisplay().map(shell.widget, null, clientArea);
 			}
 		});
+		Rectangle monitor= UIThreadRunnable.syncExec(shell.display,
+				(Result<Rectangle>) () -> shell.widget.getMonitor().getClientArea());
+		assertTrue(clientBounds.intersection(monitor).equals(clientBounds),
+				() -> "Screenshot must fit the capture display: " + clientBounds + " within " + monitor); //$NON-NLS-1$ //$NON-NLS-2$
 		assertTrue(SWTUtils.captureScreenshot(image.toString(), clientBounds),
 				() -> "Could not capture " + image); //$NON-NLS-1$
 		assertTrue(Files.isRegularFile(image) && Files.size(image) > 0,
