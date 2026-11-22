@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JUnit3AssertionNls.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper.lib</a> &gt; <span class="el_source">JUnit3AssertionNls.java</span></div><h1>JUnit3AssertionNls.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer and others.
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper.lib;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.eclipse.jdt.core.IBuffer;
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.core.compiler.InvalidInputException;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.internal.corext.refactoring.nls.NLSElement;
+import org.eclipse.jdt.internal.corext.refactoring.nls.NLSScanner;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.jface.text.BadLocationException;
+import org.sandbox.jdt.triggerpattern.cleanup.EncodingSourceRewrite;
+
+/** Tracks scanner-proven NLS tags when an assertion is split into several physical lines. */
+record JUnit3AssertionNls(int lineStart, String line, List&lt;NLSElement&gt; literals) {
+<span class="fc" id="L32">	static final JUnit3AssertionNls NONE= new JUnit3AssertionNls(0, &quot;&quot;, List.of()); //$NON-NLS-1$</span>
+<span class="fc" id="L33">	static final JUnit3AssertionNls UNSAFE= new JUnit3AssertionNls(-1, &quot;&quot;, List.of()); //$NON-NLS-1$</span>
+<span class="fc" id="L34">	private static final String MOVED= JUnit3AssertionNls.class.getName();</span>
+<span class="fc" id="L35">	private static final String ANALYSIS= MOVED + &quot;.analysis&quot;; //$NON-NLS-1$</span>
+
+	static JUnit3AssertionNls inspect(MethodInvocation invocation, boolean splitsStatement) {
+<span class="fc bfc" id="L38" title="All 2 branches covered.">		if (invocation.getProperty(ANALYSIS) instanceof JUnit3AssertionNls cached) return cached;</span>
+<span class="fc" id="L39">		JUnit3AssertionNls analysis= analyze(invocation, splitsStatement);</span>
+<span class="fc" id="L40">		invocation.setProperty(ANALYSIS, analysis);</span>
+<span class="fc" id="L41">		return analysis;</span>
+	}
+
+	private static JUnit3AssertionNls analyze(MethodInvocation invocation, boolean splitsStatement) {
+<span class="fc" id="L45">		CompilationUnit root= (CompilationUnit) invocation.getRoot();</span>
+<span class="pc bpc" id="L46" title="1 of 2 branches missed.">		if (!(root.getJavaElement() instanceof ICompilationUnit unit)) return NONE;</span>
+<span class="fc" id="L47">		int first= root.getLineNumber(invocation.getStartPosition());</span>
+<span class="fc" id="L48">		int last= root.getLineNumber(invocation.getStartPosition() + invocation.getLength() - 1);</span>
+		try {
+<span class="fc" id="L50">			IBuffer buffer= unit.getBuffer();</span>
+<span class="fc" id="L51">			int start= root.getPosition(first, 0);</span>
+<span class="fc" id="L52">			int end= root.getPosition(last + 1, 0);</span>
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">			String text= buffer.getText(start, (end &lt; 0 ? buffer.getLength() : end) - start);</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">			if (!text.contains(NLSElement.TAG_PREFIX)) return NONE;</span>
+<span class="fc" id="L55">			var lines= NLSScanner.scan(text);</span>
+<span class="fc" id="L56">			List&lt;NLSElement&gt; literals= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">			for (var scanned : lines) literals.addAll(List.of(scanned.getElements()));</span>
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">			if (literals.stream().noneMatch(NLSElement::hasTag)) return NONE;</span>
+			// Tags on separate lines of retained arguments do not move with the prefix.
+<span class="fc bfc" id="L60" title="All 2 branches covered.">			Expression receiver= invocation.getExpression() instanceof MethodInvocation method ? method : null;</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">			Expression message= JUnit3SemanticSupport.hasLeadingMessage(invocation, invocation.resolveMethodBinding())</span>
+<span class="fc" id="L62">					? (Expression) invocation.arguments().getFirst() : null;</span>
+<span class="fc" id="L63">			boolean affectedLine= false;</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">			for (var scanned : lines) {</span>
+<span class="fc" id="L65">				int number= first + scanned.getLineNumber();</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">				if (List.of(scanned.getElements()).stream().anyMatch(NLSElement::hasTag)</span>
+<span class="pc bpc" id="L67" title="1 of 4 branches missed.">						&amp;&amp; (onLine(root, receiver, number) || onLine(root, message, number))) affectedLine= true;</span>
+			}
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">			if (!affectedLine) return NONE;</span>
+<span class="pc bpc" id="L70" title="1 of 4 branches missed.">			if (!splitsStatement &amp;&amp; message != null) {</span>
+<span class="fc" id="L71">				var arguments= literals.stream().filter(e -&gt; contains(invocation, start + e.getPosition().getOffset())).toList();</span>
+<span class="fc" id="L72">				int leading= (int) arguments.stream().filter(e -&gt; contains(message, start + e.getPosition().getOffset())).count();</span>
+<span class="pc bpc" id="L73" title="3 of 6 branches missed.">				if (leading == 0 || first == last &amp;&amp; rotationPreservesTags(arguments, leading)) return NONE;</span>
+			}
+			// Other strings on this physical line can change owners when the statement splits.
+<span class="pc bpc" id="L76" title="3 of 6 branches missed.">			if (first != last || literals.stream().anyMatch(e -&gt; !contains(invocation, start + e.getPosition().getOffset()))) {</span>
+<span class="nc" id="L77">				return UNSAFE;</span>
+			}
+<span class="fc" id="L79">			List&lt;StringLiteral&gt; nodes= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L80">			boolean[] nestedBody= { false };</span>
+<span class="fc" id="L81">			invocation.accept(new ASTVisitor() {</span>
+<span class="fc" id="L82">				@Override public boolean visit(StringLiteral literal) { nodes.add(literal); return false; }</span>
+<span class="nc" id="L83">				@Override public boolean visit(LambdaExpression lambda) { nestedBody[0]= true; return false; }</span>
+<span class="nc" id="L84">				@Override public boolean visit(AnonymousClassDeclaration type) { nestedBody[0]= true; return false; }</span>
+			});
+<span class="pc bpc" id="L86" title="2 of 4 branches missed.">			if (nestedBody[0] || nodes.size() != literals.size()</span>
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">					|| EncodingSourceRewrite.literalsWithUnambiguousTags(root, unit, nodes).size() != nodes.size()) return UNSAFE;</span>
+<span class="fc" id="L88">			JUnit3AssertionNls analysis= new JUnit3AssertionNls(start, text, List.copyOf(literals));</span>
+<span class="pc bpc" id="L89" title="2 of 4 branches missed.">			return analysis.canCopyPrefix(root, receiver) &amp;&amp; analysis.canCopyPrefix(root, message) ? analysis : UNSAFE;</span>
+<span class="nc" id="L90">		} catch (JavaModelException | InvalidInputException | BadLocationException e) {</span>
+<span class="nc" id="L91">			return UNSAFE;</span>
+		}
+	}
+
+	private boolean canCopyPrefix(CompilationUnit root, Expression prefix) {
+<span class="fc bfc" id="L96" title="All 8 branches covered.">		if (prefix == null || literals.stream().noneMatch(e -&gt; e.hasTag() &amp;&amp; contains(prefix, lineStart + e.getPosition().getOffset()))) {</span>
+<span class="fc" id="L97">			return true;</span>
+		}
+<span class="fc" id="L99">		int start= root.getExtendedStartPosition(prefix);</span>
+<span class="pc bpc" id="L100" title="2 of 4 branches missed.">		return start &gt;= lineStart &amp;&amp; start + root.getExtendedLength(prefix) &lt;= lineStart + line.length();</span>
+	}
+
+	/** Moving the leading message to the end rotates the literal ordinals in the invocation. */
+	private static boolean rotationPreservesTags(List&lt;NLSElement&gt; arguments, int leading) {
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">		for (int index= 0; index &lt; arguments.size(); index++) {</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">			if (arguments.get(index).hasTag() != arguments.get((index + leading) % arguments.size()).hasTag()) return false;</span>
+		}
+<span class="nc" id="L108">		return true;</span>
+	}
+
+	private static boolean onLine(CompilationUnit root, Expression expression, int number) {
+<span class="pc bpc" id="L112" title="2 of 6 branches missed.">		return expression != null &amp;&amp; root.getLineNumber(expression.getStartPosition()) &lt;= number</span>
+<span class="fc" id="L113">				&amp;&amp; number &lt;= root.getLineNumber(expression.getStartPosition() + expression.getLength() - 1);</span>
+	}
+
+	private static boolean contains(ASTNode node, int offset) {
+<span class="fc bfc" id="L117" title="All 4 branches covered.">		return offset &gt;= node.getStartPosition() &amp;&amp; offset &lt; node.getStartPosition() + node.getLength();</span>
+	}
+
+	/**
+	 * Return a tagged statement only where it needs a line-end comment. A move target would
+	 * leave the comment on the original line. Record untagged literals too for renumbering.
+	 */
+	Statement taggedStatement(Expression expression, String prefix, int kind, ASTRewrite rewrite) {
+<span class="fc" id="L125">		int count= 0;</span>
+<span class="fc" id="L126">		StringBuilder tags= new StringBuilder();</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">		for (var literal : literals) {</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">			if (contains(expression, lineStart + literal.getPosition().getOffset())) {</span>
+<span class="fc" id="L129">				count++;</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">				if (literal.hasTag()) tags.append(' ').append(NLSElement.createTagText(count));</span>
+			}
+		}
+<span class="fc bfc" id="L133" title="All 2 branches covered.">		if (count &gt; 0) expression.setProperty(MOVED, rewrite);</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">		if (tags.isEmpty()) return null;</span>
+<span class="fc" id="L135">		var range= rewrite.getExtendedSourceRangeComputer().computeSourceRange(expression);</span>
+<span class="fc" id="L136">		int offset= range.getStartPosition() - lineStart;</span>
+<span class="fc" id="L137">		return (Statement) rewrite.createStringPlaceholder(prefix + line.substring(offset, offset + range.getLength())</span>
+<span class="fc" id="L138">				+ &quot;;&quot; + tags, kind); //$NON-NLS-1$</span>
+	}
+
+	static void recordMoved(Expression expression, CompilationUnitRewrite rewrite) {
+<span class="fc bfc" id="L142" title="All 4 branches covered.">		if (expression != null &amp;&amp; expression.getProperty(MOVED) == rewrite.getASTRewrite()) {</span>
+<span class="fc" id="L143">			EncodingSourceRewrite.record(rewrite, expression);</span>
+<span class="fc" id="L144">			expression.setProperty(MOVED, null);</span>
+		}
+<span class="fc" id="L146">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

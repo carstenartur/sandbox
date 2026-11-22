@@ -52,7 +52,7 @@ public final class JUnit3SemanticSupport {
 	public static boolean hasLeadingMessage(MethodInvocation invocation, IMethodBinding binding) {
 <span class="fc" id="L53">		String name= invocation.getName().getIdentifier();</span>
 <span class="fc" id="L54">		int argumentCount= invocation.arguments().size();</span>
-<span class="pc bpc" id="L55" title="3 of 4 branches missed.">		boolean messageShape= argumentCount == 2 &amp;&amp; ONEPARAM_ASSERTIONS.contains(name)</span>
+<span class="fc bfc" id="L55" title="All 4 branches covered.">		boolean messageShape= argumentCount == 2 &amp;&amp; ONEPARAM_ASSERTIONS.contains(name)</span>
 <span class="pc bpc" id="L56" title="1 of 4 branches missed.">				|| argumentCount == 3 &amp;&amp; TWOPARAM_ASSERTIONS.contains(name)</span>
 <span class="pc bpc" id="L57" title="5 of 6 branches missed.">				|| argumentCount == 4 &amp;&amp; (&quot;assertEquals&quot;.equals(name) || &quot;assertArrayEquals&quot;.equals(name)); //$NON-NLS-1$ //$NON-NLS-2$</span>
 <span class="pc bpc" id="L58" title="2 of 6 branches missed.">		if (!messageShape || binding == null || binding.getParameterTypes().length == 0) {</span>

@@ -22,20 +22,21 @@ public record JUnit3HierarchyMigration(String rootTypeName, List&lt;TypeMigratio
 	public static final String ROLE_AFTER_EACH= &quot;JUNIT3_AFTER_EACH&quot;; //$NON-NLS-1$
 	public static final String ROLE_ASSERTION_QUALIFY= &quot;JUNIT3_ASSERTION_QUALIFY&quot;; //$NON-NLS-1$
 	public static final String ROLE_ASSERTION_MESSAGE_FIRST= &quot;JUNIT3_ASSERTION_MESSAGE_FIRST&quot;; //$NON-NLS-1$
+	public static final String ROLE_ASSERTION_PRESERVE_EVALUATION= &quot;JUNIT3_ASSERTION_PRESERVE_EVALUATION&quot;; //$NON-NLS-1$
 
-<span class="fc" id="L26">	public JUnit3HierarchyMigration {</span>
-<span class="fc" id="L27">		types= List.copyOf(types);</span>
-<span class="fc" id="L28">		baselineTestTypeHandles= List.copyOf(baselineTestTypeHandles);</span>
-<span class="fc" id="L29">	}</span>
+<span class="fc" id="L27">	public JUnit3HierarchyMigration {</span>
+<span class="fc" id="L28">		types= List.copyOf(types);</span>
+<span class="fc" id="L29">		baselineTestTypeHandles= List.copyOf(baselineTestTypeHandles);</span>
+<span class="fc" id="L30">	}</span>
 
 	/** Local semantic targets belonging to one type declaration. */
 	public record TypeMigration(String compilationUnitHandle, String typeBindingKey,
 			boolean removeTestCaseSuperclass, List&lt;MethodMigration&gt; methods,
 			List&lt;InvocationMigration&gt; invocations) {
-<span class="fc" id="L35">		public TypeMigration {</span>
-<span class="fc" id="L36">			methods= List.copyOf(methods);</span>
-<span class="fc" id="L37">			invocations= List.copyOf(invocations);</span>
-<span class="fc" id="L38">		}</span>
+<span class="fc" id="L36">		public TypeMigration {</span>
+<span class="fc" id="L37">			methods= List.copyOf(methods);</span>
+<span class="fc" id="L38">			invocations= List.copyOf(invocations);</span>
+<span class="fc" id="L39">		}</span>
 	}
 
 	/**
@@ -49,12 +50,12 @@ public record JUnit3HierarchyMigration(String rootTypeName, List&lt;TypeMigratio
 	public record MethodMigration(String methodBindingKey, MethodKind kind, int executionOrder,
 			boolean removeOverride) {
 		public MethodMigration(String methodBindingKey, MethodKind kind) {
-<span class="nc" id="L52">			this(methodBindingKey, kind, 0, false);</span>
-<span class="nc" id="L53">		}</span>
+<span class="nc" id="L53">			this(methodBindingKey, kind, 0, false);</span>
+<span class="nc" id="L54">		}</span>
 
 		public MethodMigration(String methodBindingKey, MethodKind kind, int executionOrder) {
-<span class="fc" id="L56">			this(methodBindingKey, kind, executionOrder, false);</span>
-<span class="fc" id="L57">		}</span>
+<span class="fc" id="L57">			this(methodBindingKey, kind, executionOrder, false);</span>
+<span class="fc" id="L58">		}</span>
 	}
 
 	/** Exact source invocation authorized for a declarative assertion rewrite. */
@@ -62,15 +63,16 @@ public record JUnit3HierarchyMigration(String rootTypeName, List&lt;TypeMigratio
 			InvocationKind kind) {
 	}
 
-<span class="fc" id="L65">	public enum MethodKind {</span>
-<span class="fc" id="L66">		TEST,</span>
-<span class="fc" id="L67">		BEFORE_EACH,</span>
-<span class="fc" id="L68">		AFTER_EACH</span>
+<span class="fc" id="L66">	public enum MethodKind {</span>
+<span class="fc" id="L67">		TEST,</span>
+<span class="fc" id="L68">		BEFORE_EACH,</span>
+<span class="fc" id="L69">		AFTER_EACH</span>
 	}
 
-<span class="fc" id="L71">	public enum InvocationKind {</span>
-<span class="fc" id="L72">		QUALIFY,</span>
-<span class="fc" id="L73">		MESSAGE_FIRST</span>
+<span class="fc" id="L72">	public enum InvocationKind {</span>
+<span class="fc" id="L73">		QUALIFY,</span>
+<span class="fc" id="L74">		MESSAGE_FIRST,</span>
+<span class="fc" id="L75">		PRESERVE_EVALUATION</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

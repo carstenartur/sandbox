@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JUnit3AssertionRewriter.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper.lib</a> &gt; <span class="el_source">JUnit3AssertionRewriter.java</span></div><h1>JUnit3AssertionRewriter.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0, available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper.lib;
+
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3SemanticSupport.JUNIT3_ASSERT;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3SemanticSupport.JUNIT3_TEST_CASE;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_JUPITER_API_ASSERTIONS;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.BooleanLiteral;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.FieldAccess;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.ThisExpression;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+import org.eclipse.jdt.internal.corext.codemanipulation.ContextSensitiveImportRewriteContext;
+import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.text.edits.TextEditGroup;
+
+import org.sandbox.jdt.internal.common.AstProcessing;
+
+/** Shares evaluation-preserving assertion edits between local and coordinated migration. */
+public final class JUnit3AssertionRewriter {
+
+<span class="fc" id="L54">	private final Set&lt;String&gt; names= new HashSet&lt;&gt;();</span>
+
+<span class="fc" id="L56">	public JUnit3AssertionRewriter(CompilationUnit root) {</span>
+<span class="fc" id="L57">		AstProcessing.independent().visit(SimpleName.class, name -&gt; names.add(name.getIdentifier())).build(root);</span>
+<span class="fc" id="L58">	}</span>
+
+	/** Whether this invocation has a proven rewrite, including any required preceding evaluations. */
+	public static boolean supports(MethodInvocation invocation) {
+<span class="fc" id="L62">		IMethodBinding binding= invocation.resolveMethodBinding();</span>
+<span class="pc bpc" id="L63" title="2 of 4 branches missed.">		if (binding == null || binding.isRecovered()) return false;</span>
+<span class="fc" id="L64">		IMethodBinding declaration= binding.getMethodDeclaration();</span>
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">		ITypeBinding owner= declaration == null ? null : declaration.getDeclaringClass();</span>
+<span class="pc bpc" id="L66" title="4 of 8 branches missed.">		if (declaration == null || declaration.isRecovered() || owner == null || owner.isRecovered()</span>
+<span class="pc bpc" id="L67" title="1 of 4 branches missed.">				|| !(JUNIT3_ASSERT.equals(owner.getQualifiedName()) || JUNIT3_TEST_CASE.equals(owner.getQualifiedName()))) {</span>
+<span class="nc" id="L68">			return false;</span>
+		}
+<span class="fc bfc" id="L70" title="All 4 branches covered.">		boolean precedingEvaluation= capturesMessage(invocation) || !hasDisposableReceiver(invocation);</span>
+<span class="fc" id="L71">		JUnit3AssertionNls nls= nls(invocation);</span>
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">		if (nls == JUnit3AssertionNls.UNSAFE</span>
+<span class="pc bpc" id="L73" title="1 of 6 branches missed.">				|| (precedingEvaluation || nls != JUnit3AssertionNls.NONE) &amp;&amp; !(invocation.getParent() instanceof ExpressionStatement)) return false;</span>
+<span class="fc bfc" id="L74" title="All 4 branches covered.">		if (!hasDisposableReceiver(invocation) &amp;&amp; !(invocation.getExpression() instanceof MethodInvocation)) return false;</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">		if (isBooleanEquality(invocation)) {</span>
+<span class="fc" id="L76">			List&lt;?&gt; arguments= invocation.arguments();</span>
+<span class="fc" id="L77">			Expression expected= (Expression) arguments.get(arguments.size() - 2);</span>
+<span class="fc" id="L78">			Expression actual= (Expression) arguments.getLast();</span>
+<span class="pc bpc" id="L79" title="2 of 6 branches missed.">			return expected instanceof BooleanLiteral || isPrimitiveBoolean(expected) &amp;&amp; isPrimitiveBoolean(actual);</span>
+		}
+<span class="fc" id="L81">		return true;</span>
+	}
+
+	/** Simple existing hint rewrites remain sufficient when no evaluation or boolean overload needs adaptation. */
+	public static boolean needsEvaluationRewrite(MethodInvocation invocation) {
+<span class="pc bpc" id="L86" title="1 of 6 branches missed.">		return !hasDisposableReceiver(invocation) || capturesMessage(invocation) || isBooleanEquality(invocation)</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">				|| nls(invocation) != JUnit3AssertionNls.NONE;</span>
+	}
+
+	private static JUnit3AssertionNls nls(MethodInvocation invocation) {
+<span class="fc bfc" id="L91" title="All 2 branches covered.">		boolean receiver= !hasDisposableReceiver(invocation);</span>
+<span class="fc bfc" id="L92" title="All 4 branches covered.">		if (!receiver &amp;&amp; !JUnit3SemanticSupport.hasLeadingMessage(invocation, invocation.resolveMethodBinding())) return JUnit3AssertionNls.NONE;</span>
+<span class="fc bfc" id="L93" title="All 4 branches covered.">		return JUnit3AssertionNls.inspect(invocation, receiver || capturesMessage(invocation));</span>
+	}
+
+	private static boolean isPrimitiveBoolean(Expression expression) {
+<span class="fc" id="L97">		ITypeBinding type= expression.resolveTypeBinding();</span>
+<span class="pc bpc" id="L98" title="4 of 8 branches missed.">		return type != null &amp;&amp; !type.isRecovered() &amp;&amp; type.isPrimitive() &amp;&amp; &quot;boolean&quot;.equals(type.getName()); //$NON-NLS-1$</span>
+	}
+
+	private static boolean isBooleanEquality(MethodInvocation invocation) {
+<span class="fc" id="L102">		IMethodBinding binding= invocation.resolveMethodBinding();</span>
+<span class="pc bpc" id="L103" title="1 of 4 branches missed.">		if (binding == null || !&quot;assertEquals&quot;.equals(binding.getName())) return false; //$NON-NLS-1$</span>
+<span class="fc" id="L104">		ITypeBinding[] parameters= binding.getParameterTypes();</span>
+<span class="pc bpc" id="L105" title="1 of 4 branches missed.">		return (parameters.length == 2 || parameters.length == 3)</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">				&amp;&amp; &quot;boolean&quot;.equals(parameters[parameters.length - 2].getQualifiedName()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">				&amp;&amp; &quot;boolean&quot;.equals(parameters[parameters.length - 1].getQualifiedName()); //$NON-NLS-1$</span>
+	}
+
+	private static boolean hasDisposableReceiver(MethodInvocation invocation) {
+<span class="fc" id="L111">		Expression receiver= invocation.getExpression();</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">		if (receiver == null) return true;</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">		if (receiver instanceof ThisExpression) {</span>
+<span class="fc" id="L114">			ITypeBinding type= receiver.resolveTypeBinding();</span>
+<span class="pc bpc" id="L115" title="2 of 4 branches missed.">			return type != null &amp;&amp; !type.isRecovered();</span>
+		}
+<span class="pc bpc" id="L117" title="1 of 6 branches missed.">		return receiver instanceof Name name &amp;&amp; name.resolveBinding() instanceof ITypeBinding type &amp;&amp; !type.isRecovered();</span>
+	}
+
+	private static boolean capturesMessage(MethodInvocation invocation) {
+<span class="fc bfc" id="L121" title="All 2 branches covered.">		return JUnit3SemanticSupport.hasLeadingMessage(invocation, invocation.resolveMethodBinding())</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">				&amp;&amp; !isConstantMessage((Expression) invocation.arguments().getFirst());</span>
+	}
+
+	private static boolean isConstantMessage(Expression message) {
+<span class="fc bfc" id="L126" title="All 2 branches covered.">		if (!(message.resolveConstantExpressionValue() instanceof String)) return false;</span>
+<span class="fc" id="L127">		boolean[] passive= { true };</span>
+<span class="fc" id="L128">		message.accept(new ASTVisitor() {</span>
+			@Override
+<span class="nc" id="L130">			public boolean visit(MethodInvocation node) { passive[0]= false; return false; }</span>
+
+			@Override
+			public boolean visit(FieldAccess node) {
+<span class="nc" id="L134">				passive[0]&amp;= node.getExpression() instanceof ThisExpression;</span>
+<span class="nc" id="L135">				return false;</span>
+			}
+
+			@Override
+			public boolean visit(QualifiedName node) {
+<span class="nc bnc" id="L140" title="All 2 branches missed.">				if (node.resolveBinding() instanceof IVariableBinding) {</span>
+<span class="nc" id="L141">					passive[0]&amp;= node.getQualifier().resolveBinding() instanceof ITypeBinding;</span>
+				}
+<span class="nc" id="L143">				return false;</span>
+			}
+		});
+<span class="fc" id="L146">		return passive[0];</span>
+	}
+
+	/** Applies one resolved invocation while retaining its original control-flow position. */
+	public void rewrite(MethodInvocation invocation, ASTRewrite rewrite, ImportRewrite imports, TextEditGroup group) {
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">		if (!supports(invocation)) throw new IllegalArgumentException(&quot;Unproven JUnit 3 assertion rewrite&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L152">		AST ast= invocation.getAST();</span>
+<span class="fc" id="L153">		List&lt;Statement&gt; preceding= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L154">		JUnit3AssertionNls nls= nls(invocation);</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">		if (!hasDisposableReceiver(invocation)) {</span>
+<span class="fc" id="L156">			Expression receiver= invocation.getExpression();</span>
+<span class="fc" id="L157">			Statement tagged= nls.taggedStatement(receiver, &quot;&quot;, ASTNode.EXPRESSION_STATEMENT, rewrite); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">			preceding.add(tagged != null ? tagged : ast.newExpressionStatement((Expression) rewrite.createMoveTarget(receiver)));</span>
+		}
+<span class="fc" id="L160">		List&lt;?&gt; arguments= invocation.arguments();</span>
+<span class="fc" id="L161">		ListRewrite changed= rewrite.getListRewrite(invocation, MethodInvocation.ARGUMENTS_PROPERTY);</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">		if (JUnit3SemanticSupport.hasLeadingMessage(invocation, invocation.resolveMethodBinding())) {</span>
+<span class="fc" id="L163">			Expression message= (Expression) arguments.getFirst();</span>
+			Expression finalMessage;
+<span class="fc bfc" id="L165" title="All 4 branches covered.">			if (capturesMessage(invocation) || nls != JUnit3AssertionNls.NONE) {</span>
+<span class="fc" id="L166">				String name= uniqueMessageName(invocation);</span>
+<span class="fc" id="L167">				VariableDeclarationFragment fragment= ast.newVariableDeclarationFragment();</span>
+<span class="fc" id="L168">				fragment.setName(ast.newSimpleName(name));</span>
+<span class="fc" id="L169">				String type= imports.addImport(&quot;java.lang.String&quot;, new ContextSensitiveImportRewriteContext(invocation, imports)); //$NON-NLS-1$</span>
+<span class="fc" id="L170">				Statement tagged= nls.taggedStatement(message, type + &quot; &quot; + name + &quot; = &quot;, ASTNode.VARIABLE_DECLARATION_STATEMENT, rewrite); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L171" title="All 2 branches covered.">				if (tagged == null) {</span>
+<span class="fc" id="L172">					fragment.setInitializer((Expression) rewrite.createMoveTarget(message));</span>
+<span class="fc" id="L173">					VariableDeclarationStatement capture= ast.newVariableDeclarationStatement(fragment);</span>
+<span class="fc" id="L174">					capture.setType(ast.newSimpleType(ast.newName(type)));</span>
+<span class="fc" id="L175">					preceding.add(capture);</span>
+<span class="fc" id="L176">				} else {</span>
+<span class="fc" id="L177">					preceding.add(tagged);</span>
+				}
+<span class="fc" id="L179">				finalMessage= ast.newSimpleName(name);</span>
+<span class="fc" id="L180">			} else {</span>
+<span class="fc" id="L181">				finalMessage= (Expression) rewrite.createMoveTarget(message);</span>
+			}
+<span class="fc" id="L183">			changed.remove(message, group);</span>
+<span class="fc" id="L184">			changed.insertLast(finalMessage, group);</span>
+		}
+<span class="fc bfc" id="L186" title="All 2 branches covered.">		if (isBooleanEquality(invocation)) {</span>
+<span class="fc" id="L187">			Expression expected= (Expression) arguments.get(arguments.size() - 2);</span>
+<span class="fc" id="L188">			Expression actual= (Expression) arguments.getLast();</span>
+<span class="fc" id="L189">			String assertion= &quot;assertTrue&quot;; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">			if (expected instanceof BooleanLiteral literal) {</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">				if (!literal.booleanValue()) assertion= &quot;assertFalse&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L192">			} else {</span>
+<span class="fc" id="L193">				InfixExpression equality= ast.newInfixExpression();</span>
+<span class="fc" id="L194">				equality.setOperator(InfixExpression.Operator.EQUALS);</span>
+<span class="fc" id="L195">				ParenthesizedExpression left= ast.newParenthesizedExpression();</span>
+<span class="fc" id="L196">				left.setExpression((Expression) rewrite.createMoveTarget(expected));</span>
+<span class="fc" id="L197">				ParenthesizedExpression right= ast.newParenthesizedExpression();</span>
+<span class="fc" id="L198">				right.setExpression((Expression) rewrite.createMoveTarget(actual));</span>
+<span class="fc" id="L199">				equality.setLeftOperand(left);</span>
+<span class="fc" id="L200">				equality.setRightOperand(right);</span>
+<span class="fc" id="L201">				changed.replace(actual, equality, group);</span>
+			}
+<span class="fc" id="L203">			changed.remove(expected, group);</span>
+<span class="fc" id="L204">			rewrite.set(invocation, MethodInvocation.NAME_PROPERTY, ast.newSimpleName(assertion), group);</span>
+		}
+<span class="fc" id="L206">		String assertionType= imports.addImport(ORG_JUNIT_JUPITER_API_ASSERTIONS,</span>
+<span class="fc" id="L207">				new ContextSensitiveImportRewriteContext(invocation, imports));</span>
+<span class="fc" id="L208">		rewrite.set(invocation, MethodInvocation.EXPRESSION_PROPERTY, ast.newName(assertionType), group);</span>
+<span class="fc" id="L209">		insertPreceding(invocation, preceding, rewrite, group);</span>
+<span class="fc" id="L210">	}</span>
+
+	/** Removes an obsolete qualifier import while retaining imports needed by moved receiver evaluations. */
+	public static void registerQualifierChange(MethodInvocation invocation, CompilationUnitRewrite cuRewrite) {
+<span class="fc" id="L214">		Expression receiver= invocation.getExpression();</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">		if (cuRewrite.getASTRewrite().get(invocation, MethodInvocation.EXPRESSION_PROPERTY) != receiver) {</span>
+<span class="fc bfc" id="L216" title="All 2 branches covered.">			if (!(receiver instanceof MethodInvocation)) {</span>
+<span class="fc bfc" id="L217" title="All 2 branches covered.">				cuRewrite.getImportRemover().registerRemovedNode(receiver == null ? invocation.getName() : receiver);</span>
+			}
+<span class="fc" id="L219">			JUnit3AssertionNls.recordMoved(receiver, cuRewrite);</span>
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">			if (!invocation.arguments().isEmpty()) JUnit3AssertionNls.recordMoved((Expression) invocation.arguments().getFirst(), cuRewrite);</span>
+<span class="fc" id="L221">			cuRewrite.getImportRemover().registerAddedImport(ORG_JUNIT_JUPITER_API_ASSERTIONS);</span>
+		}
+<span class="fc" id="L223">	}</span>
+
+	private String uniqueMessageName(MethodInvocation invocation) {
+<span class="fc" id="L226">		var scope= new ScopeAnalyzer((CompilationUnit) invocation.getRoot());</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">		for (var binding : scope.getDeclarationsInScope(invocation.getStartPosition(), ScopeAnalyzer.VARIABLES)) {</span>
+<span class="fc" id="L228">			names.add(binding.getName());</span>
+		}
+<span class="fc" id="L230">		String candidate= &quot;junitMessage&quot;; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L231" title="All 2 branches covered.">		for (int suffix= 2; !names.add(candidate); suffix++) candidate= &quot;junitMessage&quot; + suffix; //$NON-NLS-1$</span>
+<span class="fc" id="L232">		return candidate;</span>
+	}
+
+	@SuppressWarnings(&quot;unchecked&quot;)
+	private static void insertPreceding(MethodInvocation invocation, List&lt;Statement&gt; preceding,
+			ASTRewrite rewrite, TextEditGroup group) {
+<span class="fc bfc" id="L238" title="All 2 branches covered.">		if (preceding.isEmpty()) return;</span>
+<span class="fc" id="L239">		ExpressionStatement statement= (ExpressionStatement) invocation.getParent();</span>
+<span class="fc bfc" id="L240" title="All 2 branches covered.">		if (statement.getParent() instanceof Block parent) {</span>
+<span class="fc" id="L241">			ListRewrite statements= rewrite.getListRewrite(parent, Block.STATEMENTS_PROPERTY);</span>
+<span class="fc bfc" id="L242" title="All 2 branches covered.">			for (Statement before : preceding) statements.insertBefore(before, statement, group);</span>
+<span class="fc" id="L243">		} else {</span>
+<span class="fc" id="L244">			Block block= invocation.getAST().newBlock();</span>
+<span class="fc" id="L245">			block.statements().addAll(preceding);</span>
+			// Register edits within the assertion before moving it into the conditional/loop body.
+<span class="fc" id="L247">			block.statements().add(rewrite.createMoveTarget(statement));</span>
+<span class="fc" id="L248">			rewrite.replace(statement, block, group);</span>
+		}
+<span class="fc" id="L250">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

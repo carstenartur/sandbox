@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -27,17 +28,21 @@ import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.CastExpression;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.EnhancedForStatement;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
-import org.eclipse.jdt.core.dom.InstanceofExpression;
+import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.NullLiteral;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.QualifiedName;
-import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
-import org.eclipse.jdt.core.dom.SuperFieldAccess;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
@@ -53,8 +58,11 @@ import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
  * &lt;p&gt;Example: If an {@code ArrayList&lt;String&gt;} variable only uses {@code add()} and
  * {@code size()}, it can be widened to {@code Collection&lt;String&gt;}.&lt;/p&gt;
  *
- * &lt;p&gt;Safety: Variables are skipped when they are cast, used in instanceof, passed
- * as method arguments, returned, or assigned to other variables.&lt;/p&gt;
+ * &lt;p&gt;Safety: Only proven receiver uses, null comparisons, simple reassignments,
+ * and iteration are accepted. Other roles can constrain the static type and
+ * prevent widening. Candidate members retain accessibility, field identity and
+ * the exception contract resolved at each use; widening must not make a
+ * declaration or assignment cast redundant.&lt;/p&gt;
  */
 public final class TypeWideningAnalyzer {
 
@@ -71,27 +79,27 @@ public final class TypeWideningAnalyzer {
 		private final ITypeBinding widestType;
 		private final List&lt;ITypeBinding&gt; intermediateTypes;
 
-<span class="fc" id="L74">		TypeWideningResult(IVariableBinding variableBinding, ITypeBinding currentType, ITypeBinding widestType,</span>
+<span class="fc" id="L82">		TypeWideningResult(IVariableBinding variableBinding, ITypeBinding currentType, ITypeBinding widestType,</span>
 				List&lt;ITypeBinding&gt; intermediateTypes) {
-<span class="fc" id="L76">			this.variableBinding = variableBinding;</span>
-<span class="fc" id="L77">			this.currentType = currentType;</span>
-<span class="fc" id="L78">			this.widestType = widestType;</span>
-<span class="fc" id="L79">			this.intermediateTypes = intermediateTypes;</span>
-<span class="fc" id="L80">		}</span>
+<span class="fc" id="L84">			this.variableBinding = variableBinding;</span>
+<span class="fc" id="L85">			this.currentType = currentType;</span>
+<span class="fc" id="L86">			this.widestType = widestType;</span>
+<span class="fc" id="L87">			this.intermediateTypes = intermediateTypes;</span>
+<span class="fc" id="L88">		}</span>
 
 		/** The variable binding that was analyzed */
 		public IVariableBinding getVariableBinding() {
-<span class="fc" id="L84">			return variableBinding;</span>
+<span class="fc" id="L92">			return variableBinding;</span>
 		}
 
 		/** The current declared type of the variable */
 		public ITypeBinding getCurrentType() {
-<span class="fc" id="L89">			return currentType;</span>
+<span class="fc" id="L97">			return currentType;</span>
 		}
 
 		/** The widest type the variable can be downgraded to, or null if no widening is possible */
 		public ITypeBinding getWidestType() {
-<span class="fc" id="L94">			return widestType;</span>
+<span class="fc" id="L102">			return widestType;</span>
 		}
 
 		/**
@@ -100,23 +108,24 @@ public final class TypeWideningAnalyzer {
 		 * general (widestType). The widestType is included as the last element.
 		 */
 		public List&lt;ITypeBinding&gt; getIntermediateTypes() {
-<span class="fc" id="L103">			return Collections.unmodifiableList(intermediateTypes);</span>
+<span class="fc" id="L111">			return Collections.unmodifiableList(intermediateTypes);</span>
 		}
 
 		/** Whether the variable can be widened to a more general type */
 		public boolean canWiden() {
-<span class="pc bpc" id="L108" title="2 of 4 branches missed.">			return widestType != null &amp;&amp; !widestType.getQualifiedName().equals(currentType.getQualifiedName());</span>
+<span class="pc bpc" id="L116" title="2 of 4 branches missed.">			return widestType != null &amp;&amp; !widestType.getQualifiedName().equals(currentType.getQualifiedName());</span>
 		}
 	}
 
 	/**
 	 * Helper class to store variable usage information during AST traversal.
 	 */
-<span class="fc" id="L115">	private static class VariableInfo {</span>
-<span class="fc" id="L116">		Set&lt;String&gt; usedMethodSignatures = new HashSet&lt;&gt;();</span>
-<span class="fc" id="L117">		Set&lt;String&gt; usedFields = new HashSet&lt;&gt;();</span>
-		boolean hasCast;
-		boolean hasInstanceof;
+<span class="fc" id="L123">	private static class VariableInfo {</span>
+<span class="fc" id="L124">		Set&lt;IMethodBinding&gt; usedMethods = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L125">		Set&lt;IVariableBinding&gt; usedFields = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L126">		Set&lt;ITypeBinding&gt; equalsArguments = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L127">		List&lt;Expression&gt; assignedValues = new ArrayList&lt;&gt;();</span>
+		boolean needsIterable;
 		boolean hasUnsafeUsage;
 	}
 
@@ -125,10 +134,12 @@ public final class TypeWideningAnalyzer {
 	 */
 	private static class VariableDeclarationInfo {
 		final ITypeBinding typeBinding;
+		final Expression initializer;
 
-<span class="fc" id="L129">		VariableDeclarationInfo(ITypeBinding typeBinding) {</span>
-<span class="fc" id="L130">			this.typeBinding = typeBinding;</span>
-<span class="fc" id="L131">		}</span>
+<span class="fc" id="L139">		VariableDeclarationInfo(ITypeBinding typeBinding, Expression initializer) {</span>
+<span class="fc" id="L140">			this.typeBinding = typeBinding;</span>
+<span class="fc" id="L141">			this.initializer = initializer;</span>
+<span class="fc" id="L142">		}</span>
 	}
 
 	/**
@@ -139,153 +150,238 @@ public final class TypeWideningAnalyzer {
 	 * @return a map from variable binding key to type widening result
 	 */
 	public static Map&lt;String, TypeWideningResult&gt; analyzeCompilationUnit(CompilationUnit compilationUnit) {
-<span class="fc" id="L142">		Map&lt;IVariableBinding, VariableInfo&gt; variableUsages = new HashMap&lt;&gt;();</span>
-<span class="fc" id="L143">		Map&lt;IVariableBinding, VariableDeclarationInfo&gt; variableDeclarations = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L153">		Map&lt;IVariableBinding, VariableInfo&gt; variableUsages = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L154">		Map&lt;IVariableBinding, VariableDeclarationInfo&gt; variableDeclarations = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">		String sourcePackage = compilationUnit.getPackage() == null ? &quot;&quot; //$NON-NLS-1$</span>
+<span class="fc" id="L156">				: compilationUnit.getPackage().getName().getFullyQualifiedName();</span>
 
-<span class="fc" id="L145">		compilationUnit.accept(new ASTVisitor() {</span>
+<span class="fc" id="L158">		compilationUnit.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(VariableDeclarationStatement node) {
-<span class="pc bpc" id="L148" title="1 of 2 branches missed.">				if (node.fragments().size() &gt; 1) {</span>
-<span class="nc" id="L149">					return true;</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">				if (node.fragments().size() &gt; 1) {</span>
+<span class="nc" id="L162">					return true;</span>
 				}
 
-<span class="fc" id="L152">				Type type = node.getType();</span>
-<span class="pc bpc" id="L153" title="2 of 4 branches missed.">				if (type == null || type.isVar()) {</span>
-<span class="nc" id="L154">					return true;</span>
+<span class="fc" id="L165">				Type type = node.getType();</span>
+<span class="pc bpc" id="L166" title="2 of 4 branches missed.">				if (type == null || type.isVar()) {</span>
+<span class="nc" id="L167">					return true;</span>
 				}
 
-<span class="fc" id="L157">				ITypeBinding typeBinding = type.resolveBinding();</span>
-<span class="pc bpc" id="L158" title="1 of 6 branches missed.">				if (typeBinding == null || typeBinding.isPrimitive() || typeBinding.isArray()) {</span>
-<span class="fc" id="L159">					return true;</span>
+<span class="fc" id="L170">				ITypeBinding typeBinding = type.resolveBinding();</span>
+<span class="pc bpc" id="L171" title="2 of 8 branches missed.">				if (typeBinding == null || typeBinding.isRecovered() || typeBinding.isPrimitive() || typeBinding.isArray()</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">						|| typeBinding.isRawType()</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">						|| hasTypeAnnotations(typeBinding)) {</span>
+<span class="fc" id="L174">					return true;</span>
 				}
 
-<span class="fc bfc" id="L162" title="All 2 branches covered.">				for (Object fragObj : node.fragments()) {</span>
-<span class="fc" id="L163">					VariableDeclarationFragment fragment = (VariableDeclarationFragment) fragObj;</span>
-<span class="fc" id="L164">					IVariableBinding varBinding = fragment.resolveBinding();</span>
-<span class="pc bpc" id="L165" title="3 of 6 branches missed.">					if (varBinding == null || varBinding.isField() || varBinding.isParameter()) {</span>
-<span class="nc" id="L166">						continue;</span>
+<span class="fc bfc" id="L177" title="All 2 branches covered.">				for (Object fragObj : node.fragments()) {</span>
+<span class="fc" id="L178">					VariableDeclarationFragment fragment = (VariableDeclarationFragment) fragObj;</span>
+<span class="fc" id="L179">					IVariableBinding varBinding = fragment.resolveBinding();</span>
+<span class="pc bpc" id="L180" title="4 of 8 branches missed.">					if (varBinding == null || varBinding.isRecovered() || varBinding.isField() || varBinding.isParameter()) {</span>
+<span class="nc" id="L181">						continue;</span>
+					}
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">					if (hasTypeAnnotations(varBinding.getType())) {</span>
+<span class="nc" id="L184">						continue;</span>
 					}
 
-<span class="fc" id="L169">					variableDeclarations.put(varBinding, new VariableDeclarationInfo(typeBinding));</span>
-<span class="fc" id="L170">					variableUsages.put(varBinding, new VariableInfo());</span>
+<span class="fc" id="L187">					variableDeclarations.put(varBinding, new VariableDeclarationInfo(typeBinding, fragment.getInitializer()));</span>
+<span class="fc" id="L188">					variableUsages.put(varBinding, new VariableInfo());</span>
 				}
 
-<span class="fc" id="L173">				return true;</span>
+<span class="fc" id="L191">				return true;</span>
 			}
 
 			@Override
 			public boolean visit(SimpleName node) {
-<span class="fc" id="L178">				IBinding binding = node.resolveBinding();</span>
-<span class="fc bfc" id="L179" title="All 2 branches covered.">				if (!(binding instanceof IVariableBinding varBinding)) {</span>
-<span class="fc" id="L180">					return true;</span>
+<span class="fc" id="L196">				IBinding binding = node.resolveBinding();</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">				if (!(binding instanceof IVariableBinding varBinding)) {</span>
+<span class="fc" id="L198">					return true;</span>
 				}
 
-<span class="fc" id="L183">				VariableInfo info = variableUsages.get(varBinding);</span>
-<span class="fc bfc" id="L184" title="All 2 branches covered.">				if (info == null) {</span>
-<span class="fc" id="L185">					return true;</span>
+<span class="fc" id="L201">				VariableInfo info = variableUsages.get(varBinding);</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">				if (info == null) {</span>
+<span class="fc" id="L203">					return true;</span>
 				}
 
-<span class="fc" id="L188">				collectUsageInfo(node, info);</span>
-<span class="fc" id="L189">				return true;</span>
+<span class="fc" id="L206">				collectUsageInfo(node, info);</span>
+<span class="fc" id="L207">				return true;</span>
 			}
 		});
 
-<span class="fc" id="L193">		Map&lt;String, TypeWideningResult&gt; results = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L211">		Map&lt;String, TypeWideningResult&gt; results = new HashMap&lt;&gt;();</span>
 
-<span class="fc bfc" id="L195" title="All 2 branches covered.">		for (Map.Entry&lt;IVariableBinding, VariableDeclarationInfo&gt; entry : variableDeclarations.entrySet()) {</span>
-<span class="fc" id="L196">			IVariableBinding varBinding = entry.getKey();</span>
-<span class="fc" id="L197">			VariableDeclarationInfo declInfo = entry.getValue();</span>
-<span class="fc" id="L198">			VariableInfo usageInfo = variableUsages.get(varBinding);</span>
+<span class="fc bfc" id="L213" title="All 2 branches covered.">		for (Map.Entry&lt;IVariableBinding, VariableDeclarationInfo&gt; entry : variableDeclarations.entrySet()) {</span>
+<span class="fc" id="L214">			IVariableBinding varBinding = entry.getKey();</span>
+<span class="fc" id="L215">			VariableDeclarationInfo declInfo = entry.getValue();</span>
+<span class="fc" id="L216">			VariableInfo usageInfo = variableUsages.get(varBinding);</span>
 
-<span class="pc bpc" id="L200" title="1 of 2 branches missed.">			if (usageInfo == null) {</span>
-<span class="nc" id="L201">				continue;</span>
+<span class="pc bpc" id="L218" title="1 of 2 branches missed.">			if (usageInfo == null) {</span>
+<span class="nc" id="L219">				continue;</span>
 			}
 
-<span class="fc bfc" id="L204" title="All 6 branches covered.">			if (usageInfo.hasCast || usageInfo.hasInstanceof || usageInfo.hasUnsafeUsage) {</span>
-<span class="fc" id="L205">				continue;</span>
+<span class="fc bfc" id="L222" title="All 2 branches covered.">			if (usageInfo.hasUnsafeUsage) {</span>
+<span class="fc" id="L223">				continue;</span>
 			}
 
 			// Don't widen if the variable has no actual usage (no method calls, no field access)
-<span class="pc bpc" id="L209" title="1 of 4 branches missed.">			if (usageInfo.usedMethodSignatures.isEmpty() &amp;&amp; usageInfo.usedFields.isEmpty()) {</span>
-<span class="fc" id="L210">				continue;</span>
+<span class="fc bfc" id="L227" title="All 4 branches covered.">			if (usageInfo.usedMethods.isEmpty() &amp;&amp; usageInfo.usedFields.isEmpty()) {</span>
+<span class="fc" id="L228">				continue;</span>
 			}
 
-<span class="fc" id="L213">			ITypeBinding widenedType = findMostGeneralType(declInfo.typeBinding,</span>
-<span class="fc" id="L214">					usageInfo.usedMethodSignatures, usageInfo.usedFields);</span>
+<span class="fc" id="L231">			ITypeBinding widenedType = findMostGeneralType(declInfo.typeBinding,</span>
+<span class="fc" id="L232">					usageInfo.usedMethods, usageInfo.usedFields, sourcePackage);</span>
 
-<span class="pc bpc" id="L216" title="2 of 4 branches missed.">			if (widenedType != null &amp;&amp; !widenedType.getQualifiedName().equals(declInfo.typeBinding.getQualifiedName())) {</span>
-<span class="fc" id="L217">				List&lt;ITypeBinding&gt; intermediateTypes = collectIntermediateTypes(declInfo.typeBinding, widenedType,</span>
-<span class="fc" id="L218">						usageInfo.usedMethodSignatures, usageInfo.usedFields);</span>
-<span class="fc" id="L219">				results.put(varBinding.getKey(),</span>
-<span class="fc" id="L220">						new TypeWideningResult(varBinding, declInfo.typeBinding, widenedType, intermediateTypes));</span>
+<span class="pc bpc" id="L234" title="1 of 4 branches missed.">			if (widenedType != null &amp;&amp; !widenedType.getQualifiedName().equals(declInfo.typeBinding.getQualifiedName())) {</span>
+<span class="pc bpc" id="L235" title="1 of 4 branches missed.">				if ((usageInfo.needsIterable &amp;&amp; !isSubtypeOf(widenedType, &quot;java.lang.Iterable&quot;)) //$NON-NLS-1$</span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">						|| usageInfo.equalsArguments.stream().anyMatch(argument -&gt; !argument.isAssignmentCompatible(widenedType)</span>
+<span class="pc bpc" id="L237" title="1 of 4 branches missed.">								&amp;&amp; !widenedType.isAssignmentCompatible(argument))</span>
+<span class="fc bfc" id="L238" title="All 2 branches covered.">						|| makesCastRedundant(declInfo.initializer, widenedType)</span>
+<span class="pc bpc" id="L239" title="1 of 2 branches missed.">						|| usageInfo.assignedValues.stream().anyMatch(value -&gt; makesCastRedundant(value, widenedType))) {</span>
+<span class="nc" id="L240">					continue;</span>
+				}
+<span class="fc" id="L242">				List&lt;ITypeBinding&gt; intermediateTypes = collectIntermediateTypes(declInfo.typeBinding, widenedType,</span>
+<span class="fc" id="L243">						usageInfo.usedMethods, usageInfo.usedFields, sourcePackage);</span>
+<span class="fc" id="L244">				results.put(varBinding.getKey(),</span>
+<span class="fc" id="L245">						new TypeWideningResult(varBinding, declInfo.typeBinding, widenedType, intermediateTypes));</span>
 			}
 		}
 
-<span class="fc" id="L224">		return results;</span>
+<span class="fc" id="L249">		return results;</span>
 	}
 
 	/**
 	 * Collects usage information from a SimpleName node into the given VariableInfo.
 	 */
 	private static void collectUsageInfo(SimpleName node, VariableInfo info) {
-<span class="fc" id="L231">		var parent = node.getParent();</span>
-
-<span class="fc bfc" id="L233" title="All 2 branches covered.">		if (parent instanceof CastExpression) {</span>
-<span class="fc" id="L234">			info.hasCast = true;</span>
-<span class="fc bfc" id="L235" title="All 2 branches covered.">		} else if (parent instanceof InstanceofExpression) {</span>
-<span class="fc" id="L236">			info.hasInstanceof = true;</span>
-<span class="fc bfc" id="L237" title="All 2 branches covered.">		} else if (parent instanceof MethodInvocation mi) {</span>
-<span class="fc bfc" id="L238" title="All 2 branches covered.">			if (mi.getExpression() == node) {</span>
-<span class="fc" id="L239">				IMethodBinding methodBinding = mi.resolveMethodBinding();</span>
-<span class="pc bpc" id="L240" title="1 of 2 branches missed.">				if (methodBinding != null) {</span>
-<span class="fc" id="L241">					info.usedMethodSignatures.add(createMethodSignature(methodBinding));</span>
-				}
-<span class="fc" id="L243">			} else {</span>
-<span class="fc" id="L244">				info.hasUnsafeUsage = true;</span>
-			}
-<span class="pc bpc" id="L246" title="1 of 2 branches missed.">		} else if (parent instanceof FieldAccess fa) {</span>
-<span class="nc bnc" id="L247" title="All 2 branches missed.">			if (fa.getExpression() == node) {</span>
-<span class="nc" id="L248">				info.usedFields.add(fa.getName().getIdentifier());</span>
-			}
-<span class="pc bpc" id="L250" title="1 of 2 branches missed.">		} else if (parent instanceof QualifiedName qn) {</span>
-<span class="nc bnc" id="L251" title="All 2 branches missed.">			if (qn.getQualifier() == node) {</span>
-<span class="nc" id="L252">				info.usedFields.add(qn.getName().getIdentifier());</span>
-			}
-<span class="pc bpc" id="L254" title="1 of 2 branches missed.">		} else if (parent instanceof SuperFieldAccess sfa) {</span>
-<span class="nc" id="L255">			info.usedFields.add(sfa.getName().getIdentifier());</span>
-<span class="pc bfc" id="L256" title="All 2 branches covered.">		} else if (parent instanceof Assignment assignment) {</span>
-<span class="fc bfc" id="L257" title="All 2 branches covered.">			if (assignment.getRightHandSide() == node) {</span>
-<span class="fc" id="L258">				info.hasUnsafeUsage = true;</span>
-			}
-<span class="fc bfc" id="L260" title="All 2 branches covered.">		} else if (parent instanceof ReturnStatement) {</span>
-<span class="fc" id="L261">			info.hasUnsafeUsage = true;</span>
+<span class="fc bfc" id="L256" title="All 4 branches covered.">		if (node.getParent() instanceof VariableDeclarationFragment fragment &amp;&amp; fragment.getName() == node) {</span>
+<span class="fc" id="L257">			return;</span>
 		}
-<span class="fc" id="L263">	}</span>
+<span class="fc" id="L259">		Expression expression = node;</span>
+<span class="fc bfc" id="L260" title="All 2 branches covered.">		while (expression.getParent() instanceof ParenthesizedExpression parentheses) {</span>
+<span class="fc" id="L261">			expression = parentheses;</span>
+		}
+<span class="fc" id="L263">		var parent = expression.getParent();</span>
+<span class="fc bfc" id="L264" title="All 4 branches covered.">		if (parent instanceof MethodInvocation invocation &amp;&amp; invocation.getExpression() == expression) {</span>
+<span class="fc" id="L265">			IMethodBinding method = invocation.resolveMethodBinding();</span>
+<span class="pc bpc" id="L266" title="2 of 4 branches missed.">			if (method != null &amp;&amp; !method.isRecovered()) {</span>
+<span class="pc bpc" id="L267" title="1 of 4 branches missed.">				if (&quot;equals&quot;.equals(method.getName()) &amp;&amp; method.getParameterTypes().length == 1 //$NON-NLS-1$</span>
+<span class="pc bpc" id="L268" title="1 of 2 branches missed.">						&amp;&amp; &quot;java.lang.Object&quot;.equals(method.getParameterTypes()[0].getQualifiedName()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L269" title="1 of 2 branches missed.">						&amp;&amp; invocation.arguments().size() == 1) {</span>
+<span class="fc" id="L270">					ITypeBinding argument = ((Expression) invocation.arguments().getFirst()).resolveTypeBinding();</span>
+<span class="pc bpc" id="L271" title="2 of 4 branches missed.">					if (argument == null || argument.isRecovered()) {</span>
+<span class="nc" id="L272">						info.hasUnsafeUsage = true;</span>
+<span class="nc" id="L273">						return;</span>
+					}
+<span class="fc" id="L275">					info.equalsArguments.add(argument);</span>
+				}
+<span class="fc" id="L277">				info.usedMethods.add(method);</span>
+<span class="fc" id="L278">				return;</span>
+			}
+<span class="pc bpc" id="L280" title="3 of 4 branches missed.">		} else if (parent instanceof FieldAccess access &amp;&amp; access.getExpression() == expression</span>
+<span class="nc bnc" id="L281" title="All 4 branches missed.">				&amp;&amp; access.resolveFieldBinding() != null &amp;&amp; !access.resolveFieldBinding().isRecovered()) {</span>
+<span class="nc" id="L282">			info.usedFields.add(access.resolveFieldBinding());</span>
+<span class="nc" id="L283">			return;</span>
+<span class="pc bpc" id="L284" title="1 of 4 branches missed.">		} else if (parent instanceof QualifiedName name &amp;&amp; name.getQualifier() == expression</span>
+<span class="pc bpc" id="L285" title="3 of 6 branches missed.">				&amp;&amp; name.resolveBinding() instanceof IVariableBinding field &amp;&amp; field.isField() &amp;&amp; !field.isRecovered()) {</span>
+<span class="fc" id="L286">			info.usedFields.add(field);</span>
+<span class="fc" id="L287">			return;</span>
+<span class="fc bfc" id="L288" title="All 4 branches covered.">		} else if (parent instanceof Assignment assignment &amp;&amp; assignment.getLeftHandSide() == expression</span>
+<span class="fc bfc" id="L289" title="All 2 branches covered.">				&amp;&amp; assignment.getOperator() == Assignment.Operator.ASSIGN</span>
+<span class="pc bpc" id="L290" title="1 of 2 branches missed.">				&amp;&amp; assignment.getParent() instanceof ExpressionStatement) {</span>
+<span class="fc" id="L291">			info.assignedValues.add(assignment.getRightHandSide());</span>
+<span class="fc" id="L292">			return;</span>
+<span class="pc bpc" id="L293" title="1 of 4 branches missed.">		} else if (parent instanceof EnhancedForStatement loop &amp;&amp; loop.getExpression() == expression) {</span>
+<span class="fc" id="L294">			info.needsIterable = true;</span>
+<span class="fc" id="L295">			return;</span>
+<span class="pc bpc" id="L296" title="1 of 4 branches missed.">		} else if (parent instanceof InfixExpression comparison &amp;&amp; comparison.extendedOperands().isEmpty()</span>
+<span class="pc bpc" id="L297" title="1 of 2 branches missed.">				&amp;&amp; (comparison.getOperator() == InfixExpression.Operator.EQUALS</span>
+<span class="pc bpc" id="L298" title="1 of 2 branches missed.">						|| comparison.getOperator() == InfixExpression.Operator.NOT_EQUALS)</span>
+<span class="pc bpc" id="L299" title="1 of 2 branches missed.">				&amp;&amp; (unparenthesize(comparison.getLeftOperand()) instanceof NullLiteral</span>
+<span class="pc bpc" id="L300" title="1 of 2 branches missed.">						|| unparenthesize(comparison.getRightOperand()) instanceof NullLiteral)) {</span>
+<span class="fc" id="L301">			return;</span>
+		}
+		// Every other role can constrain the static type: constructor arguments,
+		// method references, patterns, switch selectors, throws, aliases and results.
+<span class="fc" id="L305">		info.hasUnsafeUsage = true;</span>
+<span class="fc" id="L306">	}</span>
+
+	private static Expression unparenthesize(Expression expression) {
+<span class="pc bpc" id="L309" title="1 of 2 branches missed.">		while (expression instanceof ParenthesizedExpression parentheses) {</span>
+<span class="nc" id="L310">			expression = parentheses.getExpression();</span>
+		}
+<span class="fc" id="L312">		return expression;</span>
+	}
+
+	private static boolean makesCastRedundant(Expression value, ITypeBinding widenedType) {
+<span class="fc bfc" id="L316" title="All 2 branches covered.">		if (unparenthesize(value) instanceof CastExpression cast) {</span>
+<span class="fc" id="L317">			ITypeBinding operand = cast.getExpression().resolveTypeBinding();</span>
+<span class="pc bpc" id="L318" title="1 of 4 branches missed.">			return operand == null || operand.isAssignmentCompatible(widenedType);</span>
+		}
+<span class="fc" id="L320">		return false;</span>
+	}
+
+	private static boolean isSubtypeOf(ITypeBinding type, String name) {
+<span class="fc bfc" id="L324" title="All 2 branches covered.">		if (type == null) {</span>
+<span class="fc" id="L325">			return false;</span>
+		}
+<span class="pc bpc" id="L327" title="1 of 4 branches missed.">		if (name.equals(type.getErasure().getQualifiedName()) || isSubtypeOf(type.getSuperclass(), name)) {</span>
+<span class="fc" id="L328">			return true;</span>
+		}
+<span class="fc bfc" id="L330" title="All 2 branches covered.">		for (ITypeBinding iface : type.getInterfaces()) {</span>
+<span class="fc bfc" id="L331" title="All 2 branches covered.">			if (isSubtypeOf(iface, name)) {</span>
+<span class="fc" id="L332">				return true;</span>
+			}
+		}
+<span class="fc" id="L335">		return false;</span>
+	}
+
+	private static boolean hasTypeAnnotations(ITypeBinding type) {
+<span class="fc" id="L339">		return hasTypeAnnotations(type, Collections.newSetFromMap(new IdentityHashMap&lt;&gt;()));</span>
+	}
+
+	private static boolean hasTypeAnnotations(ITypeBinding type, Set&lt;ITypeBinding&gt; seen) {
+<span class="pc bpc" id="L343" title="1 of 4 branches missed.">		if (type == null || !seen.add(type)) {</span>
+<span class="fc" id="L344">			return false;</span>
+		}
+		// ImportRewrite reproduces annotations embedded in a supertype binding,
+		// including private/library-internal annotations absent from the local declaration.
+<span class="pc bpc" id="L348" title="1 of 4 branches missed.">		if (type.getTypeAnnotations().length != 0 || hasTypeAnnotations(type.getComponentType(), seen)</span>
+<span class="pc bpc" id="L349" title="2 of 4 branches missed.">				|| hasTypeAnnotations(type.getBound(), seen) || hasTypeAnnotations(type.getWildcard(), seen)</span>
+<span class="pc bpc" id="L350" title="1 of 2 branches missed.">				|| hasTypeAnnotations(type.getDeclaringClass(), seen)) {</span>
+<span class="fc" id="L351">			return true;</span>
+		}
+<span class="fc bfc" id="L353" title="All 2 branches covered.">		for (ITypeBinding argument : type.getTypeArguments()) {</span>
+<span class="fc bfc" id="L354" title="All 2 branches covered.">			if (hasTypeAnnotations(argument, seen)) {</span>
+<span class="fc" id="L355">				return true;</span>
+			}
+		}
+<span class="fc" id="L358">		return false;</span>
+	}
 
 	/**
 	 * Creates a method signature string from a method binding.
 	 * Format: methodName(param1Type,param2Type):returnType
 	 */
 	static String createMethodSignature(IMethodBinding methodBinding) {
-<span class="fc" id="L270">		StringBuilder signature = new StringBuilder();</span>
-<span class="fc" id="L271">		signature.append(methodBinding.getName()).append('(');</span>
-<span class="fc" id="L272">		ITypeBinding[] parameterTypes = methodBinding.getParameterTypes();</span>
-<span class="fc bfc" id="L273" title="All 2 branches covered.">		for (int i = 0; i &lt; parameterTypes.length; i++) {</span>
-<span class="fc bfc" id="L274" title="All 2 branches covered.">			if (i &gt; 0) {</span>
-<span class="fc" id="L275">				signature.append(',');</span>
+<span class="fc" id="L366">		StringBuilder signature = new StringBuilder();</span>
+<span class="fc" id="L367">		signature.append(methodBinding.getName()).append('(');</span>
+<span class="fc" id="L368">		ITypeBinding[] parameterTypes = methodBinding.getParameterTypes();</span>
+<span class="fc bfc" id="L369" title="All 2 branches covered.">		for (int i = 0; i &lt; parameterTypes.length; i++) {</span>
+<span class="fc bfc" id="L370" title="All 2 branches covered.">			if (i &gt; 0) {</span>
+<span class="fc" id="L371">				signature.append(',');</span>
 			}
-<span class="fc" id="L277">			ITypeBinding paramType = parameterTypes[i];</span>
-<span class="pc bpc" id="L278" title="1 of 2 branches missed.">			if (paramType != null) {</span>
-<span class="fc" id="L279">				ITypeBinding erasure = paramType.getErasure();</span>
-<span class="pc bpc" id="L280" title="1 of 2 branches missed.">				signature.append(erasure != null ? erasure.getQualifiedName() : &quot;java.lang.Object&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L373">			ITypeBinding paramType = parameterTypes[i];</span>
+<span class="pc bpc" id="L374" title="1 of 2 branches missed.">			if (paramType != null) {</span>
+<span class="fc" id="L375">				ITypeBinding erasure = paramType.getErasure();</span>
+<span class="pc bpc" id="L376" title="1 of 2 branches missed.">				signature.append(erasure != null ? erasure.getQualifiedName() : &quot;java.lang.Object&quot;); //$NON-NLS-1$</span>
 			}
 		}
-<span class="fc" id="L283">		signature.append(')');</span>
-<span class="fc" id="L284">		ITypeBinding returnType = methodBinding.getReturnType();</span>
-<span class="pc bpc" id="L285" title="1 of 2 branches missed.">		if (returnType != null) {</span>
-<span class="fc" id="L286">			signature.append(':').append(returnType.getQualifiedName());</span>
+<span class="fc" id="L379">		signature.append(')');</span>
+<span class="fc" id="L380">		ITypeBinding returnType = methodBinding.getReturnType();</span>
+<span class="pc bpc" id="L381" title="1 of 2 branches missed.">		if (returnType != null) {</span>
+<span class="fc" id="L382">			signature.append(':').append(returnType.getQualifiedName());</span>
 		}
-<span class="fc" id="L288">		return signature.toString();</span>
+<span class="fc" id="L384">		return signature.toString();</span>
 	}
 
 	/**
@@ -303,59 +399,65 @@ public final class TypeWideningAnalyzer {
 	 */
 	public static List&lt;ITypeBinding&gt; collectIntermediateTypes(ITypeBinding currentType, ITypeBinding widestType,
 			Set&lt;String&gt; usedMethodSignatures, Set&lt;String&gt; usedFields) {
-<span class="pc bpc" id="L306" title="1 of 2 branches missed.">		if (widestType == null) {</span>
-<span class="nc" id="L307">			return new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L402">		VariableInfo members = resolveMembers(currentType, usedMethodSignatures, usedFields);</span>
+<span class="nc" id="L403">		return collectIntermediateTypes(currentType, widestType, members.usedMethods, members.usedFields, null);</span>
+	}
+
+	private static List&lt;ITypeBinding&gt; collectIntermediateTypes(ITypeBinding currentType, ITypeBinding widestType,
+			Set&lt;IMethodBinding&gt; usedMethods, Set&lt;IVariableBinding&gt; usedFields, String sourcePackage) {
+<span class="pc bpc" id="L408" title="1 of 2 branches missed.">		if (widestType == null) {</span>
+<span class="nc" id="L409">			return new ArrayList&lt;&gt;();</span>
 		}
-<span class="fc" id="L309">		String widestErasureName = widestType.getErasure().getQualifiedName();</span>
+<span class="fc" id="L411">		String widestErasureName = widestType.getErasure().getQualifiedName();</span>
 
-<span class="fc" id="L311">		List&lt;ITypeBinding&gt; result = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L312">		Set&lt;String&gt; seen = new HashSet&lt;&gt;();</span>
-<span class="fc" id="L313">		seen.add(currentType.getErasure().getQualifiedName());</span>
+<span class="fc" id="L413">		List&lt;ITypeBinding&gt; result = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L414">		Set&lt;String&gt; seen = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L415">		seen.add(currentType.getErasure().getQualifiedName());</span>
 
-<span class="fc" id="L315">		Queue&lt;ITypeBinding&gt; queue = new LinkedList&lt;&gt;();</span>
-<span class="fc" id="L316">		enqueueSupertypes(currentType, queue);</span>
+<span class="fc" id="L417">		Queue&lt;ITypeBinding&gt; queue = new LinkedList&lt;&gt;();</span>
+<span class="fc" id="L418">		enqueueSupertypes(currentType, queue);</span>
 
-<span class="fc bfc" id="L318" title="All 2 branches covered.">		while (!queue.isEmpty()) {</span>
-<span class="fc" id="L319">			ITypeBinding type = queue.poll();</span>
-<span class="pc bpc" id="L320" title="2 of 4 branches missed.">			if (type == null || isJavaLangObject(type)) {</span>
-<span class="nc" id="L321">				continue;</span>
+<span class="fc bfc" id="L420" title="All 2 branches covered.">		while (!queue.isEmpty()) {</span>
+<span class="fc" id="L421">			ITypeBinding type = queue.poll();</span>
+<span class="pc bpc" id="L422" title="2 of 4 branches missed.">			if (type == null || isJavaLangObject(type)) {</span>
+<span class="nc" id="L423">				continue;</span>
 			}
-<span class="fc" id="L323">			String erasureName = type.getErasure().getQualifiedName();</span>
-<span class="pc bpc" id="L324" title="1 of 2 branches missed.">			if (!seen.add(erasureName)) {</span>
-<span class="nc" id="L325">				continue;</span>
+<span class="fc" id="L425">			String erasureName = type.getErasure().getQualifiedName();</span>
+<span class="pc bpc" id="L426" title="1 of 2 branches missed.">			if (!seen.add(erasureName)) {</span>
+<span class="nc" id="L427">				continue;</span>
 			}
 			// Only include types that are supertypes of currentType and subtypes
 			// of (or equal to) widestType, and declare all used members.
-<span class="fc bfc" id="L329" title="All 2 branches covered.">			if (!isTaggingInterface(type)</span>
-<span class="fc bfc" id="L330" title="All 2 branches covered.">					&amp;&amp; declaresAllMembers(currentType, type, usedMethodSignatures, usedFields)</span>
-<span class="fc bfc" id="L331" title="All 2 branches covered.">					&amp;&amp; widestType.isSubTypeCompatible(type)) {</span>
+<span class="fc bfc" id="L431" title="All 2 branches covered.">			if (!isTaggingInterface(type)</span>
+<span class="fc bfc" id="L432" title="All 2 branches covered.">					&amp;&amp; declaresAllMembers(currentType, type, usedMethods, usedFields, sourcePackage)</span>
+<span class="fc bfc" id="L433" title="All 2 branches covered.">					&amp;&amp; widestType.isSubTypeCompatible(type)) {</span>
 				// Don't add widestType yet — it will be appended last
-<span class="fc bfc" id="L333" title="All 2 branches covered.">				if (!erasureName.equals(widestErasureName)) {</span>
-<span class="fc" id="L334">					result.add(type);</span>
+<span class="fc bfc" id="L435" title="All 2 branches covered.">				if (!erasureName.equals(widestErasureName)) {</span>
+<span class="fc" id="L436">					result.add(type);</span>
 				}
-<span class="fc" id="L336">				enqueueSupertypes(type, queue);</span>
+<span class="fc" id="L438">				enqueueSupertypes(type, queue);</span>
 			}
 		}
 
 		// Always append widestType as the last element if it passed the member check
-<span class="pc bpc" id="L341" title="1 of 2 branches missed.">		if (declaresAllMembers(currentType, widestType, usedMethodSignatures, usedFields)) {</span>
-<span class="fc" id="L342">			result.add(widestType);</span>
+<span class="pc bpc" id="L443" title="1 of 2 branches missed.">		if (declaresAllMembers(currentType, widestType, usedMethods, usedFields, sourcePackage)) {</span>
+<span class="fc" id="L444">			result.add(widestType);</span>
 		}
-<span class="fc" id="L344">		return result;</span>
+<span class="fc" id="L446">		return result;</span>
 	}
 
 	/**
 	 * Enqueues all direct supertypes (superclass and interfaces) of the given type.
 	 */
 	private static void enqueueSupertypes(ITypeBinding type, Queue&lt;ITypeBinding&gt; queue) {
-<span class="fc" id="L351">		ITypeBinding superclass = type.getSuperclass();</span>
-<span class="pc bpc" id="L352" title="1 of 4 branches missed.">		if (superclass != null &amp;&amp; !isJavaLangObject(superclass)) {</span>
-<span class="fc" id="L353">			queue.add(superclass);</span>
+<span class="fc" id="L453">		ITypeBinding superclass = type.getSuperclass();</span>
+<span class="fc bfc" id="L454" title="All 4 branches covered.">		if (superclass != null &amp;&amp; !isJavaLangObject(superclass)) {</span>
+<span class="fc" id="L455">			queue.add(superclass);</span>
 		}
-<span class="fc bfc" id="L355" title="All 2 branches covered.">		for (ITypeBinding iface : type.getInterfaces()) {</span>
-<span class="fc" id="L356">			queue.add(iface);</span>
+<span class="fc bfc" id="L457" title="All 2 branches covered.">		for (ITypeBinding iface : type.getInterfaces()) {</span>
+<span class="fc" id="L458">			queue.add(iface);</span>
 		}
-<span class="fc" id="L358">	}</span>
+<span class="fc" id="L460">	}</span>
 
 	/**
 	 * Walks the type hierarchy to find the most general type that declares
@@ -363,115 +465,181 @@ public final class TypeWideningAnalyzer {
 	 */
 	static ITypeBinding findMostGeneralType(ITypeBinding currentType, Set&lt;String&gt; usedMethodSignatures,
 			Set&lt;String&gt; usedFields) {
-<span class="pc bpc" id="L366" title="1 of 2 branches missed.">		if (currentType == null) {</span>
-<span class="nc" id="L367">			return null;</span>
+<span class="nc" id="L468">		VariableInfo members = resolveMembers(currentType, usedMethodSignatures, usedFields);</span>
+<span class="nc" id="L469">		return findMostGeneralType(currentType, members.usedMethods, members.usedFields, null);</span>
+	}
+
+	private static ITypeBinding findMostGeneralType(ITypeBinding currentType, Set&lt;IMethodBinding&gt; usedMethods,
+			Set&lt;IVariableBinding&gt; usedFields, String sourcePackage) {
+<span class="pc bpc" id="L474" title="1 of 2 branches missed.">		if (currentType == null) {</span>
+<span class="nc" id="L475">			return null;</span>
 		}
 
-<span class="fc" id="L370">		ITypeBinding mostGeneral = currentType;</span>
+<span class="fc" id="L478">		ITypeBinding mostGeneral = currentType;</span>
 
-<span class="fc" id="L372">		ITypeBinding superclass = currentType.getSuperclass();</span>
-<span class="fc bfc" id="L373" title="All 6 branches covered.">		if (superclass != null &amp;&amp; !isJavaLangObject(superclass) &amp;&amp; declaresAllMembers(currentType, superclass, usedMethodSignatures, usedFields)) {</span>
-<span class="fc" id="L374">			ITypeBinding candidate = findMostGeneralType(superclass, usedMethodSignatures, usedFields);</span>
-<span class="pc bpc" id="L375" title="1 of 2 branches missed.">			if (candidate != null) {</span>
-<span class="fc" id="L376">				mostGeneral = candidate;</span>
+<span class="fc" id="L480">		ITypeBinding superclass = currentType.getSuperclass();</span>
+<span class="fc bfc" id="L481" title="All 4 branches covered.">		if (superclass != null &amp;&amp; !isJavaLangObject(superclass)</span>
+<span class="fc bfc" id="L482" title="All 2 branches covered.">				&amp;&amp; declaresAllMembers(currentType, superclass, usedMethods, usedFields, sourcePackage)) {</span>
+<span class="fc" id="L483">			ITypeBinding candidate = findMostGeneralType(superclass, usedMethods, usedFields, sourcePackage);</span>
+<span class="pc bpc" id="L484" title="1 of 2 branches missed.">			if (candidate != null) {</span>
+<span class="fc" id="L485">				mostGeneral = candidate;</span>
 			}
 		}
 
-<span class="fc bfc" id="L380" title="All 2 branches covered.">		for (ITypeBinding iface : currentType.getInterfaces()) {</span>
+<span class="fc bfc" id="L489" title="All 2 branches covered.">		for (ITypeBinding iface : currentType.getInterfaces()) {</span>
 			// Skip tagging/marker interfaces (e.g., Serializable, Cloneable, RandomAccess)
-<span class="fc bfc" id="L382" title="All 2 branches covered.">			if (isTaggingInterface(iface)) {</span>
-<span class="fc" id="L383">				continue;</span>
+<span class="fc bfc" id="L491" title="All 2 branches covered.">			if (isTaggingInterface(iface)) {</span>
+<span class="fc" id="L492">				continue;</span>
 			}
-<span class="fc bfc" id="L385" title="All 2 branches covered.">			if (declaresAllMembers(currentType, iface, usedMethodSignatures, usedFields)) {</span>
-<span class="fc" id="L386">				mostGeneral = iface;</span>
+<span class="fc bfc" id="L494" title="All 2 branches covered.">			if (declaresAllMembers(currentType, iface, usedMethods, usedFields, sourcePackage)) {</span>
+<span class="fc" id="L495">				mostGeneral = iface;</span>
 			}
 		}
 
-<span class="fc" id="L390">		return mostGeneral;</span>
+<span class="fc" id="L499">		return mostGeneral;</span>
 	}
 
 	/**
 	 * Checks if a type is a tagging/marker interface (has no declared methods).
 	 */
 	private static boolean isTaggingInterface(ITypeBinding type) {
-<span class="pc bpc" id="L397" title="1 of 4 branches missed.">		if (type == null || !type.isInterface()) {</span>
-<span class="fc" id="L398">			return false;</span>
+<span class="pc bpc" id="L506" title="1 of 4 branches missed.">		if (type == null || !type.isInterface()) {</span>
+<span class="fc" id="L507">			return false;</span>
 		}
-<span class="fc bfc" id="L400" title="All 2 branches covered.">		return type.getDeclaredMethods().length == 0;</span>
+<span class="fc bfc" id="L509" title="All 2 branches covered.">		return type.getDeclaredMethods().length == 0;</span>
 	}
 
 	/**
 	 * Checks if a type is java.lang.Object.
 	 */
 	private static boolean isJavaLangObject(ITypeBinding type) {
-<span class="pc bpc" id="L407" title="1 of 4 branches missed.">		return type != null &amp;&amp; &quot;java.lang.Object&quot;.equals(type.getQualifiedName()); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L516" title="1 of 4 branches missed.">		return type != null &amp;&amp; &quot;java.lang.Object&quot;.equals(type.getQualifiedName()); //$NON-NLS-1$</span>
 	}
 
 	/**
 	 * Checks if a candidate type declares all the required method signatures and fields.
 	 */
 	private static boolean declaresAllMembers(ITypeBinding originalType, ITypeBinding candidateType,
-			Set&lt;String&gt; usedMethodSignatures, Set&lt;String&gt; usedFields) {
-<span class="pc bpc" id="L415" title="2 of 4 branches missed.">		if (originalType == null || candidateType == null) {</span>
-<span class="nc" id="L416">			return false;</span>
+			Set&lt;IMethodBinding&gt; usedMethods, Set&lt;IVariableBinding&gt; usedFields, String sourcePackage) {
+<span class="pc bpc" id="L524" title="3 of 8 branches missed.">		if (originalType == null || candidateType == null || candidateType.isRecovered() || candidateType.isRawType()</span>
+<span class="fc bfc" id="L525" title="All 2 branches covered.">				|| hasTypeAnnotations(candidateType)</span>
+<span class="pc bpc" id="L526" title="1 of 2 branches missed.">				|| !isTypeAccessible(candidateType, sourcePackage)</span>
+<span class="pc bpc" id="L527" title="3 of 4 branches missed.">				|| (candidateType.isDeprecated() &amp;&amp; !originalType.isDeprecated())) {</span>
+<span class="fc" id="L528">			return false;</span>
 		}
 
-<span class="fc" id="L419">		Map&lt;String, Set&lt;String&gt;&gt; candidateMethodSignatures = new HashMap&lt;&gt;();</span>
-<span class="fc" id="L420">		collectMethodSignatures(candidateType, new HashSet&lt;&gt;(), candidateMethodSignatures);</span>
+<span class="fc" id="L531">		Map&lt;String, IMethodBinding&gt; candidateMethods = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L532">		collectMethods(candidateType, new HashSet&lt;&gt;(), candidateMethods);</span>
 
-<span class="fc bfc" id="L422" title="All 2 branches covered.">		for (String usedSignature : usedMethodSignatures) {</span>
-<span class="fc" id="L423">			int parenIndex = usedSignature.indexOf('(');</span>
-<span class="pc bpc" id="L424" title="1 of 2 branches missed.">			if (parenIndex &lt; 0) {</span>
-<span class="nc" id="L425">				continue;</span>
+<span class="fc bfc" id="L534" title="All 2 branches covered.">		for (IMethodBinding original : usedMethods) {</span>
+<span class="pc bpc" id="L535" title="1 of 2 branches missed.">			if (original == null) {</span>
+<span class="nc" id="L536">				return false;</span>
 			}
-<span class="fc" id="L427">			String methodName = usedSignature.substring(0, parenIndex);</span>
-
-<span class="fc" id="L429">			Set&lt;String&gt; candidateSignatures = candidateMethodSignatures.get(methodName);</span>
-<span class="pc bpc" id="L430" title="1 of 4 branches missed.">			if (candidateSignatures == null || !candidateSignatures.contains(usedSignature)) {</span>
-<span class="fc" id="L431">				return false;</span>
+<span class="fc" id="L538">			IMethodBinding candidate = candidateMethods.get(createMethodSignature(original));</span>
+<span class="pc bpc" id="L539" title="1 of 4 branches missed.">			if (candidate == null || candidate.isRecovered()</span>
+<span class="fc bfc" id="L540" title="All 2 branches covered.">					|| !isAccessible(candidate.getModifiers(), candidate.getDeclaringClass(), sourcePackage)</span>
+<span class="pc bpc" id="L541" title="3 of 4 branches missed.">					|| (candidate.isDeprecated() &amp;&amp; !original.isDeprecated())</span>
+<span class="pc bpc" id="L542" title="1 of 2 branches missed.">					|| (Modifier.isStatic(candidate.getModifiers())</span>
+<span class="nc bnc" id="L543" title="All 2 branches missed.">							&amp;&amp; !candidate.getMethodDeclaration().isEqualTo(original.getMethodDeclaration()))</span>
+<span class="fc bfc" id="L544" title="All 2 branches covered.">					|| introducesCheckedException(original, candidate)) {</span>
+<span class="fc" id="L545">				return false;</span>
 			}
 		}
 
-<span class="fc" id="L435">		Set&lt;String&gt; declaredFields = new HashSet&lt;&gt;();</span>
-<span class="fc" id="L436">		collectFields(candidateType, new HashSet&lt;&gt;(), declaredFields);</span>
+<span class="fc" id="L549">		Map&lt;String, IVariableBinding&gt; candidateFields = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L550">		collectFields(candidateType, new HashSet&lt;&gt;(), candidateFields);</span>
+<span class="fc bfc" id="L551" title="All 2 branches covered.">		for (IVariableBinding original : usedFields) {</span>
+<span class="pc bpc" id="L552" title="1 of 2 branches missed.">			if (original == null) {</span>
+<span class="nc" id="L553">				return false;</span>
+			}
+<span class="fc" id="L555">			IVariableBinding candidate = candidateFields.get(original.getName());</span>
+<span class="pc bpc" id="L556" title="2 of 4 branches missed.">			if (candidate == null || candidate.isRecovered()</span>
+<span class="pc bpc" id="L557" title="1 of 2 branches missed.">					|| !original.getVariableDeclaration().isEqualTo(candidate.getVariableDeclaration())</span>
+<span class="nc bnc" id="L558" title="All 2 branches missed.">					|| !original.getType().isEqualTo(candidate.getType())</span>
+<span class="nc bnc" id="L559" title="All 2 branches missed.">					|| !isAccessible(candidate.getModifiers(), candidate.getDeclaringClass(), sourcePackage)) {</span>
+<span class="fc" id="L560">				return false;</span>
+			}
+		}
+<span class="fc" id="L563">		return true;</span>
+	}
 
-<span class="fc" id="L438">		return declaredFields.containsAll(usedFields);</span>
+	/** Compatibility adapter for clients supplying member names rather than use-site bindings. */
+	private static VariableInfo resolveMembers(ITypeBinding type, Set&lt;String&gt; signatures, Set&lt;String&gt; fieldNames) {
+<span class="nc" id="L568">		var result = new VariableInfo();</span>
+<span class="nc" id="L569">		Map&lt;String, IMethodBinding&gt; methods = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L570">		Map&lt;String, IVariableBinding&gt; fields = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L571">		collectMethods(type, new HashSet&lt;&gt;(), methods);</span>
+<span class="nc" id="L572">		collectFields(type, new HashSet&lt;&gt;(), fields);</span>
+<span class="nc bnc" id="L573" title="All 2 branches missed.">		for (String signature : signatures) {</span>
+<span class="nc" id="L574">			result.usedMethods.add(methods.get(signature));</span>
+		}
+<span class="nc bnc" id="L576" title="All 2 branches missed.">		for (String field : fieldNames) {</span>
+<span class="nc" id="L577">			result.usedFields.add(fields.get(field));</span>
+		}
+<span class="nc" id="L579">		return result;</span>
+	}
+
+	private static boolean isTypeAccessible(ITypeBinding type, String sourcePackage) {
+<span class="pc bpc" id="L583" title="1 of 2 branches missed.">		return isAccessible(type.getModifiers(), type, sourcePackage)</span>
+<span class="pc bpc" id="L584" title="1 of 4 branches missed.">				&amp;&amp; (type.getDeclaringClass() == null || isTypeAccessible(type.getDeclaringClass(), sourcePackage));</span>
+	}
+
+	private static boolean isAccessible(int modifiers, ITypeBinding declaringType, String sourcePackage) {
+<span class="pc bpc" id="L588" title="2 of 6 branches missed.">		return Modifier.isPublic(modifiers) || (!Modifier.isPrivate(modifiers) &amp;&amp; declaringType.getPackage() != null</span>
+<span class="fc bfc" id="L589" title="All 2 branches covered.">				&amp;&amp; declaringType.getPackage().getName().equals(sourcePackage));</span>
+	}
+
+	private static boolean introducesCheckedException(IMethodBinding original, IMethodBinding candidate) {
+<span class="pc bfc" id="L593" title="All 2 branches covered.">		for (ITypeBinding exception : candidate.getExceptionTypes()) {</span>
+<span class="pc bpc" id="L594" title="2 of 4 branches missed.">			if (isSubtypeOf(exception, &quot;java.lang.RuntimeException&quot;) || isSubtypeOf(exception, &quot;java.lang.Error&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L595">				continue;</span>
+			}
+<span class="fc" id="L597">			boolean covered = false;</span>
+<span class="pc bpc" id="L598" title="1 of 2 branches missed.">			for (ITypeBinding originalException : original.getExceptionTypes()) {</span>
+<span class="nc" id="L599">				covered |= exception.isAssignmentCompatible(originalException);</span>
+			}
+<span class="pc bpc" id="L601" title="1 of 2 branches missed.">			if (!covered) {</span>
+<span class="fc" id="L602">				return true;</span>
+			}
+		}
+<span class="fc" id="L605">		return false;</span>
 	}
 
 	/**
 	 * Recursively collects method signatures for a type and its supertypes/interfaces.
 	 */
-	private static void collectMethodSignatures(ITypeBinding type, Set&lt;ITypeBinding&gt; visited,
-			Map&lt;String, Set&lt;String&gt;&gt; signaturesByName) {
-<span class="fc bfc" id="L446" title="All 4 branches covered.">		if (type == null || !visited.add(type)) {</span>
-<span class="fc" id="L447">			return;</span>
+	private static void collectMethods(ITypeBinding type, Set&lt;ITypeBinding&gt; visited,
+			Map&lt;String, IMethodBinding&gt; methods) {
+<span class="fc bfc" id="L613" title="All 4 branches covered.">		if (type == null || !visited.add(type)) {</span>
+<span class="fc" id="L614">			return;</span>
 		}
 
-<span class="fc bfc" id="L450" title="All 2 branches covered.">		for (IMethodBinding method : type.getDeclaredMethods()) {</span>
-<span class="fc" id="L451">			String signature = createMethodSignature(method);</span>
-<span class="fc" id="L452">			String name = method.getName();</span>
-<span class="fc" id="L453">			signaturesByName.computeIfAbsent(name, k -&gt; new HashSet&lt;&gt;()).add(signature);</span>
+<span class="fc bfc" id="L617" title="All 2 branches covered.">		for (IMethodBinding method : type.getDeclaredMethods()) {</span>
+<span class="fc" id="L618">			methods.putIfAbsent(createMethodSignature(method), method);</span>
 		}
 
-<span class="fc" id="L456">		collectMethodSignatures(type.getSuperclass(), visited, signaturesByName);</span>
-<span class="fc bfc" id="L457" title="All 2 branches covered.">		for (ITypeBinding iface : type.getInterfaces()) {</span>
-<span class="fc" id="L458">			collectMethodSignatures(iface, visited, signaturesByName);</span>
+<span class="fc" id="L621">		collectMethods(type.getSuperclass(), visited, methods);</span>
+<span class="fc bfc" id="L622" title="All 2 branches covered.">		for (ITypeBinding iface : type.getInterfaces()) {</span>
+<span class="fc" id="L623">			collectMethods(iface, visited, methods);</span>
 		}
-<span class="fc" id="L460">	}</span>
+<span class="fc" id="L625">	}</span>
 
 	/**
 	 * Recursively collects field names for a type and its supertypes.
 	 */
-	private static void collectFields(ITypeBinding type, Set&lt;ITypeBinding&gt; visited, Set&lt;String&gt; fieldNames) {
-<span class="pc bpc" id="L466" title="1 of 4 branches missed.">		if (type == null || !visited.add(type)) {</span>
-<span class="fc" id="L467">			return;</span>
+	private static void collectFields(ITypeBinding type, Set&lt;ITypeBinding&gt; visited, Map&lt;String, IVariableBinding&gt; fields) {
+<span class="fc bfc" id="L631" title="All 4 branches covered.">		if (type == null || !visited.add(type)) {</span>
+<span class="fc" id="L632">			return;</span>
 		}
 
-<span class="fc bfc" id="L470" title="All 2 branches covered.">		for (IVariableBinding field : type.getDeclaredFields()) {</span>
-<span class="fc" id="L471">			fieldNames.add(field.getName());</span>
+<span class="fc bfc" id="L635" title="All 2 branches covered.">		for (IVariableBinding field : type.getDeclaredFields()) {</span>
+<span class="fc" id="L636">			fields.putIfAbsent(field.getName(), field);</span>
 		}
 
-<span class="fc" id="L474">		collectFields(type.getSuperclass(), visited, fieldNames);</span>
-<span class="fc" id="L475">	}</span>
+<span class="fc" id="L639">		collectFields(type.getSuperclass(), visited, fields);</span>
+<span class="fc bfc" id="L640" title="All 2 branches covered.">		for (ITypeBinding iface : type.getInterfaces()) {</span>
+<span class="fc" id="L641">			collectFields(iface, visited, fields);</span>
+		}
+<span class="fc" id="L643">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

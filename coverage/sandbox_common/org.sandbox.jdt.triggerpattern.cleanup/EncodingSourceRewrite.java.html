@@ -259,7 +259,7 @@ public final class EncodingSourceRewrite {
 
 	private static LineComment containingComment(CompilationUnit root, int offset, int length) {
 <span class="pc bpc" id="L261" title="1 of 2 branches missed.">		for (Object candidate : root.getCommentList()) {</span>
-<span class="pc bpc" id="L262" title="2 of 4 branches missed.">			if (candidate instanceof LineComment comment &amp;&amp; offset &gt;= comment.getStartPosition()</span>
+<span class="pc bpc" id="L262" title="1 of 4 branches missed.">			if (candidate instanceof LineComment comment &amp;&amp; offset &gt;= comment.getStartPosition()</span>
 <span class="fc bfc" id="L263" title="All 2 branches covered.">					&amp;&amp; offset + length &lt;= comment.getStartPosition() + comment.getLength()) {</span>
 <span class="fc" id="L264">				return comment;</span>
 			}

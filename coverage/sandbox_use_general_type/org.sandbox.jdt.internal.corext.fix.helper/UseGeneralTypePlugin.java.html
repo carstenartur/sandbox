@@ -13,19 +13,28 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.ParameterizedType;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite.ImportRewriteContext;
+import org.eclipse.jdt.internal.core.JavaProject;
+import org.eclipse.jdt.internal.core.SearchableEnvironment;
+import org.eclipse.jdt.internal.corext.codemanipulation.ContextSensitiveImportRewriteContext;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
@@ -51,12 +60,12 @@ import org.sandbox.jdt.internal.corext.util.TypeWideningAnalyzer;
  * list.size();
  * &lt;/pre&gt;
  */
-<span class="fc" id="L54">public class UseGeneralTypePlugin {</span>
+<span class="fc" id="L63">public class UseGeneralTypePlugin {</span>
 
 	/**
 	 * Holder for variable type widening transformation data.
 	 */
-<span class="fc" id="L59">	public static class TypeWidenHolder {</span>
+<span class="fc" id="L68">	public static class TypeWidenHolder {</span>
 		/** The variable declaration statement to transform */
 		public VariableDeclarationStatement variableDeclarationStatement;
 		/** The variable declaration fragment */
@@ -66,9 +75,9 @@ import org.sandbox.jdt.internal.corext.util.TypeWideningAnalyzer;
 		/** The widened type binding (most general type that still supports all usages) */
 		public ITypeBinding widenedType;
 		/** All method signatures used on this variable (methodName + parameter types) */
-<span class="fc" id="L69">		public Set&lt;String&gt; usedMethodSignatures = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L78">		public Set&lt;String&gt; usedMethodSignatures = new HashSet&lt;&gt;();</span>
 		/** All field names accessed on this variable */
-<span class="fc" id="L71">		public Set&lt;String&gt; usedFields = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L80">		public Set&lt;String&gt; usedFields = new HashSet&lt;&gt;();</span>
 		/** Whether the variable is cast to a specific type */
 		public boolean hasCast;
 		/** Whether the variable is used in instanceof check */
@@ -84,60 +93,123 @@ import org.sandbox.jdt.internal.corext.util.TypeWideningAnalyzer;
 			boolean createForIfVarNotUsed) {
 
 		// Use shared TypeWideningAnalyzer from sandbox_common
-<span class="fc" id="L87">		Map&lt;String, TypeWideningAnalyzer.TypeWideningResult&gt; analysisResults =</span>
-<span class="fc" id="L88">				TypeWideningAnalyzer.analyzeCompilationUnit(compilationUnit);</span>
+<span class="fc" id="L96">		Map&lt;String, TypeWideningAnalyzer.TypeWideningResult&gt; analysisResults =</span>
+<span class="fc" id="L97">				TypeWideningAnalyzer.analyzeCompilationUnit(compilationUnit);</span>
 
-<span class="fc bfc" id="L90" title="All 2 branches covered.">		if (analysisResults.isEmpty()) {</span>
-<span class="fc" id="L91">			return;</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">		if (analysisResults.isEmpty()) {</span>
+<span class="fc" id="L100">			return;</span>
+		}
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">		if (!(compilationUnit.getJavaElement() instanceof ICompilationUnit unit)</span>
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">				|| !(unit.getJavaProject() instanceof JavaProject project)) {</span>
+<span class="nc" id="L104">			return;</span>
+		}
+		try {
+<span class="fc" id="L107">			var access = new ProjectTypeAccess(project, unit);</span>
+			try {
+				// Keep restricted references: removing the only one can make an
+				// existing @SuppressWarnings(&quot;restriction&quot;) unnecessary.
+<span class="fc bfc" id="L111" title="All 2 branches covered.">				analysisResults.values().removeIf(result -&gt; !access.permits(result.getCurrentType(), new HashSet&lt;&gt;())</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">						|| !access.permits(result.getWidestType(), new HashSet&lt;&gt;()));</span>
+<span class="fc" id="L113">			} finally {</span>
+<span class="fc" id="L114">				access.cleanup();</span>
+			}
+<span class="nc" id="L116">		} catch (JavaModelException exception) {</span>
+			// Keep the declaration when its replacement's project access cannot be established.
+<span class="nc" id="L118">			return;</span>
+		}
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">		if (analysisResults.isEmpty()) {</span>
+<span class="nc" id="L121">			return;</span>
 		}
 
 		// Collect VariableDeclarationStatement info needed for rewriting
-<span class="fc" id="L95">		ReferenceHolder&lt;String, StatementInfo&gt; statementsByKey = new ReferenceHolder&lt;&gt;();</span>
-<span class="fc" id="L96">		AstProcessorBuilder.with(statementsByKey, nodesprocessed)</span>
-<span class="fc" id="L97">			.onVariableDeclarationStatement((node, holder) -&gt; {</span>
-<span class="pc bpc" id="L98" title="1 of 2 branches missed.">				if (node.fragments().size() &gt; 1) {</span>
-<span class="nc" id="L99">					return true;</span>
+<span class="fc" id="L125">		ReferenceHolder&lt;String, StatementInfo&gt; statementsByKey = new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L126">		AstProcessorBuilder.with(statementsByKey, nodesprocessed)</span>
+<span class="fc" id="L127">			.onVariableDeclarationStatement((node, holder) -&gt; {</span>
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">				if (node.fragments().size() &gt; 1) {</span>
+<span class="nc" id="L129">					return true;</span>
 				}
-<span class="fc" id="L101">				Type type = node.getType();</span>
-<span class="pc bpc" id="L102" title="2 of 4 branches missed.">				if (type == null || type.isVar()) {</span>
-<span class="nc" id="L103">					return true;</span>
+<span class="fc" id="L131">				Type type = node.getType();</span>
+<span class="pc bpc" id="L132" title="2 of 4 branches missed.">				if (type == null || type.isVar()) {</span>
+<span class="nc" id="L133">					return true;</span>
 				}
-<span class="fc bfc" id="L105" title="All 2 branches covered.">				for (Object fragObj : node.fragments()) {</span>
-<span class="fc" id="L106">					VariableDeclarationFragment fragment = (VariableDeclarationFragment) fragObj;</span>
-<span class="fc" id="L107">					IVariableBinding varBinding = fragment.resolveBinding();</span>
-<span class="pc bpc" id="L108" title="1 of 2 branches missed.">					if (varBinding != null) {</span>
-<span class="fc" id="L109">						holder.put(varBinding.getKey(), new StatementInfo(node, fragment));</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">				for (Object fragObj : node.fragments()) {</span>
+<span class="fc" id="L136">					VariableDeclarationFragment fragment = (VariableDeclarationFragment) fragObj;</span>
+<span class="fc" id="L137">					IVariableBinding varBinding = fragment.resolveBinding();</span>
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">					if (varBinding != null) {</span>
+<span class="fc" id="L139">						holder.put(varBinding.getKey(), new StatementInfo(node, fragment));</span>
 					}
 				}
-<span class="fc" id="L112">				return true;</span>
+<span class="fc" id="L142">				return true;</span>
 			})
-<span class="fc" id="L114">			.build(compilationUnit);</span>
+<span class="fc" id="L144">			.build(compilationUnit);</span>
 
 		// Build TypeWidenHolder entries from analysis results
-<span class="fc" id="L117">		ReferenceHolder&lt;Integer, TypeWidenHolder&gt; holder = new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L147">		ReferenceHolder&lt;Integer, TypeWidenHolder&gt; holder = new ReferenceHolder&lt;&gt;();</span>
 
-<span class="fc bfc" id="L119" title="All 2 branches covered.">		for (TypeWideningAnalyzer.TypeWideningResult result : analysisResults.values()) {</span>
-<span class="fc" id="L120">			StatementInfo stmtInfo = statementsByKey.get(result.getVariableBinding().getKey());</span>
-<span class="pc bpc" id="L121" title="1 of 2 branches missed.">			if (stmtInfo == null) {</span>
-<span class="nc" id="L122">				continue;</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">		for (TypeWideningAnalyzer.TypeWideningResult result : analysisResults.values()) {</span>
+<span class="fc" id="L150">			StatementInfo stmtInfo = statementsByKey.get(result.getVariableBinding().getKey());</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">			if (stmtInfo == null) {</span>
+<span class="nc" id="L152">				continue;</span>
 			}
 
-<span class="fc" id="L125">			TypeWidenHolder typeHolder = new TypeWidenHolder();</span>
-<span class="fc" id="L126">			typeHolder.variableDeclarationStatement = stmtInfo.statement;</span>
-<span class="fc" id="L127">			typeHolder.fragment = stmtInfo.fragment;</span>
-<span class="fc" id="L128">			typeHolder.currentType = result.getCurrentType();</span>
-<span class="fc" id="L129">			typeHolder.widenedType = result.getWidestType();</span>
-<span class="fc" id="L130">			typeHolder.usedMethodSignatures = new HashSet&lt;&gt;();</span>
-<span class="fc" id="L131">			typeHolder.usedFields = new HashSet&lt;&gt;();</span>
-<span class="fc" id="L132">			typeHolder.nodesprocessed = nodesprocessed;</span>
+<span class="fc" id="L155">			TypeWidenHolder typeHolder = new TypeWidenHolder();</span>
+<span class="fc" id="L156">			typeHolder.variableDeclarationStatement = stmtInfo.statement;</span>
+<span class="fc" id="L157">			typeHolder.fragment = stmtInfo.fragment;</span>
+<span class="fc" id="L158">			typeHolder.currentType = result.getCurrentType();</span>
+<span class="fc" id="L159">			typeHolder.widenedType = result.getWidestType();</span>
+<span class="fc" id="L160">			typeHolder.usedMethodSignatures = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L161">			typeHolder.usedFields = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L162">			typeHolder.nodesprocessed = nodesprocessed;</span>
 
-<span class="fc" id="L134">			holder.put(holder.size(), typeHolder);</span>
+<span class="fc" id="L164">			holder.put(holder.size(), typeHolder);</span>
 		}
 
-<span class="pc bpc" id="L137" title="1 of 2 branches missed.">		if (!holder.isEmpty()) {</span>
-<span class="fc" id="L138">			operations.add(fixcore.rewrite(holder));</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">		if (!holder.isEmpty()) {</span>
+<span class="fc" id="L168">			operations.add(fixcore.rewrite(holder));</span>
 		}
-<span class="fc" id="L140">	}</span>
+<span class="fc" id="L170">	}</span>
+
+	/** Queries the same combined classpath access rules that JDT applies to a new source reference. */
+	private static final class ProjectTypeAccess extends SearchableEnvironment {
+<span class="fc" id="L174">		private final Map&lt;String, Boolean&gt; unrestricted = new HashMap&lt;&gt;();</span>
+
+		ProjectTypeAccess(JavaProject project, ICompilationUnit unit) throws JavaModelException {
+<span class="fc" id="L177">			super(project, unit.getOwner(), false, JavaProject.NO_RELEASE);</span>
+			// Check both discouraged and forbidden references without changing compiler preferences.
+<span class="fc" id="L179">			checkAccessRestrictions = true;</span>
+<span class="fc" id="L180">		}</span>
+
+		boolean permits(ITypeBinding binding, Set&lt;ITypeBinding&gt; visited) {
+<span class="pc bpc" id="L183" title="2 of 4 branches missed.">			if (binding == null || binding.isRecovered()) {</span>
+<span class="nc" id="L184">				return false;</span>
+			}
+<span class="pc bpc" id="L186" title="3 of 6 branches missed.">			if (!visited.add(binding) || binding.isPrimitive() || binding.isTypeVariable()) {</span>
+<span class="nc" id="L187">				return true;</span>
+			}
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">			if (binding.isArray()) {</span>
+<span class="nc" id="L190">				return permits(binding.getComponentType(), visited);</span>
+			}
+<span class="pc bpc" id="L192" title="1 of 2 branches missed.">			if (binding.isWildcardType()) {</span>
+<span class="nc bnc" id="L193" title="All 4 branches missed.">				return binding.getBound() == null || permits(binding.getBound(), visited);</span>
+			}
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">			if (binding.isCapture()) {</span>
+<span class="nc" id="L196">				return permits(binding.getWildcard(), visited);</span>
+			}
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">			if (!(binding.getTypeDeclaration().getJavaElement() instanceof IType type)</span>
+<span class="fc" id="L199">					|| !unrestricted.computeIfAbsent(type.getHandleIdentifier(), key -&gt; {</span>
+<span class="fc" id="L200">						var answer = find(type.getTypeQualifiedName('.'), type.getPackageFragment().getElementName(), null);</span>
+<span class="pc bpc" id="L201" title="1 of 4 branches missed.">						return answer != null &amp;&amp; answer.getAccessRestriction() == null;</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">					})) {</span>
+<span class="fc" id="L203">				return false;</span>
+			}
+<span class="fc bfc" id="L205" title="All 2 branches covered.">			for (ITypeBinding argument : binding.getTypeArguments()) {</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">				if (!permits(argument, visited)) {</span>
+<span class="fc" id="L207">					return false;</span>
+				}
+			}
+<span class="pc bpc" id="L210" title="1 of 4 branches missed.">			return binding.getDeclaringClass() == null || permits(binding.getDeclaringClass(), visited);</span>
+		}
+	}
 
 	/**
 	 * Helper class to store variable declaration statement information needed for rewriting.
@@ -146,44 +218,72 @@ import org.sandbox.jdt.internal.corext.util.TypeWideningAnalyzer;
 		final VariableDeclarationStatement statement;
 		final VariableDeclarationFragment fragment;
 
-<span class="fc" id="L149">		StatementInfo(VariableDeclarationStatement statement, VariableDeclarationFragment fragment) {</span>
-<span class="fc" id="L150">			this.statement = statement;</span>
-<span class="fc" id="L151">			this.fragment = fragment;</span>
-<span class="fc" id="L152">		}</span>
+<span class="fc" id="L221">		StatementInfo(VariableDeclarationStatement statement, VariableDeclarationFragment fragment) {</span>
+<span class="fc" id="L222">			this.statement = statement;</span>
+<span class="fc" id="L223">			this.fragment = fragment;</span>
+<span class="fc" id="L224">		}</span>
 	}
 
 	public void rewrite(UseGeneralTypeFixCore fixcore, ReferenceHolder&lt;Integer, TypeWidenHolder&gt; holder,
 			CompilationUnitRewrite cuRewrite, TextEditGroup group) {
 		
-<span class="fc" id="L158">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L159">		AST ast = cuRewrite.getAST();</span>
+<span class="fc" id="L230">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L231">		AST ast = cuRewrite.getAST();</span>
 		
-<span class="fc bfc" id="L161" title="All 2 branches covered.">		for (TypeWidenHolder typeHolder : holder.values()) {</span>
-<span class="pc bpc" id="L162" title="1 of 2 branches missed.">			if (typeHolder.nodesprocessed.contains(typeHolder.variableDeclarationStatement)) {</span>
-<span class="nc" id="L163">				continue;</span>
+<span class="fc bfc" id="L233" title="All 2 branches covered.">		for (TypeWidenHolder typeHolder : holder.values()) {</span>
+<span class="pc bpc" id="L234" title="1 of 2 branches missed.">			if (typeHolder.nodesprocessed.contains(typeHolder.variableDeclarationStatement)) {</span>
+<span class="nc" id="L235">				continue;</span>
 			}
 			
-<span class="fc" id="L166">			Type oldType = typeHolder.variableDeclarationStatement.getType();</span>
-<span class="fc" id="L167">			Type newType = cuRewrite.getImportRewrite().addImport(typeHolder.widenedType, ast);</span>
+<span class="fc" id="L238">			Type oldType = typeHolder.variableDeclarationStatement.getType();</span>
+<span class="fc" id="L239">			var imports = cuRewrite.getImportRewrite();</span>
+<span class="fc" id="L240">			var lexicalContext = new ContextSensitiveImportRewriteContext(oldType, imports);</span>
+<span class="fc" id="L241">			ImportRewriteContext context = lexicalContext;</span>
+<span class="fc bfc" id="L242" title="All 2 branches covered.">			Type oldBase = oldType instanceof ParameterizedType parameterized ? parameterized.getType() : oldType;</span>
+<span class="fc bfc" id="L243" title="All 2 branches covered.">			boolean qualified = oldBase.toString().indexOf('.') &gt;= 0</span>
+<span class="pc bpc" id="L244" title="1 of 2 branches missed.">					&amp;&amp; oldBase.toString().equals(typeHolder.currentType.getErasure().getQualifiedName());</span>
+<span class="fc bfc" id="L245" title="All 2 branches covered.">			if (qualified) {</span>
+				// Preserve intentional qualification. Importing a new package on demand
+				// can make existing wildcard-imported names ambiguous (for example SWT/AWT).
+<span class="fc" id="L248">				context = new ImportRewriteContext() {</span>
+					@Override
+					public int findInContext(String qualifier, String name, int kind) {
+<span class="pc bpc" id="L251" title="2 of 4 branches missed.">						return kind == KIND_TYPE &amp;&amp; (qualifier + '.' + name).equals(typeHolder.widenedType.getErasure().getQualifiedName())</span>
+<span class="pc" id="L252">								? RES_NAME_CONFLICT : lexicalContext.findInContext(qualifier, name, kind);</span>
+					}
+				};
+			}
+<span class="fc" id="L256">			Type newType = imports.addImport(typeHolder.widenedType, ast, context);</span>
+<span class="fc bfc" id="L257" title="All 2 branches covered.">			Type newBase = newType instanceof ParameterizedType parameterized ? parameterized.getType() : newType;</span>
+			// ImportRemover protects simple names even for qualified nodes. A
+			// qualification forced by a name clash must not retain the old import.
+<span class="fc" id="L260">			boolean qualifiedReplacement = newBase.toString().equals(typeHolder.widenedType.getErasure().getQualifiedName());</span>
+<span class="fc bfc" id="L261" title="All 2 branches covered.">			if (!qualifiedReplacement) {</span>
+<span class="fc" id="L262">				cuRewrite.getImportRemover().registerAddedImports(newType);</span>
+<span class="fc bfc" id="L263" title="All 2 branches covered.">			} else if (newType instanceof ParameterizedType parameterized) {</span>
+<span class="fc bfc" id="L264" title="All 2 branches covered.">				for (Object argument : parameterized.typeArguments()) {</span>
+<span class="fc" id="L265">					cuRewrite.getImportRemover().registerAddedImports((Type) argument);</span>
+				}
+			}
 
 			// Let JDT remove the old import only when no surviving reference
 			// needs it. Replacing the declaration alone can create an unused import.
-<span class="fc" id="L171">			cuRewrite.getImportRemover().registerRemovedNode(oldType);</span>
-<span class="fc" id="L172">			rewrite.replace(oldType, newType, group);</span>
+<span class="fc" id="L271">			cuRewrite.getImportRemover().registerRemovedNode(oldType);</span>
+<span class="fc" id="L272">			rewrite.replace(oldType, newType, group);</span>
 			
 			// Mark as processed
-<span class="fc" id="L175">			typeHolder.nodesprocessed.add(typeHolder.variableDeclarationStatement);</span>
+<span class="fc" id="L275">			typeHolder.nodesprocessed.add(typeHolder.variableDeclarationStatement);</span>
 		}
-<span class="fc" id="L177">	}</span>
+<span class="fc" id="L277">	}</span>
 
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L180" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L181">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L280" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L281">			return &quot;&quot;&quot;</span>
 				Map&lt;String, Integer&gt; map = new LinkedHashMap&lt;&gt;();
 				map.put(&quot;a&quot;, 1);
 				&quot;&quot;&quot;;
 		}
-<span class="nc" id="L186">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L286">		return &quot;&quot;&quot;</span>
 			LinkedHashMap&lt;String, Integer&gt; map = new LinkedHashMap&lt;&gt;();
 			map.put(&quot;a&quot;, 1);
 			&quot;&quot;&quot;;
