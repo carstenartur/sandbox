@@ -534,6 +534,22 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	}
 
 	@Override
+	public boolean visit(JavaDocRegion node) {
+		if (this.helperVisitor.hasPredicate(VisitorEnum.JavaDocRegion)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.JavaDocRegion, node);
+		}
+		return super.visit(node);
+	}
+
+	@Override
+	public boolean visit(JavaDocTextElement node) {
+		if (this.helperVisitor.hasPredicate(VisitorEnum.JavaDocTextElement)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.JavaDocTextElement, node);
+		}
+		return true;
+	}
+
+	@Override
 	public boolean visit(LabeledStatement node) {
 		if (this.helperVisitor.hasPredicate(VisitorEnum.LabeledStatement)) {
 			return this.helperVisitor.testPredicate(VisitorEnum.LabeledStatement, node);
@@ -1063,6 +1079,14 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	}
 
 	@Override
+	public boolean visit(TagProperty node) {
+		if (this.helperVisitor.hasPredicate(VisitorEnum.TagProperty)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.TagProperty, node);
+		}
+		return true;
+	}
+
+	@Override
 	public boolean visit(TextBlock node) {
 		if (this.helperVisitor.hasPredicate(VisitorEnum.TextBlock)) {
 			return this.helperVisitor.testPredicate(VisitorEnum.TextBlock, node);
@@ -1526,6 +1550,20 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	}
 
 	@Override
+	public void endVisit(JavaDocRegion node) {
+		if (this.helperVisitor.hasConsumer(VisitorEnum.JavaDocRegion)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.JavaDocRegion, node);
+		}
+	}
+
+	@Override
+	public void endVisit(JavaDocTextElement node) {
+		if (this.helperVisitor.hasConsumer(VisitorEnum.JavaDocTextElement)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.JavaDocTextElement, node);
+		}
+	}
+
+	@Override
 	public void endVisit(LabeledStatement node) {
 		if (this.helperVisitor.hasConsumer(VisitorEnum.LabeledStatement)) {
 			this.helperVisitor.acceptConsumer(VisitorEnum.LabeledStatement, node);
@@ -1880,6 +1918,13 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	public void endVisit(TagElement node) {
 		if (this.helperVisitor.hasConsumer(VisitorEnum.TagElement)) {
 			this.helperVisitor.acceptConsumer(VisitorEnum.TagElement, node);
+		}
+	}
+
+	@Override
+	public void endVisit(TagProperty node) {
+		if (this.helperVisitor.hasConsumer(VisitorEnum.TagProperty)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.TagProperty, node);
 		}
 	}
 

@@ -75,7 +75,7 @@ import org.sandbox.jdt.container.api.ContainerUsageProfile.WorkloadShape;
 import org.sandbox.jdt.container.api.UsageEvidence;
 import org.sandbox.jdt.container.api.UsageEvidence.Kind;
 import org.sandbox.jdt.internal.common.AstProcessing;
-import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.sandbox.jdt.internal.common.ImportNameBindings;
 
 /**
  * Classifies every binding-resolved use of one array candidate inside a compilation
@@ -107,12 +107,9 @@ public final class LocalArrayUsageAnalyzer {
 			return accumulator.toProfile();
 		}
 
-		ReferenceHolder<String, Object> traversalState= ReferenceHolder.create();
-		AstProcessing.independent(traversalState)
-				.on(SimpleName.class, (name, holder) -> {
-					classifyMatchingReference(name, seed.identity().bindingKey(), accumulator);
-					return true;
-				})
+		AstProcessing.independent()
+				.visit(SimpleName.class,
+						name -> classifyMatchingReference(name, seed.identity().bindingKey(), accumulator))
 				.build(compilationUnit);
 
 		if (!accumulator.bindingSeen()) {
@@ -135,7 +132,7 @@ public final class LocalArrayUsageAnalyzer {
 			SimpleName name,
 			String targetBindingKey,
 			Accumulator accumulator) {
-		IBinding resolved= name.resolveBinding();
+		IBinding resolved= ImportNameBindings.resolve(name);
 		if (!(resolved instanceof IVariableBinding variable)
 				|| !targetBindingKey.equals(variable.getVariableDeclaration().getKey())) {
 			return;
@@ -415,7 +412,7 @@ public final class LocalArrayUsageAnalyzer {
 		ASTNode parent= reference.getParent();
 		if (parent instanceof QualifiedName qualified
 				&& qualified.getName() == reference
-				&& hasBindingKey(qualified.resolveBinding(), bindingKey)) {
+				&& hasBindingKey(ImportNameBindings.resolve(qualified), bindingKey)) {
 			reference= qualified;
 		} else if (parent instanceof FieldAccess fieldAccess
 				&& fieldAccess.getName() == reference

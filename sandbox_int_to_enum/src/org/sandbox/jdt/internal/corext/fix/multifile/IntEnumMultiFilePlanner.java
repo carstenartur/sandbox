@@ -42,6 +42,7 @@ import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.IfStatement;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
@@ -77,6 +78,10 @@ public final class IntEnumMultiFilePlanner {
 	private static final String CLEANUP_ID= "int-to-enum"; //$NON-NLS-1$
 
 	private record ConstantDecl(String bindingKey, String name, EnumConstantValue value) {
+	}
+
+	private record ParsedSources(Map<String, CompilationUnit> roots,
+			Map<ImportDeclaration, IBinding> staticImports) {
 	}
 
 	private record FreezeResult(List<IntEnumCandidate> candidates,
@@ -170,12 +175,13 @@ public final class IntEnumMultiFilePlanner {
 					diagnostics(selectedUnits, true, List.of()));
 		}
 		long parseStarted= System.nanoTime();
-		Map<String, CompilationUnit> roots= parse(project, selectedUnits, monitor);
+		ParsedSources parsed= parse(project, selectedUnits, monitor);
+		Map<String, CompilationUnit> roots= parsed.roots();
 		long parseNanos= System.nanoTime() - parseStarted;
 		MultiFilePlanningBudget.checkCanceled(monitor);
 		List<CandidateBuilder> builders= discoverCandidates(roots, monitor);
 		MultiFilePlanningBudget.checkCanceled(monitor);
-		validateReferences(roots, builders, monitor);
+		validateReferences(roots, parsed.staticImports(), builders, monitor);
 		MultiFilePlanningBudget.checkCanceled(monitor);
 		validateGeneratedNames(roots.values(), builders, monitor);
 		MultiFilePlanningBudget.checkCanceled(monitor);
@@ -201,9 +207,10 @@ public final class IntEnumMultiFilePlanner {
 		return new MultiFileCleanUpDiagnostics(CLEANUP_ID, scope, candidates);
 	}
 
-	private static Map<String, CompilationUnit> parse(IJavaProject project, ICompilationUnit[] units,
+	private static ParsedSources parse(IJavaProject project, ICompilationUnit[] units,
 			IProgressMonitor monitor) {
 		Map<String, CompilationUnit> roots= new LinkedHashMap<>();
+		Map<ImportDeclaration, IBinding> staticImports= new IdentityHashMap<>();
 		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);
 		parser.setProject(project);
 		parser.setResolveBindings(true);
@@ -213,10 +220,18 @@ public final class IntEnumMultiFilePlanner {
 		parser.createASTs(units, new String[0], new ASTRequestor() {
 			@Override
 			public void acceptAST(ICompilationUnit source, CompilationUnit ast) {
+				// JDT releases the compiler scopes of source dependencies after this callback.
+				// Resolve static members now, while their declaring types can still be queried.
+				for (Object value : ast.imports()) {
+					ImportDeclaration declaration= (ImportDeclaration) value;
+					if (declaration.isStatic() && !declaration.isOnDemand()) {
+						staticImports.put(declaration, declaration.resolveBinding());
+					}
+				}
 				roots.put(source.getPrimary().getHandleIdentifier(), ast);
 			}
 		}, monitor);
-		return roots;
+		return new ParsedSources(roots, staticImports);
 	}
 
 	private static List<CandidateBuilder> discoverCandidates(Map<String, CompilationUnit> roots,
@@ -389,7 +404,7 @@ public final class IntEnumMultiFilePlanner {
 	}
 
 	private static void validateReferences(Map<String, CompilationUnit> roots,
-			List<CandidateBuilder> candidates, IProgressMonitor monitor) {
+			Map<ImportDeclaration, IBinding> staticImports, List<CandidateBuilder> candidates, IProgressMonitor monitor) {
 		Map<String, CandidateBuilder> byMethod= new HashMap<>();
 		Map<String, CandidateBuilder> byConstant= new HashMap<>();
 		for (CandidateBuilder candidate : candidates) {
@@ -404,6 +419,26 @@ public final class IntEnumMultiFilePlanner {
 			String unitHandle= entry.getKey();
 			CompilationUnit root= entry.getValue();
 			root.accept(new ASTVisitor() {
+				@Override
+				public boolean visit(ImportDeclaration node) {
+					MultiFilePlanningBudget.checkCanceled(monitor);
+					IBinding binding= staticImports.get(node);
+					if (binding instanceof IVariableBinding variable) {
+						CandidateBuilder candidate= byConstant.get(variable.getVariableDeclaration().getKey());
+						if (candidate != null) {
+							candidate.invalidate("UNSUPPORTED_CONSTANT_REFERENCE", //$NON-NLS-1$
+									"A modeled state constant is imported outside the supported comparisons and call arguments."); //$NON-NLS-1$
+						}
+					} else if (binding instanceof IMethodBinding method) {
+						CandidateBuilder candidate= byMethod.get(method.getMethodDeclaration().getKey());
+						if (candidate != null) {
+							candidate.invalidate("UNSUPPORTED_METHOD_REFERENCE", //$NON-NLS-1$
+									"The candidate method is imported rather than referenced only by direct invocations."); //$NON-NLS-1$
+						}
+					}
+					return false;
+				}
+
 				@Override
 				public boolean visit(MethodInvocation node) {
 					MultiFilePlanningBudget.checkCanceled(monitor);
