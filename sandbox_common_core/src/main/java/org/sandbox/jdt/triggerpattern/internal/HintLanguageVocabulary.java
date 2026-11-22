@@ -74,6 +74,7 @@ public final class HintLanguageVocabulary {
 			Map.entry("stringSubstringSafe", "Resolved String substring/length calls with stable local receiver and passive start index; declines internal comments"), //$NON-NLS-1$ //$NON-NLS-2$
 			Map.entry("stringIsBlankSafe", "Resolved String Unicode strip/emptiness calls eligible for isBlank; declines internal comments"), //$NON-NLS-1$ //$NON-NLS-2$
 			Map.entry("stringIndexOfContainsSafe", "Resolved String.indexOf(String) comparisons with target-stable arguments; declines comments and unsafe lambda bodies"), //$NON-NLS-1$ //$NON-NLS-2$
+			Map.entry("mapViewOperationSafe", "Resolved Map view operations outside Map implementations; declines comments and unknown bindings"), //$NON-NLS-1$ //$NON-NLS-2$
 			Map.entry("miscNoCommentsOrSwitch", "No comments in JDT's extended rewrite range or nested switch constructs"), //$NON-NLS-1$ //$NON-NLS-2$
 			Map.entry("miscPrimitiveBooleanConditionalSafe", "Resolved primitive boolean condition without target-sensitive expressions, direct lambda bodies or comments"), //$NON-NLS-1$ //$NON-NLS-2$
 			Map.entry("isStableValue", "Literal or resolved final local/parameter read; no field/array access or implicit conversion proof"), //$NON-NLS-1$ //$NON-NLS-2$

@@ -304,7 +304,7 @@ public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatem
             );
             
             if (streamExpression != null) {
-                renderer.preserveElementTypeImport(cuRewrite.getImportRemover());
+                renderer.preserveImports(cuRewrite);
                 ExpressionStatement newStatement = ast.newExpressionStatement(streamExpression);
                 rewrite.replace(visited, newStatement, group);
                 
@@ -322,7 +322,7 @@ public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatem
             Expression streamExpression = renderer.renderDirectForEach(
                     extracted.model.getSource(), java.util.List.of(), varName, terminal.ordered());
             if (streamExpression != null) {
-                renderer.preserveElementTypeImport(cuRewrite.getImportRemover());
+                renderer.preserveImports(cuRewrite);
                 rewrite.replace(visited, ast.newExpressionStatement(streamExpression), group);
                 if (extracted.model.getSource().type() == SourceDescriptor.SourceType.ARRAY) {
                     cuRewrite.getImportRewrite().addImport("java.util.Arrays"); //$NON-NLS-1$
@@ -356,7 +356,7 @@ public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatem
                     }
                 }
                 
-                renderer.preserveElementTypeImport(cuRewrite.getImportRemover());
+                renderer.preserveImports(cuRewrite);
                 rewrite.replace(visited, replacement, group);
                 if (directCollectFallback) {
                     if (extracted.model.getSource().type() == SourceDescriptor.SourceType.ARRAY) {
@@ -462,9 +462,6 @@ public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatem
         switch (model.getSource().type()) {
             case ARRAY:
                 cuRewrite.getImportRewrite().addImport("java.util.Arrays"); //$NON-NLS-1$
-                break;
-            case ITERABLE:
-                cuRewrite.getImportRewrite().addImport("java.util.stream.StreamSupport"); //$NON-NLS-1$
                 break;
             default:
                 break;

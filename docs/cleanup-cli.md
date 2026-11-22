@@ -95,15 +95,27 @@ cleanup.remove_unused_imports=true
 cleanup.add_missing_override_annotations=true
 cleanup.use_lambda=true
 
-# Sandbox-specific cleanups
-REMOVE_UNNECESSARY_ARRAY_CREATION=true
-USE_STRINGBUILDER=true
+# Former Sandbox cleanups now built into Eclipse JDT
+cleanup.remove_unnecessary_array_creation=true
+cleanup.stringbuffer_to_stringbuilder=true
+
+# Sandbox encoding cleanup, preserving the original encoding behavior
+cleanup.explicit_encoding=true
+cleanup.explicit_encoding_keep_behavior=true
+cleanup.explicit_encoding_insert_utf8=false
+cleanup.explicit_encoding_aggregate_to_utf8=false
 ```
 
 Predefined profiles are available in `.github/cleanup-profiles/`:
 - `minimal.properties` — Basic cleanups only
 - `standard.properties` — Balanced approach
-- `aggressive.properties` — Maximum transformations
+- `aggressive.properties` — Adds stream conversion, preserving charset
+  modernization, Platform status factories, and strict JUnit 3/4 migration
+
+The aggressive profile explicitly selects these families; it does not enable
+every optional Sandbox feature or incompatible transformation mode. JUnit
+migration requires the target project's Jupiter dependencies and complete
+related source scope.
 
 ## JSON Report Format
 

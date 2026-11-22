@@ -14,6 +14,7 @@
 package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -54,6 +55,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
@@ -67,7 +69,7 @@ import org.sandbox.jdt.internal.corext.fix.IntToEnumFixCore;
  * <p>The detector deliberately accepts only candidates whose complete data flow
  * can be proven inside the current compilation unit. In particular, constants
  * and the migrated method must be private, every use of the state parameter must
- * be one of the recognised equality comparisons or the switch selector, and every call site must pass
+ * be a recognised comparison, switch selector, or proven private table read, and every call site must pass
  * one of the recognised constants. This keeps the ordinary single-file cleanup
  * safe while coordinated package-scoped migrations use the separate project-wide
  * planner.</p>
@@ -96,6 +98,10 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 		public TypeDeclaration enclosingType;
 		/** Constant expressions in conditions and call sites to replace. */
 		public Map<Expression, String> constantReferences = new LinkedHashMap<>();
+		/** Implicit arguments in nested callers where an inherited name hides the generated enum. */
+		final Set<Expression> ownerQualifiedArguments = new HashSet<>();
+		/** State references used directly to read a proven private lookup table. */
+		final List<SimpleName> ordinalIndexes = new ArrayList<>();
 	}
 
 	private static final class ConstantInfo {
@@ -293,7 +299,7 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 			candidate.holder.constantFields.put(info.name, info.field);
 		}
 
-		if (!collectCallSiteReplacements(compilationUnit, candidate, enumConstants)
+		if (!collectCallSiteReplacements(compilationUnit, candidate, enumConstants, enumName)
 				|| !validateAllReferences(compilationUnit, candidate, enumConstants)) {
 			return null;
 		}
@@ -301,7 +307,7 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 	}
 
 	private static boolean collectCallSiteReplacements(CompilationUnit compilationUnit, Candidate candidate,
-			Map<String, ConstantInfo> enumConstants) {
+			Map<String, ConstantInfo> enumConstants, String enumName) {
 		AtomicBoolean valid = new AtomicBoolean(true);
 		compilationUnit.accept(new ASTVisitor() {
 			@Override
@@ -328,11 +334,40 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 					valid.set(false);
 					return false;
 				}
-				candidate.holder.constantReferences.put(unparenthesize(argument), constant.name);
+				Expression reference = unparenthesize(argument);
+				if (!planArgumentQualifier(reference, candidate.holder, enumName)) {
+					valid.set(false);
+					return false;
+				}
+				candidate.holder.constantReferences.put(reference, constant.name);
 				return true;
 			}
 		});
 		return valid.get();
+	}
+
+	private static boolean planArgumentQualifier(Expression argument, IntConstantHolder data, String enumName) {
+		if (argument instanceof QualifiedName || findEnclosingType(argument) == data.enclosingType) {
+			return true;
+		}
+		// A nested caller can inherit a field or type whose name is absent from the owner's source.
+		var analyzer = new ScopeAnalyzer((CompilationUnit) argument.getRoot());
+		IBinding[] scope = analyzer.getDeclarationsInScope(argument.getStartPosition(),
+				ScopeAnalyzer.VARIABLES | ScopeAnalyzer.TYPES | ScopeAnalyzer.CHECK_VISIBILITY);
+		boolean hidesEnum = false;
+		boolean hidesOwner = false;
+		String ownerName = data.enclosingType.getName().getIdentifier();
+		for (IBinding binding : scope) {
+			hidesEnum |= enumName.equals(binding.getName());
+			hidesOwner |= ownerName.equals(binding.getName()) && !binding.isEqualTo(data.enclosingType.resolveBinding());
+		}
+		if (hidesEnum) {
+			if (hidesOwner) {
+				return false;
+			}
+			data.ownerQualifiedArguments.add(argument);
+		}
+		return true;
 	}
 
 	/**
@@ -417,6 +452,8 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 
 	private static boolean validateAllReferences(CompilationUnit compilationUnit, Candidate candidate,
 			Map<String, ConstantInfo> enumConstants) {
+		boolean canUseOrdinal = hasOrdinalValues(enumConstants.values());
+		Map<String, Boolean> localTables = new HashMap<>();
 		AtomicBoolean valid = new AtomicBoolean(true);
 		Set<String> enumConstantNames = new HashSet<>();
 		for (ConstantInfo constant : enumConstants.values()) {
@@ -443,6 +480,10 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 					} else if (sameVariable(candidate.stateBinding, variableBinding)
 							&& node != candidate.holder.parameter.getName()
 							&& !candidate.stateReferences.contains(containingExpression(node))) {
+						if (canUseOrdinal && PrivateEnumLookup.isLocalIndex(node, candidate.holder.method, localTables)) {
+							candidate.holder.ordinalIndexes.add(node);
+							return true;
+						}
 						valid.set(false);
 						return false;
 					}
@@ -608,6 +649,17 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 		return -1;
 	}
 
+	private static boolean hasOrdinalValues(Iterable<ConstantInfo> constants) {
+		long position = 0;
+		for (ConstantInfo constant : constants) {
+			if (!"int".equals(constant.value.typeName()) || !Long.valueOf(position).equals(constant.value.value())) { //$NON-NLS-1$
+				return false;
+			}
+			position++;
+		}
+		return true;
+	}
+
 	private static boolean hasDistinctValues(Iterable<ConstantInfo> constants) {
 		Set<EnumConstantValue> values = new HashSet<>();
 		for (ConstantInfo constant : constants) {
@@ -698,11 +750,32 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 
 			Type enumType = ast.newSimpleType(ast.newSimpleName(enumName));
 			rewrite.replace(data.parameter.getType(), enumType, group);
-			for (Map.Entry<Expression, String> reference : data.constantReferences.entrySet()) {
-				String enumConstantName = reference.getValue().substring(prefix.length());
-				Name replacement = ast.newName(enumName + "." + enumConstantName); //$NON-NLS-1$
-				rewrite.replace(reference.getKey(), replacement, group);
+			PrivateEnumLookup.rewriteIndexes(data.ordinalIndexes, rewrite, group);
+			rewriteConstantReferences(data, prefix, enumName, rewrite, group);
+		}
+	}
+
+	static void rewriteConstantReferences(IntConstantHolder data, String prefix, String enumName,
+			ASTRewrite rewrite, TextEditGroup group) {
+		AST ast = rewrite.getAST();
+		for (Map.Entry<Expression, String> entry : data.constantReferences.entrySet()) {
+			Expression reference = entry.getKey();
+			if (reference.getParent() instanceof SwitchCase) {
+				continue; // Switch labels are rewritten separately as unqualified enum constants.
 			}
+			Name enumType;
+			if (reference instanceof QualifiedName qualified) {
+				// Keep the original type qualifier that already resolved in the caller's scope.
+				Name owner = (Name) rewrite.createCopyTarget(qualified.getQualifier());
+				enumType = ast.newQualifiedName(owner, ast.newSimpleName(enumName));
+			} else if (data.ownerQualifiedArguments.contains(reference)) {
+				SimpleName owner = ast.newSimpleName(data.enclosingType.getName().getIdentifier());
+				enumType = ast.newQualifiedName(owner, ast.newSimpleName(enumName));
+			} else {
+				enumType = ast.newSimpleName(enumName);
+			}
+			String constant = entry.getValue().substring(prefix.length());
+			rewrite.replace(reference, ast.newQualifiedName(enumType, ast.newSimpleName(constant)), group);
 		}
 	}
 
