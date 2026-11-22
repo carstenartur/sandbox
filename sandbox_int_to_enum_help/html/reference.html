@@ -21,6 +21,14 @@
    <p>Open-ended arithmetic and unresolved source uses prevent automatic conversion. Reflection, native boundaries,
       external consumers and persistence/wire contracts are outside the supported closed source domain.</p>
 
+   <h2>Private lookup-table indices</h2>
+   <p>A private source-only conversion can retain a read such as <code>labels[state]</code> as
+      <code>labels[state.ordinal()]</code> when the original integer constants are exactly
+      <code>0, 1, ...</code> in enum declaration order. The one-dimensional table must be freshly allocated
+      and confined to local element reads. Writes, escaping tables and external buffers do not satisfy this proof.</p>
+   <p>The table order is coupled to the enum declaration: a later enum reorder must update the table too.
+      This does not make <code>ordinal()</code> a persisted, serialized or wire identity.</p>
+
    <h2>Coordinated preview-selection contract</h2>
    <p>A project-wide conversion may be proven safe only as a closed set of declaration, signature, caller,
       comparison, and switch changes. With the pinned optional patched JDT UI host, that set is exposed as one

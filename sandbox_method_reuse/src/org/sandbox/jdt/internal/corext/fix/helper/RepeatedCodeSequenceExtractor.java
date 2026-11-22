@@ -11,6 +11,7 @@
 package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -24,6 +25,8 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubMonitor;
 
+import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.text.Document;
 import org.eclipse.ltk.core.refactoring.Change;
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 
@@ -37,9 +40,11 @@ import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.NodeFinder;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.refactoring.CompilationUnitChange;
 import org.eclipse.jdt.internal.corext.refactoring.code.ExtractMethodRefactoring;
@@ -72,12 +77,12 @@ public final class RepeatedCodeSequenceExtractor {
 	private record PreparedExtraction(ExtractMethodRefactoring refactoring, String ownerName,
 			int score, int statementCount, int duplicateCount, int sourceOffset) {
 
-		ICleanUpFix toCleanUpFix() {
+		ICleanUpFix toCleanUpFix(String source) {
 			return monitor -> {
 				SubMonitor progress= SubMonitor.convert(monitor, 3);
 				CompilationUnitChange change= extract(refactoring, progress.split(1));
 				if (ownerName != null && canMakeGeneratedMethodStatic(change, ownerName,
-						refactoring.getMethodName(), progress.split(1))) {
+						refactoring.getMethodName(), source, progress.split(1))) {
 					// Extract Method uses this modifier mask to build the declaration and calculate type parameters.
 					refactoring.setVisibility(Modifier.PRIVATE | Modifier.STATIC);
 					try {
@@ -101,12 +106,13 @@ public final class RepeatedCodeSequenceExtractor {
 	}
 
 	private static boolean canMakeGeneratedMethodStatic(CompilationUnitChange change, String ownerName,
-			String methodName, IProgressMonitor monitor) throws CoreException {
+			String methodName, String source, IProgressMonitor monitor) throws CoreException {
 		ICompilationUnit unit= change.getCompilationUnit();
 		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
 		parser.setProject(unit.getJavaProject());
 		parser.setUnitName(unit.getPath().toPortableString());
-		parser.setSource(change.getPreviewContent(monitor).toCharArray());
+		parser.setSource(previewSource(change, source).toCharArray());
+		parser.setWorkingCopyOwner(unit.getOwner());
 		var options= unit.getOptions(true);
 		options.put(JavaCore.COMPILER_PB_MISSING_STATIC_ON_METHOD, JavaCore.WARNING);
 		options.put(JavaCore.COMPILER_PB_POTENTIALLY_MISSING_STATIC_ON_METHOD, JavaCore.WARNING);
@@ -150,6 +156,7 @@ public final class RepeatedCodeSequenceExtractor {
 		if (unit == null || root == null) {
 			return null;
 		}
+		String source= unit.getSource();
 		int minimumStatements= normalizeMinimum(configuredMinimum);
 		List<List<Candidate>> groups= candidateGroups(root, minimumStatements);
 		PreparedExtraction best= null;
@@ -157,7 +164,7 @@ public final class RepeatedCodeSequenceExtractor {
 		for (List<Candidate> group : groups) {
 			for (Candidate candidate : group) {
 				if (checks++ >= MAX_REFACTORING_CHECKS) {
-					return best == null ? null : best.toCleanUpFix();
+					return validatedFix(best, unit, source);
 				}
 				if (!hasJdtDuplicate(candidate)) {
 					continue;
@@ -171,7 +178,105 @@ public final class RepeatedCodeSequenceExtractor {
 				// JDT determines each candidate's actual duplicate set.
 			}
 		}
-		return best == null ? null : best.toCleanUpFix();
+		return validatedFix(best, unit, source);
+	}
+
+
+	private record ProblemKey(boolean error, int id, List<String> arguments) {
+	}
+
+	private static ICleanUpFix validatedFix(PreparedExtraction extraction, ICompilationUnit unit,
+			String source) throws CoreException {
+		if (extraction == null) {
+			return null;
+		}
+		return validateFix(extraction.toCleanUpFix(source), unit, source);
+	}
+
+	/** Checks both extraction and existing-method delegation against the complete source unit. */
+	public static ICleanUpFix validateFix(ICleanUpFix fix, ICompilationUnit unit, String source) throws CoreException {
+		CompilationUnitChange change= fix.createChange(new NullProgressMonitor());
+		try {
+			Map<ProblemKey, Integer> before= compilerProblems(unit, source);
+			Map<ProblemKey, Integer> after= compilerProblems(unit, previewSource(change, source));
+			for (var problem : after.entrySet()) {
+				if (problem.getValue() > before.getOrDefault(problem.getKey(), 0)) {
+					// JDT's semantic checks can accept duplicate replacements which fail
+					// compilation or introduce diagnostics in the complete generated unit.
+					return null;
+				}
+			}
+			return fix;
+		} finally {
+			change.dispose();
+		}
+	}
+
+	private static String previewSource(CompilationUnitChange change, String source) throws CoreException {
+		// Cleanup fixpoint rounds use private working copies. TextChange's resource
+		// preview can read an older file-buffer document instead of that exact source.
+		Document document= new Document(source);
+		try {
+			change.getEdit().copy().apply(document);
+		} catch (BadLocationException exception) {
+			throw new CoreException(Status.error("Cannot preview repeated sequence extraction", exception)); //$NON-NLS-1$
+		}
+		return document.get();
+	}
+
+	private static Map<ProblemKey, Integer> compilerProblems(ICompilationUnit unit, String source) {
+		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
+		parser.setProject(unit.getJavaProject());
+		parser.setUnitName(unit.getPath().toPortableString());
+		parser.setSource(source.toCharArray());
+		parser.setWorkingCopyOwner(unit.getOwner());
+		var options= unit.getOptions(true);
+		// Check optional warnings in the preview without changing project preferences.
+		// A later warning-profile change must not expose diagnostics introduced here.
+		options.replaceAll((key, severity) -> key.startsWith(JavaCore.PLUGIN_ID + ".compiler.problem.") //$NON-NLS-1$
+				&& (JavaCore.IGNORE.equals(severity) || JavaCore.INFO.equals(severity)) ? JavaCore.WARNING : severity);
+		options.put(JavaCore.COMPILER_PB_MAX_PER_UNIT, "0"); //$NON-NLS-1$
+		parser.setCompilerOptions(options);
+		parser.setResolveBindings(true);
+		CompilationUnit root= (CompilationUnit) parser.createAST(null);
+		Map<ProblemKey, Integer> problems= new LinkedHashMap<>();
+		for (IProblem problem : root.getProblems()) {
+			if (problem.isError() || problem.isWarning()) {
+				ProblemKey key= new ProblemKey(problem.isError(), problem.getID(), problemArguments(problem, root));
+				problems.merge(key, 1, Integer::sum);
+			}
+		}
+		return problems;
+	}
+
+	private static List<String> problemArguments(IProblem problem, CompilationUnit root) {
+		String[] arguments= problem.getArguments();
+		if (problem.getID() == IProblem.PotentiallyUnclosedCloseable && arguments.length == 1
+				&& ("<unassigned Closeable value>".equals(arguments[0]) //$NON-NLS-1$
+						|| arguments[0].matches("<unassigned Closeable value from line [1-9][0-9]*>"))) { //$NON-NLS-1$
+			int start= problem.getSourceStart();
+			int length= problem.getSourceEnd() - start + 1;
+			if (start >= 0 && length > 0
+					&& NodeFinder.perform(root, start, length) instanceof Expression expression
+					&& expression.getStartPosition() == start && expression.getLength() == length) {
+				ASTNode owner= expression;
+				while (owner != null && !(owner instanceof MethodDeclaration)) owner= owner.getParent();
+				if (owner != null) {
+					var method= ((MethodDeclaration) owner).resolveBinding();
+					if (method != null && !method.isRecovered() && method.getDeclaringClass() != null
+							&& !method.getDeclaringClass().isRecovered() && !method.getDeclaringClass().isLocal()
+							&& !method.getDeclaringClass().isAnonymous()) {
+						String key= method.getMethodDeclaration().getKey();
+						if (key != null && !key.isBlank()) {
+							// Existing leaks in callers cannot credit a new leak in an extracted
+							// helper. Source-line shifts alone do not change resource identity.
+							return List.of("<unassigned Closeable value>", key, expression.toString()); //$NON-NLS-1$
+						}
+					}
+				}
+			}
+		}
+		return Arrays.asList(arguments);
 	}
 
 	/** Normalizes profile values to a conservative supported range. */

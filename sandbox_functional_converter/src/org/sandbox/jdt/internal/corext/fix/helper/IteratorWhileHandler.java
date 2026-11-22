@@ -35,7 +35,6 @@ import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCo
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.functional.core.model.LoopModel;
-import org.sandbox.functional.core.model.SourceDescriptor;
 import org.sandbox.functional.core.terminal.CollectTerminal;
 import org.sandbox.functional.core.terminal.ReduceTerminal;
 import org.sandbox.functional.core.terminal.TerminalOperation;
@@ -206,6 +205,7 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
 		if (streamExpression == null) {
 			return;
 		}
+		renderer.preserveImports(cuRewrite);
 
 		Statement replacement;
 		if (accumulatorDeclaration != null) {
@@ -216,6 +216,12 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
 		}
 
 		rewrite.replace(visited, replacement, group);
+		// The element declaration disappears along with iterator.next(). Its type
+		// can be the last source use of an explicit import, independently of Iterator.
+		if (conversion.pattern().loopBody() instanceof Block body
+				&& body.statements().get(0) instanceof VariableDeclarationStatement element) {
+			cuRewrite.getImportRemover().registerRemovedNode(element.getType());
+		}
 		if (visited instanceof WhileStatement) {
 			Statement iteratorDeclaration= findPreviousStatement((Statement) visited);
 			if (iteratorDeclaration != null) {
@@ -272,7 +278,7 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
 				(VariableDeclarationFragment) original.fragments().get(0);
 		VariableDeclarationFragment fragment= ast.newVariableDeclarationFragment();
 		fragment.setName(ast.newSimpleName(originalFragment.getName().getIdentifier()));
-		fragment.setInitializer((Expression) ASTNode.copySubtree(ast, initializer));
+		fragment.setInitializer(initializer);
 		VariableDeclarationStatement declaration= ast.newVariableDeclarationStatement(fragment);
 		declaration.setType((Type) ASTNode.copySubtree(ast, original.getType()));
 		declaration.modifiers().addAll(ASTNode.copySubtrees(ast, original.modifiers()));
@@ -280,9 +286,6 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
 	}
 
 	private void addRequiredImports(CompilationUnitRewrite cuRewrite, LoopModel model) {
-		if (model.getSource().type() == SourceDescriptor.SourceType.ITERABLE) {
-			cuRewrite.getImportRewrite().addImport("java.util.stream.StreamSupport"); //$NON-NLS-1$
-		}
 		if (model.getTerminal() instanceof CollectTerminal) {
 			cuRewrite.getImportRewrite().addImport("java.util.stream.Collectors"); //$NON-NLS-1$
 		}

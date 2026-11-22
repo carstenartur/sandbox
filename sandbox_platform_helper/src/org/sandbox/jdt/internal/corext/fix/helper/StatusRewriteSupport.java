@@ -35,6 +35,7 @@ import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.triggerpattern.cleanup.EncodingSourceRewrite;
 
 /** Target-API and binding housekeeping for the actual Status rewrite only. */
 final class StatusRewriteSupport {
@@ -136,6 +137,7 @@ final class StatusRewriteSupport {
 			rewrite.setProperty(STATE_KEY, state);
 		}
 		for (Expression expression : discarded) {
+			EncodingSourceRewrite.record(cuRewrite, expression);
 			state.removed.add(expression);
 			state.collect(cuRewrite.getRoot(), expression);
 		}
@@ -214,6 +216,7 @@ final class StatusRewriteSupport {
 					var fragments= cuRewrite.getASTRewrite().getListRewrite(field, FieldDeclaration.FRAGMENTS_PROPERTY);
 					ASTNode deleted= fragments.getRewrittenList().size() == 1 ? field : fragment;
 					ASTNodes.removeButKeepComment(cuRewrite.getASTRewrite(), deleted, group);
+					EncodingSourceRewrite.record(cuRewrite, deleted);
 					cuRewrite.getImportRemover().registerRemovedNode(deleted);
 					removed.add(fragment);
 					removed.add(deleted);

@@ -189,16 +189,15 @@ public class E1 {
 			"""
 					package test1;
 
-					import java.io.FileOutputStream;
+					import java.io.FileWriter;
 					import java.io.IOException;
-					import java.io.OutputStreamWriter;
 					import java.io.Writer;
 					import java.nio.charset.Charset;
 
 					public class E1 {
 					    void method(String filename) {
 					        try {
-					            Writer fw=new OutputStreamWriter(new FileOutputStream(filename), Charset.defaultCharset());
+					            Writer fw=new FileWriter(filename, Charset.defaultCharset());
 					            } catch (IOException e) {
 					            e.printStackTrace();
 					            }

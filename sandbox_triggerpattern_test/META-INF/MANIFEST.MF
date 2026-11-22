@@ -9,6 +9,7 @@ Bundle-RequiredExecutionEnvironment: JavaSE-25
 Require-Bundle: org.junit,
  sandbox_test_commons,
  org.eclipse.jdt.core,
+ org.eclipse.jdt.launching,
  org.eclipse.core.expressions,
  org.eclipse.core.runtime,
  org.eclipse.ui.views,

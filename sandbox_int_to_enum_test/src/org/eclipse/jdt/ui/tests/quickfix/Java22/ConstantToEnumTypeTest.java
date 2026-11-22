@@ -23,6 +23,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.jar.JarEntry;
+import java.util.jar.JarOutputStream;
 import java.util.stream.Stream;
 
 import javax.tools.ToolProvider;
@@ -32,9 +34,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
@@ -133,9 +137,126 @@ public class ConstantToEnumTypeTest {
 		verifyMigration(scenario, true, false);
 	}
 
+	static Stream<String> indexedBodies() {
+		return Stream.of("""
+				int[] values = { 31, 43 };
+				if (state == STATUS_A) return values[state];
+				else if (state == STATUS_B) return values[(state)] + 10;
+				return -1;
+				""", """
+				int[] values = { 31, 43 };
+				switch (state) {
+				case STATUS_A: return values[state];
+				case STATUS_B: return values[(state)] + 10;
+				default: return -1;
+				}
+				""", """
+				if (state == STATUS_B) return new int[] { 31, 43 }[state] + 10;
+				else if (state == STATUS_A) return new int[] { 31, 43 }[state];
+				return -1;
+				""");
+	}
+
+	@ParameterizedTest
+	@MethodSource("indexedBodies")
+	void privateOrdinalArrayIndex(String body) throws Exception {
+		String source= """
+				package test1;
+				public class Example {
+				    private static final int STATUS_A = 0, STATUS_B = 1;
+				    private static int process(int state) {
+				        BODY
+				    }
+				    public static String run() { return process(STATUS_A) + ":" + process(STATUS_B); }
+				}
+				class Example$Unrelated {}
+				""".replace("BODY", body);
+		String preview= verifyMigration(source, false, true);
+		assertTrue(preview.contains("state.ordinal()"), preview);
+	}
+
+	@ParameterizedTest
+	@MethodSource("indexedBodies")
+	void nestedOwnerKeepsQualifiedEnumAtEnclosingAndSiblingCallSites(String body) throws Exception {
+		String source= """
+				package test1;
+				public class Example {
+				    static class Base { enum Status { A } }
+				    static class Owner {
+				        private static final int STATUS_A = 0, STATUS_B = 1;
+				        private static int process(int state) {
+				            BODY
+				        }
+				        static class Child extends Base {
+				            static int call() { return process(STATUS_A); }
+				        }
+				    }
+				    static class Caller {
+				        enum Status { B }
+				        static int call() { return Owner.process(Example.Owner.STATUS_B); }
+				    }
+				    public static String run() {
+				        return Owner.process(Owner.STATUS_A) + ":" + Caller.call() + ":" + Owner.Child.call();
+				    }
+				}
+				""".replace("BODY", body);
+		String preview= verifyMigration(source, false, true);
+		assertEquals("31:53:31", execute(new String[] { preview }, false, "preview"));
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings= {"same unit", "primary", "secondary", "unsaved secondary", "binary", "member"})
+	void skipsLocalTableMigrationWhenExistingTypeOwnsTheEnumBinaryName(String location) throws Exception {
+		String alias= "class Example$Status {}";
+		String source= new Scenario("int", "0", "1").source(false)
+				.replace("return 17;", "return new int[] { 17, 29 }[state];");
+		if ("same unit".equals(location)) {
+			source+= "\n" + alias;
+		} else if ("member".equals(location)) {
+			source= source.replace("class Example {",
+					"class Example { static class Inner$Status {} static class Inner {") + "}";
+		} else if ("binary".equals(location)) {
+			addBinaryAlias();
+		} else if ("unsaved secondary".equals(location)) {
+			var sibling= unit("Other.java", "package test1; class Other {}");
+			sibling.getBuffer().setContents("package test1; class Other {} " + alias);
+			assertTrue(sibling.hasUnsavedChanges());
+		} else {
+			String name= "primary".equals(location) ? "Example$Status.java" : "Other.java";
+			unit(name, "package test1; " + alias);
+		}
+		ICompilationUnit owner= unit("Example.java", source);
+		var cleanup= cleanup(false);
+		cleanup.checkPreConditions(context.getJavaProject(), new ICompilationUnit[] { owner }, null);
+		assertNull(cleanup.createFix(new CleanUpContext(owner, parse(owner))),
+				"The existing type already owns the proposed enum class file");
+		assertEquals(source, owner.getSource());
+	}
+
+	private void addBinaryAlias() throws Exception {
+		Path file= temporary.resolve("Example$Status.java");
+		Files.writeString(file, "package test1; public class Example$Status {}");
+		assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null,
+				"--release", "22", "-d", temporary.toString(), file.toString()));
+		String entry= "test1/Example$Status.class";
+		Path library= temporary.resolve("existing-domain.jar");
+		try (var jar= new JarOutputStream(Files.newOutputStream(library))) {
+			jar.putNextEntry(new JarEntry(entry));
+			Files.copy(temporary.resolve(entry), jar);
+		}
+		var project= context.getJavaProject();
+		List<IClasspathEntry> classpath= new ArrayList<>(List.of(project.getRawClasspath()));
+		classpath.add(JavaCore.newLibraryEntry(org.eclipse.core.runtime.IPath.fromOSString(library.toString()), null, null));
+		project.setRawClasspath(classpath.toArray(IClasspathEntry[]::new), null);
+	}
+
 	private void verifyMigration(Scenario scenario, boolean coordinated, boolean apply) throws Exception {
+		verifyMigration(scenario.source(coordinated), coordinated, apply);
+	}
+
+	private String verifyMigration(String source, boolean coordinated, boolean apply) throws Exception {
 		List<ICompilationUnit> units= new ArrayList<>();
-		units.add(unit("Example.java", scenario.source(coordinated)));
+		units.add(unit("Example.java", source));
 		if (coordinated) units.add(unit("Client.java", """
 				package test1;
 				public class Client {
@@ -151,7 +272,7 @@ public class ConstantToEnumTypeTest {
 		try {
 			for (ICompilationUnit unit : units) {
 				var fix= cleanup.createFix(new CleanUpContext(unit, parse(unit)));
-				assertNotNull(fix, scenario.toString());
+				assertNotNull(fix, source);
 				var change= fix.createChange(null);
 				String preview= change.getPreviewContent(null);
 				assertTrue(preview.contains("Status"));
@@ -161,7 +282,7 @@ public class ConstantToEnumTypeTest {
 			for (int i= 0; i < units.size(); i++) assertEquals(originals[i], units.get(i).getSource());
 			if (!apply) {
 				assertEquals(expected, execute(previews.toArray(String[]::new), coordinated, "preview"));
-				return;
+				return previews.get(0);
 			}
 			changes.initializeValidationData(null);
 			assertFalse(changes.isValid(null).hasFatalError());
@@ -181,12 +302,32 @@ public class ConstantToEnumTypeTest {
 				for (int i= 0; i < units.size(); i++) assertEquals(originals[i], units.get(i).getSource());
 			} finally { undo.dispose(); }
 		} finally { changes.dispose(); }
+		return previews.get(0);
 	}
 
 	static Stream<String> rejectedSources() {
 		Scenario strings= new Scenario("String", "\"a\"", "\"b\"");
 		String source= strings.source(false);
+		String indexed= new Scenario("int", "0", "1").source(false)
+				.replace("return 17;", "return new int[] {17, 29}[state];");
+		String table= indexed.replace("if (state == STATUS_A)", "int[] table = {17, 29}; if (state == STATUS_A)")
+				.replace("new int[] {17, 29}[state]", "table[state]");
 		return Stream.of(
+				table.replace("table[state]", "table[state]++"),
+				table.replace("return table[state];", "{ System.out.println(table); return table[state]; }"),
+				table.replace("int[] table = {17, 29};", "int[] table = external;")
+						.replace("public class Example {", "public class Example { public static int[] external;"),
+				indexed.replace("int STATUS_", "byte STATUS_").replace("process(int state)", "process(byte state)"),
+				indexed.replace("int STATUS_B = 1", "int STATUS_B = 2"),
+				indexed.replace("int STATUS_B = 1", "int STATUS_B = 0").replace("int STATUS_A = 0", "int STATUS_A = 1"),
+				indexed.replace("return 29;", "return state;"),
+				indexed.replace("[state]", "[state + 1]"),
+				indexed.replace("process(STATUS_B)", "process(3)"),
+				indexed.replace("public static String run()", """
+						static class Caller extends Base {
+						    static int call(int Example, int test1) { return Example + test1 + process(STATUS_A); }
+						}
+						public static String run()""") + "\nclass Base { enum Status { A } }\n",
 				source.replace("public static String run()", "static Status other() { return new Status(); } public static String run()")
 						+ "\nclass Status {}\n",
 				source.replace("if (state == STATUS_A)", "int Status = 0; if (state == STATUS_A)"),

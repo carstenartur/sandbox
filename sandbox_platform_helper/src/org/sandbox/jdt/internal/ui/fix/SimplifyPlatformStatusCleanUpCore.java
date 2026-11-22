@@ -38,6 +38,7 @@ import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 import org.sandbox.jdt.internal.corext.fix.SimplifyPlatformStatusFixCore;
+import org.sandbox.jdt.triggerpattern.cleanup.NlsAwareCleanUpFix;
 
 public class SimplifyPlatformStatusCleanUpCore extends AbstractCleanUp {
 	public SimplifyPlatformStatusCleanUpCore(final Map<String, String> options) {
@@ -75,7 +76,7 @@ public class SimplifyPlatformStatusCleanUpCore extends AbstractCleanUp {
 		if (operations.isEmpty()) {
 			return null;
 		}
-		return new CompilationUnitRewriteOperationsFixCore(PlatformStatusCleanUpFix_refactor, compilationUnit,
+		return new NlsAwareCleanUpFix(PlatformStatusCleanUpFix_refactor, compilationUnit,
 				operations.toArray(
 						new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange[0]));
 	}
