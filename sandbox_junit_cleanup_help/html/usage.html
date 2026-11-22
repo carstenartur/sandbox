@@ -93,6 +93,32 @@ public class MyTest {
       because these two examples convert successfully: other tests, custom runners, rules, and dependencies may
       still require them. Compare the same test identities, results, and invocation counts before and after migration.</p>
 
+   <h2 id="staged-migration">Reuse a fixture during a staged migration</h2>
+   <p>The separate <code>io.github.carstenartur:sandbox-junit-migration-support</code> test dependency provides
+      manual lifecycle adapters. Keep the fixture instance so migrated tests can still use its helper methods.
+      For accessible setup and teardown hooks, a former <code>@Rule</code> can use an instance registration:</p>
+   <pre>private final SharedSetup fixture = new SharedSetup();
+
+@org.junit.jupiter.api.extension.RegisterExtension
+final org.junit.jupiter.api.extension.Extension extension =
+        org.sandbox.junit.jupiter.ExternalResourceExtension.perTest(fixture::before, fixture::after);</pre>
+   <p>For a former <code>@ClassRule</code>, retain the static fixture and register <code>perClass</code> on a
+      static extension field. A fixture class used in both scopes needs separate registrations at the original
+      scopes. Protected hooks require a companion in the fixture's package or an appropriate subclass.
+      Preserve inherited setup and review ordering with the other rules and extensions.</p>
+   <p>The support jar currently requires a Java 25 test runtime. The cleanup does not add the dependency or
+      generate these mixed-lifecycle adapters automatically. The bridge covers <code>before</code>/<code>after</code>
+      hooks; a rule that overrides <code>apply</code> needs its additional behavior migrated explicitly.
+      Keep Vintage while unmigrated JUnit 4 tests still need it.</p>
+   <p>To suppress inherited tests for a migrated leaf, use
+      <code>org.sandbox.junit.jupiter.IgnoreInheritedTests</code> with the support jar's discovery filter.
+      Suppressed inherited methods are absent from the discovered test tree, rather than counted as skipped.
+      A PDE test bundle must also package <code>META-INF/services/org.junit.platform.launcher.PostDiscoveryFilter</code>
+      containing <code>org.sandbox.junit.jupiter.InheritedTestsFilter</code>, include <code>META-INF/</code> in
+      <code>bin.includes</code>, and import <code>org.sandbox.junit.jupiter</code> and
+      <code>org.junit.platform.launcher</code>. Make the support bundle and compatible launcher available in
+      the target. Compare fixture initialization and hook ordering as well as discovered test counts.</p>
+
    <h2>When a transformation is offered</h2>
    <p>The cleanup requires resolvable JUnit types and only rewrites patterns for which a supported Jupiter equivalent has been implemented.
       Coordinated rules and fixtures additionally require the complete source lifecycle scope.</p>
