@@ -52,10 +52,14 @@ one Undo. Preparing the preview never edits the editor buffer. Changing source,
 referenced definitions, compiler or classpath settings, or either effective cleanup
 profile invalidates the prepared result. If another cleanup has already changed
 the file during this invocation, run the combined operation on the current file.</p>
-<p>All combined phases share one work allowance and one best-effort total time
-limit, including preparation, reparsing and rejected searches. There are at most
-two ordinary numerical phases, one optional tail-iteration phase and one converter phase. Exhaustion or cancellation discards
-the private result. These limits can yield fewer candidates than two independent
+<p>Each file has one work allowance and one best-effort total time limit, shared
+by all combined phases, including preparation, reparsing and rejected searches.
+There are at most two ordinary numerical phases, one optional tail-iteration phase
+and one converter phase. Reaching the time limit reports
+<code>COMBINED_TIMEOUT_EXCEEDED</code> as a warning, discards that file's private
+result and leaves its original source unchanged. Other selected files can still be processed.</p>
+<p>Work exhaustion also discards the private result. Explicit cancellation still
+stops the cleanup operation. These limits can yield fewer candidates than two independent
 cleanup invocations with separate full budgets. Quick Assist remains restricted
 to its mathematics selection. The combined option adds no save action, and the
 ordinary Functional Converter continues to run without the mathematics feature.</p>
