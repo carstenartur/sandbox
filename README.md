@@ -134,6 +134,13 @@ https://carstenartur.github.io/sandbox/snapshots/latest/
 ```
 Use this to test the latest features. Updated automatically on every commit to `main`. May be unstable.
 
+#### Historical Releases
+
+The original Eclipse update sites for 1.2.0 and 1.2.1 are preserved at a fixed Git commit. Use the matching URL to install one of those versions.
+
+- 1.2.0: `https://raw.githubusercontent.com/carstenartur/sandbox/16ec2f57830f79745567514565a1b67d3621a662/`
+- 1.2.1: `https://raw.githubusercontent.com/carstenartur/sandbox/16ec2f57830f79745567514565a1b67d3621a662/sandbox1.2.1/`
+
 ### Installation Steps
 
 1. Open Eclipse IDE
@@ -153,6 +160,18 @@ Each cleanup or quick-fix feature installs its matching offline user documentati
 ## Building from Source
 
 > **For Contributors/Developers**: Want to build the project locally? See [Building and testing](CONTRIBUTING.md#building-and-testing) in CONTRIBUTING.md for complete build instructions.
+
+To download only the latest main-branch source and build it locally, use a shallow clone.
+
+```sh
+git clone --depth 1 --single-branch --branch main https://github.com/carstenartur/sandbox.git
+```
+
+To keep the main branch's commit history and download historical file contents on demand, use a partial clone.
+
+```sh
+git clone --filter=blob:none --single-branch --branch main https://github.com/carstenartur/sandbox.git
+```
 
 **Quick Start:**
 

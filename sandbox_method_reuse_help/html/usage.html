@@ -67,7 +67,7 @@ void second(String input) {
    <!-- MethodReuseCleanUpTest.MethodReuseScenarios.SIMPLE_INLINE_SEQUENCE -->
    <h3>Before</h3>
    <pre id="existing-method-before">package test1;
-public class Test {
+public final class Test {
     public String formatName(String first, String last) {
         return first.trim() + " " + last.trim();
     }
@@ -79,7 +79,7 @@ public class Test {
 }</pre>
    <h3>After</h3>
    <pre id="existing-method-after">package test1;
-public class Test {
+public final class Test {
     public String formatName(String first, String last) {
         return first.trim() + " " + last.trim();
     }

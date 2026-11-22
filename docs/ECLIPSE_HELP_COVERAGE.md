@@ -27,7 +27,7 @@ The standard local LTK frame is a shared Eclipse host surface. JFace supplies th
 | JFace Cleanup | `jface-cleanup.png` with enabled suboptions | three migration examples and safety limits | three distinct real LTK captures |
 | JUnit Migration | `junit-migration-cleanup.png` with strict options | presets, best-effort boundary and migration examples | real patched-host atomic-candidate capture |
 | Method Reuse | `method-reuse-cleanup.png` with enabled modes | test-backed inline-sequence replacement and safety boundary | shared standard LTK evidence |
-| Mathematics Cleanup | exact type/safety/goal/budget settings in `html/examples.html` | four pinned whole Bouncy Castle production sources; runtime bitwise operations; constant-only changes preserved; explicit performance limits | four distinct native before/after captures, exact Apply and byte-exact Undo, source/profile provenance |
+| Mathematics Cleanup | exact type/safety/goal/budget settings in `html/examples.html` | five pinned whole Bouncy Castle production sources; four bitwise examples and one opt-in BigInteger modular square; constant-only changes preserved; explicit performance limits | five distinct native before/after captures, exact Apply and byte-exact Undo, source/profile provenance |
 | Int to Enum | `int-to-enum-cleanup.png` with local/project options | local and coordinated applicability rules | real patched-host atomic-candidate capture |
 | Use General Type | `use-general-type-cleanup.png` with enabled cleanup | declaration and constructor examples plus safety limits | shared standard LTK evidence |
 | Upstreamed iterator cleanup | concise historical/upstream reference | source example where retained | no Sandbox-specific UI screenshot |

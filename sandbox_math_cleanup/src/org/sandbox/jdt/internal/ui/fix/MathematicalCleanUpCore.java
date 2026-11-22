@@ -4,8 +4,11 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.fix;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.eclipse.core.resources.ProjectScope;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -47,7 +50,9 @@ public final class MathematicalCleanUpCore extends AbstractCleanUp {
    MathCleanUpOptions options=MathCleanUpOptions.parse(values,targetJava(project));
    FunctionalMathOptions.validate(values,options,FunctionalMathOptions.converterAvailable());
    combinedProfiles.put(project.getHandleIdentifier(),FunctionalMathOptions.capture(project,values));
-   profiles.put(project.getHandleIdentifier(),new ProfileSnapshot(options,persistedMathOptions(project)));
+   var selected=Arrays.stream(units).map(ICompilationUnit::getPrimary).map(ICompilationUnit::getHandleIdentifier)
+     .collect(Collectors.toUnmodifiableSet());
+   profiles.put(project.getHandleIdentifier(),new ProfileSnapshot(options,persistedMathOptions(project),selected));
    if(options.enabled()) {
     environments.put(project.getHandleIdentifier(),MathematicalEnvironment.capture(project));
     for(ICompilationUnit unit:units) originalSources.put(unit.getPrimary().getHandleIdentifier(),unit.getPrimary().getSource());
@@ -65,7 +70,8 @@ public final class MathematicalCleanUpCore extends AbstractCleanUp {
   try {
    profile=profiles.get(project.getHandleIdentifier());
    if(profile==null) {
-    profile=new ProfileSnapshot(MathCleanUpOptions.parse(values,targetJava(project)),persistedMathOptions(project));
+    profile=new ProfileSnapshot(MathCleanUpOptions.parse(values,targetJava(project)),persistedMathOptions(project),
+      Set.of(unit.getPrimary().getHandleIdentifier()));
     profiles.put(project.getHandleIdentifier(),profile);
    }
    options=currentOptions(project,profile);
@@ -107,6 +113,18 @@ public final class MathematicalCleanUpCore extends AbstractCleanUp {
   }
   analysis.diagnostics().stream().limit(20).forEach(item->diagnostics.addInfo(item.code()+": "+item.message()));
   if(!analysis.changed()) return null;
+  // Native cleanup hosts synchronize peer source at different points during Apply.
+  // Do not construct a plan whose source receipt another selected CU can invalidate.
+  for(var receipt:analysis.sourceDependencyReceipts()) {
+   if(JavaCore.create(receipt.identity()) instanceof ICompilationUnit dependency) {
+    String handle=dependency.getPrimary().getHandleIdentifier();
+    if(!handle.equals(primary.getHandleIdentifier()) && profile.selectedPrimaryHandles().contains(handle)) {
+     diagnostics.addInfo("MATHEMATICS_SELECTED_SOURCE_DEPENDENCY: "+primary.getElementName() //$NON-NLS-1$
+       +" reads selected "+dependency.getElementName()+"; run mathematics on this file separately"); //$NON-NLS-1$ //$NON-NLS-2$
+     return null;
+    }
+   }
+  }
   ProfileSnapshot analyzedProfile=profile;MathematicalEnvironment.Snapshot analyzedEnvironment=environment;
   return monitor->{
    if(monitor!=null && monitor.isCanceled()) throw new OperationCanceledException();
@@ -151,5 +169,5 @@ public final class MathematicalCleanUpCore extends AbstractCleanUp {
   String version=project.getOption(JavaCore.COMPILER_CODEGEN_TARGET_PLATFORM,true);
   return Integer.parseInt(version.startsWith("1.")?version.substring(2):version);
  }
- private record ProfileSnapshot(MathCleanUpOptions requested,Map<String,String> persisted) { }
+ private record ProfileSnapshot(MathCleanUpOptions requested,Map<String,String> persisted,Set<String> selectedPrimaryHandles) { }
 }
