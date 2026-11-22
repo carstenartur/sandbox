@@ -30,6 +30,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.swt.finder.finders.UIThreadRunnable;
 import org.eclipse.swtbot.swt.finder.results.Result;
@@ -261,11 +262,12 @@ final class FocusedCleanupConfigurationScreenshots {
 
 	static void prepareJUnitForScreenshot(SWTBotShell shell) {
 		Button bestEffort= shell.bot().checkBox(BEST_EFFORT_LABEL).widget;
-		UIThreadRunnable.syncExec(shell.display, (VoidResult) () -> showCompleteJUnitPolicy(bestEffort));
+		String problem= UIThreadRunnable.syncExec(shell.display, (Result<String>) () -> showCompleteJUnitPolicy(bestEffort));
+		assertEquals("", problem, () -> "JUnit screenshot clips the best-effort policy: " + problem); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
-	/** Keeps the native preview width while giving the long JUnit policy its measured space. */
-	private static void showCompleteJUnitPolicy(Button button) {
+	/** Preserves the preview width where the host can provide the required space. */
+	static String showCompleteJUnitPolicy(Button button) {
 		ScrolledComposite options= null;
 		Control optionsPane= button;
 		while (!(optionsPane.getParent() instanceof SashForm)) {
@@ -273,9 +275,13 @@ final class FocusedCleanupConfigurationScreenshots {
 			if (optionsPane instanceof ScrolledComposite scrolled) {
 				options= scrolled;
 			}
-			assertTrue(optionsPane != null, "JUnit options must belong to the native preview split"); //$NON-NLS-1$
+			if (optionsPane == null) {
+				return "JUnit options must belong to the native preview split"; //$NON-NLS-1$
+			}
 		}
-		assertTrue(options != null, "JUnit options must have a native scroll viewport"); //$NON-NLS-1$
+		if (options == null) {
+			return "JUnit options must have a native scroll viewport"; //$NON-NLS-1$
+		}
 		SashForm split= (SashForm) optionsPane.getParent();
 		Point preferred= button.computeSize(SWT.DEFAULT, SWT.DEFAULT);
 		Point origin= button.getDisplay().map(button, options, 0, 0);
@@ -284,13 +290,18 @@ final class FocusedCleanupConfigurationScreenshots {
 			int extraWidth= overflow + split.getSashWidth();
 			int optionsWidth= optionsPane.getSize().x + extraWidth;
 			int previewWidth= split.getClientArea().width - optionsPane.getSize().x - split.getSashWidth();
-			Point size= button.getShell().getSize();
-			button.getShell().setSize(size.x + extraWidth, size.y);
-			split.setWeights(optionsWidth, previewWidth);
-			button.getShell().layout(true, true);
+			Shell shell= button.getShell();
+			Point size= shell.getSize();
+			int clientWidth= shell.getClientArea().width;
+			shell.setSize(size.x + extraWidth, size.y);
+			// If the host caps the shell, give the caption the available space
+			// by reducing the preview instead of scaling both panes down.
+			int acceptedGrowth= shell.getClientArea().width - clientWidth;
+			int missingWidth= Math.max(0, extraWidth - acceptedGrowth);
+			split.setWeights(optionsWidth, Math.max(1, previewWidth - missingWidth));
+			shell.layout(true, true);
 		}
-		String problem= CodePatternsScreenshotVisibility.checkboxProblem(button);
-		assertTrue(problem.isEmpty(), () -> "JUnit screenshot clips the best-effort policy: " + problem); //$NON-NLS-1$
+		return CodePatternsScreenshotVisibility.checkboxProblem(button);
 	}
 
 	private static void capture(SWTBotShell shell, Path outputRoot, String helpBundle, String fileName)
