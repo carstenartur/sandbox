@@ -83,7 +83,7 @@ A dedicated refactoring remains useful when the operation needs interactive choi
 - `IntToEnumHelper` implements conservative binding-based if/else detection and migration.
 - `EnumConstantValue` holds immutable declared-type/value semantics for byte, short, char, int, long and String domains. Integral values use an exact 64-bit representation, never an int truncation.
 - `EnumComparison` recognizes primitive equality/inequality and resolved JDK String/Objects equality. Discovery and stale-plan checks use the same comparison contract.
-- `EnumNameSafety` conservatively rejects names already used inside the owner, including implicit type references and local variables. Both detectors and stale-plan validation share this guard.
+- `EnumNameSafety` conservatively rejects names already used inside the owner, including implicit type references and local variables. It also checks the proposed binary name against current same-package source declarations and class files on the project classpath. The check follows named member declarations, accounts for secondary types and unsaved editor buffers, and avoids waiting for the workspace index. For example, an existing top-level `Owner$Status` owns the same class file as the proposed nested `Owner.Status`. Both detectors and stale-plan validation share this guard.
 - `SwitchIntToEnumHelper` reuses the same closed private-domain validation for existing int switches. It changes the parameter and all proven constant call sites together, preserves switch bodies and fall-through order, and leaves public/overridden methods, numeric uses and incomplete domains unchanged. Its stateless discovery uses `AstProcessing.independent().visit(...)`.
 
 ### `org.sandbox.jdt.internal.ui.fix`

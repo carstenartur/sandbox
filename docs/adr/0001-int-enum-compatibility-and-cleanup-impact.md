@@ -55,6 +55,8 @@ Aliases, sparse/ranged domains and bit masks are not ordinary enum domains. Bit 
 
 `Enum.ordinal()` is never a persisted, serialized or wire identity. Reordering enum constants must not alter external meaning.
 
+A private source-only migration may use `state.ordinal()` to read a method-local lookup table when every original integer equals the position of its generated enum constant. The table must be freshly allocated and confined to local reads. Its order is coupled to the enum declaration, so a later reorder must update the table as well. External buffers, writes, and values passed through a public API require a different proof.
+
 ### Reference generation
 
 A generated package-private nested enum may be referenced only by callers in the same package. References are generated through AST/`ImportRewrite` name selection so same-package callers receive idiomatic `Owner.Enum.CONSTANT` names while conflicts may retain an unambiguous qualified owner name. Cross-package callers are rejected during planning instead of producing inaccessible source.
