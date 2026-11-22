@@ -13,26 +13,38 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
+import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Comment;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ConditionalExpression;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.TextBlock;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.dom.ASTNodeFactory;
 import org.eclipse.jdt.internal.corext.dom.Bindings;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
@@ -42,6 +54,7 @@ import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
 import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
+import org.sandbox.jdt.triggerpattern.cleanup.EncodingSourceRewrite;
 
 /**
  * Fix core for string simplification using TriggerPattern hints.
@@ -62,62 +75,89 @@ public class StringSimplificationFixCore {
 	 * @param operations the set to add found operations to
 	 */
 	public static void findOperations(CompilationUnit compilationUnit,
-			java.util.Set<CompilationUnitRewriteOperation> operations) {
+			java.util.Set<CompilationUnitRewriteOperation> operations) throws JavaModelException {
+		List<StringLiteral> literals= new ArrayList<>();
+		compilationUnit.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(StringLiteral literal) {
+				literals.add(literal);
+				return false;
+			}
+		});
+		Set<StringLiteral> removableLiterals= compilationUnit.getJavaElement() instanceof ICompilationUnit unit
+				? new HashSet<>(EncodingSourceRewrite.literalsWithUnambiguousTags(compilationUnit, unit, literals)) : Set.of();
 		
 		// Pattern 1: "" + $x
 		Pattern emptyPrefixPattern = Pattern.of("\"\" + $x", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> emptyPrefixMatches = ENGINE.findMatches(compilationUnit, emptyPrefixPattern);
 		for (Match match : emptyPrefixMatches) {
-			operations.add(new StringValueOfOperation(match, "Empty string prefix")); //$NON-NLS-1$
+			if (isSafeStringValueOfArgument(match) && removableLiterals.containsAll(removedLiterals(match, "$x"))) { //$NON-NLS-1$
+				operations.add(new StringValueOfOperation(match, "Empty string prefix")); //$NON-NLS-1$
+			}
 		}
 		
 		// Pattern 2: $x + ""
 		Pattern emptySuffixPattern = Pattern.of("$x + \"\"", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> emptySuffixMatches = ENGINE.findMatches(compilationUnit, emptySuffixPattern);
 		for (Match match : emptySuffixMatches) {
-			operations.add(new StringValueOfOperation(match, "Empty string suffix")); //$NON-NLS-1$
+			if (isSafeStringValueOfArgument(match) && removableLiterals.containsAll(removedLiterals(match, "$x"))) { //$NON-NLS-1$
+				operations.add(new StringValueOfOperation(match, "Empty string suffix")); //$NON-NLS-1$
+			}
 		}
 		
 		// Pattern 3: $str.length() == 0
 		Pattern lengthCheckPattern = Pattern.of("$str.length() == 0", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> lengthCheckMatches = ENGINE.findMatches(compilationUnit, lengthCheckPattern);
 		for (Match match : lengthCheckMatches) {
-			operations.add(new IsEmptyOperation(match, "String length check")); //$NON-NLS-1$
+			if (isSafeStringEmptinessCheck(match)) {
+				operations.add(new IsEmptyOperation(match, "String length check")); //$NON-NLS-1$
+			}
 		}
 		
 		// Pattern 4: $str.equals("")
 		Pattern equalsEmptyPattern = Pattern.of("$str.equals(\"\")", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> equalsEmptyMatches = ENGINE.findMatches(compilationUnit, equalsEmptyPattern);
 		for (Match match : equalsEmptyMatches) {
-			operations.add(new IsEmptyOperation(match, "String equals empty")); //$NON-NLS-1$
+			if (isSafeStringEmptinessCheck(match)
+					&& removableLiterals.containsAll(removedLiterals(match, "$str"))) { //$NON-NLS-1$
+				operations.add(new IsEmptyOperation(match, "String equals empty")); //$NON-NLS-1$
+			}
 		}
 		
 		// Pattern 5: $x == true
 		Pattern boolTruePattern = Pattern.of("$x == true", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> boolTrueMatches = ENGINE.findMatches(compilationUnit, boolTruePattern);
 		for (Match match : boolTrueMatches) {
-			operations.add(new SimplifyBooleanOperation(match, "Boolean == true", false)); //$NON-NLS-1$
+			if (isSafeBooleanValue(match, "$x")) { //$NON-NLS-1$
+				operations.add(new SimplifyBooleanOperation(match, "Boolean == true", false)); //$NON-NLS-1$
+			}
 		}
 		
 		// Pattern 6: $x == false
 		Pattern boolFalsePattern = Pattern.of("$x == false", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> boolFalseMatches = ENGINE.findMatches(compilationUnit, boolFalsePattern);
 		for (Match match : boolFalseMatches) {
-			operations.add(new SimplifyBooleanOperation(match, "Boolean == false", true)); //$NON-NLS-1$
+			if (isSafeBooleanValue(match, "$x")) { //$NON-NLS-1$
+				operations.add(new SimplifyBooleanOperation(match, "Boolean == false", true)); //$NON-NLS-1$
+			}
 		}
 		
 		// Pattern 7: $cond ? true : false
 		Pattern ternaryTrueFalsePattern = Pattern.of("$cond ? true : false", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> ternaryTrueFalseMatches = ENGINE.findMatches(compilationUnit, ternaryTrueFalsePattern);
 		for (Match match : ternaryTrueFalseMatches) {
-			operations.add(new SimplifyTernaryOperation(match, "Ternary true:false", false)); //$NON-NLS-1$
+			if (isSafeBooleanValue(match, "$cond")) { //$NON-NLS-1$
+				operations.add(new SimplifyTernaryOperation(match, "Ternary true:false", false)); //$NON-NLS-1$
+			}
 		}
 		
 		// Pattern 8: $cond ? false : true
 		Pattern ternaryFalseTruePattern = Pattern.of("$cond ? false : true", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> ternaryFalseTrueMatches = ENGINE.findMatches(compilationUnit, ternaryFalseTruePattern);
 		for (Match match : ternaryFalseTrueMatches) {
-			operations.add(new SimplifyTernaryOperation(match, "Ternary false:true", true)); //$NON-NLS-1$
+			if (isSafeBooleanValue(match, "$cond")) { //$NON-NLS-1$
+				operations.add(new SimplifyTernaryOperation(match, "Ternary false:true", true)); //$NON-NLS-1$
+			}
 		}
 		
 		// Pattern 9: $list.size() == 0
@@ -149,7 +189,9 @@ public class StringSimplificationFixCore {
 		Pattern stringFormatPattern = Pattern.of("String.format(\"%s\", $x)", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> stringFormatMatches = ENGINE.findMatches(compilationUnit, stringFormatPattern);
 		for (Match match : stringFormatMatches) {
-			operations.add(new MethodToStringValueOfOperation(match, "Redundant String.format")); //$NON-NLS-1$
+			if (isSafeStringFormat(match) && removableLiterals.containsAll(removedLiterals(match, "$x"))) { //$NON-NLS-1$
+				operations.add(new MethodToStringValueOfOperation(match, "Redundant String.format")); //$NON-NLS-1$
+			}
 		}
 		
 		// Pattern 13: $x.toString().equals($y)
@@ -163,8 +205,121 @@ public class StringSimplificationFixCore {
 		Pattern nullCheckTernaryPattern = Pattern.of("$x != null ? $x : $default", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> nullCheckTernaryMatches = ENGINE.findMatches(compilationUnit, nullCheckTernaryPattern);
 		for (Match match : nullCheckTernaryMatches) {
-			operations.add(new RequireNonNullElseOperation(match, "Null-check ternary")); //$NON-NLS-1$
+			if (isSafeNullFallback(match)) {
+				operations.add(new RequireNonNullElseOperation(match, "Null-check ternary")); //$NON-NLS-1$
+			}
 		}
+	}
+
+	private static List<StringLiteral> removedLiterals(Match match, String retainedBinding) {
+		ASTNode retained= match.getBinding(retainedBinding);
+		List<StringLiteral> removed= new ArrayList<>();
+		match.getMatchedNode().accept(new ASTVisitor() {
+			@Override
+			public boolean preVisit2(ASTNode node) {
+				return node != retained;
+			}
+
+			@Override
+			public boolean visit(StringLiteral literal) {
+				removed.add(literal);
+				return false;
+			}
+		});
+		return removed;
+	}
+
+	/** Do not remove unboxing or the explicit comparison documenting an assignment. */
+	public static boolean isSafeBooleanValue(Match match, String bindingName) {
+		if (!(match.getBinding(bindingName) instanceof Expression expression)
+				|| ASTNodes.getUnparenthesedExpression(expression) instanceof Assignment) {
+			return false;
+		}
+		ITypeBinding type= expression.resolveTypeBinding();
+		return type != null && !type.isRecovered() && type.isPrimitive()
+				&& "boolean".equals(type.getName()); //$NON-NLS-1$
+	}
+
+	/** Concatenation and formatting must not select the different char[] overload. */
+	public static boolean isSafeStringValueOfArgument(Match match) {
+		if (!(match.getBinding("$x") instanceof Expression expression)) { //$NON-NLS-1$
+			return false;
+		}
+		ITypeBinding type= expression.resolveTypeBinding();
+		return type != null && !type.isRecovered() && !type.isNullType()
+				&& !(type.isArray() && type.getDimensions() == 1
+						&& "char".equals(type.getElementType().getQualifiedName())); //$NON-NLS-1$
+	}
+
+	/** Formatter dispatch and varargs expansion differ from ordinary string conversion. */
+	public static boolean isSafeStringFormat(Match match) {
+		if (!(match.getMatchedNode() instanceof MethodInvocation invocation)
+				|| !(match.getBinding("$x") instanceof Expression expression)) { //$NON-NLS-1$
+			return false;
+		}
+		IMethodBinding method= invocation.resolveMethodBinding();
+		if (method == null || method.isRecovered() || !method.isVarargs()
+				|| !Modifier.isStatic(method.getModifiers()) || !"format".equals(method.getName()) //$NON-NLS-1$
+				|| method.getDeclaringClass() == null || method.getDeclaringClass().isRecovered()
+				|| !"java.lang.String".equals(method.getDeclaringClass().getQualifiedName())) { //$NON-NLS-1$
+			return false;
+		}
+		ITypeBinding[] parameters= method.getParameterTypes();
+		if (parameters.length != 2 || !"java.lang.String".equals(parameters[0].getQualifiedName()) //$NON-NLS-1$
+				|| !parameters[1].isArray() || parameters[1].getDimensions() != 1
+				|| !"java.lang.Object".equals(parameters[1].getElementType().getQualifiedName())) { //$NON-NLS-1$
+			return false;
+		}
+		ITypeBinding type= expression.resolveTypeBinding();
+		if (type == null || type.isRecovered() || type.isArray() || type.isNullType()) {
+			return false;
+		}
+		// These final JDK types neither implement Formattable nor return null from toString().
+		return type.isPrimitive() || switch (type.getQualifiedName()) {
+			case "java.lang.String", "java.lang.Boolean", "java.lang.Byte", "java.lang.Short", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+					"java.lang.Integer", "java.lang.Long", "java.lang.Float", "java.lang.Double", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+					"java.lang.Character" -> true; //$NON-NLS-1$
+			default -> false;
+		};
+	}
+
+	/** Requires the String API, not merely a method named length or equals. */
+	public static boolean isSafeStringEmptinessCheck(Match match) {
+		ASTNode matched= match.getMatchedNode();
+		MethodInvocation invocation;
+		if (matched instanceof InfixExpression comparison) {
+			if (comparison.hasExtendedOperands() || comparison.getParent() instanceof LambdaExpression
+					|| !(ASTNodes.getUnparenthesedExpression(comparison.getLeftOperand()) instanceof MethodInvocation length)) {
+				return false;
+			}
+			invocation= length;
+		} else if (matched instanceof MethodInvocation equals) {
+			invocation= equals;
+		} else {
+			return false;
+		}
+		IMethodBinding binding= invocation.resolveMethodBinding();
+		return binding != null && !binding.isRecovered() && binding.getDeclaringClass() != null
+				&& !binding.getDeclaringClass().isRecovered()
+				&& "java.lang.String".equals(binding.getDeclaringClass().getQualifiedName()); //$NON-NLS-1$
+	}
+
+	/** Preserve the conditional's null result, lazy fallback and repeated receiver read. */
+	public static boolean isSafeNullFallback(Match match) {
+		if (!(match.getMatchedNode() instanceof ConditionalExpression conditional)
+				|| conditional.getParent() instanceof LambdaExpression
+				|| !(ASTNodes.getUnparenthesedExpression(conditional.getExpression()) instanceof InfixExpression condition)
+				|| !(ASTNodes.getUnparenthesedExpression(condition.getLeftOperand()) instanceof SimpleName first)
+				|| !(ASTNodes.getUnparenthesedExpression(conditional.getThenExpression()) instanceof SimpleName second)
+				|| !(first.resolveBinding() instanceof IVariableBinding variable)
+				|| variable.isRecovered() || variable.isField() || variable.isEnumConstant()
+				|| !variable.isEqualTo(second.resolveBinding())) {
+			return false;
+		}
+		ITypeBinding type= variable.getType();
+		Expression fallback= ASTNodes.getUnparenthesedExpression(conditional.getElseExpression());
+		return type != null && !type.isRecovered() && "java.lang.String".equals(type.getQualifiedName()) //$NON-NLS-1$
+				&& (fallback instanceof StringLiteral || fallback instanceof TextBlock);
 	}
 	
 	/** Checks the binding and source context shared by the cleanup and quick assist. */
@@ -263,6 +418,7 @@ public class StringSimplificationFixCore {
 			
 			// Apply the rewrite
 			rewrite.replace(infixExpr, methodInvocation, group);
+			removedLiterals(match, "$x").forEach(literal -> EncodingSourceRewrite.record(cuRewrite, literal)); //$NON-NLS-1$
 		}
 	}
 	
@@ -309,6 +465,7 @@ public class StringSimplificationFixCore {
 			
 			// Apply the rewrite
 			rewrite.replace(matchedNode, methodInvocation, group);
+			removedLiterals(match, "$x").forEach(literal -> EncodingSourceRewrite.record(cuRewrite, literal)); //$NON-NLS-1$
 		}
 	}
 	
@@ -348,6 +505,7 @@ public class StringSimplificationFixCore {
 			
 			// Apply the rewrite
 			rewrite.replace(matchedNode, isEmptyCall, group);
+			removedLiterals(match, "$str").forEach(literal -> EncodingSourceRewrite.record(cuRewrite, literal)); //$NON-NLS-1$
 		}
 	}
 	
@@ -390,10 +548,7 @@ public class StringSimplificationFixCore {
 			Expression replacement;
 			if (negate) {
 				// Create: !boolExpression
-				PrefixExpression negation = ast.newPrefixExpression();
-				negation.setOperator(PrefixExpression.Operator.NOT);
-				negation.setOperand((Expression) ASTNode.copySubtree(ast, boolExpression));
-				replacement = negation;
+				replacement = ASTNodeFactory.not(ast, (Expression) ASTNode.copySubtree(ast, boolExpression));
 			} else {
 				// Just use the boolean expression as-is
 				replacement = (Expression) ASTNode.copySubtree(ast, boolExpression);
@@ -443,10 +598,7 @@ public class StringSimplificationFixCore {
 			Expression replacement;
 			if (negate) {
 				// Create: !condition
-				PrefixExpression negation = ast.newPrefixExpression();
-				negation.setOperator(PrefixExpression.Operator.NOT);
-				negation.setOperand((Expression) ASTNode.copySubtree(ast, condition));
-				replacement = negation;
+				replacement = ASTNodeFactory.not(ast, (Expression) ASTNode.copySubtree(ast, condition));
 			} else {
 				// Just use the condition as-is
 				replacement = (Expression) ASTNode.copySubtree(ast, condition);

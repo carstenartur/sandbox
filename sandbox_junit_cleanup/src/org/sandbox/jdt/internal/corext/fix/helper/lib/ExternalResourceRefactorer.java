@@ -297,7 +297,7 @@ public final class ExternalResourceRefactorer {
 			FieldDeclaration fieldDeclaration, boolean fieldStatic, ASTRewrite rewriter, AST ast, TextEditGroup group,
 			ImportRewrite importRewriter) {
 
-		if (anonymousClass == null) {
+		if (!canMigrateAnonymousClass(anonymousClass)) {
 			return;
 		}
 
@@ -315,6 +315,16 @@ public final class ExternalResourceRefactorer {
 			replaceFieldWithExtensionDeclaration(classInstanceCreation, nestedClassName, fieldStatic, rewriter, ast,
 					group, importRewriter);
 		}
+	}
+
+	/**
+	 * An anonymous body alone cannot replace the behavior of a custom resource superclass.
+	 * @param anonymousClass the original anonymous resource
+	 * @return whether its only inherited resource contract is JUnit's empty base callbacks
+	 */
+	public static boolean canMigrateAnonymousClass(AnonymousClassDeclaration anonymousClass) {
+		ITypeBinding binding= anonymousClass == null ? null : anonymousClass.resolveBinding();
+		return binding != null && !binding.isRecovered() && isDirectlyExtendingExternalResource(binding);
 	}
 
 	/**

@@ -274,7 +274,7 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 		ASTStreamRenderer renderer= new ASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(), loop.getBody());
 		Expression forEach= renderer.renderDirectForEach(extracted.model.getSource(), List.of(),
 				loop.getParameter().getName().getIdentifier(), true);
-		renderer.preserveElementTypeImport(cuRewrite.getImportRemover());
+		renderer.preserveImports(cuRewrite);
 		String arraysReference= cuRewrite.getImportRewrite().addImport("java.util.Arrays"); //$NON-NLS-1$
 		MethodInvocation stream= (MethodInvocation) ((MethodInvocation) forEach).getExpression();
 		stream.setExpression(ast.newName(arraysReference));
@@ -301,7 +301,7 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 			ASTStreamRenderer renderer= new ASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(), extracted.originalBody);
 			String variableName= model.getElement() != null ? model.getElement().variableName() : "item"; //$NON-NLS-1$
 			Expression directForEach= renderer.renderDirectForEach(model.getSource(), java.util.List.of(), variableName, true);
-			renderer.preserveElementTypeImport(cuRewrite.getImportRemover());
+			renderer.preserveImports(cuRewrite);
 			rewrite.replace(loop, ast.newExpressionStatement(directForEach), group);
 			return;
 		}
@@ -314,7 +314,7 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 		if (streamExpression == null) {
 			return;
 		}
-		renderer.preserveElementTypeImport(cuRewrite.getImportRemover());
+		renderer.preserveImports(cuRewrite);
 
 		VariableDeclarationStatement replacement= createMergedDeclaration(ast, accumulator, streamExpression);
 		rewrite.remove(accumulator, group);
@@ -335,7 +335,9 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 				(VariableDeclarationFragment) original.fragments().get(0);
 		VariableDeclarationFragment fragment= ast.newVariableDeclarationFragment();
 		fragment.setName(ast.newSimpleName(originalFragment.getName().getIdentifier()));
-		fragment.setInitializer((Expression) ASTNode.copySubtree(ast, initializer));
+		// This detached expression can contain ASTRewrite copy/string targets.
+		// Copying its AST would discard those targets and leave empty lambda blocks.
+		fragment.setInitializer(initializer);
 		VariableDeclarationStatement declaration= ast.newVariableDeclarationStatement(fragment);
 		declaration.setType((Type) ASTNode.copySubtree(ast, original.getType()));
 		declaration.modifiers().addAll(ASTNode.copySubtrees(ast, original.modifiers()));
@@ -381,9 +383,6 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 		switch (model.getSource().type()) {
 			case ARRAY:
 				cuRewrite.getImportRewrite().addImport("java.util.Arrays"); //$NON-NLS-1$
-				break;
-			case ITERABLE:
-				cuRewrite.getImportRewrite().addImport("java.util.stream.StreamSupport"); //$NON-NLS-1$
 				break;
 			default:
 				break;
