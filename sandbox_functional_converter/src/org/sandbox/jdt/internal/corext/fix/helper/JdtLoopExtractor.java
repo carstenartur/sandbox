@@ -16,6 +16,7 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.dom.Bindings;
+import org.eclipse.jdt.internal.corext.dom.LinkedNodeFinder;
 import org.sandbox.functional.core.builder.LoopModelBuilder;
 import org.sandbox.functional.core.model.*;
 import org.sandbox.functional.core.model.SourceDescriptor.SourceType;
@@ -321,7 +322,7 @@ public class JdtLoopExtractor {
         }
 
         if (body.getParent() instanceof EnhancedForStatement loop && requiresIntactLambdaBody(loop, compilationUnit)) {
-            addSimpleForEachTerminal(statements, builder);
+            addSimpleForEachTerminal(statements, builder, true);
             return;
         }
         
@@ -346,6 +347,7 @@ public class JdtLoopExtractor {
     }
 
     private boolean requiresIntactLambdaBody(EnhancedForStatement loop, CompilationUnit compilationUnit) {
+        if (observesCollectionBeingFilled(loop.getBody())) return true;
         IVariableBinding element = loop.getParameter().resolveBinding();
         if (element != null && !Modifier.isFinal(element.getModifiers()) && !element.isEffectivelyFinal()) {
             return true; // A mutable loop local must not become a mutable lambda parameter.
@@ -366,6 +368,18 @@ public class JdtLoopExtractor {
             @Override public boolean visit(AnonymousClassDeclaration node) { return false; }
             @Override public boolean visit(TypeDeclaration node) { return false; }
             @Override public boolean visit(TypePattern node) { intact[0] = true; return false; }
+            @Override public boolean visit(ContinueStatement node) {
+                // A non-terminal if becomes a map callback. Its nested continue
+                // must still skip the original iteration, including later adds.
+                for (ASTNode parent = node.getParent(); parent != loop; parent = parent.getParent()) {
+                    if (parent instanceof IfStatement branch && branch.getParent() instanceof Block block
+                            && block.statements().indexOf(branch) < block.statements().size() - 1
+                            && !isContinueStatement(branch.getThenStatement())) {
+                        intact[0] = true;
+                    }
+                }
+                return false;
+            }
             @Override public boolean visit(VariableDeclarationStatement node) {
                 for (Object modifier : node.modifiers()) {
                     if (modifier instanceof Annotation) intact[0] = true;
@@ -377,6 +391,31 @@ public class JdtLoopExtractor {
             }
         });
         return intact[0];
+    }
+
+    private boolean observesCollectionBeingFilled(Statement body) {
+        // Only a terminal collect replaces its accumulator. Side-effect maps
+        // followed by matches must remain eligible even when they read a collection.
+        Statement terminal = body;
+        while (true) {
+            if (terminal instanceof Block block && !block.statements().isEmpty()) {
+                terminal = (Statement) block.statements().get(block.statements().size() - 1);
+            } else if (terminal instanceof IfStatement guard && guard.getElseStatement() == null) {
+                terminal = guard.getThenStatement();
+            } else {
+                break;
+            }
+        }
+        if (!isCollectPattern(terminal)) return false;
+        MethodInvocation add = (MethodInvocation) ((ExpressionStatement) terminal).getExpression();
+        SimpleName target = (SimpleName) add.getExpression();
+        if (!(target.resolveBinding() instanceof IVariableBinding binding)) return false;
+        for (SimpleName use : LinkedNodeFinder.findByBinding(body, binding)) {
+            if (use.getParent() instanceof MethodInvocation call && call.getExpression() == use
+                    && "add".equals(call.getName().getIdentifier()) && call.arguments().size() == 1) continue; //$NON-NLS-1$
+            return true;
+        }
+        return false;
     }
     
     /**
@@ -475,6 +514,11 @@ public class JdtLoopExtractor {
      * Used when the body is too complex to decompose into map/filter chains.
      */
     private void addSimpleForEachTerminal(java.util.List<Statement> statements, LoopModelBuilder builder) {
+        addSimpleForEachTerminal(statements, builder, false);
+    }
+
+    private void addSimpleForEachTerminal(java.util.List<Statement> statements, LoopModelBuilder builder,
+            boolean lowerContinues) {
         // A fallback retains the body intact. It must not strand loop control in a lambda
         // or turn a return from the enclosing method into a return from the callback.
         boolean[] transfersControl = { false };
@@ -483,7 +527,10 @@ public class JdtLoopExtractor {
             @Override public boolean visit(AnonymousClassDeclaration node) { return false; }
             @Override public boolean visit(TypeDeclaration node) { return false; }
             @Override public boolean visit(ReturnStatement node) { transfersControl[0] = true; return false; }
-            @Override public boolean visit(ContinueStatement node) { transfersControl[0] = true; return false; }
+            @Override public boolean visit(ContinueStatement node) {
+                if (!lowerContinues || node.getLabel() != null) transfersControl[0] = true;
+                return false;
+            }
         };
         for (Statement statement : statements) statement.accept(visitor);
         if (transfersControl[0]) return;
@@ -565,12 +612,14 @@ public class JdtLoopExtractor {
                                 && primitive.getPrimitiveTypeCode() == PrimitiveType.BOOLEAN
                                 && statements.get(i + 1) instanceof IfStatement match
                                 && match.getElseStatement() == null && isEarlyReturnIf(match, statements)
-                                && ASTNodes.isSameLocalVariable(frag.getName(), match.getExpression())) {
+                                && booleanMatchPolarity(frag.getName(), match.getExpression()) != 0) {
                             Statement branch = match.getThenStatement();
                             if (branch instanceof Block block) branch = (Statement) block.statements().get(0);
                             boolean returnsTrue = ((BooleanLiteral) ((ReturnStatement) branch).getExpression()).booleanValue();
-                            if (returnsTrue) builder.anyMatch(init.toString());
-                            else builder.noneMatch(init.toString());
+                            String predicate = booleanMatchPolarity(frag.getName(), match.getExpression()) > 0
+                                    ? init.toString() : "!(" + init + ")"; //$NON-NLS-1$ //$NON-NLS-2$
+                            if (returnsTrue) builder.anyMatch(predicate);
+                            else builder.noneMatch(predicate);
                             return;
                         }
                         String newVarName = frag.getName().getIdentifier();
@@ -788,6 +837,29 @@ public class JdtLoopExtractor {
             }
         }
         return false;
+    }
+
+    /** 1 means the local's value, -1 its negation, and 0 a different predicate. */
+    static int booleanMatchPolarity(SimpleName variable, Expression expression) {
+        Expression value = ASTNodes.getUnparenthesedExpression(expression);
+        if (ASTNodes.isSameLocalVariable(variable, value)) return 1;
+        if (value instanceof PrefixExpression prefix && prefix.getOperator() == PrefixExpression.Operator.NOT) {
+            return -booleanMatchPolarity(variable, prefix.getOperand());
+        }
+        if (value instanceof InfixExpression comparison && !comparison.hasExtendedOperands()
+                && (comparison.getOperator() == InfixExpression.Operator.EQUALS
+                        || comparison.getOperator() == InfixExpression.Operator.NOT_EQUALS)) {
+            Expression left = ASTNodes.getUnparenthesedExpression(comparison.getLeftOperand());
+            Expression right = ASTNodes.getUnparenthesedExpression(comparison.getRightOperand());
+            BooleanLiteral literal = left instanceof BooleanLiteral bool ? bool
+                    : right instanceof BooleanLiteral bool ? bool : null;
+            if (literal != null) {
+                int polarity = booleanMatchPolarity(variable, literal == left ? right : left);
+                return literal.booleanValue() == (comparison.getOperator() == InfixExpression.Operator.EQUALS)
+                        ? polarity : -polarity;
+            }
+        }
+        return 0;
     }
     
     private void addMatchTerminal(IfStatement ifStmt, LoopModelBuilder builder, String varName) {

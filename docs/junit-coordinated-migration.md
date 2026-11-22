@@ -56,3 +56,16 @@ verified execution components. They must not be enabled merely by broadening the
 suite scope. Run the actual migrated project tests as well. See the
 [executable capability matrix](../sandbox_junit_cleanup/MIGRATION_CAPABILITIES.md)
 for the production classes and tests behind each current boundary.
+
+## Review a large migration in batches
+
+The headless cleanup application can split independent dependency components into
+separately reviewable batches. Add `--batch-max-files 20` to a project check, then
+inspect the reported batch, required descriptor changes and review receipt.
+Apply one reviewed batch with the same project, configuration and file limit;
+run the project's build and tests before planning the next batch. A dependency
+component can exceed the requested limit when splitting it would break its
+contract. The Workbench cleanup selection is unchanged.
+
+See the [batch commands and review steps](../sandbox_cleanup_application/README.md#reviewing-a-junit-migration-in-batches)
+for receipt validation, intermediate-state checks and native Undo.
