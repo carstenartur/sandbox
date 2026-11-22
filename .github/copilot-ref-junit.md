@@ -27,6 +27,23 @@ Located in `sandbox_junit_cleanup/src/.../helper/`:
 - `AssertionRefactorer` — refactors JUnit 3/4 assertions
 - `ImportHelper` — manages import changes
 
+## Coordinated execution and staged support
+
+Use `sandbox_junit_cleanup/MIGRATION_CAPABILITIES.md` as the executable boundary.
+The coordinated constant-row Parameterized strategy requires the selected
+project's Jupiter `ParameterizedClass` and reports `PARAMETERIZED_CLASS_READY`.
+`PARAMETERIZED_RUNTIME_VERIFICATION_REQUIRED` is discovery evidence only. Keep
+source/binding revalidation and the native runtime regression comparison when
+changing this path; source discovery alone must not authorize a new strategy.
+
+The separate `sandbox-junit-migration-support` jar targets Java 25, including the
+consumer test runtime. Its `ExternalResourceExtension.perTest` and `perClass`
+factories support manual hook registration at instance and static scope. Retain
+the original fixture instances and inherited setup. The automatic cleanup still
+rejects incompatible mixed rule scopes. Consumer dependencies, PDE service
+registration and arbitrary `ExternalResource.apply` overrides are not supplied
+automatically; follow the support module README.
+
 ## TriggerPattern DSL (.sandbox-hint files)
 
 JUnit migration also uses `.sandbox-hint` DSL rules:
@@ -53,9 +70,16 @@ void $name($params$) :: methodNameMatches($name, "test.*") && !isStatic($name) &
 When using standalone `ASTParser`, types not on classpath produce **recovered** bindings:
 - `isRecovered() == true` but `getQualifiedName()` returns "" or unreliable name
 - **ALWAYS check** `binding != null && !binding.isRecovered()` before trusting
-- Fall back to source-level names: `annotation.getTypeName().getFullyQualifiedName()`
+- Use `annotation.getTypeName().getFullyQualifiedName()` only where the visitor's own contract permits source-name discovery; spelling is not a substitute for required semantic binding evidence.
 
 Affects: `LambdaASTVisitor.java` — all annotation visit/endVisit methods and field type matching.
+
+Typed declarative annotation patterns require the resolved JUnit source type;
+foreign or recovered annotations cannot authorize an executable match. A
+qualified source annotation keeps the rule's qualified Jupiter destination.
+Keep `QualifiedJUnitAnnotationTest` checks for destination bindings, local name
+collisions, diagnostics and Undo. Custom handlers that emit their own types and
+imports retain their declared input spellings until separately qualified.
 
 ## ThrowingRunnable → Executable Migration
 
