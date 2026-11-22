@@ -49,6 +49,16 @@
    </ul>
    <p>A JDT Core run is not accepted as evidence for JUnit 4 migration coverage.</p>
 
+   <h2>PDE imports in the project-wide runner</h2>
+   <p>The explicit headless project-wide cleanup application can add <code>Import-Package</code> entries
+      to an existing PDE manifest when changed Java sources newly reference modeled Jupiter API packages.
+      Imported and fully qualified references are supported, including extension, parallel and
+      parameter-provider APIs. Existing references alone do not trigger descriptor repair. The Java and
+      manifest edits participate in the same check/apply transaction.</p>
+   <p>This path does not install target bundles or resolve arbitrary Maven/Gradle dependencies.
+      The supported Platform Suite dependency and deployment operations have separate contracts.
+      Ordinary per-file cleanup does not imply these project-resource changes.</p>
+
    <h2>Evidence produced by project-wide QA</h2>
    <ul>
       <li>Exact repository URL, ref, commit, target platform, Java version, and cleanup profile.</li>

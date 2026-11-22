@@ -83,6 +83,10 @@ final class FunctionalMathCoordinator {
    budget.check();
    if(phases.stream().anyMatch(phase->!phase.sourceDependencies().current())) throw new IllegalArgumentException("STALE_SOURCE_DEPENDENCY");
    return new Plan(original,document.get(),compiler,phases,budget.used());
+  } catch(OperationCanceledException cancelled) {
+   // JDT parsers also observe the deadline through IProgressMonitor. Distinguish
+   // that bounded, per-file no-op from a real cancellation of the whole cleanup.
+   budget.check();throw cancelled;
   } catch(CoreException | BadLocationException failure) {
    throw new IllegalArgumentException("COMBINED_CLEANUP_UNAVAILABLE: "+failure.getMessage(),failure);
   } finally {
@@ -222,8 +226,13 @@ final class FunctionalMathCoordinator {
   Budget(MathCleanUpOptions options,IProgressMonitor parent) {
    this.parent=parent==null?new NullProgressMonitor():parent;total=options.workBudget();remaining=total;timeout=options.timeoutSeconds()*1_000_000_000L;
   }
-  @Override public boolean isCanceled() { return super.isCanceled() || parent.isCanceled() || Thread.currentThread().isInterrupted() || System.nanoTime()-started>=timeout; }
-  void check() { if(isCanceled()) throw new OperationCanceledException("Combined cleanup cancelled or total deadline exceeded"); }
+  private boolean callerCancelled() { return super.isCanceled() || parent.isCanceled() || Thread.currentThread().isInterrupted(); }
+  private boolean expired() { return System.nanoTime()-started>=timeout; }
+  @Override public boolean isCanceled() { return callerCancelled() || expired(); }
+  void check() {
+   if(callerCancelled()) throw new OperationCanceledException("Combined cleanup cancelled");
+   if(expired()) throw new IllegalArgumentException("COMBINED_TIMEOUT_EXCEEDED: original buffer unchanged");
+  }
   void phase(String name) { parent.subTask(name);check(); }
   void charge(long work) {check();if(work<0 || work>remaining) throw new IllegalArgumentException("COMBINED_BUDGET_EXCEEDED: original buffer unchanged");remaining-=work;}
   MathCleanUpOptions allocate(MathCleanUpOptions options,int numerator,int denominator) {

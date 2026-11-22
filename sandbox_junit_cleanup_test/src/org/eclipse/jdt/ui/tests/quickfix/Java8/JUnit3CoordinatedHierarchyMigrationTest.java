@@ -11,8 +11,12 @@
 package org.eclipse.jdt.ui.tests.quickfix.Java8;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,23 +28,29 @@ import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 
 import org.eclipse.jdt.junit.JUnitCore;
+import org.eclipse.ltk.core.refactoring.RefactoringCore;
 
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnitTestTypeInventory;
+import org.sandbox.jdt.internal.corext.fix.multifile.JUnitMultiFilePlanner;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.triggerpattern.api.ExecutionTreeComparator;
 import org.sandbox.jdt.triggerpattern.api.ExecutionTreeComparator.Comparison;
 import org.sandbox.jdt.triggerpattern.api.ExecutionTreeComparator.Policy;
 import org.sandbox.jdt.triggerpattern.api.ExecutionTreeSnapshot;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
-import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
+import org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions;
 
 /** End-to-end rewrite contract for ordinary closed JUnit 3 hierarchies. */
 public class JUnit3CoordinatedHierarchyMigrationTest {
 
 	@RegisterExtension
-	AbstractEclipseJava context= new EclipseJava17();
+	Context context= new Context();
 
 	private IPackageFragmentRoot root;
 
@@ -221,6 +231,85 @@ public class JUnit3CoordinatedHierarchyMigrationTest {
 		assertRuntimeTreePreservedAcrossLoaders(runtimeBefore, launchTarget);
 	}
 
+	@Test
+	public void preservesAssertionEvaluationInACoordinatedHierarchy() throws Exception {
+		IPackageFragment pack= root.createPackageFragment("evaluation", true, null); //$NON-NLS-1$
+		String originalBase= """
+				package evaluation;
+				import junit.framework.Assert;
+				import junit.framework.TestCase;
+				public abstract class BaseTest extends TestCase {
+					private String events= "";
+					public void testInherited() {
+						this.receiver().assertTrue(this.message(), this.actual());
+						Assert.assertTrue(this.message(), this.actual());
+						assertEquals("message", "value", "value"); //$NON-NLS-1$
+						assertEquals("receiver;message;actual;message;actual;", this.events);
+					}
+					private TestCase receiver() { this.events += "receiver;"; return null; }
+					private String message() { this.events += "message;"; return this.events; }
+					private boolean actual() { this.events += "actual;"; return true; }
+				}
+				""";
+		String originalLeaf= "package evaluation; public class ConcreteTest extends BaseTest { }"; //$NON-NLS-1$
+		ICompilationUnit base= pack.createCompilationUnit("BaseTest.java", originalBase, false, null); //$NON-NLS-1$
+		ICompilationUnit leaf= pack.createCompilationUnit("ConcreteTest.java", originalLeaf, false, null); //$NON-NLS-1$
+		ICompilationUnit[] units= { base, leaf };
+		var diagnostics= CompilerDiagnosticAssertions.capture(units);
+		var options= context.getJavaProject().getOptions(false);
+		var classpath= List.of(context.getJavaProject().getRawClasspath());
+		ExecutionTreeSnapshot before= JUnitRuntimeTestTree.capture(leaf.findPrimaryType(),
+				JUnitRuntimeTestTree.TestKind.JUNIT3, true);
+		assertTrue(before.successful(), before.toString());
+		enableMigration();
+		context.apply(units);
+		assertFalse(base.getSource().contains("extends TestCase"), base.getSource()); //$NON-NLS-1$
+		assertTrue(base.getSource().contains("Assertions.assertTrue"), base.getSource()); //$NON-NLS-1$
+		assertEquals(JUnit3BooleanAssertionTest.taggedLiterals(originalBase), JUnit3BooleanAssertionTest.taggedLiterals(base.getSource()));
+		diagnostics.assertNoNewDiagnostics();
+		ExecutionTreeSnapshot after= JUnitRuntimeTestTree.capture(leaf.findPrimaryType(),
+				JUnitRuntimeTestTree.TestKind.JUNIT5, true);
+		assertTrue(after.successful(), after.toString());
+		Comparison comparison= ExecutionTreeComparator.compare(before, after, Policy.sameShape().withAttributes(false));
+		assertTrue(comparison.equivalent(), comparison::difference);
+		RefactoringCore.getUndoManager().performUndo(null, null);
+		assertEquals(originalBase, base.getSource());
+		assertEquals(originalLeaf, leaf.getSource());
+		diagnostics.assertRestored();
+		assertEquals(options, context.getJavaProject().getOptions(false));
+		assertEquals(classpath, List.of(context.getJavaProject().getRawClasspath()));
+	}
+
+	@Test
+	public void rejectsAnEqualLengthEditThatChangesTheAssertionEvaluationPlan() throws CoreException {
+		IPackageFragment pack= root.createPackageFragment("stale", true, null); //$NON-NLS-1$
+		String original= """
+				package stale;
+				public abstract class BaseTest extends junit.framework.TestCase {
+					private String value= "message";
+					public void testInherited() { assertTrue("abc", actual()); }
+					public String msg() { return this.value; }
+					private boolean actual() { return this.value != null; }
+				}
+				""";
+		ICompilationUnit base= pack.createCompilationUnit("BaseTest.java", original, false, null); //$NON-NLS-1$
+		ICompilationUnit leaf= pack.createCompilationUnit("ConcreteTest.java", //$NON-NLS-1$
+				"package stale; public class ConcreteTest extends BaseTest { }", false, null); //$NON-NLS-1$
+		var plan= JUnitMultiFilePlanner.createCoordinated(context.getJavaProject(),
+				new ICompilationUnit[] { base, leaf }, false, true, true, null).plan();
+		assertTrue(plan.hasCoordinatedChanges());
+		String edited= original.replace("assertTrue(\"abc\",", "assertTrue(msg(),"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertEquals(original.length(), edited.length());
+		base.getBuffer().setContents(edited);
+		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
+		parser.setSource(base);
+		parser.setResolveBindings(true);
+		CompilationUnit changed= (CompilationUnit) parser.createAST(null);
+		assertThrows(CoreException.class, () -> plan.addOperationsFor(base, changed,
+				new java.util.LinkedHashSet<>(), new java.util.LinkedHashSet<>()));
+		assertEquals(edited, base.getSource());
+	}
+
 	private void enableMigration() throws CoreException {
 		context.enable(MYCleanUpConstants.JUNIT3_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_3_TEST);
@@ -239,5 +328,16 @@ public class JUnit3CoordinatedHierarchyMigrationTest {
 		Policy crossLoaderPolicy= Policy.sameShape().withAttributes(false);
 		Comparison comparison= ExecutionTreeComparator.compare(before, after, crossLoaderPolicy);
 		assertTrue(comparison.equivalent(), comparison::difference);
+	}
+
+	static final class Context extends AbstractEclipseJava {
+		Context() {
+			super("testresources/rtstubs_17.jar", JavaCore.VERSION_17); //$NON-NLS-1$
+		}
+
+		void apply(ICompilationUnit[] units) throws CoreException {
+			var status= performRefactoring(units, null);
+			assertFalse(status.hasError(), status.toString());
+		}
 	}
 }

@@ -66,8 +66,8 @@ class JUnit3LifecycleDiagnosticTest {
 						"super.setUp(); new Object() { @Override public String toString() { return this.getClass().getName(); } }.toString();", false), //$NON-NLS-1$
 				Arguments.of(profile, "removed assertion receiver", "setUp", //$NON-NLS-1$ //$NON-NLS-2$
 						"super.setUp(); this.assertTrue(true);", false), //$NON-NLS-1$
-				Arguments.of(profile, "removed receiver subtree", "setUp", //$NON-NLS-1$ //$NON-NLS-2$
-						"super.setUp(); this.receiver().assertTrue(true);", false), //$NON-NLS-1$
+				Arguments.of(profile, "preserved receiver subtree", "setUp", //$NON-NLS-1$ //$NON-NLS-2$
+						"super.setUp(); this.receiver().assertTrue(true);", true), //$NON-NLS-1$
 				Arguments.of(profile, "unrelated receiver in lambda", "setUp", //$NON-NLS-1$ //$NON-NLS-2$
 						"super.setUp(); Runnable action= () -> new StringBuilder().append(1); action.run();", false), //$NON-NLS-1$
 				Arguments.of(profile, "preexisting empty callback", "setUp", "", true), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -127,6 +127,9 @@ class JUnit3LifecycleDiagnosticTest {
 					assertNull(migrated.getSuperclassType(), unit.getSource());
 					var migratedCallback= Arrays.stream(migrated.getMethods())
 							.filter(method -> callback.equals(method.getName().getIdentifier())).findFirst().orElseThrow();
+					if ("preserved receiver subtree".equals(description)) { //$NON-NLS-1$
+						assertTrue(migratedCallback.getBody().toString().contains("this.receiver();")); //$NON-NLS-1$
+					}
 					assertEquals("org.junit.jupiter.api." + ("setUp".equals(callback) ? "BeforeEach" : "AfterEach"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 							migratedCallback.resolveBinding().getAnnotations()[0].getAnnotationType().getQualifiedName());
 					cleanup.checkPostConditions(null);

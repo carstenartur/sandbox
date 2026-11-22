@@ -62,6 +62,7 @@ public class EclipseHelpTestModuleBoundaryTest {
 			"MathematicsHelpScreenshots.java", //$NON-NLS-1$
 			"MathematicsHelpScreenshotsSWTBotTest.java", //$NON-NLS-1$
 			"PdeXmlQuickFixScreenshot.java", //$NON-NLS-1$
+			"PinnedEncodingInventory.java", //$NON-NLS-1$
 			"PinnedEncodingPreviewSWTBotTest.java", //$NON-NLS-1$
 			"PinnedFilePreviewDriver.java", //$NON-NLS-1$
 			"PinnedFilePreviewPositionTest.java", //$NON-NLS-1$
