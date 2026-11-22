@@ -159,7 +159,8 @@ The cleanup handles a wide range of encoding-sensitive classes:
 
 ### I/O Streams
 - `InputStreamReader` / `OutputStreamWriter`
-- `FileReader` / `FileWriter` (converted to stream + charset)
+- `FileReader` (converted to stream + charset)
+- `FileWriter` (typed Charset constructors on Java 11+; compatible stream wrappers on older source levels)
 - `PrintWriter`
 - `Scanner`
 
@@ -188,6 +189,32 @@ Reader r = new FileReader(file);
 ```java
 Reader r = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8);
 ```
+
+### Example: FileWriter Concrete Type and Append Mode
+
+On Java 11+, supported JDK `FileWriter` constructors taking a `File` or `String`
+path retain `FileWriter` and receive a typed `Charset` argument. The optional
+`append` argument is preserved after the charset, so concrete declarations,
+return types and inferred `var` types remain `FileWriter`.
+
+For **Prefer UTF-8**, for example:
+
+```java
+// Before
+FileWriter writer = new FileWriter(file, true);
+
+// After (Java 11+)
+FileWriter writer = new FileWriter(file, StandardCharsets.UTF_8, true);
+```
+
+The chosen encoding strategy supplies the charset; **Keep Behavior** uses
+`Charset.defaultCharset()`. At Java 7–10 source levels, the cleanup uses
+`new OutputStreamWriter(new FileOutputStream(file, append), charset)` only when
+the existing target type accepts `OutputStreamWriter`. A concrete `FileWriter`
+target stays unchanged there. Both paths retain the original path and append
+expressions without duplicating their evaluation. Existing explicit-charset
+constructors, `FileDescriptor` constructors and anonymous subclasses are left
+unchanged.
 
 ### Example: Channels.newReader (Java 10+)
 
