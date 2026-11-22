@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -272,7 +273,7 @@ class PublicEnumAdapterTest {
 
 	private void compile(Path binary, String name, String source) throws Exception {
 		Path file= temporary.resolve(name + ".java");
-		Files.writeString(file, source);
+		Files.writeString(file, source, StandardCharsets.UTF_8);
 		assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null,
 				"--release", "22", "-d", binary.toString(), "-cp", binary.toString(), file.toString()), source);
 	}
