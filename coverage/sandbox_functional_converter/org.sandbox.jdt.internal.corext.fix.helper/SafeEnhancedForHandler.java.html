@@ -136,7 +136,7 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 <span class="fc bfc" id="L136" title="All 2 branches covered.">		if (maps.stream().anyMatch(MapOp::isSideEffect)) return;</span>
 <span class="fc" id="L137">		loop.getBody().accept(new ASTVisitor() {</span>
 <span class="fc" id="L138">			@Override public boolean visit(LambdaExpression node) { return false; }</span>
-<span class="nc" id="L139">			@Override public boolean visit(AnonymousClassDeclaration node) { return false; }</span>
+<span class="fc" id="L139">			@Override public boolean visit(AnonymousClassDeclaration node) { return false; }</span>
 <span class="nc" id="L140">			@Override public boolean visit(TypeDeclaration node) { return false; }</span>
 			@Override public boolean visit(VariableDeclarationStatement node) {
 <span class="pc bpc" id="L142" title="1 of 2 branches missed.">				if (node.fragments().size() == 1) {</span>
@@ -274,7 +274,7 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 <span class="fc" id="L274">		ASTStreamRenderer renderer= new ASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(), loop.getBody());</span>
 <span class="fc" id="L275">		Expression forEach= renderer.renderDirectForEach(extracted.model.getSource(), List.of(),</span>
 <span class="fc" id="L276">				loop.getParameter().getName().getIdentifier(), true);</span>
-<span class="fc" id="L277">		renderer.preserveElementTypeImport(cuRewrite.getImportRemover());</span>
+<span class="fc" id="L277">		renderer.preserveImports(cuRewrite);</span>
 <span class="fc" id="L278">		String arraysReference= cuRewrite.getImportRewrite().addImport(&quot;java.util.Arrays&quot;); //$NON-NLS-1$</span>
 <span class="fc" id="L279">		MethodInvocation stream= (MethodInvocation) ((MethodInvocation) forEach).getExpression();</span>
 <span class="fc" id="L280">		stream.setExpression(ast.newName(arraysReference));</span>
@@ -301,7 +301,7 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 <span class="fc" id="L301">			ASTStreamRenderer renderer= new ASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(), extracted.originalBody);</span>
 <span class="pc bpc" id="L302" title="1 of 2 branches missed.">			String variableName= model.getElement() != null ? model.getElement().variableName() : &quot;item&quot;; //$NON-NLS-1$</span>
 <span class="fc" id="L303">			Expression directForEach= renderer.renderDirectForEach(model.getSource(), java.util.List.of(), variableName, true);</span>
-<span class="fc" id="L304">			renderer.preserveElementTypeImport(cuRewrite.getImportRemover());</span>
+<span class="fc" id="L304">			renderer.preserveImports(cuRewrite);</span>
 <span class="fc" id="L305">			rewrite.replace(loop, ast.newExpressionStatement(directForEach), group);</span>
 <span class="fc" id="L306">			return;</span>
 		}
@@ -314,7 +314,7 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 <span class="pc bpc" id="L314" title="1 of 2 branches missed.">		if (streamExpression == null) {</span>
 <span class="nc" id="L315">			return;</span>
 		}
-<span class="fc" id="L317">		renderer.preserveElementTypeImport(cuRewrite.getImportRemover());</span>
+<span class="fc" id="L317">		renderer.preserveImports(cuRewrite);</span>
 
 <span class="fc" id="L319">		VariableDeclarationStatement replacement= createMergedDeclaration(ast, accumulator, streamExpression);</span>
 <span class="fc" id="L320">		rewrite.remove(accumulator, group);</span>
@@ -335,108 +335,107 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 <span class="fc" id="L335">				(VariableDeclarationFragment) original.fragments().get(0);</span>
 <span class="fc" id="L336">		VariableDeclarationFragment fragment= ast.newVariableDeclarationFragment();</span>
 <span class="fc" id="L337">		fragment.setName(ast.newSimpleName(originalFragment.getName().getIdentifier()));</span>
-<span class="fc" id="L338">		fragment.setInitializer((Expression) ASTNode.copySubtree(ast, initializer));</span>
-<span class="fc" id="L339">		VariableDeclarationStatement declaration= ast.newVariableDeclarationStatement(fragment);</span>
-<span class="fc" id="L340">		declaration.setType((Type) ASTNode.copySubtree(ast, original.getType()));</span>
-<span class="fc" id="L341">		declaration.modifiers().addAll(ASTNode.copySubtrees(ast, original.modifiers()));</span>
-<span class="fc" id="L342">		return declaration;</span>
+		// This detached expression can contain ASTRewrite copy/string targets.
+		// Copying its AST would discard those targets and leave empty lambda blocks.
+<span class="fc" id="L340">		fragment.setInitializer(initializer);</span>
+<span class="fc" id="L341">		VariableDeclarationStatement declaration= ast.newVariableDeclarationStatement(fragment);</span>
+<span class="fc" id="L342">		declaration.setType((Type) ASTNode.copySubtree(ast, original.getType()));</span>
+<span class="fc" id="L343">		declaration.modifiers().addAll(ASTNode.copySubtrees(ast, original.modifiers()));</span>
+<span class="fc" id="L344">		return declaration;</span>
 	}
 
 	private boolean isVariableReferencedAfter(EnhancedForStatement loop, VariableDeclarationStatement accumulator) {
-<span class="pc bpc" id="L346" title="1 of 2 branches missed.">		if (!(loop.getParent() instanceof Block block)) {</span>
-<span class="nc" id="L347">			return true;</span>
+<span class="pc bpc" id="L348" title="1 of 2 branches missed.">		if (!(loop.getParent() instanceof Block block)) {</span>
+<span class="nc" id="L349">			return true;</span>
 		}
-<span class="fc" id="L349">		int loopIndex= block.statements().indexOf(loop);</span>
-<span class="pc bpc" id="L350" title="2 of 4 branches missed.">		if (loopIndex &lt; 0 || accumulator.fragments().isEmpty()) {</span>
-<span class="nc" id="L351">			return true;</span>
+<span class="fc" id="L351">		int loopIndex= block.statements().indexOf(loop);</span>
+<span class="pc bpc" id="L352" title="2 of 4 branches missed.">		if (loopIndex &lt; 0 || accumulator.fragments().isEmpty()) {</span>
+<span class="nc" id="L353">			return true;</span>
 		}
-<span class="fc" id="L353">		VariableDeclarationFragment fragment=</span>
-<span class="fc" id="L354">				(VariableDeclarationFragment) accumulator.fragments().get(0);</span>
-<span class="fc" id="L355">		IVariableBinding binding= fragment.resolveBinding();</span>
-<span class="pc bfc" id="L356" title="All 2 branches covered.">		for (int i= loopIndex + 1; i &lt; block.statements().size(); i++) {</span>
-<span class="pc bpc" id="L357" title="1 of 2 branches missed.">			if (referencesVariable((Statement) block.statements().get(i), fragment.getName().getIdentifier(), binding)) {</span>
-<span class="fc" id="L358">				return true;</span>
+<span class="fc" id="L355">		VariableDeclarationFragment fragment=</span>
+<span class="fc" id="L356">				(VariableDeclarationFragment) accumulator.fragments().get(0);</span>
+<span class="fc" id="L357">		IVariableBinding binding= fragment.resolveBinding();</span>
+<span class="pc bfc" id="L358" title="All 2 branches covered.">		for (int i= loopIndex + 1; i &lt; block.statements().size(); i++) {</span>
+<span class="pc bpc" id="L359" title="1 of 2 branches missed.">			if (referencesVariable((Statement) block.statements().get(i), fragment.getName().getIdentifier(), binding)) {</span>
+<span class="fc" id="L360">				return true;</span>
 			}
 		}
-<span class="fc" id="L361">		return false;</span>
+<span class="fc" id="L363">		return false;</span>
 	}
 
 	private boolean referencesVariable(ASTNode node, String variableName, IVariableBinding binding) {
-<span class="fc" id="L365">		final boolean[] referenced= { false };</span>
-<span class="fc" id="L366">		ReferenceHolder&lt;ASTNode, Object&gt; data= ReferenceHolder.create();</span>
-<span class="fc" id="L367">		HelperVisitorFactory.callSimpleNameVisitor(node, data, new HashSet&lt;&gt;(), (name, holder) -&gt; {</span>
-<span class="fc bfc" id="L368" title="All 2 branches covered.">			if (!variableName.equals(name.getIdentifier())) {</span>
-<span class="fc" id="L369">				return true;</span>
+<span class="fc" id="L367">		final boolean[] referenced= { false };</span>
+<span class="fc" id="L368">		ReferenceHolder&lt;ASTNode, Object&gt; data= ReferenceHolder.create();</span>
+<span class="fc" id="L369">		HelperVisitorFactory.callSimpleNameVisitor(node, data, new HashSet&lt;&gt;(), (name, holder) -&gt; {</span>
+<span class="fc bfc" id="L370" title="All 2 branches covered.">			if (!variableName.equals(name.getIdentifier())) {</span>
+<span class="fc" id="L371">				return true;</span>
 			}
-<span class="pc bpc" id="L371" title="2 of 4 branches missed.">			if (binding == null || binding.equals(name.resolveBinding())) {</span>
-<span class="fc" id="L372">				referenced[0]= true;</span>
-<span class="fc" id="L373">				return false;</span>
+<span class="pc bpc" id="L373" title="2 of 4 branches missed.">			if (binding == null || binding.equals(name.resolveBinding())) {</span>
+<span class="fc" id="L374">				referenced[0]= true;</span>
+<span class="fc" id="L375">				return false;</span>
 			}
-<span class="nc" id="L375">			return true;</span>
+<span class="nc" id="L377">			return true;</span>
 		});
-<span class="fc" id="L377">		return referenced[0];</span>
+<span class="fc" id="L379">		return referenced[0];</span>
 	}
 
 	private void addRequiredImports(CompilationUnitRewrite cuRewrite, LoopModel model) {
-<span class="pc bpc" id="L381" title="1 of 3 branches missed.">		switch (model.getSource().type()) {</span>
+<span class="fc bfc" id="L383" title="All 2 branches covered.">		switch (model.getSource().type()) {</span>
 			case ARRAY:
-<span class="fc" id="L383">				cuRewrite.getImportRewrite().addImport(&quot;java.util.Arrays&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L384">				break;</span>
-			case ITERABLE:
-<span class="nc" id="L386">				cuRewrite.getImportRewrite().addImport(&quot;java.util.stream.StreamSupport&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L387">				break;</span>
+<span class="fc" id="L385">				cuRewrite.getImportRewrite().addImport(&quot;java.util.Arrays&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L386">				break;</span>
 			default:
 				break;
 		}
-<span class="fc" id="L391">		cuRewrite.getImportRewrite().addImport(&quot;java.util.stream.Collectors&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L392">	}</span>
+<span class="fc" id="L390">		cuRewrite.getImportRewrite().addImport(&quot;java.util.stream.Collectors&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L391">	}</span>
 
 	private Set&lt;String&gt; liftedAccumulatorNames(EnhancedForStatement loop, LoopModel model) {
-<span class="fc" id="L395">		String targetVariable= null;</span>
-<span class="fc bfc" id="L396" title="All 2 branches covered.">		if (model.getTerminal() instanceof ReduceTerminal reduceTerminal) {</span>
-<span class="fc" id="L397">			targetVariable= reduceTerminal.targetVariable();</span>
-<span class="fc bfc" id="L398" title="All 2 branches covered.">		} else if (model.getTerminal() instanceof CollectTerminal collectTerminal</span>
-<span class="fc bfc" id="L399" title="All 2 branches covered.">				&amp;&amp; findFreshAccumulator(loop, collectTerminal.targetVariable()) != null) {</span>
-<span class="fc" id="L400">			targetVariable= collectTerminal.targetVariable();</span>
+<span class="fc" id="L394">		String targetVariable= null;</span>
+<span class="fc bfc" id="L395" title="All 2 branches covered.">		if (model.getTerminal() instanceof ReduceTerminal reduceTerminal) {</span>
+<span class="fc" id="L396">			targetVariable= reduceTerminal.targetVariable();</span>
+<span class="fc bfc" id="L397" title="All 2 branches covered.">		} else if (model.getTerminal() instanceof CollectTerminal collectTerminal</span>
+<span class="fc bfc" id="L398" title="All 2 branches covered.">				&amp;&amp; findFreshAccumulator(loop, collectTerminal.targetVariable()) != null) {</span>
+<span class="fc" id="L399">			targetVariable= collectTerminal.targetVariable();</span>
 		}
-<span class="pc bpc" id="L402" title="1 of 4 branches missed.">		if (targetVariable == null || targetVariable.indexOf('.') &gt;= 0) {</span>
-<span class="fc" id="L403">			return Set.of();</span>
+<span class="pc bpc" id="L401" title="1 of 4 branches missed.">		if (targetVariable == null || targetVariable.indexOf('.') &gt;= 0) {</span>
+<span class="fc" id="L402">			return Set.of();</span>
 		}
-<span class="fc" id="L405">		return Set.of(targetVariable);</span>
+<span class="fc" id="L404">		return Set.of(targetVariable);</span>
 	}
 
 	private VariableDeclarationStatement findFreshAccumulator(EnhancedForStatement loop, String targetVariable) {
-<span class="fc" id="L409">		VariableDeclarationStatement declaration= findAdjacentAccumulator(loop, targetVariable);</span>
-<span class="fc bfc" id="L410" title="All 2 branches covered.">		return declaration != null &amp;&amp; targetVariable.equals(</span>
-<span class="fc bfc" id="L411" title="All 2 branches covered.">				CollectPatternDetector.isEmptyCollectionDeclaration(declaration)) ? declaration : null;</span>
+<span class="fc" id="L408">		VariableDeclarationStatement declaration= findAdjacentAccumulator(loop, targetVariable);</span>
+<span class="fc bfc" id="L409" title="All 2 branches covered.">		return declaration != null &amp;&amp; targetVariable.equals(</span>
+<span class="fc bfc" id="L410" title="All 2 branches covered.">				CollectPatternDetector.isEmptyCollectionDeclaration(declaration)) ? declaration : null;</span>
 	}
 
 	private VariableDeclarationStatement findAdjacentAccumulator(EnhancedForStatement loop, String targetVariable) {
-<span class="pc bpc" id="L415" title="2 of 4 branches missed.">		if (targetVariable == null || !(loop.getParent() instanceof Block block)) {</span>
-<span class="nc" id="L416">			return null;</span>
+<span class="pc bpc" id="L414" title="2 of 4 branches missed.">		if (targetVariable == null || !(loop.getParent() instanceof Block block)) {</span>
+<span class="nc" id="L415">			return null;</span>
 		}
 		@SuppressWarnings(&quot;unchecked&quot;) //$NON-NLS-1$
-<span class="fc" id="L419">		List&lt;Statement&gt; statements= block.statements();</span>
-<span class="fc" id="L420">		int loopIndex= statements.indexOf(loop);</span>
-<span class="fc bfc" id="L421" title="All 2 branches covered.">		if (loopIndex &lt;= 0) {</span>
-<span class="fc" id="L422">			return null;</span>
+<span class="fc" id="L418">		List&lt;Statement&gt; statements= block.statements();</span>
+<span class="fc" id="L419">		int loopIndex= statements.indexOf(loop);</span>
+<span class="fc bfc" id="L420" title="All 2 branches covered.">		if (loopIndex &lt;= 0) {</span>
+<span class="fc" id="L421">			return null;</span>
 		}
-<span class="fc" id="L424">		Statement previous= statements.get(loopIndex - 1);</span>
-<span class="fc bfc" id="L425" title="All 2 branches covered.">		if (!(previous instanceof VariableDeclarationStatement declaration)</span>
-<span class="pc bpc" id="L426" title="1 of 2 branches missed.">				|| declaration.fragments().size() != 1) {</span>
-<span class="fc" id="L427">			return null;</span>
+<span class="fc" id="L423">		Statement previous= statements.get(loopIndex - 1);</span>
+<span class="fc bfc" id="L424" title="All 2 branches covered.">		if (!(previous instanceof VariableDeclarationStatement declaration)</span>
+<span class="pc bpc" id="L425" title="1 of 2 branches missed.">				|| declaration.fragments().size() != 1) {</span>
+<span class="fc" id="L426">			return null;</span>
 		}
-<span class="fc" id="L429">		VariableDeclarationFragment fragment=</span>
-<span class="fc" id="L430">				(VariableDeclarationFragment) declaration.fragments().get(0);</span>
-<span class="fc bfc" id="L431" title="All 2 branches covered.">		return targetVariable.equals(fragment.getName().getIdentifier()) ? declaration : null;</span>
+<span class="fc" id="L428">		VariableDeclarationFragment fragment=</span>
+<span class="fc" id="L429">				(VariableDeclarationFragment) declaration.fragments().get(0);</span>
+<span class="fc bfc" id="L430" title="All 2 branches covered.">		return targetVariable.equals(fragment.getName().getIdentifier()) ? declaration : null;</span>
 	}
 
 	private boolean isConvertible(LoopModel model) {
-<span class="pc bpc" id="L435" title="1 of 2 branches missed.">		if (model == null) {</span>
-<span class="nc" id="L436">			return false;</span>
+<span class="pc bpc" id="L434" title="1 of 2 branches missed.">		if (model == null) {</span>
+<span class="nc" id="L435">			return false;</span>
 		}
-<span class="fc" id="L438">		LoopMetadata metadata= model.getMetadata();</span>
-<span class="pc bpc" id="L439" title="1 of 6 branches missed.">		return metadata == null || !metadata.hasBreak() &amp;&amp; !metadata.hasContinue();</span>
+<span class="fc" id="L437">		LoopMetadata metadata= model.getMetadata();</span>
+<span class="pc bpc" id="L438" title="1 of 6 branches missed.">		return metadata == null || !metadata.hasBreak() &amp;&amp; !metadata.hasContinue();</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

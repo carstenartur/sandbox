@@ -15,7 +15,6 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
@@ -23,7 +22,6 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnumConstantDeclaration;
 import org.eclipse.jdt.core.dom.EnumDeclaration;
-import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.Javadoc;
 import org.eclipse.jdt.core.dom.Modifier;
@@ -51,126 +49,126 @@ import org.sandbox.jdt.internal.corext.fix.helper.IntToEnumHelper.IntConstantHol
  * Case bodies and fall-through order are preserved; accepted callers receive the
  * corresponding enum values together with the parameter type change.
  */
-<span class="fc" id="L54">public class SwitchIntToEnumHelper extends AbstractTool&lt;ReferenceHolder&lt;Integer, IntConstantHolder&gt;&gt; {</span>
+<span class="fc" id="L52">public class SwitchIntToEnumHelper extends AbstractTool&lt;ReferenceHolder&lt;Integer, IntConstantHolder&gt;&gt; {</span>
 
 	@Override
 	public void find(IntToEnumFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="fc" id="L59">		AstProcessing.independent().visit(SwitchStatement.class, node -&gt; {</span>
-<span class="pc bpc" id="L60" title="1 of 2 branches missed.">			if (nodesprocessed.contains(node)) {</span>
-<span class="nc" id="L61">				return;</span>
+<span class="fc" id="L57">		AstProcessing.independent().visit(SwitchStatement.class, node -&gt; {</span>
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">			if (nodesprocessed.contains(node)) {</span>
+<span class="nc" id="L59">				return;</span>
 			}
-<span class="fc" id="L63">			IntConstantHolder holder = IntToEnumHelper.createSwitchCandidate(compilationUnit, node);</span>
-<span class="fc bfc" id="L64" title="All 2 branches covered.">			if (holder == null) {</span>
-<span class="fc" id="L65">				return;</span>
+<span class="fc" id="L61">			IntConstantHolder holder = IntToEnumHelper.createSwitchCandidate(compilationUnit, node);</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">			if (holder == null) {</span>
+<span class="fc" id="L63">				return;</span>
 			}
-<span class="fc" id="L67">			holder.nodesProcessed = nodesprocessed;</span>
-<span class="fc" id="L68">			ReferenceHolder&lt;Integer, IntConstantHolder&gt; dataholder = new ReferenceHolder&lt;&gt;();</span>
-<span class="fc" id="L69">			dataholder.put(0, holder);</span>
-<span class="fc" id="L70">			operations.add(fixcore.rewrite(dataholder));</span>
-<span class="fc" id="L71">			nodesprocessed.add(node);</span>
-<span class="fc" id="L72">		}).build(compilationUnit);</span>
-<span class="fc" id="L73">	}</span>
+<span class="fc" id="L65">			holder.nodesProcessed = nodesprocessed;</span>
+<span class="fc" id="L66">			ReferenceHolder&lt;Integer, IntConstantHolder&gt; dataholder = new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L67">			dataholder.put(0, holder);</span>
+<span class="fc" id="L68">			operations.add(fixcore.rewrite(dataholder));</span>
+<span class="fc" id="L69">			nodesprocessed.add(node);</span>
+<span class="fc" id="L70">		}).build(compilationUnit);</span>
+<span class="fc" id="L71">	}</span>
 
 	@SuppressWarnings(&quot;unchecked&quot;)
 	@Override
 	public void rewrite(IntToEnumFixCore fixCore, ReferenceHolder&lt;Integer, IntConstantHolder&gt; holder,
 			CompilationUnitRewrite cuRewrite, TextEditGroup group) {
 
-<span class="fc bfc" id="L80" title="All 2 branches covered.">		for (IntConstantHolder data : holder.values()) {</span>
-<span class="pc bpc" id="L81" title="1 of 2 branches missed.">			if (data.switchStatement == null) {</span>
-<span class="nc" id="L82">				continue;</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">		for (IntConstantHolder data : holder.values()) {</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">			if (data.switchStatement == null) {</span>
+<span class="nc" id="L80">				continue;</span>
 			}
 
-<span class="fc" id="L85">			AST ast = cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L86">			ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L83">			AST ast = cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L84">			ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
 
-<span class="fc" id="L88">			String prefix = findCommonPrefix(data.constantNames);</span>
-<span class="pc bpc" id="L89" title="1 of 2 branches missed.">			if (prefix == null) {</span>
-<span class="nc" id="L90">				continue;</span>
+<span class="fc" id="L86">			String prefix = findCommonPrefix(data.constantNames);</span>
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">			if (prefix == null) {</span>
+<span class="nc" id="L88">				continue;</span>
 			}
 
-<span class="fc" id="L93">			String enumName = prefixToEnumName(prefix);</span>
+<span class="fc" id="L91">			String enumName = prefixToEnumName(prefix);</span>
 
 			// 1. Create enum declaration
-<span class="fc" id="L96">			EnumDeclaration enumDecl = ast.newEnumDeclaration();</span>
-<span class="fc" id="L97">			enumDecl.setName(ast.newSimpleName(enumName));</span>
-<span class="fc" id="L98">			Javadoc doc = ast.newJavadoc();</span>
-<span class="fc" id="L99">			TagElement tag = ast.newTagElement();</span>
-<span class="fc" id="L100">			TextElement text = ast.newTextElement();</span>
-<span class="fc" id="L101">			text.setText(&quot;Values accepted by the &quot; + data.comparedVariable + &quot; switch.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L102">			tag.fragments().add(text);</span>
-<span class="fc" id="L103">			doc.tags().add(tag);</span>
-<span class="fc" id="L104">			enumDecl.setJavadoc(doc);</span>
-<span class="fc" id="L105">			enumDecl.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.PRIVATE_KEYWORD));</span>
+<span class="fc" id="L94">			EnumDeclaration enumDecl = ast.newEnumDeclaration();</span>
+<span class="fc" id="L95">			enumDecl.setName(ast.newSimpleName(enumName));</span>
+<span class="fc" id="L96">			Javadoc doc = ast.newJavadoc();</span>
+<span class="fc" id="L97">			TagElement tag = ast.newTagElement();</span>
+<span class="fc" id="L98">			TextElement text = ast.newTextElement();</span>
+<span class="fc" id="L99">			text.setText(&quot;Values accepted by the &quot; + data.comparedVariable + &quot; switch.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L100">			tag.fragments().add(text);</span>
+<span class="fc" id="L101">			doc.tags().add(tag);</span>
+<span class="fc" id="L102">			enumDecl.setJavadoc(doc);</span>
+<span class="fc" id="L103">			enumDecl.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.PRIVATE_KEYWORD));</span>
 
-<span class="fc bfc" id="L107" title="All 2 branches covered.">			for (String constName : data.constantNames) {</span>
-<span class="fc" id="L108">				EnumConstantDeclaration enumConst = ast.newEnumConstantDeclaration();</span>
-<span class="fc" id="L109">				String enumValueName = constName.substring(prefix.length());</span>
-<span class="fc" id="L110">				enumConst.setName(ast.newSimpleName(enumValueName));</span>
-<span class="fc" id="L111">				Javadoc original = data.constantFields.get(constName).getJavadoc();</span>
-<span class="fc bfc" id="L112" title="All 2 branches covered.">				if (original != null) {</span>
-<span class="fc" id="L113">					enumConst.setJavadoc((Javadoc) ASTNode.copySubtree(ast, original));</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">			for (String constName : data.constantNames) {</span>
+<span class="fc" id="L106">				EnumConstantDeclaration enumConst = ast.newEnumConstantDeclaration();</span>
+<span class="fc" id="L107">				String enumValueName = constName.substring(prefix.length());</span>
+<span class="fc" id="L108">				enumConst.setName(ast.newSimpleName(enumValueName));</span>
+<span class="fc" id="L109">				Javadoc original = data.constantFields.get(constName).getJavadoc();</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">				if (original != null) {</span>
+<span class="fc" id="L111">					enumConst.setJavadoc((Javadoc) ASTNode.copySubtree(ast, original));</span>
 				}
-<span class="fc" id="L115">				enumDecl.enumConstants().add(enumConst);</span>
+<span class="fc" id="L113">				enumDecl.enumConstants().add(enumConst);</span>
 			}
 
 			// 2. Find the enclosing TypeDeclaration
-<span class="fc" id="L119">			TypeDeclaration typeDecl = data.enclosingType;</span>
-<span class="pc bpc" id="L120" title="1 of 2 branches missed.">			if (typeDecl == null) {</span>
-<span class="nc" id="L121">				continue;</span>
+<span class="fc" id="L117">			TypeDeclaration typeDecl = data.enclosingType;</span>
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">			if (typeDecl == null) {</span>
+<span class="nc" id="L119">				continue;</span>
 			}
 
-<span class="fc" id="L124">			ListRewrite bodyRewrite = rewrite.getListRewrite(typeDecl, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);</span>
+<span class="fc" id="L122">			ListRewrite bodyRewrite = rewrite.getListRewrite(typeDecl, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);</span>
 
 			// 3. Insert enum before the first constant field being removed
-<span class="fc" id="L127">			FieldDeclaration firstField = data.constantFields.values().iterator().next();</span>
-<span class="fc" id="L128">			bodyRewrite.insertBefore(enumDecl, firstField, group);</span>
+<span class="fc" id="L125">			FieldDeclaration firstField = data.constantFields.values().iterator().next();</span>
+<span class="fc" id="L126">			bodyRewrite.insertBefore(enumDecl, firstField, group);</span>
 
 			// 4. Remove old int constant field declarations
-<span class="fc" id="L131">			Set&lt;FieldDeclaration&gt; fieldsToRemove = new HashSet&lt;&gt;(data.constantFields.values());</span>
-<span class="fc bfc" id="L132" title="All 2 branches covered.">			for (FieldDeclaration field : fieldsToRemove) {</span>
-<span class="fc" id="L133">				List&lt;?&gt; fragments = field.fragments();</span>
-<span class="fc" id="L134">				boolean allFragmentsRemoved = true;</span>
-<span class="fc bfc" id="L135" title="All 2 branches covered.">				for (Object frag : fragments) {</span>
-<span class="fc" id="L136">					VariableDeclarationFragment vdf = (VariableDeclarationFragment) frag;</span>
-<span class="pc bpc" id="L137" title="1 of 2 branches missed.">					if (!data.constantFields.containsKey(vdf.getName().getIdentifier())) {</span>
-<span class="nc" id="L138">						allFragmentsRemoved = false;</span>
-<span class="nc" id="L139">						break;</span>
+<span class="fc" id="L129">			Set&lt;FieldDeclaration&gt; fieldsToRemove = new HashSet&lt;&gt;(data.constantFields.values());</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">			for (FieldDeclaration field : fieldsToRemove) {</span>
+<span class="fc" id="L131">				List&lt;?&gt; fragments = field.fragments();</span>
+<span class="fc" id="L132">				boolean allFragmentsRemoved = true;</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">				for (Object frag : fragments) {</span>
+<span class="fc" id="L134">					VariableDeclarationFragment vdf = (VariableDeclarationFragment) frag;</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">					if (!data.constantFields.containsKey(vdf.getName().getIdentifier())) {</span>
+<span class="nc" id="L136">						allFragmentsRemoved = false;</span>
+<span class="nc" id="L137">						break;</span>
 					}
 				}
-<span class="pc bpc" id="L142" title="1 of 2 branches missed.">				if (allFragmentsRemoved) {</span>
-<span class="fc" id="L143">					bodyRewrite.remove(field, group);</span>
-<span class="fc" id="L144">				} else {</span>
-<span class="nc" id="L145">					ListRewrite fragRewrite = rewrite.getListRewrite(field, FieldDeclaration.FRAGMENTS_PROPERTY);</span>
-<span class="nc bnc" id="L146" title="All 2 branches missed.">					for (Object frag : fragments) {</span>
-<span class="nc" id="L147">						VariableDeclarationFragment vdf = (VariableDeclarationFragment) frag;</span>
-<span class="nc bnc" id="L148" title="All 2 branches missed.">						if (data.constantFields.containsKey(vdf.getName().getIdentifier())) {</span>
-<span class="nc" id="L149">							fragRewrite.remove(vdf, group);</span>
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">				if (allFragmentsRemoved) {</span>
+<span class="fc" id="L141">					bodyRewrite.remove(field, group);</span>
+<span class="fc" id="L142">				} else {</span>
+<span class="nc" id="L143">					ListRewrite fragRewrite = rewrite.getListRewrite(field, FieldDeclaration.FRAGMENTS_PROPERTY);</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">					for (Object frag : fragments) {</span>
+<span class="nc" id="L145">						VariableDeclarationFragment vdf = (VariableDeclarationFragment) frag;</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">						if (data.constantFields.containsKey(vdf.getName().getIdentifier())) {</span>
+<span class="nc" id="L147">							fragRewrite.remove(vdf, group);</span>
 						}
 					}
 				}
 			}
 
 			// 5. Update switch case labels to enum values
-<span class="fc" id="L156">			SwitchCase firstCase = null;</span>
-<span class="fc" id="L157">			boolean hasDefault = false;</span>
-<span class="fc bfc" id="L158" title="All 2 branches covered.">			for (Object stmt : data.switchStatement.statements()) {</span>
-<span class="fc bfc" id="L159" title="All 2 branches covered.">				if (stmt instanceof SwitchCase switchCase) {</span>
-<span class="fc bfc" id="L160" title="All 2 branches covered.">					if (firstCase == null) {</span>
-<span class="fc" id="L161">						firstCase = switchCase;</span>
+<span class="fc" id="L154">			SwitchCase firstCase = null;</span>
+<span class="fc" id="L155">			boolean hasDefault = false;</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">			for (Object stmt : data.switchStatement.statements()) {</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">				if (stmt instanceof SwitchCase switchCase) {</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">					if (firstCase == null) {</span>
+<span class="fc" id="L159">						firstCase = switchCase;</span>
 					}
-<span class="fc bfc" id="L163" title="All 2 branches covered.">					if (switchCase.isDefault()) {</span>
-<span class="fc" id="L164">						hasDefault = true;</span>
-<span class="fc" id="L165">						continue;</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">					if (switchCase.isDefault()) {</span>
+<span class="fc" id="L162">						hasDefault = true;</span>
+<span class="fc" id="L163">						continue;</span>
 					}
-<span class="fc bfc" id="L167" title="All 2 branches covered.">					for (Object expr : switchCase.expressions()) {</span>
-<span class="pc bpc" id="L168" title="1 of 2 branches missed.">						if (expr instanceof SimpleName sn) {</span>
-<span class="fc" id="L169">							String constName = sn.getIdentifier();</span>
-<span class="pc bpc" id="L170" title="1 of 2 branches missed.">							if (data.constantFields.containsKey(constName)) {</span>
-<span class="fc" id="L171">								String enumValueName = constName.substring(prefix.length());</span>
-<span class="fc" id="L172">								SimpleName newName = ast.newSimpleName(enumValueName);</span>
-<span class="fc" id="L173">								rewrite.replace(sn, newName, group);</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">					for (Object expr : switchCase.expressions()) {</span>
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">						if (expr instanceof SimpleName sn) {</span>
+<span class="fc" id="L167">							String constName = sn.getIdentifier();</span>
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">							if (data.constantFields.containsKey(constName)) {</span>
+<span class="fc" id="L169">								String enumValueName = constName.substring(prefix.length());</span>
+<span class="fc" id="L170">								SimpleName newName = ast.newSimpleName(enumValueName);</span>
+<span class="fc" id="L171">								rewrite.replace(sn, newName, group);</span>
 							}
 						}
 					}
@@ -179,88 +177,84 @@ import org.sandbox.jdt.internal.corext.fix.helper.IntToEnumHelper.IntConstantHol
 
 			// Previously an unmatched int left the switch without executing a case.
 			// Insert its equivalent first so existing fall-through paths keep their targets.
-<span class="pc bpc" id="L182" title="1 of 4 branches missed.">			if (!hasDefault &amp;&amp; firstCase != null) {</span>
-<span class="fc" id="L183">				SwitchCase fallback = ast.newSwitchCase();</span>
-<span class="fc" id="L184">				fallback.setSwitchLabeledRule(firstCase.isSwitchLabeledRule());</span>
-<span class="fc" id="L185">				ListRewrite statements = rewrite.getListRewrite(data.switchStatement, SwitchStatement.STATEMENTS_PROPERTY);</span>
-<span class="fc" id="L186">				statements.insertFirst(fallback, group);</span>
-<span class="fc bfc" id="L187" title="All 2 branches covered.">				ASTNode body = firstCase.isSwitchLabeledRule()</span>
-<span class="fc" id="L188">						? rewrite.createStringPlaceholder(&quot;{ /* No matching constant. */ }&quot;, ASTNode.BLOCK) //$NON-NLS-1$</span>
-<span class="fc" id="L189">						: ast.newBreakStatement();</span>
-<span class="fc" id="L190">				statements.insertAfter(body, fallback, group);</span>
+<span class="pc bpc" id="L180" title="1 of 4 branches missed.">			if (!hasDefault &amp;&amp; firstCase != null) {</span>
+<span class="fc" id="L181">				SwitchCase fallback = ast.newSwitchCase();</span>
+<span class="fc" id="L182">				fallback.setSwitchLabeledRule(firstCase.isSwitchLabeledRule());</span>
+<span class="fc" id="L183">				ListRewrite statements = rewrite.getListRewrite(data.switchStatement, SwitchStatement.STATEMENTS_PROPERTY);</span>
+<span class="fc" id="L184">				statements.insertFirst(fallback, group);</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">				ASTNode body = firstCase.isSwitchLabeledRule()</span>
+<span class="fc" id="L186">						? rewrite.createStringPlaceholder(&quot;{ /* No matching constant. */ }&quot;, ASTNode.BLOCK) //$NON-NLS-1$</span>
+<span class="fc" id="L187">						: ast.newBreakStatement();</span>
+<span class="fc" id="L188">				statements.insertAfter(body, fallback, group);</span>
 			}
 
 			// 6. Update the proven parameter and every accepted local call site.
-<span class="fc" id="L194">			Type newType = ast.newSimpleType(ast.newSimpleName(enumName));</span>
-<span class="fc" id="L195">			rewrite.replace(data.parameter.getType(), newType, group);</span>
-<span class="fc bfc" id="L196" title="All 2 branches covered.">			for (Map.Entry&lt;Expression, String&gt; reference : data.constantReferences.entrySet()) {</span>
-<span class="fc bfc" id="L197" title="All 2 branches covered.">				if (!(reference.getKey().getParent() instanceof SwitchCase)) {</span>
-<span class="fc" id="L198">					String constant = reference.getValue().substring(prefix.length());</span>
-<span class="fc" id="L199">					rewrite.replace(reference.getKey(), ast.newName(enumName + &quot;.&quot; + constant), group); //$NON-NLS-1$</span>
-				}
-			}
+<span class="fc" id="L192">			Type newType = ast.newSimpleType(ast.newSimpleName(enumName));</span>
+<span class="fc" id="L193">			rewrite.replace(data.parameter.getType(), newType, group);</span>
+<span class="fc" id="L194">			PrivateEnumLookup.rewriteIndexes(data.ordinalIndexes, rewrite, group);</span>
+<span class="fc" id="L195">			IntToEnumHelper.rewriteConstantReferences(data, prefix, enumName, rewrite, group);</span>
 		}
-<span class="fc" id="L203">	}</span>
+<span class="fc" id="L197">	}</span>
 
 	/**
 	 * Find the longest common prefix of all constant names, ending at an underscore boundary.
 	 * Returns null if no valid underscore-delimited prefix is found.
 	 */
 	static String findCommonPrefix(List&lt;String&gt; names) {
-<span class="pc bpc" id="L210" title="2 of 4 branches missed.">		if (names == null || names.isEmpty()) {</span>
-<span class="nc" id="L211">			return null;</span>
+<span class="pc bpc" id="L204" title="2 of 4 branches missed.">		if (names == null || names.isEmpty()) {</span>
+<span class="nc" id="L205">			return null;</span>
 		}
-<span class="fc" id="L213">		String first = names.get(0);</span>
-<span class="fc" id="L214">		int prefixEnd = first.length();</span>
-<span class="fc bfc" id="L215" title="All 2 branches covered.">		for (String name : names) {</span>
-<span class="fc" id="L216">			prefixEnd = Math.min(prefixEnd, name.length());</span>
-<span class="fc bfc" id="L217" title="All 2 branches covered.">			for (int i = 0; i &lt; prefixEnd; i++) {</span>
-<span class="fc bfc" id="L218" title="All 2 branches covered.">				if (first.charAt(i) != name.charAt(i)) {</span>
-<span class="fc" id="L219">					prefixEnd = i;</span>
-<span class="fc" id="L220">					break;</span>
+<span class="fc" id="L207">		String first = names.get(0);</span>
+<span class="fc" id="L208">		int prefixEnd = first.length();</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">		for (String name : names) {</span>
+<span class="fc" id="L210">			prefixEnd = Math.min(prefixEnd, name.length());</span>
+<span class="fc bfc" id="L211" title="All 2 branches covered.">			for (int i = 0; i &lt; prefixEnd; i++) {</span>
+<span class="fc bfc" id="L212" title="All 2 branches covered.">				if (first.charAt(i) != name.charAt(i)) {</span>
+<span class="fc" id="L213">					prefixEnd = i;</span>
+<span class="fc" id="L214">					break;</span>
 				}
 			}
 		}
-<span class="fc" id="L224">		String prefix = first.substring(0, prefixEnd);</span>
+<span class="fc" id="L218">		String prefix = first.substring(0, prefixEnd);</span>
 		// Trim to last underscore for a clean prefix boundary.
 		// If there is no underscore (or only at position 0), we do not
 		// consider this a valid prefix according to the architecture
 		// contract (which requires underscore-delimited prefixes).
-<span class="fc" id="L229">		int lastUnderscore = prefix.lastIndexOf('_');</span>
-<span class="pc bpc" id="L230" title="1 of 2 branches missed.">		if (lastUnderscore &gt; 0) {</span>
-<span class="fc" id="L231">			return prefix.substring(0, lastUnderscore + 1);</span>
+<span class="fc" id="L223">		int lastUnderscore = prefix.lastIndexOf('_');</span>
+<span class="pc bpc" id="L224" title="1 of 2 branches missed.">		if (lastUnderscore &gt; 0) {</span>
+<span class="fc" id="L225">			return prefix.substring(0, lastUnderscore + 1);</span>
 		}
-<span class="nc" id="L233">		return null;</span>
+<span class="nc" id="L227">		return null;</span>
 	}
 
 	/**
 	 * Convert a constant prefix like &quot;STATUS_&quot; to an enum name like &quot;Status&quot;.
 	 */
 	static String prefixToEnumName(String prefix) {
-<span class="pc bpc" id="L240" title="1 of 2 branches missed.">		if (prefix.endsWith(&quot;_&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L241">			prefix = prefix.substring(0, prefix.length() - 1);</span>
+<span class="pc bpc" id="L234" title="1 of 2 branches missed.">		if (prefix.endsWith(&quot;_&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L235">			prefix = prefix.substring(0, prefix.length() - 1);</span>
 		}
-<span class="fc" id="L243">		StringBuilder sb = new StringBuilder();</span>
-<span class="fc" id="L244">		boolean capitalizeNext = true;</span>
-<span class="fc bfc" id="L245" title="All 2 branches covered.">		for (char c : prefix.toLowerCase().toCharArray()) {</span>
-<span class="pc bpc" id="L246" title="1 of 2 branches missed.">			if (c == '_') {</span>
-<span class="nc" id="L247">				capitalizeNext = true;</span>
-<span class="nc" id="L248">			} else {</span>
-<span class="fc bfc" id="L249" title="All 2 branches covered.">				if (capitalizeNext) {</span>
-<span class="fc" id="L250">					sb.append(Character.toUpperCase(c));</span>
-<span class="fc" id="L251">					capitalizeNext = false;</span>
-<span class="fc" id="L252">				} else {</span>
-<span class="fc" id="L253">					sb.append(c);</span>
+<span class="fc" id="L237">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L238">		boolean capitalizeNext = true;</span>
+<span class="fc bfc" id="L239" title="All 2 branches covered.">		for (char c : prefix.toLowerCase().toCharArray()) {</span>
+<span class="pc bpc" id="L240" title="1 of 2 branches missed.">			if (c == '_') {</span>
+<span class="nc" id="L241">				capitalizeNext = true;</span>
+<span class="nc" id="L242">			} else {</span>
+<span class="fc bfc" id="L243" title="All 2 branches covered.">				if (capitalizeNext) {</span>
+<span class="fc" id="L244">					sb.append(Character.toUpperCase(c));</span>
+<span class="fc" id="L245">					capitalizeNext = false;</span>
+<span class="fc" id="L246">				} else {</span>
+<span class="fc" id="L247">					sb.append(c);</span>
 				}
 			}
 		}
-<span class="fc" id="L257">		return sb.toString();</span>
+<span class="fc" id="L251">		return sb.toString();</span>
 	}
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L262" title="All 2 branches missed.">		if (!afterRefactoring) {</span>
-<span class="nc" id="L263">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">		if (!afterRefactoring) {</span>
+<span class="nc" id="L257">			return &quot;&quot;&quot;</span>
 					// Before:
 					private static final int STATUS_PENDING = 0;
 					private static final int STATUS_APPROVED = 1;
@@ -275,7 +269,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.IntToEnumHelper.IntConstantHol
 					}
 					&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L278">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L272">		return &quot;&quot;&quot;</span>
 				// After:
 				/** Values accepted by the status switch. */
 				private enum Status {

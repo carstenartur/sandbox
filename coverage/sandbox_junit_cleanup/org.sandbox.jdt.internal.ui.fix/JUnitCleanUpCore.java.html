@@ -125,7 +125,7 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp&lt;JUnitMi
 <span class="fc bfc" id="L125" title="All 2 branches covered.">		Analysis analysis= junit4Enabled</span>
 <span class="fc" id="L126">				? JUnitBestEffortSupport.analyze(project, compilationUnits, fixes, monitor)</span>
 <span class="fc" id="L127">				: Analysis.empty();</span>
-<span class="pc bpc" id="L128" title="3 of 6 branches missed.">		if (bestEffort &amp;&amp; migrateExternalResources &amp;&amp; analysis.disableCoordinatedExternalResource()) {</span>
+<span class="pc bpc" id="L128" title="1 of 6 branches missed.">		if (bestEffort &amp;&amp; migrateExternalResources &amp;&amp; analysis.disableCoordinatedExternalResource()) {</span>
 <span class="nc" id="L129">			planningOptions= new JUnitMultiFilePlanner.PlanningOptions(</span>
 <span class="nc" id="L130">					false,</span>
 <span class="nc" id="L131">					fixes.contains(JUnitCleanUpFixCore.TEST3),</span>
@@ -137,7 +137,7 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp&lt;JUnitMi
 		}
 <span class="fc" id="L138">		analysis= JUnitBestEffortSupport.reconcileParameterized(analysis, result.plan(), result.diagnostics(),</span>
 <span class="fc bfc" id="L139" title="All 2 branches covered.">				fixes.contains(JUnitCleanUpFixCore.PARAMETERIZED)</span>
-<span class="pc bpc" id="L140" title="1 of 2 branches missed.">						&amp;&amp; project.findType(&quot;org.junit.jupiter.params.ParameterizedClass&quot;) != null); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">						&amp;&amp; project.findType(&quot;org.junit.jupiter.params.ParameterizedClass&quot;) != null); //$NON-NLS-1$</span>
 <span class="pc bpc" id="L141" title="1 of 6 branches missed.">		if (!bestEffort &amp;&amp; result.plan() != null &amp;&amp; !analysis.gaps().isEmpty()) {</span>
 <span class="fc" id="L142">			Set&lt;String&gt; blockedRuleUnits= analysis.gaps().stream()</span>
 <span class="fc" id="L143">					.map(JUnitBestEffortSupport.Gap::ownerCompilationUnitHandle)</span>
@@ -389,10 +389,10 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp&lt;JUnitMi
 	@Override
 	public String[] getStepDescriptions() {
 <span class="fc" id="L391">		List&lt;String&gt; result= new ArrayList&lt;&gt;();</span>
-<span class="pc bpc" id="L392" title="2 of 4 branches missed.">		if (isEnabled(JUNIT_CLEANUP) || isEnabled(JUNIT3_CLEANUP)) {</span>
-<span class="nc" id="L393">			result.add(Messages.format(JUnitCleanUp_description, new Object[] { String.join(&quot;,&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L394">					computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collectors.toList())) }));</span>
-<span class="nc bnc" id="L395" title="All 2 branches missed.">			if (isEnabled(JUnitMigrationOptions.BEST_EFFORT)) {</span>
+<span class="pc bpc" id="L392" title="1 of 4 branches missed.">		if (isEnabled(JUNIT_CLEANUP) || isEnabled(JUNIT3_CLEANUP)) {</span>
+<span class="fc" id="L393">			result.add(Messages.format(JUnitCleanUp_description, new Object[] { String.join(&quot;,&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L394">					computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collectors.toList())) }));</span>
+<span class="pc bpc" id="L395" title="1 of 2 branches missed.">			if (isEnabled(JUnitMigrationOptions.BEST_EFFORT)) {</span>
 <span class="nc" id="L396">				result.add(&quot;Migrate independently safe JUnit constructs and add @todo scaffolds for manual completion&quot;); //$NON-NLS-1$</span>
 			}
 		}

@@ -612,6 +612,74 @@
 <th>Project</th>
 <th>Line</th></tr>
 <tr class="b">
+<td>org/sandbox/jdt/triggerpattern/string/StringSimplificationHintProvider.java</td>
+<td>Sandbox TriggerPattern Cleanups</td>
+<td>68</td></tr>
+<tr class="a">
+<td>org/sandbox/jdt/triggerpattern/string/StringSimplificationHintProvider.java</td>
+<td>Sandbox TriggerPattern Cleanups</td>
+<td>123</td></tr>
+<tr class="b">
+<td colspan="3">
+<pre>public static IJavaCompletionProposal replaceEmptyStringConcatenation(HintContext ctx) {
+		if (!StringSimplificationFixCore.isSafeStringValueOfArgument(ctx.getMatch())) {
+			return null;
+		}
+		ASTNode matchedNode = ctx.getMatch().getMatchedNode();
+
+		if (!(matchedNode instanceof InfixExpression)) {
+			return null;
+		}
+
+		InfixExpression infixExpr = (InfixExpression) matchedNode;
+
+		// Get the bound variable from placeholders
+		ASTNode xNode = ctx.getMatch().getBinding(&quot;$x&quot;); //$NON-NLS-1$
+		if (xNode == null || !(xNode instanceof Expression)) {
+			return null;
+		}
+
+		Expression valueExpression = (Expression) xNode;
+
+		// Create the replacement: String.valueOf(valueExpression)
+		AST ast = ctx.getASTRewrite().getAST();
+		
+		MethodInvocation methodInvocation = ast.newMethodInvocation();
+		methodInvocation.setExpression(ast.newName(&quot;String&quot;)); //$NON-NLS-1$
+		methodInvocation.setName(ast.newSimpleName(&quot;valueOf&quot;)); //$NON-NLS-1$
+		methodInvocation.arguments().add(ASTNode.copySubtree(ast, valueExpression));
+
+		// Apply the rewrite
+		ctx.getASTRewrite().replace(infixExpr, methodInvocation, null);
+
+		// Create the proposal
+		String label = &quot;Replace '&quot; + infixExpr + &quot;' with 'String.valueOf(...)'&quot;; //$NON-NLS-1$ //$NON-NLS-2$
+		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(
+			label,
+			ctx.getICompilationUnit(),
+			ctx.getASTRewrite(),
+			10, // relevance
+			(Image) null
+		);
+
+		return proposal;
+	}
+
+	/**
+	 * Suggests replacing {@code $x + &quot;&quot;} with {@code String.valueOf($x)}.
+	 * 
+	 * &lt;p&gt;Example: {@code value + &quot;&quot;} becomes {@code String.valueOf(value)}&lt;/p&gt;
+	 * 
+	 * @param ctx the hint context containing the match and AST information
+	 * @return a completion proposal, or null if the pattern doesn't match
+	 */
+	@TriggerPattern(value = &quot;$x + \&quot;\&quot;&quot;, kind = PatternKind.EXPRESSION)</pre></td></tr></table>
+<table class="table table-striped">
+<tr class="a">
+<th>File</th>
+<th>Project</th>
+<th>Line</th></tr>
+<tr class="b">
 <td>org/sandbox/jdt/internal/ui/preferences/cleanup/DefaultCleanUpOptionsInitializer.java</td>
 <td>Sandbox TriggerPattern Cleanups</td>
 <td>25</td></tr>
@@ -851,71 +919,6 @@
 	public String getPreview(boolean afterRefactoring, ChangeBehavior cb) {
 		if (afterRefactoring) {
 			return &quot;Properties p=new Properties();\n&quot; + //$NON-NLS-1$</pre></td></tr></table>
-<table class="table table-striped">
-<tr class="a">
-<th>File</th>
-<th>Project</th>
-<th>Line</th></tr>
-<tr class="b">
-<td>org/sandbox/jdt/triggerpattern/string/StringSimplificationHintProvider.java</td>
-<td>Sandbox TriggerPattern Cleanups</td>
-<td>67</td></tr>
-<tr class="a">
-<td>org/sandbox/jdt/triggerpattern/string/StringSimplificationHintProvider.java</td>
-<td>Sandbox TriggerPattern Cleanups</td>
-<td>119</td></tr>
-<tr class="b">
-<td colspan="3">
-<pre>public static IJavaCompletionProposal replaceEmptyStringConcatenation(HintContext ctx) {
-		ASTNode matchedNode = ctx.getMatch().getMatchedNode();
-
-		if (!(matchedNode instanceof InfixExpression)) {
-			return null;
-		}
-
-		InfixExpression infixExpr = (InfixExpression) matchedNode;
-
-		// Get the bound variable from placeholders
-		ASTNode xNode = ctx.getMatch().getBinding(&quot;$x&quot;); //$NON-NLS-1$
-		if (xNode == null || !(xNode instanceof Expression)) {
-			return null;
-		}
-
-		Expression valueExpression = (Expression) xNode;
-
-		// Create the replacement: String.valueOf(valueExpression)
-		AST ast = ctx.getASTRewrite().getAST();
-		
-		MethodInvocation methodInvocation = ast.newMethodInvocation();
-		methodInvocation.setExpression(ast.newName(&quot;String&quot;)); //$NON-NLS-1$
-		methodInvocation.setName(ast.newSimpleName(&quot;valueOf&quot;)); //$NON-NLS-1$
-		methodInvocation.arguments().add(ASTNode.copySubtree(ast, valueExpression));
-
-		// Apply the rewrite
-		ctx.getASTRewrite().replace(infixExpr, methodInvocation, null);
-
-		// Create the proposal
-		String label = &quot;Replace '&quot; + infixExpr + &quot;' with 'String.valueOf(...)'&quot;; //$NON-NLS-1$ //$NON-NLS-2$
-		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(
-			label,
-			ctx.getICompilationUnit(),
-			ctx.getASTRewrite(),
-			10, // relevance
-			(Image) null
-		);
-
-		return proposal;
-	}
-
-	/**
-	 * Suggests replacing {@code $x + &quot;&quot;} with {@code String.valueOf($x)}.
-	 * 
-	 * &lt;p&gt;Example: {@code value + &quot;&quot;} becomes {@code String.valueOf(value)}&lt;/p&gt;
-	 * 
-	 * @param ctx the hint context containing the match and AST information
-	 * @return a completion proposal, or null if the pattern doesn't match
-	 */
-	@TriggerPattern(value = &quot;$x + \&quot;\&quot;&quot;, kind = PatternKind.EXPRESSION)</pre></td></tr></table>
 <table class="table table-striped">
 <tr class="a">
 <th>File</th>
@@ -1549,7 +1552,7 @@
 <tr class="b">
 <td>org/sandbox/jdt/core/cleanupapp/ProjectWideCodeCleanupApplication.java</td>
 <td>Sandbox cleanup application</td>
-<td>642</td></tr>
+<td>706</td></tr>
 <tr class="a">
 <td>org/sandbox/jdt/cleanup/multifile/MultiFileCleanUpDiagnostics.java</td>
 <td>Sandbox common</td>
@@ -1809,6 +1812,43 @@
 	public String getPreview(boolean afterRefactoring, ChangeBehavior cb) {
 		if (afterRefactoring) {
 			return &quot;Files.newBufferedReader(path, &quot; + cb.computeCharsetforPreview() + &quot;);\n&quot;; //$NON-NLS-1$ //$NON-NLS-2$</pre></td></tr></table>
+<table class="table table-striped">
+<tr class="a">
+<th>File</th>
+<th>Project</th>
+<th>Line</th></tr>
+<tr class="b">
+<td>org/sandbox/jdt/internal/corext/fix/helper/FileReaderExplicitEncoding.java</td>
+<td>Sandbox encoding quickfix</td>
+<td>99</td></tr>
+<tr class="a">
+<td>org/sandbox/jdt/internal/corext/fix/helper/FileWriterExplicitEncoding.java</td>
+<td>Sandbox encoding quickfix</td>
+<td>84</td></tr>
+<tr class="b">
+<td colspan="3">
+<pre>ITypeBinding replacement= reader.getSuperclass();
+		Expression expression= creation;
+		while (expression.getParent() instanceof ParenthesizedExpression parentheses) {
+			expression= parentheses;
+		}
+		ITypeBinding required;
+		if (expression.getParent() instanceof VariableDeclarationFragment fragment &amp;&amp; fragment.getInitializer() == expression) {
+			var binding= fragment.resolveBinding();
+			required= binding == null ? null : binding.getType();
+		} else {
+			required= ASTNodes.getTargetType(expression);
+		}
+		return replacement != null &amp;&amp; required != null &amp;&amp; !required.isRecovered()
+				&amp;&amp; replacement.isAssignmentCompatible(required);
+	}
+
+	@Override
+	public void rewrite(UseExplicitEncodingFixCore upp, final ClassInstanceCreation visited, final CompilationUnitRewrite cuRewrite,
+			TextEditGroup group, ChangeBehavior cb, ReferenceHolder&lt;ASTNode, Object&gt; data) {
+		ASTRewrite rewrite= cuRewrite.getASTRewrite();
+		AST ast= cuRewrite.getRoot().getAST();
+		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, visited, (String) data.get(visited),getCharsetConstants(cuRewrite));</pre></td></tr></table>
 <table class="table table-striped">
 <tr class="a">
 <th>File</th>
@@ -2244,51 +2284,6 @@
 <th>Project</th>
 <th>Line</th></tr>
 <tr class="b">
-<td>org/sandbox/jdt/triggerpattern/string/StringSimplificationHintProvider.java</td>
-<td>Sandbox TriggerPattern Cleanups</td>
-<td>580</td></tr>
-<tr class="a">
-<td>org/sandbox/jdt/triggerpattern/string/StringSimplificationHintProvider.java</td>
-<td>Sandbox TriggerPattern Cleanups</td>
-<td>635</td></tr>
-<tr class="b">
-<td colspan="3">
-<pre>public static IJavaCompletionProposal simplifyStringBuilderSingleAppend(HintContext ctx) {
-		ASTNode matchedNode = ctx.getMatch().getMatchedNode();
-
-		if (!(matchedNode instanceof MethodInvocation)) {
-			return null;
-		}
-
-		MethodInvocation methodInvocation = (MethodInvocation) matchedNode;
-
-		// Get the appended value
-		ASTNode xNode = ctx.getMatch().getBinding(&quot;$x&quot;); //$NON-NLS-1$
-		if (xNode == null || !(xNode instanceof Expression)) {
-			return null;
-		}
-
-		Expression valueExpression = (Expression) xNode;
-
-		// Create the replacement: String.valueOf(valueExpression)
-		AST ast = ctx.getASTRewrite().getAST();
-		
-		MethodInvocation valueOfCall = ast.newMethodInvocation();
-		valueOfCall.setExpression(ast.newName(&quot;String&quot;)); //$NON-NLS-1$
-		valueOfCall.setName(ast.newSimpleName(&quot;valueOf&quot;)); //$NON-NLS-1$
-		valueOfCall.arguments().add(ASTNode.copySubtree(ast, valueExpression));
-
-		// Apply the rewrite
-		ctx.getASTRewrite().replace(methodInvocation, valueOfCall, null);
-
-		// Create the proposal
-		String label = &quot;Replace StringBuilder single append with 'String.valueOf(...)'&quot;; //$NON-NLS-1$</pre></td></tr></table>
-<table class="table table-striped">
-<tr class="a">
-<th>File</th>
-<th>Project</th>
-<th>Line</th></tr>
-<tr class="b">
 <td>org/sandbox/jdt/internal/corext/fix/helper/URLDecoderDecodeExplicitEncoding.java</td>
 <td>Sandbox encoding quickfix</td>
 <td>87</td></tr>
@@ -2430,6 +2425,50 @@
 <th>Project</th>
 <th>Line</th></tr>
 <tr class="b">
+<td>org/sandbox/jdt/triggerpattern/string/StringSimplificationHintProvider.java</td>
+<td>Sandbox TriggerPattern Cleanups</td>
+<td>602</td></tr>
+<tr class="a">
+<td>org/sandbox/jdt/triggerpattern/string/StringSimplificationHintProvider.java</td>
+<td>Sandbox TriggerPattern Cleanups</td>
+<td>660</td></tr>
+<tr class="b">
+<td colspan="3">
+<pre>ASTNode matchedNode = ctx.getMatch().getMatchedNode();
+
+		if (!(matchedNode instanceof MethodInvocation)) {
+			return null;
+		}
+
+		MethodInvocation methodInvocation = (MethodInvocation) matchedNode;
+
+		// Get the appended value
+		ASTNode xNode = ctx.getMatch().getBinding(&quot;$x&quot;); //$NON-NLS-1$
+		if (xNode == null || !(xNode instanceof Expression)) {
+			return null;
+		}
+
+		Expression valueExpression = (Expression) xNode;
+
+		// Create the replacement: String.valueOf(valueExpression)
+		AST ast = ctx.getASTRewrite().getAST();
+		
+		MethodInvocation valueOfCall = ast.newMethodInvocation();
+		valueOfCall.setExpression(ast.newName(&quot;String&quot;)); //$NON-NLS-1$
+		valueOfCall.setName(ast.newSimpleName(&quot;valueOf&quot;)); //$NON-NLS-1$
+		valueOfCall.arguments().add(ASTNode.copySubtree(ast, valueExpression));
+
+		// Apply the rewrite
+		ctx.getASTRewrite().replace(methodInvocation, valueOfCall, null);
+
+		// Create the proposal
+		String label = &quot;Replace StringBuilder single append with 'String.valueOf(...)'&quot;; //$NON-NLS-1$</pre></td></tr></table>
+<table class="table table-striped">
+<tr class="a">
+<th>File</th>
+<th>Project</th>
+<th>Line</th></tr>
+<tr class="b">
 <td>org/sandbox/jdt/triggerpattern/api/DryRunReporter.java</td>
 <td>Sandbox Common Core</td>
 <td>276</td></tr>
@@ -2481,7 +2520,7 @@
 <tr class="b">
 <td>org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java</td>
 <td>Sandbox junit cleanup</td>
-<td>578</td></tr>
+<td>751</td></tr>
 <tr class="a">
 <td>org/sandbox/jdt/internal/corext/fix/multifile/JUnitMultiFilePlanner.java</td>
 <td>Sandbox junit cleanup</td>
@@ -2690,38 +2729,6 @@
 <th>Project</th>
 <th>Line</th></tr>
 <tr class="b">
-<td>org/sandbox/jdt/internal/corext/fix/helper/IteratorWhileHandler.java</td>
-<td>Sandbox functional converter</td>
-<td>266</td></tr>
-<tr class="a">
-<td>org/sandbox/jdt/internal/corext/fix/helper/SafeEnhancedForHandler.java</td>
-<td>Sandbox functional converter</td>
-<td>329</td></tr>
-<tr class="b">
-<td colspan="3">
-<pre>}
-
-	@SuppressWarnings(&quot;unchecked&quot;)
-	private VariableDeclarationStatement createMergedDeclaration(AST ast,
-			VariableDeclarationStatement original, Expression initializer) {
-		VariableDeclarationFragment originalFragment=
-				(VariableDeclarationFragment) original.fragments().get(0);
-		VariableDeclarationFragment fragment= ast.newVariableDeclarationFragment();
-		fragment.setName(ast.newSimpleName(originalFragment.getName().getIdentifier()));
-		fragment.setInitializer((Expression) ASTNode.copySubtree(ast, initializer));
-		VariableDeclarationStatement declaration= ast.newVariableDeclarationStatement(fragment);
-		declaration.setType((Type) ASTNode.copySubtree(ast, original.getType()));
-		declaration.modifiers().addAll(ASTNode.copySubtrees(ast, original.modifiers()));
-		return declaration;
-	}
-
-	private void addRequiredImports(CompilationUnitRewrite cuRewrite, LoopModel model) {</pre></td></tr></table>
-<table class="table table-striped">
-<tr class="a">
-<th>File</th>
-<th>Project</th>
-<th>Line</th></tr>
-<tr class="b">
 <td>org/sandbox/jdt/internal/corext/fix/helper/InputStreamReaderExplicitEncoding.java</td>
 <td>Sandbox encoding quickfix</td>
 <td>51</td></tr>
@@ -2756,11 +2763,11 @@
 <tr class="b">
 <td>org/sandbox/jdt/core/cleanupapp/ProjectWideCodeCleanupApplication.java</td>
 <td>Sandbox cleanup application</td>
-<td>647</td></tr>
+<td>711</td></tr>
 <tr class="a">
 <td>org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java</td>
 <td>Sandbox junit cleanup</td>
-<td>774</td></tr>
+<td>947</td></tr>
 <tr class="b">
 <td colspan="3">
 <pre>private static String escape(String value) {
@@ -2790,7 +2797,7 @@
 <tr class="a">
 <td>org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java</td>
 <td>Sandbox junit cleanup</td>
-<td>774</td></tr>
+<td>947</td></tr>
 <tr class="b">
 <td colspan="3">
 <pre>private static String escape(String value) {
@@ -2896,11 +2903,11 @@
 <tr class="b">
 <td>org/sandbox/jdt/triggerpattern/string/StringSimplificationHintProvider.java</td>
 <td>Sandbox TriggerPattern Cleanups</td>
-<td>470</td></tr>
+<td>491</td></tr>
 <tr class="a">
 <td>org/sandbox/jdt/triggerpattern/string/StringSimplificationHintProvider.java</td>
 <td>Sandbox TriggerPattern Cleanups</td>
-<td>521</td></tr>
+<td>542</td></tr>
 <tr class="b">
 <td colspan="3">
 <pre>public static IJavaCompletionProposal replaceCollectionSizeCheck(HintContext ctx) {
@@ -2991,6 +2998,38 @@
 	}
 
 	private static int countTemporaryFolderFields(org.eclipse.jdt.core.dom.CompilationUnit root) {</pre></td></tr></table>
+<table class="table table-striped">
+<tr class="a">
+<th>File</th>
+<th>Project</th>
+<th>Line</th></tr>
+<tr class="b">
+<td>org/sandbox/jdt/internal/corext/fix/helper/IteratorWhileHandler.java</td>
+<td>Sandbox functional converter</td>
+<td>272</td></tr>
+<tr class="a">
+<td>org/sandbox/jdt/internal/corext/fix/helper/SafeEnhancedForHandler.java</td>
+<td>Sandbox functional converter</td>
+<td>329</td></tr>
+<tr class="b">
+<td colspan="3">
+<pre>}
+
+	@SuppressWarnings(&quot;unchecked&quot;)
+	private VariableDeclarationStatement createMergedDeclaration(AST ast,
+			VariableDeclarationStatement original, Expression initializer) {
+		VariableDeclarationFragment originalFragment=
+				(VariableDeclarationFragment) original.fragments().get(0);
+		VariableDeclarationFragment fragment= ast.newVariableDeclarationFragment();
+		fragment.setName(ast.newSimpleName(originalFragment.getName().getIdentifier()));
+		fragment.setInitializer(initializer);
+		VariableDeclarationStatement declaration= ast.newVariableDeclarationStatement(fragment);
+		declaration.setType((Type) ASTNode.copySubtree(ast, original.getType()));
+		declaration.modifiers().addAll(ASTNode.copySubtrees(ast, original.modifiers()));
+		return declaration;
+	}
+
+	private void addRequiredImports(CompilationUnitRewrite cuRewrite, LoopModel model) {</pre></td></tr></table>
 <table class="table table-striped">
 <tr class="a">
 <th>File</th>
@@ -3987,6 +4026,82 @@
 <th>Project</th>
 <th>Line</th></tr>
 <tr class="b">
+<td>org/sandbox/jdt/triggerpattern/string/StringSimplificationHintProvider.java</td>
+<td>Sandbox TriggerPattern Cleanups</td>
+<td>286</td></tr>
+<tr class="a">
+<td>org/sandbox/jdt/triggerpattern/string/StringSimplificationHintProvider.java</td>
+<td>Sandbox TriggerPattern Cleanups</td>
+<td>337</td></tr>
+<tr class="b">
+<td colspan="3">
+<pre>public static IJavaCompletionProposal simplifyBooleanComparisonTrue(HintContext ctx) {
+		if (!StringSimplificationFixCore.isSafeBooleanValue(ctx.getMatch(), &quot;$x&quot;)) { //$NON-NLS-1$
+			return null;
+		}
+		ASTNode matchedNode = ctx.getMatch().getMatchedNode();
+
+		if (!(matchedNode instanceof InfixExpression)) {
+			return null;
+		}
+
+		InfixExpression infixExpr = (InfixExpression) matchedNode;
+
+		// Get the boolean variable
+		ASTNode xNode = ctx.getMatch().getBinding(&quot;$x&quot;); //$NON-NLS-1$
+		if (xNode == null || !(xNode instanceof Expression)) {
+			return null;
+		}
+
+		Expression boolExpression = (Expression) xNode;
+
+		// Create the replacement: just the boolean expression
+		AST ast = ctx.getASTRewrite().getAST();
+		Expression replacement = (Expression) ASTNode.copySubtree(ast, boolExpression);</pre></td></tr></table>
+<table class="table table-striped">
+<tr class="a">
+<th>File</th>
+<th>Project</th>
+<th>Line</th></tr>
+<tr class="b">
+<td>org/sandbox/jdt/triggerpattern/string/StringSimplificationHintProvider.java</td>
+<td>Sandbox TriggerPattern Cleanups</td>
+<td>388</td></tr>
+<tr class="a">
+<td>org/sandbox/jdt/triggerpattern/string/StringSimplificationHintProvider.java</td>
+<td>Sandbox TriggerPattern Cleanups</td>
+<td>439</td></tr>
+<tr class="b">
+<td colspan="3">
+<pre>public static IJavaCompletionProposal simplifyTernaryBooleanTrueFalse(HintContext ctx) {
+		if (!StringSimplificationFixCore.isSafeBooleanValue(ctx.getMatch(), &quot;$cond&quot;)) { //$NON-NLS-1$
+			return null;
+		}
+		ASTNode matchedNode = ctx.getMatch().getMatchedNode();
+
+		if (!(matchedNode instanceof ConditionalExpression)) {
+			return null;
+		}
+
+		ConditionalExpression ternary = (ConditionalExpression) matchedNode;
+
+		// Get the condition
+		ASTNode condNode = ctx.getMatch().getBinding(&quot;$cond&quot;); //$NON-NLS-1$
+		if (condNode == null || !(condNode instanceof Expression)) {
+			return null;
+		}
+
+		Expression condition = (Expression) condNode;
+
+		// Create the replacement: just the condition
+		AST ast = ctx.getASTRewrite().getAST();
+		Expression replacement = (Expression) ASTNode.copySubtree(ast, condition);</pre></td></tr></table>
+<table class="table table-striped">
+<tr class="a">
+<th>File</th>
+<th>Project</th>
+<th>Line</th></tr>
+<tr class="b">
 <td>org/sandbox/jdt/triggerpattern/api/PatternMatchSupport.java</td>
 <td>Sandbox Common Core</td>
 <td>96</td></tr>
@@ -4102,11 +4217,11 @@
 <tr class="b">
 <td>org/sandbox/jdt/internal/corext/fix/StringSimplificationFixCore.java</td>
 <td>Sandbox TriggerPattern Cleanups</td>
-<td>553</td></tr>
+<td>705</td></tr>
 <tr class="a">
 <td>org/sandbox/jdt/triggerpattern/string/StringSimplificationHintProvider.java</td>
 <td>Sandbox TriggerPattern Cleanups</td>
-<td>713</td></tr>
+<td>737</td></tr>
 <tr class="b">
 <td colspan="3">
 <pre>ImportRewrite importRewrite = cuRewrite.getImportRewrite();

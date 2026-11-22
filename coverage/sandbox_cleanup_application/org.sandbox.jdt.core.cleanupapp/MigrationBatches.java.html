@@ -1,0 +1,459 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>MigrationBatches.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_cleanup_application</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.core.cleanupapp</a> &gt; <span class="el_source">MigrationBatches.java</span></div><h1>MigrationBatches.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.core.cleanupapp;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.HexFormat;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+
+import org.eclipse.core.filebuffers.FileBuffers;
+import org.eclipse.core.filebuffers.LocationKind;
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.jdt.core.IClasspathEntry;
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.ltk.core.refactoring.Change;
+import org.eclipse.ltk.core.refactoring.CompositeChange;
+import org.eclipse.ltk.core.refactoring.NullChange;
+import org.eclipse.ltk.core.refactoring.PerformChangeOperation;
+import org.eclipse.ltk.core.refactoring.RefactoringCore;
+import org.eclipse.ltk.core.refactoring.RefactoringStatus;
+import org.eclipse.ltk.core.refactoring.TextEditBasedChange;
+
+import org.sandbox.jdt.cleanup.multifile.api.LineDelimiterPreserver;
+import org.sandbox.jdt.core.cleanupapp.MigrationBatchDependencies.Group;
+import org.sandbox.jdt.core.cleanupapp.ProjectWideCodeCleanupApplication.ChangedFile;
+import org.sandbox.jdt.core.cleanupapp.ProjectWideCodeCleanupApplication.MetadataPlan;
+import org.sandbox.jdt.core.cleanupapp.ProjectWideCodeCleanupApplication.ResourceSnapshot;
+import org.sandbox.jdt.core.cleanupapp.ProjectWideCodeCleanupApplication.SourceSnapshot;
+
+/** A single invocation's native refactoring, review packages and expected workspace contents. */
+final class MigrationBatches {
+	record SourceEdit(SourceSnapshot source, String beforeText, String afterText, byte[] nativeBytes, byte[] after,
+			TextEditBasedChange change) {
+<span class="fc" id="L61">		String path() { return source.file().getFullPath().toPortableString(); }</span>
+	}
+	record Batch(String id, String receipt, List&lt;String&gt; files, List&lt;String&gt; prerequisites, List&lt;String&gt; dependencies) {}
+	private record Package(Batch batch, List&lt;SourceEdit&gt; edits, Map&lt;ResourceSnapshot, byte[]&gt; metadata) {}
+
+	private record UnitSettings(Map&lt;String, String&gt; options, String charset) {}
+
+	private record Context(IJavaProject project, List&lt;IClasspathEntry&gt; raw, List&lt;IClasspathEntry&gt; resolved,
+			IPath output, Map&lt;String, String&gt; options, Map&lt;ICompilationUnit, UnitSettings&gt; unitOptions,
+			Map&lt;IFile, String&gt; resourceCharsets) {
+		static Context capture(IJavaProject project, List&lt;SourceSnapshot&gt; sources, List&lt;ResourceSnapshot&gt; resources) throws CoreException {
+<span class="fc" id="L72">			var unitOptions= new HashMap&lt;ICompilationUnit, UnitSettings&gt;();</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">			for (var source : sources) {</span>
+<span class="fc" id="L74">				unitOptions.put(source.unit(), new UnitSettings(Map.copyOf(source.unit().getCustomOptions()), source.file().getCharset()));</span>
+			}
+<span class="fc" id="L76">			var resourceCharsets= new HashMap&lt;IFile, String&gt;();</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">			for (var resource : resources) resourceCharsets.put(resource.file(), resource.file().getCharset());</span>
+<span class="fc" id="L78">			return new Context(project, List.of(project.getRawClasspath()), List.of(project.getResolvedClasspath(true)),</span>
+<span class="fc" id="L79">					project.getOutputLocation(), Map.copyOf(project.getOptions(true)), unitOptions, resourceCharsets);</span>
+		}
+	}
+
+	private final Context context;
+	private final Change nativeChange;
+	private final List&lt;SourceSnapshot&gt; sources;
+	private final List&lt;ResourceSnapshot&gt; resources;
+	private final List&lt;SourceEdit&gt; edits;
+	private final List&lt;Package&gt; packages;
+	private final MetadataPlan fullMetadata;
+
+<span class="fc" id="L91">	private MigrationBatches(Context context, Change nativeChange, List&lt;SourceSnapshot&gt; sources, List&lt;ResourceSnapshot&gt; resources,</span>
+			List&lt;SourceEdit&gt; edits, List&lt;Package&gt; packages, MetadataPlan fullMetadata) {
+<span class="fc" id="L93">		this.context= context;</span>
+<span class="fc" id="L94">		this.nativeChange= nativeChange;</span>
+<span class="fc" id="L95">		this.sources= sources;</span>
+<span class="fc" id="L96">		this.resources= resources;</span>
+<span class="fc" id="L97">		this.edits= edits;</span>
+<span class="fc" id="L98">		this.packages= packages;</span>
+<span class="fc" id="L99">		this.fullMetadata= fullMetadata;</span>
+<span class="fc" id="L100">	}</span>
+
+	static MigrationBatches plan(IJavaProject project, Change change, List&lt;SourceSnapshot&gt; sources,
+			List&lt;ResourceSnapshot&gt; resources, List&lt;Group&gt; candidates, int limit, Map&lt;String, String&gt; cleanupOptions, IProgressMonitor monitor)
+			throws CoreException, IOException {
+<span class="fc" id="L105">		var context= Context.capture(project, sources, resources);</span>
+<span class="fc" id="L106">		Map&lt;IFile, SourceSnapshot&gt; inputs= new HashMap&lt;&gt;();</span>
+<span class="fc" id="L107">		Map&lt;String, Integer&gt; windows= new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">		for (int index= 0; index &lt; sources.size(); index++) {</span>
+<span class="fc" id="L109">			var input= sources.get(index);</span>
+<span class="fc" id="L110">			inputs.put(input.file(), input);</span>
+<span class="fc" id="L111">			windows.put(input.file().getFullPath().toPortableString(), index / limit);</span>
+		}
+<span class="fc" id="L113">		var byPath= new TreeMap&lt;String, SourceEdit&gt;();</span>
+<span class="fc" id="L114">		collect(change, inputs, byPath, monitor);</span>
+<span class="fc" id="L115">		var edits= List.copyOf(byPath.values());</span>
+<span class="fc" id="L116">		var explicitGroups= Set.copyOf(candidates);</span>
+<span class="fc" id="L117">		var groups= new ArrayList&lt;&gt;(explicitGroups);</span>
+<span class="fc" id="L118">		groups.addAll(MigrationBatchDependencies.discover(project, edits, sources, monitor));</span>
+<span class="fc" id="L119">		Map&lt;String, String&gt; parents= new HashMap&lt;&gt;();</span>
+<span class="fc" id="L120">		byPath.keySet().forEach(path -&gt; parents.put(path, path));</span>
+		// Explicit planner candidates may overlap at an unchanged owner. Ordinary
+		// usage of an unchanged source helper is never itself an atomic candidate.
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">		for (Group candidate : candidates) {</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">			for (String path : candidate.paths()) parents.putIfAbsent(path, path);</span>
+<span class="nc" id="L125">			connect(parents, candidate.paths());</span>
+		}
+<span class="fc bfc" id="L127" title="All 2 branches covered.">		for (Group group : groups) {</span>
+<span class="fc" id="L128">			connect(parents, group.paths().stream().filter(byPath::containsKey).toList());</span>
+		}
+<span class="fc" id="L130">		Map&lt;String, Set&lt;String&gt;&gt; reasonsByComponent= new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">		for (Group group : groups) {</span>
+<span class="fc" id="L132">			var participants= group.paths().stream().filter(byPath::containsKey).distinct().toList();</span>
+<span class="pc bpc" id="L133" title="2 of 6 branches missed.">			if (!participants.isEmpty() &amp;&amp; (participants.size() &gt; 1 || explicitGroups.contains(group))) {</span>
+<span class="fc" id="L134">				reasonsByComponent.computeIfAbsent(root(parents, participants.getFirst()), key -&gt; new TreeSet&lt;&gt;()).add(group.reason());</span>
+			}
+		}
+<span class="fc" id="L137">		Map&lt;String, List&lt;SourceEdit&gt;&gt; components= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">		for (var edit : edits) components.computeIfAbsent(root(parents, edit.path()), key -&gt; new ArrayList&lt;&gt;()).add(edit);</span>
+<span class="fc" id="L139">		Map&lt;String, List&lt;SourceEdit&gt;&gt; packages= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">		for (var component : components.values()) {</span>
+			// A component crossing a stable filing window gets a package of its own.
+			// Removing another package can therefore never repack the remaining components.
+<span class="fc" id="L143">			int window= windows.get(component.getFirst().path());</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">			boolean crossesWindow= component.stream().anyMatch(edit -&gt; windows.get(edit.path()) != window);</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">			String bucket= crossesWindow ? component.getFirst().path() : Integer.toString(window);</span>
+<span class="fc" id="L146">			packages.computeIfAbsent(bucket, key -&gt; new ArrayList&lt;&gt;()).addAll(component);</span>
+		}
+<span class="fc" id="L148">		List&lt;Package&gt; plans= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L149">		var options= context.options();</span>
+<span class="fc" id="L150">		var complete= metadata(sources, resources, edits, options);</span>
+<span class="fc" id="L151">		var reviewContext= contextDigest(context, sources, resources, cleanupOptions, limit);</span>
+<span class="fc" id="L152">		boolean retirementCaptured= false;</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">		for (var pack : packages.values()) {</span>
+<span class="fc" id="L154">			pack.sort(java.util.Comparator.comparing(SourceEdit::path));</span>
+<span class="fc" id="L155">			var reasons= new TreeSet&lt;String&gt;();</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">			for (var edit : pack) reasons.addAll(reasonsByComponent.getOrDefault(root(parents, edit.path()), Set.of()));</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">			var meta= packages.size() == 1 ? complete : metadata(sources, resources, pack, options);</span>
+<span class="fc" id="L158">			retirementCaptured |= meta.retiresVintage();</span>
+<span class="fc" id="L159">			plans.add(review(project, pack, reasons, meta, reviewContext));</span>
+		}
+<span class="pc bpc" id="L161" title="1 of 4 branches missed.">		if (complete.retiresVintage() &amp;&amp; !retirementCaptured) {</span>
+			// The existing standalone closure proof compares the original suite and
+			// every selected legacy member with the proposed deployment in one pass.
+<span class="fc" id="L164">			var reasons= new TreeSet&lt;String&gt;();</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">			for (var plan : plans) reasons.addAll(plan.batch().dependencies());</span>
+<span class="fc" id="L166">			reasons.add(&quot;Vintage dependency retirement requires the complete original-to-migrated deployment&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L167">			plans= List.of(review(project, edits, reasons, complete, reviewContext));</span>
+		}
+<span class="fc" id="L169">		return new MigrationBatches(context, change, sources, resources, edits, List.copyOf(plans), complete);</span>
+	}
+
+	private static Package review(IJavaProject project, List&lt;SourceEdit&gt; pack, Set&lt;String&gt; reasons, MetadataPlan meta, String reviewContext) {
+<span class="fc" id="L173">		List&lt;String&gt; files= pack.stream().map(e -&gt; e.source().relativePath()).toList();</span>
+<span class="fc" id="L174">		String id= digest(files.stream().map(x -&gt; x.getBytes(StandardCharsets.UTF_8)).toList());</span>
+<span class="fc" id="L175">		var evidence= new ArrayList&lt;byte[]&gt;();</span>
+<span class="fc" id="L176">		evidence.add(reviewContext.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc bfc" id="L177" title="All 2 branches covered.">		for (var edit : pack) {</span>
+<span class="fc" id="L178">			evidence.add(edit.source().relativePath().getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L179">			evidence.add(edit.source().before());</span>
+<span class="fc" id="L180">			evidence.add(edit.after());</span>
+		}
+<span class="fc" id="L182">		var prerequisites= new ArrayList&lt;String&gt;();</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">		for (var entry : meta.changes().entrySet()) {</span>
+<span class="fc" id="L184">			var resource= entry.getKey();</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">			prerequisites.add(reportPath(resource.file(), !project.getProject().equals(resource.file().getProject())));</span>
+<span class="fc" id="L186">			evidence.add(resource.file().getFullPath().toPortableString().getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L187">			evidence.add(resource.before());</span>
+<span class="fc" id="L188">			evidence.add(entry.getValue());</span>
+		}
+<span class="fc" id="L190">		var batch= new Batch(id, digest(evidence), files, List.copyOf(prerequisites), List.copyOf(reasons));</span>
+<span class="fc" id="L191">		return new Package(batch, List.copyOf(pack), meta.changes());</span>
+	}
+
+	/** Inputs shared by every package. Hash their bytes once per plan. */
+	private static String contextDigest(Context context, List&lt;SourceSnapshot&gt; sources, List&lt;ResourceSnapshot&gt; resources,
+			Map&lt;String, String&gt; cleanupOptions, int limit) throws CoreException {
+<span class="fc" id="L197">		var fields= new ArrayList&lt;byte[]&gt;();</span>
+<span class="fc" id="L198">		fields.add(context.project().getPath().toPortableString().getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L199">		fields.add(context.output().toPortableString().getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L200">		fields.add(Integer.toString(limit).getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L201">		options(fields, cleanupOptions);</span>
+<span class="fc" id="L202">		options(fields, context.options());</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">		for (var entries : List.of(context.raw(), context.resolved())) {</span>
+<span class="fc" id="L204">			fields.add(Integer.toString(entries.size()).getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">			for (var entry : entries) fields.add(context.project().encodeClasspathEntry(entry).getBytes(StandardCharsets.UTF_8));</span>
+		}
+<span class="fc bfc" id="L207" title="All 2 branches covered.">		for (var source : sources) {</span>
+<span class="fc" id="L208">			var settings= context.unitOptions().get(source.unit());</span>
+<span class="fc" id="L209">			fields.add(source.relativePath().getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L210">			fields.add(settings.charset().getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L211">			options(fields, settings.options());</span>
+<span class="fc" id="L212">			fields.add(source.before());</span>
+		}
+<span class="fc bfc" id="L214" title="All 2 branches covered.">		for (var resource : resources) {</span>
+<span class="fc" id="L215">			fields.add(resource.file().getFullPath().toPortableString().getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L216">			fields.add(context.resourceCharsets().get(resource.file()).getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L217">			fields.add(resource.before());</span>
+		}
+<span class="fc" id="L219">		return digest(fields);</span>
+	}
+
+	private static void options(List&lt;byte[]&gt; fields, Map&lt;String, String&gt; values) {
+<span class="fc" id="L223">		fields.add(Integer.toString(values.size()).getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L224">		new TreeMap&lt;&gt;(values).forEach((key, value) -&gt; {</span>
+<span class="fc" id="L225">			fields.add(key.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L226">			fields.add(value.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L227">		});</span>
+<span class="fc" id="L228">	}</span>
+
+	private static void connect(Map&lt;String, String&gt; parents, List&lt;String&gt; paths) {
+<span class="pc bpc" id="L231" title="1 of 2 branches missed.">		if (paths.isEmpty()) return;</span>
+<span class="fc" id="L232">		String first= root(parents, paths.getFirst());</span>
+<span class="fc bfc" id="L233" title="All 2 branches covered.">		for (int index= 1; index &lt; paths.size(); index++) parents.put(root(parents, paths.get(index)), first);</span>
+<span class="fc" id="L234">	}</span>
+
+	private static String root(Map&lt;String, String&gt; parents, String path) {
+<span class="fc bfc" id="L237" title="All 2 branches covered.">		while (!path.equals(parents.get(path))) {</span>
+<span class="fc" id="L238">			String parent= parents.get(path);</span>
+<span class="fc" id="L239">			parents.put(path, parents.get(parent));</span>
+<span class="fc" id="L240">			path= parent;</span>
+		}
+<span class="fc" id="L242">		return path;</span>
+	}
+
+	private static void collect(Change change, Map&lt;IFile, SourceSnapshot&gt; sources, Map&lt;String, SourceEdit&gt; results,
+			IProgressMonitor monitor) throws CoreException, IOException {
+<span class="pc bpc" id="L247" title="2 of 4 branches missed.">		if (change instanceof NullChange || !change.isEnabled()) return;</span>
+<span class="fc bfc" id="L248" title="All 2 branches covered.">		if (change instanceof CompositeChange composite) {</span>
+<span class="fc bfc" id="L249" title="All 2 branches covered.">			for (Change child : composite.getChildren()) collect(child, sources, results, monitor);</span>
+<span class="fc" id="L250">			return;</span>
+		}
+<span class="pc bpc" id="L252" title="1 of 2 branches missed.">		if (!(change instanceof TextEditBasedChange text)) throw new IOException(&quot;Cannot partition native change &quot; + change.getName()); //$NON-NLS-1$</span>
+<span class="fc" id="L253">		Object element= text.getModifiedElement();</span>
+<span class="pc bpc" id="L254" title="1 of 2 branches missed.">		if (element instanceof ICompilationUnit unit) element= unit.getResource();</span>
+<span class="pc bpc" id="L255" title="1 of 2 branches missed.">		var input= element instanceof IFile file ? sources.get(file) : null;</span>
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">		if (input == null) throw new IOException(&quot;Unclassified native project prerequisite: &quot; + change.getName()); //$NON-NLS-1$</span>
+<span class="fc" id="L257">		String before= text.getCurrentContent(monitor);</span>
+<span class="fc" id="L258">		String after= text.getPreviewContent(monitor);</span>
+<span class="fc" id="L259">		String charset= input.file().getCharset();</span>
+<span class="fc" id="L260">		var nativeBytes= LineDelimiterPreserver.encodePreview(input.before(), Charset.forName(charset), before, after);</span>
+<span class="fc" id="L261">		var reviewed= LineDelimiterPreserver.preserve(input.before(), nativeBytes, charset);</span>
+<span class="pc bpc" id="L262" title="1 of 2 branches missed.">		if (Arrays.equals(reviewed, input.before())) {</span>
+<span class="nc" id="L263">			change.setEnabled(false);</span>
+<span class="nc" id="L264">			return;</span>
+		}
+<span class="fc" id="L266">		var edit= new SourceEdit(input, before, after, nativeBytes, reviewed, text);</span>
+<span class="pc bpc" id="L267" title="1 of 2 branches missed.">		if (results.putIfAbsent(edit.path(), edit) != null) throw new IOException(&quot;Multiple independent native edits for &quot; + edit.path()); //$NON-NLS-1$</span>
+<span class="fc" id="L268">	}</span>
+
+	private static MetadataPlan metadata(List&lt;SourceSnapshot&gt; sources, List&lt;ResourceSnapshot&gt; resources,
+			List&lt;SourceEdit&gt; selected, Map&lt;String, String&gt; options) throws CoreException, IOException {
+<span class="fc" id="L272">		Map&lt;SourceSnapshot, byte[]&gt; replacements= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L273">		selected.forEach(edit -&gt; replacements.put(edit.source(), edit.after()));</span>
+<span class="fc" id="L274">		var proposed= ProjectWideCodeCleanupApplication.planProjectMetadata(sources, resources, replacements, options);</span>
+<span class="fc" id="L275">		Map&lt;ResourceSnapshot, byte[]&gt; changes= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L276">		proposed.changes().forEach((resource, bytes) -&gt; {</span>
+<span class="pc bpc" id="L277" title="1 of 2 branches missed.">			if (!Arrays.equals(resource.before(), bytes)) changes.put(resource, bytes);</span>
+<span class="fc" id="L278">		});</span>
+<span class="fc" id="L279">		return new MetadataPlan(changes, proposed.retiresVintage());</span>
+	}
+
+<span class="fc" id="L282">	List&lt;Batch&gt; batches() { return packages.stream().map(Package::batch).toList(); }</span>
+
+	List&lt;ChangedFile&gt; select(String id, String receipt, boolean apply, IProgressMonitor monitor)
+			throws IOException, CoreException {
+		try {
+			List&lt;SourceEdit&gt; selected;
+			Map&lt;ResourceSnapshot, byte[]&gt; metadata;
+<span class="fc bfc" id="L289" title="All 2 branches covered.">			if (id == null) {</span>
+<span class="fc" id="L290">				selected= edits;</span>
+<span class="fc" id="L291">				metadata= fullMetadata.changes();</span>
+<span class="fc" id="L292">			} else {</span>
+<span class="fc" id="L293">				var plan= packages.stream().filter(p -&gt; p.batch().id().equals(id)).findFirst()</span>
+<span class="pc" id="L294">						.orElseThrow(() -&gt; new IOException(&quot;Batch no longer exists. Review the current batches: &quot; + id)); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L295" title="1 of 4 branches missed.">				if (receipt != null &amp;&amp; !plan.batch().receipt().equals(receipt)) throw new IOException(&quot;Batch review receipt is stale: &quot; + id); //$NON-NLS-1$</span>
+<span class="fc" id="L296">				selected= plan.edits();</span>
+<span class="fc" id="L297">				metadata= plan.metadata();</span>
+			}
+<span class="fc bfc" id="L299" title="All 2 branches covered.">			if (apply) perform(selected, metadata, monitor);</span>
+<span class="fc" id="L300">			List&lt;ChangedFile&gt; changes= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L301" title="All 2 branches covered.">			boolean mixed= resources.stream().anyMatch(r -&gt; !sources.getFirst().file().getProject().equals(r.file().getProject()));</span>
+<span class="fc bfc" id="L302" title="All 2 branches covered.">			for (var e : selected) changes.add(new ChangedFile(reportPath(e.source().file(), mixed), e.source().before(), e.after()));</span>
+<span class="fc bfc" id="L303" title="All 2 branches covered.">			for (var e : metadata.entrySet()) changes.add(new ChangedFile(reportPath(e.getKey().file(), mixed), e.getKey().before(), e.getValue()));</span>
+<span class="fc" id="L304">			return List.copyOf(changes);</span>
+		} finally {
+<span class="fc" id="L306">			nativeChange.dispose();</span>
+		}
+	}
+
+	private static String reportPath(IFile file, boolean mixed) {
+<span class="fc bfc" id="L311" title="All 2 branches covered.">		if (!mixed) return file.getProjectRelativePath().toPortableString();</span>
+<span class="fc" id="L312">		var parent= file.getProject().getLocation().toFile().toPath().getParent();</span>
+<span class="pc bpc" id="L313" title="1 of 2 branches missed.">		if (parent == null) throw new IllegalArgumentException(&quot;Physical project has no parent for a mixed-project patch&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L314">		return ProjectWideCodeCleanupApplication.patchPath(parent, file.getLocation().toFile().toPath());</span>
+	}
+
+	private void perform(List&lt;SourceEdit&gt; selected, Map&lt;ResourceSnapshot, byte[]&gt; metadata, IProgressMonitor monitor)
+			throws CoreException {
+<span class="fc" id="L319">		Set&lt;SourceEdit&gt; chosen= new HashSet&lt;&gt;(selected);</span>
+<span class="fc bfc" id="L320" title="All 2 branches covered.">		for (var edit : edits) edit.change().setEnabled(chosen.contains(edit));</span>
+<span class="fc" id="L321">		var transaction= new CompositeChange(&quot;Apply reviewed migration batch&quot;) { //$NON-NLS-1$</span>
+			@Override public Change perform(IProgressMonitor pm) throws CoreException {
+<span class="fc" id="L323">				Change undo= super.perform(pm);</span>
+				try {
+<span class="fc bfc" id="L325" title="All 2 branches covered.">					for (var edit : selected) verify(edit.source().file(), edit.after());</span>
+<span class="fc bfc" id="L326" title="All 2 branches covered.">					for (var entry : metadata.entrySet()) verify(entry.getKey().file(), entry.getValue());</span>
+<span class="pc" id="L327">				} catch (CoreException failure) {</span>
+<span class="nc bnc" id="L328" title="All 2 branches missed.">					if (undo != null) {</span>
+<span class="nc" id="L329">						try { undo.perform(new org.eclipse.core.runtime.NullProgressMonitor()); }</span>
+<span class="nc" id="L330">						catch (CoreException | RuntimeException rollback) { failure.addSuppressed(rollback); }</span>
+<span class="nc" id="L331">						finally { undo.dispose(); }</span>
+					}
+<span class="nc" id="L333">					throw failure;</span>
+				}
+<span class="fc" id="L335">				return undo;</span>
+			}
+		};
+<span class="fc" id="L338">		transaction.add(nativeChange);</span>
+<span class="fc bfc" id="L339" title="All 2 branches covered.">		for (var edit : selected) {</span>
+<span class="pc bpc" id="L340" title="1 of 2 branches missed.">			if (!Arrays.equals(edit.nativeBytes(), edit.after())) {</span>
+<span class="nc" id="L341">				transaction.add(new BatchResourceChange(edit.source().file(), edit.nativeBytes(), edit.after(), edit.source().before()));</span>
+			}
+		}
+<span class="fc bfc" id="L344" title="All 2 branches covered.">		for (var entry : metadata.entrySet()) {</span>
+<span class="fc" id="L345">			var resource= entry.getKey();</span>
+<span class="fc" id="L346">			transaction.add(new BatchResourceChange(resource.file(), resource.before(), entry.getValue(), null));</span>
+		}
+<span class="fc" id="L348">		var workspace= ResourcesPlugin.getWorkspace();</span>
+<span class="fc" id="L349">		workspace.run(pm -&gt; {</span>
+			try {
+<span class="fc" id="L351">				validateContext(selected, metadata);</span>
+<span class="fc" id="L352">				transaction.initializeValidationData(pm);</span>
+<span class="fc" id="L353">				var operation= new PerformChangeOperation(transaction);</span>
+<span class="fc" id="L354">				operation.setUndoManager(RefactoringCore.getUndoManager(), transaction.getName());</span>
+<span class="fc" id="L355">				operation.run(pm);</span>
+<span class="pc bpc" id="L356" title="2 of 4 branches missed.">				if (!operation.changeExecuted() || operation.getUndoChange() == null)</span>
+<span class="nc" id="L357">					throw new IOException(&quot;Batch could not execute with Undo: &quot; + operation.getValidationStatus()); //$NON-NLS-1$</span>
+<span class="fc" id="L358">			} catch (IOException e) {</span>
+<span class="fc" id="L359">				throw new CoreException(Status.error(e.getMessage(), e));</span>
+<span class="nc" id="L360">			} catch (CoreException | RuntimeException failure) {</span>
+<span class="nc" id="L361">				var partial= transaction.getUndoUntilException();</span>
+<span class="nc bnc" id="L362" title="All 2 branches missed.">				if (partial != null) {</span>
+<span class="nc" id="L363">					try { partial.perform(new org.eclipse.core.runtime.NullProgressMonitor()); }</span>
+<span class="nc" id="L364">					catch (CoreException | RuntimeException rollback) { failure.addSuppressed(rollback); }</span>
+<span class="nc" id="L365">					finally { partial.dispose(); }</span>
+				}
+<span class="nc" id="L367">				throw failure;</span>
+			}
+<span class="fc" id="L369">		}, workspace.getRoot(), 0, monitor);</span>
+<span class="fc" id="L370">	}</span>
+
+	private void validateContext(List&lt;SourceEdit&gt; selected, Map&lt;ResourceSnapshot, byte[]&gt; reviewedMetadata) throws IOException, CoreException {
+<span class="fc" id="L373">		var current= ProjectWideCodeCleanupApplication.snapshots(context.project());</span>
+<span class="fc bfc" id="L374" title="All 2 branches covered.">		if (!context.equals(Context.capture(context.project(), current, resources))) {</span>
+<span class="fc" id="L375">			throw new IOException(&quot;Project scope, encoding, compiler options or classpath changed after batch planning&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L377">		var currentSources= new HashMap&lt;IFile, SourceSnapshot&gt;();</span>
+<span class="fc bfc" id="L378" title="All 2 branches covered.">		for (var snapshot : current) currentSources.put(snapshot.file(), snapshot);</span>
+<span class="fc bfc" id="L379" title="All 2 branches covered.">		for (var source : sources) {</span>
+<span class="fc" id="L380">			var now= currentSources.get(source.file());</span>
+<span class="pc bpc" id="L381" title="2 of 4 branches missed.">			if (!source.path().equals(now.path()) || !Arrays.equals(source.before(), now.before())</span>
+<span class="pc bpc" id="L382" title="2 of 4 branches missed.">					|| source.unit().hasUnsavedChanges() || dirty(source.file())) {</span>
+<span class="nc" id="L383">				throw new IOException(&quot;Source changed after batch planning: &quot; + source.relativePath()); //$NON-NLS-1$</span>
+			}
+		}
+<span class="fc" id="L386">		var deployments= resources.stream().map(ResourceSnapshot::file)</span>
+<span class="pc bpc" id="L387" title="2 of 4 branches missed.">				.filter(f -&gt; &quot;feature.xml&quot;.equals(f.getName()) || &quot;target&quot;.equals(f.getFileExtension())) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc" id="L388">				.map(f -&gt; f.getFullPath().toPortableString()).toList();</span>
+<span class="fc" id="L389">		var currentResources= ProjectWideCodeCleanupApplication.resourceSnapshots(context.project().getProject(), deployments);</span>
+<span class="pc bpc" id="L390" title="1 of 2 branches missed.">		if (currentResources.size() != resources.size()) throw new IOException(&quot;Project descriptor scope changed after batch planning&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L391" title="All 2 branches covered.">		for (int index= 0; index &lt; resources.size(); index++) {</span>
+<span class="fc" id="L392">			var resource= resources.get(index);</span>
+<span class="fc" id="L393">			var now= currentResources.get(index);</span>
+<span class="pc bpc" id="L394" title="3 of 6 branches missed.">			if (!resource.file().equals(now.file()) || !resource.path().equals(now.path()) || !Arrays.equals(resource.before(), now.before())</span>
+<span class="fc bfc" id="L395" title="All 2 branches covered.">					|| dirty(resource.file())) throw new IOException(&quot;Project prerequisite changed after batch planning: &quot; + resource.file().getFullPath()); //$NON-NLS-1$</span>
+		}
+		// Re-run the existing deployment proof inside the workspace scheduling
+		// rule. Generated files and project references also participate in it.
+<span class="fc" id="L399">		var currentMeta= metadata(sources, resources, selected, context.options()).changes();</span>
+<span class="pc bpc" id="L400" title="1 of 2 branches missed.">		if (!currentMeta.keySet().equals(reviewedMetadata.keySet()) || currentMeta.entrySet().stream()</span>
+<span class="fc bfc" id="L401" title="All 4 branches covered.">				.anyMatch(e -&gt; !Arrays.equals(e.getValue(), reviewedMetadata.get(e.getKey())))) {</span>
+<span class="fc" id="L402">			throw new IOException(&quot;Deployment prerequisites changed after batch planning&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L404">	}</span>
+
+	private static boolean dirty(IFile file) {
+<span class="fc" id="L407">		var buffer= FileBuffers.getTextFileBufferManager().getTextFileBuffer(file.getFullPath(), LocationKind.IFILE);</span>
+<span class="pc bpc" id="L408" title="1 of 4 branches missed.">		return buffer != null &amp;&amp; buffer.isDirty();</span>
+	}
+
+	private static void verify(IFile file, byte[] expected) throws CoreException {
+<span class="fc" id="L412">		try (var input= file.getContents()) {</span>
+<span class="pc bpc" id="L413" title="1 of 2 branches missed.">			if (!Arrays.equals(expected, input.readAllBytes()))</span>
+<span class="nc" id="L414">				throw new IOException(&quot;Workspace contents differ from the reviewed batch: &quot; + file.getFullPath()); //$NON-NLS-1$</span>
+<span class="nc" id="L415">		} catch (IOException e) { throw new CoreException(Status.error(e.getMessage(), e)); }</span>
+<span class="fc" id="L416">	}</span>
+
+	private static String digest(List&lt;byte[]&gt; fields) {
+		try {
+<span class="fc" id="L420">			var hash= MessageDigest.getInstance(&quot;SHA-256&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L421" title="All 2 branches covered.">			for (byte[] field : fields) {</span>
+<span class="fc" id="L422">				hash.update(ByteBuffer.allocate(Integer.BYTES).putInt(field.length).array());</span>
+<span class="fc" id="L423">				hash.update(field);</span>
+			}
+<span class="fc" id="L425">			return HexFormat.of().formatHex(hash.digest());</span>
+<span class="nc" id="L426">		} catch (NoSuchAlgorithmException e) { throw new IllegalStateException(e); }</span>
+	}
+
+	/** Exact workspace bytes for descriptors and any native line-delimiter correction. */
+	private static final class BatchResourceChange extends Change {
+		private final IFile file;
+		private final byte[] from;
+		private final byte[] to;
+		private final byte[] beforeNativeChange;
+
+<span class="fc" id="L436">		BatchResourceChange(IFile file, byte[] from, byte[] to, byte[] beforeNativeChange) {</span>
+<span class="fc" id="L437">			this.file= file;</span>
+<span class="fc" id="L438">			this.from= from;</span>
+<span class="fc" id="L439">			this.beforeNativeChange= beforeNativeChange;</span>
+<span class="fc" id="L440">			this.to= to;</span>
+<span class="fc" id="L441">		}</span>
+<span class="nc" id="L442">		@Override public String getName() { return file.getFullPath().toPortableString(); }</span>
+<span class="nc" id="L443">		@Override public Object getModifiedElement() { return file; }</span>
+<span class="fc" id="L444">		@Override public void initializeValidationData(IProgressMonitor pm) {}</span>
+		@Override public RefactoringStatus isValid(IProgressMonitor pm) throws CoreException {
+<span class="fc" id="L446">			try (var input= file.getContents()) {</span>
+<span class="fc" id="L447">				byte[] current= input.readAllBytes();</span>
+<span class="pc bpc" id="L448" title="3 of 4 branches missed.">				if (Arrays.equals(current, from) || Arrays.equals(current, beforeNativeChange)) return new RefactoringStatus();</span>
+<span class="nc" id="L449">				return RefactoringStatus.createFatalErrorStatus(&quot;Resource changed: &quot; + getName()); //$NON-NLS-1$</span>
+<span class="pc" id="L450">			} catch (IOException e) { throw new CoreException(Status.error(e.getMessage(), e)); }</span>
+		}
+		@Override public Change perform(IProgressMonitor pm) throws CoreException {
+<span class="fc" id="L453">			verify(file, from);</span>
+<span class="fc" id="L454">			file.setContents(new java.io.ByteArrayInputStream(to), false, true, pm);</span>
+<span class="fc" id="L455">			return new BatchResourceChange(file, to, from, null);</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

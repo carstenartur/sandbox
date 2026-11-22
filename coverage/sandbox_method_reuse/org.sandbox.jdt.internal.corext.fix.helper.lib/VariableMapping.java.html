@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ASTMatcher;
 
 /**
  * Represents a one-to-one mapping between variable names in the target code and
@@ -20,13 +21,13 @@ import org.eclipse.jdt.core.dom.Expression;
  * simple names), which is useful for cases where a parameter is replaced by a
  * method call or other expression.
  */
-<span class="fc" id="L23">public class VariableMapping {</span>
+<span class="fc" id="L24">public class VariableMapping {</span>
 	// Maps from target variable name to candidate variable name
-<span class="fc" id="L25">	private final Map&lt;String, String&gt; targetToCandidate = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L26">	private final Map&lt;String, String&gt; targetToCandidate = new HashMap&lt;&gt;();</span>
 	// Maps from candidate variable name to target variable name (for reverse lookup)
-<span class="fc" id="L27">	private final Map&lt;String, String&gt; candidateToTarget = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L28">	private final Map&lt;String, String&gt; candidateToTarget = new HashMap&lt;&gt;();</span>
 	// Maps from target variable name to candidate expression (for complex expressions)
-<span class="fc" id="L29">	private final Map&lt;String, Expression&gt; targetToExpression = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L30">	private final Map&lt;String, Expression&gt; targetToExpression = new HashMap&lt;&gt;();</span>
 	
 	/**
 	 * Add or verify a mapping between target and candidate variable names
@@ -36,22 +37,25 @@ import org.eclipse.jdt.core.dom.Expression;
 	 * @return true if mapping is consistent, false if conflict
 	 */
 	public boolean addMapping(String targetName, String candidateName) {
+<span class="pc bpc" id="L40" title="1 of 2 branches missed.">		if (targetToExpression.containsKey(targetName)) {</span>
+<span class="nc" id="L41">			return false;</span>
+		}
 		// Check if we already have a mapping for this target name
-<span class="fc bfc" id="L40" title="All 2 branches covered.">		if (targetToCandidate.containsKey(targetName)) {</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">		if (targetToCandidate.containsKey(targetName)) {</span>
 			// Verify consistency: same target name must always map to same candidate name
-<span class="fc" id="L42">			return targetToCandidate.get(targetName).equals(candidateName);</span>
+<span class="fc" id="L46">			return targetToCandidate.get(targetName).equals(candidateName);</span>
 		}
 		
 		// Check if candidate name is already mapped to a different target name
-<span class="pc bpc" id="L46" title="1 of 2 branches missed.">		if (candidateToTarget.containsKey(candidateName)) {</span>
+<span class="pc bpc" id="L50" title="1 of 2 branches missed.">		if (candidateToTarget.containsKey(candidateName)) {</span>
 			// Verify consistency: same candidate name must always map to same target name
-<span class="nc" id="L48">			return candidateToTarget.get(candidateName).equals(targetName);</span>
+<span class="nc" id="L52">			return candidateToTarget.get(candidateName).equals(targetName);</span>
 		}
 		
 		// New mapping - add it
-<span class="fc" id="L52">		targetToCandidate.put(targetName, candidateName);</span>
-<span class="fc" id="L53">		candidateToTarget.put(candidateName, targetName);</span>
-<span class="fc" id="L54">		return true;</span>
+<span class="fc" id="L56">		targetToCandidate.put(targetName, candidateName);</span>
+<span class="fc" id="L57">		candidateToTarget.put(candidateName, targetName);</span>
+<span class="fc" id="L58">		return true;</span>
 	}
 	
 	/**
@@ -59,58 +63,60 @@ import org.eclipse.jdt.core.dom.Expression;
 	 * Used when the candidate uses a complex expression (like a method call) 
 	 * where the target uses a simple variable
 	 * 
-	 * Note: This method does not perform bidirectional consistency checking like addMapping.
-	 * Callers are responsible for ensuring expression mappings don't conflict with existing
-	 * name mappings. If a simple name mapping already exists for the target name, it will
-	 * be overridden by the expression mapping.
+	 * An existing mapping must describe the same expression; mixed name/expression
+	 * mappings are rejected instead of silently overwriting the earlier occurrence.
 	 * 
 	 * @param targetName Variable name in target code
 	 * @param candidateExpr Expression in candidate code
 	 */
-	public void addExpressionMapping(String targetName, Expression candidateExpr) {
-<span class="fc" id="L71">		targetToExpression.put(targetName, candidateExpr);</span>
-<span class="fc" id="L72">	}</span>
+	public boolean addExpressionMapping(String targetName, Expression candidateExpr) {
+<span class="pc bpc" id="L73" title="2 of 4 branches missed.">		if (candidateExpr == null || targetToCandidate.containsKey(targetName)) {</span>
+<span class="nc" id="L74">			return false;</span>
+		}
+<span class="fc" id="L76">		Expression previous = targetToExpression.putIfAbsent(targetName, candidateExpr);</span>
+<span class="pc bpc" id="L77" title="3 of 4 branches missed.">		return previous == null || previous.subtreeMatch(new ASTMatcher(), candidateExpr);</span>
+	}
 	
 	/**
 	 * Get the candidate name mapped to a target name
 	 */
 	public String getCandidateName(String targetName) {
-<span class="nc" id="L78">		return targetToCandidate.get(targetName);</span>
+<span class="nc" id="L84">		return targetToCandidate.get(targetName);</span>
 	}
 	
 	/**
 	 * Get the candidate expression mapped to a target name
 	 */
 	public Expression getCandidateExpression(String targetName) {
-<span class="nc" id="L85">		return targetToExpression.get(targetName);</span>
+<span class="fc" id="L91">		return targetToExpression.get(targetName);</span>
 	}
 	
 	/**
 	 * Check if a target name has an expression mapping (not just a name mapping)
 	 */
 	public boolean hasExpressionMapping(String targetName) {
-<span class="fc" id="L92">		return targetToExpression.containsKey(targetName);</span>
+<span class="fc" id="L98">		return targetToExpression.containsKey(targetName);</span>
 	}
 	
 	/**
 	 * Check if mapping is valid (at least one mapping exists)
 	 */
 	public boolean isValid() {
-<span class="pc bpc" id="L99" title="1 of 4 branches missed.">		return !targetToCandidate.isEmpty() || !targetToExpression.isEmpty();</span>
+<span class="nc bnc" id="L105" title="All 4 branches missed.">		return !targetToCandidate.isEmpty() || !targetToExpression.isEmpty();</span>
 	}
 	
 	/**
 	 * Get all target to candidate mappings
 	 */
 	public Map&lt;String, String&gt; getMappings() {
-<span class="fc" id="L106">		return new HashMap&lt;&gt;(targetToCandidate);</span>
+<span class="fc" id="L112">		return new HashMap&lt;&gt;(targetToCandidate);</span>
 	}
 	
 	/**
 	 * Get all target to expression mappings
 	 */
 	public Map&lt;String, Expression&gt; getExpressionMappings() {
-<span class="fc" id="L113">		return new HashMap&lt;&gt;(targetToExpression);</span>
+<span class="fc" id="L119">		return new HashMap&lt;&gt;(targetToExpression);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

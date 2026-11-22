@@ -47,7 +47,7 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 <span class="fc" id="L47">		}</span>
 		
 		public MethodDeclaration getContainingMethod() {
-<span class="nc" id="L50">			return containingMethod;</span>
+<span class="fc" id="L50">			return containingMethod;</span>
 		}
 		
 		public List&lt;Statement&gt; getMatchingStatements() {
@@ -75,8 +75,8 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 <span class="fc" id="L75">		Block targetBody = targetMethod.getBody();</span>
 <span class="fc" id="L76">		List&lt;Statement&gt; targetStatements = getStatements(targetBody);</span>
 		
-<span class="pc bpc" id="L78" title="1 of 2 branches missed.">		if (targetStatements.isEmpty()) {</span>
-<span class="nc" id="L79">			return matches;</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">		if (targetStatements.isEmpty()) {</span>
+<span class="fc" id="L79">			return matches;</span>
 		}
 		
 		// Visit all methods in the compilation unit
@@ -89,7 +89,7 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 				}
 				
 				// Search for matching sequences in this method
-<span class="fc" id="L92">				searchInMethod(node, targetStatements, matches);</span>
+<span class="fc" id="L92">				searchInMethod(node, targetMethod, targetStatements, matches);</span>
 <span class="fc" id="L93">				return true;</span>
 			})
 <span class="fc" id="L95">			.build(cu);</span>
@@ -100,33 +100,34 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 	/**
 	 * Search for matching code sequences within a single method
 	 */
-	private static void searchInMethod(MethodDeclaration method, List&lt;Statement&gt; targetStatements, List&lt;InlineSequenceMatch&gt; matches) {
-<span class="pc bpc" id="L104" title="1 of 2 branches missed.">		if (method.getBody() == null) {</span>
-<span class="nc" id="L105">			return;</span>
+	private static void searchInMethod(MethodDeclaration method, MethodDeclaration targetMethod,
+			List&lt;Statement&gt; targetStatements, List&lt;InlineSequenceMatch&gt; matches) {
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">		if (method.getBody() == null) {</span>
+<span class="nc" id="L106">			return;</span>
 		}
 		
-<span class="fc" id="L108">		List&lt;Statement&gt; methodStatements = getStatements(method.getBody());</span>
-<span class="fc" id="L109">		int targetLength = targetStatements.size();</span>
+<span class="fc" id="L109">		List&lt;Statement&gt; methodStatements = getStatements(method.getBody());</span>
+<span class="fc" id="L110">		int targetLength = targetStatements.size();</span>
 		
 		// Try to find the target sequence at each position
-<span class="fc bfc" id="L112" title="All 2 branches covered.">		for (int i = 0; i &lt;= methodStatements.size() - targetLength; i++) {</span>
-<span class="fc" id="L113">			List&lt;Statement&gt; candidateSequence = methodStatements.subList(i, i + targetLength);</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">		for (int i = 0; i &lt;= methodStatements.size() - targetLength; i++) {</span>
+<span class="fc" id="L114">			List&lt;Statement&gt; candidateSequence = methodStatements.subList(i, i + targetLength);</span>
 			
 			// Try to match this sequence with the target
-<span class="fc" id="L116">			VariableMapping mapping = CodeSequenceMatcher.matchSequence(targetStatements, candidateSequence);</span>
+<span class="fc" id="L117">			VariableMapping mapping = CodeSequenceMatcher.matchSequence(targetStatements, candidateSequence);</span>
 			
-<span class="fc bfc" id="L118" title="All 4 branches covered.">			if (mapping != null &amp;&amp; mapping.isValid()) {</span>
+<span class="fc bfc" id="L119" title="All 4 branches covered.">			if (mapping != null &amp;&amp; ExistingMethodReuseSafety.canReuse(targetMethod, method, candidateSequence, mapping)) {</span>
 				// Found a match!
-<span class="fc" id="L120">				matches.add(new InlineSequenceMatch(method, new ArrayList&lt;&gt;(candidateSequence), mapping));</span>
+<span class="fc" id="L121">				matches.add(new InlineSequenceMatch(method, new ArrayList&lt;&gt;(candidateSequence), mapping));</span>
 			}
 		}
-<span class="fc" id="L123">	}</span>
+<span class="fc" id="L124">	}</span>
 	
 	/**
 	 * Extract statements from a block (helper method)
 	 */
 	private static List&lt;Statement&gt; getStatements(Block block) {
-<span class="fc" id="L129">		return block.statements();</span>
+<span class="fc" id="L130">		return block.statements();</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

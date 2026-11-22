@@ -149,7 +149,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 <span class="fc" id="L149">		AstProcessorBuilder.with(dataHolder, nodesprocessed)</span>
 <span class="fc" id="L150">			.onMethodInvocation((node, h) -&gt; {</span>
 				// Check if this is a .run() call on a ThrowingRunnable
-<span class="pc bpc" id="L152" title="1 of 4 branches missed.">				if (RUN_METHOD.equals(node.getName().getIdentifier()) &amp;&amp; node.arguments().isEmpty()) {</span>
+<span class="fc bfc" id="L152" title="All 4 branches covered.">				if (RUN_METHOD.equals(node.getName().getIdentifier()) &amp;&amp; node.arguments().isEmpty()) {</span>
 <span class="pc bpc" id="L153" title="1 of 2 branches missed.">					if (isThrowingRunnableRunCall(node)) {</span>
 <span class="pc bpc" id="L154" title="2 of 4 branches missed.">						if (!nodesprocessed.contains(node) &amp;&amp; !found.contains(node)) {</span>
 <span class="fc" id="L155">							found.add(node);</span>

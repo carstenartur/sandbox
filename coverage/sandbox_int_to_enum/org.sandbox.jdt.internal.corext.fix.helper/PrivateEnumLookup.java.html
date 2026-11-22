@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>PrivateEnumLookup.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_int_to_enum</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">PrivateEnumLookup.java</span></div><h1>PrivateEnumLookup.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.util.List;
+import java.util.Map;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.ArrayAccess;
+import org.eclipse.jdt.core.dom.ArrayCreation;
+import org.eclipse.jdt.core.dom.ArrayInitializer;
+import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.PostfixExpression;
+import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.text.edits.TextEditGroup;
+
+/** Confines ordinal conversion to a read of a fresh, non-escaping lookup array. */
+final class PrivateEnumLookup {
+	private PrivateEnumLookup() { }
+
+	static boolean isLocalIndex(SimpleName state, MethodDeclaration method, Map&lt;String, Boolean&gt; localTables) {
+<span class="fc" id="L38">		Expression index= withParentheses(state);</span>
+<span class="pc bpc" id="L39" title="1 of 6 branches missed.">		if (!(index.getParent() instanceof ArrayAccess access) || access.getIndex() != index || !readOnly(access)) {</span>
+<span class="fc" id="L40">			return false;</span>
+		}
+<span class="fc" id="L42">		Expression table= access.getArray();</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">		if (table instanceof ArrayCreation creation) {</span>
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">			return creation.getType().getDimensions() == 1;</span>
+		}
+<span class="pc bpc" id="L46" title="2 of 4 branches missed.">		if (!(table instanceof SimpleName name) || !(name.resolveBinding() instanceof IVariableBinding binding)</span>
+<span class="pc bpc" id="L47" title="3 of 6 branches missed.">				|| binding.isRecovered() || binding.getKey() == null || binding.getType().getDimensions() != 1) {</span>
+<span class="nc" id="L48">			return false;</span>
+		}
+<span class="fc" id="L50">		return localTables.computeIfAbsent(binding.getKey(), key -&gt; confinedToReads(binding, method));</span>
+	}
+
+	private static boolean confinedToReads(IVariableBinding binding, MethodDeclaration method) {
+<span class="fc" id="L54">		CompilationUnit root= (CompilationUnit) method.getRoot();</span>
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">		if (!(root.findDeclaringNode(binding) instanceof VariableDeclarationFragment declaration)</span>
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">				|| !(declaration.getParent() instanceof VariableDeclarationStatement)</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">				|| !(declaration.getInitializer() instanceof ArrayInitializer</span>
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">						|| declaration.getInitializer() instanceof ArrayCreation)) {</span>
+<span class="fc" id="L59">			return false;</span>
+		}
+<span class="fc" id="L61">		ASTNode enclosing= declaration;</span>
+<span class="pc bpc" id="L62" title="1 of 4 branches missed.">		while (enclosing != null &amp;&amp; !(enclosing instanceof MethodDeclaration)) {</span>
+<span class="fc" id="L63">			enclosing= enclosing.getParent();</span>
+		}
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">		if (enclosing != method) {</span>
+<span class="nc" id="L66">			return false;</span>
+		}
+<span class="fc" id="L68">		boolean[] confined= { true };</span>
+<span class="fc" id="L69">		method.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(SimpleName name) {
+<span class="fc bfc" id="L72" title="All 4 branches covered.">				if (name != declaration.getName() &amp;&amp; binding.getName().equals(name.getIdentifier())) {</span>
+<span class="fc" id="L73">					IBinding use= name.resolveBinding();</span>
+<span class="pc bpc" id="L74" title="2 of 4 branches missed.">					if (use == null || use.isRecovered()) {</span>
+<span class="nc" id="L75">						confined[0]= false;</span>
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">					} else if (binding.isEqualTo(use)) {</span>
+<span class="fc" id="L77">						Expression expression= withParentheses(name);</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">						if (!(expression.getParent() instanceof ArrayAccess access)</span>
+<span class="pc bpc" id="L79" title="2 of 4 branches missed.">								|| access.getArray() != expression || !readOnly(access)) {</span>
+<span class="fc" id="L80">							confined[0]= false;</span>
+						}
+					}
+				}
+<span class="fc" id="L84">				return false;</span>
+			}
+		});
+<span class="fc" id="L87">		return confined[0];</span>
+	}
+
+	private static Expression withParentheses(Expression expression) {
+<span class="fc bfc" id="L91" title="All 2 branches covered.">		while (expression.getParent() instanceof ParenthesizedExpression parent) {</span>
+<span class="fc" id="L92">			expression= parent;</span>
+		}
+<span class="fc" id="L94">		return expression;</span>
+	}
+
+	private static boolean readOnly(ArrayAccess access) {
+<span class="fc" id="L98">		Expression expression= withParentheses(access);</span>
+<span class="fc" id="L99">		ASTNode parent= expression.getParent();</span>
+<span class="pc bpc" id="L100" title="3 of 4 branches missed.">		return !(parent instanceof Assignment assignment &amp;&amp; assignment.getLeftHandSide() == expression</span>
+<span class="pc bpc" id="L101" title="1 of 4 branches missed.">				|| parent instanceof PostfixExpression || parent instanceof PrefixExpression prefix</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">						&amp;&amp; (prefix.getOperator() == PrefixExpression.Operator.INCREMENT</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">								|| prefix.getOperator() == PrefixExpression.Operator.DECREMENT));</span>
+	}
+
+	static void rewriteIndexes(List&lt;SimpleName&gt; indexes, ASTRewrite rewrite, TextEditGroup group) {
+<span class="fc bfc" id="L107" title="All 2 branches covered.">		for (SimpleName index : indexes) {</span>
+<span class="fc" id="L108">			var ast= index.getAST();</span>
+<span class="fc" id="L109">			var ordinal= ast.newMethodInvocation();</span>
+<span class="fc" id="L110">			ordinal.setExpression(ast.newSimpleName(index.getIdentifier()));</span>
+<span class="fc" id="L111">			ordinal.setName(ast.newSimpleName(&quot;ordinal&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L112">			rewrite.replace(index, ordinal, group);</span>
+		}
+<span class="fc" id="L114">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

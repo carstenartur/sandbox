@@ -28,95 +28,94 @@ import org.eclipse.core.runtime.CoreException;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
-import org.eclipse.jdt.internal.ui.fix.MapCleanUpOptions;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 
 import org.sandbox.jdt.internal.corext.fix.MethodReuseCleanUpFixCore;
+import org.sandbox.jdt.internal.corext.fix.helper.MethodReuseNlsFix;
 import org.sandbox.jdt.internal.corext.fix.helper.RepeatedCodeSequenceExtractor;
 
 /** Cleanup for extracting repeated sequences or reusing an existing method. */
 public class MethodReuseCleanUpCore extends AbstractCleanUp {
 
-	private Map&lt;String, String&gt; optionsMap;
+	// Keep the supplied options live: the cleanup dialog may update them after preview.
+	private CleanUpOptions currentOptions;
 
 	public MethodReuseCleanUpCore(final Map&lt;String, String&gt; options) {
 <span class="fc" id="L49">		super(options);</span>
-<span class="fc" id="L50">		optionsMap= options;</span>
-<span class="fc" id="L51">	}</span>
+<span class="fc" id="L50">	}</span>
 
-<span class="fc" id="L53">	public MethodReuseCleanUpCore() {</span>
-<span class="fc" id="L54">	}</span>
+<span class="fc" id="L52">	public MethodReuseCleanUpCore() {</span>
+<span class="fc" id="L53">	}</span>
 
 	@Override
 	public void setOptions(CleanUpOptions options) {
-<span class="fc" id="L58">		super.setOptions(options);</span>
-<span class="fc bfc" id="L59" title="All 2 branches covered.">		if (options instanceof MapCleanUpOptions mapOptions) {</span>
-<span class="fc" id="L60">			optionsMap= mapOptions.getMap();</span>
-		}
-<span class="fc" id="L62">	}</span>
+<span class="fc" id="L57">		super.setOptions(options);</span>
+<span class="fc" id="L58">		currentOptions= options;</span>
+<span class="fc" id="L59">	}</span>
 
 	@Override
 	public CleanUpRequirements getRequirements() {
-<span class="fc" id="L66">		return new CleanUpRequirements(requireAST(), false, false, null);</span>
+<span class="fc" id="L63">		return new CleanUpRequirements(requireAST(), false, false, null);</span>
 	}
 
 	public boolean requireAST() {
-<span class="fc bfc" id="L70" title="All 4 branches covered.">		return isEnabled(METHOD_REUSE_CLEANUP) || isEnabled(METHOD_REUSE_INLINE_SEQUENCES);</span>
+<span class="fc bfc" id="L67" title="All 4 branches covered.">		return isEnabled(METHOD_REUSE_CLEANUP) || isEnabled(METHOD_REUSE_INLINE_SEQUENCES);</span>
 	}
 
 	@Override
 	public ICleanUpFix createFix(final CleanUpContext context) throws CoreException {
-<span class="fc" id="L75">		CompilationUnit compilationUnit= context.getAST();</span>
-<span class="pc bpc" id="L76" title="1 of 6 branches missed.">		if (compilationUnit == null || context.getCompilationUnit() == null || !requireAST()) {</span>
-<span class="fc" id="L77">			return null;</span>
+<span class="fc" id="L72">		CompilationUnit compilationUnit= context.getAST();</span>
+<span class="pc bpc" id="L73" title="1 of 6 branches missed.">		if (compilationUnit == null || context.getCompilationUnit() == null || !requireAST()) {</span>
+<span class="fc" id="L74">			return null;</span>
 		}
 
-<span class="fc bfc" id="L80" title="All 2 branches covered.">		if (isEnabled(METHOD_REUSE_CLEANUP)) {</span>
-<span class="fc" id="L81">			ICleanUpFix extraction= RepeatedCodeSequenceExtractor.createFix(</span>
-<span class="fc" id="L82">					context.getCompilationUnit(), compilationUnit, getMinimumStatements());</span>
-<span class="fc bfc" id="L83" title="All 2 branches covered.">			if (extraction != null) {</span>
-<span class="fc" id="L84">				return extraction;</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">		if (isEnabled(METHOD_REUSE_CLEANUP)) {</span>
+<span class="fc" id="L78">			ICleanUpFix extraction= RepeatedCodeSequenceExtractor.createFix(</span>
+<span class="fc" id="L79">					context.getCompilationUnit(), compilationUnit, getMinimumStatements());</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">			if (extraction != null) {</span>
+<span class="fc" id="L81">				return extraction;</span>
 			}
 		}
 
-<span class="fc bfc" id="L88" title="All 2 branches covered.">		if (!isEnabled(METHOD_REUSE_INLINE_SEQUENCES)) {</span>
-<span class="fc" id="L89">			return null;</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">		if (!isEnabled(METHOD_REUSE_INLINE_SEQUENCES)) {</span>
+<span class="fc" id="L86">			return null;</span>
 		}
-<span class="fc" id="L91">		Set&lt;CompilationUnitRewriteOperation&gt; operations= new LinkedHashSet&lt;&gt;();</span>
-<span class="fc" id="L92">		Set&lt;ASTNode&gt; nodesProcessed= new HashSet&lt;&gt;();</span>
-<span class="fc" id="L93">		MethodReuseCleanUpFixCore.INLINE_SEQUENCES.findOperations(</span>
-<span class="fc" id="L94">				compilationUnit, operations, nodesProcessed);</span>
-<span class="pc bpc" id="L95" title="1 of 2 branches missed.">		if (operations.isEmpty()) {</span>
-<span class="nc" id="L96">			return null;</span>
+<span class="fc" id="L88">		Set&lt;CompilationUnitRewriteOperation&gt; operations= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L89">		Set&lt;ASTNode&gt; nodesProcessed= new HashSet&lt;&gt;();</span>
+<span class="fc" id="L90">		MethodReuseCleanUpFixCore.INLINE_SEQUENCES.findOperations(</span>
+<span class="fc" id="L91">				compilationUnit, operations, nodesProcessed);</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">		if (operations.isEmpty()) {</span>
+<span class="fc" id="L93">			return null;</span>
 		}
-<span class="fc" id="L98">		return new CompilationUnitRewriteOperationsFixCore(&quot;Method Reuse Cleanup&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L99">				compilationUnit, operations.toArray(new CompilationUnitRewriteOperation[0]));</span>
+<span class="fc" id="L95">		ICleanUpFix inline= MethodReuseNlsFix.create(&quot;Method Reuse Cleanup&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L96">				compilationUnit, operations.toArray(new CompilationUnitRewriteOperation[0]));</span>
+<span class="fc" id="L97">		return RepeatedCodeSequenceExtractor.validateFix(inline, context.getCompilationUnit(),</span>
+<span class="fc" id="L98">				context.getCompilationUnit().getSource());</span>
 	}
 
 	@Override
 	public String[] getStepDescriptions() {
-<span class="fc" id="L104">		List&lt;String&gt; result= new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L105" title="All 2 branches covered.">		if (isEnabled(METHOD_REUSE_CLEANUP)) {</span>
-<span class="fc" id="L106">			result.add(&quot;Extract repeated sequences of at least &quot; + getMinimumStatements() //$NON-NLS-1$</span>
+<span class="fc" id="L103">		List&lt;String&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">		if (isEnabled(METHOD_REUSE_CLEANUP)) {</span>
+<span class="fc" id="L105">			result.add(&quot;Extract repeated sequences of at least &quot; + getMinimumStatements() //$NON-NLS-1$</span>
 					+ &quot; statements and replace every JDT-validated duplicate with a call&quot;); //$NON-NLS-1$
 		}
-<span class="pc bpc" id="L109" title="1 of 2 branches missed.">		if (isEnabled(METHOD_REUSE_INLINE_SEQUENCES)) {</span>
-<span class="nc" id="L110">			result.add(&quot;Replace inline code sequences with calls to an existing method&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">		if (isEnabled(METHOD_REUSE_INLINE_SEQUENCES)) {</span>
+<span class="nc" id="L109">			result.add(&quot;Replace inline code sequences with calls to an existing method&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L112">		return result.toArray(new String[0]);</span>
+<span class="fc" id="L111">		return result.toArray(new String[0]);</span>
 	}
 
 	@Override
 	public String getPreview() {
-<span class="fc" id="L117">		StringBuilder preview= new StringBuilder();</span>
-<span class="pc bpc" id="L118" title="1 of 2 branches missed.">		if (isEnabled(METHOD_REUSE_CLEANUP)) {</span>
-<span class="fc" id="L119">			preview.append(&quot;&quot;&quot;</span>
+<span class="fc" id="L116">		StringBuilder preview= new StringBuilder();</span>
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">		if (isEnabled(METHOD_REUSE_CLEANUP)) {</span>
+<span class="fc" id="L118">			preview.append(&quot;&quot;&quot;</span>
 				void first(String value) {
 				    extractedSequence(value);
 				}
@@ -129,8 +128,8 @@ public class MethodReuseCleanUpCore extends AbstractCleanUp {
 				    extractedSequence(input);
 				}
 				&quot;&quot;&quot;); //$NON-NLS-1$
-<span class="fc" id="L132">		} else {</span>
-<span class="nc" id="L133">			preview.append(&quot;&quot;&quot;</span>
+<span class="fc" id="L131">		} else {</span>
+<span class="nc" id="L132">			preview.append(&quot;&quot;&quot;</span>
 				void first(String value) {
 				    String text = value.trim();
 				    text = text.toLowerCase();
@@ -143,34 +142,35 @@ public class MethodReuseCleanUpCore extends AbstractCleanUp {
 				}
 				&quot;&quot;&quot;); //$NON-NLS-1$
 		}
-<span class="pc bpc" id="L146" title="1 of 2 branches missed.">		if (isEnabled(METHOD_REUSE_INLINE_SEQUENCES)) {</span>
-<span class="nc" id="L147">			preview.append(&quot;&quot;&quot;</span>
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">		if (isEnabled(METHOD_REUSE_INLINE_SEQUENCES)) {</span>
+<span class="nc" id="L146">			preview.append(&quot;&quot;&quot;</span>
 				void printUser(String first, String last) {
 				    String name = formatName(first, last);
 				    System.out.println(name);
 				}
 				&quot;&quot;&quot;); //$NON-NLS-1$
-<span class="nc" id="L153">		} else {</span>
-<span class="fc" id="L154">			preview.append(&quot;&quot;&quot;</span>
+<span class="nc" id="L152">		} else {</span>
+<span class="fc" id="L153">			preview.append(&quot;&quot;&quot;</span>
 				void printUser(String first, String last) {
 				    String name = first.trim() + &quot; &quot; + last.trim();
 				    System.out.println(name);
 				}
 				&quot;&quot;&quot;); //$NON-NLS-1$
 		}
-<span class="fc" id="L161">		return preview.toString();</span>
+<span class="fc" id="L160">		return preview.toString();</span>
 	}
 
 	private int getMinimumStatements() {
-<span class="pc bpc" id="L165" title="1 of 2 branches missed.">		String configured= optionsMap == null ? null : optionsMap.get(MINIMUM_STATEMENTS);</span>
-<span class="pc bpc" id="L166" title="1 of 2 branches missed.">		if (configured != null) {</span>
+<span class="pc bpc" id="L164" title="1 of 4 branches missed.">		String configured= currentOptions != null &amp;&amp; currentOptions.getKeys().contains(MINIMUM_STATEMENTS)</span>
+<span class="fc" id="L165">				? currentOptions.getValue(MINIMUM_STATEMENTS) : null;</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">		if (configured != null) {</span>
 			try {
 <span class="fc" id="L168">				return RepeatedCodeSequenceExtractor.normalizeMinimum(Integer.parseInt(configured));</span>
 <span class="nc" id="L169">			} catch (NumberFormatException exception) {</span>
 				// Fall through to the documented default.
 			}
 		}
-<span class="nc" id="L173">		return RepeatedCodeSequenceExtractor.DEFAULT_MINIMUM_STATEMENTS;</span>
+<span class="fc" id="L173">		return RepeatedCodeSequenceExtractor.DEFAULT_MINIMUM_STATEMENTS;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

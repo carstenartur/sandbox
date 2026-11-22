@@ -51,7 +51,7 @@ final class IteratorImportCleanup {
 <span class="pc bpc" id="L51" title="2 of 4 branches missed.">			if (binding instanceof ITypeBinding type &amp;&amp; !type.isRecovered()) {</span>
 <span class="fc" id="L52">				String name= type.getTypeDeclaration().getQualifiedName();</span>
 <span class="fc" id="L53">				removedTypes.add(name);</span>
-<span class="pc bpc" id="L54" title="2 of 4 branches missed.">				if (!explicitTypes.contains(name) &amp;&amp; type.getPackage() != null) {</span>
+<span class="pc bpc" id="L54" title="1 of 4 branches missed.">				if (!explicitTypes.contains(name) &amp;&amp; type.getPackage() != null) {</span>
 <span class="fc" id="L55">					affectedPackages.add(type.getPackage().getName());</span>
 				}
 			}

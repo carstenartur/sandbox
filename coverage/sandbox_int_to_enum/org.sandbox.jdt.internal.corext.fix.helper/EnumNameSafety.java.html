@@ -7,7 +7,21 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IPackageFragmentRoot;
+import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 
@@ -16,19 +30,120 @@ public final class EnumNameSafety {
 
 	private EnumNameSafety() { }
 
-	/** Conservatively rejects names already declared or referenced inside the owner. */
+	/** Rejects both source-level shadowing and an existing type that would own the same class file. */
 	public static boolean conflicts(TypeDeclaration owner, String name) {
-<span class="fc" id="L21">		boolean[] conflict= { false };</span>
-<span class="fc" id="L22">		owner.accept(new ASTVisitor() {</span>
+<span class="fc bfc" id="L35" title="All 2 branches covered.">		if (identifierInUse(owner, name)) {</span>
+<span class="fc" id="L36">			return true;</span>
+		}
+<span class="fc" id="L38">		ITypeBinding binding= owner.resolveBinding();</span>
+<span class="pc bpc" id="L39" title="3 of 6 branches missed.">		if (binding == null || binding.isRecovered() || binding.getBinaryName() == null) {</span>
+<span class="nc" id="L40">			return true;</span>
+		}
+<span class="fc" id="L42">		String binaryName= binding.getBinaryName() + '$' + name;</span>
+<span class="fc" id="L43">		String simpleBinaryName= binaryName.substring(binaryName.lastIndexOf('.') + 1);</span>
+<span class="fc" id="L44">		CompilationUnit root= (CompilationUnit) owner.getRoot();</span>
+		// The current editor buffer can contain a newly declared alias before it has reached the index.
+<span class="fc bfc" id="L46" title="All 2 branches covered.">		if (declares(root.types(), simpleBinaryName)) {</span>
+<span class="fc" id="L47">			return true;</span>
+		}
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">		if (!(root.getTypeRoot() instanceof ICompilationUnit unit)) {</span>
+<span class="nc" id="L50">			return false;</span>
+		}
+		try {
+<span class="fc" id="L53">			var project= unit.getJavaProject();</span>
+			// The editor may hold a workspace scheduling rule. Never wait for the workspace index here.
+<span class="fc" id="L55">			String packageName= binding.getPackage().getName();</span>
+<span class="fc" id="L56">			Map&lt;ICompilationUnit, ICompilationUnit&gt; copies= new HashMap&lt;&gt;();</span>
+<span class="fc" id="L57">			collectCopies(copies, JavaCore.getWorkingCopies(null), packageName);</span>
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">			if (unit.getOwner() != null) {</span>
+<span class="nc" id="L59">				collectCopies(copies, JavaCore.getWorkingCopies(unit.getOwner()), packageName);</span>
+			}
+<span class="fc bfc" id="L61" title="All 2 branches covered.">			for (var sourceRoot : project.getAllPackageFragmentRoots()) {</span>
+<span class="fc" id="L62">				var pack= sourceRoot.getPackageFragment(packageName);</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">				if (sourceRoot.getKind() == IPackageFragmentRoot.K_BINARY) {</span>
+<span class="fc bfc" id="L64" title="All 4 branches covered.">					if (pack.exists() &amp;&amp; pack.getOrdinaryClassFile(simpleBinaryName + &quot;.class&quot;).exists()) return true; //$NON-NLS-1$</span>
+					continue;
+				}
+<span class="fc bfc" id="L67" title="All 2 branches covered.">				if (pack.exists()) {</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">					for (var other : pack.getCompilationUnits()) {</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">						if (!unit.getPrimary().equals(other.getPrimary())</span>
+<span class="pc bpc" id="L70" title="1 of 4 branches missed.">								&amp;&amp; !copies.containsKey(other.getPrimary()) &amp;&amp; declares(other, simpleBinaryName)) {</span>
+<span class="nc" id="L71">							return true;</span>
+						}
+					}
+				}
+				// Includes working copies with no corresponding source file yet.
+<span class="fc bfc" id="L76" title="All 2 branches covered.">				for (var other : copies.values()) {</span>
+<span class="pc bpc" id="L77" title="1 of 4 branches missed.">					if (pack.equals(other.getParent()) &amp;&amp; !unit.getPrimary().equals(other.getPrimary())</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">							&amp;&amp; declares(other, simpleBinaryName)) return true;</span>
+				}
+			}
+<span class="fc" id="L81">			return false;</span>
+<span class="nc" id="L82">		} catch (JavaModelException unavailable) {</span>
+<span class="nc" id="L83">			return true;</span>
+		}
+	}
+
+	private static void collectCopies(Map&lt;ICompilationUnit, ICompilationUnit&gt; copies, ICompilationUnit[] candidates,
+			String packageName) {
+<span class="fc bfc" id="L89" title="All 2 branches covered.">		for (var candidate : candidates) {</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">			if (packageName.equals(candidate.getParent().getElementName())) {</span>
+<span class="fc" id="L91">				copies.put(candidate.getPrimary(), candidate);</span>
+			}
+		}
+<span class="fc" id="L94">	}</span>
+
+	private static boolean declares(ICompilationUnit unit, String name) throws JavaModelException {
+<span class="fc bfc" id="L97" title="All 4 branches covered.">		if (unit.isWorkingCopy() &amp;&amp; !unit.isConsistent()) {</span>
+			// Read the unsaved buffer. Reconciling another editor would alter its Java model state.
+<span class="fc" id="L99">			ASTParser parser= ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L100">			String source= unit.getSource();</span>
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">			if (source == null) return true;</span>
+<span class="fc" id="L102">			parser.setSource(source.toCharArray());</span>
+<span class="fc" id="L103">			parser.setCompilerOptions(unit.getJavaProject().getOptions(true));</span>
+<span class="fc" id="L104">			parser.setIgnoreMethodBodies(true);</span>
+<span class="fc" id="L105">			return declares(((CompilationUnit) parser.createAST(null)).types(), name);</span>
+		}
+<span class="fc" id="L107">		return declares(unit.getTypes(), name);</span>
+	}
+
+	private static boolean declares(IType[] types, String name) throws JavaModelException {
+<span class="fc bfc" id="L111" title="All 2 branches covered.">		for (var type : types) {</span>
+<span class="fc" id="L112">			String identifier= type.getElementName();</span>
+<span class="pc bpc" id="L113" title="1 of 4 branches missed.">			if (name.equals(identifier) || name.startsWith(identifier + '$')</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">					&amp;&amp; declares(type.getTypes(), name.substring(identifier.length() + 1))) {</span>
+<span class="fc" id="L115">				return true;</span>
+			}
+		}
+<span class="fc" id="L118">		return false;</span>
+	}
+
+	private static boolean declares(List&lt;?&gt; declarations, String name) {
+<span class="fc bfc" id="L122" title="All 2 branches covered.">		for (Object declaration : declarations) {</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">			if (declaration instanceof AbstractTypeDeclaration type) {</span>
+<span class="fc" id="L124">				String identifier= type.getName().getIdentifier();</span>
+<span class="fc bfc" id="L125" title="All 4 branches covered.">				if (name.equals(identifier) || name.startsWith(identifier + '$')</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">						&amp;&amp; declares(type.bodyDeclarations(), name.substring(identifier.length() + 1))) {</span>
+<span class="fc" id="L127">					return true;</span>
+				}
+			}
+		}
+<span class="fc" id="L131">		return false;</span>
+	}
+
+	/** Returns whether a generated member name could shadow an existing declaration or reference. */
+	static boolean identifierInUse(TypeDeclaration owner, String name) {
+<span class="fc" id="L136">		boolean[] conflict= { false };</span>
+<span class="fc" id="L137">		owner.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(SimpleName node) {
-<span class="fc bfc" id="L25" title="All 2 branches covered.">				if (name.equals(node.getIdentifier())) {</span>
-<span class="fc" id="L26">					conflict[0]= true;</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">				if (name.equals(node.getIdentifier())) {</span>
+<span class="fc" id="L141">					conflict[0]= true;</span>
 				}
-<span class="fc bfc" id="L28" title="All 2 branches covered.">				return !conflict[0];</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">				return !conflict[0];</span>
 			}
 		});
-<span class="fc" id="L31">		return conflict[0];</span>
+<span class="fc" id="L146">		return conflict[0];</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -291,8 +291,8 @@ public abstract class AbstractPlannedMultiFileCleanUp&lt;P&gt; extends AbstractC
 <span class="nc" id="L291">				return List.of();</span>
 			}
 <span class="fc" id="L293">			String cleanupId= diagnostics.cleanupId();</span>
-<span class="pc bpc" id="L294" title="2 of 4 branches missed.">			if (cleanupId.isBlank() || UNKNOWN_CLEANUP_ID.equals(cleanupId)) {</span>
-<span class="nc" id="L295">				cleanupId= getClass().getName();</span>
+<span class="pc bpc" id="L294" title="1 of 4 branches missed.">			if (cleanupId.isBlank() || UNKNOWN_CLEANUP_ID.equals(cleanupId)) {</span>
+<span class="fc" id="L295">				cleanupId= getClass().getName();</span>
 			}
 <span class="fc" id="L297">			List&lt;Map&lt;String, Object&gt;&gt; result= new ArrayList&lt;&gt;();</span>
 <span class="fc bfc" id="L298" title="All 2 branches covered.">			for (MultiFileCandidateDiagnostic candidate : diagnostics.candidates()) {</span>

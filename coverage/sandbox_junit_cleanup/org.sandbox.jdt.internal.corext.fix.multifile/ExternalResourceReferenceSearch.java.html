@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ExternalResourceReferenceSearch.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.multifile</a> &gt; <span class="el_source">ExternalResourceReferenceSearch.java</span></div><h1>ExternalResourceReferenceSearch.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which accompanies this distribution,
+ * and is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.multifile;
+
+import java.io.ByteArrayInputStream;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.jdt.core.IClassFile;
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IField;
+import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.IMember;
+import org.eclipse.jdt.core.IMethod;
+import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.core.ToolFactory;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
+import org.eclipse.jdt.core.dom.ChildListPropertyDescriptor;
+import org.eclipse.jdt.core.dom.ChildPropertyDescriptor;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.NodeFinder;
+import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.VariableDeclaration;
+import org.eclipse.jdt.core.search.FieldReferenceMatch;
+import org.eclipse.jdt.core.search.IJavaSearchConstants;
+import org.eclipse.jdt.core.search.IJavaSearchScope;
+import org.eclipse.jdt.core.search.SearchEngine;
+import org.eclipse.jdt.core.search.SearchMatch;
+import org.eclipse.jdt.core.search.SearchParticipant;
+import org.eclipse.jdt.core.search.SearchPattern;
+import org.eclipse.jdt.core.search.SearchRequestor;
+import org.eclipse.jdt.core.util.IClassFileReader;
+import org.eclipse.jdt.core.util.IConstantPoolConstant;
+
+/** Proves the selected resource contract without relying on a previous build. */
+final class ExternalResourceReferenceSearch {
+
+<span class="fc" id="L70">	private final Set&lt;String&gt; projectHandles= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L71">	private final Set&lt;String&gt; selectedHandles= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L72">	private final Map&lt;String, CompilationUnit&gt; candidateRoots= new LinkedHashMap&lt;&gt;();</span>
+	private final IJavaSearchScope sourceScope;
+	private final boolean validSelection;
+
+<span class="fc" id="L76">	ExternalResourceReferenceSearch(List&lt;IJavaProject&gt; projects, List&lt;ICompilationUnit&gt; selected) throws JavaModelException {</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">		for (IJavaProject project : projects) {</span>
+<span class="pc bpc" id="L78" title="2 of 4 branches missed.">			if (project != null &amp;&amp; project.exists()) projectHandles.add(project.getHandleIdentifier());</span>
+		}
+<span class="pc bpc" id="L80" title="2 of 4 branches missed.">		boolean valid= !projects.isEmpty() &amp;&amp; !selected.isEmpty();</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">		for (ICompilationUnit unit : selected) {</span>
+<span class="pc bpc" id="L82" title="2 of 4 branches missed.">			if (unit == null || !unit.exists()</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">					|| !projectHandles.contains(unit.getJavaProject().getHandleIdentifier())) {</span>
+<span class="nc" id="L84">				valid= false;</span>
+<span class="nc" id="L85">			} else {</span>
+<span class="fc" id="L86">				selectedHandles.add(unit.getPrimary().getHandleIdentifier());</span>
+			}
+		}
+<span class="fc" id="L89">		validSelection= valid;</span>
+<span class="fc" id="L90">		sourceScope= SearchEngine.createJavaSearchScope(</span>
+<span class="fc" id="L91">				JavaCore.create(ResourcesPlugin.getWorkspace().getRoot()).getJavaProjects(), IJavaSearchScope.SOURCES);</span>
+<span class="fc" id="L92">	}</span>
+
+	boolean allReferencesSelected(IJavaElement target, IProgressMonitor monitor) throws CoreException {
+<span class="fc" id="L95">		checkCanceled(monitor);</span>
+<span class="pc bpc" id="L96" title="4 of 8 branches missed.">		if (!validSelection || target == null || !target.exists() || !isSelected(target)) return false;</span>
+<span class="fc" id="L97">		SearchPattern exact= SearchPattern.createPattern(target, IJavaSearchConstants.REFERENCES);</span>
+<span class="pc bpc" id="L98" title="1 of 4 branches missed.">		if (exact == null || !matchesSelected(exact, SearchEngine.createWorkspaceScope(), target, false, monitor)) {</span>
+<span class="fc" id="L99">			return false;</span>
+		}
+		// Element-focused JDT searches can omit an indexed caller whose last builder
+		// state predates a new reference. String patterns do not use that prefilter.
+<span class="fc" id="L103">		List&lt;SearchPattern&gt; patterns= candidatePatterns(target);</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">		if (patterns == null) return false;</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">		for (SearchPattern pattern : patterns) {</span>
+<span class="pc bpc" id="L106" title="1 of 4 branches missed.">			if (pattern == null || !matchesSelected(pattern, sourceScope, target, true, monitor)) return false;</span>
+		}
+<span class="fc" id="L108">		checkCanceled(monitor);</span>
+<span class="fc" id="L109">		return true;</span>
+	}
+
+	private boolean matchesSelected(SearchPattern pattern, IJavaSearchScope scope, IJavaElement target,
+			boolean refineCandidates, IProgressMonitor monitor) throws CoreException {
+<span class="fc" id="L114">		boolean[] complete= { true };</span>
+<span class="fc" id="L115">		new SearchEngine().search(pattern,</span>
+<span class="fc" id="L116">					new SearchParticipant[] { SearchEngine.getDefaultSearchParticipant() },</span>
+<span class="fc" id="L117">					scope, new SearchRequestor() {</span>
+						@Override
+						public void acceptSearchMatch(SearchMatch match) throws CoreException {
+<span class="fc bfc" id="L120" title="All 2 branches covered.">							if (!complete[0]) return;</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">							if (isBinaryLambdaParameter(match, target, monitor)) return;</span>
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">							if (match.getAccuracy() != SearchMatch.A_ACCURATE</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">									|| !(match.getElement() instanceof IJavaElement element)</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">									|| !(element.getAncestor(IJavaElement.COMPILATION_UNIT) instanceof ICompilationUnit unit)</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">									|| !unit.exists()) {</span>
+<span class="fc" id="L126">								complete[0]= false;</span>
+<span class="fc" id="L127">								return;</span>
+							}
+<span class="fc bfc" id="L129" title="All 4 branches covered.">							if (!isSelected(unit) &amp;&amp; (!refineCandidates</span>
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">									|| !isOtherDeclaration(unit.getPrimary(), match, target, monitor))) {</span>
+<span class="fc" id="L131">								complete[0]= false;</span>
+							}
+<span class="fc" id="L133">						}</span>
+<span class="fc" id="L134">					}, monitor);</span>
+<span class="fc" id="L135">		checkCanceled(monitor);</span>
+<span class="fc" id="L136">		return complete[0];</span>
+	}
+
+	private boolean isSelected(IJavaElement element) {
+<span class="pc bpc" id="L140" title="2 of 4 branches missed.">		return element.getAncestor(IJavaElement.COMPILATION_UNIT) instanceof ICompilationUnit unit &amp;&amp; unit.exists()</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">				&amp;&amp; projectHandles.contains(unit.getJavaProject().getHandleIdentifier())</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">				&amp;&amp; selectedHandles.contains(unit.getPrimary().getHandleIdentifier());</span>
+	}
+
+	private boolean isBinaryLambdaParameter(SearchMatch match, IJavaElement target, IProgressMonitor monitor)
+			throws JavaModelException {
+<span class="fc bfc" id="L147" title="All 4 branches covered.">		if (!(target instanceof IField field) || !(match instanceof FieldReferenceMatch)</span>
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">				|| !(match.getElement() instanceof IJavaElement element)</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">				|| !(element.getAncestor(IJavaElement.CLASS_FILE) instanceof IClassFile binary)</span>
+<span class="pc bpc" id="L150" title="4 of 8 branches missed.">				|| !binary.exists() || match.getOffset() &lt; 0 || match.getLength() &lt;= 0 || binary.getBuffer() == null) {</span>
+<span class="fc" id="L151">			return false;</span>
+		}
+		// Attached JDK source can report a lambda parameter as an inaccurate field
+		// match. Require both the actual bytecode and its lexical declaration to
+		// disprove that reference; an unknown or real binary caller still blocks.
+<span class="fc" id="L156">		var reader= ToolFactory.createDefaultClassFileReader(new ByteArrayInputStream(binary.getBytes()),</span>
+<span class="fc" id="L157">				IClassFileReader.CONSTANT_POOL);</span>
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">		if (reader == null) return false;</span>
+<span class="fc" id="L159">		var pool= reader.getConstantPool();</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">		for (int i= 1; i &lt; pool.getConstantPoolCount(); i++) {</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">			if (pool.getEntryKind(i) == IConstantPoolConstant.CONSTANT_Fieldref</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">					&amp;&amp; field.getElementName().equals(new String(pool.decodeEntry(i).getFieldName()))) return false;</span>
+		}
+<span class="fc" id="L164">		CompilationUnit root= candidateRoots.get(binary.getHandleIdentifier());</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">		if (root == null) {</span>
+<span class="fc" id="L166">			ASTParser parser= ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L167">			parser.setSource(binary);</span>
+<span class="fc" id="L168">			root= (CompilationUnit) parser.createAST(monitor);</span>
+<span class="fc" id="L169">			candidateRoots.put(binary.getHandleIdentifier(), root);</span>
+		}
+<span class="fc" id="L171">		var node= NodeFinder.perform(root, match.getOffset(), match.getLength());</span>
+<span class="pc bpc" id="L172" title="2 of 4 branches missed.">		if (!(node instanceof SimpleName name) || name.isDeclaration()</span>
+<span class="pc bpc" id="L173" title="2 of 4 branches missed.">				|| name.getStartPosition() != match.getOffset() || name.getLength() != match.getLength()</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">				|| !field.getElementName().equals(name.getIdentifier())) return false;</span>
+<span class="fc" id="L175">		return isLambdaParameterExpression(name);</span>
+	}
+
+	private static boolean isLambdaParameterExpression(SimpleName name) {
+		// A parameter may be the leftmost qualifier in parameter.member, never a
+		// field tail, method name, type name, declaration, or statement label.
+<span class="fc" id="L181">		ASTNode expression= name;</span>
+<span class="pc bpc" id="L182" title="3 of 4 branches missed.">		while (expression.getParent() instanceof QualifiedName qualified &amp;&amp; qualified.getQualifier() == expression) {</span>
+<span class="nc" id="L183">			expression= qualified;</span>
+		}
+<span class="fc" id="L185">		var location= expression.getLocationInParent();</span>
+<span class="pc bpc" id="L186" title="1 of 4 branches missed.">		boolean expressionRole= location instanceof ChildPropertyDescriptor child &amp;&amp; child.getChildType() == Expression.class</span>
+<span class="pc bpc" id="L187" title="2 of 4 branches missed.">				|| location instanceof ChildListPropertyDescriptor list &amp;&amp; list.getElementType() == Expression.class</span>
+<span class="nc bnc" id="L188" title="All 4 branches missed.">				|| expression.getParent() instanceof LambdaExpression lambda &amp;&amp; lambda.getBody() == expression;</span>
+<span class="pc bpc" id="L189" title="2 of 4 branches missed.">		if (!expressionRole || (name.getFlags() &amp; (ASTNode.RECOVERED | ASTNode.MALFORMED)) != 0) return false;</span>
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">		for (ASTNode child= name, parent= child.getParent(); parent != null; child= parent, parent= parent.getParent()) {</span>
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">			if ((parent.getFlags() &amp; (ASTNode.RECOVERED | ASTNode.MALFORMED)) != 0) return false;</span>
+<span class="pc bpc" id="L192" title="2 of 4 branches missed.">			if (parent instanceof AbstractTypeDeclaration || parent instanceof AnonymousClassDeclaration</span>
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">					|| parent instanceof MethodDeclaration) return false;</span>
+<span class="pc bpc" id="L194" title="1 of 4 branches missed.">			if (parent instanceof LambdaExpression lambda &amp;&amp; lambda.getBody() == child) {</span>
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">				for (Object parameter : lambda.parameters()) {</span>
+<span class="pc bpc" id="L196" title="1 of 2 branches missed.">					if (parameter instanceof VariableDeclaration variable</span>
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">							&amp;&amp; (variable.getFlags() &amp; (ASTNode.RECOVERED | ASTNode.MALFORMED)) == 0</span>
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">							&amp;&amp; name.getIdentifier().equals(variable.getName().getIdentifier())) return true;</span>
+				}
+			}
+		}
+<span class="nc" id="L202">		return false;</span>
+	}
+
+	private static void checkCanceled(IProgressMonitor monitor) {
+<span class="pc bpc" id="L206" title="1 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) throw new OperationCanceledException();</span>
+<span class="fc" id="L207">	}</span>
+
+	private static List&lt;SearchPattern&gt; candidatePatterns(IJavaElement target) throws JavaModelException {
+<span class="fc" id="L210">		List&lt;SearchPattern&gt; patterns= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L211" title="All 2 branches covered.">		if (target instanceof IType type) {</span>
+<span class="fc" id="L212">			patterns.add(pattern(type.getFullyQualifiedName('.'), IJavaSearchConstants.TYPE));</span>
+<span class="pc bpc" id="L213" title="2 of 4 branches missed.">		} else if (target instanceof IMember member &amp;&amp; member.getDeclaringType() != null) {</span>
+<span class="fc" id="L214">			String name= member.getDeclaringType().getFullyQualifiedName('.') + '.' + member.getElementName();</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">			if (member instanceof IField field) {</span>
+<span class="fc" id="L216">				patterns.add(pattern(name, IJavaSearchConstants.FIELD));</span>
+<span class="fc bfc" id="L217" title="All 2 branches covered.">				if (field.isRecordComponent()) patterns.add(pattern(name + &quot;()&quot;, IJavaSearchConstants.METHOD)); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L218" title="1 of 2 branches missed.">			} else if (member instanceof IMethod) {</span>
+				// Bindings below distinguish overloads and equal names in other projects.
+<span class="fc" id="L220">				patterns.add(pattern(name, IJavaSearchConstants.METHOD));</span>
+<span class="fc" id="L221">			} else {</span>
+<span class="nc" id="L222">				return null;</span>
+			}
+		} else {
+<span class="nc" id="L225">			return null;</span>
+		}
+<span class="fc" id="L227">		return patterns;</span>
+	}
+
+	private static SearchPattern pattern(String name, int kind) {
+<span class="fc" id="L231">		return SearchPattern.createPattern(name, kind, IJavaSearchConstants.REFERENCES,</span>
+<span class="fc" id="L232">				SearchPattern.R_EXACT_MATCH | SearchPattern.R_CASE_SENSITIVE);</span>
+	}
+
+	private boolean isOtherDeclaration(ICompilationUnit unit, SearchMatch match, IJavaElement target,
+			IProgressMonitor monitor) throws JavaModelException {
+<span class="fc" id="L237">		String handle= unit.getHandleIdentifier();</span>
+<span class="fc" id="L238">		CompilationUnit root= candidateRoots.get(handle);</span>
+<span class="pc bpc" id="L239" title="1 of 2 branches missed.">		if (root == null) {</span>
+<span class="fc" id="L240">			ASTParser parser= ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L241">			parser.setSource(unit);</span>
+<span class="fc" id="L242">			parser.setResolveBindings(true);</span>
+<span class="fc" id="L243">			root= (CompilationUnit) parser.createAST(monitor);</span>
+<span class="fc" id="L244">			candidateRoots.put(handle, root);</span>
+		}
+<span class="fc" id="L246">		var node= NodeFinder.perform(root, match.getOffset(), match.getLength());</span>
+<span class="pc bpc" id="L247" title="1 of 2 branches missed.">		IBinding binding= node instanceof Name name ? name.resolveBinding()</span>
+<span class="nc bnc" id="L248" title="All 2 branches missed.">				: node instanceof Type type ? type.resolveBinding() : null;</span>
+<span class="pc bpc" id="L249" title="2 of 4 branches missed.">		if (binding == null || binding.isRecovered()) return false;</span>
+		IJavaElement declaration;
+<span class="pc bpc" id="L251" title="3 of 4 branches missed.">		if (target instanceof IType &amp;&amp; binding instanceof ITypeBinding type) {</span>
+<span class="nc" id="L252">			declaration= type.getTypeDeclaration().getJavaElement();</span>
+<span class="pc bpc" id="L253" title="2 of 4 branches missed.">		} else if (target instanceof IField field &amp;&amp; field.isRecordComponent()</span>
+<span class="nc bnc" id="L254" title="All 4 branches missed.">				&amp;&amp; binding instanceof IMethodBinding method &amp;&amp; method.getParameterTypes().length == 0</span>
+<span class="nc bnc" id="L255" title="All 2 branches missed.">				&amp;&amp; field.getElementName().equals(method.getName())) {</span>
+<span class="nc" id="L256">			return differentOwner(method.getDeclaringClass().getTypeDeclaration().getJavaElement(), field.getDeclaringType());</span>
+<span class="pc bpc" id="L257" title="3 of 6 branches missed.">		} else if (target instanceof IField &amp;&amp; binding instanceof IVariableBinding variable &amp;&amp; variable.isField()) {</span>
+<span class="fc" id="L258">			declaration= variable.getVariableDeclaration().getJavaElement();</span>
+<span class="pc bnc" id="L259" title="All 4 branches missed.">		} else if (target instanceof IMethod &amp;&amp; binding instanceof IMethodBinding method) {</span>
+<span class="nc" id="L260">			declaration= method.getMethodDeclaration().getJavaElement();</span>
+<span class="nc" id="L261">		} else {</span>
+<span class="nc" id="L262">			return false;</span>
+		}
+<span class="pc bpc" id="L264" title="2 of 4 branches missed.">		if (declaration == null || !declaration.exists()) return false;</span>
+<span class="pc bpc" id="L265" title="3 of 6 branches missed.">		if (!(target instanceof IType) &amp;&amp; target instanceof IMember expected &amp;&amp; declaration instanceof IMember actual) {</span>
+<span class="fc" id="L266">			IType expectedOwner= expected.getDeclaringType();</span>
+<span class="fc" id="L267">			IType actualOwner= actual.getDeclaringType();</span>
+<span class="pc bpc" id="L268" title="2 of 4 branches missed.">			if (actualOwner == null || expectedOwner == null</span>
+<span class="pc bpc" id="L269" title="1 of 2 branches missed.">					|| !actualOwner.getFullyQualifiedName('.').equals(expectedOwner.getFullyQualifiedName('.'))) {</span>
+<span class="nc" id="L270">				return false;</span>
+			}
+		}
+<span class="pc bpc" id="L273" title="1 of 2 branches missed.">		return !declaration.getHandleIdentifier().equals(target.getHandleIdentifier());</span>
+	}
+
+	private static boolean differentOwner(IJavaElement actual, IType expected) {
+<span class="nc bnc" id="L277" title="All 4 branches missed.">		return actual instanceof IType type &amp;&amp; type.exists()</span>
+<span class="nc bnc" id="L278" title="All 2 branches missed.">				&amp;&amp; type.getFullyQualifiedName('.').equals(expected.getFullyQualifiedName('.'))</span>
+<span class="nc bnc" id="L279" title="All 2 branches missed.">				&amp;&amp; !type.getHandleIdentifier().equals(expected.getHandleIdentifier());</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>MethodReuseNlsFix.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_method_reuse</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">MethodReuseNlsFix.java</span></div><h1>MethodReuseNlsFix.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials are made available under the terms
+ * of the Eclipse Public License 2.0 which accompanies this distribution, and is
+ * available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.WorkingCopyOwner;
+import org.eclipse.jdt.core.compiler.InvalidInputException;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.LineComment;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.rewrite.ITrackedNodePosition;
+import org.eclipse.jdt.core.refactoring.CompilationUnitChange;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.refactoring.nls.NLSElement;
+import org.eclipse.jdt.internal.corext.refactoring.nls.NLSLine;
+import org.eclipse.jdt.internal.corext.refactoring.nls.NLSScanner;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.jdt.internal.corext.refactoring.util.TextEditUtil;
+import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
+import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.text.Document;
+import org.eclipse.text.edits.InsertEdit;
+import org.eclipse.text.edits.MultiTextEdit;
+import org.eclipse.text.edits.RangeMarker;
+import org.eclipse.text.edits.ReplaceEdit;
+import org.eclipse.text.edits.TextEdit;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.VariableMapping;
+import org.sandbox.jdt.triggerpattern.cleanup.NlsAwareCleanUpFix;
+
+/** Restores the original NLS intent after AST-generated arguments change physical lines. */
+public final class MethodReuseNlsFix {
+
+<span class="fc" id="L58">	private static final String STATE= MethodReuseNlsFix.class.getName();</span>
+	private record Argument(ITrackedNodePosition position, List&lt;NLSElement&gt; literals) { }
+	private record Explanation(ITrackedNodePosition position, String text) { }
+	private record State(String source, List&lt;NLSElement&gt; literals, List&lt;Argument&gt; arguments,
+			List&lt;Explanation&gt; explanations) { }
+
+	private MethodReuseNlsFix() { }
+
+	public static ICleanUpFix create(String name, CompilationUnit root, CompilationUnitRewriteOperation[] operations) {
+<span class="fc" id="L67">		return monitor -&gt; {</span>
+			try {
+<span class="fc" id="L69">				ICompilationUnit unit= (ICompilationUnit) root.getJavaElement();</span>
+<span class="fc" id="L70">				State state= new State(unit.getSource(), literals(NLSScanner.scan(unit)), new ArrayList&lt;&gt;(), new ArrayList&lt;&gt;());</span>
+<span class="fc" id="L71">				root.setProperty(STATE, state);</span>
+<span class="fc" id="L72">				CompilationUnitChange change= new NlsAwareCleanUpFix(name, root, operations).createChange(monitor);</span>
+<span class="pc bpc" id="L73" title="1 of 4 branches missed.">				if (state.arguments().isEmpty() &amp;&amp; state.explanations().isEmpty()) return change;</span>
+				try {
+<span class="fc" id="L75">					return complete(change, state);</span>
+				} finally {
+<span class="fc" id="L77">					change.dispose();</span>
+				}
+<span class="nc" id="L79">			} catch (InvalidInputException | BadLocationException exception) {</span>
+<span class="nc" id="L80">				throw new CoreException(Status.error(&quot;Cannot preserve method-reuse NLS markers&quot;, exception)); //$NON-NLS-1$</span>
+			} finally {
+<span class="fc" id="L82">				root.setProperty(STATE, null);</span>
+			}
+		};
+	}
+
+	static void record(CompilationUnitRewrite rewrite, MethodDeclaration target, MethodInvocation call,
+			List&lt;Statement&gt; statements, VariableMapping mapping) {
+<span class="fc bfc" id="L89" title="All 2 branches covered.">		if (!(rewrite.getRoot().getProperty(STATE) instanceof State state)) return;</span>
+<span class="fc" id="L90">		List&lt;Expression&gt; copied= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">		for (int index= 0; index &lt; target.parameters().size(); index++) {</span>
+<span class="fc" id="L92">			SingleVariableDeclaration parameter= (SingleVariableDeclaration) target.parameters().get(index);</span>
+<span class="fc" id="L93">			Expression original= mapping.getCandidateExpression(parameter.getName().getIdentifier());</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">			if (original == null) continue;</span>
+<span class="fc" id="L95">			copied.add(original);</span>
+<span class="fc" id="L96">			List&lt;NLSElement&gt; literals= state.literals().stream().filter(element -&gt; contains(original,</span>
+<span class="fc" id="L97">					element.getPosition().getOffset(), element.getPosition().getLength())).toList();</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">			if (!literals.isEmpty()) state.arguments().add(new Argument(</span>
+<span class="fc" id="L99">					rewrite.getASTRewrite().track((ASTNode) call.arguments().get(index)), literals));</span>
+		}
+<span class="fc bfc" id="L101" title="All 2 branches covered.">		for (Object candidate : rewrite.getRoot().getCommentList()) {</span>
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">			if (!(candidate instanceof LineComment comment)</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">					|| statements.stream().noneMatch(statement -&gt; contains(statement, comment.getStartPosition(), comment.getLength()))</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">					|| copied.stream().anyMatch(expression -&gt; contains(expression, comment.getStartPosition(), comment.getLength()))) continue;</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">			List&lt;NLSElement&gt; tags= state.literals().stream().filter(element -&gt; element.hasTag()</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">					&amp;&amp; contains(comment, element.getTagPosition().getOffset(), element.getTagPosition().getLength()))</span>
+<span class="pc" id="L107">					.sorted(Comparator.comparingInt((NLSElement element) -&gt; element.getTagPosition().getOffset()).reversed()).toList();</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">			if (tags.isEmpty()) continue;</span>
+<span class="fc" id="L109">			StringBuilder text= new StringBuilder(state.source().substring(comment.getStartPosition(),</span>
+<span class="fc" id="L110">					comment.getStartPosition() + comment.getLength()));</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">			for (NLSElement tag : tags) {</span>
+<span class="fc" id="L112">				int start= tag.getTagPosition().getOffset() - comment.getStartPosition();</span>
+<span class="fc" id="L113">				text.delete(start, start + tag.getTagPosition().getLength());</span>
+			}
+<span class="fc" id="L115">			String explanation= text.toString().strip();</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">			if (explanation.startsWith(&quot;//&quot;)) explanation= explanation.substring(2).strip(); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">			if (!explanation.isEmpty()) state.explanations().add(new Explanation(rewrite.getASTRewrite().track(call), explanation));</span>
+		}
+<span class="fc" id="L119">	}</span>
+
+	private static CompilationUnitChange complete(CompilationUnitChange change, State state)
+			throws CoreException, BadLocationException, InvalidInputException {
+<span class="fc" id="L123">		Document document= new Document(state.source());</span>
+<span class="fc" id="L124">		MultiTextEdit preview= new MultiTextEdit();</span>
+<span class="fc" id="L125">		preview.addChild(change.getEdit());</span>
+<span class="fc" id="L126">		List&lt;RangeMarker&gt; originalTags= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">		for (NLSElement element : state.literals()) {</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">			if (!element.hasTag()) continue;</span>
+<span class="fc" id="L129">			RangeMarker marker= new RangeMarker(element.getPosition().getOffset(), element.getPosition().getLength());</span>
+<span class="fc" id="L130">			TextEditUtil.insert(preview, marker);</span>
+<span class="fc" id="L131">			originalTags.add(marker);</span>
+		}
+		// Apply this disposable edit tree, rather than a copy, so JDT updates the
+		// argument positions. Every createChange invocation builds fresh tracking data.
+<span class="fc" id="L135">		preview.apply(document, TextEdit.UPDATE_REGIONS);</span>
+		List&lt;NLSElement&gt; generated;
+<span class="fc" id="L137">		ICompilationUnit trial= change.getCompilationUnit().getWorkingCopy(new WorkingCopyOwner() { }, null);</span>
+		try {
+<span class="fc" id="L139">			trial.getBuffer().setContents(document.get());</span>
+<span class="fc" id="L140">			generated= literals(NLSScanner.scan(trial));</span>
+<span class="fc" id="L141">		} finally {</span>
+<span class="fc" id="L142">			trial.discardWorkingCopy();</span>
+		}
+<span class="fc" id="L144">		Set&lt;Integer&gt; tagged= new HashSet&lt;&gt;();</span>
+<span class="fc" id="L145">		Map&lt;Integer, Integer&gt; literalLengths= new HashMap&lt;&gt;();</span>
+<span class="fc" id="L146">		generated.forEach(element -&gt; literalLengths.put(element.getPosition().getOffset(), element.getPosition().getLength()));</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">		for (RangeMarker marker : originalTags) {</span>
+<span class="pc bpc" id="L148" title="1 of 4 branches missed.">			if (!marker.isDeleted() &amp;&amp; literalLengths.getOrDefault(marker.getOffset(), -1) == marker.getLength()) {</span>
+<span class="fc" id="L149">				tagged.add(marker.getOffset());</span>
+			}
+		}
+<span class="fc bfc" id="L152" title="All 2 branches covered.">		for (Argument argument : state.arguments()) {</span>
+<span class="fc" id="L153">			List&lt;NLSElement&gt; moved= generated.stream().filter(element -&gt; contains(argument.position().getStartPosition(),</span>
+<span class="fc" id="L154">					argument.position().getLength(), element.getPosition().getOffset(), element.getPosition().getLength())).toList();</span>
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">			if (moved.size() != argument.literals().size()) {</span>
+<span class="nc" id="L156">				throw new CoreException(Status.error(&quot;Cannot track relocated method-reuse string literals&quot;)); //$NON-NLS-1$</span>
+			}
+<span class="fc bfc" id="L158" title="All 2 branches covered.">			for (int index= 0; index &lt; moved.size(); index++) {</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">				if (argument.literals().get(index).hasTag()) tagged.add(moved.get(index).getPosition().getOffset());</span>
+			}
+		}
+<span class="fc" id="L162">		MultiTextEdit markers= new MultiTextEdit();</span>
+<span class="fc" id="L163">		Map&lt;Integer, StringBuilder&gt; suffixes= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">		for (NLSElement element : generated) {</span>
+<span class="fc" id="L165">			boolean wanted= tagged.contains(element.getPosition().getOffset());</span>
+<span class="fc bfc" id="L166" title="All 4 branches covered.">			if (wanted &amp;&amp; !element.hasTag()) append(suffixes, lineEnd(document,</span>
+<span class="fc" id="L167">					element.getPosition().getOffset() + element.getPosition().getLength() - 1), ' ' + element.getTagText());</span>
+<span class="pc bpc" id="L168" title="1 of 4 branches missed.">			else if (!wanted &amp;&amp; element.hasTag()) {</span>
+				// Keep a comment introducer if an old ordinal now identifies an untagged
+				// literal; explanatory text after that marker must remain a comment.
+<span class="fc" id="L171">				markers.addChild(new ReplaceEdit(element.getTagPosition().getOffset(), element.getTagPosition().getLength(), &quot;//&quot;)); //$NON-NLS-1$</span>
+			}
+		}
+<span class="fc bfc" id="L174" title="All 2 branches covered.">		for (Explanation explanation : state.explanations()) append(suffixes,</span>
+<span class="fc" id="L175">				lineEnd(document, explanation.position().getStartPosition() + explanation.position().getLength() - 1),</span>
+<span class="fc" id="L176">				&quot; // &quot; + explanation.text()); //$NON-NLS-1$</span>
+<span class="fc" id="L177">		suffixes.forEach((offset, text) -&gt; markers.addChild(new InsertEdit(offset, text.toString())));</span>
+<span class="fc" id="L178">		markers.apply(document);</span>
+<span class="fc" id="L179">		String result= document.get();</span>
+<span class="fc" id="L180">		int start= 0;</span>
+<span class="pc bpc" id="L181" title="2 of 6 branches missed.">		while (start &lt; state.source().length() &amp;&amp; start &lt; result.length() &amp;&amp; state.source().charAt(start) == result.charAt(start)) start++;</span>
+<span class="fc" id="L182">		int oldEnd= state.source().length(), newEnd= result.length();</span>
+<span class="pc bpc" id="L183" title="2 of 6 branches missed.">		while (oldEnd &gt; start &amp;&amp; newEnd &gt; start &amp;&amp; state.source().charAt(oldEnd - 1) == result.charAt(newEnd - 1)) { oldEnd--; newEnd--; }</span>
+<span class="fc" id="L184">		ReplaceEdit edit= new ReplaceEdit(start, oldEnd - start, result.substring(start, newEnd));</span>
+<span class="fc" id="L185">		CompilationUnitChange completed= new CompilationUnitChange(change.getName(), change.getCompilationUnit());</span>
+<span class="fc" id="L186">		completed.setSaveMode(change.getSaveMode());</span>
+<span class="fc" id="L187">		completed.setEdit(edit);</span>
+<span class="fc" id="L188">		completed.addTextEditGroup(new TextEditGroup(change.getName(), edit));</span>
+<span class="fc" id="L189">		return completed;</span>
+	}
+
+	private static List&lt;NLSElement&gt; literals(NLSLine[] lines) {
+<span class="fc" id="L193">		return Arrays.stream(lines).flatMap(line -&gt; Arrays.stream(line.getElements())).toList();</span>
+	}
+
+	private static int lineEnd(Document document, int offset) throws BadLocationException {
+<span class="fc" id="L197">		var line= document.getLineInformationOfOffset(offset);</span>
+<span class="fc" id="L198">		return line.getOffset() + line.getLength();</span>
+	}
+
+	private static void append(Map&lt;Integer, StringBuilder&gt; suffixes, int offset, String text) {
+<span class="fc" id="L202">		suffixes.computeIfAbsent(offset, key -&gt; new StringBuilder()).append(text);</span>
+<span class="fc" id="L203">	}</span>
+
+	private static boolean contains(ASTNode node, int start, int length) {
+<span class="fc" id="L206">		return contains(node.getStartPosition(), node.getLength(), start, length);</span>
+	}
+
+	private static boolean contains(int outerStart, int outerLength, int start, int length) {
+<span class="pc bpc" id="L210" title="1 of 6 branches missed.">		return outerStart &gt;= 0 &amp;&amp; start &gt;= outerStart &amp;&amp; start + length &lt;= outerStart + outerLength;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

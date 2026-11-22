@@ -13,26 +13,38 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
+import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Comment;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ConditionalExpression;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.TextBlock;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.dom.ASTNodeFactory;
 import org.eclipse.jdt.internal.corext.dom.Bindings;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
@@ -42,6 +54,7 @@ import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
 import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
+import org.sandbox.jdt.triggerpattern.cleanup.EncodingSourceRewrite;
 
 /**
  * Fix core for string simplification using TriggerPattern hints.
@@ -51,9 +64,9 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
  * 
  * @since 1.2.2
  */
-<span class="nc" id="L54">public class StringSimplificationFixCore {</span>
+<span class="nc" id="L67">public class StringSimplificationFixCore {</span>
 	
-<span class="fc" id="L56">	private static final TriggerPatternEngine ENGINE = new TriggerPatternEngine();</span>
+<span class="fc" id="L69">	private static final TriggerPatternEngine ENGINE = new TriggerPatternEngine();</span>
 	
 	/**
 	 * Finds string simplification operations in the compilation unit.
@@ -62,163 +75,305 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
 	 * @param operations the set to add found operations to
 	 */
 	public static void findOperations(CompilationUnit compilationUnit,
-			java.util.Set&lt;CompilationUnitRewriteOperation&gt; operations) {
+			java.util.Set&lt;CompilationUnitRewriteOperation&gt; operations) throws JavaModelException {
+<span class="fc" id="L79">		List&lt;StringLiteral&gt; literals= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L80">		compilationUnit.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(StringLiteral literal) {
+<span class="fc" id="L83">				literals.add(literal);</span>
+<span class="fc" id="L84">				return false;</span>
+			}
+		});
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">		Set&lt;StringLiteral&gt; removableLiterals= compilationUnit.getJavaElement() instanceof ICompilationUnit unit</span>
+<span class="pc" id="L88">				? new HashSet&lt;&gt;(EncodingSourceRewrite.literalsWithUnambiguousTags(compilationUnit, unit, literals)) : Set.of();</span>
 		
 		// Pattern 1: &quot;&quot; + $x
-<span class="fc" id="L68">		Pattern emptyPrefixPattern = Pattern.of(&quot;\&quot;\&quot; + $x&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
-<span class="fc" id="L69">		List&lt;Match&gt; emptyPrefixMatches = ENGINE.findMatches(compilationUnit, emptyPrefixPattern);</span>
-<span class="fc bfc" id="L70" title="All 2 branches covered.">		for (Match match : emptyPrefixMatches) {</span>
-<span class="fc" id="L71">			operations.add(new StringValueOfOperation(match, &quot;Empty string prefix&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L91">		Pattern emptyPrefixPattern = Pattern.of(&quot;\&quot;\&quot; + $x&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L92">		List&lt;Match&gt; emptyPrefixMatches = ENGINE.findMatches(compilationUnit, emptyPrefixPattern);</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">		for (Match match : emptyPrefixMatches) {</span>
+<span class="pc bpc" id="L94" title="1 of 4 branches missed.">			if (isSafeStringValueOfArgument(match) &amp;&amp; removableLiterals.containsAll(removedLiterals(match, &quot;$x&quot;))) { //$NON-NLS-1$</span>
+<span class="fc" id="L95">				operations.add(new StringValueOfOperation(match, &quot;Empty string prefix&quot;)); //$NON-NLS-1$</span>
+			}
 		}
 		
 		// Pattern 2: $x + &quot;&quot;
-<span class="fc" id="L75">		Pattern emptySuffixPattern = Pattern.of(&quot;$x + \&quot;\&quot;&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
-<span class="fc" id="L76">		List&lt;Match&gt; emptySuffixMatches = ENGINE.findMatches(compilationUnit, emptySuffixPattern);</span>
-<span class="fc bfc" id="L77" title="All 2 branches covered.">		for (Match match : emptySuffixMatches) {</span>
-<span class="fc" id="L78">			operations.add(new StringValueOfOperation(match, &quot;Empty string suffix&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L100">		Pattern emptySuffixPattern = Pattern.of(&quot;$x + \&quot;\&quot;&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L101">		List&lt;Match&gt; emptySuffixMatches = ENGINE.findMatches(compilationUnit, emptySuffixPattern);</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">		for (Match match : emptySuffixMatches) {</span>
+<span class="pc bpc" id="L103" title="1 of 4 branches missed.">			if (isSafeStringValueOfArgument(match) &amp;&amp; removableLiterals.containsAll(removedLiterals(match, &quot;$x&quot;))) { //$NON-NLS-1$</span>
+<span class="fc" id="L104">				operations.add(new StringValueOfOperation(match, &quot;Empty string suffix&quot;)); //$NON-NLS-1$</span>
+			}
 		}
 		
 		// Pattern 3: $str.length() == 0
-<span class="fc" id="L82">		Pattern lengthCheckPattern = Pattern.of(&quot;$str.length() == 0&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
-<span class="fc" id="L83">		List&lt;Match&gt; lengthCheckMatches = ENGINE.findMatches(compilationUnit, lengthCheckPattern);</span>
-<span class="fc bfc" id="L84" title="All 2 branches covered.">		for (Match match : lengthCheckMatches) {</span>
-<span class="fc" id="L85">			operations.add(new IsEmptyOperation(match, &quot;String length check&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L109">		Pattern lengthCheckPattern = Pattern.of(&quot;$str.length() == 0&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L110">		List&lt;Match&gt; lengthCheckMatches = ENGINE.findMatches(compilationUnit, lengthCheckPattern);</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">		for (Match match : lengthCheckMatches) {</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">			if (isSafeStringEmptinessCheck(match)) {</span>
+<span class="fc" id="L113">				operations.add(new IsEmptyOperation(match, &quot;String length check&quot;)); //$NON-NLS-1$</span>
+			}
 		}
 		
 		// Pattern 4: $str.equals(&quot;&quot;)
-<span class="fc" id="L89">		Pattern equalsEmptyPattern = Pattern.of(&quot;$str.equals(\&quot;\&quot;)&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
-<span class="fc" id="L90">		List&lt;Match&gt; equalsEmptyMatches = ENGINE.findMatches(compilationUnit, equalsEmptyPattern);</span>
-<span class="fc bfc" id="L91" title="All 2 branches covered.">		for (Match match : equalsEmptyMatches) {</span>
-<span class="fc" id="L92">			operations.add(new IsEmptyOperation(match, &quot;String equals empty&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L118">		Pattern equalsEmptyPattern = Pattern.of(&quot;$str.equals(\&quot;\&quot;)&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L119">		List&lt;Match&gt; equalsEmptyMatches = ENGINE.findMatches(compilationUnit, equalsEmptyPattern);</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">		for (Match match : equalsEmptyMatches) {</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">			if (isSafeStringEmptinessCheck(match)</span>
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">					&amp;&amp; removableLiterals.containsAll(removedLiterals(match, &quot;$str&quot;))) { //$NON-NLS-1$</span>
+<span class="fc" id="L123">				operations.add(new IsEmptyOperation(match, &quot;String equals empty&quot;)); //$NON-NLS-1$</span>
+			}
 		}
 		
 		// Pattern 5: $x == true
-<span class="fc" id="L96">		Pattern boolTruePattern = Pattern.of(&quot;$x == true&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
-<span class="fc" id="L97">		List&lt;Match&gt; boolTrueMatches = ENGINE.findMatches(compilationUnit, boolTruePattern);</span>
-<span class="fc bfc" id="L98" title="All 2 branches covered.">		for (Match match : boolTrueMatches) {</span>
-<span class="fc" id="L99">			operations.add(new SimplifyBooleanOperation(match, &quot;Boolean == true&quot;, false)); //$NON-NLS-1$</span>
+<span class="fc" id="L128">		Pattern boolTruePattern = Pattern.of(&quot;$x == true&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L129">		List&lt;Match&gt; boolTrueMatches = ENGINE.findMatches(compilationUnit, boolTruePattern);</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">		for (Match match : boolTrueMatches) {</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">			if (isSafeBooleanValue(match, &quot;$x&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L132">				operations.add(new SimplifyBooleanOperation(match, &quot;Boolean == true&quot;, false)); //$NON-NLS-1$</span>
+			}
 		}
 		
 		// Pattern 6: $x == false
-<span class="fc" id="L103">		Pattern boolFalsePattern = Pattern.of(&quot;$x == false&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
-<span class="fc" id="L104">		List&lt;Match&gt; boolFalseMatches = ENGINE.findMatches(compilationUnit, boolFalsePattern);</span>
-<span class="fc bfc" id="L105" title="All 2 branches covered.">		for (Match match : boolFalseMatches) {</span>
-<span class="fc" id="L106">			operations.add(new SimplifyBooleanOperation(match, &quot;Boolean == false&quot;, true)); //$NON-NLS-1$</span>
+<span class="fc" id="L137">		Pattern boolFalsePattern = Pattern.of(&quot;$x == false&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L138">		List&lt;Match&gt; boolFalseMatches = ENGINE.findMatches(compilationUnit, boolFalsePattern);</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">		for (Match match : boolFalseMatches) {</span>
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">			if (isSafeBooleanValue(match, &quot;$x&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L141">				operations.add(new SimplifyBooleanOperation(match, &quot;Boolean == false&quot;, true)); //$NON-NLS-1$</span>
+			}
 		}
 		
 		// Pattern 7: $cond ? true : false
-<span class="fc" id="L110">		Pattern ternaryTrueFalsePattern = Pattern.of(&quot;$cond ? true : false&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
-<span class="fc" id="L111">		List&lt;Match&gt; ternaryTrueFalseMatches = ENGINE.findMatches(compilationUnit, ternaryTrueFalsePattern);</span>
-<span class="fc bfc" id="L112" title="All 2 branches covered.">		for (Match match : ternaryTrueFalseMatches) {</span>
-<span class="fc" id="L113">			operations.add(new SimplifyTernaryOperation(match, &quot;Ternary true:false&quot;, false)); //$NON-NLS-1$</span>
+<span class="fc" id="L146">		Pattern ternaryTrueFalsePattern = Pattern.of(&quot;$cond ? true : false&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L147">		List&lt;Match&gt; ternaryTrueFalseMatches = ENGINE.findMatches(compilationUnit, ternaryTrueFalsePattern);</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">		for (Match match : ternaryTrueFalseMatches) {</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">			if (isSafeBooleanValue(match, &quot;$cond&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L150">				operations.add(new SimplifyTernaryOperation(match, &quot;Ternary true:false&quot;, false)); //$NON-NLS-1$</span>
+			}
 		}
 		
 		// Pattern 8: $cond ? false : true
-<span class="fc" id="L117">		Pattern ternaryFalseTruePattern = Pattern.of(&quot;$cond ? false : true&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
-<span class="fc" id="L118">		List&lt;Match&gt; ternaryFalseTrueMatches = ENGINE.findMatches(compilationUnit, ternaryFalseTruePattern);</span>
-<span class="fc bfc" id="L119" title="All 2 branches covered.">		for (Match match : ternaryFalseTrueMatches) {</span>
-<span class="fc" id="L120">			operations.add(new SimplifyTernaryOperation(match, &quot;Ternary false:true&quot;, true)); //$NON-NLS-1$</span>
+<span class="fc" id="L155">		Pattern ternaryFalseTruePattern = Pattern.of(&quot;$cond ? false : true&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L156">		List&lt;Match&gt; ternaryFalseTrueMatches = ENGINE.findMatches(compilationUnit, ternaryFalseTruePattern);</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">		for (Match match : ternaryFalseTrueMatches) {</span>
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">			if (isSafeBooleanValue(match, &quot;$cond&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L159">				operations.add(new SimplifyTernaryOperation(match, &quot;Ternary false:true&quot;, true)); //$NON-NLS-1$</span>
+			}
 		}
 		
 		// Pattern 9: $list.size() == 0
-<span class="fc" id="L124">		Pattern collectionSizePattern = Pattern.of(&quot;$list.size() == 0&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
-<span class="fc" id="L125">		List&lt;Match&gt; collectionSizeMatches = ENGINE.findMatches(compilationUnit, collectionSizePattern);</span>
-<span class="fc bfc" id="L126" title="All 2 branches covered.">		for (Match match : collectionSizeMatches) {</span>
-<span class="fc bfc" id="L127" title="All 2 branches covered.">			if (isSafeCollectionSizeCheck(match)) {</span>
-<span class="fc" id="L128">				operations.add(new CollectionIsEmptyOperation(match, &quot;Collection size check&quot;, &quot;$list&quot;, false)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L164">		Pattern collectionSizePattern = Pattern.of(&quot;$list.size() == 0&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L165">		List&lt;Match&gt; collectionSizeMatches = ENGINE.findMatches(compilationUnit, collectionSizePattern);</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">		for (Match match : collectionSizeMatches) {</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">			if (isSafeCollectionSizeCheck(match)) {</span>
+<span class="fc" id="L168">				operations.add(new CollectionIsEmptyOperation(match, &quot;Collection size check&quot;, &quot;$list&quot;, false)); //$NON-NLS-1$ //$NON-NLS-2$</span>
 			}
 		}
 		
 		// Pattern 10: $list.size() &gt; 0
-<span class="fc" id="L133">		Pattern collectionNotEmptyPattern = Pattern.of(&quot;$list.size() &gt; 0&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
-<span class="fc" id="L134">		List&lt;Match&gt; collectionNotEmptyMatches = ENGINE.findMatches(compilationUnit, collectionNotEmptyPattern);</span>
-<span class="fc bfc" id="L135" title="All 2 branches covered.">		for (Match match : collectionNotEmptyMatches) {</span>
-<span class="fc bfc" id="L136" title="All 2 branches covered.">			if (isSafeCollectionSizeCheck(match)) {</span>
-<span class="fc" id="L137">				operations.add(new CollectionIsEmptyOperation(match, &quot;Collection non-empty check&quot;, &quot;$list&quot;, true)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L173">		Pattern collectionNotEmptyPattern = Pattern.of(&quot;$list.size() &gt; 0&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L174">		List&lt;Match&gt; collectionNotEmptyMatches = ENGINE.findMatches(compilationUnit, collectionNotEmptyPattern);</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">		for (Match match : collectionNotEmptyMatches) {</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">			if (isSafeCollectionSizeCheck(match)) {</span>
+<span class="fc" id="L177">				operations.add(new CollectionIsEmptyOperation(match, &quot;Collection non-empty check&quot;, &quot;$list&quot;, true)); //$NON-NLS-1$ //$NON-NLS-2$</span>
 			}
 		}
 		
 		// Pattern 11: new StringBuilder().append($x).toString()
-<span class="fc" id="L142">		Pattern stringBuilderPattern = Pattern.of(&quot;new StringBuilder().append($x).toString()&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
-<span class="fc" id="L143">		List&lt;Match&gt; stringBuilderMatches = ENGINE.findMatches(compilationUnit, stringBuilderPattern);</span>
-<span class="fc bfc" id="L144" title="All 2 branches covered.">		for (Match match : stringBuilderMatches) {</span>
-<span class="fc" id="L145">			operations.add(new MethodToStringValueOfOperation(match, &quot;StringBuilder single append&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L182">		Pattern stringBuilderPattern = Pattern.of(&quot;new StringBuilder().append($x).toString()&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L183">		List&lt;Match&gt; stringBuilderMatches = ENGINE.findMatches(compilationUnit, stringBuilderPattern);</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">		for (Match match : stringBuilderMatches) {</span>
+<span class="fc" id="L185">			operations.add(new MethodToStringValueOfOperation(match, &quot;StringBuilder single append&quot;)); //$NON-NLS-1$</span>
 		}
 		
 		// Pattern 12: String.format(&quot;%s&quot;, $x)
-<span class="fc" id="L149">		Pattern stringFormatPattern = Pattern.of(&quot;String.format(\&quot;%s\&quot;, $x)&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
-<span class="fc" id="L150">		List&lt;Match&gt; stringFormatMatches = ENGINE.findMatches(compilationUnit, stringFormatPattern);</span>
-<span class="fc bfc" id="L151" title="All 2 branches covered.">		for (Match match : stringFormatMatches) {</span>
-<span class="fc" id="L152">			operations.add(new MethodToStringValueOfOperation(match, &quot;Redundant String.format&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L189">		Pattern stringFormatPattern = Pattern.of(&quot;String.format(\&quot;%s\&quot;, $x)&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L190">		List&lt;Match&gt; stringFormatMatches = ENGINE.findMatches(compilationUnit, stringFormatPattern);</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">		for (Match match : stringFormatMatches) {</span>
+<span class="pc bpc" id="L192" title="1 of 4 branches missed.">			if (isSafeStringFormat(match) &amp;&amp; removableLiterals.containsAll(removedLiterals(match, &quot;$x&quot;))) { //$NON-NLS-1$</span>
+<span class="fc" id="L193">				operations.add(new MethodToStringValueOfOperation(match, &quot;Redundant String.format&quot;)); //$NON-NLS-1$</span>
+			}
 		}
 		
 		// Pattern 13: $x.toString().equals($y)
-<span class="fc" id="L156">		Pattern toStringEqualsPattern = Pattern.of(&quot;$x.toString().equals($y)&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
-<span class="fc" id="L157">		List&lt;Match&gt; toStringEqualsMatches = ENGINE.findMatches(compilationUnit, toStringEqualsPattern);</span>
-<span class="fc bfc" id="L158" title="All 2 branches covered.">		for (Match match : toStringEqualsMatches) {</span>
-<span class="fc" id="L159">			operations.add(new ObjectsEqualsOperation(match, &quot;Null-safe toString equals&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L198">		Pattern toStringEqualsPattern = Pattern.of(&quot;$x.toString().equals($y)&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L199">		List&lt;Match&gt; toStringEqualsMatches = ENGINE.findMatches(compilationUnit, toStringEqualsPattern);</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">		for (Match match : toStringEqualsMatches) {</span>
+<span class="fc" id="L201">			operations.add(new ObjectsEqualsOperation(match, &quot;Null-safe toString equals&quot;)); //$NON-NLS-1$</span>
 		}
 		
 		// Pattern 14: $x != null ? $x : $default
-<span class="fc" id="L163">		Pattern nullCheckTernaryPattern = Pattern.of(&quot;$x != null ? $x : $default&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
-<span class="fc" id="L164">		List&lt;Match&gt; nullCheckTernaryMatches = ENGINE.findMatches(compilationUnit, nullCheckTernaryPattern);</span>
-<span class="fc bfc" id="L165" title="All 2 branches covered.">		for (Match match : nullCheckTernaryMatches) {</span>
-<span class="fc" id="L166">			operations.add(new RequireNonNullElseOperation(match, &quot;Null-check ternary&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L205">		Pattern nullCheckTernaryPattern = Pattern.of(&quot;$x != null ? $x : $default&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L206">		List&lt;Match&gt; nullCheckTernaryMatches = ENGINE.findMatches(compilationUnit, nullCheckTernaryPattern);</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">		for (Match match : nullCheckTernaryMatches) {</span>
+<span class="fc bfc" id="L208" title="All 2 branches covered.">			if (isSafeNullFallback(match)) {</span>
+<span class="fc" id="L209">				operations.add(new RequireNonNullElseOperation(match, &quot;Null-check ternary&quot;)); //$NON-NLS-1$</span>
+			}
 		}
-<span class="fc" id="L168">	}</span>
+<span class="fc" id="L212">	}</span>
+
+	private static List&lt;StringLiteral&gt; removedLiterals(Match match, String retainedBinding) {
+<span class="fc" id="L215">		ASTNode retained= match.getBinding(retainedBinding);</span>
+<span class="fc" id="L216">		List&lt;StringLiteral&gt; removed= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L217">		match.getMatchedNode().accept(new ASTVisitor() {</span>
+			@Override
+			public boolean preVisit2(ASTNode node) {
+<span class="fc bfc" id="L220" title="All 2 branches covered.">				return node != retained;</span>
+			}
+
+			@Override
+			public boolean visit(StringLiteral literal) {
+<span class="fc" id="L225">				removed.add(literal);</span>
+<span class="fc" id="L226">				return false;</span>
+			}
+		});
+<span class="fc" id="L229">		return removed;</span>
+	}
+
+	/** Do not remove unboxing or the explicit comparison documenting an assignment. */
+	public static boolean isSafeBooleanValue(Match match, String bindingName) {
+<span class="pc bpc" id="L234" title="1 of 2 branches missed.">		if (!(match.getBinding(bindingName) instanceof Expression expression)</span>
+<span class="fc bfc" id="L235" title="All 2 branches covered.">				|| ASTNodes.getUnparenthesedExpression(expression) instanceof Assignment) {</span>
+<span class="fc" id="L236">			return false;</span>
+		}
+<span class="fc" id="L238">		ITypeBinding type= expression.resolveTypeBinding();</span>
+<span class="pc bpc" id="L239" title="2 of 6 branches missed.">		return type != null &amp;&amp; !type.isRecovered() &amp;&amp; type.isPrimitive()</span>
+<span class="pc bpc" id="L240" title="1 of 2 branches missed.">				&amp;&amp; &quot;boolean&quot;.equals(type.getName()); //$NON-NLS-1$</span>
+	}
+
+	/** Concatenation and formatting must not select the different char[] overload. */
+	public static boolean isSafeStringValueOfArgument(Match match) {
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">		if (!(match.getBinding(&quot;$x&quot;) instanceof Expression expression)) { //$NON-NLS-1$</span>
+<span class="nc" id="L246">			return false;</span>
+		}
+<span class="fc" id="L248">		ITypeBinding type= expression.resolveTypeBinding();</span>
+<span class="pc bpc" id="L249" title="2 of 6 branches missed.">		return type != null &amp;&amp; !type.isRecovered() &amp;&amp; !type.isNullType()</span>
+<span class="pc bpc" id="L250" title="1 of 4 branches missed.">				&amp;&amp; !(type.isArray() &amp;&amp; type.getDimensions() == 1</span>
+<span class="fc bfc" id="L251" title="All 2 branches covered.">						&amp;&amp; &quot;char&quot;.equals(type.getElementType().getQualifiedName())); //$NON-NLS-1$</span>
+	}
+
+	/** Formatter dispatch and varargs expansion differ from ordinary string conversion. */
+	public static boolean isSafeStringFormat(Match match) {
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">		if (!(match.getMatchedNode() instanceof MethodInvocation invocation)</span>
+<span class="pc bpc" id="L257" title="1 of 2 branches missed.">				|| !(match.getBinding(&quot;$x&quot;) instanceof Expression expression)) { //$NON-NLS-1$</span>
+<span class="nc" id="L258">			return false;</span>
+		}
+<span class="fc" id="L260">		IMethodBinding method= invocation.resolveMethodBinding();</span>
+<span class="pc bpc" id="L261" title="2 of 6 branches missed.">		if (method == null || method.isRecovered() || !method.isVarargs()</span>
+<span class="pc bpc" id="L262" title="2 of 4 branches missed.">				|| !Modifier.isStatic(method.getModifiers()) || !&quot;format&quot;.equals(method.getName()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L263" title="2 of 4 branches missed.">				|| method.getDeclaringClass() == null || method.getDeclaringClass().isRecovered()</span>
+<span class="pc bpc" id="L264" title="1 of 2 branches missed.">				|| !&quot;java.lang.String&quot;.equals(method.getDeclaringClass().getQualifiedName())) { //$NON-NLS-1$</span>
+<span class="fc" id="L265">			return false;</span>
+		}
+<span class="fc" id="L267">		ITypeBinding[] parameters= method.getParameterTypes();</span>
+<span class="pc bpc" id="L268" title="2 of 4 branches missed.">		if (parameters.length != 2 || !&quot;java.lang.String&quot;.equals(parameters[0].getQualifiedName()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L269" title="2 of 4 branches missed.">				|| !parameters[1].isArray() || parameters[1].getDimensions() != 1</span>
+<span class="pc bpc" id="L270" title="1 of 2 branches missed.">				|| !&quot;java.lang.Object&quot;.equals(parameters[1].getElementType().getQualifiedName())) { //$NON-NLS-1$</span>
+<span class="nc" id="L271">			return false;</span>
+		}
+<span class="fc" id="L273">		ITypeBinding type= expression.resolveTypeBinding();</span>
+<span class="pc bpc" id="L274" title="3 of 8 branches missed.">		if (type == null || type.isRecovered() || type.isArray() || type.isNullType()) {</span>
+<span class="fc" id="L275">			return false;</span>
+		}
+		// These final JDK types neither implement Formattable nor return null from toString().
+<span class="fc bfc" id="L278" title="All 4 branches covered.">		return type.isPrimitive() || switch (type.getQualifiedName()) {</span>
+			case &quot;java.lang.String&quot;, &quot;java.lang.Boolean&quot;, &quot;java.lang.Byte&quot;, &quot;java.lang.Short&quot;, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+					&quot;java.lang.Integer&quot;, &quot;java.lang.Long&quot;, &quot;java.lang.Float&quot;, &quot;java.lang.Double&quot;, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+<span class="fc" id="L281">					&quot;java.lang.Character&quot; -&gt; true; //$NON-NLS-1$</span>
+<span class="fc" id="L282">			default -&gt; false;</span>
+<span class="fc bfc" id="L283" title="All 2 branches covered.">		};</span>
+	}
+
+	/** Requires the String API, not merely a method named length or equals. */
+	public static boolean isSafeStringEmptinessCheck(Match match) {
+<span class="fc" id="L288">		ASTNode matched= match.getMatchedNode();</span>
+		MethodInvocation invocation;
+<span class="fc bfc" id="L290" title="All 2 branches covered.">		if (matched instanceof InfixExpression comparison) {</span>
+<span class="pc bpc" id="L291" title="2 of 4 branches missed.">			if (comparison.hasExtendedOperands() || comparison.getParent() instanceof LambdaExpression</span>
+<span class="pc bpc" id="L292" title="1 of 2 branches missed.">					|| !(ASTNodes.getUnparenthesedExpression(comparison.getLeftOperand()) instanceof MethodInvocation length)) {</span>
+<span class="nc" id="L293">				return false;</span>
+			}
+<span class="fc" id="L295">			invocation= length;</span>
+<span class="pc bpc" id="L296" title="1 of 2 branches missed.">		} else if (matched instanceof MethodInvocation equals) {</span>
+<span class="fc" id="L297">			invocation= equals;</span>
+<span class="fc" id="L298">		} else {</span>
+<span class="nc" id="L299">			return false;</span>
+		}
+<span class="fc" id="L301">		IMethodBinding binding= invocation.resolveMethodBinding();</span>
+<span class="pc bpc" id="L302" title="3 of 6 branches missed.">		return binding != null &amp;&amp; !binding.isRecovered() &amp;&amp; binding.getDeclaringClass() != null</span>
+<span class="pc bpc" id="L303" title="1 of 2 branches missed.">				&amp;&amp; !binding.getDeclaringClass().isRecovered()</span>
+<span class="fc bfc" id="L304" title="All 2 branches covered.">				&amp;&amp; &quot;java.lang.String&quot;.equals(binding.getDeclaringClass().getQualifiedName()); //$NON-NLS-1$</span>
+	}
+
+	/** Preserve the conditional's null result, lazy fallback and repeated receiver read. */
+	public static boolean isSafeNullFallback(Match match) {
+<span class="pc bpc" id="L309" title="1 of 2 branches missed.">		if (!(match.getMatchedNode() instanceof ConditionalExpression conditional)</span>
+<span class="pc bpc" id="L310" title="1 of 2 branches missed.">				|| conditional.getParent() instanceof LambdaExpression</span>
+<span class="pc bpc" id="L311" title="1 of 2 branches missed.">				|| !(ASTNodes.getUnparenthesedExpression(conditional.getExpression()) instanceof InfixExpression condition)</span>
+<span class="fc bfc" id="L312" title="All 2 branches covered.">				|| !(ASTNodes.getUnparenthesedExpression(condition.getLeftOperand()) instanceof SimpleName first)</span>
+<span class="pc bpc" id="L313" title="1 of 2 branches missed.">				|| !(ASTNodes.getUnparenthesedExpression(conditional.getThenExpression()) instanceof SimpleName second)</span>
+<span class="pc bpc" id="L314" title="1 of 2 branches missed.">				|| !(first.resolveBinding() instanceof IVariableBinding variable)</span>
+<span class="pc bpc" id="L315" title="2 of 6 branches missed.">				|| variable.isRecovered() || variable.isField() || variable.isEnumConstant()</span>
+<span class="pc bpc" id="L316" title="1 of 2 branches missed.">				|| !variable.isEqualTo(second.resolveBinding())) {</span>
+<span class="fc" id="L317">			return false;</span>
+		}
+<span class="fc" id="L319">		ITypeBinding type= variable.getType();</span>
+<span class="fc" id="L320">		Expression fallback= ASTNodes.getUnparenthesedExpression(conditional.getElseExpression());</span>
+<span class="pc bpc" id="L321" title="3 of 6 branches missed.">		return type != null &amp;&amp; !type.isRecovered() &amp;&amp; &quot;java.lang.String&quot;.equals(type.getQualifiedName()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L322" title="1 of 4 branches missed.">				&amp;&amp; (fallback instanceof StringLiteral || fallback instanceof TextBlock);</span>
+	}
 	
 	/** Checks the binding and source context shared by the cleanup and quick assist. */
 	public static boolean isSafeCollectionSizeCheck(Match match) {
-<span class="pc bpc" id="L172" title="1 of 2 branches missed.">		if (!(match.getMatchedNode() instanceof InfixExpression comparison)</span>
-<span class="pc bpc" id="L173" title="1 of 2 branches missed.">				|| comparison.hasExtendedOperands()</span>
-<span class="pc bpc" id="L174" title="1 of 2 branches missed.">				|| !(ASTNodes.getUnparenthesedExpression(comparison.getLeftOperand()) instanceof MethodInvocation size)</span>
-<span class="pc bpc" id="L175" title="1 of 2 branches missed.">				|| size.getExpression() == null</span>
-<span class="pc bpc" id="L176" title="1 of 2 branches missed.">				|| !(comparison.getRoot() instanceof CompilationUnit root)</span>
-<span class="pc bpc" id="L177" title="1 of 2 branches missed.">				|| root.getCommentList() == null) {</span>
-<span class="nc" id="L178">			return false;</span>
+<span class="pc bpc" id="L327" title="1 of 2 branches missed.">		if (!(match.getMatchedNode() instanceof InfixExpression comparison)</span>
+<span class="pc bpc" id="L328" title="1 of 2 branches missed.">				|| comparison.hasExtendedOperands()</span>
+<span class="pc bpc" id="L329" title="1 of 2 branches missed.">				|| !(ASTNodes.getUnparenthesedExpression(comparison.getLeftOperand()) instanceof MethodInvocation size)</span>
+<span class="pc bpc" id="L330" title="1 of 2 branches missed.">				|| size.getExpression() == null</span>
+<span class="pc bpc" id="L331" title="1 of 2 branches missed.">				|| !(comparison.getRoot() instanceof CompilationUnit root)</span>
+<span class="pc bpc" id="L332" title="1 of 2 branches missed.">				|| root.getCommentList() == null) {</span>
+<span class="nc" id="L333">			return false;</span>
 		}
-<span class="fc bfc" id="L180" title="All 4 branches covered.">		if (comparison.getOperator() == InfixExpression.Operator.EQUALS &amp;&amp; comparison.getParent() instanceof LambdaExpression) {</span>
+<span class="fc bfc" id="L335" title="All 4 branches covered.">		if (comparison.getOperator() == InfixExpression.Operator.EQUALS &amp;&amp; comparison.getParent() instanceof LambdaExpression) {</span>
 			// A bare method call would also make the expression lambda void-compatible.
-<span class="fc" id="L182">			return false;</span>
+<span class="fc" id="L337">			return false;</span>
 		}
-<span class="fc" id="L184">		IMethodBinding method= size.resolveMethodBinding();</span>
-<span class="fc" id="L185">		ITypeBinding receiver= size.getExpression().resolveTypeBinding();</span>
-<span class="pc bpc" id="L186" title="3 of 6 branches missed.">		if (method == null || method.isRecovered() || Modifier.isStatic(method.getModifiers())</span>
-<span class="pc bpc" id="L187" title="2 of 4 branches missed.">				|| method.getParameterTypes().length != 0 || !&quot;int&quot;.equals(method.getReturnType().getQualifiedName()) //$NON-NLS-1$</span>
-<span class="fc bfc" id="L188" title="All 2 branches covered.">				|| !isCollectionOrMap(receiver)) {</span>
-<span class="fc" id="L189">			return false;</span>
+<span class="fc" id="L339">		IMethodBinding method= size.resolveMethodBinding();</span>
+<span class="fc" id="L340">		ITypeBinding receiver= size.getExpression().resolveTypeBinding();</span>
+<span class="pc bpc" id="L341" title="3 of 6 branches missed.">		if (method == null || method.isRecovered() || Modifier.isStatic(method.getModifiers())</span>
+<span class="pc bpc" id="L342" title="2 of 4 branches missed.">				|| method.getParameterTypes().length != 0 || !&quot;int&quot;.equals(method.getReturnType().getQualifiedName()) //$NON-NLS-1$</span>
+<span class="fc bfc" id="L343" title="All 2 branches covered.">				|| !isCollectionOrMap(receiver)) {</span>
+<span class="fc" id="L344">			return false;</span>
 		}
 		// A collection implementation may implement isEmpty() through this check
 		// in an override or a helper, including via an alias of the receiver.
-<span class="fc bfc" id="L193" title="All 2 branches covered.">		for (ASTNode ancestor= comparison.getParent(); ancestor != null; ancestor= ancestor.getParent()) {</span>
-<span class="pc bpc" id="L194" title="1 of 4 branches missed.">			if ((ancestor instanceof AbstractTypeDeclaration || ancestor instanceof AnonymousClassDeclaration)</span>
-<span class="fc bfc" id="L195" title="All 2 branches covered.">					&amp;&amp; isCollectionOrMap(ASTNodes.getEnclosingType(ancestor))) {</span>
-<span class="fc" id="L196">				return false;</span>
+<span class="fc bfc" id="L348" title="All 2 branches covered.">		for (ASTNode ancestor= comparison.getParent(); ancestor != null; ancestor= ancestor.getParent()) {</span>
+<span class="pc bpc" id="L349" title="1 of 4 branches missed.">			if ((ancestor instanceof AbstractTypeDeclaration || ancestor instanceof AnonymousClassDeclaration)</span>
+<span class="fc bfc" id="L350" title="All 2 branches covered.">					&amp;&amp; isCollectionOrMap(ASTNodes.getEnclosingType(ancestor))) {</span>
+<span class="fc" id="L351">				return false;</span>
 			}
 		}
-<span class="fc" id="L199">		int start= root.getExtendedStartPosition(comparison);</span>
-<span class="fc" id="L200">		int length= root.getExtendedLength(comparison);</span>
-<span class="pc bpc" id="L201" title="2 of 4 branches missed.">		if (start &lt; 0 || length &lt; comparison.getLength()) {</span>
-<span class="nc" id="L202">			return false;</span>
+<span class="fc" id="L354">		int start= root.getExtendedStartPosition(comparison);</span>
+<span class="fc" id="L355">		int length= root.getExtendedLength(comparison);</span>
+<span class="pc bpc" id="L356" title="2 of 4 branches missed.">		if (start &lt; 0 || length &lt; comparison.getLength()) {</span>
+<span class="nc" id="L357">			return false;</span>
 		}
-<span class="fc" id="L204">		int end= start + length;</span>
-<span class="fc bfc" id="L205" title="All 2 branches covered.">		for (Object value : root.getCommentList()) {</span>
-<span class="fc" id="L206">			Comment comment= (Comment) value;</span>
-<span class="fc" id="L207">			int commentStart= comment.getStartPosition();</span>
-<span class="pc bpc" id="L208" title="1 of 2 branches missed.">			if (commentStart &gt;= end) {</span>
-<span class="nc" id="L209">				break;</span>
+<span class="fc" id="L359">		int end= start + length;</span>
+<span class="fc bfc" id="L360" title="All 2 branches covered.">		for (Object value : root.getCommentList()) {</span>
+<span class="fc" id="L361">			Comment comment= (Comment) value;</span>
+<span class="fc" id="L362">			int commentStart= comment.getStartPosition();</span>
+<span class="pc bpc" id="L363" title="1 of 2 branches missed.">			if (commentStart &gt;= end) {</span>
+<span class="nc" id="L364">				break;</span>
 			}
-<span class="pc bpc" id="L211" title="1 of 2 branches missed.">			if (commentStart + comment.getLength() &gt; start) {</span>
-<span class="fc" id="L212">				return false;</span>
+<span class="pc bpc" id="L366" title="1 of 2 branches missed.">			if (commentStart + comment.getLength() &gt; start) {</span>
+<span class="fc" id="L367">				return false;</span>
 			}
 		}
-<span class="fc" id="L215">		return true;</span>
+<span class="fc" id="L370">		return true;</span>
 	}
 
 	private static boolean isCollectionOrMap(ITypeBinding type) {
-<span class="pc bpc" id="L219" title="2 of 4 branches missed.">		return type != null &amp;&amp; !type.isRecovered()</span>
-<span class="fc bfc" id="L220" title="All 2 branches covered.">				&amp;&amp; (Bindings.findTypeInHierarchy(type, &quot;java.util.Collection&quot;) != null //$NON-NLS-1$</span>
-<span class="fc bfc" id="L221" title="All 2 branches covered.">						|| Bindings.findTypeInHierarchy(type, &quot;java.util.Map&quot;) != null); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L374" title="2 of 4 branches missed.">		return type != null &amp;&amp; !type.isRecovered()</span>
+<span class="fc bfc" id="L375" title="All 2 branches covered.">				&amp;&amp; (Bindings.findTypeInHierarchy(type, &quot;java.util.Collection&quot;) != null //$NON-NLS-1$</span>
+<span class="fc bfc" id="L376" title="All 2 branches covered.">						|| Bindings.findTypeInHierarchy(type, &quot;java.util.Map&quot;) != null); //$NON-NLS-1$</span>
 	}
 
 	/**
@@ -229,41 +384,42 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
 		private final Match match;
 		private final String description;
 		
-<span class="fc" id="L232">		public StringValueOfOperation(Match match, String description) {</span>
-<span class="fc" id="L233">			this.match = match;</span>
-<span class="fc" id="L234">			this.description = description;</span>
-<span class="fc" id="L235">		}</span>
+<span class="fc" id="L387">		public StringValueOfOperation(Match match, String description) {</span>
+<span class="fc" id="L388">			this.match = match;</span>
+<span class="fc" id="L389">			this.description = description;</span>
+<span class="fc" id="L390">		}</span>
 		
 		@Override
 		public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
-<span class="fc" id="L239">			ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L240">			AST ast = cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L241">			TextEditGroup group = createTextEditGroup(description, cuRewrite);</span>
+<span class="fc" id="L394">			ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L395">			AST ast = cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L396">			TextEditGroup group = createTextEditGroup(description, cuRewrite);</span>
 			
-<span class="fc" id="L243">			ASTNode matchedNode = match.getMatchedNode();</span>
-<span class="pc bpc" id="L244" title="1 of 2 branches missed.">			if (!(matchedNode instanceof InfixExpression)) {</span>
-<span class="nc" id="L245">				return;</span>
+<span class="fc" id="L398">			ASTNode matchedNode = match.getMatchedNode();</span>
+<span class="pc bpc" id="L399" title="1 of 2 branches missed.">			if (!(matchedNode instanceof InfixExpression)) {</span>
+<span class="nc" id="L400">				return;</span>
 			}
 			
-<span class="fc" id="L248">			InfixExpression infixExpr = (InfixExpression) matchedNode;</span>
+<span class="fc" id="L403">			InfixExpression infixExpr = (InfixExpression) matchedNode;</span>
 			
 			// Get the bound variable from placeholders
-<span class="fc" id="L251">			ASTNode xNode = match.getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L252" title="2 of 4 branches missed.">			if (xNode == null || !(xNode instanceof Expression)) {</span>
-<span class="nc" id="L253">				return;</span>
+<span class="fc" id="L406">			ASTNode xNode = match.getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L407" title="2 of 4 branches missed.">			if (xNode == null || !(xNode instanceof Expression)) {</span>
+<span class="nc" id="L408">				return;</span>
 			}
 			
-<span class="fc" id="L256">			Expression valueExpression = (Expression) xNode;</span>
+<span class="fc" id="L411">			Expression valueExpression = (Expression) xNode;</span>
 			
 			// Create the replacement: String.valueOf(valueExpression)
-<span class="fc" id="L259">			MethodInvocation methodInvocation = ast.newMethodInvocation();</span>
-<span class="fc" id="L260">			methodInvocation.setExpression(ast.newName(&quot;String&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L261">			methodInvocation.setName(ast.newSimpleName(&quot;valueOf&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L262">			methodInvocation.arguments().add(ASTNode.copySubtree(ast, valueExpression));</span>
+<span class="fc" id="L414">			MethodInvocation methodInvocation = ast.newMethodInvocation();</span>
+<span class="fc" id="L415">			methodInvocation.setExpression(ast.newName(&quot;String&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L416">			methodInvocation.setName(ast.newSimpleName(&quot;valueOf&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L417">			methodInvocation.arguments().add(ASTNode.copySubtree(ast, valueExpression));</span>
 			
 			// Apply the rewrite
-<span class="fc" id="L265">			rewrite.replace(infixExpr, methodInvocation, group);</span>
-<span class="fc" id="L266">		}</span>
+<span class="fc" id="L420">			rewrite.replace(infixExpr, methodInvocation, group);</span>
+<span class="fc" id="L421">			removedLiterals(match, &quot;$x&quot;).forEach(literal -&gt; EncodingSourceRewrite.record(cuRewrite, literal)); //$NON-NLS-1$</span>
+<span class="fc" id="L422">		}</span>
 	}
 	
 	/**
@@ -277,39 +433,40 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
 		private final Match match;
 		private final String description;
 		
-<span class="fc" id="L280">		public MethodToStringValueOfOperation(Match match, String description) {</span>
-<span class="fc" id="L281">			this.match = match;</span>
-<span class="fc" id="L282">			this.description = description;</span>
-<span class="fc" id="L283">		}</span>
+<span class="fc" id="L436">		public MethodToStringValueOfOperation(Match match, String description) {</span>
+<span class="fc" id="L437">			this.match = match;</span>
+<span class="fc" id="L438">			this.description = description;</span>
+<span class="fc" id="L439">		}</span>
 		
 		@Override
 		public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
-<span class="fc" id="L287">			ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L288">			AST ast = cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L289">			TextEditGroup group = createTextEditGroup(description, cuRewrite);</span>
+<span class="fc" id="L443">			ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L444">			AST ast = cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L445">			TextEditGroup group = createTextEditGroup(description, cuRewrite);</span>
 			
-<span class="fc" id="L291">			ASTNode matchedNode = match.getMatchedNode();</span>
-<span class="pc bpc" id="L292" title="1 of 2 branches missed.">			if (!(matchedNode instanceof MethodInvocation)) {</span>
-<span class="nc" id="L293">				return;</span>
+<span class="fc" id="L447">			ASTNode matchedNode = match.getMatchedNode();</span>
+<span class="pc bpc" id="L448" title="1 of 2 branches missed.">			if (!(matchedNode instanceof MethodInvocation)) {</span>
+<span class="nc" id="L449">				return;</span>
 			}
 			
 			// Get the bound variable from placeholders
-<span class="fc" id="L297">			ASTNode xNode = match.getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L298" title="2 of 4 branches missed.">			if (xNode == null || !(xNode instanceof Expression)) {</span>
-<span class="nc" id="L299">				return;</span>
+<span class="fc" id="L453">			ASTNode xNode = match.getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L454" title="2 of 4 branches missed.">			if (xNode == null || !(xNode instanceof Expression)) {</span>
+<span class="nc" id="L455">				return;</span>
 			}
 			
-<span class="fc" id="L302">			Expression valueExpression = (Expression) xNode;</span>
+<span class="fc" id="L458">			Expression valueExpression = (Expression) xNode;</span>
 			
 			// Create the replacement: String.valueOf(valueExpression)
-<span class="fc" id="L305">			MethodInvocation methodInvocation = ast.newMethodInvocation();</span>
-<span class="fc" id="L306">			methodInvocation.setExpression(ast.newName(&quot;String&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L307">			methodInvocation.setName(ast.newSimpleName(&quot;valueOf&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L308">			methodInvocation.arguments().add(ASTNode.copySubtree(ast, valueExpression));</span>
+<span class="fc" id="L461">			MethodInvocation methodInvocation = ast.newMethodInvocation();</span>
+<span class="fc" id="L462">			methodInvocation.setExpression(ast.newName(&quot;String&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L463">			methodInvocation.setName(ast.newSimpleName(&quot;valueOf&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L464">			methodInvocation.arguments().add(ASTNode.copySubtree(ast, valueExpression));</span>
 			
 			// Apply the rewrite
-<span class="fc" id="L311">			rewrite.replace(matchedNode, methodInvocation, group);</span>
-<span class="fc" id="L312">		}</span>
+<span class="fc" id="L467">			rewrite.replace(matchedNode, methodInvocation, group);</span>
+<span class="fc" id="L468">			removedLiterals(match, &quot;$x&quot;).forEach(literal -&gt; EncodingSourceRewrite.record(cuRewrite, literal)); //$NON-NLS-1$</span>
+<span class="fc" id="L469">		}</span>
 	}
 	
 	/**
@@ -320,35 +477,36 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
 		private final Match match;
 		private final String description;
 		
-<span class="fc" id="L323">		public IsEmptyOperation(Match match, String description) {</span>
-<span class="fc" id="L324">			this.match = match;</span>
-<span class="fc" id="L325">			this.description = description;</span>
-<span class="fc" id="L326">		}</span>
+<span class="fc" id="L480">		public IsEmptyOperation(Match match, String description) {</span>
+<span class="fc" id="L481">			this.match = match;</span>
+<span class="fc" id="L482">			this.description = description;</span>
+<span class="fc" id="L483">		}</span>
 		
 		@Override
 		public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
-<span class="fc" id="L330">			ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L331">			AST ast = cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L332">			TextEditGroup group = createTextEditGroup(description, cuRewrite);</span>
+<span class="fc" id="L487">			ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L488">			AST ast = cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L489">			TextEditGroup group = createTextEditGroup(description, cuRewrite);</span>
 			
-<span class="fc" id="L334">			ASTNode matchedNode = match.getMatchedNode();</span>
+<span class="fc" id="L491">			ASTNode matchedNode = match.getMatchedNode();</span>
 			
 			// Get the bound variable from placeholders
-<span class="fc" id="L337">			ASTNode strNode = match.getBinding(&quot;$str&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L338" title="2 of 4 branches missed.">			if (strNode == null || !(strNode instanceof Expression)) {</span>
-<span class="nc" id="L339">				return;</span>
+<span class="fc" id="L494">			ASTNode strNode = match.getBinding(&quot;$str&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L495" title="2 of 4 branches missed.">			if (strNode == null || !(strNode instanceof Expression)) {</span>
+<span class="nc" id="L496">				return;</span>
 			}
 			
-<span class="fc" id="L342">			Expression strExpression = (Expression) strNode;</span>
+<span class="fc" id="L499">			Expression strExpression = (Expression) strNode;</span>
 			
 			// Create the replacement: strExpression.isEmpty()
-<span class="fc" id="L345">			MethodInvocation isEmptyCall = ast.newMethodInvocation();</span>
-<span class="fc" id="L346">			isEmptyCall.setExpression((Expression) ASTNode.copySubtree(ast, strExpression));</span>
-<span class="fc" id="L347">			isEmptyCall.setName(ast.newSimpleName(&quot;isEmpty&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L502">			MethodInvocation isEmptyCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L503">			isEmptyCall.setExpression((Expression) ASTNode.copySubtree(ast, strExpression));</span>
+<span class="fc" id="L504">			isEmptyCall.setName(ast.newSimpleName(&quot;isEmpty&quot;)); //$NON-NLS-1$</span>
 			
 			// Apply the rewrite
-<span class="fc" id="L350">			rewrite.replace(matchedNode, isEmptyCall, group);</span>
-<span class="fc" id="L351">		}</span>
+<span class="fc" id="L507">			rewrite.replace(matchedNode, isEmptyCall, group);</span>
+<span class="fc" id="L508">			removedLiterals(match, &quot;$str&quot;).forEach(literal -&gt; EncodingSourceRewrite.record(cuRewrite, literal)); //$NON-NLS-1$</span>
+<span class="fc" id="L509">		}</span>
 	}
 	
 	/**
@@ -360,48 +518,45 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
 		private final String description;
 		private final boolean negate;
 		
-<span class="fc" id="L363">		public SimplifyBooleanOperation(Match match, String description, boolean negate) {</span>
-<span class="fc" id="L364">			this.match = match;</span>
-<span class="fc" id="L365">			this.description = description;</span>
-<span class="fc" id="L366">			this.negate = negate;</span>
-<span class="fc" id="L367">		}</span>
+<span class="fc" id="L521">		public SimplifyBooleanOperation(Match match, String description, boolean negate) {</span>
+<span class="fc" id="L522">			this.match = match;</span>
+<span class="fc" id="L523">			this.description = description;</span>
+<span class="fc" id="L524">			this.negate = negate;</span>
+<span class="fc" id="L525">		}</span>
 		
 		@Override
 		public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
-<span class="fc" id="L371">			ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L372">			AST ast = cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L373">			TextEditGroup group = createTextEditGroup(description, cuRewrite);</span>
+<span class="fc" id="L529">			ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L530">			AST ast = cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L531">			TextEditGroup group = createTextEditGroup(description, cuRewrite);</span>
 			
-<span class="fc" id="L375">			ASTNode matchedNode = match.getMatchedNode();</span>
-<span class="pc bpc" id="L376" title="1 of 2 branches missed.">			if (!(matchedNode instanceof InfixExpression)) {</span>
-<span class="nc" id="L377">				return;</span>
+<span class="fc" id="L533">			ASTNode matchedNode = match.getMatchedNode();</span>
+<span class="pc bpc" id="L534" title="1 of 2 branches missed.">			if (!(matchedNode instanceof InfixExpression)) {</span>
+<span class="nc" id="L535">				return;</span>
 			}
 			
-<span class="fc" id="L380">			InfixExpression infixExpr = (InfixExpression) matchedNode;</span>
+<span class="fc" id="L538">			InfixExpression infixExpr = (InfixExpression) matchedNode;</span>
 			
 			// Get the boolean variable
-<span class="fc" id="L383">			ASTNode xNode = match.getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L384" title="2 of 4 branches missed.">			if (xNode == null || !(xNode instanceof Expression)) {</span>
-<span class="nc" id="L385">				return;</span>
+<span class="fc" id="L541">			ASTNode xNode = match.getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L542" title="2 of 4 branches missed.">			if (xNode == null || !(xNode instanceof Expression)) {</span>
+<span class="nc" id="L543">				return;</span>
 			}
 			
-<span class="fc" id="L388">			Expression boolExpression = (Expression) xNode;</span>
+<span class="fc" id="L546">			Expression boolExpression = (Expression) xNode;</span>
 			
 			Expression replacement;
-<span class="fc bfc" id="L391" title="All 2 branches covered.">			if (negate) {</span>
+<span class="fc bfc" id="L549" title="All 2 branches covered.">			if (negate) {</span>
 				// Create: !boolExpression
-<span class="fc" id="L393">				PrefixExpression negation = ast.newPrefixExpression();</span>
-<span class="fc" id="L394">				negation.setOperator(PrefixExpression.Operator.NOT);</span>
-<span class="fc" id="L395">				negation.setOperand((Expression) ASTNode.copySubtree(ast, boolExpression));</span>
-<span class="fc" id="L396">				replacement = negation;</span>
-<span class="fc" id="L397">			} else {</span>
+<span class="fc" id="L551">				replacement = ASTNodeFactory.not(ast, (Expression) ASTNode.copySubtree(ast, boolExpression));</span>
+<span class="fc" id="L552">			} else {</span>
 				// Just use the boolean expression as-is
-<span class="fc" id="L399">				replacement = (Expression) ASTNode.copySubtree(ast, boolExpression);</span>
+<span class="fc" id="L554">				replacement = (Expression) ASTNode.copySubtree(ast, boolExpression);</span>
 			}
 			
 			// Apply the rewrite
-<span class="fc" id="L403">			rewrite.replace(infixExpr, replacement, group);</span>
-<span class="fc" id="L404">		}</span>
+<span class="fc" id="L558">			rewrite.replace(infixExpr, replacement, group);</span>
+<span class="fc" id="L559">		}</span>
 	}
 	
 	/**
@@ -413,48 +568,45 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
 		private final String description;
 		private final boolean negate;
 		
-<span class="fc" id="L416">		public SimplifyTernaryOperation(Match match, String description, boolean negate) {</span>
-<span class="fc" id="L417">			this.match = match;</span>
-<span class="fc" id="L418">			this.description = description;</span>
-<span class="fc" id="L419">			this.negate = negate;</span>
-<span class="fc" id="L420">		}</span>
+<span class="fc" id="L571">		public SimplifyTernaryOperation(Match match, String description, boolean negate) {</span>
+<span class="fc" id="L572">			this.match = match;</span>
+<span class="fc" id="L573">			this.description = description;</span>
+<span class="fc" id="L574">			this.negate = negate;</span>
+<span class="fc" id="L575">		}</span>
 		
 		@Override
 		public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
-<span class="fc" id="L424">			ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L425">			AST ast = cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L426">			TextEditGroup group = createTextEditGroup(description, cuRewrite);</span>
+<span class="fc" id="L579">			ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L580">			AST ast = cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L581">			TextEditGroup group = createTextEditGroup(description, cuRewrite);</span>
 			
-<span class="fc" id="L428">			ASTNode matchedNode = match.getMatchedNode();</span>
-<span class="pc bpc" id="L429" title="1 of 2 branches missed.">			if (!(matchedNode instanceof ConditionalExpression)) {</span>
-<span class="nc" id="L430">				return;</span>
+<span class="fc" id="L583">			ASTNode matchedNode = match.getMatchedNode();</span>
+<span class="pc bpc" id="L584" title="1 of 2 branches missed.">			if (!(matchedNode instanceof ConditionalExpression)) {</span>
+<span class="nc" id="L585">				return;</span>
 			}
 			
-<span class="fc" id="L433">			ConditionalExpression ternary = (ConditionalExpression) matchedNode;</span>
+<span class="fc" id="L588">			ConditionalExpression ternary = (ConditionalExpression) matchedNode;</span>
 			
 			// Get the condition
-<span class="fc" id="L436">			ASTNode condNode = match.getBinding(&quot;$cond&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L437" title="2 of 4 branches missed.">			if (condNode == null || !(condNode instanceof Expression)) {</span>
-<span class="nc" id="L438">				return;</span>
+<span class="fc" id="L591">			ASTNode condNode = match.getBinding(&quot;$cond&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L592" title="2 of 4 branches missed.">			if (condNode == null || !(condNode instanceof Expression)) {</span>
+<span class="nc" id="L593">				return;</span>
 			}
 			
-<span class="fc" id="L441">			Expression condition = (Expression) condNode;</span>
+<span class="fc" id="L596">			Expression condition = (Expression) condNode;</span>
 			
 			Expression replacement;
-<span class="fc bfc" id="L444" title="All 2 branches covered.">			if (negate) {</span>
+<span class="fc bfc" id="L599" title="All 2 branches covered.">			if (negate) {</span>
 				// Create: !condition
-<span class="fc" id="L446">				PrefixExpression negation = ast.newPrefixExpression();</span>
-<span class="fc" id="L447">				negation.setOperator(PrefixExpression.Operator.NOT);</span>
-<span class="fc" id="L448">				negation.setOperand((Expression) ASTNode.copySubtree(ast, condition));</span>
-<span class="fc" id="L449">				replacement = negation;</span>
-<span class="fc" id="L450">			} else {</span>
+<span class="fc" id="L601">				replacement = ASTNodeFactory.not(ast, (Expression) ASTNode.copySubtree(ast, condition));</span>
+<span class="fc" id="L602">			} else {</span>
 				// Just use the condition as-is
-<span class="fc" id="L452">				replacement = (Expression) ASTNode.copySubtree(ast, condition);</span>
+<span class="fc" id="L604">				replacement = (Expression) ASTNode.copySubtree(ast, condition);</span>
 			}
 			
 			// Apply the rewrite
-<span class="fc" id="L456">			rewrite.replace(ternary, replacement, group);</span>
-<span class="fc" id="L457">		}</span>
+<span class="fc" id="L608">			rewrite.replace(ternary, replacement, group);</span>
+<span class="fc" id="L609">		}</span>
 	}
 	
 	/**
@@ -470,46 +622,46 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
 		private final String bindingName;
 		private final boolean negate;
 		
-<span class="fc" id="L473">		public CollectionIsEmptyOperation(Match match, String description, String bindingName, boolean negate) {</span>
-<span class="fc" id="L474">			this.match = match;</span>
-<span class="fc" id="L475">			this.description = description;</span>
-<span class="fc" id="L476">			this.bindingName = bindingName;</span>
-<span class="fc" id="L477">			this.negate = negate;</span>
-<span class="fc" id="L478">		}</span>
+<span class="fc" id="L625">		public CollectionIsEmptyOperation(Match match, String description, String bindingName, boolean negate) {</span>
+<span class="fc" id="L626">			this.match = match;</span>
+<span class="fc" id="L627">			this.description = description;</span>
+<span class="fc" id="L628">			this.bindingName = bindingName;</span>
+<span class="fc" id="L629">			this.negate = negate;</span>
+<span class="fc" id="L630">		}</span>
 		
 		@Override
 		public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
-<span class="fc" id="L482">			ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L483">			AST ast = cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L484">			TextEditGroup group = createTextEditGroup(description, cuRewrite);</span>
+<span class="fc" id="L634">			ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L635">			AST ast = cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L636">			TextEditGroup group = createTextEditGroup(description, cuRewrite);</span>
 			
-<span class="fc" id="L486">			ASTNode matchedNode = match.getMatchedNode();</span>
+<span class="fc" id="L638">			ASTNode matchedNode = match.getMatchedNode();</span>
 			
-<span class="fc" id="L488">			ASTNode listNode = match.getBinding(bindingName);</span>
-<span class="pc bpc" id="L489" title="2 of 4 branches missed.">			if (listNode == null || !(listNode instanceof Expression)) {</span>
-<span class="nc" id="L490">				return;</span>
+<span class="fc" id="L640">			ASTNode listNode = match.getBinding(bindingName);</span>
+<span class="pc bpc" id="L641" title="2 of 4 branches missed.">			if (listNode == null || !(listNode instanceof Expression)) {</span>
+<span class="nc" id="L642">				return;</span>
 			}
 			
-<span class="fc" id="L493">			Expression listExpression = (Expression) listNode;</span>
+<span class="fc" id="L645">			Expression listExpression = (Expression) listNode;</span>
 			
 			// Create: listExpression.isEmpty()
-<span class="fc" id="L496">			MethodInvocation isEmptyCall = ast.newMethodInvocation();</span>
-<span class="fc" id="L497">			isEmptyCall.setExpression((Expression) ASTNode.copySubtree(ast, listExpression));</span>
-<span class="fc" id="L498">			isEmptyCall.setName(ast.newSimpleName(&quot;isEmpty&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L648">			MethodInvocation isEmptyCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L649">			isEmptyCall.setExpression((Expression) ASTNode.copySubtree(ast, listExpression));</span>
+<span class="fc" id="L650">			isEmptyCall.setName(ast.newSimpleName(&quot;isEmpty&quot;)); //$NON-NLS-1$</span>
 			
 			Expression replacement;
-<span class="fc bfc" id="L501" title="All 2 branches covered.">			if (negate) {</span>
+<span class="fc bfc" id="L653" title="All 2 branches covered.">			if (negate) {</span>
 				// Create: !listExpression.isEmpty()
-<span class="fc" id="L503">				PrefixExpression negation = ast.newPrefixExpression();</span>
-<span class="fc" id="L504">				negation.setOperator(PrefixExpression.Operator.NOT);</span>
-<span class="fc" id="L505">				negation.setOperand(isEmptyCall);</span>
-<span class="fc" id="L506">				replacement = negation;</span>
-<span class="fc" id="L507">			} else {</span>
-<span class="fc" id="L508">				replacement = isEmptyCall;</span>
+<span class="fc" id="L655">				PrefixExpression negation = ast.newPrefixExpression();</span>
+<span class="fc" id="L656">				negation.setOperator(PrefixExpression.Operator.NOT);</span>
+<span class="fc" id="L657">				negation.setOperand(isEmptyCall);</span>
+<span class="fc" id="L658">				replacement = negation;</span>
+<span class="fc" id="L659">			} else {</span>
+<span class="fc" id="L660">				replacement = isEmptyCall;</span>
 			}
 			
-<span class="fc" id="L511">			rewrite.replace(matchedNode, replacement, group);</span>
-<span class="fc" id="L512">		}</span>
+<span class="fc" id="L663">			rewrite.replace(matchedNode, replacement, group);</span>
+<span class="fc" id="L664">		}</span>
 	}
 	
 	/**
@@ -522,52 +674,52 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
 		private final Match match;
 		private final String description;
 		
-<span class="fc" id="L525">		public ObjectsEqualsOperation(Match match, String description) {</span>
-<span class="fc" id="L526">			this.match = match;</span>
-<span class="fc" id="L527">			this.description = description;</span>
-<span class="fc" id="L528">		}</span>
+<span class="fc" id="L677">		public ObjectsEqualsOperation(Match match, String description) {</span>
+<span class="fc" id="L678">			this.match = match;</span>
+<span class="fc" id="L679">			this.description = description;</span>
+<span class="fc" id="L680">		}</span>
 		
 		@Override
 		public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
-<span class="fc" id="L532">			ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L533">			AST ast = cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L534">			TextEditGroup group = createTextEditGroup(description, cuRewrite);</span>
+<span class="fc" id="L684">			ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L685">			AST ast = cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L686">			TextEditGroup group = createTextEditGroup(description, cuRewrite);</span>
 			
-<span class="fc" id="L536">			ASTNode matchedNode = match.getMatchedNode();</span>
-<span class="pc bpc" id="L537" title="1 of 2 branches missed.">			if (!(matchedNode instanceof MethodInvocation)) {</span>
-<span class="nc" id="L538">				return;</span>
+<span class="fc" id="L688">			ASTNode matchedNode = match.getMatchedNode();</span>
+<span class="pc bpc" id="L689" title="1 of 2 branches missed.">			if (!(matchedNode instanceof MethodInvocation)) {</span>
+<span class="nc" id="L690">				return;</span>
 			}
 			
-<span class="fc" id="L541">			ASTNode xNode = match.getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L542">			ASTNode yNode = match.getBinding(&quot;$y&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L693">			ASTNode xNode = match.getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L694">			ASTNode yNode = match.getBinding(&quot;$y&quot;); //$NON-NLS-1$</span>
 			
-<span class="pc bpc" id="L544" title="2 of 4 branches missed.">			if (xNode == null || !(xNode instanceof Expression) ||</span>
-<span class="pc bpc" id="L545" title="2 of 4 branches missed.">			    yNode == null || !(yNode instanceof Expression)) {</span>
-<span class="nc" id="L546">				return;</span>
+<span class="pc bpc" id="L696" title="2 of 4 branches missed.">			if (xNode == null || !(xNode instanceof Expression) ||</span>
+<span class="pc bpc" id="L697" title="2 of 4 branches missed.">			    yNode == null || !(yNode instanceof Expression)) {</span>
+<span class="nc" id="L698">				return;</span>
 			}
 			
-<span class="fc" id="L549">			Expression xExpression = (Expression) xNode;</span>
-<span class="fc" id="L550">			Expression yExpression = (Expression) yNode;</span>
+<span class="fc" id="L701">			Expression xExpression = (Expression) xNode;</span>
+<span class="fc" id="L702">			Expression yExpression = (Expression) yNode;</span>
 			
 			// Add import for java.util.Objects
-<span class="fc" id="L553">			ImportRewrite importRewrite = cuRewrite.getImportRewrite();</span>
-<span class="fc" id="L554">			String objectsType = importRewrite.addImport(&quot;java.util.Objects&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L705">			ImportRewrite importRewrite = cuRewrite.getImportRewrite();</span>
+<span class="fc" id="L706">			String objectsType = importRewrite.addImport(&quot;java.util.Objects&quot;); //$NON-NLS-1$</span>
 			
 			// Create: Objects.equals(x.toString(), y)
-<span class="fc" id="L557">			MethodInvocation equalsCall = ast.newMethodInvocation();</span>
-<span class="fc" id="L558">			equalsCall.setExpression(ast.newName(objectsType));</span>
-<span class="fc" id="L559">			equalsCall.setName(ast.newSimpleName(&quot;equals&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L709">			MethodInvocation equalsCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L710">			equalsCall.setExpression(ast.newName(objectsType));</span>
+<span class="fc" id="L711">			equalsCall.setName(ast.newSimpleName(&quot;equals&quot;)); //$NON-NLS-1$</span>
 			
 			// Create x.toString()
-<span class="fc" id="L562">			MethodInvocation toStringCall = ast.newMethodInvocation();</span>
-<span class="fc" id="L563">			toStringCall.setExpression((Expression) ASTNode.copySubtree(ast, xExpression));</span>
-<span class="fc" id="L564">			toStringCall.setName(ast.newSimpleName(&quot;toString&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L714">			MethodInvocation toStringCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L715">			toStringCall.setExpression((Expression) ASTNode.copySubtree(ast, xExpression));</span>
+<span class="fc" id="L716">			toStringCall.setName(ast.newSimpleName(&quot;toString&quot;)); //$NON-NLS-1$</span>
 			
-<span class="fc" id="L566">			equalsCall.arguments().add(toStringCall);</span>
-<span class="fc" id="L567">			equalsCall.arguments().add(ASTNode.copySubtree(ast, yExpression));</span>
+<span class="fc" id="L718">			equalsCall.arguments().add(toStringCall);</span>
+<span class="fc" id="L719">			equalsCall.arguments().add(ASTNode.copySubtree(ast, yExpression));</span>
 			
-<span class="fc" id="L569">			rewrite.replace(matchedNode, equalsCall, group);</span>
-<span class="fc" id="L570">		}</span>
+<span class="fc" id="L721">			rewrite.replace(matchedNode, equalsCall, group);</span>
+<span class="fc" id="L722">		}</span>
 	}
 	
 	/**
@@ -580,46 +732,46 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
 		private final Match match;
 		private final String description;
 		
-<span class="fc" id="L583">		public RequireNonNullElseOperation(Match match, String description) {</span>
-<span class="fc" id="L584">			this.match = match;</span>
-<span class="fc" id="L585">			this.description = description;</span>
-<span class="fc" id="L586">		}</span>
+<span class="fc" id="L735">		public RequireNonNullElseOperation(Match match, String description) {</span>
+<span class="fc" id="L736">			this.match = match;</span>
+<span class="fc" id="L737">			this.description = description;</span>
+<span class="fc" id="L738">		}</span>
 		
 		@Override
 		public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
-<span class="fc" id="L590">			ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L591">			AST ast = cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L592">			TextEditGroup group = createTextEditGroup(description, cuRewrite);</span>
+<span class="fc" id="L742">			ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L743">			AST ast = cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L744">			TextEditGroup group = createTextEditGroup(description, cuRewrite);</span>
 			
-<span class="fc" id="L594">			ASTNode matchedNode = match.getMatchedNode();</span>
-<span class="pc bpc" id="L595" title="1 of 2 branches missed.">			if (!(matchedNode instanceof ConditionalExpression)) {</span>
-<span class="nc" id="L596">				return;</span>
+<span class="fc" id="L746">			ASTNode matchedNode = match.getMatchedNode();</span>
+<span class="pc bpc" id="L747" title="1 of 2 branches missed.">			if (!(matchedNode instanceof ConditionalExpression)) {</span>
+<span class="nc" id="L748">				return;</span>
 			}
 			
-<span class="fc" id="L599">			ASTNode xNode = match.getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L600">			ASTNode defaultNode = match.getBinding(&quot;$default&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L751">			ASTNode xNode = match.getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L752">			ASTNode defaultNode = match.getBinding(&quot;$default&quot;); //$NON-NLS-1$</span>
 			
-<span class="pc bpc" id="L602" title="2 of 4 branches missed.">			if (xNode == null || !(xNode instanceof Expression) ||</span>
-<span class="pc bpc" id="L603" title="2 of 4 branches missed.">			    defaultNode == null || !(defaultNode instanceof Expression)) {</span>
-<span class="nc" id="L604">				return;</span>
+<span class="pc bpc" id="L754" title="2 of 4 branches missed.">			if (xNode == null || !(xNode instanceof Expression) ||</span>
+<span class="pc bpc" id="L755" title="2 of 4 branches missed.">			    defaultNode == null || !(defaultNode instanceof Expression)) {</span>
+<span class="nc" id="L756">				return;</span>
 			}
 			
-<span class="fc" id="L607">			Expression xExpression = (Expression) xNode;</span>
-<span class="fc" id="L608">			Expression defaultExpression = (Expression) defaultNode;</span>
+<span class="fc" id="L759">			Expression xExpression = (Expression) xNode;</span>
+<span class="fc" id="L760">			Expression defaultExpression = (Expression) defaultNode;</span>
 			
 			// Add import for java.util.Objects
-<span class="fc" id="L611">			ImportRewrite importRewrite = cuRewrite.getImportRewrite();</span>
-<span class="fc" id="L612">			String objectsType = importRewrite.addImport(&quot;java.util.Objects&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L763">			ImportRewrite importRewrite = cuRewrite.getImportRewrite();</span>
+<span class="fc" id="L764">			String objectsType = importRewrite.addImport(&quot;java.util.Objects&quot;); //$NON-NLS-1$</span>
 			
 			// Create: Objects.requireNonNullElse(x, default)
-<span class="fc" id="L615">			MethodInvocation requireNonNullElseCall = ast.newMethodInvocation();</span>
-<span class="fc" id="L616">			requireNonNullElseCall.setExpression(ast.newName(objectsType));</span>
-<span class="fc" id="L617">			requireNonNullElseCall.setName(ast.newSimpleName(&quot;requireNonNullElse&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L618">			requireNonNullElseCall.arguments().add(ASTNode.copySubtree(ast, xExpression));</span>
-<span class="fc" id="L619">			requireNonNullElseCall.arguments().add(ASTNode.copySubtree(ast, defaultExpression));</span>
+<span class="fc" id="L767">			MethodInvocation requireNonNullElseCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L768">			requireNonNullElseCall.setExpression(ast.newName(objectsType));</span>
+<span class="fc" id="L769">			requireNonNullElseCall.setName(ast.newSimpleName(&quot;requireNonNullElse&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L770">			requireNonNullElseCall.arguments().add(ASTNode.copySubtree(ast, xExpression));</span>
+<span class="fc" id="L771">			requireNonNullElseCall.arguments().add(ASTNode.copySubtree(ast, defaultExpression));</span>
 			
-<span class="fc" id="L621">			rewrite.replace(matchedNode, requireNonNullElseCall, group);</span>
-<span class="fc" id="L622">		}</span>
+<span class="fc" id="L773">			rewrite.replace(matchedNode, requireNonNullElseCall, group);</span>
+<span class="fc" id="L774">		}</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

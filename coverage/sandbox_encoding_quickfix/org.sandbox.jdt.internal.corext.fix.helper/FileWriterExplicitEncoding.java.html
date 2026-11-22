@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.OutputStreamWriter;
@@ -24,78 +25,116 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 
-import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 
 /**
- * Change
- *
- * Writer fw=new FileWriter(&quot;file.txt&quot;) Writer fw=new OutputStreamWriter(new
- * FileOutputStream(&quot;file.txt&quot;),defaultCharset);
- *
- * Charset.defaultCharset() is available since Java 1.5
- *
+ * Adds a typed Charset to Java 11 FileWriter constructors. Older source levels
+ * use an OutputStreamWriter only when the existing target type accepts it.
  */
 <span class="fc" id="L46">public class FileWriterExplicitEncoding extends AbstractExplicitEncoding&lt;ClassInstanceCreation&gt; {</span>
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed, ChangeBehavior cb) {
-<span class="fc" id="L50">		ReferenceHolder&lt;ASTNode, Object&gt; datah= ReferenceHolder.createForNodes();</span>
-<span class="fc" id="L51">		HelperVisitorFactory.forClassInstanceCreation(FileWriter.class)</span>
-<span class="fc" id="L52">			.in(compilationUnit)</span>
-<span class="fc" id="L53">			.excluding(nodesprocessed)</span>
-<span class="fc" id="L54">			.processEach(datah, (visited, holder) -&gt; processFoundNode(fixcore, operations, cb, visited, holder));</span>
-<span class="fc" id="L55">	}</span>
+<span class="fc" id="L50">		var element= compilationUnit.getJavaElement();</span>
+<span class="pc bpc" id="L51" title="1 of 4 branches missed.">		boolean hasCharsetConstructor= element != null &amp;&amp; JavaModelUtil.is11OrHigher(element.getJavaProject());</span>
+<span class="fc" id="L52">		ReferenceHolder&lt;ASTNode, Object&gt; datah= ReferenceHolder.createForNodes();</span>
+<span class="fc" id="L53">		HelperVisitorFactory.forClassInstanceCreation(FileWriter.class)</span>
+<span class="fc" id="L54">			.in(compilationUnit)</span>
+<span class="fc" id="L55">			.excluding(nodesprocessed)</span>
+<span class="fc" id="L56">			.processEach(datah, (visited, holder) -&gt; processFoundNode(fixcore, operations, cb, visited, holder, hasCharsetConstructor));</span>
+<span class="fc" id="L57">	}</span>
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore, Set&lt;CompilationUnitRewriteOperation&gt; operations,
 			ChangeBehavior cb, ClassInstanceCreation visited,
-			ReferenceHolder&lt;ASTNode, Object&gt; holder) {
-<span class="fc" id="L60">		operations.add(fixcore.rewrite(visited, cb, holder));</span>
-<span class="fc" id="L61">		return false;</span>
+			ReferenceHolder&lt;ASTNode, Object&gt; holder, boolean hasCharsetConstructor) {
+<span class="fc" id="L62">		var constructor= visited.resolveConstructorBinding();</span>
+<span class="pc bpc" id="L63" title="3 of 6 branches missed.">		if (constructor == null || constructor.isRecovered() || visited.getAnonymousClassDeclaration() != null</span>
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">				|| !FileWriter.class.getName().equals(constructor.getDeclaringClass().getQualifiedName())) {</span>
+<span class="nc" id="L65">			return false;</span>
+		}
+<span class="fc" id="L67">		ITypeBinding[] parameters= constructor.getParameterTypes();</span>
+<span class="pc bpc" id="L68" title="1 of 4 branches missed.">		if (parameters.length &lt; 1 || parameters.length &gt; 2</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">				|| (!File.class.getName().equals(parameters[0].getQualifiedName())</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">						&amp;&amp; !String.class.getName().equals(parameters[0].getQualifiedName()))</span>
+<span class="fc bfc" id="L71" title="All 4 branches covered.">				|| (parameters.length == 2 &amp;&amp; !&quot;boolean&quot;.equals(parameters[1].getQualifiedName()))) { //$NON-NLS-1$</span>
+<span class="fc" id="L72">			return false;</span>
+		}
+<span class="fc bfc" id="L74" title="All 4 branches covered.">		if (!hasCharsetConstructor &amp;&amp; !acceptsOutputStreamWriter(visited)) {</span>
+<span class="fc" id="L75">			return false;</span>
+		}
+<span class="fc" id="L77">		holder.put(visited, Boolean.valueOf(hasCharsetConstructor));</span>
+<span class="fc" id="L78">		operations.add(fixcore.rewrite(visited, cb, holder));</span>
+<span class="fc" id="L79">		return false;</span>
+	}
+
+	private static boolean acceptsOutputStreamWriter(ClassInstanceCreation creation) {
+<span class="fc" id="L83">		ITypeBinding writer= creation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">		ITypeBinding replacement= writer == null ? null : writer.getSuperclass();</span>
+<span class="fc" id="L85">		Expression expression= creation;</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">		while (expression.getParent() instanceof ParenthesizedExpression parentheses) {</span>
+<span class="nc" id="L87">			expression= parentheses;</span>
+		}
+		ITypeBinding required;
+<span class="pc bpc" id="L90" title="1 of 4 branches missed.">		if (expression.getParent() instanceof VariableDeclarationFragment fragment &amp;&amp; fragment.getInitializer() == expression) {</span>
+<span class="fc" id="L91">			var binding= fragment.resolveBinding();</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">			required= binding == null ? null : binding.getType();</span>
+<span class="fc" id="L93">		} else {</span>
+<span class="fc" id="L94">			required= ASTNodes.getTargetType(expression);</span>
+		}
+<span class="pc bpc" id="L96" title="3 of 6 branches missed.">		return replacement != null &amp;&amp; required != null &amp;&amp; !required.isRecovered()</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">				&amp;&amp; replacement.isAssignmentCompatible(required);</span>
 	}
 
 	@Override
 	public void rewrite(UseExplicitEncodingFixCore upp, final ClassInstanceCreation visited, final CompilationUnitRewrite cuRewrite,
 			TextEditGroup group, ChangeBehavior cb, ReferenceHolder&lt;ASTNode, Object&gt; data) {
-<span class="fc" id="L67">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L68">		AST ast= cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L69">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, visited, (String) data.get(visited),getCharsetConstants(cuRewrite));</span>
-		/**
-		 * new FileInputStream(&lt;filename&gt;)
-		 */
-<span class="fc" id="L73">		ClassInstanceCreation fosclassInstance= ast.newClassInstanceCreation();</span>
-<span class="fc" id="L74">		fosclassInstance.setType(ast.newSimpleType(addImport(FileOutputStream.class.getCanonicalName(), cuRewrite, ast)));</span>
-<span class="fc" id="L75">		fosclassInstance.arguments().add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression((ASTNode) visited.arguments().get(0))));</span>
-		/**
-		 * new InputStreamReader(new FileInputStream(&lt;filename&gt;))
-		 */
-<span class="fc" id="L79">		ClassInstanceCreation oswclassInstance= ast.newClassInstanceCreation();</span>
-<span class="fc" id="L80">		oswclassInstance.setType(ast.newSimpleType(addImport(OutputStreamWriter.class.getCanonicalName(), cuRewrite, ast)));</span>
-<span class="fc" id="L81">		oswclassInstance.arguments().add(fosclassInstance);</span>
-<span class="fc" id="L82">		oswclassInstance.arguments().add(callToCharsetDefaultCharset);</span>
+<span class="fc" id="L103">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L104">		AST ast= cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L105">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, visited, null, getCharsetConstants(cuRewrite));</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">		if (Boolean.TRUE.equals(data.get(visited))) {</span>
+			// FileWriter(File/String, Charset[, boolean append]) is available since Java 11.
+<span class="fc" id="L108">			rewrite.getListRewrite(visited, ClassInstanceCreation.ARGUMENTS_PROPERTY)</span>
+<span class="fc" id="L109">					.insertAt(callToCharsetDefaultCharset, 1, group);</span>
+<span class="fc" id="L110">			return;</span>
+		}
+		// The legacy wrapper must preserve the optional append argument too.
+<span class="fc" id="L113">		ClassInstanceCreation fosclassInstance= ast.newClassInstanceCreation();</span>
+<span class="fc" id="L114">		fosclassInstance.setType(ast.newSimpleType(addImport(FileOutputStream.class.getCanonicalName(), cuRewrite, ast)));</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">		for (Object argument : visited.arguments()) {</span>
+<span class="fc" id="L116">			fosclassInstance.arguments().add(ASTNodes.createMoveTarget(rewrite, (ASTNode) argument));</span>
+		}
+<span class="fc" id="L118">		ClassInstanceCreation oswclassInstance= ast.newClassInstanceCreation();</span>
+<span class="fc" id="L119">		oswclassInstance.setType(ast.newSimpleType(addImport(OutputStreamWriter.class.getCanonicalName(), cuRewrite, ast)));</span>
+<span class="fc" id="L120">		oswclassInstance.arguments().add(fosclassInstance);</span>
+<span class="fc" id="L121">		oswclassInstance.arguments().add(callToCharsetDefaultCharset);</span>
 
-<span class="fc" id="L84">		cuRewrite.getImportRemover().registerRemovedNode(visited.getType());</span>
-<span class="fc" id="L85">		ASTNodes.replaceButKeepComment(rewrite, visited, oswclassInstance, group);</span>
-<span class="fc" id="L86">	}</span>
+<span class="fc" id="L123">		cuRewrite.getImportRemover().registerRemovedNode(visited.getType());</span>
+<span class="fc" id="L124">		ASTNodes.replaceButKeepComment(rewrite, visited, oswclassInstance, group);</span>
+<span class="fc" id="L125">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring, ChangeBehavior cb) {
-<span class="nc bnc" id="L90" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L91">			return &quot;Writer w=new OutputStreamWriter(new FileOutputStream(outputfile),&quot; + cb.computeCharsetforPreview() + &quot;);\n&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L130">			return &quot;Writer w=new OutputStreamWriter(new FileOutputStream(outputfile),&quot; + cb.computeCharsetforPreview() + &quot;);\n&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 		}
-<span class="nc" id="L93">		return &quot;Writer w=new FileWriter(outputfile);\n&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L132">		return &quot;Writer w=new FileWriter(outputfile);\n&quot;; //$NON-NLS-1$</span>
 	}
 
 	@Override
 	public String toString() {
-<span class="fc" id="L98">		return &quot;new FileWriter(outputfile)&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L137">		return &quot;new FileWriter(outputfile)&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

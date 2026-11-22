@@ -78,7 +78,7 @@ public final class RuleImportCleanupSupport {
 <span class="pc bpc" id="L78" title="1 of 2 branches missed.">					&amp;&amp; TestNameRefactorer.assess(field).eligible();</span>
 		}
 <span class="fc bfc" id="L80" title="All 2 branches covered.">		return fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE)</span>
-<span class="fc bfc" id="L81" title="All 2 branches covered.">				&amp;&amp; RuleExternalResourceJUnitPlugin.isEligibleExternalResourceType(binding);</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">				&amp;&amp; RuleExternalResourceJUnitPlugin.isEligibleExternalResourceField(field);</span>
 	}
 
 	private static boolean hasRuleAnnotation(FieldDeclaration field) {

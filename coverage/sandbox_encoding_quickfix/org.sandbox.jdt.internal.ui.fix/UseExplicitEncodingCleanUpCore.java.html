@@ -204,9 +204,9 @@ public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp implements I
 	@Override
 	public String[] getStepDescriptions() {
 <span class="fc" id="L206">		List&lt;String&gt; result= new ArrayList&lt;&gt;();</span>
-<span class="pc bpc" id="L207" title="1 of 2 branches missed.">		if (isEnabled(EXPLICITENCODING_CLEANUP)) {</span>
-<span class="nc" id="L208">			String with=computeRefactorDeepth().toString();</span>
-<span class="nc" id="L209">			result.add(Messages.format(ExplicitEncodingCleanUp_description,new Object[] {String.join(&quot;,&quot;, computeFixSet().stream().map(UseExplicitEncodingFixCore::toString).collect(Collectors.toList())),with})); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">		if (isEnabled(EXPLICITENCODING_CLEANUP)) {</span>
+<span class="fc" id="L208">			String with=computeRefactorDeepth().toString();</span>
+<span class="fc" id="L209">			result.add(Messages.format(ExplicitEncodingCleanUp_description,new Object[] {String.join(&quot;,&quot;, computeFixSet().stream().map(UseExplicitEncodingFixCore::toString).collect(Collectors.toList())),with})); //$NON-NLS-1$</span>
 		}
 <span class="fc" id="L211">		return result.toArray(new String[0]);</span>
 	}

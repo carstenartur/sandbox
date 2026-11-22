@@ -179,8 +179,8 @@ final class VintageDeploymentPlan {
 				// The standalone Maven model never reads the Eclipse compiler's bin directory.
 				// Only the class files corresponding to participating source files are expected there.
 <span class="pc bpc" id="L181" title="1 of 4 branches missed.">				if (name.startsWith(&quot;bin/&quot;) &amp;&amp; name.endsWith(&quot;.class&quot;)</span>
-<span class="fc bfc" id="L182" title="All 2 branches covered.">						&amp;&amp; sources.containsKey(root.resolve(&quot;src/test/java/&quot; + name.substring(4, name.length() - 6) + &quot;.java&quot;))) {</span>
-<span class="fc" id="L183">					continue;</span>
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">						&amp;&amp; sources.containsKey(root.resolve(&quot;src/test/java/&quot; + name.substring(4, name.length() - 6) + &quot;.java&quot;))) {</span>
+<span class="nc" id="L183">					continue;</span>
 				}
 <span class="fc bfc" id="L185" title="All 2 branches covered.">				if (Set.of(&quot;pom.xml&quot;, &quot;.project&quot;, &quot;.classpath&quot;, &quot;.settings/org.eclipse.jdt.core.prefs&quot;, &quot;.settings/org.eclipse.core.resources.prefs&quot;).contains(name)) {</span>
 <span class="fc" id="L186">					continue;</span>
@@ -259,8 +259,8 @@ final class VintageDeploymentPlan {
 <span class="fc bfc" id="L259" title="All 2 branches covered.">		for (Object element : unit.imports()) {</span>
 <span class="fc" id="L260">			ImportDeclaration decl= (ImportDeclaration) element;</span>
 <span class="fc" id="L261">			String name= decl.getName().getFullyQualifiedName();</span>
-<span class="pc bpc" id="L262" title="4 of 8 branches missed.">			if (decl.isStatic() || decl.isOnDemand() || !IMPORTS.contains(name) || !imports.add(name)) {</span>
-<span class="nc" id="L263">				return false;</span>
+<span class="pc bpc" id="L262" title="3 of 8 branches missed.">			if (decl.isStatic() || decl.isOnDemand() || !IMPORTS.contains(name) || !imports.add(name)) {</span>
+<span class="fc" id="L263">				return false;</span>
 			}
 		}
 <span class="fc" id="L266">		String prefix= unit.getPackage().getName().getFullyQualifiedName() + &quot;.&quot;;</span>
