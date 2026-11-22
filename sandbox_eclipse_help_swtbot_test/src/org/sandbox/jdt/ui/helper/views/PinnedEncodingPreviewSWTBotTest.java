@@ -12,6 +12,8 @@ package org.sandbox.jdt.ui.helper.views;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -55,16 +57,16 @@ public class PinnedEncodingPreviewSWTBotTest {
                 Path path = root.resolve(control.getKey());
                 try (var tree = TreeWalk.forPath(git.getRepository(), project.getName() + "/" + control.getKey(), baseline.getTree())) {
                     org.junit.jupiter.api.Assertions.assertNotNull(tree, control.getKey());
-                    org.junit.jupiter.api.Assertions.assertArrayEquals(git.getRepository().open(tree.getObjectId(0)).getBytes(),
+                    org.junit.jupiter.api.Assertions.assertArrayEquals(git.getRepository().open(tree.getObjectId(0)).getBytes(Charset.defaultCharset()),
                             Files.readAllBytes(path), control.getKey());
-                    assertTrue(Files.readString(path).contains(control.getValue()), control.getKey());
+                    assertTrue(Files.readString(path, StandardCharsets.UTF_8).contains(control.getValue()), control.getKey());
                 }
             }
             Path reader = root.resolve(PinnedEncodingInventory.READER_SOURCE);
             try (var tree = TreeWalk.forPath(git.getRepository(), project.getName() + "/" + PinnedEncodingInventory.READER_SOURCE,
                     baseline.getTree())) {
                 org.junit.jupiter.api.Assertions.assertNotNull(tree, PinnedEncodingInventory.READER_SOURCE);
-                byte[] original = git.getRepository().open(tree.getObjectId(0)).getBytes();
+                byte[] original = git.getRepository().open(tree.getObjectId(0)).getBytes(Charset.defaultCharset());
                 org.junit.jupiter.api.Assertions.assertArrayEquals(original, Files.readAllBytes(reader),
                         "The FileReader check must leave its pinned source unchanged");
                 PinnedEncodingInventory.assertReader(evidence, reader, original, preferUtf8);
