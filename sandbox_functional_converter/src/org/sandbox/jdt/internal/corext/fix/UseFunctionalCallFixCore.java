@@ -168,7 +168,18 @@ public enum UseFunctionalCallFixCore {
 			if (Boolean.TRUE.equals(nodeWithComment.getProperty(ASTNodes.UNTOUCH_COMMENT))) {
 				return new SourceRange(nodeWithComment.getStartPosition(), nodeWithComment.getLength());
 			}
-			return super.computeSourceRange(nodeWithComment);
+			SourceRange range= super.computeSourceRange(nodeWithComment);
+			// A copied child must fit inside an exact replacement range. Keep comments
+			// within that range, including those between a loop header and its body.
+			for (ASTNode parent= nodeWithComment.getParent(); parent != null; parent= parent.getParent()) {
+				if (Boolean.TRUE.equals(parent.getProperty(ASTNodes.UNTOUCH_COMMENT))) {
+					int start= Math.max(range.getStartPosition(), parent.getStartPosition());
+					int end= Math.min(range.getStartPosition() + range.getLength(),
+							parent.getStartPosition() + parent.getLength());
+					range= new SourceRange(start, end - start);
+				}
+			}
+			return range;
 		}
 	};
 }
