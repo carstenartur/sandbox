@@ -65,9 +65,13 @@
       previews leave the caller's <code>s.getBytes(encoding)</code> expression intact.</p>
    <p><img src="../images/encoding-keep-pinned.png" alt="Keep behavior changes the fallback to Charset.defaultCharset() in JavaCompareUtilities" /></p>
    <p><img src="../images/encoding-utf8-pinned.png" alt="Prefer UTF-8 changes the same fallback to StandardCharsets.UTF_8" /></p>
-   <p>The same pinned inventory checks three unchanged controls. The formatter reads old profile
-      files with a concrete <code>FileReader</code>, <code>History</code> already specifies UTF-8,
-      and <code>AbstractSpellDictionary</code> supplies an indirect charset constant.</p>
+   <p>The same pinned inventory checks <code>FormatterProfileStore</code> as a positive case.
+      Both policies keep its concrete <code>FileReader</code> type and add the Java 11+
+      <code>Charset</code> constructor argument: Keep behavior selects
+      <code>Charset.defaultCharset()</code>, and Prefer UTF-8 selects
+      <code>StandardCharsets.UTF_8</code>. Its existing <code>IOException</code> handler
+      covers that constructor. Two controls remain unchanged: <code>History</code> already
+      specifies UTF-8, and <code>AbstractSpellDictionary</code> supplies an indirect charset constant.</p>
 
    <h2>Aggregate UTF-8</h2>
    <p>This policy also adopts UTF-8 for supported implicit-default calls, but introduces or reuses a class-level

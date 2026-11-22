@@ -187,7 +187,7 @@ The cleanup handles a wide range of encoding-sensitive classes:
 
 ### I/O Streams
 - `InputStreamReader` / `OutputStreamWriter`
-- `FileReader` (converted to stream + charset)
+- `FileReader` (typed Charset constructors on Java 11+ when the existing exception contract permits; compatible stream wrappers otherwise)
 - `FileWriter` (typed Charset constructors on Java 11+; compatible stream wrappers on older source levels)
 - `PrintWriter`
 - `Scanner`
@@ -206,7 +206,35 @@ The cleanup handles a wide range of encoding-sensitive classes:
 
 ### Example: FileReader Replacement
 
-FileReader uses platform default encoding. The cleanup converts it to an explicit charset.
+On Java 11+, a supported JDK `FileReader(File)` or `FileReader(String)` call
+retains its concrete type and receives a typed `Charset` argument when an
+existing catch, method throws clause or lambda contract covers `IOException`.
+The Charset constructor declares `IOException`, which is broader than the
+original constructor's `FileNotFoundException`; this rewrite does not widen the
+surrounding exception contract.
+
+For **Prefer UTF-8**, an existing broad contract permits this change:
+
+```java
+// Before
+FileReader open(File file) throws IOException {
+    return new FileReader(file);
+}
+
+// After (Java 11+)
+FileReader open(File file) throws IOException {
+    return new FileReader(file, StandardCharsets.UTF_8);
+}
+```
+
+**Keep Behavior** uses `Charset.defaultCharset()` instead. If the typed
+constructor is unavailable (including Java 7–10 source levels) or its exception
+is not covered, the cleanup offers the stream wrapper only when the existing
+target type accepts `InputStreamReader`. A concrete or inferred `FileReader`
+target stays unchanged in those cases. Existing explicit-charset constructors
+and anonymous subclasses are left unchanged.
+
+For a compatible `Reader` target, the wrapper fallback is:
 
 **Before:**
 ```java
