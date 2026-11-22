@@ -4,13 +4,13 @@
 
 ## Overview
 
-The **Encoding Cleanup** plugin automatically replaces platform-dependent or implicit encoding usage with explicit, safe alternatives using `StandardCharsets.UTF_8` or equivalent constants. This cleanup improves code portability and prevents encoding-related bugs across different platforms and locales.
+The **Encoding Cleanup** plugin makes supported encoding choices explicit. Depending on the selected strategy, it preserves the runtime platform default or replaces that default with UTF-8. Recognized explicitly selected charsets retain their encoding.
 
 It supports multiple strategies and is Java-version-aware, adapting transformations based on the target Java version (7, 10, 11, or 21+).
 
 ## Key Features
 
-- 🔄 **Automatic Encoding Conversion** - Replaces implicit platform encodings with explicit UTF-8
+- 🔄 **Automatic Encoding Conversion** - Makes supported encoding uses explicit according to the selected policy
 - 🎯 **Multiple Strategies** - Prefer UTF-8, Keep Behavior, or Aggregate UTF-8
 - 📦 **Java Version Aware** - Adapts transformations based on Java 7, 10, 11, or 21+
 - 🧪 **Comprehensive Test Coverage** - Tested against extensive test suites
@@ -60,32 +60,56 @@ The cleanup logic is tested and verified by the following test files:
 1. Open **Source** → **Clean Up...**
 2. Navigate to the **Encoding** category
 3. Select one of the strategies:
-   - **Prefer UTF-8** - Replace all encodings with UTF-8
+   - **Prefer UTF-8** - Use UTF-8 for supported implicit platform-default calls; preserve explicitly selected charsets
    - **Keep Behavior** - Make the runtime default explicit and preserve explicitly selected charsets
-   - **Aggregate UTF-8** - Create a shared constant for UTF-8
+   - **Aggregate UTF-8** - Apply the UTF-8 default policy and reuse or create matching charset constants where safe
 
 ### Via JDT Batch Tooling
 
-Use these properties for command-line or automated cleanup:
-- `encoding.strategy = PREFER_UTF8 | KEEP | AGGREGATE`
-- `aggregate.charset.name = UTF_8`
-- `min.java.version = 7 | 10 | 11 | 21`
+Use the shipped cleanup option IDs in a properties profile. Enable the master
+option and select exactly one of the three strategy options, for example:
+
+```properties
+cleanup.explicit_encoding=true
+cleanup.explicit_encoding_keep_behavior=true
+cleanup.explicit_encoding_insert_utf8=false
+cleanup.explicit_encoding_aggregate_to_utf8=false
+```
+
+For **Prefer UTF-8**, enable `cleanup.explicit_encoding_insert_utf8` instead of
+`cleanup.explicit_encoding_keep_behavior`; for **Aggregate UTF-8**, enable
+`cleanup.explicit_encoding_aggregate_to_utf8` instead. Keep the other strategy
+options `false`. The Eclipse project's source level determines which API
+overloads are available; there is no `min.java.version` cleanup option.
+
+The shipped [conservative encoding profile](../.github/actions/cleanup-review/profiles/conservative-encoding.properties),
+[explicit encoding review profile](../.github/cleanup-profiles/review-explicit-encoding.properties)
+and [aggressive profile](../.github/cleanup-profiles/aggressive.properties) all
+select **Keep Behavior** for encoding. A profile's name does not imply a UTF-8
+behavior change.
 
 ## Cleanup Strategies
 
 The cleanup supports three different strategies to handle encoding transformations:
 
-| Strategy | Description | Platform Default Handling | Replaces `"UTF-8"` | Aggregates Constant |
-|----------|-------------|---------------------------|--------------------|---------------------|
-| **Prefer UTF-8** | Replace all implicit/platform encodings with UTF-8 | Yes | Yes | No |
-| **Keep Behavior** | Preserve explicit charsets; make implicit defaults explicit | Uses `Charset.defaultCharset()` | Yes | No |
-| **Aggregate UTF-8** | Create class-level `UTF_8` constant, reference it everywhere | Yes | Yes | Yes (`UTF_8`) |
+| Strategy | Supported implicit platform-default calls | Recognized explicit charset names | Constant aggregation |
+|----------|--------------------------------------------|-----------------------------------|----------------------|
+| **Prefer UTF-8** | Use `StandardCharsets.UTF_8` | Use the matching standard charset | No |
+| **Keep Behavior** | Use `Charset.defaultCharset()` | Use the matching standard charset | No |
+| **Aggregate UTF-8** | Use a UTF-8 constant | Retain the matching charset | Reuse or create an owner-local field where safe; otherwise use the standard constant directly |
+
+APIs with a specified UTF-8 default, such as the supported no-charset `Files`
+reader/writer methods, keep that default in all three modes. They do not become
+platform-default operations under **Keep Behavior**. These policies apply to
+eligible API uses, not arbitrary string literals or dynamic charset names.
 
 ### Strategy: Prefer UTF-8
 
-Replaces all literal `"UTF-8"` occurrences and platform-default encodings with `StandardCharsets.UTF_8`.
+Uses `StandardCharsets.UTF_8` for supported implicit platform-default calls and
+replaces recognized explicit names with their matching standard charset. An
+explicit `"ISO-8859-1"`, for example, stays ISO-8859-1 rather than becoming UTF-8.
 
-**Use Case**: Standardize on UTF-8 across entire codebase
+**Use Case**: Choose UTF-8 where supported calls currently rely on the platform default
 
 **Example**:
 ```java
@@ -119,7 +143,11 @@ new InputStreamReader(in, Charset.defaultCharset());
 
 ### Strategy: Aggregate UTF-8
 
-Replaces all `"UTF-8"` usage and `StandardCharsets.UTF_8` with a class-level constant.
+Applies the same charset policy as **Prefer UTF-8**, then reuses or creates
+owner-local constants for eligible rewrites. Recognized non-UTF-8 selections
+keep their matching charset. Field names are derived from the charset with
+collision handling; a direct standard constant is used when a field reference
+or its initialization would be unsafe.
 
 **Use Case**: Reduce repetition, centralize encoding constant
 
@@ -136,9 +164,9 @@ new InputStreamReader(in, UTF_8);
 new InputStreamReader(new FileInputStream(file), UTF_8);
 ```
 
-Also supports dynamic replacement of:
-- `Charset.forName("UTF-8")`
-- `"UTF-8"` literals passed to methods like `setEncoding(...)`
+Recognized literals in supported `Charset.forName(...)` and
+`InputSource.setEncoding(...)` calls are also eligible. Dynamic names and
+unrelated methods with the same spelling are not covered by this policy.
 
 ## Java Version Support
 
@@ -248,7 +276,9 @@ private static final Charset UTF_8 = StandardCharsets.UTF_8;
 Reader r = new InputStreamReader(in, UTF_8);
 ```
 
-All uses of `StandardCharsets.UTF_8` or `"UTF-8"` will be redirected to `UTF_8`.
+Eligible UTF-8 rewrites refer to a matching owner-local constant when that field
+can be used safely. Its name may differ from `UTF_8` to avoid collisions;
+otherwise the cleanup uses `StandardCharsets.UTF_8` directly.
 
 ## Charset Literal Replacements
 
