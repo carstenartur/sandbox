@@ -141,8 +141,11 @@ jobs:
             "${check[@]}" --report "$dir/cleanup-check-report.json" --patch "$dir/cleanup-check.patch" \
               "$project/ui/org/eclipse/jdt/internal/ui/compare/JavaCompareUtilities.java" || rc=$?
             test "$rc" -eq 2
+            rc=0
+            "${check[@]}" --report "$dir/reader.json" --patch "$dir/reader.patch" \
+              "$project/ui/org/eclipse/jdt/internal/ui/preferences/formatter/FormatterProfileStore.java" || rc=$?
+            test "$rc" -eq 2
             "${check[@]}" --report "$dir/controls.json" --patch "$dir/controls.patch" \
-              "$project/ui/org/eclipse/jdt/internal/ui/preferences/formatter/FormatterProfileStore.java" \
               "$project/core extension/org/eclipse/jdt/internal/corext/util/History.java" \
               "$project/ui/org/eclipse/jdt/internal/ui/text/spelling/engine/AbstractSpellDictionary.java"
           done

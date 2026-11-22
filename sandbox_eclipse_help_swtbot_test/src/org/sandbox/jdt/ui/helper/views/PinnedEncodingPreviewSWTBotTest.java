@@ -10,7 +10,6 @@
  *******************************************************************************/
 package org.sandbox.jdt.ui.helper.views;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
@@ -23,8 +22,6 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
 
-import com.google.gson.JsonParser;
-
 import org.junit.jupiter.api.Test;
 
 /** Compare the two explicit encoding policies on the same genuine fallback at R4_40. */
@@ -32,7 +29,6 @@ public class PinnedEncodingPreviewSWTBotTest {
     private static final String SOURCE = "ui/org/eclipse/jdt/internal/ui/compare/JavaCompareUtilities.java";
     private static final String BEFORE = "return s.getBytes();";
     private static final Map<String, String> CONTROLS = Map.of(
-            "ui/org/eclipse/jdt/internal/ui/preferences/formatter/FormatterProfileStore.java", "FileReader reader= new FileReader(file)",
             "core extension/org/eclipse/jdt/internal/corext/util/History.java", "StandardCharsets.UTF_8",
             "ui/org/eclipse/jdt/internal/ui/text/spelling/engine/AbstractSpellDictionary.java", "word.getBytes(UTF_8)");
 
@@ -49,12 +45,7 @@ public class PinnedEncodingPreviewSWTBotTest {
     private static void compareFallback(boolean preferUtf8) throws Exception {
         String name = preferUtf8 ? "encoding-utf8" : "encoding-keep";
         Path evidence = Path.of(System.getenv("SANDBOX_STATUS_EVIDENCE"), name);
-        var controls = JsonParser.parseString(Files.readString(evidence.resolve("controls.json"))).getAsJsonObject();
-        assertEquals(3, controls.get("filesProcessed").getAsInt());
-        assertEquals(0, controls.get("filesChanged").getAsInt());
-        assertEquals(0, controls.get("errorCount").getAsInt());
-        assertTrue(controls.getAsJsonArray("changedFiles").isEmpty());
-        assertEquals(0, Files.size(evidence.resolve("controls.patch")));
+        PinnedEncodingInventory.assertControls(evidence);
         var project = ResourcesPlugin.getWorkspace().getRoot().getProject("org.eclipse.jdt.ui");
         Path root = project.getLocation().toFile().toPath().toRealPath();
         Path checkout = java.util.Objects.requireNonNull(root.getParent(), "Missing retained checkout");
@@ -68,6 +59,15 @@ public class PinnedEncodingPreviewSWTBotTest {
                             Files.readAllBytes(path), control.getKey());
                     assertTrue(Files.readString(path).contains(control.getValue()), control.getKey());
                 }
+            }
+            Path reader = root.resolve(PinnedEncodingInventory.READER_SOURCE);
+            try (var tree = TreeWalk.forPath(git.getRepository(), project.getName() + "/" + PinnedEncodingInventory.READER_SOURCE,
+                    baseline.getTree())) {
+                org.junit.jupiter.api.Assertions.assertNotNull(tree, PinnedEncodingInventory.READER_SOURCE);
+                byte[] original = git.getRepository().open(tree.getObjectId(0)).getBytes();
+                org.junit.jupiter.api.Assertions.assertArrayEquals(original, Files.readAllBytes(reader),
+                        "The FileReader check must leave its pinned source unchanged");
+                PinnedEncodingInventory.assertReader(evidence, reader, original, preferUtf8);
             }
         }
         String charset = preferUtf8 ? "StandardCharsets.UTF_8" : "Charset.defaultCharset()";
