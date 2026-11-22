@@ -244,6 +244,13 @@ automatic BigInteger interpretation. Unsupported regions stay unchanged.</td></t
 summaries, heap/alias analysis and arbitrary algorithm rewrites remain unsupported. A region must satisfy the extractor's explicit local
 binding, effect and value-semantics checks. External user-defined field constants are rejected because their defining source is not part of the local proof.</td></tr>
 </tbody></table>
+<p id="selected-source-dependencies">For ordinary Mathematics cleanup with tail conversion
+and combined Functional Converter disabled, a recorded source dependency on another
+selected Java file defers the dependent file's mathematical change. The diagnostic is
+<code>MATHEMATICS_SELECTED_SOURCE_DEPENDENCY</code>. This also applies when the selected
+helper has no mathematical replacement of its own. Other selected files with independent
+candidates remain eligible. Finish edits to the helper files, then run Mathematics
+on the caller alone.</p>
 <p>BigInteger helper expansion uses the original helper body as input to
 Regelsuche. For example, a helper returning
 <code>value.modPow(BigInteger.TWO, modulus)</code> can expose a modular square
