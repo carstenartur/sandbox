@@ -89,7 +89,7 @@ public class InlineCodeSequenceFinder {
 				}
 				
 				// Search for matching sequences in this method
-				searchInMethod(node, targetStatements, matches);
+				searchInMethod(node, targetMethod, targetStatements, matches);
 				return true;
 			})
 			.build(cu);
@@ -100,7 +100,8 @@ public class InlineCodeSequenceFinder {
 	/**
 	 * Search for matching code sequences within a single method
 	 */
-	private static void searchInMethod(MethodDeclaration method, List<Statement> targetStatements, List<InlineSequenceMatch> matches) {
+	private static void searchInMethod(MethodDeclaration method, MethodDeclaration targetMethod,
+			List<Statement> targetStatements, List<InlineSequenceMatch> matches) {
 		if (method.getBody() == null) {
 			return;
 		}
@@ -115,7 +116,7 @@ public class InlineCodeSequenceFinder {
 			// Try to match this sequence with the target
 			VariableMapping mapping = CodeSequenceMatcher.matchSequence(targetStatements, candidateSequence);
 			
-			if (mapping != null && mapping.isValid()) {
+			if (mapping != null && ExistingMethodReuseSafety.canReuse(targetMethod, method, candidateSequence, mapping)) {
 				// Found a match!
 				matches.add(new InlineSequenceMatch(method, new ArrayList<>(candidateSequence), mapping));
 			}

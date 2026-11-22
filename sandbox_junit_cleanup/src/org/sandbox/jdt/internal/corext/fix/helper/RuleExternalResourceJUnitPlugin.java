@@ -21,6 +21,7 @@ import java.util.Set;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
@@ -66,12 +67,7 @@ public class RuleExternalResourceJUnitPlugin extends TriggerPatternCleanupPlugin
 	@Override
 	protected JunitHolder createHolder(Match match) {
 		FieldDeclaration fieldDecl = (FieldDeclaration) match.getMatchedNode();
-		VariableDeclarationFragment fragment = (VariableDeclarationFragment) fieldDecl.fragments().get(0);
-		if (fragment.resolveBinding() == null) {
-			return null;
-		}
-		ITypeBinding binding = fragment.resolveBinding().getType();
-		if (!isEligibleExternalResourceType(binding)) {
+		if (!isEligibleExternalResourceField(fieldDecl)) {
 			return null;
 		}
 		JunitHolder holder = new JunitHolder();
@@ -79,8 +75,25 @@ public class RuleExternalResourceJUnitPlugin extends TriggerPatternCleanupPlugin
 		return holder;
 	}
 
+	/**
+	 * Checks the complete rule field, including an anonymous initializer's inherited contract.
+	 * @param field the original rule field
+	 * @return whether the local callback rewrite can preserve the field's behavior
+	 */
+	public static boolean isEligibleExternalResourceField(FieldDeclaration field) {
+		if (field.fragments().size() != 1
+				|| !(field.fragments().getFirst() instanceof VariableDeclarationFragment fragment)
+				|| fragment.resolveBinding() == null
+				|| !isEligibleExternalResourceType(fragment.resolveBinding().getType())) {
+			return false;
+		}
+		return !(fragment.getInitializer() instanceof ClassInstanceCreation creation)
+				|| creation.getAnonymousClassDeclaration() == null
+				|| ExternalResourceRefactorer.canMigrateAnonymousClass(creation.getAnonymousClassDeclaration());
+	}
+
 	static boolean isEligibleExternalResourceType(ITypeBinding binding) {
-		if (binding == null) {
+		if (binding == null || binding.isRecovered()) {
 			return false;
 		}
 		return !isDedicatedRuleType(binding) && isExternalResourceHierarchy(binding);

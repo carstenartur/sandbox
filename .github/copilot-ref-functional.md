@@ -53,13 +53,19 @@ Each transformation pattern is a separate helper class following the same patter
 
 ## Target Format Selection
 
-Three output formats (controlled via UI dropdown):
+Three output formats are selected through the UI dropdown or
+`cleanup.loop_conversion.target_format`. The corresponding source-format
+options must also be enabled.
 
-| Format | Status |
-|--------|--------|
-| **Stream** (default) | ✅ Fully implemented |
-| **Classic for-loop** | ⏳ UI only — transformation pending |
-| **While-loop** | ⏳ UI only — transformation pending |
+| Target | Profile value | Supported conversion boundary |
+|--------|---------------|-------------------------------|
+| **Stream** (default) | `stream` | Eligible imperative loops use the stream capture and control-flow checks. |
+| **Enhanced for** | `enhanced_for` | Eligible iterator loops and supported sequential stream traversals become enhanced-for loops. |
+| **Iterator while** | `iterator_while` | Eligible enhanced-for loops and supported sequential stream traversals use an explicit iterator. |
+
+Classic iterator-for loops are supported inputs to eligible enhanced-for
+conversion, not a separate output target. Consult the plugin README's source
+and type matrix for stream factories, terminals and conservative no-change cases.
 
 ## Test Patterns
 

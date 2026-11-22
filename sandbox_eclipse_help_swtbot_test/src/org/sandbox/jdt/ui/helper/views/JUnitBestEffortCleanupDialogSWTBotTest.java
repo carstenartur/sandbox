@@ -95,8 +95,9 @@ public class JUnitBestEffortCleanupDialogSWTBotTest {
 	@Test
 	public void documentationCaptureShowsTheCompleteBestEffortPolicy() {
 		SWTBotShell profileDialog= openJUnitProfile();
+		FocusedCleanupConfigurationScreenshots.prepareForScreenshot(bot, profileDialog);
 		profileDialog.bot().checkBox(MIGRATION_LABEL).select();
-		FocusedCleanupConfigurationScreenshots.prepareForScreenshot(bot, profileDialog, JUNIT_TAB);
+		FocusedCleanupConfigurationScreenshots.prepareJUnitForScreenshot(profileDialog);
 		SWTBotCheckBox bestEffort= profileDialog.bot().checkBox(BEST_EFFORT_LABEL);
 		String problem= UIThreadRunnable.syncExec(profileDialog.display,
 				(Result<String>) () -> CodePatternsScreenshotVisibility.checkboxProblem(bestEffort.widget));

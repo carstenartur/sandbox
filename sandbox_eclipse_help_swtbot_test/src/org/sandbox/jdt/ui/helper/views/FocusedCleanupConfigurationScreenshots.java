@@ -51,6 +51,7 @@ final class FocusedCleanupConfigurationScreenshots {
 	}
 
 	private static final String JUNIT_TAB= "JUnit Migration (Sandbox)"; //$NON-NLS-1$
+	private static final String PROFILE_NAME= "Sandbox Help Preview"; //$NON-NLS-1$
 
 	private static final List<CleanupTab> TABS= List.of(
 			new CleanupTab("Explicit Encoding (Sandbox)", "sandbox_encoding_quickfix_help", //$NON-NLS-1$ //$NON-NLS-2$
@@ -88,19 +89,29 @@ final class FocusedCleanupConfigurationScreenshots {
 		clickButton(preferences, "Edit...", "Edit…"); //$NON-NLS-1$ //$NON-NLS-2$
 
 		SWTBotShell profileDialog= bot.activeShell();
-		profileDialog.bot().textWithLabel("Profile name:").setText("Sandbox Help Preview"); //$NON-NLS-1$ //$NON-NLS-2$
+		var profileName= profileDialog.bot().textWithLabel("Profile name:"); //$NON-NLS-1$
+		if (!PROFILE_NAME.equals(profileName.getText())) {
+			profileName.setText(PROFILE_NAME);
+		}
+		prepareForScreenshot(bot, profileDialog);
 		for (CleanupTab tab : TABS) {
 			clickButton(profileDialog, "Deselect All"); //$NON-NLS-1$
 			profileDialog.bot().tabItem(tab.label()).activate();
 			bot.sleep(250);
 			int selected= selectVisibleCleanupCheckboxes(bot, profileDialog);
 			assertTrue(selected > 0, () -> "No enabled cleanup option was selected for " + tab.label()); //$NON-NLS-1$
+			boolean junitTab= JUNIT_TAB.equals(tab.label());
+			if (junitTab) {
+				prepareJUnitForScreenshot(profileDialog);
+			}
 			bot.sleep(500);
-			prepareForScreenshot(bot, profileDialog, tab.label());
-			assertEquals("Sandbox Help Preview", profileDialog.bot().textWithLabel("Profile name:").getText()); //$NON-NLS-1$ //$NON-NLS-2$
+			assertEquals(PROFILE_NAME, profileName.getText());
 			assertTrue(profileDialog.bot().button("OK").isEnabled(), //$NON-NLS-1$
 					"The documentation profile must be valid and confirmable before capture"); //$NON-NLS-1$
 			capture(profileDialog, outputRoot, tab.helpBundle(), tab.fileName());
+			if (junitTab) {
+				setStandardSize(profileDialog);
+			}
 			System.out.println("[help-screenshots] Captured focused enabled cleanup tab: " + tab.label()); //$NON-NLS-1$
 		}
 
@@ -205,7 +216,20 @@ final class FocusedCleanupConfigurationScreenshots {
 		});
 	}
 
-	static void prepareForScreenshot(SWTWorkbenchBot bot, SWTBotShell shell, String tabLabel) {
+	static void prepareForScreenshot(SWTWorkbenchBot bot, SWTBotShell shell) {
+		setStandardSize(shell);
+		// SWTBot activation forces focus. Activate before selecting options so the
+		// capture preserves the native button painting after the selection events.
+		shell.activate();
+		bot.sleep(500);
+	}
+
+	static void prepareJUnitForScreenshot(SWTBotShell shell) {
+		Button bestEffort= shell.bot().checkBox(BEST_EFFORT_LABEL).widget;
+		UIThreadRunnable.syncExec(shell.display, (VoidResult) () -> showCompleteJUnitPolicy(bestEffort));
+	}
+
+	private static void setStandardSize(SWTBotShell shell) {
 		UIThreadRunnable.syncExec(shell.display, new VoidResult() {
 			@Override
 			public void run() {
@@ -215,12 +239,6 @@ final class FocusedCleanupConfigurationScreenshots {
 				shell.widget.layout(true, true);
 			}
 		});
-		if (JUNIT_TAB.equals(tabLabel)) {
-			Button bestEffort= shell.bot().checkBox(BEST_EFFORT_LABEL).widget;
-			UIThreadRunnable.syncExec(shell.display, (VoidResult) () -> showCompleteJUnitPolicy(bestEffort));
-		}
-		shell.activate();
-		bot.sleep(500);
 	}
 
 	/** Keeps the native preview width while giving the long JUnit policy its measured space. */
