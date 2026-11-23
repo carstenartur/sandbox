@@ -23,6 +23,18 @@
       <li>A deterministic TODO with a code example is added to the owning source type's Javadoc, without adding executable members.</li>
    </ul>
 
+   <p>When <code>@Rule</code> and <code>@ClassRule</code> fixtures share a source ancestor that extends
+      <code>ExternalResource</code>, best effort marks the connected fixtures and tests. This includes tests
+      that inherit rules, source superclasses that supply test and lifecycle methods, and other fixtures
+      required by the marked tests. These types keep their JUnit 4 discovery and lifecycle behavior until
+      the shared fixture is split into separate instance and class extensions. Independent fixtures and their
+      tests can still migrate together. Safe assertion or assumption rewrites can continue in marked files.</p>
+
+   <p>A Rule field can refer to a source fixture through a parenthesized construction or a typed factory call.
+      For a fixture with one lifecycle, best effort uses <code>EXTERNAL_RESOURCE_INITIALIZER_UNSUPPORTED</code>
+      when the existing rewrite cannot migrate the fixture and field together. Their connected tests and
+      fixtures stay on JUnit 4 while independently eligible fixtures and tests can still migrate.</p>
+
    <h2>What the mode does not guarantee</h2>
    <p class="warning">The resulting project is deliberately allowed to be incomplete. It may fail to compile
       or its tests may fail until every generated marker is resolved. Selecting this mode is not an assertion

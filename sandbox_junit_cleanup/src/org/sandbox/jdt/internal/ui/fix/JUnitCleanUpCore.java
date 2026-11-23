@@ -124,13 +124,10 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 						closedScope.booleanValue(), monitor);
 
 		Analysis analysis= junit4Enabled
-				? JUnitBestEffortSupport.analyze(project, compilationUnits, fixes, monitor)
+				? JUnitBestEffortSupport.analyze(project, compilationUnits, fixes, bestEffort, monitor)
 				: Analysis.empty();
 		if (bestEffort && migrateExternalResources && analysis.disableCoordinatedExternalResource()) {
-			planningOptions= new JUnitMultiFilePlanner.PlanningOptions(
-					false,
-					fixes.contains(JUnitCleanUpFixCore.TEST3),
-					fixes.contains(JUnitCleanUpFixCore.PARAMETERIZED), true);
+			planningOptions= planningOptions.withRetainedExternalResourceUnits(analysis.retainedExternalResourceCompilationUnitHandles());
 			result= closedScope == null
 					? JUnitMultiFilePlanner.createCoordinated(project, compilationUnits, planningOptions, monitor)
 					: JUnitMultiFilePlanner.createCoordinated(project, compilationUnits, planningOptions,
