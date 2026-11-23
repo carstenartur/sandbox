@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 6: The import org.eclipse.jdt.internal.corext cannot be resolved",
-    "verifiedAt": "2026-11-22T02:24:03.515264546Z",
+    "verifiedAt": "2026-11-23T03:28:48.920630618Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
