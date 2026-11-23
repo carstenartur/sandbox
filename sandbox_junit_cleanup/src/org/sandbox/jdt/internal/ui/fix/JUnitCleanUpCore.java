@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -33,17 +34,29 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 
+import org.eclipse.jdt.core.IAnnotatable;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.IPackageFragment;
+import org.eclipse.jdt.core.IPackageFragmentRoot;
+import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.util.Messages;
+import org.eclipse.jdt.internal.junit.launcher.JUnit3TestFinder;
+import org.eclipse.jdt.internal.junit.launcher.JUnit4TestFinder;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
+import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
+import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 
 import org.sandbox.jdt.triggerpattern.cleanup.NlsAwareCleanUpFix;
 import org.sandbox.jdt.cleanup.multifile.AbstractPlannedMultiFileCleanUp;
@@ -74,12 +87,39 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 	private final Map<IJavaProject, Set<String>> verifiedClosedScopes= new HashMap<>();
 	private final Set<IJavaProject> rejectedScopes= new HashSet<>();
 	private final Map<IJavaProject, Analysis> migrationAnalyses= new HashMap<>();
+	private final Map<IJavaProject, AssumptionScope> assumptionScopes= new HashMap<>();
+
+	private record AssumptionScope(List<IJavaProject> projects, Map<ICompilationUnit, String> sources) {
+		boolean isCurrent() throws CoreException {
+			return JavaProjectCompilationUnits.readOnlyProjects(projects).isEmpty()
+					&& sources.keySet().stream().allMatch(JUnitCleanUpCore::editable)
+					&& projects.equals(JavaProjectCompilationUnits.withReferencingProjects(projects))
+					&& sources.equals(sourceSnapshot(assumptionSourceUnits(projects)));
+		}
+	}
 
 	public JUnitCleanUpCore(final Map<String, String> options) {
-		super(options);
+		setOptions(options);
 	}
 
 	public JUnitCleanUpCore() {
+	}
+
+	@Override
+	public void setOptions(CleanUpOptions options) {
+		super.setOptions(options);
+		migrationAnalyses.clear();
+		assumptionScopes.clear();
+		pendingExpandedScopes.clear();
+		verifiedClosedScopes.clear();
+		rejectedScopes.clear();
+	}
+
+	@Override
+	protected RefactoringStatus checkPlanPostConditions(IProgressMonitor monitor) throws CoreException {
+		migrationAnalyses.clear();
+		assumptionScopes.clear();
+		return super.checkPlanPostConditions(monitor);
 	}
 
 	@Override
@@ -94,6 +134,7 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 	@Override
 	protected MultiFileCleanUpPlanResult<JUnitMigrationPlan> createPlan(IJavaProject project,
 			ICompilationUnit[] compilationUnits, IProgressMonitor monitor) throws CoreException {
+		assumptionScopes.remove(project);
 		EnumSet<JUnitCleanUpFixCore> fixes= computeFixSet();
 		if (!(isEnabled(JUNIT_CLEANUP) || isEnabled(JUNIT3_CLEANUP)) || fixes.isEmpty()) {
 			migrationAnalyses.remove(project);
@@ -148,6 +189,9 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 			}
 		}
 		migrationAnalyses.put(project, analysis);
+		if (bestEffort && fixes.contains(JUnitCleanUpFixCore.ASSUME)) {
+			prepareAssumptionScope(project, compilationUnits, fixes, analysis, result.plan(), closedScope, monitor);
+		}
 		return result;
 	}
 
@@ -202,6 +246,12 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 		EnumSet<JUnitCleanUpFixCore> effectiveFixSet= preserveExecutionContract
 				? JUnitBestEffortSupport.independentlySafeFixes(computeFixSet)
 				: computeFixSet;
+		if (bestEffort && effectiveFixSet.contains(JUnitCleanUpFixCore.ASSUME)) {
+			AssumptionScope scope= assumptionScopes.get(context.getCompilationUnit().getJavaProject());
+			if (scope == null || !scope.isCurrent()) {
+				effectiveFixSet.remove(JUnitCleanUpFixCore.ASSUME);
+			}
+		}
 		Set<CompilationUnitRewriteOperationWithSourceRange> operations= new LinkedHashSet<>();
 		Set<ASTNode> sharedNodesProcessed= new HashSet<>();
 		if (!preserveExecutionContract) {
@@ -223,6 +273,167 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 	/** Returns difficult-construct analysis captured during the latest project plan. */
 	protected Analysis getMigrationAnalysis(IJavaProject project) {
 		return migrationAnalyses.getOrDefault(project, Analysis.empty());
+	}
+
+	/** Proves assumption compatibility before any member fix, including on an unpatched host. */
+	private void prepareAssumptionScope(IJavaProject project, ICompilationUnit[] selected,
+			EnumSet<JUnitCleanUpFixCore> fixes, Analysis analysis, JUnitMigrationPlan plan, Boolean closedScope,
+			IProgressMonitor monitor) throws CoreException {
+		if (plan == null || Boolean.FALSE.equals(closedScope) || !analysis.gaps().isEmpty()) {
+			return;
+		}
+		List<ICompilationUnit> current= List.of(selected);
+		Map<ICompilationUnit, String> selectedSnapshot= sourceSnapshot(current);
+		HelperSearchSeeds helpers= JUnitSharedHelperScopeDetector.findSearchSeeds(project, current,
+				false, true, false, monitor);
+		List<IJavaProject> projects= coordinatedProjects(project, helpers.ordinary(), helpers);
+		if (!helpers.ordinary().complete() || !JavaProjectCompilationUnits.readOnlyProjects(projects).isEmpty()) {
+			return;
+		}
+		// Expansion seeds intentionally omit public/protected and non-direct wrappers.
+		// Their absence cannot exclude consumers from the assumption compatibility proof.
+		List<ICompilationUnit> group= assumptionSourceUnits(projects);
+		Map<ICompilationUnit, String> snapshot= sourceSnapshot(group);
+		if (!snapshot.entrySet().containsAll(selectedSnapshot.entrySet())) {
+			return;
+		}
+		if (helpers.ordinary().candidateFound() && !RelatedCompilationUnitSearch.findReferences(projects,
+				helpers.ordinary().elements(), current, group, monitor).complete()) {
+			return;
+		}
+		Set<String> selectedHandles= handles(current);
+		JUnit4TestFinder vintage= new JUnit4TestFinder();
+		JUnit3TestFinder junit3= new JUnit3TestFinder();
+		for (ICompilationUnit unit : group) {
+			if (monitor != null && monitor.isCanceled()) {
+				throw new OperationCanceledException();
+			}
+			if (selectedHandles.contains(unit.getPrimary().getHandleIdentifier())
+					&& retainsVintageAnnotations(unit, plan, fixes, monitor)) {
+				return;
+			}
+			for (IType type : unit.getAllTypes()) {
+				if (!vintage.isTest(type)) {
+					continue;
+				}
+				if (!selectedHandles.contains(unit.getPrimary().getHandleIdentifier())
+						|| !fixes.contains(JUnitCleanUpFixCore.TEST)
+						|| junit3.isTest(type) && !fixes.contains(JUnitCleanUpFixCore.TEST3)) {
+					// Later per-project preconditions do not prove that this consumer is selected.
+					return;
+				}
+				for (IType ancestor : type.newSupertypeHierarchy(monitor).getAllSuperclasses(type)) {
+					ICompilationUnit declaration= ancestor.getCompilationUnit();
+					if (declaration == null && binaryVintageContract(ancestor)) {
+						return;
+					}
+					if (declaration != null && !selectedHandles.contains(declaration.getPrimary().getHandleIdentifier())) {
+						// Abstract test declarations are not themselves finder-visible consumers.
+						return;
+					}
+				}
+			}
+		}
+		AssumptionScope scope= new AssumptionScope(projects, snapshot);
+		if (scope.isCurrent()) {
+			assumptionScopes.put(project, scope);
+		}
+	}
+
+	/** Uses the actual selected operations: enabled TEST alone does not convert every annotation form. */
+	private static boolean retainsVintageAnnotations(ICompilationUnit unit, JUnitMigrationPlan plan,
+			EnumSet<JUnitCleanUpFixCore> fixes, IProgressMonitor monitor) throws CoreException {
+		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
+		parser.setSource(unit);
+		parser.setResolveBindings(true);
+		CompilationUnit root= (CompilationUnit) parser.createAST(monitor);
+		Set<CompilationUnitRewriteOperationWithSourceRange> operations= new LinkedHashSet<>();
+		Set<ASTNode> processed= new HashSet<>();
+		plan.addOperationsFor(unit, root, operations, processed);
+		EnumSet<JUnitCleanUpFixCore> effective= fixes.clone();
+		effective.remove(JUnitCleanUpFixCore.ASSUME);
+		for (JUnitCleanUpFixCore fix : effective) {
+			fix.findOperations(root, operations, processed);
+		}
+		RuleImportCleanupSupport.addIfSafe(root, effective, operations);
+		if (!operations.isEmpty()) {
+			var change= new NlsAwareCleanUpFix(JUnitCleanUpFix_refactor, root, operations.toArray(
+					new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0])).createOptionalChange(monitor);
+			if (change != null) {
+				try {
+					parser.setProject(unit.getJavaProject());
+					parser.setUnitName(unit.getPath().removeFirstSegments(1).toString());
+					parser.setSource(change.getPreviewContent(monitor).toCharArray());
+					parser.setResolveBindings(true);
+					root= (CompilationUnit) parser.createAST(monitor);
+				} finally {
+					change.dispose();
+				}
+			}
+		}
+		boolean[] retained= { false };
+		root.accept(new ASTVisitor() {
+			@Override
+			public boolean preVisit2(ASTNode node) {
+				if (node instanceof Annotation annotation) {
+					var type= annotation.resolveTypeBinding();
+					retained[0]|= type == null || type.isRecovered()
+							|| JUnitConstants.ORG_JUNIT_TEST.equals(type.getQualifiedName())
+							|| JUnitConstants.ORG_JUNIT_RUNWITH.equals(type.getQualifiedName());
+				}
+				return !retained[0];
+			}
+		});
+		return retained[0];
+	}
+
+	private static boolean binaryVintageContract(IType type) throws CoreException {
+		if (binaryVintageAnnotation(type)) return true;
+		for (var method : type.getMethods()) {
+			if (binaryVintageAnnotation(method)) return true;
+		}
+		return false;
+	}
+
+	private static boolean binaryVintageAnnotation(IAnnotatable element) throws CoreException {
+		for (var annotation : element.getAnnotations()) {
+			// The Java model guarantees fully qualified annotation names for class files.
+			if (JUnitConstants.ORG_JUNIT_TEST.equals(annotation.getElementName())
+					|| JUnitConstants.ORG_JUNIT_RUNWITH.equals(annotation.getElementName())) return true;
+		}
+		return false;
+	}
+
+	private static boolean editable(ICompilationUnit unit) {
+		var resource= unit.getResource();
+		var attributes= resource == null ? null : resource.getResourceAttributes();
+		return !unit.isReadOnly() && resource != null && (attributes == null || !attributes.isReadOnly());
+	}
+
+	/** Observes executable source roots, including generated/derived roots that cannot be expanded for edits. */
+	private static List<ICompilationUnit> assumptionSourceUnits(Collection<IJavaProject> projects) throws CoreException {
+		Map<String, ICompilationUnit> units= new LinkedHashMap<>();
+		for (IJavaProject project : projects) {
+			for (IPackageFragmentRoot root : project.getPackageFragmentRoots()) {
+				if (!root.exists() || root.getKind() != IPackageFragmentRoot.K_SOURCE) continue;
+				for (IJavaElement child : root.getChildren()) {
+					if (child instanceof IPackageFragment pack) {
+						for (ICompilationUnit unit : pack.getCompilationUnits()) {
+							if (unit.exists()) units.put(unit.getPrimary().getHandleIdentifier(), unit.getPrimary());
+						}
+					}
+				}
+			}
+		}
+		return List.copyOf(units.values());
+	}
+
+	private static Map<ICompilationUnit, String> sourceSnapshot(Collection<ICompilationUnit> units) throws CoreException {
+		Map<ICompilationUnit, String> result= new LinkedHashMap<>();
+		for (ICompilationUnit unit : units) {
+			result.put(unit.getPrimary(), unit.getSource());
+		}
+		return result;
 	}
 
 	@Override

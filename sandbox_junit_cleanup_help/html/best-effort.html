@@ -28,7 +28,17 @@
       that inherit rules, source superclasses that supply test and lifecycle methods, and other fixtures
       required by the marked tests. These types keep their JUnit 4 discovery and lifecycle behavior until
       the shared fixture is split into separate instance and class extensions. Independent fixtures and their
-      tests can still migrate together. Safe assertion or assumption rewrites can continue in marked files.</p>
+      tests can still migrate together. Assertion rewrites and optimizations of existing Jupiter assumptions
+      can continue in marked files.</p>
+
+   <p>JUnit 4 <code>Assume</code> calls stay in place throughout the coordinated source group while a consumer
+      retains Vintage execution, including calls in separate shared helpers. Generated and derived test sources
+      participate in this check even though they are excluded from automatic scope expansion. Calls also stay when the cleanup
+      cannot prove a complete, selected and editable caller scope. This preserves unsatisfied assumptions as
+      aborted tests. Jupiter tests can use these retained helpers. A closed group with no retained Vintage
+      consumer can still migrate its assumptions to Jupiter. Retained parameterized <code>@Test</code>
+      annotations, <code>@RunWith</code> runners and tests inherited from binary libraries also keep the
+      JUnit 4 assumption contract.</p>
 
    <p>A Rule field can refer to a source fixture through a parenthesized construction or a typed factory call.
       For a fixture with one lifecycle, best effort uses <code>EXTERNAL_RESOURCE_INITIALIZER_UNSUPPORTED</code>

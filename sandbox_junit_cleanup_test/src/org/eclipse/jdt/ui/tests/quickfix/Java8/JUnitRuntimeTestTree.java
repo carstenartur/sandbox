@@ -153,9 +153,12 @@ final class JUnitRuntimeTestTree {
 		}
 		String result= String.valueOf(element.getTestResult(true));
 		if (element instanceof ITestCaseElement testCase) {
+			var model= (org.eclipse.jdt.internal.junit.model.TestElement) element;
 			return new Node(NodeKind.TEST, identity, display, result,
 					Map.of("testClass", text(testCase.getTestClassName()), //$NON-NLS-1$
-							"testMethod", text(testCase.getTestMethodName())), List.of()); //$NON-NLS-1$
+							"testMethod", text(testCase.getTestMethodName()), //$NON-NLS-1$
+							"assumptionFailure", Boolean.toString(model.isAssumptionFailure()), //$NON-NLS-1$
+							"uniqueId", text(model.getUniqueId())), List.of()); //$NON-NLS-1$
 		}
 		if (element instanceof ITestSuiteElement suite) {
 			return new Node(NodeKind.CONTAINER, identity, display, result,

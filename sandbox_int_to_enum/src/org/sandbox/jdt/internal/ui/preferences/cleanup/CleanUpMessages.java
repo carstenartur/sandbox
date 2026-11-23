@@ -23,6 +23,7 @@ public final class CleanUpMessages extends NLS {
 
 	public static String IntToEnumTabPage_CheckboxName_IntToEnum;
 	public static String IntToEnumTabPage_CheckboxName_ProjectWide;
+	public static String IntToEnumTabPage_CheckboxName_PublicAdapter;
 	public static String IntToEnumTabPage_GroupName_IntToEnum;
 
 	static {

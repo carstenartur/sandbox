@@ -303,7 +303,6 @@ public final class JUnitBestEffortSupport {
 		result.retainAll(EnumSet.of(
 				JUnitCleanUpFixCore.ASSERT,
 				JUnitCleanUpFixCore.ASSERT_OPTIMIZATION,
-				JUnitCleanUpFixCore.ASSUME,
 				JUnitCleanUpFixCore.ASSUME_OPTIMIZATION));
 		return result;
 	}

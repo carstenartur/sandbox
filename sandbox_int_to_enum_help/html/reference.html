@@ -9,7 +9,7 @@
 </head>
 <body>
    <h1>Int to Enum: reference</h1>
-   <h2>Applicability contract</h2>
+   <h2>Closed-flow applicability contract</h2>
    <p>The cleanup requires a closed domain of distinct compile-time values, a matching scalar parameter type,
       and proven callers. Supported if/else domains are byte, short, char, int, long and String.</p>
    <p>String constants must be non-null. All callers must supply recognized constants, which preserves both
@@ -17,7 +17,7 @@
    <p>Before generating coordinated edits, constant values/types, parameter uses, visibility and enum-name availability are revalidated.
       An incompatible edit rejects the plan and its pending caller changes. Receiver evaluations are never silently removed.</p>
 
-   <h2>Safety model</h2>
+   <h2>Closed-flow safety model</h2>
    <p>Open-ended arithmetic and unresolved source uses prevent automatic conversion. Reflection, native boundaries,
       external consumers and persistence/wire contracts are outside the supported closed source domain.</p>
 
@@ -51,6 +51,21 @@
       <li>Arithmetic and bit-mask domains are not ordinary enum candidates.</li>
       <li>Cross-repository consumers cannot be updated by a workspace-local cleanup.</li>
    </ul>
+
+   <h2>Additive public API adapters</h2>
+   <p>The separate <strong>Add enum-valued methods and keep legacy public APIs</strong> option is off by
+      default and available only in explicit cleanup profiles. It adds a public nested enum and a distinctly
+      named adapter, such as <code>processValue(Status)</code>, while retaining the original public
+      <code>int</code> or <code>String</code> constants and method. Each enum constant exposes its original
+      value through <code>legacyValue()</code>.</p>
+   <p>The supported owner is a public final top-level class that is not serializable. The candidate is a one-parameter
+      public instance method returning <code>void</code>, with no declared exceptions or method type parameters,
+      and a complete directly compared constant group with distinct values. Conflicting names or overlapping
+      domains prevent the addition. Review new names for conflicts in external wildcard static imports.</p>
+   <p>The new adapter requires a non-null enum value. Existing callers keep the original method's handling
+      of null, unknown values and non-interned strings. This does not introduce a general value-to-enum parser,
+      retire legacy fields or methods, or migrate persistence and wire formats. The two new members apply and
+      undo together; this option is not registered as a save action.</p>
 
    <h2>Support information</h2>
    <p>The Help content is shipped with the same feature version as the runtime

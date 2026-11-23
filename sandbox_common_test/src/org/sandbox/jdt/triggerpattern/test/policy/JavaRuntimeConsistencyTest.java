@@ -15,15 +15,20 @@ import java.util.regex.Pattern;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPathFactory;
+import javax.xml.xpath.XPathNodes;
 
 import org.junit.jupiter.api.Test;
 import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 
 /** Keeps the executable runtime independent of the Java level of edited projects. */
 @SuppressWarnings("nls")
 public class JavaRuntimeConsistencyTest {
 
 	private static final String JUSTJ = "https://download.eclipse.org/justj/jres/25/updates/release/25.0.4.v20260826-0822";
+	private static final String SUPPORT_MODULE = "sandbox-junit-migration-support";
+	private static final String SUPPORT_RELEASE = "/project/build/plugins/plugin[groupId='org.apache.maven.plugins'"
+			+ " and artifactId='maven-compiler-plugin']/configuration/release";
 
 	@Test
 	void buildEntrypointsRequireExactlyJava25() throws Exception {
@@ -34,16 +39,42 @@ public class JavaRuntimeConsistencyTest {
 		assertEquals("[25,26)", value(pom, "//requireJavaVersion/version"));
 		assertEquals("25", read(".java-version").strip());
 		assertTrue(read("Makefile").contains("SUPPORTED_JAVA_MAJOR := 25"));
+	}
+
+	@Test
+	void moduleCompilerLevelsMatchTheirRuntimeContracts() throws Exception {
+		var xpath = XPathFactory.newInstance().newXPath();
+		var compilerLevels = xpath.compile("//maven.compiler.source | //maven.compiler.target | //maven.compiler.release"
+				+ " | //source | //target | //release");
+		var supportRelease = xpath.compile(SUPPORT_RELEASE);
 		for (Path module : modules()) {
 			Path file = module.resolve("pom.xml");
-			if (Files.exists(file)) {
-				String text = Files.readString(file);
-				var literals = Pattern.compile("<(?:maven\\.compiler\\.(?:source|target|release)|release|source|target)>(\\d+)</").matcher(text);
-				while (literals.find()) {
-					assertEquals("25", literals.group(1), file.toString());
+			if (!Files.exists(file)) continue;
+			Document pom = xml(root().relativize(file).toString());
+			Node allowedRelease = SUPPORT_MODULE.equals(module.getFileName().toString())
+					? supportRelease.evaluateExpression(pom, Node.class) : null;
+			for (Node level : compilerLevels.evaluateExpression(pom, XPathNodes.class)) {
+				String literal = level.getTextContent().strip();
+				if (literal.matches("\\d+")) {
+					assertEquals(level.isSameNode(allowedRelease) ? "21" : "25", literal,
+							file + ": " + level.getNodeName());
 				}
 			}
 		}
+	}
+
+	@Test
+	void supportJarTargetsJava21AndInheritsTheBuildRuntime() throws Exception {
+		Document pom = xml(SUPPORT_MODULE + "/pom.xml");
+		assertEquals("io.github.carstenartur", value(pom, "/project/groupId"));
+		assertEquals(SUPPORT_MODULE, value(pom, "/project/artifactId"));
+		assertEquals("0", value(pom, "count(/project/packaging[normalize-space(.) != 'jar'])"));
+		assertEquals("maven", value(pom, "/project/properties/tycho.mode"));
+		assertEquals("1", value(pom, "count(//properties/tycho.mode)"));
+		assertEquals("0", value(pom, "count(//properties/java-version | //properties/java-execenv)"),
+				"Inherit the build runtime and execution environment from the parent");
+		assertEquals("1", value(pom, "count(" + SUPPORT_RELEASE + ")"));
+		assertEquals("21", value(pom, SUPPORT_RELEASE));
 	}
 
 	@Test

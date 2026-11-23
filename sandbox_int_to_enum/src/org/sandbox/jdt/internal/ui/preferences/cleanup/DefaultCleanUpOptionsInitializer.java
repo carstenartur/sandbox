@@ -27,5 +27,6 @@ public class DefaultCleanUpOptionsInitializer implements ICleanUpOptionsInitiali
 	public void setDefaultOptions(CleanUpOptions options) {
 		options.setOption(MYCleanUpConstants.INT_TO_ENUM_CLEANUP, CleanUpOptions.FALSE);
 		options.setOption(IntToEnumCleanUpOptions.PROJECT_WIDE, CleanUpOptions.FALSE);
+		options.setOption(IntToEnumCleanUpOptions.PUBLIC_VALUE_ADAPTER, CleanUpOptions.FALSE);
 	}
 }

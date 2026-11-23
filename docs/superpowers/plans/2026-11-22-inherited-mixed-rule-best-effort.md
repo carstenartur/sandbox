@@ -14,7 +14,7 @@
 
 - Build with Java 25 against the repository baseline.
 - Use native Eclipse/JDT JUnit tests and existing compiler/lifecycle assertions; add no Python automation, warning suppression, ignored failures or screenshot changes.
-- Keep the complete change below 1,500 changed text lines and create an ordinary PR against current main.
+- Aim for at most 1,500 changed text lines; the existing PR's documented policy exception covers necessary native/shared-helper evidence. Stop before 2,000 lines and keep corrections on the existing ordinary PR against current main.
 - Strict mode must retain its fatal mixed-lifecycle precondition and make no edits.
 - Preserve compiler diagnostic identities and multiplicities, all selected/dependent units, and exact source restoration after Undo.
 - Do not implement automatic mixed-lifecycle adapters or depend on unmerged #1971.
@@ -28,6 +28,7 @@
 - Independent fixtures and their rule owners in separate compilation units must still migrate together. A retained Rule can identify a second source fixture through parenthesized construction or a typed factory initializer.
 - Use a resolved source initializer and its Rule or ClassRule kind as retention evidence. An unsupported initializer and its selected fixture stay together under their own reason code when the ordinary rewrite cannot migrate the field.
 - Repeated best-effort application must not duplicate markers or allow later partial migration.
+- JUnit 4 assumptions must retain their exception contract for Vintage consumers and shared helpers; an eager, source-snapshot-bound group decision must work in the stock per-project lifecycle and without optional scope expansion.
 
 ---
 
@@ -62,3 +63,11 @@
 
 - [x] **Step 6: Document and commit the coherent repair.**
   Add a short help paragraph explaining retained inherited mixed components in best effort. Run `git diff --check`, measure changed text lines against the recorded main base, and commit the code/tests/help. Report exact commands, RED/GREEN results and remaining hosted-CI needs. Root owns independent review, remote publication and merge.
+
+### Bounded post-publication correction: retained assumptions
+
+- [x] Reproduce direct and separate-helper assumption outcome changes with real cleanup Apply before implementation; retain the native RED and two independent no-retained controls.
+- [x] Remove `ASSUME` from the safe-operation allowlist and require eager complete source-group compatibility before migrating assumptions in ordinary helper units. Prove actual annotation/runner conversion and account for binary test ancestors. Retain `ASSUME_OPTIMIZATION`, independent migrations and strict behavior.
+- [x] Verify native abort/failure counts, both project orders, unselected/read-only callers, source/binary ancestors, retained timeout/runner contracts, a subsequent closed group, complete diagnostics and exact Undo. Replay exported actual Apply sources with the second actual engine family.
+- [x] Run the existing 111 affected cases with the new regressions, document exact source/artifact identities and the bounded report, and commit this correction locally for one scoped independent review.
+- [x] Address the confirmed review omission of generated/derived consumers with public, protected or multi-statement helpers. Reproduce native RED, share the complete observational source inventory between permission and freshness, then repeat the existing qualification and actual-source JUnit 6 replay without broadening edit eligibility.

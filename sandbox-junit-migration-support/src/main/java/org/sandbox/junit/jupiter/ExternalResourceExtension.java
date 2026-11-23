@@ -5,6 +5,8 @@
 package org.sandbox.junit.jupiter;
 
 import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -13,6 +15,8 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.Extension;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.function.Executable;
+import org.junit.jupiter.api.function.ThrowingConsumer;
+import org.junit.jupiter.api.function.ThrowingSupplier;
 
 /** Registers the setup and teardown hooks of an existing fixture at a Jupiter lifecycle boundary. */
 public final class ExternalResourceExtension {
@@ -28,13 +32,55 @@ public final class ExternalResourceExtension {
 		return new PerClass(new Hooks(before, after));
 	}
 
+	/**
+	 * Select the fixture once at each test's setup boundary. A null fixture skips
+	 * both hooks. After successful setup, teardown uses the selected fixture.
+	 * The supplier and both callbacks must be non-null.
+	 */
+	public static <T> Extension perTest(Supplier<? extends T> fixture,
+			ThrowingConsumer<? super T> before, Consumer<? super T> after) {
+		return new PerTest(Hooks.deferred(fixture, before, after));
+	}
+
+	/**
+	 * Select the fixture once at class setup. A null fixture skips both hooks.
+	 * After successful setup, teardown uses the selected fixture.
+	 * The supplier and both callbacks must be non-null.
+	 */
+	public static <T> Extension perClass(Supplier<? extends T> fixture,
+			ThrowingConsumer<? super T> before, Consumer<? super T> after) {
+		return new PerClass(Hooks.deferred(fixture, before, after));
+	}
+
 	private static final class Hooks {
-		private final Executable before;
-		private final Runnable after;
+		private final ThrowingSupplier<Runnable> setup;
 
 		Hooks(Executable before, Runnable after) {
-			this.before= Objects.requireNonNull(before);
-			this.after= Objects.requireNonNull(after);
+			Objects.requireNonNull(before);
+			Runnable cleanup= Objects.requireNonNull(after)::run;
+			this.setup= () -> {
+				before.execute();
+				return cleanup;
+			};
+		}
+
+		private Hooks(ThrowingSupplier<Runnable> setup) {
+			this.setup= setup;
+		}
+
+		static <T> Hooks deferred(Supplier<? extends T> fixture,
+				ThrowingConsumer<? super T> before, Consumer<? super T> after) {
+			Objects.requireNonNull(fixture);
+			Objects.requireNonNull(before);
+			Objects.requireNonNull(after);
+			return new Hooks(() -> {
+				T selected= fixture.get();
+				if (selected == null) {
+					return null;
+				}
+				before.accept(selected);
+				return () -> after.accept(selected);
+			});
 		}
 
 		// Scoped to the invocation and this registration, including repeated tests and nested classes.
@@ -43,13 +89,17 @@ public final class ExternalResourceExtension {
 		}
 
 		void start(ExtensionContext context) throws Throwable {
-			before.execute();
-			store(context).put("started", Boolean.TRUE);
+			Runnable cleanup= setup.get();
+			if (cleanup != null) {
+				// Store the action so Jupiter does not auto-close an AutoCloseable receiver.
+				store(context).put("cleanup", cleanup);
+			}
 		}
 
 		void finish(ExtensionContext context) {
-			if (store(context).remove("started") != null) {
-				after.run();
+			Runnable cleanup= store(context).remove("cleanup", Runnable.class);
+			if (cleanup != null) {
+				cleanup.run();
 			}
 		}
 	}
