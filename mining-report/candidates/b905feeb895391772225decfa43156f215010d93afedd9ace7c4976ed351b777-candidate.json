@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 3: The import org.eclipse.jface.text.StyledString cannot be resolved",
-    "verifiedAt": "2026-11-22T02:24:05.274431573Z",
+    "verifiedAt": "2026-11-23T03:28:50.050675631Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0

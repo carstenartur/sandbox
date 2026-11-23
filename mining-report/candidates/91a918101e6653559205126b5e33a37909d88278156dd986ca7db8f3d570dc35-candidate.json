@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 10: org.eclipse.jface.preference cannot be resolved to a type",
-    "verifiedAt": "2026-11-22T02:24:10.548849318Z",
+    "verifiedAt": "2026-11-23T03:28:53.452911919Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
