@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.ArrayType;
 import org.eclipse.jdt.core.dom.ASTMatcher;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -60,12 +61,21 @@ public final class FqnAwarePlaceholderAstMatcher extends PlaceholderAstMatcher {
 	private final ASTMatcher structuralMatcher = new ASTMatcher();
 	private final Set<UnknownSemanticRequirement> unknownRequirements = new LinkedHashSet<>();
 	private final boolean ignoreSemanticIdentities;
+	private final Annotation annotationPattern;
+	private final String qualifiedAnnotationType;
 
 	public FqnAwarePlaceholderAstMatcher() {
-		this(false);
+		this(false, null, null);
 	}
 
-	private FqnAwarePlaceholderAstMatcher(boolean ignoreSemanticIdentities) {
+	/** Constrains only the root annotation of a typed pattern, so nested values still match structurally. */
+	public FqnAwarePlaceholderAstMatcher(Annotation annotationPattern, String qualifiedAnnotationType) {
+		this(false, annotationPattern, qualifiedAnnotationType);
+	}
+
+	private FqnAwarePlaceholderAstMatcher(boolean ignoreSemanticIdentities, Annotation annotationPattern, String qualifiedAnnotationType) {
+		this.annotationPattern = annotationPattern;
+		this.qualifiedAnnotationType = qualifiedAnnotationType;
 		this.ignoreSemanticIdentities = ignoreSemanticIdentities;
 	}
 
@@ -75,12 +85,36 @@ public final class FqnAwarePlaceholderAstMatcher extends PlaceholderAstMatcher {
 	 */
 	public boolean couldMatchIgnoringSemanticIdentities(ASTNode pattern, ASTNode source) {
 		return pattern != null && source != null
-				&& pattern.subtreeMatch(new FqnAwarePlaceholderAstMatcher(true), source);
+				&& pattern.subtreeMatch(new FqnAwarePlaceholderAstMatcher(true, null, null), source);
 	}
 
 	@Override
 	public List<UnknownSemanticRequirement> getUnknownSemanticRequirements() {
 		return List.copyOf(unknownRequirements);
+	}
+
+	@Override
+	protected boolean annotationNamesMatch(Annotation pattern, Annotation source) {
+		if (pattern != annotationPattern || qualifiedAnnotationType == null) {
+			return super.annotationNamesMatch(pattern, source);
+		}
+		String patternName = pattern.getTypeName().getFullyQualifiedName();
+		if (!namesAnnotation(patternName)) {
+			return false;
+		}
+		ITypeBinding type = source.resolveTypeBinding();
+		if (type == null || type.isRecovered()) {
+			if (!namesAnnotation(source.getTypeName().getFullyQualifiedName())) {
+				return false;
+			}
+			markUnknown("Annotation binding unavailable for " + qualifiedAnnotationType); //$NON-NLS-1$
+			return true;
+		}
+		return type.isAnnotation() && qualifiedAnnotationType.equals(type.getQualifiedName());
+	}
+
+	private boolean namesAnnotation(String spelling) {
+		return qualifiedAnnotationType.equals(spelling) || qualifiedAnnotationType.endsWith('.' + spelling);
 	}
 
 	@Override

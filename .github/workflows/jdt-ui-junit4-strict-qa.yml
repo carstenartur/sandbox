@@ -49,6 +49,14 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           path: sandbox
 
+      # Restore Sandbox Maven dependencies before the corpus adds another set of descriptors.
+      - name: Set up Java 25
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
       - name: Checkout the pinned JDT UI R4_40 corpus
         uses: actions/checkout@v7
         with:
@@ -56,13 +64,6 @@ jobs:
           ref: R4_40
           fetch-depth: 0
           path: upstream/eclipse.jdt.ui
-
-      - name: Set up Java 25
-        uses: actions/setup-java@v6
-        with:
-          distribution: temurin
-          java-version: '25'
-          cache: maven
 
       - name: Verify pinned Maven Wrapper
         working-directory: sandbox

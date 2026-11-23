@@ -16,6 +16,7 @@
 - Modify `sandbox-junit-migration-support/src/main/java/org/sandbox/junit/jupiter/ExternalResourceExtension.java`.
 - Extend `sandbox-junit-migration-support/src/test/java/org/sandbox/junit/jupiter/ExternalResourceExtensionTest.java`; use a focused companion test class in the same package if the new concurrency/receiver cases would obscure existing fixtures.
 - Modify `sandbox-junit-migration-support/pom.xml` for a module-local compiler release only; inspect generated `maven-bundle.bnd` metadata and change the bnd instructions only if the generated EE would be wrong.
+- Update `sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/JavaRuntimeConsistencyTest.java` for the support artifact's module-local compiler release.
 - Update `sandbox-junit-migration-support/README.md`, `docs/junit-coordinated-migration.md`, `sandbox_junit_cleanup_help/html/usage.html` and the consumer-artifact exception in `docs/JAVA_BUILD_RUNTIME.md`.
 
 **Interfaces and fixed requirements:**
@@ -41,3 +42,6 @@
 
 - [x] **Step 6: Verify, self-review and commit.**
   Run the focused tests while iterating and the complete support-module suite once per necessary final JVM/BOM combination. Standard entry: `./mvnw -f sandbox-junit-migration-support/pom.xml verify` with Java 25; select the consumer JVM through Surefire's supported JVM property rather than changing Maven's runtime. Record exact commands and actual XML counts. Run `git diff --check`, inspect artifact metadata/source identity, and measure changed lines against `49e12331b056bdf8ae9c7a07d9dce9e0245ba1b1`. Commit local code/tests/docs and append the full report at the supplied task report path; root reviews and publishes.
+
+- [x] **Step 7: Qualify the repository runtime guard.**
+  Require Java 21 at the support jar's Maven compiler configuration and Java 25 for all other numeric module compiler levels. Assert that the support POM inherits the build runtime and execution environment. Run the Java runtime policy with Java 25 against the checkout and record any dependency provisioning limits on the full reactor run.
