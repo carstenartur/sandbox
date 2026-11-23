@@ -49,6 +49,7 @@ class ReleaseBuildEvidenceTest {
         builder.environment().put("PATH", bin + ":" + builder.environment().get("PATH"));
         builder.environment().put("RUNNER_TEMP", runnerTemp.toString());
         builder.environment().put("SKIP_TESTS", "false");
+        builder.environment().put("RELEASE_EPOCH", "1795392000");
         builder.environment().put("FAKE_MAVEN_EXIT", Integer.toString(mavenExit));
         Process process = builder.start();
         try {

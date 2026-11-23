@@ -96,6 +96,7 @@ public final class AggregateInstallationVerifier {
     private final Map<String, String> records = new TreeMap<>();
     private Path probe;
     private Path inventory;
+    private SupportArtifacts candidate;
 
     private record CleanupRun(int exitCode, Path reportFile, Path patchFile, String report, Map<Path, String> sources) { }
     record RuntimeProbe(String status, int bundles, int cleanups, int helpTocs, List<String> resolvedBundles,
@@ -122,11 +123,19 @@ public final class AggregateInstallationVerifier {
     }
 
     public static void main(String[] args) throws Exception {
-        require(args.length == 1, "Expected the Sandbox repository root");
-        new AggregateInstallationVerifier(Path.of(args[0])).verify();
+        require(args.length >= 1 && args.length <= 3, "Expected repository root, optional reactor JAR and requested qualifier");
+        Path root = Path.of(args[0]);
+        Path canonical;
+        if (args.length > 1) {
+            canonical = Path.of(args[1]);
+        } else {
+            String version = children(read(root.resolve("pom.xml")), "version").getFirst().getTextContent().strip();
+            canonical = root.resolve("sandbox-junit-migration-support/target/sandbox-junit-migration-support-" + version + ".jar");
+        }
+        new AggregateInstallationVerifier(root).verify(canonical, args.length == 3 ? args[2] : null);
     }
 
-    private void verify() throws Exception {
+    private void verify(Path canonical, String requestedQualifier) throws Exception {
         Files.deleteIfExists(evidence.resolve("verification.properties"));
         Map<String, String> current = featureVersions(repository);
         require(current.containsKey(AGGREGATE), "The built repository has no aggregate IU");
@@ -135,6 +144,22 @@ public final class AggregateInstallationVerifier {
         require(!baseRepositories.isEmpty(), "Missing target repositories");
         inventory = inventory();
         probe = compileProbe();
+        candidate = SupportArtifacts.read(Path.of(repository), false);
+        if (requestedQualifier != null) {
+            String qualifier = candidate.support().version().getQualifier();
+            require("dev".equals(requestedQualifier) ? qualifier.matches("dev[0-9]{17}") : requestedQualifier.equals(qualifier),
+                    "Expected support qualifier " + requestedQualifier + ", built " + qualifier);
+        }
+        SupportArtifacts.requireBundle(canonical, candidate.support().version());
+        candidate.support().requireSameBytes(canonical);
+        records.put("support.maven.path", canonical.toRealPath().toString());
+        records.put("support.maven.sha256", digest(canonical));
+        records.put("support.p2.path", candidate.support().path().toString());
+        records.put("support.p2.sha256", candidate.support().sha256());
+        records.put("support.version", candidate.support().version().toString());
+        Path product = new DistributionVerifier(root).findProductRoot();
+        supportProbe(product, "product", false, candidate.support());
+        verifySupportUpgrade();
         Path fresh = installation("fresh");
         provisionStock(fresh, "fresh-stock");
         Map<String, String> stock = hostDigests(fresh);
@@ -238,6 +263,18 @@ public final class AggregateInstallationVerifier {
             Map<String, String> stock, Set<String> expectedRoots, String candidateVersion) throws Exception {
         verifyInstalledFeatures(installation, stage, versions, stock, expectedRoots);
         Path home = home(installation);
+        Path result = runProbe(home, stage, inventory.toString());
+        verifySupport(home, stage, result, candidate.support());
+        RuntimeProbe runtime = requireRuntimeProbe(stage, Files.readString(result), expectedBundleIdentities());
+        records.put(stage + ".astApi.sha256", verifyAstApi(runtime, Path.of(repository), candidateVersion));
+        records.put(stage + ".runtime.sha256", digest(result));
+        records.put(stage + ".runtime.bundleCount", Integer.toString(runtime.bundles()));
+        records.put(stage + ".runtime.cleanupCount", Integer.toString(runtime.cleanups()));
+        records.put(stage + ".runtime.helpTocCount", Integer.toString(runtime.helpTocs()));
+        formatterSmoke(home, stage);
+    }
+
+    private Path runProbe(Path home, String stage, String mode) throws Exception {
         Path result = evidence.resolve(stage + "-runtime.json");
         FileSnapshot previous = snapshot(result);
         Files.deleteIfExists(result);
@@ -246,19 +283,83 @@ public final class AggregateInstallationVerifier {
         try {
             Files.writeString(configuration, new String(original, StandardCharsets.UTF_8) + '\n'
                     + PROBE + ",1.0.0," + probe.toUri() + ",4,false\n");
-            run(home, stage + "-runtime", PROBE + ".verify", List.of(inventory.toString(), result.toString()), Duration.ofMinutes(3));
+            run(home, stage + "-runtime", PROBE + ".verify", List.of(mode, result.toString()), Duration.ofMinutes(3));
             requireFreshFile(result, previous, "Runtime probe result");
         } finally {
             Files.write(configuration, original);
         }
         require(java.util.Arrays.equals(original, Files.readAllBytes(configuration)), "Probe changed installation configuration");
-        RuntimeProbe runtime = requireRuntimeProbe(stage, Files.readString(result), expectedBundleIdentities());
-        records.put(stage + ".astApi.sha256", verifyAstApi(runtime, Path.of(repository), candidateVersion));
-        records.put(stage + ".runtime.sha256", digest(result));
-        records.put(stage + ".runtime.bundleCount", Integer.toString(runtime.bundles()));
-        records.put(stage + ".runtime.cleanupCount", Integer.toString(runtime.cleanups()));
-        records.put(stage + ".runtime.helpTocCount", Integer.toString(runtime.helpTocs()));
-        formatterSmoke(home, stage);
+        return result;
+    }
+
+    private void supportProbe(Path installation, String stage, boolean historical, SupportArtifacts.Artifact expected) throws Exception {
+        Path home = home(installation);
+        verifySupport(home, stage, runProbe(home, stage, historical ? "historical" : "support"), expected);
+    }
+
+    private void verifySupport(Path home, String stage, Path report, SupportArtifacts.Artifact expected) throws Exception {
+        var observed = jsonObject(stage, Files.readString(report)).getAsJsonObject("support");
+        require(SupportArtifacts.BSN.equals(jsonString(observed, "bsn")) && expected.version().toString().equals(jsonString(observed, "version")),
+                "Unexpected running support bundle " + observed);
+        var profile = profile(home, stage);
+        var installed = SupportArtifacts.installed(SupportArtifacts.BSN, expected, home, Path.of(jsonString(observed, "path")), profile);
+        records.put(stage + ".bundlePool", profile.bundlePool());
+        records.put(stage + ".profileId", profile.id());
+        records.put(stage + ".support.path", installed.toString());
+        records.put(stage + ".support.version", expected.version().toString());
+        String digest = digest(installed);
+        records.put(stage + ".support.sha256", digest);
+        var receipt = observed.deepCopy();
+        receipt.addProperty("profileId", profile.id());
+        receipt.addProperty("bundlePool", profile.bundlePool());
+        receipt.addProperty("root", false);
+        receipt.addProperty("installedSha256", digest);
+        receipt.addProperty("repositoryPath", expected.path().toString());
+        receipt.addProperty("repositorySha256", expected.sha256());
+        boolean reconstructed = "support-before".equals(stage);
+        if (reconstructed) {
+            require(!profile.units().containsKey(SupportArtifacts.BINDING), "Unexpected JDT 5 binding in historical profile");
+        } else {
+            var binding = candidate.binding();
+            require(binding.version().toString().equals(jsonString(observed, "fragmentVersion")), "Unexpected active JDT 5 fragment version");
+            Path fragment = SupportArtifacts.installed(SupportArtifacts.BINDING, binding, home, Path.of(jsonString(observed, "fragmentPath")), profile);
+            receipt.addProperty("fragmentSha256", digest(fragment));
+        }
+        String origin = reconstructed ? "historical.fixture" : "support.maven";
+        receipt.addProperty("origin", reconstructed ? "reconstructed historical implementation" : "Maven reactor");
+        receipt.addProperty("originPath", records.get(origin + ".path"));
+        receipt.addProperty("originSha256", records.get(origin + ".sha256"));
+        Files.writeString(evidence.resolve(stage + "-support.json"), receipt + "\n");
+        records.put(stage + ".support.root", "false");
+        records.put(stage + ".profile", java.util.Objects.requireNonNull(latestProfile(home).getParent()).toString());
+    }
+
+    private void verifySupportUpgrade() throws Exception {
+        Path source = work.resolve("support-fixture-source");
+        Path oldJar = HistoricalSupport.build(source, work, installedClasspath());
+        URI fixture = publishFixture(source, "historical-support");
+        var old = SupportArtifacts.Artifact.read(HistoricalSupport.VERSION, oldJar);
+        Path oldPublished = Path.of(fixture).resolve("plugins").resolve(oldJar.getFileName());
+        old.requireSameBytes(oldPublished);
+        String group = SupportArtifacts.COMPONENT + SupportArtifacts.GROUP;
+        String oldRoot = group + '/' + HistoricalSupport.FEATURE_VERSION;
+        Path destination = installation("support-upgrade");
+        records.put("historical.fixture.path", old.path().toString());
+        records.put("historical.fixture.sha256", old.sha256());
+        provisionStock(destination, "support-stock");
+        provision(destination, "support-before-install", List.of(fixture.toString()), List.of(oldRoot), List.of());
+        AggregateInstallationEvidence.requireFeatures(profile(destination, "support-before"), Map.of(group, HistoricalSupport.FEATURE_VERSION), Set.of(group));
+        supportProbe(destination, "support-before", true, SupportArtifacts.Artifact.read(HistoricalSupport.VERSION, oldPublished));
+        require(candidate.support().version().compareTo(old.version()) > 0 && !candidate.support().sha256().equals(old.sha256()),
+                "Candidate does not upgrade the reconstructed support implementation");
+        provision(destination, "support-replace", List.of(repository.toString()), List.of(group + '/' + candidate.component().version()), List.of(oldRoot));
+        AggregateInstallationEvidence.requireFeatures(profile(destination, "support-after"), Map.of(group, candidate.component().version().toString()), Set.of(group));
+        supportProbe(destination, "support-after", false, candidate.support());
+        require(records.get("support-before.profile").equals(records.get("support-after.profile"))
+                && "SandboxAggregate".equals(records.get("support-before.profileId"))
+                && "SandboxAggregate".equals(records.get("support-after.profileId")), "Support upgrade changed profile");
+        recreateDirectory(destination);
+        Files.delete(destination);
     }
 
     private void verifyInstalledFeatures(Path installation, String stage, Map<String, String> versions,
@@ -984,12 +1085,17 @@ public final class AggregateInstallationVerifier {
         factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
         factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "");
         factory.newTransformer().transform(new DOMSource(metadata.getOwnerDocument()), new StreamResult(feature.resolve("feature.xml").toFile()));
-        Path target = work.resolve("next-repository");
+        URI result = publishFixture(source, "update-fixture");
+        require(featureVersions(result).equals(Map.of(AGGREGATE, next)), "Unexpected fixture metadata");
+        return result;
+    }
+
+    private URI publishFixture(Path source, String name) throws Exception {
+        Path target = work.resolve(name + "-repository");
         Files.createDirectories(target);
-        run(builder, "publish-update-fixture", "org.eclipse.equinox.p2.publisher.FeaturesAndBundlesPublisher",
+        run(builder, "publish-" + name, "org.eclipse.equinox.p2.publisher.FeaturesAndBundlesPublisher",
                 List.of("-source", source.toString(), "-metadataRepository", target.toUri().toString(),
                         "-artifactRepository", target.toUri().toString(), "-publishArtifacts", "-compress"), Duration.ofMinutes(3));
-        require(featureVersions(target.toUri()).equals(Map.of(AGGREGATE, next)), "Unexpected fixture metadata");
         return target.toUri();
     }
 
@@ -1028,21 +1134,25 @@ public final class AggregateInstallationVerifier {
         return result;
     }
 
-    private Path compileProbe() throws Exception {
-        Path source = work.resolve("AggregateProbe.java");
-        try (InputStream stream = AggregateInstallationVerifier.class.getResourceAsStream("/probe/AggregateProbe.java")) {
-            require(stream != null, "Missing runtime probe source");
-            Files.copy(stream, source);
-        }
-        Path classes = work.resolve("probe-classes");
-        Files.createDirectories(classes);
-        String classpath;
+    private String installedClasspath() throws IOException {
         try (var files = Files.list(builder.resolve("plugins"))) {
-            classpath = files.filter(path -> path.toString().endsWith(".jar")).sorted().map(Path::toString)
+            return files.filter(path -> path.toString().endsWith(".jar")).sorted().map(Path::toString)
                     .collect(java.util.stream.Collectors.joining(java.io.File.pathSeparator));
         }
-        require(ToolProvider.getSystemJavaCompiler().run(null, null, null, "--release", "25", "-classpath", classpath,
-                "-d", classes.toString(), source.toString()) == 0, "Runtime probe compilation failed");
+    }
+
+    private Path compileProbe() throws Exception {
+        Path classes = Files.createDirectories(work.resolve("probe-classes"));
+        List<String> arguments = new ArrayList<>(List.of("--release", "25", "--source-path", "", "-classpath", installedClasspath(), "-d", classes.toString()));
+        for (String name : List.of("AggregateProbe.java", "SupportProbe.java")) {
+            Path source = work.resolve(name);
+            try (InputStream stream = AggregateInstallationVerifier.class.getResourceAsStream("/probe/" + name)) {
+                require(stream != null, "Missing runtime probe " + name);
+                Files.copy(stream, source);
+            }
+            arguments.add(source.toString());
+        }
+        require(ToolProvider.getSystemJavaCompiler().run(null, null, null, arguments.toArray(String[]::new)) == 0, "Runtime probe compilation failed");
         Manifest manifest = new Manifest();
         Attributes attributes = manifest.getMainAttributes();
         attributes.putValue("Manifest-Version", "1.0");
@@ -1057,15 +1167,19 @@ public final class AggregateInstallationVerifier {
             output.putNextEntry(new JarEntry("plugin.xml"));
             output.write(("<plugin><extension point='org.eclipse.core.runtime.applications' id='verify'><application><run class='org.sandbox.distribution.probe.AggregateProbe'/></application></extension></plugin>").getBytes(StandardCharsets.UTF_8));
             output.closeEntry();
-            try (var files = Files.walk(classes)) {
-                for (Path file : files.filter(Files::isRegularFile).sorted().toList()) {
-                    output.putNextEntry(new JarEntry(classes.relativize(file).toString().replace('\\', '/')));
-                    Files.copy(file, output);
-                    output.closeEntry();
-                }
-            }
+            writeClasses(classes, output);
         }
         return archive;
+    }
+
+    static void writeClasses(Path classes, JarOutputStream output) throws IOException {
+        try (var files = Files.walk(classes)) {
+            for (Path file : files.filter(Files::isRegularFile).sorted().toList()) {
+                output.putNextEntry(new JarEntry(classes.relativize(file).toString().replace('\\', '/')));
+                Files.copy(file, output);
+                output.closeEntry();
+            }
+        }
     }
 
     private AggregateInstallationEvidence.Profile profile(Path installation, String stage) throws Exception {
@@ -1097,7 +1211,7 @@ public final class AggregateInstallationVerifier {
         return result;
     }
 
-    private static String digest(Path file) throws Exception {
+    static String digest(Path file) throws Exception {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         try (InputStream input = Files.newInputStream(file)) {
             byte[] buffer = new byte[8192];

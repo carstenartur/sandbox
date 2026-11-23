@@ -57,6 +57,16 @@ class AggregateProvisioningContractTest {
     }
 
     @Test
+    void junitFeatureIncludesSupportDirectly() throws Exception {
+        Path feature = Path.of("../sandbox_junit_cleanup_feature/feature.xml");
+        try (var stream = Files.newInputStream(feature)) {
+            assertEquals(1, AggregateInstallationEvidence.children(AggregateInstallationEvidence.xml(stream), "plugin")
+                    .stream().filter(plugin -> "org.sandbox.junit.migration.support".equals(plugin.getAttribute("id")))
+                    .count(), "Installed cleanup users need the staged support bundle");
+        }
+    }
+
+    @Test
     void committedPdeLaunchIncludesAggregateInBothFeatureSelections() throws Exception {
         Path root = Path.of(System.getProperty("user.dir")).toAbsolutePath();
         while (root != null && !Files.isRegularFile(root.resolve("sandbox_product/sandbox.product.launch"))) root = root.getParent();

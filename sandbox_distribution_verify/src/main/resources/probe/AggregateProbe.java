@@ -29,6 +29,11 @@ public final class AggregateProbe implements IApplication {
     public Object start(IApplicationContext context) throws Exception {
         String[] arguments = (String[]) context.getArguments().get(IApplicationContext.APPLICATION_ARGS);
         if (arguments.length != 2) throw new IllegalArgumentException("Expected inventory and result paths");
+        String support = SupportProbe.observe("historical".equals(arguments[0]));
+        if ("support".equals(arguments[0]) || "historical".equals(arguments[0])) {
+            Files.writeString(Path.of(arguments[1]), "{\"support\":" + support + "}\n");
+            return EXIT_OK;
+        }
         List<String> expected = Files.readAllLines(Path.of(arguments[0]));
         Set<String> ids = new LinkedHashSet<>();
         List<Bundle> bundles = new ArrayList<>();
@@ -88,15 +93,15 @@ public final class AggregateProbe implements IApplication {
         Files.writeString(Path.of(arguments[1]), "{\"status\":\"PASS\",\"bundles\":" + bundles.size()
                 + ",\"cleanups\":" + cleanups + ",\"helpTocs\":" + tocs
                 + ",\"astApiJar\":\"" + escape(astApiJar) + "\""
-                + ",\"resolvedBundles\":" + resolvedBundles + "}\n");
+                + ",\"support\":" + support + ",\"resolvedBundles\":" + resolvedBundles + "}\n");
         return EXIT_OK;
     }
 
-    private static String escape(String value) {
+    static String escape(String value) {
         return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
-    private static void require(boolean condition, String message) {
+    static void require(boolean condition, String message) {
         if (!condition) throw new IllegalStateException(message);
     }
 
