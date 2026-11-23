@@ -94,3 +94,72 @@ Jupiter's `PER_CLASS` lifecycle, the test instance is constructed before
 `perClass` setup.
 
 Unmigrated tests can continue to register `ProjectTestSetup` as a JUnit 4 rule. The Jupiter extension calls teardown after successful setup, including when the test fails. A failed setup leaves teardown uncalled at both scopes. If a test body and its teardown both fail, Vintage reports both causes in a multiple-failure error. Jupiter reports the body failure with the teardown failure suppressed. This adapter covers the `ExternalResource.before/after` lifecycle. A rule that overrides `apply` to wrap the test body needs a migration for that additional behavior.
+
+### Grouping peers that JUnit 4 captured together
+
+Supply the effective outer-to-inner order for **one scope**. The following example
+uses two public fixture hooks. The test keeps access to the live fields, and
+the group holds the original selected receivers through teardown.
+
+```java
+import static org.sandbox.junit.jupiter.ExternalResourceExtension.perTestGroup;
+import static org.sandbox.junit.jupiter.ExternalResourceExtension.resourceHook;
+
+import java.util.List;
+import org.junit.jupiter.api.extension.Extension;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+class SearchTest {
+    static class Workspace {
+        public void open() { /* prepare the workspace */ }
+        public void close() { /* release the workspace */ }
+    }
+
+    private Workspace project = new Workspace();
+    private Workspace index;
+
+    SearchTest() {
+        index = new Workspace();
+    }
+
+    @RegisterExtension
+    static final Extension resources = perTestGroup(SearchTest.class, context -> {
+        SearchTest test = (SearchTest) context.getRequiredTestInstance();
+        return List.of(
+                resourceHook(() -> test.project, Workspace::open, Workspace::close),
+                resourceHook(() -> test.index, Workspace::open, Workspace::close));
+    });
+}
+```
+
+For static class fixtures, use a separate static `perClassGroup(SearchTest.class,
+context -> ...)` registration with selectors that read static fields. Entry and
+exit run only where the required test class exactly matches the supplied class.
+The factory runs once per matching entry. Defer field reads to the selectors.
+The extension validates a snapshot of the entire list and selects **every**
+receiver before setup starts, so an outer setup can replace a peer's field without
+redirecting its hooks. A null list or descriptor fails before selection. Empty
+groups are valid. Null receivers skip both hooks. Aliases and repeated descriptors
+retain their own positions. A factory or selector failure acquires nothing.
+
+Only successful setups acquire cleanup. The group removes its pending actions
+before draining them in reverse order. One ordinary cleanup failure escapes
+intact. Several produce a fresh OpenTest4J `MultipleFailuresError` with every
+original failure in cleanup order, including duplicates. An ordinary setup
+failure keeps its identity. Jupiter controls how it combines cleanup with a
+setup, body or user-lifecycle failure. A suppression-disabled primary can hide
+cleanup failures. An assumption can abort a test after cleanup, while a failing
+cleanup can turn the abort into a failure.
+
+If group setup throws `OutOfMemoryError`, the group immediately drains the
+successful outer setups and rethrows the original error. An `OutOfMemoryError`
+during cleanup stops the drain. Already collected failures, or a distinct
+cleanup failure during fatal setup, are attached where suppression permits.
+A fatal body or user hook can escape Jupiter before the group gets its exit
+callback. Under `PER_CLASS`, Jupiter constructs the instance before class setup.
+
+The caller must establish the effective order, resolve field hiding and provide
+legally accessible hooks. The group supplies no automatic mixed-rule conversion
+or translation of custom `apply` wrappers. Provision the support artifact,
+OpenTest4J 1.3 and the matching Jupiter/Platform dependencies in the test target.
+The four outstanding reference-matrix failures remain separate migration work.

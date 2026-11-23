@@ -24,6 +24,17 @@ a peer's field. With Jupiter's `PER_CLASS` lifecycle, test-instance construction
 precedes `perClass` setup. An arbitrary override of `ExternalResource.apply` needs
 an explicit migration for its additional behavior.
 
+For a reviewed group at one scope, register `perTestGroup` or `perClassGroup`
+for the exact concrete class. Its factory returns ordered `resourceHook` descriptors.
+Defer field reads to the selectors. The group snapshots the list and reads all
+receivers before setup, including peers an outer hook may replace. Null receivers
+are skipped, and aliases remain distinct entries. Successful setups unwind in
+reverse. Multiple ordinary cleanup failures retain their order and identity in
+an OpenTest4J aggregate. Jupiter controls suppressed failures and fatal exits
+outside the group. The support README gives the two-fixture registration and
+failure boundaries. Establishing order and hiding, translating custom wrappers
+and resolving the four outstanding reference-matrix failures remain open.
+
 The support jar targets Java 21 for consumer tests. The Sandbox build, product
 and PDE test baseline require Java 25. Provision the support jar and any PDE
 service registration explicitly. Mixed-lifecycle conversion remains manual.
