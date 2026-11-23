@@ -32,10 +32,12 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
 import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
 import org.sandbox.jdt.triggerpattern.api.RewriteRule;
 import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
 import org.sandbox.jdt.triggerpattern.cleanup.AbstractPatternCleanupPlugin;
 import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
+import org.sandbox.jdt.triggerpattern.internal.PatternParser;
 
 /**
  * Abstract base class that connects TriggerPattern with the JUnit Cleanup framework.
@@ -173,8 +175,19 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
         for (Pattern pattern : getPatterns()) {
             List<Match> matches = ENGINE.findExecutableMatches(compilationUnit, pattern);
             
+            if (matches.isEmpty()) continue;
+            String requiredSpelling = null;
+            if (pattern.getKind() == PatternKind.ANNOTATION && !getClass().isAnnotationPresent(RewriteRule.class)) {
+                // Custom handlers emit their own target types and imports. Keep their established input spellings.
+                Annotation template = (Annotation) new PatternParser().parse(pattern);
+                requiredSpelling = template.getTypeName().getFullyQualifiedName();
+            }
             for (Match match : matches) {
                 ASTNode node = match.getMatchedNode();
+                if (requiredSpelling != null && node instanceof Annotation annotation
+                        && !requiredSpelling.equals(annotation.getTypeName().getFullyQualifiedName())) {
+                    continue;
+                }
                 
                 // Skip already processed nodes
                 if (nodesprocessed.contains(node)) {

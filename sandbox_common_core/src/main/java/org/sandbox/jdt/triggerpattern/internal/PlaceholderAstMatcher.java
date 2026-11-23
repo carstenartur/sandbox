@@ -20,6 +20,7 @@ import java.util.Map;
 
 import org.eclipse.jdt.core.dom.ASTMatcher;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -250,10 +251,14 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 		MarkerAnnotation otherAnnotation = (MarkerAnnotation) other;
 		
 		// Match annotation name
-		return patternNode.getTypeName().getFullyQualifiedName()
-				.equals(otherAnnotation.getTypeName().getFullyQualifiedName());
+		return annotationNamesMatch(patternNode, otherAnnotation);
 	}
 	
+	/** Compares annotation names while leaving the annotation's values to their structural matchers. */
+	protected boolean annotationNamesMatch(Annotation pattern, Annotation source) {
+		return pattern.getTypeName().getFullyQualifiedName().equals(source.getTypeName().getFullyQualifiedName());
+	}
+
 	/**
 	 * Matches single member annotations (e.g., {@code @SuppressWarnings("unchecked")}).
 	 * 
@@ -270,8 +275,7 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 		SingleMemberAnnotation otherAnnotation = (SingleMemberAnnotation) other;
 		
 		// Match annotation name
-		if (!patternNode.getTypeName().getFullyQualifiedName()
-				.equals(otherAnnotation.getTypeName().getFullyQualifiedName())) {
+		if (!annotationNamesMatch(patternNode, otherAnnotation)) {
 			return false;
 		}
 		
@@ -295,8 +299,7 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 		NormalAnnotation otherAnnotation = (NormalAnnotation) other;
 		
 		// Match annotation name
-		if (!patternNode.getTypeName().getFullyQualifiedName()
-				.equals(otherAnnotation.getTypeName().getFullyQualifiedName())) {
+		if (!annotationNamesMatch(patternNode, otherAnnotation)) {
 			return false;
 		}
 		

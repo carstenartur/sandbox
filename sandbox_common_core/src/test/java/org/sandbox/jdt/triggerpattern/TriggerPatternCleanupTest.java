@@ -14,6 +14,7 @@
 package org.sandbox.jdt.triggerpattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -76,7 +77,9 @@ class TriggerPatternCleanupTest {
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
-		assertEquals(1, matches.size(), "Should find one @Before annotation with qualified type");
+		assertEquals(1, matches.size(), "Keep the structural match for diagnostics on the fixture without JUnit");
+		assertFalse(matches.get(0).getUnknownSemanticRequirements().isEmpty());
+		assertTrue(engine.findExecutableMatches(cu, pattern).isEmpty());
 	}
 	
 	@Test

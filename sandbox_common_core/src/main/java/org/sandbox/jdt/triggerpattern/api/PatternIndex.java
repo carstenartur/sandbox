@@ -218,9 +218,14 @@ public final class PatternIndex {
 		}
 
 		for (IndexEntry entry : entries) {
-			PlaceholderAstMatcher matcher = kind == PatternKind.TYPE_DECLARATION
-					? new TypeDeclarationHeaderMatcher()
-					: new FqnAwarePlaceholderAstMatcher();
+			PlaceholderAstMatcher matcher;
+			if (kind == PatternKind.TYPE_DECLARATION) {
+				matcher = new TypeDeclarationHeaderMatcher();
+			} else if (entry.patternNode() instanceof Annotation annotation && kind == PatternKind.ANNOTATION) {
+				matcher = new FqnAwarePlaceholderAstMatcher(annotation, entry.sourcePattern().getQualifiedType());
+			} else {
+				matcher = new FqnAwarePlaceholderAstMatcher();
+			}
 			matcher.setCaseInsensitive(caseInsensitive);
 			if (entry.patternNode().subtreeMatch(matcher, node)) {
 				Match match = PatternMatchSupport.createMatch(node, matcher.getBindings(),
