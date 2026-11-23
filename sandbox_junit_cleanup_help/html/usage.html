@@ -117,6 +117,14 @@ public class MyTest {
       Separate suppliers read at their own setup boundaries. Review peer rules that change fields
       if JUnit 4 captured those fields together before setup. Under Jupiter's <code>PER_CLASS</code>
       lifecycle, test-instance construction precedes <code>perClass</code> setup.</p>
+   <p>For peers captured together, use one <code>perTestGroup</code> or <code>perClassGroup</code>
+      for the exact concrete class and scope. The factory supplies <code>resourceHook</code> entries
+      in the effective outer-to-inner order. Defer fixture field reads to their selectors.
+      The group selects all receivers before setup, skips null receivers and retains aliases.
+      Only successful setups unwind, in reverse order. Multiple ordinary cleanup failures form
+      an ordered OpenTest4J aggregate. Jupiter controls suppression and can bypass the exit callback
+      for a fatal error from the test body. Group registration, ordering and field-hiding analysis,
+      custom <code>apply</code> migration and support-bundle provisioning remain manual.</p>
    <p>The support jar targets Java 21 for consumer tests. The Sandbox build, product and PDE test
       baseline require Java 25. Add the dependency and register mixed-lifecycle adapters manually.
       The bridge covers <code>before</code>/<code>after</code>
