@@ -3,4 +3,5 @@ Bundle-SymbolicName: org.sandbox.junit.migration.support
 Bundle-Version: ${version_cleanup;${project.version}}
 Export-Package: org.sandbox.junit.jupiter
 Import-Package: org.junit.platform.*;version="[1.14,7)",\
-                org.junit.jupiter.*;version="[5.14,7)",*
+                org.junit.jupiter.*;version="[5.14,7)",\
+                org.opentest4j;version="[1.3,2)",*
