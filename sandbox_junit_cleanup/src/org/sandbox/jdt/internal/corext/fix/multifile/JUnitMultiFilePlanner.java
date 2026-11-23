@@ -65,11 +65,28 @@ public final class JUnitMultiFilePlanner {
 	/** Enabled project-planning contracts for one cleanup run. */
 	public record PlanningOptions(boolean migrateExternalResourceRules,
 			boolean migrateJUnit3Hierarchies,
-			boolean diagnoseParameterizedCandidates, boolean executeParameterizedPlans) {
+			boolean diagnoseParameterizedCandidates, boolean executeParameterizedPlans,
+			Set<String> retainedExternalResourceUnits) {
+
+		public PlanningOptions {
+			retainedExternalResourceUnits= Set.copyOf(retainedExternalResourceUnits);
+		}
+
+		public PlanningOptions(boolean migrateExternalResourceRules, boolean migrateJUnit3Hierarchies,
+				boolean diagnoseParameterizedCandidates, boolean executeParameterizedPlans) {
+			this(migrateExternalResourceRules, migrateJUnit3Hierarchies,
+					diagnoseParameterizedCandidates, executeParameterizedPlans, Set.of());
+		}
 
 		public PlanningOptions(boolean migrateExternalResourceRules, boolean migrateJUnit3Hierarchies,
 				boolean diagnoseParameterizedCandidates) {
 			this(migrateExternalResourceRules, migrateJUnit3Hierarchies, diagnoseParameterizedCandidates, false);
+		}
+
+		/** Retains the specified fixture contracts while planning independent migrations. */
+		public PlanningOptions withRetainedExternalResourceUnits(Set<String> unitHandles) {
+			return new PlanningOptions(migrateExternalResourceRules, migrateJUnit3Hierarchies,
+					diagnoseParameterizedCandidates, executeParameterizedPlans, unitHandles);
 		}
 
 		boolean hasPlanningWork() {
@@ -236,7 +253,7 @@ public final class JUnitMultiFilePlanner {
 		}
 
 		MigrationResult externalResult= options.migrateExternalResourceRules()
-				? planExternalResources(rootsByHandle, status, monitor)
+				? planExternalResources(rootsByHandle, options.retainedExternalResourceUnits(), status, monitor)
 				: new MigrationResult(List.of(), List.of());
 		MultiFilePlanningBudget.checkCanceled(monitor);
 		JUnit3HierarchyPlanner.Result junit3Result= options.migrateJUnit3Hierarchies()
@@ -265,11 +282,18 @@ public final class JUnitMultiFilePlanner {
 	}
 
 	private static MigrationResult planExternalResources(Map<String, CompilationUnit> rootsByHandle,
-			RefactoringStatus status, IProgressMonitor monitor) {
+			Set<String> retainedUnits, RefactoringStatus status, IProgressMonitor monitor) {
 		MultiFilePlanningBudget.checkCanceled(monitor);
 		ResourceScope resourceScope= collectResourceChains(rootsByHandle, monitor);
 		MultiFilePlanningBudget.checkCanceled(monitor);
 		List<RuleField> ruleFields= collectRuleFields(rootsByHandle, resourceScope.chainsByTypeKey(), monitor);
+		if (!retainedUnits.isEmpty()) {
+			// Keep the complete selected scope and omit a Rule as a whole if
+			// its field or any link in its fixture chain must stay on JUnit 4.
+			ruleFields.removeIf(field -> retainedUnits.contains(field.compilationUnitHandle())
+					|| resourceScope.chainsByTypeKey().get(field.resourceTypeKey()).types().stream()
+							.anyMatch(type -> retainedUnits.contains(type.compilationUnitHandle())));
+		}
 		MultiFilePlanningBudget.checkCanceled(monitor);
 		MigrationResult result= createMigrations(ruleFields, resourceScope.chainsByTypeKey(), status, monitor);
 		if (resourceScope.diagnostics().isEmpty()) {
@@ -474,7 +498,7 @@ public final class JUnitMultiFilePlanner {
 		return new MigrationResult(migrations, diagnostics);
 	}
 
-	private static boolean requiresLocalExternalResourceRewrite(TypeDeclaration node, ITypeBinding binding) {
+	static boolean requiresLocalExternalResourceRewrite(TypeDeclaration node, ITypeBinding binding) {
 		ITypeBinding superclass= binding == null ? null : binding.getSuperclass();
 		if (superclass != null
 				&& ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(superclass.getErasure().getQualifiedName())) {
