@@ -196,7 +196,7 @@ public final class JavaProjectCompilationUnits {
 <span class="nc" id="L196">			return false;</span>
 		}
 <span class="fc" id="L198">		ResourceAttributes attributes= resource.getResourceAttributes();</span>
-<span class="pc bpc" id="L199" title="2 of 4 branches missed.">		return attributes == null || !attributes.isReadOnly();</span>
+<span class="pc bpc" id="L199" title="1 of 4 branches missed.">		return attributes == null || !attributes.isReadOnly();</span>
 	}
 
 	/**
@@ -211,8 +211,8 @@ public final class JavaProjectCompilationUnits {
 		}
 <span class="fc" id="L212">		List&lt;IJavaProject&gt; result= new ArrayList&lt;&gt;();</span>
 <span class="fc bfc" id="L213" title="All 2 branches covered.">		for (IJavaProject project : projects) {</span>
-<span class="pc bpc" id="L214" title="1 of 2 branches missed.">			if (!isEditable(project)) {</span>
-<span class="nc" id="L215">				result.add(project);</span>
+<span class="fc bfc" id="L214" title="All 2 branches covered.">			if (!isEditable(project)) {</span>
+<span class="fc" id="L215">				result.add(project);</span>
 			}
 		}
 <span class="fc" id="L218">		return List.copyOf(result);</span>

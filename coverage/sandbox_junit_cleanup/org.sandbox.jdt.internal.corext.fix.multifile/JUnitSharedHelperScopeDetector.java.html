@@ -154,7 +154,7 @@ public final class JUnitSharedHelperScopeDetector {
 <span class="fc" id="L154">		Map&lt;String, CompilationUnit&gt; roots= new LinkedHashMap&lt;&gt;(selectedRoots);</span>
 <span class="fc" id="L155">		Set&lt;ICompilationUnit&gt; declarationUnits= new LinkedHashSet&lt;&gt;();</span>
 <span class="fc bfc" id="L156" title="All 2 branches covered.">		for (HelperCandidate candidate : possible.values()) {</span>
-<span class="pc bpc" id="L157" title="1 of 2 branches missed.">			if (!roots.containsKey(candidate.compilationUnit().getHandleIdentifier())) {</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">			if (!roots.containsKey(candidate.compilationUnit().getHandleIdentifier())) {</span>
 <span class="fc" id="L158">				declarationUnits.add(candidate.compilationUnit());</span>
 			}
 		}
@@ -170,7 +170,7 @@ public final class JUnitSharedHelperScopeDetector {
 <span class="fc bfc" id="L170" title="All 2 branches covered.">			if (invocationCandidates.contains(candidate.bindingKey())</span>
 <span class="fc bfc" id="L171" title="All 2 branches covered.">					&amp;&amp; isDirectWrapper(method, migrateAssertions, migrateAssumptions)) {</span>
 <span class="fc" id="L172">				verified.putIfAbsent(candidate.bindingKey(), candidate);</span>
-<span class="pc bpc" id="L173" title="2 of 4 branches missed.">			} else if (followAssertionPaths &amp;&amp; !verified.containsKey(candidate.bindingKey())) {</span>
+<span class="pc bpc" id="L173" title="1 of 4 branches missed.">			} else if (followAssertionPaths &amp;&amp; !verified.containsKey(candidate.bindingKey())) {</span>
 <span class="fc" id="L174">				List&lt;IJavaElement&gt; path= assertionPath(candidate, roots, checks, monitor);</span>
 <span class="fc bfc" id="L175" title="All 2 branches covered.">				if (!path.isEmpty()) {</span>
 <span class="fc" id="L176">					assertionPaths.add(path);</span>
@@ -511,8 +511,8 @@ public final class JUnitSharedHelperScopeDetector {
 	}
 
 	private static boolean eligible(IMethodBinding binding) {
-<span class="pc bpc" id="L514" title="2 of 4 branches missed.">		if (binding == null || binding.isConstructor()) {</span>
-<span class="nc" id="L515">			return false;</span>
+<span class="pc bpc" id="L514" title="1 of 4 branches missed.">		if (binding == null || binding.isConstructor()) {</span>
+<span class="fc" id="L515">			return false;</span>
 		}
 <span class="fc" id="L517">		int modifiers= binding.getModifiers();</span>
 <span class="fc bfc" id="L518" title="All 4 branches covered.">		if (Modifier.isPublic(modifiers) || Modifier.isProtected(modifiers)) {</span>

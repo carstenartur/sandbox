@@ -65,16 +65,33 @@ public final class JUnitMultiFilePlanner {
 	/** Enabled project-planning contracts for one cleanup run. */
 	public record PlanningOptions(boolean migrateExternalResourceRules,
 			boolean migrateJUnit3Hierarchies,
-			boolean diagnoseParameterizedCandidates, boolean executeParameterizedPlans) {
+			boolean diagnoseParameterizedCandidates, boolean executeParameterizedPlans,
+			Set&lt;String&gt; retainedExternalResourceUnits) {
+
+<span class="fc" id="L71">		public PlanningOptions {</span>
+<span class="fc" id="L72">			retainedExternalResourceUnits= Set.copyOf(retainedExternalResourceUnits);</span>
+<span class="fc" id="L73">		}</span>
+
+		public PlanningOptions(boolean migrateExternalResourceRules, boolean migrateJUnit3Hierarchies,
+				boolean diagnoseParameterizedCandidates, boolean executeParameterizedPlans) {
+<span class="fc" id="L77">			this(migrateExternalResourceRules, migrateJUnit3Hierarchies,</span>
+<span class="fc" id="L78">					diagnoseParameterizedCandidates, executeParameterizedPlans, Set.of());</span>
+<span class="fc" id="L79">		}</span>
 
 		public PlanningOptions(boolean migrateExternalResourceRules, boolean migrateJUnit3Hierarchies,
 				boolean diagnoseParameterizedCandidates) {
-<span class="fc" id="L72">			this(migrateExternalResourceRules, migrateJUnit3Hierarchies, diagnoseParameterizedCandidates, false);</span>
-<span class="fc" id="L73">		}</span>
+<span class="fc" id="L83">			this(migrateExternalResourceRules, migrateJUnit3Hierarchies, diagnoseParameterizedCandidates, false);</span>
+<span class="fc" id="L84">		}</span>
+
+		/** Retains the specified fixture contracts while planning independent migrations. */
+		public PlanningOptions withRetainedExternalResourceUnits(Set&lt;String&gt; unitHandles) {
+<span class="fc" id="L88">			return new PlanningOptions(migrateExternalResourceRules, migrateJUnit3Hierarchies,</span>
+<span class="fc" id="L89">					diagnoseParameterizedCandidates, executeParameterizedPlans, unitHandles);</span>
+		}
 
 		boolean hasPlanningWork() {
-<span class="fc bfc" id="L76" title="All 4 branches covered.">			return migrateExternalResourceRules || migrateJUnit3Hierarchies</span>
-<span class="fc bfc" id="L77" title="All 2 branches covered.">					|| diagnoseParameterizedCandidates;</span>
+<span class="fc bfc" id="L93" title="All 4 branches covered.">			return migrateExternalResourceRules || migrateJUnit3Hierarchies</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">					|| diagnoseParameterizedCandidates;</span>
 		}
 	}
 
@@ -88,9 +105,9 @@ public final class JUnitMultiFilePlanner {
 	 * direct {@code ExternalResource} subclass.
 	 */
 	private record ResourceChain(ResourceType fixture, List&lt;ResourceType&gt; types) {
-<span class="fc" id="L91">		ResourceChain {</span>
-<span class="fc" id="L92">			types= List.copyOf(types);</span>
-<span class="fc" id="L93">		}</span>
+<span class="fc" id="L108">		ResourceChain {</span>
+<span class="fc" id="L109">			types= List.copyOf(types);</span>
+<span class="fc" id="L110">		}</span>
 	}
 
 	private record RuleField(String compilationUnitHandle, String fieldBindingKey, String resourceTypeKey,
@@ -103,16 +120,16 @@ public final class JUnitMultiFilePlanner {
 
 	private record MigrationResult(List&lt;ExternalResourceRuleMigration&gt; migrations,
 			List&lt;MultiFileCandidateDiagnostic&gt; diagnostics) {
-<span class="fc" id="L106">		MigrationResult {</span>
-<span class="fc" id="L107">			migrations= List.copyOf(migrations);</span>
-<span class="fc" id="L108">			diagnostics= List.copyOf(diagnostics);</span>
-<span class="fc" id="L109">		}</span>
+<span class="fc" id="L123">		MigrationResult {</span>
+<span class="fc" id="L124">			migrations= List.copyOf(migrations);</span>
+<span class="fc" id="L125">			diagnostics= List.copyOf(diagnostics);</span>
+<span class="fc" id="L126">		}</span>
 	}
 
-<span class="fc" id="L112">	private enum RuleKind {</span>
-<span class="fc" id="L113">		NONE,</span>
-<span class="fc" id="L114">		INSTANCE,</span>
-<span class="fc" id="L115">		CLASS</span>
+<span class="fc" id="L129">	private enum RuleKind {</span>
+<span class="fc" id="L130">		NONE,</span>
+<span class="fc" id="L131">		INSTANCE,</span>
+<span class="fc" id="L132">		CLASS</span>
 	}
 
 	private JUnitMultiFilePlanner() {
@@ -122,195 +139,202 @@ public final class JUnitMultiFilePlanner {
 	public static MultiFileCleanUpPlanResult&lt;JUnitMigrationPlan&gt; create(IJavaProject project,
 			ICompilationUnit[] selectedUnits, boolean migrateExternalResourceRules, IProgressMonitor monitor)
 			throws CoreException {
-<span class="fc" id="L125">		SelectedCompilationUnitPlan selectedScope= SelectedCompilationUnitPlan.of(project, selectedUnits);</span>
-<span class="pc bpc" id="L126" title="2 of 4 branches missed.">		if (!migrateExternalResourceRules || selectedUnits.length == 0) {</span>
-<span class="nc" id="L127">			return MultiFileCleanUpPlanResult.success(emptyPlan(selectedScope));</span>
+<span class="fc" id="L142">		SelectedCompilationUnitPlan selectedScope= SelectedCompilationUnitPlan.of(project, selectedUnits);</span>
+<span class="pc bpc" id="L143" title="2 of 4 branches missed.">		if (!migrateExternalResourceRules || selectedUnits.length == 0) {</span>
+<span class="nc" id="L144">			return MultiFileCleanUpPlanResult.success(emptyPlan(selectedScope));</span>
 		}
-<span class="pc bpc" id="L129" title="3 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
-<span class="nc" id="L130">			throw new OperationCanceledException();</span>
+<span class="pc bpc" id="L146" title="3 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
+<span class="nc" id="L147">			throw new OperationCanceledException();</span>
 		}
-<span class="fc" id="L132">		List&lt;ICompilationUnit&gt; allProjectUnits= JavaProjectCompilationUnits.collect(project);</span>
-<span class="fc" id="L133">		Set&lt;String&gt; projectHandles= new LinkedHashSet&lt;&gt;();</span>
-<span class="fc bfc" id="L134" title="All 2 branches covered.">		for (ICompilationUnit unit : allProjectUnits) {</span>
-<span class="fc" id="L135">			projectHandles.add(unit.getPrimary().getHandleIdentifier());</span>
+<span class="fc" id="L149">		List&lt;ICompilationUnit&gt; allProjectUnits= JavaProjectCompilationUnits.collect(project);</span>
+<span class="fc" id="L150">		Set&lt;String&gt; projectHandles= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">		for (ICompilationUnit unit : allProjectUnits) {</span>
+<span class="fc" id="L152">			projectHandles.add(unit.getPrimary().getHandleIdentifier());</span>
 		}
-<span class="fc" id="L137">		return create(project, selectedUnits, true,</span>
-<span class="fc" id="L138">				selectedScope.compilationUnitHandles().equals(projectHandles), monitor);</span>
+<span class="fc" id="L154">		return create(project, selectedUnits, true,</span>
+<span class="fc" id="L155">				selectedScope.compilationUnitHandles().equals(projectHandles), monitor);</span>
 	}
 
 	/** Compatibility entry point for ExternalResource-only closed-scope planning. */
 	public static MultiFileCleanUpPlanResult&lt;JUnitMigrationPlan&gt; create(IJavaProject project,
 			ICompilationUnit[] selectedUnits, boolean migrateExternalResourceRules, boolean closedScope,
 			IProgressMonitor monitor) throws CoreException {
-<span class="fc" id="L145">		return createCoordinated(project, selectedUnits, migrateExternalResourceRules, false, closedScope, monitor);</span>
+<span class="fc" id="L162">		return createCoordinated(project, selectedUnits, migrateExternalResourceRules, false, closedScope, monitor);</span>
 	}
 
 	/** Compatibility entry point for established coordinated planning callers. */
 	public static MultiFileCleanUpPlanResult&lt;JUnitMigrationPlan&gt; createCoordinated(IJavaProject project,
 			ICompilationUnit[] selectedUnits, boolean migrateExternalResourceRules,
 			boolean migrateJUnit3Hierarchies, IProgressMonitor monitor) throws CoreException {
-<span class="nc" id="L152">		return createCoordinated(project, selectedUnits,</span>
-<span class="nc" id="L153">				new PlanningOptions(migrateExternalResourceRules, migrateJUnit3Hierarchies, false), monitor);</span>
+<span class="nc" id="L169">		return createCoordinated(project, selectedUnits,</span>
+<span class="nc" id="L170">				new PlanningOptions(migrateExternalResourceRules, migrateJUnit3Hierarchies, false), monitor);</span>
 	}
 
 	/** Compatibility entry point for established closed-scope planning callers. */
 	public static MultiFileCleanUpPlanResult&lt;JUnitMigrationPlan&gt; createCoordinated(IJavaProject project,
 			ICompilationUnit[] selectedUnits, boolean migrateExternalResourceRules,
 			boolean migrateJUnit3Hierarchies, boolean closedScope, IProgressMonitor monitor) throws CoreException {
-<span class="fc" id="L160">		return createCoordinated(project, selectedUnits,</span>
-<span class="fc" id="L161">				new PlanningOptions(migrateExternalResourceRules, migrateJUnit3Hierarchies, false), closedScope, monitor);</span>
+<span class="fc" id="L177">		return createCoordinated(project, selectedUnits,</span>
+<span class="fc" id="L178">				new PlanningOptions(migrateExternalResourceRules, migrateJUnit3Hierarchies, false), closedScope, monitor);</span>
 	}
 
 	/** Plans all enabled coordinated JUnit migrations for a project selection. */
 	public static MultiFileCleanUpPlanResult&lt;JUnitMigrationPlan&gt; createCoordinated(IJavaProject project,
 			ICompilationUnit[] selectedUnits, PlanningOptions options,
 			IProgressMonitor monitor) throws CoreException {
-<span class="fc" id="L168">		Objects.requireNonNull(options);</span>
-<span class="fc" id="L169">		SelectedCompilationUnitPlan selectedScope= SelectedCompilationUnitPlan.of(project, selectedUnits);</span>
-<span class="pc bpc" id="L170" title="1 of 4 branches missed.">		if (!options.hasPlanningWork() || selectedUnits.length == 0) {</span>
-<span class="fc" id="L171">			return MultiFileCleanUpPlanResult.success(emptyPlan(selectedScope));</span>
+<span class="fc" id="L185">		Objects.requireNonNull(options);</span>
+<span class="fc" id="L186">		SelectedCompilationUnitPlan selectedScope= SelectedCompilationUnitPlan.of(project, selectedUnits);</span>
+<span class="pc bpc" id="L187" title="1 of 4 branches missed.">		if (!options.hasPlanningWork() || selectedUnits.length == 0) {</span>
+<span class="fc" id="L188">			return MultiFileCleanUpPlanResult.success(emptyPlan(selectedScope));</span>
 		}
-<span class="pc bpc" id="L173" title="1 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
-<span class="nc" id="L174">			throw new OperationCanceledException();</span>
+<span class="pc bpc" id="L190" title="1 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
+<span class="nc" id="L191">			throw new OperationCanceledException();</span>
 		}
-<span class="fc" id="L176">		List&lt;ICompilationUnit&gt; allProjectUnits= JavaProjectCompilationUnits.collect(project);</span>
-<span class="fc" id="L177">		Set&lt;String&gt; projectHandles= new LinkedHashSet&lt;&gt;();</span>
-<span class="fc bfc" id="L178" title="All 2 branches covered.">		for (ICompilationUnit unit : allProjectUnits) {</span>
-<span class="fc" id="L179">			projectHandles.add(unit.getPrimary().getHandleIdentifier());</span>
+<span class="fc" id="L193">		List&lt;ICompilationUnit&gt; allProjectUnits= JavaProjectCompilationUnits.collect(project);</span>
+<span class="fc" id="L194">		Set&lt;String&gt; projectHandles= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L195" title="All 2 branches covered.">		for (ICompilationUnit unit : allProjectUnits) {</span>
+<span class="fc" id="L196">			projectHandles.add(unit.getPrimary().getHandleIdentifier());</span>
 		}
-<span class="fc" id="L181">		return createCoordinated(project, selectedUnits, options,</span>
-<span class="fc" id="L182">				selectedScope.compilationUnitHandles().equals(projectHandles), monitor);</span>
+<span class="fc" id="L198">		return createCoordinated(project, selectedUnits, options,</span>
+<span class="fc" id="L199">				selectedScope.compilationUnitHandles().equals(projectHandles), monitor);</span>
 	}
 
 	/** Plans enabled migrations after the caller has classified the selected source scope. */
 	public static MultiFileCleanUpPlanResult&lt;JUnitMigrationPlan&gt; createCoordinated(IJavaProject project,
 			ICompilationUnit[] selectedUnits, PlanningOptions options,
 			boolean closedScope, IProgressMonitor monitor) throws CoreException {
-<span class="fc" id="L189">		Objects.requireNonNull(options);</span>
-<span class="fc" id="L190">		SelectedCompilationUnitPlan selectedScope= SelectedCompilationUnitPlan.of(project, selectedUnits);</span>
-<span class="pc bpc" id="L191" title="2 of 4 branches missed.">		if (!options.hasPlanningWork() || selectedUnits.length == 0) {</span>
-<span class="nc" id="L192">			return MultiFileCleanUpPlanResult.success(emptyPlan(selectedScope));</span>
+<span class="fc" id="L206">		Objects.requireNonNull(options);</span>
+<span class="fc" id="L207">		SelectedCompilationUnitPlan selectedScope= SelectedCompilationUnitPlan.of(project, selectedUnits);</span>
+<span class="pc bpc" id="L208" title="2 of 4 branches missed.">		if (!options.hasPlanningWork() || selectedUnits.length == 0) {</span>
+<span class="nc" id="L209">			return MultiFileCleanUpPlanResult.success(emptyPlan(selectedScope));</span>
 		}
-<span class="fc bfc" id="L194" title="All 4 branches covered.">		if (!closedScope &amp;&amp; !options.diagnoseParameterizedCandidates()) {</span>
-<span class="pc bpc" id="L195" title="1 of 2 branches missed.">			JUnitTestTypeInventory inventory= options.migrateJUnit3Hierarchies()</span>
-<span class="nc" id="L196">					? JUnitTestTypeInventory.capture(project, monitor)</span>
-<span class="fc" id="L197">					: new JUnitTestTypeInventory(List.of());</span>
-<span class="fc" id="L198">			MultiFileCleanUpDiagnostics diagnostics= diagnostics(selectedUnits, false, List.of());</span>
-<span class="fc" id="L199">			JUnitMigrationPlan plan= new JUnitMigrationPlan(selectedScope, List.of(), List.of(), inventory);</span>
-<span class="fc" id="L200">			return MultiFileCleanUpPlanResult.success(plan, new RefactoringStatus(),</span>
-<span class="fc" id="L201">					MultiFilePlanningMetrics.empty(), diagnostics);</span>
+<span class="fc bfc" id="L211" title="All 4 branches covered.">		if (!closedScope &amp;&amp; !options.diagnoseParameterizedCandidates()) {</span>
+<span class="pc bpc" id="L212" title="1 of 2 branches missed.">			JUnitTestTypeInventory inventory= options.migrateJUnit3Hierarchies()</span>
+<span class="nc" id="L213">					? JUnitTestTypeInventory.capture(project, monitor)</span>
+<span class="fc" id="L214">					: new JUnitTestTypeInventory(List.of());</span>
+<span class="fc" id="L215">			MultiFileCleanUpDiagnostics diagnostics= diagnostics(selectedUnits, false, List.of());</span>
+<span class="fc" id="L216">			JUnitMigrationPlan plan= new JUnitMigrationPlan(selectedScope, List.of(), List.of(), inventory);</span>
+<span class="fc" id="L217">			return MultiFileCleanUpPlanResult.success(plan, new RefactoringStatus(),</span>
+<span class="fc" id="L218">					MultiFilePlanningMetrics.empty(), diagnostics);</span>
 		}
-<span class="fc" id="L203">		MultiFilePlanningBudget.checkCanceled(monitor);</span>
+<span class="fc" id="L220">		MultiFilePlanningBudget.checkCanceled(monitor);</span>
 
-<span class="fc" id="L205">		long planningStarted= System.nanoTime();</span>
-<span class="fc" id="L206">		MultiFilePlanningBudget.Assessment budget= MultiFilePlanningBudget.assess(selectedUnits,</span>
-<span class="fc" id="L207">				MultiFilePlanningLimits.fromSystemProperties(), monitor);</span>
-<span class="pc bpc" id="L208" title="1 of 2 branches missed.">		if (!budget.mayProceed()) {</span>
-<span class="nc" id="L209">			return new MultiFileCleanUpPlanResult&lt;&gt;(null, budget.status(), budget.metrics(),</span>
-<span class="nc" id="L210">					diagnostics(selectedUnits, closedScope, List.of()));</span>
+<span class="fc" id="L222">		long planningStarted= System.nanoTime();</span>
+<span class="fc" id="L223">		MultiFilePlanningBudget.Assessment budget= MultiFilePlanningBudget.assess(selectedUnits,</span>
+<span class="fc" id="L224">				MultiFilePlanningLimits.fromSystemProperties(), monitor);</span>
+<span class="pc bpc" id="L225" title="1 of 2 branches missed.">		if (!budget.mayProceed()) {</span>
+<span class="nc" id="L226">			return new MultiFileCleanUpPlanResult&lt;&gt;(null, budget.status(), budget.metrics(),</span>
+<span class="nc" id="L227">					diagnostics(selectedUnits, closedScope, List.of()));</span>
 		}
-<span class="fc bfc" id="L212" title="All 2 branches covered.">		Map&lt;String, String&gt; parameterizedSnapshots= options.diagnoseParameterizedCandidates()</span>
-<span class="fc" id="L213">				? JUnit4ParameterizedPlanner.captureSources(selectedUnits, monitor) : Map.of();</span>
-<span class="fc" id="L214">		long parseStarted= System.nanoTime();</span>
-<span class="fc" id="L215">		Map&lt;String, CompilationUnit&gt; rootsByHandle= parse(project, selectedUnits, monitor);</span>
-<span class="fc" id="L216">		long parseNanos= System.nanoTime() - parseStarted;</span>
-<span class="fc" id="L217">		RefactoringStatus status= budget.status();</span>
-<span class="fc" id="L218">		JUnit4ParameterizedPlanner.Result parameterizedResult=</span>
-<span class="fc bfc" id="L219" title="All 2 branches covered.">				options.diagnoseParameterizedCandidates()</span>
-<span class="fc" id="L220">						? JUnit4ParameterizedPlanner.discover(rootsByHandle, parameterizedSnapshots, closedScope,</span>
-<span class="fc bfc" id="L221" title="All 2 branches covered.">								options.executeParameterizedPlans()</span>
-<span class="fc bfc" id="L222" title="All 2 branches covered.">										&amp;&amp; project.findType(&quot;org.junit.jupiter.params.ParameterizedClass&quot;) != null, monitor) //$NON-NLS-1$</span>
-<span class="fc" id="L223">						: new JUnit4ParameterizedPlanner.Result(List.of(), List.of());</span>
+<span class="fc bfc" id="L229" title="All 2 branches covered.">		Map&lt;String, String&gt; parameterizedSnapshots= options.diagnoseParameterizedCandidates()</span>
+<span class="fc" id="L230">				? JUnit4ParameterizedPlanner.captureSources(selectedUnits, monitor) : Map.of();</span>
+<span class="fc" id="L231">		long parseStarted= System.nanoTime();</span>
+<span class="fc" id="L232">		Map&lt;String, CompilationUnit&gt; rootsByHandle= parse(project, selectedUnits, monitor);</span>
+<span class="fc" id="L233">		long parseNanos= System.nanoTime() - parseStarted;</span>
+<span class="fc" id="L234">		RefactoringStatus status= budget.status();</span>
+<span class="fc" id="L235">		JUnit4ParameterizedPlanner.Result parameterizedResult=</span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">				options.diagnoseParameterizedCandidates()</span>
+<span class="fc" id="L237">						? JUnit4ParameterizedPlanner.discover(rootsByHandle, parameterizedSnapshots, closedScope,</span>
+<span class="fc bfc" id="L238" title="All 2 branches covered.">								options.executeParameterizedPlans()</span>
+<span class="fc bfc" id="L239" title="All 2 branches covered.">										&amp;&amp; project.findType(&quot;org.junit.jupiter.params.ParameterizedClass&quot;) != null, monitor) //$NON-NLS-1$</span>
+<span class="fc" id="L240">						: new JUnit4ParameterizedPlanner.Result(List.of(), List.of());</span>
 
-<span class="fc bfc" id="L225" title="All 2 branches covered.">		if (!closedScope) {</span>
-<span class="pc bpc" id="L226" title="1 of 2 branches missed.">			JUnitTestTypeInventory inventory= options.migrateJUnit3Hierarchies()</span>
-<span class="nc" id="L227">					? JUnitTestTypeInventory.capture(project, monitor)</span>
-<span class="fc" id="L228">					: new JUnitTestTypeInventory(List.of());</span>
-<span class="fc" id="L229">			MultiFilePlanningMetrics metrics= budget.metrics()</span>
-<span class="fc" id="L230">					.withDurations(parseNanos, System.nanoTime() - planningStarted)</span>
-<span class="fc" id="L231">					.withRetainedPlanEntries(0);</span>
-<span class="fc" id="L232">			MultiFileCleanUpDiagnostics diagnostics= diagnostics(selectedUnits, false,</span>
-<span class="fc" id="L233">					parameterizedResult.diagnostics());</span>
-<span class="fc" id="L234">			JUnitMigrationPlan plan= new JUnitMigrationPlan(selectedScope, List.of(), List.of(), inventory);</span>
-<span class="fc" id="L235">			return MultiFileCleanUpPlanResult.success(plan, status, metrics, diagnostics);</span>
+<span class="fc bfc" id="L242" title="All 2 branches covered.">		if (!closedScope) {</span>
+<span class="pc bpc" id="L243" title="1 of 2 branches missed.">			JUnitTestTypeInventory inventory= options.migrateJUnit3Hierarchies()</span>
+<span class="nc" id="L244">					? JUnitTestTypeInventory.capture(project, monitor)</span>
+<span class="fc" id="L245">					: new JUnitTestTypeInventory(List.of());</span>
+<span class="fc" id="L246">			MultiFilePlanningMetrics metrics= budget.metrics()</span>
+<span class="fc" id="L247">					.withDurations(parseNanos, System.nanoTime() - planningStarted)</span>
+<span class="fc" id="L248">					.withRetainedPlanEntries(0);</span>
+<span class="fc" id="L249">			MultiFileCleanUpDiagnostics diagnostics= diagnostics(selectedUnits, false,</span>
+<span class="fc" id="L250">					parameterizedResult.diagnostics());</span>
+<span class="fc" id="L251">			JUnitMigrationPlan plan= new JUnitMigrationPlan(selectedScope, List.of(), List.of(), inventory);</span>
+<span class="fc" id="L252">			return MultiFileCleanUpPlanResult.success(plan, status, metrics, diagnostics);</span>
 		}
 
-<span class="fc bfc" id="L238" title="All 2 branches covered.">		MigrationResult externalResult= options.migrateExternalResourceRules()</span>
-<span class="fc" id="L239">				? planExternalResources(rootsByHandle, status, monitor)</span>
-<span class="fc" id="L240">				: new MigrationResult(List.of(), List.of());</span>
-<span class="fc" id="L241">		MultiFilePlanningBudget.checkCanceled(monitor);</span>
-<span class="fc bfc" id="L242" title="All 2 branches covered.">		JUnit3HierarchyPlanner.Result junit3Result= options.migrateJUnit3Hierarchies()</span>
-<span class="fc" id="L243">				? JUnit3HierarchyPlanner.create(project, selectedUnits, rootsByHandle, true, monitor)</span>
-<span class="fc" id="L244">				: new JUnit3HierarchyPlanner.Result(List.of(), List.of(), new JUnitTestTypeInventory(List.of()));</span>
+<span class="fc bfc" id="L255" title="All 2 branches covered.">		MigrationResult externalResult= options.migrateExternalResourceRules()</span>
+<span class="fc" id="L256">				? planExternalResources(rootsByHandle, options.retainedExternalResourceUnits(), status, monitor)</span>
+<span class="fc" id="L257">				: new MigrationResult(List.of(), List.of());</span>
+<span class="fc" id="L258">		MultiFilePlanningBudget.checkCanceled(monitor);</span>
+<span class="fc bfc" id="L259" title="All 2 branches covered.">		JUnit3HierarchyPlanner.Result junit3Result= options.migrateJUnit3Hierarchies()</span>
+<span class="fc" id="L260">				? JUnit3HierarchyPlanner.create(project, selectedUnits, rootsByHandle, true, monitor)</span>
+<span class="fc" id="L261">				: new JUnit3HierarchyPlanner.Result(List.of(), List.of(), new JUnitTestTypeInventory(List.of()));</span>
 
-<span class="fc" id="L246">		List&lt;MultiFileCandidateDiagnostic&gt; candidateDiagnostics= new ArrayList&lt;&gt;(parameterizedResult.diagnostics());</span>
-<span class="fc" id="L247">		candidateDiagnostics.addAll(externalResult.diagnostics());</span>
-<span class="fc" id="L248">		candidateDiagnostics.addAll(junit3Result.diagnostics());</span>
-<span class="fc" id="L249">		int retainedEntries= externalResult.migrations().size() + junit3Result.migrations().size()</span>
-<span class="fc" id="L250">				+ parameterizedResult.plans().size();</span>
-<span class="fc" id="L251">		MultiFilePlanningMetrics metrics= budget.metrics()</span>
-<span class="fc" id="L252">				.withDurations(parseNanos, System.nanoTime() - planningStarted)</span>
-<span class="fc" id="L253">				.withRetainedPlanEntries(retainedEntries);</span>
-<span class="fc" id="L254">		MultiFileCleanUpDiagnostics diagnostics= diagnostics(selectedUnits, true, candidateDiagnostics);</span>
-<span class="fc bfc" id="L255" title="All 2 branches covered.">		if (status.hasFatalError()) {</span>
-<span class="fc" id="L256">			return new MultiFileCleanUpPlanResult&lt;&gt;(null, status, metrics, diagnostics);</span>
+<span class="fc" id="L263">		List&lt;MultiFileCandidateDiagnostic&gt; candidateDiagnostics= new ArrayList&lt;&gt;(parameterizedResult.diagnostics());</span>
+<span class="fc" id="L264">		candidateDiagnostics.addAll(externalResult.diagnostics());</span>
+<span class="fc" id="L265">		candidateDiagnostics.addAll(junit3Result.diagnostics());</span>
+<span class="fc" id="L266">		int retainedEntries= externalResult.migrations().size() + junit3Result.migrations().size()</span>
+<span class="fc" id="L267">				+ parameterizedResult.plans().size();</span>
+<span class="fc" id="L268">		MultiFilePlanningMetrics metrics= budget.metrics()</span>
+<span class="fc" id="L269">				.withDurations(parseNanos, System.nanoTime() - planningStarted)</span>
+<span class="fc" id="L270">				.withRetainedPlanEntries(retainedEntries);</span>
+<span class="fc" id="L271">		MultiFileCleanUpDiagnostics diagnostics= diagnostics(selectedUnits, true, candidateDiagnostics);</span>
+<span class="fc bfc" id="L272" title="All 2 branches covered.">		if (status.hasFatalError()) {</span>
+<span class="fc" id="L273">			return new MultiFileCleanUpPlanResult&lt;&gt;(null, status, metrics, diagnostics);</span>
 		}
-<span class="fc" id="L258">		JUnitMigrationPlan plan= new JUnitMigrationPlan(selectedScope, externalResult.migrations(),</span>
-<span class="fc" id="L259">				junit3Result.migrations(), junit3Result.inventory(), Set.of(), parameterizedResult.plans());</span>
-<span class="fc" id="L260">		return MultiFileCleanUpPlanResult.success(plan, status, metrics, diagnostics);</span>
+<span class="fc" id="L275">		JUnitMigrationPlan plan= new JUnitMigrationPlan(selectedScope, externalResult.migrations(),</span>
+<span class="fc" id="L276">				junit3Result.migrations(), junit3Result.inventory(), Set.of(), parameterizedResult.plans());</span>
+<span class="fc" id="L277">		return MultiFileCleanUpPlanResult.success(plan, status, metrics, diagnostics);</span>
 	}
 
 	private static JUnitMigrationPlan emptyPlan(SelectedCompilationUnitPlan selectedScope) {
-<span class="fc" id="L264">		return new JUnitMigrationPlan(selectedScope, List.of(), List.of(), new JUnitTestTypeInventory(List.of()));</span>
+<span class="fc" id="L281">		return new JUnitMigrationPlan(selectedScope, List.of(), List.of(), new JUnitTestTypeInventory(List.of()));</span>
 	}
 
 	private static MigrationResult planExternalResources(Map&lt;String, CompilationUnit&gt; rootsByHandle,
-			RefactoringStatus status, IProgressMonitor monitor) {
-<span class="fc" id="L269">		MultiFilePlanningBudget.checkCanceled(monitor);</span>
-<span class="fc" id="L270">		ResourceScope resourceScope= collectResourceChains(rootsByHandle, monitor);</span>
-<span class="fc" id="L271">		MultiFilePlanningBudget.checkCanceled(monitor);</span>
-<span class="fc" id="L272">		List&lt;RuleField&gt; ruleFields= collectRuleFields(rootsByHandle, resourceScope.chainsByTypeKey(), monitor);</span>
-<span class="fc" id="L273">		MultiFilePlanningBudget.checkCanceled(monitor);</span>
-<span class="fc" id="L274">		MigrationResult result= createMigrations(ruleFields, resourceScope.chainsByTypeKey(), status, monitor);</span>
-<span class="pc bpc" id="L275" title="1 of 2 branches missed.">		if (resourceScope.diagnostics().isEmpty()) {</span>
-<span class="fc" id="L276">			return result;</span>
+			Set&lt;String&gt; retainedUnits, RefactoringStatus status, IProgressMonitor monitor) {
+<span class="fc" id="L286">		MultiFilePlanningBudget.checkCanceled(monitor);</span>
+<span class="fc" id="L287">		ResourceScope resourceScope= collectResourceChains(rootsByHandle, monitor);</span>
+<span class="fc" id="L288">		MultiFilePlanningBudget.checkCanceled(monitor);</span>
+<span class="fc" id="L289">		List&lt;RuleField&gt; ruleFields= collectRuleFields(rootsByHandle, resourceScope.chainsByTypeKey(), monitor);</span>
+<span class="fc bfc" id="L290" title="All 2 branches covered.">		if (!retainedUnits.isEmpty()) {</span>
+			// Keep the complete selected scope and omit a Rule as a whole if
+			// its field or any link in its fixture chain must stay on JUnit 4.
+<span class="fc bfc" id="L293" title="All 2 branches covered.">			ruleFields.removeIf(field -&gt; retainedUnits.contains(field.compilationUnitHandle())</span>
+<span class="fc" id="L294">					|| resourceScope.chainsByTypeKey().get(field.resourceTypeKey()).types().stream()</span>
+<span class="pc bpc" id="L295" title="1 of 2 branches missed.">							.anyMatch(type -&gt; retainedUnits.contains(type.compilationUnitHandle())));</span>
 		}
-<span class="nc" id="L278">		List&lt;MultiFileCandidateDiagnostic&gt; diagnostics= new ArrayList&lt;&gt;(resourceScope.diagnostics());</span>
-<span class="nc" id="L279">		diagnostics.addAll(result.diagnostics());</span>
-<span class="nc" id="L280">		return new MigrationResult(result.migrations(), diagnostics);</span>
+<span class="fc" id="L297">		MultiFilePlanningBudget.checkCanceled(monitor);</span>
+<span class="fc" id="L298">		MigrationResult result= createMigrations(ruleFields, resourceScope.chainsByTypeKey(), status, monitor);</span>
+<span class="pc bpc" id="L299" title="1 of 2 branches missed.">		if (resourceScope.diagnostics().isEmpty()) {</span>
+<span class="fc" id="L300">			return result;</span>
+		}
+<span class="nc" id="L302">		List&lt;MultiFileCandidateDiagnostic&gt; diagnostics= new ArrayList&lt;&gt;(resourceScope.diagnostics());</span>
+<span class="nc" id="L303">		diagnostics.addAll(result.diagnostics());</span>
+<span class="nc" id="L304">		return new MigrationResult(result.migrations(), diagnostics);</span>
 	}
 
 	private static MultiFileCleanUpDiagnostics diagnostics(ICompilationUnit[] selectedUnits, boolean complete,
 			List&lt;MultiFileCandidateDiagnostic&gt; candidates) {
-<span class="fc" id="L285">		List&lt;String&gt; selectedHandles= java.util.Arrays.stream(selectedUnits)</span>
-<span class="fc" id="L286">				.map(ICompilationUnit::getPrimary)</span>
-<span class="fc" id="L287">				.map(ICompilationUnit::getHandleIdentifier)</span>
-<span class="fc" id="L288">				.toList();</span>
-<span class="fc bfc" id="L289" title="All 2 branches covered.">		MultiFileScopeDiagnostic scope= complete</span>
-<span class="fc" id="L290">				? new MultiFileScopeDiagnostic(selectedHandles, List.of(), &quot;CLOSED_SOURCE_SCOPE&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L291">						&quot;The selected compilation units form a closed coordinated JUnit migration scope.&quot;, true) //$NON-NLS-1$</span>
-<span class="fc" id="L292">				: new MultiFileScopeDiagnostic(selectedHandles, List.of(), &quot;INCOMPLETE_SOURCE_SCOPE&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L293">						&quot;The selected compilation units do not contain every source unit required by the enabled JUnit migrations.&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L294">						false);</span>
-<span class="fc" id="L295">		return new MultiFileCleanUpDiagnostics(CLEANUP_ID, scope, candidates);</span>
+<span class="fc" id="L309">		List&lt;String&gt; selectedHandles= java.util.Arrays.stream(selectedUnits)</span>
+<span class="fc" id="L310">				.map(ICompilationUnit::getPrimary)</span>
+<span class="fc" id="L311">				.map(ICompilationUnit::getHandleIdentifier)</span>
+<span class="fc" id="L312">				.toList();</span>
+<span class="fc bfc" id="L313" title="All 2 branches covered.">		MultiFileScopeDiagnostic scope= complete</span>
+<span class="fc" id="L314">				? new MultiFileScopeDiagnostic(selectedHandles, List.of(), &quot;CLOSED_SOURCE_SCOPE&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L315">						&quot;The selected compilation units form a closed coordinated JUnit migration scope.&quot;, true) //$NON-NLS-1$</span>
+<span class="fc" id="L316">				: new MultiFileScopeDiagnostic(selectedHandles, List.of(), &quot;INCOMPLETE_SOURCE_SCOPE&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L317">						&quot;The selected compilation units do not contain every source unit required by the enabled JUnit migrations.&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L318">						false);</span>
+<span class="fc" id="L319">		return new MultiFileCleanUpDiagnostics(CLEANUP_ID, scope, candidates);</span>
 	}
 
 	private static Map&lt;String, CompilationUnit&gt; parse(IJavaProject project, ICompilationUnit[] units,
 			IProgressMonitor monitor) {
-<span class="fc" id="L300">		Map&lt;String, CompilationUnit&gt; roots= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L301">		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);</span>
-<span class="fc" id="L302">		parser.setProject(project);</span>
-<span class="fc" id="L303">		parser.setResolveBindings(true);</span>
-<span class="fc" id="L304">		parser.setBindingsRecovery(IASTSharedValues.SHARED_BINDING_RECOVERY);</span>
-<span class="fc" id="L305">		parser.setStatementsRecovery(IASTSharedValues.SHARED_AST_STATEMENT_RECOVERY);</span>
-<span class="fc" id="L306">		parser.setCompilerOptions(RefactoringASTParser.getCompilerOptions(project));</span>
-<span class="fc" id="L307">		parser.createASTs(units, new String[0], new ASTRequestor() {</span>
+<span class="fc" id="L324">		Map&lt;String, CompilationUnit&gt; roots= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L325">		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);</span>
+<span class="fc" id="L326">		parser.setProject(project);</span>
+<span class="fc" id="L327">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L328">		parser.setBindingsRecovery(IASTSharedValues.SHARED_BINDING_RECOVERY);</span>
+<span class="fc" id="L329">		parser.setStatementsRecovery(IASTSharedValues.SHARED_AST_STATEMENT_RECOVERY);</span>
+<span class="fc" id="L330">		parser.setCompilerOptions(RefactoringASTParser.getCompilerOptions(project));</span>
+<span class="fc" id="L331">		parser.createASTs(units, new String[0], new ASTRequestor() {</span>
 			@Override
 			public void acceptAST(ICompilationUnit source, CompilationUnit ast) {
-<span class="fc" id="L310">				roots.put(source.getPrimary().getHandleIdentifier(), ast);</span>
-<span class="fc" id="L311">			}</span>
-<span class="fc" id="L312">		}, monitor);</span>
-<span class="fc" id="L313">		return roots;</span>
+<span class="fc" id="L334">				roots.put(source.getPrimary().getHandleIdentifier(), ast);</span>
+<span class="fc" id="L335">			}</span>
+<span class="fc" id="L336">		}, monitor);</span>
+<span class="fc" id="L337">		return roots;</span>
 	}
 
 	/**
@@ -322,45 +346,45 @@ public final class JUnitMultiFilePlanner {
 	 */
 	private static ResourceScope collectResourceChains(Map&lt;String, CompilationUnit&gt; rootsByHandle,
 			IProgressMonitor monitor) {
-<span class="fc" id="L325">		Map&lt;String, ResourceType&gt; sourceTypes= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L326">		Map&lt;String, ITypeBinding&gt; bindings= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L327" title="All 2 branches covered.">		for (Map.Entry&lt;String, CompilationUnit&gt; entry : rootsByHandle.entrySet()) {</span>
-<span class="fc" id="L328">			MultiFilePlanningBudget.checkCanceled(monitor);</span>
-<span class="fc" id="L329">			String unitHandle= entry.getKey();</span>
-<span class="fc" id="L330">			entry.getValue().accept(new ASTVisitor() {</span>
+<span class="fc" id="L349">		Map&lt;String, ResourceType&gt; sourceTypes= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L350">		Map&lt;String, ITypeBinding&gt; bindings= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L351" title="All 2 branches covered.">		for (Map.Entry&lt;String, CompilationUnit&gt; entry : rootsByHandle.entrySet()) {</span>
+<span class="fc" id="L352">			MultiFilePlanningBudget.checkCanceled(monitor);</span>
+<span class="fc" id="L353">			String unitHandle= entry.getKey();</span>
+<span class="fc" id="L354">			entry.getValue().accept(new ASTVisitor() {</span>
 				@Override
 				public boolean visit(TypeDeclaration node) {
-<span class="fc" id="L333">					MultiFilePlanningBudget.checkCanceled(monitor);</span>
-<span class="fc" id="L334">					ITypeBinding binding= node.resolveBinding();</span>
-<span class="fc" id="L335">					String typeKey= JUnitMigrationPlan.typeKey(binding);</span>
-<span class="pc bpc" id="L336" title="1 of 2 branches missed.">					if (typeKey != null) {</span>
-<span class="fc" id="L337">						sourceTypes.put(typeKey, new ResourceType(unitHandle, typeKey, binding.getQualifiedName(),</span>
-<span class="fc" id="L338">								requiresLocalExternalResourceRewrite(node, binding)));</span>
-<span class="fc" id="L339">						bindings.put(typeKey, binding);</span>
+<span class="fc" id="L357">					MultiFilePlanningBudget.checkCanceled(monitor);</span>
+<span class="fc" id="L358">					ITypeBinding binding= node.resolveBinding();</span>
+<span class="fc" id="L359">					String typeKey= JUnitMigrationPlan.typeKey(binding);</span>
+<span class="pc bpc" id="L360" title="1 of 2 branches missed.">					if (typeKey != null) {</span>
+<span class="fc" id="L361">						sourceTypes.put(typeKey, new ResourceType(unitHandle, typeKey, binding.getQualifiedName(),</span>
+<span class="fc" id="L362">								requiresLocalExternalResourceRewrite(node, binding)));</span>
+<span class="fc" id="L363">						bindings.put(typeKey, binding);</span>
 					}
-<span class="fc" id="L341">					return true;</span>
+<span class="fc" id="L365">					return true;</span>
 				}
 			});
 		}
 
-<span class="fc" id="L346">		Map&lt;String, ResourceChain&gt; chains= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L347">		List&lt;MultiFileCandidateDiagnostic&gt; diagnostics= new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L348" title="All 2 branches covered.">		for (Map.Entry&lt;String, ITypeBinding&gt; entry : bindings.entrySet()) {</span>
-<span class="fc" id="L349">			MultiFilePlanningBudget.checkCanceled(monitor);</span>
-<span class="fc" id="L350">			ResourceType fixture= sourceTypes.get(entry.getKey());</span>
-<span class="fc" id="L351">			List&lt;ResourceType&gt; chain= resourceChain(entry.getValue(), sourceTypes);</span>
-<span class="fc bfc" id="L352" title="All 2 branches covered.">			if (chain != null) {</span>
-<span class="fc" id="L353">				chains.put(entry.getKey(), new ResourceChain(fixture, chain));</span>
-<span class="pc bpc" id="L354" title="1 of 2 branches missed.">			} else if (extendsExternalResource(entry.getValue())) {</span>
-<span class="nc" id="L355">				String message= &quot;ExternalResource fixture &quot; + fixture.typeName() //$NON-NLS-1$</span>
+<span class="fc" id="L370">		Map&lt;String, ResourceChain&gt; chains= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L371">		List&lt;MultiFileCandidateDiagnostic&gt; diagnostics= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L372" title="All 2 branches covered.">		for (Map.Entry&lt;String, ITypeBinding&gt; entry : bindings.entrySet()) {</span>
+<span class="fc" id="L373">			MultiFilePlanningBudget.checkCanceled(monitor);</span>
+<span class="fc" id="L374">			ResourceType fixture= sourceTypes.get(entry.getKey());</span>
+<span class="fc" id="L375">			List&lt;ResourceType&gt; chain= resourceChain(entry.getValue(), sourceTypes);</span>
+<span class="fc bfc" id="L376" title="All 2 branches covered.">			if (chain != null) {</span>
+<span class="fc" id="L377">				chains.put(entry.getKey(), new ResourceChain(fixture, chain));</span>
+<span class="pc bpc" id="L378" title="1 of 2 branches missed.">			} else if (extendsExternalResource(entry.getValue())) {</span>
+<span class="nc" id="L379">				String message= &quot;ExternalResource fixture &quot; + fixture.typeName() //$NON-NLS-1$</span>
 						+ &quot; inherits its callbacks from a type that is not part of the selected source scope.&quot;; //$NON-NLS-1$
-<span class="nc" id="L357">				diagnostics.add(MultiFileCandidateDiagnostic.rejected(</span>
-<span class="nc" id="L358">						&quot;external-resource:&quot; + fixture.typeName(), fixture.compilationUnitHandle(), //$NON-NLS-1$</span>
-<span class="nc" id="L359">						&quot;EXTERNAL_RESOURCE_BASE_OUT_OF_SCOPE&quot;, message, //$NON-NLS-1$</span>
-<span class="nc" id="L360">						List.of(fixture.compilationUnitHandle())));</span>
+<span class="nc" id="L381">				diagnostics.add(MultiFileCandidateDiagnostic.rejected(</span>
+<span class="nc" id="L382">						&quot;external-resource:&quot; + fixture.typeName(), fixture.compilationUnitHandle(), //$NON-NLS-1$</span>
+<span class="nc" id="L383">						&quot;EXTERNAL_RESOURCE_BASE_OUT_OF_SCOPE&quot;, message, //$NON-NLS-1$</span>
+<span class="nc" id="L384">						List.of(fixture.compilationUnitHandle())));</span>
 			}
 		}
-<span class="fc" id="L363">		return new ResourceScope(chains, diagnostics);</span>
+<span class="fc" id="L387">		return new ResourceScope(chains, diagnostics);</span>
 	}
 
 	/**
@@ -369,59 +393,59 @@ public final class JUnitMultiFilePlanner {
 	 * source scope or never reaches {@code ExternalResource}.
 	 */
 	private static List&lt;ResourceType&gt; resourceChain(ITypeBinding binding, Map&lt;String, ResourceType&gt; sourceTypes) {
-<span class="fc" id="L372">		List&lt;ResourceType&gt; chain= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L373">		ITypeBinding current= binding;</span>
-<span class="pc bpc" id="L374" title="1 of 2 branches missed.">		while (current != null) {</span>
-<span class="fc" id="L375">			ResourceType sourceType= sourceTypes.get(JUnitMigrationPlan.typeKey(current));</span>
-<span class="fc bfc" id="L376" title="All 2 branches covered.">			if (sourceType == null) {</span>
-<span class="fc" id="L377">				return null;</span>
+<span class="fc" id="L396">		List&lt;ResourceType&gt; chain= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L397">		ITypeBinding current= binding;</span>
+<span class="pc bpc" id="L398" title="1 of 2 branches missed.">		while (current != null) {</span>
+<span class="fc" id="L399">			ResourceType sourceType= sourceTypes.get(JUnitMigrationPlan.typeKey(current));</span>
+<span class="fc bfc" id="L400" title="All 2 branches covered.">			if (sourceType == null) {</span>
+<span class="fc" id="L401">				return null;</span>
 			}
-<span class="fc" id="L379">			chain.add(sourceType);</span>
-<span class="fc" id="L380">			ITypeBinding superclass= current.getSuperclass();</span>
-<span class="pc bpc" id="L381" title="1 of 2 branches missed.">			if (superclass == null) {</span>
-<span class="nc" id="L382">				return null;</span>
+<span class="fc" id="L403">			chain.add(sourceType);</span>
+<span class="fc" id="L404">			ITypeBinding superclass= current.getSuperclass();</span>
+<span class="pc bpc" id="L405" title="1 of 2 branches missed.">			if (superclass == null) {</span>
+<span class="nc" id="L406">				return null;</span>
 			}
-<span class="fc bfc" id="L384" title="All 2 branches covered.">			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(superclass.getErasure().getQualifiedName())) {</span>
-<span class="fc" id="L385">				return chain;</span>
+<span class="fc bfc" id="L408" title="All 2 branches covered.">			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(superclass.getErasure().getQualifiedName())) {</span>
+<span class="fc" id="L409">				return chain;</span>
 			}
-<span class="fc" id="L387">			current= superclass;</span>
+<span class="fc" id="L411">			current= superclass;</span>
 		}
-<span class="nc" id="L389">		return null;</span>
+<span class="nc" id="L413">		return null;</span>
 	}
 
 	private static List&lt;RuleField&gt; collectRuleFields(Map&lt;String, CompilationUnit&gt; rootsByHandle,
 			Map&lt;String, ResourceChain&gt; chainsByTypeKey, IProgressMonitor monitor) {
-<span class="fc" id="L394">		List&lt;RuleField&gt; result= new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L395" title="All 2 branches covered.">		for (Map.Entry&lt;String, CompilationUnit&gt; entry : rootsByHandle.entrySet()) {</span>
-<span class="fc" id="L396">			MultiFilePlanningBudget.checkCanceled(monitor);</span>
-<span class="fc" id="L397">			String unitHandle= entry.getKey();</span>
-<span class="fc" id="L398">			entry.getValue().accept(new ASTVisitor() {</span>
+<span class="fc" id="L418">		List&lt;RuleField&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L419" title="All 2 branches covered.">		for (Map.Entry&lt;String, CompilationUnit&gt; entry : rootsByHandle.entrySet()) {</span>
+<span class="fc" id="L420">			MultiFilePlanningBudget.checkCanceled(monitor);</span>
+<span class="fc" id="L421">			String unitHandle= entry.getKey();</span>
+<span class="fc" id="L422">			entry.getValue().accept(new ASTVisitor() {</span>
 				@Override
 				public boolean visit(FieldDeclaration node) {
-<span class="fc" id="L401">					MultiFilePlanningBudget.checkCanceled(monitor);</span>
-<span class="fc" id="L402">					RuleKind kind= ruleKind(node);</span>
-<span class="fc bfc" id="L403" title="All 2 branches covered.">					boolean classRule= kind == RuleKind.CLASS;</span>
-<span class="pc bpc" id="L404" title="1 of 4 branches missed.">					if (kind == RuleKind.NONE || node.fragments().size() != 1</span>
-<span class="pc bpc" id="L405" title="1 of 2 branches missed.">							|| classRule != Modifier.isStatic(node.getModifiers())) {</span>
-<span class="fc" id="L406">						return true;</span>
+<span class="fc" id="L425">					MultiFilePlanningBudget.checkCanceled(monitor);</span>
+<span class="fc" id="L426">					RuleKind kind= ruleKind(node);</span>
+<span class="fc bfc" id="L427" title="All 2 branches covered.">					boolean classRule= kind == RuleKind.CLASS;</span>
+<span class="fc bfc" id="L428" title="All 4 branches covered.">					if (kind == RuleKind.NONE || node.fragments().size() != 1</span>
+<span class="pc bpc" id="L429" title="1 of 2 branches missed.">							|| classRule != Modifier.isStatic(node.getModifiers())) {</span>
+<span class="fc" id="L430">						return true;</span>
 					}
-<span class="fc" id="L408">					VariableDeclarationFragment fragment= (VariableDeclarationFragment) node.fragments().get(0);</span>
-<span class="fc" id="L409">					IVariableBinding fieldBinding= fragment.resolveBinding();</span>
-<span class="fc" id="L410">					ITypeBinding resourceBinding= resourceTypeBinding(fragment, fieldBinding);</span>
-<span class="fc" id="L411">					String resourceTypeKey= JUnitMigrationPlan.typeKey(resourceBinding);</span>
-<span class="fc" id="L412">					ResourceChain chain= chainsByTypeKey.get(resourceTypeKey);</span>
-<span class="pc bpc" id="L413" title="1 of 4 branches missed.">					if (fieldBinding == null || chain == null) {</span>
-<span class="fc" id="L414">						return true;</span>
+<span class="fc" id="L432">					VariableDeclarationFragment fragment= (VariableDeclarationFragment) node.fragments().get(0);</span>
+<span class="fc" id="L433">					IVariableBinding fieldBinding= fragment.resolveBinding();</span>
+<span class="fc" id="L434">					ITypeBinding resourceBinding= resourceTypeBinding(fragment, fieldBinding);</span>
+<span class="fc" id="L435">					String resourceTypeKey= JUnitMigrationPlan.typeKey(resourceBinding);</span>
+<span class="fc" id="L436">					ResourceChain chain= chainsByTypeKey.get(resourceTypeKey);</span>
+<span class="pc bpc" id="L437" title="1 of 4 branches missed.">					if (fieldBinding == null || chain == null) {</span>
+<span class="fc" id="L438">						return true;</span>
 					}
-<span class="fc" id="L416">					String fieldKey= fieldBinding.getVariableDeclaration().getKey();</span>
-<span class="pc bpc" id="L417" title="1 of 2 branches missed.">					if (fieldKey != null) {</span>
-<span class="fc" id="L418">						result.add(new RuleField(unitHandle, fieldKey, resourceTypeKey, classRule));</span>
+<span class="fc" id="L440">					String fieldKey= fieldBinding.getVariableDeclaration().getKey();</span>
+<span class="pc bpc" id="L441" title="1 of 2 branches missed.">					if (fieldKey != null) {</span>
+<span class="fc" id="L442">						result.add(new RuleField(unitHandle, fieldKey, resourceTypeKey, classRule));</span>
 					}
-<span class="fc" id="L420">					return true;</span>
+<span class="fc" id="L444">					return true;</span>
 				}
 			});
 		}
-<span class="fc" id="L424">		return result;</span>
+<span class="fc" id="L448">		return result;</span>
 	}
 
 	private static MigrationResult createMigrations(List&lt;RuleField&gt; fields,
@@ -430,105 +454,105 @@ public final class JUnitMultiFilePlanner {
 		// entries only for source types that actually change. A callback-free indirect
 		// subclass inherits the migrated callback implementation and must not produce an
 		// empty JDT cleanup change.
-<span class="fc" id="L433">		Map&lt;String, List&lt;RuleField&gt;&gt; fieldsByResourceType= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L434">		Map&lt;String, ResourceType&gt; resourcesByTypeKey= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L435" title="All 2 branches covered.">		for (RuleField field : fields) {</span>
-<span class="fc bfc" id="L436" title="All 2 branches covered.">			for (ResourceType resource : chainsByTypeKey.get(field.resourceTypeKey()).types()) {</span>
-<span class="fc bfc" id="L437" title="All 2 branches covered.">				if (!resource.requiresLocalRewrite()) {</span>
-<span class="fc" id="L438">					continue;</span>
+<span class="fc" id="L457">		Map&lt;String, List&lt;RuleField&gt;&gt; fieldsByResourceType= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L458">		Map&lt;String, ResourceType&gt; resourcesByTypeKey= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L459" title="All 2 branches covered.">		for (RuleField field : fields) {</span>
+<span class="fc bfc" id="L460" title="All 2 branches covered.">			for (ResourceType resource : chainsByTypeKey.get(field.resourceTypeKey()).types()) {</span>
+<span class="fc bfc" id="L461" title="All 2 branches covered.">				if (!resource.requiresLocalRewrite()) {</span>
+<span class="fc" id="L462">					continue;</span>
 				}
-<span class="fc" id="L440">				resourcesByTypeKey.putIfAbsent(resource.typeBindingKey(), resource);</span>
-<span class="fc" id="L441">				fieldsByResourceType.computeIfAbsent(resource.typeBindingKey(), ignored -&gt; new ArrayList&lt;&gt;())</span>
-<span class="fc" id="L442">						.add(field);</span>
+<span class="fc" id="L464">				resourcesByTypeKey.putIfAbsent(resource.typeBindingKey(), resource);</span>
+<span class="fc" id="L465">				fieldsByResourceType.computeIfAbsent(resource.typeBindingKey(), ignored -&gt; new ArrayList&lt;&gt;())</span>
+<span class="fc" id="L466">						.add(field);</span>
 			}
 		}
-<span class="fc" id="L445">		List&lt;ExternalResourceRuleMigration&gt; migrations= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L446">		List&lt;MultiFileCandidateDiagnostic&gt; diagnostics= new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L447" title="All 2 branches covered.">		for (Map.Entry&lt;String, List&lt;RuleField&gt;&gt; entry : fieldsByResourceType.entrySet()) {</span>
-<span class="fc" id="L448">			MultiFilePlanningBudget.checkCanceled(monitor);</span>
-<span class="fc" id="L449">			ResourceType resource= resourcesByTypeKey.get(entry.getKey());</span>
-<span class="fc" id="L450">			List&lt;RuleField&gt; resourceFields= entry.getValue();</span>
-<span class="fc bfc" id="L451" title="All 2 branches covered.">			boolean hasRule= resourceFields.stream().anyMatch(field -&gt; !field.classRule());</span>
-<span class="fc" id="L452">			boolean hasClassRule= resourceFields.stream().anyMatch(RuleField::classRule);</span>
-<span class="fc" id="L453">			List&lt;String&gt; relatedHandles= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L454">			relatedHandles.add(resource.compilationUnitHandle());</span>
-<span class="fc" id="L455">			resourceFields.stream().map(RuleField::compilationUnitHandle).forEach(relatedHandles::add);</span>
-<span class="fc" id="L456">			String candidateId= &quot;external-resource:&quot; + resource.typeName(); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L457" title="All 4 branches covered.">			if (hasRule &amp;&amp; hasClassRule) {</span>
-<span class="fc" id="L458">				String message= &quot;ExternalResource type &quot; + resource.typeName() //$NON-NLS-1$</span>
+<span class="fc" id="L469">		List&lt;ExternalResourceRuleMigration&gt; migrations= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L470">		List&lt;MultiFileCandidateDiagnostic&gt; diagnostics= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L471" title="All 2 branches covered.">		for (Map.Entry&lt;String, List&lt;RuleField&gt;&gt; entry : fieldsByResourceType.entrySet()) {</span>
+<span class="fc" id="L472">			MultiFilePlanningBudget.checkCanceled(monitor);</span>
+<span class="fc" id="L473">			ResourceType resource= resourcesByTypeKey.get(entry.getKey());</span>
+<span class="fc" id="L474">			List&lt;RuleField&gt; resourceFields= entry.getValue();</span>
+<span class="fc bfc" id="L475" title="All 2 branches covered.">			boolean hasRule= resourceFields.stream().anyMatch(field -&gt; !field.classRule());</span>
+<span class="fc" id="L476">			boolean hasClassRule= resourceFields.stream().anyMatch(RuleField::classRule);</span>
+<span class="fc" id="L477">			List&lt;String&gt; relatedHandles= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L478">			relatedHandles.add(resource.compilationUnitHandle());</span>
+<span class="fc" id="L479">			resourceFields.stream().map(RuleField::compilationUnitHandle).forEach(relatedHandles::add);</span>
+<span class="fc" id="L480">			String candidateId= &quot;external-resource:&quot; + resource.typeName(); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L481" title="All 4 branches covered.">			if (hasRule &amp;&amp; hasClassRule) {</span>
+<span class="fc" id="L482">				String message= &quot;ExternalResource type &quot; + resource.typeName() //$NON-NLS-1$</span>
 						+ &quot; is used by both @Rule and @ClassRule fields; one callback lifecycle cannot safely represent both usages.&quot;; //$NON-NLS-1$
-<span class="fc" id="L460">				status.addFatalError(message);</span>
-<span class="fc" id="L461">				diagnostics.add(MultiFileCandidateDiagnostic.rejected(candidateId,</span>
-<span class="fc" id="L462">						resource.compilationUnitHandle(), &quot;MIXED_RULE_LIFECYCLE&quot;, message, relatedHandles)); //$NON-NLS-1$</span>
-<span class="fc" id="L463">				continue;</span>
+<span class="fc" id="L484">				status.addFatalError(message);</span>
+<span class="fc" id="L485">				diagnostics.add(MultiFileCandidateDiagnostic.rejected(candidateId,</span>
+<span class="fc" id="L486">						resource.compilationUnitHandle(), &quot;MIXED_RULE_LIFECYCLE&quot;, message, relatedHandles)); //$NON-NLS-1$</span>
+<span class="fc" id="L487">				continue;</span>
 			}
-<span class="fc bfc" id="L465" title="All 2 branches covered.">			for (RuleField field : resourceFields) {</span>
-<span class="fc" id="L466">				migrations.add(new ExternalResourceRuleMigration(field.compilationUnitHandle(), field.fieldBindingKey(),</span>
-<span class="fc" id="L467">						resource.compilationUnitHandle(), resource.typeBindingKey(), field.classRule()));</span>
+<span class="fc bfc" id="L489" title="All 2 branches covered.">			for (RuleField field : resourceFields) {</span>
+<span class="fc" id="L490">				migrations.add(new ExternalResourceRuleMigration(field.compilationUnitHandle(), field.fieldBindingKey(),</span>
+<span class="fc" id="L491">						resource.compilationUnitHandle(), resource.typeBindingKey(), field.classRule()));</span>
 			}
-<span class="fc bfc" id="L469" title="All 2 branches covered.">			String lifecycle= hasClassRule ? &quot;class&quot; : &quot;instance&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L470">			diagnostics.add(MultiFileCandidateDiagnostic.transformed(candidateId,</span>
-<span class="fc" id="L471">					resource.compilationUnitHandle(), &quot;Migrates &quot; + resourceFields.size() + &quot; &quot; + lifecycle //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L472">							+ &quot; rule field(s) together with &quot; + resource.typeName() + &quot;.&quot;, relatedHandles)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L493" title="All 2 branches covered.">			String lifecycle= hasClassRule ? &quot;class&quot; : &quot;instance&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L494">			diagnostics.add(MultiFileCandidateDiagnostic.transformed(candidateId,</span>
+<span class="fc" id="L495">					resource.compilationUnitHandle(), &quot;Migrates &quot; + resourceFields.size() + &quot; &quot; + lifecycle //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L496">							+ &quot; rule field(s) together with &quot; + resource.typeName() + &quot;.&quot;, relatedHandles)); //$NON-NLS-1$ //$NON-NLS-2$</span>
 		}
-<span class="fc" id="L474">		return new MigrationResult(migrations, diagnostics);</span>
+<span class="fc" id="L498">		return new MigrationResult(migrations, diagnostics);</span>
 	}
 
-	private static boolean requiresLocalExternalResourceRewrite(TypeDeclaration node, ITypeBinding binding) {
-<span class="pc bpc" id="L478" title="1 of 2 branches missed.">		ITypeBinding superclass= binding == null ? null : binding.getSuperclass();</span>
-<span class="pc bpc" id="L479" title="1 of 2 branches missed.">		if (superclass != null</span>
-<span class="fc bfc" id="L480" title="All 2 branches covered.">				&amp;&amp; ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(superclass.getErasure().getQualifiedName())) {</span>
-<span class="fc" id="L481">			return true;</span>
+	static boolean requiresLocalExternalResourceRewrite(TypeDeclaration node, ITypeBinding binding) {
+<span class="pc bpc" id="L502" title="1 of 2 branches missed.">		ITypeBinding superclass= binding == null ? null : binding.getSuperclass();</span>
+<span class="pc bpc" id="L503" title="1 of 2 branches missed.">		if (superclass != null</span>
+<span class="fc bfc" id="L504" title="All 2 branches covered.">				&amp;&amp; ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(superclass.getErasure().getQualifiedName())) {</span>
+<span class="fc" id="L505">			return true;</span>
 		}
-<span class="fc bfc" id="L483" title="All 2 branches covered.">		for (MethodDeclaration method : node.getMethods()) {</span>
-<span class="fc bfc" id="L484" title="All 4 branches covered.">			if (!method.isConstructor() &amp;&amp; method.parameters().isEmpty()) {</span>
-<span class="fc" id="L485">				String name= method.getName().getIdentifier();</span>
-<span class="pc bpc" id="L486" title="1 of 4 branches missed.">				if (&quot;before&quot;.equals(name) || &quot;after&quot;.equals(name)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L487">					return true;</span>
+<span class="fc bfc" id="L507" title="All 2 branches covered.">		for (MethodDeclaration method : node.getMethods()) {</span>
+<span class="fc bfc" id="L508" title="All 4 branches covered.">			if (!method.isConstructor() &amp;&amp; method.parameters().isEmpty()) {</span>
+<span class="fc" id="L509">				String name= method.getName().getIdentifier();</span>
+<span class="fc bfc" id="L510" title="All 4 branches covered.">				if (&quot;before&quot;.equals(name) || &quot;after&quot;.equals(name)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L511">					return true;</span>
 				}
 			}
 		}
-<span class="fc" id="L491">		return false;</span>
+<span class="fc" id="L515">		return false;</span>
 	}
 
 	private static RuleKind ruleKind(FieldDeclaration field) {
-<span class="fc bfc" id="L495" title="All 2 branches covered.">		for (Object modifier : field.modifiers()) {</span>
-<span class="fc bfc" id="L496" title="All 2 branches covered.">			if (modifier instanceof Annotation annotation) {</span>
-<span class="fc" id="L497">				ITypeBinding binding= annotation.resolveTypeBinding();</span>
-<span class="pc bpc" id="L498" title="1 of 2 branches missed.">				if (binding == null) {</span>
-<span class="nc" id="L499">					continue;</span>
+<span class="fc bfc" id="L519" title="All 2 branches covered.">		for (Object modifier : field.modifiers()) {</span>
+<span class="fc bfc" id="L520" title="All 2 branches covered.">			if (modifier instanceof Annotation annotation) {</span>
+<span class="fc" id="L521">				ITypeBinding binding= annotation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L522" title="1 of 2 branches missed.">				if (binding == null) {</span>
+<span class="nc" id="L523">					continue;</span>
 				}
-<span class="fc bfc" id="L501" title="All 2 branches covered.">				if (ORG_JUNIT_RULE.equals(binding.getQualifiedName())) {</span>
-<span class="fc" id="L502">					return RuleKind.INSTANCE;</span>
+<span class="fc bfc" id="L525" title="All 2 branches covered.">				if (ORG_JUNIT_RULE.equals(binding.getQualifiedName())) {</span>
+<span class="fc" id="L526">					return RuleKind.INSTANCE;</span>
 				}
-<span class="fc bfc" id="L504" title="All 2 branches covered.">				if (ORG_JUNIT_CLASS_RULE.equals(binding.getQualifiedName())) {</span>
-<span class="fc" id="L505">					return RuleKind.CLASS;</span>
+<span class="fc bfc" id="L528" title="All 2 branches covered.">				if (ORG_JUNIT_CLASS_RULE.equals(binding.getQualifiedName())) {</span>
+<span class="fc" id="L529">					return RuleKind.CLASS;</span>
 				}
 			}
 		}
-<span class="fc" id="L509">		return RuleKind.NONE;</span>
+<span class="fc" id="L533">		return RuleKind.NONE;</span>
 	}
 
 	private static ITypeBinding resourceTypeBinding(VariableDeclarationFragment fragment,
 			IVariableBinding fieldBinding) {
-<span class="fc" id="L514">		Expression initializer= fragment.getInitializer();</span>
-<span class="fc bfc" id="L515" title="All 2 branches covered.">		if (initializer instanceof ClassInstanceCreation creation) {</span>
-<span class="fc" id="L516">			ITypeBinding binding= creation.resolveTypeBinding();</span>
-<span class="pc bpc" id="L517" title="1 of 2 branches missed.">			if (binding != null) {</span>
-<span class="fc" id="L518">				return binding;</span>
+<span class="fc" id="L538">		Expression initializer= fragment.getInitializer();</span>
+<span class="fc bfc" id="L539" title="All 2 branches covered.">		if (initializer instanceof ClassInstanceCreation creation) {</span>
+<span class="fc" id="L540">			ITypeBinding binding= creation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L541" title="1 of 2 branches missed.">			if (binding != null) {</span>
+<span class="fc" id="L542">				return binding;</span>
 			}
 		}
-<span class="pc bpc" id="L521" title="1 of 2 branches missed.">		return fieldBinding == null ? null : fieldBinding.getType();</span>
+<span class="pc bpc" id="L545" title="1 of 2 branches missed.">		return fieldBinding == null ? null : fieldBinding.getType();</span>
 	}
 
 	private static boolean extendsExternalResource(ITypeBinding binding) {
-<span class="pc bpc" id="L525" title="1 of 4 branches missed.">		for (ITypeBinding current= binding == null ? null : binding.getSuperclass(); current != null;</span>
-<span class="fc" id="L526">				current= current.getSuperclass()) {</span>
-<span class="pc bpc" id="L527" title="1 of 2 branches missed.">			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(current.getErasure().getQualifiedName())) {</span>
-<span class="nc" id="L528">				return true;</span>
+<span class="pc bpc" id="L549" title="1 of 4 branches missed.">		for (ITypeBinding current= binding == null ? null : binding.getSuperclass(); current != null;</span>
+<span class="fc" id="L550">				current= current.getSuperclass()) {</span>
+<span class="pc bpc" id="L551" title="1 of 2 branches missed.">			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(current.getErasure().getQualifiedName())) {</span>
+<span class="nc" id="L552">				return true;</span>
 			}
 		}
-<span class="fc" id="L531">		return false;</span>
+<span class="fc" id="L555">		return false;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -70,7 +70,7 @@ public record MultiFileCleanUpDiagnostics(String cleanupId, MultiFileScopeDiagno
 
 	/** Adds one concise, nonfatal planning summary to the cleanup preview status. */
 	public void appendSummary(RefactoringStatus status) {
-<span class="pc bpc" id="L73" title="2 of 6 branches missed.">		if (status == null || candidates.isEmpty() &amp;&amp; scope.addedCompilationUnitHandles().isEmpty()</span>
+<span class="pc bpc" id="L73" title="1 of 6 branches missed.">		if (status == null || candidates.isEmpty() &amp;&amp; scope.addedCompilationUnitHandles().isEmpty()</span>
 <span class="fc bfc" id="L74" title="All 2 branches covered.">				&amp;&amp; scope.complete()) {</span>
 <span class="fc" id="L75">			return;</span>
 		}

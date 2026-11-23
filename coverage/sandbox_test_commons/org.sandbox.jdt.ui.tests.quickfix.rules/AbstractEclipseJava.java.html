@@ -1094,9 +1094,9 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 <span class="fc" id="L1094">		final IWorkspace workspace = ResourcesPlugin.getWorkspace();</span>
 <span class="fc" id="L1095">		workspace.run(perform, new NullProgressMonitor());</span>
 <span class="fc" id="L1096">		final RefactoringStatus status = create.getConditionCheckingStatus();</span>
-<span class="pc bpc" id="L1097" title="1 of 2 branches missed.">		if (status.hasFatalError()) {</span>
-<span class="nc" id="L1098">			throw new CoreException(</span>
-<span class="nc" id="L1099">					new StatusInfo(status.getSeverity(), status.getMessageMatchingSeverity(status.getSeverity())));</span>
+<span class="fc bfc" id="L1097" title="All 2 branches covered.">		if (status.hasFatalError()) {</span>
+<span class="fc" id="L1098">			throw new CoreException(</span>
+<span class="fc" id="L1099">					new StatusInfo(status.getSeverity(), status.getMessageMatchingSeverity(status.getSeverity())));</span>
 		}
 <span class="fc" id="L1101">		assertTrue(perform.changeExecuted(), &quot;Change wasn't executed&quot;); //$NON-NLS-1$</span>
 <span class="fc" id="L1102">		final Change undo = perform.getUndoChange();</span>
