@@ -117,11 +117,16 @@ public class EclipseHelpTestModuleBoundaryTest {
 		assertTrue(read(repository, "pom.xml") //$NON-NLS-1$
 				.contains("<module>sandbox_eclipse_help_swtbot_test</module>")); //$NON-NLS-1$
 
-		String helpBuild= read(repository, "sandbox_help_build/pom.xml"); //$NON-NLS-1$
-		assertTrue(helpBuild.contains(
-				"<module>../sandbox_eclipse_help_swtbot_test</module>")); //$NON-NLS-1$
-		assertFalse(helpBuild.contains("<module>../sandbox_usage_view_test</module>")); //$NON-NLS-1$
-		assertFalse(helpBuild.contains("<module>../sandbox_usage_view</module>")); //$NON-NLS-1$
+		Node helpBuild= readPom(repository.resolve("sandbox_help_build/pom.xml")); //$NON-NLS-1$
+		Set<String> modules= texts(helpBuild, "/project/modules/module"); //$NON-NLS-1$
+		for (String required : Set.of("../sandbox_eclipse_help_swtbot_test", "../sandbox_junit_cleanup_feature", //$NON-NLS-1$ //$NON-NLS-2$
+				"../sandbox-junit-migration-support", "../sandbox_junit_cleanup_jdt5")) { //$NON-NLS-1$ //$NON-NLS-2$
+			assertTrue(modules.contains(required), required);
+		}
+		Set<String> allModules= texts(helpBuild, "/project/modules/module | /project/profiles/profile/modules/module"); //$NON-NLS-1$
+		for (String forbidden : Set.of("../sandbox_usage_view_test", "../sandbox_usage_view")) { //$NON-NLS-1$ //$NON-NLS-2$
+			assertFalse(allModules.contains(forbidden), forbidden);
+		}
 
 		assertWorkflowUsesDedicatedModule(repository,
 				".github/workflows/eclipse-help-screenshots.yml"); //$NON-NLS-1$
@@ -172,14 +177,17 @@ public class EclipseHelpTestModuleBoundaryTest {
 				.contains("-Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.SandboxAtomicPreviewPatchedJdtSWTBotTest")); //$NON-NLS-1$
 	}
 
-	private static Node profile(String id) throws Exception {
+	private static Node readPom(Path path) throws Exception {
 		var factory= DocumentBuilderFactory.newDefaultInstance();
 		factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
 		factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true); //$NON-NLS-1$
 		factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, ""); //$NON-NLS-1$
 		factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, ""); //$NON-NLS-1$
-		var document= factory.newDocumentBuilder().parse(SandboxCheckout.locate(null)
-				.resolve("sandbox_eclipse_help_swtbot_test/pom.xml").toFile()); //$NON-NLS-1$
+		return factory.newDocumentBuilder().parse(path.toFile());
+	}
+
+	private static Node profile(String id) throws Exception {
+		Node document= readPom(SandboxCheckout.locate(null).resolve("sandbox_eclipse_help_swtbot_test/pom.xml")); //$NON-NLS-1$
 		Node profile= (Node) XPathFactory.newDefaultInstance().newXPath().evaluate(
 				"/project/profiles/profile[id='" + id + "']", document, XPathConstants.NODE); //$NON-NLS-1$ //$NON-NLS-2$
 		assertNotNull(profile, id);

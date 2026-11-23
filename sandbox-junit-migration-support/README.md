@@ -7,8 +7,10 @@ including the build of this jar, require Java 25. The Sandbox product and PDE
 test baseline also use Java 25. The Sandbox JUnit cleanup feature installs
 `org.sandbox.junit.migration.support` in the host IDE. Select it in the consumer's
 PDE target or add the Maven artifact to its test classpath. The feature also installs
-a manifest-only fragment that selects the JDT JUnit 5 providers in an IDE containing
-both JUnit generations. The standalone Maven JAR keeps its broad imports and
+a manifest-only fragment that requires the JDT JUnit 5 provider bundles by name and
+version range. It selects Jupiter API 5.14 to below 6, and Platform Launcher
+and Engine 1.14 to below 2. Both the PDE development launch and the installed product use
+these providers in an IDE containing both JUnit generations. The standalone Maven JAR keeps its broad imports and
 supports the ordinary JUnit 6 classpath. Native JDT 6 consumers in this
 fragment-bound product need a separately verified binding. Configure PDE
 service discovery as described below. Mixed-lifecycle fixture adoption is manual.

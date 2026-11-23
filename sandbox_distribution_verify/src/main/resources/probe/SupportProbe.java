@@ -19,6 +19,7 @@ import org.eclipse.core.runtime.Platform;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.Version;
+import org.osgi.framework.namespace.BundleNamespace;
 import org.osgi.framework.namespace.HostNamespace;
 import org.osgi.framework.namespace.PackageNamespace;
 import org.osgi.framework.wiring.BundleWiring;
@@ -79,6 +80,11 @@ final class SupportProbe {
                     && expected.equals(provider.getSymbolicName()) && wire.getProviderWiring().isCurrent()
                     && provider.equals(FrameworkUtil.getBundle(actual)) && actual == runner.loadClass(type),
                     "Support/JDT class spaces differ for " + type + ": support " + provider + ", JDT " + FrameworkUtil.getBundle(runner.loadClass(type)));
+            if (!historical) {
+                require(wiring.getRequiredWires(BundleNamespace.BUNDLE_NAMESPACE).stream()
+                        .anyMatch(w -> provider.equals(w.getProviderWiring().getBundle())),
+                        "Missing JDT 5 provider bundle wire for " + pkg + ": " + provider);
+            }
             Version exported = (Version) wire.getCapability().getAttributes().get(PackageNamespace.CAPABILITY_VERSION_ATTRIBUTE);
             int major = legacySix ? 6 : pkg.startsWith("org.junit.jupiter.") ? 5 : 1;
             int minimumMinor = legacySix ? 0 : 14;
