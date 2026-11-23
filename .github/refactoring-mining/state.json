@@ -5536,9 +5536,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "lastProcessedCommit": "05be2519c00be901ef1067b044790fa07dc9871e",
-      "lastProcessedDate": "2026-11-22T02:23:51.133643459Z",
-      "totalProcessed": 1415,
+      "lastProcessedCommit": "a3912fca1065ff255eb2c19cea6532b539237b46",
+      "lastProcessedDate": "2026-11-23T03:28:39.762036397Z",
+      "totalProcessed": 1487,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -6287,6 +6287,87 @@
           "deferredAt": "2026-11-22T02:21:21.192391848Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "cf01ab9cc1b581b492cecbb417e5563f6013db9c",
+          "message": "Bug 372181 - Working set support for Expressions View",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-23T03:23:59.398475262Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "597289dc45ec68d383f69461a6af586bd3d59caf",
+          "message": "Bug 372181 - Working set support for Expressions View",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-23T03:23:59.402695141Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b853ed2c9bd9f3c0ebe4bc9b23102a3fcb6870c6",
+          "message": "Bug 372181 - Working set support for Expressions View",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-23T03:26:11.920388470Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "552635fba630d89f6e4ddecba9e4ca0aacb087e1",
+          "message": "Bug 372181 - Working set support for Expressions View",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-23T03:26:30.215573346Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "eca4380528c0d428b566d5f5e58e7026e18489a1",
+          "message": "Bug 372181 - Working set support for Expressions View",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-23T03:26:47.395426463Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "faf798e1240cdf437166b53f7dd3fcb5cc7e84ef",
+          "message": "Bug 372181 - Working set support for Expressions View",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-23T03:26:47.398206941Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b7053c11ba5d798ba237dc3dd66553dd88691c12",
+          "message": "Revert \"Bug 372181 - Working set support for Expressions View\"",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-23T03:27:36.382740833Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "d08c4f116a729cd3e24cf0d753cc7d435b70e9d7",
+          "message": "Revert \"Bug 372181 - Working set support for Expressions View\"",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-23T03:28:09.200138691Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "00f6e99dc7478899c4054a9c431c1bf8fc71eaed",
+          "message": "Revert \"Bug 372181 - Working set support for Expressions View\"",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-23T03:28:09.210015331Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -6354,5 +6435,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 54996
+  "globalTotalProcessed": 55068
 }
