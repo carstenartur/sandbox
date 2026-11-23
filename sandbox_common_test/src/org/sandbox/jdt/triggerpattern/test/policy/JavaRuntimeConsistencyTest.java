@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -93,7 +94,7 @@ public class JavaRuntimeConsistencyTest {
 			}
 			Path classpath = module.resolve(".classpath");
 			if (Files.exists(classpath)) {
-				assertFalse(Pattern.compile("JavaSE-(?!25(?:[\"/]|$))\\d+").matcher(Files.readString(classpath)).find(), classpath.toString());
+				assertFalse(Pattern.compile("JavaSE-(?!25(?:[\"/]|$))\\d+").matcher(Files.readString(classpath, StandardCharsets.UTF_8)).find(), classpath.toString());
 			}
 			Path prefs = module.resolve(".settings/org.eclipse.jdt.core.prefs");
 			if (Files.exists(prefs)) {
@@ -126,7 +127,7 @@ public class JavaRuntimeConsistencyTest {
 		for (Path module : modules()) {
 			try (var files = Files.list(module)) {
 				for (Path launch : files.filter(p -> p.toString().endsWith(".launch")).toList()) {
-					String text = Files.readString(launch);
+					String text = Files.readString(launch, StandardCharsets.UTF_8);
 					assertFalse(text.contains("JavaSE-21"), launch.toString());
 					assertFalse(text.contains("org.eclipse.justj"), "Development launch uses the configured Java25 VM: " + launch);
 				}
@@ -215,7 +216,7 @@ public class JavaRuntimeConsistencyTest {
 		return path;
 	}
 
-	private static String read(String path) throws Exception { return Files.readString(root().resolve(path)); }
+	private static String read(String path) throws Exception { return Files.readString(root().resolve(path), StandardCharsets.UTF_8); }
 
 	private static Document xml(String path) throws Exception {
 		var factory = DocumentBuilderFactory.newInstance();
