@@ -157,8 +157,9 @@ jobs:
           set -euo pipefail
           status=0
           log="$RUNNER_TEMP/sandbox-maven.log"
+          # Recheck missing releases recorded in the restored Maven cache.
           xvfb-run --auto-servernum ./mvnw \
-            --no-transfer-progress -e -V --batch-mode --fail-at-end \
+            --no-transfer-progress -e -V --batch-mode --update-snapshots --fail-at-end \
             -Dtycho.localArtifacts=ignore clean verify 2>&1 | tee "$log" || status=$?
           # Store the log after clean, including failures before Surefire starts.
           mkdir -p target/build-verification

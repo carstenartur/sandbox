@@ -553,7 +553,7 @@ public class AssertOptimizationTest {
 	}
 
 	@Test
-	public void swaps_assertLinesMatch_parameters() throws CoreException {
+	public void preserves_assertLinesMatch_pattern_argument() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
 				"""
@@ -564,12 +564,12 @@ public class AssertOptimizationTest {
 				
 				public class MyTest {
 					private List<String> getLines() {
-						return List.of("line3", "line4");
+						return List.of("line [0-9]+");
 					}
 					
 					@Test
 					public void testLinesMatch() {
-						Assertions.assertLinesMatch(getLines(), List.of("line1", "line2"));
+						Assertions.assertLinesMatch(getLines(), List.of("line 12"));
 					}
 				}
 				""", false, null);
@@ -578,25 +578,8 @@ public class AssertOptimizationTest {
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT_OPTIMIZATION);
 
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
-				"""
-				package test;
-				import java.util.List;
-				import org.junit.jupiter.api.Assertions;
-				import org.junit.jupiter.api.Test;
-				
-				public class MyTest {
-					private List<String> getLines() {
-						return List.of("line3", "line4");
-					}
-					
-					@Test
-					public void testLinesMatch() {
-						Assertions.assertLinesMatch(List.of("line1", "line2"), getLines());
-					}
-				}
-				"""
-		}, null);
+		// The expected argument interprets this line as a regular expression.
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
 	@Test

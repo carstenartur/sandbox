@@ -116,6 +116,7 @@ jobs:
           -e
           -V
           --batch-mode
+          --update-snapshots
           -Dtycho.localArtifacts=ignore
           -Pjacoco,reports,product,repo,benchmark,cli-dist,maven-plugin
           clean verify
