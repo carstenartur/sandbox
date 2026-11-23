@@ -2,10 +2,10 @@
 
 Add `io.github.carstenartur:sandbox-junit-migration-support` at the matching Sandbox version to the **test** classpath. When working from a checkout, install it with `./mvnw -f sandbox-junit-migration-support/pom.xml install` on Java 25. Keep the project's JUnit BOM in dependency management so the launcher, Jupiter and Vintage engines use compatible versions. Include Vintage while running JUnit 4 tests. The jar supplies a discovery filter and lifecycle extensions.
 
-The support jar currently targets Java 25, so the test runtime that loads it must
-support Java 25 as well. Building it on Java 25 does not make it loadable by a
-Java 21 test runtime. The cleanup does not automatically add this jar, its PDE
-service registration, or mixed-lifecycle fixture adapters to a consuming project.
+The support jar targets Java 21 for consumer test runtimes. Sandbox builds,
+including the build of this jar, require Java 25. The Sandbox product and PDE
+test baseline also use Java 25. Add the jar and any PDE service registration
+explicitly in the consuming project. Mixed-lifecycle fixture adoption is manual.
 
 ## Migrating a test subclass
 
@@ -45,6 +45,28 @@ final org.junit.jupiter.api.extension.Extension extension =
         ExternalResourceExtension.perTest(project::before, project::after);
 ```
 
+When a constructor assigns the fixture, register a supplier and unbound method
+references to its accessible hooks:
+
+```java
+class MigratedTest {
+    private Fixture fixture;
+
+    @RegisterExtension
+    final Extension extension =
+            ExternalResourceExtension.perTest(() -> fixture, Fixture::before, Fixture::after);
+
+    MigratedTest() {
+        fixture = new Fixture();
+    }
+}
+```
+
+The supplier runs once at the start of each test lifecycle. A null result skips
+both hooks. After successful setup, teardown uses the selected receiver even if
+the field is reassigned. The supplier form of `perClass` provides the same behavior
+at class setup and teardown for a static fixture field.
+
 For protected hooks, such as `ProjectTestSetup.before()`, put the factory in the fixture's package or add a Jupiter companion subclass that can access the hooks:
 
 ```java
@@ -63,8 +85,12 @@ When migrating a leaf, include any setup that it previously inherited from a JUn
 
 If the same fixture class serves both rule scopes, keep its implementation and
 the fixture instances used by each consumer. Use separate `perTest` and `perClass`
-registrations at the corresponding instance and static fields; one registration
-does not run at both scopes. Review ordering with other rules, extensions and
-inherited lifecycle methods, then compare the same tests before and after.
+registrations at the corresponding instance and static fields. Review field
+hiding and ordering with other rules, extensions and inherited lifecycle methods,
+then compare the same tests before and after. Each supplier reads independently
+at its own setup boundary. JUnit 4 can snapshot peer rules together before any
+peer setup, so rules that reassign peer fields need explicit review. With
+Jupiter's `PER_CLASS` lifecycle, the test instance is constructed before
+`perClass` setup.
 
 Unmigrated tests can continue to register `ProjectTestSetup` as a JUnit 4 rule. The Jupiter extension calls teardown after successful setup, including when the test fails. A failed setup leaves teardown uncalled at both scopes. If a test body and its teardown both fail, Vintage reports both causes in a multiple-failure error. Jupiter reports the body failure with the teardown failure suppressed. This adapter covers the `ExternalResource.before/after` lifecycle. A rule that overrides `apply` to wrap the test body needs a migration for that additional behavior.

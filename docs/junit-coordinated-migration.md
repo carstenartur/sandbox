@@ -10,13 +10,23 @@ Named `ExternalResource` implementations and proven `@Rule`/`@ClassRule` consume
 
 For incremental manual adoption, the separate
 [staged support jar](../sandbox-junit-migration-support/README.md) retains fixture
-instances through `perTest` and `perClass` hook registrations. Use an instance
-extension field for a former `@Rule` and a static field for a former `@ClassRule`.
-The two scopes require separate registrations; inherited setup and ordering
-still need review. This Java 25 support jar and its discovery filter must be
-wired explicitly into the consumer, including PDE service registration where
-needed. It does not enable automatic mixed-lifecycle conversion or preserve an
-arbitrary override of `ExternalResource.apply`.
+instances through `perTest` and `perClass` hook registrations. For a
+constructor-assigned fixture with accessible hooks, use
+`perTest(() -> fixture, Fixture::before, Fixture::after)` on an instance extension
+field. A former `@ClassRule` uses a separate static `perClass` registration.
+Each supplier runs once at setup. A null result skips both hooks, and successful
+setup binds teardown to the same receiver even if the field changes.
+
+Review inherited setup, field hiding and ordering across rules and extensions.
+Suppliers select receivers individually at their own setup boundaries. If JUnit 4
+captured peer rule fields together before setup, review any rule that can replace
+a peer's field. With Jupiter's `PER_CLASS` lifecycle, test-instance construction
+precedes `perClass` setup. An arbitrary override of `ExternalResource.apply` needs
+an explicit migration for its additional behavior.
+
+The support jar targets Java 21 for consumer tests. The Sandbox build, product
+and PDE test baseline require Java 25. Provision the support jar and any PDE
+service registration explicitly. Mixed-lifecycle conversion remains manual.
 
 ### JUnit 4 suites
 
