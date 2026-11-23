@@ -16,8 +16,15 @@
 	<properties>
 		<!-- This is a normal Maven/Java module, not an OSGi bundle. -->
 		<tycho.mode>maven</tycho.mode>
+		<!-- The support module generates the UTC suffix for this channel. -->
+		<sandbox.support.qualifier>dev</sandbox.support.qualifier>
 	</properties>
 	<dependencies>
+		<dependency>
+			<groupId>org.osgi</groupId>
+			<artifactId>org.osgi.framework</artifactId>
+			<version>1.8.0</version>
+		</dependency>
 		<dependency>
 			<groupId>com.google.code.gson</groupId>
 			<artifactId>gson</artifactId>
@@ -78,6 +85,8 @@
 							<mainClass>org.sandbox.distribution.AggregateInstallationVerifier</mainClass>
 							<arguments>
 								<argument>${maven.multiModuleProjectDirectory}</argument>
+								<argument>${maven.multiModuleProjectDirectory}/sandbox-junit-migration-support/target/sandbox-junit-migration-support-${project.version}.jar</argument>
+								<argument>${sandbox.support.qualifier}</argument>
 							</arguments>
 							<classpathScope>runtime</classpathScope>
 							<cleanupDaemonThreads>false</cleanupDaemonThreads>

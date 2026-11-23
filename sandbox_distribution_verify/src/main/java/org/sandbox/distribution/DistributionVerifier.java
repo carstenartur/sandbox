@@ -65,7 +65,7 @@ public final class DistributionVerifier {
     private final Path evidence;
     private final Platform platform;
 
-    private DistributionVerifier(Path root) throws VerificationException {
+    DistributionVerifier(Path root) throws VerificationException {
         this.root = root.toAbsolutePath().normalize();
         this.evidence = this.root.resolve("target/distribution-verification");
         this.platform = Platform.current();
@@ -658,7 +658,7 @@ public final class DistributionVerifier {
         Files.writeString(evidence.resolve("verification.md"), markdown);
     }
 
-    private Path findProductRoot() throws Exception {
+    Path findProductRoot() throws Exception {
         Path products = root.resolve("sandbox_product/target/products");
         require(Files.isDirectory(products), "Materialized products directory is missing: " + products);
         List<Path> candidates;
@@ -743,7 +743,7 @@ public final class DistributionVerifier {
         return new ProcessResult(process.exitValue(), false);
     }
 
-    private Document repositoryXml(Path repository, String stem) throws Exception {
+    static Document repositoryXml(Path repository, String stem) throws Exception {
         Path jar = repository.resolve(stem + ".jar");
         if (Files.isRegularFile(jar)) {
             try (ZipFile zip = new ZipFile(jar.toFile())) {
@@ -838,7 +838,7 @@ public final class DistributionVerifier {
         return factory.newDocumentBuilder().parse(stream);
     }
 
-    private static List<Element> elements(Document document, String localName) {
+    static List<Element> elements(Document document, String localName) {
         NodeList nodes = document.getElementsByTagNameNS("*", localName);
         List<Element> result = new ArrayList<>(nodes.getLength());
         for (int index = 0; index < nodes.getLength(); index++) {

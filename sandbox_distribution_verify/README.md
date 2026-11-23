@@ -15,6 +15,23 @@ It checks:
 - execution of the cleanup application for formatter, charset-modernization and functional-converter probes, including a published 1.3.8-to-candidate aggregate upgrade, and compilation of the transformed Java sources.
 - exact runtime AST API version and JAR digest, including the bundle used by Sandbox Tools and Use General Type.
 
+For staged JUnit support the verifier checks the reactor JAR against the update-site
+artifact and the installed file in the product, fresh aggregate and upgraded profile.
+Native probes invoke the factories and inspect the filter through the installed JDT
+JUnit 5 runner's class space. The old component fixture rebuilds the pre-supplier
+implementation from commit `49e12331b056bdf8ae9c7a07d9dce9e0245ba1b1`.
+The unchanged historical bundle can wire to the JDT JUnit 6 runtime on a stock SDK
+with both generations. The upgrade retains the same p2 profile, selects only the
+candidate feature root and verifies that its new fragment attaches the support host
+to the actual JDT JUnit 5 providers.
+Profiles, API observations and SHA-256 receipts are under `target/distribution-verification/aggregate`.
+
+Snapshot publication records the support version, source and digest in
+`support-receipt.json` beside the build manifest. A new source must advance both
+containing feature versions. If two builds land in the same qualifier minute, rerun
+the existing build in a later minute. The support version and bytes for that source
+remain fixed.
+
 Run the complete build on Windows, Linux or macOS with:
 
 ```text
