@@ -21,10 +21,12 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
@@ -94,6 +96,45 @@ class CodePatternsScreenshotVisibilityTest {
 			assertFalse(CodePatternsScreenshotVisibility.controlProblem(button).isEmpty(),
 					"Fixture must reproduce a control wider than the viewport");
 			assertEquals("", CodePatternsScreenshotVisibility.checkboxProblem(button));
+		});
+	}
+
+	@Test
+	void junitPolicyFitsWhenTheWindowCannotGrow() {
+		runOnDisplay(() -> {
+			Shell shell= new Shell(Display.getDefault());
+			try {
+				shell.setLayout(new FillLayout());
+				SashForm split= new SashForm(shell, SWT.HORIZONTAL);
+				ScrolledComposite viewport= new ScrolledComposite(split, SWT.V_SCROLL);
+				Composite content= new Composite(viewport, SWT.NONE);
+				Button button= new Button(content, SWT.CHECK | SWT.LEFT);
+				button.setText("Best effort: migrate every proven construct and add @todo scaffolds for unresolved gaps (manual repair may be required)");
+				Point preferred= button.computeSize(SWT.DEFAULT, SWT.DEFAULT);
+				button.setBounds(10, 10, preferred.x, preferred.y);
+				content.setSize(preferred.x + 20, preferred.y + 20);
+				viewport.setContent(content);
+				Composite preview= new Composite(split, SWT.NONE);
+				split.setWeights(1, 1);
+
+				Rectangle size= shell.computeTrim(0, 0, preferred.x * 3 / 2, 240);
+				shell.setMaximumSize(size.width, size.height);
+				shell.setSize(size.width, size.height);
+				shell.open();
+				shell.layout(true, true);
+				int windowWidth= shell.getClientArea().width;
+				int previewWidth= preview.getSize().x;
+				assertFalse(CodePatternsScreenshotVisibility.checkboxProblem(button).isEmpty(), "Fixture must clip the caption");
+
+				assertEquals("", FocusedCleanupConfigurationScreenshots.showCompleteJUnitPolicy(button));
+
+				assertEquals(windowWidth, shell.getClientArea().width, "The host still limits the dialog");
+				assertTrue(preview.getSize().x > 0 && preview.getSize().x < previewWidth,
+						"The preview must give the complete caption room on a smaller display");
+				assertEquals("", CodePatternsScreenshotVisibility.checkboxProblem(button));
+			} finally {
+				shell.dispose();
+			}
 		});
 	}
 

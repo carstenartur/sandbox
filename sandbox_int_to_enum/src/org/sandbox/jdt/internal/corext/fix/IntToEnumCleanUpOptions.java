@@ -21,6 +21,9 @@ public final class IntToEnumCleanUpOptions {
 	 */
 	public static final String PROJECT_WIDE= "cleanup.int_to_enum.project_wide"; //$NON-NLS-1$
 
+	/** Adds a named public enum entry while retaining the legacy constant API. Explicit cleanup profiles only. */
+	public static final String PUBLIC_VALUE_ADAPTER= "cleanup.int_to_enum.public_value_adapter"; //$NON-NLS-1$
+
 	private IntToEnumCleanUpOptions() {
 		// constants only
 	}
