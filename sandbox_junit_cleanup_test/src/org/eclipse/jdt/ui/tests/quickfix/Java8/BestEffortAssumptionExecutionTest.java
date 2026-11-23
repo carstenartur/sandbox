@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -148,7 +149,7 @@ class BestEffortAssumptionExecutionTest {
 						.getOutputLocation().append("assumptions/Base.class")).getLocation().toFile().toPath();
 				Files.createDirectories(binaryClasses.resolve("assumptions"));
 				Files.copy(compiled, binaryClasses.resolve("assumptions/Base.class"));
-				Files.writeString(binaryClasses.resolve("Base.java.before"), inherited);
+				Files.writeString(binaryClasses.resolve("Base.java.before"), inherited, StandardCharsets.UTF_8);
 				base.delete(true, null);
 				AbstractEclipseJava.addToClasspath(provider.getJavaProject(), JavaCore.newLibraryEntry(
 						org.eclipse.core.runtime.Path.fromOSString(binaryClasses.toString()), null, null));
@@ -335,7 +336,7 @@ class BestEffortAssumptionExecutionTest {
 		String directory= System.getenv("SANDBOX_ASSUMPTION_EVIDENCE");
 		if (directory != null) {
 			Path target= Files.createDirectories(Path.of(directory, scenario));
-			for (ICompilationUnit unit : units) Files.writeString(target.resolve(unit.getElementName()), unit.getSource());
+			for (ICompilationUnit unit : units) Files.writeString(target.resolve(unit.getElementName()), unit.getSource(), StandardCharsets.UTF_8);
 			if (scenario.equals("binary")) {
 				Files.createDirectories(target.resolve("assumptions"));
 				Files.copy(binaryClasses.resolve("assumptions/Base.class"), target.resolve("assumptions/Base.class"));
