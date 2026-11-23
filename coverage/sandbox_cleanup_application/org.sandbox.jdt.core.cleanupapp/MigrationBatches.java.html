@@ -274,7 +274,7 @@ final class MigrationBatches {
 <span class="fc" id="L274">		var proposed= ProjectWideCodeCleanupApplication.planProjectMetadata(sources, resources, replacements, options);</span>
 <span class="fc" id="L275">		Map&lt;ResourceSnapshot, byte[]&gt; changes= new LinkedHashMap&lt;&gt;();</span>
 <span class="fc" id="L276">		proposed.changes().forEach((resource, bytes) -&gt; {</span>
-<span class="pc bpc" id="L277" title="1 of 2 branches missed.">			if (!Arrays.equals(resource.before(), bytes)) changes.put(resource, bytes);</span>
+<span class="fc bfc" id="L277" title="All 2 branches covered.">			if (!Arrays.equals(resource.before(), bytes)) changes.put(resource, bytes);</span>
 <span class="fc" id="L278">		});</span>
 <span class="fc" id="L279">		return new MetadataPlan(changes, proposed.retiresVintage());</span>
 	}

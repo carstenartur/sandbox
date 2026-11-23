@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>PublicEnumAdapter.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_int_to_enum</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">PublicEnumAdapter.java</span></div><h1>PublicEnumAdapter.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer and others.
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import javax.lang.model.SourceVersion;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldAccess;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.IfStatement;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.PrimitiveType;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.internal.corext.dom.Bindings;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.sandbox.jdt.cleanup.multifile.GeneratedNameHierarchyPolicy;
+import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumMigrationMode;
+
+/** Adds a typed entry for a public legacy method without rewriting existing members or callers. */
+public final class PublicEnumAdapter {
+	private PublicEnumAdapter() { }
+
+	/** Adds owner-local changes for the explicitly selected compatibility profile. */
+	public static void addOperations(CompilationUnit root, Set&lt;ASTNode&gt; processed,
+			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations) {
+<span class="fc bfc" id="L50" title="All 2 branches covered.">		for (Object declaration : root.types()) {</span>
+<span class="pc bpc" id="L51" title="2 of 4 branches missed.">			if (!(declaration instanceof TypeDeclaration owner) || owner.isInterface()</span>
+<span class="pc bpc" id="L52" title="1 of 4 branches missed.">					|| !Modifier.isFinal(owner.getModifiers()) || !Modifier.isPublic(owner.getModifiers())</span>
+<span class="pc bpc" id="L53" title="2 of 4 branches missed.">					|| !valid(owner.resolveBinding()) || processed.stream().anyMatch(node -&gt; isInside(node, owner))) {</span>
+<span class="nc" id="L54">				continue;</span>
+			}
+<span class="fc" id="L56">			List&lt;Candidate&gt; candidates= Arrays.stream(owner.getMethods())</span>
+<span class="fc" id="L57">					.map(method -&gt; candidate(owner, method)).filter(java.util.Objects::nonNull).toList();</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">			for (Candidate candidate : candidates) {</span>
+				// Two methods may imply competing nested types or competing bridge names.
+<span class="pc bpc" id="L60" title="1 of 4 branches missed.">				if (candidates.stream().noneMatch(other -&gt; candidate != other &amp;&amp; (candidate.enumName.equals(other.enumName)</span>
+<span class="pc bpc" id="L61" title="2 of 4 branches missed.">						|| candidate.entryName.equals(other.entryName)))) {</span>
+<span class="fc" id="L62">					operations.add(candidate.operation());</span>
+				}
+			}
+		}
+<span class="fc" id="L66">	}</span>
+
+	private static boolean isInside(ASTNode node, TypeDeclaration owner) {
+<span class="nc bnc" id="L69" title="All 2 branches missed.">		for (ASTNode current= node; current != null; current= current.getParent()) {</span>
+<span class="nc bnc" id="L70" title="All 2 branches missed.">			if (current == owner) return true;</span>
+		}
+<span class="nc" id="L72">		return false;</span>
+	}
+
+	private static Candidate candidate(TypeDeclaration owner, MethodDeclaration method) {
+<span class="fc" id="L76">		IMethodBinding binding= method.resolveBinding();</span>
+<span class="pc bpc" id="L77" title="3 of 6 branches missed.">		if (!valid(binding) || !Modifier.isPublic(method.getModifiers()) || Modifier.isStatic(method.getModifiers())</span>
+<span class="pc bpc" id="L78" title="3 of 6 branches missed.">				|| method.getBody() == null || method.parameters().size() != 1 || !method.typeParameters().isEmpty()</span>
+<span class="pc bpc" id="L79" title="2 of 4 branches missed.">				|| !method.thrownExceptionTypes().isEmpty() || !(method.getReturnType2() instanceof PrimitiveType returns)</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">				|| returns.getPrimitiveTypeCode() != PrimitiveType.VOID) {</span>
+<span class="nc" id="L81">			return null;</span>
+		}
+<span class="fc" id="L83">		var parameter= (SingleVariableDeclaration) method.parameters().get(0);</span>
+<span class="fc" id="L84">		var state= parameter.resolveBinding();</span>
+<span class="pc bpc" id="L85" title="2 of 4 branches missed.">		if (!valid(state) || !valid(state.getType())</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">				|| !Set.of(&quot;int&quot;, &quot;java.lang.String&quot;).contains(state.getType().getQualifiedName())) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L87">			return null;</span>
+		}
+<span class="fc" id="L89">		Set&lt;String&gt; compared= comparedConstants(owner, method, state);</span>
+<span class="fc" id="L90">		String prefix= SwitchIntToEnumHelper.findCommonPrefix(new ArrayList&lt;&gt;(compared));</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">		if (prefix == null) return null;</span>
+<span class="fc" id="L92">		String enumName= SwitchIntToEnumHelper.prefixToEnumName(prefix);</span>
+<span class="fc" id="L93">		String entryName= method.getName().getIdentifier() + &quot;Value&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L94" title="1 of 4 branches missed.">		if (!identifier(enumName) || EnumNameSafety.conflicts(owner, enumName)</span>
+<span class="fc bfc" id="L95" title="All 4 branches covered.">				|| EnumNameSafety.identifierInUse(owner, entryName) || hierarchyConflicts(owner.resolveBinding(), enumName, entryName)) {</span>
+<span class="fc" id="L96">			return null;</span>
+		}
+
+<span class="fc" id="L99">		List&lt;String&gt; fields= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L100">		Set&lt;EnumConstantValue&gt; values= new HashSet&lt;&gt;();</span>
+<span class="fc" id="L101">		String ownerName= owner.getName().getIdentifier();</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">		for (var field : owner.getFields()) {</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">			for (Object element : field.fragments()) {</span>
+<span class="fc" id="L104">				var fragment= (VariableDeclarationFragment) element;</span>
+<span class="fc" id="L105">				String name= fragment.getName().getIdentifier();</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">				if (!name.startsWith(prefix)) continue;</span>
+<span class="fc" id="L107">				var value= EnumConstantValue.from(fragment.resolveBinding());</span>
+<span class="fc" id="L108">				String symbol= name.substring(prefix.length());</span>
+<span class="pc bpc" id="L109" title="1 of 6 branches missed.">				if (!Modifier.isPublic(field.getModifiers()) || value == null || !value.matches(state.getType())</span>
+<span class="pc bpc" id="L110" title="1 of 6 branches missed.">						|| !values.add(value) || !compared.contains(name) || !identifier(symbol)</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">						|| symbol.equals(ownerName)) {</span>
+<span class="fc" id="L112">					return null;</span>
+				}
+<span class="fc" id="L114">				fields.add(name);</span>
+			}
+		}
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">		if (fields.size() != compared.size()) return null;</span>
+<span class="fc" id="L118">		String scalar= parameter.getType().toString();</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">		if (!Set.of(&quot;int&quot;, &quot;String&quot;, &quot;java.lang.String&quot;).contains(scalar)) return null; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc" id="L120">		return new Candidate(owner, method, prefix, enumName, entryName, scalar, fields);</span>
+	}
+
+	/** A complete direct if/else chain provides evidence that the public constants describe one parameter. */
+	private static Set&lt;String&gt; comparedConstants(TypeDeclaration owner, MethodDeclaration method, IVariableBinding state) {
+<span class="fc" id="L125">		Set&lt;String&gt; result= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">		for (Object statement : method.getBody().statements()) {</span>
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">			if (!(statement instanceof IfStatement first)) continue;</span>
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">			if (!result.isEmpty()) return Set.of();</span>
+<span class="fc bfc" id="L129" title="All 4 branches covered.">			for (IfStatement arm= first; arm != null; arm= arm.getElseStatement() instanceof IfStatement next ? next : null) {</span>
+<span class="fc" id="L130">				var operands= EnumComparison.operands(arm.getExpression());</span>
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">				if (operands == null) return Set.of();</span>
+<span class="fc" id="L132">				IVariableBinding left= variable(operands.left());</span>
+<span class="fc" id="L133">				IVariableBinding right= variable(operands.right());</span>
+<span class="pc bpc" id="L134" title="3 of 4 branches missed.">				IVariableBinding field= state.isEqualTo(left) ? right : state.isEqualTo(right) ? left : null;</span>
+<span class="pc bpc" id="L135" title="2 of 4 branches missed.">				if (!valid(field) || !owner.resolveBinding().isEqualTo(field.getDeclaringClass())</span>
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">						|| !result.add(field.getName())) return Set.of();</span>
+			}
+		}
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">		return result.size() &gt;= 2 ? result : Set.of();</span>
+	}
+
+	private static IVariableBinding variable(Expression expression) {
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">		if (!EnumConstantValue.isDirectReference(expression)) return null;</span>
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">		IBinding binding= expression instanceof Name name ? name.resolveBinding()</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">				: expression instanceof FieldAccess access ? access.resolveFieldBinding() : null;</span>
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">		return binding instanceof IVariableBinding variable ? variable.getVariableDeclaration() : null;</span>
+	}
+
+	private static boolean hierarchyConflicts(ITypeBinding owner, String enumName, String entryName) {
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">		if (!GeneratedNameHierarchyPolicy.inheritedMemberTypeCollisions(owner, enumName).isEmpty()</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">				|| Arrays.stream(owner.getDeclaredFields()).anyMatch(field -&gt; field.getName().equals(owner.getName()))) {</span>
+<span class="nc" id="L152">			return true;</span>
+		}
+<span class="fc bfc" id="L154" title="All 2 branches covered.">		for (ITypeBinding type : Bindings.getAllSuperTypes(owner)) {</span>
+			// Adding a public method can change a serializable class's default serialVersionUID.
+<span class="pc bpc" id="L156" title="1 of 4 branches missed.">			if (!valid(type) || &quot;java.io.Serializable&quot;.equals(type.getQualifiedName()) //$NON-NLS-1$</span>
+<span class="pc bnc" id="L157" title="All 2 branches missed.">					|| Arrays.stream(type.getDeclaredFields()).anyMatch(field -&gt; field.getName().equals(enumName)</span>
+<span class="pc bpc" id="L158" title="3 of 4 branches missed.">							|| field.getName().equals(owner.getName()))</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">					|| Arrays.stream(type.getDeclaredMethods()).anyMatch(member -&gt; member.getName().equals(entryName))) {</span>
+<span class="fc" id="L160">				return true;</span>
+			}
+		}
+<span class="fc" id="L163">		return false;</span>
+	}
+
+	private static boolean valid(IBinding binding) {
+<span class="pc bpc" id="L167" title="2 of 4 branches missed.">		return binding != null &amp;&amp; !binding.isRecovered();</span>
+	}
+
+	private static boolean identifier(String name) {
+<span class="pc bpc" id="L171" title="1 of 4 branches missed.">		return SourceVersion.isIdentifier(name) &amp;&amp; !SourceVersion.isKeyword(name);</span>
+	}
+
+	private record Candidate(TypeDeclaration owner, MethodDeclaration method, String prefix, String enumName,
+			String entryName, String scalar, List&lt;String&gt; constants) {
+		CompilationUnitRewriteOperationWithSourceRange operation() {
+<span class="fc" id="L177">			return new CompilationUnitRewriteOperationWithSourceRange() {</span>
+				@Override
+				public void rewriteASTInternal(CompilationUnitRewrite unit, LinkedProposalModelCore linkedModel) {
+<span class="fc" id="L180">					var rewrite= unit.getASTRewrite();</span>
+<span class="fc" id="L181">					var group= createTextEditGroup(IntEnumMigrationMode.PUBLIC_VALUE_ADAPTER_OPT_IN.previewStatement(), unit);</span>
+					// Keep both declarations in one insertion so the preview can apply or undo the adapter atomically.
+<span class="fc" id="L183">					var members= rewrite.createStringPlaceholder(source(), ASTNode.ENUM_DECLARATION);</span>
+<span class="fc" id="L184">					rewrite.getListRewrite(owner, TypeDeclaration.BODY_DECLARATIONS_PROPERTY).insertAfter(members, method, group);</span>
+<span class="fc" id="L185">				}</span>
+			};
+		}
+
+		String source() {
+<span class="fc" id="L190">			Set&lt;String&gt; reserved= new HashSet&lt;&gt;();</span>
+<span class="fc" id="L191">			ITypeBinding declaringType= owner.resolveBinding();</span>
+<span class="fc" id="L192">			reserved.add(declaringType.getName());</span>
+<span class="fc" id="L193">			Arrays.stream(declaringType.getDeclaredFields()).forEach(field -&gt; reserved.add(field.getName()));</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">			for (ITypeBinding type : Bindings.getAllSuperTypes(declaringType)) {</span>
+<span class="pc" id="L195">				Arrays.stream(type.getDeclaredFields()).forEach(field -&gt; reserved.add(field.getName()));</span>
+			}
+<span class="fc" id="L197">			constants.forEach(name -&gt; reserved.add(name.substring(prefix.length())));</span>
+<span class="fc" id="L198">			String backing= fresh(&quot;value&quot;, reserved); //$NON-NLS-1$</span>
+<span class="fc" id="L199">			String argument= fresh(&quot;rawValue&quot;, reserved); //$NON-NLS-1$</span>
+<span class="fc" id="L200">			String parameter= fresh(&quot;enumValue&quot;, reserved); //$NON-NLS-1$</span>
+<span class="fc" id="L201">			String elements= constants.stream().map(name -&gt; {</span>
+<span class="fc" id="L202">				String reference= owner.getName().getIdentifier() + &quot;.&quot; + name; //$NON-NLS-1$</span>
+<span class="fc" id="L203">				return &quot;/** Legacy value for &quot; + name + &quot;. */\n\t&quot; + name.substring(prefix.length()) + &quot;(&quot; + reference + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="fc" id="L204">			}).collect(Collectors.joining(&quot;,\n\t&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L205">			return &quot;&quot;&quot;</span>
+					/** Named values accepted by {{method}}. */
+					public enum {{enum}} {
+						{{elements}};
+
+						private final {{scalar}} {{backing}};
+
+						{{enum}}({{scalar}} {{argument}}) {
+							this.{{backing}} = {{argument}};
+						}
+
+						/**
+						 * Returns the original constant value.
+						 * @return the original constant value
+						 */
+						public {{scalar}} legacyValue() {
+							return this.{{backing}};
+						}
+					}
+
+					/**
+					 * Invokes {{method}} with the named value.
+					 * @param {{parameter}} the named value
+					 * @throws java.lang.NullPointerException if the named value is null
+					 */
+					public void {{entry}}({{enum}} {{parameter}}) {
+						this.{{method}}({{parameter}}.legacyValue());
+					}&quot;&quot;&quot; //$NON-NLS-1$
+<span class="fc" id="L233">					.replace(&quot;{{method}}&quot;, method.getName().getIdentifier()) //$NON-NLS-1$</span>
+<span class="fc" id="L234">					.replace(&quot;{{enum}}&quot;, enumName) //$NON-NLS-1$</span>
+<span class="fc" id="L235">					.replace(&quot;{{scalar}}&quot;, scalar) //$NON-NLS-1$</span>
+<span class="fc" id="L236">					.replace(&quot;{{entry}}&quot;, entryName) //$NON-NLS-1$</span>
+<span class="fc" id="L237">					.replace(&quot;{{backing}}&quot;, backing) //$NON-NLS-1$</span>
+<span class="fc" id="L238">					.replace(&quot;{{argument}}&quot;, argument) //$NON-NLS-1$</span>
+<span class="fc" id="L239">					.replace(&quot;{{parameter}}&quot;, parameter) //$NON-NLS-1$</span>
+<span class="fc" id="L240">					.replace(&quot;{{elements}}&quot;, elements); //$NON-NLS-1$</span>
+		}
+	}
+
+	private static String fresh(String base, Set&lt;String&gt; reserved) {
+<span class="fc" id="L245">		String name= base;</span>
+<span class="fc bfc" id="L246" title="All 2 branches covered.">		for (int suffix= 2; !reserved.add(name); suffix++) {</span>
+<span class="fc" id="L247">			name= base + suffix;</span>
+		}
+<span class="fc" id="L249">		return name;</span>
+	}
+
+	/** Example shown when public adapters are explicitly enabled in the cleanup profile. */
+	public static String preview() {
+<span class="fc" id="L254">		return &quot;&quot;&quot;</span>
+				// Public API adapter example
+				public final class Service {
+				    public static final int PRIORITY_NORMAL = 10;
+				    public static final int PRIORITY_HIGH = 40;
+
+				    public void setPriority(int priority) {
+				        // Existing implementation
+				    }
+
+				    public enum Priority {
+				        NORMAL(Service.PRIORITY_NORMAL), HIGH(Service.PRIORITY_HIGH);
+
+				        private final int value;
+
+				        Priority(int rawValue) {
+				            this.value = rawValue;
+				        }
+
+				        public int legacyValue() {
+				            return this.value;
+				        }
+				    }
+
+				    public void setPriorityValue(Priority enumValue) {
+				        this.setPriority(enumValue.legacyValue());
+				    }
+				}
+				&quot;&quot;&quot;; //$NON-NLS-1$
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

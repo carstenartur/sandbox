@@ -253,7 +253,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.IntToEnumHelper.IntConstantHol
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L256" title="All 2 branches missed.">		if (!afterRefactoring) {</span>
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">		if (!afterRefactoring) {</span>
 <span class="nc" id="L257">			return &quot;&quot;&quot;</span>
 					// Before:
 					private static final int STATUS_PENDING = 0;
@@ -269,7 +269,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.IntToEnumHelper.IntConstantHol
 					}
 					&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L272">		return &quot;&quot;&quot;</span>
+<span class="fc" id="L272">		return &quot;&quot;&quot;</span>
 				// After:
 				/** Values accepted by the status switch. */
 				private enum Status {

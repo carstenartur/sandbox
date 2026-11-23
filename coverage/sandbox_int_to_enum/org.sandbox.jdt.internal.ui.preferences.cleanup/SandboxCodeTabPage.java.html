@@ -62,10 +62,18 @@ import org.sandbox.jdt.internal.ui.fix.IntToEnumCleanUp;
 <span class="nc" id="L62">				CleanUpMessages.IntToEnumTabPage_CheckboxName_ProjectWide,</span>
 <span class="nc" id="L63">				IntToEnumCleanUpOptions.PROJECT_WIDE,</span>
 <span class="nc" id="L64">				FALSE_TRUE);</span>
-<span class="nc" id="L65">		registerSlavePreference(intToEnum, new CheckboxPreference[] { projectWide });</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">		if (isSaveAction()) {</span>
+<span class="nc" id="L66">			registerSlavePreference(intToEnum, new CheckboxPreference[] { projectWide });</span>
+<span class="nc" id="L67">		} else {</span>
+<span class="nc" id="L68">			intent(intToEnumGroup);</span>
+<span class="nc" id="L69">			CheckboxPreference adapter= createCheckboxPref(intToEnumGroup, numColumns - 1,</span>
+<span class="nc" id="L70">					CleanUpMessages.IntToEnumTabPage_CheckboxName_PublicAdapter,</span>
+<span class="nc" id="L71">					IntToEnumCleanUpOptions.PUBLIC_VALUE_ADAPTER, FALSE_TRUE);</span>
+<span class="nc" id="L72">			registerSlavePreference(intToEnum, new CheckboxPreference[] { projectWide, adapter });</span>
+		}
 
-<span class="nc" id="L67">		intent(intToEnumGroup);</span>
-<span class="nc" id="L68">		registerPreference(intToEnum);</span>
-<span class="nc" id="L69">	}</span>
+<span class="nc" id="L75">		intent(intToEnumGroup);</span>
+<span class="nc" id="L76">		registerPreference(intToEnum);</span>
+<span class="nc" id="L77">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

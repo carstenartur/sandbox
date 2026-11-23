@@ -15,55 +15,58 @@ import org.sandbox.jdt.cleanup.multifile.CleanUpImpact;
 /**
  * Compatibility contract for constant-domain to enum migrations.
  *
- * &lt;p&gt;Only {@link #CLOSED_FLOW_AUTOMATIC} is currently executable. The other
- * modes make future compatibility work explicit without weakening the current
- * conservative detector.&lt;/p&gt;
+ * &lt;p&gt;Closed-source migration and additive public entries have distinct contracts.
+ * Persistence and protocol migrations require a separate policy.&lt;/p&gt;
  */
-<span class="fc" id="L22">public enum IntEnumMigrationMode {</span>
+<span class="fc" id="L21">public enum IntEnumMigrationMode {</span>
 
-<span class="fc" id="L24">	/** Package-private source flow whose complete declaration/caller closure is proven. */</span>
-<span class="fc" id="L25">	CLOSED_FLOW_AUTOMATIC(CleanUpImpact.PROJECT_CLOSED, true, false,</span>
-<span class="fc" id="L26">			&quot;Closed source flow: all declarations and callers are migrated atomically; no public, persisted or wire identity is claimed.&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L23">	/** Package-private source flow whose complete declaration/caller closure is proven. */</span>
+<span class="fc" id="L24">	CLOSED_FLOW_AUTOMATIC(CleanUpImpact.PROJECT_CLOSED, true, false,</span>
+<span class="fc" id="L25">			&quot;Closed source flow: all declarations and callers are migrated atomically; no public, persisted or wire identity is claimed.&quot;), //$NON-NLS-1$</span>
+
+	/** Additive public source API with explicit legacy int or String values. */
+<span class="fc" id="L28">	PUBLIC_VALUE_ADAPTER_OPT_IN(CleanUpImpact.COMPATIBILITY_MANAGED, true, true,</span>
+<span class="fc" id="L29">			&quot;Compatibility-managed public API: retain legacy constants and methods and add a named enum-valued entry.&quot;), //$NON-NLS-1$</span>
 
 	/** Public or externally represented numeric identity with explicit adapters. */
-<span class="fc" id="L29">	NUMERIC_ADAPTER_OPT_IN(CleanUpImpact.COMPATIBILITY_MANAGED, false, true,</span>
-<span class="fc" id="L30">			&quot;Compatibility-managed numeric domain: explicit value/fromValue adapters and an unknown-value policy are required.&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L32">	NUMERIC_ADAPTER_OPT_IN(CleanUpImpact.COMPATIBILITY_MANAGED, false, true,</span>
+<span class="fc" id="L33">			&quot;Compatibility-managed numeric domain: explicit value/fromValue adapters and an unknown-value policy are required.&quot;), //$NON-NLS-1$</span>
 
 	/** Bit flags, aliases or ranged domains that require an interactive design decision. */
-<span class="fc" id="L33">	MANUAL_DOMAIN_REFACTORING(CleanUpImpact.MANUAL_REFACTORING, false, true,</span>
-<span class="fc" id="L34">			&quot;Manual domain refactoring: aliases, ranges or bit flags require an explicit representation such as EnumSet.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L36">	MANUAL_DOMAIN_REFACTORING(CleanUpImpact.MANUAL_REFACTORING, false, true,</span>
+<span class="fc" id="L37">			&quot;Manual domain refactoring: aliases, ranges or bit flags require an explicit representation such as EnumSet.&quot;); //$NON-NLS-1$</span>
 
 	private final CleanUpImpact impact;
 	private final boolean implemented;
 	private final boolean explicitNumericIdentityRequired;
 	private final String previewStatement;
 
-<span class="fc" id="L41">	IntEnumMigrationMode(CleanUpImpact impact, boolean implemented, boolean explicitNumericIdentityRequired,</span>
+<span class="fc" id="L44">	IntEnumMigrationMode(CleanUpImpact impact, boolean implemented, boolean explicitNumericIdentityRequired,</span>
 			String previewStatement) {
-<span class="fc" id="L43">		this.impact= impact;</span>
-<span class="fc" id="L44">		this.implemented= implemented;</span>
-<span class="fc" id="L45">		this.explicitNumericIdentityRequired= explicitNumericIdentityRequired;</span>
-<span class="fc" id="L46">		this.previewStatement= previewStatement;</span>
-<span class="fc" id="L47">	}</span>
+<span class="fc" id="L46">		this.impact= impact;</span>
+<span class="fc" id="L47">		this.implemented= implemented;</span>
+<span class="fc" id="L48">		this.explicitNumericIdentityRequired= explicitNumericIdentityRequired;</span>
+<span class="fc" id="L49">		this.previewStatement= previewStatement;</span>
+<span class="fc" id="L50">	}</span>
 
 	/** Returns the cleanup impact shown in previews and reports. */
 	public CleanUpImpact impact() {
-<span class="fc" id="L51">		return impact;</span>
+<span class="fc" id="L54">		return impact;</span>
 	}
 
 	/** Returns whether this mode may currently create rewrite operations. */
 	public boolean implemented() {
-<span class="fc" id="L56">		return implemented;</span>
+<span class="fc" id="L59">		return implemented;</span>
 	}
 
 	/** Returns whether constants require explicit stable numeric values and adapters. */
 	public boolean explicitNumericIdentityRequired() {
-<span class="fc" id="L61">		return explicitNumericIdentityRequired;</span>
+<span class="fc" id="L64">		return explicitNumericIdentityRequired;</span>
 	}
 
 	/** Returns the user-facing compatibility statement. */
 	public String previewStatement() {
-<span class="fc" id="L66">		return previewStatement;</span>
+<span class="fc" id="L69">		return previewStatement;</span>
 	}
 
 	/**
@@ -71,12 +74,12 @@ import org.sandbox.jdt.cleanup.multifile.CleanUpImpact;
 	 * migration mode.
 	 */
 	public boolean ordinalAllowedForExternalIdentity() {
-<span class="fc" id="L74">		return false;</span>
+<span class="fc" id="L77">		return false;</span>
 	}
 
 	/** Returns the only mode available to the automatic cleanup. */
 	public static IntEnumMigrationMode automaticMode() {
-<span class="fc" id="L79">		return CLOSED_FLOW_AUTOMATIC;</span>
+<span class="fc" id="L82">		return CLOSED_FLOW_AUTOMATIC;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

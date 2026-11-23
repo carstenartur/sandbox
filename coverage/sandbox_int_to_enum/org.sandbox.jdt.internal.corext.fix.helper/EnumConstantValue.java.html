@@ -51,8 +51,8 @@ public record EnumConstantValue(String typeName, Object value) {
 <span class="fc bfc" id="L51" title="All 2 branches covered.">		if (constant instanceof Character character) {</span>
 <span class="fc" id="L52">			return new EnumConstantValue(name, Long.valueOf(character.charValue()));</span>
 		}
-<span class="pc bpc" id="L54" title="1 of 8 branches missed.">		return constant instanceof Byte || constant instanceof Short || constant instanceof Integer || constant instanceof Long</span>
-<span class="pc" id="L55">				? new EnumConstantValue(name, Long.valueOf(((Number) constant).longValue())) : null;</span>
+<span class="fc bfc" id="L54" title="All 8 branches covered.">		return constant instanceof Byte || constant instanceof Short || constant instanceof Integer || constant instanceof Long</span>
+<span class="fc" id="L55">				? new EnumConstantValue(name, Long.valueOf(((Number) constant).longValue())) : null;</span>
 	}
 
 	public static boolean supports(Type type) {

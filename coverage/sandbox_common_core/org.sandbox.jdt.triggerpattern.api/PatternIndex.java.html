@@ -218,76 +218,81 @@ public final class PatternIndex {
 		}
 
 <span class="fc bfc" id="L220" title="All 2 branches covered.">		for (IndexEntry entry : entries) {</span>
-<span class="fc bfc" id="L221" title="All 2 branches covered.">			PlaceholderAstMatcher matcher = kind == PatternKind.TYPE_DECLARATION</span>
-<span class="fc" id="L222">					? new TypeDeclarationHeaderMatcher()</span>
-<span class="fc" id="L223">					: new FqnAwarePlaceholderAstMatcher();</span>
-<span class="fc" id="L224">			matcher.setCaseInsensitive(caseInsensitive);</span>
-<span class="fc bfc" id="L225" title="All 2 branches covered.">			if (entry.patternNode().subtreeMatch(matcher, node)) {</span>
-<span class="fc" id="L226">				Match match = PatternMatchSupport.createMatch(node, matcher.getBindings(),</span>
-<span class="fc" id="L227">						node.getStartPosition(), node.getLength(), matcher.getUnknownSemanticRequirements());</span>
-<span class="fc bfc" id="L228" title="All 2 branches covered.">				if (PatternMatchSupport.satisfiesConstraints(entry.sourcePattern(), match)) {</span>
-<span class="fc" id="L229">					results.computeIfAbsent(entry.rule(), ignored -&gt; new ArrayList&lt;&gt;()).add(match);</span>
+			PlaceholderAstMatcher matcher;
+<span class="fc bfc" id="L222" title="All 2 branches covered.">			if (kind == PatternKind.TYPE_DECLARATION) {</span>
+<span class="fc" id="L223">				matcher = new TypeDeclarationHeaderMatcher();</span>
+<span class="pc bpc" id="L224" title="1 of 4 branches missed.">			} else if (entry.patternNode() instanceof Annotation annotation &amp;&amp; kind == PatternKind.ANNOTATION) {</span>
+<span class="fc" id="L225">				matcher = new FqnAwarePlaceholderAstMatcher(annotation, entry.sourcePattern().getQualifiedType());</span>
+			} else {
+<span class="fc" id="L227">				matcher = new FqnAwarePlaceholderAstMatcher();</span>
+			}
+<span class="fc" id="L229">			matcher.setCaseInsensitive(caseInsensitive);</span>
+<span class="fc bfc" id="L230" title="All 2 branches covered.">			if (entry.patternNode().subtreeMatch(matcher, node)) {</span>
+<span class="fc" id="L231">				Match match = PatternMatchSupport.createMatch(node, matcher.getBindings(),</span>
+<span class="fc" id="L232">						node.getStartPosition(), node.getLength(), matcher.getUnknownSemanticRequirements());</span>
+<span class="fc bfc" id="L233" title="All 2 branches covered.">				if (PatternMatchSupport.satisfiesConstraints(entry.sourcePattern(), match)) {</span>
+<span class="fc" id="L234">					results.computeIfAbsent(entry.rule(), ignored -&gt; new ArrayList&lt;&gt;()).add(match);</span>
 				}
 			}
-<span class="fc" id="L232">		}</span>
-<span class="fc" id="L233">	}</span>
+<span class="fc" id="L237">		}</span>
+<span class="fc" id="L238">	}</span>
 
 	/**
 	 * Attempts statement sequence matching for all STATEMENT_SEQUENCE rules.
 	 */
 	private void matchStatementSequences(Block block,
 			Map&lt;TransformationRule, List&lt;Match&gt;&gt; results) {
-<span class="fc" id="L240">		List&lt;IndexEntry&gt; entries = rulesByKind.get(PatternKind.STATEMENT_SEQUENCE);</span>
-<span class="pc bpc" id="L241" title="1 of 4 branches missed.">		if (entries == null || entries.isEmpty()) {</span>
-<span class="fc" id="L242">			return;</span>
+<span class="fc" id="L245">		List&lt;IndexEntry&gt; entries = rulesByKind.get(PatternKind.STATEMENT_SEQUENCE);</span>
+<span class="pc bpc" id="L246" title="1 of 4 branches missed.">		if (entries == null || entries.isEmpty()) {</span>
+<span class="fc" id="L247">			return;</span>
 		}
 
 		@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L246">		List&lt;Statement&gt; statements = block.statements();</span>
-<span class="fc" id="L247">		PlaceholderAstMatcher shape = new FqnAwarePlaceholderAstMatcher();</span>
+<span class="fc" id="L251">		List&lt;Statement&gt; statements = block.statements();</span>
+<span class="fc" id="L252">		PlaceholderAstMatcher shape = new FqnAwarePlaceholderAstMatcher();</span>
 
-<span class="fc bfc" id="L249" title="All 2 branches covered.">		for (IndexEntry entry : entries) {</span>
-<span class="fc" id="L250">			ASTNode patternNode = entry.patternNode();</span>
-<span class="pc bpc" id="L251" title="1 of 2 branches missed.">			if (!(patternNode instanceof Block patternBlock)) {</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">		for (IndexEntry entry : entries) {</span>
+<span class="fc" id="L255">			ASTNode patternNode = entry.patternNode();</span>
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">			if (!(patternNode instanceof Block patternBlock)) {</span>
 				continue;
 			}
 			@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L255">			List&lt;Statement&gt; patternStatements = patternBlock.statements();</span>
-<span class="fc" id="L256">			int minimumSize = shape.minimumStatementCount(patternStatements);</span>
-<span class="fc bfc" id="L257" title="All 2 branches covered.">			boolean variadic = minimumSize != patternStatements.size();</span>
+<span class="fc" id="L260">			List&lt;Statement&gt; patternStatements = patternBlock.statements();</span>
+<span class="fc" id="L261">			int minimumSize = shape.minimumStatementCount(patternStatements);</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">			boolean variadic = minimumSize != patternStatements.size();</span>
 			// Empty source ranges have no anchor and cannot be rewritten.
-<span class="fc" id="L259">			minimumSize = Math.max(1, minimumSize);</span>
-<span class="pc bpc" id="L260" title="1 of 4 branches missed.">			if (patternStatements.isEmpty() || minimumSize &gt; statements.size()) {</span>
-<span class="fc" id="L261">				continue;</span>
+<span class="fc" id="L264">			minimumSize = Math.max(1, minimumSize);</span>
+<span class="pc bpc" id="L265" title="1 of 4 branches missed.">			if (patternStatements.isEmpty() || minimumSize &gt; statements.size()) {</span>
+<span class="fc" id="L266">				continue;</span>
 			}
 
-<span class="fc bfc" id="L264" title="All 2 branches covered.">			for (int start = 0; start &lt;= statements.size() - minimumSize; start++) {</span>
-<span class="fc" id="L265">				SemanticRewritePlanContext.checkCanceled();</span>
-<span class="fc bfc" id="L266" title="All 2 branches covered.">				int maximumSize = variadic ? statements.size() - start : minimumSize;</span>
-<span class="fc bfc" id="L267" title="All 2 branches covered.">				for (int size = minimumSize; size &lt;= maximumSize; size++) {</span>
-<span class="fc" id="L268">					SemanticRewritePlanContext.checkCanceled();</span>
-<span class="fc" id="L269">					PlaceholderAstMatcher matcher = new FqnAwarePlaceholderAstMatcher();</span>
-<span class="fc" id="L270">					matcher.setCaseInsensitive(caseInsensitive);</span>
+<span class="fc bfc" id="L269" title="All 2 branches covered.">			for (int start = 0; start &lt;= statements.size() - minimumSize; start++) {</span>
+<span class="fc" id="L270">				SemanticRewritePlanContext.checkCanceled();</span>
+<span class="fc bfc" id="L271" title="All 2 branches covered.">				int maximumSize = variadic ? statements.size() - start : minimumSize;</span>
+<span class="fc bfc" id="L272" title="All 2 branches covered.">				for (int size = minimumSize; size &lt;= maximumSize; size++) {</span>
+<span class="fc" id="L273">					SemanticRewritePlanContext.checkCanceled();</span>
+<span class="fc" id="L274">					PlaceholderAstMatcher matcher = new FqnAwarePlaceholderAstMatcher();</span>
+<span class="fc" id="L275">					matcher.setCaseInsensitive(caseInsensitive);</span>
 					// Match the original list: copying subtrees would discard bindings,
 					// parent/import context and source-node identity used by guards.
-<span class="fc bfc" id="L273" title="All 2 branches covered.">					if (matcher.matchStatementsWithMultiPlaceholders(patternStatements,</span>
-<span class="fc" id="L274">							statements.subList(start, start + size))) {</span>
-<span class="fc" id="L275">						Statement first = statements.get(start);</span>
-<span class="fc" id="L276">						Statement last = statements.get(start + size - 1);</span>
-<span class="fc" id="L277">						int offset = first.getStartPosition();</span>
-<span class="fc" id="L278">						int length = last.getStartPosition() + last.getLength() - offset;</span>
-<span class="fc" id="L279">						Match match = PatternMatchSupport.createMatch(first, matcher.getBindings(), offset, length,</span>
-<span class="fc" id="L280">								matcher.getUnknownSemanticRequirements());</span>
-<span class="pc bpc" id="L281" title="1 of 2 branches missed.">						if (PatternMatchSupport.satisfiesConstraints(entry.sourcePattern(), match)) {</span>
-<span class="fc" id="L282">							results.computeIfAbsent(entry.rule(), ignored -&gt; new ArrayList&lt;&gt;()).add(match);</span>
+<span class="fc bfc" id="L278" title="All 2 branches covered.">					if (matcher.matchStatementsWithMultiPlaceholders(patternStatements,</span>
+<span class="fc" id="L279">							statements.subList(start, start + size))) {</span>
+<span class="fc" id="L280">						Statement first = statements.get(start);</span>
+<span class="fc" id="L281">						Statement last = statements.get(start + size - 1);</span>
+<span class="fc" id="L282">						int offset = first.getStartPosition();</span>
+<span class="fc" id="L283">						int length = last.getStartPosition() + last.getLength() - offset;</span>
+<span class="fc" id="L284">						Match match = PatternMatchSupport.createMatch(first, matcher.getBindings(), offset, length,</span>
+<span class="fc" id="L285">								matcher.getUnknownSemanticRequirements());</span>
+<span class="pc bpc" id="L286" title="1 of 2 branches missed.">						if (PatternMatchSupport.satisfiesConstraints(entry.sourcePattern(), match)) {</span>
+<span class="fc" id="L287">							results.computeIfAbsent(entry.rule(), ignored -&gt; new ArrayList&lt;&gt;()).add(match);</span>
 						}
 					}
 				}
 			}
-<span class="fc" id="L287">		}</span>
-<span class="fc" id="L288">	}</span>
+<span class="fc" id="L292">		}</span>
+<span class="fc" id="L293">	}</span>
 
-<span class="fc" id="L290">	private record IndexEntry(TransformationRule rule, Pattern sourcePattern, ASTNode patternNode) {</span>
+<span class="fc" id="L295">	private record IndexEntry(TransformationRule rule, Pattern sourcePattern, ASTNode patternNode) {</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

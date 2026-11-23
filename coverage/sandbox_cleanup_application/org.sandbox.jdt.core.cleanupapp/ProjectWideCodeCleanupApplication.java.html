@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.jar.Manifest;
 
 import org.eclipse.core.resources.IFile;
@@ -74,7 +75,7 @@ import org.sandbox.jdt.internal.common.PdeManifestImportUpdater;
  * runs restore every tracked file byte-for-byte, and incomplete apply runs roll
  * back the source and project-resource snapshots.&lt;/p&gt;
  */
-<span class="fc" id="L77">public final class ProjectWideCodeCleanupApplication implements IApplication {</span>
+<span class="fc" id="L78">public final class ProjectWideCodeCleanupApplication implements IApplication {</span>
 
 	private static final int EXIT_OK= 0;
 	private static final int EXIT_ERROR= 1;
@@ -82,14 +83,9 @@ import org.sandbox.jdt.internal.common.PdeManifestImportUpdater;
 
 	private static final String MAVEN_POM= &quot;pom.xml&quot;; //$NON-NLS-1$
 	private static final String PDE_MANIFEST= &quot;META-INF/MANIFEST.MF&quot;; //$NON-NLS-1$
-	private static final String JUNIT_ISOLATED_TYPE=
-			&quot;org.junit.jupiter.api.parallel.Isolated&quot;; //$NON-NLS-1$
-	private static final String JUNIT_PARALLEL_PACKAGE=
-			&quot;org.junit.jupiter.api.parallel&quot;; //$NON-NLS-1$
-
-<span class="fc" id="L90">	private enum Mode {</span>
-<span class="fc" id="L91">		CHECK,</span>
-<span class="fc" id="L92">		APPLY</span>
+<span class="fc" id="L86">	private enum Mode {</span>
+<span class="fc" id="L87">		CHECK,</span>
+<span class="fc" id="L88">		APPLY</span>
 	}
 
 	private record Arguments(String projectName, Path projectLocation, Path configuration,
@@ -111,667 +107,666 @@ import org.sandbox.jdt.internal.common.PdeManifestImportUpdater;
 
 	@Override
 	public Object start(IApplicationContext context) {
-<span class="fc" id="L114">		Instant started= Instant.now();</span>
-<span class="fc" id="L115">		List&lt;String&gt; errors= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L116">		List&lt;String&gt; statusMessages= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L117">		List&lt;String&gt; planningDiagnostics= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L118">		List&lt;ChangedFile&gt; changed= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L119">		List&lt;MigrationBatches.Batch&gt; batches= List.of();</span>
+<span class="fc" id="L110">		Instant started= Instant.now();</span>
+<span class="fc" id="L111">		List&lt;String&gt; errors= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L112">		List&lt;String&gt; statusMessages= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L113">		List&lt;String&gt; planningDiagnostics= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L114">		List&lt;ChangedFile&gt; changed= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L115">		List&lt;MigrationBatches.Batch&gt; batches= List.of();</span>
 		Arguments arguments;
 		try {
-<span class="fc" id="L122">			arguments= parseArguments((String[]) context.getArguments().get(IApplicationContext.APPLICATION_ARGS));</span>
-<span class="pc" id="L123">		} catch (IllegalArgumentException e) {</span>
-<span class="nc" id="L124">			System.err.println(e.getMessage());</span>
+<span class="fc" id="L118">			arguments= parseArguments((String[]) context.getArguments().get(IApplicationContext.APPLICATION_ARGS));</span>
+<span class="pc" id="L119">		} catch (IllegalArgumentException e) {</span>
+<span class="nc" id="L120">			System.err.println(e.getMessage());</span>
+<span class="nc" id="L121">			printUsage();</span>
+<span class="nc" id="L122">			return Integer.valueOf(EXIT_ERROR);</span>
+		}
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">		if (arguments == null) {</span>
 <span class="nc" id="L125">			printUsage();</span>
-<span class="nc" id="L126">			return Integer.valueOf(EXIT_ERROR);</span>
-		}
-<span class="pc bpc" id="L128" title="1 of 2 branches missed.">		if (arguments == null) {</span>
-<span class="nc" id="L129">			printUsage();</span>
-<span class="nc" id="L130">			return Integer.valueOf(EXIT_OK);</span>
+<span class="nc" id="L126">			return Integer.valueOf(EXIT_OK);</span>
 		}
 
-<span class="fc" id="L133">		List&lt;SourceSnapshot&gt; sources= List.of();</span>
-<span class="fc" id="L134">		List&lt;ResourceSnapshot&gt; resources= List.of();</span>
-<span class="fc" id="L135">		List&lt;ResourceSnapshot&gt; writtenResources= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L136">		Map&lt;String, String&gt; options= Map.of();</span>
+<span class="fc" id="L129">		List&lt;SourceSnapshot&gt; sources= List.of();</span>
+<span class="fc" id="L130">		List&lt;ResourceSnapshot&gt; resources= List.of();</span>
+<span class="fc" id="L131">		List&lt;ResourceSnapshot&gt; writtenResources= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L132">		Map&lt;String, String&gt; options= Map.of();</span>
 		try {
-<span class="fc" id="L138">			options= readOptions(arguments.configuration());</span>
-<span class="fc" id="L139">			IProject project= requireProject(arguments.projectName(), arguments.projectLocation());</span>
-<span class="fc" id="L140">			IJavaProject javaProject= JavaCore.create(project);</span>
-<span class="pc bpc" id="L141" title="1 of 2 branches missed.">			if (!javaProject.exists()) {</span>
-<span class="nc" id="L142">				throw new IllegalArgumentException(&quot;Workspace project is not a Java project: &quot; //$NON-NLS-1$</span>
-<span class="nc" id="L143">						+ arguments.projectName());</span>
+<span class="fc" id="L134">			options= readOptions(arguments.configuration());</span>
+<span class="fc" id="L135">			IProject project= requireProject(arguments.projectName(), arguments.projectLocation());</span>
+<span class="fc" id="L136">			IJavaProject javaProject= JavaCore.create(project);</span>
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">			if (!javaProject.exists()) {</span>
+<span class="nc" id="L138">				throw new IllegalArgumentException(&quot;Workspace project is not a Java project: &quot; //$NON-NLS-1$</span>
+<span class="nc" id="L139">						+ arguments.projectName());</span>
 			}
-<span class="fc" id="L145">			sources= snapshots(javaProject);</span>
-<span class="fc" id="L146">			resources= resourceSnapshots(project, arguments.pdeDeployments());</span>
-<span class="pc bpc" id="L147" title="1 of 2 branches missed.">			if (sources.isEmpty()) {</span>
-<span class="nc" id="L148">				throw new IllegalArgumentException(&quot;Java project contains no source compilation units: &quot; //$NON-NLS-1$</span>
-<span class="nc" id="L149">						+ arguments.projectName());</span>
-			}
-
-<span class="fc" id="L152">			IProgressMonitor monitor= new NullProgressMonitor();</span>
-<span class="fc" id="L153">			CleanUpRefactoring refactoring= new CleanUpRefactoring();</span>
-<span class="fc bfc" id="L154" title="All 2 branches covered.">			for (SourceSnapshot source : sources) {</span>
-<span class="fc" id="L155">				refactoring.addCompilationUnit(source.unit());</span>
+<span class="fc" id="L141">			sources= snapshots(javaProject);</span>
+<span class="fc" id="L142">			resources= resourceSnapshots(project, arguments.pdeDeployments());</span>
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">			if (sources.isEmpty()) {</span>
+<span class="nc" id="L144">				throw new IllegalArgumentException(&quot;Java project contains no source compilation units: &quot; //$NON-NLS-1$</span>
+<span class="nc" id="L145">						+ arguments.projectName());</span>
 			}
 
-<span class="fc" id="L158">			ICleanUp[] cleanUps= JavaPlugin.getDefault().getCleanUpRegistry().createCleanUps();</span>
-<span class="fc" id="L159">			CleanUpOptions cleanUpOptions= new CleanUpOptions();</span>
-<span class="fc" id="L160">			options.forEach(cleanUpOptions::setOption);</span>
-<span class="fc bfc" id="L161" title="All 2 branches covered.">			for (ICleanUp cleanUp : cleanUps) {</span>
-<span class="fc" id="L162">				cleanUp.setOptions(cleanUpOptions);</span>
-<span class="fc" id="L163">				refactoring.addCleanUp(cleanUp);</span>
+<span class="fc" id="L148">			IProgressMonitor monitor= new NullProgressMonitor();</span>
+<span class="fc" id="L149">			CleanUpRefactoring refactoring= new CleanUpRefactoring();</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">			for (SourceSnapshot source : sources) {</span>
+<span class="fc" id="L151">				refactoring.addCompilationUnit(source.unit());</span>
 			}
 
-<span class="fc" id="L166">			var observer= new MigrationBatchDependencies.CandidateObserver(cleanUps);</span>
-<span class="fc bfc" id="L167" title="All 2 branches covered.">			if (arguments.batchMaxFiles() &gt; 0) {</span>
-<span class="fc" id="L168">				refactoring.addCleanUp(observer);</span>
+<span class="fc" id="L154">			ICleanUp[] cleanUps= JavaPlugin.getDefault().getCleanUpRegistry().createCleanUps();</span>
+<span class="fc" id="L155">			CleanUpOptions cleanUpOptions= new CleanUpOptions();</span>
+<span class="fc" id="L156">			options.forEach(cleanUpOptions::setOption);</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">			for (ICleanUp cleanUp : cleanUps) {</span>
+<span class="fc" id="L158">				cleanUp.setOptions(cleanUpOptions);</span>
+<span class="fc" id="L159">				refactoring.addCleanUp(cleanUp);</span>
 			}
 
-<span class="fc" id="L171">			RefactoringStatus status= refactoring.checkAllConditions(monitor);</span>
-<span class="pc bpc" id="L172" title="1 of 2 branches missed.">			for (RefactoringStatusEntry entry : status.getEntries()) {</span>
-<span class="nc" id="L173">				statusMessages.add(entry.getMessage());</span>
+<span class="fc" id="L162">			var observer= new MigrationBatchDependencies.CandidateObserver(cleanUps);</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">			if (arguments.batchMaxFiles() &gt; 0) {</span>
+<span class="fc" id="L164">				refactoring.addCleanUp(observer);</span>
 			}
-<span class="fc bfc" id="L175" title="All 2 branches covered.">			for (ICleanUp cleanUp : cleanUps) {</span>
-<span class="fc bfc" id="L176" title="All 2 branches covered.">				if (cleanUp instanceof IMultiFileCleanUpDiagnosticsProvider provider) {</span>
-<span class="fc" id="L177">					String json= provider.getLastPlanningDiagnosticsJson(javaProject);</span>
-<span class="pc bpc" id="L178" title="1 of 4 branches missed.">					if (json != null &amp;&amp; !json.isBlank()) {</span>
-<span class="fc" id="L179">						planningDiagnostics.add(json);</span>
+
+<span class="fc" id="L167">			RefactoringStatus status= refactoring.checkAllConditions(monitor);</span>
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">			for (RefactoringStatusEntry entry : status.getEntries()) {</span>
+<span class="nc" id="L169">				statusMessages.add(entry.getMessage());</span>
+			}
+<span class="fc bfc" id="L171" title="All 2 branches covered.">			for (ICleanUp cleanUp : cleanUps) {</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">				if (cleanUp instanceof IMultiFileCleanUpDiagnosticsProvider provider) {</span>
+<span class="fc" id="L173">					String json= provider.getLastPlanningDiagnosticsJson(javaProject);</span>
+<span class="pc bpc" id="L174" title="1 of 4 branches missed.">					if (json != null &amp;&amp; !json.isBlank()) {</span>
+<span class="fc" id="L175">						planningDiagnostics.add(json);</span>
 					}
 				}
 			}
-<span class="pc bpc" id="L183" title="1 of 2 branches missed.">			if (status.hasFatalError()) {</span>
-<span class="nc" id="L184">				throw new IllegalStateException(&quot;Cleanup preconditions failed: &quot; //$NON-NLS-1$</span>
-<span class="nc" id="L185">						+ status.getMessageMatchingSeverity(RefactoringStatus.FATAL));</span>
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">			if (status.hasFatalError()) {</span>
+<span class="nc" id="L180">				throw new IllegalStateException(&quot;Cleanup preconditions failed: &quot; //$NON-NLS-1$</span>
+<span class="nc" id="L181">						+ status.getMessageMatchingSeverity(RefactoringStatus.FATAL));</span>
 			}
 
-<span class="fc" id="L188">			Change change= refactoring.createChange(monitor);</span>
-<span class="pc bpc" id="L189" title="1 of 4 branches missed.">			if (arguments.batchMaxFiles() &gt; 0 &amp;&amp; change != null) {</span>
-<span class="fc" id="L190">				var preview= MigrationBatches.plan(javaProject, change, sources, resources, observer.groups(),</span>
-<span class="fc" id="L191">						arguments.batchMaxFiles(), options, monitor);</span>
-<span class="fc" id="L192">				batches= preview.batches();</span>
-<span class="fc bfc" id="L193" title="All 2 branches covered.">				changed= preview.select(arguments.batch(), arguments.receipt(), arguments.mode() == Mode.APPLY, monitor);</span>
-<span class="pc bpc" id="L194" title="1 of 2 branches missed.">			} else if (change != null) {</span>
-<span class="fc bfc" id="L195" title="All 2 branches covered.">				boolean restoreAfterExecution= arguments.mode() == Mode.CHECK;</span>
-<span class="fc" id="L196">				boolean executionCompleted= false;</span>
+<span class="fc" id="L184">			Change change= refactoring.createChange(monitor);</span>
+<span class="pc bpc" id="L185" title="1 of 4 branches missed.">			if (arguments.batchMaxFiles() &gt; 0 &amp;&amp; change != null) {</span>
+<span class="fc" id="L186">				var preview= MigrationBatches.plan(javaProject, change, sources, resources, observer.groups(),</span>
+<span class="fc" id="L187">						arguments.batchMaxFiles(), options, monitor);</span>
+<span class="fc" id="L188">				batches= preview.batches();</span>
+<span class="fc bfc" id="L189" title="All 2 branches covered.">				changed= preview.select(arguments.batch(), arguments.receipt(), arguments.mode() == Mode.APPLY, monitor);</span>
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">			} else if (change != null) {</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">				boolean restoreAfterExecution= arguments.mode() == Mode.CHECK;</span>
+<span class="fc" id="L192">				boolean executionCompleted= false;</span>
 				try {
-<span class="fc" id="L198">					change.perform(monitor);</span>
-<span class="fc" id="L199">					preserveOriginalLineDelimiters(sources);</span>
-<span class="fc" id="L200">					updateProjectMetadata(sources, resources, writtenResources, javaProject.getOptions(true));</span>
-<span class="fc" id="L201">					refresh(sources, resources, monitor);</span>
-<span class="fc" id="L202">					changed= changedFiles(sources, resources);</span>
-<span class="fc" id="L203">					executionCompleted= true;</span>
-<span class="fc" id="L204">				} finally {</span>
-<span class="fc bfc" id="L205" title="All 4 branches covered.">					if (restoreAfterExecution || !executionCompleted) {</span>
-<span class="fc" id="L206">						restore(sources, writtenResources, monitor, errors);</span>
+<span class="fc" id="L194">					change.perform(monitor);</span>
+<span class="fc" id="L195">					preserveOriginalLineDelimiters(sources);</span>
+<span class="fc" id="L196">					updateProjectMetadata(sources, resources, writtenResources, javaProject.getOptions(true));</span>
+<span class="fc" id="L197">					refresh(sources, resources, monitor);</span>
+<span class="fc" id="L198">					changed= changedFiles(sources, resources);</span>
+<span class="fc" id="L199">					executionCompleted= true;</span>
+<span class="fc" id="L200">				} finally {</span>
+<span class="fc bfc" id="L201" title="All 4 branches covered.">					if (restoreAfterExecution || !executionCompleted) {</span>
+<span class="fc" id="L202">						restore(sources, writtenResources, monitor, errors);</span>
 					}
 				}
 			}
-<span class="fc" id="L210">		} catch (CoreException | IOException | RuntimeException e) {</span>
-<span class="fc" id="L211">			errors.add(describeException(e));</span>
-<span class="fc" id="L212">			e.printStackTrace(System.err);</span>
+<span class="fc" id="L206">		} catch (CoreException | IOException | RuntimeException e) {</span>
+<span class="fc" id="L207">			errors.add(describeException(e));</span>
+<span class="fc" id="L208">			e.printStackTrace(System.err);</span>
 		}
 
-<span class="fc bfc" id="L215" title="All 2 branches covered.">		if (arguments.patch() != null) {</span>
+<span class="fc bfc" id="L211" title="All 2 branches covered.">		if (arguments.patch() != null) {</span>
 			try {
-<span class="fc" id="L217">				writePatch(arguments.patch(), changed);</span>
-<span class="pc" id="L218">			} catch (IOException e) {</span>
-<span class="nc" id="L219">				errors.add(&quot;Cannot write cleanup patch: &quot; + e.getMessage()); //$NON-NLS-1$</span>
+<span class="fc" id="L213">				writePatch(arguments.patch(), changed);</span>
+<span class="pc" id="L214">			} catch (IOException e) {</span>
+<span class="nc" id="L215">				errors.add(&quot;Cannot write cleanup patch: &quot; + e.getMessage()); //$NON-NLS-1$</span>
 			}
 		}
-<span class="fc" id="L222">		Instant ended= Instant.now();</span>
+<span class="fc" id="L218">		Instant ended= Instant.now();</span>
 		try {
-<span class="fc" id="L224">			writeReport(arguments.report(), arguments, started, ended, options, sources, changed,</span>
-<span class="fc" id="L225">					statusMessages, planningDiagnostics, batches, errors);</span>
-<span class="pc" id="L226">		} catch (IOException e) {</span>
-<span class="nc" id="L227">			errors.add(&quot;Cannot write cleanup report: &quot; + e.getMessage()); //$NON-NLS-1$</span>
+<span class="fc" id="L220">			writeReport(arguments.report(), arguments, started, ended, options, sources, changed,</span>
+<span class="fc" id="L221">					statusMessages, planningDiagnostics, batches, errors);</span>
+<span class="pc" id="L222">		} catch (IOException e) {</span>
+<span class="nc" id="L223">			errors.add(&quot;Cannot write cleanup report: &quot; + e.getMessage()); //$NON-NLS-1$</span>
 		}
 
-<span class="fc bfc" id="L230" title="All 2 branches covered.">		if (!errors.isEmpty()) {</span>
-<span class="fc" id="L231">			return Integer.valueOf(EXIT_ERROR);</span>
+<span class="fc bfc" id="L226" title="All 2 branches covered.">		if (!errors.isEmpty()) {</span>
+<span class="fc" id="L227">			return Integer.valueOf(EXIT_ERROR);</span>
 		}
-<span class="fc bfc" id="L233" title="All 4 branches covered.">		if (arguments.mode() == Mode.CHECK &amp;&amp; !changed.isEmpty()) {</span>
-<span class="fc" id="L234">			return Integer.valueOf(EXIT_CHANGES);</span>
+<span class="fc bfc" id="L229" title="All 4 branches covered.">		if (arguments.mode() == Mode.CHECK &amp;&amp; !changed.isEmpty()) {</span>
+<span class="fc" id="L230">			return Integer.valueOf(EXIT_CHANGES);</span>
 		}
-<span class="fc" id="L236">		return Integer.valueOf(EXIT_OK);</span>
+<span class="fc" id="L232">		return Integer.valueOf(EXIT_OK);</span>
 	}
 
 	private static Arguments parseArguments(String[] values) {
-<span class="pc bpc" id="L240" title="1 of 2 branches missed.">		if (values == null) {</span>
-<span class="nc" id="L241">			throw new IllegalArgumentException(&quot;Application arguments are unavailable.&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L236" title="1 of 2 branches missed.">		if (values == null) {</span>
+<span class="nc" id="L237">			throw new IllegalArgumentException(&quot;Application arguments are unavailable.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L243">		String project= null;</span>
-<span class="fc" id="L244">		Path projectLocation= null;</span>
-<span class="fc" id="L245">		Path configuration= null;</span>
-<span class="fc" id="L246">		Path report= null;</span>
-<span class="fc" id="L247">		Path patch= null;</span>
-<span class="fc" id="L248">		Mode mode= Mode.CHECK;</span>
-<span class="fc" id="L249">		int maxFiles= 0;</span>
-<span class="fc" id="L250">		String batch= null;</span>
-<span class="fc" id="L251">		String receipt= null;</span>
-<span class="fc" id="L252">		List&lt;String&gt; pdeDeployments= new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L253" title="All 2 branches covered.">		for (int index= 0; index &lt; values.length; index++) {</span>
-<span class="fc" id="L254">			String value= values[index];</span>
-<span class="pc bpc" id="L255" title="3 of 12 branches missed.">			switch (value) {</span>
+<span class="fc" id="L239">		String project= null;</span>
+<span class="fc" id="L240">		Path projectLocation= null;</span>
+<span class="fc" id="L241">		Path configuration= null;</span>
+<span class="fc" id="L242">		Path report= null;</span>
+<span class="fc" id="L243">		Path patch= null;</span>
+<span class="fc" id="L244">		Mode mode= Mode.CHECK;</span>
+<span class="fc" id="L245">		int maxFiles= 0;</span>
+<span class="fc" id="L246">		String batch= null;</span>
+<span class="fc" id="L247">		String receipt= null;</span>
+<span class="fc" id="L248">		List&lt;String&gt; pdeDeployments= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L249" title="All 2 branches covered.">		for (int index= 0; index &lt; values.length; index++) {</span>
+<span class="fc" id="L250">			String value= values[index];</span>
+<span class="pc bpc" id="L251" title="3 of 12 branches missed.">			switch (value) {</span>
 			case &quot;--help&quot;, &quot;-help&quot; -&gt; { //$NON-NLS-1$ //$NON-NLS-2$
-<span class="nc" id="L257">				return null;</span>
+<span class="nc" id="L253">				return null;</span>
 			}
-<span class="fc" id="L259">			case &quot;--project&quot; -&gt; project= requiredValue(values, ++index, value); //$NON-NLS-1$</span>
-<span class="nc" id="L260">			case &quot;--project-location&quot; -&gt; projectLocation= Path.of(requiredValue(values, ++index, value)); //$NON-NLS-1$</span>
-<span class="fc" id="L261">			case &quot;--config&quot;, &quot;-config&quot; -&gt; configuration= Path.of(requiredValue(values, ++index, value)); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L262">			case &quot;--pde-deployment&quot; -&gt; pdeDeployments.add(requiredValue(values, ++index, value)); //$NON-NLS-1$</span>
-<span class="fc" id="L263">			case &quot;--report&quot; -&gt; report= Path.of(requiredValue(values, ++index, value)); //$NON-NLS-1$</span>
+<span class="fc" id="L255">			case &quot;--project&quot; -&gt; project= requiredValue(values, ++index, value); //$NON-NLS-1$</span>
+<span class="nc" id="L256">			case &quot;--project-location&quot; -&gt; projectLocation= Path.of(requiredValue(values, ++index, value)); //$NON-NLS-1$</span>
+<span class="fc" id="L257">			case &quot;--config&quot;, &quot;-config&quot; -&gt; configuration= Path.of(requiredValue(values, ++index, value)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L258">			case &quot;--pde-deployment&quot; -&gt; pdeDeployments.add(requiredValue(values, ++index, value)); //$NON-NLS-1$</span>
+<span class="fc" id="L259">			case &quot;--report&quot; -&gt; report= Path.of(requiredValue(values, ++index, value)); //$NON-NLS-1$</span>
 			case &quot;--batch-max-files&quot; -&gt; {
-<span class="fc" id="L265">				maxFiles= Integer.parseInt(requiredValue(values, ++index, value));</span>
-<span class="pc bpc" id="L266" title="1 of 2 branches missed.">				if (maxFiles &lt; 1) {</span>
-<span class="nc" id="L267">					throw new IllegalArgumentException(&quot;--batch-max-files must be positive&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L261">				maxFiles= Integer.parseInt(requiredValue(values, ++index, value));</span>
+<span class="pc bpc" id="L262" title="1 of 2 branches missed.">				if (maxFiles &lt; 1) {</span>
+<span class="nc" id="L263">					throw new IllegalArgumentException(&quot;--batch-max-files must be positive&quot;); //$NON-NLS-1$</span>
 				}
 			}
-<span class="fc" id="L270">			case &quot;--batch&quot; -&gt; batch= requiredValue(values, ++index, value); //$NON-NLS-1$</span>
-<span class="fc" id="L271">			case &quot;--batch-receipt&quot; -&gt; receipt= requiredValue(values, ++index, value); //$NON-NLS-1$</span>
-<span class="fc" id="L272">			case &quot;--patch&quot; -&gt; patch= Path.of(requiredValue(values, ++index, value)); //$NON-NLS-1$</span>
+<span class="fc" id="L266">			case &quot;--batch&quot; -&gt; batch= requiredValue(values, ++index, value); //$NON-NLS-1$</span>
+<span class="fc" id="L267">			case &quot;--batch-receipt&quot; -&gt; receipt= requiredValue(values, ++index, value); //$NON-NLS-1$</span>
+<span class="fc" id="L268">			case &quot;--patch&quot; -&gt; patch= Path.of(requiredValue(values, ++index, value)); //$NON-NLS-1$</span>
 			case &quot;--mode&quot; -&gt; { //$NON-NLS-1$
-<span class="fc" id="L274">				String requested= requiredValue(values, ++index, value);</span>
+<span class="fc" id="L270">				String requested= requiredValue(values, ++index, value);</span>
 				try {
-<span class="fc" id="L276">					mode= Mode.valueOf(requested.toUpperCase(java.util.Locale.ROOT));</span>
-<span class="pc" id="L277">				} catch (IllegalArgumentException e) {</span>
-<span class="nc" id="L278">					throw new IllegalArgumentException(&quot;Unsupported project cleanup mode: &quot; + requested, e); //$NON-NLS-1$</span>
+<span class="fc" id="L272">					mode= Mode.valueOf(requested.toUpperCase(java.util.Locale.ROOT));</span>
+<span class="pc" id="L273">				} catch (IllegalArgumentException e) {</span>
+<span class="nc" id="L274">					throw new IllegalArgumentException(&quot;Unsupported project cleanup mode: &quot; + requested, e); //$NON-NLS-1$</span>
 				}
 			}
 			default -&gt; {
-<span class="nc bnc" id="L282" title="All 4 branches missed.">				if (!value.isBlank() &amp;&amp; !&quot;-pdelaunch&quot;.equals(value)) { //$NON-NLS-1$</span>
-<span class="nc" id="L283">					throw new IllegalArgumentException(&quot;Unknown option: &quot; + value); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L278" title="All 4 branches missed.">				if (!value.isBlank() &amp;&amp; !&quot;-pdelaunch&quot;.equals(value)) { //$NON-NLS-1$</span>
+<span class="nc" id="L279">					throw new IllegalArgumentException(&quot;Unknown option: &quot; + value); //$NON-NLS-1$</span>
 				}
 			}
 			}
 		}
-<span class="pc bpc" id="L288" title="2 of 4 branches missed.">		if (project == null || project.isBlank()) {</span>
-<span class="nc" id="L289">			throw new IllegalArgumentException(&quot;--project is required.&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L284" title="2 of 4 branches missed.">		if (project == null || project.isBlank()) {</span>
+<span class="nc" id="L285">			throw new IllegalArgumentException(&quot;--project is required.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="pc bpc" id="L291" title="1 of 2 branches missed.">		if (configuration == null) {</span>
-<span class="nc" id="L292">			throw new IllegalArgumentException(&quot;--config is required.&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L287" title="1 of 2 branches missed.">		if (configuration == null) {</span>
+<span class="nc" id="L288">			throw new IllegalArgumentException(&quot;--config is required.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="pc bpc" id="L294" title="1 of 2 branches missed.">		if (report == null) {</span>
-<span class="nc" id="L295">			throw new IllegalArgumentException(&quot;--report is required.&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L290" title="1 of 2 branches missed.">		if (report == null) {</span>
+<span class="nc" id="L291">			throw new IllegalArgumentException(&quot;--report is required.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="pc bpc" id="L297" title="3 of 10 branches missed.">		if ((batch != null || receipt != null) &amp;&amp; maxFiles == 0 || receipt != null &amp;&amp; batch == null) {</span>
-<span class="nc" id="L298">			throw new IllegalArgumentException(&quot;Batch selection requires --batch-max-files and --batch&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L293" title="3 of 10 branches missed.">		if ((batch != null || receipt != null) &amp;&amp; maxFiles == 0 || receipt != null &amp;&amp; batch == null) {</span>
+<span class="nc" id="L294">			throw new IllegalArgumentException(&quot;Batch selection requires --batch-max-files and --batch&quot;); //$NON-NLS-1$</span>
 		}
-<span class="pc bpc" id="L300" title="2 of 8 branches missed.">		if (maxFiles &gt; 0 &amp;&amp; mode == Mode.APPLY &amp;&amp; (batch == null || receipt == null)) {</span>
-<span class="nc" id="L301">			throw new IllegalArgumentException(&quot;Preview the batches, then supply --batch and --batch-receipt for apply&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L296" title="2 of 8 branches missed.">		if (maxFiles &gt; 0 &amp;&amp; mode == Mode.APPLY &amp;&amp; (batch == null || receipt == null)) {</span>
+<span class="nc" id="L297">			throw new IllegalArgumentException(&quot;Preview the batches, then supply --batch and --batch-receipt for apply&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L303">		return new Arguments(project,</span>
-<span class="pc bpc" id="L304" title="1 of 2 branches missed.">				projectLocation == null ? null : projectLocation.toAbsolutePath().normalize(),</span>
-<span class="fc" id="L305">				configuration.toAbsolutePath().normalize(), report.toAbsolutePath().normalize(),</span>
-<span class="fc bfc" id="L306" title="All 2 branches covered.">				patch == null ? null : patch.toAbsolutePath().normalize(), mode, List.copyOf(pdeDeployments), maxFiles, batch, receipt);</span>
+<span class="fc" id="L299">		return new Arguments(project,</span>
+<span class="pc bpc" id="L300" title="1 of 2 branches missed.">				projectLocation == null ? null : projectLocation.toAbsolutePath().normalize(),</span>
+<span class="fc" id="L301">				configuration.toAbsolutePath().normalize(), report.toAbsolutePath().normalize(),</span>
+<span class="fc bfc" id="L302" title="All 2 branches covered.">				patch == null ? null : patch.toAbsolutePath().normalize(), mode, List.copyOf(pdeDeployments), maxFiles, batch, receipt);</span>
 	}
 
 	private static String requiredValue(String[] values, int index, String option) {
-<span class="pc bpc" id="L310" title="2 of 4 branches missed.">		if (index &gt;= values.length || values[index].isBlank()) {</span>
-<span class="nc" id="L311">			throw new IllegalArgumentException(option + &quot; requires a value.&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L306" title="2 of 4 branches missed.">		if (index &gt;= values.length || values[index].isBlank()) {</span>
+<span class="nc" id="L307">			throw new IllegalArgumentException(option + &quot; requires a value.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L313">		return values[index];</span>
+<span class="fc" id="L309">		return values[index];</span>
 	}
 
 	private static Map&lt;String, String&gt; readOptions(Path path) throws IOException {
-<span class="pc bpc" id="L317" title="1 of 2 branches missed.">		if (!Files.isRegularFile(path)) {</span>
-<span class="nc" id="L318">			throw new IOException(&quot;Cleanup configuration does not exist: &quot; + path); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L313" title="1 of 2 branches missed.">		if (!Files.isRegularFile(path)) {</span>
+<span class="nc" id="L314">			throw new IOException(&quot;Cleanup configuration does not exist: &quot; + path); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L320">		Properties properties= new Properties();</span>
-<span class="fc" id="L321">		try (var reader= Files.newBufferedReader(path, StandardCharsets.UTF_8)) {</span>
-<span class="fc" id="L322">			properties.load(reader);</span>
+<span class="fc" id="L316">		Properties properties= new Properties();</span>
+<span class="fc" id="L317">		try (var reader= Files.newBufferedReader(path, StandardCharsets.UTF_8)) {</span>
+<span class="fc" id="L318">			properties.load(reader);</span>
 		}
-<span class="fc" id="L324">		Map&lt;String, String&gt; result= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L325">		properties.stringPropertyNames().stream().sorted()</span>
-<span class="fc" id="L326">				.forEach(name -&gt; result.put(name, properties.getProperty(name)));</span>
-<span class="fc" id="L327">		return result;</span>
+<span class="fc" id="L320">		Map&lt;String, String&gt; result= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L321">		properties.stringPropertyNames().stream().sorted()</span>
+<span class="fc" id="L322">				.forEach(name -&gt; result.put(name, properties.getProperty(name)));</span>
+<span class="fc" id="L323">		return result;</span>
 	}
 
 	private static IProject requireProject(String name, Path requestedLocation) throws CoreException, IOException {
-<span class="fc" id="L331">		IWorkspaceRoot root= ResourcesPlugin.getWorkspace().getRoot();</span>
-<span class="fc" id="L332">		IProject project= root.getProject(name);</span>
-<span class="fc" id="L333">		IProgressMonitor monitor= new NullProgressMonitor();</span>
-<span class="pc bpc" id="L334" title="1 of 2 branches missed.">		if (!project.exists()) {</span>
-<span class="nc bnc" id="L335" title="All 2 branches missed.">			if (requestedLocation == null) {</span>
-<span class="nc" id="L336">				throw new IllegalArgumentException(&quot;Workspace project does not exist and --project-location was not supplied: &quot; //$NON-NLS-1$</span>
-<span class="nc" id="L337">						+ name);</span>
+<span class="fc" id="L327">		IWorkspaceRoot root= ResourcesPlugin.getWorkspace().getRoot();</span>
+<span class="fc" id="L328">		IProject project= root.getProject(name);</span>
+<span class="fc" id="L329">		IProgressMonitor monitor= new NullProgressMonitor();</span>
+<span class="pc bpc" id="L330" title="1 of 2 branches missed.">		if (!project.exists()) {</span>
+<span class="nc bnc" id="L331" title="All 2 branches missed.">			if (requestedLocation == null) {</span>
+<span class="nc" id="L332">				throw new IllegalArgumentException(&quot;Workspace project does not exist and --project-location was not supplied: &quot; //$NON-NLS-1$</span>
+<span class="nc" id="L333">						+ name);</span>
 			}
-<span class="nc" id="L339">			Path canonicalLocation= requestedLocation.toRealPath();</span>
-<span class="nc" id="L340">			Path descriptionFile= canonicalLocation.resolve(&quot;.project&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L341" title="All 2 branches missed.">			if (!Files.isRegularFile(descriptionFile)) {</span>
-<span class="nc" id="L342">				throw new IOException(&quot;Imported project location has no .project file: &quot; + canonicalLocation); //$NON-NLS-1$</span>
+<span class="nc" id="L335">			Path canonicalLocation= requestedLocation.toRealPath();</span>
+<span class="nc" id="L336">			Path descriptionFile= canonicalLocation.resolve(&quot;.project&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L337" title="All 2 branches missed.">			if (!Files.isRegularFile(descriptionFile)) {</span>
+<span class="nc" id="L338">				throw new IOException(&quot;Imported project location has no .project file: &quot; + canonicalLocation); //$NON-NLS-1$</span>
 			}
-<span class="nc" id="L344">			IProjectDescription description= ResourcesPlugin.getWorkspace().loadProjectDescription(</span>
-<span class="nc" id="L345">					org.eclipse.core.runtime.Path.fromOSString(descriptionFile.toString()));</span>
-<span class="nc bnc" id="L346" title="All 2 branches missed.">			if (!name.equals(description.getName())) {</span>
-<span class="nc" id="L347">				throw new IOException(&quot;Imported .project declares &quot; + description.getName() //$NON-NLS-1$</span>
-<span class="nc" id="L348">						+ &quot; but --project requested &quot; + name); //$NON-NLS-1$</span>
+<span class="nc" id="L340">			IProjectDescription description= ResourcesPlugin.getWorkspace().loadProjectDescription(</span>
+<span class="nc" id="L341">					org.eclipse.core.runtime.Path.fromOSString(descriptionFile.toString()));</span>
+<span class="nc bnc" id="L342" title="All 2 branches missed.">			if (!name.equals(description.getName())) {</span>
+<span class="nc" id="L343">				throw new IOException(&quot;Imported .project declares &quot; + description.getName() //$NON-NLS-1$</span>
+<span class="nc" id="L344">						+ &quot; but --project requested &quot; + name); //$NON-NLS-1$</span>
 			}
-<span class="nc" id="L350">			org.eclipse.core.runtime.IPath location=</span>
-<span class="nc" id="L351">					org.eclipse.core.runtime.Path.fromOSString(canonicalLocation.toString());</span>
-<span class="nc" id="L352">			org.eclipse.core.runtime.IPath defaultLocation=</span>
-<span class="nc bnc" id="L353" title="All 2 branches missed.">					root.getLocation() == null ? null : root.getLocation().append(name);</span>
-<span class="nc bnc" id="L354" title="All 2 branches missed.">			description.setLocation(location.equals(defaultLocation) ? null : location);</span>
-<span class="nc" id="L355">			project.create(description, monitor);</span>
-<span class="pc bpc" id="L356" title="1 of 2 branches missed.">		} else if (requestedLocation != null) {</span>
-<span class="nc" id="L357">			Path canonicalLocation= requestedLocation.toRealPath();</span>
-<span class="nc" id="L358">			org.eclipse.core.runtime.IPath actualLocation= project.getLocation();</span>
-<span class="nc bnc" id="L359" title="All 4 branches missed.">			if (actualLocation == null || !canonicalLocation.equals(actualLocation.toFile().toPath().toRealPath())) {</span>
-<span class="nc" id="L360">				throw new IOException(&quot;Workspace project exists at another location: &quot; + name); //$NON-NLS-1$</span>
+<span class="nc" id="L346">			org.eclipse.core.runtime.IPath location=</span>
+<span class="nc" id="L347">					org.eclipse.core.runtime.Path.fromOSString(canonicalLocation.toString());</span>
+<span class="nc" id="L348">			org.eclipse.core.runtime.IPath defaultLocation=</span>
+<span class="nc bnc" id="L349" title="All 2 branches missed.">					root.getLocation() == null ? null : root.getLocation().append(name);</span>
+<span class="nc bnc" id="L350" title="All 2 branches missed.">			description.setLocation(location.equals(defaultLocation) ? null : location);</span>
+<span class="nc" id="L351">			project.create(description, monitor);</span>
+<span class="pc bpc" id="L352" title="1 of 2 branches missed.">		} else if (requestedLocation != null) {</span>
+<span class="nc" id="L353">			Path canonicalLocation= requestedLocation.toRealPath();</span>
+<span class="nc" id="L354">			org.eclipse.core.runtime.IPath actualLocation= project.getLocation();</span>
+<span class="nc bnc" id="L355" title="All 4 branches missed.">			if (actualLocation == null || !canonicalLocation.equals(actualLocation.toFile().toPath().toRealPath())) {</span>
+<span class="nc" id="L356">				throw new IOException(&quot;Workspace project exists at another location: &quot; + name); //$NON-NLS-1$</span>
 			}
 		}
-<span class="pc bpc" id="L363" title="1 of 2 branches missed.">		if (!project.isOpen()) {</span>
-<span class="nc" id="L364">			project.open(monitor);</span>
+<span class="pc bpc" id="L359" title="1 of 2 branches missed.">		if (!project.isOpen()) {</span>
+<span class="nc" id="L360">			project.open(monitor);</span>
 		}
-<span class="fc" id="L366">		project.refreshLocal(IResource.DEPTH_INFINITE, monitor);</span>
-<span class="fc" id="L367">		return project;</span>
+<span class="fc" id="L362">		project.refreshLocal(IResource.DEPTH_INFINITE, monitor);</span>
+<span class="fc" id="L363">		return project;</span>
 	}
 
 	static List&lt;SourceSnapshot&gt; snapshots(IJavaProject project) throws CoreException, IOException {
-<span class="fc" id="L371">		List&lt;ICompilationUnit&gt; units= new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L372" title="All 2 branches covered.">		for (IPackageFragmentRoot root : project.getPackageFragmentRoots()) {</span>
-<span class="fc bfc" id="L373" title="All 2 branches covered.">			if (root.getKind() != IPackageFragmentRoot.K_SOURCE) {</span>
-<span class="fc" id="L374">				continue;</span>
+<span class="fc" id="L367">		List&lt;ICompilationUnit&gt; units= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L368" title="All 2 branches covered.">		for (IPackageFragmentRoot root : project.getPackageFragmentRoots()) {</span>
+<span class="fc bfc" id="L369" title="All 2 branches covered.">			if (root.getKind() != IPackageFragmentRoot.K_SOURCE) {</span>
+<span class="fc" id="L370">				continue;</span>
 			}
-<span class="fc bfc" id="L376" title="All 2 branches covered.">			for (IJavaElement child : root.getChildren()) {</span>
-<span class="pc bpc" id="L377" title="1 of 2 branches missed.">				if (child instanceof IPackageFragment fragment) {</span>
-<span class="fc" id="L378">					units.addAll(Arrays.asList(fragment.getCompilationUnits()));</span>
+<span class="fc bfc" id="L372" title="All 2 branches covered.">			for (IJavaElement child : root.getChildren()) {</span>
+<span class="pc bpc" id="L373" title="1 of 2 branches missed.">				if (child instanceof IPackageFragment fragment) {</span>
+<span class="fc" id="L374">					units.addAll(Arrays.asList(fragment.getCompilationUnits()));</span>
 				}
 			}
 		}
-<span class="fc" id="L382">		units.sort(Comparator.comparing(unit -&gt; unit.getPath().toPortableString()));</span>
-<span class="fc" id="L383">		List&lt;SourceSnapshot&gt; result= new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L384" title="All 2 branches covered.">		for (ICompilationUnit unit : units) {</span>
-<span class="pc bpc" id="L385" title="2 of 4 branches missed.">			if (!(unit.getResource() instanceof IFile file) || file.getLocation() == null) {</span>
-<span class="nc" id="L386">				continue;</span>
+<span class="fc" id="L378">		units.sort(Comparator.comparing(unit -&gt; unit.getPath().toPortableString()));</span>
+<span class="fc" id="L379">		List&lt;SourceSnapshot&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L380" title="All 2 branches covered.">		for (ICompilationUnit unit : units) {</span>
+<span class="pc bpc" id="L381" title="2 of 4 branches missed.">			if (!(unit.getResource() instanceof IFile file) || file.getLocation() == null) {</span>
+<span class="nc" id="L382">				continue;</span>
 			}
-<span class="fc" id="L388">			Path path= file.getLocation().toFile().toPath().toAbsolutePath().normalize();</span>
-<span class="fc" id="L389">			result.add(new SourceSnapshot(unit, file, path,</span>
-<span class="fc" id="L390">					file.getProjectRelativePath().toPortableString(), Files.readAllBytes(path)));</span>
+<span class="fc" id="L384">			Path path= file.getLocation().toFile().toPath().toAbsolutePath().normalize();</span>
+<span class="fc" id="L385">			result.add(new SourceSnapshot(unit, file, path,</span>
+<span class="fc" id="L386">					file.getProjectRelativePath().toPortableString(), Files.readAllBytes(path)));</span>
 		}
-<span class="fc" id="L392">		return List.copyOf(result);</span>
+<span class="fc" id="L388">		return List.copyOf(result);</span>
 	}
 
 
 	static List&lt;ResourceSnapshot&gt; resourceSnapshots(IProject project, List&lt;String&gt; selected) throws IOException {
-<span class="fc" id="L397">		List&lt;IFile&gt; files= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L398">		IFile descriptor= project.getFile(PDE_MANIFEST);</span>
-<span class="fc bfc" id="L399" title="All 2 branches covered.">		if (descriptor.exists()) {</span>
-<span class="fc" id="L400">			files.add(descriptor);</span>
-<span class="fc" id="L401">			IFile build= project.getFile(&quot;build.properties&quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L402" title="All 2 branches covered.">			if (build.exists()) {</span>
-<span class="fc" id="L403">				files.add(build);</span>
+<span class="fc" id="L393">		List&lt;IFile&gt; files= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L394">		IFile descriptor= project.getFile(PDE_MANIFEST);</span>
+<span class="fc bfc" id="L395" title="All 2 branches covered.">		if (descriptor.exists()) {</span>
+<span class="fc" id="L396">			files.add(descriptor);</span>
+<span class="fc" id="L397">			IFile build= project.getFile(&quot;build.properties&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L398" title="All 2 branches covered.">			if (build.exists()) {</span>
+<span class="fc" id="L399">				files.add(build);</span>
 			}
-<span class="fc" id="L405">			IWorkspaceRoot root= project.getWorkspace().getRoot();</span>
-<span class="fc bfc" id="L406" title="All 2 branches covered.">			for (String path : selected) {</span>
-<span class="pc bpc" id="L407" title="2 of 4 branches missed.">				if (!path.startsWith(&quot;/&quot;) || !(root.findMember(path) instanceof IFile file) //$NON-NLS-1$</span>
-<span class="pc bpc" id="L408" title="1 of 4 branches missed.">						|| !(&quot;feature.xml&quot;.equals(file.getName()) || &quot;target&quot;.equals(file.getFileExtension()))) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L409">					throw new IOException(&quot;Expected a workspace feature.xml or .target file: &quot; + path); //$NON-NLS-1$</span>
+<span class="fc" id="L401">			IWorkspaceRoot root= project.getWorkspace().getRoot();</span>
+<span class="fc bfc" id="L402" title="All 2 branches covered.">			for (String path : selected) {</span>
+<span class="pc bpc" id="L403" title="2 of 4 branches missed.">				if (!path.startsWith(&quot;/&quot;) || !(root.findMember(path) instanceof IFile file) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L404" title="1 of 4 branches missed.">						|| !(&quot;feature.xml&quot;.equals(file.getName()) || &quot;target&quot;.equals(file.getFileExtension()))) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L405">					throw new IOException(&quot;Expected a workspace feature.xml or .target file: &quot; + path); //$NON-NLS-1$</span>
 				}
-<span class="pc bpc" id="L411" title="1 of 2 branches missed.">				if (!files.contains(file)) {</span>
-<span class="fc" id="L412">					files.add(file);</span>
+<span class="pc bpc" id="L407" title="1 of 2 branches missed.">				if (!files.contains(file)) {</span>
+<span class="fc" id="L408">					files.add(file);</span>
 				}
 			}
-<span class="fc" id="L415">		} else {</span>
-<span class="pc bpc" id="L416" title="1 of 2 branches missed.">			if (!selected.isEmpty()) {</span>
-<span class="nc" id="L417">				throw new IOException(&quot;PDE deployment descriptors require a bundle manifest&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L411">		} else {</span>
+<span class="pc bpc" id="L412" title="1 of 2 branches missed.">			if (!selected.isEmpty()) {</span>
+<span class="nc" id="L413">				throw new IOException(&quot;PDE deployment descriptors require a bundle manifest&quot;); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L419">			descriptor= project.getFile(MAVEN_POM);</span>
-<span class="fc bfc" id="L420" title="All 2 branches covered.">			if (descriptor.exists()) {</span>
-<span class="fc" id="L421">				files.add(descriptor);</span>
+<span class="fc" id="L415">			descriptor= project.getFile(MAVEN_POM);</span>
+<span class="fc bfc" id="L416" title="All 2 branches covered.">			if (descriptor.exists()) {</span>
+<span class="fc" id="L417">				files.add(descriptor);</span>
 			}
 		}
-<span class="fc" id="L424">		List&lt;ResourceSnapshot&gt; snapshots= new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L425" title="All 2 branches covered.">		for (IFile file : files) {</span>
-<span class="pc bpc" id="L426" title="2 of 4 branches missed.">			if (file.isLinked(IResource.CHECK_ANCESTORS) || file.getLocation() == null) {</span>
-<span class="nc" id="L427">				throw new IOException(&quot;Cannot snapshot a linked descriptor: &quot; + file.getFullPath()); //$NON-NLS-1$</span>
+<span class="fc" id="L420">		List&lt;ResourceSnapshot&gt; snapshots= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L421" title="All 2 branches covered.">		for (IFile file : files) {</span>
+<span class="pc bpc" id="L422" title="2 of 4 branches missed.">			if (file.isLinked(IResource.CHECK_ANCESTORS) || file.getLocation() == null) {</span>
+<span class="nc" id="L423">				throw new IOException(&quot;Cannot snapshot a linked descriptor: &quot; + file.getFullPath()); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L429">			Path path= file.getLocation().toFile().toPath().toAbsolutePath().normalize();</span>
-<span class="pc bpc" id="L430" title="1 of 2 branches missed.">			if (!path.toRealPath().equals(path)) {</span>
-<span class="nc" id="L431">				throw new IOException(&quot;Cannot snapshot a symbolic descriptor path: &quot; + path); //$NON-NLS-1$</span>
+<span class="fc" id="L425">			Path path= file.getLocation().toFile().toPath().toAbsolutePath().normalize();</span>
+<span class="pc bpc" id="L426" title="1 of 2 branches missed.">			if (!path.toRealPath().equals(path)) {</span>
+<span class="nc" id="L427">				throw new IOException(&quot;Cannot snapshot a symbolic descriptor path: &quot; + path); //$NON-NLS-1$</span>
 			}
-<span class="fc bfc" id="L433" title="All 2 branches covered.">			if (!project.equals(file.getProject()) &amp;&amp; !project.getLocation().removeLastSegments(1)</span>
-<span class="pc bpc" id="L434" title="1 of 2 branches missed.">					.equals(file.getProject().getLocation().removeLastSegments(1))) {</span>
-<span class="nc" id="L435">				throw new IOException(&quot;External deployment project must be a physical sibling: &quot; + path); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L429" title="All 2 branches covered.">			if (!project.equals(file.getProject()) &amp;&amp; !project.getLocation().removeLastSegments(1)</span>
+<span class="pc bpc" id="L430" title="1 of 2 branches missed.">					.equals(file.getProject().getLocation().removeLastSegments(1))) {</span>
+<span class="nc" id="L431">				throw new IOException(&quot;External deployment project must be a physical sibling: &quot; + path); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L437">			snapshots.add(new ResourceSnapshot(file, path, file.getProjectRelativePath().toPortableString(),</span>
-<span class="fc" id="L438">					Files.readAllBytes(path)));</span>
+<span class="fc" id="L433">			snapshots.add(new ResourceSnapshot(file, path, file.getProjectRelativePath().toPortableString(),</span>
+<span class="fc" id="L434">					Files.readAllBytes(path)));</span>
 		}
-<span class="fc" id="L440">		return List.copyOf(snapshots);</span>
+<span class="fc" id="L436">		return List.copyOf(snapshots);</span>
 	}
 
 	private static void updateProjectMetadata(List&lt;SourceSnapshot&gt; sources, List&lt;ResourceSnapshot&gt; resources,
 			List&lt;ResourceSnapshot&gt; written, Map&lt;String, String&gt; options) throws IOException, CoreException {
-<span class="fc bfc" id="L445" title="All 2 branches covered.">		if (resources.isEmpty()) {</span>
-<span class="fc" id="L446">			return;</span>
+<span class="fc bfc" id="L441" title="All 2 branches covered.">		if (resources.isEmpty()) {</span>
+<span class="fc" id="L442">			return;</span>
 		}
-<span class="fc" id="L448">		Map&lt;SourceSnapshot, byte[]&gt; replacements= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L449" title="All 2 branches covered.">		for (SourceSnapshot source : sources) {</span>
-<span class="fc" id="L450">			byte[] after= Files.readAllBytes(source.path());</span>
-<span class="fc bfc" id="L451" title="All 2 branches covered.">			if (!Arrays.equals(source.before(), after)) {</span>
-<span class="fc" id="L452">				replacements.put(source, after);</span>
+<span class="fc" id="L444">		Map&lt;SourceSnapshot, byte[]&gt; replacements= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L445" title="All 2 branches covered.">		for (SourceSnapshot source : sources) {</span>
+<span class="fc" id="L446">			byte[] after= Files.readAllBytes(source.path());</span>
+<span class="fc bfc" id="L447" title="All 2 branches covered.">			if (!Arrays.equals(source.before(), after)) {</span>
+<span class="fc" id="L448">				replacements.put(source, after);</span>
 			}
 		}
-<span class="fc" id="L455">		var proposed= planProjectMetadata(sources, resources, replacements, options);</span>
-<span class="fc bfc" id="L456" title="All 2 branches covered.">		for (var entry : proposed.changes().entrySet()) {</span>
-<span class="fc" id="L457">			ResourceSnapshot resource= entry.getKey();</span>
-<span class="pc bpc" id="L458" title="1 of 2 branches missed.">			if (!Arrays.equals(resource.before(), Files.readAllBytes(resource.path()))) {</span>
-<span class="nc" id="L459">				throw new IOException(&quot;Project descriptor changed during cleanup: &quot; + resource.file().getFullPath()); //$NON-NLS-1$</span>
+<span class="fc" id="L451">		var proposed= planProjectMetadata(sources, resources, replacements, options);</span>
+<span class="fc bfc" id="L452" title="All 2 branches covered.">		for (var entry : proposed.changes().entrySet()) {</span>
+<span class="fc" id="L453">			ResourceSnapshot resource= entry.getKey();</span>
+<span class="pc bpc" id="L454" title="1 of 2 branches missed.">			if (!Arrays.equals(resource.before(), Files.readAllBytes(resource.path()))) {</span>
+<span class="nc" id="L455">				throw new IOException(&quot;Project descriptor changed during cleanup: &quot; + resource.file().getFullPath()); //$NON-NLS-1$</span>
 			}
-<span class="pc bpc" id="L461" title="1 of 2 branches missed.">			if (!Arrays.equals(entry.getValue(), resource.before())) {</span>
-<span class="fc" id="L462">				written.add(resource);</span>
-<span class="fc" id="L463">				Files.write(resource.path(), entry.getValue());</span>
+<span class="fc bfc" id="L457" title="All 2 branches covered.">			if (!Arrays.equals(entry.getValue(), resource.before())) {</span>
+<span class="fc" id="L458">				written.add(resource);</span>
+<span class="fc" id="L459">				Files.write(resource.path(), entry.getValue());</span>
 			}
 		}
-<span class="fc" id="L466">	}</span>
+<span class="fc" id="L462">	}</span>
 
 	static MetadataPlan planProjectMetadata(List&lt;SourceSnapshot&gt; sources,
 			List&lt;ResourceSnapshot&gt; resources, Map&lt;SourceSnapshot, byte[]&gt; replacements, Map&lt;String, String&gt; options)
 			throws IOException, CoreException {
-<span class="fc bfc" id="L471" title="All 2 branches covered.">		if (resources.isEmpty()) {</span>
-<span class="fc" id="L472">			return new MetadataPlan(Map.of(), false);</span>
+<span class="fc bfc" id="L467" title="All 2 branches covered.">		if (resources.isEmpty()) {</span>
+<span class="fc" id="L468">			return new MetadataPlan(Map.of(), false);</span>
 		}
-<span class="fc" id="L474">		ResourceSnapshot descriptor= resources.getFirst();</span>
-<span class="fc" id="L475">		boolean pde= PDE_MANIFEST.equals(descriptor.relativePath());</span>
-<span class="fc" id="L476">		boolean isolatedIntroduced= false;</span>
-<span class="fc" id="L477">		boolean suiteIntroduced= false;</span>
-<span class="fc bfc" id="L478" title="All 2 branches covered.">		for (var entry : replacements.entrySet()) {</span>
-<span class="fc" id="L479">			SourceSnapshot source= entry.getKey();</span>
-<span class="fc" id="L480">			byte[] after= entry.getValue();</span>
-<span class="pc bpc" id="L481" title="2 of 6 branches missed.">			isolatedIntroduced |= pde &amp;&amp; !contains(source.before(), JUNIT_ISOLATED_TYPE) &amp;&amp; contains(after, JUNIT_ISOLATED_TYPE);</span>
-<span class="fc" id="L482">			Charset charset= Charset.forName(source.file().getCharset());</span>
-<span class="fc" id="L483">			String updated= new String(after, charset);</span>
-<span class="fc bfc" id="L484" title="All 2 branches covered.">			if (PlatformSuiteDependencies.usesSuite(updated, options)</span>
-<span class="pc bpc" id="L485" title="1 of 2 branches missed.">					&amp;&amp; !PlatformSuiteDependencies.usesSuite(new String(source.before(), charset), options)) {</span>
-<span class="pc bpc" id="L486" title="1 of 4 branches missed.">				if (!pde &amp;&amp; !source.relativePath().startsWith(&quot;src/test/java/&quot;)) { //$NON-NLS-1$</span>
-<span class="nc" id="L487">					throw new IOException(&quot;Cannot add a test-scoped Suite dependency for &quot; + source.relativePath()); //$NON-NLS-1$</span>
+<span class="fc" id="L470">		ResourceSnapshot descriptor= resources.getFirst();</span>
+<span class="fc" id="L471">		boolean pde= PDE_MANIFEST.equals(descriptor.relativePath());</span>
+<span class="fc" id="L472">		Set&lt;String&gt; jupiterPackages= new TreeSet&lt;&gt;();</span>
+<span class="fc" id="L473">		boolean suiteIntroduced= false;</span>
+<span class="fc bfc" id="L474" title="All 2 branches covered.">		for (var entry : replacements.entrySet()) {</span>
+<span class="fc" id="L475">			SourceSnapshot source= entry.getKey();</span>
+<span class="fc" id="L476">			byte[] after= entry.getValue();</span>
+<span class="fc" id="L477">			Charset charset= Charset.forName(source.file().getCharset());</span>
+<span class="fc" id="L478">			String original= new String(source.before(), charset);</span>
+<span class="fc" id="L479">			String updated= new String(after, charset);</span>
+<span class="fc bfc" id="L480" title="All 2 branches covered.">			if (pde) {</span>
+<span class="fc" id="L481">				jupiterPackages.addAll(JupiterDependencies.introducedPackages(original, updated, options));</span>
+			}
+<span class="fc bfc" id="L483" title="All 2 branches covered.">			if (PlatformSuiteDependencies.usesSuite(updated, options)</span>
+<span class="pc bpc" id="L484" title="1 of 2 branches missed.">					&amp;&amp; !PlatformSuiteDependencies.usesSuite(original, options)) {</span>
+<span class="pc bpc" id="L485" title="1 of 4 branches missed.">				if (!pde &amp;&amp; !source.relativePath().startsWith(&quot;src/test/java/&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L486">					throw new IOException(&quot;Cannot add a test-scoped Suite dependency for &quot; + source.relativePath()); //$NON-NLS-1$</span>
 				}
-<span class="fc" id="L489">				suiteIntroduced= true;</span>
+<span class="fc" id="L488">				suiteIntroduced= true;</span>
 			}
 		}
-<span class="pc bpc" id="L492" title="1 of 4 branches missed.">		if (!isolatedIntroduced &amp;&amp; !suiteIntroduced) {</span>
-<span class="fc" id="L493">			return new MetadataPlan(Map.of(), false);</span>
+<span class="fc bfc" id="L491" title="All 4 branches covered.">		if (jupiterPackages.isEmpty() &amp;&amp; !suiteIntroduced) {</span>
+<span class="fc" id="L492">			return new MetadataPlan(Map.of(), false);</span>
 		}
-<span class="pc bpc" id="L495" title="2 of 4 branches missed.">		if (descriptor.file().isLinked(IResource.CHECK_ANCESTORS) || Files.isSymbolicLink(descriptor.path())) {</span>
-<span class="nc" id="L496">			throw new IOException(&quot;Cannot update a linked project descriptor: &quot; + descriptor.relativePath()); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L494" title="2 of 4 branches missed.">		if (descriptor.file().isLinked(IResource.CHECK_ANCESTORS) || Files.isSymbolicLink(descriptor.path())) {</span>
+<span class="nc" id="L495">			throw new IOException(&quot;Cannot update a linked project descriptor: &quot; + descriptor.relativePath()); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L498">		boolean retiresVintage= false;</span>
-<span class="fc" id="L499">		byte[] updated= descriptor.before();</span>
-<span class="pc bpc" id="L500" title="1 of 2 branches missed.">		if (isolatedIntroduced) {</span>
-<span class="nc" id="L501">			updated= PdeManifestImportUpdater.addImport(updated, JUNIT_PARALLEL_PACKAGE);</span>
+<span class="fc" id="L497">		boolean retiresVintage= false;</span>
+<span class="fc" id="L498">		byte[] updated= descriptor.before();</span>
+<span class="fc bfc" id="L499" title="All 2 branches covered.">		for (String packageName : jupiterPackages) {</span>
+<span class="fc" id="L500">			updated= PdeManifestImportUpdater.addImport(updated, packageName);</span>
 		}
-<span class="pc bpc" id="L503" title="1 of 2 branches missed.">		if (suiteIntroduced) {</span>
-<span class="fc bfc" id="L504" title="All 2 branches covered.">			if (pde) {</span>
-<span class="fc" id="L505">				updated= PdeManifestImportUpdater.addImport(updated, PlatformSuiteDependencies.API_PACKAGE);</span>
-<span class="fc" id="L506">			} else {</span>
-<span class="fc" id="L507">				String pom= StandardCharsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(updated)).toString();</span>
-<span class="fc" id="L508">				String withSuite= PlatformSuiteDependencies.addToPom(pom);</span>
-<span class="fc" id="L509">				Map&lt;Path, VintageDeploymentPlan.SourceTransition&gt; participants= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L510" title="All 2 branches covered.">				for (SourceSnapshot source : sources) {</span>
-<span class="fc" id="L511">					Charset encoding= Charset.forName(source.file().getCharset());</span>
-<span class="fc" id="L512">					participants.put(source.path(), new VintageDeploymentPlan.SourceTransition(</span>
-<span class="fc" id="L513">							new String(source.before(), encoding), new String(replacements.getOrDefault(source, source.before()), encoding)));</span>
+<span class="fc bfc" id="L502" title="All 2 branches covered.">		if (suiteIntroduced) {</span>
+<span class="fc bfc" id="L503" title="All 2 branches covered.">			if (pde) {</span>
+<span class="fc" id="L504">				updated= PdeManifestImportUpdater.addImport(updated, PlatformSuiteDependencies.API_PACKAGE);</span>
+<span class="fc" id="L505">			} else {</span>
+<span class="fc" id="L506">				String pom= StandardCharsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(updated)).toString();</span>
+<span class="fc" id="L507">				String withSuite= PlatformSuiteDependencies.addToPom(pom);</span>
+<span class="fc" id="L508">				Map&lt;Path, VintageDeploymentPlan.SourceTransition&gt; participants= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L509" title="All 2 branches covered.">				for (SourceSnapshot source : sources) {</span>
+<span class="fc" id="L510">					Charset encoding= Charset.forName(source.file().getCharset());</span>
+<span class="fc" id="L511">					participants.put(source.path(), new VintageDeploymentPlan.SourceTransition(</span>
+<span class="fc" id="L512">							new String(source.before(), encoding), new String(replacements.getOrDefault(source, source.before()), encoding)));</span>
 				}
-<span class="fc" id="L515">				String deployment= VintageDeploymentPlan.afterSuiteMigration(withSuite, descriptor.file(), participants);</span>
-<span class="fc bfc" id="L516" title="All 2 branches covered.">				retiresVintage= !deployment.equals(withSuite);</span>
-<span class="fc" id="L517">				updated= deployment.getBytes(StandardCharsets.UTF_8);</span>
+<span class="fc" id="L514">				String deployment= VintageDeploymentPlan.afterSuiteMigration(withSuite, descriptor.file(), participants);</span>
+<span class="fc bfc" id="L515" title="All 2 branches covered.">				retiresVintage= !deployment.equals(withSuite);</span>
+<span class="fc" id="L516">				updated= deployment.getBytes(StandardCharsets.UTF_8);</span>
 			}
 		}
-<span class="fc" id="L520">		Map&lt;ResourceSnapshot, byte[]&gt; proposed= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L521">		proposed.put(descriptor, updated);</span>
-<span class="pc bpc" id="L522" title="1 of 6 branches missed.">		if (pde &amp;&amp; suiteIntroduced &amp;&amp; resources.size() &gt; 1) {</span>
-<span class="fc" id="L523">			String bundle= new Manifest(new ByteArrayInputStream(descriptor.before()))</span>
-<span class="fc" id="L524">					.getMainAttributes().getValue(&quot;Bundle-SymbolicName&quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L525" title="All 2 branches covered.">			for (ResourceSnapshot resource : resources.subList(1, resources.size())) {</span>
-<span class="fc" id="L526">				boolean build= &quot;build.properties&quot;.equals(resource.relativePath()); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L527" title="All 2 branches covered.">				Charset charset= build ? StandardCharsets.ISO_8859_1 : Charset.forName(resource.file().getCharset());</span>
-<span class="fc" id="L528">				String source= charset.newDecoder().decode(java.nio.ByteBuffer.wrap(resource.before())).toString();</span>
+<span class="fc" id="L519">		Map&lt;ResourceSnapshot, byte[]&gt; proposed= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L520">		proposed.put(descriptor, updated);</span>
+<span class="fc bfc" id="L521" title="All 6 branches covered.">		if (pde &amp;&amp; suiteIntroduced &amp;&amp; resources.size() &gt; 1) {</span>
+<span class="fc" id="L522">			String bundle= new Manifest(new ByteArrayInputStream(descriptor.before()))</span>
+<span class="fc" id="L523">					.getMainAttributes().getValue(&quot;Bundle-SymbolicName&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L524" title="All 2 branches covered.">			for (ResourceSnapshot resource : resources.subList(1, resources.size())) {</span>
+<span class="fc" id="L525">				boolean build= &quot;build.properties&quot;.equals(resource.relativePath()); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L526" title="All 2 branches covered.">				Charset charset= build ? StandardCharsets.ISO_8859_1 : Charset.forName(resource.file().getCharset());</span>
+<span class="fc" id="L527">				String source= charset.newDecoder().decode(java.nio.ByteBuffer.wrap(resource.before())).toString();</span>
 				String result;
-<span class="fc bfc" id="L530" title="All 2 branches covered.">				if (build) {</span>
-<span class="fc" id="L531">					result= PdeSuiteDeployment.buildProperties(source);</span>
-<span class="fc" id="L532">				} else {</span>
-<span class="pc bpc" id="L533" title="1 of 2 branches missed.">					if (bundle == null) {</span>
-<span class="nc" id="L534">						throw new IOException(&quot;Deployment planning requires Bundle-SymbolicName&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L529" title="All 2 branches covered.">				if (build) {</span>
+<span class="fc" id="L530">					result= PdeSuiteDeployment.buildProperties(source);</span>
+<span class="fc" id="L531">				} else {</span>
+<span class="pc bpc" id="L532" title="1 of 2 branches missed.">					if (bundle == null) {</span>
+<span class="nc" id="L533">						throw new IOException(&quot;Deployment planning requires Bundle-SymbolicName&quot;); //$NON-NLS-1$</span>
 					}
-<span class="fc" id="L536">					result= PdeSuiteDeployment.xml(source, &quot;feature.xml&quot;.equals(resource.file().getName()), //$NON-NLS-1$</span>
-<span class="fc" id="L537">							bundle.split(&quot;;&quot;, 2)[0].strip()); //$NON-NLS-1$</span>
+<span class="fc" id="L535">					result= PdeSuiteDeployment.xml(source, &quot;feature.xml&quot;.equals(resource.file().getName()), //$NON-NLS-1$</span>
+<span class="fc" id="L536">							bundle.split(&quot;;&quot;, 2)[0].strip()); //$NON-NLS-1$</span>
 				}
-<span class="pc bpc" id="L539" title="1 of 2 branches missed.">				if (!source.equals(result)) {</span>
-<span class="fc" id="L540">					proposed.put(resource, result.getBytes(charset));</span>
+<span class="pc bpc" id="L538" title="1 of 2 branches missed.">				if (!source.equals(result)) {</span>
+<span class="fc" id="L539">					proposed.put(resource, result.getBytes(charset));</span>
 				}
 			}
 		}
-<span class="fc" id="L544">		return new MetadataPlan(proposed, retiresVintage);</span>
-	}
-
-	private static boolean contains(byte[] content, String token) {
-<span class="fc" id="L548">		return new String(content, StandardCharsets.UTF_8).contains(token);</span>
+<span class="fc" id="L543">		return new MetadataPlan(proposed, retiresVintage);</span>
 	}
 
 	private static void refresh(List&lt;SourceSnapshot&gt; sources, List&lt;ResourceSnapshot&gt; resources,
 			IProgressMonitor monitor) throws CoreException {
-<span class="fc bfc" id="L553" title="All 2 branches covered.">		for (SourceSnapshot source : sources) {</span>
-<span class="fc" id="L554">			source.file().refreshLocal(IResource.DEPTH_ZERO, monitor);</span>
+<span class="fc bfc" id="L548" title="All 2 branches covered.">		for (SourceSnapshot source : sources) {</span>
+<span class="fc" id="L549">			source.file().refreshLocal(IResource.DEPTH_ZERO, monitor);</span>
 		}
-<span class="fc bfc" id="L556" title="All 2 branches covered.">		for (ResourceSnapshot resource : resources) {</span>
-<span class="fc" id="L557">			resource.file().refreshLocal(IResource.DEPTH_ZERO, monitor);</span>
+<span class="fc bfc" id="L551" title="All 2 branches covered.">		for (ResourceSnapshot resource : resources) {</span>
+<span class="fc" id="L552">			resource.file().refreshLocal(IResource.DEPTH_ZERO, monitor);</span>
 		}
-<span class="fc" id="L559">	}</span>
+<span class="fc" id="L554">	}</span>
 
 	private static List&lt;ChangedFile&gt; changedFiles(List&lt;SourceSnapshot&gt; sources,
 			List&lt;ResourceSnapshot&gt; resources) throws IOException {
-<span class="fc" id="L563">		List&lt;ChangedFile&gt; result= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L564">		IProject project= sources.getFirst().file().getProject();</span>
-<span class="fc bfc" id="L565" title="All 2 branches covered.">		boolean mixed= resources.stream().anyMatch(r -&gt; !project.equals(r.file().getProject()));</span>
-<span class="fc" id="L566">		Path parent= project.getLocation().toFile().toPath().getParent();</span>
-<span class="fc bfc" id="L567" title="All 2 branches covered.">		for (SourceSnapshot source : sources) {</span>
-<span class="fc" id="L568">			byte[] after= Files.readAllBytes(source.path());</span>
-<span class="fc bfc" id="L569" title="All 2 branches covered.">			if (!Arrays.equals(source.before(), after)) {</span>
-<span class="fc bfc" id="L570" title="All 2 branches covered.">				result.add(new ChangedFile(mixed ? patchPath(parent, source.path()) : source.relativePath(), source.before(), after));</span>
+<span class="fc" id="L558">		List&lt;ChangedFile&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L559">		IProject project= sources.getFirst().file().getProject();</span>
+<span class="fc bfc" id="L560" title="All 2 branches covered.">		boolean mixed= resources.stream().anyMatch(r -&gt; !project.equals(r.file().getProject()));</span>
+<span class="fc" id="L561">		Path parent= project.getLocation().toFile().toPath().getParent();</span>
+<span class="fc bfc" id="L562" title="All 2 branches covered.">		for (SourceSnapshot source : sources) {</span>
+<span class="fc" id="L563">			byte[] after= Files.readAllBytes(source.path());</span>
+<span class="fc bfc" id="L564" title="All 2 branches covered.">			if (!Arrays.equals(source.before(), after)) {</span>
+<span class="fc bfc" id="L565" title="All 2 branches covered.">				result.add(new ChangedFile(mixed ? patchPath(parent, source.path()) : source.relativePath(), source.before(), after));</span>
 			}
 		}
-<span class="fc bfc" id="L573" title="All 2 branches covered.">		for (ResourceSnapshot resource : resources) {</span>
-<span class="fc" id="L574">			byte[] after= Files.readAllBytes(resource.path());</span>
-<span class="fc bfc" id="L575" title="All 2 branches covered.">			if (!Arrays.equals(resource.before(), after)) {</span>
-<span class="fc bfc" id="L576" title="All 2 branches covered.">				result.add(new ChangedFile(mixed ? patchPath(parent, resource.path()) : resource.relativePath(), resource.before(), after));</span>
+<span class="fc bfc" id="L568" title="All 2 branches covered.">		for (ResourceSnapshot resource : resources) {</span>
+<span class="fc" id="L569">			byte[] after= Files.readAllBytes(resource.path());</span>
+<span class="fc bfc" id="L570" title="All 2 branches covered.">			if (!Arrays.equals(resource.before(), after)) {</span>
+<span class="fc bfc" id="L571" title="All 2 branches covered.">				result.add(new ChangedFile(mixed ? patchPath(parent, resource.path()) : resource.relativePath(), resource.before(), after));</span>
 			}
 		}
-<span class="fc" id="L579">		result.sort(Comparator.comparing(ChangedFile::relativePath));</span>
-<span class="fc" id="L580">		return List.copyOf(result);</span>
+<span class="fc" id="L574">		result.sort(Comparator.comparing(ChangedFile::relativePath));</span>
+<span class="fc" id="L575">		return List.copyOf(result);</span>
 	}
 
 	static String patchPath(Path root, Path file) {
-<span class="fc" id="L584">		return root.relativize(file).toString().replace(java.io.File.separatorChar, '/');</span>
+<span class="fc" id="L579">		return root.relativize(file).toString().replace(java.io.File.separatorChar, '/');</span>
 	}
 
 	private static void restore(List&lt;SourceSnapshot&gt; sources, List&lt;ResourceSnapshot&gt; resources,
 			IProgressMonitor monitor, List&lt;String&gt; errors) {
-<span class="fc" id="L589">		restore(sources, monitor, errors);</span>
-<span class="fc bfc" id="L590" title="All 2 branches covered.">		for (ResourceSnapshot resource : resources) {</span>
-<span class="fc" id="L591">			restore(resource.file(), resource.path(), resource.relativePath(), resource.before(), monitor, errors);</span>
+<span class="fc" id="L584">		restore(sources, monitor, errors);</span>
+<span class="fc bfc" id="L585" title="All 2 branches covered.">		for (ResourceSnapshot resource : resources) {</span>
+<span class="fc" id="L586">			restore(resource.file(), resource.path(), resource.relativePath(), resource.before(), monitor, errors);</span>
 		}
-<span class="fc" id="L593">	}</span>
+<span class="fc" id="L588">	}</span>
 
 	private static void restore(List&lt;SourceSnapshot&gt; sources, IProgressMonitor monitor,
 			List&lt;String&gt; errors) {
-<span class="fc bfc" id="L597" title="All 2 branches covered.">		for (SourceSnapshot source : sources) {</span>
-<span class="fc" id="L598">			restore(source.file(), source.path(), source.relativePath(), source.before(), monitor, errors);</span>
+<span class="fc bfc" id="L592" title="All 2 branches covered.">		for (SourceSnapshot source : sources) {</span>
+<span class="fc" id="L593">			restore(source.file(), source.path(), source.relativePath(), source.before(), monitor, errors);</span>
 		}
-<span class="fc" id="L600">	}</span>
+<span class="fc" id="L595">	}</span>
 
 	private static void restore(IFile file, Path path, String relativePath, byte[] before,
 			IProgressMonitor monitor, List&lt;String&gt; errors) {
 		try {
-<span class="fc" id="L605">			Files.write(path, before);</span>
-<span class="fc" id="L606">			file.refreshLocal(IResource.DEPTH_ZERO, monitor);</span>
-<span class="pc" id="L607">		} catch (IOException | CoreException e) {</span>
-<span class="nc" id="L608">			errors.add(&quot;Cannot restore &quot; + relativePath + &quot;: &quot; + e.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L600">			Files.write(path, before);</span>
+<span class="fc" id="L601">			file.refreshLocal(IResource.DEPTH_ZERO, monitor);</span>
+<span class="pc" id="L602">		} catch (IOException | CoreException e) {</span>
+<span class="nc" id="L603">			errors.add(&quot;Cannot restore &quot; + relativePath + &quot;: &quot; + e.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$</span>
 		}
-<span class="fc" id="L610">	}</span>
+<span class="fc" id="L605">	}</span>
 
 	private static void writePatch(Path path, List&lt;ChangedFile&gt; changed) throws IOException {
-<span class="fc" id="L613">		createParent(path);</span>
-<span class="fc" id="L614">		ByteArrayOutputStream patch= new ByteArrayOutputStream();</span>
-<span class="fc bfc" id="L615" title="All 2 branches covered.">		for (ChangedFile source : changed) {</span>
-<span class="fc" id="L616">			patch.writeBytes(UnifiedDiffFormatter.format(source.relativePath(), source.before(), source.after()));</span>
+<span class="fc" id="L608">		createParent(path);</span>
+<span class="fc" id="L609">		ByteArrayOutputStream patch= new ByteArrayOutputStream();</span>
+<span class="fc bfc" id="L610" title="All 2 branches covered.">		for (ChangedFile source : changed) {</span>
+<span class="fc" id="L611">			patch.writeBytes(UnifiedDiffFormatter.format(source.relativePath(), source.before(), source.after()));</span>
 		}
-<span class="fc" id="L618">		Files.write(path, patch.toByteArray());</span>
-<span class="fc" id="L619">	}</span>
+<span class="fc" id="L613">		Files.write(path, patch.toByteArray());</span>
+<span class="fc" id="L614">	}</span>
 
 	private static void writeReport(Path path, Arguments arguments, Instant started, Instant ended,
 			Map&lt;String, String&gt; options, List&lt;SourceSnapshot&gt; sources, List&lt;ChangedFile&gt; changed,
 			List&lt;String&gt; statusMessages, List&lt;String&gt; planningDiagnostics, List&lt;MigrationBatches.Batch&gt; batches, List&lt;String&gt; errors) throws IOException {
-<span class="fc" id="L624">		createParent(path);</span>
-<span class="fc" id="L625">		StringBuilder json= new StringBuilder(2048);</span>
-<span class="fc" id="L626">		json.append(&quot;{\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L627">		property(json, &quot;schemaVersion&quot;, &quot;1&quot;, 1).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L628">		property(json, &quot;tool&quot;, &quot;sandbox-project-cleanup&quot;, 1).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L629">		property(json, &quot;mode&quot;, arguments.mode().name().toLowerCase(java.util.Locale.ROOT), 1).append(&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L630">		property(json, &quot;project&quot;, arguments.projectName(), 1).append(&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L631" title="1 of 2 branches missed.">		property(json, &quot;projectLocation&quot;, arguments.projectLocation() == null ? &quot;&quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="pc" id="L632">				: arguments.projectLocation().toString(), 1).append(&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L633">		property(json, &quot;startTime&quot;, started.toString(), 1).append(&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L634">		property(json, &quot;endTime&quot;, ended.toString(), 1).append(&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L635">		number(json, &quot;durationMs&quot;, ended.toEpochMilli() - started.toEpochMilli(), 1).append(&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L636">		number(json, &quot;filesProcessed&quot;, sources.size(), 1).append(&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L637">		number(json, &quot;filesChanged&quot;, changed.size(), 1).append(&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L638">		array(json, &quot;changedFiles&quot;, changed.stream().map(ChangedFile::relativePath).toList(), 1) //$NON-NLS-1$</span>
-<span class="fc" id="L639">				.append(&quot;,\n&quot;);</span>
-<span class="fc" id="L640">		json.append(&quot;  \&quot;cleanupOptions\&quot;: {&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L641">		int optionIndex= 0;</span>
-<span class="fc bfc" id="L642" title="All 2 branches covered.">		for (Map.Entry&lt;String, String&gt; entry : options.entrySet()) {</span>
-<span class="fc bfc" id="L643" title="All 2 branches covered.">			if (optionIndex++ &gt; 0) {</span>
-<span class="fc" id="L644">				json.append(',');</span>
+<span class="fc" id="L619">		createParent(path);</span>
+<span class="fc" id="L620">		StringBuilder json= new StringBuilder(2048);</span>
+<span class="fc" id="L621">		json.append(&quot;{\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L622">		property(json, &quot;schemaVersion&quot;, &quot;1&quot;, 1).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L623">		property(json, &quot;tool&quot;, &quot;sandbox-project-cleanup&quot;, 1).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L624">		property(json, &quot;mode&quot;, arguments.mode().name().toLowerCase(java.util.Locale.ROOT), 1).append(&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L625">		property(json, &quot;project&quot;, arguments.projectName(), 1).append(&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L626" title="1 of 2 branches missed.">		property(json, &quot;projectLocation&quot;, arguments.projectLocation() == null ? &quot;&quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc" id="L627">				: arguments.projectLocation().toString(), 1).append(&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L628">		property(json, &quot;startTime&quot;, started.toString(), 1).append(&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L629">		property(json, &quot;endTime&quot;, ended.toString(), 1).append(&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L630">		number(json, &quot;durationMs&quot;, ended.toEpochMilli() - started.toEpochMilli(), 1).append(&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L631">		number(json, &quot;filesProcessed&quot;, sources.size(), 1).append(&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L632">		number(json, &quot;filesChanged&quot;, changed.size(), 1).append(&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L633">		array(json, &quot;changedFiles&quot;, changed.stream().map(ChangedFile::relativePath).toList(), 1) //$NON-NLS-1$</span>
+<span class="fc" id="L634">				.append(&quot;,\n&quot;);</span>
+<span class="fc" id="L635">		json.append(&quot;  \&quot;cleanupOptions\&quot;: {&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L636">		int optionIndex= 0;</span>
+<span class="fc bfc" id="L637" title="All 2 branches covered.">		for (Map.Entry&lt;String, String&gt; entry : options.entrySet()) {</span>
+<span class="fc bfc" id="L638" title="All 2 branches covered.">			if (optionIndex++ &gt; 0) {</span>
+<span class="fc" id="L639">				json.append(',');</span>
 			}
-<span class="fc" id="L646">			json.append(&quot;\n    \&quot;&quot;).append(escape(entry.getKey())).append(&quot;\&quot;: \&quot;&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L647">					.append(escape(entry.getValue())).append('&quot;');</span>
+<span class="fc" id="L641">			json.append(&quot;\n    \&quot;&quot;).append(escape(entry.getKey())).append(&quot;\&quot;: \&quot;&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L642">					.append(escape(entry.getValue())).append('&quot;');</span>
 		}
-<span class="pc bpc" id="L649" title="1 of 2 branches missed.">		if (!options.isEmpty()) {</span>
-<span class="fc" id="L650">			json.append('\n');</span>
+<span class="pc bpc" id="L644" title="1 of 2 branches missed.">		if (!options.isEmpty()) {</span>
+<span class="fc" id="L645">			json.append('\n');</span>
 		}
-<span class="fc" id="L652">		json.append(&quot;  },\n&quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L653" title="All 2 branches covered.">		if (arguments.batchMaxFiles() &gt; 0) {</span>
-<span class="fc" id="L654">			number(json, &quot;batchMaxFiles&quot;, arguments.batchMaxFiles(), 1).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc bfc" id="L655" title="All 2 branches covered.">			property(json, &quot;selectedBatch&quot;, arguments.batch() == null ? &quot;&quot; : arguments.batch(), 1).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
-<span class="fc" id="L656">			json.append(&quot;  \&quot;batches\&quot;: [&quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L657" title="All 2 branches covered.">			for (int index= 0; index &lt; batches.size(); index++) {</span>
-<span class="fc" id="L658">				var batch= batches.get(index);</span>
-<span class="fc bfc" id="L659" title="All 2 branches covered.">				json.append(index == 0 ? &quot;\n    {\n&quot; : &quot;,\n    {\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L660">				property(json, &quot;id&quot;, batch.id(), 3).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L661">				property(json, &quot;receipt&quot;, batch.receipt(), 3).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L662">				array(json, &quot;files&quot;, batch.files(), 3).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L663">				array(json, &quot;prerequisites&quot;, batch.prerequisites(), 3).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L664">				array(json, &quot;dependencies&quot;, batch.dependencies(), 3).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc bfc" id="L665" title="All 2 branches covered.">				json.append(&quot;      \&quot;oversized\&quot;: &quot;).append(batch.files().size() &gt; arguments.batchMaxFiles()).append(&quot;\n    }&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L647">		json.append(&quot;  },\n&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L648" title="All 2 branches covered.">		if (arguments.batchMaxFiles() &gt; 0) {</span>
+<span class="fc" id="L649">			number(json, &quot;batchMaxFiles&quot;, arguments.batchMaxFiles(), 1).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L650" title="All 2 branches covered.">			property(json, &quot;selectedBatch&quot;, arguments.batch() == null ? &quot;&quot; : arguments.batch(), 1).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc" id="L651">			json.append(&quot;  \&quot;batches\&quot;: [&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L652" title="All 2 branches covered.">			for (int index= 0; index &lt; batches.size(); index++) {</span>
+<span class="fc" id="L653">				var batch= batches.get(index);</span>
+<span class="fc bfc" id="L654" title="All 2 branches covered.">				json.append(index == 0 ? &quot;\n    {\n&quot; : &quot;,\n    {\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L655">				property(json, &quot;id&quot;, batch.id(), 3).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L656">				property(json, &quot;receipt&quot;, batch.receipt(), 3).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L657">				array(json, &quot;files&quot;, batch.files(), 3).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L658">				array(json, &quot;prerequisites&quot;, batch.prerequisites(), 3).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L659">				array(json, &quot;dependencies&quot;, batch.dependencies(), 3).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L660" title="All 2 branches covered.">				json.append(&quot;      \&quot;oversized\&quot;: &quot;).append(batch.files().size() &gt; arguments.batchMaxFiles()).append(&quot;\n    }&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
 			}
-<span class="fc" id="L667">			json.append(&quot;\n  ],\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L662">			json.append(&quot;\n  ],\n&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L669">		array(json, &quot;refactoringStatus&quot;, statusMessages, 1).append(&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L670">		json.append(&quot;  \&quot;planningDiagnostics\&quot;: [&quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L671" title="All 2 branches covered.">		for (int index= 0; index &lt; planningDiagnostics.size(); index++) {</span>
-<span class="pc bpc" id="L672" title="1 of 2 branches missed.">			if (index &gt; 0) {</span>
-<span class="nc" id="L673">				json.append(',');</span>
+<span class="fc" id="L664">		array(json, &quot;refactoringStatus&quot;, statusMessages, 1).append(&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L665">		json.append(&quot;  \&quot;planningDiagnostics\&quot;: [&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L666" title="All 2 branches covered.">		for (int index= 0; index &lt; planningDiagnostics.size(); index++) {</span>
+<span class="pc bpc" id="L667" title="1 of 2 branches missed.">			if (index &gt; 0) {</span>
+<span class="nc" id="L668">				json.append(',');</span>
 			}
-<span class="fc" id="L675">			json.append('\n').append(&quot;    &quot;).append(planningDiagnostics.get(index)); //$NON-NLS-1$</span>
+<span class="fc" id="L670">			json.append('\n').append(&quot;    &quot;).append(planningDiagnostics.get(index)); //$NON-NLS-1$</span>
 		}
-<span class="pc bpc" id="L677" title="1 of 2 branches missed.">		if (!planningDiagnostics.isEmpty()) {</span>
-<span class="fc" id="L678">			json.append('\n').append(&quot;  &quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L672" title="1 of 2 branches missed.">		if (!planningDiagnostics.isEmpty()) {</span>
+<span class="fc" id="L673">			json.append('\n').append(&quot;  &quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L680">		json.append(&quot;],\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L681">		number(json, &quot;errorCount&quot;, errors.size(), 1).append(&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L682">		array(json, &quot;errors&quot;, errors, 1).append('\n'); //$NON-NLS-1$</span>
-<span class="fc" id="L683">		json.append(&quot;}\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L684">		Files.writeString(path, json.toString(), StandardCharsets.UTF_8);</span>
-<span class="fc" id="L685">	}</span>
+<span class="fc" id="L675">		json.append(&quot;],\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L676">		number(json, &quot;errorCount&quot;, errors.size(), 1).append(&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L677">		array(json, &quot;errors&quot;, errors, 1).append('\n'); //$NON-NLS-1$</span>
+<span class="fc" id="L678">		json.append(&quot;}\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L679">		Files.writeString(path, json.toString(), StandardCharsets.UTF_8);</span>
+<span class="fc" id="L680">	}</span>
 
 	private static StringBuilder property(StringBuilder json, String name, String value, int indent) {
-<span class="fc" id="L688">		return json.append(&quot;  &quot;.repeat(indent)).append('&quot;').append(escape(name)).append(&quot;\&quot;: \&quot;&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L689">				.append(escape(value)).append('&quot;');</span>
+<span class="fc" id="L683">		return json.append(&quot;  &quot;.repeat(indent)).append('&quot;').append(escape(name)).append(&quot;\&quot;: \&quot;&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L684">				.append(escape(value)).append('&quot;');</span>
 	}
 
 	private static StringBuilder number(StringBuilder json, String name, long value, int indent) {
-<span class="fc" id="L693">		return json.append(&quot;  &quot;.repeat(indent)).append('&quot;').append(escape(name)).append(&quot;\&quot;: &quot;).append(value); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L688">		return json.append(&quot;  &quot;.repeat(indent)).append('&quot;').append(escape(name)).append(&quot;\&quot;: &quot;).append(value); //$NON-NLS-1$ //$NON-NLS-2$</span>
 	}
 
 	private static StringBuilder array(StringBuilder json, String name, List&lt;String&gt; values, int indent) {
-<span class="fc" id="L697">		json.append(&quot;  &quot;.repeat(indent)).append('&quot;').append(escape(name)).append(&quot;\&quot;: [&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc bfc" id="L698" title="All 2 branches covered.">		for (int index= 0; index &lt; values.size(); index++) {</span>
-<span class="fc bfc" id="L699" title="All 2 branches covered.">			if (index &gt; 0) {</span>
-<span class="fc" id="L700">				json.append(',');</span>
+<span class="fc" id="L692">		json.append(&quot;  &quot;.repeat(indent)).append('&quot;').append(escape(name)).append(&quot;\&quot;: [&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L693" title="All 2 branches covered.">		for (int index= 0; index &lt; values.size(); index++) {</span>
+<span class="fc bfc" id="L694" title="All 2 branches covered.">			if (index &gt; 0) {</span>
+<span class="fc" id="L695">				json.append(',');</span>
 			}
-<span class="fc" id="L702">			json.append(&quot;\n&quot;).append(&quot;  &quot;.repeat(indent + 1)).append('&quot;') //$NON-NLS-1$</span>
-<span class="fc" id="L703">					.append(escape(values.get(index))).append('&quot;');</span>
+<span class="fc" id="L697">			json.append(&quot;\n&quot;).append(&quot;  &quot;.repeat(indent + 1)).append('&quot;') //$NON-NLS-1$</span>
+<span class="fc" id="L698">					.append(escape(values.get(index))).append('&quot;');</span>
 		}
-<span class="fc bfc" id="L705" title="All 2 branches covered.">		if (!values.isEmpty()) {</span>
-<span class="fc" id="L706">			json.append('\n').append(&quot;  &quot;.repeat(indent)); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L700" title="All 2 branches covered.">		if (!values.isEmpty()) {</span>
+<span class="fc" id="L701">			json.append('\n').append(&quot;  &quot;.repeat(indent)); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L708">		return json.append(']');</span>
+<span class="fc" id="L703">		return json.append(']');</span>
 	}
 
 	private static String escape(String value) {
-<span class="fc" id="L712">		StringBuilder escaped= new StringBuilder(value.length() + 16);</span>
-<span class="fc bfc" id="L713" title="All 2 branches covered.">		for (int index= 0; index &lt; value.length(); index++) {</span>
-<span class="fc" id="L714">			char character= value.charAt(index);</span>
-<span class="pc bpc" id="L715" title="7 of 8 branches missed.">			switch (character) {</span>
-<span class="nc" id="L716">			case '&quot;' -&gt; escaped.append(&quot;\\\&quot;&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L717">			case '\\' -&gt; escaped.append(&quot;\\\\&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L718">			case '\b' -&gt; escaped.append(&quot;\\b&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L719">			case '\f' -&gt; escaped.append(&quot;\\f&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L720">			case '\n' -&gt; escaped.append(&quot;\\n&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L721">			case '\r' -&gt; escaped.append(&quot;\\r&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L722">			case '\t' -&gt; escaped.append(&quot;\\t&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L707">		StringBuilder escaped= new StringBuilder(value.length() + 16);</span>
+<span class="fc bfc" id="L708" title="All 2 branches covered.">		for (int index= 0; index &lt; value.length(); index++) {</span>
+<span class="fc" id="L709">			char character= value.charAt(index);</span>
+<span class="pc bpc" id="L710" title="7 of 8 branches missed.">			switch (character) {</span>
+<span class="nc" id="L711">			case '&quot;' -&gt; escaped.append(&quot;\\\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L712">			case '\\' -&gt; escaped.append(&quot;\\\\&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L713">			case '\b' -&gt; escaped.append(&quot;\\b&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L714">			case '\f' -&gt; escaped.append(&quot;\\f&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L715">			case '\n' -&gt; escaped.append(&quot;\\n&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L716">			case '\r' -&gt; escaped.append(&quot;\\r&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L717">			case '\t' -&gt; escaped.append(&quot;\\t&quot;); //$NON-NLS-1$</span>
 			default -&gt; {
-<span class="pc bpc" id="L724" title="1 of 2 branches missed.">				if (character &lt; 0x20) {</span>
-<span class="nc" id="L725">					escaped.append(String.format(&quot;\\u%04x&quot;, Integer.valueOf(character))); //$NON-NLS-1$</span>
-<span class="nc" id="L726">				} else {</span>
-<span class="fc" id="L727">					escaped.append(character);</span>
+<span class="pc bpc" id="L719" title="1 of 2 branches missed.">				if (character &lt; 0x20) {</span>
+<span class="nc" id="L720">					escaped.append(String.format(&quot;\\u%04x&quot;, Integer.valueOf(character))); //$NON-NLS-1$</span>
+<span class="nc" id="L721">				} else {</span>
+<span class="fc" id="L722">					escaped.append(character);</span>
 				}
 			}
 			}
 		}
-<span class="fc" id="L732">		return escaped.toString();</span>
+<span class="fc" id="L727">		return escaped.toString();</span>
 	}
 
 	private static String describeException(Throwable throwable) {
-<span class="fc" id="L736">		StringBuilder description= new StringBuilder();</span>
-<span class="fc" id="L737">		Set&lt;Throwable&gt; visited= java.util.Collections.newSetFromMap(new java.util.IdentityHashMap&lt;&gt;());</span>
-<span class="fc" id="L738">		Throwable current= throwable;</span>
-<span class="pc bpc" id="L739" title="1 of 4 branches missed.">		while (current != null &amp;&amp; visited.add(current)) {</span>
-<span class="pc bpc" id="L740" title="1 of 2 branches missed.">			if (!description.isEmpty()) {</span>
-<span class="nc" id="L741">				description.append(&quot; &lt;- caused by: &quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L731">		StringBuilder description= new StringBuilder();</span>
+<span class="fc" id="L732">		Set&lt;Throwable&gt; visited= java.util.Collections.newSetFromMap(new java.util.IdentityHashMap&lt;&gt;());</span>
+<span class="fc" id="L733">		Throwable current= throwable;</span>
+<span class="pc bpc" id="L734" title="1 of 4 branches missed.">		while (current != null &amp;&amp; visited.add(current)) {</span>
+<span class="pc bpc" id="L735" title="1 of 2 branches missed.">			if (!description.isEmpty()) {</span>
+<span class="nc" id="L736">				description.append(&quot; &lt;- caused by: &quot;); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L743">			description.append(current.getClass().getName());</span>
-<span class="fc" id="L744">			String message= current.getMessage();</span>
-<span class="pc bpc" id="L745" title="2 of 4 branches missed.">			if (message != null &amp;&amp; !message.isBlank()) {</span>
-<span class="fc" id="L746">				description.append(&quot;: &quot;).append(message); //$NON-NLS-1$</span>
+<span class="fc" id="L738">			description.append(current.getClass().getName());</span>
+<span class="fc" id="L739">			String message= current.getMessage();</span>
+<span class="pc bpc" id="L740" title="2 of 4 branches missed.">			if (message != null &amp;&amp; !message.isBlank()) {</span>
+<span class="fc" id="L741">				description.append(&quot;: &quot;).append(message); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L748">			current= current.getCause();</span>
+<span class="fc" id="L743">			current= current.getCause();</span>
 		}
-<span class="fc" id="L750">		return description.toString();</span>
+<span class="fc" id="L745">		return description.toString();</span>
 	}
 
 
 	private static void preserveOriginalLineDelimiters(List&lt;SourceSnapshot&gt; sources)
 			throws IOException, CoreException {
-<span class="fc bfc" id="L756" title="All 2 branches covered.">		for (SourceSnapshot source : sources) {</span>
-<span class="fc" id="L757">			byte[] current= Files.readAllBytes(source.path());</span>
-<span class="fc" id="L758">			byte[] normalized= LineDelimiterPreserver.preserve(</span>
-<span class="fc" id="L759">					source.before(), current, source.file().getCharset());</span>
-<span class="pc bpc" id="L760" title="1 of 2 branches missed.">			if (!Arrays.equals(current, normalized)) {</span>
-<span class="nc" id="L761">				Files.write(source.path(), normalized);</span>
+<span class="fc bfc" id="L751" title="All 2 branches covered.">		for (SourceSnapshot source : sources) {</span>
+<span class="fc" id="L752">			byte[] current= Files.readAllBytes(source.path());</span>
+<span class="fc" id="L753">			byte[] normalized= LineDelimiterPreserver.preserve(</span>
+<span class="fc" id="L754">					source.before(), current, source.file().getCharset());</span>
+<span class="pc bpc" id="L755" title="1 of 2 branches missed.">			if (!Arrays.equals(current, normalized)) {</span>
+<span class="nc" id="L756">				Files.write(source.path(), normalized);</span>
 			}
 		}
-<span class="fc" id="L764">	}</span>
+<span class="fc" id="L759">	}</span>
 
 	private static void createParent(Path path) throws IOException {
-<span class="fc" id="L767">		Path parent= path.getParent();</span>
-<span class="pc bpc" id="L768" title="1 of 2 branches missed.">		if (parent != null) {</span>
-<span class="fc" id="L769">			Files.createDirectories(parent);</span>
+<span class="fc" id="L762">		Path parent= path.getParent();</span>
+<span class="pc bpc" id="L763" title="1 of 2 branches missed.">		if (parent != null) {</span>
+<span class="fc" id="L764">			Files.createDirectories(parent);</span>
 		}
-<span class="fc" id="L771">	}</span>
+<span class="fc" id="L766">	}</span>
 
 	private static void printUsage() {
-<span class="nc" id="L774">		System.out.println(&quot;&quot;&quot;</span>
+<span class="nc" id="L769">		System.out.println(&quot;&quot;&quot;</span>
 				Usage: eclipse -nosplash -data &lt;workspace&gt;
 				  -application org.sandbox.jdt.core.ProjectWideJavaCleanup
 				  --project &lt;workspace-project&gt;
@@ -783,11 +778,11 @@ import org.sandbox.jdt.internal.common.PdeManifestImportUpdater;
 				  [--mode check|apply]
 				  [--batch-max-files &lt;positive number&gt; [--batch &lt;id&gt; --batch-receipt &lt;receipt&gt;]]
 				&quot;&quot;&quot;); //$NON-NLS-1$
-<span class="nc" id="L786">	}</span>
+<span class="nc" id="L781">	}</span>
 
 	@Override
 	public void stop() {
 		// Nothing to stop.
-<span class="nc" id="L791">	}</span>
+<span class="nc" id="L786">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
