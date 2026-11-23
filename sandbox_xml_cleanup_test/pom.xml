@@ -26,6 +26,29 @@
 		</testResources>
 		<plugins>
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>3.5.0</version>
+				<executions>
+					<execution>
+						<?m2e execute onConfiguration?>
+						<id>shared-pinned-git-fixture</id>
+						<phase>generate-sources</phase>
+						<goals><goal>copy-resources</goal></goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}/generated-sources/upstream-fixture</outputDirectory>
+							<resources>
+								<resource>
+									<directory>${project.basedir}/../sandbox_common_test/src</directory>
+									<filtering>false</filtering>
+									<includes><include>org/sandbox/jdt/triggerpattern/test/policy/PinnedGitRepository.java</include></includes>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>tycho-surefire-plugin</artifactId>
 				<version>${tycho-version}</version>
@@ -60,11 +83,12 @@
 						<version>${tycho-version}</version>
 						<configuration>
 							<failIfNoTests>true</failIfNoTests>
+							<useUIHarness>false</useUIHarness>
 							<testClass>org.sandbox.jdt.internal.corext.fix.helper.PinnedJdtXmlCorpusTest</testClass>
 							<systemProperties>
 								<sandbox.repository.root>${maven.multiModuleProjectDirectory}</sandbox.repository.root>
-								<sandbox.xml.corpus.jdtCore>${sandbox.xml.corpus.jdtCore}</sandbox.xml.corpus.jdtCore>
-								<sandbox.xml.corpus.jdtUi>${sandbox.xml.corpus.jdtUi}</sandbox.xml.corpus.jdtUi>
+								<sandbox.xml.corpus.family>${sandbox.xml.corpus.family}</sandbox.xml.corpus.family>
+								<sandbox.xml.corpus.output>${project.build.directory}/xml-upstream-corpus</sandbox.xml.corpus.output>
 								<sandbox.xml.corpus.required>true</sandbox.xml.corpus.required>
 							</systemProperties>
 						</configuration>
