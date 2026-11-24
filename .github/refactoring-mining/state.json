@@ -5536,9 +5536,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "lastProcessedCommit": "a3912fca1065ff255eb2c19cea6532b539237b46",
-      "lastProcessedDate": "2026-11-23T03:28:39.762036397Z",
-      "totalProcessed": 1487,
+      "lastProcessedCommit": "de6d60268c660a17185ad13cc70b4eace8844dec",
+      "lastProcessedDate": "2026-11-24T02:23:23.484643761Z",
+      "totalProcessed": 1555,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -6368,6 +6368,42 @@
           "deferredAt": "2026-11-23T03:28:09.210015331Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "72950dab366c048a5119c995ea591dbaba477803",
+          "message": "[nobug] provide project-specific API Tools settings",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-24T02:15:51.451435743Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "99b365ce371c92956e3cdfde474dda4eeba5ad20",
+          "message": "[nobug] remove deprecation warnings",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-24T02:16:17.611299394Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0b43daea969cfa3ec086cfdb193e1118e7f5d491",
+          "message": "Bug 414212 - Add mixed mode launching examples ",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-24T02:18:37.077574610Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "779bd79172850c4a8bb5cc170b763cde5c62457d",
+          "message": "Bug 415350 - Remove JDT Debug requirement from mixedmode example",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-24T02:19:30.706015564Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -6430,10 +6466,11 @@
         "Java Modernization": 1,
         "Method Call Renaming": 1,
         "Constant Usage": 1,
-        "API modernization": 1
+        "API modernization": 1,
+        "JUnit Modernization": 1
       },
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 55068
+  "globalTotalProcessed": 55136
 }
