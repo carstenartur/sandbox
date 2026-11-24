@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "1ecfbbc4acd3a79b2fca4e514955a41c254c88ed1bcfe2af67c9300867851ead",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "junit.framework.Assert.fail($args$) :: enclosingClassExtends(\"junit.framework.TestCase\")\n\u003d\u003e fail($args$)\n;;",
+  "beforeExample": "import junit.framework.Assert;\nimport junit.framework.TestCase;\n\npublic class MyTest extends TestCase {\n    public void testSomething() {\n        String message \u003d \"failed\";\n        Assert.fail(message);\n    }\n    public void anotherTest() {\n        System.out.println(\"No assert here\");\n    }\n}",
+  "afterExample": "import junit.framework.TestCase;\n\npublic class MyTest extends TestCase {\n    public void testSomething() {\n        String message \u003d \"failed\";\n        fail(message);\n    }\n    public void anotherTest() {\n        System.out.println(\"No assert here\");\n    }\n}",
+  "negativeExample": "import junit.framework.Assert;\n\npublic class MyUtility {\n    public void doWork() {\n        // This should not match, as MyUtility does not extend TestCase.\n        Assert.fail(\"This should not be replaced.\");\n    }\n}",
+  "targetHintFile": "junit.sandbox-hint",
+  "sourceCommit": "8a2aac38ff9dca4488d339516ffc022dd83382d1",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "sourceEvidence": {
+    "path": "org.eclipse.debug.tests/src/org/eclipse/debug/tests/breakpoint/BreakpointOrderingTests.java",
+    "before": "\t\t\t\tAssert.fail(\"Unexpected exception: \" + e.toString());",
+    "after": "\t\t\t\tfail(\"Unexpected exception: \" + e.toString());",
+    "diffHunk": "diff --git a/org.eclipse.debug.tests/src/org/eclipse/debug/tests/breakpoint/BreakpointOrderingTests.java b/org.eclipse.debug.tests/src/org/eclipse/debug/tests/breakpoint/BreakpointOrderingTests.java\nindex e846d29..9625404 100644\n--- a/org.eclipse.debug.tests/src/org/eclipse/debug/tests/breakpoint/BreakpointOrderingTests.java\n+++ b/org.eclipse.debug.tests/src/org/eclipse/debug/tests/breakpoint/BreakpointOrderingTests.java\n@@ -75,7 +74,7 @@\n \t\t\t\tResourcesPlugin.getWorkspace().run( wr, null );\n \t\t\t}\n \t\t\tcatch ( CoreException e ) {\n-\t\t\t\tAssert.fail(\"Unexpected exception: \" + e.toString());\n+\t\t\t\tfail(\"Unexpected exception: \" + e.toString());\n \t\t\t}\n \t\t\t\n \t\t}\n"
+  },
+  "category": "JUnit Modernization",
+  "summary": "Replace deprecated `junit.framework.Assert.fail()` calls with the inherited `fail()` method when the enclosing class extends `junit.framework.TestCase`.",
+  "sourceVersion": "8",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-24T02:16:43.724795051Z",
+  "ruleFingerprint": "sha256:a1913557bffc78f070725b1e40dc9b286675922c824f23908428c1910b961862",
+  "behaviorFingerprint": "sha256:7fd1750158d27bb0a6d7c1ee219aba2b9508ac5bfdf63ddf63be59da274a527a",
+  "verification": {
+    "successful": false,
+    "stage": "DEPENDENCY_RESOLUTION",
+    "message": "Java compile error at line 1: The import junit cannot be resolved",
+    "verifiedAt": "2026-11-24T02:23:49.810078408Z",
+    "verifierVersion": "9",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

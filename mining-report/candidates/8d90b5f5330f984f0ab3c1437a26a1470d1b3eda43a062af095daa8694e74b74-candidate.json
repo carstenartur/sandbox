@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 3: The import org.eclipse.search cannot be resolved",
-    "verifiedAt": "2026-11-23T03:28:54.132237424Z",
+    "verifiedAt": "2026-11-24T02:23:45.394954923Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0

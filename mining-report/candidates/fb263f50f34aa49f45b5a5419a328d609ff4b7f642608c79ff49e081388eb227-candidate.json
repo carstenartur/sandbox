@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 12: org.eclipse.jface.text.hyperlink.IHyperlink cannot be resolved to a type",
-    "verifiedAt": "2026-11-23T03:28:54.427922559Z",
+    "verifiedAt": "2026-11-24T02:23:45.776187329Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
