@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-11-23
+# Refactoring Mining Report — 2026-11-24
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -9,7 +9,7 @@
 | eclipse.platform | 311 | 71 | 4 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
-| sandbox | 2097 | 189 | 10 |
+| sandbox | 2115 | 190 | 10 |
 
 ## Details
 ### eclipse.jdt.core
@@ -358,7 +358,7 @@
 - `sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/JHViewContentProvider.java:103` — `Arrays.asList(packageRoot.getJavaProject().getPackageFragments()).stream().fo...` → `Arrays.asList(packageRoot.getJavaProject().getPackageFragments()).forEach((pa...`
 
 #### Rule: `stream-performance` → `stream-performance.sorted-before-collect.review`
-- `sandbox_distribution_verify/src/main/java/org/sandbox/distribution/AggregateInstallationVerifier.java:944` — `variable.getModifiers().stream().map(modifier -> modifier.name().toLowerCase(...`
+- `sandbox_distribution_verify/src/main/java/org/sandbox/distribution/AggregateInstallationVerifier.java:1045` — `variable.getModifiers().stream().map(modifier -> modifier.name().toLowerCase(...`
 - `sandbox_common/src/org/sandbox/jdt/cleanup/multifile/GeneratedNameAllocator.java:205` — `group.stream().map(NestedTypeRequest::requestId).filter(candidateId -> !candi...`
 
 #### Rule: `arrays` → `arrays.clone.review`
@@ -392,8 +392,9 @@
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/cleanup/multifile/api/LineDelimiterPreserver.java:79` — `byteOrderMark.clone()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/cleanup/multifile/api/LineDelimiterPreserver.java:224` — `bytes.clone()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/cleanup/multifile/api/LineDelimiterPreserver.java:229` — `bytes.clone()`
-- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java:279` — `fixes.clone()`
-- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java:881` — `fixes.clone()`
+- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java:353` — `fixes.clone()`
+- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java:302` — `fixes.clone()`
+- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java:1104` — `fixes.clone()`
 - `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/StreamChainToLoopTest.java:106` — `cleanups.clone()`
 - `sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/JUnit3LifecycleDiagnosticTest.java:105` — `unit.getJavaProject().getRawClasspath().clone()`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapperPersistedClasspathTest.java:120` — `arguments.clone()`
@@ -487,14 +488,14 @@
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java:1214` — `version == null || version.isEmpty()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/HintFileStore.java:518` — `hintFile.getTags() == null || hintFile.getTags().isEmpty()`
 - `sandbox_triggerpattern/src/org/sandbox/jdt/internal/ui/wizard/NewSandboxHintFileWizardPage.java:211` — `selection == null || selection.isEmpty()`
-- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java:529` — `units == null || units.isEmpty()`
+- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java:737` — `units == null || units.isEmpty()`
 - `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitMigrationPlan.java:123` — `blockedRuleUnitHandles == null || blockedRuleUnitHandles.isEmpty()`
 - `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/RunWithJUnitPlugin.java:161` — `runnerQualifiedName == null || runnerQualifiedName.isEmpty()`
 - `sandbox-functional-converter-core/src/main/java/org/sandbox/functional/core/renderer/StringRenderer.java:119` — `comparatorExpression == null || comparatorExpression.isEmpty()`
 - `sandbox-functional-converter-core/src/main/java/org/sandbox/functional/core/renderer/StringRenderer.java:202` — `rawComment == null || rawComment.isEmpty()`
 - `sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/VariableNameSuggester.java:122` — `str == null || str.isEmpty()`
 - `sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/VariableNameSuggester.java:135` — `str == null || str.isEmpty()`
-- `sandbox_int_to_enum/src/org/sandbox/jdt/internal/ui/fix/IntToEnumCleanUpCore.java:271` — `units == null || units.isEmpty()`
+- `sandbox_int_to_enum/src/org/sandbox/jdt/internal/ui/fix/IntToEnumCleanUpCore.java:283` — `units == null || units.isEmpty()`
 - `sandbox_int_to_enum/src/org/sandbox/jdt/internal/corext/fix/helper/SwitchIntToEnumHelper.java:204` — `names == null || names.isEmpty()`
 - `sandbox_mining_core/src/main/java/org/sandbox/mining/core/report/StatisticsCollector.java:237` — `evaluations == null || evaluations.isEmpty()`
 - `sandbox_method_reuse/src/org/sandbox/jdt/internal/corext/fix/helper/lib/SideEffectAnalyzer.java:47` — `statements == null || statements.isEmpty()`
@@ -531,10 +532,10 @@
 - `sandbox_common_core/src/test/java/org/sandbox/jdt/triggerpattern/test/SideEffectGuardTest.java:177` — `optional.isPresent() ? optional.get() : empty[0]`
 
 #### Rule: `modernize-java9` → `modernize-java16.stream-collect-tolist.consider-stream-tolist`
-- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java:395` — `computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collector...`
+- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java:603` — `computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collector...`
 - `sandbox_use_general_type/src/org/sandbox/jdt/internal/ui/fix/UseGeneralTypeCleanUpCore.java:83` — `computeFixSet().stream().map(UseGeneralTypeFixCore::toString).collect(Collect...`
 - `sandbox_tools/src/org/sandbox/jdt/internal/ui/fix/UseIteratorToForLoopCleanUpCore.java:87` — `computeFixSet().stream().map(UseIteratorToForLoopFixCore::toString).collect(C...`
 - `sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/ui/fix/UseExplicitEncodingCleanUpCore.java:209` — `computeFixSet().stream().map(UseExplicitEncodingFixCore::toString).collect(Co...`
-- `sandbox_int_to_enum/src/org/sandbox/jdt/internal/ui/fix/IntToEnumCleanUpCore.java:213` — `computeFixSet().stream().map(IntToEnumFixCore::toString).collect(Collectors.t...`
+- `sandbox_int_to_enum/src/org/sandbox/jdt/internal/ui/fix/IntToEnumCleanUpCore.java:219` — `computeFixSet().stream().map(IntToEnumFixCore::toString).collect(Collectors.t...`
 - `sandbox_platform_helper/src/org/sandbox/jdt/internal/ui/fix/SimplifyPlatformStatusCleanUpCore.java:90` — `computeFixSet().stream().map(SimplifyPlatformStatusFixCore::toString).collect...`
 

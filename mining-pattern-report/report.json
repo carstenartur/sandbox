@@ -1,6 +1,6 @@
 {
   "summary": {
-    "totalMatches": 459,
+    "totalMatches": 460,
     "repositories": {
       "eclipse.jdt.core": {
         "files": 227,
@@ -33,8 +33,8 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 2097,
-        "matches": 189,
+        "files": 2115,
+        "matches": 190,
         "rules": 10
       }
     }
@@ -2390,7 +2390,7 @@
       "hintFile": "stream-performance",
       "rule": "stream-performance.sorted-before-collect.review",
       "file": "sandbox_distribution_verify/src/main/java/org/sandbox/distribution/AggregateInstallationVerifier.java",
-      "line": 944,
+      "line": 1045,
       "matchedCode": "variable.getModifiers().stream().map(modifier -> modifier.name().toLowerCase(java.util.Locale.ROOT)).sorted().collect(java.util.stream.Collectors.joining(\" \"))"
     },
     {
@@ -2701,8 +2701,8 @@
       "repository": "sandbox",
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
-      "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java",
-      "line": 279,
+      "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java",
+      "line": 353,
       "matchedCode": "fixes.clone()"
     },
     {
@@ -2710,7 +2710,15 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java",
-      "line": 881,
+      "line": 302,
+      "matchedCode": "fixes.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java",
+      "line": 1104,
       "matchedCode": "fixes.clone()"
     },
     {
@@ -3358,7 +3366,7 @@
       "hintFile": "string-equals",
       "rule": "string-equals.null-or-empty.review",
       "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java",
-      "line": 529,
+      "line": 737,
       "matchedCode": "units == null || units.isEmpty()"
     },
     {
@@ -3414,7 +3422,7 @@
       "hintFile": "string-equals",
       "rule": "string-equals.null-or-empty.review",
       "file": "sandbox_int_to_enum/src/org/sandbox/jdt/internal/ui/fix/IntToEnumCleanUpCore.java",
-      "line": 271,
+      "line": 283,
       "matchedCode": "units == null || units.isEmpty()"
     },
     {
@@ -3678,7 +3686,7 @@
       "hintFile": "modernize-java9",
       "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
       "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java",
-      "line": 395,
+      "line": 603,
       "matchedCode": "computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collectors.toList())"
     },
     {
@@ -3710,7 +3718,7 @@
       "hintFile": "modernize-java9",
       "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
       "file": "sandbox_int_to_enum/src/org/sandbox/jdt/internal/ui/fix/IntToEnumCleanUpCore.java",
-      "line": 213,
+      "line": 219,
       "matchedCode": "computeFixSet().stream().map(IntToEnumFixCore::toString).collect(Collectors.toList())"
     },
     {
