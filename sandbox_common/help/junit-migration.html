@@ -19,6 +19,15 @@
 <h2>Execution-tree verification</h2>
 <p><code>ExecutionTreeSnapshot</code> captures completed test containers and tests without retaining JUnit or Eclipse model objects. <code>ExecutionTreeComparator</code> applies an explicit policy for identity, nesting, order, results and attributes. Duplicate occurrences are always preserved; there is no set-only comparison that could hide a lost or duplicated test.</p>
 <h2>Current boundary</h2>
-<p>The generic plan, action and execution-tree layers are intended to support later JUnit 4 runner, suite, <code>@Rule</code> and <code>@ClassRule</code> migrations. Each new recipe must define its own discovery plan and runtime-equivalence policy instead of adding another Java-side special operation.</p>
+<p>Coordinated resource, suite and Parameterized migrations have their own discovery and execution contracts.
+The closed constant-row Parameterized strategy requires Jupiter's <code>ParameterizedClass</code> and reports
+<code>PARAMETERIZED_CLASS_READY</code>. A plan reporting <code>PARAMETERIZED_RUNTIME_VERIFICATION_REQUIRED</code>
+is discovery evidence only. Runtime regression coverage qualifies the supported strategy; users must also
+execute their migrated tests. Each additional recipe needs its own discovery plan and runtime-equivalence policy.</p>
+<p>Mixed <code>@Rule</code>/<code>@ClassRule</code> use remains outside automatic migration. The separate staged
+support jar permits manual <code>perTest</code> and <code>perClass</code> registrations while retaining fixture
+instances. The jar targets Java 21 for consumer tests. The Sandbox build and native PDE tests require Java 25.
+Set up the dependency and any required PDE service registration explicitly. Custom rule wrappers require
+manual migration.</p>
 </body>
 </html>

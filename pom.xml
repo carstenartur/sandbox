@@ -31,6 +31,7 @@
 		<central.skipPublishing>true</central.skipPublishing>
 		<!-- One property keeps every Tycho extension and plugin on one version. -->
 		<tycho-version>5.0.4</tycho-version>
+		<junit.version>6.1.3</junit.version>
 		<rcp-version>eclipse</rcp-version>
 		<!-- <rcp-version>2021-03</rcp-version> -->
 		<jacoco-version>0.8.15</jacoco-version>
@@ -78,6 +79,8 @@
 		<module>sandbox_common_core</module>
 		<module>sandbox_mining_cli</module>
 		<module>sandbox_mining_core</module>
+		<module>sandbox-junit-migration-support</module>
+		<module>sandbox_junit_migration_support_test</module>
 		<module>sandbox-ast-api</module>
 		<module>sandbox-ast-api-jdt</module>
 		<module>sandbox-jgit-storage-hibernate</module>
@@ -128,6 +131,7 @@
 		<module>sandbox_jface_cleanup_test</module>
 		<module>sandbox_junit_cleanup</module>
 		<module>sandbox_junit_cleanup_help</module>
+		<module>sandbox_junit_cleanup_jdt5</module>
 		<module>sandbox_junit_cleanup_feature</module>
 		<module>sandbox_junit_cleanup_test</module>
 		<module>sandbox_method_reuse</module>
@@ -402,7 +406,7 @@
 			<dependency>
 				<groupId>org.junit</groupId>
 				<artifactId>junit-bom</artifactId>
-				<version>6.1.3</version>
+				<version>${junit.version}</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>

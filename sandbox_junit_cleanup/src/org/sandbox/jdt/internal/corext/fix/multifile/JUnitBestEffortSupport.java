@@ -10,17 +10,26 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.multifile;
 
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_AFTER;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_AFTERCLASS;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_BEFORE;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_BEFORECLASS;
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_CLASS_RULE;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORY;
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULE;
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULES_EXPECTED_EXCEPTION;
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULES_EXTERNAL_RESOURCE;
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULES_TEMPORARY_FOLDER;
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RUNWITH;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_TEST;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HexFormat;
@@ -32,9 +41,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 
 import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
@@ -47,14 +58,16 @@ import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.Javadoc;
-import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MemberValuePair;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.NormalAnnotation;
+import org.eclipse.jdt.core.dom.RecordDeclaration;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.TagElement;
@@ -71,9 +84,11 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 import org.eclipse.jdt.internal.corext.refactoring.util.RefactoringASTParser;
 import org.eclipse.text.edits.TextEditGroup;
 
+import org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.ParameterizedMigrationEligibility;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleExpectedExceptionJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.RuleExternalResourceJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleTemporayFolderJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RunWithMigrationEligibility;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.TestNameRefactorer;
@@ -93,6 +108,11 @@ public final class JUnitBestEffortSupport {
 	private static final String TIMEOUT= "org.junit.rules.Timeout"; //$NON-NLS-1$
 	private static final String ERROR_COLLECTOR= "org.junit.rules.ErrorCollector"; //$NON-NLS-1$
 	private static final String MARKER_PREFIX= "Sandbox JUnit migration gap "; //$NON-NLS-1$
+	private static final String MIXED_RULE_LIFECYCLE= "MIXED_RULE_LIFECYCLE"; //$NON-NLS-1$
+	private static final String EXTERNAL_RESOURCE_INITIALIZER_UNSUPPORTED= "EXTERNAL_RESOURCE_INITIALIZER_UNSUPPORTED"; //$NON-NLS-1$
+	private static final Set<String> INHERITED_TEST_ANNOTATIONS= Set.of(ORG_JUNIT_TEST, ORG_JUNIT_BEFORE,
+			ORG_JUNIT_AFTER, ORG_JUNIT_BEFORECLASS, ORG_JUNIT_AFTERCLASS, ORG_JUNIT_RULE, ORG_JUNIT_CLASS_RULE,
+			ORG_JUNIT_RUNWITH, ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORY);
 
 	/** One unresolved construct and the exact source type where it must be completed. */
 	public record Gap(String ownerCompilationUnitHandle, String targetTypeBindingKey,
@@ -116,7 +136,10 @@ public final class JUnitBestEffortSupport {
 		}
 	}
 
-	/** Deterministic analysis retained between project planning and per-file fixes. */
+	/**
+	 * Deterministic analysis retained between project planning and per-file fixes.
+	 * The defer flag indicates that some ExternalResource components must be retained.
+	 */
 	public record Analysis(List<Gap> gaps, boolean disableCoordinatedExternalResource) {
 
 		/** Copies and orders all gaps. */
@@ -141,6 +164,13 @@ public final class JUnitBestEffortSupport {
 			}
 			String handle= unit.getPrimary().getHandleIdentifier();
 			return gaps.stream().filter(gap -> handle.equals(gap.ownerCompilationUnitHandle())).toList();
+		}
+
+		/** Returns the compilation units excluded from coordinated ExternalResource rewriting. */
+		public Set<String> retainedExternalResourceCompilationUnitHandles() {
+			return gaps.stream().filter(gap -> MIXED_RULE_LIFECYCLE.equals(gap.reasonCode())
+					|| EXTERNAL_RESOURCE_INITIALIZER_UNSUPPORTED.equals(gap.reasonCode()))
+					.map(Gap::ownerCompilationUnitHandle).collect(java.util.stream.Collectors.toUnmodifiableSet());
 		}
 
 		/** Wraps ordinary planner evidence with explicit manual-completion evidence. */
@@ -182,9 +212,8 @@ public final class JUnitBestEffortSupport {
 
 	private static final class ResourceUsage {
 		private final ITypeBinding binding;
-		private final List<SourceType> owners= new ArrayList<>();
-		private boolean instanceRule;
-		private boolean classRule;
+		private final LinkedHashSet<SourceType> owners= new LinkedHashSet<>();
+		private final EnumSet<RuleKind> ruleKinds= EnumSet.noneOf(RuleKind.class);
 
 		ResourceUsage(ITypeBinding binding) {
 			this.binding= binding;
@@ -274,14 +303,19 @@ public final class JUnitBestEffortSupport {
 		result.retainAll(EnumSet.of(
 				JUnitCleanUpFixCore.ASSERT,
 				JUnitCleanUpFixCore.ASSERT_OPTIMIZATION,
-				JUnitCleanUpFixCore.ASSUME,
 				JUnitCleanUpFixCore.ASSUME_OPTIMIZATION));
 		return result;
 	}
 
-	/** Analyzes all enabled difficult JUnit 4 constructs before cleanup planning. */
+	/** Analyzes enabled JUnit 4 constructs, including references outside the selected source scope. */
 	public static Analysis analyze(IJavaProject project, ICompilationUnit[] units,
-			EnumSet<JUnitCleanUpFixCore> fixes, IProgressMonitor monitor) {
+			EnumSet<JUnitCleanUpFixCore> fixes, IProgressMonitor monitor) throws CoreException {
+		return analyze(project, units, fixes, true, monitor);
+	}
+
+	/** Analyzes JUnit 4 contracts with the retention rules of the selected migration mode. */
+	public static Analysis analyze(IJavaProject project, ICompilationUnit[] units,
+			EnumSet<JUnitCleanUpFixCore> fixes, boolean bestEffort, IProgressMonitor monitor) throws CoreException {
 		Objects.requireNonNull(project);
 		Objects.requireNonNull(units);
 		Objects.requireNonNull(fixes);
@@ -292,6 +326,9 @@ public final class JUnitBestEffortSupport {
 		Map<String, SourceType> sourceTypesByKey= new LinkedHashMap<>();
 		Map<String, Gap> gaps= new LinkedHashMap<>();
 		Map<String, ResourceUsage> usages= new LinkedHashMap<>();
+		Set<SourceType> unsupportedInitializerOwners= new LinkedHashSet<>();
+		boolean migrateExternalResources= fixes.contains(JUnitCleanUpFixCore.EXTERNALRESOURCE)
+				|| fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE);
 
 		for (Map.Entry<String, CompilationUnit> entry : roots.entrySet()) {
 			String handle= entry.getKey();
@@ -348,7 +385,8 @@ public final class JUnitBestEffortSupport {
 					if (ownerDeclaration == null) {
 						return true;
 					}
-					SourceType owner= sourceType(handle, ownerDeclaration);
+					SourceType fallbackOwner= sourceType(handle, ownerDeclaration);
+					SourceType owner= sourceTypesByKey.getOrDefault(fallbackOwner.bindingKey(), fallbackOwner);
 					ITypeBinding fieldType= field.getType().resolveBinding();
 					String qualifiedType= qualifiedName(fieldType);
 					if (fixes.contains(JUnitCleanUpFixCore.RULETEMPORARYFOLDER)
@@ -384,22 +422,40 @@ public final class JUnitBestEffortSupport {
 					RuleKind ruleKind= ruleKind(field);
 					if (ruleKind != RuleKind.NONE) {
 						ITypeBinding resource= resourceTypeBinding(field);
-						if (extendsExternalResource(resource)) {
-							String resourceKey= JUnitMigrationPlan.typeKey(resource);
-							String usageKey= resourceKey == null ? qualifiedName(resource) : resourceKey;
-							if (usageKey != null && !usageKey.isBlank()) {
-								ResourceUsage usage= usages.computeIfAbsent(usageKey,
-										ignored -> new ResourceUsage(resource));
-								usage.owners.add(owner);
-								usage.instanceRule|= ruleKind == RuleKind.INSTANCE;
-								usage.classRule|= ruleKind == RuleKind.CLASS;
-							}
-						} else if (rulesEnabled(fixes) && !isKnownRuleType(qualifiedType)) {
+						boolean resourceRule= extendsExternalResource(resource);
+						boolean unsupportedAnonymous= resourceRule && fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE)
+								&& resource.isAnonymous() && !RuleExternalResourceJUnitPlugin.isEligibleExternalResourceField(field);
+						if (unsupportedAnonymous) {
+							addInheritedAnonymousRuleGaps(gaps, sourceTypesByKey, owner, field, resource);
+						} else if (!resourceRule && rulesEnabled(fixes) && !isKnownRuleType(qualifiedType)) {
 							addGap(gaps, owner, fieldCandidate("rule", field), //$NON-NLS-1$
 									"UNSUPPORTED_JUNIT4_RULE", //$NON-NLS-1$
 									"The rule type " + (qualifiedType == null ? "<unresolved>" : qualifiedType) //$NON-NLS-1$ //$NON-NLS-2$
 											+ " has no proven automatic Jupiter equivalent.", //$NON-NLS-1$
 									"Implement the rule contract as a Jupiter extension, register it explicitly, and then remove the JUnit 4 rule field."); //$NON-NLS-1$
+						}
+						if (!bestEffort) {
+							if (resourceRule && !unsupportedAnonymous) {
+								recordResourceUsage(usages, resource, owner, ruleKind);
+							}
+							return true;
+						}
+						// The planner accepts only single-fragment declarations. Every
+						// initializer still establishes a dependency for retained JUnit 4 fields.
+						boolean multiple= field.fragments().size() > 1;
+						for (Object value : field.fragments()) {
+							ITypeBinding initializer= selectedInitializerFixture((VariableDeclarationFragment) value,
+									multiple, sourceTypesByKey);
+							if (initializer == null && !resourceRule) {
+								continue;
+							}
+							ITypeBinding fixture= initializer == null ? resource : initializer;
+							recordResourceUsage(usages, fixture, owner, unsupportedAnonymous ? RuleKind.NONE : ruleKind);
+							if (migrateExternalResources && (multiple
+									? !selectedResourceChain(fixture, sourceTypesByKey).isEmpty()
+									: initializer != null && !plannerCoversInitializer(resource, initializer, sourceTypesByKey))) {
+								unsupportedInitializerOwners.add(owner);
+							}
 						}
 					}
 					return true;
@@ -407,27 +463,334 @@ public final class JUnitBestEffortSupport {
 			});
 		}
 
-		boolean mixedLifecycle= false;
-		for (Map.Entry<String, ResourceUsage> entry : usages.entrySet()) {
+		if (migrateExternalResources) {
+			addUnselectedResourceCallerGaps(units, roots, sourceTypesByKey, usages, gaps, monitor);
+		}
+
+		boolean retainResources= bestEffort
+				? addRetainedExternalResourceGaps(sourceTypesByKey, usages.values(), unsupportedInitializerOwners, gaps)
+				: addStrictMixedRuleGaps(sourceTypesByKey, usages, gaps);
+		return new Analysis(new ArrayList<>(gaps.values()), retainResources);
+	}
+
+	private static boolean addStrictMixedRuleGaps(Map<String, SourceType> sourceTypes,
+			Map<String, ResourceUsage> usages, Map<String, Gap> gaps) {
+		boolean mixed= false;
+		for (var entry : usages.entrySet()) {
 			ResourceUsage usage= entry.getValue();
-			if (!usage.instanceRule || !usage.classRule) {
-				continue;
-			}
-			mixedLifecycle= true;
-			SourceType target= sourceTypesByKey.get(entry.getKey());
-			if (target == null && !usage.owners.isEmpty()) {
-				target= usage.owners.get(0);
-			}
-			if (target != null) {
+			if (usage.ruleKinds.size() > 1) {
+				mixed= true;
+				SourceType target= sourceTypes.getOrDefault(entry.getKey(), usage.owners.getFirst());
 				String resourceName= qualifiedName(usage.binding);
-				addGap(gaps, target, "external-resource:" //$NON-NLS-1$
-						+ (resourceName == null ? target.name() : resourceName),
-						"MIXED_RULE_LIFECYCLE", //$NON-NLS-1$
+				addGap(gaps, target, "external-resource:" + (resourceName == null ? target.name() : resourceName), //$NON-NLS-1$
+						MIXED_RULE_LIFECYCLE,
 						"The same ExternalResource fixture is used by both @Rule and @ClassRule, so one Jupiter callback lifecycle cannot preserve both contracts.", //$NON-NLS-1$
 						"Split the fixture into separate instance and class extensions, migrate each callback lifecycle, and update the corresponding fields."); //$NON-NLS-1$
 			}
 		}
-		return new Analysis(new ArrayList<>(gaps.values()), mixedLifecycle);
+		return mixed;
+	}
+
+	private static void recordResourceUsage(Map<String, ResourceUsage> usages, ITypeBinding fixture,
+			SourceType owner, RuleKind ruleKind) {
+		String resourceKey= JUnitMigrationPlan.typeKey(fixture);
+		String usageKey= resourceKey == null ? qualifiedName(fixture) : resourceKey;
+		if (usageKey != null && !usageKey.isBlank()) {
+			ResourceUsage usage= usages.computeIfAbsent(usageKey, ignored -> new ResourceUsage(fixture));
+			usage.owners.add(owner);
+			// An unsupported anonymous rule still depends on its source fixture.
+			if (ruleKind != RuleKind.NONE) {
+				usage.ruleKinds.add(ruleKind);
+			}
+		}
+	}
+
+	private static boolean addRetainedExternalResourceGaps(Map<String, SourceType> sourceTypes,
+			Collection<ResourceUsage> usages, Set<SourceType> unsupportedInitializerOwners, Map<String, Gap> gaps) {
+		// The planner can change hooks on the inherited source fixture as well as
+		// the concrete fixture. The binary JUnit base does not couple those hooks.
+		Map<String, EnumSet<RuleKind>> ruleKindsByFixture= new LinkedHashMap<>();
+		Set<SourceType> mixed= new LinkedHashSet<>();
+		for (ResourceUsage usage : usages) {
+			// Keep the established protection for uses with the same exact binding,
+			// including when the ordinary binding is the only evidence available.
+			if (usage.ruleKinds.size() > 1) {
+				mixed.addAll(usage.owners);
+			}
+			for (String key : selectedResourceChain(usage.binding, sourceTypes)) {
+				ruleKindsByFixture.computeIfAbsent(key, ignored -> EnumSet.noneOf(RuleKind.class))
+						.addAll(usage.ruleKinds);
+			}
+		}
+		ruleKindsByFixture.forEach((key, kinds) -> {
+			if (kinds.size() > 1) {
+				mixed.add(sourceTypes.get(key));
+			}
+		});
+		if (mixed.isEmpty() && unsupportedInitializerOwners.isEmpty()) {
+			return false;
+		}
+
+		Map<SourceType, Set<SourceType>> relatedTypes= resourceRelationships(sourceTypes, usages, mixed);
+		expandResourceComponent(relatedTypes, mixed);
+		for (SourceType type : mixed) {
+			addGap(gaps, type, "external-resource:" + type.name(), //$NON-NLS-1$
+					MIXED_RULE_LIFECYCLE,
+					"This type is coupled to an ExternalResource hierarchy used by both @Rule and @ClassRule, so one Jupiter callback lifecycle cannot preserve both contracts.", //$NON-NLS-1$
+					"Split the fixture into separate instance and class extensions, then migrate the related fixtures, rules and test lifecycle together."); //$NON-NLS-1$
+		}
+		// A component reached by a mixed fixture already has an actionable gap.
+		unsupportedInitializerOwners.removeAll(mixed);
+		expandResourceComponent(relatedTypes, unsupportedInitializerOwners);
+		for (SourceType type : unsupportedInitializerOwners) {
+			addGap(gaps, type, "external-resource-initializer:" + type.name(), //$NON-NLS-1$
+					EXTERNAL_RESOURCE_INITIALIZER_UNSUPPORTED,
+					"A Rule initializer identifies a source fixture that the existing Rule rewrite cannot migrate together with its field.", //$NON-NLS-1$
+					"Migrate the fixture, its initializer and all related rules and tests together, or retain their JUnit 4 contract."); //$NON-NLS-1$
+		}
+		return true;
+	}
+
+	private static Map<SourceType, Set<SourceType>> resourceRelationships(Map<String, SourceType> sourceTypes,
+			Collection<ResourceUsage> usages, Set<SourceType> mixed) {
+		Map<SourceType, Set<SourceType>> relatedTypes= new LinkedHashMap<>();
+		Set<SourceType> testContracts= new LinkedHashSet<>();
+		for (SourceType type : sourceTypes.values()) {
+			if (declaresJUnit4TestContract(type.declaration())) {
+				testContracts.add(type);
+			}
+		}
+		for (SourceType type : sourceTypes.values()) {
+			for (String key : selectedResourceChain(type.binding(), sourceTypes)) {
+				connect(relatedTypes, type, sourceTypes.get(key));
+			}
+			// A retained test requires the source annotations on its superclasses.
+			// Their other subclasses can also consume those same annotations.
+			for (ITypeBinding ancestor= type.binding().getSuperclass();
+					ancestor != null && !ancestor.isRecovered(); ancestor= ancestor.getSuperclass()) {
+				SourceType declaration= sourceTypes.get(JUnitMigrationPlan.typeKey(ancestor));
+				if (testContracts.contains(declaration)) {
+					connect(relatedTypes, type, declaration);
+				}
+			}
+		}
+		for (ResourceUsage usage : usages) {
+			Set<String> fixtures= selectedResourceChain(usage.binding, sourceTypes);
+			if (!fixtures.isEmpty()) {
+				SourceType fixture= sourceTypes.get(fixtures.iterator().next());
+				for (SourceType owner : usage.owners) {
+					connect(relatedTypes, fixture, owner);
+				}
+			}
+		}
+
+		// Suppressing a lifecycle rewrite applies to the whole file. Carry
+		// that restriction to contracts declared beside an affected type.
+		Set<SourceType> participants= new LinkedHashSet<>(mixed);
+		participants.addAll(relatedTypes.keySet());
+		Map<String, SourceType> firstTypeByUnit= new LinkedHashMap<>();
+		for (SourceType type : participants) {
+			SourceType first= firstTypeByUnit.putIfAbsent(type.unitHandle(), type);
+			if (first != null) {
+				connect(relatedTypes, first, type);
+			}
+		}
+
+		return relatedTypes;
+	}
+
+	private static void expandResourceComponent(Map<SourceType, Set<SourceType>> relatedTypes, Set<SourceType> affected) {
+		ArrayDeque<SourceType> pending= new ArrayDeque<>(affected);
+		while (!pending.isEmpty()) {
+			for (SourceType related : relatedTypes.getOrDefault(pending.removeFirst(), Set.of())) {
+				if (affected.add(related)) {
+					pending.addLast(related);
+				}
+			}
+		}
+	}
+
+	private static void connect(Map<SourceType, Set<SourceType>> relatedTypes, SourceType first, SourceType second) {
+		if (!first.equals(second)) {
+			relatedTypes.computeIfAbsent(first, ignored -> new LinkedHashSet<>()).add(second);
+			relatedTypes.computeIfAbsent(second, ignored -> new LinkedHashSet<>()).add(first);
+		}
+	}
+
+	private static boolean declaresJUnit4TestContract(TypeDeclaration declaration) {
+		return hasInheritedTestAnnotation(declaration.modifiers())
+				|| Arrays.stream(declaration.getMethods()).anyMatch(method -> hasInheritedTestAnnotation(method.modifiers()))
+				|| Arrays.stream(declaration.getFields()).anyMatch(field -> hasInheritedTestAnnotation(field.modifiers()));
+	}
+
+	private static boolean hasInheritedTestAnnotation(List<?> modifiers) {
+		for (Object modifier : modifiers) {
+			if (modifier instanceof Annotation annotation) {
+				ITypeBinding binding= annotation.resolveTypeBinding();
+				if (binding != null && !binding.isRecovered() && INHERITED_TEST_ANNOTATIONS.contains(qualifiedName(binding))) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	private static void addUnselectedResourceCallerGaps(ICompilationUnit[] units,
+			Map<String, CompilationUnit> roots,
+			Map<String, SourceType> sourceTypes, Map<String, ResourceUsage> usages,
+			Map<String, Gap> gaps, IProgressMonitor monitor) throws CoreException {
+		List<ICompilationUnit> selected= Arrays.asList(units);
+		List<IJavaProject> projects= JavaProjectCompilationUnits.owningProjects(selected);
+		ExternalResourceReferenceSearch references= new ExternalResourceReferenceSearch(projects, selected);
+		Map<String, Set<IJavaElement>> exposures= resourceExposures(roots, sourceTypes);
+		Set<String> blocked= new LinkedHashSet<>();
+		for (SourceType type : sourceTypes.values()) {
+			if (!extendsExternalResource(type.binding())) {
+				continue;
+			}
+			// The native ICleanUp lifecycle need not invoke optional scope expansion.
+			// A full project selection alone does not close a shared fixture's callers.
+			if (!(type.binding().getJavaElement() instanceof IType modelType)) {
+				blocked.add(type.bindingKey());
+				continue;
+			}
+			List<IJavaElement> contract= new ArrayList<>();
+			contract.add(modelType);
+			contract.addAll(exposures.getOrDefault(type.bindingKey(), Set.of()));
+			// Mixed type/member OR patterns can turn accurate JDT matches into
+			// inaccurate ones. Prove each binding-derived target independently.
+			for (IJavaElement target : contract) {
+				if (target == null || !references.allReferencesSelected(target, monitor)) {
+					blocked.add(type.bindingKey());
+					break;
+				}
+			}
+		}
+		if (blocked.isEmpty()) {
+			return;
+		}
+
+		// Renaming one callback in a selected superclass chain would also break any
+		// retained sibling/subclass. Preserve only the connected resource contract.
+		boolean expanded;
+		do {
+			expanded= false;
+			for (SourceType type : sourceTypes.values()) {
+				Set<String> chain= selectedResourceChain(type.binding(), sourceTypes);
+				if (chain.stream().anyMatch(blocked::contains)) {
+					expanded|= blocked.addAll(chain);
+				}
+			}
+		} while (expanded);
+
+		String reason= "EXTERNAL_RESOURCE_CALLER_OUT_OF_SCOPE"; //$NON-NLS-1$
+		String explanation= "An ExternalResource contract has a reference outside the selected source scope or an unresolved reference; its existing JUnit 4 callers must keep before()/after() and Rule behavior."; //$NON-NLS-1$
+		String remediation= "Select the complete fixture and caller contract for coordinated migration, or retain this fixture and its JUnit 4 consumers."; //$NON-NLS-1$
+		for (String key : blocked) {
+			SourceType type= sourceTypes.get(key);
+			addGap(gaps, type, "external-resource:" + type.name(), reason, explanation, remediation); //$NON-NLS-1$
+		}
+		for (ResourceUsage usage : usages.values()) {
+			if (!usage.ruleKinds.isEmpty()
+					&& selectedResourceChain(usage.binding, sourceTypes).stream().anyMatch(blocked::contains)) {
+				for (SourceType owner : usage.owners) {
+					addGap(gaps, owner, "external-resource:" + qualifiedName(usage.binding), //$NON-NLS-1$
+							reason, explanation, remediation);
+				}
+			}
+		}
+	}
+
+	private static Map<String, Set<IJavaElement>> resourceExposures(Map<String, CompilationUnit> roots,
+			Map<String, SourceType> sourceTypes) {
+		Map<String, Set<IJavaElement>> exposures= new LinkedHashMap<>();
+		for (CompilationUnit root : roots.values()) {
+			root.accept(new ASTVisitor() {
+				@Override
+				public boolean visit(MethodDeclaration method) {
+					if (method.getReturnType2() != null) {
+						var binding= method.resolveBinding();
+						addExposure(method.getReturnType2().resolveBinding(),
+								binding == null ? null : binding.getJavaElement());
+					}
+					return true;
+				}
+
+				@Override
+				public boolean visit(VariableDeclarationFragment variable) {
+					if (variable.getParent() instanceof FieldDeclaration field) {
+						var binding= variable.resolveBinding();
+						addExposure(binding == null ? field.getType().resolveBinding() : binding.getType(),
+								binding == null ? null : binding.getJavaElement());
+					}
+					return true;
+				}
+
+				@Override
+				public boolean visit(SingleVariableDeclaration variable) {
+					if (variable.getParent() instanceof RecordDeclaration) {
+						var binding= variable.resolveBinding();
+						addExposure(binding == null ? variable.getType().resolveBinding() : binding.getType(),
+								binding == null ? null : binding.getJavaElement());
+					}
+					return true;
+				}
+
+				private void addExposure(ITypeBinding type, IJavaElement declaration) {
+					addExposure(type, declaration, new LinkedHashSet<>());
+				}
+
+				private void addExposure(ITypeBinding type, IJavaElement declaration, Set<String> visited) {
+					if (type == null || !visited.add(type.getKey())) {
+						return;
+					}
+					// Callers of a factory or field need not name the resource type. Its
+					// declared source signature still exposes that exact Rule contract.
+					for (String key : selectedResourceChain(type, sourceTypes)) {
+						exposures.computeIfAbsent(key, _ -> new LinkedHashSet<>()).add(declaration);
+					}
+					if (type.isArray()) {
+						addExposure(type.getElementType(), declaration, visited);
+					}
+					for (ITypeBinding argument : type.getTypeArguments()) {
+						addExposure(argument, declaration, visited);
+					}
+					for (ITypeBinding bound : type.getTypeBounds()) {
+						addExposure(bound, declaration, visited);
+					}
+					addExposure(type.getBound(), declaration, visited);
+				}
+			});
+		}
+		return exposures;
+	}
+
+	private static Set<String> selectedResourceChain(ITypeBinding binding, Map<String, SourceType> sourceTypes) {
+		Set<String> chain= new LinkedHashSet<>();
+		if (extendsExternalResource(binding)) {
+			for (ITypeBinding current= binding; current != null
+					&& !ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(qualifiedName(current)); current= current.getSuperclass()) {
+				String key= JUnitMigrationPlan.typeKey(current);
+				if (sourceTypes.containsKey(key)) chain.add(key);
+			}
+		}
+		return chain;
+	}
+
+	private static void addInheritedAnonymousRuleGaps(Map<String, Gap> gaps, Map<String, SourceType> sourceTypes,
+			SourceType owner, FieldDeclaration field, ITypeBinding resource) {
+		String candidate= fieldCandidate("anonymous-external-resource", field); //$NON-NLS-1$
+		String reason= "INHERITED_ANONYMOUS_EXTERNAL_RESOURCE"; //$NON-NLS-1$
+		String explanation= "An anonymous rule inherits lifecycle or helper behavior from a custom ExternalResource superclass; copying only its body cannot preserve that contract."; //$NON-NLS-1$
+		String remediation= "Retain the JUnit 4 rule, or migrate its complete superclass contract to a Jupiter extension before changing the test lifecycle."; //$NON-NLS-1$
+		addGap(gaps, owner, candidate, reason, explanation, remediation);
+		// A selected source superclass must also retain before()/after() while the
+		// anonymous JUnit 4 consumer continues to invoke those inherited methods.
+		for (ITypeBinding current= resource.getSuperclass(); current != null
+				&& !ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(qualifiedName(current)); current= current.getSuperclass()) {
+			SourceType superclass= sourceTypes.get(JUnitMigrationPlan.typeKey(current));
+			if (superclass != null) addGap(gaps, superclass, candidate, reason, explanation, remediation);
+		}
 	}
 
 	/** Adds one idempotent marker operation for the supplied compilation-unit gaps. */
@@ -659,6 +1022,39 @@ public final class JUnitBestEffortSupport {
 			}
 		}
 		return field.getType().resolveBinding();
+	}
+
+	private static ITypeBinding selectedInitializerFixture(VariableDeclarationFragment fragment, boolean multiple,
+			Map<String, SourceType> sourceTypes) {
+		Expression initializer= fragment.getInitializer();
+		if (initializer == null || !multiple && initializer instanceof ClassInstanceCreation) {
+			return null;
+		}
+		ITypeBinding binding= initializer.resolveTypeBinding();
+		return binding != null && !binding.isRecovered() && !selectedResourceChain(binding, sourceTypes).isEmpty()
+				? binding : null;
+	}
+
+	// For a factory or parenthesized expression the planner starts at the declared
+	// field type. Every callback below it would miss the Rule's coordinated lifecycle.
+	private static boolean plannerCoversInitializer(ITypeBinding plannedFixture, ITypeBinding initializer,
+			Map<String, SourceType> sourceTypes) {
+		String plannedKey= JUnitMigrationPlan.typeKey(plannedFixture);
+		boolean inPlannedChain= false;
+		for (ITypeBinding current= initializer; current != null && !current.isRecovered(); current= current.getSuperclass()) {
+			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(qualifiedName(current))) {
+				return inPlannedChain;
+			}
+			SourceType selected= sourceTypes.get(JUnitMigrationPlan.typeKey(current));
+			if (selected == null) {
+				return false;
+			}
+			inPlannedChain|= selected.bindingKey().equals(plannedKey);
+			if (!inPlannedChain && JUnitMultiFilePlanner.requiresLocalExternalResourceRewrite(selected.declaration(), current)) {
+				return false;
+			}
+		}
+		return false;
 	}
 
 	private static boolean extendsExternalResource(ITypeBinding binding) {

@@ -13,6 +13,10 @@ named baseline; this project decision does not imply that those upstream
 releases universally require Java 25. Java 21 is rejected for Sandbox builds,
 and later JDKs require separate qualification.
 
+The standalone `sandbox-junit-migration-support` jar is a consumer artifact
+compiled for Java 21. Its Maven build runs on Java 25, and the Sandbox product,
+cleanup bundles and native PDE support tests continue to use Java 25.
+
 The materialized product uses the pinned JustJ 25 repository
 `https://download.eclipse.org/justj/jres/25/updates/release/25.0.4.v20260826-0822`.
 Tycho resolves the ordinary `JavaSE-25` compilation environment and adds the

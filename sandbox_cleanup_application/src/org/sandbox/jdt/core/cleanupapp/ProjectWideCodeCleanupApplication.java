@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.jar.Manifest;
 
 import org.eclipse.core.resources.IFile;
@@ -82,28 +83,26 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 
 	private static final String MAVEN_POM= "pom.xml"; //$NON-NLS-1$
 	private static final String PDE_MANIFEST= "META-INF/MANIFEST.MF"; //$NON-NLS-1$
-	private static final String JUNIT_ISOLATED_TYPE=
-			"org.junit.jupiter.api.parallel.Isolated"; //$NON-NLS-1$
-	private static final String JUNIT_PARALLEL_PACKAGE=
-			"org.junit.jupiter.api.parallel"; //$NON-NLS-1$
-
 	private enum Mode {
 		CHECK,
 		APPLY
 	}
 
 	private record Arguments(String projectName, Path projectLocation, Path configuration,
-			Path report, Path patch, Mode mode, List<String> pdeDeployments) {
+			Path report, Path patch, Mode mode, List<String> pdeDeployments, int batchMaxFiles, String batch, String receipt) {
 	}
 
-	private record SourceSnapshot(ICompilationUnit unit, IFile file, Path path, String relativePath,
+	record SourceSnapshot(ICompilationUnit unit, IFile file, Path path, String relativePath,
 			byte[] before) {
 	}
 
-	private record ResourceSnapshot(IFile file, Path path, String relativePath, byte[] before) {
+	record ResourceSnapshot(IFile file, Path path, String relativePath, byte[] before) {
 	}
 
-	private record ChangedFile(String relativePath, byte[] before, byte[] after) {
+	record MetadataPlan(Map<ResourceSnapshot, byte[]> changes, boolean retiresVintage) {
+	}
+
+	record ChangedFile(String relativePath, byte[] before, byte[] after) {
 	}
 
 	@Override
@@ -113,6 +112,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 		List<String> statusMessages= new ArrayList<>();
 		List<String> planningDiagnostics= new ArrayList<>();
 		List<ChangedFile> changed= new ArrayList<>();
+		List<MigrationBatches.Batch> batches= List.of();
 		Arguments arguments;
 		try {
 			arguments= parseArguments((String[]) context.getArguments().get(IApplicationContext.APPLICATION_ARGS));
@@ -159,6 +159,11 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 				refactoring.addCleanUp(cleanUp);
 			}
 
+			var observer= new MigrationBatchDependencies.CandidateObserver(cleanUps);
+			if (arguments.batchMaxFiles() > 0) {
+				refactoring.addCleanUp(observer);
+			}
+
 			RefactoringStatus status= refactoring.checkAllConditions(monitor);
 			for (RefactoringStatusEntry entry : status.getEntries()) {
 				statusMessages.add(entry.getMessage());
@@ -177,7 +182,12 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 			}
 
 			Change change= refactoring.createChange(monitor);
-			if (change != null) {
+			if (arguments.batchMaxFiles() > 0 && change != null) {
+				var preview= MigrationBatches.plan(javaProject, change, sources, resources, observer.groups(),
+						arguments.batchMaxFiles(), options, monitor);
+				batches= preview.batches();
+				changed= preview.select(arguments.batch(), arguments.receipt(), arguments.mode() == Mode.APPLY, monitor);
+			} else if (change != null) {
 				boolean restoreAfterExecution= arguments.mode() == Mode.CHECK;
 				boolean executionCompleted= false;
 				try {
@@ -208,7 +218,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 		Instant ended= Instant.now();
 		try {
 			writeReport(arguments.report(), arguments, started, ended, options, sources, changed,
-					statusMessages, planningDiagnostics, errors);
+					statusMessages, planningDiagnostics, batches, errors);
 		} catch (IOException e) {
 			errors.add("Cannot write cleanup report: " + e.getMessage()); //$NON-NLS-1$
 		}
@@ -232,6 +242,9 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 		Path report= null;
 		Path patch= null;
 		Mode mode= Mode.CHECK;
+		int maxFiles= 0;
+		String batch= null;
+		String receipt= null;
 		List<String> pdeDeployments= new ArrayList<>();
 		for (int index= 0; index < values.length; index++) {
 			String value= values[index];
@@ -244,6 +257,14 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 			case "--config", "-config" -> configuration= Path.of(requiredValue(values, ++index, value)); //$NON-NLS-1$ //$NON-NLS-2$
 			case "--pde-deployment" -> pdeDeployments.add(requiredValue(values, ++index, value)); //$NON-NLS-1$
 			case "--report" -> report= Path.of(requiredValue(values, ++index, value)); //$NON-NLS-1$
+			case "--batch-max-files" -> {
+				maxFiles= Integer.parseInt(requiredValue(values, ++index, value));
+				if (maxFiles < 1) {
+					throw new IllegalArgumentException("--batch-max-files must be positive"); //$NON-NLS-1$
+				}
+			}
+			case "--batch" -> batch= requiredValue(values, ++index, value); //$NON-NLS-1$
+			case "--batch-receipt" -> receipt= requiredValue(values, ++index, value); //$NON-NLS-1$
 			case "--patch" -> patch= Path.of(requiredValue(values, ++index, value)); //$NON-NLS-1$
 			case "--mode" -> { //$NON-NLS-1$
 				String requested= requiredValue(values, ++index, value);
@@ -269,10 +290,16 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 		if (report == null) {
 			throw new IllegalArgumentException("--report is required."); //$NON-NLS-1$
 		}
+		if ((batch != null || receipt != null) && maxFiles == 0 || receipt != null && batch == null) {
+			throw new IllegalArgumentException("Batch selection requires --batch-max-files and --batch"); //$NON-NLS-1$
+		}
+		if (maxFiles > 0 && mode == Mode.APPLY && (batch == null || receipt == null)) {
+			throw new IllegalArgumentException("Preview the batches, then supply --batch and --batch-receipt for apply"); //$NON-NLS-1$
+		}
 		return new Arguments(project,
 				projectLocation == null ? null : projectLocation.toAbsolutePath().normalize(),
 				configuration.toAbsolutePath().normalize(), report.toAbsolutePath().normalize(),
-				patch == null ? null : patch.toAbsolutePath().normalize(), mode, List.copyOf(pdeDeployments));
+				patch == null ? null : patch.toAbsolutePath().normalize(), mode, List.copyOf(pdeDeployments), maxFiles, batch, receipt);
 	}
 
 	private static String requiredValue(String[] values, int index, String option) {
@@ -336,7 +363,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 		return project;
 	}
 
-	private static List<SourceSnapshot> snapshots(IJavaProject project) throws CoreException, IOException {
+	static List<SourceSnapshot> snapshots(IJavaProject project) throws CoreException, IOException {
 		List<ICompilationUnit> units= new ArrayList<>();
 		for (IPackageFragmentRoot root : project.getPackageFragmentRoots()) {
 			if (root.getKind() != IPackageFragmentRoot.K_SOURCE) {
@@ -362,7 +389,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 	}
 
 
-	private static List<ResourceSnapshot> resourceSnapshots(IProject project, List<String> selected) throws IOException {
+	static List<ResourceSnapshot> resourceSnapshots(IProject project, List<String> selected) throws IOException {
 		List<IFile> files= new ArrayList<>();
 		IFile descriptor= project.getFile(PDE_MANIFEST);
 		if (descriptor.exists()) {
@@ -414,35 +441,63 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 		if (resources.isEmpty()) {
 			return;
 		}
-		ResourceSnapshot descriptor= resources.getFirst();
-		boolean pde= PDE_MANIFEST.equals(descriptor.relativePath());
-		boolean isolatedIntroduced= false;
-		boolean suiteIntroduced= false;
+		Map<SourceSnapshot, byte[]> replacements= new LinkedHashMap<>();
 		for (SourceSnapshot source : sources) {
 			byte[] after= Files.readAllBytes(source.path());
-			if (Arrays.equals(source.before(), after)) {
-				continue;
+			if (!Arrays.equals(source.before(), after)) {
+				replacements.put(source, after);
 			}
-			isolatedIntroduced |= pde && !contains(source.before(), JUNIT_ISOLATED_TYPE) && contains(after, JUNIT_ISOLATED_TYPE);
+		}
+		var proposed= planProjectMetadata(sources, resources, replacements, options);
+		for (var entry : proposed.changes().entrySet()) {
+			ResourceSnapshot resource= entry.getKey();
+			if (!Arrays.equals(resource.before(), Files.readAllBytes(resource.path()))) {
+				throw new IOException("Project descriptor changed during cleanup: " + resource.file().getFullPath()); //$NON-NLS-1$
+			}
+			if (!Arrays.equals(entry.getValue(), resource.before())) {
+				written.add(resource);
+				Files.write(resource.path(), entry.getValue());
+			}
+		}
+	}
+
+	static MetadataPlan planProjectMetadata(List<SourceSnapshot> sources,
+			List<ResourceSnapshot> resources, Map<SourceSnapshot, byte[]> replacements, Map<String, String> options)
+			throws IOException, CoreException {
+		if (resources.isEmpty()) {
+			return new MetadataPlan(Map.of(), false);
+		}
+		ResourceSnapshot descriptor= resources.getFirst();
+		boolean pde= PDE_MANIFEST.equals(descriptor.relativePath());
+		Set<String> jupiterPackages= new TreeSet<>();
+		boolean suiteIntroduced= false;
+		for (var entry : replacements.entrySet()) {
+			SourceSnapshot source= entry.getKey();
+			byte[] after= entry.getValue();
 			Charset charset= Charset.forName(source.file().getCharset());
+			String original= new String(source.before(), charset);
 			String updated= new String(after, charset);
+			if (pde) {
+				jupiterPackages.addAll(JupiterDependencies.introducedPackages(original, updated, options));
+			}
 			if (PlatformSuiteDependencies.usesSuite(updated, options)
-					&& !PlatformSuiteDependencies.usesSuite(new String(source.before(), charset), options)) {
+					&& !PlatformSuiteDependencies.usesSuite(original, options)) {
 				if (!pde && !source.relativePath().startsWith("src/test/java/")) { //$NON-NLS-1$
 					throw new IOException("Cannot add a test-scoped Suite dependency for " + source.relativePath()); //$NON-NLS-1$
 				}
 				suiteIntroduced= true;
 			}
 		}
-		if (!isolatedIntroduced && !suiteIntroduced) {
-			return;
+		if (jupiterPackages.isEmpty() && !suiteIntroduced) {
+			return new MetadataPlan(Map.of(), false);
 		}
 		if (descriptor.file().isLinked(IResource.CHECK_ANCESTORS) || Files.isSymbolicLink(descriptor.path())) {
 			throw new IOException("Cannot update a linked project descriptor: " + descriptor.relativePath()); //$NON-NLS-1$
 		}
+		boolean retiresVintage= false;
 		byte[] updated= descriptor.before();
-		if (isolatedIntroduced) {
-			updated= PdeManifestImportUpdater.addImport(updated, JUNIT_PARALLEL_PACKAGE);
+		for (String packageName : jupiterPackages) {
+			updated= PdeManifestImportUpdater.addImport(updated, packageName);
 		}
 		if (suiteIntroduced) {
 			if (pde) {
@@ -454,9 +509,10 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 				for (SourceSnapshot source : sources) {
 					Charset encoding= Charset.forName(source.file().getCharset());
 					participants.put(source.path(), new VintageDeploymentPlan.SourceTransition(
-							new String(source.before(), encoding), Files.readString(source.path(), encoding)));
+							new String(source.before(), encoding), new String(replacements.getOrDefault(source, source.before()), encoding)));
 				}
 				String deployment= VintageDeploymentPlan.afterSuiteMigration(withSuite, descriptor.file(), participants);
+				retiresVintage= !deployment.equals(withSuite);
 				updated= deployment.getBytes(StandardCharsets.UTF_8);
 			}
 		}
@@ -484,20 +540,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 				}
 			}
 		}
-		for (var entry : proposed.entrySet()) {
-			ResourceSnapshot resource= entry.getKey();
-			if (!Arrays.equals(resource.before(), Files.readAllBytes(resource.path()))) {
-				throw new IOException("Project descriptor changed during cleanup: " + resource.file().getFullPath()); //$NON-NLS-1$
-			}
-			if (!Arrays.equals(entry.getValue(), resource.before())) {
-				written.add(resource);
-				Files.write(resource.path(), entry.getValue());
-			}
-		}
-	}
-
-	private static boolean contains(byte[] content, String token) {
-		return new String(content, StandardCharsets.UTF_8).contains(token);
+		return new MetadataPlan(proposed, retiresVintage);
 	}
 
 	private static void refresh(List<SourceSnapshot> sources, List<ResourceSnapshot> resources,
@@ -532,7 +575,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 		return List.copyOf(result);
 	}
 
-	private static String patchPath(Path root, Path file) {
+	static String patchPath(Path root, Path file) {
 		return root.relativize(file).toString().replace(java.io.File.separatorChar, '/');
 	}
 
@@ -572,7 +615,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 
 	private static void writeReport(Path path, Arguments arguments, Instant started, Instant ended,
 			Map<String, String> options, List<SourceSnapshot> sources, List<ChangedFile> changed,
-			List<String> statusMessages, List<String> planningDiagnostics, List<String> errors) throws IOException {
+			List<String> statusMessages, List<String> planningDiagnostics, List<MigrationBatches.Batch> batches, List<String> errors) throws IOException {
 		createParent(path);
 		StringBuilder json= new StringBuilder(2048);
 		json.append("{\n"); //$NON-NLS-1$
@@ -602,6 +645,22 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 			json.append('\n');
 		}
 		json.append("  },\n"); //$NON-NLS-1$
+		if (arguments.batchMaxFiles() > 0) {
+			number(json, "batchMaxFiles", arguments.batchMaxFiles(), 1).append(",\n"); //$NON-NLS-1$ //$NON-NLS-2$
+			property(json, "selectedBatch", arguments.batch() == null ? "" : arguments.batch(), 1).append(",\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			json.append("  \"batches\": ["); //$NON-NLS-1$
+			for (int index= 0; index < batches.size(); index++) {
+				var batch= batches.get(index);
+				json.append(index == 0 ? "\n    {\n" : ",\n    {\n"); //$NON-NLS-1$ //$NON-NLS-2$
+				property(json, "id", batch.id(), 3).append(",\n"); //$NON-NLS-1$ //$NON-NLS-2$
+				property(json, "receipt", batch.receipt(), 3).append(",\n"); //$NON-NLS-1$ //$NON-NLS-2$
+				array(json, "files", batch.files(), 3).append(",\n"); //$NON-NLS-1$ //$NON-NLS-2$
+				array(json, "prerequisites", batch.prerequisites(), 3).append(",\n"); //$NON-NLS-1$ //$NON-NLS-2$
+				array(json, "dependencies", batch.dependencies(), 3).append(",\n"); //$NON-NLS-1$ //$NON-NLS-2$
+				json.append("      \"oversized\": ").append(batch.files().size() > arguments.batchMaxFiles()).append("\n    }"); //$NON-NLS-1$ //$NON-NLS-2$
+			}
+			json.append("\n  ],\n"); //$NON-NLS-1$
+		}
 		array(json, "refactoringStatus", statusMessages, 1).append(",\n"); //$NON-NLS-1$
 		json.append("  \"planningDiagnostics\": ["); //$NON-NLS-1$
 		for (int index= 0; index < planningDiagnostics.size(); index++) {
@@ -717,6 +776,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 				  [--patch <changes.patch>]
 				  [--pde-deployment </workspace-project/feature.xml or .target>] (repeatable)
 				  [--mode check|apply]
+				  [--batch-max-files <positive number> [--batch <id> --batch-receipt <receipt>]]
 				"""); //$NON-NLS-1$
 	}
 

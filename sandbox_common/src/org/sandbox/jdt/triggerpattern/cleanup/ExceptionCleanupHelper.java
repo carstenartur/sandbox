@@ -21,6 +21,8 @@ import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.BodyDeclaration;
 import org.eclipse.jdt.core.dom.CatchClause;
+import org.eclipse.jdt.core.dom.ChildListPropertyDescriptor;
+import org.eclipse.jdt.core.dom.ChildPropertyDescriptor;
 import org.eclipse.jdt.core.dom.Comment;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EmptyStatement;
@@ -64,6 +66,33 @@ public class ExceptionCleanupHelper {
 
 	private ExceptionCleanupHelper() {
 		// utility class – not instantiable
+	}
+
+	/**
+	 * Returns whether an earlier operation discarded an enclosing catch. The try
+	 * may also have been replaced by its moved body without a separate catch edit.
+	 * Planned operations in those discarded branches must not add imports or edits.
+	 */
+	public static boolean isInRemovedCatch(ASTNode node, ASTRewrite rewrite) {
+		for (ASTNode current= node; current != null; current= current.getParent()) {
+			if (current instanceof CatchClause clause && clause.getParent() instanceof TryStatement statement) {
+				if (!rewrite.getListRewrite(statement, TryStatement.CATCH_CLAUSES_PROPERTY)
+						.getRewrittenList().contains(clause)) {
+					return true;
+				}
+				ASTNode parent= statement.getParent();
+				var location= statement.getLocationInParent();
+				if (parent != null && location instanceof ChildListPropertyDescriptor list
+						&& !rewrite.getListRewrite(parent, list).getRewrittenList().contains(statement)) {
+					return true;
+				}
+				if (parent != null && location instanceof ChildPropertyDescriptor property
+						&& rewrite.get(parent, property) != statement) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	/**

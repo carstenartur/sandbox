@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-SymbolicName: sandbox_junit_cleanup_jdt5
+Bundle-Version: 1.3.11.qualifier
+Bundle-Name: Sandbox staged migration support for the JDT JUnit 5 runner
+Fragment-Host: org.sandbox.junit.migration.support
+Require-Bundle: junit-jupiter-api;bundle-version="[5.14,6)",
+ junit-platform-launcher;bundle-version="[1.14,2)",
+ junit-platform-engine;bundle-version="[1.14,2)"

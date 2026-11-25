@@ -4,10 +4,11 @@
 
 This Eclipse plugin detects legacy Java code in which integral or String constants represent a closed set of states and migrates provably safe cases to an enum. Its bundle and existing cleanup profile IDs retain the historical `int_to_enum` name.
 
-The implementation has three deliberately separated capabilities:
+The implementation has four capabilities:
 
 - **Local if/else state detection** — binding-based migration when the complete state flow is contained in one compilation unit.
 - **Project-wide coordinated migration** — a narrow package-scoped method/caller migration that requires a proven closed source scope.
+- **Additive public API adapters** — an explicit option adds named enum-valued entries while retaining public int or String fields and their original methods.
 - **Integer switch migration** — the existing experimental prototype for switch statements.
 
 Local cleanup does not automatically request project sources. Complete-project analysis is an explicit, disabled-by-default option because it can inspect and modify additional files and is materially more expensive.
@@ -35,7 +36,7 @@ The local implementation transforms a candidate only when all of the following a
 2. Their compile-time values are distinct.
 3. A `private` method has a parameter of the same type compared with those constants in an `if`/`else if` chain.
 4. All comparisons refer to the same parameter binding.
-5. Every use of that parameter is one of the recognised comparisons.
+5. Every use of that parameter is a recognised comparison or a supported private lookup-table index. A local read such as `labels[state]` can become `labels[state.ordinal()]` when the original integer values are exactly 0, 1, … in declaration order and the freshly allocated array is confined to local reads. The enum names remain visible in the debugger.
 6. Every call site in the compilation unit passes one of the recognised constants.
 7. The constants have no unsupported remaining references.
 8. The generated enum name and constants are valid; the enum name does not hide an existing declaration or type reference in its owner.
@@ -97,7 +98,7 @@ The cleanup deliberately preserves the existing control flow. Replacing an if/el
 
 ## Cases currently rejected
 
-The implemented detectors do not yet migrate:
+The closed-flow detectors skip the following cases:
 
 - public or protected constants and method signatures;
 - parameters passed arbitrary expressions, null, or runtime strings rather than recognised constants;
@@ -109,6 +110,12 @@ The implemented detectors do not yet migrate:
 - existing nested types that conflict with the generated enum name.
 
 A rejected candidate is left unchanged.
+
+## Public API adapters
+
+In an explicit cleanup profile, enable **Add enum-valued methods and keep legacy public APIs**. For a public final class with `STATUS_A`, `STATUS_B` and a public `process(int)` method, new clients can call `service.processValue(Service.Status.B)`. Each enum constant retains its readable name and its explicit original value through `legacyValue()`. Strings use the same mapping. The new method requires a non-null enum value. Existing clients still use the original constants and methods, including the original handling of null, non-interned strings and unknown values.
+
+The option supports a single-parameter instance method returning void, with no declared exceptions or method type parameters. An if/else-if chain must compare that parameter with every public compile-time constant of one underscore-prefixed group. The adapter requires distinct values and free names for both new members. Serializable owners and overlapping domains are skipped. A new public nested type can conflict with another type imported through an external client’s wildcard static imports. Review the proposed names in the native preview. The method and enum are inserted and undone together. No save-action option is registered.
 
 ## Project-wide coordinated migration
 

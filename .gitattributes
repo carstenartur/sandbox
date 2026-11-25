@@ -9,3 +9,11 @@ mvnw.cmd text eol=crlf
 /sandbox_eclipse_help_swtbot_test/fixtures/mathematics/**/*.java.txt text eol=lf
 # Frozen independent inputs and their receipts retain their selected bytes.
 /sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/heldout/** text eol=lf
+
+# Compatibility endpoints for old Eclipse installations are hosted on the main branch.
+/p2.index export-ignore
+/compositeContent.xml export-ignore
+/compositeArtifacts.xml export-ignore
+/sandbox1.2.1/p2.index export-ignore
+/sandbox1.2.1/compositeContent.xml export-ignore
+/sandbox1.2.1/compositeArtifacts.xml export-ignore

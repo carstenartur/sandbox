@@ -226,6 +226,7 @@ jobs:
           git add -u -- ':!.github/workflows/'
           git commit -m "Release version ${RELEASE_VERSION}"
           echo "RELEASE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          echo "RELEASE_EPOCH=$(git show -s --format=%ct HEAD)" >> "$GITHUB_ENV"
 
       - name: Maven distribution build and verification
         timeout-minutes: 150
@@ -250,6 +251,8 @@ jobs:
             -Pdistribution,cli-dist,maven-plugin,benchmark \
             --batch-mode \
             -Dtycho.localArtifacts=ignore \
+            -Dsandbox.support.qualifier=zRelease \
+            "-Dproject.build.outputTimestamp=$RELEASE_EPOCH" \
             clean verify "${test_args[@]}" 2>&1 \
             | tee "$release_log"
 

@@ -796,7 +796,7 @@ public class StringSimplificationCleanUpTest {
 			package test1;
 
 			public class E1 {
-			    void method(Object obj) {
+			    void method(String obj) {
 			        String result = String.format("%s", obj);
 			    }
 			}
@@ -806,7 +806,7 @@ public class StringSimplificationCleanUpTest {
 			package test1;
 
 			public class E1 {
-			    void method(Object obj) {
+			    void method(String obj) {
 			        String result = String.valueOf(obj);
 			    }
 			}

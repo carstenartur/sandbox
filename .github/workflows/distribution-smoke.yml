@@ -99,8 +99,9 @@ jobs:
         run: |
           set -o pipefail
           status=0
-          command=(./mvnw -Pdistribution,cli-dist,swtbot --batch-mode -Dtycho.localArtifacts=ignore
-            -Dsandbox.math.retainHeadlessProbe=true clean verify)
+          # Recheck missing releases recorded in the restored Maven cache.
+          command=(./mvnw -Pdistribution,cli-dist,swtbot --batch-mode --update-snapshots
+            -Dtycho.localArtifacts=ignore -Dsandbox.math.retainHeadlessProbe=true clean verify)
           if [[ "$RUNNER_OS" == 'Linux' ]]; then
             command=(xvfb-run --auto-servernum "${command[@]}")
           fi

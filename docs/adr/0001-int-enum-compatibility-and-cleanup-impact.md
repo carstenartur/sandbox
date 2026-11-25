@@ -6,7 +6,7 @@
 
 ## Context
 
-A local syntax cleanup and a coordinated signature/type migration do not make the same safety claim. The integer-to-enum cleanup currently supports only package-private source domains whose declarations, comparisons and callers can be proven closed in the selected Java source scope. Future requests include public APIs, persisted values, command-line values and wire protocols; those representations cannot be treated as ordinary source-only cleanups.
+A local syntax cleanup and a coordinated signature/type migration do not make the same safety claim. The integer-to-enum cleanup supports local private and coordinated package-private source domains whose declarations, comparisons and callers can be proven closed. A separate explicit mode adds enum-valued public entries while retaining the legacy fields and methods. Persisted values, command-line values and wire protocols still require their own representation policy.
 
 ## Decision
 
@@ -25,7 +25,7 @@ Only `LOCAL_SAFE` is eligible for an ordinary save action. All other levels requ
 
 #### `CLOSED_FLOW_AUTOMATIC`
 
-This is the only implemented automatic mode. It requires:
+This automatic mode rewrites a proven closed source flow. Its coordinated form requires:
 
 - package-private constants and candidate method;
 - distinct constant values;
@@ -36,6 +36,12 @@ This is the only implemented automatic mode. It requires:
 - callers in the same package as the package-private nested enum.
 
 The migration is `PROJECT_CLOSED`: it preserves the behaviour of the proven source flow but makes no source- or binary-compatibility promise to external clients.
+
+#### `PUBLIC_VALUE_ADAPTER_OPT_IN`
+
+An explicit cleanup profile may add a public nested enum and a distinctly named public method to a final class. Each enum constant stores the existing public compile-time int or String constant. Its `legacyValue()` returns that exact value. For example, `processValue(Status)` calls the unchanged `process(int)` or `process(String)`. Existing binaries keep the original method descriptor, switch labels remain compile-time constants, and calls with null or unknown values follow the original method body.
+
+This single-unit `COMPATIBILITY_MANAGED` edit is off by default and absent from save-action profiles. Its first implementation accepts a one-parameter, void, non-static public method with a complete directly compared constant group. Final owners avoid introducing an override in an unknown subclass. Serializable owners, locally ambiguous names and aliases are excluded. External consumers combining wildcard static imports must check for conflicts with the proposed nested type name. The edit introduces no deprecation annotations. The wider numeric adapter and external representation policy below remains a separate mode.
 
 #### `NUMERIC_ADAPTER_OPT_IN`
 
@@ -54,6 +60,8 @@ Aliases, sparse/ranged domains and bit masks are not ordinary enum domains. Bit 
 ### External identity
 
 `Enum.ordinal()` is never a persisted, serialized or wire identity. Reordering enum constants must not alter external meaning.
+
+A private source-only migration may use `state.ordinal()` to read a method-local lookup table when every original integer equals the position of its generated enum constant. The table must be freshly allocated and confined to local reads. Its order is coupled to the enum declaration, so a later reorder must update the table as well. External buffers, writes, and values passed through a public API require a different proof.
 
 ### Reference generation
 

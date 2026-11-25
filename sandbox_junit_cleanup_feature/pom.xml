@@ -11,4 +11,16 @@
 	<artifactId>sandbox_junit_cleanup_feature</artifactId>
 	<name>Sandbox junit cleanup Feature</name>
 	<packaging>eclipse-feature</packaging>
+	<dependencies>
+		<dependency>
+			<groupId>io.github.carstenartur</groupId>
+			<artifactId>sandbox-junit-migration-support</artifactId>
+			<version>${project.version}</version>
+			<exclusions>
+				<!-- Use the Jupiter 5 and Platform 1 bundles supplied by the JDT 5 target. -->
+				<exclusion><groupId>org.junit.jupiter</groupId><artifactId>*</artifactId></exclusion>
+				<exclusion><groupId>org.junit.platform</groupId><artifactId>*</artifactId></exclusion>
+			</exclusions>
+		</dependency>
+	</dependencies>
 </project>

@@ -14,6 +14,7 @@
 package org.sandbox.jdt.internal.ui.fix;
 
 import static org.sandbox.jdt.internal.corext.fix.IntToEnumCleanUpOptions.PROJECT_WIDE;
+import static org.sandbox.jdt.internal.corext.fix.IntToEnumCleanUpOptions.PUBLIC_VALUE_ADAPTER;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.INT_TO_ENUM_CLEANUP;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.IntToEnumCleanUpFix_refactor;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.IntToEnumCleanUp_description;
@@ -54,6 +55,8 @@ import org.sandbox.jdt.cleanup.multifile.RelatedCompilationUnitSearch;
 import org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan;
 import org.sandbox.jdt.cleanup.multifile.SourceRootPolicy;
 import org.sandbox.jdt.internal.corext.fix.IntToEnumFixCore;
+import org.sandbox.jdt.internal.corext.fix.helper.PublicEnumAdapter;
+import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumMigrationMode;
 import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumMigrationPlan;
 import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumMultiFilePlanner;
 import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumPackageVisibilityPolicy;
@@ -132,6 +135,9 @@ public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp<IntEnu
 		Set<ASTNode> nodesProcessed= new HashSet<>();
 		plan.addOperationsFor(context.getCompilationUnit(), compilationUnit, operations, nodesProcessed);
 		computeFixSet.forEach(i -> i.findOperations(compilationUnit, operations, nodesProcessed));
+		if (isEnabled(PUBLIC_VALUE_ADAPTER)) {
+			PublicEnumAdapter.addOperations(compilationUnit, nodesProcessed, operations);
+		}
 
 		if (operations.isEmpty()) {
 			return null;
@@ -216,6 +222,9 @@ public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp<IntEnu
 			if (isEnabled(PROJECT_WIDE)) {
 				result.add(IntToEnumCleanUp_project_wide_description);
 			}
+			if (isEnabled(PUBLIC_VALUE_ADAPTER)) {
+				result.add(IntEnumMigrationMode.PUBLIC_VALUE_ADAPTER_OPT_IN.previewStatement());
+			}
 		}
 		return result.toArray(new String[0]);
 	}
@@ -223,6 +232,9 @@ public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp<IntEnu
 	@Override
 	public String getPreview() {
 		StringBuilder sb= new StringBuilder();
+		if (isEnabled(INT_TO_ENUM_CLEANUP) && isEnabled(PUBLIC_VALUE_ADAPTER)) {
+			sb.append(PublicEnumAdapter.preview()).append('\n');
+		}
 		EnumSet<IntToEnumFixCore> computeFixSet= computeFixSet();
 		EnumSet.allOf(IntToEnumFixCore.class).forEach(e -> sb.append(e.getPreview(computeFixSet.contains(e))));
 		return sb.toString();

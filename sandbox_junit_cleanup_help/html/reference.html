@@ -13,6 +13,19 @@
    <p>The cleanup requires resolvable JUnit types and only rewrites patterns for which a supported Jupiter equivalent has been implemented.
       Project-wide constructs are planned before per-file edits so a fixture, its hierarchy, and all rule users can be evaluated together.</p>
 
+   <h2>Imported and qualified annotations</h2>
+   <p>Declarative JUnit 4 migrations recognize imported and fully qualified <code>@Test</code> markers,
+      <code>@Before</code>, <code>@After</code>, <code>@BeforeClass</code>, <code>@AfterClass</code> and
+      <code>@Ignore</code>. The original annotation must resolve to the expected JUnit 4 type; a same-named
+      application annotation or an unresolved source annotation is not sufficient. Make the target Jupiter
+      API available in the selected project before migration.</p>
+   <p>A qualified source produces a qualified Jupiter annotation, so a local <code>Test</code> or
+      <code>Disabled</code> declaration does not capture the generated name. Both the single-value and named
+      <code>value</code> forms of <code>@Ignore</code> retain their reason on <code>@Disabled</code>.</p>
+   <p>Custom handlers such as <code>@Test(timeout = ...)</code> and <code>@RunWith(...)</code> retain the
+      source spellings supported by their own patterns. The declarative annotation support does not extend
+      those handlers to every fully qualified spelling.</p>
+
    <h2>Strict safety model</h2>
    <p>Strict mode is fail closed. A missing source type, unresolved binding, custom runner, unsupported matcher, external reference,
       or incompatible lifecycle prevents the affected coordinated migration. The cleanup does not manufacture an extension whose behavior
@@ -49,6 +62,16 @@
    </ul>
    <p>A JDT Core run is not accepted as evidence for JUnit 4 migration coverage.</p>
 
+   <h2>PDE imports in the project-wide runner</h2>
+   <p>The explicit headless project-wide cleanup application can add <code>Import-Package</code> entries
+      to an existing PDE manifest when changed Java sources newly reference modeled Jupiter API packages.
+      Imported and fully qualified references are supported, including extension, parallel and
+      parameter-provider APIs. Existing references alone do not trigger descriptor repair. The Java and
+      manifest edits participate in the same check/apply transaction.</p>
+   <p>This path does not install target bundles or resolve arbitrary Maven/Gradle dependencies.
+      The supported Platform Suite dependency and deployment operations have separate contracts.
+      Ordinary per-file cleanup does not imply these project-resource changes.</p>
+
    <h2>Evidence produced by project-wide QA</h2>
    <ul>
       <li>Exact repository URL, ref, commit, target platform, Java version, and cleanup profile.</li>
@@ -61,19 +84,23 @@
    </ul>
 
    <h2>Known limitations</h2>
-   <p>Parameterized source planning recognizes selected local and inherited providers,
-      editable static provider delegates, constructor parameters, and ordered field injection.
-      It rejects incomplete scopes, ambiguous indices and unproven argument conversions.
-      A discovered component is reported as <code>FOUND</code> with reason
-      <code>PARAMETERIZED_RUNTIME_VERIFICATION_REQUIRED</code>. This is planning evidence,
-      not an applied migration: the coordinated target still needs a JDT runtime comparison
-      of test identities, multiplicity, display names and results. The existing narrow local
-      Parameterized rewrite has a separate applicability contract.</p>
+   <p>Coordinated Parameterized migration supports a closed constant-row component with proven local or
+      inherited providers, editable static delegates, constructor parameters, and ordered field injection.
+      Enable the Parameterized migration and provide Jupiter's <code>ParameterizedClass</code> in the selected
+      project. An executable component reports <code>PARAMETERIZED_CLASS_READY</code>; its sources and
+      bindings are revalidated before rewriting. Incomplete scopes, ambiguous indices, unproven conversions
+      and unsupported execution hooks remain rejection cases.</p>
+   <p>A <code>FOUND</code> component with <code>PARAMETERIZED_RUNTIME_VERIFICATION_REQUIRED</code> records
+      discovery only and does not authorize Apply. The coordinated strategy has JDT runtime regression
+      coverage for test identities, multiplicity, display names and results; run the affected project's tests
+      to verify its migration. The narrow local Parameterized rewrite retains its separate applicability contract.</p>
    <ul>
       <li>Adding or updating the JUnit Jupiter dependency is a build-system task and is not inferred blindly.</li>
       <li>Custom JUnit 4 runners and arbitrary Rules may need dedicated migrations.</li>
-      <li>Parameterized field injection and custom providers require an explicit argument-source design.</li>
-      <li>A fixture used as both <code>@Rule</code> and <code>@ClassRule</code> must be split into separate lifecycle extensions.</li>
+      <li>Parameterized providers and injection outside the supported closed contract require manual completion.</li>
+      <li>Automatic cleanup rejects a fixture used at incompatible rule scopes. The
+          <a href="usage.html#staged-migration">manual staged bridge</a> can retain its implementation and
+          consumer instances through separate per-test and per-class registrations.</li>
       <li>The migrated test suite must be executed; source-level conversion alone cannot validate test semantics.</li>
    </ul>
 

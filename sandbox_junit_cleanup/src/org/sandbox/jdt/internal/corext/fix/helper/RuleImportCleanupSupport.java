@@ -78,7 +78,7 @@ public final class RuleImportCleanupSupport {
 					&& TestNameRefactorer.assess(field).eligible();
 		}
 		return fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE)
-				&& RuleExternalResourceJUnitPlugin.isEligibleExternalResourceType(binding);
+				&& RuleExternalResourceJUnitPlugin.isEligibleExternalResourceField(field);
 	}
 
 	private static boolean hasRuleAnnotation(FieldDeclaration field) {

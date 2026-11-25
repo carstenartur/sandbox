@@ -180,12 +180,43 @@ The classpath and dependencies must resolve in that runtime.
 
 This runner requires `--project`, `--config` and `--report`. Its modes are
 `check` (the default) and `apply`; the per-file runner's `diff`, `--scope`
-and positional-input options do not apply. Check temporarily performs the
-change, captures the changed bytes and restores tracked source and project-resource
-bytes before writing the patch/report. An incomplete change execution attempts
+and positional-input options do not apply. In the default whole-project mode,
+check temporarily performs the change, captures the changed bytes and restores
+tracked source and project-resource bytes before writing the patch/report. An incomplete change execution attempts
 to restore those snapshots.
 Exit codes are `0` for success, `2` for changes required in check mode and
 `1` for errors, with errors taking precedence.
+
+### Reviewing a JUnit migration in batches
+
+Add `--batch-max-files 20` to the project-wide check command above to preview
+review packages of up to 20 changed Java compilation units each. Analysis
+still sees the complete project and uses the cleanup's configured planning
+limits. The batch check uses JDT’s native source preview to plan the related
+descriptor edits. The JSON `batches` array lists each package's source files,
+required project resources, stable ID and review receipt. An atomic component can exceed the requested
+limit. Its entry identifies the files and dependencies that keep it together.
+The planner groups edits using the cleanup’s coordinated candidates and JDT bindings
+in the original and proposed sources. For example, moving a declaration can affect
+an unchanged caller. Run the project build and test suite after applying each batch.
+If retiring Maven Vintage dependencies needs all original suite and member
+transitions in one proof, those source files and the POM share one package.
+
+To apply a package, use the same project, configuration and file limit, and
+add the ID and receipt from its report.
+
+```bash
+  --mode apply --batch-max-files 20 --batch "$id" --batch-receipt "$receipt"
+```
+
+The application plans the full project again before executing the selected
+package. The receipt covers the reviewed project sources, descriptors, classpath,
+compiler settings and cleanup configuration. A stale receipt fails before execution.
+Run check after each package to review the remaining work,
+including any transitions that become available after a compatibility bridge.
+Descriptor changes required for that package join the same LTK Undo operation.
+The file limit and package selection are project-application options. The
+Workbench cleanup wizard retains its existing candidate selection.
 
 For a JUnit Platform suite migration in a PDE test bundle, pass
 `--pde-deployment /FeatureProject/feature.xml` and
@@ -221,10 +252,19 @@ relative to the selected bundle. If a selected descriptor cannot be interpreted,
 the application restores every changed participant.
 
 Review the complete patch, planning diagnostics and the project's normal tests.
-The runner can also add the required Jupiter parallel-package import to an
-existing PDE manifest when a migration introduces `@Isolated`. Its project
-scope does not broaden the [supported migration shapes](../sandbox_junit_cleanup/MIGRATION_CAPABILITIES.md)
-or supply an arbitrary Maven/Gradle dependency resolver. The default CLI and
+The project-wide runner also adds `Import-Package` entries to an existing PDE
+manifest for modeled Jupiter API packages newly referenced by changed Java
+sources. This includes ordinary and static imports, wildcard imports and fully
+qualified references, such as extension, parallel and parameter-provider APIs.
+Existing Jupiter references alone do not trigger descriptor repair; comments,
+strings and unrelated packages are ignored. The manifest joins the same
+check/apply transaction as the Java changes.
+
+These PDE imports do not install the required bundles into a target or add
+arbitrary Maven/Gradle dependencies. The separately documented Platform Suite
+dependency and deployment paths retain their own applicability contracts.
+Project scope does not broaden the [supported migration shapes](../sandbox_junit_cleanup/MIGRATION_CAPABILITIES.md).
+The default CLI and
 cleanup-review action continue to use the per-compilation-unit application.
 See the [upstream JDT QA workflow](../qa/upstream-jdt/README.md) for reproducible
 before/after evidence recipes.

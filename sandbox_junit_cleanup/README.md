@@ -90,6 +90,14 @@ assertEquals("Values must match", expected, actual);
 assertEquals(expected, actual, "Values must match");
 ```
 
+For incremental adoption of shared JUnit 4 rules and JDT UI-style inherited-test
+filtering, see the [staged JUnit migration support](../sandbox-junit-migration-support/README.md).
+This separate support jar provides manual `perTest` and `perClass` hook
+registrations and an inherited-test discovery filter. Keep the original fixture
+instances and register each lifecycle scope explicitly. It requires a Java 25
+test runtime; the cleanup does not automatically wire mixed-lifecycle fixtures
+or the support dependency into the project.
+
 ## Migration Summary
 
 ### JUnit 3 Transformations
@@ -122,6 +130,21 @@ assertEquals(expected, actual, "Values must match");
 | `assertNull(String message, object)` | `assertNull(object, String message)` |
 
 ## Supported Features
+
+### Qualified JUnit 4 annotations
+
+The declarative annotation migrations recognize imported and fully qualified
+JUnit 4 `@Test` markers, `@Before`, `@After`, `@BeforeClass`, `@AfterClass`,
+and `@Ignore`. Both `@org.junit.Ignore("reason")` and
+`@org.junit.Ignore(value = "reason")` retain the reason on the Jupiter
+`@Disabled` annotation. The cleanup verifies the resolved source annotation
+type. A qualified source annotation produces a qualified destination, including
+in classes that declare their own `Test` or `Disabled` type.
+
+Custom handlers for constructs such as `@Test(timeout = …)` and `@RunWith(…)`
+continue to use the spelling declared by their individual patterns. Extending
+a custom handler to another spelling requires checking how it resolves each
+generated type at the rewrite site.
 
 ### Test Class Structure
 - ✅ Remove `extends TestCase` inheritance
@@ -706,12 +729,14 @@ xvfb-run --auto-servernum mvn test -pl sandbox_junit_cleanup_test
 
 ## Known Limitations
 
-- Does not migrate JUnit 4 `@RunWith` annotations (requires manual review)
-- Parameterized tests need manual migration
-- Custom test runners may need adjustment
+- Modeled JUnit 4 suite runners are supported; custom runner behavior still needs a dedicated migration.
+- Coordinated Parameterized migration supports the closed constant-row contract when the selected project supplies Jupiter's `ParameterizedClass`. Discovery reported as `PARAMETERIZED_RUNTIME_VERIFICATION_REQUIRED` is not an executable migration.
+- Mixed `@Rule`/`@ClassRule` fixtures fail closed in automatic cleanup. The separate support jar can be wired manually at the two lifecycle scopes.
 - Some advanced JUnit 4 features have no direct JUnit 5 equivalent
 
-See [TODO.md](TODO.md) for planned enhancements.
+See [MIGRATION_CAPABILITIES.md](MIGRATION_CAPABILITIES.md) for the executable
+boundaries and [TODO.md](TODO.md) for planned enhancements. Run the same test
+selection before and after migration and compare identities, counts and results.
 
 ## Contributing to Eclipse JDT
 

@@ -13,6 +13,9 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.cleanup;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -23,17 +26,23 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTMatcher;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CatchClause;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MemberValuePair;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.NormalAnnotation;
+import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.Statement;
@@ -45,6 +54,7 @@ import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+import org.eclipse.jdt.core.manipulation.ImportReferencesCollector;
 import org.eclipse.jdt.internal.corext.codemanipulation.ContextSensitiveImportRewriteContext;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
@@ -158,7 +168,7 @@ public class HintFileFixCore {
 			BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile, resolvedRules);
 			List<TransformationResult> results = processor.process(compilationUnit);
 
-			for (TransformationResult result : results) {
+			for (TransformationResult result : outsideCatchBodiesFirst(results)) {
 				if (result.hasReplacement()) {
 					if (isNonWidenableDeclaration(result, compilationUnit)) {
 						continue;
@@ -243,7 +253,7 @@ public class HintFileFixCore {
 		BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile, resolvedRules);
 		List<TransformationResult> results = processor.process(compilationUnit, compilerOptions);
 
-		for (TransformationResult result : results) {
+		for (TransformationResult result : outsideCatchBodiesFirst(results)) {
 			if (result.hasReplacement()) {
 				if (isNonWidenableDeclaration(result, compilationUnit)) {
 					continue;
@@ -280,11 +290,28 @@ public class HintFileFixCore {
 	public static void findOperationsFromHint(CompilationUnit compilationUnit,
 			HintFile hintFile, Set<CompilationUnitRewriteOperation> operations) {
 		GuardRegistry.getInstance();
-		for (TransformationResult result : new BatchTransformationProcessor(hintFile).process(compilationUnit)) {
+		for (TransformationResult result : outsideCatchBodiesFirst(new BatchTransformationProcessor(hintFile).process(compilationUnit))) {
 			if (result.hasReplacement() && !isNonWidenableDeclaration(result, compilationUnit)) {
 				addRewriteOperation(compilationUnit, result, operations);
 			}
 		}
+	}
+
+	private static List<TransformationResult> outsideCatchBodiesFirst(List<TransformationResult> results) {
+		// Matches are grouped by rule. Finish possible handler removals before any
+		// rule adds imports or edits in a handler; preserve rule order at each depth.
+		return results.stream().sorted(Comparator.comparingInt(result -> catchDepth(result.match().getMatchedNode())))
+				.toList();
+	}
+
+	private static int catchDepth(ASTNode node) {
+		int depth= 0;
+		for (ASTNode current= node; current != null; current= current.getParent()) {
+			if (current instanceof CatchClause) {
+				depth++;
+			}
+		}
+		return depth;
 	}
 
 	/** Declines unsupported or recovered text before constructing an empty cleanup fix. */
@@ -437,7 +464,8 @@ public class HintFileFixCore {
 			ASTNode matchedNode = result.match().getMatchedNode();
 			String replacement = result.replacement();
 
-			if (matchedNode == null || replacement == null) {
+			if (matchedNode == null || replacement == null
+					|| ExceptionCleanupHelper.isInRemovedCatch(matchedNode, rewrite)) {
 				return;
 			}
 			boolean sequence= result.rule().sourcePattern().getKind() == PatternKind.STATEMENT_SEQUENCE;
@@ -488,6 +516,7 @@ public class HintFileFixCore {
 				if (!imports.getRemoveImports().isEmpty() && !sequence && !ordinaryStatement) {
 					ImportRemover remover = cuRewrite.getImportRemover();
 					remover.registerRemovedNode(matchedNode);
+					registerRetainedBindings(remover, cuRewrite);
 					remover.applyRemoves(importRewrite);
 				}
 				for (String addStatic : imports.getAddStaticImports()) {
@@ -511,6 +540,8 @@ public class HintFileFixCore {
 				// Note: This may execute multiple times for the same imports when multiple
 				// rules match in the same file. ImportRewrite handles duplicate add/remove
 				// operations gracefully, so this is an acceptable tradeoff for simplicity.
+				Set<String> retainedStaticImports= imports.getReplaceStaticImports().isEmpty()
+						? Set.of() : retainedStaticImports(cuRewrite);
 				for (Map.Entry<String, String> entry : imports.getReplaceStaticImports().entrySet()) {
 					String oldType = entry.getKey();
 					String newType = entry.getValue();
@@ -521,6 +552,14 @@ public class HintFileFixCore {
 								(org.eclipse.jdt.core.dom.ImportDeclaration) importObj;
 						if (importDecl.isStatic()) {
 							String importName = importDecl.getName().getFullyQualifiedName();
+							// A qualified replacement does not also migrate untouched calls.
+							// In particular, their message-first overload may still require JUnit 4.
+							if (retainedStaticImports.contains("*") //$NON-NLS-1$
+									|| (importDecl.isOnDemand()
+											? retainedStaticImports.stream().anyMatch(name -> name.startsWith(importName + '.'))
+											: retainedStaticImports.contains(importName))) {
+								continue;
+							}
 							if (importDecl.isOnDemand() && importName.equals(oldType)) {
 								// Wildcard: import static org.junit.Assert.* → import static org.junit.jupiter.api.Assertions.*
 								importRewrite.removeStaticImport(oldType + ".*"); //$NON-NLS-1$
@@ -547,6 +586,9 @@ public class HintFileFixCore {
 				Expression newNode = parseExpression(shortenedReplacement, cuRewrite);
 				if (newNode != null) {
 					ASTNode copy = ASTNode.copySubtree(ast, newNode);
+					if (insertStringGetBytesArgument(matchedNode, copy, cuRewrite, group)) {
+						return;
+					}
 					int oldCount = countStringLiterals(matchedNode);
 					int newCount = countStringLiterals(copy);
                     if (CharsetConstructorMigration.rewriteExpression(matchedNode, copy, replacement, cuRewrite, group)) {
@@ -650,6 +692,74 @@ public class HintFileFixCore {
 			}
 		}
 
+		/** Keep the original bindings of placeholder subtrees copied into the replacement. */
+		private void registerRetainedBindings(ImportRemover remover, CompilationUnitRewrite cuRewrite) {
+			if (!(result.match().getMatchedNode() instanceof Expression)) {
+				return;
+			}
+			Expression replacement= parseExpression(result.replacement(), cuRewrite);
+			if (replacement == null) {
+				return;
+			}
+			Set<ASTNode> candidates= new HashSet<>();
+			for (Object binding : result.match().getBindings().values()) {
+				if (binding instanceof ASTNode node) {
+					candidates.add(node);
+				} else if (binding instanceof List<?> nodes) {
+					for (Object value : nodes) {
+						if (value instanceof ASTNode node) candidates.add(node);
+					}
+				}
+			}
+			Set<ASTNode> retained= new HashSet<>();
+			ASTMatcher matcher= new ASTMatcher();
+			replacement.accept(new ASTVisitor() {
+				@Override public void preVisit(ASTNode node) {
+					for (ASTNode candidate : candidates) {
+						if (candidate.subtreeMatch(matcher, node)) retained.add(candidate);
+					}
+				}
+			});
+			result.match().getMatchedNode().accept(new ASTVisitor() {
+				@Override public boolean preVisit2(ASTNode node) {
+					if (retained.contains(node)) {
+						remover.registerRetainedNode(node);
+						return false; // ImportRemover requires non-overlapping retained regions.
+					}
+					return true;
+				}
+			});
+		}
+
+		/** Static imports still needed outside removed regions, including copied arguments. */
+		private static Set<String> retainedStaticImports(CompilationUnitRewrite cuRewrite) {
+			Set<String> removed= new HashSet<>();
+			for (IBinding binding : cuRewrite.getImportRemover().getImportsToRemove()) {
+				String name= staticImportName(binding);
+				if (name != null) removed.add(name);
+			}
+			List<SimpleName> references= new ArrayList<>();
+			ImportReferencesCollector.collect(cuRewrite.getRoot(), cuRewrite.getCu().getJavaProject(),
+					null, new ArrayList<>(), references);
+			Set<String> retained= new HashSet<>();
+			for (SimpleName reference : references) {
+				String name= staticImportName(reference.resolveBinding());
+				if (name == null) return Set.of("*"); // An unresolved use cannot prove an import obsolete. //$NON-NLS-1$
+				if (!removed.contains(name)) retained.add(name);
+			}
+			return retained;
+		}
+
+		private static String staticImportName(IBinding binding) {
+			if (binding == null || binding.isRecovered()) return null;
+			ITypeBinding owner= switch (binding) {
+				case IMethodBinding method -> method.getDeclaringClass();
+				case IVariableBinding variable -> variable.getDeclaringClass();
+				default -> null;
+			};
+			return owner == null ? null : owner.getQualifiedName() + '.' + binding.getName();
+		}
+
 		/** Rewrites only the matched original list window, preserving its siblings. */
 		private void rewriteStatementSequence(CompilationUnitRewrite cuRewrite, TextEditGroup group) {
 			ASTNode anchor= result.match().getMatchedNode();
@@ -686,6 +796,32 @@ public class HintFileFixCore {
 
 		private static Block parseStatements(String source, CompilationUnitRewrite cuRewrite) {
 			return parseBody(source, cuRewrite);
+		}
+
+		/** Preserve retained literal positions when only a getBytes argument is added. */
+		private static boolean insertStringGetBytesArgument(ASTNode matchedNode, ASTNode replacement,
+				CompilationUnitRewrite cuRewrite, TextEditGroup group) {
+			if (!(matchedNode instanceof MethodInvocation original)
+					|| !(replacement instanceof MethodInvocation updated)
+					|| !"getBytes".equals(original.getName().getIdentifier()) //$NON-NLS-1$
+					|| !original.getName().getIdentifier().equals(updated.getName().getIdentifier())
+					|| !original.arguments().isEmpty() || updated.arguments().size() != 1
+					|| !original.typeArguments().isEmpty() || !updated.typeArguments().isEmpty()
+					|| original.getExpression() == null || updated.getExpression() == null
+					|| !original.getExpression().subtreeMatch(new ASTMatcher(), updated.getExpression())) {
+				return false;
+			}
+			var binding= original.resolveMethodBinding();
+			if (binding == null || binding.isRecovered() || binding.getDeclaringClass() == null
+					|| binding.getDeclaringClass().isRecovered()
+					|| !"java.lang.String".equals(binding.getDeclaringClass().getQualifiedName()) //$NON-NLS-1$
+					|| binding.getParameterTypes().length != 0) {
+				return false;
+			}
+			ASTNode argument= (ASTNode) updated.arguments().getFirst();
+			cuRewrite.getASTRewrite().getListRewrite(original, MethodInvocation.ARGUMENTS_PROPERTY)
+					.insertLast(ASTNode.copySubtree(original.getAST(), argument), group);
+			return true;
 		}
 
 		private static Expression parseExpression(String source, CompilationUnitRewrite cuRewrite) {

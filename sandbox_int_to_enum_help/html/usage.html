@@ -16,6 +16,14 @@
       Enable it explicitly when a declaration and its callers in other project source files must be planned together.
       This scope choice is separate from the optional host support for atomic preview selection described below.</p>
 
+   <h2>Adding a public enum entry</h2>
+   <p>In a cleanup profile, select <strong>Add enum-valued methods and keep legacy public APIs</strong>. For a public final class with <code>STATUS_A</code>,
+      <code>STATUS_B</code> and <code>process(int)</code>, a new caller can use
+      <code>service.processValue(Service.Status.B)</code>. The same option handles String constants.
+      <code>Service.Status.B.legacyValue()</code> returns its original value.</p>
+   <p>Review the proposed nested type and method names. The original fields and method keep their signatures
+      and behavior. This one-file change is available in explicit cleanup profiles only.</p>
+
    <h2>Additional state types</h2>
    <p>The if/else conversion supports <code>byte</code>, <code>short</code>, <code>char</code>,
       <code>int</code>, <code>long</code> and <code>String</code>, both locally and in coordinated migrations.

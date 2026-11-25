@@ -43,7 +43,7 @@ public class MethodReuseCleanUpTest {
 	enum MethodReuseScenarios {
 		SIMPLE_INLINE_SEQUENCE("""
 			package test1;
-			public class Test {
+			public final class Test {
 				public String formatName(String first, String last) {
 					return first.trim() + " " + last.trim();
 				}
@@ -55,7 +55,7 @@ public class MethodReuseCleanUpTest {
 			}""",
 			"""
 			package test1;
-			public class Test {
+			public final class Test {
 				public String formatName(String first, String last) {
 					return first.trim() + " " + last.trim();
 				}
@@ -66,9 +66,9 @@ public class MethodReuseCleanUpTest {
 				}
 			}"""),
 
-		INLINE_WITH_METHOD_CALLS("""
+		UNSAFE_GETTER_EVALUATION_ORDER("""
 			package test1;
-			public class Test {
+			public final class Test {
 				public String combine(String a, String b) {
 					return a.toLowerCase() + b.toUpperCase();
 				}
@@ -82,28 +82,11 @@ public class MethodReuseCleanUpTest {
 					String getFirst() { return ""; }
 					String getLast() { return ""; }
 				}
-			}""",
-			"""
-			package test1;
-			public class Test {
-				public String combine(String a, String b) {
-					return a.toLowerCase() + b.toUpperCase();
-				}
-
-				public void process(User u) {
-					String result = combine(u.getFirst(), u.getLast());
-					System.out.println(result);
-				}
-
-				class User {
-					String getFirst() { return ""; }
-					String getLast() { return ""; }
-				}
-			}"""),
+			}""", null),
 
 		MULTIPLE_VARIABLE_MAPPING("""
 			package test1;
-			public class Test {
+			public final class Test {
 				public int calculate(int x, int y) {
 					int temp = x + y;
 					return temp * 2;
@@ -117,7 +100,7 @@ public class MethodReuseCleanUpTest {
 			}""",
 			"""
 			package test1;
-			public class Test {
+			public final class Test {
 				public int calculate(int x, int y) {
 					int temp = x + y;
 					return temp * 2;
@@ -144,8 +127,12 @@ public class MethodReuseCleanUpTest {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
 		ICompilationUnit unit= pack.createCompilationUnit("Test.java", test.given, false, null); //$NON-NLS-1$
 		context.enable(MYCleanUpConstants.METHOD_REUSE_INLINE_SEQUENCES);
-		context.assertRefactoringResultAsExpected(
-				new ICompilationUnit[] { unit }, new String[] { test.expected }, null);
+		if (test.expected == null) {
+			context.assertRefactoringHasNoChange(new ICompilationUnit[] { unit });
+		} else {
+			context.assertRefactoringResultAsExpected(
+					new ICompilationUnit[] { unit }, new String[] { test.expected }, null);
+		}
 	}
 
 	@Test

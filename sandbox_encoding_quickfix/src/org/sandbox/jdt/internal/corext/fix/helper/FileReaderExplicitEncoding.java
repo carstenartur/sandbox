@@ -16,79 +16,138 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.InputStreamReader;
-import java.util.List;
+import java.nio.charset.Charset;
 import java.util.Set;
 
 import org.eclipse.text.edits.TextEditGroup;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
+import org.eclipse.jdt.core.dom.CatchClause;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
-import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.TryStatement;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.UnionType;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 
-import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 
 /**
- * Change
- *
- * Find: Reader is=new FileReader("file.txt")
- *
- * Rewrite: Reader is=new InputStreamReader(new
- * FileInputStream("file.txt"),Charset.defaultCharset());
- *
- * Charset.defaultCharset() is available since Java 1.5
- *
+ * Uses FileReader's Charset constructors since Java 11 when the surrounding
+ * exception contract permits IOException. Other supported contexts retain the
+ * assignment-compatible InputStreamReader/FileInputStream replacement.
  */
 public class FileReaderExplicitEncoding extends AbstractExplicitEncoding<ClassInstanceCreation> {
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb) {
+		var element= compilationUnit.getJavaElement();
+		boolean hasCharsetConstructor= element != null && JavaModelUtil.is11OrHigher(element.getJavaProject());
 		ReferenceHolder<ASTNode, Object> datah= ReferenceHolder.createForNodes();
 		HelperVisitorFactory.forClassInstanceCreation(FileReader.class)
 			.in(compilationUnit)
 			.excluding(nodesprocessed)
-			.processEach(datah, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));
+			.processEach(datah, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder, hasCharsetConstructor));
 	}
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
 			Set<CompilationUnitRewriteOperation> operations, ChangeBehavior cb,
-			ClassInstanceCreation visited, ReferenceHolder<ASTNode, Object> holder) {
-		// The replacement is a supertype of FileReader. Preserve concrete declarations,
-		// inferred variable types, and overloads requiring the original FileReader.
-		if (!acceptsInputStreamReader(visited)) {
+			ClassInstanceCreation visited, ReferenceHolder<ASTNode, Object> holder, boolean hasCharsetConstructor) {
+		IMethodBinding constructor= visited.resolveConstructorBinding();
+		if (constructor == null || constructor.isRecovered() || visited.getAnonymousClassDeclaration() != null
+				|| !FileReader.class.getName().equals(constructor.getDeclaringClass().getQualifiedName())
+				|| constructor.getParameterTypes().length != 1) {
 			return false;
 		}
-		List<ASTNode> arguments= visited.arguments();
-		switch (arguments.size()) {
-			case 1:
-				break;
-			case 2:
-				if (!(arguments.get(1) instanceof StringLiteral)) {
-					return false;
-				}
-				StringLiteral argstring3= (StringLiteral) arguments.get(1);
-				if (!ENCODINGS.contains(argstring3.getLiteralValue())) {
-					return false;
-				}
-				holder.put(argstring3, ENCODING_MAP.get(argstring3.getLiteralValue()));
-				break;
-			default:
-				return false;
+		boolean useCharsetConstructor= hasCharsetConstructor && acceptsCharsetConstructor(visited, constructor);
+		if (!useCharsetConstructor && !acceptsInputStreamReader(visited)) {
+			return false;
 		}
+		holder.put(visited, Boolean.valueOf(useCharsetConstructor));
 		operations.add(fixcore.rewrite(visited, cb, holder));
 		return false;
+	}
+
+	private static boolean acceptsCharsetConstructor(ClassInstanceCreation creation, IMethodBinding original) {
+		for (IMethodBinding candidate : original.getDeclaringClass().getDeclaredMethods()) {
+			ITypeBinding[] parameters= candidate.getParameterTypes();
+			if (!candidate.isConstructor() || parameters.length != 2
+					|| !parameters[0].isEqualTo(original.getParameterTypes()[0])
+					|| !Charset.class.getName().equals(parameters[1].getQualifiedName())) {
+				continue;
+			}
+			// The Charset overload declares IOException, not merely FileNotFoundException.
+			for (ITypeBinding exception : candidate.getExceptionTypes()) {
+				if (!isExceptionHandled(creation, exception)) {
+					return false;
+				}
+			}
+			return true;
+		}
+		return false;
+	}
+
+	private static boolean isExceptionHandled(ASTNode node, ITypeBinding exception) {
+		for (ASTNode child= node, parent= child.getParent(); parent != null;
+				child= parent, parent= parent.getParent()) {
+			if (parent instanceof TryStatement statement
+					&& (child.getLocationInParent() == TryStatement.BODY_PROPERTY
+							|| child.getLocationInParent() == TryStatement.RESOURCES2_PROPERTY)) {
+				for (Object item : statement.catchClauses()) {
+					Type caught= ((CatchClause) item).getException().getType();
+					if (caught instanceof UnionType union) {
+						for (Object alternative : union.types()) {
+							if (catches(exception, ((Type) alternative).resolveBinding())) {
+								return true;
+							}
+						}
+					} else if (catches(exception, caught.resolveBinding())) {
+						return true;
+					}
+				}
+			}
+			if (parent instanceof LambdaExpression lambda) {
+				return declares(lambda.resolveMethodBinding(), exception);
+			}
+			if (parent instanceof MethodDeclaration method) {
+				return declares(method.resolveBinding(), exception);
+			}
+			if (parent instanceof AbstractTypeDeclaration || parent instanceof AnonymousClassDeclaration) {
+				return false;
+			}
+		}
+		return false;
+	}
+
+	private static boolean declares(IMethodBinding method, ITypeBinding exception) {
+		if (method != null) {
+			for (ITypeBinding declared : method.getExceptionTypes()) {
+				if (catches(exception, declared)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	private static boolean catches(ITypeBinding exception, ITypeBinding handler) {
+		return handler != null && !handler.isRecovered() && exception.isAssignmentCompatible(handler);
 	}
 
 	private static boolean acceptsInputStreamReader(ClassInstanceCreation creation) {
@@ -117,7 +176,12 @@ public class FileReaderExplicitEncoding extends AbstractExplicitEncoding<ClassIn
 			TextEditGroup group, ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
-		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, visited, (String) data.get(visited),getCharsetConstants(cuRewrite));
+		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, visited, null, getCharsetConstants(cuRewrite));
+		if (Boolean.TRUE.equals(data.get(visited))) {
+			rewrite.getListRewrite(visited, ClassInstanceCreation.ARGUMENTS_PROPERTY)
+					.insertLast(callToCharsetDefaultCharset, group);
+			return;
+		}
 		/**
 		 * new FileInputStream(<filename>)
 		 */

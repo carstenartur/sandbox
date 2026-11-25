@@ -104,7 +104,7 @@ for repo_id in tycho-snapshots eclipse-snapshots eclipse-cbi eclipse-hosted; do
   retry_options+=("-Daether.connector.http.retryHandler.intervalMax.$repo_id=5000"
                   "-Daether.transport.http.retryHandler.intervalMax.$repo_id=5000")
 done
-mvn --batch-mode -ntp "${retry_options[@]}" -f "$BUILD_DIR/pom.xml" \
+mvn --batch-mode --errors --update-snapshots -ntp "${retry_options[@]}" -f "$BUILD_DIR/pom.xml" \
   -Pbuild-individual-bundles \
   -pl ":$PATCHED_JDT_UI_BUNDLE" -am \
   -Declipse-sdk-repo="$PATCHED_JDT_UI_SDK_REPOSITORY" \

@@ -22,27 +22,33 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ArrayCreation;
 import org.eclipse.jdt.core.dom.ArrayInitializer;
-import org.eclipse.jdt.core.dom.BooleanLiteral;
-import org.eclipse.jdt.core.dom.CharacterLiteral;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldAccess;
+import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.NullLiteral;
-import org.eclipse.jdt.core.dom.NumberLiteral;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.SuperFieldAccess;
 import org.eclipse.jdt.core.dom.TypeLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+import org.eclipse.jdt.internal.corext.codemanipulation.ContextSensitiveImportRewriteContext;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.LibStandardNames;
@@ -66,10 +72,13 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 	 * Assertion methods that have expected/actual parameter order. First parameter
 	 * should be expected (constant/literal), second should be actual (computed).
 	 */
-	private static final Set<String> METHODS_WITH_EXPECTED_ACTUAL = Set.of("assertEquals", "assertNotEquals",
-			"assertArrayEquals", "assertSame", "assertNotSame", "assertIterableEquals", // JUnit 5 only
-			"assertLinesMatch" // JUnit 5 only
-	);
+	// assertLinesMatch interprets only its expected lines as patterns or skip markers.
+	private static final Set<String> METHODS_WITH_EXPECTED_ACTUAL = Set.of("assertEquals", "assertNotEquals", //$NON-NLS-1$ //$NON-NLS-2$
+			"assertArrayEquals", "assertSame", "assertNotSame", "assertIterableEquals"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+	private static final Set<String> SYMMETRIC_VALUE_TYPES= Set.of(LibStandardNames.JAVA_LANG_STRING,
+			LibStandardNames.JAVA_LANG_INTEGER, LibStandardNames.JAVA_LANG_LONG, LibStandardNames.JAVA_LANG_DOUBLE,
+			"java.lang.Boolean", "java.lang.Byte", "java.lang.Character", "java.lang.Short", "java.lang.Float", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
+			"java.lang.Class"); //$NON-NLS-1$
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
@@ -117,23 +126,8 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 			return true; // Continue processing other nodes
 		}
 
-		// Get the condition expression (may be first or second argument depending on
-		// whether message is present)
-		Expression condition = null;
-
-		if (arguments.size() == 1) {
-			condition = (Expression) arguments.get(0);
-		} else if (arguments.size() == 2) {
-			// Check if first argument is String (message), otherwise it's condition
-			Expression firstArg = (Expression) arguments.get(0);
-			ITypeBinding firstArgType = firstArg.resolveTypeBinding();
-			if (firstArgType != null && "java.lang.String".equals(firstArgType.getQualifiedName())) {
-				// First arg is message, second is condition
-				condition = (Expression) arguments.get(1);
-			} else {
-				condition = firstArg;
-			}
-		}
+		// This helper only visits Jupiter assertions, whose condition comes first.
+		Expression condition= arguments.size() <= 2 ? (Expression) arguments.get(0) : null;
 
 		if (condition == null || !canOptimize(condition)) {
 			return true; // Continue processing other nodes
@@ -149,135 +143,131 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 	private boolean processParameterOrder(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ASTNode node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
-
-		if (!(node instanceof MethodInvocation)) {
-			return true; // Continue processing other nodes
-		}
-
-		MethodInvocation mi = (MethodInvocation) node;
-		List<?> arguments = mi.arguments();
-
-		// Need at least 2 arguments (expected, actual) or 3 with message
-		if (arguments.size() < 2) {
-			return true; // Continue processing other nodes
-		}
-
-		// Get first two arguments (they might be expected/actual or message/expected
-		// depending on JUnit version)
-		Expression first = (Expression) arguments.get(0);
-		Expression second = (Expression) arguments.get(1);
-
-		// Check if first argument is a String message (JUnit 4 style)
-		ITypeBinding firstType = first.resolveTypeBinding();
-		boolean firstIsMessage = firstType != null && "java.lang.String".equals(firstType.getQualifiedName());
-
-		Expression expectedParam;
-		Expression actualParam;
-
-		if (firstIsMessage && arguments.size() >= 3) {
-			// JUnit 4: message, expected, actual
-			expectedParam = (Expression) arguments.get(1);
-			actualParam = (Expression) arguments.get(2);
-		} else {
-			// JUnit 5: expected, actual [, message]
-			expectedParam = first;
-			actualParam = second;
-		}
-
-		// If expected is not constant but actual is constant, we need to swap
-		if (!isConstantExpression(expectedParam) && isConstantExpression(actualParam)) {
+		if (node instanceof MethodInvocation invocation && canSwapArguments(invocation)) {
 			return addStandardRewriteOperation(fixcore, operations, node, dataHolder);
 		}
-
-		return true; // Continue processing other nodes
+		return true;
 	}
 
-	/**
-	 * Determines if an expression is a constant value. Constants include literals,
-	 * final fields, enums, class literals, array literals, and collection factory
-	 * methods with constant arguments.
-	 */
-	private boolean isConstantExpression(Expression expr) {
-		if (expr == null) {
+	private static boolean canSwapArguments(MethodInvocation invocation) {
+		List<?> arguments= invocation.arguments();
+		if (arguments.size() < 2) {
 			return false;
 		}
+		String name= invocation.getName().getIdentifier();
+		boolean identityAssertion= "assertSame".equals(name) || "assertNotSame".equals(name); //$NON-NLS-1$ //$NON-NLS-2$
+		Expression expected= (Expression) arguments.get(0);
+		Expression actual= (Expression) arguments.get(1);
+		return !isStableArgument(expected, identityAssertion) && isStableArgument(actual, identityAssertion)
+				&& (identityAssertion || hasSymmetricComparison(name, expected, actual));
+	}
 
-		// Literals
-		if (expr instanceof NumberLiteral || expr instanceof StringLiteral || expr instanceof BooleanLiteral
-				|| expr instanceof CharacterLiteral || expr instanceof NullLiteral || expr instanceof TypeLiteral) {
+	private static boolean hasSymmetricComparison(String method, Expression expected, Expression actual) {
+		// Jupiter dispatches equals on the expected value, including array and iterable elements.
+		return switch (method) {
+		case "assertArrayEquals" -> isSymmetricArray(expected.resolveTypeBinding()) && isSymmetricArray(actual.resolveTypeBinding()); //$NON-NLS-1$
+		case "assertIterableEquals" -> isSymmetricValue(standardListElement(expected)) && isSymmetricValue(standardListElement(actual)); //$NON-NLS-1$
+		default -> isSymmetricValue(expected.resolveTypeBinding()) && isSymmetricValue(actual.resolveTypeBinding());
+		};
+	}
+
+	private static boolean isSymmetricArray(ITypeBinding type) {
+		return type != null && type.isArray() && isSymmetricValue(type.getElementType());
+	}
+
+	private static boolean isSymmetricValue(ITypeBinding type) {
+		return type != null && !type.isRecovered() && (type.isPrimitive() || type.isNullType() || type.isEnum()
+				|| SYMMETRIC_VALUE_TYPES.contains(type.getQualifiedName())
+				|| "java.lang.Class".equals(type.getErasure().getQualifiedName())); //$NON-NLS-1$
+	}
+
+	private static ITypeBinding standardListElement(Expression expression) {
+		if (!(ASTNodes.getUnparenthesedExpression(expression) instanceof MethodInvocation invocation)) {
+			return null;
+		}
+		IMethodBinding binding= invocation.resolveMethodBinding();
+		if (!isStandardListFactory(invocation, binding)) {
+			// Iterable<T> alone says nothing about observable iterator callbacks. A nonvirtual
+			// local helper with a sole JDK factory return has the same known implementation.
+			if (binding == null || binding.isRecovered()
+					|| !(Modifier.isPrivate(binding.getModifiers()) || Modifier.isStatic(binding.getModifiers()))
+					|| !(invocation.getRoot() instanceof CompilationUnit root)
+					|| !(root.findDeclaringNode(binding.getMethodDeclaration()) instanceof MethodDeclaration declaration)
+					|| declaration.getBody() == null || declaration.getBody().statements().size() != 1
+					|| !(declaration.getBody().statements().getFirst() instanceof ReturnStatement result)
+					|| !(result.getExpression() instanceof MethodInvocation factory)) {
+				return null;
+			}
+			binding= factory.resolveMethodBinding();
+			if (!isStandardListFactory(factory, binding)) {
+				return null;
+			}
+		}
+		ITypeBinding[] arguments= binding.getReturnType().getTypeArguments();
+		return arguments.length == 1 ? arguments[0] : null;
+	}
+
+	private static boolean isStableArgument(Expression expression, boolean identityAssertion) {
+		if (expression instanceof ParenthesizedExpression parentheses) {
+			return isStableArgument(parentheses.getExpression(), identityAssertion);
+		}
+		if (expression instanceof NullLiteral || expression instanceof TypeLiteral || isCompileTimeConstant(expression)) {
 			return true;
 		}
-
-		// Final fields and enum constants
-		if (expr instanceof SimpleName) {
-			SimpleName name = (SimpleName) expr;
-			if (name.resolveBinding() instanceof IVariableBinding binding && binding.isField()) {
-				int modifiers = binding.getModifiers();
-				return Modifier.isFinal(modifiers) || Modifier.isStatic(modifiers) || binding.isEnumConstant();
-			}
+		if (identityAssertion && expression instanceof SimpleName name && isLocalStaticFinalReference(name)) {
+			return true;
 		}
-
-		// Qualified names (e.g., MyClass.CONSTANT)
-		if (expr instanceof QualifiedName) {
-			QualifiedName qname = (QualifiedName) expr;
-			if (qname.resolveBinding() instanceof IVariableBinding binding && binding.isField()) {
-				int modifiers = binding.getModifiers();
-				return Modifier.isFinal(modifiers) || Modifier.isStatic(modifiers) || binding.isEnumConstant();
-			}
+		if (expression instanceof ArrayCreation array && array.getInitializer() != null) {
+			return isStableArgument(array.getInitializer(), false);
 		}
-
-		// Field access (e.g., Status.ACTIVE)
-		if (expr instanceof FieldAccess) {
-			FieldAccess fieldAccess = (FieldAccess) expr;
-			IVariableBinding binding = fieldAccess.resolveFieldBinding();
-			if (binding != null) {
-				int modifiers = binding.getModifiers();
-				return Modifier.isFinal(modifiers) || Modifier.isStatic(modifiers) || binding.isEnumConstant();
-			}
+		if (expression instanceof ArrayInitializer initializer) {
+			List<?> elements= initializer.expressions();
+			return elements.stream().allMatch(element -> isStableArgument((Expression) element, false));
 		}
+		return expression instanceof MethodInvocation invocation && isStableLibraryCall(invocation);
+	}
 
-		// Array creation with initializer containing only constants
-		if (expr instanceof ArrayCreation) {
-			ArrayCreation arrayCreation = (ArrayCreation) expr;
-			ArrayInitializer initializer = arrayCreation.getInitializer();
-			if (initializer != null) {
-				List<?> expressions = initializer.expressions();
-				return expressions.stream().allMatch(e -> isConstantExpression((Expression) e));
-			}
+	private static boolean isCompileTimeConstant(Expression expression) {
+		// A field access through an expression can evaluate its receiver even for a constant field.
+		return !(expression instanceof FieldAccess || expression instanceof SuperFieldAccess)
+				&& (!(expression instanceof QualifiedName name) || name.getQualifier().resolveBinding() instanceof ITypeBinding)
+				&& expression.resolveConstantExpressionValue() != null;
+	}
+
+	private static boolean isLocalStaticFinalReference(SimpleName name) {
+		if (!(name.resolveBinding() instanceof IVariableBinding field) || field.isRecovered() || !field.isField()
+				|| !Modifier.isStatic(field.getModifiers()) || !Modifier.isFinal(field.getModifiers())) {
+			return false;
 		}
+		// Reading a final reference from one of its own class's methods does not initialize another class.
+		MethodDeclaration method= ASTNodes.getParent(name, MethodDeclaration.class);
+		var binding= method == null ? null : method.resolveBinding();
+		return binding != null && !binding.isRecovered() && binding.getDeclaringClass().isEqualTo(field.getDeclaringClass());
+	}
 
-		// Array initializer
-		if (expr instanceof ArrayInitializer) {
-			ArrayInitializer initializer = (ArrayInitializer) expr;
-			List<?> expressions = initializer.expressions();
-			return expressions.stream().allMatch(e -> isConstantExpression((Expression) e));
+	private static boolean isStableLibraryCall(MethodInvocation invocation) {
+		var binding= invocation.resolveMethodBinding();
+		if (binding == null || binding.isRecovered()) {
+			return false;
 		}
-
-		// Collection factory methods: List.of(...), Set.of(...), Arrays.asList(...),
-		// Map.of(...)
-		if (expr instanceof MethodInvocation) {
-			MethodInvocation mi = (MethodInvocation) expr;
-			String methodName = mi.getName().getIdentifier();
-			Expression receiver = mi.getExpression();
-
-			if (methodName.equals("of") || methodName.equals("asList")) {
-				if (receiver instanceof SimpleName) {
-					String receiverName = ((SimpleName) receiver).getIdentifier();
-					if (receiverName.equals("List") || receiverName.equals("Set") || receiverName.equals("Arrays")
-							|| receiverName.equals("Map")) {
-						List<?> arguments = mi.arguments();
-						return arguments.stream().allMatch(arg -> isConstantExpression((Expression) arg));
-					}
-				}
-			}
-
-			// Method call on string literal: "test".getBytes()
-			if (receiver instanceof StringLiteral) {
-				return true;
-			}
+		List<?> arguments= invocation.arguments();
+		if (invocation.getExpression() instanceof StringLiteral) {
+			return LibStandardNames.JAVA_LANG_STRING.equals(binding.getDeclaringClass().getQualifiedName())
+					&& "getBytes".equals(binding.getName()) && arguments.isEmpty(); //$NON-NLS-1$
 		}
+		return isStandardListFactory(invocation, binding)
+				&& arguments.stream().allMatch(argument -> isCompileTimeConstant((Expression) argument));
+	}
 
-		return false;
+	private static boolean isStandardListFactory(MethodInvocation invocation, IMethodBinding binding) {
+		if (binding == null || binding.isRecovered() || !(invocation.getExpression() instanceof Name qualifier)
+				|| !(qualifier.resolveBinding() instanceof ITypeBinding)) {
+			return false;
+		}
+		String owner= binding.getMethodDeclaration().getDeclaringClass().getQualifiedName();
+		String method= binding.getName();
+		return ("java.util.List".equals(owner) && "of".equals(method)) //$NON-NLS-1$ //$NON-NLS-2$
+				|| ("java.util.Arrays".equals(owner) && "asList".equals(method)); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	private boolean canOptimize(Expression condition) {
@@ -301,6 +291,31 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 		}
 
 		return false;
+	}
+
+	@Override
+	public void rewrite(JUnitCleanUpFixCore fixcore, ReferenceHolder<Integer, JunitHolder> hit,
+			CompilationUnitRewrite cuRewrite, TextEditGroup group) {
+		MethodInvocation invocation= hit.get(hit.size() - 1).getMethodInvocation();
+		super.rewrite(fixcore, hit, cuRewrite, group);
+		ASTRewrite rewrite= cuRewrite.getASTRewrite();
+		SimpleName replacement= (SimpleName) rewrite.get(invocation, MethodInvocation.NAME_PROPERTY);
+		if (invocation.getExpression() != null || replacement.getIdentifier().equals(invocation.getName().getIdentifier())) {
+			return;
+		}
+		ImportRewrite imports= cuRewrite.getImportRewrite();
+		String method= replacement.getIdentifier();
+		String reference= imports.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, method, false,
+				new ContextSensitiveImportRewriteContext(invocation, imports));
+		int separator= reference.lastIndexOf('.');
+		if (separator >= 0) {
+			rewrite.set(invocation, MethodInvocation.EXPRESSION_PROPERTY,
+					invocation.getAST().newName(reference.substring(0, separator)), group);
+		} else {
+			cuRewrite.getImportRemover().registerAddedStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, method, false);
+		}
+		// Retain the original static import when an unchanged call still uses it.
+		cuRewrite.getImportRemover().registerRemovedNode(invocation.getName());
 	}
 
 	@Override
@@ -328,23 +343,8 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 		// Handle assertTrue/assertFalse optimization
 		boolean isTrue = "assertTrue".equals(methodName);
 
-		// Get the condition and message
-		Expression condition = null;
-		Expression message = null;
-
-		if (arguments.size() == 1) {
-			condition = (Expression) arguments.get(0);
-		} else if (arguments.size() == 2) {
-			Expression firstArg = (Expression) arguments.get(0);
-			ITypeBinding firstArgType = firstArg.resolveTypeBinding();
-			if (firstArgType != null && "java.lang.String".equals(firstArgType.getQualifiedName())) {
-				message = firstArg;
-				condition = (Expression) arguments.get(1);
-			} else {
-				condition = firstArg;
-				message = (Expression) arguments.get(1);
-			}
-		}
+		Expression condition= (Expression) arguments.get(0);
+		Expression message= arguments.size() == 2 ? (Expression) arguments.get(1) : null;
 
 		if (condition == null) {
 			return;
@@ -394,13 +394,7 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 					rewriter.set(mi, MethodInvocation.NAME_PROPERTY, ast.newSimpleName(newMethodName), group);
 					ListRewrite argsRewrite = rewriter.getListRewrite(mi, MethodInvocation.ARGUMENTS_PROPERTY);
 
-					// Create new argument list
-					argsRewrite.remove((ASTNode) condition, group);
-					if (message != null) {
-						argsRewrite.insertLast(rewriter.createCopyTarget(nonNullExpr), group);
-					} else {
-						argsRewrite.insertFirst(rewriter.createCopyTarget(nonNullExpr), group);
-					}
+					argsRewrite.replace(condition, rewriter.createCopyTarget(nonNullExpr), group);
 				}
 			} else {
 				// Handle equality checks between non-null values
@@ -483,47 +477,16 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 	 * Swaps expected/actual parameters if they are in the wrong order. Expected
 	 * (constant) should come first, actual (computed) should come second.
 	 */
-	private void swapParametersIfNeeded(MethodInvocation mi, ASTRewrite rewriter, TextEditGroup group) {
-		List<?> arguments = mi.arguments();
-
-		if (arguments.size() < 2) {
+	private void swapParametersIfNeeded(MethodInvocation invocation, ASTRewrite rewriter, TextEditGroup group) {
+		if (!canSwapArguments(invocation)) {
 			return;
 		}
-
-		Expression first = (Expression) arguments.get(0);
-		Expression second = (Expression) arguments.get(1);
-
-		// Check if first argument is a String message (JUnit 4 style)
-		ITypeBinding firstType = first.resolveTypeBinding();
-		boolean firstIsMessage = firstType != null && "java.lang.String".equals(firstType.getQualifiedName());
-
-		Expression expectedParam;
-		Expression actualParam;
-		int expectedIndex;
-		int actualIndex;
-
-		if (firstIsMessage && arguments.size() >= 3) {
-			// JUnit 4: message, expected, actual
-			expectedParam = (Expression) arguments.get(1);
-			actualParam = (Expression) arguments.get(2);
-			expectedIndex = 1;
-			actualIndex = 2;
-		} else {
-			// JUnit 5: expected, actual [, message]
-			expectedParam = first;
-			actualParam = second;
-			expectedIndex = 0;
-			actualIndex = 1;
-		}
-
-		// If expected is not constant but actual is constant, swap them
-		if (!isConstantExpression(expectedParam) && isConstantExpression(actualParam)) {
-			ListRewrite argsRewrite = rewriter.getListRewrite(mi, MethodInvocation.ARGUMENTS_PROPERTY);
-			Expression newExpected = (Expression) rewriter.createCopyTarget(actualParam);
-			Expression newActual = (Expression) rewriter.createCopyTarget(expectedParam);
-			argsRewrite.replace((ASTNode) arguments.get(expectedIndex), newExpected, group);
-			argsRewrite.replace((ASTNode) arguments.get(actualIndex), newActual, group);
-		}
+		List<?> arguments= invocation.arguments();
+		Expression expected= (Expression) arguments.get(0);
+		Expression actual= (Expression) arguments.get(1);
+		ListRewrite argsRewrite= rewriter.getListRewrite(invocation, MethodInvocation.ARGUMENTS_PROPERTY);
+		argsRewrite.replace(expected, rewriter.createCopyTarget(actual), group);
+		argsRewrite.replace(actual, rewriter.createCopyTarget(expected), group);
 	}
 
 	private boolean isPrimitiveComparison(Expression left, Expression right) {

@@ -23,6 +23,28 @@
       <li>A deterministic TODO with a code example is added to the owning source type's Javadoc, without adding executable members.</li>
    </ul>
 
+   <p>When <code>@Rule</code> and <code>@ClassRule</code> fixtures share a source ancestor that extends
+      <code>ExternalResource</code>, best effort marks the connected fixtures and tests. This includes tests
+      that inherit rules, source superclasses that supply test and lifecycle methods, and other fixtures
+      required by the marked tests. These types keep their JUnit 4 discovery and lifecycle behavior until
+      the shared fixture is split into separate instance and class extensions. Independent fixtures and their
+      tests can still migrate together. Assertion rewrites and optimizations of existing Jupiter assumptions
+      can continue in marked files.</p>
+
+   <p>JUnit 4 <code>Assume</code> calls stay in place throughout the coordinated source group while a consumer
+      retains Vintage execution, including calls in separate shared helpers. Generated and derived test sources
+      participate in this check even though they are excluded from automatic scope expansion. Calls also stay when the cleanup
+      cannot prove a complete, selected and editable caller scope. This preserves unsatisfied assumptions as
+      aborted tests. Jupiter tests can use these retained helpers. A closed group with no retained Vintage
+      consumer can still migrate its assumptions to Jupiter. Retained parameterized <code>@Test</code>
+      annotations, <code>@RunWith</code> runners and tests inherited from binary libraries also keep the
+      JUnit 4 assumption contract.</p>
+
+   <p>A Rule field can refer to a source fixture through a parenthesized construction or a typed factory call.
+      For a fixture with one lifecycle, best effort uses <code>EXTERNAL_RESOURCE_INITIALIZER_UNSUPPORTED</code>
+      when the existing rewrite cannot migrate the fixture and field together. Their connected tests and
+      fixtures stay on JUnit 4 while independently eligible fixtures and tests can still migrate.</p>
+
    <h2>What the mode does not guarantee</h2>
    <p class="warning">The resulting project is deliberately allowed to be incomplete. It may fail to compile
       or its tests may fail until every generated marker is resolved. Selecting this mode is not an assertion
@@ -56,10 +78,10 @@ public class LegacyTest {
    <p>The project-wide cleanup application records the same evidence in JSON. Unit locations are represented
       by opaque identifiers; source paths are not exposed unnecessarily. A gap entry contains:</p>
    <pre>{
-  "candidateId": "parameterized:ConvertLoopOperationTest",
-  "reasonCode": "PARAMETERIZED_FIELD_INJECTION",
-  "explanation": "@Parameterized.Parameter field injection is not represented...",
-  "remediation": "Replace field injection ... with explicit Jupiter method arguments..."
+  "candidateId": "runner:LegacyTest",
+  "reasonCode": "CUSTOM_JUNIT4_RUNNER",
+  "explanation": "The JUnit 4 runner has no generally equivalent automatic Jupiter rewrite.",
+  "remediation": "Port the runner behavior to Jupiter extensions, or retain Vintage for this test type."
 }</pre>
 
    <h2>Typical difficult constructs</h2>
@@ -69,9 +91,9 @@ public class LegacyTest {
       </thead>
       <tbody>
          <tr><td>Custom <code>@RunWith</code> runner</td><td>The runner may combine discovery, lifecycle, filtering, and execution semantics.</td><td>Port the behavior to explicit Jupiter extensions or retain Vintage for the type.</td></tr>
-         <tr><td>Parameterized field injection</td><td>Constructor or method arguments are not equivalent to mutable field injection in every hierarchy.</td><td>Create an explicit argument source and pass values to the test method or constructor.</td></tr>
+         <tr><td>Parameterized provider or injection outside the supported contract</td><td>The closed constant-row <code>ParameterizedClass</code> strategy cannot prove every provider or hierarchy.</td><td>Check the <a href="reference.html">executable boundary</a>; implement an explicit argument source for unsupported cases.</td></tr>
          <tr><td>Custom Rule</td><td>An arbitrary Rule can wrap statements, alter errors, or control shared resources.</td><td>Implement the contract as one or more Jupiter callbacks, parameter resolvers, or interceptors.</td></tr>
-         <tr><td>Fixture used as both <code>@Rule</code> and <code>@ClassRule</code></td><td>One callback lifecycle cannot be both per-test and per-class.</td><td>Split the fixture into separate instance and class extensions.</td></tr>
+         <tr><td>Fixture used as both <code>@Rule</code> and <code>@ClassRule</code></td><td>One registration cannot serve both lifecycle scopes; automatic cleanup rejects that mixed use.</td><td>Retain the fixture implementation and wire separate instance <code>perTest</code> and static <code>perClass</code> registrations with the <a href="usage.html#staged-migration">manual staged bridge</a>, or write dedicated extensions.</td></tr>
          <tr><td>Complex <code>ExpectedException</code> matcher</td><td>The throwing range and matcher semantics may not map exactly to one <code>assertThrows</code>.</td><td>Choose the throwing statements explicitly and add Jupiter assertions for message, cause, and state.</td></tr>
       </tbody>
    </table>

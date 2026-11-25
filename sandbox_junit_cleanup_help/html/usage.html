@@ -93,6 +93,52 @@ public class MyTest {
       because these two examples convert successfully: other tests, custom runners, rules, and dependencies may
       still require them. Compare the same test identities, results, and invocation counts before and after migration.</p>
 
+   <h2 id="staged-migration">Reuse a fixture during a staged migration</h2>
+   <p>The separate <code>io.github.carstenartur:sandbox-junit-migration-support</code> test dependency provides
+      manual lifecycle adapters. Keep the fixture instance so migrated tests can still use its helper methods.
+      For accessible setup and teardown hooks, a former <code>@Rule</code> can use an instance registration:</p>
+   <pre>class MigratedTest {
+    private Fixture fixture;
+
+    @org.junit.jupiter.api.extension.RegisterExtension
+    final org.junit.jupiter.api.extension.Extension extension =
+            org.sandbox.junit.jupiter.ExternalResourceExtension.perTest(() -&gt; fixture, Fixture::before, Fixture::after);
+
+    MigratedTest() {
+        fixture = new Fixture();
+    }
+}</pre>
+   <p>The supplier reads the constructor-assigned fixture once at setup. A null result skips both hooks.
+      After successful setup, teardown uses the selected receiver even if the field changes.</p>
+   <p>For a former <code>@ClassRule</code>, retain the static fixture and register <code>perClass</code> on a
+      static extension field. A fixture class used in both scopes needs separate registrations at the original
+      scopes. Protected hooks require a companion in the fixture's package or an appropriate subclass.
+      Preserve inherited setup and review field hiding and ordering with other rules and extensions.
+      Separate suppliers read at their own setup boundaries. Review peer rules that change fields
+      if JUnit 4 captured those fields together before setup. Under Jupiter's <code>PER_CLASS</code>
+      lifecycle, test-instance construction precedes <code>perClass</code> setup.</p>
+   <p>For peers captured together, use one <code>perTestGroup</code> or <code>perClassGroup</code>
+      for the exact concrete class and scope. The factory supplies <code>resourceHook</code> entries
+      in the effective outer-to-inner order. Defer fixture field reads to their selectors.
+      The group selects all receivers before setup, skips null receivers and retains aliases.
+      Only successful setups unwind, in reverse order. Multiple ordinary cleanup failures form
+      an ordered OpenTest4J aggregate. Jupiter controls suppression and can bypass the exit callback
+      for a fatal error from the test body. Group registration, ordering and field-hiding analysis,
+      custom <code>apply</code> migration and support-bundle provisioning remain manual.</p>
+   <p>The support jar targets Java 21 for consumer tests. The Sandbox build, product and PDE test
+      baseline require Java 25. Add the dependency and register mixed-lifecycle adapters manually.
+      The bridge covers <code>before</code>/<code>after</code>
+      hooks; a rule that overrides <code>apply</code> needs its additional behavior migrated explicitly.
+      Keep Vintage while unmigrated JUnit 4 tests still need it.</p>
+   <p>To suppress inherited tests for a migrated leaf, use
+      <code>org.sandbox.junit.jupiter.IgnoreInheritedTests</code> with the support jar's discovery filter.
+      Suppressed inherited methods are absent from the discovered test tree, rather than counted as skipped.
+      A PDE test bundle must also package <code>META-INF/services/org.junit.platform.launcher.PostDiscoveryFilter</code>
+      containing <code>org.sandbox.junit.jupiter.InheritedTestsFilter</code>, include <code>META-INF/</code> in
+      <code>bin.includes</code>, and import <code>org.sandbox.junit.jupiter</code> and
+      <code>org.junit.platform.launcher</code>. Make the support bundle and compatible launcher available in
+      the target. Compare fixture initialization and hook ordering as well as discovered test counts.</p>
+
    <h2>When a transformation is offered</h2>
    <p>The cleanup requires resolvable JUnit types and only rewrites patterns for which a supported Jupiter equivalent has been implemented.
       Coordinated rules and fixtures additionally require the complete source lifecycle scope.</p>

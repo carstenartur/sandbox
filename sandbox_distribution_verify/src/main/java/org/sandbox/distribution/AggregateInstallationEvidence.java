@@ -24,10 +24,10 @@ import org.w3c.dom.Node;
 
 /** Reads the actual p2 profile, not the presence of cached artifact files. */
 final class AggregateInstallationEvidence {
-    record Profile(Map<String, Set<String>> units, Set<String> roots) {
+    record Profile(Map<String, Set<String>> units, Set<String> roots, String id, String bundlePool) {
         Profile {
             Map<String, Set<String>> copy = new LinkedHashMap<>();
-            units.forEach((id, versions) -> copy.put(id, Set.copyOf(versions)));
+            units.forEach((unit, versions) -> copy.put(unit, Set.copyOf(versions)));
             units = Map.copyOf(copy);
             roots = Set.copyOf(roots);
         }
@@ -64,7 +64,16 @@ final class AggregateInstallationEvidence {
                     }
                 }
             }
-            return new Profile(units, roots);
+            String pool = "";
+            for (Element properties : children(profile, "properties")) {
+                for (Element property : children(properties, "property")) {
+                    if ("org.eclipse.equinox.p2.cache".equals(property.getAttribute("name"))) {
+                        require(pool.isEmpty(), "Duplicate profile bundle pool");
+                        pool = property.getAttribute("value");
+                    }
+                }
+            }
+            return new Profile(units, roots, profile.getAttribute("id"), pool);
         }
     }
 
