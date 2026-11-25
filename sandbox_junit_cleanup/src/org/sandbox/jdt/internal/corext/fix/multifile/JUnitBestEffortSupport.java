@@ -44,6 +44,7 @@ import java.util.Set;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 
+import org.eclipse.jdt.core.IAnnotatable;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
@@ -85,6 +86,8 @@ import org.eclipse.jdt.internal.corext.refactoring.util.RefactoringASTParser;
 import org.eclipse.text.edits.TextEditGroup;
 
 import org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits;
+import org.sandbox.jdt.cleanup.multifile.MultiFileCandidateDiagnostic;
+import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpDiagnostics;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.ParameterizedMigrationEligibility;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleExpectedExceptionJUnitPlugin;
@@ -104,6 +107,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.TestNameRefactorer;
  */
 public final class JUnitBestEffortSupport {
 
+	private static final String EXTERNAL_RESOURCE_FIXTURE_OUT_OF_SCOPE= "EXTERNAL_RESOURCE_FIXTURE_OUT_OF_SCOPE"; //$NON-NLS-1$
 	private static final String TEST_NAME= "org.junit.rules.TestName"; //$NON-NLS-1$
 	private static final String TIMEOUT= "org.junit.rules.Timeout"; //$NON-NLS-1$
 	private static final String ERROR_COLLECTOR= "org.junit.rules.ErrorCollector"; //$NON-NLS-1$
@@ -128,6 +132,11 @@ public final class JUnitBestEffortSupport {
 			reasonCode= Objects.requireNonNull(reasonCode);
 			explanation= Objects.requireNonNull(explanation);
 			remediation= Objects.requireNonNull(remediation);
+		}
+
+		/** The owner's JUnit 4 rule cannot be registered on a Jupiter test. */
+		public boolean retainsUnselectedFixture() {
+			return EXTERNAL_RESOURCE_FIXTURE_OUT_OF_SCOPE.equals(reasonCode);
 		}
 
 		String markerText() {
@@ -171,6 +180,18 @@ public final class JUnitBestEffortSupport {
 			return gaps.stream().filter(gap -> MIXED_RULE_LIFECYCLE.equals(gap.reasonCode())
 					|| EXTERNAL_RESOURCE_INITIALIZER_UNSUPPORTED.equals(gap.reasonCode()))
 					.map(Gap::ownerCompilationUnitHandle).collect(java.util.stream.Collectors.toUnmodifiableSet());
+		}
+
+		/** Includes explicit retention decisions in the ordinary coordinated plan report. */
+		public MultiFileCleanUpDiagnostics withUnselectedFixtureDiagnostics(MultiFileCleanUpDiagnostics planner) {
+			var retained= gaps.stream().filter(Gap::retainsUnselectedFixture).toList();
+			if (retained.isEmpty()) return planner;
+			var candidates= new ArrayList<>(planner.candidates());
+			for (Gap gap : retained) {
+				candidates.add(MultiFileCandidateDiagnostic.rejected(gap.candidateId(), gap.ownerCompilationUnitHandle(),
+						gap.reasonCode(), gap.explanation(), List.of(gap.ownerCompilationUnitHandle())));
+			}
+			return new MultiFileCleanUpDiagnostics(planner.cleanupId(), planner.scope(), candidates);
 		}
 
 		/** Wraps ordinary planner evidence with explicit manual-completion evidence. */
@@ -343,9 +364,11 @@ public final class JUnitBestEffortSupport {
 		Map<String, Gap> gaps= new LinkedHashMap<>();
 		Map<String, ResourceUsage> usages= new LinkedHashMap<>();
 		Set<SourceType> unsupportedInitializerOwners= new LinkedHashSet<>();
+		Set<SourceType> externalFixtureOwners= new LinkedHashSet<>();
 		boolean migrateExternalResources= fixes.contains(JUnitCleanUpFixCore.EXTERNALRESOURCE)
 				|| fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE);
 
+		boolean changesExecution= changesExecutionContract(fixes);
 		for (Map.Entry<String, CompilationUnit> entry : roots.entrySet()) {
 			String handle= entry.getKey();
 			entry.getValue().accept(new ASTVisitor() {
@@ -368,7 +391,7 @@ public final class JUnitBestEffortSupport {
 									assessment.reasonCode(), assessment.explanation(),
 									remediationFor(assessment.reasonCode()));
 						}
-					} else if (parameterizedRunner && requiresParameterizedClosure(fixes)) {
+					} else if (parameterizedRunner && changesExecution) {
 						String reasonCode= "PARAMETERIZED_COMPONENT_NOT_SELECTED"; //$NON-NLS-1$
 						addGap(gaps, type, "parameterized:" + type.name(), //$NON-NLS-1$
 								reasonCode,
@@ -437,6 +460,9 @@ public final class JUnitBestEffortSupport {
 
 					RuleKind ruleKind= ruleKind(field);
 					if (ruleKind != RuleKind.NONE) {
+						if (changesExecution && hasUnselectedFixture(field, sourceTypesByKey)) {
+							externalFixtureOwners.add(owner);
+						}
 						ITypeBinding resource= resourceTypeBinding(field);
 						boolean resourceRule= extendsExternalResource(resource);
 						boolean unsupportedAnonymous= resourceRule && fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE)
@@ -482,11 +508,80 @@ public final class JUnitBestEffortSupport {
 		if (migrateExternalResources) {
 			addUnselectedResourceCallerGaps(units, roots, sourceTypesByKey, usages, gaps, monitor);
 		}
+		if (changesExecution) {
+			Map<IType, Boolean> inheritedRules= new LinkedHashMap<>();
+			for (SourceType type : sourceTypesByKey.values()) {
+				if (inheritsUnselectedRule(type.binding(), sourceTypesByKey, inheritedRules)) externalFixtureOwners.add(type);
+			}
+		}
 
+		if (!externalFixtureOwners.isEmpty()) {
+			// An inherited rule and its tests must still be discovered by the same engine.
+			expandResourceComponent(resourceRelationships(sourceTypesByKey, List.of(), externalFixtureOwners),
+					externalFixtureOwners);
+			for (SourceType owner : externalFixtureOwners) {
+				addGap(gaps, owner, "external-resource-owner:" + owner.name(), EXTERNAL_RESOURCE_FIXTURE_OUT_OF_SCOPE, //$NON-NLS-1$
+						"The test depends on a JUnit 4 rule declaration or fixture outside the selected source scope. Its JUnit 4 lifecycle must be retained.", //$NON-NLS-1$
+						"Select the fixture hierarchy and its callers for coordinated migration."); //$NON-NLS-1$
+			}
+		}
 		boolean retainResources= bestEffort
 				? addRetainedExternalResourceGaps(sourceTypesByKey, usages.values(), unsupportedInitializerOwners, gaps)
 				: addStrictMixedRuleGaps(sourceTypesByKey, usages, gaps);
 		return new Analysis(new ArrayList<>(gaps.values()), retainResources);
+	}
+
+	private static boolean inheritsUnselectedRule(ITypeBinding owner, Map<String, SourceType> selected,
+			Map<IType, Boolean> inheritedRules) throws JavaModelException {
+		for (var parent= owner.getSuperclass(); parent != null; parent= parent.getSuperclass()) {
+			if (selected.containsKey(JUnitMigrationPlan.typeKey(parent))) continue;
+			if (!(parent.getTypeDeclaration().getJavaElement() instanceof IType type)) return true;
+			Boolean hasRule= inheritedRules.get(type);
+			if (hasRule == null) {
+				// An unselected source binding can lose its compiler scope after createASTs.
+				// Read the declarations from the actual ancestor's current Java model.
+				hasRule= declaresRule(type);
+				inheritedRules.put(type, hasRule);
+			}
+			if (hasRule.booleanValue()) return true;
+		}
+		return false;
+	}
+
+	private static boolean declaresRule(IType type) throws JavaModelException {
+		for (var field : type.getFields()) if (hasRuleAnnotation(type, field)) return true;
+		for (var method : type.getMethods()) if (hasRuleAnnotation(type, method)) return true;
+		return false;
+	}
+
+	private static boolean hasRuleAnnotation(IType owner, IAnnotatable member) throws JavaModelException {
+		for (var annotation : member.getAnnotations()) {
+			String name= annotation.getElementName();
+			// Class files expose the qualified annotation name. Source may instead import it.
+			if (ORG_JUNIT_RULE.equals(name) || ORG_JUNIT_CLASS_RULE.equals(name)) return true;
+			if (!owner.isBinary() && ("Rule".equals(name) || "ClassRule".equals(name))) { //$NON-NLS-1$ //$NON-NLS-2$
+				String[][] matches= owner.resolveType(name);
+				if (matches == null || matches.length != 1) return true;
+				String resolved= matches[0][0] + "." + matches[0][1]; //$NON-NLS-1$
+				if (ORG_JUNIT_RULE.equals(resolved) || ORG_JUNIT_CLASS_RULE.equals(resolved)) return true;
+			}
+		}
+		return false;
+	}
+
+	private static boolean hasUnselectedFixture(FieldDeclaration field, Map<String, SourceType> selected) {
+		for (Object value : field.fragments()) {
+			var fragment= (VariableDeclarationFragment) value;
+			ITypeBinding fixture= fragment.getInitializer() == null ? null : fragment.getInitializer().resolveTypeBinding();
+			if (!extendsExternalResource(fixture)) fixture= field.getType().resolveBinding();
+			if (!extendsExternalResource(fixture) || RuleExternalResourceJUnitPlugin.isDedicatedRuleType(fixture)) continue;
+			// An anonymous implementation belongs to this field. Check its named ancestors.
+			for (var current= fixture.isAnonymous() ? fixture.getSuperclass() : fixture; current != null
+					&& !ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(qualifiedName(current)); current= current.getSuperclass()) {
+				if (!selected.containsKey(JUnitMigrationPlan.typeKey(current))) return true;
+			}
+		}
+		return false;
 	}
 
 	private static boolean addStrictMixedRuleGaps(Map<String, SourceType> sourceTypes,
@@ -1116,7 +1211,7 @@ public final class JUnitBestEffortSupport {
 	}
 
 
-	private static boolean requiresParameterizedClosure(EnumSet<JUnitCleanUpFixCore> fixes) {
+	private static boolean changesExecutionContract(EnumSet<JUnitCleanUpFixCore> fixes) {
 		EnumSet<JUnitCleanUpFixCore> structural= fixes.clone();
 		structural.removeAll(independentlySafeFixes(fixes));
 		return !structural.isEmpty();

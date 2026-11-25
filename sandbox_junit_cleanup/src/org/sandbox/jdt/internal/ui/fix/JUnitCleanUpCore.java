@@ -180,8 +180,13 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 		analysis= JUnitBestEffortSupport.reconcileParameterized(analysis, result.plan(), result.diagnostics(),
 				fixes.contains(JUnitCleanUpFixCore.PARAMETERIZED)
 						&& project.findType("org.junit.jupiter.params.ParameterizedClass") != null); //$NON-NLS-1$
-		if (!bestEffort && result.plan() != null && !analysis.gaps().isEmpty()) {
+		var diagnostics= analysis.withUnselectedFixtureDiagnostics(result.diagnostics());
+		if (diagnostics != result.diagnostics()) {
+			result= new MultiFileCleanUpPlanResult<>(result.plan(), result.status(), result.metrics(), diagnostics);
+		}
+		if (result.plan() != null && !analysis.gaps().isEmpty()) {
 			Set<String> blockedRuleUnits= analysis.gaps().stream()
+					.filter(gap -> !bestEffort || gap.retainsUnselectedFixture())
 					.map(JUnitBestEffortSupport.Gap::ownerCompilationUnitHandle)
 					.collect(Collectors.toCollection(LinkedHashSet::new));
 			JUnitMigrationPlan compatiblePlan=
@@ -216,6 +221,10 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 		Analysis analysis= migrationAnalyses.getOrDefault(
 				context.getCompilationUnit().getJavaProject(), Analysis.empty());
 		List<JUnitBestEffortSupport.Gap> localGaps= analysis.gapsFor(context.getCompilationUnit());
+		if (localGaps.stream().anyMatch(JUnitBestEffortSupport.Gap::retainsUnselectedFixture)) {
+			// Retain the complete owner. Best-effort mode still records its Javadoc gap.
+			computeFixSet.clear();
+		}
 		if (plan.mixedResources().retains(context.getCompilationUnit())) {
 			if (!bestEffort) return null;
 			Set<CompilationUnitRewriteOperationWithSourceRange> markers= new LinkedHashSet<>();
