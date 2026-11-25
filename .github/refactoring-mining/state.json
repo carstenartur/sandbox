@@ -187,9 +187,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/carstenartur/sandbox": {
-      "lastProcessedCommit": "57d526e674cbb1fff77615cd2f145d0ebf50da2e",
-      "lastProcessedDate": "2026-11-14T02:18:46.306437087Z",
-      "totalProcessed": 100,
+      "lastProcessedCommit": "d34b67cdf2d0b67a207d2e8f7cf1361322ce2178",
+      "lastProcessedDate": "2026-11-25T02:23:07.516153334Z",
+      "totalProcessed": 116,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -283,29 +283,20 @@
           "maxRetries": 3
         },
         {
-          "hash": "36da23c5b4275c173cca55f90ea38fc8724158c1",
-          "message": "Merge pull request #9 from carstenartur/dependabot/maven/com.github.spotbugs-spotbugs-maven-plugin-4.7.0.0",
-          "diffLines": 14,
-          "reason": "API_FAILURE",
-          "deferredAt": "2026-11-14T02:18:51.458453229Z",
+          "hash": "1af72164c49ae61776a338446502c56890f01ce5",
+          "message": "reuse common test plugin",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-25T02:22:04.522447072Z",
           "retryCount": 0,
           "maxRetries": 3
         },
         {
-          "hash": "f1d9e5d5cdaa06a3cc158a838132039821141eed",
-          "message": "Bump spotbugs-maven-plugin from 4.7.0.0 to 4.7.1.0",
-          "diffLines": 14,
-          "reason": "API_FAILURE",
-          "deferredAt": "2026-11-14T02:18:51.458732990Z",
-          "retryCount": 0,
-          "maxRetries": 3
-        },
-        {
-          "hash": "a62b3a7eed3db81cec3ba8ba3b9c1ab318662a39",
-          "message": "Merge pull request #11 from carstenartur/dependabot/maven/com.github.spotbugs-spotbugs-maven-plugin-4.7.1.0",
-          "diffLines": 14,
-          "reason": "API_FAILURE",
-          "deferredAt": "2026-11-14T02:18:51.458773822Z",
+          "hash": "c3697cdd34d3e3177a394442872bfcf39bee7f80",
+          "message": "reuse test commons",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-25T02:22:04.524015756Z",
           "retryCount": 0,
           "maxRetries": 3
         }
@@ -315,7 +306,9 @@
       "lastModelUsed": "gemini-2.5-flash",
       "currentEpoch": 0,
       "completedEpochs": [],
-      "categoryHitCounts": {},
+      "categoryHitCounts": {
+        "API Modernization": 1
+      },
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
@@ -5536,9 +5529,8 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "lastProcessedCommit": "de6d60268c660a17185ad13cc70b4eace8844dec",
-      "lastProcessedDate": "2026-11-24T02:23:23.484643761Z",
-      "totalProcessed": 1555,
+      "lastProcessedDate": "2026-11-25T02:20:33.102126586Z",
+      "totalProcessed": 1608,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -6404,15 +6396,70 @@
           "deferredAt": "2026-11-24T02:19:30.706015564Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "0643c40412ead265c6679ad608f2e8fceb7f15e9",
+          "message": "Bug 327497 - [source lookup] Two debug source look up requests for the same debug session ",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-25T02:15:40.967818339Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ed4a5afff53343242837d9fe7f0014d5419fcb81",
+          "message": "[bug 438621][debug]: provided step filters extension point",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-25T02:16:07.878747596Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "2fd676ca07dc7f2cf5d9f0e74d312b15e665b067",
+          "message": "Bug 287303 - [patch] Add Word Wrap action to Console View",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-25T02:16:43.822643284Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "bbfb01305dca3332c80e5cdc4a50b5b7ddcbdf31",
+          "message": "Bug 437193 - JSR-45 Support broken ",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-25T02:17:33.524264420Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e598699286ab39f12bbcc0d7b1fc2475f11d40f5",
+          "message": "Bug 438724 - [flex] REVEAL delta does not always work reliably",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-25T02:19:05.514504612Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f8e14408928261dc167508ea6610f5abdaf09153",
+          "message": "Bug 155411 - [launch] Need a way to assign stdin to a file from Run Dialog ",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-25T02:19:30.814951142Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
       "learnedMaxDiffLines": -1,
       "lastModelUsed": "gemini-2.5-flash",
-      "currentEpoch": 2,
+      "currentEpoch": 3,
       "completedEpochs": [
         "2020-01-01 to 2026-01-01",
-        "2015-01-01 to 2020-01-01"
+        "2015-01-01 to 2020-01-01",
+        "2010-01-01 to 2015-01-01"
       ],
       "categoryHitCounts": {
         "API Misuse": 1,
@@ -6434,7 +6481,7 @@
         "Simplification": 1,
         "Primitive Parsing": 3,
         "Java 8+ Modernization": 1,
-        "String Literal Replacement": 2,
+        "String Literal Replacement": 3,
         "Structural change (control flow)": 1,
         "New feature introduction / Declarative changes": 1,
         "Structural change (modifier, control flow)": 1,
@@ -6467,10 +6514,11 @@
         "Method Call Renaming": 1,
         "Constant Usage": 1,
         "API modernization": 1,
-        "JUnit Modernization": 1
+        "JUnit Modernization": 1,
+        "Redundant Cast Removal": 1
       },
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 55136
+  "globalTotalProcessed": 55205
 }
