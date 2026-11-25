@@ -120,6 +120,7 @@ public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {
 		} else {
 			// For assumeTrue and assumeFalse use the ordinary Jupiter migration.
 			super.processMethodInvocation(group, rewriter, ast, importRewriter, minv);
+			if (retainsLegacyImports(minv)) return;
 			// The base implementation removes Assume when it rewrites a qualified
 			// boolean call. Restore that import if another call still needs it;
 			// preserving it only in processImportDeclaration is too early.

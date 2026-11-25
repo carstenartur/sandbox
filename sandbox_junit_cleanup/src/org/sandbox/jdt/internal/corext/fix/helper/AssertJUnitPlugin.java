@@ -19,6 +19,7 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -65,16 +66,25 @@ public class AssertJUnitPlugin extends AbstractMethodMigrationPlugin {
 			ImportRewrite importRewriter, MethodInvocation node) {
 
 		Expression assertexpression = node.getExpression();
+		var binding= node.resolveMethodBinding();
+		if (retainsLegacyImports(node) && METHOD_ASSERT_THAT.equals(node.getName().getIdentifier())
+				&& binding != null && !binding.isRecovered() && ORG_JUNIT_ASSERT.equals(binding.getDeclaringClass().getQualifiedName())
+				&& (assertexpression == null || assertexpression instanceof Name name && name.resolveBinding() instanceof ITypeBinding)) {
+			// Hamcrest keeps the message first. Explicit qualification also leaves retained imports unambiguous.
+			rewriter.set(node, MethodInvocation.EXPRESSION_PROPERTY, ast.newName(ORG_HAMCREST_MATCHER_ASSERT), group);
+			return;
+		}
 
 		// Special handling for assertThat - delegate to Hamcrest
 		if (METHOD_ASSERT_THAT.equals(node.getName().getIdentifier()) && assertexpression instanceof Name name
 				&& ("Assert".equals(name.getFullyQualifiedName()) || ORG_JUNIT_ASSERT.equals(name.getFullyQualifiedName()))) { //$NON-NLS-1$
 			rewriter.set(node, MethodInvocation.EXPRESSION_PROPERTY, null, group);
 			importRewriter.addStaticImport(ORG_HAMCREST_MATCHER_ASSERT, METHOD_ASSERT_THAT, false);
-			importRewriter.removeImport(ORG_JUNIT_ASSERT);
+			if (!retainsLegacyImports(node)) importRewriter.removeImport(ORG_JUNIT_ASSERT);
 		} else {
 			// Standard assertion handling - use base class behavior
 			super.processMethodInvocation(group, rewriter, ast, importRewriter, node);
+			if (retainsLegacyImports(node)) return;
 			if (assertexpression instanceof Name name && ORG_JUNIT_ASSERT.equals(name.getFullyQualifiedName())) {
 				ASTNodes.replaceButKeepComment(rewriter, assertexpression,
 						ast.newName(ORG_JUNIT_JUPITER_API_ASSERTIONS), group);
