@@ -28,12 +28,17 @@ public final class MigrationSupportProvider {
 	private MigrationSupportProvider() {}
 
 	public static boolean available(IJavaProject project) throws JavaModelException {
-		var type= project.findType(FACTORY);
-		if (type == null || !type.isBinary()) return false;
+		Path location= binaryLocation(project, FACTORY);
+		return location != null && compatible(location);
+	}
+
+	public static Path binaryLocation(IJavaProject project, String className) throws JavaModelException {
+		var type= project.findType(className);
+		if (type == null || !type.isBinary()) return null;
 		var root= type.getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT);
 		var resource= root.getResource();
 		var location= resource == null ? root.getPath() : resource.getLocation();
-		return location != null && compatible(location.toFile().toPath());
+		return location == null ? null : location.toFile().toPath();
 	}
 
 	public static boolean compatible(Path jar) {

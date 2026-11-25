@@ -165,6 +165,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 			}
 
 			Change change;
+			MixedSupportImport.Bindings mixedBindings;
 			try (var staged= MixedSupportImport.stage(javaProject, resources, sources, options, monitor)) {
 				RefactoringStatus status= refactoring.checkAllConditions(monitor);
 				for (RefactoringStatusEntry entry : status.getEntries()) {
@@ -184,10 +185,11 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 				}
 
 				change= refactoring.createChange(monitor);
+				mixedBindings= staged == null ? null : staged.bindings(javaProject);
 			}
 			if (arguments.batchMaxFiles() > 0 && change != null) {
 				var preview= MigrationBatches.plan(javaProject, change, sources, resources, observer.groups(),
-						arguments.batchMaxFiles(), options, monitor);
+						arguments.batchMaxFiles(), options, mixedBindings, monitor);
 				batches= preview.batches();
 				changed= preview.select(arguments.batch(), arguments.receipt(), arguments.mode() == Mode.APPLY, monitor);
 			} else if (change != null) {
@@ -196,7 +198,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 				try {
 					change.perform(monitor);
 					preserveOriginalLineDelimiters(sources);
-					updateProjectMetadata(sources, resources, writtenResources, javaProject.getOptions(true));
+					updateProjectMetadata(sources, resources, writtenResources, javaProject.getOptions(true), mixedBindings);
 					refresh(sources, resources, monitor);
 					changed= changedFiles(sources, resources);
 					executionCompleted= true;
@@ -440,7 +442,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 	}
 
 	private static void updateProjectMetadata(List<SourceSnapshot> sources, List<ResourceSnapshot> resources,
-			List<ResourceSnapshot> written, Map<String, String> options) throws IOException, CoreException {
+			List<ResourceSnapshot> written, Map<String, String> options, MixedSupportImport.Bindings mixedBindings) throws IOException, CoreException {
 		if (resources.isEmpty()) {
 			return;
 		}
@@ -451,7 +453,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 				replacements.put(source, after);
 			}
 		}
-		var proposed= planProjectMetadata(sources, resources, replacements, options);
+		var proposed= planProjectMetadata(sources, resources, replacements, options, mixedBindings);
 		for (var entry : proposed.changes().entrySet()) {
 			ResourceSnapshot resource= entry.getKey();
 			if (!Arrays.equals(resource.before(), Files.readAllBytes(resource.path()))) {
@@ -465,7 +467,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 	}
 
 	static MetadataPlan planProjectMetadata(List<SourceSnapshot> sources,
-			List<ResourceSnapshot> resources, Map<SourceSnapshot, byte[]> replacements, Map<String, String> options)
+			List<ResourceSnapshot> resources, Map<SourceSnapshot, byte[]> replacements, Map<String, String> options, MixedSupportImport.Bindings mixedBindings)
 			throws IOException, CoreException {
 		if (resources.isEmpty()) {
 			return new MetadataPlan(Map.of(), false);
@@ -474,6 +476,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 		boolean pde= PDE_MANIFEST.equals(descriptor.relativePath());
 		Set<String> jupiterPackages= new TreeSet<>();
 		boolean suiteIntroduced= false;
+		boolean mixedAdapter= false;
 		for (var entry : replacements.entrySet()) {
 			SourceSnapshot source= entry.getKey();
 			byte[] after= entry.getValue();
@@ -481,7 +484,9 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 			String original= new String(source.before(), charset);
 			String updated= new String(after, charset);
 			if (pde) {
-				jupiterPackages.addAll(JupiterDependencies.introducedPackages(original, updated, options));
+				var introduced= JupiterDependencies.introducedPackages(original, updated, options);
+				jupiterPackages.addAll(introduced.packages());
+				mixedAdapter |= introduced.mixedAdapter();
 			}
 			if (PlatformSuiteDependencies.usesSuite(updated, options)
 					&& !PlatformSuiteDependencies.usesSuite(original, options)) {
@@ -498,9 +503,14 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 			throw new IOException("Cannot update a linked project descriptor: " + descriptor.relativePath()); //$NON-NLS-1$
 		}
 		boolean retiresVintage= false;
-		byte[] updated= descriptor.before();
+		// A new registration needs the same exporter clauses that passed the planner.
+		if (mixedAdapter && mixedBindings == null && descriptor.file().getProject().hasNature("org.eclipse.pde.PluginNature")) { //$NON-NLS-1$
+			throw new IOException("No validated PDE provider for the mixed rule registration"); //$NON-NLS-1$
+		}
+		var bindings= mixedAdapter ? mixedBindings : null;
+		byte[] updated= bindings == null ? descriptor.before() : bindings.manifest();
 		for (String packageName : jupiterPackages) {
-			updated= PdeManifestImportUpdater.addImport(updated, packageName);
+			updated= bindings == null ? PdeManifestImportUpdater.addImport(updated, packageName) : bindings.addImport(updated, packageName);
 		}
 		if (suiteIntroduced) {
 			if (pde) {
@@ -600,7 +610,9 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 	private static void restore(IFile file, Path path, String relativePath, byte[] before,
 			IProgressMonitor monitor, List<String> errors) {
 		try {
-			Files.write(path, before);
+			if (Files.notExists(path) || !Arrays.equals(before, Files.readAllBytes(path))) {
+				Files.write(path, before);
+			}
 			file.refreshLocal(IResource.DEPTH_ZERO, monitor);
 		} catch (IOException | CoreException e) {
 			errors.add("Cannot restore " + relativePath + ": " + e.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$

@@ -19,12 +19,16 @@ import java.util.TreeSet;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.Javadoc;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.PackageDeclaration;
 import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.sandbox.jdt.internal.common.MigrationSupportProvider;
 
 /** Jupiter package references introduced by any source cleanup, including hint rules. */
@@ -44,16 +48,27 @@ final class JupiterDependencies {
 	private JupiterDependencies() {
 	}
 
-	static Set<String> introducedPackages(String before, String after, Map<String, String> options) {
-		Set<String> introduced= referencedPackages(after, options);
-		introduced.removeAll(referencedPackages(before, options));
-		return introduced;
+	static final List<String> MIXED_PACKAGES= List.of(MigrationSupportProvider.PACKAGE, "org.junit.jupiter.api", //$NON-NLS-1$
+			"org.junit.jupiter.api.extension", "org.junit.jupiter.api.function", "org.junit.jupiter.api.parallel"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+
+	record Introduced(Set<String> packages, boolean mixedAdapter) {}
+	private record References(Set<String> packages, Set<String> registrations) {}
+
+	static Introduced introducedPackages(String before, String after, Map<String, String> options) {
+		var original= references(before, options);
+		var updated= references(after, options);
+		var introduced= updated.packages();
+		introduced.removeAll(original.packages());
+		boolean addedAdapter= !original.registrations().containsAll(updated.registrations());
+		if (addedAdapter) introduced.addAll(MIXED_PACKAGES);
+		return new Introduced(introduced, addedAdapter);
 	}
 
-	private static Set<String> referencedPackages(String source, Map<String, String> options) {
-		Set<String> packages= new TreeSet<>();
+	private static References references(String source, Map<String, String> options) {
+		var result= new References(new TreeSet<>(), new TreeSet<>());
+		var packages= result.packages();
 		if (!source.contains("org.junit.jupiter.") && !source.contains(MigrationSupportProvider.PACKAGE)) { //$NON-NLS-1$
-			return packages;
+			return result;
 		}
 		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
 		parser.setSource(source.toCharArray());
@@ -95,6 +110,16 @@ final class JupiterDependencies {
 						&& MigrationSupportProvider.FACTORY.equals(qualifier.getFullyQualifiedName())
 						&& Set.of("perTest", "perClass").contains(node.getName().getIdentifier())) { //$NON-NLS-1$ //$NON-NLS-2$
 					packages.add("org.junit.jupiter.api.function"); //$NON-NLS-1$
+					if (node.getParent() instanceof VariableDeclarationFragment field
+							&& field.getInitializer() == node && field.getParent() instanceof FieldDeclaration declaration
+							&& declaration.getParent() instanceof TypeDeclaration owner && owner.isPackageMemberTypeDeclaration()) {
+						for (Object modifier : declaration.modifiers()) {
+							if (modifier instanceof Annotation annotation && "org.junit.jupiter.api.extension.RegisterExtension" //$NON-NLS-1$
+									.equals(annotation.getTypeName().getFullyQualifiedName())) {
+								result.registrations().add(owner.getName() + "." + field.getName() + "." + node.getName()); //$NON-NLS-1$ //$NON-NLS-2$
+							}
+						}
+					}
 				}
 				return true;
 			}
@@ -109,6 +134,6 @@ final class JupiterDependencies {
 				return false;
 			}
 		});
-		return packages;
+		return result;
 	}
 }
