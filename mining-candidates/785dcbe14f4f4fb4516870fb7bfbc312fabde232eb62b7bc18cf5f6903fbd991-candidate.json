@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "785dcbe14f4f4fb4516870fb7bfbc312fabde232eb62b7bc18cf5f6903fbd991",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$prefix + \"skip_brkp.gif\"\n\u003d\u003e\n$prefix + \"skip_brkp.png\"\n;;",
+  "beforeExample": "public class IconConstants {\n    private static final String ELCL \u003d \"elcl16/\";\n    public static final String IMG_SKIP_BREAKPOINTS \u003d \"skip\";\n    public void declareRegistryImage(String id, String path) {\n        System.out.println(\"Registering \" + id + \": \" + path);\n    }\n    public void setupImages() {\n        declareRegistryImage(IMG_SKIP_BREAKPOINTS, ELCL + \"skip_brkp.gif\");\n    }\n}",
+  "afterExample": "public class IconConstants {\n    private static final String ELCL \u003d \"elcl16/\";\n    public static final String IMG_SKIP_BREAKPOINTS \u003d \"skip\";\n    public void declareRegistryImage(String id, String path) {\n        System.out.println(\"Registering \" + id + \": \" + path);\n    }\n    public void setupImages() {\n        declareRegistryImage(IMG_SKIP_BREAKPOINTS, ELCL + \"skip_brkp.png\");\n    }\n}",
+  "negativeExample": "public class IconConstants {\n    private static final String ELCL \u003d \"elcl16/\";\n    public static final String IMG_STEP_INTO \u003d \"stepinto\";\n    public static final String IMG_SKIP_BREAKPOINTS \u003d \"skip\";\n    public void declareRegistryImage(String id, String path) {\n        System.out.println(\"Registering \" + id + \": \" + path);\n    }\n    public void setupImages() {\n        // Should not match \"stepinto_co.gif\"\n        declareRegistryImage(IMG_STEP_INTO, ELCL + \"stepinto_co.gif\");\n        // Should not match \"skip_brkp.png\" (already correct extension)\n        declareRegistryImage(IMG_SKIP_BREAKPOINTS, ELCL + \"skip_brkp.png\");\n    }\n}",
+  "targetHintFile": "image-extension-cleanup.sandbox-hint",
+  "sourceCommit": "c37aa73ffdd7a1497c2d8729ffb08e5cd35b1cc1",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "sourceEvidence": {
+    "path": "org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/DebugPluginImages.java",
+    "before": "\t\tdeclareRegistryImage(IDebugUIConstants.IMG_SKIP_BREAKPOINTS, ELCL + \"skip_brkp.gif\"); //$NON-NLS-1$",
+    "after": "\t\tdeclareRegistryImage(IDebugUIConstants.IMG_SKIP_BREAKPOINTS, ELCL + \"skip_brkp.png\"); //$NON-NLS-1$",
+    "diffHunk": "diff --git a/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/DebugPluginImages.java b/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/DebugPluginImages.java\nindex bde0b6e..5c3b700 100644\n--- a/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/DebugPluginImages.java\n+++ b/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/DebugPluginImages.java\n@@ -62,7 +62,7 @@\n \t\tdeclareRegistryImage(IDebugUIConstants.IMG_ACT_DEBUG, CTOOL + \"debug_exc.png\"); //$NON-NLS-1$\n \t\tdeclareRegistryImage(IDebugUIConstants.IMG_ACT_RUN, CTOOL + \"run_exc.png\"); //$NON-NLS-1$\n         declareRegistryImage(IDebugUIConstants.IMG_ACT_SYNCED, ELCL + \"synced.png\"); //$NON-NLS-1$\n-\t\tdeclareRegistryImage(IDebugUIConstants.IMG_SKIP_BREAKPOINTS, ELCL + \"skip_brkp.gif\"); //$NON-NLS-1$\n+\t\tdeclareRegistryImage(IDebugUIConstants.IMG_SKIP_BREAKPOINTS, ELCL + \"skip_brkp.png\"); //$NON-NLS-1$\n \t\t\n \t\t//menus\n \t\tdeclareRegistryImage(IDebugUIConstants.IMG_LCL_CHANGE_VARIABLE_VALUE, ELCL + \"changevariablevalue_co.png\"); //$NON-NLS-1$\n"
+  },
+  "category": "String Literal Replacement",
+  "summary": "Replace the \u0027.gif\u0027 extension with \u0027.png\u0027 in string concatenations for specific image paths.",
+  "sourceVersion": "8",
+  "status": "READY_FOR_REVIEW",
+  "discoveredAt": "2026-11-25T02:18:18.367296767Z",
+  "ruleFingerprint": "sha256:de59f506c30fee828397f26dd9cf3d69fb634d51d31bebf32ff2230d2578bede",
+  "behaviorFingerprint": "sha256:6bb70adafc220d23c4f3c13e486f2a55dbf553a654b04f1173a00ca93dc5b0c5",
+  "verification": {
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Example rewrite verified; semantic review still required",
+    "verifiedAt": "2026-11-25T02:23:35.458702982Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-11-25T02:23:35.459449374Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-11-25T02:23:35.459467518Z"
+    }
+  ]
+}

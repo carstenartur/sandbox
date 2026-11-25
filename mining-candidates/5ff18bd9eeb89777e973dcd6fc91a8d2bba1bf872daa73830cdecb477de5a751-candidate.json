@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "AFTER_REWRITE",
     "message": "Transformed source is invalid: Java compile error at line 27: Syntax error on token(s), misplaced construct(s)",
-    "verifiedAt": "2026-11-24T02:23:44.311444755Z",
+    "verifiedAt": "2026-11-25T02:23:28.680863495Z",
     "verifierVersion": "9",
     "matches": 1,
     "replacements": 1

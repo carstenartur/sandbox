@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "27a37e23c0be969c7eb82cd960fec567a7e1f7fe0baedaef108103ce5f789425",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.core.dom.AST.JLS_Latest\n\u003d\u003e\norg.eclipse.jdt.core.dom.AST.getJLSLatest()\n;;",
+  "beforeExample": "import org.eclipse.jdt.core.dom.AST;\nimport org.eclipse.jdt.core.dom.ASTParser;\nimport java.util.Map;\nimport org.eclipse.jdt.core.JavaCore;\nimport org.eclipse.jdt.core.dom.CompilationUnit;\n\npublic class Example {\n    void foo() {\n        ASTParser parser \u003d ASTParser.newParser(AST.JLS_Latest);\n        String code \u003d \"class A {}\";\n        char[] source \u003d code.toCharArray();\n        parser.setSource(source);\n        Map options \u003d JavaCore.getOptions();\n        JavaCore.setComplianceOptions(JavaCore.VERSION_11, options);\n        parser.setCompilerOptions(options);\n        CompilationUnit result \u003d (CompilationUnit) parser.createAST(null);\n    }\n}",
+  "afterExample": "import org.eclipse.jdt.core.dom.AST;\nimport org.eclipse.jdt.core.dom.ASTParser;\nimport java.util.Map;\nimport org.eclipse.jdt.core.JavaCore;\nimport org.eclipse.jdt.core.dom.CompilationUnit;\n\npublic class Example {\n    void foo() {\n        ASTParser parser \u003d ASTParser.newParser(AST.getJLSLatest());\n        String code \u003d \"class A {}\";\n        char[] source \u003d code.toCharArray();\n        parser.setSource(source);\n        Map options \u003d JavaCore.getOptions();\n        JavaCore.setComplianceOptions(JavaCore.VERSION_11, options);\n        parser.setCompilerOptions(options);\n        CompilationUnit result \u003d (CompilationUnit) parser.createAST(null);\n    }\n}",
+  "negativeExample": "import org.eclipse.jdt.core.dom.AST;\nimport org.eclipse.jdt.core.dom.ASTParser;\n\npublic class Example {\n    void foo() {\n        ASTParser parser \u003d ASTParser.newParser(AST.JLS14); // This should not match, as it\u0027s a specific JLS version, not JLS_Latest.\n    }\n}",
+  "targetHintFile": "modernize-jdt.sandbox-hint",
+  "sourceCommit": "d83bc8ee3fe30115f170eba9529a9d642c20aeca",
+  "sourceRepo": "https://github.com/carstenartur/sandbox",
+  "sourceEvidence": {
+    "path": "sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/MatcherTest.java",
+    "before": "\t\tASTParser parser \u003d ASTParser.newParser(AST.JLS_Latest);",
+    "after": "\t\tASTParser parser \u003d ASTParser.newParser(AST.getJLSLatest());",
+    "diffHunk": "diff --git a/sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/MatcherTest.java b/sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/MatcherTest.java\nindex 344c693..976b55d 100644\n--- a/sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/MatcherTest.java\n+++ b/sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/MatcherTest.java\n@@ -12,7 +12,7 @@\n \n \t@Test\n \tpublic void matcherTest() {\n-\t\tASTParser parser \u003d ASTParser.newParser(AST.JLS_Latest);\n+\t\tASTParser parser \u003d ASTParser.newParser(AST.getJLSLatest());\n \t\tString code \u003d \"import java.util.Collection;\\n\"\n \t\t\t\t+ \"\\n\"\n \t\t\t\t+ \"public class E {\\n\"\n"
+  },
+  "category": "API Modernization",
+  "summary": "Replaces the deprecated AST.JLS_Latest field with the equivalent AST.getJLSLatest() static method call for JDT API modernization.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-25T02:23:07.564367736Z",
+  "ruleFingerprint": "sha256:9fa44a309f379d7334917f42a437745f408dd58a68b399a05fb5ec9a22580c89",
+  "behaviorFingerprint": "sha256:9ee9e71952ea41c4ab7ce378ae2ad4ec31138578aa9b98cd5666e84bcbb08d7d",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-11-25T02:23:35.537002324Z",
+    "verifierVersion": "9",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
