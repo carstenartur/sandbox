@@ -21,75 +21,95 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.Javadoc;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.PackageDeclaration;
 import org.eclipse.jdt.core.dom.QualifiedName;
+import org.sandbox.jdt.internal.common.MigrationSupportProvider;
 
 /** Jupiter package references introduced by any source cleanup, including hint rules. */
 final class JupiterDependencies {
 
 	// Match a child package before its parent; nested types belong to the same package.
-<span class="fc" id="L31">	private static final List&lt;String&gt; API_PACKAGES= Set.of(</span>
-<span class="fc" id="L32">			&quot;org.junit.jupiter.api&quot;, &quot;org.junit.jupiter.api.condition&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L33">			&quot;org.junit.jupiter.api.extension&quot;, &quot;org.junit.jupiter.api.extension.support&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L34">			&quot;org.junit.jupiter.api.function&quot;, &quot;org.junit.jupiter.api.io&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L35">			&quot;org.junit.jupiter.api.parallel&quot;, &quot;org.junit.jupiter.api.util&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L36">			&quot;org.junit.jupiter.params&quot;, &quot;org.junit.jupiter.params.aggregator&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L37">			&quot;org.junit.jupiter.params.converter&quot;, &quot;org.junit.jupiter.params.provider&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L38">			&quot;org.junit.jupiter.params.support&quot;) //$NON-NLS-1$</span>
-<span class="fc" id="L39">			.stream().sorted(Comparator.comparingInt(String::length).reversed()).toList();</span>
+<span class="fc" id="L34">	private static final List&lt;String&gt; API_PACKAGES= Set.of(</span>
+<span class="fc" id="L35">			&quot;org.junit.jupiter.api&quot;, &quot;org.junit.jupiter.api.condition&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L36">			&quot;org.junit.jupiter.api.extension&quot;, &quot;org.junit.jupiter.api.extension.support&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L37">			&quot;org.junit.jupiter.api.function&quot;, &quot;org.junit.jupiter.api.io&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L38">			&quot;org.junit.jupiter.api.parallel&quot;, &quot;org.junit.jupiter.api.util&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L39">			&quot;org.junit.jupiter.params&quot;, &quot;org.junit.jupiter.params.aggregator&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L40">			&quot;org.junit.jupiter.params.converter&quot;, &quot;org.junit.jupiter.params.provider&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L41">			&quot;org.junit.jupiter.params.support&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L42">			.stream().sorted(Comparator.comparingInt(String::length).reversed()).toList();</span>
 
 	private JupiterDependencies() {
 	}
 
 	static Set&lt;String&gt; introducedPackages(String before, String after, Map&lt;String, String&gt; options) {
-<span class="fc" id="L45">		Set&lt;String&gt; introduced= referencedPackages(after, options);</span>
-<span class="fc" id="L46">		introduced.removeAll(referencedPackages(before, options));</span>
-<span class="fc" id="L47">		return introduced;</span>
+<span class="fc" id="L48">		Set&lt;String&gt; introduced= referencedPackages(after, options);</span>
+<span class="fc" id="L49">		introduced.removeAll(referencedPackages(before, options));</span>
+<span class="fc" id="L50">		return introduced;</span>
 	}
 
 	private static Set&lt;String&gt; referencedPackages(String source, Map&lt;String, String&gt; options) {
-<span class="fc" id="L51">		Set&lt;String&gt; packages= new TreeSet&lt;&gt;();</span>
-<span class="fc bfc" id="L52" title="All 2 branches covered.">		if (!source.contains(&quot;org.junit.jupiter.&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L53">			return packages;</span>
+<span class="fc" id="L54">		Set&lt;String&gt; packages= new TreeSet&lt;&gt;();</span>
+<span class="fc bfc" id="L55" title="All 4 branches covered.">		if (!source.contains(&quot;org.junit.jupiter.&quot;) &amp;&amp; !source.contains(MigrationSupportProvider.PACKAGE)) { //$NON-NLS-1$</span>
+<span class="fc" id="L56">			return packages;</span>
 		}
-<span class="fc" id="L55">		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());</span>
-<span class="fc" id="L56">		parser.setSource(source.toCharArray());</span>
-<span class="fc" id="L57">		parser.setCompilerOptions(options);</span>
-<span class="fc" id="L58">		parser.createAST(null).accept(new ASTVisitor() {</span>
+<span class="fc" id="L58">		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L59">		parser.setSource(source.toCharArray());</span>
+<span class="fc" id="L60">		parser.setCompilerOptions(options);</span>
+<span class="fc" id="L61">		parser.createAST(null).accept(new ASTVisitor() {</span>
 			private void reference(String name, boolean packageImport) {
-<span class="fc bfc" id="L60" title="All 2 branches covered.">				for (String candidate : API_PACKAGES) {</span>
-<span class="fc bfc" id="L61" title="All 4 branches covered.">					if (packageImport &amp;&amp; candidate.equals(name)</span>
-<span class="pc bpc" id="L62" title="1 of 4 branches missed.">							|| name.startsWith(candidate + '.') &amp;&amp; name.length() &gt; candidate.length() + 1</span>
-<span class="pc bpc" id="L63" title="1 of 2 branches missed.">									&amp;&amp; Character.isUpperCase(name.charAt(candidate.length() + 1))) {</span>
-<span class="fc" id="L64">						packages.add(candidate);</span>
-<span class="fc" id="L65">						return;</span>
+<span class="pc bpc" id="L63" title="1 of 4 branches missed.">				if (name.equals(MigrationSupportProvider.FACTORY) || name.startsWith(MigrationSupportProvider.FACTORY + '.')</span>
+<span class="pc bpc" id="L64" title="1 of 4 branches missed.">						|| packageImport &amp;&amp; name.equals(MigrationSupportProvider.PACKAGE)) {</span>
+<span class="fc" id="L65">					packages.add(MigrationSupportProvider.PACKAGE);</span>
+<span class="fc" id="L66">					return;</span>
+				}
+<span class="fc bfc" id="L68" title="All 2 branches covered.">				for (String candidate : API_PACKAGES) {</span>
+<span class="fc bfc" id="L69" title="All 4 branches covered.">					if (packageImport &amp;&amp; candidate.equals(name)</span>
+<span class="pc bpc" id="L70" title="1 of 4 branches missed.">							|| name.startsWith(candidate + '.') &amp;&amp; name.length() &gt; candidate.length() + 1</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">									&amp;&amp; Character.isUpperCase(name.charAt(candidate.length() + 1))) {</span>
+<span class="fc" id="L72">						packages.add(candidate);</span>
+<span class="fc" id="L73">						return;</span>
 					}
 				}
-<span class="fc" id="L68">			}</span>
+<span class="fc" id="L76">			}</span>
 
 			@Override
 			public boolean visit(ImportDeclaration node) {
-<span class="fc bfc" id="L72" title="All 4 branches covered.">				reference(node.getName().getFullyQualifiedName(), node.isOnDemand() &amp;&amp; !node.isStatic());</span>
-<span class="fc" id="L73">				return false;</span>
+<span class="fc bfc" id="L80" title="All 4 branches covered.">				reference(node.getName().getFullyQualifiedName(), node.isOnDemand() &amp;&amp; !node.isStatic());</span>
+<span class="fc" id="L81">				return false;</span>
 			}
 
 			@Override
 			public boolean visit(QualifiedName node) {
-<span class="fc" id="L78">				reference(node.getFullyQualifiedName(), false);</span>
-<span class="fc" id="L79">				return false;</span>
+<span class="fc" id="L86">				reference(node.getFullyQualifiedName(), false);</span>
+<span class="fc" id="L87">				return false;</span>
+			}
+
+			@Override
+			public boolean visit(MethodInvocation node) {
+				// The generated three-argument call site links ThrowingConsumer even though
+				// its inferred type does not appear in the Java source.
+<span class="pc bpc" id="L94" title="1 of 4 branches missed.">				if (node.arguments().size() == 3 &amp;&amp; node.getExpression() instanceof Name qualifier</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">						&amp;&amp; MigrationSupportProvider.FACTORY.equals(qualifier.getFullyQualifiedName())</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">						&amp;&amp; Set.of(&quot;perTest&quot;, &quot;perClass&quot;).contains(node.getName().getIdentifier())) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L97">					packages.add(&quot;org.junit.jupiter.api.function&quot;); //$NON-NLS-1$</span>
+				}
+<span class="fc" id="L99">				return true;</span>
 			}
 
 			@Override
 			public boolean visit(Javadoc node) {
-<span class="fc" id="L84">				return false;</span>
+<span class="fc" id="L104">				return false;</span>
 			}
 
 			@Override
 			public boolean visit(PackageDeclaration node) {
-<span class="fc" id="L89">				return false;</span>
+<span class="fc" id="L109">				return false;</span>
 			}
 		});
-<span class="fc" id="L92">		return packages;</span>
+<span class="fc" id="L112">		return packages;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

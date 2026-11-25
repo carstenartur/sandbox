@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>MixedResourcePlan.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.multifile</a> &gt; <span class="el_source">MixedResourcePlan.java</span></div><h1>MixedResourcePlan.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.multifile;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.dom.*;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits;
+import org.sandbox.jdt.internal.common.MigrationSupportProvider;
+
+/** Per-use changes. All other source contracts in the component stay on Vintage. */
+public record MixedResourcePlan(Map&lt;String, Registration&gt; registrations, Set&lt;String&gt; protectedUnits,
+		Map&lt;String, String&gt; sourceFingerprints, List&lt;JUnitBestEffortSupport.Gap&gt; retained) {
+<span class="fc" id="L24">	static final MixedResourcePlan EMPTY= new MixedResourcePlan(Map.of(), Set.of(), Map.of(), List.of());</span>
+	static final String REGISTER= &quot;org.junit.jupiter.api.extension.RegisterExtension&quot;; //$NON-NLS-1$
+	static final String TEST_INSTANCE= &quot;org.junit.jupiter.api.TestInstance&quot;; //$NON-NLS-1$
+	static final String PER_METHOD= TEST_INSTANCE + &quot;.Lifecycle.PER_METHOD&quot;; //$NON-NLS-1$
+<span class="fc" id="L28">	static final String ISOLATED= &quot;org.junit.jupiter.api.parallel.Isolated&quot;; //$NON-NLS-1$</span>
+
+<span class="fc" id="L30">	public MixedResourcePlan {</span>
+<span class="fc" id="L31">		registrations= Map.copyOf(registrations);</span>
+<span class="fc" id="L32">		protectedUnits= Set.copyOf(protectedUnits);</span>
+<span class="fc" id="L33">		sourceFingerprints= Map.copyOf(sourceFingerprints);</span>
+<span class="fc" id="L34">		retained= List.copyOf(retained);</span>
+<span class="fc" id="L35">	}</span>
+
+	public record Registration(String fieldKey, String receiverExpression, String registrationName, String parameter, boolean classRule, List&lt;String&gt; orderedTests) {
+<span class="fc" id="L38">		public Registration {</span>
+<span class="fc" id="L39">			orderedTests= List.copyOf(orderedTests);</span>
+<span class="fc" id="L40">		}</span>
+		static final String METHOD_ORDER= &quot;@org.junit.jupiter.api.TestMethodOrder(org.junit.jupiter.api.MethodOrderer.OrderAnnotation.class)&quot;; //$NON-NLS-1$
+
+		String declaration() {
+<span class="fc bfc" id="L44" title="All 2 branches covered.">			return &quot;@&quot; + REGISTER + &quot;\n&quot; + (classRule ? &quot;static &quot; : &quot;&quot;) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="fc" id="L45">					+ &quot;final org.junit.jupiter.api.extension.Extension &quot; + registrationName + &quot; =\n        &quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">					+ MigrationSupportProvider.FACTORY + (classRule ? &quot;.perClass&quot; : &quot;.perTest&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L47">					+ &quot;(() -&gt; &quot; + receiverExpression + &quot;, &quot; + parameter + &quot; -&gt; &quot; + parameter + &quot;.before(), &quot; + parameter + &quot; -&gt; &quot; + parameter + &quot;.after());&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+		}
+	}
+
+	public boolean retains(ICompilationUnit unit) {
+<span class="fc" id="L52">		String handle= unit.getPrimary().getHandleIdentifier();</span>
+<span class="fc bfc" id="L53" title="All 4 branches covered.">		return protectedUnits.contains(handle) &amp;&amp; !registrations.containsKey(handle);</span>
+	}
+
+	void addOperations(ICompilationUnit unit, CompilationUnit root,
+			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; processed) throws CoreException {
+<span class="fc" id="L58">		var registration= registrations.get(unit.getPrimary().getHandleIdentifier());</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">		if (registration == null) {</span>
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">			if (retains(unit)) root.accept(new ASTVisitor() {</span>
+				@Override public void preVisit(ASTNode node) {
+<span class="nc bnc" id="L62" title="All 4 branches missed.">					if (node instanceof BodyDeclaration || node instanceof Annotation) processed.add(node);</span>
+<span class="nc" id="L63">				}</span>
+			});
+<span class="fc" id="L65">			return;</span>
+		}
+<span class="fc" id="L67">		var project= unit.getJavaProject();</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">		if (!MigrationSupportProvider.available(project)) throw stale();</span>
+<span class="fc" id="L69">		var current= JavaProjectCompilationUnits.collect(project);</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">		if (sourceFingerprints.size() != current.size()) throw stale();</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">		for (var source : current) {</span>
+<span class="fc" id="L72">			if (!JUnit4ParameterizedPlan.fingerprint(source.getPrimary().getSource())</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">					.equals(sourceFingerprints.get(source.getPrimary().getHandleIdentifier()))) throw stale();</span>
+		}
+<span class="pc bpc" id="L75" title="2 of 4 branches missed.">		if (root.types().size() != 1 || !(root.types().getFirst() instanceof TypeDeclaration owner)) throw stale();</span>
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">		for (FieldDeclaration field : owner.getFields()) {</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">			if (field.fragments().size() != 1) continue;</span>
+<span class="fc" id="L78">			var fragment= (VariableDeclarationFragment) field.fragments().getFirst();</span>
+<span class="fc" id="L79">			var binding= fragment.resolveBinding();</span>
+<span class="pc bpc" id="L80" title="3 of 6 branches missed.">			if (binding == null || binding.isRecovered() || !registration.fieldKey().equals(binding.getKey())) continue;</span>
+<span class="fc" id="L81">			Annotation rule= JUnitMigrationPlan.findRuleAnnotation(field, registration.classRule());</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">			if (rule == null || !MixedResourcePlanner.currentOwnerProof(unit, registration, sourceFingerprints.keySet(),</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">					new ExternalResourceReferenceSearch(List.of(project), current))) throw stale();</span>
+<span class="fc" id="L84">			processed.add(field);</span>
+<span class="fc" id="L85">			processed.add(rule);</span>
+<span class="fc" id="L86">			operations.add(new CompilationUnitRewriteOperationWithSourceRange() {</span>
+				@Override public void rewriteASTInternal(CompilationUnitRewrite cu, LinkedProposalModelCore linked) {
+<span class="fc" id="L88">					var rewrite= cu.getASTRewrite();</span>
+<span class="fc" id="L89">					var group= createTextEditGroup(&quot;Register the existing fixture at its original rule scope&quot;, cu); //$NON-NLS-1$</span>
+<span class="fc" id="L90">					rewrite.remove(rule, group);</span>
+<span class="fc" id="L91">					cu.getImportRemover().registerRemovedNode(rule);</span>
+<span class="fc" id="L92">					var annotation= owner.getAST().newMarkerAnnotation();</span>
+<span class="fc" id="L93">					annotation.setTypeName(owner.getAST().newName(ISOLATED));</span>
+<span class="fc" id="L94">					var modifiers= rewrite.getListRewrite(owner, TypeDeclaration.MODIFIERS2_PROPERTY);</span>
+<span class="fc" id="L95">					modifiers.insertFirst(annotation, group);</span>
+<span class="fc" id="L96">					var lifecycle= owner.getAST().newSingleMemberAnnotation();</span>
+<span class="fc" id="L97">					lifecycle.setTypeName(owner.getAST().newName(TEST_INSTANCE));</span>
+<span class="fc" id="L98">					lifecycle.setValue(owner.getAST().newName(PER_METHOD));</span>
+<span class="fc" id="L99">					modifiers.insertFirst(lifecycle, group);</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">					if (!registration.orderedTests().isEmpty()) {</span>
+<span class="fc" id="L101">						modifiers.insertFirst(rewrite.createStringPlaceholder(Registration.METHOD_ORDER, ASTNode.SINGLE_MEMBER_ANNOTATION), group);</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">						for (var method : owner.getMethods()) {</span>
+<span class="fc" id="L103">							int order= registration.orderedTests().indexOf(method.getName().getIdentifier());</span>
+<span class="pc bpc" id="L104" title="2 of 6 branches missed.">							if (order &gt;= 0 &amp;&amp; !method.isConstructor() &amp;&amp; method.parameters().isEmpty()) {</span>
+<span class="fc" id="L105">								var rank= owner.getAST().newSingleMemberAnnotation();</span>
+<span class="fc" id="L106">								rank.setTypeName(owner.getAST().newName(&quot;org.junit.jupiter.api.Order&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L107">								rank.setValue(owner.getAST().newNumberLiteral(Integer.toString(order + 1)));</span>
+<span class="fc" id="L108">								rewrite.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY).insertFirst(rank, group);</span>
+							}
+						}
+					}
+<span class="fc" id="L112">					var declaration= rewrite.createStringPlaceholder(registration.declaration(), ASTNode.FIELD_DECLARATION);</span>
+<span class="fc" id="L113">					rewrite.getListRewrite(owner, TypeDeclaration.BODY_DECLARATIONS_PROPERTY).insertAfter(declaration, field, group);</span>
+<span class="fc" id="L114">				}</span>
+			});
+<span class="fc" id="L116">			return;</span>
+		}
+<span class="nc" id="L118">		throw stale();</span>
+	}
+
+	private static CoreException stale() {
+<span class="fc" id="L122">		return new CoreException(Status.error(&quot;The mixed ExternalResource sources, bindings or support provider changed. Retry the complete cleanup.&quot;)); //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

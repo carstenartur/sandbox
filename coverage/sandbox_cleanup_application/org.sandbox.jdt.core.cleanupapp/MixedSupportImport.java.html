@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>MixedSupportImport.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_cleanup_application</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.core.cleanupapp</a> &gt; <span class="el_source">MixedSupportImport.java</span></div><h1>MixedSupportImport.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.core.cleanupapp;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IResourceStatus;
+import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.core.runtime.jobs.MultiRule;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.pde.core.plugin.PluginRegistry;
+import org.eclipse.pde.internal.core.ClasspathComputer;
+import org.sandbox.jdt.core.cleanupapp.ProjectWideCodeCleanupApplication.ResourceSnapshot;
+import org.sandbox.jdt.core.cleanupapp.ProjectWideCodeCleanupApplication.SourceSnapshot;
+import org.sandbox.jdt.internal.common.MigrationSupportProvider;
+import org.sandbox.jdt.internal.common.PdeManifestImportUpdater;
+
+/** Temporarily exposes a real active target provider while JDT resolves candidate registrations. */
+final class MixedSupportImport implements AutoCloseable {
+	private final ResourceSnapshot descriptor;
+	private final byte[] staged;
+	private final IProgressMonitor monitor;
+
+<span class="fc" id="L39">	private MixedSupportImport(ResourceSnapshot descriptor, byte[] staged, IProgressMonitor monitor) {</span>
+<span class="fc" id="L40">		this.descriptor= descriptor;</span>
+<span class="fc" id="L41">		this.staged= staged;</span>
+<span class="fc" id="L42">		this.monitor= monitor;</span>
+<span class="fc" id="L43">	}</span>
+
+	static MixedSupportImport stage(IJavaProject project, List&lt;ResourceSnapshot&gt; resources, List&lt;SourceSnapshot&gt; sources,
+			Map&lt;String, String&gt; options, IProgressMonitor monitor) throws IOException, CoreException {
+<span class="fc bfc" id="L47" title="All 4 branches covered.">		if (resources.isEmpty() || !&quot;META-INF/MANIFEST.MF&quot;.equals(resources.getFirst().relativePath()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">				|| !Boolean.parseBoolean(options.get(&quot;cleanup.junitcleanup&quot;)) //$NON-NLS-1$</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">				|| !(Boolean.parseBoolean(options.get(&quot;cleanup.junitcleanup_4_ruleexternalresource&quot;)) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L50" title="1 of 2 branches missed.">						|| Boolean.parseBoolean(options.get(&quot;cleanup.junitcleanup_4_externalresource&quot;))) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">				|| !project.getProject().hasNature(&quot;org.eclipse.pde.PluginNature&quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">				|| Platform.getBundle(&quot;org.eclipse.pde.core&quot;) == null) return null; //$NON-NLS-1$</span>
+		// Projects without an apparent class rule cannot require the mixed strategy.
+		// The JUnit planner subsequently proves both annotations and their common source hierarchy.
+<span class="fc" id="L55">		boolean possible= false;</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">		for (var source : sources) {</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">			if (source.unit().getSource().contains(&quot;ClassRule&quot;)) { possible= true; break; } //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L59" title="1 of 4 branches missed.">		if (!possible || !Target.hasProvider()) return null;</span>
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">		if (MigrationSupportProvider.available(project)</span>
+<span class="nc bnc" id="L61" title="All 2 branches missed.">				&amp;&amp; project.findType(&quot;org.junit.jupiter.api.TestInstance&quot;) != null //$NON-NLS-1$</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">				&amp;&amp; project.findType(&quot;org.junit.jupiter.api.extension.RegisterExtension&quot;) != null //$NON-NLS-1$</span>
+<span class="nc bnc" id="L63" title="All 2 branches missed.">				&amp;&amp; project.findType(&quot;org.junit.jupiter.api.parallel.Isolated&quot;) != null //$NON-NLS-1$</span>
+<span class="nc bnc" id="L64" title="All 2 branches missed.">				&amp;&amp; project.findType(&quot;org.junit.jupiter.api.function.ThrowingConsumer&quot;) != null) return null; //$NON-NLS-1$</span>
+<span class="fc" id="L65">		var descriptor= resources.getFirst();</span>
+<span class="fc" id="L66">		byte[] staged= descriptor.before();</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">		for (String name : List.of(MigrationSupportProvider.PACKAGE, &quot;org.junit.jupiter.api&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L68">				&quot;org.junit.jupiter.api.extension&quot;, &quot;org.junit.jupiter.api.parallel&quot;, &quot;org.junit.jupiter.api.function&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc" id="L69">			staged= PdeManifestImportUpdater.addImport(staged, name);</span>
+		}
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">		if (Arrays.equals(staged, descriptor.before())) return null;</span>
+<span class="fc" id="L72">		var transaction= new MixedSupportImport(descriptor, staged, monitor);</span>
+<span class="fc" id="L73">		transaction.write(descriptor.before(), staged);</span>
+		try {
+<span class="fc" id="L75">			Target.awaitClasspath(monitor);</span>
+<span class="fc" id="L76">			return transaction;</span>
+<span class="nc" id="L77">		} catch (RuntimeException e) {</span>
+<span class="nc" id="L78">			try { transaction.close(); } catch (CoreException restore) { e.addSuppressed(restore); }</span>
+<span class="nc" id="L79">			throw e;</span>
+		}
+	}
+
+	private void write(byte[] expected, byte[] replacement) throws CoreException {
+<span class="fc" id="L84">		var file= descriptor.file();</span>
+<span class="fc" id="L85">		var rules= file.getWorkspace().getRuleFactory();</span>
+<span class="fc" id="L86">		var rule= MultiRule.combine(rules.modifyRule(file), rules.refreshRule(file));</span>
+<span class="fc" id="L87">		file.getWorkspace().run(pm -&gt; {</span>
+			try {
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">				if (!Arrays.equals(Files.readAllBytes(descriptor.path()), expected)) {</span>
+<span class="nc" id="L90">					throw new IOException(&quot;The PDE manifest changed during migration planning: &quot; + descriptor.path()); //$NON-NLS-1$</span>
+				}
+<span class="nc" id="L92">			} catch (IOException changed) {</span>
+<span class="nc" id="L93">				throw new CoreException(Status.error(changed.getMessage(), changed));</span>
+			}
+			try {
+<span class="fc" id="L96">				file.setContents(new ByteArrayInputStream(replacement), IResource.NONE, null);</span>
+<span class="fc" id="L97">			} catch (CoreException failure) {</span>
+<span class="fc" id="L98">				try { recover(expected, replacement, failure); }</span>
+<span class="nc" id="L99">				catch (IOException | CoreException recovery) { failure.addSuppressed(recovery); }</span>
+<span class="fc" id="L100">				throw failure;</span>
+			}
+<span class="fc" id="L102">		}, rule, IWorkspace.AVOID_UPDATE, null);</span>
+<span class="fc" id="L103">	}</span>
+
+	private void recover(byte[] expected, byte[] replacement, CoreException failure) throws IOException, CoreException {
+<span class="fc" id="L106">		var file= descriptor.file();</span>
+<span class="fc" id="L107">		file.refreshLocal(IResource.DEPTH_ZERO, null);</span>
+<span class="fc" id="L108">		byte[] current= Files.readAllBytes(descriptor.path());</span>
+		// A failed stream write can leave the old bytes or a prefix of its output.
+		// An out-of-sync rejection precedes the write, so it cannot own such a prefix.
+<span class="fc bfc" id="L111" title="All 2 branches covered.">		boolean wrotePrefix= failure.getStatus().getCode() != IResourceStatus.OUT_OF_SYNC_LOCAL</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">				&amp;&amp; current.length &lt;= replacement.length</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">				&amp;&amp; Arrays.equals(current, 0, current.length, replacement, 0, current.length);</span>
+<span class="fc bfc" id="L114" title="All 6 branches covered.">		if (!Arrays.equals(current, descriptor.before()) &amp;&amp; (Arrays.equals(current, expected) || wrotePrefix)) {</span>
+<span class="fc" id="L115">			file.setContents(new ByteArrayInputStream(descriptor.before()), IResource.NONE, null);</span>
+		}
+<span class="fc" id="L117">	}</span>
+
+	@Override public void close() throws CoreException {
+<span class="fc" id="L120">		write(staged, descriptor.before());</span>
+<span class="fc" id="L121">		Target.awaitClasspath(monitor);</span>
+<span class="fc" id="L122">	}</span>
+
+	/** Keep PDE optional for non-PDE installations of the application. */
+	private static final class Target {
+		static boolean hasProvider() {
+<span class="fc" id="L127">			var model= PluginRegistry.findModel(MigrationSupportProvider.BUNDLE);</span>
+<span class="pc bpc" id="L128" title="3 of 6 branches missed.">			return model != null &amp;&amp; model.isEnabled() &amp;&amp; model.getInstallLocation() != null</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">					&amp;&amp; MigrationSupportProvider.compatible(Path.of(model.getInstallLocation()));</span>
+		}
+
+		static void awaitClasspath(IProgressMonitor monitor) {
+			try {
+<span class="fc" id="L134">				Job.getJobManager().join(ClasspathComputer.class, monitor);</span>
+<span class="pc" id="L135">			} catch (InterruptedException e) {</span>
+<span class="nc" id="L136">				Thread.currentThread().interrupt();</span>
+<span class="nc" id="L137">				throw new OperationCanceledException();</span>
+			}
+<span class="fc" id="L139">		}</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
