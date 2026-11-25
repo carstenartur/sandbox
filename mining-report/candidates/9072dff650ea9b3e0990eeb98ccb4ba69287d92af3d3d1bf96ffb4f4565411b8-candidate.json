@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "9072dff650ea9b3e0990eeb98ccb4ba69287d92af3d3d1bf96ffb4f4565411b8",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "($CastType) $receiver.getService($CastType.class)\n\u003d\u003e\n$receiver.getService($CastType.class)\n;;",
+  "beforeExample": "interface IServiceLocator {\n    \u003cT\u003e T getService(Class\u003cT\u003e api);\n}\n\nclass MockWorkbench {\n    public IServiceLocator getServiceLocator() {\n        return new IServiceLocator() {\n            @Override\n            public \u003cT\u003e T getService(Class\u003cT\u003e api) {\n                if (api.equals(MockEvaluationService.class)) {\n                    return (T) new MockEvaluationService();\n                }\n                return null;\n            }\n        };\n    }\n}\n\nclass MockEvaluationService {\n    public String evaluate() { return \"evaluated\"; }\n}\n\npublic class MyClient {\n    public void clientMethod() {\n        IServiceLocator locator \u003d new MockWorkbench().getServiceLocator();\n        MockEvaluationService service \u003d (MockEvaluationService) locator.getService(MockEvaluationService.class);\n        service.evaluate();\n    }\n}",
+  "afterExample": "interface IServiceLocator {\n    \u003cT\u003e T getService(Class\u003cT\u003e api);\n}\n\nclass MockWorkbench {\n    public IServiceLocator getServiceLocator() {\n        return new IServiceLocator() {\n            @Override\n            public \u003cT\u003e T getService(Class\u003cT\u003e api) {\n                if (api.equals(MockEvaluationService.class)) {\n                    return (T) new MockEvaluationService();\n                }\n                return null;\n            }\n        };\n    }\n}\n\nclass MockEvaluationService {\n    public String evaluate() { return \"evaluated\"; }\n}\n\npublic class MyClient {\n    public void clientMethod() {\n        IServiceLocator locator \u003d new MockWorkbench().getServiceLocator();\n        MockEvaluationService service \u003d locator.getService(MockEvaluationService.class);\n        service.evaluate();\n    }\n}",
+  "negativeExample": "interface IServiceLocatorOld {\n    // Old signature: returns Object, requiring a cast\n    Object getService(Class\u003c?\u003e api);\n}\n\nclass MockWorkbenchOld {\n    public IServiceLocatorOld getServiceLocator() {\n        return new IServiceLocatorOld() {\n            @Override\n            public Object getService(Class\u003c?\u003e api) {\n                if (api.equals(MockEvaluationService.class)) {\n                    return new MockEvaluationService();\n                }\n                return null;\n            }\n        };\n    }\n}\n\nclass MockEvaluationService {\n    public String evaluate() { return \"evaluated\"; }\n}\n\npublic class MyClient {\n    public void clientMethod() {\n        IServiceLocatorOld locator \u003d new MockWorkbenchOld().getServiceLocator();\n        // This cast is necessary and should NOT be removed by the rule if getService() returns Object\n        MockEvaluationService service \u003d (MockEvaluationService) locator.getService(MockEvaluationService.class);\n        service.evaluate();\n    }\n}",
+  "targetHintFile": "remove-redundant-cast-getservice.sandbox-hint",
+  "sourceCommit": "5d4ea367b42aa3d2a875fcc86f4ccf6ef74a62fe",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "sourceEvidence": {
+    "path": "org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/DebugUIPlugin.java",
+    "before": "\t\tIEvaluationService esrvc \u003d (IEvaluationService)PlatformUI.getWorkbench().getService(IEvaluationService.class);",
+    "after": "\t\tIEvaluationService esrvc \u003d PlatformUI.getWorkbench().getService(IEvaluationService.class);",
+    "diffHunk": "diff --git a/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/DebugUIPlugin.java b/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/DebugUIPlugin.java\nindex 541a80d..458546c 100644\n--- a/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/DebugUIPlugin.java\n+++ b/org.eclipse.debug.ui/ui/org/eclipse/debug/internal/ui/DebugUIPlugin.java\n@@ -1453,7 +1453,7 @@\n \t */\n \tpublic static IEvaluationContext createEvaluationContext(Object defaultvar) {\n \t\tIEvaluationContext parent \u003d null;\n-\t\tIEvaluationService esrvc \u003d (IEvaluationService)PlatformUI.getWorkbench().getService(IEvaluationService.class);\n+\t\tIEvaluationService esrvc \u003d PlatformUI.getWorkbench().getService(IEvaluationService.class);\n \t\tif (esrvc !\u003d null) {\n \t\t\tparent \u003d esrvc.getCurrentState();\n \t\t}\n"
+  },
+  "category": "Redundant Cast Removal",
+  "sourceVersion": "8",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-25T02:18:18.472913035Z",
+  "ruleFingerprint": "sha256:2461b66e4eef0d842cf442e389512df36afb42dd33ca482b03ef3b9efc2a576e",
+  "behaviorFingerprint": "sha256:1d2af7705c7347d9794749d36ac03d73269cbfb901bb2333d1c627f978e8988b",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-11-25T02:23:35.499582904Z",
+    "verifierVersion": "9",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

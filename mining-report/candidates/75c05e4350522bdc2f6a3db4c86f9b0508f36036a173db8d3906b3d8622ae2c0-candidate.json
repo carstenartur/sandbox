@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 3: The import org.eclipse.jdt.core.CoreException cannot be resolved",
-    "verifiedAt": "2026-11-24T02:23:38.352047056Z",
+    "verifiedAt": "2026-11-25T02:23:21.694424487Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
