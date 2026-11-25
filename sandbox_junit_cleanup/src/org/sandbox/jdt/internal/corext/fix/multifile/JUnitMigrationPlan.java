@@ -68,7 +68,7 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 		List<JUnit3HierarchyMigration> junit3Hierarchies,
 		JUnitTestTypeInventory testTypeInventory,
 		Set<String> junit4CompatibleExternalResourceTypes,
-		List<JUnit4ParameterizedPlan> preparedParameterizedPlans) {
+		List<JUnit4ParameterizedPlan> preparedParameterizedPlans, MixedResourcePlan mixedResources) {
 
 	private static final String JUNIT3_HINT_RESOURCE=
 			"org/sandbox/jdt/internal/corext/fix/hints/junit3-hierarchy-to-jupiter.sandbox-hint"; //$NON-NLS-1$
@@ -83,6 +83,13 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 		testTypeInventory= Objects.requireNonNull(testTypeInventory);
 		junit4CompatibleExternalResourceTypes= Set.copyOf(junit4CompatibleExternalResourceTypes);
 		preparedParameterizedPlans= List.copyOf(preparedParameterizedPlans);
+		Objects.requireNonNull(mixedResources);
+	}
+
+	public JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
+			List<ExternalResourceRuleMigration> externalResourceRules, List<JUnit3HierarchyMigration> junit3Hierarchies,
+			JUnitTestTypeInventory inventory, Set<String> compatibleTypes, List<JUnit4ParameterizedPlan> parameterized) {
+		this(selectedScope, externalResourceRules, junit3Hierarchies, inventory, compatibleTypes, parameterized, MixedResourcePlan.EMPTY);
 	}
 
 	public JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
@@ -91,7 +98,7 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 			JUnitTestTypeInventory testTypeInventory,
 			Set<String> junit4CompatibleExternalResourceTypes) {
 		this(selectedScope, externalResourceRules, junit3Hierarchies, testTypeInventory,
-				junit4CompatibleExternalResourceTypes, List.of());
+				junit4CompatibleExternalResourceTypes, List.of(), MixedResourcePlan.EMPTY);
 	}
 
 	public JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
@@ -111,7 +118,7 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 	}
 
 	public boolean hasCoordinatedChanges() {
-		return !externalResourceRules.isEmpty() || !junit3Hierarchies.isEmpty()
+		return !mixedResources.registrations().isEmpty() || !externalResourceRules.isEmpty() || !junit3Hierarchies.isEmpty()
 				|| preparedParameterizedPlans.stream().anyMatch(JUnit4ParameterizedPlan::executable);
 	}
 
@@ -136,12 +143,13 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 			return this;
 		}
 		return new JUnitMigrationPlan(selectedScope, externalResourceRules, junit3Hierarchies,
-				testTypeInventory, compatibleTypes, preparedParameterizedPlans);
+				testTypeInventory, compatibleTypes, preparedParameterizedPlans, mixedResources);
 	}
 
 	public void addOperationsFor(ICompilationUnit unit, CompilationUnit root,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesProcessed)
 			throws CoreException {
+		mixedResources.addOperations(unit, root, operations, nodesProcessed);
 		String unitHandle= unit.getPrimary().getHandleIdentifier();
 		for (JUnit4ParameterizedPlan parameterized : preparedParameterizedPlans) {
 			JUnit4ParameterizedMigration.addOperations(parameterized, unit, root, operations, nodesProcessed);
@@ -375,7 +383,7 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 		return builder.build();
 	}
 
-	private static Annotation findRuleAnnotation(FieldDeclaration field, boolean classRule) {
+	static Annotation findRuleAnnotation(FieldDeclaration field, boolean classRule) {
 		String expected= classRule ? "org.junit.ClassRule" : "org.junit.Rule"; //$NON-NLS-1$ //$NON-NLS-2$
 		for (Object modifier : field.modifiers()) {
 			if (modifier instanceof Annotation annotation) {

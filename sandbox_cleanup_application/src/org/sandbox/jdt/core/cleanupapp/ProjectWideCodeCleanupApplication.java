@@ -164,24 +164,27 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 				refactoring.addCleanUp(observer);
 			}
 
-			RefactoringStatus status= refactoring.checkAllConditions(monitor);
-			for (RefactoringStatusEntry entry : status.getEntries()) {
-				statusMessages.add(entry.getMessage());
-			}
-			for (ICleanUp cleanUp : cleanUps) {
-				if (cleanUp instanceof IMultiFileCleanUpDiagnosticsProvider provider) {
-					String json= provider.getLastPlanningDiagnosticsJson(javaProject);
-					if (json != null && !json.isBlank()) {
-						planningDiagnostics.add(json);
+			Change change;
+			try (var staged= MixedSupportImport.stage(javaProject, resources, sources, options, monitor)) {
+				RefactoringStatus status= refactoring.checkAllConditions(monitor);
+				for (RefactoringStatusEntry entry : status.getEntries()) {
+					statusMessages.add(entry.getMessage());
+				}
+				for (ICleanUp cleanUp : cleanUps) {
+					if (cleanUp instanceof IMultiFileCleanUpDiagnosticsProvider provider) {
+						String json= provider.getLastPlanningDiagnosticsJson(javaProject);
+						if (json != null && !json.isBlank()) {
+							planningDiagnostics.add(json);
+						}
 					}
 				}
-			}
-			if (status.hasFatalError()) {
-				throw new IllegalStateException("Cleanup preconditions failed: " //$NON-NLS-1$
-						+ status.getMessageMatchingSeverity(RefactoringStatus.FATAL));
-			}
+				if (status.hasFatalError()) {
+					throw new IllegalStateException("Cleanup preconditions failed: " //$NON-NLS-1$
+							+ status.getMessageMatchingSeverity(RefactoringStatus.FATAL));
+				}
 
-			Change change= refactoring.createChange(monitor);
+				change= refactoring.createChange(monitor);
+			}
 			if (arguments.batchMaxFiles() > 0 && change != null) {
 				var preview= MigrationBatches.plan(javaProject, change, sources, resources, observer.groups(),
 						arguments.batchMaxFiles(), options, monitor);

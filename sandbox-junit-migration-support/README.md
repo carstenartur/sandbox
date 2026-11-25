@@ -13,7 +13,7 @@ and Engine 1.14 to below 2. Both the PDE development launch and the installed pr
 these providers in an IDE containing both JUnit generations. The standalone Maven JAR keeps its broad imports and
 supports the ordinary JUnit 6 classpath. Native JDT 6 consumers in this
 fragment-bound product need a separately verified binding. Configure PDE
-service discovery as described below. Mixed-lifecycle fixture adoption is manual.
+service discovery as described below. The JUnit cleanup can register independent single-rule owners automatically when the consumer resolves this artifact.
 
 ## Migrating a test subclass
 
@@ -166,8 +166,17 @@ cleanup failure during fatal setup, are attached where suppression permits.
 A fatal body or user hook can escape Jupiter before the group gets its exit
 callback. Under `PER_CLASS`, Jupiter constructs the instance before class setup.
 
-The caller must establish the effective order, resolve field hiding and provide
-legally accessible hooks. The group supplies no automatic mixed-rule conversion
-or translation of custom `apply` wrappers. Provision the support artifact,
-OpenTest4J 1.3 and the matching Jupiter/Platform dependencies in the test target.
-The four outstanding reference-matrix failures remain separate migration work.
+For a group, the caller establishes effective rule order and field hiding and
+supplies legally accessible hooks. Custom `apply` wrappers require their own
+migration. Provision the support artifact, OpenTest4J 1.3 and matching
+Jupiter/Platform dependencies in the test target.
+
+The coordinated cleanup automatically registers a single accessible rule in a
+proven leaf consumer of a mixed-scope fixture. The registration defers the field
+read until the original lifecycle boundary. The fixture and its inherited hooks
+stay available to Vintage consumers. Independent multi-method owners receive
+explicit method ranks matching JUnit 4's default order. Unfiltered Platform
+suites may select migrated JUnit classes. Vintage-only suite or launcher callers,
+inherited contracts, external field writes and rule peers retain the owner on Vintage. In the project-wide PDE application an available target
+bundle can supply the generated dependency. CHECK restores the original
+manifest and APPLY commits the imports required by the changed Java files.

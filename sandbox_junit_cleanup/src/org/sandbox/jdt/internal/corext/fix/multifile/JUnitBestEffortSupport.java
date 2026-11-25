@@ -293,6 +293,22 @@ public final class JUnitBestEffortSupport {
 		return new Gap(handle, bindingKey, name, start, candidateId, reasonCode, explanation, remediation);
 	}
 
+	/** Replace general mixed-lifecycle gaps only within the proved adapter component. */
+	public static Analysis reconcileMixed(Analysis analysis, MixedResourcePlan plan) {
+		if (plan.protectedUnits().isEmpty()) return analysis;
+		var gaps= new ArrayList<>(analysis.gaps().stream()
+				.filter(gap -> !(plan.protectedUnits().contains(gap.ownerCompilationUnitHandle())
+						&& (MIXED_RULE_LIFECYCLE.equals(gap.reasonCode())
+								|| "MIXED_RULE_CONTRACT_RETAINED".equals(gap.reasonCode()) //$NON-NLS-1$
+								// The provider stays unchanged. This owner has its own field-write and subtype closure.
+								|| "EXTERNAL_RESOURCE_CALLER_OUT_OF_SCOPE".equals(gap.reasonCode()) //$NON-NLS-1$
+										&& plan.registrations().containsKey(gap.ownerCompilationUnitHandle())))).toList());
+		gaps.addAll(plan.retained());
+		boolean deferred= gaps.stream().anyMatch(gap -> MIXED_RULE_LIFECYCLE.equals(gap.reasonCode())
+				|| EXTERNAL_RESOURCE_INITIALIZER_UNSUPPORTED.equals(gap.reasonCode()));
+		return new Analysis(gaps, deferred);
+	}
+
 	/**
 	 * Returns rewrites that do not change test discovery, lifecycle, runners or
 	 * extension contracts and may therefore proceed beside a quarantined gap.
@@ -617,7 +633,7 @@ public final class JUnitBestEffortSupport {
 		}
 	}
 
-	private static boolean declaresJUnit4TestContract(TypeDeclaration declaration) {
+	static boolean declaresJUnit4TestContract(TypeDeclaration declaration) {
 		return hasInheritedTestAnnotation(declaration.modifiers())
 				|| Arrays.stream(declaration.getMethods()).anyMatch(method -> hasInheritedTestAnnotation(method.modifiers()))
 				|| Arrays.stream(declaration.getFields()).anyMatch(field -> hasInheritedTestAnnotation(field.modifiers()));

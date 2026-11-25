@@ -66,16 +66,22 @@ public final class JUnitMultiFilePlanner {
 	public record PlanningOptions(boolean migrateExternalResourceRules,
 			boolean migrateJUnit3Hierarchies,
 			boolean diagnoseParameterizedCandidates, boolean executeParameterizedPlans,
-			Set<String> retainedExternalResourceUnits) {
+			Set<String> retainedExternalResourceUnits, boolean mixedTestAdapters) {
 
 		public PlanningOptions {
 			retainedExternalResourceUnits= Set.copyOf(retainedExternalResourceUnits);
 		}
 
 		public PlanningOptions(boolean migrateExternalResourceRules, boolean migrateJUnit3Hierarchies,
+				boolean diagnoseParameterizedCandidates, boolean executeParameterizedPlans, Set<String> retainedExternalResourceUnits) {
+			this(migrateExternalResourceRules, migrateJUnit3Hierarchies, diagnoseParameterizedCandidates,
+					executeParameterizedPlans, retainedExternalResourceUnits, true);
+		}
+
+		public PlanningOptions(boolean migrateExternalResourceRules, boolean migrateJUnit3Hierarchies,
 				boolean diagnoseParameterizedCandidates, boolean executeParameterizedPlans) {
 			this(migrateExternalResourceRules, migrateJUnit3Hierarchies,
-					diagnoseParameterizedCandidates, executeParameterizedPlans, Set.of());
+					diagnoseParameterizedCandidates, executeParameterizedPlans, Set.of(), true);
 		}
 
 		public PlanningOptions(boolean migrateExternalResourceRules, boolean migrateJUnit3Hierarchies,
@@ -86,7 +92,12 @@ public final class JUnitMultiFilePlanner {
 		/** Retains the specified fixture contracts while planning independent migrations. */
 		public PlanningOptions withRetainedExternalResourceUnits(Set<String> unitHandles) {
 			return new PlanningOptions(migrateExternalResourceRules, migrateJUnit3Hierarchies,
-					diagnoseParameterizedCandidates, executeParameterizedPlans, unitHandles);
+					diagnoseParameterizedCandidates, executeParameterizedPlans, unitHandles, mixedTestAdapters);
+		}
+
+		public PlanningOptions withMixedTestAdapters(boolean enabled) {
+			return new PlanningOptions(migrateExternalResourceRules, migrateJUnit3Hierarchies,
+					diagnoseParameterizedCandidates, executeParameterizedPlans, retainedExternalResourceUnits, enabled);
 		}
 
 		boolean hasPlanningWork() {
@@ -252,8 +263,15 @@ public final class JUnitMultiFilePlanner {
 			return MultiFileCleanUpPlanResult.success(plan, status, metrics, diagnostics);
 		}
 
+		List<MultiFileCandidateDiagnostic> mixedDiagnostics= new ArrayList<>();
+		MixedResourcePlan mixed= options.migrateExternalResourceRules()
+				? MixedResourcePlanner.discover(project, rootsByHandle, options.mixedTestAdapters(),
+						options.retainedExternalResourceUnits(), status, mixedDiagnostics, monitor)
+				: MixedResourcePlan.EMPTY;
+		Set<String> protectedUnits= new LinkedHashSet<>(options.retainedExternalResourceUnits());
+		protectedUnits.addAll(mixed.protectedUnits());
 		MigrationResult externalResult= options.migrateExternalResourceRules()
-				? planExternalResources(rootsByHandle, options.retainedExternalResourceUnits(), status, monitor)
+				? planExternalResources(rootsByHandle, protectedUnits, status, monitor)
 				: new MigrationResult(List.of(), List.of());
 		MultiFilePlanningBudget.checkCanceled(monitor);
 		JUnit3HierarchyPlanner.Result junit3Result= options.migrateJUnit3Hierarchies()
@@ -261,10 +279,15 @@ public final class JUnitMultiFilePlanner {
 				: new JUnit3HierarchyPlanner.Result(List.of(), List.of(), new JUnitTestTypeInventory(List.of()));
 
 		List<MultiFileCandidateDiagnostic> candidateDiagnostics= new ArrayList<>(parameterizedResult.diagnostics());
+		// Preserve the original detailed fatal for unsupported mixed declarations.
+		for (var diagnostic : mixedDiagnostics) {
+			if (externalResult.diagnostics().stream().noneMatch(existing -> existing.candidateId().equals(diagnostic.candidateId())
+					&& existing.reasonCode().equals(diagnostic.reasonCode()))) candidateDiagnostics.add(diagnostic);
+		}
 		candidateDiagnostics.addAll(externalResult.diagnostics());
 		candidateDiagnostics.addAll(junit3Result.diagnostics());
 		int retainedEntries= externalResult.migrations().size() + junit3Result.migrations().size()
-				+ parameterizedResult.plans().size();
+				+ parameterizedResult.plans().size() + mixed.registrations().size();
 		MultiFilePlanningMetrics metrics= budget.metrics()
 				.withDurations(parseNanos, System.nanoTime() - planningStarted)
 				.withRetainedPlanEntries(retainedEntries);
@@ -273,7 +296,7 @@ public final class JUnitMultiFilePlanner {
 			return new MultiFileCleanUpPlanResult<>(null, status, metrics, diagnostics);
 		}
 		JUnitMigrationPlan plan= new JUnitMigrationPlan(selectedScope, externalResult.migrations(),
-				junit3Result.migrations(), junit3Result.inventory(), Set.of(), parameterizedResult.plans());
+				junit3Result.migrations(), junit3Result.inventory(), Set.of(), parameterizedResult.plans(), mixed);
 		return MultiFileCleanUpPlanResult.success(plan, status, metrics, diagnostics);
 	}
 

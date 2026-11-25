@@ -21,8 +21,11 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.Javadoc;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.PackageDeclaration;
 import org.eclipse.jdt.core.dom.QualifiedName;
+import org.sandbox.jdt.internal.common.MigrationSupportProvider;
 
 /** Jupiter package references introduced by any source cleanup, including hint rules. */
 final class JupiterDependencies {
@@ -49,7 +52,7 @@ final class JupiterDependencies {
 
 	private static Set<String> referencedPackages(String source, Map<String, String> options) {
 		Set<String> packages= new TreeSet<>();
-		if (!source.contains("org.junit.jupiter.")) { //$NON-NLS-1$
+		if (!source.contains("org.junit.jupiter.") && !source.contains(MigrationSupportProvider.PACKAGE)) { //$NON-NLS-1$
 			return packages;
 		}
 		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
@@ -57,6 +60,11 @@ final class JupiterDependencies {
 		parser.setCompilerOptions(options);
 		parser.createAST(null).accept(new ASTVisitor() {
 			private void reference(String name, boolean packageImport) {
+				if (name.equals(MigrationSupportProvider.FACTORY) || name.startsWith(MigrationSupportProvider.FACTORY + '.')
+						|| packageImport && name.equals(MigrationSupportProvider.PACKAGE)) {
+					packages.add(MigrationSupportProvider.PACKAGE);
+					return;
+				}
 				for (String candidate : API_PACKAGES) {
 					if (packageImport && candidate.equals(name)
 							|| name.startsWith(candidate + '.') && name.length() > candidate.length() + 1
@@ -77,6 +85,18 @@ final class JupiterDependencies {
 			public boolean visit(QualifiedName node) {
 				reference(node.getFullyQualifiedName(), false);
 				return false;
+			}
+
+			@Override
+			public boolean visit(MethodInvocation node) {
+				// The generated three-argument call site links ThrowingConsumer even though
+				// its inferred type does not appear in the Java source.
+				if (node.arguments().size() == 3 && node.getExpression() instanceof Name qualifier
+						&& MigrationSupportProvider.FACTORY.equals(qualifier.getFullyQualifiedName())
+						&& Set.of("perTest", "perClass").contains(node.getName().getIdentifier())) { //$NON-NLS-1$ //$NON-NLS-2$
+					packages.add("org.junit.jupiter.api.function"); //$NON-NLS-1$
+				}
+				return true;
 			}
 
 			@Override
