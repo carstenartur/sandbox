@@ -12,6 +12,7 @@ package org.sandbox.jdt.internal.common;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -35,10 +36,15 @@ public final class PdeManifestImportUpdater {
 	}
 
 	public record Exporter(String symbolicName, String version) {
+		private static final Pattern BUNDLE_COMPONENT= Pattern.compile("[A-Za-z0-9_-]++"); //$NON-NLS-1$
+		private static final Pattern VERSION_NUMBER= Pattern.compile("[0-9]++"); //$NON-NLS-1$
+
 		public Exporter {
-			if (!symbolicName.matches("[A-Za-z0-9_-]+(?:\\.[A-Za-z0-9_-]+)*")) //$NON-NLS-1$
+			if (!Arrays.stream(symbolicName.split("\\.", -1)).allMatch(BUNDLE_COMPONENT.asMatchPredicate())) //$NON-NLS-1$
 				throw new IllegalArgumentException("Invalid bundle symbolic name: " + symbolicName); //$NON-NLS-1$
-			if (!version.matches("[0-9]+\\.[0-9]+\\.[0-9]+(?:\\.[A-Za-z0-9_-]+)?")) //$NON-NLS-1$
+			String[] parts= version.split("\\.", 4); //$NON-NLS-1$
+			if (parts.length < 3 || !VERSION_NUMBER.matcher(parts[0]).matches() || !VERSION_NUMBER.matcher(parts[1]).matches()
+					|| !VERSION_NUMBER.matcher(parts[2]).matches() || parts.length == 4 && !BUNDLE_COMPONENT.matcher(parts[3]).matches())
 				throw new IllegalArgumentException("Invalid bundle version: " + version); //$NON-NLS-1$
 		}
 	}

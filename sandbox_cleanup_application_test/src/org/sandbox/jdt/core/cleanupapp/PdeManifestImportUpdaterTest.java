@@ -14,11 +14,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.jar.Manifest;
 
 import org.junit.jupiter.api.Test;
 
 import org.sandbox.jdt.internal.common.PdeManifestImportUpdater;
+import org.sandbox.jdt.internal.common.PdeManifestImportUpdater.Exporter;
 
 public class PdeManifestImportUpdaterTest {
 
@@ -76,6 +81,36 @@ public class PdeManifestImportUpdaterTest {
 						.getBytes(StandardCharsets.UTF_8);
 
 		assertSame(original, PdeManifestImportUpdater.addImport(original, PARALLEL_PACKAGE));
+	}
+
+	@Test
+	public void preservesLongExporterComponentsAndTheOriginalImport() throws IOException {
+		String name= "9_-." + "a".repeat(2048) + ".Core-2"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		String version= "00001.02.3." + "A".repeat(2048) + "_-9"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		byte[] original= "Manifest-Version: 1.0\r\nImport-Package: existing.api;x=1\r\n\r\n".getBytes(StandardCharsets.UTF_8); //$NON-NLS-1$
+		var exporter= new Exporter(name, version);
+		byte[] updated= PdeManifestImportUpdater.addImport(original, PARALLEL_PACKAGE, exporter);
+		String header= new Manifest(new ByteArrayInputStream(updated)).getMainAttributes().getValue("Import-Package"); //$NON-NLS-1$
+		assertEquals("existing.api;x=1," + PARALLEL_PACKAGE + ";bundle-symbolic-name=" + name //$NON-NLS-1$ //$NON-NLS-2$
+				+ ";bundle-version=\"[" + version + "," + version + "]\"", header); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		assertSame(updated, PdeManifestImportUpdater.addImport(updated, PARALLEL_PACKAGE, exporter));
+	}
+
+	@Test
+	public void rejectsInvalidExporterNameComponents() {
+		for (String name : List.of("", ".api", "api.", "api..core", "unit,io", "café", "api\nmore")) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$
+			assertThrows(IllegalArgumentException.class, () -> new Exporter(name, "0.0.0"), name); //$NON-NLS-1$
+		}
+	}
+
+	@Test
+	public void acceptsOnlyThreeNumericVersionComponentsAndAnOptionalQualifier() {
+		for (String version : List.of("0.0.0", "000.01.02", "1.2.3.4", "1.2.3.-_A9")) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+			assertEquals(version, new Exporter("_", version).version()); //$NON-NLS-1$
+		}
+		for (String version : List.of("", "1.2", "1..3", "1.2.3.", "1.2.3.q.1", "1.2.a", "１.2.3", "1.2.3.q+1")) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$
+			assertThrows(IllegalArgumentException.class, () -> new Exporter("_", version), version); //$NON-NLS-1$
+		}
 	}
 
 	@Test
