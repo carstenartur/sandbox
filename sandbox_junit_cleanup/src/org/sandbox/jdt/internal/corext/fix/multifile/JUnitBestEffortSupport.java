@@ -521,8 +521,8 @@ public final class JUnitBestEffortSupport {
 					externalFixtureOwners);
 			for (SourceType owner : externalFixtureOwners) {
 				addGap(gaps, owner, "external-resource-owner:" + owner.name(), EXTERNAL_RESOURCE_FIXTURE_OUT_OF_SCOPE, //$NON-NLS-1$
-						"The test depends on a JUnit 4 rule declaration or fixture outside the selected source scope. Its JUnit 4 lifecycle must be retained.", //$NON-NLS-1$
-						"Select the fixture hierarchy and its callers for coordinated migration."); //$NON-NLS-1$
+						"A fixture declaration is outside the selected source scope or an ancestor's rule metadata is unavailable. The test's existing lifecycle must be retained.", //$NON-NLS-1$
+						"Provide any unavailable ancestor metadata and select the fixture hierarchy and its callers for coordinated migration."); //$NON-NLS-1$
 			}
 		}
 		boolean retainResources= bestEffort
@@ -534,6 +534,7 @@ public final class JUnitBestEffortSupport {
 	private static boolean inheritsUnselectedRule(ITypeBinding owner, Map<String, SourceType> selected,
 			Map<IType, Boolean> inheritedRules) throws JavaModelException {
 		for (var parent= owner.getSuperclass(); parent != null; parent= parent.getSuperclass()) {
+			if (parent.isRecovered()) return true;
 			if (selected.containsKey(JUnitMigrationPlan.typeKey(parent))) continue;
 			if (!(parent.getTypeDeclaration().getJavaElement() instanceof IType type)) return true;
 			Boolean hasRule= inheritedRules.get(type);
@@ -549,9 +550,15 @@ public final class JUnitBestEffortSupport {
 	}
 
 	private static boolean declaresRule(IType type) throws JavaModelException {
-		for (var field : type.getFields()) if (hasRuleAnnotation(type, field)) return true;
-		for (var method : type.getMethods()) if (hasRuleAnnotation(type, method)) return true;
-		return false;
+		try {
+			for (var field : type.getFields()) if (hasRuleAnnotation(type, field)) return true;
+			for (var method : type.getMethods()) if (hasRuleAnnotation(type, method)) return true;
+			return false;
+		} catch (JavaModelException exception) {
+			// A binding's handle can outlive its source. Missing metadata is not proof of no rule.
+			if (exception.isDoesNotExist()) return true;
+			throw exception;
+		}
 	}
 
 	private static boolean hasRuleAnnotation(IType owner, IAnnotatable member) throws JavaModelException {

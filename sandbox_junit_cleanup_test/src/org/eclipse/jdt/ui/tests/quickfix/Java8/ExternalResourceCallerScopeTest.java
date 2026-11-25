@@ -11,6 +11,7 @@ package org.eclipse.jdt.ui.tests.quickfix.Java8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
@@ -37,11 +38,14 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
+import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.junit.JUnitCore;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
@@ -433,6 +437,82 @@ class ExternalResourceCallerScopeTest {
 	}
 
 	private record InheritedFixture(String name, String declaration, String observation) {}
+
+	@ParameterizedTest
+	@ValueSource(strings= { "strict", "best-effort", "junit6", "test-without-rule-rewrite" })
+	void retainsUnavailableAncestorWithoutAbortingIndependentMigration(String profile) throws Exception {
+		String original= """
+				package test;
+				import unavailable.fixture.MissingBase;
+				public class UnavailableOwner extends MissingBase {
+					@org.junit.Test public void unresolvedFixture() {}
+				}
+				""";
+		ICompilationUnit owner= callers.createCompilationUnit("UnavailableOwner.java", original, false, null);
+		ICompilationUnit independent= callers.createCompilationUnit("Independent.java", """
+				package test;
+				import org.junit.Test;
+				public class Independent {
+					@Test public void runnable() { System.out.println(getClass()); }
+				}
+				""", false, null);
+		String independentOriginal= independent.getSource();
+		var parser= ASTParser.newParser(AST.getJLSLatest());
+		parser.setSource(owner);
+		parser.setResolveBindings(true);
+		parser.setBindingsRecovery(true);
+		var ast= (CompilationUnit) parser.createAST(null);
+		var ancestor= ((TypeDeclaration) ast.types().getFirst()).resolveBinding().getSuperclass();
+		assertNotNull(ancestor);
+		assertTrue(ancestor.getJavaElement() instanceof IType);
+		IType unavailable= (IType) ancestor.getJavaElement();
+		assertFalse(unavailable.exists());
+		JavaModelException absent= assertThrows(JavaModelException.class, unavailable::getFields);
+		assertTrue(absent.isDoesNotExist());
+		assertTrue(Arrays.stream(ast.getProblems()).anyMatch(IProblem::isError),
+				"The unavailable ancestor is an existing input problem, not a cleanup-generated error");
+		var diagnostics= CompilerDiagnosticAssertions.capture(owner, independent);
+		var originalOptions= caller.getJavaProject().getOptions(false);
+		var cleanup= new ReportingJUnitCleanUpCore(Map.of(
+				MYCleanUpConstants.JUNIT_CLEANUP, CleanUpOptions.TRUE,
+				MYCleanUpConstants.JUNIT_CLEANUP_4_TEST, CleanUpOptions.TRUE,
+				MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE, Boolean.toString(!profile.equals("test-without-rule-rewrite")),
+				MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE, Boolean.toString(!profile.equals("test-without-rule-rewrite")),
+				"cleanup.junitcleanup_best_effort", Boolean.toString(profile.equals("best-effort")),
+				"cleanup.junitcleanup_6_compatibility", Boolean.toString(profile.equals("junit6"))));
+		var change= new CompositeChange("Retain an unavailable ancestor");
+		var monitor= new NullProgressMonitor();
+		try {
+			var status= cleanup.checkPreConditions(caller.getJavaProject(), new ICompilationUnit[] { owner, independent }, monitor);
+			assertFalse(status.hasFatalError(), status.toString());
+			for (ICompilationUnit unit : List.of(owner, independent)) {
+				var fix= cleanup.createFix(new CleanUpContext(unit, parse(unit)));
+				if (fix != null) change.add(fix.createChange(monitor));
+			}
+			change.initializeValidationData(monitor);
+			var undo= change.perform(monitor);
+			assertNotNull(undo);
+			try {
+				diagnostics.assertNoNewDiagnostics();
+				assertRetainedOwner(original, owner.getSource(), profile);
+				assertTrue(independent.getSource().contains("import org.junit.jupiter.api.Test;"), independent.getSource());
+				assertEquals(List.of("junit-jupiter test.Independent SUCCESSFUL"), engineResults(List.of("test.Independent")));
+				assertTrue(cleanup.getLastPlanningDiagnosticsJson(caller.getJavaProject())
+						.contains("EXTERNAL_RESOURCE_FIXTURE_OUT_OF_SCOPE"));
+			} finally {
+				var redo= undo.perform(monitor);
+				if (redo != null) redo.dispose();
+				undo.dispose();
+			}
+		} finally {
+			change.dispose();
+			cleanup.checkPostConditions(monitor);
+			assertEquals(original, owner.getSource());
+			assertEquals(independentOriginal, independent.getSource());
+			assertEquals(originalOptions, caller.getJavaProject().getOptions(false));
+			diagnostics.assertRestored();
+		}
+	}
 
 	private static void assertRetainedOwner(String original, String applied, String profile) {
 		if (profile.equals("best-effort")) {
