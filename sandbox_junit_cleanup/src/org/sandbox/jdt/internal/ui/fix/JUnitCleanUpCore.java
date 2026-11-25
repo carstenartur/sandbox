@@ -152,7 +152,8 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 				new JUnitMultiFilePlanner.PlanningOptions(
 						migrateExternalResources,
 						fixes.contains(JUnitCleanUpFixCore.TEST3),
-						fixes.contains(JUnitCleanUpFixCore.PARAMETERIZED), true);
+						fixes.contains(JUnitCleanUpFixCore.PARAMETERIZED), true)
+				.withMixedTestAdapters(fixes.contains(JUnitCleanUpFixCore.TEST));
 
 		// Parse and classify the complete project scope before the strict per-file gap
 		// analysis. On a newly imported Eclipse project this first coordinated parse
@@ -167,6 +168,7 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 		Analysis analysis= junit4Enabled
 				? JUnitBestEffortSupport.analyze(project, compilationUnits, fixes, bestEffort, monitor)
 				: Analysis.empty();
+		if (result.plan() != null) analysis= JUnitBestEffortSupport.reconcileMixed(analysis, result.plan().mixedResources());
 		if (bestEffort && migrateExternalResources && analysis.disableCoordinatedExternalResource()) {
 			planningOptions= planningOptions.withRetainedExternalResourceUnits(analysis.retainedExternalResourceCompilationUnitHandles());
 			result= closedScope == null
@@ -174,6 +176,7 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 					: JUnitMultiFilePlanner.createCoordinated(project, compilationUnits, planningOptions,
 							closedScope.booleanValue(), monitor);
 		}
+		if (result.plan() != null) analysis= JUnitBestEffortSupport.reconcileMixed(analysis, result.plan().mixedResources());
 		analysis= JUnitBestEffortSupport.reconcileParameterized(analysis, result.plan(), result.diagnostics(),
 				fixes.contains(JUnitCleanUpFixCore.PARAMETERIZED)
 						&& project.findType("org.junit.jupiter.params.ParameterizedClass") != null); //$NON-NLS-1$
@@ -213,6 +216,13 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 		Analysis analysis= migrationAnalyses.getOrDefault(
 				context.getCompilationUnit().getJavaProject(), Analysis.empty());
 		List<JUnitBestEffortSupport.Gap> localGaps= analysis.gapsFor(context.getCompilationUnit());
+		if (plan.mixedResources().retains(context.getCompilationUnit())) {
+			if (!bestEffort) return null;
+			Set<CompilationUnitRewriteOperationWithSourceRange> markers= new LinkedHashSet<>();
+			JUnitBestEffortSupport.addMarkerOperation(compilationUnit, localGaps, markers);
+			return markers.isEmpty() ? null : new NlsAwareCleanUpFix(JUnitCleanUpFix_refactor, compilationUnit,
+					markers.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]));
+		}
 		if (!bestEffort && !localGaps.isEmpty()) {
 			// Strict mode remains atomic for migration edits. The only permitted
 			// compatibility change makes inherited JUnit 4 virtual lifecycle dispatch
