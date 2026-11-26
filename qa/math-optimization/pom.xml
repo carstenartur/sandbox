@@ -1,9 +1,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
  <modelVersion>4.0.0</modelVersion><groupId>org.sandbox.qa</groupId><artifactId>math-qualification</artifactId><version>1.0.0-SNAPSHOT</version>
  <name>Standalone qualification of the production mathematics core</name>
- <properties><maven.compiler.release>25</maven.compiler.release><project.build.sourceEncoding>UTF-8</project.build.sourceEncoding><repo>${project.basedir}/../..</repo><bc.binary>${settings.localRepository}/org/bouncycastle/bcprov-jdk18on/1.85.2/bcprov-jdk18on-1.85.2.jar</bc.binary><bc.sources>${settings.localRepository}/org/bouncycastle/bcprov-jdk18on/1.85.2/bcprov-jdk18on-1.85.2-sources.jar</bc.sources><bc.sources.sha256>b37ac84b1d5435ab7b8d166c16ab9f75e09f68f8ec50479bae433939b241b03f</bc.sources.sha256></properties>
+ <properties><regelsuche.version>0.5.4-SNAPSHOT</regelsuche.version><maven.compiler.release>25</maven.compiler.release><project.build.sourceEncoding>UTF-8</project.build.sourceEncoding><repo>${project.basedir}/../..</repo><bc.binary>${settings.localRepository}/org/bouncycastle/bcprov-jdk18on/1.85.2/bcprov-jdk18on-1.85.2.jar</bc.binary><bc.sources>${settings.localRepository}/org/bouncycastle/bcprov-jdk18on/1.85.2/bcprov-jdk18on-1.85.2-sources.jar</bc.sources><bc.sources.sha256>b37ac84b1d5435ab7b8d166c16ab9f75e09f68f8ec50479bae433939b241b03f</bc.sources.sha256></properties>
  <dependencies>
-  <dependency><groupId>io.github.carstenartur</groupId><artifactId>regelsuche-optimization-sdk</artifactId><version>0.5.3</version></dependency>
+  <dependency><groupId>io.github.carstenartur</groupId><artifactId>regelsuche-optimization-sdk</artifactId><version>${regelsuche.version}</version></dependency>
   <dependency><groupId>org.eclipse.jdt</groupId><artifactId>org.eclipse.jdt.core</artifactId><version>3.47.0</version></dependency>
   <dependency><groupId>org.eclipse.platform</groupId><artifactId>org.eclipse.text</artifactId><version>3.14.700</version></dependency>
   <dependency><groupId>org.eclipse.jgit</groupId><artifactId>org.eclipse.jgit</artifactId><version>7.8.0.202609011348-r</version></dependency>
