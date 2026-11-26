@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Copyright (c) 2026 Carsten Hammer.
  *
  * This program and the accompanying materials
@@ -119,6 +119,12 @@ final class PdeXmlQuickFixScreenshot {
 			SWTBotView explorer= bot.viewById(PROJECT_EXPLORER_VIEW);
 			explorer.show();
 			SWTBotTree explorerTree= explorer.bot().tree();
+			// Keep unrelated projects visible as roots without exposing host-specific JRE labels.
+			for (SWTBotTreeItem item : explorerTree.getAllItems()) {
+				if (!PROJECT_NAME.equals(item.getText()) && item.isExpanded()) {
+					item.collapse();
+				}
+			}
 			SWTBotTreeItem fileItem= explorerTree.getTreeItem(PROJECT_NAME).expand()
 					.getNode("schema").expand().getNode("cleanUps.exsd"); //$NON-NLS-1$ //$NON-NLS-2$
 			explorerTree.setFocus();

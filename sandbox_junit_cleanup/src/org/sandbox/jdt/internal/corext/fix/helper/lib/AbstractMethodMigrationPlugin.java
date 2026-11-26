@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Copyright (c) 2026 Carsten Hammer.
  *
  * This program and the accompanying materials
@@ -19,6 +19,8 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ChildListPropertyDescriptor;
+import org.eclipse.jdt.core.dom.ChildPropertyDescriptor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
@@ -28,6 +30,7 @@ import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
@@ -55,6 +58,8 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
  * </ul>
  */
 public abstract class AbstractMethodMigrationPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
+
+	private static final String RETAIN_LEGACY_IMPORT= AbstractMethodMigrationPlugin.class.getName() + ".retainLegacyImport"; //$NON-NLS-1$
 
 	/**
 	 * Returns the fully qualified name of the source class (JUnit 4).
@@ -92,19 +97,43 @@ public abstract class AbstractMethodMigrationPlugin extends AbstractTool<Referen
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
+		Set<MethodInvocation> retained= JUnit4AssertionNls.unsupportedCaptures(compilationUnit,
+				getSourceClass(), getTargetClass(), getMethodsRequiringReorder());
 		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
 		HelperVisitorFactory.forMethodCalls(getSourceClass(), getMethodNames())
 			.andStaticImports()
 			.andImportsOf(getSourceClass())
 			.in(compilationUnit)
 			.excluding(nodesprocessed)
-			.processEach(dataHolder, (visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder));
+			.processEach(dataHolder, (visited, aholder) -> {
+				if (retained.contains(visited) || !retained.isEmpty() && visited instanceof ImportDeclaration) return true;
+				visited.setProperty(RETAIN_LEGACY_IMPORT, !retained.isEmpty());
+				return processFoundNode(fixcore, operations, visited, aholder);
+			});
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ASTNode node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
 		return addStandardRewriteOperation(fixcore, operations, node, dataHolder);
+	}
+
+	static void recordRetainedImports(ASTNode node, CompilationUnitRewrite rewrite) {
+		if (node instanceof MethodInvocation invocation && retainsLegacyImports(invocation)) {
+			ASTNode qualifier= invocation.getExpression();
+			ASTRewrite astRewrite= rewrite.getASTRewrite();
+			boolean replaced= astRewrite.get(invocation, MethodInvocation.EXPRESSION_PROPERTY) != qualifier;
+			if (invocation.getLocationInParent() instanceof ChildPropertyDescriptor child) {
+				replaced|= astRewrite.get(invocation.getParent(), child) != invocation;
+			} else if (invocation.getLocationInParent() instanceof ChildListPropertyDescriptor list) {
+				replaced|= !astRewrite.getListRewrite(invocation.getParent(), list).getRewrittenList().contains(invocation);
+			}
+			if (replaced) rewrite.getImportRemover().registerRemovedNode(qualifier == null ? invocation.getName() : qualifier);
+		}
+	}
+
+	protected static boolean retainsLegacyImports(MethodInvocation invocation) {
+		return Boolean.TRUE.equals(invocation.getProperty(RETAIN_LEGACY_IMPORT));
 	}
 
 	@Override
@@ -127,6 +156,12 @@ public abstract class AbstractMethodMigrationPlugin extends AbstractTool<Referen
 			ImportRewrite importRewriter, MethodInvocation methodInvocation) {
 		
 		String methodName = methodInvocation.getName().getIdentifier();
+		if (retainsLegacyImports(methodInvocation)) {
+			// Retained calls still need the source imports; qualify each migrated call explicitly.
+			rewriter.set(methodInvocation, MethodInvocation.EXPRESSION_PROPERTY, ast.newName(getTargetClass()), group);
+			if (getMethodsRequiringReorder().contains(methodName)) reorderMessageParameter(group, rewriter, methodInvocation);
+			return;
+		}
 		
 		// Update qualified expression if present (e.g., Assert.assertEquals → Assertions.assertEquals)
 		Expression expression = methodInvocation.getExpression();
