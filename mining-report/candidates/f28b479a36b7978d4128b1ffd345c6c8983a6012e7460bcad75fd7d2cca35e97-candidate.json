@@ -20,7 +20,7 @@
     "successful": false,
     "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.ui.text.correction cannot be resolved",
-    "verifiedAt": "2026-11-25T02:23:22.500216023Z",
+    "verifiedAt": "2026-11-26T02:19:55.172003847Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0

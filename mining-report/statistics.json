@@ -1,7 +1,7 @@
 {
-  "totalProcessed": 2197,
+  "totalProcessed": 2232,
   "relevant": 178,
-  "irrelevant": 2019,
+  "irrelevant": 2054,
   "duplicates": 0,
   "green": 168,
   "yellow": 0,
@@ -1127,7 +1127,33 @@
     "The commit modifies internal control flow logic within a helper class, which is not a generalizable, semantics-preserving Java cleanup suitable for a DSL rule. It refactors an if-else if block into an if-else with a throw statement.": 1,
     "The commit modifies .classpath XML files, adding access rules and attributes to classpath entries, and fixing a path string. These are build configuration changes, not Java code cleanups that can be expressed with the TriggerPattern DSL.": 1,
     "Architectural refactoring: This commit involves moving a utility class (`LibStandardNames.java`) to a new common package and updating its package declaration. It also modifies `import static` statements in numerous files and updates plugin manifest files (`META-INF/MANIFEST.MF`) to reflect the new module dependencies. The DSL is designed for local, semantics-preserving code transformations on expressions and statements, not for file moves, package declaration rewrites, import path changes driven by class relocation, or manifest updates. Such changes are outside the scope and capabilities of the TriggerPattern DSL.": 1,
-    "Architectural refactoring: This commit is similar to the previous one, involving the relocation of another utility class (`MYCleanUpConstants.java`) to a new common package. It updates the package declaration, modifies `import static` statements to reflect the new location, and deletes the original files. The TriggerPattern DSL is not capable of performing file system operations like moving files, rewriting package declarations, or handling `import static` changes that result from a class being moved to a new package. These are architectural changes beyond the scope of local code transformations.": 1
+    "Architectural refactoring: This commit is similar to the previous one, involving the relocation of another utility class (`MYCleanUpConstants.java`) to a new common package. It updates the package declaration, modifies `import static` statements to reflect the new location, and deletes the original files. The TriggerPattern DSL is not capable of performing file system operations like moving files, rewriting package declarations, or handling `import static` changes that result from a class being moved to a new package. These are architectural changes beyond the scope of local code transformations.": 1,
+    "The commit only updates a dependency version in pom.xml, which is a build configuration change, not a Java code cleanup.": 4,
+    "Changes are in a Maven pom.xml file, not Java source code. The TriggerPattern DSL is for Java code transformations.": 4,
+    "The commit modifies a pom.xml file, which is a project configuration file, not Java source code. The DSL is designed for Java code transformations.": 1,
+    "The commit modifies a GitHub Actions workflow file (.github/workflows/pmd.yml), which is a CI/CD configuration, not Java source code. The DSL is designed for Java code transformations.": 1,
+    "The commit modifies Eclipse classpath (.classpath) and project preference (.settings/org.eclipse.jdt.core.prefs) files. These are IDE and compiler configuration files, not Java source code. The DSL is designed for Java code transformations.": 1,
+    "The commit only updates a plugin version in pom.xml, which is a build configuration change and not a Java code cleanup. The TriggerPattern DSL is designed for Java code transformations.": 1,
+    "The commit modifies a README.md file, which is a documentation change and not a Java code cleanup. It does not involve any local, semantics-preserving Java code transformation.": 1,
+    "This commit primarily updates build configuration files (.github/workflows/codeql.yml, pom.xml) and OSGi manifest files (META-INF/MANIFEST.MF). These are build-related changes, dependency updates, and module configuration, not local, semantics-preserving Java code cleanups that can be expressed by the TriggerPattern DSL.": 1,
+    "This commit modifies XML build configuration files (pom.xml) by adding new dependencies. It does not contain any Java code changes that can be expressed as a cleanup rule in the TriggerPattern DSL. The DSL is intended for Java source code transformations, not build system configuration.": 1,
+    "This commit primarily adds Javadoc-style comments to `JFacePlugin.java` describing a deprecation and replacement strategy for `SubProgressMonitor` with `SubMonitor`. It also includes changes to `.gitignore`, `MANIFEST.MF`, `feature.xml`, and `pom.xml` which are related to build and project configuration, not Java code cleanup. The Java code changes are limited to adding descriptive comments, not actual functional code transformations. While the comments describe a potential cleanup, the commit itself does not implement it, and the described cleanup (replacing a method call with a variable declaration and then using that variable) is too complex for the current DSL which focuses on local expression-level rewrites.": 1,
+    "This commit is limited to adding internal comments within the `JFacePlugin.java` class and modifying the string literals returned by the `getPreview` method. These string literals represent the \u0027before\u0027 and \u0027after\u0027 states of a *proposed* refactoring from `IProgressMonitor.beginTask` and `SubProgressMonitor` to `SubMonitor.convert` and `SubMonitor.split`. However, the commit itself does not apply this refactoring to actual Java code. The described refactoring involves complex, multi-statement transformations (replacing a method call with a variable declaration and subsequent uses of that new variable), which is beyond the current capabilities of the TriggerPattern DSL that is designed for local, expression-level rewrites. Furthermore, the examples use Eclipse-specific APIs (`IProgressMonitor`, `SubMonitor`, etc.) which cannot be verified with JDK-only examples.": 1,
+    "The commit modifies a Maven `pom.xml` file to update a plugin version. The TriggerPattern DSL is designed for Java code transformations, not XML configuration files.": 1,
+    "The commit involves a multi-step refactoring that is too complex for a single TriggerPattern DSL rule. It replaces a method invocation (`IProgressMonitor.beginTask`) with a local variable declaration and initializer (`SubMonitor subMonitor \u003d SubMonitor.convert(...)`), and then uses this newly introduced local variable (`subMonitor`) in subsequent replacements of `new SubProgressMonitor(...)` calls. The DSL does not support chaining rules or passing context (like the name of a newly introduced variable) between independent pattern matches, nor does it directly support replacing an expression statement with a variable declaration statement followed by subsequent dependent replacements.": 1,
+    "The commit deletes a configuration file (`.github/dependabot.yml`). The TriggerPattern DSL is designed for Java code transformations, not file system operations or non-Java files.": 1,
+    "The commit creates a configuration file (`.github/dependabot.yml`). The TriggerPattern DSL is designed for Java code transformations, not file system operations or non-Java files.": 1,
+    "The commit deletes a configuration file (.github/dependabot.yml), which is not a Java code cleanup.": 1,
+    "The commit creates a configuration file (.github/dependabot.yml), which is not a Java code cleanup.": 1,
+    "The commit updates a version property in a Maven pom.xml file, which is a build configuration change, not a Java code cleanup.": 1,
+    "The commit involves various changes across multiple XML configuration files (Maven pom.xml, Eclipse feature.xml, product definition) and deletes a .prefs file. These are build system, dependency management, and project configuration changes, not a small, local, semantics-preserving Java code cleanup.": 1,
+    "The commit modifies a GitHub Actions YAML workflow file, not Java code. The TriggerPattern DSL is for Java code transformations.": 1,
+    "The commit creates a Maven toolchains XML file, not Java code. The TriggerPattern DSL is for Java code transformations.": 1,
+    "The commit modifies a GitHub Actions workflow YAML file (.github/workflows/maven.yml), not Java source code. The TriggerPattern DSL is designed for Java code transformations.": 3,
+    "The commit modifies a Dependabot configuration YAML file (.github/dependabot.yml), not Java source code. The TriggerPattern DSL is designed for Java code transformations.": 1,
+    "The commit modifies a GitHub Actions workflow file (.yml), not Java source code. No Java cleanup DSL rule is applicable.": 2,
+    "The commit modifies a GitHub Actions workflow file (.yml) by commenting out lines, not Java source code. No Java cleanup DSL rule is applicable.": 1,
+    "The commit modifies a Markdown file (.md), not Java source code. No Java cleanup DSL rule is applicable.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-platform/eclipse.platform.text": {
@@ -1145,7 +1171,7 @@
       "red": 0
     },
     "https://github.com/carstenartur/sandbox": {
-      "totalProcessed": 94,
+      "totalProcessed": 129,
       "relevant": 1,
       "green": 1,
       "yellow": 0,
@@ -1337,23 +1363,28 @@
       "date": "2026-11-25",
       "processed": 54,
       "relevant": 3
+    },
+    {
+      "date": "2026-11-26",
+      "processed": 35,
+      "relevant": 0
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-11-25T02:12:36.403Z",
-    "completedAt": "2026-11-25T02:23:13.177954795Z",
-    "durationSeconds": 636,
+    "startedAt": "2026-11-26T02:12:03.429Z",
+    "completedAt": "2026-11-26T02:19:46.207919851Z",
+    "durationSeconds": 462,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
     "apiCallsMade": 18,
-    "deferredCommits": 650,
+    "deferredCommits": 653,
     "permanentlySkipped": 0
   },
   "timeWindow": {
     "earliestEvaluation": "2026-10-20T02:20:11.033616597Z",
-    "latestEvaluation": "2026-11-25T02:23:07.508589957Z",
+    "latestEvaluation": "2026-11-26T02:19:45.284125556Z",
     "earliestCommitDate": "2010-01-04T11:37:57Z",
     "latestCommitDate": "2023-06-30T14:47:04Z"
   }
