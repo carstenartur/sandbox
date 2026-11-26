@@ -3,11 +3,11 @@
   "version": "0.5.4-SNAPSHOT",
   "distribution": "commit-pinned source build",
   "sourceRepository": "https://github.com/carstenartur/Regelsuche",
-  "sourceRevision": "dc46d59d015f4d1ae68ef134e4ded5a00c4b2a5a",
-  "sourceTree": "b5f8741ea7526975fb909e3dc966722453ed18b9",
+  "sourceRevision": "6bcddc0931e1e3139edf3a9fca5bc87635b1e6ac",
+  "sourceTree": "f8034a9168d9d1b1b2b35755c501f60b96b15ab1",
   "javaCompiler": "Temurin 25.0.5+8",
   "buildOutputTimestamp": "2026-11-26T00:00:00Z",
-  "jarSha256": "7c5f56973902578c7da6fefe6b93c931e31e743a223646908e23c1740a8e4cb1",
+  "jarSha256": "205b984e7c2c73f7ad43e54659df5a8d3749d982357655fbec9e12201075bec6",
   "artifacts": [
     {
       "artifactId": "regelsuche-core",
@@ -27,31 +27,30 @@
     },
     {
       "artifactId": "regelsuche-math-algorithms",
-      "sha256": "66eeb1fb15cb7721ba2c920deee2cda6b4a662bb7fbe166e56c9cf062d56fd44"
+      "sha256": "58c251eef699b1fb229da0ecd3793e100d56f24dc4a9de5c63a63a8604fe3098"
     },
     {
       "artifactId": "regelsuche-optimization-sdk",
-      "sha256": "7c5f56973902578c7da6fefe6b93c931e31e743a223646908e23c1740a8e4cb1"
+      "sha256": "205b984e7c2c73f7ad43e54659df5a8d3749d982357655fbec9e12201075bec6"
     }
   ],
   "tests": {
-    "reactor": 3542,
+    "reactor": 3574,
     "failures": 0,
     "errors": 0,
     "skipped": 1
   },
   "reproducibleBuilds": 2,
   "mavenVersions": [
-    "3.9.9",
     "3.9.16"
   ],
   "pomSha256": {
-    "regelsuche-parent": "b50211a9d2148981a31b599583295cec6b329a052324cc732bfe29a6ba8cd2e8",
+    "regelsuche-parent": "2b8ce9aee67a9604aaf42128eac539fad30a4e839b5c7df59abcec8d5d213593",
     "regelsuche-core": "a51e1ce2b634439ccd1a697b9568f9fc8332bc0e201b30cf56b1b2cf651c4e32",
     "regelsuche-egraph": "ff2a2241fbc36444824da19b80b6159b6460a5c2471c82091b7c7ee5f897e4e4",
     "regelsuche-search": "9c7ada94eca6ee9df851bcac1653533a75c4c266d4742f725884681051ed7436",
     "regelsuche-validation": "f7c9049eb61fec70774a55aef729ba80908a89ce8e125c51ce28e3dddd4fe227",
-    "regelsuche-math-algorithms": "184209f52ea1bda12a8f92ba9001bfeb9043f4ab83ac4e7b1cc3efaca3705f82",
-    "regelsuche-optimization-sdk": "6b24012595a521cf4797179f50cab605cbf6d94af4dd9270d1d38c0e084c702d"
+    "regelsuche-math-algorithms": "c38c011cce5984875b3230ec04c712df98356be5bfe5aba3008a14708d4fb6de",
+    "regelsuche-optimization-sdk": "b5b5ac23efdacaeb3eb64fe30d1fed929295c56c20cf53b54430ac575136c6ed"
   }
 }
