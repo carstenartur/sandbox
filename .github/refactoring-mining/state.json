@@ -187,9 +187,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/carstenartur/sandbox": {
-      "lastProcessedCommit": "d34b67cdf2d0b67a207d2e8f7cf1361322ce2178",
-      "lastProcessedDate": "2026-11-25T02:23:07.516153334Z",
-      "totalProcessed": 116,
+      "lastProcessedCommit": "1e94a557b47cd1a575474eb545d983c86ca39826",
+      "lastProcessedDate": "2026-11-26T02:19:45.284587581Z",
+      "totalProcessed": 160,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -297,6 +297,33 @@
           "diffLines": 502,
           "reason": "DIFF_TOO_LARGE",
           "deferredAt": "2026-11-25T02:22:04.524015756Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "9bf11857f13def6eae8c106f2f8165cf4be19dde",
+          "message": "Jface3 (#23)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-26T02:16:39.942919114Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "25f07a848b6ce31f5191c3b3bee97296705a679b",
+          "message": "add launch configuration",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-26T02:17:45.696593051Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "3db6e3d413b5a0b469cabf18224f820daa9d1329",
+          "message": "2022 12 (#32)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-26T02:18:46.978892140Z",
           "retryCount": 0,
           "maxRetries": 3
         }
@@ -6520,5 +6547,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 55205
+  "globalTotalProcessed": 55249
 }
