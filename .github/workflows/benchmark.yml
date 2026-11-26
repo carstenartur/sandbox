@@ -14,6 +14,7 @@ on:
       - 'sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/JUnitXmlInventoryComparator*.java'
       - 'sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/PinnedGitRepository*.java'
       - '.github/workflows/benchmark.yml'
+      - '.github/actions/provision-regelsuche/**'
   pull_request:
     types: [opened, reopened, synchronize, labeled]
     branches:
@@ -28,6 +29,7 @@ on:
       - 'sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/JUnitXmlInventoryComparator*.java'
       - 'sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/PinnedGitRepository*.java'
       - '.github/workflows/benchmark.yml'
+      - '.github/actions/provision-regelsuche/**'
   workflow_dispatch:
     inputs:
       jdt_upstream:
@@ -36,6 +38,43 @@ on:
         default: false
 
 jobs:
+  guarded-root:
+    if: github.event.action != 'labeled'
+    name: Source-discovered exact quadratic roots
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25.0.5'
+          cache: maven
+      - uses: ./.github/actions/provision-regelsuche
+      - name: Qualify original upstream source and generated Java
+        run: >-
+          ./mvnw --batch-mode --no-transfer-progress -f qa/math-optimization/pom.xml
+          -Dtest=GuardedQuadraticRootSourceTest,BouncyCastleGuardedRootTest
+          -Dsandbox.math.bc.root.upstream=true
+          -Dsandbox.math.bc.root.output="${{ runner.temp }}/guarded-root" test
+      - name: Check benchmark isolation, exact outputs and artifact freshness
+        run: >-
+          ./mvnw --batch-mode --no-transfer-progress -f qa/math-optimization/pom.xml
+          -Dtest=GuardedRootBenchmarkTest
+          -Dsandbox.math.bc.root.benchmarkExport="${{ runner.temp }}/guarded-root" test
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: guarded-root-qualification
+          path: |
+            qa/math-optimization/target/surefire-reports/**
+            ${{ runner.temp }}/guarded-root/root-qualification.properties
+            ${{ runner.temp }}/guarded-root/original/*.java
+            ${{ runner.temp }}/guarded-root/generated/*.java
+          retention-days: 14
+
   swt-before-after:
     if: github.event.action != 'labeled'
     name: Pinned SWT mathematics before and after
@@ -72,10 +111,15 @@ jobs:
       - name: Set up Java 25
         uses: actions/setup-java@v6
         with:
-          java-version: '25'
+          java-version: '25.0.5'
           distribution: temurin
           cache: maven
           cache-dependency-path: sandbox/qa/math-optimization/pom.xml
+      - name: Provision the pinned mathematics SDK
+        uses: ./sandbox/.github/actions/provision-regelsuche
+        with:
+          sandbox-directory: sandbox
+
       - name: Install GTK and headless display dependencies
         run: |
           sudo apt-get update
@@ -141,10 +185,15 @@ jobs:
           path: sandbox
       - uses: actions/setup-java@v6
         with:
-          java-version: '25'
+          java-version: '25.0.5'
           distribution: temurin
           cache: maven
           cache-dependency-path: sandbox/pom.xml
+      - name: Provision the pinned mathematics SDK
+        uses: ./sandbox/.github/actions/provision-regelsuche
+        with:
+          sandbox-directory: sandbox
+
       - name: Materialize the product from this checkout
         working-directory: sandbox
         shell: bash
@@ -211,7 +260,7 @@ jobs:
             8
             17
             21
-            25
+            25.0.5
           mvn-toolchain-id: |
             JavaSE-1.8
             JavaSE-17
@@ -219,6 +268,11 @@ jobs:
             JavaSE-25
           cache: maven
           cache-dependency-path: sandbox/qa/math-optimization/pom.xml
+      - name: Provision the pinned mathematics SDK
+        uses: ./sandbox/.github/actions/provision-regelsuche
+        with:
+          sandbox-directory: sandbox
+
       - name: Install native test dependencies
         run: |
           sudo apt-get update
@@ -272,10 +326,13 @@ jobs:
       - name: Set up JDK 25
         uses: actions/setup-java@v6
         with:
-          java-version: '25'
+          java-version: '25.0.5'
           distribution: 'temurin'
           cache: maven
           
+      - name: Provision the pinned mathematics SDK
+        uses: ./.github/actions/provision-regelsuche
+
       - name: Install Parent POM
         run: mvn install -N -DskipTests
           

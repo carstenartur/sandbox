@@ -1,19 +1,40 @@
 # Pinned Regelsuche optimization SDK
 
-The mathematics plug-in and headless QA use
-[`io.github.carstenartur:regelsuche-optimization-sdk:0.5.3`](https://central.sonatype.com/artifact/io.github.carstenartur/regelsuche-optimization-sdk/0.5.3).
-Maven resolves the SDK and its runtime dependencies. The plug-in's
-`generate-resources` step copies these JARs into `lib/` for its private
-OSGi bundle classpath. Eclipse m2e runs the same step on project configuration.
-The packaged plug-in works offline. [qualification.json](qualification.json)
-records the released SDK JAR's checksum and source commit.
+The mathematics plug-in and headless QA use `0.5.4-SNAPSHOT` built from the
+exact Regelsuche commit in [qualification.json](qualification.json). The
+coupled quadratic-root API requires this source build. There is no claim
+that these APIs are available in the published Maven Central 0.5.3 artifact.
+The receipt binds the source revision, Java compiler, reproducible archive
+timestamp and checksums of all six Regelsuche runtime artifacts.
 
-This receipt qualifies the packaged 0.5.3 dependency. Source-only methods
-added later in Regelsuche, including finite Hall/Hunter and proof-DAG APIs,
-rational positivity certificates and Montgomery schedule planning, are not
-present in this pinned release. Exposing a future method in a cleanup also
-requires Java-source effect checks and a separately replayed consumer test.
-Keep this release receipt unchanged until that dependency is actually upgraded.
+CI uses [the source provisioning action](../../.github/actions/provision-regelsuche/action.yml)
+before resolving the plug-in dependencies. The action checks out that full
+commit, installs the SDK reactor with the pinned compiler and compares all
+artifact checksums. It does not resolve a mutable source branch or assume
+that a matching SNAPSHOT is present in a shared Maven cache.
+
+For a local build, use Temurin 25.0.5 and a fresh sibling checkout:
+
+```bash
+git -c core.autocrlf=false clone https://github.com/carstenartur/Regelsuche.git ../regelsuche-sdk
+revision=$(jq -r .sourceRevision sandbox_math_cleanup/lib/qualification.json)
+timestamp=$(jq -r .buildOutputTimestamp sandbox_math_cleanup/lib/qualification.json)
+git -C ../regelsuche-sdk checkout --detach "$revision"
+./mvnw -f ../regelsuche-sdk/pom.xml -pl regelsuche-optimization-sdk -am \
+  -DskipTests -Dproject.build.outputTimestamp="$timestamp" install
+./mvnw -f qa/math-optimization/pom.xml test
+```
+
+The plug-in's `generate-resources` step copies the Maven runtime closure
+into `lib/` for its private OSGi classpath. Eclipse m2e runs the same copy
+step after the source SDK is installed. The packaged plug-in works offline;
+the generated consumer Java has no Regelsuche runtime dependency.
+
+The original released dependency receipt is retained in
+[qualification-0.5.3.json](qualification-0.5.3.json). Existing screenshots
+remain bound to that historical SDK and keep their original provenance.
+Source availability does not automatically authorize another cleanup:
+each source adapter still needs effect checks and replayed consumer tests.
 
 ## Previous qualified snapshot for polynomial denominators and projective handoffs
 

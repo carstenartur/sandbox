@@ -6,6 +6,74 @@ input archives. Qualification tests and benchmarks compile and execute separate
 copies of the original and generated source. These behavioral comparisons
 supplement symbolic proof; finite samples are not the proof.
 
+## Guarded quadratic-root qualification
+
+First [install the pinned source SDK](../../sandbox_math_cleanup/lib/README.md).
+The new API requires that exact `0.5.4-SNAPSHOT` source build and Temurin
+25.0.5. Then run the ordinary source-analysis qualification:
+
+```bash
+./mvnw -f qa/math-optimization/pom.xml \
+  -Dtest=GuardedQuadraticRootSourceTest,BouncyCastleGuardedRootTest \
+  -Dsandbox.math.bc.root.upstream=true \
+  -Dsandbox.math.bc.root.output="$PWD/qa/math-optimization/target/guarded-root" test
+```
+
+The JGit fixture verifies Bouncy Castle repository/ref/commit
+`6560e91d0a164b8ab58266f141ee6daeec21a340`. `MathematicalAnalysis` receives
+the original source, extracts the scalar control flow and calls the shared
+search. Qualification replays the emitted guarded plan, compiles both complete
+variants, compares exact package-visible roots and public hash-to-curve outputs,
+and checks Apply/Undo and dependency freshness. The exported properties receipt
+is written only after these checks pass.
+
+The synthetic suite varies names and primes and exhausts small-field inputs,
+including inputs outside the mathematical domain. Such inputs retain the
+original result or exception through the fallback. Negative controls cover
+source effects, reference identity and changed arithmetic/guards. Main and
+test sources in this feature have regular `-Xlint:all -Werror` Maven gates.
+
+The qualification explicitly allows 100,000,000 work units, 20,000 states
+and 60 seconds per source analysis. These are limits, not a measurement of
+work consumed. The emitted nonreal fast path has one modular power and no
+inversion; one branch additionally normalizes the joint sign with binary
+Jacobi. The surrounding helper still computes its original norm power, and
+the retained fallback still contains the original operations. Runtime
+measurements must therefore execute the generated code rather than count
+method names across the source file.
+
+For a fresh JMH run on that exact generated code:
+
+```bash
+./mvnw -f qa/math-optimization/pom.xml clean verify -Pguarded-root-benchmark \
+  -Dtest=GuardedQuadraticRootSourceTest,BouncyCastleGuardedRootTest
+```
+
+This creates a fresh qualification under `target/guarded-root` and measures
+the package helper and public 32-byte hash-to-curve call with two JVM forks.
+Both variants include their actual guards, original fallback and normalization.
+The benchmark checks exact outputs and source/class hashes before and after
+each trial. `target/guarded-root-jmh.json` includes the qualification receipt
+hash; keep it with the receipt when interpreting timings. The CI job runs the
+source and benchmark-integrity tests without a timing threshold.
+
+The 26 November 2026 local run on Temurin 25.0.5+8 and an AMD EPYC 7763
+measured the generated
+source SHA-256 `1a983a09b8396e04b70648d107e5ae3d70d3d4a1a62851cb7920478446bc2221`:
+
+| Complete timed call | Original, microseconds | Generated, microseconds | Interpretation |
+| --- | ---: | ---: | --- |
+| `sqrtOrSqrtZ` | 127.77 ± 11.43 | 94.70 ± 5.79 | 25.9% lower mean time; separated JMH intervals |
+| 32-byte `hashToCurve` | 1266.52 ± 160.50 | 1152.61 ± 102.56 | 9.0% lower mean; overlapping intervals, inconclusive |
+
+The intervals are JMH's reported 99.9% confidence intervals from two forks,
+three 500 ms warmups and five 500 ms measurements per fork. The generated
+helper allocates about 37.2 kB per call versus 17.7 kB originally; this run
+therefore supports a local time benefit with an allocation cost. It does not
+establish a general full-call speedup, constant-time behavior or performance
+on another JVM or machine. Reproduce with the command above before making a
+deployment-specific decision.
+
 ## Explicit compiler diagnostics
 
 Archive scanners use the [shared strict compiler profile](../../sandbox_math_cleanup_test/ARCHITECTURE.md#compiler-diagnostics).

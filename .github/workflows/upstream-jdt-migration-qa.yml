@@ -264,8 +264,13 @@ jobs:
         uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: '25'
+          java-version: '25.0.5'
           cache: maven
+
+      - name: Provision the pinned mathematics SDK
+        uses: ./sandbox/.github/actions/provision-regelsuche
+        with:
+          sandbox-directory: sandbox
 
       - name: Set up Node.js for Sandbox CSS tests
         uses: actions/setup-node@v7
@@ -382,8 +387,13 @@ jobs:
         uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: '25'
+          java-version: '25.0.5'
           cache: maven
+
+      - name: Provision the pinned mathematics SDK
+        uses: ./sandbox/.github/actions/provision-regelsuche
+        with:
+          sandbox-directory: sandbox
 
       - name: Set up Node.js for Sandbox CSS tests
         uses: actions/setup-node@v7

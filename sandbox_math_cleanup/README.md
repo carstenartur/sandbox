@@ -76,8 +76,39 @@ Preview/Apply/Undo; transferred tail bodies and verified numerical fallbacks are
 protected. Source or profile drift invalidates the prepared change. See
 [tail contracts and boundaries](TAIL_RECURSION.md) and the
 [native configuration guide](../sandbox_math_cleanup_help/html/cleanup.html#tail-recursion).
-Maven resolves Regelsuche 0.5.3 and embeds its runtime libraries in the plug-in.
-The [SDK provenance](lib/README.md) records the release coordinates and checksum.
+The build embeds the exact Regelsuche source SDK pinned by the
+[SDK provenance and setup instructions](lib/README.md). The new quadratic-root
+API is not part of the older Maven Central 0.5.3 release.
+
+### Guarded roots in quadratic extensions
+
+With Preserve Java behavior, BigInteger and Lower estimated runtime selected,
+ordinary analysis can extract a bounded scalar root program with a retry branch
+and two ordered coordinates. It asks the Regelsuche core to derive shared powers
+and search the signed coordinate choices. The input is the original source;
+there is no supplied optimized body or class-name recognition.
+
+The source contract requires a proved prime `p ≡ 3 (mod 4)`, canonical nonreal
+inputs and the norm relation. The generated fast path checks the runtime
+conditions and retains the original source as fallback. A checked quadratic
+character operation preserves the exact original pair, including direct
+package-level observations. The existing real/zero path stays outside the
+changed region. The proof also binds constants, resolved source dependencies,
+the coordinate sink's value-only use and the actual emitted statements.
+
+This contract preserves coordinate values, exception types and messages, and
+relevant ordered effects. It does not preserve diagnostic source locations,
+bytecode positions, or debugger/profiler metadata. An unchanged caller that
+inspects an exception's stack-trace line numbers can therefore observe the
+rewritten source layout. A coordinate sink or one of its source helpers that
+uses stack inspection or other calling-context observations is rejected.
+
+The [source qualification](../qa/math-optimization/README.md#guarded-quadratic-root-qualification)
+starts from the pinned original Bouncy Castle method and also exercises renamed
+sources and other primes. Its larger explicit work and state budget covers
+prime evidence, search and independent source replay; the default small budget
+can decline this larger proof. An unsupported program, observable reference
+identity, stale dependency or exhausted budget yields no replacement.
 
 ### Verified whole-task rewrites
 
@@ -111,13 +142,15 @@ selection and full Nat256-addition optimization remain outside the supported fra
 
 ## Current implementation and qualification
 
-The current packaged dependency is
-`io.github.carstenartur:regelsuche-optimization-sdk:0.5.3`; its exact JAR and
-source identity are recorded in [lib/qualification.json](lib/qualification.json).
-Newer Regelsuche source capabilities, including Hall/Hunter certificates,
-Bernstein/Gram positivity and Montgomery planning, require a later SDK build
-and their own Java-source integration and consumer qualification. Their
-presence in the Regelsuche core does not add a Sandbox cleanup automatically.
+The current packaged dependency is the source-built
+`io.github.carstenartur:regelsuche-optimization-sdk:0.5.4-SNAPSHOT`; its exact JAR,
+source identity and reproducible build inputs are recorded in
+[lib/qualification.json](lib/qualification.json). The dated qualification
+checkpoints below retain their original dependency versions and evidence.
+Other Regelsuche capabilities, including Hall/Hunter certificates,
+Bernstein/Gram positivity and Montgomery planning, still require their own
+Java-source integration and consumer qualification. Their presence in the
+Regelsuche core does not add a Sandbox cleanup automatically.
 
 The [16 November archive scan](../qa/math-optimization/PRACTICAL_REVIEW.md#bouncy-castle-1852-archive-scan-on-16-november-2026)
 records **126 strict** and **134 mathematical** regions at Sandbox `ea460537`.

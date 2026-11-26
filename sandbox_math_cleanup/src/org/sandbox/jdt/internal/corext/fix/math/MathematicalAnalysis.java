@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Copyright (c) 2026 Carsten Hammer.
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 at https://www.eclipse.org/legal/epl-2.0/
@@ -292,6 +292,9 @@ public final class MathematicalAnalysis {
             compilerOptions, environment, replacements, evidence, diagnostics, valueWork);
       JavaQuadraticDenominatorOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
             compilerOptions, environment, replacements, evidence, diagnostics, valueWork);
+      JavaGuardedFieldOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
+            compilerOptions, environment, replacements, evidence, diagnostics, valueWork);
+      sourceContext.takeWork();
       JavaFixedPowerOptimizer.optimize(ast,source,options,monitor,selectionOffset,selectionLength,compilerOptions,environment,replacements,evidence,diagnostics,valueWork);
       if (selectionOffset >= 0)
          JavaValueResidueOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
@@ -683,7 +686,7 @@ public final class MathematicalAnalysis {
                      source.substring(0, region.start()) + replacement + source.substring(region.start() + region.length()),
                      compilerOptions,
                      options.targetJava(),
-                     (IProgressMonitor)monitor,
+                     monitor,
                      environment, sourcePlan == null
                            ? List.of(new GeneratedSourceDiagnostics.Edit(region.start(),region.length(),replacement.length()))
                            : GeneratedSourceDiagnostics.edits(sourcePlan)
@@ -903,7 +906,7 @@ public final class MathematicalAnalysis {
             var combinedEdit = analysis.newEdit();
             var diagnosticEdits = GeneratedSourceDiagnostics.edits(combinedEdit);
             combinedEdit.apply(combined);
-            CompilationUnit combinedAst = checkGeneratedSource(ast, source, combined.get(), compilerOptions, options.targetJava(), (IProgressMonitor)monitor, environment, diagnosticEdits);
+            CompilationUnit combinedAst = checkGeneratedSource(ast, source, combined.get(), compilerOptions, options.targetJava(), monitor, environment, diagnosticEdits);
             if (!acceptedReceiverGuards.isEmpty()) {
                var receiverGuardEdits = new ArrayList<>(replacements); receiverGuardEdits.addAll(analysis.documentation());
                if (receiverGuardEdits.size() > source.length()) throw new IllegalArgumentException("VALUE_WORK_LIMIT"); //$NON-NLS-1$
@@ -936,6 +939,15 @@ public final class MathematicalAnalysis {
                for (var region : evidence) if(region.fixedPower()!=null)
                   JavaFixedPowerOptimizer.verifyCombined(combinedAst,combined.get(),region,options,valueWork);
                remainingWork-=valueWork.used-beforePowerReplay;
+            }
+            if (evidence.stream().anyMatch(region -> region.fieldRoot() != null)) {
+               valueWork.charge(Math.max(0, valueWork.remaining() - Math.max(0, remainingWork)));
+               long before = valueWork.used;
+               var allEdits = new ArrayList<>(replacements);
+               allEdits.addAll(analysis.documentation());
+               for (var region : evidence) if (region.fieldRoot() != null)
+                  JavaGuardedFieldOptimizer.verify(combinedAst, combined.get(), region, allEdits, options, environment, monitor, valueWork);
+               remainingWork -= valueWork.used - before;
             }
             if (evidence.stream().anyMatch(region -> JavaRationalDenominatorOptimizer.isRegion(region)
                   || JavaQuadraticDenominatorOptimizer.isRegion(region))) {
@@ -1479,7 +1491,15 @@ public final class MathematicalAnalysis {
       String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,
       LoopSchedulingEvidence scheduling, FiniteSumEvidence finiteSum, RuntimeIterationEvidence runtimeIteration,
       SourceNumericBranchEvidence sourceNumericBranch, FixedPowerEvidence fixedPower, ValueInverseEvidence valueInverse,
-      FieldInversionEvidence fieldInversion, ConstructorGuardEvidence constructorGuard) {
+      FieldInversionEvidence fieldInversion, ConstructorGuardEvidence constructorGuard, FieldRootEvidence fieldRoot) {
+      public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
+            String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,
+            LoopSchedulingEvidence scheduling, FiniteSumEvidence finiteSum, RuntimeIterationEvidence runtimeIteration,
+            SourceNumericBranchEvidence sourceNumericBranch, FixedPowerEvidence fixedPower, ValueInverseEvidence valueInverse,
+            FieldInversionEvidence fieldInversion, ConstructorGuardEvidence constructorGuard) {
+         this(offset, length, proof, cost, original, replacement, explanation, sourcePlan, scheduling, finiteSum,
+               runtimeIteration, sourceNumericBranch, fixedPower, valueInverse, fieldInversion, constructorGuard, null);
+      }
       public VerifiedRegion {
          if (sourcePlan != null) sourcePlan.requireEnvelope(offset, length, original, replacement);
          if (explanation != null && !proof.equals(explanation.verified().proof())) {
