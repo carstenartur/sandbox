@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 4: The import org.eclipse.jface.util cannot be resolved",
-    "verifiedAt": "2026-11-25T02:23:27.412903501Z",
+    "verifiedAt": "2026-11-26T02:19:58.412888748Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0

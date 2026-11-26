@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "AFTER_REWRITE",
     "message": "Transformed source is invalid: Java compile error at line 13: Syntax error, insert \"}\" to complete ClassBody",
-    "verifiedAt": "2026-11-25T02:23:31.043326094Z",
+    "verifiedAt": "2026-11-26T02:20:00.724364217Z",
     "verifierVersion": "9",
     "matches": 1,
     "replacements": 1

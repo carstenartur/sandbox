@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 4: The import org.eclipse.jdt.internal.ui.text.template cannot be resolved",
-    "verifiedAt": "2026-11-25T02:23:19.133816250Z",
+    "verifiedAt": "2026-11-26T02:19:52.951501492Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0

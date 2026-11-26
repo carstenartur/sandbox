@@ -20,7 +20,7 @@
     "successful": false,
     "stage": "DEPENDENCY_RESOLUTION",
     "message": "Java compile error at line 2: The import org.eclipse.jface.viewers cannot be resolved",
-    "verifiedAt": "2026-11-25T02:23:23.865536577Z",
+    "verifiedAt": "2026-11-26T02:19:56.153336281Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0

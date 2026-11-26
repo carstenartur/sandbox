@@ -19,8 +19,9 @@
   "category": "String Literal Replacement",
   "summary": "Replace the \u0027.gif\u0027 extension with \u0027.png\u0027 in string concatenations for specific image paths.",
   "sourceVersion": "8",
-  "status": "READY_FOR_REVIEW",
+  "status": "REJECTED",
   "discoveredAt": "2026-11-25T02:18:18.367296767Z",
+  "rejectionReason": "Review issue #1985 closed (not_planned); existing rejection retained",
   "ruleFingerprint": "sha256:de59f506c30fee828397f26dd9cf3d69fb634d51d31bebf32ff2230d2578bede",
   "behaviorFingerprint": "sha256:6bb70adafc220d23c4f3c13e486f2a55dbf553a654b04f1173a00ca93dc5b0c5",
   "verification": {
@@ -46,6 +47,13 @@
       "actor": "CandidateVerificationCli",
       "reason": "All deterministic candidate gates passed",
       "occurredAt": "2026-11-25T02:23:35.459467518Z"
+    },
+    {
+      "from": "READY_FOR_REVIEW",
+      "to": "REJECTED",
+      "actor": "CandidateReviewIssues",
+      "reason": "Review issue #1985 closed (not_planned); existing rejection retained",
+      "occurredAt": "2026-11-26T02:19:52.190452948Z"
     }
   ]
 }
