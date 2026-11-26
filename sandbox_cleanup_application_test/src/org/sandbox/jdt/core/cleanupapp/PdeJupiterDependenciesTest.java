@@ -173,10 +173,10 @@ class PdeJupiterDependenciesTest {
 		Object resource= resourceConstructor.newInstance(descriptor, path(descriptor),
 				descriptor.getProjectRelativePath().toString(), bytes(descriptor));
 		List<Object> written= new ArrayList<>();
-		Method update= owner.getDeclaredMethod("updateProjectMetadata", List.class, List.class, List.class, Map.class); //$NON-NLS-1$
+		Method update= owner.getDeclaredMethod("updateProjectMetadata", List.class, List.class, List.class, Map.class, MixedSupportImport.Bindings.class); //$NON-NLS-1$
 		update.setAccessible(true);
 		try {
-			update.invoke(null, List.of(snapshot), List.of(resource), written, JavaCore.getOptions());
+			update.invoke(null, List.of(snapshot), List.of(resource), written, JavaCore.getOptions(), null);
 		} catch (InvocationTargetException exception) {
 			if (exception.getCause() instanceof Exception cause) {
 				throw cause;

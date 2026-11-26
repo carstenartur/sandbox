@@ -87,9 +87,10 @@ final class MigrationBatches {
 	private final List<SourceEdit> edits;
 	private final List<Package> packages;
 	private final MetadataPlan fullMetadata;
+	private final MixedSupportImport.Bindings mixedBindings;
 
 	private MigrationBatches(Context context, Change nativeChange, List<SourceSnapshot> sources, List<ResourceSnapshot> resources,
-			List<SourceEdit> edits, List<Package> packages, MetadataPlan fullMetadata) {
+			List<SourceEdit> edits, List<Package> packages, MetadataPlan fullMetadata, MixedSupportImport.Bindings mixedBindings) {
 		this.context= context;
 		this.nativeChange= nativeChange;
 		this.sources= sources;
@@ -97,10 +98,11 @@ final class MigrationBatches {
 		this.edits= edits;
 		this.packages= packages;
 		this.fullMetadata= fullMetadata;
+		this.mixedBindings= mixedBindings;
 	}
 
 	static MigrationBatches plan(IJavaProject project, Change change, List<SourceSnapshot> sources,
-			List<ResourceSnapshot> resources, List<Group> candidates, int limit, Map<String, String> cleanupOptions, IProgressMonitor monitor)
+			List<ResourceSnapshot> resources, List<Group> candidates, int limit, Map<String, String> cleanupOptions, MixedSupportImport.Bindings mixedBindings, IProgressMonitor monitor)
 			throws CoreException, IOException {
 		var context= Context.capture(project, sources, resources);
 		Map<IFile, SourceSnapshot> inputs= new HashMap<>();
@@ -147,14 +149,14 @@ final class MigrationBatches {
 		}
 		List<Package> plans= new ArrayList<>();
 		var options= context.options();
-		var complete= metadata(sources, resources, edits, options);
+		var complete= metadata(sources, resources, edits, options, mixedBindings);
 		var reviewContext= contextDigest(context, sources, resources, cleanupOptions, limit);
 		boolean retirementCaptured= false;
 		for (var pack : packages.values()) {
 			pack.sort(java.util.Comparator.comparing(SourceEdit::path));
 			var reasons= new TreeSet<String>();
 			for (var edit : pack) reasons.addAll(reasonsByComponent.getOrDefault(root(parents, edit.path()), Set.of()));
-			var meta= packages.size() == 1 ? complete : metadata(sources, resources, pack, options);
+			var meta= packages.size() == 1 ? complete : metadata(sources, resources, pack, options, mixedBindings);
 			retirementCaptured |= meta.retiresVintage();
 			plans.add(review(project, pack, reasons, meta, reviewContext));
 		}
@@ -166,7 +168,7 @@ final class MigrationBatches {
 			reasons.add("Vintage dependency retirement requires the complete original-to-migrated deployment"); //$NON-NLS-1$
 			plans= List.of(review(project, edits, reasons, complete, reviewContext));
 		}
-		return new MigrationBatches(context, change, sources, resources, edits, List.copyOf(plans), complete);
+		return new MigrationBatches(context, change, sources, resources, edits, List.copyOf(plans), complete, mixedBindings);
 	}
 
 	private static Package review(IJavaProject project, List<SourceEdit> pack, Set<String> reasons, MetadataPlan meta, String reviewContext) {
@@ -268,10 +270,10 @@ final class MigrationBatches {
 	}
 
 	private static MetadataPlan metadata(List<SourceSnapshot> sources, List<ResourceSnapshot> resources,
-			List<SourceEdit> selected, Map<String, String> options) throws CoreException, IOException {
+			List<SourceEdit> selected, Map<String, String> options, MixedSupportImport.Bindings mixedBindings) throws CoreException, IOException {
 		Map<SourceSnapshot, byte[]> replacements= new LinkedHashMap<>();
 		selected.forEach(edit -> replacements.put(edit.source(), edit.after()));
-		var proposed= ProjectWideCodeCleanupApplication.planProjectMetadata(sources, resources, replacements, options);
+		var proposed= ProjectWideCodeCleanupApplication.planProjectMetadata(sources, resources, replacements, options, mixedBindings);
 		Map<ResourceSnapshot, byte[]> changes= new LinkedHashMap<>();
 		proposed.changes().forEach((resource, bytes) -> {
 			if (!Arrays.equals(resource.before(), bytes)) changes.put(resource, bytes);
@@ -396,7 +398,7 @@ final class MigrationBatches {
 		}
 		// Re-run the existing deployment proof inside the workspace scheduling
 		// rule. Generated files and project references also participate in it.
-		var currentMeta= metadata(sources, resources, selected, context.options()).changes();
+		var currentMeta= metadata(sources, resources, selected, context.options(), mixedBindings).changes();
 		if (!currentMeta.keySet().equals(reviewedMetadata.keySet()) || currentMeta.entrySet().stream()
 				.anyMatch(e -> !Arrays.equals(e.getValue(), reviewedMetadata.get(e.getKey())))) {
 			throw new IOException("Deployment prerequisites changed after batch planning"); //$NON-NLS-1$

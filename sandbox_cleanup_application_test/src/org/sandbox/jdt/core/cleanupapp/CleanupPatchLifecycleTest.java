@@ -468,7 +468,7 @@ class CleanupPatchLifecycleTest {
 			}
 			diagnostics.assertRestored();
 		}
-		var plan= MigrationBatches.plan(JavaCore.create(project), nativeChange, inputs, List.of(), List.of(), 1, Map.of(), monitor);
+		var plan= MigrationBatches.plan(JavaCore.create(project), nativeChange, inputs, List.of(), List.of(), 1, Map.of(), null, monitor);
 		assertEquals(before[2].equals(after[2]) ? 1 : 2, plan.batches().size());
 		var pair= plan.batches().getFirst();
 		assertEquals(List.of("src/probe/Api.java", "src/probe/Caller.java"), pair.files());
@@ -496,7 +496,7 @@ class CleanupPatchLifecycleTest {
 		var edit= new CompilationUnitChange("Api", input.unit());
 		edit.setEdit(new ReplaceEdit(0, input.before().length, "package probe; public final class Api {}"));
 		var plan= MigrationBatches.plan(javaProject, new CompositeChange("API", new org.eclipse.ltk.core.refactoring.Change[] { edit }),
-				List.of(input), List.of(descriptor), List.of(), 1, Map.of(), monitor);
+				List.of(input), List.of(descriptor), List.of(), 1, Map.of(), null, monitor);
 		var manager= org.eclipse.core.filebuffers.FileBuffers.getTextFileBufferManager();
 		var location= org.eclipse.core.filebuffers.LocationKind.IFILE;
 		try {
@@ -853,7 +853,7 @@ class CleanupPatchLifecycleTest {
 				exactPreview.add(edit);
 			}
 			RefactoringCore.getUndoManager().performUndo(null, monitor);
-			var planned= MigrationBatches.plan(JavaCore.create(project), exactPreview, inputs, List.of(descriptor), List.of(), 1, Map.of(), monitor);
+			var planned= MigrationBatches.plan(JavaCore.create(project), exactPreview, inputs, List.of(descriptor), List.of(), 1, Map.of(), null, monitor);
 			assertEquals(1, planned.batches().size());
 			var reviewed= planned.batches().getFirst();
 			var newResource= createSource("src/test/resources/junit-platform.properties", "junit.platform.discovery.includeEngines=vintage");

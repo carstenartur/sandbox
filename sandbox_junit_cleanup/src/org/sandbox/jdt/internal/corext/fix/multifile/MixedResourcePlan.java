@@ -65,7 +65,7 @@ public record MixedResourcePlan(Map<String, Registration> registrations, Set<Str
 			return;
 		}
 		var project= unit.getJavaProject();
-		if (!MigrationSupportProvider.available(project)) throw stale();
+		if (!MixedResourcePlanner.compatibleProvider(project)) throw stale();
 		var current= JavaProjectCompilationUnits.collect(project);
 		if (sourceFingerprints.size() != current.size()) throw stale();
 		for (var source : current) {
