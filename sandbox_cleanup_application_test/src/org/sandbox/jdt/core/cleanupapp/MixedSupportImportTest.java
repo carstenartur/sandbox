@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Copyright (c) 2026 Carsten Hammer and others.
  * SPDX-License-Identifier: EPL-2.0
  *******************************************************************************/
@@ -268,6 +268,9 @@ class MixedSupportImportTest {
 		var javaOptions= java.getOptions(false);
 		JavaCore.setComplianceOptions(JavaCore.VERSION_21, javaOptions);
 		java.setOptions(javaOptions);
+		// Start PDE's lazy container update before waiting for the job it schedules.
+		JavaCore.getClasspathContainer(
+				org.eclipse.core.runtime.Path.fromPortableString("org.eclipse.pde.core.requiredPlugins"), java);
 		Job.getJobManager().join(ClasspathComputer.class, new NullProgressMonitor());
 		assertNotNull(java.findType("org.junit.Rule"), () -> project.getName() + " lacks its required JUnit 4 bundle");
 		if (shape == Fixture.OLD_FACTORY || shape == Fixture.PREVIOUS_USE || shape == Fixture.PRIOR_RULE) assertNotNull(java.findType(MigrationSupportProvider.FACTORY));

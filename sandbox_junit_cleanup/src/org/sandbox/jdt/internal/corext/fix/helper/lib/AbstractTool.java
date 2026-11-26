@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Copyright (c) 2021, 2025 Carsten Hammer.
  *
  * This program and the accompanying materials
@@ -229,6 +229,8 @@ public abstract class AbstractTool<T> {
 		ImportRewrite importRewriter = cuRewrite.getImportRewrite();
 		JunitHolder junitHolder = hit.get(hit.size() - 1);
 		process2Rewrite(group, rewriter, ast, importRewriter, junitHolder);
+		JUnit4AssertionNls.recordMoved(junitHolder.getMinv(), cuRewrite);
+		AbstractMethodMigrationPlugin.recordRetainedImports(junitHolder.getMinv(), cuRewrite);
 		hit.remove(hit.size() - 1);
 	}
 }

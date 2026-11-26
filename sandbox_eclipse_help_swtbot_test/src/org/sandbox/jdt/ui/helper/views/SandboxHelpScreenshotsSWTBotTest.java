@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Copyright (c) 2026 Carsten Hammer.
  *
  * This program and the accompanying materials
@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.ui.helper.views;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -20,13 +22,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
-import java.util.Date;
 import java.util.List;
-import java.util.TimeZone;
 import java.util.regex.Pattern;
 
 import org.eclipse.core.resources.IFile;
@@ -40,6 +41,7 @@ import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.launching.JavaRuntime;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.swt.SWT;
@@ -110,8 +112,6 @@ public class SandboxHelpScreenshotsSWTBotTest {
     }
 
     static final class AtomicPreviewScreenshotGeometry {
-        private static final String ATOMIC_SELECTION =
-                "Selection is atomic: use the single candidate checkbox in the Changes tree to include or exclude every required file.";
         private static final String CAPTURE_GEOMETRY_KEY =
                 AtomicPreviewScreenshotGeometry.class.getName() + ".captureGeometry";
         private static final int DEFAULT_CLIENT_HEIGHT = 900;
@@ -1103,10 +1103,16 @@ public class SandboxHelpScreenshotsSWTBotTest {
             outputFolder.create(true, true, new NullProgressMonitor());
         }
 
+        var environment = JavaRuntime.getExecutionEnvironmentsManager().getEnvironment("JavaSE-25");
+        assertNotNull(environment, "Screenshot target must provide the pinned JavaSE-25 environment");
+        var defaultVM = JavaRuntime.getDefaultVMInstall();
+        assertNotNull(defaultVM, "Screenshot target must provide its default Java runtime");
         IClasspathEntry[] classpath = new IClasspathEntry[] {
                 JavaCore.newSourceEntry(sourceFolder.getFullPath()),
-                JavaCore.newContainerEntry(new org.eclipse.core.runtime.Path("org.eclipse.jdt.launching.JRE_CONTAINER")) };
+                JavaCore.newContainerEntry(JavaRuntime.newJREContainerPath(environment)) };
         javaProject.setRawClasspath(classpath, outputFolder.getFullPath(), new NullProgressMonitor());
+        assertSame(defaultVM, JavaRuntime.getVMInstall(javaProject),
+                "Stable execution-environment label must retain the fixture's original runtime");
         writeCleanupFixtureSources(javaProject);
         project.refreshLocal(IResource.DEPTH_INFINITE, new NullProgressMonitor());
         return project;
@@ -1288,7 +1294,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
 
     private static void commit(Git git, String message, String timestamp) throws Exception {
         PersonIdent identity = new PersonIdent("Sandbox Help", "help@example.invalid",
-                Date.from(Instant.parse(timestamp)), TimeZone.getTimeZone("UTC"));
+                Instant.parse(timestamp), ZoneId.of("UTC"));
         git.commit().setMessage(message).setAuthor(identity).setCommitter(identity).call();
     }
 
