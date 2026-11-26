@@ -12,6 +12,7 @@
     xmlns:xmi="http://www.omg.org/XMI"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:git="http://www.eclipse.org/oomph/setup/git/1.0"
+    xmlns:launching="http://www.eclipse.org/oomph/setup/launching/1.0"
     xmlns:maven="http://www.eclipse.org/oomph/setup/maven/1.0"
     xmlns:setup.p2="http://www.eclipse.org/oomph/setup/p2/1.0"
     xmlns:jdt="http://www.eclipse.org/oomph/setup/jdt/1.0"
@@ -22,6 +23,7 @@
     xmlns:setup.workingsets="http://www.eclipse.org/oomph/setup/workingsets/1.0"
     xsi:schemaLocation="
       http://www.eclipse.org/oomph/setup/git/1.0 https://raw.githubusercontent.com/eclipse-oomph/oomph/master/setups/models/Git.ecore
+      http://www.eclipse.org/oomph/setup/launching/1.0 https://raw.githubusercontent.com/eclipse-oomph/oomph/master/setups/models/Launching.ecore
       http://www.eclipse.org/oomph/setup/maven/1.0 https://raw.githubusercontent.com/eclipse-oomph/oomph/master/setups/models/Maven.ecore
       http://www.eclipse.org/oomph/setup/jdt/1.0 https://raw.githubusercontent.com/eclipse-oomph/oomph/master/setups/models/JDT.ecore
       http://www.eclipse.org/oomph/setup/pde/1.0 https://raw.githubusercontent.com/eclipse-oomph/oomph/master/setups/models/PDE.ecore
@@ -35,6 +37,7 @@
   <setupTask xsi:type="setup.p2:P2Task" id="sandbox.development.tools"
       label="Sandbox development tools">
     <requirement name="org.eclipse.jdt.feature.group"/>
+    <requirement name="org.eclipse.oomph.setup.launching.feature.group"/>
     <requirement name="org.eclipse.pde.feature.group"/>
     <requirement name="org.eclipse.egit.feature.group"/>
     <requirement name="org.eclipse.m2e.feature.feature.group"/>
@@ -140,13 +143,18 @@
       predecessors="sandbox.target.project" name="target platform for sandbox">
     <description>Resolve and activate the target before importing its Java and PDE consumers.</description>
   </setupTask>
+  <setupTask xsi:type="launching:LaunchTask" id="sandbox.regelsuche.sdk"
+      predecessors="sandbox.target.project" launcher="/sandbox_target/Regelsuche-SDK.launch"
+      runEveryStartup="true" stopOnFailure="true">
+    <description>Verify or install the qualified Regelsuche source SDK in the workbench Maven repository.</description>
+  </setupTask>
   <!-- Oomph determines needed tasks before performing them. On a fresh
        workspace the full Maven import is therefore already scheduled when the
        target-only project is imported. Keep the broad ProjectsImportTask after
        Maven; Maven's STARTUP check skips a tree with previously imported projects.
        Manual setup retains Maven's existing repair/reimport behavior. -->
   <setupTask xsi:type="maven:MavenImportTask" id="sandbox.maven"
-      predecessors="sandbox.target" label="Sandbox Maven projects">
+      predecessors="sandbox.target sandbox.regelsuche.sdk" label="Sandbox Maven projects">
     <sourceLocator rootFolder="${git.clone.sandbox.location}" locateNestedProjects="true">
       <!-- MavenImportTask's excludedPath check compares BackendSystem objects
            by identity and can dereference a null relative URI on reimport.

@@ -5,7 +5,8 @@ exact Regelsuche commit in [qualification.json](qualification.json). The
 coupled quadratic-root API requires this source build. There is no claim
 that these APIs are available in the published Maven Central 0.5.3 artifact.
 The receipt binds the source revision, Java compiler, reproducible archive
-timestamp and checksums of all six Regelsuche runtime artifacts.
+timestamp and checksums of all six Regelsuche runtime artifacts and their
+seven Maven descriptors, including the parent POM.
 
 CI uses [the source provisioning action](../../.github/actions/provision-regelsuche/action.yml)
 before resolving the plug-in dependencies. The action checks out that full
@@ -13,17 +14,18 @@ commit, installs the SDK reactor with the pinned compiler and compares all
 artifact checksums. It does not resolve a mutable source branch or assume
 that a matching SNAPSHOT is present in a shared Maven cache.
 
-For a local build, use Temurin 25.0.5 and a fresh sibling checkout:
+For a local build, use Temurin 25.0.5+8 and the checked source bootstrap:
 
 ```bash
-git -c core.autocrlf=false clone https://github.com/carstenartur/Regelsuche.git ../regelsuche-sdk
-revision=$(jq -r .sourceRevision sandbox_math_cleanup/lib/qualification.json)
-timestamp=$(jq -r .buildOutputTimestamp sandbox_math_cleanup/lib/qualification.json)
-git -C ../regelsuche-sdk checkout --detach "$revision"
-./mvnw -f ../regelsuche-sdk/pom.xml -pl regelsuche-optimization-sdk -am \
-  -DskipTests -Dproject.build.outputTimestamp="$timestamp" install
+./mvnw -f qa/regelsuche-sdk-bootstrap/pom.xml compile exec:java
 ./mvnw -f qa/math-optimization/pom.xml test
 ```
+
+The bootstrap uses Maven's effective local repository and settings. It reuses
+an installation only after all thirteen files match the receipt. Otherwise
+it fetches the exact source revision and tree, verifies the fresh build before
+installation, and rejects conflicting cached artifacts. Oomph runs this same
+bootstrap before importing the Maven projects and checks it again on restart.
 
 The plug-in's `generate-resources` step copies the Maven runtime closure
 into `lib/` for its private OSGi classpath. Eclipse m2e runs the same copy
@@ -31,8 +33,9 @@ step after the source SDK is installed. The packaged plug-in works offline;
 the generated consumer Java has no Regelsuche runtime dependency.
 
 The original released dependency receipt is retained in
-[qualification-0.5.3.json](qualification-0.5.3.json). Existing screenshots
-remain bound to that historical SDK and keep their original provenance.
+[qualification-0.5.3.json](qualification-0.5.3.json). Screenshots retain the
+SDK identity recorded by their genuine capture; a dependency upgrade does
+not relabel a historical capture.
 Source availability does not automatically authorize another cleanup:
 each source adapter still needs effect checks and replayed consumer tests.
 

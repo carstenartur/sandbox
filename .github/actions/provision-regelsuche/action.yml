@@ -54,3 +54,12 @@ runs:
           jar="$HOME/.m2/repository/io/github/carstenartur/$artifact/$version/$artifact-$version.jar"
           printf '%s  %s\n' "$expected" "$jar" | sha256sum --check --status
         done <<< "$artifacts"
+        # Git pack indexes are read-only on Windows. Remove this action's checkout
+        # before a subsequent reactor clean tries to delete it with ordinary file permissions.
+        if [[ "$RUNNER_OS" == 'Windows' ]]; then
+          SDK_CHECKOUT=$(cygpath -w "$sdk_source") pwsh -NoProfile -NonInteractive -Command \
+            'Remove-Item -LiteralPath $env:SDK_CHECKOUT -Recurse -Force -ErrorAction Stop'
+        else
+          rm -rf -- "$sdk_source"
+        fi
+        [[ ! -e "$sdk_source" ]]

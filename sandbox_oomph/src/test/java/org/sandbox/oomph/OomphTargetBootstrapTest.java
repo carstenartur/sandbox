@@ -56,6 +56,32 @@ class OomphTargetBootstrapTest {
     }
 
     @Test
+    void qualifiedSourceSdkRunsInTheWorkbenchMavenEnvironmentBeforeImport() throws Exception {
+        var tasks = tasks();
+        Element sdk = task(tasks, "sandbox.regelsuche.sdk");
+        assertEquals("launching:LaunchTask", type(sdk));
+        assertEquals(Set.of(BOOTSTRAP), predecessors(sdk));
+        assertEquals("true", sdk.getAttribute("stopOnFailure"));
+        assertEquals("true", sdk.getAttribute("runEveryStartup"));
+        assertTrue(predecessors(task(tasks, "sandbox.maven")).contains("sandbox.regelsuche.sdk"));
+        String launcher = sdk.getAttribute("launcher");
+        assertEquals("/sandbox_target/Regelsuche-SDK.launch", launcher);
+        Element launch = xml(module.getParent().resolve(launcher.substring(1))).getDocumentElement();
+        assertEquals("org.eclipse.m2e.Maven2LaunchConfigurationType", launch.getAttribute("type"));
+        Map<String, String> arguments = new LinkedHashMap<>();
+        var attributes = launch.getElementsByTagName("stringAttribute");
+        for (int i = 0; i < attributes.getLength(); i++) {
+            Element attribute = (Element) attributes.item(i);
+            arguments.put(attribute.getAttribute("key"), attribute.getAttribute("value"));
+        }
+        assertEquals("${workspace_loc:/sandbox_target}/../qa/regelsuche-sdk-bootstrap",
+                arguments.get("org.eclipse.jdt.launching.WORKING_DIRECTORY"));
+        assertTrue(arguments.get("org.eclipse.jdt.launching.VM_ARGUMENTS").contains("${system_property:user.home}"));
+        assertTrue(arguments.get("org.eclipse.jdt.launching.VM_ARGUMENTS").contains("${system_property:maven.repo.local}"));
+        assertTrue(arguments.get("M2_GOALS").endsWith("compile exec:java"));
+    }
+
+    @Test
     void publicWorkspaceEnablesAutomaticResourceRefreshForGeneratedMavenManifests() throws Exception {
         // The optional Sandbox product already opts in. The actual public
         // Github Projects catalog must do so too, otherwise m2e manually
@@ -181,6 +207,7 @@ class OomphTargetBootstrapTest {
 
         Map<String, String> extensionModels = Map.of(
                 "git", "Git.ecore",
+                "launching", "Launching.ecore",
                 "maven", "Maven.ecore",
                 "jdt", "JDT.ecore",
                 "pde", "PDE.ecore",
