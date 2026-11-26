@@ -56,8 +56,9 @@ final class JUnit4AssertionNls {
 		CompilationUnit root= (CompilationUnit) invocation.getRoot();
 		Expression message= (Expression) invocation.arguments().getFirst();
 		try {
-			String source= ((ICompilationUnit) root.getJavaElement()).getBuffer().getContents();
-			NLSLine[] lines= NLSScanner.scan(source);
+			ICompilationUnit unit= (ICompilationUnit) root.getJavaElement();
+			String source= unit.getBuffer().getContents();
+			NLSLine[] lines= scan(unit, source);
 			if (!needsCapture(invocation, lines)) return null;
 			String name= uniqueName(invocation, rewrite);
 			StringBuilder text= new StringBuilder(source.substring(message.getStartPosition(),
@@ -98,7 +99,7 @@ final class JUnit4AssertionNls {
 		try {
 			String source= unit.getBuffer().getContents();
 			if (!source.contains(NLSElement.TAG_PREFIX)) return Set.of();
-			NLSLine[] lines= NLSScanner.scan(source);
+			NLSLine[] lines= scan(unit, source);
 			var literals= new ArrayList<StringLiteral>();
 			root.accept(new ASTVisitor() {
 				@Override
@@ -155,6 +156,15 @@ final class JUnit4AssertionNls {
 		} catch (JavaModelException | InvalidInputException | BadLocationException exception) {
 			throw new IllegalArgumentException("Cannot inspect assertion NLS tags", exception); //$NON-NLS-1$
 		}
+	}
+
+	private static NLSLine[] scan(ICompilationUnit unit, String source)
+			throws JavaModelException, InvalidInputException, BadLocationException {
+		NLSLine[] lines= NLSScanner.scan(unit);
+		if (!source.equals(unit.getBuffer().getContents())) {
+			throw new IllegalArgumentException("Source changed while scanning assertion NLS tags"); //$NON-NLS-1$
+		}
+		return lines;
 	}
 
 	private static boolean needsCapture(MethodInvocation invocation, NLSLine[] lines) {
