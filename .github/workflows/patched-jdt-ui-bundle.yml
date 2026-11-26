@@ -222,7 +222,7 @@ jobs:
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: '25.0.5'
+          java-version: '25.0.5+8'
           cache: maven
       - name: Provision the pinned mathematics SDK
         uses: ./.github/actions/provision-regelsuche
