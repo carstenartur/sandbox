@@ -222,8 +222,11 @@ jobs:
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: '25'
+          java-version: '25.0.5'
           cache: maven
+      - name: Provision the pinned mathematics SDK
+        uses: ./.github/actions/provision-regelsuche
+
       - name: Verify pinned Maven Wrapper
         run: ./mvnw --batch-mode --no-transfer-progress --version
       - name: Install Linux product runtime libraries
