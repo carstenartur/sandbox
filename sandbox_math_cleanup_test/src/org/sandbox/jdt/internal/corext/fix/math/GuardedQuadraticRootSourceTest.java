@@ -7,6 +7,7 @@ import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import javax.tools.ToolProvider;
@@ -211,7 +212,7 @@ class GuardedQuadraticRootSourceTest {
 
     private URLClassLoader compile(String source, String name) throws Exception {
         Path folder = Files.createDirectories(temporary.resolve(name));
-        Path file = Files.writeString(folder.resolve("Ocean.java"), source);
+        Path file = Files.writeString(folder.resolve("Ocean.java"), source, StandardCharsets.UTF_8);
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null, "--release", "17",
                 "-Xlint:all", "-Werror", "-d", folder.toString(), file.toString()));
         return new URLClassLoader(new URL[]{folder.toUri().toURL()}, ClassLoader.getPlatformClassLoader());

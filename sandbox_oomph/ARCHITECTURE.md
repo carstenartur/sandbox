@@ -92,5 +92,12 @@ and preservation of a separately created user project. No replacement Oomph pars
 The test redirects the official catalog's Sandbox URL to the candidate model and selects the candidate Git ref only in the test.
 Production models retain the public URL and main stream. CI includes this check in the existing Maven verification gate.
 
+The separate public Installer test checks the exact open project inventory after fresh startup and after restart.
+It uses committed Eclipse project names from the verified public clone and supplements them with Maven artifact IDs.
+[m2e's project scanner](https://github.com/eclipse-m2e/m2e-core/blob/2.12.0/org.eclipse.m2e.core/src/org/eclipse/m2e/core/project/LocalProjectScanner.java)
+follows nested module declarations in the raw POM, including declarations in inactive profiles. The probe follows the same
+declarations and the independent `sandbox_oomph` source locator. Reading Eclipse descriptions from Git `HEAD` keeps the
+same source of expected names on restart. Missing, extra, and closed projects fail the inventory check.
+
 The acceptance test currently runs on Linux x86_64. Cross-platform installer interaction and the separate upstream JDT QA
 scenario remain additional release checks; the workspace setup itself uses platform-independent Oomph tasks and paths.

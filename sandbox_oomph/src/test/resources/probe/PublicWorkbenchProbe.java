@@ -258,20 +258,14 @@ public final class PublicWorkbenchProbe implements IStartup {
 
     private void verifyInventory(Path clone) throws Exception {
         var workspace = ResourcesPlugin.getWorkspace();
-        Set<String> expectedProjects = new TreeSet<>();
         String descriptions = git(clone, "ls-files", "--", ".project", ":(glob)**/.project");
-        for (String path : descriptions.lines().toList()) {
-            if (path.startsWith(".github/")) continue; // excluded by the public project source locator
+        List<Path> committedDescriptions = descriptions.lines().map(Path::of).toList();
+        Set<String> expectedProjects = PublicProjectInventory.expectedProjects(clone, committedDescriptions, path -> {
             String xml = git(clone, "show", "HEAD:" + path);
             try (var input = new java.io.ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8))) {
-                expectedProjects.add(workspace.loadProjectDescription(input).getName());
+                return workspace.loadProjectDescription(input).getName();
             }
-        }
-        // The Maven import also creates these projects with no committed Eclipse descriptor.
-        for (String project : List.of("sandbox_distribution_verify", "sandbox_extra_search_help", "sandbox_oomph")) {
-            require(Files.isRegularFile(clone.resolve(project).resolve("pom.xml")), "Missing Maven project " + project);
-            expectedProjects.add(project);
-        }
+        });
         Set<String> actual = new TreeSet<>();
         for (var project : workspace.getRoot().getProjects()) {
             actual.add(project.getName() + (project.isOpen() ? "" : " [closed]"));
