@@ -27,7 +27,7 @@
   },
   "cleanupProfile": "junit4-to-jupiter.properties",
   "profileSha256": "db130cfe692ac797db90ea1161cb8828d43d929b4dae733fd900e612eb785aa8",
-  "strictMigrationPatchSha256": "0a9f0042e6e00e28022366db6fd2a853c198b04a50fe62742d5c04334c164e42",
+  "strictMigrationPatchSha256": "840398282485b2c79f779b22a3b0115fd7a6c8a43cb9035fa659361f981df6c4",
   "baselineSha256": {
     "META-INF/MANIFEST.MF": "76c3f92aad12e0ad50a142d8aa729fef1d6e50ff1498d740511920bc465c9dba",
     "ui/org/eclipse/jdt/junit/tests/TestRunSessionSerializationTests3.java": "08fee85c32e1dd5170ea78224dd576655fca5a2546602d4647233a40f7d42862",
