@@ -46,12 +46,25 @@ runs:
         timestamp=$(jq -ber '.buildOutputTimestamp' "$receipt")
         version=$(jq -ber '.version' "$receipt")
         artifacts=$(jq -ber '.artifacts[] | [.artifactId, .sha256] | @tsv' "$receipt")
+        repository_file="$sdk_source/target/local-repository.txt"
+        if [[ "$RUNNER_OS" == 'Windows' ]]; then
+          repository_file=$(cygpath -m "$repository_file")
+        fi
+        # Read the effective repository from the same Maven session that installs the jars.
         "$sandbox/mvnw" --batch-mode --no-transfer-progress -f "$sdk_source/pom.xml" \
           -pl regelsuche-optimization-sdk -am -DskipTests \
-          -Dproject.build.outputTimestamp="$timestamp" install
+          -Dproject.build.outputTimestamp="$timestamp" \
+          -Dexpression=session.localRepository.basedir -Doutput="$repository_file" \
+          install org.apache.maven.plugins:maven-help-plugin:3.5.1:evaluate
+        local_repository=$(< "$repository_file")
+        local_repository=${local_repository%$'\r'}
+        if [[ "$RUNNER_OS" == 'Windows' ]]; then
+          local_repository=$(cygpath -u "$local_repository")
+        fi
+        [[ -d "$local_repository" ]]
         while IFS=$'\t' read -r artifact expected; do
           [[ "$artifact" =~ ^regelsuche-[a-z-]+$ && "$expected" =~ ^[0-9a-f]{64}$ ]]
-          jar="$HOME/.m2/repository/io/github/carstenartur/$artifact/$version/$artifact-$version.jar"
+          jar="$local_repository/io/github/carstenartur/$artifact/$version/$artifact-$version.jar"
           printf '%s  %s\n' "$expected" "$jar" | sha256sum --check --status
         done <<< "$artifacts"
         # Git pack indexes are read-only on Windows. Remove this action's checkout
