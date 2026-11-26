@@ -117,7 +117,9 @@ final class JavaFieldProgramLowering {
                     %1$s = %5$s;
                 }
                 if (%3$s < 0) return %9$s(%6$s.negate().mod(%8$s), %7$s.negate().mod(%8$s));
-                """.formatted(n, m, s, t, r, x, y, p, factory);
+                """.replace("%1$s", n).replace("%2$s", m).replace("%3$s", s)
+                .replace("%4$s", t).replace("%5$s", r).replace("%6$s", x)
+                .replace("%7$s", y).replace("%8$s", p).replace("%9$s", factory);
     }
 
     QuadraticRootProgram decode(IfStatement fast) {

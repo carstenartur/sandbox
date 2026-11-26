@@ -46,7 +46,8 @@ final class JavaFieldValueSink {
                 if (name.isDeclaration() || !local.isEqualTo(name.resolveBinding())) return true;
                 ASTNode parent = name.getParent();
                 while (parent != method) {
-                    require(parent != null && !(parent instanceof LambdaExpression) && !(parent instanceof MethodDeclaration)
+                    if (parent == null) throw unavailable();
+                    require(!(parent instanceof LambdaExpression) && !(parent instanceof MethodDeclaration)
                             && !(parent instanceof AnonymousClassDeclaration) && !(parent instanceof AbstractTypeDeclaration));
                     parent = parent.getParent();
                 }

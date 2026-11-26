@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launchConfiguration type="org.eclipse.m2e.Maven2LaunchConfigurationType">
+  <stringAttribute key="M2_GOALS" value="--batch-mode --no-transfer-progress compile exec:java"/>
+  <stringAttribute key="org.eclipse.jdt.launching.WORKING_DIRECTORY" value="${workspace_loc:/sandbox_target}/../qa/regelsuche-sdk-bootstrap"/>
+  <stringAttribute key="org.eclipse.jdt.launching.JRE_CONTAINER" value="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-25"/>
+  <stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="&quot;-Duser.home=${system_property:user.home}&quot; &quot;-Dbootstrap.workbenchRepository=${system_property:maven.repo.local}&quot;"/>
+</launchConfiguration>

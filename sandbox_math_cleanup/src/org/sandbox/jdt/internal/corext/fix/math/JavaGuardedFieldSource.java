@@ -295,12 +295,14 @@ final class JavaGuardedFieldSource {
         return true;
     }
     static String key(IBinding binding) {
-        require(binding != null && !binding.isRecovered() && binding.getKey() != null);
-        return binding.getKey();
+        if (binding == null || binding.isRecovered()) throw unavailable();
+        String key = binding.getKey();
+        if (key == null) throw unavailable();
+        return key;
     }
     static <T> T requireType(Object x, Class<T> type) {
         require(type.isInstance(x)); return type.cast(x);
     }
     static void require(boolean valid) { if (!valid) throw unavailable(); }
-    private static IllegalArgumentException unavailable() { return new IllegalArgumentException("Unproved field source"); }
+    static IllegalArgumentException unavailable() { return new IllegalArgumentException("Unproved field source"); }
 }
