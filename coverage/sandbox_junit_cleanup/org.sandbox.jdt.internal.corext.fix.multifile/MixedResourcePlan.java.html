@@ -65,7 +65,7 @@ public record MixedResourcePlan(Map&lt;String, Registration&gt; registrations, S
 <span class="fc" id="L65">			return;</span>
 		}
 <span class="fc" id="L67">		var project= unit.getJavaProject();</span>
-<span class="pc bpc" id="L68" title="1 of 2 branches missed.">		if (!MigrationSupportProvider.available(project)) throw stale();</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">		if (!MixedResourcePlanner.compatibleProvider(project)) throw stale();</span>
 <span class="fc" id="L69">		var current= JavaProjectCompilationUnits.collect(project);</span>
 <span class="fc bfc" id="L70" title="All 2 branches covered.">		if (sourceFingerprints.size() != current.size()) throw stale();</span>
 <span class="fc bfc" id="L71" title="All 2 branches covered.">		for (var source : current) {</span>

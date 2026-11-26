@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>PdeMixedSupportWiring.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.multifile</a> &gt; <span class="el_source">PdeMixedSupportWiring.java</span></div><h1>PdeMixedSupportWiring.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.multifile;
+
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Dictionary;
+import java.util.HashSet;
+import java.util.Hashtable;
+import java.util.List;
+
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.osgi.service.resolver.BaseDescription;
+import org.eclipse.osgi.service.resolver.BundleDescription;
+import org.eclipse.osgi.service.resolver.ExportPackageDescription;
+import org.eclipse.osgi.service.resolver.PlatformAdmin;
+import org.eclipse.pde.core.plugin.PluginRegistry;
+import org.osgi.framework.Constants;
+import org.osgi.framework.FrameworkUtil;
+import org.sandbox.jdt.internal.common.MigrationSupportProvider;
+
+/** The type identities used by the generated factory call in a PDE consumer. */
+final class PdeMixedSupportWiring {
+	private static final String API= &quot;org.junit.jupiter.api&quot;; //$NON-NLS-1$
+	private static final String EXTENSION= API + &quot;.extension&quot;; //$NON-NLS-1$
+	private static final String FUNCTION= API + &quot;.function&quot;; //$NON-NLS-1$
+	private static final String PARALLEL= API + &quot;.parallel&quot;; //$NON-NLS-1$
+<span class="fc" id="L32">	private static final List&lt;String&gt; PLATFORM= List.of(&quot;org.junit.platform.engine&quot;, &quot;org.junit.platform.launcher&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L33">	private static final List&lt;String&gt; TYPES= List.of(API + &quot;.TestInstance&quot;, EXTENSION + &quot;.Extension&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L34">			FUNCTION + &quot;.ThrowingConsumer&quot;, PARALLEL + &quot;.Isolated&quot;, MigrationSupportProvider.FACTORY); //$NON-NLS-1$ //$NON-NLS-2$</span>
+
+	private PdeMixedSupportWiring() {}
+
+	static boolean available(IJavaProject java) throws JavaModelException {
+<span class="fc" id="L39">		var model= PluginRegistry.findModel(java.getProject());</span>
+<span class="pc bpc" id="L40" title="2 of 4 branches missed.">		if (model == null || model.getBundleDescription() == null) return false;</span>
+<span class="fc" id="L41">		var consumer= model.getBundleDescription();</span>
+<span class="fc" id="L42">		var apiJar= MigrationSupportProvider.binaryLocation(java, TYPES.getFirst());</span>
+<span class="fc" id="L43">		var supportJar= MigrationSupportProvider.binaryLocation(java, MigrationSupportProvider.FACTORY);</span>
+<span class="pc bpc" id="L44" title="2 of 4 branches missed.">		if (apiJar == null || supportJar == null) return false;</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">		for (String type : TYPES) {</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">			var expected= type.equals(MigrationSupportProvider.FACTORY) ? supportJar : apiJar;</span>
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">			if (!expected.equals(MigrationSupportProvider.binaryLocation(java, type))) return false;</span>
+		}
+<span class="fc" id="L49">		var api= targetBundle(consumer, apiJar);</span>
+<span class="fc" id="L50">		var support= targetBundle(consumer, supportJar);</span>
+<span class="pc bpc" id="L51" title="3 of 6 branches missed.">		if (api == null || support == null || !MigrationSupportProvider.BUNDLE.equals(support.getSymbolicName())) return false;</span>
+<span class="fc" id="L52">		boolean constrainsCallbacks= Arrays.stream(support.getExportPackages())</span>
+<span class="fc" id="L53">				.filter(pkg -&gt; MigrationSupportProvider.PACKAGE.equals(pkg.getName()))</span>
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">				.anyMatch(pkg -&gt; pkg.getDirective(Constants.USES_DIRECTIVE) instanceof String[] uses</span>
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">						&amp;&amp; Arrays.asList(uses).containsAll(List.of(EXTENSION, FUNCTION)));</span>
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">		if (!constrainsCallbacks) return false;</span>
+
+		// PDE development resolution deliberately skips OSGi uses constraints. Resolve a private
+		// copy of the selected target, including the real workspace manifests and host fragments.
+<span class="fc" id="L60">		var live= consumer.getContainingState();</span>
+<span class="fc" id="L61">		var state= live.getFactory().createState(live);</span>
+<span class="fc" id="L62">		Dictionary&lt;?, ?&gt;[] original= live.getPlatformProperties();</span>
+<span class="fc" id="L63">		var properties= new Dictionary&lt;?, ?&gt;[original.length];</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">		for (int i= 0; i &lt; original.length; i++) {</span>
+<span class="fc" id="L65">			var copy= new Hashtable&lt;Object, Object&gt;();</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">			for (var keys= original[i].keys(); keys.hasMoreElements();) {</span>
+<span class="fc" id="L67">				var key= keys.nextElement();</span>
+<span class="fc" id="L68">				copy.put(key, original[i].get(key));</span>
+			}
+<span class="fc" id="L70">			copy.remove(&quot;osgi.resolverMode&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L71">			copy.put(&quot;osgi.resolver.usesMode&quot;, &quot;aggressive&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L72">			properties[i]= copy;</span>
+		}
+<span class="fc" id="L74">		state.setPlatformProperties(properties);</span>
+<span class="fc" id="L75">		var context= FrameworkUtil.getBundle(PdeMixedSupportWiring.class).getBundleContext();</span>
+<span class="fc" id="L76">		var reference= context.getServiceReference(PlatformAdmin.class);</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">		if (reference == null) return false;</span>
+		try {
+<span class="fc" id="L79">			var admin= context.getService(reference);</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">			if (admin == null) return false;</span>
+<span class="fc" id="L81">			var resolver= admin.createResolver();</span>
+			// A Jupiter API bundle imports its own exported packages. When a new import
+			// requires this precise exporter, keep its export ahead of substitutes.
+<span class="fc" id="L84">			boolean canSubstitute= Arrays.stream(live.getBundles(api.getSymbolicName())).anyMatch(other -&gt;</span>
+<span class="fc bfc" id="L85" title="All 4 branches covered.">					other.getVersion().getMajor() == api.getVersion().getMajor() &amp;&amp; other.getVersion().compareTo(api.getVersion()) &gt; 0);</span>
+<span class="pc bpc" id="L86" title="1 of 6 branches missed.">			if (canSubstitute &amp;&amp; Arrays.stream(consumer.getImportPackages()).anyMatch(pkg -&gt; (pkg.getName().equals(API) || pkg.getName().startsWith(API + '.'))</span>
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">					&amp;&amp; api.getSymbolicName().equals(pkg.getBundleSymbolicName())</span>
+<span class="pc bpc" id="L88" title="3 of 6 branches missed.">					&amp;&amp; pkg.getBundleVersionRange().isExact() &amp;&amp; pkg.getBundleVersionRange().includes(api.getVersion()))) {</span>
+<span class="fc" id="L89">				var preferred= new HashSet&lt;Long&gt;();</span>
+<span class="fc" id="L90">				preferred.add(api.getBundleId());</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">				for (String pkg : PLATFORM) {</span>
+<span class="fc" id="L92">					var supplier= exporter(consumer, pkg);</span>
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">					if (supplier != null) preferred.add(supplier.getBundleId());</span>
+				}
+<span class="fc bfc" id="L95" title="All 2 branches covered.">				resolver.setSelectionPolicy(Comparator.comparing((BaseDescription cap) -&gt; !preferred.contains(cap.getSupplier().getBundleId()))</span>
+<span class="fc" id="L96">						.thenComparing(BaseDescription::getVersion, Comparator.reverseOrder())</span>
+<span class="fc" id="L97">						.thenComparingLong(cap -&gt; cap.getSupplier().getBundleId()));</span>
+			}
+<span class="fc" id="L99">			state.setResolver(resolver);</span>
+<span class="fc" id="L100">			state.resolve(false);</span>
+<span class="fc" id="L101">			var resolved= state.getBundle(consumer.getBundleId());</span>
+<span class="fc" id="L102">			var selectedApi= state.getBundle(api.getBundleId());</span>
+<span class="fc" id="L103">			var selectedSupport= state.getBundle(support.getBundleId());</span>
+<span class="pc bpc" id="L104" title="1 of 4 branches missed.">			return coherent(resolved, selectedApi, selectedSupport) &amp;&amp; samePlatformSuppliers(consumer, resolved);</span>
+		} finally {
+<span class="fc" id="L106">			context.ungetService(reference);</span>
+		}
+	}
+
+	private static BundleDescription targetBundle(BundleDescription consumer, Path jar) {
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">		for (var target : PluginRegistry.getActiveModels()) {</span>
+<span class="pc bpc" id="L112" title="1 of 4 branches missed.">			if (target.getInstallLocation() != null &amp;&amp; jar.equals(Path.of(target.getInstallLocation()))) {</span>
+<span class="fc" id="L113">				var installed= target.getBundleDescription();</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">				if (installed == null) return null;</span>
+<span class="fc" id="L115">				var candidates= Arrays.stream(consumer.getContainingState().getBundles(installed.getSymbolicName()))</span>
+<span class="fc" id="L116">						.filter(bundle -&gt; installed.getVersion().equals(bundle.getVersion())).toList();</span>
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">				return candidates.size() == 1 ? candidates.getFirst() : null;</span>
+			}
+		}
+<span class="nc" id="L120">		return null;</span>
+	}
+
+	private static boolean coherent(BundleDescription consumer, BundleDescription api, BundleDescription support) {
+<span class="pc bpc" id="L124" title="2 of 6 branches missed.">		if (!consumer.isResolved() || !support.isResolved() || !api.isResolved()</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">				|| exporter(consumer, MigrationSupportProvider.PACKAGE) != support) return false;</span>
+<span class="pc bpc" id="L126" title="1 of 4 branches missed.">		for (String pkg : List.of(API, EXTENSION, FUNCTION, PARALLEL)) if (exporter(consumer, pkg) != api) return false;</span>
+<span class="pc bpc" id="L127" title="3 of 6 branches missed.">		return exporter(support, EXTENSION) == api &amp;&amp; exporter(support, FUNCTION) == api &amp;&amp; samePlatformSuppliers(consumer, support);</span>
+	}
+
+	private static boolean samePlatformSuppliers(BundleDescription consumer, BundleDescription other) {
+<span class="fc bfc" id="L131" title="All 2 branches covered.">		for (String pkg : PLATFORM) {</span>
+<span class="fc" id="L132">			var expected= exporter(consumer, pkg);</span>
+<span class="fc" id="L133">			var actual= exporter(other, pkg);</span>
+<span class="pc bpc" id="L134" title="3 of 6 branches missed.">			if (expected != null &amp;&amp; (actual == null || expected.getBundleId() != actual.getBundleId())) return false;</span>
+		}
+<span class="fc" id="L136">		return true;</span>
+	}
+
+	private static BundleDescription exporter(BundleDescription bundle, String pkg) {
+<span class="fc" id="L140">		var direct= Arrays.stream(bundle.getResolvedImports()).filter(wire -&gt; pkg.equals(wire.getName())).findFirst();</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">		if (direct.isPresent()) return direct.get().getExporter();</span>
+<span class="nc" id="L142">		var visible= bundle.getContainingState().getStateHelper().getVisiblePackages(bundle);</span>
+<span class="nc" id="L143">		var suppliers= Arrays.stream(visible).filter(wire -&gt; pkg.equals(wire.getName()))</span>
+<span class="nc" id="L144">				.map(ExportPackageDescription::getExporter).distinct().toList();</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">		return suppliers.size() == 1 ? suppliers.getFirst() : null;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

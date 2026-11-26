@@ -95,11 +95,11 @@ import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 				try {
 <span class="fc" id="L96">					var capability= cleanup.getClass().getMethod(&quot;getCoordinatedCleanUpPreview&quot;, IJavaProject.class); //$NON-NLS-1$</span>
 <span class="fc" id="L97">					var candidates= (Collection&lt;?&gt;) capability.invoke(cleanup, project);</span>
-<span class="pc bpc" id="L98" title="1 of 2 branches missed.">					for (Object object : candidates) {</span>
-<span class="nc" id="L99">						var candidate= (Map&lt;?, ?&gt;) object;</span>
-<span class="nc" id="L100">						var participating= (Collection&lt;?&gt;) candidate.get(&quot;compilationUnits&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L101">						groups.add(new Group(String.valueOf(candidate.get(&quot;id&quot;)), participating.stream() //$NON-NLS-1$</span>
-<span class="nc" id="L102">								.map(ICompilationUnit.class::cast).map(MigrationBatchDependencies::path).toList()));</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">					for (Object object : candidates) {</span>
+<span class="fc" id="L99">						var candidate= (Map&lt;?, ?&gt;) object;</span>
+<span class="fc" id="L100">						var participating= (Collection&lt;?&gt;) candidate.get(&quot;compilationUnits&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L101">						groups.add(new Group(String.valueOf(candidate.get(&quot;id&quot;)), participating.stream() //$NON-NLS-1$</span>
+<span class="fc" id="L102">								.map(ICompilationUnit.class::cast).map(MigrationBatchDependencies::path).toList()));</span>
 					}
 <span class="fc" id="L104">				} catch (NoSuchMethodException ignored) {</span>
 					// Ordinary JDT cleanups have no coordinated candidate metadata.
@@ -441,7 +441,7 @@ import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 <span class="fc" id="L441">				binding= method.getMethodDeclaration();</span>
 <span class="fc bfc" id="L442" title="All 2 branches covered.">				if (tracked == null) {</span>
 <span class="fc" id="L443">					overloads(method.getDeclaringClass(), method, false);</span>
-<span class="pc bpc" id="L444" title="1 of 4 branches missed.">					if (site.getParent() instanceof MethodInvocation call &amp;&amp; call.getName() == site) invocationOverloads(call, method);</span>
+<span class="fc bfc" id="L444" title="All 4 branches covered.">					if (site.getParent() instanceof MethodInvocation call &amp;&amp; call.getName() == site) invocationOverloads(call, method);</span>
 				}
 			}
 <span class="fc bfc" id="L447" title="All 2 branches covered.">			if (binding instanceof ITypeBinding type) binding= type.getTypeDeclaration();</span>

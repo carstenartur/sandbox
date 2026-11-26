@@ -28,35 +28,40 @@ public final class MigrationSupportProvider {
 	private MigrationSupportProvider() {}
 
 	public static boolean available(IJavaProject project) throws JavaModelException {
-<span class="fc" id="L31">		var type= project.findType(FACTORY);</span>
-<span class="fc bfc" id="L32" title="All 4 branches covered.">		if (type == null || !type.isBinary()) return false;</span>
-<span class="fc" id="L33">		var root= type.getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT);</span>
-<span class="fc" id="L34">		var resource= root.getResource();</span>
-<span class="pc bpc" id="L35" title="1 of 2 branches missed.">		var location= resource == null ? root.getPath() : resource.getLocation();</span>
-<span class="pc bpc" id="L36" title="1 of 4 branches missed.">		return location != null &amp;&amp; compatible(location.toFile().toPath());</span>
+<span class="fc" id="L31">		Path location= binaryLocation(project, FACTORY);</span>
+<span class="fc bfc" id="L32" title="All 4 branches covered.">		return location != null &amp;&amp; compatible(location);</span>
+	}
+
+	public static Path binaryLocation(IJavaProject project, String className) throws JavaModelException {
+<span class="fc" id="L36">		var type= project.findType(className);</span>
+<span class="fc bfc" id="L37" title="All 4 branches covered.">		if (type == null || !type.isBinary()) return null;</span>
+<span class="fc" id="L38">		var root= type.getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT);</span>
+<span class="fc" id="L39">		var resource= root.getResource();</span>
+<span class="pc bpc" id="L40" title="1 of 2 branches missed.">		var location= resource == null ? root.getPath() : resource.getLocation();</span>
+<span class="pc bpc" id="L41" title="1 of 2 branches missed.">		return location == null ? null : location.toFile().toPath();</span>
 	}
 
 	public static boolean compatible(Path jar) {
-<span class="pc bpc" id="L40" title="1 of 2 branches missed.">		if (!Files.isRegularFile(jar)) return false;</span>
-<span class="fc" id="L41">		try (var archive= new JarFile(jar.toFile())) {</span>
-<span class="fc" id="L42">			var manifest= archive.getManifest();</span>
-<span class="pc bpc" id="L43" title="1 of 2 branches missed.">			if (manifest == null) return false;</span>
-<span class="fc" id="L44">			var attributes= manifest.getMainAttributes();</span>
-<span class="fc" id="L45">			String name= attributes.getValue(&quot;Bundle-SymbolicName&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L46" title="2 of 4 branches missed.">			if (name == null || !BUNDLE.equals(name.split(&quot;;&quot;, 2)[0].strip())) return false; //$NON-NLS-1$</span>
-<span class="fc" id="L47">			var entry= archive.getJarEntry(FACTORY.replace('.', '/') + &quot;.class&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L48" title="1 of 2 branches missed.">			if (entry == null) return false;</span>
-<span class="fc" id="L49">			try (var input= archive.getInputStream(entry)) {</span>
-<span class="fc" id="L50">				var reader= ToolFactory.createDefaultClassFileReader(input, IClassFileReader.METHOD_INFOS);</span>
-<span class="pc bpc" id="L51" title="2 of 4 branches missed.">				if (reader == null || !Flags.isPublic(reader.getAccessFlags())) return false;</span>
-<span class="fc" id="L52">				return Arrays.stream(reader.getMethodInfos())</span>
-<span class="fc bfc" id="L53" title="All 4 branches covered.">						.filter(method -&gt; Flags.isPublic(method.getAccessFlags()) &amp;&amp; Flags.isStatic(method.getAccessFlags())</span>
-<span class="fc bfc" id="L54" title="All 2 branches covered.">								&amp;&amp; SIGNATURE.equals(new String(method.getDescriptor())))</span>
-<span class="fc" id="L55">						.map(method -&gt; new String(method.getName())).collect(java.util.stream.Collectors.toSet())</span>
-<span class="fc" id="L56">						.containsAll(Set.of(&quot;perTest&quot;, &quot;perClass&quot;)); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc bnc" id="L57" title="All 2 branches missed.">			}</span>
-<span class="nc" id="L58">		} catch (IOException e) {</span>
-<span class="nc" id="L59">			return false;</span>
+<span class="pc bpc" id="L45" title="1 of 2 branches missed.">		if (!Files.isRegularFile(jar)) return false;</span>
+<span class="fc" id="L46">		try (var archive= new JarFile(jar.toFile())) {</span>
+<span class="fc" id="L47">			var manifest= archive.getManifest();</span>
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">			if (manifest == null) return false;</span>
+<span class="fc" id="L49">			var attributes= manifest.getMainAttributes();</span>
+<span class="fc" id="L50">			String name= attributes.getValue(&quot;Bundle-SymbolicName&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L51" title="2 of 4 branches missed.">			if (name == null || !BUNDLE.equals(name.split(&quot;;&quot;, 2)[0].strip())) return false; //$NON-NLS-1$</span>
+<span class="fc" id="L52">			var entry= archive.getJarEntry(FACTORY.replace('.', '/') + &quot;.class&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">			if (entry == null) return false;</span>
+<span class="fc" id="L54">			try (var input= archive.getInputStream(entry)) {</span>
+<span class="fc" id="L55">				var reader= ToolFactory.createDefaultClassFileReader(input, IClassFileReader.METHOD_INFOS);</span>
+<span class="pc bpc" id="L56" title="2 of 4 branches missed.">				if (reader == null || !Flags.isPublic(reader.getAccessFlags())) return false;</span>
+<span class="fc" id="L57">				return Arrays.stream(reader.getMethodInfos())</span>
+<span class="fc bfc" id="L58" title="All 4 branches covered.">						.filter(method -&gt; Flags.isPublic(method.getAccessFlags()) &amp;&amp; Flags.isStatic(method.getAccessFlags())</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">								&amp;&amp; SIGNATURE.equals(new String(method.getDescriptor())))</span>
+<span class="fc" id="L60">						.map(method -&gt; new String(method.getName())).collect(java.util.stream.Collectors.toSet())</span>
+<span class="fc" id="L61">						.containsAll(Set.of(&quot;perTest&quot;, &quot;perClass&quot;)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">			}</span>
+<span class="nc" id="L63">		} catch (IOException e) {</span>
+<span class="nc" id="L64">			return false;</span>
 		}
 	}
 }

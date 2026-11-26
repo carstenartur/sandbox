@@ -708,7 +708,7 @@ public final class JUnitBestEffortSupport {
 		}
 <span class="fc bfc" id="L709" title="All 2 branches covered.">		for (ResourceUsage usage : usages.values()) {</span>
 <span class="pc bpc" id="L710" title="1 of 2 branches missed.">			if (!usage.ruleKinds.isEmpty()</span>
-<span class="pc bpc" id="L711" title="1 of 2 branches missed.">					&amp;&amp; selectedResourceChain(usage.binding, sourceTypes).stream().anyMatch(blocked::contains)) {</span>
+<span class="fc bfc" id="L711" title="All 2 branches covered.">					&amp;&amp; selectedResourceChain(usage.binding, sourceTypes).stream().anyMatch(blocked::contains)) {</span>
 <span class="fc bfc" id="L712" title="All 2 branches covered.">				for (SourceType owner : usage.owners) {</span>
 <span class="fc" id="L713">					addGap(gaps, owner, &quot;external-resource:&quot; + qualifiedName(usage.binding), //$NON-NLS-1$</span>
 <span class="fc" id="L714">							reason, explanation, remediation);</span>
