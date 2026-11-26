@@ -54,7 +54,7 @@ jobs:
     - name: Setup Java JDK
       uses: actions/setup-java@v6
       with:
-        java-version: '25'
+        java-version: '25.0.5+8'
         distribution: 'temurin'
         cache: maven
 
@@ -67,6 +67,9 @@ jobs:
         path: ~/.m2/repository
         key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml', 'sandbox_target/*.target') }}
         restore-keys: ${{ runner.os }}-maven-
+
+    - name: Provision the pinned mathematics SDK
+      uses: ./.github/actions/provision-regelsuche
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL

@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Copyright (c) 2025 Carsten Hammer.
  *
  * This program and the accompanying materials
@@ -20,6 +20,7 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.util.TypeCheckingUtils;
 
@@ -47,7 +48,7 @@ public final class AssertionRefactorer {
 	public static void reorderParameters(MethodInvocation node, ASTRewrite rewriter, TextEditGroup group,
 			Set<String> oneparam, Set<String> twoparam) {
 		String methodName = node.getName().getIdentifier();
-		List<Expression> arguments = node.arguments();
+		List<Expression> arguments = ASTNodes.getChildListProperty(node, MethodInvocation.ARGUMENTS_PROPERTY);
 		switch (arguments.size()) {
 		case 2:
 			if (oneparam.contains(methodName)) {
@@ -77,7 +78,7 @@ public final class AssertionRefactorer {
 	 */
 	private static void reorderParameters(ASTRewrite rewriter, MethodInvocation node, TextEditGroup group) {
 		ListRewrite listRewrite = rewriter.getListRewrite(node, MethodInvocation.ARGUMENTS_PROPERTY);
-		List<Expression> arguments = node.arguments();
+		List<Expression> arguments = ASTNodes.getChildListProperty(node, MethodInvocation.ARGUMENTS_PROPERTY);
 		if (!TypeCheckingUtils.isStringType(arguments.get(0), String.class)) {
 			return;
 		}

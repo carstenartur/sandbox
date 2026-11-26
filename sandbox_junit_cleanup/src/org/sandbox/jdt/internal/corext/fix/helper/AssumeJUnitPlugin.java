@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Copyright (c) 2021 Carsten Hammer.
  *
  * This program and the accompanying materials
@@ -113,8 +113,9 @@ public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {
 			importRewriter.removeStaticImport(ORG_JUNIT_ASSUME + "." + METHOD_ASSUME_THAT);
 			MethodInvocation newAssumeThatCall = ast.newMethodInvocation();
 			newAssumeThatCall.setName(ast.newSimpleName(METHOD_ASSUME_THAT));
-			for (Object arg : minv.arguments()) {
-				newAssumeThatCall.arguments().add(rewriter.createCopyTarget((org.eclipse.jdt.core.dom.ASTNode) arg));
+			for (Expression arg : ASTNodes.<Expression>getChildListProperty(minv, MethodInvocation.ARGUMENTS_PROPERTY)) {
+				ASTNodes.<Expression>getChildListProperty(newAssumeThatCall, MethodInvocation.ARGUMENTS_PROPERTY)
+						.add((Expression) rewriter.createCopyTarget(arg));
 			}
 			ASTNodes.replaceButKeepComment(rewriter, minv, newAssumeThatCall, group);
 		} else {

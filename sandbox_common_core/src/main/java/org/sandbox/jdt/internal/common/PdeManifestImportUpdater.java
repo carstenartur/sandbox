@@ -12,6 +12,7 @@ package org.sandbox.jdt.internal.common;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -31,13 +32,35 @@ public final class PdeManifestImportUpdater {
 	}
 
 	public static byte[] addImport(byte[] original, String packageName) {
+		return addImport(original, packageName, null);
+	}
+
+	public record Exporter(String symbolicName, String version) {
+		private static final Pattern BUNDLE_COMPONENT= Pattern.compile("[A-Za-z0-9_-]++"); //$NON-NLS-1$
+		private static final Pattern VERSION_NUMBER= Pattern.compile("[0-9]++"); //$NON-NLS-1$
+
+		public Exporter {
+			if (!Arrays.stream(symbolicName.split("\\.", -1)).allMatch(BUNDLE_COMPONENT.asMatchPredicate())) //$NON-NLS-1$
+				throw new IllegalArgumentException("Invalid bundle symbolic name: " + symbolicName); //$NON-NLS-1$
+			String[] parts= version.split("\\.", 4); //$NON-NLS-1$
+			if (parts.length < 3 || !VERSION_NUMBER.matcher(parts[0]).matches() || !VERSION_NUMBER.matcher(parts[1]).matches()
+					|| !VERSION_NUMBER.matcher(parts[2]).matches() || parts.length == 4 && !BUNDLE_COMPONENT.matcher(parts[3]).matches())
+				throw new IllegalArgumentException("Invalid bundle version: " + version); //$NON-NLS-1$
+		}
+	}
+
+	public static byte[] addImport(byte[] original, String packageName, Exporter exporter) {
 		Objects.requireNonNull(original);
 		String content= new String(original, StandardCharsets.UTF_8);
-		String updated= addImport(content, packageName);
+		String updated= addImport(content, packageName, exporter);
 		return content.equals(updated) ? original : updated.getBytes(StandardCharsets.UTF_8);
 	}
 
 	public static String addImport(String manifest, String packageName) {
+		return addImport(manifest, packageName, null);
+	}
+
+	private static String addImport(String manifest, String packageName, Exporter exporter) {
 		Objects.requireNonNull(manifest);
 		Objects.requireNonNull(packageName);
 		if (!PACKAGE_NAME.matcher(packageName).matches()) {
@@ -47,6 +70,13 @@ public final class PdeManifestImportUpdater {
 		int mainSectionEnd= mainSectionEnd(manifest);
 		Matcher header= IMPORT_PACKAGE_PATTERN.matcher(manifest.substring(0, mainSectionEnd));
 		String lineDelimiter= lineDelimiter(manifest);
+		String clause= packageName;
+		if (exporter != null) {
+			String attributes= ";bundle-symbolic-name=" + exporter.symbolicName() + ";bundle-version=\"[" //$NON-NLS-1$ //$NON-NLS-2$
+					+ exporter.version() + "," + exporter.version() + "]\""; //$NON-NLS-1$ //$NON-NLS-2$
+			// Import clauses are ASCII here. Leave room for the header and continuation prefix.
+			clause= (clause + attributes).replaceAll("(.{54})(?=.)", "$1" + lineDelimiter + " "); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		}
 		if (header.find()) {
 			String physicalHeader= header.group();
 			String unfolded= physicalHeader.substring(IMPORT_PACKAGE_HEADER.length())
@@ -56,7 +86,7 @@ public final class PdeManifestImportUpdater {
 			}
 			String separator= physicalHeader.stripTrailing().endsWith(",") //$NON-NLS-1$
 					? lineDelimiter + " " : "," + lineDelimiter + " "; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-			return manifest.substring(0, header.end()) + separator + packageName
+			return manifest.substring(0, header.end()) + separator + clause
 					+ manifest.substring(header.end());
 		}
 
@@ -65,7 +95,7 @@ public final class PdeManifestImportUpdater {
 		String suffix= mainSectionEnd == manifest.length() && isLineBreakBefore(manifest, mainSectionEnd)
 				? lineDelimiter : ""; //$NON-NLS-1$
 		return manifest.substring(0, mainSectionEnd) + prefix + IMPORT_PACKAGE_HEADER + " " //$NON-NLS-1$
-				+ packageName + suffix + manifest.substring(mainSectionEnd);
+				+ clause + suffix + manifest.substring(mainSectionEnd);
 	}
 
 	private static int mainSectionEnd(String manifest) {

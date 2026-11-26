@@ -15,6 +15,9 @@ on:
       - 'sandbox_oomph/src/test/java/org/sandbox/oomph/PublicEppInstallerTest.java'
       - 'sandbox_oomph/src/test/resources/probe/Public*.java'
       - 'sandbox_oomph/sandboxproject.setup'
+      - 'qa/regelsuche-sdk-bootstrap/**'
+      - 'sandbox_target/Regelsuche-SDK.launch'
+      - 'sandbox_math_cleanup/lib/qualification.json'
       - 'sandbox_extra_search_test/.project'
       - 'sandbox_extra_search_test/.classpath'
       - 'sandbox_extra_search_test/pom.xml'
@@ -35,7 +38,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
         with:
-          java-version: '25'
+          java-version: '25.0.5+8'
           distribution: temurin
           cache: maven
       - uses: ./.github/actions/verify-eclipse-desktop-runtime

@@ -66,20 +66,29 @@ public final class PublicWorkbenchProbe implements IStartup {
             require(runningJdk.equals(Path.of(System.getProperty("sandbox.public.jdk")).toRealPath())
                     && Files.isExecutable(runningJdk.resolve("bin/javac")), "The Java IDE is not running the selected full JDK: " + runningJdk);
             var root = ResourcesPlugin.getWorkspace().getRoot();
-            if ("fresh".equals(phase)) {
+            boolean fresh = "fresh".equals(phase);
+            var sdkLaunch = root.getProject("sandbox_target").getFile("Regelsuche-SDK.launch");
+            if (fresh || sdkLaunch.exists()) {
                 // Show the normal asynchronous startup progress so its own success receipt can be observed.
+                // A public main with the SDK bootstrap also schedules STARTUP on restart.
+                String startup = fresh ? "startup" : "restart-startup";
                 awaitUi(() -> {
                     var log = key(StyledText.class, "log");
                     if (log == null) return false;
-                    checkOomphStatus(log, "startup");
+                    checkOomphStatus(log, startup);
                     Button dismiss = key(Button.class, "dismiss");
                     if (dismiss != null && dismiss.getSelection()) { dismiss.setSelection(false); press(dismiss); }
                     Button finish = key(Button.class, "finish");
                     if (finish == null || !finish.isEnabled()) return false;
                     String transcript = log.getText();
-                    require(transcript.contains("Sandbox Maven projects"), "Missing Maven import in native STARTUP: " + transcript);
-                    Files.writeString(evidence.resolve("startup-tasks.log"), transcript);
-                    screenshot("startup-complete");
+                    if (fresh) require(transcript.contains("Sandbox Maven projects"), "Missing Maven import in native STARTUP: " + transcript);
+                    if (sdkLaunch.exists()) {
+                        Path privateRepo = Path.of(System.getProperty("user.home"), ".m2", "repository");
+                        require(transcript.contains("Verified qualified Regelsuche jars and descriptors in " + privateRepo),
+                                "Missing qualified SDK in the isolated Maven repository: " + transcript);
+                    }
+                    Files.writeString(evidence.resolve(startup + "-tasks.log"), transcript);
+                    screenshot(startup + "-complete");
                     press(finish);
                     return true;
                 }, "successful public STARTUP tasks");
@@ -249,20 +258,14 @@ public final class PublicWorkbenchProbe implements IStartup {
 
     private void verifyInventory(Path clone) throws Exception {
         var workspace = ResourcesPlugin.getWorkspace();
-        Set<String> expectedProjects = new TreeSet<>();
         String descriptions = git(clone, "ls-files", "--", ".project", ":(glob)**/.project");
-        for (String path : descriptions.lines().toList()) {
-            if (path.startsWith(".github/")) continue; // excluded by the public project source locator
+        List<Path> committedDescriptions = descriptions.lines().map(Path::of).toList();
+        Set<String> expectedProjects = PublicProjectInventory.expectedProjects(clone, committedDescriptions, path -> {
             String xml = git(clone, "show", "HEAD:" + path);
             try (var input = new java.io.ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8))) {
-                expectedProjects.add(workspace.loadProjectDescription(input).getName());
+                return workspace.loadProjectDescription(input).getName();
             }
-        }
-        // The Maven import also creates these projects with no committed Eclipse descriptor.
-        for (String project : List.of("sandbox_distribution_verify", "sandbox_extra_search_help", "sandbox_oomph")) {
-            require(Files.isRegularFile(clone.resolve(project).resolve("pom.xml")), "Missing Maven project " + project);
-            expectedProjects.add(project);
-        }
+        });
         Set<String> actual = new TreeSet<>();
         for (var project : workspace.getRoot().getProjects()) {
             actual.add(project.getName() + (project.isOpen() ? "" : " [closed]"));

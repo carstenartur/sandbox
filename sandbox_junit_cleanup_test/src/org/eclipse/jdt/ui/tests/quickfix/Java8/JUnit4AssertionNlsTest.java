@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Copyright (c) 2026 Carsten Hammer and others.
  *
  * This program and the accompanying materials are made available under the terms

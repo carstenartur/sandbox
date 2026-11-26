@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Copyright (c) 2026 Carsten Hammer and others.
  *
  * This program and the accompanying materials are made available under the
@@ -39,6 +39,7 @@ import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.ITypeRoot;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.compiler.IProblem;
@@ -425,7 +426,7 @@ class ExternalResourceCallerScopeTest {
 						MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE, Boolean.toString(!profile.equals("test-without-rule-rewrite")),
 						"cleanup.junitcleanup_6_compatibility", Boolean.toString(profile.equals("junit6"))),
 				cleanup -> {
-					var names= selected.stream().map(unit -> unit.findPrimaryType().getFullyQualifiedName()).toList();
+					var names= selected.stream().map(ITypeRoot::findPrimaryType).map(IType::getFullyQualifiedName).toList();
 					var expected= names.stream().map(name -> (name.equals("test.Independent") ? "junit-jupiter " : "junit-vintage ")
 							+ name + " SUCCESSFUL").toList();
 					assertEquals(expected, engineResults(names));

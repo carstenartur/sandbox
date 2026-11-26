@@ -301,7 +301,7 @@ public record JavaSourceRewritePlan(String unitName, String sourceSha256, int so
         String original = source.substring(edit.getOffset(), edit.getExclusiveEnd());
         if (!original.equals(replacement)) changes.add(new Change(edit.getOffset(), edit.getLength(), hash(original), replacement));
     }
-    private static Node captureNode(ASTNode node, String source) {
+    static Node captureNode(ASTNode node, String source) {
         int start = node.getStartPosition(), length = node.getLength();
         String id = "source@" + start + ":" + length + ":" + node.getNodeType(); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
         return new Node(id, start, length, node.getNodeType(), bindingKey(node), hash(source.substring(start, start + length)));

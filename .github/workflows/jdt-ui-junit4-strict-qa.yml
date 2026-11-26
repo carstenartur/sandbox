@@ -54,8 +54,13 @@ jobs:
         uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: '25'
+          java-version: '25.0.5+8'
           cache: maven
+
+      - name: Provision the pinned mathematics SDK
+        uses: ./sandbox/.github/actions/provision-regelsuche
+        with:
+          sandbox-directory: sandbox
 
       - name: Checkout the pinned JDT UI R4_40 corpus
         uses: actions/checkout@v7

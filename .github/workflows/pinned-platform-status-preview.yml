@@ -65,7 +65,7 @@ jobs:
           echo "SANDBOX_STATUS_RUNTIME=$RUNNER_TEMP/pinned-status" >> "$GITHUB_ENV"
           apt-get update
           apt-get install --yes --no-install-recommends \
-            ca-certificates curl git unzip xz-utils zstd xvfb xauth \
+            ca-certificates curl git jq unzip xz-utils zstd xvfb xauth \
             libgtk-3-0t64 libwebkit2gtk-4.1-0 libasound2t64 \
             adwaita-icon-theme fonts-dejavu-core fonts-liberation
 
@@ -85,8 +85,11 @@ jobs:
         uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: '25'
+          java-version: '25.0.5+8'
           cache: maven
+
+      - name: Provision the pinned mathematics SDK
+        uses: ./.github/actions/provision-regelsuche
 
       - name: Materialize the Linux Sandbox product from the checkout
         run: >-

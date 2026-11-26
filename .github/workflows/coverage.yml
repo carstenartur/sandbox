@@ -83,9 +83,13 @@ jobs:
         if: steps.gate.outputs.run == 'true'
         uses: actions/setup-java@v6
         with:
-          java-version: '25'
+          java-version: '25.0.5+8'
           distribution: temurin
           cache: maven
+
+      - name: Provision the pinned mathematics SDK
+        if: steps.gate.outputs.run == 'true'
+        uses: ./.github/actions/provision-regelsuche
 
       - name: Verify pinned Maven Wrapper
         if: steps.gate.outputs.run == 'true'

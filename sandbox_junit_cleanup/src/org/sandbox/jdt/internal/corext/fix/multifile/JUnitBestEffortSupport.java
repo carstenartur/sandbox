@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Copyright (c) 2026 Carsten Hammer.
  *
  * This program and the accompanying materials
@@ -49,6 +49,7 @@ import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.ITypeRoot;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
@@ -57,6 +58,7 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTRequestor;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
@@ -78,6 +80,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.TypeLiteral;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
@@ -295,7 +298,7 @@ public final class JUnitBestEffortSupport {
 		int start= -1;
 		if (JavaCore.create(handle) instanceof ICompilationUnit unit) {
 			IType[] types= unit.getAllTypes();
-			IType target= unit.findPrimaryType();
+			IType target= ((ITypeRoot) unit).findPrimaryType();
 			for (IType type : types) {
 				if (typeIdentity.equals(type.getKey()) || typeIdentity.equals(type.getFullyQualifiedName('.'))) {
 					target= type;
@@ -979,8 +982,8 @@ public final class JUnitBestEffortSupport {
 					String sample= marker.toString().replace("*/", "* /") //$NON-NLS-1$ //$NON-NLS-2$
 							.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$
 					example.setText(" <pre>\n * " + sample.replace("\n", "\n * ") + "\n * </pre>"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-					todo.fragments().add(example);
-					documentation.tags().add(todo);
+					ASTNodes.getChildListProperty(todo, TagElement.FRAGMENTS_PROPERTY).add(example);
+					ASTNodes.getChildListProperty(documentation, Javadoc.TAGS_PROPERTY).add(todo);
 				}
 				rewrite.set(type, TypeDeclaration.JAVADOC_PROPERTY, documentation, group);
 			}
@@ -996,27 +999,29 @@ public final class JUnitBestEffortSupport {
 		}
 		method.setName(ast.newSimpleName(name));
 		method.setReturnType2(ast.newPrimitiveType(org.eclipse.jdt.core.dom.PrimitiveType.VOID));
-		method.modifiers().add(ast.newModifier(org.eclipse.jdt.core.dom.Modifier.ModifierKeyword.PRIVATE_KEYWORD));
-		method.modifiers().add(ast.newModifier(org.eclipse.jdt.core.dom.Modifier.ModifierKeyword.STATIC_KEYWORD));
+		ASTNodes.getChildListProperty(method, MethodDeclaration.MODIFIERS2_PROPERTY)
+				.add(ast.newModifier(org.eclipse.jdt.core.dom.Modifier.ModifierKeyword.PRIVATE_KEYWORD));
+		ASTNodes.getChildListProperty(method, MethodDeclaration.MODIFIERS2_PROPERTY)
+				.add(ast.newModifier(org.eclipse.jdt.core.dom.Modifier.ModifierKeyword.STATIC_KEYWORD));
 
 		Javadoc javadoc= ast.newJavadoc();
 		TagElement todo= ast.newTagElement();
 		todo.setTagName("@todo"); //$NON-NLS-1$
 		TextElement text= ast.newTextElement();
 		text.setText(javadocText(gap.markerText()));
-		todo.fragments().add(text);
-		javadoc.tags().add(todo);
+		ASTNodes.getChildListProperty(todo, TagElement.FRAGMENTS_PROPERTY).add(text);
+		ASTNodes.getChildListProperty(javadoc, Javadoc.TAGS_PROPERTY).add(todo);
 		method.setJavadoc(javadoc);
 
 		ClassInstanceCreation exception= ast.newClassInstanceCreation();
 		exception.setType(ast.newSimpleType(ast.newSimpleName("UnsupportedOperationException"))); //$NON-NLS-1$
 		StringLiteral message= ast.newStringLiteral();
 		message.setLiteralValue("Manual JUnit migration required: " + gap.reasonCode()); //$NON-NLS-1$
-		exception.arguments().add(message);
+		ASTNodes.getChildListProperty(exception, ClassInstanceCreation.ARGUMENTS_PROPERTY).add(message);
 		ThrowStatement throwStatement= ast.newThrowStatement();
 		throwStatement.setExpression(exception);
-		org.eclipse.jdt.core.dom.Block body= ast.newBlock();
-		body.statements().add(throwStatement);
+		Block body= ast.newBlock();
+		ASTNodes.getChildListProperty(body, Block.STATEMENTS_PROPERTY).add(throwStatement);
 		method.setBody(body);
 		return method;
 	}

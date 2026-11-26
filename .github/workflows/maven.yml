@@ -13,6 +13,7 @@ on:
       - 'pom.xml'
       - '.mvn/**'
       - 'sandbox*/**'
+      - 'qa/regelsuche-sdk-bootstrap/**'
       - 'features/**'
       - 'plugins/**'
       - 'org/**'
@@ -20,6 +21,7 @@ on:
       - '*.properties'
       - '.github/actions/cleanup-action/**'
       - '.github/actions/verify-eclipse-desktop-runtime/**'
+      - '.github/actions/provision-regelsuche/**'
       - '.github/workflows/maven.yml'
       - '.github/workflows/cleanup-workflow-runs.yml'
       - '.github/scripts/cleanup-workflow-runs.cjs'
@@ -71,16 +73,16 @@ jobs:
           oomph=false
           while IFS= read -r path; do
             case "$path" in
-              mvnw|mvnw.cmd|.gitattributes|.project|.classpath|.settings/*|pom.xml|.mvn/*|sandbox*/*|features/*|plugins/*|org/*|*.xml|*.properties|\
-              .github/actions/cleanup-action/*|.github/actions/verify-eclipse-desktop-runtime/*|\
+              mvnw|mvnw.cmd|.gitattributes|.project|.classpath|.settings/*|pom.xml|.mvn/*|sandbox*/*|qa/regelsuche-sdk-bootstrap/*|features/*|plugins/*|org/*|*.xml|*.properties|\
+              .github/actions/cleanup-action/*|.github/actions/verify-eclipse-desktop-runtime/*|.github/actions/provision-regelsuche/*|\
               .github/workflows/maven.yml|.github/workflows/cleanup-workflow-runs.yml|\
               .github/scripts/cleanup-workflow-runs.cjs|.github/scripts/cleanup-workflow-runs.test.cjs)
                 relevant=true
                 ;;
             esac
             case "$path" in
-              sandbox_oomph/*|sandbox_target/*|sandbox_product/*|.mvn/maven.config|.project|.classpath|.settings/*|*/.project|*/.classpath|*/.settings/*|\
-              */pom.xml|*/build.properties|*/META-INF/MANIFEST.MF|pom.xml|.github/workflows/maven.yml)
+              sandbox_oomph/*|sandbox_target/*|sandbox_product/*|qa/regelsuche-sdk-bootstrap/*|.mvn/maven.config|.project|.classpath|.settings/*|*/.project|*/.classpath|*/.settings/*|\
+              */pom.xml|*/build.properties|*/META-INF/MANIFEST.MF|pom.xml|.github/workflows/maven.yml|.github/actions/provision-regelsuche/*)
                 oomph=true ;;
             esac
           done < <(git diff --name-only --diff-filter=ACDMRT "$BASE_SHA"...HEAD)
@@ -113,9 +115,12 @@ jobs:
       - name: Set up JDK 25
         uses: actions/setup-java@v6
         with:
-          java-version: '25'
+          java-version: '25.0.5+8'
           distribution: temurin
           cache: maven
+
+      - name: Provision the pinned mathematics SDK
+        uses: ./.github/actions/provision-regelsuche
 
       - name: Verify pinned Maven Wrapper
         run: ./mvnw --batch-mode --no-transfer-progress --version
@@ -198,9 +203,12 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-java@v6
         with:
-          java-version: '25'
+          java-version: '25.0.5+8'
           distribution: temurin
           cache: maven
+      - name: Provision the pinned mathematics SDK
+        uses: ./.github/actions/provision-regelsuche
+
       - uses: ./.github/actions/verify-eclipse-desktop-runtime
       - name: Provide the SWT browser required by Oomph notifications
         shell: bash
@@ -212,6 +220,8 @@ jobs:
             sudo apt-get install --yes --no-install-recommends "$package"
           fi
           dpkg-query -W "$package"
+      - name: Verify the isolated source SDK bootstrap
+        run: ./mvnw --batch-mode --no-transfer-progress -f qa/regelsuche-sdk-bootstrap/pom.xml test
       - name: Verify fresh provisioning and manual setup after restart
         env:
           CANDIDATE_REF: ${{ github.head_ref || github.ref_name }}
@@ -228,6 +238,7 @@ jobs:
         with:
           name: oomph-verification
           path: |
+            qa/regelsuche-sdk-bootstrap/target/surefire-reports/**
             sandbox_oomph/target/surefire-reports/**
             sandbox_oomph/target/oomph-runtime/*.log
             sandbox_oomph/target/oomph-runtime/*.properties

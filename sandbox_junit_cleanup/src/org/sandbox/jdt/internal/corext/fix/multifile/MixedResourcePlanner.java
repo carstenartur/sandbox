@@ -17,6 +17,7 @@ import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IField;
 import org.eclipse.jdt.core.IJavaProject;
@@ -49,6 +50,11 @@ final class MixedResourcePlanner {
 
 	private MixedResourcePlanner(Map<String, CompilationUnit> roots) {
 		this.roots= roots;
+	}
+
+	static boolean compatibleProvider(IJavaProject project) throws CoreException {
+		return MigrationSupportProvider.available(project) && (!project.getProject().hasNature("org.eclipse.pde.PluginNature") //$NON-NLS-1$
+				|| Platform.getBundle("org.eclipse.pde.core") != null && PdeMixedSupportWiring.available(project)); //$NON-NLS-1$
 	}
 
 	static MixedResourcePlan discover(IJavaProject project, Map<String, CompilationUnit> roots,
@@ -88,7 +94,7 @@ final class MixedResourcePlanner {
 		Set<String> mixed= new LinkedHashSet<>(registered);
 		scopes.forEach((fixture, kinds) -> { if (kinds.size() > 1) mixed.add(fixture); });
 		if (mixed.isEmpty()) return MixedResourcePlan.EMPTY;
-		boolean provider= MigrationSupportProvider.available(project);
+		boolean provider= compatibleProvider(project);
 		boolean supported= enabled && provider;
 		Map<String, Registration> registrations= new LinkedHashMap<>();
 		Set<String> protectedUnits= new LinkedHashSet<>();

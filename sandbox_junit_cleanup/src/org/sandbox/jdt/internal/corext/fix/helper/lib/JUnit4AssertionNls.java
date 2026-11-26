@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Copyright (c) 2026 Carsten Hammer and others.
  *
  * This program and the accompanying materials are made available under the terms
@@ -31,6 +31,7 @@ import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.refactoring.nls.NLSElement;
 import org.eclipse.jdt.internal.corext.refactoring.nls.NLSLine;
 import org.eclipse.jdt.internal.corext.refactoring.nls.NLSScanner;
@@ -219,21 +220,21 @@ final class JUnit4AssertionNls {
 		return name;
 	}
 
-	@SuppressWarnings("unchecked")
 	private static void insertBefore(MethodInvocation invocation, Statement declaration, ASTRewrite rewrite, TextEditGroup group) {
 		if (invocation.getParent() instanceof ExpressionStatement statement) {
 			if (statement.getParent() instanceof Block block) {
 				rewrite.getListRewrite(block, Block.STATEMENTS_PROPERTY).insertBefore(declaration, statement, group);
 			} else {
 				Block block= invocation.getAST().newBlock();
-				block.statements().add(declaration);
-				block.statements().add(rewrite.createMoveTarget(statement));
+				ASTNodes.getChildListProperty(block, Block.STATEMENTS_PROPERTY).add(declaration);
+				ASTNodes.getChildListProperty(block, Block.STATEMENTS_PROPERTY).add(rewrite.createMoveTarget(statement));
 				rewrite.replace(statement, block, group);
 			}
 		} else if (invocation.getParent() instanceof LambdaExpression lambda && lambda.getBody() == invocation) {
 			Block block= invocation.getAST().newBlock();
-			block.statements().add(declaration);
-			block.statements().add(invocation.getAST().newExpressionStatement((Expression) rewrite.createMoveTarget(invocation)));
+			ASTNodes.getChildListProperty(block, Block.STATEMENTS_PROPERTY).add(declaration);
+			ASTNodes.getChildListProperty(block, Block.STATEMENTS_PROPERTY)
+					.add(invocation.getAST().newExpressionStatement((Expression) rewrite.createMoveTarget(invocation)));
 			rewrite.set(lambda, LambdaExpression.BODY_PROPERTY, block, group);
 		} else {
 			throw new IllegalArgumentException("Cannot capture an assertion message at this evaluation position"); //$NON-NLS-1$

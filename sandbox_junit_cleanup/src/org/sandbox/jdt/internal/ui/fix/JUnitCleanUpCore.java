@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Copyright (c) 2021, 2026 Carsten Hammer.
  *
  * This program and the accompanying materials
@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
@@ -52,6 +53,7 @@ import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCo
 import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.jdt.internal.junit.launcher.JUnit3TestFinder;
 import org.eclipse.jdt.internal.junit.launcher.JUnit4TestFinder;
+import org.eclipse.jdt.internal.ui.fix.MapCleanUpOptions;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
@@ -83,6 +85,7 @@ import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 /** Core cleanup implementation for JUnit 3/4 to Jupiter migration. */
 public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigrationPlan> {
 
+	private CleanUpOptions cleanUpOptions;
 	private final Map<IJavaProject, Set<String>> pendingExpandedScopes= new HashMap<>();
 	private final Map<IJavaProject, Set<String>> verifiedClosedScopes= new HashMap<>();
 	private final Set<IJavaProject> rejectedScopes= new HashSet<>();
@@ -99,7 +102,7 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 	}
 
 	public JUnitCleanUpCore(final Map<String, String> options) {
-		setOptions(options);
+		cleanUpOptions= new MapCleanUpOptions(options);
 	}
 
 	public JUnitCleanUpCore() {
@@ -107,12 +110,20 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 
 	@Override
 	public void setOptions(CleanUpOptions options) {
-		super.setOptions(options);
+		Assert.isLegal(options != null);
+		cleanUpOptions= options;
 		migrationAnalyses.clear();
 		assumptionScopes.clear();
 		pendingExpandedScopes.clear();
 		verifiedClosedScopes.clear();
 		rejectedScopes.clear();
+	}
+
+	@Override
+	public boolean isEnabled(String key) {
+		Assert.isNotNull(cleanUpOptions);
+		Assert.isLegal(key != null);
+		return cleanUpOptions.isEnabled(key);
 	}
 
 	@Override
