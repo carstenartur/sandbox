@@ -1,5 +1,6 @@
 package org.sandbox.jdt.ui.helper.views;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -46,6 +47,7 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseBundleClasspath;
 public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 
 	private static final String CLEANUP_PREVIEW_PROJECT= "SandboxCleanupPreviewProject"; //$NON-NLS-1$
+	private static final String PROJECT_EXPLORER_VIEW= "org.eclipse.ui.navigator.ProjectExplorer"; //$NON-NLS-1$
 	private static final String PROBLEMS_VIEW= "org.eclipse.ui.views.ProblemView"; //$NON-NLS-1$
 	private static final String REFACTORING_MINING_VIEW= "org.sandbox.jdt.views.refactoringMining"; //$NON-NLS-1$
 	private static final List<String> SHADOW_PLATFORM_SOURCES= List.of(
@@ -128,8 +130,13 @@ public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 	@Test
 	@Order(7)
 	public void capturePdeXmlMarkerQuickFix() throws Exception {
+		SWTBotTree explorer= new SWTWorkbenchBot().viewById(PROJECT_EXPLORER_VIEW).bot().tree();
+		explorer.getTreeItem(CLEANUP_PREVIEW_PROJECT).expand();
+		assertTrue(explorer.getTreeItem(CLEANUP_PREVIEW_PROJECT).isExpanded());
 		showView(PROBLEMS_VIEW);
 		PdeXmlQuickFixScreenshot.capture();
+		assertFalse(explorer.getTreeItem(CLEANUP_PREVIEW_PROJECT).isExpanded(),
+				"The PDE marker capture must collapse the unrelated Java project"); //$NON-NLS-1$
 	}
 
 	@Test

@@ -74,6 +74,14 @@ establish a general full-call speedup, constant-time behavior or performance
 on another JVM or machine. Reproduce with the command above before making a
 deployment-specific decision.
 
+The Regelsuche SDK pin to `6bcddc0931e1e3139edf3a9fca5bc87635b1e6ac`
+was requalified against the previous pin at `dc46d59d015f4d1ae68ef134e4ded5a00c4b2a5a`.
+On the pinned Bouncy Castle input, the two ordinary Apply runs produced the
+same 742 source and class files byte for byte, including all guards and
+fallbacks. For 64 candidate pairs, the newer search reported 1,003,408 work
+units versus 504,157 before. That difference concerns acquisition inside the
+optimizer. The complete calls after Apply run identical code.
+
 ## Explicit compiler diagnostics
 
 Archive scanners use the [shared strict compiler profile](../../sandbox_math_cleanup_test/ARCHITECTURE.md#compiler-diagnostics).
