@@ -3,39 +3,39 @@
   "version": "0.5.4-SNAPSHOT",
   "distribution": "commit-pinned source build",
   "sourceRepository": "https://github.com/carstenartur/Regelsuche",
-  "sourceRevision": "6bcddc0931e1e3139edf3a9fca5bc87635b1e6ac",
-  "sourceTree": "f8034a9168d9d1b1b2b35755c501f60b96b15ab1",
+  "sourceRevision": "e29218175e11af2d7f16fcc42bb42e995c8d9567",
+  "sourceTree": "988d068737a529c50b8531729835055758ec5245",
   "javaCompiler": "Temurin 25.0.5+8",
-  "buildOutputTimestamp": "2026-11-26T00:00:00Z",
-  "jarSha256": "205b984e7c2c73f7ad43e54659df5a8d3749d982357655fbec9e12201075bec6",
+  "buildOutputTimestamp": "2026-11-27T00:00:00Z",
+  "jarSha256": "02ea112c6eff8c472ff7e1ae16d36c6fb91f7d2c658dd19d9fbe57cb83390e63",
   "artifacts": [
     {
       "artifactId": "regelsuche-core",
-      "sha256": "90afd85afcb41e3a501c0917b647c6b66692ad28489c06fd9ba6cd63ef216b38"
+      "sha256": "7cf8e48f839809ba74a86161902b03dca8b8c6157f8fe833ae956aa3d04952b7"
     },
     {
       "artifactId": "regelsuche-egraph",
-      "sha256": "ee416d0b7b1647a9d996b14735aeff5f4513809fe557c6120a951cd175a72996"
+      "sha256": "a355cd424b952f8c0f78b479880572a4d7b2e51244b64f351c4abbc51753556e"
     },
     {
       "artifactId": "regelsuche-search",
-      "sha256": "3e1d699f2b70c6b8bf32658831e6e50d6d4e0c6b36711e01ec3584494c3eb49c"
+      "sha256": "db39ed6c58eb450917c3aaa65dd61ce3a32945641b7820510d2a5f29d2a03fae"
     },
     {
       "artifactId": "regelsuche-validation",
-      "sha256": "4ec0526c57b67a3f6c3ca8ef98f593e7404f0c2f085cdbdb589fdfc69e1f031b"
+      "sha256": "04676fcf6be815def2454211bd1e5a77fe647da48b1eca70b4d8df5528d1fb7a"
     },
     {
       "artifactId": "regelsuche-math-algorithms",
-      "sha256": "58c251eef699b1fb229da0ecd3793e100d56f24dc4a9de5c63a63a8604fe3098"
+      "sha256": "303ffc65d5b2b78d0d645f0528d033bd06d24fbec2143f7d8c764c0579f109fa"
     },
     {
       "artifactId": "regelsuche-optimization-sdk",
-      "sha256": "205b984e7c2c73f7ad43e54659df5a8d3749d982357655fbec9e12201075bec6"
+      "sha256": "02ea112c6eff8c472ff7e1ae16d36c6fb91f7d2c658dd19d9fbe57cb83390e63"
     }
   ],
   "tests": {
-    "reactor": 3574,
+    "reactor": 3593,
     "failures": 0,
     "errors": 0,
     "skipped": 1
@@ -45,12 +45,12 @@
     "3.9.16"
   ],
   "pomSha256": {
-    "regelsuche-parent": "2b8ce9aee67a9604aaf42128eac539fad30a4e839b5c7df59abcec8d5d213593",
+    "regelsuche-parent": "2d75376a224f3c48afb3aa288cc252f641a55d2e37cc75971152fdd031023245",
     "regelsuche-core": "a51e1ce2b634439ccd1a697b9568f9fc8332bc0e201b30cf56b1b2cf651c4e32",
     "regelsuche-egraph": "ff2a2241fbc36444824da19b80b6159b6460a5c2471c82091b7c7ee5f897e4e4",
     "regelsuche-search": "9c7ada94eca6ee9df851bcac1653533a75c4c266d4742f725884681051ed7436",
     "regelsuche-validation": "f7c9049eb61fec70774a55aef729ba80908a89ce8e125c51ce28e3dddd4fe227",
-    "regelsuche-math-algorithms": "c38c011cce5984875b3230ec04c712df98356be5bfe5aba3008a14708d4fb6de",
-    "regelsuche-optimization-sdk": "b5b5ac23efdacaeb3eb64fe30d1fed929295c56c20cf53b54430ac575136c6ed"
+    "regelsuche-math-algorithms": "9b9855e6ce9ec9a3f6a0312757896021e7729115ddb30f403546f06bb515b942",
+    "regelsuche-optimization-sdk": "7c6cfd36a3f657c4d92eedbeb6474a26b1826e0825c8adf00b893c9d0787ed65"
   }
 }
