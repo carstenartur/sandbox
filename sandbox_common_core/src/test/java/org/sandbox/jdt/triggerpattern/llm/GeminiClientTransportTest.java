@@ -69,7 +69,11 @@ class GeminiClientTransportTest {
 			assertEquals(List.of(1, 2), transport.countsAtSend);
 			assertEquals(2, client.getDailyRequestCount());
 			assertEquals(List.of(5000L), transport.waits);
-			assertEquals(transport.requests.get(0).uri(), transport.requests.get(1).uri());
+			for (HttpRequest request : transport.requests) {
+				assertEquals(URI.create("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"),
+						request.uri());
+				assertEquals(List.of("test-key"), request.headers().allValues("x-goog-api-key"));
+			}
 			assertFalse(client.isApiUnavailable());
 		}
 	}
