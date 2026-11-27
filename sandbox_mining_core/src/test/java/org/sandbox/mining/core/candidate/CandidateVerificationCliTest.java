@@ -242,6 +242,23 @@ class CandidateVerificationCliTest {
 	}
 
 	@Test
+	void reportLinksOnlyToWebRepositories() throws IOException {
+		Path candidateDir = tempDir.resolve("repositories");
+		Path reportDir = tempDir.resolve("report");
+		CandidateStore store = new CandidateStore(candidateDir);
+		store.save(candidate("web-commit", "2026-01-01T00:00:00Z"));
+		MiningCandidate offline = candidate("offline", "2026-01-02T00:00:00Z");
+		offline.setSourceRepo("urn:example:offline");
+		store.save(offline);
+		assertEquals(0, CandidateVerificationCli.run(new String[] {
+				"--candidate-dir", candidateDir.toString(), "--report-dir", reportDir.toString() }));
+		String html = Files.readString(reportDir.resolve("candidates.html"));
+		assertTrue(html.contains("href=\"https://github.com/example/repo/commit/web-commit\""));
+		assertTrue(html.contains("<td><code>offline</code></td>"));
+		assertFalse(html.contains("urn:example:offline"));
+	}
+
+	@Test
 	void verifiesOneCandidateAndMarksCrossOriginRuleDuplicate() throws IOException {
 		Path candidateDir = tempDir.resolve("candidates"); //$NON-NLS-1$
 		Path reportDir = tempDir.resolve("report"); //$NON-NLS-1$
