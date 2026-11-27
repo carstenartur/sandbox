@@ -46,6 +46,8 @@ record JavaFieldCallSite(MethodDeclaration caller, Statement statement, MethodIn
             for (Object item : caller.getBody().statements()) {
                 work.charge(1);
                 var statement = (Statement)item;
+                if (previous instanceof VariableDeclarationStatement pair && statement instanceof Block block
+                        && JavaFieldCallOptimizer.existingScoped(ast, source, root, caller, pair, block, options, work)) return true;
                 if (destination(statement) instanceof ConditionalExpression choice
                         && choice.getElseExpression() instanceof MethodInvocation fallback && staticCall(fallback)
                         && root.resolveBinding().isEqualTo(fallback.resolveMethodBinding())
@@ -83,7 +85,11 @@ record JavaFieldCallSite(MethodDeclaration caller, Statement statement, MethodIn
     }
 
     static JavaFieldCallSite bind(JavaGuardedFieldSource site, MethodDeclaration caller, Statement statement, MethodInvocation call) {
-        require(matches(site.method, call) && terminalContinuation(site, caller, statement));
+        require(terminalContinuation(site, caller, statement));
+        return bindArguments(site, caller, statement, call);
+    }
+    static JavaFieldCallSite bindArguments(JavaGuardedFieldSource site, MethodDeclaration caller, Statement statement, MethodInvocation call) {
+        require(matches(site.method, call) && site.checkedStaticCall(call));
         var formals = new ArrayList<String>();
         for (Object item : site.method.parameters()) formals.add(key(((SingleVariableDeclaration)item).resolveBinding()));
         var args = site.inputs.stream().map(role -> (SimpleName)arg(call, formals.indexOf(role.key()))).toList();

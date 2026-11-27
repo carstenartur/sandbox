@@ -237,6 +237,31 @@ class FieldGuardFactsTest {
         }
     }
 
+    @ParameterizedTest @ValueSource(booleans = {false, true})
+    void changedStaticOrInstanceSelectionCannotQualifyACachedExactCall(boolean instance) throws Exception {
+        String imports = "import java.math.BigInteger; ";
+        String method = instance ? "final BigInteger magnitude(Object b) { return new BigInteger(1, (byte[]) b); }"
+                : "static BigInteger magnitude(byte[] b) { return new BigInteger(1, b); }";
+        Files.writeString(temporary.resolve("Parent.java"), imports + "class Parent { " + method + " }");
+        Path child = Files.writeString(temporary.resolve("Child.java"), "class Child extends Parent {}");
+        String supplier = (instance ? "new Child()" : "Child") + ".magnitude(bytes)";
+        String source = SOURCE.replace("new BigInteger(1, bytes)", supplier);
+        int selected = source.indexOf("destination[0]");
+        var cached = analyze(source, selected, temporary.toString());
+        Files.writeString(child, imports + "class Child extends Parent { " + (instance ? "" : "static ")
+                + "BigInteger magnitude(byte[] b) { return new BigInteger(1, b) { "
+                + "@Override public int compareTo(BigInteger other) { throw new IllegalStateException(); } }; } }");
+        for (var result : List.of(cached, analyze(source, selected, temporary.toString()))) {
+            var doc = new Document(source);
+            result.newEdit().apply(doc);
+            try (var loader = compile(doc.get(), result == cached ? "cached" : "fresh")) {
+                String observed = run(loader.loadClass("Ocean"), 0, 2, 1);
+                assertTrue(observed.startsWith("true[["), observed);
+            }
+            assertEquals(source, doc.get());
+        }
+    }
+
     @Test void anInheritedModulusAliasCannotQualifyACachedExactCall() throws Exception {
         String imports = "import java.math.BigInteger; ";
         Files.writeString(temporary.resolve("Parent.java"), imports + "class Parent { static final BigInteger P = BigInteger.valueOf(19); }");
@@ -265,6 +290,23 @@ class FieldGuardFactsTest {
             assertTrue(result.evidence().stream().noneMatch(r -> r.fieldRoot() != null && r.fieldRoot().callSite() != null
                     && !r.fieldRoot().callSite().normWitnessKey().isEmpty()), doc::get);
         }
+    }
+
+    @ParameterizedTest @ValueSource(booleans = {false, true})
+    void staleFinalityCannotCertifyAnInstanceGetter(boolean finalClass) throws Exception {
+        String source = SOURCE.replace("Coordinates point, int[][]", "Reader point, int[][]");
+        String ordinary = "import java.math.BigInteger; class Reader { BigInteger first() { return new BigInteger(1, new byte[]{1}); } "
+                + "BigInteger second() { return new BigInteger(1, new byte[]{2}); } }";
+        Path file = Files.writeString(temporary.resolve("Reader.java"), finalClass ? ordinary.replace("class Reader", "final class Reader")
+                : ordinary.replace("BigInteger first()", "final BigInteger first()").replace("BigInteger second()", "final BigInteger second()"));
+        String[] paths = {temporary.toString()};
+        int selected = source.indexOf("destination[0]");
+        var stale = parse(source, paths);
+        assertTrue(receipt(analyze(source, selected, paths)).inputs().getFirst().exactClass());
+        Files.writeString(file, ordinary);
+        var doc = new Document(source);
+        analyze(stale, source, selected, paths).newEdit().apply(doc);
+        assertEquals(source, doc.get());
     }
 
     private static void assertSelectedScalar(String source) throws Exception {
@@ -385,6 +427,9 @@ class FieldGuardFactsTest {
     }
 
     private static MathematicalAnalysis.Analysis analyze(String source, int selection, String... sourcepath) {
+        return analyze(parse(source, sourcepath), source, selection, sourcepath);
+    }
+    private static CompilationUnit parse(String source, String... sourcepath) {
         var compiler = StrictCompilerOptions.allWarnings(17);
         var parser = ASTParser.newParser(AST.getJLSLatest());
         parser.setEnvironment(new String[0], sourcepath, null, true);
@@ -394,6 +439,10 @@ class FieldGuardFactsTest {
         parser.setSource(source.toCharArray());
         var ast = (CompilationUnit)parser.createAST(null);
         assertFalse(Arrays.stream(ast.getProblems()).anyMatch(p -> p.isError()), () -> Arrays.toString(ast.getProblems()));
+        return ast;
+    }
+    private static MathematicalAnalysis.Analysis analyze(CompilationUnit ast, String source, int selection, String... sourcepath) {
+        var compiler = StrictCompilerOptions.allWarnings(17);
         var options = MathCleanUpOptions.parse(Map.of(MathCleanUpOptions.CLEANUP, "true", MathCleanUpOptions.WORK_BUDGET, "100000000",
                 MathCleanUpOptions.MAX_STATES, "20000", MathCleanUpOptions.TIMEOUT_SECONDS, "30"), 17);
         return MathematicalAnalysis.analyze(ast, source, options, null, selection, 1,

@@ -19,6 +19,11 @@ record JavaFieldGuardFacts(List<Input> inputs, String witnessName, String witnes
         return new Input(left.exactClass() && right.exactClass(), left.nonnegative() && right.nonnegative(),
                 left.belowModulus() && right.belowModulus());
     }
+    static JavaFieldGuardFacts forNormalization(JavaGuardedFieldSource site, JavaFieldCallSite call) {
+        try { return inspect(site, call, call.statement()); }
+        catch (JavaValueSourceSummary.DeadlineExceeded expired) { throw expired; }
+        catch (IllegalArgumentException unsupported) { return new JavaFieldGuardFacts(List.of(UNKNOWN, UNKNOWN, UNKNOWN), "", ""); }
+    }
     static JavaFieldGuardFacts inspect(JavaGuardedFieldSource site, JavaFieldCallSite call, Statement before) {
         var definitions = new HashMap<String,Expression>();
         var values = new HashMap<String,Input>();
@@ -129,14 +134,19 @@ record JavaFieldGuardFacts(List<Input> inputs, String witnessName, String witnes
         Input value(Expression expr, Map<String,Input> locals, Set<String> moduli) {
             return value(expr, locals, moduli, 0);
         }
+        private static boolean fixedDispatch(IMethodBinding method) {
+            return Modifier.isPrivate(method.getModifiers()) || Modifier.isFinal(method.getModifiers())
+                    || Modifier.isFinal(method.getDeclaringClass().getModifiers());
+        }
         private Input value(Expression expr, Map<String,Input> locals, Set<String> moduli, int depth) {
             site.work.charge(1);
             if (expr == null || depth >= 24) return UNKNOWN;
             Expression node = unwrap(expr);
             if (node instanceof SimpleName n) return locals.getOrDefault(key(n.resolveBinding()), UNKNOWN);
             if (node instanceof ClassInstanceCreation creation && big(creation.resolveTypeBinding())
-                    && creation.getAnonymousClassDeclaration() == null && creation.resolveConstructorBinding() != null) {
-                if (creation.arguments().size() == 2 && creation.arguments().getFirst() instanceof Expression sign
+                    && creation.getAnonymousClassDeclaration() == null && creation.resolveConstructorBinding() != null
+                    && JavaSourceTypeNames.closedType(creation.getType(), site.work::charge)) {
+                if (creation.arguments().size() == 2 && creation.arguments().getFirst() instanceof NumberLiteral sign
                         && Integer.valueOf(1).equals(sign.resolveConstantExpressionValue())
                         && creation.resolveConstructorBinding().getParameterTypes()[1].getQualifiedName().equals("byte[]")) return POSITIVE_MAGNITUDE;
                 return new Input(true, false, false);
@@ -146,13 +156,15 @@ record JavaFieldGuardFacts(List<Input> inputs, String witnessName, String witnes
             if (jdk(call, "mod", BIG) && arg(call, 0) instanceof SimpleName modulus && moduli.contains(key(modulus.resolveBinding()))
                     && value(call.getExpression(), locals, moduli, depth + 1).exactClass()) return new Input(false, true, true);
             var binding = call.resolveMethodBinding();
-            if (binding == null || binding.isRecovered() || !binding.getDeclaringClass().isFromSource() || !big(binding.getReturnType())
-                    || !(staticCall(call) || Modifier.isPrivate(binding.getModifiers()) || Modifier.isFinal(binding.getModifiers())
-                        || Modifier.isFinal(binding.getDeclaringClass().getModifiers()))) return UNKNOWN;
+            if (binding == null || binding.isRecovered() || !binding.getDeclaringClass().isFromSource() || !big(binding.getReturnType())) return UNKNOWN;
+            if (Modifier.isStatic(binding.getModifiers())) {
+                if (!site.closedStaticCall(call)) return UNKNOWN;
+            } else if (site.normalized || !fixedDispatch(binding) || !site.directInstanceReceiver(call, binding.getDeclaringClass())
+                    || !fixedDispatch(site.checkSourceMethod(binding))) return UNKNOWN;
             String id = key(binding.getMethodDeclaration());
             if (summaries.containsKey(id)) return summaries.get(id);
             if (active.size() >= 12 || summaries.size() >= 48 || !active.add(id)) return UNKNOWN;
-            var definition = JavaSourceContext.definition(site.unit, binding.getMethodDeclaration());
+            var definition = site.definition(binding.getMethodDeclaration());
             Input result = UNKNOWN;
             if (definition != null && definition.declaration() instanceof MethodDeclaration method) {
                 site.definitions.add(id);

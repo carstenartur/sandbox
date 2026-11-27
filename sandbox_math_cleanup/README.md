@@ -121,6 +121,11 @@ direct fallback. It replays the generated method and source facts on the combine
 AST. A synchronized scalar method or an effectful address or argument excludes
 this call-specific rewrite.
 
+A source-proved parity normalization of a fresh `BigInteger[]` pair permits
+both candidate arms to omit character correction while preserving the final value,
+original root and direct fallback. The [scalar observation specification](../docs/superpowers/specs/2026-11-27-normalized-scalar-observation-design.md)
+defines the admitted source, scoped temporary, effects and independent Apply proof.
+
 This contract preserves coordinate values, exception types and messages, and
 relevant ordered effects. It does not preserve diagnostic source locations,
 bytecode positions, or debugger/profiler metadata. An unchanged caller that

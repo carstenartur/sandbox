@@ -45,6 +45,7 @@ import org.eclipse.pde.core.target.ITargetLocation;
 import org.eclipse.pde.core.target.ITargetPlatformService;
 import org.eclipse.pde.core.target.LoadTargetDefinitionJob;
 import org.eclipse.pde.internal.core.ClasspathComputer;
+import org.eclipse.pde.internal.core.ClasspathContainerState;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -268,9 +269,10 @@ class MixedSupportImportTest {
 		var javaOptions= java.getOptions(false);
 		JavaCore.setComplianceOptions(JavaCore.VERSION_21, javaOptions);
 		java.setOptions(javaOptions);
-		// Start PDE's lazy container update before waiting for the job it schedules.
+		// Finish lazy initialization before forcing PDE to replace any saved empty container.
 		JavaCore.getClasspathContainer(
 				org.eclipse.core.runtime.Path.fromPortableString("org.eclipse.pde.core.requiredPlugins"), java);
+		ClasspathContainerState.requestClasspathUpdate(project);
 		Job.getJobManager().join(ClasspathComputer.class, new NullProgressMonitor());
 		assertNotNull(java.findType("org.junit.Rule"), () -> project.getName() + " lacks its required JUnit 4 bundle");
 		if (shape == Fixture.OLD_FACTORY || shape == Fixture.PREVIOUS_USE || shape == Fixture.PRIOR_RULE) assertNotNull(java.findType(MigrationSupportProvider.FACTORY));

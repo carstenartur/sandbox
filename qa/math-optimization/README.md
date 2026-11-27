@@ -14,7 +14,7 @@ The new API requires that exact `0.5.4-SNAPSHOT` source build and Temurin
 
 ```bash
 ./mvnw -f qa/math-optimization/pom.xml \
-  -Dtest=GuardedQuadraticRootSourceTest,BouncyCastleGuardedRootTest \
+  -Dtest=GuardedQuadraticRootSourceTest,BouncyCastleGuardedRootTest,NormalizedScalarObservationTest,NormalizedScalarReplayTest \
   -Dsandbox.math.bc.root.upstream=true \
   -Dsandbox.math.bc.root.output="$PWD/qa/math-optimization/target/guarded-root" test
 ```
@@ -32,6 +32,9 @@ including inputs outside the mathematical domain. Such inputs retain the
 original result or exception through the fallback. Negative controls cover
 source effects, reference identity and changed arithmetic/guards. Main and
 test sources in this feature have regular `-Xlint:all -Werror` Maven gates.
+
+The [scalar observation specification](../../docs/superpowers/specs/2026-11-27-normalized-scalar-observation-design.md)
+defines the full 381-bit, Apply/replay, dependency and compiler/exception matrix.
 
 The qualification explicitly allows 100,000,000 work units, 20,000 states
 and 60 seconds per source analysis. These are limits, not a measurement of

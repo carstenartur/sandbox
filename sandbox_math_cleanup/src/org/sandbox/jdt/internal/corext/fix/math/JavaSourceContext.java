@@ -122,7 +122,7 @@ public final class JavaSourceContext implements AutoCloseable {
     private record Unit(CompilationUnit ast, String source, String identity, String sha256) { }
     record Fact(BigInteger value, String provenance) { }
 
-    record Definition(CompilationUnit unit, String source, ASTNode declaration) { }
+    record Definition(CompilationUnit unit, String source, ASTNode declaration, Receipt receipt) { }
     private record Constant(Optional<BigInteger> value, Set<ASTNode> declarations) { }
     /** Only definitions actually read in this scope; nested constant reads retain their transitive provenance. */
     record LocalSources(JavaSourceContext context, Set<ASTNode> previous, Set<ASTNode> declarations) implements AutoCloseable {
@@ -157,9 +157,9 @@ public final class JavaSourceContext implements AutoCloseable {
             CompilationUnit ast = context.definitionUnit(binding, owner);
             ASTNode declaration = ast == null ? null : ast.findDeclaringNode(binding.getKey());
             if (declaration == null) return null;
-            String source = ast == context.root ? context.rootSource : context.units.values().stream()
-                .filter(unit -> unit.ast() == ast).findFirst().orElseThrow().source();
-            return new Definition(ast, source, declaration);
+            if (ast == context.root) return new Definition(ast, context.rootSource, declaration, null);
+            var unit = context.units.values().stream().filter(candidate -> candidate.ast() == ast).findFirst().orElseThrow();
+            return new Definition(ast, unit.source(), declaration, new Receipt(unit.identity(), unit.sha256()));
         } catch (Unavailable unavailable) { return null; }
     }
     static Fact constant(CompilationUnit request, IVariableBinding binding) {

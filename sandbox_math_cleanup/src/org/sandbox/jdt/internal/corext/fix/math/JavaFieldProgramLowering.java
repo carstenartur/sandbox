@@ -62,7 +62,7 @@ final class JavaFieldProgramLowering {
             if (facts != null && role >= 0 && facts.inputs().get(role).exactClass()) continue;
             // Class.isInstance is null-safe and does not introduce a nullable flow fact into the
             // unchanged fallback. The retained zero test has already dereferenced the imaginary input.
-            checks.add((s.equals(b) && facts == null ? "" : BIG + ".class.isInstance(" + s + ") && ") + s + ".getClass() == java.math.BigInteger.class");
+            checks.add((s.equals(b) && facts == null ? "" : site.bigName() + ".class.isInstance(" + s + ") && ") + s + ".getClass() == " + site.bigName() + ".class");
         }
         for (var input : site.inputs) {
             String s = input.spelling();
@@ -82,10 +82,10 @@ final class JavaFieldProgramLowering {
     private String reg(int index) { return index < 3 ? site.inputs.get(index).spelling() : prefix + index; }
     private String constant(BigInteger value) {
         for (var ref : site.constants.values()) if (value.equals(ref.value())) return ref.spelling();
-        if (value.bitLength() <= 63) return BIG + ".valueOf(" + value + "L)";
+        if (value.bitLength() <= 63) return site.bigName() + ".valueOf(" + value + "L)";
         for (var ref : site.constants.values()) if (value.add(BigInteger.ONE).equals(ref.value()))
-            return ref.spelling() + ".subtract(" + BIG + ".ONE)";
-        return "new java.math.BigInteger(\"" + value.toString(16) + "\", 16)";
+            return ref.spelling() + ".subtract(" + site.bigName() + ".ONE)";
+        return "new " + site.bigName() + "(\"" + value.toString(16) + "\", 16)";
     }
 
     private void emitSteps(StringBuilder out, List<Step> steps, int index, String spaces) {
@@ -103,7 +103,7 @@ final class JavaFieldProgramLowering {
                 case INVERSE -> left + ".modInverse(" + p + ")";
                 case POWER -> left + ".modPow(" + constant(step.literal()) + ", " + p + ")";
             };
-            out.append(spaces).append(BIG).append(' ').append(reg(index++)).append(" = ").append(expr).append(";\n");
+            out.append(spaces).append(site.bigName()).append(' ').append(reg(index++)).append(" = ").append(expr).append(";\n");
         }
     }
 
@@ -166,7 +166,7 @@ final class JavaFieldProgramLowering {
         boolean normalized = statements.size() > 1 && statements.get(statements.size() - 2) instanceof Block;
         var steps = instructions(statements.subList(0, statements.size() - (normalized ? 2 : 1)), registers);
         var output = requireType(ret.getExpression(), MethodInvocation.class);
-        require(staticCall(output) && site.sink.resolveMethodBinding().isEqualTo(output.resolveMethodBinding()));
+        require(site.checkedStaticCall(output) && site.sink.resolveMethodBinding().isEqualTo(output.resolveMethodBinding()));
         int x = register(registers, arg(output, 0)), y = register(registers, arg(output, 1));
         if (normalized) {
             var correction = (Block)statements.get(statements.size() - 2);
@@ -215,7 +215,7 @@ final class JavaFieldProgramLowering {
     }
 
     private BigInteger literal(Expression expr) {
-        if (expr instanceof MethodInvocation call && staticCall(call) && jdk(call, "valueOf", "long")
+        if (expr instanceof MethodInvocation call && site.checkedStaticCall(call) && jdk(call, "valueOf", "long")
                 && arg(call, 0) instanceof NumberLiteral number && number.resolveConstantExpressionValue() instanceof Long l)
             return BigInteger.valueOf(l);
         if (expr instanceof MethodInvocation call && jdk(call, "subtract", BIG)) {
@@ -246,7 +246,7 @@ final class JavaFieldProgramLowering {
                 require(binding != null && !binding.isRecovered() && (big(binding.getDeclaringClass())
                         || binding.getDeclaringClass().getQualifiedName().equals("java.lang.Object") && binding.getName().equals("getClass")
                         || binding.getMethodDeclaration().getDeclaringClass().getQualifiedName().equals("java.lang.Class") && binding.getName().equals("isInstance")
-                        || binding.isEqualTo(site.sink.resolveMethodBinding()) && staticCall(call)));
+                        || binding.isEqualTo(site.sink.resolveMethodBinding()) && site.checkedStaticCall(call)));
                 return true;
             }
         });
