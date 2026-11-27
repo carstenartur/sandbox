@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -62,14 +63,21 @@ public class SourceScanner {
 	public List<Path> findJavaFiles(Path rootDir, List<String> subPaths) throws IOException {
 		List<Path> javaFiles = new ArrayList<>();
 
+		if (!Files.isDirectory(rootDir)) {
+			return javaFiles;
+		}
 		List<Path> searchRoots = new ArrayList<>();
 		if (subPaths == null || subPaths.isEmpty()) {
 			searchRoots.add(rootDir);
 		} else {
+			Path realRoot = rootDir.toRealPath();
 			for (String sub : subPaths) {
 				Path subPath = rootDir.resolve(sub);
-				if (Files.isDirectory(subPath)) {
-					searchRoots.add(subPath);
+				if (Files.isDirectory(subPath, LinkOption.NOFOLLOW_LINKS)) {
+					Path realPath = subPath.toRealPath();
+					if (realPath.startsWith(realRoot)) {
+						searchRoots.add(rootDir.resolve(realRoot.relativize(realPath)));
+					}
 				}
 			}
 		}
@@ -84,7 +92,7 @@ public class SourceScanner {
 					if (javaFiles.size() >= maxFiles) {
 						return FileVisitResult.TERMINATE;
 					}
-					if (file.toString().endsWith(".java")) { //$NON-NLS-1$
+					if (attrs.isRegularFile() && file.toString().endsWith(".java")) { //$NON-NLS-1$
 						javaFiles.add(file);
 					}
 					return FileVisitResult.CONTINUE;
