@@ -317,9 +317,10 @@ public final class CandidateVerificationCli {
 		Path reportCandidates = reportDir.resolve("candidates"); //$NON-NLS-1$
 		Files.createDirectories(reportCandidates);
 		for (MiningCandidate candidate : candidates) {
-			Path source = candidateDir.resolve(candidate.toFileName());
+			String fileName = candidate.toFileName();
+			Path source = candidateDir.resolve(fileName);
 			if (Files.isRegularFile(source)) {
-				Files.copy(source, reportCandidates.resolve(candidate.toFileName()),
+				Files.copy(source, reportCandidates.resolve(fileName),
 						StandardCopyOption.REPLACE_EXISTING);
 			}
 		}
