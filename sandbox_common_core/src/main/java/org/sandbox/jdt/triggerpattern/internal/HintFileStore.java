@@ -17,10 +17,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.channels.Channels;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.SecureDirectoryStream;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -55,6 +61,9 @@ import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
  * @since 1.2.6
  */
 public final class HintFileStore {
+
+	private static final Set<OpenOption> HINT_WRITE_OPTIONS = Set.of(StandardOpenOption.WRITE,
+			StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, LinkOption.NOFOLLOW_LINKS);
 
 	private static final Logger LOGGER = Logger.getLogger(HintFileStore.class.getName());
 
@@ -623,7 +632,8 @@ public final class HintFileStore {
 	 * {@code <directory>/.hints/ai-inferred-<sanitized-id>.sandbox-hint}.</p>
 	 *
 	 * <p>The {@code .hints/} subdirectory is created if it does not exist.
-	 * Existing files with the same name are overwritten.</p>
+	 * Existing regular files with the same name are overwritten. Symbolic links in
+	 * place of the hint directory or destination file are rejected.</p>
 	 *
 	 * @param baseDirectory the project root directory
 	 * @return list of paths that were written
@@ -638,20 +648,51 @@ public final class HintFileStore {
 			return written;
 		}
 		Files.createDirectories(hintsDir);
-		HintFileSerializer serializer = new HintFileSerializer();
-		for (HintFile hf : inferred) {
-			String hfId = hf.getId();
-			// Strip the "inferred:" prefix to avoid doubled prefix on reload
-			if (hfId != null && hfId.startsWith(INFERRED_PREFIX)) {
-				hfId = hfId.substring(INFERRED_PREFIX.length());
+		// Anchor writes to the opened directory where the filesystem supports relative handles.
+		try (var project = Files.newDirectoryStream(baseDirectory);
+				var secureHints = project instanceof SecureDirectoryStream<Path> secureProject
+						? secureProject.newDirectoryStream(hintsDir.getFileName(), LinkOption.NOFOLLOW_LINKS) : null) {
+			if (secureHints == null && (!Files.isDirectory(hintsDir, LinkOption.NOFOLLOW_LINKS)
+					|| !hintsDir.toRealPath().equals(baseDirectory.toRealPath().resolve(HINTS_DIRECTORY)))) {
+				throw new IOException("Expected a directory inside the project: " + hintsDir); //$NON-NLS-1$
 			}
-			String safeName = sanitizeFileName(hfId);
-			Path target = hintsDir.resolve(AI_INFERRED_FILE_PREFIX + safeName + SANDBOX_HINT_EXTENSION);
-			String content = serializer.serialize(hf);
-			Files.writeString(target, content, StandardCharsets.UTF_8);
-			written.add(target);
+			HintFileSerializer serializer = new HintFileSerializer();
+			for (HintFile hf : inferred) {
+				String hfId = hf.getId();
+				// Strip the "inferred:" prefix to avoid doubled prefix on reload
+				if (hfId != null && hfId.startsWith(INFERRED_PREFIX)) {
+					hfId = hfId.substring(INFERRED_PREFIX.length());
+				}
+				String safeName = sanitizeFileName(hfId);
+				Path target = hintsDir.resolve(AI_INFERRED_FILE_PREFIX + safeName + SANDBOX_HINT_EXTENSION);
+				String content = serializer.serialize(hf);
+				if (secureHints != null) {
+					try (var channel = secureHints.newByteChannel(target.getFileName(), HINT_WRITE_OPTIONS);
+							var writer = Channels.newWriter(channel, StandardCharsets.UTF_8)) {
+						writer.write(content);
+					}
+				} else {
+					replaceHintFile(target, content);
+				}
+				written.add(target);
+			}
 		}
 		return written;
+	}
+
+	// Providers without directory handles may also lack NOFOLLOW_LINKS for byte channels.
+	// Moving a new file over the destination replaces the directory entry without following it.
+	private static void replaceHintFile(Path target, String content) throws IOException {
+		if (Files.exists(target, LinkOption.NOFOLLOW_LINKS) && !Files.isRegularFile(target, LinkOption.NOFOLLOW_LINKS)) {
+			throw new IOException("Expected a regular hint file: " + target); //$NON-NLS-1$
+		}
+		Path temporary = Files.createTempFile(target.getParent(), "inferred-", ".tmp"); //$NON-NLS-1$ //$NON-NLS-2$
+		try {
+			Files.writeString(temporary, content, StandardCharsets.UTF_8);
+			Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING);
+		} finally {
+			Files.deleteIfExists(temporary);
+		}
 	}
 
 	/**
