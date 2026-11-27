@@ -306,7 +306,7 @@ class MixedSupportImportTest {
 				assertEquals(1, invoke("apply", report, config), () -> report(report));
 				assertArrayEquals(conflict, Files.readAllBytes(path(manifest)));
 				assertArrayEquals(source, Files.readAllBytes(path(folder)));
-				assertEquals(instanceSource, Files.readString(path(instance)));
+				assertEquals(instanceSource, Files.readString(path(instance), StandardCharsets.UTF_8));
 				manifest.setContents(new ByteArrayInputStream(original), true, false, null);
 				Job.getJobManager().join(ClasspathComputer.class, null);
 			}
@@ -314,9 +314,9 @@ class MixedSupportImportTest {
 			assertArrayEquals(original, Files.readAllBytes(path(manifest)));
 			assertEquals(0, invoke("apply", report, config), () -> report(report));
 			Job.getJobManager().join(ClasspathComputer.class, null);
-			assertTrue(Files.readString(path(instance)).contains("@org.junit.jupiter.api.extension.RegisterExtension"));
+			assertTrue(Files.readString(path(instance), StandardCharsets.UTF_8).contains("@org.junit.jupiter.api.extension.RegisterExtension"));
 			if (shape == Fixture.TEMP_DIR) {
-				String folder= Files.readString(path(project.getFile("src/mixed/FolderTest.java")));
+				String folder= Files.readString(path(project.getFile("src/mixed/FolderTest.java")), StandardCharsets.UTF_8);
 				assertTrue(folder.contains("org.junit.jupiter.api.io.TempDir"), folder);
 			}
 			String additional= shape == Fixture.TEMP_DIR ? "org.junit.jupiter.api.io" : "org.junit.jupiter.api.function";
@@ -358,7 +358,7 @@ class MixedSupportImportTest {
 			var imports= new java.util.jar.Manifest(new ByteArrayInputStream(Files.readAllBytes(path(manifest)))).getMainAttributes()
 					.getValue(Constants.IMPORT_PACKAGE);
 			assertTrue(imports.contains(MigrationSupportProvider.PACKAGE), imports);
-			assertTrue(Files.readString(path(instance)).contains("@org.junit.jupiter.api.extension.RegisterExtension"));
+			assertTrue(Files.readString(path(instance), StandardCharsets.UTF_8).contains("@org.junit.jupiter.api.extension.RegisterExtension"));
 			assertEquals(apiBefore, MigrationSupportProvider.binaryLocation(java, "org.junit.jupiter.api.parallel.Isolated"));
 			assertEquals(apiBefore, MigrationSupportProvider.binaryLocation(java, "org.junit.jupiter.api.function.ThrowingConsumer"));
 			assertEquals(0, invoke("check", report, config), () -> report(report));
@@ -367,7 +367,7 @@ class MixedSupportImportTest {
 				assertEquals("Apply reviewed migration batch", RefactoringCore.getUndoManager().peekUndoName());
 				RefactoringCore.getUndoManager().performUndo(null, new NullProgressMonitor());
 				assertArrayEquals(original, Files.readAllBytes(path(manifest)));
-				assertEquals(instanceSource, Files.readString(path(instance)));
+				assertEquals(instanceSource, Files.readString(path(instance), StandardCharsets.UTF_8));
 				assertArrayEquals(sharedBefore, Files.readAllBytes(path(shared)));
 				assertArrayEquals(fixtureBytes, Files.readAllBytes(path(fixture)));
 			}
