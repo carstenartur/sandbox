@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sandbox.mining.scanner.SourceScanner;
@@ -64,6 +65,23 @@ class SourceScannerTest {
 		List<Path> javaFiles = scanner.findJavaFiles(tempDir, List.of("src/main/java"));
 		assertEquals(1, javaFiles.size());
 		assertTrue(javaFiles.get(0).toString().endsWith("Foo.java"));
+	}
+
+	@Test
+	void scanStaysInsideTheCheckout() throws IOException {
+		Path checkout = Files.createDirectory(tempDir.resolve("checkout"));
+		Path source = Files.createFile(checkout.resolve("Included.java"));
+		Path external = Files.createDirectories(tempDir.resolve("external/src"));
+		Path otherSource = Files.createFile(external.resolve("Other.java"));
+		try {
+			Files.createSymbolicLink(checkout.resolve("Linked.java"), otherSource);
+			Files.createSymbolicLink(checkout.resolve("alias"), external.getParent());
+		} catch (UnsupportedOperationException | java.nio.file.FileSystemException e) {
+			Assumptions.abort("Symbolic links unavailable: " + e.getMessage());
+		}
+		SourceScanner scanner = new SourceScanner();
+		assertEquals(List.of(source), scanner.findJavaFiles(checkout, List.of()));
+		assertEquals(List.of(source), scanner.findJavaFiles(checkout, List.of(".", "alias/src", "../external")));
 	}
 
 	@Test
