@@ -159,6 +159,7 @@ class GuardedQuadraticRootSourceTest {
         analysis.newEdit().apply(document);
         String output = document.get(), helper = proof.callSite().helperName();
         for (var changed : List.of(output.replace(helper + "(a, b, g)", helper + "(b, a, g)"),
+                output.replace(proof.callSite().temporaryName(), "differentLocal"),
                 output.replace(": recover(a, b, g)", ": recover(b, a, g)"),
                 output.replace("cobalt.signum() > 0", "cobalt.signum() < 0"),
                 output.replace("grey.getClass()", "amber.getClass()"), output.replace("new BigInteger(1, ar)", "new BigInteger(1, br)"))) {

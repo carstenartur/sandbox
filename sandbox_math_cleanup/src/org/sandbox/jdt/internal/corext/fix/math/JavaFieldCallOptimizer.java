@@ -143,14 +143,16 @@ final class JavaFieldCallOptimizer {
         for (Object item : statements)
             if (item instanceof VariableDeclarationStatement decl && decl.fragments().size() == 1
                     && ((VariableDeclarationFragment)decl.fragments().getFirst()).getName().getIdentifier().equals(receipt.temporaryName())) declaration = decl;
-        require(declaration != null && statements.indexOf(declaration) + 1 < statements.size());
+        if (declaration == null) throw unavailable();
+        int nextStatement = statements.indexOf(declaration) + 1;
+        require(nextStatement < statements.size());
         var temp = (VariableDeclarationFragment)declaration.fragments().getFirst();
         var tryCall = requireType(temp.getInitializer(), MethodInvocation.class);
         require(staticCall(tryCall));
         var helper = requireType(site.unit.findDeclaringNode(tryCall.resolveMethodBinding()), MethodDeclaration.class);
         require(helper.getParent() == caller.getParent() && helper.getName().getIdentifier().equals(receipt.helperName())
                 && helper.getModifiers() == (Modifier.PRIVATE | Modifier.STATIC) && helper.getBody() != null);
-        var statement = (Statement)statements.get(statements.indexOf(declaration) + 1);
+        var statement = (Statement)statements.get(nextStatement);
         var choose = requireType(JavaFieldCallSite.destination(statement), ConditionalExpression.class);
         var test = requireType(choose.getExpression(), InfixExpression.class);
         require(test.getOperator() == InfixExpression.Operator.NOT_EQUALS && !test.hasExtendedOperands()
