@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JUnit4AssertionNls.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper.lib</a> &gt; <span class="el_source">JUnit4AssertionNls.java</span></div><h1>JUnit4AssertionNls.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*</span>
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials are made available under the terms
+ * of the Eclipse Public License 2.0 which accompanies this distribution, and is
+ * available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper.lib;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.core.compiler.InvalidInputException;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.LineComment;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.refactoring.nls.NLSElement;
+import org.eclipse.jdt.internal.corext.refactoring.nls.NLSLine;
+import org.eclipse.jdt.internal.corext.refactoring.nls.NLSScanner;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
+import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.triggerpattern.cleanup.EncodingSourceRewrite;
+
+/** Keeps a tagged message's evaluation and NLS comments together before the assertion. */
+final class JUnit4AssertionNls {
+
+<span class="fc" id="L47">	private static final String MOVED= JUnit4AssertionNls.class.getName() + &quot;.moved&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L48">	private static final String NAMES= JUnit4AssertionNls.class.getName() + &quot;.names&quot;; //$NON-NLS-1$</span>
+	private record Capture(Expression message, Statement declaration, TextEditGroup group) { }
+	private record Names(ASTRewrite rewrite, Set&lt;String&gt; names) { }
+
+	private JUnit4AssertionNls() {
+	}
+
+	static Expression capture(MethodInvocation invocation, ASTRewrite rewrite, TextEditGroup group) {
+<span class="fc" id="L56">		CompilationUnit root= (CompilationUnit) invocation.getRoot();</span>
+<span class="fc" id="L57">		Expression message= (Expression) invocation.arguments().getFirst();</span>
+		try {
+<span class="fc" id="L59">			ICompilationUnit unit= (ICompilationUnit) root.getJavaElement();</span>
+<span class="fc" id="L60">			String source= unit.getBuffer().getContents();</span>
+<span class="fc" id="L61">			NLSLine[] lines= scan(unit, source);</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">			if (!needsCapture(invocation, lines)) return null;</span>
+<span class="fc" id="L63">			String name= uniqueName(invocation, rewrite);</span>
+<span class="fc" id="L64">			StringBuilder text= new StringBuilder(source.substring(message.getStartPosition(),</span>
+<span class="fc" id="L65">					message.getStartPosition() + message.getLength()));</span>
+<span class="fc" id="L66">			var changes= new ArrayList&lt;Runnable&gt;();</span>
+<span class="fc" id="L67">			StringBuilder lastTags= new StringBuilder();</span>
+<span class="fc" id="L68">			int lastLine= root.getLineNumber(message.getStartPosition() + message.getLength() - 1) - 1;</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">			for (NLSLine line : lines) {</span>
+<span class="fc" id="L70">				int index= 0;</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">				for (NLSElement literal : line.getElements()) {</span>
+<span class="fc" id="L72">					boolean included= contains(message, literal.getPosition().getOffset());</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">					if (included) index++;</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">					if (!literal.hasTag()) continue;</span>
+<span class="fc" id="L75">					int start= literal.getTagPosition().getOffset();</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">					if (contains(message, start)) {</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">						String tag= included ? NLSElement.createTagText(index) : &quot;//&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L78">						int relative= start - message.getStartPosition();</span>
+<span class="fc" id="L79">						changes.add(() -&gt; text.replace(relative, relative + literal.getTagPosition().getLength(), tag));</span>
+<span class="pc bpc" id="L80" title="1 of 4 branches missed.">					} else if (included &amp;&amp; line.getLineNumber() == lastLine) {</span>
+<span class="fc" id="L81">						lastTags.append(' ').append(NLSElement.createTagText(index));</span>
+					}
+				}
+			}
+<span class="fc bfc" id="L85" title="All 2 branches covered.">			for (Runnable change : changes.reversed()) change.run();</span>
+<span class="fc" id="L86">			String note= trailingNote(root, invocation, message, source, lines);</span>
+<span class="fc" id="L87">			Statement declaration= (Statement) rewrite.createStringPlaceholder(</span>
+<span class="fc" id="L88">					&quot;java.lang.String &quot; + name + &quot; = &quot; + text + &quot;;&quot; + lastTags + note, ASTNode.VARIABLE_DECLARATION_STATEMENT); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc" id="L89">			invocation.setProperty(MOVED, new Capture(message, declaration, group));</span>
+<span class="fc" id="L90">			return root.getAST().newSimpleName(name);</span>
+<span class="nc" id="L91">		} catch (JavaModelException | InvalidInputException | BadLocationException exception) {</span>
+<span class="nc" id="L92">			throw new IllegalArgumentException(&quot;Cannot preserve assertion NLS tags&quot;, exception); //$NON-NLS-1$</span>
+		}
+	}
+
+	/** Retains calls without a safe evaluation boundary or an unambiguous, independent NLS line. */
+	static Set&lt;MethodInvocation&gt; unsupportedCaptures(CompilationUnit root, String owner, String target, Set&lt;String&gt; methods) {
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">		if (!(root.getJavaElement() instanceof ICompilationUnit unit)) return Set.of();</span>
+		try {
+<span class="fc" id="L100">			String source= unit.getBuffer().getContents();</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">			if (!source.contains(NLSElement.TAG_PREFIX)) return Set.of();</span>
+<span class="fc" id="L102">			NLSLine[] lines= scan(unit, source);</span>
+<span class="fc" id="L103">			var literals= new ArrayList&lt;StringLiteral&gt;();</span>
+<span class="fc" id="L104">			root.accept(new ASTVisitor() {</span>
+				@Override
+				public boolean visit(StringLiteral literal) {
+<span class="fc" id="L107">					literals.add(literal);</span>
+<span class="fc" id="L108">					return false;</span>
+				}
+			});
+<span class="fc" id="L111">			Set&lt;StringLiteral&gt; safe= new HashSet&lt;&gt;(EncodingSourceRewrite.literalsWithUnambiguousTags(root, unit, literals));</span>
+<span class="fc" id="L112">			Set&lt;MethodInvocation&gt; unsupported= new HashSet&lt;&gt;();</span>
+<span class="fc" id="L113">			var candidates= new ArrayList&lt;MethodInvocation&gt;();</span>
+<span class="fc" id="L114">			root.accept(new ASTVisitor() {</span>
+				@Override
+				public boolean visit(MethodInvocation invocation) {
+<span class="fc" id="L117">					var binding= invocation.resolveMethodBinding();</span>
+<span class="pc bpc" id="L118" title="2 of 6 branches missed.">					if (binding == null || binding.isRecovered() || !owner.equals(binding.getDeclaringClass().getQualifiedName())</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">							|| !methods.contains(invocation.getName().getIdentifier())) return true;</span>
+<span class="fc" id="L120">					candidates.add(invocation);</span>
+<span class="fc" id="L121">					Expression receiver= invocation.getExpression();</span>
+<span class="pc bpc" id="L122" title="1 of 6 branches missed.">					if (receiver != null &amp;&amp; !(receiver instanceof Name name &amp;&amp; name.resolveBinding() instanceof ITypeBinding)) {</span>
+						// A type qualifier is unevaluated; an expression qualifier must retain its evaluation.
+<span class="fc" id="L124">						unsupported.add(invocation);</span>
+<span class="fc" id="L125">						return true;</span>
+					}
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">					if (invocation.arguments().size() &gt;= 2</span>
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">							&amp;&amp; &quot;java.lang.String&quot;.equals(binding.getParameterTypes()[0].getQualifiedName()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">							&amp;&amp; needsCapture(invocation, lines)) {</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">						boolean boundary= invocation.getParent() instanceof ExpressionStatement</span>
+<span class="pc bpc" id="L131" title="1 of 4 branches missed.">								|| invocation.getParent() instanceof LambdaExpression lambda &amp;&amp; lambda.getBody() == invocation;</span>
+<span class="fc bfc" id="L132" title="All 4 branches covered.">						boolean ambiguous= literals.stream().anyMatch(literal -&gt; contains(invocation, literal.getStartPosition()) &amp;&amp; !safe.contains(literal));</span>
+<span class="fc" id="L133">						int first= root.getLineNumber(invocation.getStartPosition()) - 1;</span>
+<span class="fc" id="L134">						int last= root.getLineNumber(invocation.getStartPosition() + invocation.getLength() - 1) - 1;</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">						for (NLSLine line : lines) {</span>
+<span class="fc bfc" id="L136" title="All 4 branches covered.">							if (line.getLineNumber() &lt; first || line.getLineNumber() &gt; last) continue;</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">							for (NLSElement literal : line.getElements()) {</span>
+<span class="fc bfc" id="L138" title="All 4 branches covered.">								ambiguous|= literal.hasTag() &amp;&amp; !contains(invocation, literal.getPosition().getOffset());</span>
+							}
+						}
+<span class="fc bfc" id="L141" title="All 4 branches covered.">						if (!boundary || ambiguous) unsupported.add(invocation);</span>
+					}
+<span class="fc" id="L143">					return true;</span>
+				}
+			});
+<span class="fc bfc" id="L146" title="All 2 branches covered.">			if (!unsupported.isEmpty()) {</span>
+<span class="fc" id="L147">				String firstSegment= target.substring(0, target.indexOf('.'));</span>
+<span class="fc" id="L148">				ScopeAnalyzer scope= new ScopeAnalyzer(root);</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">				for (MethodInvocation invocation : candidates) {</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">					for (var binding : scope.getDeclarationsInScope(invocation.getStartPosition(), ScopeAnalyzer.VARIABLES)) {</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">						if (firstSegment.equals(binding.getName())) unsupported.add(invocation);</span>
+					}
+				}
+			}
+<span class="fc" id="L155">			return unsupported;</span>
+<span class="nc" id="L156">		} catch (JavaModelException | InvalidInputException | BadLocationException exception) {</span>
+<span class="nc" id="L157">			throw new IllegalArgumentException(&quot;Cannot inspect assertion NLS tags&quot;, exception); //$NON-NLS-1$</span>
+		}
+	}
+
+	private static NLSLine[] scan(ICompilationUnit unit, String source)
+			throws JavaModelException, InvalidInputException, BadLocationException {
+<span class="fc" id="L163">		NLSLine[] lines= NLSScanner.scan(unit);</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">		if (!source.equals(unit.getBuffer().getContents())) {</span>
+<span class="nc" id="L165">			throw new IllegalArgumentException(&quot;Source changed while scanning assertion NLS tags&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L167">		return lines;</span>
+	}
+
+	private static boolean needsCapture(MethodInvocation invocation, NLSLine[] lines) {
+<span class="fc bfc" id="L171" title="All 2 branches covered.">		for (NLSLine line : lines) {</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">			for (NLSElement literal : line.getElements()) {</span>
+<span class="fc" id="L173">				int offset= literal.getPosition().getOffset();</span>
+<span class="fc bfc" id="L174" title="All 4 branches covered.">				if (contains(invocation, offset) &amp;&amp; literal.hasTag()) return true;</span>
+			}
+		}
+<span class="fc" id="L177">		return false;</span>
+	}
+
+	private static String trailingNote(CompilationUnit root, MethodInvocation invocation, Expression message,
+			String source, NLSLine[] lines) {
+<span class="fc" id="L182">		int end= message.getStartPosition() + message.getLength();</span>
+<span class="fc" id="L183">		int next= ((ASTNode) invocation.arguments().get(1)).getStartPosition();</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">		for (Object node : root.getCommentList()) {</span>
+<span class="pc bpc" id="L185" title="1 of 4 branches missed.">			if (!(node instanceof LineComment comment) || comment.getStartPosition() &lt; end</span>
+<span class="pc bpc" id="L186" title="1 of 4 branches missed.">					|| comment.getStartPosition() &gt;= next || root.getLineNumber(comment.getStartPosition()) != root.getLineNumber(end - 1)) continue;</span>
+<span class="fc" id="L187">			int start= comment.getStartPosition();</span>
+<span class="fc" id="L188">			StringBuilder text= new StringBuilder(source.substring(start, start + comment.getLength()));</span>
+<span class="fc" id="L189">			var tags= new ArrayList&lt;NLSElement&gt;();</span>
+<span class="fc bfc" id="L190" title="All 4 branches covered.">			for (NLSLine line : lines) for (NLSElement literal : line.getElements()) {</span>
+<span class="pc bpc" id="L191" title="1 of 4 branches missed.">				if (literal.hasTag() &amp;&amp; contains(comment, literal.getTagPosition().getOffset())) tags.add(literal);</span>
+			}
+<span class="fc bfc" id="L193" title="All 2 branches covered.">			for (NLSElement tag : tags.reversed()) {</span>
+<span class="fc" id="L194">				int offset= tag.getTagPosition().getOffset() - start;</span>
+<span class="fc" id="L195">				text.delete(offset, offset + tag.getTagPosition().getLength());</span>
+			}
+<span class="fc" id="L197">			String note= text.toString().strip();</span>
+<span class="pc bpc" id="L198" title="2 of 6 branches missed.">			return note.isEmpty() || &quot;//&quot;.equals(note) ? &quot;&quot; : &quot; &quot; + (note.startsWith(&quot;//&quot;) ? note : &quot;// &quot; + note); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$</span>
+		}
+<span class="fc" id="L200">		return &quot;&quot;; //$NON-NLS-1$</span>
+	}
+
+	private static boolean contains(ASTNode node, int offset) {
+<span class="fc bfc" id="L204" title="All 4 branches covered.">		return offset &gt;= node.getStartPosition() &amp;&amp; offset &lt; node.getStartPosition() + node.getLength();</span>
+	}
+
+	private static String uniqueName(MethodInvocation invocation, ASTRewrite rewrite) {
+<span class="fc" id="L208">		CompilationUnit root= (CompilationUnit) invocation.getRoot();</span>
+		Set&lt;String&gt; names;
+<span class="pc bpc" id="L210" title="3 of 4 branches missed.">		if (root.getProperty(NAMES) instanceof Names previous &amp;&amp; previous.rewrite() == rewrite) {</span>
+<span class="nc" id="L211">			names= previous.names();</span>
+<span class="nc" id="L212">		} else {</span>
+<span class="fc" id="L213">			names= new HashSet&lt;&gt;();</span>
+<span class="fc" id="L214">			Set&lt;String&gt; collected= names;</span>
+<span class="fc" id="L215">			root.accept(new ASTVisitor() {</span>
+				@Override
+				public boolean visit(SimpleName node) {
+<span class="fc" id="L218">					collected.add(node.getIdentifier());</span>
+<span class="fc" id="L219">					return true;</span>
+				}
+			});
+<span class="fc" id="L222">			root.setProperty(NAMES, new Names(rewrite, names));</span>
+		}
+<span class="fc" id="L224">		var scope= new ScopeAnalyzer(root);</span>
+<span class="fc bfc" id="L225" title="All 2 branches covered.">		for (var binding : scope.getDeclarationsInScope(invocation.getStartPosition(), ScopeAnalyzer.VARIABLES)) {</span>
+<span class="fc" id="L226">			names.add(binding.getName());</span>
+		}
+<span class="fc" id="L228">		String name= &quot;junitMessage&quot;; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L229" title="All 2 branches covered.">		for (int suffix= 2; !names.add(name); suffix++) name= &quot;junitMessage&quot; + suffix; //$NON-NLS-1$</span>
+<span class="fc" id="L230">		return name;</span>
+	}
+
+	private static void insertBefore(MethodInvocation invocation, Statement declaration, ASTRewrite rewrite, TextEditGroup group) {
+<span class="fc bfc" id="L234" title="All 2 branches covered.">		if (invocation.getParent() instanceof ExpressionStatement statement) {</span>
+<span class="fc bfc" id="L235" title="All 2 branches covered.">			if (statement.getParent() instanceof Block block) {</span>
+<span class="fc" id="L236">				rewrite.getListRewrite(block, Block.STATEMENTS_PROPERTY).insertBefore(declaration, statement, group);</span>
+<span class="fc" id="L237">			} else {</span>
+<span class="fc" id="L238">				Block block= invocation.getAST().newBlock();</span>
+<span class="fc" id="L239">				ASTNodes.getChildListProperty(block, Block.STATEMENTS_PROPERTY).add(declaration);</span>
+<span class="fc" id="L240">				ASTNodes.getChildListProperty(block, Block.STATEMENTS_PROPERTY).add(rewrite.createMoveTarget(statement));</span>
+<span class="fc" id="L241">				rewrite.replace(statement, block, group);</span>
+			}
+<span class="pc bpc" id="L243" title="2 of 4 branches missed.">		} else if (invocation.getParent() instanceof LambdaExpression lambda &amp;&amp; lambda.getBody() == invocation) {</span>
+<span class="fc" id="L244">			Block block= invocation.getAST().newBlock();</span>
+<span class="fc" id="L245">			ASTNodes.getChildListProperty(block, Block.STATEMENTS_PROPERTY).add(declaration);</span>
+<span class="fc" id="L246">			ASTNodes.getChildListProperty(block, Block.STATEMENTS_PROPERTY)</span>
+<span class="fc" id="L247">					.add(invocation.getAST().newExpressionStatement((Expression) rewrite.createMoveTarget(invocation)));</span>
+<span class="fc" id="L248">			rewrite.set(lambda, LambdaExpression.BODY_PROPERTY, block, group);</span>
+<span class="fc" id="L249">		} else {</span>
+<span class="nc" id="L250">			throw new IllegalArgumentException(&quot;Cannot capture an assertion message at this evaluation position&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L252">	}</span>
+
+	static void recordMoved(ASTNode node, CompilationUnitRewrite rewrite) {
+<span class="fc bfc" id="L255" title="All 4 branches covered.">		if (node instanceof MethodInvocation invocation &amp;&amp; node.getProperty(MOVED) instanceof Capture capture) {</span>
+<span class="fc" id="L256">			insertBefore(invocation, capture.declaration(), rewrite.getASTRewrite(), capture.group());</span>
+<span class="fc" id="L257">			EncodingSourceRewrite.record(rewrite, capture.message());</span>
+<span class="fc" id="L258">			node.setProperty(MOVED, null);</span>
+		}
+<span class="fc" id="L260">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

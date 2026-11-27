@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>AssertJUnitPlugin.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">AssertJUnitPlugin.java</span></div><h1>AssertJUnitPlugin.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>AssertJUnitPlugin.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">AssertJUnitPlugin.java</span></div><h1>AssertJUnitPlugin.java</h1><pre class="source lang-java linenums">/*
  * Copyright (c) 2021 Carsten Hammer.
  *
  * This program and the accompanying materials
@@ -19,6 +19,7 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -38,59 +39,68 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractMethodMigrationPlu
  * &lt;li&gt;Other assertions → JUnit 5 Assertions with parameter reordering&lt;/li&gt;
  * &lt;/ul&gt;
  */
-<span class="fc" id="L41">public class AssertJUnitPlugin extends AbstractMethodMigrationPlugin {</span>
+<span class="fc" id="L42">public class AssertJUnitPlugin extends AbstractMethodMigrationPlugin {</span>
 
 	@Override
 	protected String getSourceClass() {
-<span class="fc" id="L45">		return ORG_JUNIT_ASSERT;</span>
+<span class="fc" id="L46">		return ORG_JUNIT_ASSERT;</span>
 	}
 
 	@Override
 	protected String getTargetClass() {
-<span class="fc" id="L50">		return ORG_JUNIT_JUPITER_API_ASSERTIONS;</span>
+<span class="fc" id="L51">		return ORG_JUNIT_JUPITER_API_ASSERTIONS;</span>
 	}
 
 	@Override
 	protected String getTargetSimpleName() {
-<span class="fc" id="L55">		return ASSERTIONS;</span>
+<span class="fc" id="L56">		return ASSERTIONS;</span>
 	}
 
 	@Override
 	protected Set&lt;String&gt; getMethodNames() {
-<span class="fc" id="L60">		return ALL_ASSERTION_METHODS;</span>
+<span class="fc" id="L61">		return ALL_ASSERTION_METHODS;</span>
 	}
 
 	@Override
 	protected void processMethodInvocation(TextEditGroup group, ASTRewrite rewriter, AST ast,
 			ImportRewrite importRewriter, MethodInvocation node) {
 
-<span class="fc" id="L67">		Expression assertexpression = node.getExpression();</span>
+<span class="fc" id="L68">		Expression assertexpression = node.getExpression();</span>
+<span class="fc" id="L69">		var binding= node.resolveMethodBinding();</span>
+<span class="fc bfc" id="L70" title="All 4 branches covered.">		if (retainsLegacyImports(node) &amp;&amp; METHOD_ASSERT_THAT.equals(node.getName().getIdentifier())</span>
+<span class="pc bpc" id="L71" title="3 of 6 branches missed.">				&amp;&amp; binding != null &amp;&amp; !binding.isRecovered() &amp;&amp; ORG_JUNIT_ASSERT.equals(binding.getDeclaringClass().getQualifiedName())</span>
+<span class="pc bpc" id="L72" title="2 of 6 branches missed.">				&amp;&amp; (assertexpression == null || assertexpression instanceof Name name &amp;&amp; name.resolveBinding() instanceof ITypeBinding)) {</span>
+			// Hamcrest keeps the message first. Explicit qualification also leaves retained imports unambiguous.
+<span class="fc" id="L74">			rewriter.set(node, MethodInvocation.EXPRESSION_PROPERTY, ast.newName(ORG_HAMCREST_MATCHER_ASSERT), group);</span>
+<span class="fc" id="L75">			return;</span>
+		}
 
 		// Special handling for assertThat - delegate to Hamcrest
-<span class="pc bpc" id="L70" title="1 of 4 branches missed.">		if (METHOD_ASSERT_THAT.equals(node.getName().getIdentifier()) &amp;&amp; assertexpression instanceof Name name</span>
-<span class="pc bpc" id="L71" title="2 of 4 branches missed.">				&amp;&amp; (&quot;Assert&quot;.equals(name.getFullyQualifiedName()) || ORG_JUNIT_ASSERT.equals(name.getFullyQualifiedName()))) { //$NON-NLS-1$</span>
-<span class="fc" id="L72">			rewriter.set(node, MethodInvocation.EXPRESSION_PROPERTY, null, group);</span>
-<span class="fc" id="L73">			importRewriter.addStaticImport(ORG_HAMCREST_MATCHER_ASSERT, METHOD_ASSERT_THAT, false);</span>
-<span class="fc" id="L74">			importRewriter.removeImport(ORG_JUNIT_ASSERT);</span>
-<span class="fc" id="L75">		} else {</span>
+<span class="pc bpc" id="L79" title="1 of 4 branches missed.">		if (METHOD_ASSERT_THAT.equals(node.getName().getIdentifier()) &amp;&amp; assertexpression instanceof Name name</span>
+<span class="pc bpc" id="L80" title="2 of 4 branches missed.">				&amp;&amp; (&quot;Assert&quot;.equals(name.getFullyQualifiedName()) || ORG_JUNIT_ASSERT.equals(name.getFullyQualifiedName()))) { //$NON-NLS-1$</span>
+<span class="fc" id="L81">			rewriter.set(node, MethodInvocation.EXPRESSION_PROPERTY, null, group);</span>
+<span class="fc" id="L82">			importRewriter.addStaticImport(ORG_HAMCREST_MATCHER_ASSERT, METHOD_ASSERT_THAT, false);</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">			if (!retainsLegacyImports(node)) importRewriter.removeImport(ORG_JUNIT_ASSERT);</span>
+<span class="fc" id="L84">		} else {</span>
 			// Standard assertion handling - use base class behavior
-<span class="fc" id="L77">			super.processMethodInvocation(group, rewriter, ast, importRewriter, node);</span>
-<span class="fc bfc" id="L78" title="All 4 branches covered.">			if (assertexpression instanceof Name name &amp;&amp; ORG_JUNIT_ASSERT.equals(name.getFullyQualifiedName())) {</span>
-<span class="fc" id="L79">				ASTNodes.replaceButKeepComment(rewriter, assertexpression,</span>
-<span class="fc" id="L80">						ast.newName(ORG_JUNIT_JUPITER_API_ASSERTIONS), group);</span>
+<span class="fc" id="L86">			super.processMethodInvocation(group, rewriter, ast, importRewriter, node);</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">			if (retainsLegacyImports(node)) return;</span>
+<span class="fc bfc" id="L88" title="All 4 branches covered.">			if (assertexpression instanceof Name name &amp;&amp; ORG_JUNIT_ASSERT.equals(name.getFullyQualifiedName())) {</span>
+<span class="fc" id="L89">				ASTNodes.replaceButKeepComment(rewriter, assertexpression,</span>
+<span class="fc" id="L90">						ast.newName(ORG_JUNIT_JUPITER_API_ASSERTIONS), group);</span>
 			}
 		}
-<span class="fc" id="L83">	}</span>
+<span class="fc" id="L93">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L87" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L88">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L97" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L98">			return &quot;&quot;&quot;</span>
 					Assertions.assertNotEquals(5,result, &quot;failuremessage&quot;);  // expected = 5, actual = result
 					Assertions.assertTrue(false,&quot;failuremessage&quot;);
 					&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L93">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L103">		return &quot;&quot;&quot;</span>
 				Assert.assertNotEquals(&quot;failuremessage&quot;,5, result);  // expected = 5, actual = result
 				Assert.assertTrue(&quot;failuremessage&quot;,false);
 				&quot;&quot;&quot;; //$NON-NLS-1$
@@ -98,7 +108,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractMethodMigrationPlu
 
 	@Override
 	public String toString() {
-<span class="fc" id="L101">		return &quot;Assert&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L111">		return &quot;Assert&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

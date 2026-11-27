@@ -27,7 +27,7 @@ import org.sandbox.jdt.internal.corext.fix.multifile.JUnitMigrationPlan;
 /** JUnit cleanup core that retains privacy-preserving planning evidence. */
 public final class ReportingJUnitCleanUpCore extends JUnitCleanUpCore {
 
-<span class="pc" id="L30">	private final Map&lt;IJavaProject, String&gt; diagnosticsByProject= new HashMap&lt;&gt;();</span>
+<span class="fc" id="L30">	private final Map&lt;IJavaProject, String&gt; diagnosticsByProject= new HashMap&lt;&gt;();</span>
 
 	/** Creates a reporting cleanup core without initial options. */
 <span class="fc" id="L33">	public ReportingJUnitCleanUpCore() {</span>
@@ -35,8 +35,8 @@ public final class ReportingJUnitCleanUpCore extends JUnitCleanUpCore {
 
 	/** Creates a reporting cleanup core with the supplied cleanup options. */
 	public ReportingJUnitCleanUpCore(Map&lt;String, String&gt; options) {
-<span class="nc" id="L38">		super(options);</span>
-<span class="nc" id="L39">	}</span>
+<span class="fc" id="L38">		super(options);</span>
+<span class="fc" id="L39">	}</span>
 
 	@Override
 	protected MultiFileCleanUpPlanResult&lt;JUnitMigrationPlan&gt; createPlan(IJavaProject project,

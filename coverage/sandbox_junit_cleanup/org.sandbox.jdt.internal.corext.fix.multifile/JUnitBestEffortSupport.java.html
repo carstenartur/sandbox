@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JUnitBestEffortSupport.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.multifile</a> &gt; <span class="el_source">JUnitBestEffortSupport.java</span></div><h1>JUnitBestEffortSupport.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JUnitBestEffortSupport.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.multifile</a> &gt; <span class="el_source">JUnitBestEffortSupport.java</span></div><h1>JUnitBestEffortSupport.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*</span>
  * Copyright (c) 2026 Carsten Hammer.
  *
  * This program and the accompanying materials
@@ -44,10 +44,12 @@ import java.util.Set;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 
+import org.eclipse.jdt.core.IAnnotatable;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.ITypeRoot;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
@@ -56,6 +58,7 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTRequestor;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
@@ -77,6 +80,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.TypeLiteral;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
@@ -85,6 +89,8 @@ import org.eclipse.jdt.internal.corext.refactoring.util.RefactoringASTParser;
 import org.eclipse.text.edits.TextEditGroup;
 
 import org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits;
+import org.sandbox.jdt.cleanup.multifile.MultiFileCandidateDiagnostic;
+import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpDiagnostics;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.ParameterizedMigrationEligibility;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleExpectedExceptionJUnitPlugin;
@@ -104,15 +110,16 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.TestNameRefactorer;
  */
 public final class JUnitBestEffortSupport {
 
+	private static final String EXTERNAL_RESOURCE_FIXTURE_OUT_OF_SCOPE= &quot;EXTERNAL_RESOURCE_FIXTURE_OUT_OF_SCOPE&quot;; //$NON-NLS-1$
 	private static final String TEST_NAME= &quot;org.junit.rules.TestName&quot;; //$NON-NLS-1$
 	private static final String TIMEOUT= &quot;org.junit.rules.Timeout&quot;; //$NON-NLS-1$
 	private static final String ERROR_COLLECTOR= &quot;org.junit.rules.ErrorCollector&quot;; //$NON-NLS-1$
 	private static final String MARKER_PREFIX= &quot;Sandbox JUnit migration gap &quot;; //$NON-NLS-1$
 	private static final String MIXED_RULE_LIFECYCLE= &quot;MIXED_RULE_LIFECYCLE&quot;; //$NON-NLS-1$
 	private static final String EXTERNAL_RESOURCE_INITIALIZER_UNSUPPORTED= &quot;EXTERNAL_RESOURCE_INITIALIZER_UNSUPPORTED&quot;; //$NON-NLS-1$
-<span class="fc" id="L113">	private static final Set&lt;String&gt; INHERITED_TEST_ANNOTATIONS= Set.of(ORG_JUNIT_TEST, ORG_JUNIT_BEFORE,</span>
-<span class="fc" id="L114">			ORG_JUNIT_AFTER, ORG_JUNIT_BEFORECLASS, ORG_JUNIT_AFTERCLASS, ORG_JUNIT_RULE, ORG_JUNIT_CLASS_RULE,</span>
-<span class="fc" id="L115">			ORG_JUNIT_RUNWITH, ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORY);</span>
+<span class="fc" id="L120">	private static final Set&lt;String&gt; INHERITED_TEST_ANNOTATIONS= Set.of(ORG_JUNIT_TEST, ORG_JUNIT_BEFORE,</span>
+<span class="fc" id="L121">			ORG_JUNIT_AFTER, ORG_JUNIT_BEFORECLASS, ORG_JUNIT_AFTERCLASS, ORG_JUNIT_RULE, ORG_JUNIT_CLASS_RULE,</span>
+<span class="fc" id="L122">			ORG_JUNIT_RUNWITH, ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORY);</span>
 
 	/** One unresolved construct and the exact source type where it must be completed. */
 	public record Gap(String ownerCompilationUnitHandle, String targetTypeBindingKey,
@@ -120,19 +127,24 @@ public final class JUnitBestEffortSupport {
 			String explanation, String remediation) {
 
 		/** Validates and normalizes a best-effort gap. */
-<span class="fc" id="L123">		public Gap {</span>
-<span class="fc" id="L124">			ownerCompilationUnitHandle= Objects.requireNonNull(ownerCompilationUnitHandle);</span>
-<span class="pc bpc" id="L125" title="1 of 2 branches missed.">			targetTypeBindingKey= targetTypeBindingKey == null ? &quot;&quot; : targetTypeBindingKey; //$NON-NLS-1$</span>
-<span class="fc" id="L126">			targetTypeName= Objects.requireNonNull(targetTypeName);</span>
-<span class="fc" id="L127">			candidateId= Objects.requireNonNull(candidateId);</span>
-<span class="fc" id="L128">			reasonCode= Objects.requireNonNull(reasonCode);</span>
-<span class="fc" id="L129">			explanation= Objects.requireNonNull(explanation);</span>
-<span class="fc" id="L130">			remediation= Objects.requireNonNull(remediation);</span>
-<span class="fc" id="L131">		}</span>
+<span class="fc" id="L130">		public Gap {</span>
+<span class="fc" id="L131">			ownerCompilationUnitHandle= Objects.requireNonNull(ownerCompilationUnitHandle);</span>
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">			targetTypeBindingKey= targetTypeBindingKey == null ? &quot;&quot; : targetTypeBindingKey; //$NON-NLS-1$</span>
+<span class="fc" id="L133">			targetTypeName= Objects.requireNonNull(targetTypeName);</span>
+<span class="fc" id="L134">			candidateId= Objects.requireNonNull(candidateId);</span>
+<span class="fc" id="L135">			reasonCode= Objects.requireNonNull(reasonCode);</span>
+<span class="fc" id="L136">			explanation= Objects.requireNonNull(explanation);</span>
+<span class="fc" id="L137">			remediation= Objects.requireNonNull(remediation);</span>
+<span class="fc" id="L138">		}</span>
+
+		/** The owner's JUnit 4 rule cannot be registered on a Jupiter test. */
+		public boolean retainsUnselectedFixture() {
+<span class="fc" id="L142">			return EXTERNAL_RESOURCE_FIXTURE_OUT_OF_SCOPE.equals(reasonCode);</span>
+		}
 
 		String markerText() {
-<span class="fc" id="L134">			return MARKER_PREFIX + candidateId + &quot; (&quot; + reasonCode + &quot;): &quot; + explanation //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L135">					+ &quot; Manual completion: &quot; + remediation; //$NON-NLS-1$</span>
+<span class="fc" id="L146">			return MARKER_PREFIX + candidateId + &quot; (&quot; + reasonCode + &quot;): &quot; + explanation //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L147">					+ &quot; Manual completion: &quot; + remediation; //$NON-NLS-1$</span>
 		}
 	}
 
@@ -143,66 +155,78 @@ public final class JUnitBestEffortSupport {
 	public record Analysis(List&lt;Gap&gt; gaps, boolean disableCoordinatedExternalResource) {
 
 		/** Copies and orders all gaps. */
-<span class="fc" id="L146">		public Analysis {</span>
-<span class="pc bpc" id="L147" title="1 of 2 branches missed.">			gaps= gaps == null ? List.of() : gaps.stream()</span>
-<span class="fc" id="L148">					.sorted(Comparator.comparing(Gap::ownerCompilationUnitHandle)</span>
-<span class="fc" id="L149">							.thenComparing(Gap::targetTypeName)</span>
-<span class="fc" id="L150">							.thenComparing(Gap::candidateId)</span>
-<span class="fc" id="L151">							.thenComparing(Gap::reasonCode))</span>
-<span class="fc" id="L152">					.toList();</span>
-<span class="fc" id="L153">		}</span>
+<span class="fc" id="L158">		public Analysis {</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">			gaps= gaps == null ? List.of() : gaps.stream()</span>
+<span class="fc" id="L160">					.sorted(Comparator.comparing(Gap::ownerCompilationUnitHandle)</span>
+<span class="fc" id="L161">							.thenComparing(Gap::targetTypeName)</span>
+<span class="fc" id="L162">							.thenComparing(Gap::candidateId)</span>
+<span class="fc" id="L163">							.thenComparing(Gap::reasonCode))</span>
+<span class="fc" id="L164">					.toList();</span>
+<span class="fc" id="L165">		}</span>
 
 		/** Returns an empty analysis for strict mode. */
 		public static Analysis empty() {
-<span class="fc" id="L157">			return new Analysis(List.of(), false);</span>
+<span class="fc" id="L169">			return new Analysis(List.of(), false);</span>
 		}
 
 		/** Returns gaps belonging to one primary compilation unit. */
 		public List&lt;Gap&gt; gapsFor(ICompilationUnit unit) {
-<span class="pc bpc" id="L162" title="1 of 2 branches missed.">			if (unit == null) {</span>
-<span class="nc" id="L163">				return List.of();</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">			if (unit == null) {</span>
+<span class="nc" id="L175">				return List.of();</span>
 			}
-<span class="fc" id="L165">			String handle= unit.getPrimary().getHandleIdentifier();</span>
-<span class="fc" id="L166">			return gaps.stream().filter(gap -&gt; handle.equals(gap.ownerCompilationUnitHandle())).toList();</span>
+<span class="fc" id="L177">			String handle= unit.getPrimary().getHandleIdentifier();</span>
+<span class="fc" id="L178">			return gaps.stream().filter(gap -&gt; handle.equals(gap.ownerCompilationUnitHandle())).toList();</span>
 		}
 
 		/** Returns the compilation units excluded from coordinated ExternalResource rewriting. */
 		public Set&lt;String&gt; retainedExternalResourceCompilationUnitHandles() {
-<span class="fc bfc" id="L171" title="All 2 branches covered.">			return gaps.stream().filter(gap -&gt; MIXED_RULE_LIFECYCLE.equals(gap.reasonCode())</span>
-<span class="fc bfc" id="L172" title="All 2 branches covered.">					|| EXTERNAL_RESOURCE_INITIALIZER_UNSUPPORTED.equals(gap.reasonCode()))</span>
-<span class="fc" id="L173">					.map(Gap::ownerCompilationUnitHandle).collect(java.util.stream.Collectors.toUnmodifiableSet());</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">			return gaps.stream().filter(gap -&gt; MIXED_RULE_LIFECYCLE.equals(gap.reasonCode())</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">					|| EXTERNAL_RESOURCE_INITIALIZER_UNSUPPORTED.equals(gap.reasonCode()))</span>
+<span class="fc" id="L185">					.map(Gap::ownerCompilationUnitHandle).collect(java.util.stream.Collectors.toUnmodifiableSet());</span>
+		}
+
+		/** Includes explicit retention decisions in the ordinary coordinated plan report. */
+		public MultiFileCleanUpDiagnostics withUnselectedFixtureDiagnostics(MultiFileCleanUpDiagnostics planner) {
+<span class="fc" id="L190">			var retained= gaps.stream().filter(Gap::retainsUnselectedFixture).toList();</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">			if (retained.isEmpty()) return planner;</span>
+<span class="fc" id="L192">			var candidates= new ArrayList&lt;&gt;(planner.candidates());</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">			for (Gap gap : retained) {</span>
+<span class="fc" id="L194">				candidates.add(MultiFileCandidateDiagnostic.rejected(gap.candidateId(), gap.ownerCompilationUnitHandle(),</span>
+<span class="fc" id="L195">						gap.reasonCode(), gap.explanation(), List.of(gap.ownerCompilationUnitHandle())));</span>
+			}
+<span class="fc" id="L197">			return new MultiFileCleanUpDiagnostics(planner.cleanupId(), planner.scope(), candidates);</span>
 		}
 
 		/** Wraps ordinary planner evidence with explicit manual-completion evidence. */
 		public String toJson(String plannerDiagnosticsJson) {
-<span class="fc" id="L178">			StringBuilder json= new StringBuilder(512);</span>
-<span class="fc" id="L179">			json.append('{')</span>
-<span class="fc" id="L180">					.append(&quot;\&quot;bestEffort\&quot;:true,&quot;) //$NON-NLS-1$</span>
-<span class="fc bfc" id="L181" title="All 2 branches covered.">					.append(&quot;\&quot;manualCompletionRequired\&quot;:&quot;).append(!gaps.isEmpty()).append(',') //$NON-NLS-1$</span>
-<span class="fc" id="L182">					.append(&quot;\&quot;coordinatedExternalResourceDeferred\&quot;:&quot;) //$NON-NLS-1$</span>
-<span class="fc" id="L183">					.append(disableCoordinatedExternalResource).append(',')</span>
-<span class="fc" id="L184">					.append(&quot;\&quot;planner\&quot;:&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L185" title="1 of 4 branches missed.">			if (plannerDiagnosticsJson == null || plannerDiagnosticsJson.isBlank()) {</span>
-<span class="fc" id="L186">				json.append(&quot;null&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L187">			} else {</span>
-<span class="fc" id="L188">				json.append(plannerDiagnosticsJson);</span>
+<span class="fc" id="L202">			StringBuilder json= new StringBuilder(512);</span>
+<span class="fc" id="L203">			json.append('{')</span>
+<span class="fc" id="L204">					.append(&quot;\&quot;bestEffort\&quot;:true,&quot;) //$NON-NLS-1$</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">					.append(&quot;\&quot;manualCompletionRequired\&quot;:&quot;).append(!gaps.isEmpty()).append(',') //$NON-NLS-1$</span>
+<span class="fc" id="L206">					.append(&quot;\&quot;coordinatedExternalResourceDeferred\&quot;:&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L207">					.append(disableCoordinatedExternalResource).append(',')</span>
+<span class="fc" id="L208">					.append(&quot;\&quot;planner\&quot;:&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L209" title="1 of 4 branches missed.">			if (plannerDiagnosticsJson == null || plannerDiagnosticsJson.isBlank()) {</span>
+<span class="fc" id="L210">				json.append(&quot;null&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L211">			} else {</span>
+<span class="fc" id="L212">				json.append(plannerDiagnosticsJson);</span>
 			}
-<span class="fc" id="L190">			json.append(&quot;,\&quot;gaps\&quot;:[&quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L191" title="All 2 branches covered.">			for (int index= 0; index &lt; gaps.size(); index++) {</span>
-<span class="fc bfc" id="L192" title="All 2 branches covered.">				if (index &gt; 0) {</span>
-<span class="fc" id="L193">					json.append(',');</span>
+<span class="fc" id="L214">			json.append(&quot;,\&quot;gaps\&quot;:[&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">			for (int index= 0; index &lt; gaps.size(); index++) {</span>
+<span class="fc bfc" id="L216" title="All 2 branches covered.">				if (index &gt; 0) {</span>
+<span class="fc" id="L217">					json.append(',');</span>
 				}
-<span class="fc" id="L195">				Gap gap= gaps.get(index);</span>
-<span class="fc" id="L196">				json.append('{')</span>
-<span class="fc" id="L197">						.append(&quot;\&quot;unitId\&quot;:\&quot;&quot;).append(jsonEscape(opaqueId(gap.ownerCompilationUnitHandle()))) //$NON-NLS-1$</span>
-<span class="fc" id="L198">						.append(&quot;\&quot;,\&quot;type\&quot;:\&quot;&quot;).append(jsonEscape(gap.targetTypeName())) //$NON-NLS-1$</span>
-<span class="fc" id="L199">						.append(&quot;\&quot;,\&quot;candidateId\&quot;:\&quot;&quot;).append(jsonEscape(gap.candidateId())) //$NON-NLS-1$</span>
-<span class="fc" id="L200">						.append(&quot;\&quot;,\&quot;reasonCode\&quot;:\&quot;&quot;).append(jsonEscape(gap.reasonCode())) //$NON-NLS-1$</span>
-<span class="fc" id="L201">						.append(&quot;\&quot;,\&quot;explanation\&quot;:\&quot;&quot;).append(jsonEscape(gap.explanation())) //$NON-NLS-1$</span>
-<span class="fc" id="L202">						.append(&quot;\&quot;,\&quot;remediation\&quot;:\&quot;&quot;).append(jsonEscape(gap.remediation())) //$NON-NLS-1$</span>
-<span class="fc" id="L203">						.append(&quot;\&quot;}&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L219">				Gap gap= gaps.get(index);</span>
+<span class="fc" id="L220">				json.append('{')</span>
+<span class="fc" id="L221">						.append(&quot;\&quot;unitId\&quot;:\&quot;&quot;).append(jsonEscape(opaqueId(gap.ownerCompilationUnitHandle()))) //$NON-NLS-1$</span>
+<span class="fc" id="L222">						.append(&quot;\&quot;,\&quot;type\&quot;:\&quot;&quot;).append(jsonEscape(gap.targetTypeName())) //$NON-NLS-1$</span>
+<span class="fc" id="L223">						.append(&quot;\&quot;,\&quot;candidateId\&quot;:\&quot;&quot;).append(jsonEscape(gap.candidateId())) //$NON-NLS-1$</span>
+<span class="fc" id="L224">						.append(&quot;\&quot;,\&quot;reasonCode\&quot;:\&quot;&quot;).append(jsonEscape(gap.reasonCode())) //$NON-NLS-1$</span>
+<span class="fc" id="L225">						.append(&quot;\&quot;,\&quot;explanation\&quot;:\&quot;&quot;).append(jsonEscape(gap.explanation())) //$NON-NLS-1$</span>
+<span class="fc" id="L226">						.append(&quot;\&quot;,\&quot;remediation\&quot;:\&quot;&quot;).append(jsonEscape(gap.remediation())) //$NON-NLS-1$</span>
+<span class="fc" id="L227">						.append(&quot;\&quot;}&quot;); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L205">			return json.append(&quot;]}&quot;).toString(); //$NON-NLS-1$</span>
+<span class="fc" id="L229">			return json.append(&quot;]}&quot;).toString(); //$NON-NLS-1$</span>
 		}
 	}
 
@@ -212,12 +236,12 @@ public final class JUnitBestEffortSupport {
 
 	private static final class ResourceUsage {
 		private final ITypeBinding binding;
-<span class="fc" id="L215">		private final LinkedHashSet&lt;SourceType&gt; owners= new LinkedHashSet&lt;&gt;();</span>
-<span class="fc" id="L216">		private final EnumSet&lt;RuleKind&gt; ruleKinds= EnumSet.noneOf(RuleKind.class);</span>
+<span class="fc" id="L239">		private final LinkedHashSet&lt;SourceType&gt; owners= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L240">		private final EnumSet&lt;RuleKind&gt; ruleKinds= EnumSet.noneOf(RuleKind.class);</span>
 
-<span class="fc" id="L218">		ResourceUsage(ITypeBinding binding) {</span>
-<span class="fc" id="L219">			this.binding= binding;</span>
-<span class="fc" id="L220">		}</span>
+<span class="fc" id="L242">		ResourceUsage(ITypeBinding binding) {</span>
+<span class="fc" id="L243">			this.binding= binding;</span>
+<span class="fc" id="L244">		}</span>
 	}
 
 	private JUnitBestEffortSupport() {
@@ -226,87 +250,87 @@ public final class JUnitBestEffortSupport {
 	/** Replaces local-only gaps with the coordinated contract, keeping blocked files atomic. */
 	public static Analysis reconcileParameterized(Analysis analysis, JUnitMigrationPlan plan,
 			org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpDiagnostics diagnostics, boolean executionAvailable) throws JavaModelException {
-<span class="fc bfc" id="L229" title="All 4 branches covered.">		if (plan == null || !executionAvailable) {</span>
-<span class="fc" id="L230">			return analysis;</span>
+<span class="fc bfc" id="L253" title="All 4 branches covered.">		if (plan == null || !executionAvailable) {</span>
+<span class="fc" id="L254">			return analysis;</span>
 		}
-<span class="fc" id="L232">		List&lt;JUnit4ParameterizedPlan&gt; executable= plan.preparedParameterizedPlans().stream()</span>
-<span class="fc" id="L233">				.filter(JUnit4ParameterizedPlan::executable).toList();</span>
-<span class="fc" id="L234">		Set&lt;String&gt; authorized= executable.stream().map(item -&gt; item.testClass().bindingKey())</span>
-<span class="fc" id="L235">				.collect(java.util.stream.Collectors.toSet());</span>
-<span class="fc" id="L236">		List&lt;Gap&gt; gaps= new ArrayList&lt;&gt;(analysis.gaps().stream()</span>
-<span class="fc bfc" id="L237" title="All 2 branches covered.">				.filter(gap -&gt; !gap.candidateId().startsWith(&quot;parameterized:&quot;) //$NON-NLS-1$</span>
-<span class="fc bfc" id="L238" title="All 2 branches covered.">						|| !authorized.contains(gap.targetTypeBindingKey())).toList());</span>
-<span class="fc bfc" id="L239" title="All 2 branches covered.">		for (var diagnostic : diagnostics.candidates()) {</span>
-<span class="fc bfc" id="L240" title="All 2 branches covered.">			if (diagnostic.candidateId().startsWith(&quot;parameterized:&quot;) //$NON-NLS-1$</span>
-<span class="fc bfc" id="L241" title="All 2 branches covered.">					&amp;&amp; diagnostic.outcome() == org.sandbox.jdt.cleanup.multifile.MultiFileCandidateOutcome.REJECTED) {</span>
+<span class="fc" id="L256">		List&lt;JUnit4ParameterizedPlan&gt; executable= plan.preparedParameterizedPlans().stream()</span>
+<span class="fc" id="L257">				.filter(JUnit4ParameterizedPlan::executable).toList();</span>
+<span class="fc" id="L258">		Set&lt;String&gt; authorized= executable.stream().map(item -&gt; item.testClass().bindingKey())</span>
+<span class="fc" id="L259">				.collect(java.util.stream.Collectors.toSet());</span>
+<span class="fc" id="L260">		List&lt;Gap&gt; gaps= new ArrayList&lt;&gt;(analysis.gaps().stream()</span>
+<span class="fc bfc" id="L261" title="All 2 branches covered.">				.filter(gap -&gt; !gap.candidateId().startsWith(&quot;parameterized:&quot;) //$NON-NLS-1$</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">						|| !authorized.contains(gap.targetTypeBindingKey())).toList());</span>
+<span class="fc bfc" id="L263" title="All 2 branches covered.">		for (var diagnostic : diagnostics.candidates()) {</span>
+<span class="fc bfc" id="L264" title="All 2 branches covered.">			if (diagnostic.candidateId().startsWith(&quot;parameterized:&quot;) //$NON-NLS-1$</span>
+<span class="fc bfc" id="L265" title="All 2 branches covered.">					&amp;&amp; diagnostic.outcome() == org.sandbox.jdt.cleanup.multifile.MultiFileCandidateOutcome.REJECTED) {</span>
 				// Quarantine the test hierarchy while allowing independent resource
 				// compatibility bridges and unrelated test classes to migrate.
-<span class="fc bfc" id="L244" title="All 2 branches covered.">				for (String handle : diagnostic.relatedCompilationUnitHandles()) {</span>
-<span class="fc bfc" id="L245" title="All 2 branches covered.">					if (gaps.stream().anyMatch(gap -&gt; handle.equals(gap.ownerCompilationUnitHandle())</span>
-<span class="pc bpc" id="L246" title="1 of 4 branches missed.">							&amp;&amp; gap.candidateId().startsWith(&quot;parameterized:&quot;))) { //$NON-NLS-1$</span>
-<span class="fc" id="L247">						continue;</span>
+<span class="fc bfc" id="L268" title="All 2 branches covered.">				for (String handle : diagnostic.relatedCompilationUnitHandles()) {</span>
+<span class="fc bfc" id="L269" title="All 2 branches covered.">					if (gaps.stream().anyMatch(gap -&gt; handle.equals(gap.ownerCompilationUnitHandle())</span>
+<span class="pc bpc" id="L270" title="1 of 4 branches missed.">							&amp;&amp; gap.candidateId().startsWith(&quot;parameterized:&quot;))) { //$NON-NLS-1$</span>
+<span class="fc" id="L271">						continue;</span>
 					}
-<span class="fc" id="L249">					gaps.add(parameterizedGap(handle, diagnostic.candidateId().substring(&quot;parameterized:&quot;.length()), diagnostic.candidateId(), //$NON-NLS-1$</span>
-<span class="fc" id="L250">							diagnostic.reasonCode(), diagnostic.message(),</span>
-<span class="fc" id="L251">							&quot;Resolve the coordinated Parameterized diagnostic and rerun the complete selected scope.&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L273">					gaps.add(parameterizedGap(handle, diagnostic.candidateId().substring(&quot;parameterized:&quot;.length()), diagnostic.candidateId(), //$NON-NLS-1$</span>
+<span class="fc" id="L274">							diagnostic.reasonCode(), diagnostic.message(),</span>
+<span class="fc" id="L275">							&quot;Resolve the coordinated Parameterized diagnostic and rerun the complete selected scope.&quot;)); //$NON-NLS-1$</span>
 				}
 			}
 		}
-<span class="fc" id="L255">		Set&lt;String&gt; blocked= gaps.stream().map(Gap::ownerCompilationUnitHandle)</span>
-<span class="fc" id="L256">				.collect(java.util.stream.Collectors.toSet());</span>
-<span class="fc bfc" id="L257" title="All 2 branches covered.">		for (JUnit4ParameterizedPlan component : executable) {</span>
-<span class="pc bpc" id="L258" title="1 of 2 branches missed.">			if (component.compilationUnits().values().stream().anyMatch(blocked::contains)) {</span>
-<span class="nc bnc" id="L259" title="All 2 branches missed.">				for (String handle : new LinkedHashSet&lt;&gt;(component.compilationUnits().values())) {</span>
-<span class="nc" id="L260">					gaps.add(parameterizedGap(handle, component.testClass().bindingKey(),</span>
-<span class="nc" id="L261">							&quot;parameterized:&quot; + component.testClass().bindingKey(), &quot;PARAMETERIZED_COMPONENT_BLOCKED&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L262">							&quot;A participating compilation unit has an unresolved migration gap.&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L263">							&quot;Resolve all gaps before changing this provider and test hierarchy.&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L279">		Set&lt;String&gt; blocked= gaps.stream().map(Gap::ownerCompilationUnitHandle)</span>
+<span class="fc" id="L280">				.collect(java.util.stream.Collectors.toSet());</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">		for (JUnit4ParameterizedPlan component : executable) {</span>
+<span class="pc bpc" id="L282" title="1 of 2 branches missed.">			if (component.compilationUnits().values().stream().anyMatch(blocked::contains)) {</span>
+<span class="nc bnc" id="L283" title="All 2 branches missed.">				for (String handle : new LinkedHashSet&lt;&gt;(component.compilationUnits().values())) {</span>
+<span class="nc" id="L284">					gaps.add(parameterizedGap(handle, component.testClass().bindingKey(),</span>
+<span class="nc" id="L285">							&quot;parameterized:&quot; + component.testClass().bindingKey(), &quot;PARAMETERIZED_COMPONENT_BLOCKED&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L286">							&quot;A participating compilation unit has an unresolved migration gap.&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L287">							&quot;Resolve all gaps before changing this provider and test hierarchy.&quot;)); //$NON-NLS-1$</span>
 				}
 			}
 		}
-<span class="fc" id="L267">		return new Analysis(gaps, analysis.disableCoordinatedExternalResource());</span>
+<span class="fc" id="L291">		return new Analysis(gaps, analysis.disableCoordinatedExternalResource());</span>
 	}
 
 	private static Gap parameterizedGap(String handle, String typeIdentity, String candidateId,
 			String reasonCode, String explanation, String remediation) throws JavaModelException {
-<span class="fc" id="L272">		String bindingKey= &quot;&quot;; //$NON-NLS-1$</span>
-<span class="fc" id="L273">		String name= typeIdentity;</span>
-<span class="fc" id="L274">		int start= -1;</span>
-<span class="pc bpc" id="L275" title="1 of 2 branches missed.">		if (JavaCore.create(handle) instanceof ICompilationUnit unit) {</span>
-<span class="fc" id="L276">			IType[] types= unit.getAllTypes();</span>
-<span class="fc" id="L277">			IType target= unit.findPrimaryType();</span>
-<span class="fc bfc" id="L278" title="All 2 branches covered.">			for (IType type : types) {</span>
-<span class="pc bpc" id="L279" title="1 of 4 branches missed.">				if (typeIdentity.equals(type.getKey()) || typeIdentity.equals(type.getFullyQualifiedName('.'))) {</span>
-<span class="fc" id="L280">					target= type;</span>
-<span class="fc" id="L281">					break;</span>
+<span class="fc" id="L296">		String bindingKey= &quot;&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L297">		String name= typeIdentity;</span>
+<span class="fc" id="L298">		int start= -1;</span>
+<span class="pc bpc" id="L299" title="1 of 2 branches missed.">		if (JavaCore.create(handle) instanceof ICompilationUnit unit) {</span>
+<span class="fc" id="L300">			IType[] types= unit.getAllTypes();</span>
+<span class="fc" id="L301">			IType target= ((ITypeRoot) unit).findPrimaryType();</span>
+<span class="fc bfc" id="L302" title="All 2 branches covered.">			for (IType type : types) {</span>
+<span class="pc bpc" id="L303" title="1 of 4 branches missed.">				if (typeIdentity.equals(type.getKey()) || typeIdentity.equals(type.getFullyQualifiedName('.'))) {</span>
+<span class="fc" id="L304">					target= type;</span>
+<span class="fc" id="L305">					break;</span>
 				}
 			}
-<span class="pc bpc" id="L284" title="3 of 4 branches missed.">			if (target == null &amp;&amp; types.length != 0) {</span>
-<span class="nc" id="L285">				target= types[0];</span>
+<span class="pc bpc" id="L308" title="3 of 4 branches missed.">			if (target == null &amp;&amp; types.length != 0) {</span>
+<span class="nc" id="L309">				target= types[0];</span>
 			}
-<span class="pc bpc" id="L287" title="1 of 2 branches missed.">			if (target != null) {</span>
-<span class="fc" id="L288">				bindingKey= target.getKey();</span>
-<span class="fc" id="L289">				name= target.getFullyQualifiedName('.');</span>
-<span class="fc" id="L290">				start= target.getSourceRange().getOffset();</span>
+<span class="pc bpc" id="L311" title="1 of 2 branches missed.">			if (target != null) {</span>
+<span class="fc" id="L312">				bindingKey= target.getKey();</span>
+<span class="fc" id="L313">				name= target.getFullyQualifiedName('.');</span>
+<span class="fc" id="L314">				start= target.getSourceRange().getOffset();</span>
 			}
 		}
-<span class="fc" id="L293">		return new Gap(handle, bindingKey, name, start, candidateId, reasonCode, explanation, remediation);</span>
+<span class="fc" id="L317">		return new Gap(handle, bindingKey, name, start, candidateId, reasonCode, explanation, remediation);</span>
 	}
 
 	/** Replace general mixed-lifecycle gaps only within the proved adapter component. */
 	public static Analysis reconcileMixed(Analysis analysis, MixedResourcePlan plan) {
-<span class="fc bfc" id="L298" title="All 2 branches covered.">		if (plan.protectedUnits().isEmpty()) return analysis;</span>
-<span class="fc" id="L299">		var gaps= new ArrayList&lt;&gt;(analysis.gaps().stream()</span>
-<span class="pc bpc" id="L300" title="1 of 2 branches missed.">				.filter(gap -&gt; !(plan.protectedUnits().contains(gap.ownerCompilationUnitHandle())</span>
-<span class="fc bfc" id="L301" title="All 2 branches covered.">						&amp;&amp; (MIXED_RULE_LIFECYCLE.equals(gap.reasonCode())</span>
-<span class="fc bfc" id="L302" title="All 2 branches covered.">								|| &quot;MIXED_RULE_CONTRACT_RETAINED&quot;.equals(gap.reasonCode()) //$NON-NLS-1$</span>
+<span class="fc bfc" id="L322" title="All 2 branches covered.">		if (plan.protectedUnits().isEmpty()) return analysis;</span>
+<span class="fc" id="L323">		var gaps= new ArrayList&lt;&gt;(analysis.gaps().stream()</span>
+<span class="pc bpc" id="L324" title="1 of 2 branches missed.">				.filter(gap -&gt; !(plan.protectedUnits().contains(gap.ownerCompilationUnitHandle())</span>
+<span class="fc bfc" id="L325" title="All 2 branches covered.">						&amp;&amp; (MIXED_RULE_LIFECYCLE.equals(gap.reasonCode())</span>
+<span class="fc bfc" id="L326" title="All 2 branches covered.">								|| &quot;MIXED_RULE_CONTRACT_RETAINED&quot;.equals(gap.reasonCode()) //$NON-NLS-1$</span>
 								// The provider stays unchanged. This owner has its own field-write and subtype closure.
-<span class="fc bfc" id="L304" title="All 2 branches covered.">								|| &quot;EXTERNAL_RESOURCE_CALLER_OUT_OF_SCOPE&quot;.equals(gap.reasonCode()) //$NON-NLS-1$</span>
-<span class="fc bfc" id="L305" title="All 2 branches covered.">										&amp;&amp; plan.registrations().containsKey(gap.ownerCompilationUnitHandle())))).toList());</span>
-<span class="fc" id="L306">		gaps.addAll(plan.retained());</span>
-<span class="pc bpc" id="L307" title="1 of 2 branches missed.">		boolean deferred= gaps.stream().anyMatch(gap -&gt; MIXED_RULE_LIFECYCLE.equals(gap.reasonCode())</span>
-<span class="pc bpc" id="L308" title="1 of 2 branches missed.">				|| EXTERNAL_RESOURCE_INITIALIZER_UNSUPPORTED.equals(gap.reasonCode()));</span>
-<span class="fc" id="L309">		return new Analysis(gaps, deferred);</span>
+<span class="fc bfc" id="L328" title="All 2 branches covered.">								|| &quot;EXTERNAL_RESOURCE_CALLER_OUT_OF_SCOPE&quot;.equals(gap.reasonCode()) //$NON-NLS-1$</span>
+<span class="fc bfc" id="L329" title="All 2 branches covered.">										&amp;&amp; plan.registrations().containsKey(gap.ownerCompilationUnitHandle())))).toList());</span>
+<span class="fc" id="L330">		gaps.addAll(plan.retained());</span>
+<span class="pc bpc" id="L331" title="1 of 2 branches missed.">		boolean deferred= gaps.stream().anyMatch(gap -&gt; MIXED_RULE_LIFECYCLE.equals(gap.reasonCode())</span>
+<span class="pc bpc" id="L332" title="1 of 2 branches missed.">				|| EXTERNAL_RESOURCE_INITIALIZER_UNSUPPORTED.equals(gap.reasonCode()));</span>
+<span class="fc" id="L333">		return new Analysis(gaps, deferred);</span>
 	}
 
 	/**
@@ -315,896 +339,979 @@ public final class JUnitBestEffortSupport {
 	 */
 	public static EnumSet&lt;JUnitCleanUpFixCore&gt; independentlySafeFixes(
 			EnumSet&lt;JUnitCleanUpFixCore&gt; fixes) {
-<span class="fc" id="L318">		EnumSet&lt;JUnitCleanUpFixCore&gt; result= fixes.clone();</span>
-<span class="fc" id="L319">		result.retainAll(EnumSet.of(</span>
-<span class="fc" id="L320">				JUnitCleanUpFixCore.ASSERT,</span>
-<span class="fc" id="L321">				JUnitCleanUpFixCore.ASSERT_OPTIMIZATION,</span>
-<span class="fc" id="L322">				JUnitCleanUpFixCore.ASSUME_OPTIMIZATION));</span>
-<span class="fc" id="L323">		return result;</span>
+<span class="fc" id="L342">		EnumSet&lt;JUnitCleanUpFixCore&gt; result= fixes.clone();</span>
+<span class="fc" id="L343">		result.retainAll(EnumSet.of(</span>
+<span class="fc" id="L344">				JUnitCleanUpFixCore.ASSERT,</span>
+<span class="fc" id="L345">				JUnitCleanUpFixCore.ASSERT_OPTIMIZATION,</span>
+<span class="fc" id="L346">				JUnitCleanUpFixCore.ASSUME_OPTIMIZATION));</span>
+<span class="fc" id="L347">		return result;</span>
 	}
 
 	/** Analyzes enabled JUnit 4 constructs, including references outside the selected source scope. */
 	public static Analysis analyze(IJavaProject project, ICompilationUnit[] units,
 			EnumSet&lt;JUnitCleanUpFixCore&gt; fixes, IProgressMonitor monitor) throws CoreException {
-<span class="fc" id="L329">		return analyze(project, units, fixes, true, monitor);</span>
+<span class="fc" id="L353">		return analyze(project, units, fixes, true, monitor);</span>
 	}
 
 	/** Analyzes JUnit 4 contracts with the retention rules of the selected migration mode. */
 	public static Analysis analyze(IJavaProject project, ICompilationUnit[] units,
 			EnumSet&lt;JUnitCleanUpFixCore&gt; fixes, boolean bestEffort, IProgressMonitor monitor) throws CoreException {
-<span class="fc" id="L335">		Objects.requireNonNull(project);</span>
-<span class="fc" id="L336">		Objects.requireNonNull(units);</span>
-<span class="fc" id="L337">		Objects.requireNonNull(fixes);</span>
-<span class="pc bpc" id="L338" title="2 of 4 branches missed.">		if (units.length == 0 || fixes.isEmpty()) {</span>
-<span class="nc" id="L339">			return Analysis.empty();</span>
+<span class="fc" id="L359">		Objects.requireNonNull(project);</span>
+<span class="fc" id="L360">		Objects.requireNonNull(units);</span>
+<span class="fc" id="L361">		Objects.requireNonNull(fixes);</span>
+<span class="pc bpc" id="L362" title="2 of 4 branches missed.">		if (units.length == 0 || fixes.isEmpty()) {</span>
+<span class="nc" id="L363">			return Analysis.empty();</span>
 		}
-<span class="fc" id="L341">		Map&lt;String, CompilationUnit&gt; roots= parse(project, units, monitor);</span>
-<span class="fc" id="L342">		Map&lt;String, SourceType&gt; sourceTypesByKey= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L343">		Map&lt;String, Gap&gt; gaps= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L344">		Map&lt;String, ResourceUsage&gt; usages= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L345">		Set&lt;SourceType&gt; unsupportedInitializerOwners= new LinkedHashSet&lt;&gt;();</span>
-<span class="fc bfc" id="L346" title="All 2 branches covered.">		boolean migrateExternalResources= fixes.contains(JUnitCleanUpFixCore.EXTERNALRESOURCE)</span>
-<span class="fc bfc" id="L347" title="All 2 branches covered.">				|| fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE);</span>
+<span class="fc" id="L365">		Map&lt;String, CompilationUnit&gt; roots= parse(project, units, monitor);</span>
+<span class="fc" id="L366">		Map&lt;String, SourceType&gt; sourceTypesByKey= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L367">		Map&lt;String, Gap&gt; gaps= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L368">		Map&lt;String, ResourceUsage&gt; usages= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L369">		Set&lt;SourceType&gt; unsupportedInitializerOwners= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L370">		Set&lt;SourceType&gt; externalFixtureOwners= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L371" title="All 2 branches covered.">		boolean migrateExternalResources= fixes.contains(JUnitCleanUpFixCore.EXTERNALRESOURCE)</span>
+<span class="fc bfc" id="L372" title="All 2 branches covered.">				|| fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE);</span>
 
-<span class="fc bfc" id="L349" title="All 2 branches covered.">		for (Map.Entry&lt;String, CompilationUnit&gt; entry : roots.entrySet()) {</span>
-<span class="fc" id="L350">			String handle= entry.getKey();</span>
-<span class="fc" id="L351">			entry.getValue().accept(new ASTVisitor() {</span>
+<span class="fc" id="L374">		boolean changesExecution= changesExecutionContract(fixes);</span>
+<span class="fc bfc" id="L375" title="All 2 branches covered.">		for (Map.Entry&lt;String, CompilationUnit&gt; entry : roots.entrySet()) {</span>
+<span class="fc" id="L376">			String handle= entry.getKey();</span>
+<span class="fc" id="L377">			entry.getValue().accept(new ASTVisitor() {</span>
 				@Override
 				public boolean visit(TypeDeclaration node) {
-<span class="fc" id="L354">					ITypeBinding binding= node.resolveBinding();</span>
-<span class="fc" id="L355">					String key= JUnitMigrationPlan.typeKey(binding);</span>
-<span class="pc bpc" id="L356" title="1 of 2 branches missed.">					SourceType type= new SourceType(handle, key == null ? &quot;&quot; : key, //$NON-NLS-1$</span>
-<span class="fc" id="L357">							sourceTypeName(node), node.getStartPosition(), node, binding);</span>
-<span class="pc bpc" id="L358" title="1 of 2 branches missed.">					if (key != null) {</span>
-<span class="fc" id="L359">						sourceTypesByKey.put(key, type);</span>
+<span class="fc" id="L380">					ITypeBinding binding= node.resolveBinding();</span>
+<span class="fc" id="L381">					String key= JUnitMigrationPlan.typeKey(binding);</span>
+<span class="pc bpc" id="L382" title="1 of 2 branches missed.">					SourceType type= new SourceType(handle, key == null ? &quot;&quot; : key, //$NON-NLS-1$</span>
+<span class="fc" id="L383">							sourceTypeName(node), node.getStartPosition(), node, binding);</span>
+<span class="pc bpc" id="L384" title="1 of 2 branches missed.">					if (key != null) {</span>
+<span class="fc" id="L385">						sourceTypesByKey.put(key, type);</span>
 					}
-<span class="fc" id="L361">					boolean parameterizedRunner=</span>
-<span class="fc" id="L362">							ParameterizedMigrationEligibility.hasParameterizedRunner(node);</span>
-<span class="fc bfc" id="L363" title="All 4 branches covered.">					if (parameterizedRunner &amp;&amp; fixes.contains(JUnitCleanUpFixCore.PARAMETERIZED)) {</span>
-<span class="fc" id="L364">						ParameterizedMigrationEligibility.Assessment assessment=</span>
-<span class="fc" id="L365">								ParameterizedMigrationEligibility.assess(node);</span>
-<span class="fc bfc" id="L366" title="All 2 branches covered.">						if (!assessment.eligible()) {</span>
-<span class="fc" id="L367">							addGap(gaps, type, &quot;parameterized:&quot; + type.name(), //$NON-NLS-1$</span>
-<span class="fc" id="L368">									assessment.reasonCode(), assessment.explanation(),</span>
-<span class="fc" id="L369">									remediationFor(assessment.reasonCode()));</span>
+<span class="fc" id="L387">					boolean parameterizedRunner=</span>
+<span class="fc" id="L388">							ParameterizedMigrationEligibility.hasParameterizedRunner(node);</span>
+<span class="fc bfc" id="L389" title="All 4 branches covered.">					if (parameterizedRunner &amp;&amp; fixes.contains(JUnitCleanUpFixCore.PARAMETERIZED)) {</span>
+<span class="fc" id="L390">						ParameterizedMigrationEligibility.Assessment assessment=</span>
+<span class="fc" id="L391">								ParameterizedMigrationEligibility.assess(node);</span>
+<span class="fc bfc" id="L392" title="All 2 branches covered.">						if (!assessment.eligible()) {</span>
+<span class="fc" id="L393">							addGap(gaps, type, &quot;parameterized:&quot; + type.name(), //$NON-NLS-1$</span>
+<span class="fc" id="L394">									assessment.reasonCode(), assessment.explanation(),</span>
+<span class="fc" id="L395">									remediationFor(assessment.reasonCode()));</span>
 						}
-<span class="pc bpc" id="L371" title="1 of 4 branches missed.">					} else if (parameterizedRunner &amp;&amp; requiresParameterizedClosure(fixes)) {</span>
-<span class="fc" id="L372">						String reasonCode= &quot;PARAMETERIZED_COMPONENT_NOT_SELECTED&quot;; //$NON-NLS-1$</span>
-<span class="fc" id="L373">						addGap(gaps, type, &quot;parameterized:&quot; + type.name(), //$NON-NLS-1$</span>
-<span class="fc" id="L374">								reasonCode,</span>
-<span class="fc" id="L375">								&quot;A selected rewrite would change JUnit discovery, lifecycle or Rule semantics while the JUnit 4 Parameterized runner remains.&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L376">								remediationFor(reasonCode));</span>
+<span class="pc bpc" id="L397" title="1 of 4 branches missed.">					} else if (parameterizedRunner &amp;&amp; changesExecution) {</span>
+<span class="fc" id="L398">						String reasonCode= &quot;PARAMETERIZED_COMPONENT_NOT_SELECTED&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L399">						addGap(gaps, type, &quot;parameterized:&quot; + type.name(), //$NON-NLS-1$</span>
+<span class="fc" id="L400">								reasonCode,</span>
+<span class="fc" id="L401">								&quot;A selected rewrite would change JUnit discovery, lifecycle or Rule semantics while the JUnit 4 Parameterized runner remains.&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L402">								remediationFor(reasonCode));</span>
 					}
-<span class="fc bfc" id="L378" title="All 2 branches covered.">					if (fixes.contains(JUnitCleanUpFixCore.RUNWITH)) {</span>
-<span class="fc" id="L379">						String runner= runnerType(node);</span>
-<span class="pc bpc" id="L380" title="1 of 4 branches missed.">						if (runner != null &amp;&amp; !runner.isBlank()</span>
-<span class="fc bfc" id="L381" title="All 2 branches covered.">								&amp;&amp; !parameterizedRunner</span>
-<span class="fc bfc" id="L382" title="All 2 branches covered.">								&amp;&amp; !RunWithMigrationEligibility.canMigrate(node, runner)) {</span>
-<span class="fc" id="L383">							addGap(gaps, type, &quot;runner:&quot; + type.name(), //$NON-NLS-1$</span>
-<span class="fc" id="L384">									&quot;CUSTOM_JUNIT4_RUNNER&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L385">									&quot;The JUnit 4 runner &quot; + runner //$NON-NLS-1$</span>
+<span class="fc bfc" id="L404" title="All 2 branches covered.">					if (fixes.contains(JUnitCleanUpFixCore.RUNWITH)) {</span>
+<span class="fc" id="L405">						String runner= runnerType(node);</span>
+<span class="pc bpc" id="L406" title="1 of 4 branches missed.">						if (runner != null &amp;&amp; !runner.isBlank()</span>
+<span class="fc bfc" id="L407" title="All 2 branches covered.">								&amp;&amp; !parameterizedRunner</span>
+<span class="fc bfc" id="L408" title="All 2 branches covered.">								&amp;&amp; !RunWithMigrationEligibility.canMigrate(node, runner)) {</span>
+<span class="fc" id="L409">							addGap(gaps, type, &quot;runner:&quot; + type.name(), //$NON-NLS-1$</span>
+<span class="fc" id="L410">									&quot;CUSTOM_JUNIT4_RUNNER&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L411">									&quot;The JUnit 4 runner &quot; + runner //$NON-NLS-1$</span>
 											+ &quot; has no generally equivalent automatic Jupiter rewrite.&quot;, //$NON-NLS-1$
-<span class="fc" id="L387">									&quot;Port the runner behavior to one or more Jupiter extensions, or retain the Vintage engine for this test type.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L413">									&quot;Port the runner behavior to one or more Jupiter extensions, or retain the Vintage engine for this test type.&quot;); //$NON-NLS-1$</span>
 						}
 					}
-<span class="fc" id="L390">					return true;</span>
+<span class="fc" id="L416">					return true;</span>
 				}
 			});
 		}
 
-<span class="fc bfc" id="L395" title="All 2 branches covered.">		for (Map.Entry&lt;String, CompilationUnit&gt; entry : roots.entrySet()) {</span>
-<span class="fc" id="L396">			String handle= entry.getKey();</span>
-<span class="fc" id="L397">			entry.getValue().accept(new ASTVisitor() {</span>
+<span class="fc bfc" id="L421" title="All 2 branches covered.">		for (Map.Entry&lt;String, CompilationUnit&gt; entry : roots.entrySet()) {</span>
+<span class="fc" id="L422">			String handle= entry.getKey();</span>
+<span class="fc" id="L423">			entry.getValue().accept(new ASTVisitor() {</span>
 				@Override
 				public boolean visit(FieldDeclaration field) {
-<span class="fc" id="L400">					TypeDeclaration ownerDeclaration= enclosingType(field);</span>
-<span class="pc bpc" id="L401" title="1 of 2 branches missed.">					if (ownerDeclaration == null) {</span>
-<span class="nc" id="L402">						return true;</span>
+<span class="fc" id="L426">					TypeDeclaration ownerDeclaration= enclosingType(field);</span>
+<span class="pc bpc" id="L427" title="1 of 2 branches missed.">					if (ownerDeclaration == null) {</span>
+<span class="nc" id="L428">						return true;</span>
 					}
-<span class="fc" id="L404">					SourceType fallbackOwner= sourceType(handle, ownerDeclaration);</span>
-<span class="fc" id="L405">					SourceType owner= sourceTypesByKey.getOrDefault(fallbackOwner.bindingKey(), fallbackOwner);</span>
-<span class="fc" id="L406">					ITypeBinding fieldType= field.getType().resolveBinding();</span>
-<span class="fc" id="L407">					String qualifiedType= qualifiedName(fieldType);</span>
-<span class="fc bfc" id="L408" title="All 2 branches covered.">					if (fixes.contains(JUnitCleanUpFixCore.RULETEMPORARYFOLDER)</span>
-<span class="fc bfc" id="L409" title="All 2 branches covered.">							&amp;&amp; ORG_JUNIT_RULES_TEMPORARY_FOLDER.equals(qualifiedType)) {</span>
-<span class="fc" id="L410">						RuleTemporayFolderJUnitPlugin.Assessment assessment=</span>
-<span class="fc" id="L411">								RuleTemporayFolderJUnitPlugin.assess(field);</span>
-<span class="fc bfc" id="L412" title="All 2 branches covered.">						if (!assessment.eligible()) {</span>
-<span class="fc" id="L413">							addGap(gaps, owner, fieldCandidate(&quot;temporary-folder&quot;, field), //$NON-NLS-1$</span>
-<span class="fc" id="L414">									assessment.reasonCode(), assessment.explanation(),</span>
-<span class="fc" id="L415">									remediationFor(assessment.reasonCode()));</span>
+<span class="fc" id="L430">					SourceType fallbackOwner= sourceType(handle, ownerDeclaration);</span>
+<span class="fc" id="L431">					SourceType owner= sourceTypesByKey.getOrDefault(fallbackOwner.bindingKey(), fallbackOwner);</span>
+<span class="fc" id="L432">					ITypeBinding fieldType= field.getType().resolveBinding();</span>
+<span class="fc" id="L433">					String qualifiedType= qualifiedName(fieldType);</span>
+<span class="fc bfc" id="L434" title="All 2 branches covered.">					if (fixes.contains(JUnitCleanUpFixCore.RULETEMPORARYFOLDER)</span>
+<span class="fc bfc" id="L435" title="All 2 branches covered.">							&amp;&amp; ORG_JUNIT_RULES_TEMPORARY_FOLDER.equals(qualifiedType)) {</span>
+<span class="fc" id="L436">						RuleTemporayFolderJUnitPlugin.Assessment assessment=</span>
+<span class="fc" id="L437">								RuleTemporayFolderJUnitPlugin.assess(field);</span>
+<span class="fc bfc" id="L438" title="All 2 branches covered.">						if (!assessment.eligible()) {</span>
+<span class="fc" id="L439">							addGap(gaps, owner, fieldCandidate(&quot;temporary-folder&quot;, field), //$NON-NLS-1$</span>
+<span class="fc" id="L440">									assessment.reasonCode(), assessment.explanation(),</span>
+<span class="fc" id="L441">									remediationFor(assessment.reasonCode()));</span>
 						}
 					}
-<span class="fc bfc" id="L418" title="All 2 branches covered.">					if (fixes.contains(JUnitCleanUpFixCore.RULETESTNAME)</span>
-<span class="fc bfc" id="L419" title="All 2 branches covered.">							&amp;&amp; TEST_NAME.equals(qualifiedType)) {</span>
-<span class="fc" id="L420">						TestNameRefactorer.Assessment assessment= TestNameRefactorer.assess(field);</span>
-<span class="fc bfc" id="L421" title="All 2 branches covered.">						if (!assessment.eligible()) {</span>
-<span class="fc" id="L422">							addGap(gaps, owner, fieldCandidate(&quot;test-name&quot;, field), //$NON-NLS-1$</span>
-<span class="fc" id="L423">									assessment.reasonCode(), assessment.explanation(),</span>
-<span class="fc" id="L424">									remediationFor(assessment.reasonCode()));</span>
+<span class="fc bfc" id="L444" title="All 2 branches covered.">					if (fixes.contains(JUnitCleanUpFixCore.RULETESTNAME)</span>
+<span class="fc bfc" id="L445" title="All 2 branches covered.">							&amp;&amp; TEST_NAME.equals(qualifiedType)) {</span>
+<span class="fc" id="L446">						TestNameRefactorer.Assessment assessment= TestNameRefactorer.assess(field);</span>
+<span class="fc bfc" id="L447" title="All 2 branches covered.">						if (!assessment.eligible()) {</span>
+<span class="fc" id="L448">							addGap(gaps, owner, fieldCandidate(&quot;test-name&quot;, field), //$NON-NLS-1$</span>
+<span class="fc" id="L449">									assessment.reasonCode(), assessment.explanation(),</span>
+<span class="fc" id="L450">									remediationFor(assessment.reasonCode()));</span>
 						}
 					}
-<span class="fc bfc" id="L427" title="All 2 branches covered.">					if (fixes.contains(JUnitCleanUpFixCore.RULEEXPECTEDEXCEPTION)</span>
-<span class="fc bfc" id="L428" title="All 2 branches covered.">							&amp;&amp; ORG_JUNIT_RULES_EXPECTED_EXCEPTION.equals(qualifiedType)) {</span>
-<span class="fc" id="L429">						RuleExpectedExceptionJUnitPlugin.Assessment assessment=</span>
-<span class="fc" id="L430">								RuleExpectedExceptionJUnitPlugin.assess(field);</span>
-<span class="fc bfc" id="L431" title="All 2 branches covered.">						if (!assessment.eligible()) {</span>
-<span class="fc" id="L432">							addGap(gaps, owner, fieldCandidate(&quot;expected-exception&quot;, field), //$NON-NLS-1$</span>
-<span class="fc" id="L433">									assessment.reasonCode(), assessment.explanation(),</span>
-<span class="fc" id="L434">									remediationFor(assessment.reasonCode()));</span>
+<span class="fc bfc" id="L453" title="All 2 branches covered.">					if (fixes.contains(JUnitCleanUpFixCore.RULEEXPECTEDEXCEPTION)</span>
+<span class="fc bfc" id="L454" title="All 2 branches covered.">							&amp;&amp; ORG_JUNIT_RULES_EXPECTED_EXCEPTION.equals(qualifiedType)) {</span>
+<span class="fc" id="L455">						RuleExpectedExceptionJUnitPlugin.Assessment assessment=</span>
+<span class="fc" id="L456">								RuleExpectedExceptionJUnitPlugin.assess(field);</span>
+<span class="fc bfc" id="L457" title="All 2 branches covered.">						if (!assessment.eligible()) {</span>
+<span class="fc" id="L458">							addGap(gaps, owner, fieldCandidate(&quot;expected-exception&quot;, field), //$NON-NLS-1$</span>
+<span class="fc" id="L459">									assessment.reasonCode(), assessment.explanation(),</span>
+<span class="fc" id="L460">									remediationFor(assessment.reasonCode()));</span>
 						}
 					}
 
-<span class="fc" id="L438">					RuleKind ruleKind= ruleKind(field);</span>
-<span class="fc bfc" id="L439" title="All 2 branches covered.">					if (ruleKind != RuleKind.NONE) {</span>
-<span class="fc" id="L440">						ITypeBinding resource= resourceTypeBinding(field);</span>
-<span class="fc" id="L441">						boolean resourceRule= extendsExternalResource(resource);</span>
-<span class="fc bfc" id="L442" title="All 4 branches covered.">						boolean unsupportedAnonymous= resourceRule &amp;&amp; fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE)</span>
-<span class="fc bfc" id="L443" title="All 4 branches covered.">								&amp;&amp; resource.isAnonymous() &amp;&amp; !RuleExternalResourceJUnitPlugin.isEligibleExternalResourceField(field);</span>
-<span class="fc bfc" id="L444" title="All 2 branches covered.">						if (unsupportedAnonymous) {</span>
-<span class="fc" id="L445">							addInheritedAnonymousRuleGaps(gaps, sourceTypesByKey, owner, field, resource);</span>
-<span class="fc bfc" id="L446" title="All 6 branches covered.">						} else if (!resourceRule &amp;&amp; rulesEnabled(fixes) &amp;&amp; !isKnownRuleType(qualifiedType)) {</span>
-<span class="fc" id="L447">							addGap(gaps, owner, fieldCandidate(&quot;rule&quot;, field), //$NON-NLS-1$</span>
-<span class="fc" id="L448">									&quot;UNSUPPORTED_JUNIT4_RULE&quot;, //$NON-NLS-1$</span>
-<span class="pc bpc" id="L449" title="1 of 2 branches missed.">									&quot;The rule type &quot; + (qualifiedType == null ? &quot;&lt;unresolved&gt;&quot; : qualifiedType) //$NON-NLS-1$ //$NON-NLS-2$</span>
-											+ &quot; has no proven automatic Jupiter equivalent.&quot;, //$NON-NLS-1$
-<span class="fc" id="L451">									&quot;Implement the rule contract as a Jupiter extension, register it explicitly, and then remove the JUnit 4 rule field.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L464">					RuleKind ruleKind= ruleKind(field);</span>
+<span class="fc bfc" id="L465" title="All 2 branches covered.">					if (ruleKind != RuleKind.NONE) {</span>
+<span class="fc bfc" id="L466" title="All 4 branches covered.">						if (changesExecution &amp;&amp; hasUnselectedFixture(field, sourceTypesByKey)) {</span>
+<span class="fc" id="L467">							externalFixtureOwners.add(owner);</span>
 						}
-<span class="fc bfc" id="L453" title="All 2 branches covered.">						if (!bestEffort) {</span>
-<span class="fc bfc" id="L454" title="All 4 branches covered.">							if (resourceRule &amp;&amp; !unsupportedAnonymous) {</span>
-<span class="fc" id="L455">								recordResourceUsage(usages, resource, owner, ruleKind);</span>
+<span class="fc" id="L469">						ITypeBinding resource= resourceTypeBinding(field);</span>
+<span class="fc" id="L470">						boolean resourceRule= extendsExternalResource(resource);</span>
+<span class="fc bfc" id="L471" title="All 4 branches covered.">						boolean unsupportedAnonymous= resourceRule &amp;&amp; fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE)</span>
+<span class="fc bfc" id="L472" title="All 4 branches covered.">								&amp;&amp; resource.isAnonymous() &amp;&amp; !RuleExternalResourceJUnitPlugin.isEligibleExternalResourceField(field);</span>
+<span class="fc bfc" id="L473" title="All 2 branches covered.">						if (unsupportedAnonymous) {</span>
+<span class="fc" id="L474">							addInheritedAnonymousRuleGaps(gaps, sourceTypesByKey, owner, field, resource);</span>
+<span class="fc bfc" id="L475" title="All 6 branches covered.">						} else if (!resourceRule &amp;&amp; rulesEnabled(fixes) &amp;&amp; !isKnownRuleType(qualifiedType)) {</span>
+<span class="fc" id="L476">							addGap(gaps, owner, fieldCandidate(&quot;rule&quot;, field), //$NON-NLS-1$</span>
+<span class="fc" id="L477">									&quot;UNSUPPORTED_JUNIT4_RULE&quot;, //$NON-NLS-1$</span>
+<span class="pc bpc" id="L478" title="1 of 2 branches missed.">									&quot;The rule type &quot; + (qualifiedType == null ? &quot;&lt;unresolved&gt;&quot; : qualifiedType) //$NON-NLS-1$ //$NON-NLS-2$</span>
+											+ &quot; has no proven automatic Jupiter equivalent.&quot;, //$NON-NLS-1$
+<span class="fc" id="L480">									&quot;Implement the rule contract as a Jupiter extension, register it explicitly, and then remove the JUnit 4 rule field.&quot;); //$NON-NLS-1$</span>
+						}
+<span class="fc bfc" id="L482" title="All 2 branches covered.">						if (!bestEffort) {</span>
+<span class="fc bfc" id="L483" title="All 4 branches covered.">							if (resourceRule &amp;&amp; !unsupportedAnonymous) {</span>
+<span class="fc" id="L484">								recordResourceUsage(usages, resource, owner, ruleKind);</span>
 							}
-<span class="fc" id="L457">							return true;</span>
+<span class="fc" id="L486">							return true;</span>
 						}
 						// The planner accepts only single-fragment declarations. Every
 						// initializer still establishes a dependency for retained JUnit 4 fields.
-<span class="fc bfc" id="L461" title="All 2 branches covered.">						boolean multiple= field.fragments().size() &gt; 1;</span>
-<span class="fc bfc" id="L462" title="All 2 branches covered.">						for (Object value : field.fragments()) {</span>
-<span class="fc" id="L463">							ITypeBinding initializer= selectedInitializerFixture((VariableDeclarationFragment) value,</span>
-<span class="fc" id="L464">									multiple, sourceTypesByKey);</span>
-<span class="fc bfc" id="L465" title="All 4 branches covered.">							if (initializer == null &amp;&amp; !resourceRule) {</span>
-<span class="fc" id="L466">								continue;</span>
+<span class="fc bfc" id="L490" title="All 2 branches covered.">						boolean multiple= field.fragments().size() &gt; 1;</span>
+<span class="fc bfc" id="L491" title="All 2 branches covered.">						for (Object value : field.fragments()) {</span>
+<span class="fc" id="L492">							ITypeBinding initializer= selectedInitializerFixture((VariableDeclarationFragment) value,</span>
+<span class="fc" id="L493">									multiple, sourceTypesByKey);</span>
+<span class="fc bfc" id="L494" title="All 4 branches covered.">							if (initializer == null &amp;&amp; !resourceRule) {</span>
+<span class="fc" id="L495">								continue;</span>
 							}
-<span class="fc bfc" id="L468" title="All 2 branches covered.">							ITypeBinding fixture= initializer == null ? resource : initializer;</span>
-<span class="fc bfc" id="L469" title="All 2 branches covered.">							recordResourceUsage(usages, fixture, owner, unsupportedAnonymous ? RuleKind.NONE : ruleKind);</span>
-<span class="pc bpc" id="L470" title="1 of 2 branches missed.">							if (migrateExternalResources &amp;&amp; (multiple</span>
-<span class="pc bpc" id="L471" title="1 of 2 branches missed.">									? !selectedResourceChain(fixture, sourceTypesByKey).isEmpty()</span>
-<span class="fc bfc" id="L472" title="All 6 branches covered.">									: initializer != null &amp;&amp; !plannerCoversInitializer(resource, initializer, sourceTypesByKey))) {</span>
-<span class="fc" id="L473">								unsupportedInitializerOwners.add(owner);</span>
+<span class="fc bfc" id="L497" title="All 2 branches covered.">							ITypeBinding fixture= initializer == null ? resource : initializer;</span>
+<span class="fc bfc" id="L498" title="All 2 branches covered.">							recordResourceUsage(usages, fixture, owner, unsupportedAnonymous ? RuleKind.NONE : ruleKind);</span>
+<span class="pc bpc" id="L499" title="1 of 2 branches missed.">							if (migrateExternalResources &amp;&amp; (multiple</span>
+<span class="pc bpc" id="L500" title="1 of 2 branches missed.">									? !selectedResourceChain(fixture, sourceTypesByKey).isEmpty()</span>
+<span class="fc bfc" id="L501" title="All 6 branches covered.">									: initializer != null &amp;&amp; !plannerCoversInitializer(resource, initializer, sourceTypesByKey))) {</span>
+<span class="fc" id="L502">								unsupportedInitializerOwners.add(owner);</span>
 							}
 						}
 					}
-<span class="fc" id="L477">					return true;</span>
+<span class="fc" id="L506">					return true;</span>
 				}
 			});
 		}
 
-<span class="fc bfc" id="L482" title="All 2 branches covered.">		if (migrateExternalResources) {</span>
-<span class="fc" id="L483">			addUnselectedResourceCallerGaps(units, roots, sourceTypesByKey, usages, gaps, monitor);</span>
+<span class="fc bfc" id="L511" title="All 2 branches covered.">		if (migrateExternalResources) {</span>
+<span class="fc" id="L512">			addUnselectedResourceCallerGaps(units, roots, sourceTypesByKey, usages, gaps, monitor);</span>
+		}
+<span class="fc bfc" id="L514" title="All 2 branches covered.">		if (changesExecution) {</span>
+<span class="fc" id="L515">			Map&lt;IType, Boolean&gt; inheritedRules= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L516" title="All 2 branches covered.">			for (SourceType type : sourceTypesByKey.values()) {</span>
+<span class="fc bfc" id="L517" title="All 2 branches covered.">				if (inheritsUnselectedRule(type.binding(), sourceTypesByKey, inheritedRules)) externalFixtureOwners.add(type);</span>
+			}
 		}
 
-<span class="fc bfc" id="L486" title="All 2 branches covered.">		boolean retainResources= bestEffort</span>
-<span class="fc" id="L487">				? addRetainedExternalResourceGaps(sourceTypesByKey, usages.values(), unsupportedInitializerOwners, gaps)</span>
-<span class="fc" id="L488">				: addStrictMixedRuleGaps(sourceTypesByKey, usages, gaps);</span>
-<span class="fc" id="L489">		return new Analysis(new ArrayList&lt;&gt;(gaps.values()), retainResources);</span>
+<span class="fc bfc" id="L521" title="All 2 branches covered.">		if (!externalFixtureOwners.isEmpty()) {</span>
+			// An inherited rule and its tests must still be discovered by the same engine.
+<span class="fc" id="L523">			expandResourceComponent(resourceRelationships(sourceTypesByKey, List.of(), externalFixtureOwners),</span>
+<span class="fc" id="L524">					externalFixtureOwners);</span>
+<span class="fc bfc" id="L525" title="All 2 branches covered.">			for (SourceType owner : externalFixtureOwners) {</span>
+<span class="fc" id="L526">				addGap(gaps, owner, &quot;external-resource-owner:&quot; + owner.name(), EXTERNAL_RESOURCE_FIXTURE_OUT_OF_SCOPE, //$NON-NLS-1$</span>
+<span class="fc" id="L527">						&quot;A fixture declaration is outside the selected source scope or an ancestor's rule metadata is unavailable. The test's existing lifecycle must be retained.&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L528">						&quot;Provide any unavailable ancestor metadata and select the fixture hierarchy and its callers for coordinated migration.&quot;); //$NON-NLS-1$</span>
+			}
+		}
+<span class="fc bfc" id="L531" title="All 2 branches covered.">		boolean retainResources= bestEffort</span>
+<span class="fc" id="L532">				? addRetainedExternalResourceGaps(sourceTypesByKey, usages.values(), unsupportedInitializerOwners, gaps)</span>
+<span class="fc" id="L533">				: addStrictMixedRuleGaps(sourceTypesByKey, usages, gaps);</span>
+<span class="fc" id="L534">		return new Analysis(new ArrayList&lt;&gt;(gaps.values()), retainResources);</span>
+	}
+
+	private static boolean inheritsUnselectedRule(ITypeBinding owner, Map&lt;String, SourceType&gt; selected,
+			Map&lt;IType, Boolean&gt; inheritedRules) throws JavaModelException {
+<span class="fc bfc" id="L539" title="All 2 branches covered.">		for (var parent= owner.getSuperclass(); parent != null; parent= parent.getSuperclass()) {</span>
+<span class="fc bfc" id="L540" title="All 2 branches covered.">			if (parent.isRecovered()) return true;</span>
+<span class="fc bfc" id="L541" title="All 2 branches covered.">			if (selected.containsKey(JUnitMigrationPlan.typeKey(parent))) continue;</span>
+<span class="pc bpc" id="L542" title="1 of 2 branches missed.">			if (!(parent.getTypeDeclaration().getJavaElement() instanceof IType type)) return true;</span>
+<span class="fc" id="L543">			Boolean hasRule= inheritedRules.get(type);</span>
+<span class="fc bfc" id="L544" title="All 2 branches covered.">			if (hasRule == null) {</span>
+				// An unselected source binding can lose its compiler scope after createASTs.
+				// Read the declarations from the actual ancestor's current Java model.
+<span class="fc" id="L547">				hasRule= declaresRule(type);</span>
+<span class="fc" id="L548">				inheritedRules.put(type, hasRule);</span>
+			}
+<span class="fc bfc" id="L550" title="All 2 branches covered.">			if (hasRule.booleanValue()) return true;</span>
+		}
+<span class="fc" id="L552">		return false;</span>
+	}
+
+	private static boolean declaresRule(IType type) throws JavaModelException {
+		try {
+<span class="fc bfc" id="L557" title="All 4 branches covered.">			for (var field : type.getFields()) if (hasRuleAnnotation(type, field)) return true;</span>
+<span class="fc bfc" id="L558" title="All 4 branches covered.">			for (var method : type.getMethods()) if (hasRuleAnnotation(type, method)) return true;</span>
+<span class="fc" id="L559">			return false;</span>
+<span class="nc" id="L560">		} catch (JavaModelException exception) {</span>
+			// A binding's handle can outlive its source. Missing metadata is not proof of no rule.
+<span class="nc bnc" id="L562" title="All 2 branches missed.">			if (exception.isDoesNotExist()) return true;</span>
+<span class="nc" id="L563">			throw exception;</span>
+		}
+	}
+
+	private static boolean hasRuleAnnotation(IType owner, IAnnotatable member) throws JavaModelException {
+<span class="fc bfc" id="L568" title="All 2 branches covered.">		for (var annotation : member.getAnnotations()) {</span>
+<span class="fc" id="L569">			String name= annotation.getElementName();</span>
+			// Class files expose the qualified annotation name. Source may instead import it.
+<span class="fc bfc" id="L571" title="All 4 branches covered.">			if (ORG_JUNIT_RULE.equals(name) || ORG_JUNIT_CLASS_RULE.equals(name)) return true;</span>
+<span class="pc bpc" id="L572" title="1 of 6 branches missed.">			if (!owner.isBinary() &amp;&amp; (&quot;Rule&quot;.equals(name) || &quot;ClassRule&quot;.equals(name))) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L573">				String[][] matches= owner.resolveType(name);</span>
+<span class="pc bpc" id="L574" title="2 of 4 branches missed.">				if (matches == null || matches.length != 1) return true;</span>
+<span class="fc" id="L575">				String resolved= matches[0][0] + &quot;.&quot; + matches[0][1]; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L576" title="1 of 4 branches missed.">				if (ORG_JUNIT_RULE.equals(resolved) || ORG_JUNIT_CLASS_RULE.equals(resolved)) return true;</span>
+			}
+		}
+<span class="fc" id="L579">		return false;</span>
+	}
+
+	private static boolean hasUnselectedFixture(FieldDeclaration field, Map&lt;String, SourceType&gt; selected) {
+<span class="fc bfc" id="L583" title="All 2 branches covered.">		for (Object value : field.fragments()) {</span>
+<span class="fc" id="L584">			var fragment= (VariableDeclarationFragment) value;</span>
+<span class="fc bfc" id="L585" title="All 2 branches covered.">			ITypeBinding fixture= fragment.getInitializer() == null ? null : fragment.getInitializer().resolveTypeBinding();</span>
+<span class="fc bfc" id="L586" title="All 2 branches covered.">			if (!extendsExternalResource(fixture)) fixture= field.getType().resolveBinding();</span>
+<span class="fc bfc" id="L587" title="All 4 branches covered.">			if (!extendsExternalResource(fixture) || RuleExternalResourceJUnitPlugin.isDedicatedRuleType(fixture)) continue;</span>
+			// An anonymous implementation belongs to this field. Check its named ancestors.
+<span class="pc bpc" id="L589" title="1 of 4 branches missed.">			for (var current= fixture.isAnonymous() ? fixture.getSuperclass() : fixture; current != null</span>
+<span class="fc bfc" id="L590" title="All 2 branches covered.">					&amp;&amp; !ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(qualifiedName(current)); current= current.getSuperclass()) {</span>
+<span class="fc bfc" id="L591" title="All 2 branches covered.">				if (!selected.containsKey(JUnitMigrationPlan.typeKey(current))) return true;</span>
+			}
+		}
+<span class="fc" id="L594">		return false;</span>
 	}
 
 	private static boolean addStrictMixedRuleGaps(Map&lt;String, SourceType&gt; sourceTypes,
 			Map&lt;String, ResourceUsage&gt; usages, Map&lt;String, Gap&gt; gaps) {
-<span class="fc" id="L494">		boolean mixed= false;</span>
-<span class="fc bfc" id="L495" title="All 2 branches covered.">		for (var entry : usages.entrySet()) {</span>
-<span class="fc" id="L496">			ResourceUsage usage= entry.getValue();</span>
-<span class="fc bfc" id="L497" title="All 2 branches covered.">			if (usage.ruleKinds.size() &gt; 1) {</span>
-<span class="fc" id="L498">				mixed= true;</span>
-<span class="fc" id="L499">				SourceType target= sourceTypes.getOrDefault(entry.getKey(), usage.owners.getFirst());</span>
-<span class="fc" id="L500">				String resourceName= qualifiedName(usage.binding);</span>
-<span class="pc bpc" id="L501" title="1 of 2 branches missed.">				addGap(gaps, target, &quot;external-resource:&quot; + (resourceName == null ? target.name() : resourceName), //$NON-NLS-1$</span>
-<span class="fc" id="L502">						MIXED_RULE_LIFECYCLE,</span>
-<span class="fc" id="L503">						&quot;The same ExternalResource fixture is used by both @Rule and @ClassRule, so one Jupiter callback lifecycle cannot preserve both contracts.&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L504">						&quot;Split the fixture into separate instance and class extensions, migrate each callback lifecycle, and update the corresponding fields.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L599">		boolean mixed= false;</span>
+<span class="fc bfc" id="L600" title="All 2 branches covered.">		for (var entry : usages.entrySet()) {</span>
+<span class="fc" id="L601">			ResourceUsage usage= entry.getValue();</span>
+<span class="fc bfc" id="L602" title="All 2 branches covered.">			if (usage.ruleKinds.size() &gt; 1) {</span>
+<span class="fc" id="L603">				mixed= true;</span>
+<span class="fc" id="L604">				SourceType target= sourceTypes.getOrDefault(entry.getKey(), usage.owners.getFirst());</span>
+<span class="fc" id="L605">				String resourceName= qualifiedName(usage.binding);</span>
+<span class="pc bpc" id="L606" title="1 of 2 branches missed.">				addGap(gaps, target, &quot;external-resource:&quot; + (resourceName == null ? target.name() : resourceName), //$NON-NLS-1$</span>
+<span class="fc" id="L607">						MIXED_RULE_LIFECYCLE,</span>
+<span class="fc" id="L608">						&quot;The same ExternalResource fixture is used by both @Rule and @ClassRule, so one Jupiter callback lifecycle cannot preserve both contracts.&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L609">						&quot;Split the fixture into separate instance and class extensions, migrate each callback lifecycle, and update the corresponding fields.&quot;); //$NON-NLS-1$</span>
 			}
 		}
-<span class="fc" id="L507">		return mixed;</span>
+<span class="fc" id="L612">		return mixed;</span>
 	}
 
 	private static void recordResourceUsage(Map&lt;String, ResourceUsage&gt; usages, ITypeBinding fixture,
 			SourceType owner, RuleKind ruleKind) {
-<span class="fc" id="L512">		String resourceKey= JUnitMigrationPlan.typeKey(fixture);</span>
-<span class="pc bpc" id="L513" title="1 of 2 branches missed.">		String usageKey= resourceKey == null ? qualifiedName(fixture) : resourceKey;</span>
-<span class="pc bpc" id="L514" title="2 of 4 branches missed.">		if (usageKey != null &amp;&amp; !usageKey.isBlank()) {</span>
-<span class="fc" id="L515">			ResourceUsage usage= usages.computeIfAbsent(usageKey, ignored -&gt; new ResourceUsage(fixture));</span>
-<span class="fc" id="L516">			usage.owners.add(owner);</span>
+<span class="fc" id="L617">		String resourceKey= JUnitMigrationPlan.typeKey(fixture);</span>
+<span class="pc bpc" id="L618" title="1 of 2 branches missed.">		String usageKey= resourceKey == null ? qualifiedName(fixture) : resourceKey;</span>
+<span class="pc bpc" id="L619" title="2 of 4 branches missed.">		if (usageKey != null &amp;&amp; !usageKey.isBlank()) {</span>
+<span class="fc" id="L620">			ResourceUsage usage= usages.computeIfAbsent(usageKey, ignored -&gt; new ResourceUsage(fixture));</span>
+<span class="fc" id="L621">			usage.owners.add(owner);</span>
 			// An unsupported anonymous rule still depends on its source fixture.
-<span class="fc bfc" id="L518" title="All 2 branches covered.">			if (ruleKind != RuleKind.NONE) {</span>
-<span class="fc" id="L519">				usage.ruleKinds.add(ruleKind);</span>
+<span class="fc bfc" id="L623" title="All 2 branches covered.">			if (ruleKind != RuleKind.NONE) {</span>
+<span class="fc" id="L624">				usage.ruleKinds.add(ruleKind);</span>
 			}
 		}
-<span class="fc" id="L522">	}</span>
+<span class="fc" id="L627">	}</span>
 
 	private static boolean addRetainedExternalResourceGaps(Map&lt;String, SourceType&gt; sourceTypes,
 			Collection&lt;ResourceUsage&gt; usages, Set&lt;SourceType&gt; unsupportedInitializerOwners, Map&lt;String, Gap&gt; gaps) {
 		// The planner can change hooks on the inherited source fixture as well as
 		// the concrete fixture. The binary JUnit base does not couple those hooks.
-<span class="fc" id="L528">		Map&lt;String, EnumSet&lt;RuleKind&gt;&gt; ruleKindsByFixture= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L529">		Set&lt;SourceType&gt; mixed= new LinkedHashSet&lt;&gt;();</span>
-<span class="fc bfc" id="L530" title="All 2 branches covered.">		for (ResourceUsage usage : usages) {</span>
+<span class="fc" id="L633">		Map&lt;String, EnumSet&lt;RuleKind&gt;&gt; ruleKindsByFixture= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L634">		Set&lt;SourceType&gt; mixed= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L635" title="All 2 branches covered.">		for (ResourceUsage usage : usages) {</span>
 			// Keep the established protection for uses with the same exact binding,
 			// including when the ordinary binding is the only evidence available.
-<span class="fc bfc" id="L533" title="All 2 branches covered.">			if (usage.ruleKinds.size() &gt; 1) {</span>
-<span class="fc" id="L534">				mixed.addAll(usage.owners);</span>
+<span class="fc bfc" id="L638" title="All 2 branches covered.">			if (usage.ruleKinds.size() &gt; 1) {</span>
+<span class="fc" id="L639">				mixed.addAll(usage.owners);</span>
 			}
-<span class="fc bfc" id="L536" title="All 2 branches covered.">			for (String key : selectedResourceChain(usage.binding, sourceTypes)) {</span>
-<span class="fc" id="L537">				ruleKindsByFixture.computeIfAbsent(key, ignored -&gt; EnumSet.noneOf(RuleKind.class))</span>
-<span class="fc" id="L538">						.addAll(usage.ruleKinds);</span>
+<span class="fc bfc" id="L641" title="All 2 branches covered.">			for (String key : selectedResourceChain(usage.binding, sourceTypes)) {</span>
+<span class="fc" id="L642">				ruleKindsByFixture.computeIfAbsent(key, ignored -&gt; EnumSet.noneOf(RuleKind.class))</span>
+<span class="fc" id="L643">						.addAll(usage.ruleKinds);</span>
 			}
 		}
-<span class="fc" id="L541">		ruleKindsByFixture.forEach((key, kinds) -&gt; {</span>
-<span class="fc bfc" id="L542" title="All 2 branches covered.">			if (kinds.size() &gt; 1) {</span>
-<span class="fc" id="L543">				mixed.add(sourceTypes.get(key));</span>
+<span class="fc" id="L646">		ruleKindsByFixture.forEach((key, kinds) -&gt; {</span>
+<span class="fc bfc" id="L647" title="All 2 branches covered.">			if (kinds.size() &gt; 1) {</span>
+<span class="fc" id="L648">				mixed.add(sourceTypes.get(key));</span>
 			}
-<span class="fc" id="L545">		});</span>
-<span class="fc bfc" id="L546" title="All 4 branches covered.">		if (mixed.isEmpty() &amp;&amp; unsupportedInitializerOwners.isEmpty()) {</span>
-<span class="fc" id="L547">			return false;</span>
+<span class="fc" id="L650">		});</span>
+<span class="fc bfc" id="L651" title="All 4 branches covered.">		if (mixed.isEmpty() &amp;&amp; unsupportedInitializerOwners.isEmpty()) {</span>
+<span class="fc" id="L652">			return false;</span>
 		}
 
-<span class="fc" id="L550">		Map&lt;SourceType, Set&lt;SourceType&gt;&gt; relatedTypes= resourceRelationships(sourceTypes, usages, mixed);</span>
-<span class="fc" id="L551">		expandResourceComponent(relatedTypes, mixed);</span>
-<span class="fc bfc" id="L552" title="All 2 branches covered.">		for (SourceType type : mixed) {</span>
-<span class="fc" id="L553">			addGap(gaps, type, &quot;external-resource:&quot; + type.name(), //$NON-NLS-1$</span>
-<span class="fc" id="L554">					MIXED_RULE_LIFECYCLE,</span>
-<span class="fc" id="L555">					&quot;This type is coupled to an ExternalResource hierarchy used by both @Rule and @ClassRule, so one Jupiter callback lifecycle cannot preserve both contracts.&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L556">					&quot;Split the fixture into separate instance and class extensions, then migrate the related fixtures, rules and test lifecycle together.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L655">		Map&lt;SourceType, Set&lt;SourceType&gt;&gt; relatedTypes= resourceRelationships(sourceTypes, usages, mixed);</span>
+<span class="fc" id="L656">		expandResourceComponent(relatedTypes, mixed);</span>
+<span class="fc bfc" id="L657" title="All 2 branches covered.">		for (SourceType type : mixed) {</span>
+<span class="fc" id="L658">			addGap(gaps, type, &quot;external-resource:&quot; + type.name(), //$NON-NLS-1$</span>
+<span class="fc" id="L659">					MIXED_RULE_LIFECYCLE,</span>
+<span class="fc" id="L660">					&quot;This type is coupled to an ExternalResource hierarchy used by both @Rule and @ClassRule, so one Jupiter callback lifecycle cannot preserve both contracts.&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L661">					&quot;Split the fixture into separate instance and class extensions, then migrate the related fixtures, rules and test lifecycle together.&quot;); //$NON-NLS-1$</span>
 		}
 		// A component reached by a mixed fixture already has an actionable gap.
-<span class="fc" id="L559">		unsupportedInitializerOwners.removeAll(mixed);</span>
-<span class="fc" id="L560">		expandResourceComponent(relatedTypes, unsupportedInitializerOwners);</span>
-<span class="fc bfc" id="L561" title="All 2 branches covered.">		for (SourceType type : unsupportedInitializerOwners) {</span>
-<span class="fc" id="L562">			addGap(gaps, type, &quot;external-resource-initializer:&quot; + type.name(), //$NON-NLS-1$</span>
-<span class="fc" id="L563">					EXTERNAL_RESOURCE_INITIALIZER_UNSUPPORTED,</span>
-<span class="fc" id="L564">					&quot;A Rule initializer identifies a source fixture that the existing Rule rewrite cannot migrate together with its field.&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L565">					&quot;Migrate the fixture, its initializer and all related rules and tests together, or retain their JUnit 4 contract.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L664">		unsupportedInitializerOwners.removeAll(mixed);</span>
+<span class="fc" id="L665">		expandResourceComponent(relatedTypes, unsupportedInitializerOwners);</span>
+<span class="fc bfc" id="L666" title="All 2 branches covered.">		for (SourceType type : unsupportedInitializerOwners) {</span>
+<span class="fc" id="L667">			addGap(gaps, type, &quot;external-resource-initializer:&quot; + type.name(), //$NON-NLS-1$</span>
+<span class="fc" id="L668">					EXTERNAL_RESOURCE_INITIALIZER_UNSUPPORTED,</span>
+<span class="fc" id="L669">					&quot;A Rule initializer identifies a source fixture that the existing Rule rewrite cannot migrate together with its field.&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L670">					&quot;Migrate the fixture, its initializer and all related rules and tests together, or retain their JUnit 4 contract.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L567">		return true;</span>
+<span class="fc" id="L672">		return true;</span>
 	}
 
 	private static Map&lt;SourceType, Set&lt;SourceType&gt;&gt; resourceRelationships(Map&lt;String, SourceType&gt; sourceTypes,
 			Collection&lt;ResourceUsage&gt; usages, Set&lt;SourceType&gt; mixed) {
-<span class="fc" id="L572">		Map&lt;SourceType, Set&lt;SourceType&gt;&gt; relatedTypes= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L573">		Set&lt;SourceType&gt; testContracts= new LinkedHashSet&lt;&gt;();</span>
-<span class="fc bfc" id="L574" title="All 2 branches covered.">		for (SourceType type : sourceTypes.values()) {</span>
-<span class="fc bfc" id="L575" title="All 2 branches covered.">			if (declaresJUnit4TestContract(type.declaration())) {</span>
-<span class="fc" id="L576">				testContracts.add(type);</span>
+<span class="fc" id="L677">		Map&lt;SourceType, Set&lt;SourceType&gt;&gt; relatedTypes= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L678">		Set&lt;SourceType&gt; testContracts= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L679" title="All 2 branches covered.">		for (SourceType type : sourceTypes.values()) {</span>
+<span class="fc bfc" id="L680" title="All 2 branches covered.">			if (declaresJUnit4TestContract(type.declaration())) {</span>
+<span class="fc" id="L681">				testContracts.add(type);</span>
 			}
 		}
-<span class="fc bfc" id="L579" title="All 2 branches covered.">		for (SourceType type : sourceTypes.values()) {</span>
-<span class="fc bfc" id="L580" title="All 2 branches covered.">			for (String key : selectedResourceChain(type.binding(), sourceTypes)) {</span>
-<span class="fc" id="L581">				connect(relatedTypes, type, sourceTypes.get(key));</span>
+<span class="fc bfc" id="L684" title="All 2 branches covered.">		for (SourceType type : sourceTypes.values()) {</span>
+<span class="fc bfc" id="L685" title="All 2 branches covered.">			for (String key : selectedResourceChain(type.binding(), sourceTypes)) {</span>
+<span class="fc" id="L686">				connect(relatedTypes, type, sourceTypes.get(key));</span>
 			}
 			// A retained test requires the source annotations on its superclasses.
 			// Their other subclasses can also consume those same annotations.
-<span class="fc" id="L585">			for (ITypeBinding ancestor= type.binding().getSuperclass();</span>
-<span class="pc bpc" id="L586" title="1 of 4 branches missed.">					ancestor != null &amp;&amp; !ancestor.isRecovered(); ancestor= ancestor.getSuperclass()) {</span>
-<span class="fc" id="L587">				SourceType declaration= sourceTypes.get(JUnitMigrationPlan.typeKey(ancestor));</span>
-<span class="fc bfc" id="L588" title="All 2 branches covered.">				if (testContracts.contains(declaration)) {</span>
-<span class="fc" id="L589">					connect(relatedTypes, type, declaration);</span>
+<span class="fc" id="L690">			for (ITypeBinding ancestor= type.binding().getSuperclass();</span>
+<span class="fc bfc" id="L691" title="All 4 branches covered.">					ancestor != null &amp;&amp; !ancestor.isRecovered(); ancestor= ancestor.getSuperclass()) {</span>
+<span class="fc" id="L692">				SourceType declaration= sourceTypes.get(JUnitMigrationPlan.typeKey(ancestor));</span>
+<span class="fc bfc" id="L693" title="All 2 branches covered.">				if (testContracts.contains(declaration)) {</span>
+<span class="fc" id="L694">					connect(relatedTypes, type, declaration);</span>
 				}
 			}
 		}
-<span class="fc bfc" id="L593" title="All 2 branches covered.">		for (ResourceUsage usage : usages) {</span>
-<span class="fc" id="L594">			Set&lt;String&gt; fixtures= selectedResourceChain(usage.binding, sourceTypes);</span>
-<span class="fc bfc" id="L595" title="All 2 branches covered.">			if (!fixtures.isEmpty()) {</span>
-<span class="fc" id="L596">				SourceType fixture= sourceTypes.get(fixtures.iterator().next());</span>
-<span class="fc bfc" id="L597" title="All 2 branches covered.">				for (SourceType owner : usage.owners) {</span>
-<span class="fc" id="L598">					connect(relatedTypes, fixture, owner);</span>
+<span class="fc bfc" id="L698" title="All 2 branches covered.">		for (ResourceUsage usage : usages) {</span>
+<span class="fc" id="L699">			Set&lt;String&gt; fixtures= selectedResourceChain(usage.binding, sourceTypes);</span>
+<span class="fc bfc" id="L700" title="All 2 branches covered.">			if (!fixtures.isEmpty()) {</span>
+<span class="fc" id="L701">				SourceType fixture= sourceTypes.get(fixtures.iterator().next());</span>
+<span class="fc bfc" id="L702" title="All 2 branches covered.">				for (SourceType owner : usage.owners) {</span>
+<span class="fc" id="L703">					connect(relatedTypes, fixture, owner);</span>
 				}
 			}
 		}
 
 		// Suppressing a lifecycle rewrite applies to the whole file. Carry
 		// that restriction to contracts declared beside an affected type.
-<span class="fc" id="L605">		Set&lt;SourceType&gt; participants= new LinkedHashSet&lt;&gt;(mixed);</span>
-<span class="fc" id="L606">		participants.addAll(relatedTypes.keySet());</span>
-<span class="fc" id="L607">		Map&lt;String, SourceType&gt; firstTypeByUnit= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L608" title="All 2 branches covered.">		for (SourceType type : participants) {</span>
-<span class="fc" id="L609">			SourceType first= firstTypeByUnit.putIfAbsent(type.unitHandle(), type);</span>
-<span class="pc bpc" id="L610" title="1 of 2 branches missed.">			if (first != null) {</span>
-<span class="nc" id="L611">				connect(relatedTypes, first, type);</span>
+<span class="fc" id="L710">		Set&lt;SourceType&gt; participants= new LinkedHashSet&lt;&gt;(mixed);</span>
+<span class="fc" id="L711">		participants.addAll(relatedTypes.keySet());</span>
+<span class="fc" id="L712">		Map&lt;String, SourceType&gt; firstTypeByUnit= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L713" title="All 2 branches covered.">		for (SourceType type : participants) {</span>
+<span class="fc" id="L714">			SourceType first= firstTypeByUnit.putIfAbsent(type.unitHandle(), type);</span>
+<span class="pc bpc" id="L715" title="1 of 2 branches missed.">			if (first != null) {</span>
+<span class="nc" id="L716">				connect(relatedTypes, first, type);</span>
 			}
 		}
 
-<span class="fc" id="L615">		return relatedTypes;</span>
+<span class="fc" id="L720">		return relatedTypes;</span>
 	}
 
 	private static void expandResourceComponent(Map&lt;SourceType, Set&lt;SourceType&gt;&gt; relatedTypes, Set&lt;SourceType&gt; affected) {
-<span class="fc" id="L619">		ArrayDeque&lt;SourceType&gt; pending= new ArrayDeque&lt;&gt;(affected);</span>
-<span class="fc bfc" id="L620" title="All 2 branches covered.">		while (!pending.isEmpty()) {</span>
-<span class="fc bfc" id="L621" title="All 2 branches covered.">			for (SourceType related : relatedTypes.getOrDefault(pending.removeFirst(), Set.of())) {</span>
-<span class="fc bfc" id="L622" title="All 2 branches covered.">				if (affected.add(related)) {</span>
-<span class="fc" id="L623">					pending.addLast(related);</span>
+<span class="fc" id="L724">		ArrayDeque&lt;SourceType&gt; pending= new ArrayDeque&lt;&gt;(affected);</span>
+<span class="fc bfc" id="L725" title="All 2 branches covered.">		while (!pending.isEmpty()) {</span>
+<span class="fc bfc" id="L726" title="All 2 branches covered.">			for (SourceType related : relatedTypes.getOrDefault(pending.removeFirst(), Set.of())) {</span>
+<span class="fc bfc" id="L727" title="All 2 branches covered.">				if (affected.add(related)) {</span>
+<span class="fc" id="L728">					pending.addLast(related);</span>
 				}
 			}
 		}
-<span class="fc" id="L627">	}</span>
+<span class="fc" id="L732">	}</span>
 
 	private static void connect(Map&lt;SourceType, Set&lt;SourceType&gt;&gt; relatedTypes, SourceType first, SourceType second) {
-<span class="fc bfc" id="L630" title="All 2 branches covered.">		if (!first.equals(second)) {</span>
-<span class="fc" id="L631">			relatedTypes.computeIfAbsent(first, ignored -&gt; new LinkedHashSet&lt;&gt;()).add(second);</span>
-<span class="fc" id="L632">			relatedTypes.computeIfAbsent(second, ignored -&gt; new LinkedHashSet&lt;&gt;()).add(first);</span>
+<span class="fc bfc" id="L735" title="All 2 branches covered.">		if (!first.equals(second)) {</span>
+<span class="fc" id="L736">			relatedTypes.computeIfAbsent(first, ignored -&gt; new LinkedHashSet&lt;&gt;()).add(second);</span>
+<span class="fc" id="L737">			relatedTypes.computeIfAbsent(second, ignored -&gt; new LinkedHashSet&lt;&gt;()).add(first);</span>
 		}
-<span class="fc" id="L634">	}</span>
+<span class="fc" id="L739">	}</span>
 
 	static boolean declaresJUnit4TestContract(TypeDeclaration declaration) {
-<span class="pc bpc" id="L637" title="1 of 2 branches missed.">		return hasInheritedTestAnnotation(declaration.modifiers())</span>
-<span class="fc bfc" id="L638" title="All 2 branches covered.">				|| Arrays.stream(declaration.getMethods()).anyMatch(method -&gt; hasInheritedTestAnnotation(method.modifiers()))</span>
-<span class="fc bfc" id="L639" title="All 2 branches covered.">				|| Arrays.stream(declaration.getFields()).anyMatch(field -&gt; hasInheritedTestAnnotation(field.modifiers()));</span>
+<span class="pc bpc" id="L742" title="1 of 2 branches missed.">		return hasInheritedTestAnnotation(declaration.modifiers())</span>
+<span class="fc bfc" id="L743" title="All 2 branches covered.">				|| Arrays.stream(declaration.getMethods()).anyMatch(method -&gt; hasInheritedTestAnnotation(method.modifiers()))</span>
+<span class="fc bfc" id="L744" title="All 2 branches covered.">				|| Arrays.stream(declaration.getFields()).anyMatch(field -&gt; hasInheritedTestAnnotation(field.modifiers()));</span>
 	}
 
 	private static boolean hasInheritedTestAnnotation(List&lt;?&gt; modifiers) {
-<span class="fc bfc" id="L643" title="All 2 branches covered.">		for (Object modifier : modifiers) {</span>
-<span class="fc bfc" id="L644" title="All 2 branches covered.">			if (modifier instanceof Annotation annotation) {</span>
-<span class="fc" id="L645">				ITypeBinding binding= annotation.resolveTypeBinding();</span>
-<span class="pc bpc" id="L646" title="2 of 6 branches missed.">				if (binding != null &amp;&amp; !binding.isRecovered() &amp;&amp; INHERITED_TEST_ANNOTATIONS.contains(qualifiedName(binding))) {</span>
-<span class="fc" id="L647">					return true;</span>
+<span class="fc bfc" id="L748" title="All 2 branches covered.">		for (Object modifier : modifiers) {</span>
+<span class="fc bfc" id="L749" title="All 2 branches covered.">			if (modifier instanceof Annotation annotation) {</span>
+<span class="fc" id="L750">				ITypeBinding binding= annotation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L751" title="2 of 6 branches missed.">				if (binding != null &amp;&amp; !binding.isRecovered() &amp;&amp; INHERITED_TEST_ANNOTATIONS.contains(qualifiedName(binding))) {</span>
+<span class="fc" id="L752">					return true;</span>
 				}
 			}
 		}
-<span class="fc" id="L651">		return false;</span>
+<span class="fc" id="L756">		return false;</span>
 	}
 
 	private static void addUnselectedResourceCallerGaps(ICompilationUnit[] units,
 			Map&lt;String, CompilationUnit&gt; roots,
 			Map&lt;String, SourceType&gt; sourceTypes, Map&lt;String, ResourceUsage&gt; usages,
 			Map&lt;String, Gap&gt; gaps, IProgressMonitor monitor) throws CoreException {
-<span class="fc" id="L658">		List&lt;ICompilationUnit&gt; selected= Arrays.asList(units);</span>
-<span class="fc" id="L659">		List&lt;IJavaProject&gt; projects= JavaProjectCompilationUnits.owningProjects(selected);</span>
-<span class="fc" id="L660">		ExternalResourceReferenceSearch references= new ExternalResourceReferenceSearch(projects, selected);</span>
-<span class="fc" id="L661">		Map&lt;String, Set&lt;IJavaElement&gt;&gt; exposures= resourceExposures(roots, sourceTypes);</span>
-<span class="fc" id="L662">		Set&lt;String&gt; blocked= new LinkedHashSet&lt;&gt;();</span>
-<span class="fc bfc" id="L663" title="All 2 branches covered.">		for (SourceType type : sourceTypes.values()) {</span>
-<span class="fc bfc" id="L664" title="All 2 branches covered.">			if (!extendsExternalResource(type.binding())) {</span>
-<span class="fc" id="L665">				continue;</span>
+<span class="fc" id="L763">		List&lt;ICompilationUnit&gt; selected= Arrays.asList(units);</span>
+<span class="fc" id="L764">		List&lt;IJavaProject&gt; projects= JavaProjectCompilationUnits.owningProjects(selected);</span>
+<span class="fc" id="L765">		ExternalResourceReferenceSearch references= new ExternalResourceReferenceSearch(projects, selected);</span>
+<span class="fc" id="L766">		Map&lt;String, Set&lt;IJavaElement&gt;&gt; exposures= resourceExposures(roots, sourceTypes);</span>
+<span class="fc" id="L767">		Set&lt;String&gt; blocked= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L768" title="All 2 branches covered.">		for (SourceType type : sourceTypes.values()) {</span>
+<span class="fc bfc" id="L769" title="All 2 branches covered.">			if (!extendsExternalResource(type.binding())) {</span>
+<span class="fc" id="L770">				continue;</span>
 			}
 			// The native ICleanUp lifecycle need not invoke optional scope expansion.
 			// A full project selection alone does not close a shared fixture's callers.
-<span class="pc bpc" id="L669" title="1 of 2 branches missed.">			if (!(type.binding().getJavaElement() instanceof IType modelType)) {</span>
-<span class="nc" id="L670">				blocked.add(type.bindingKey());</span>
-<span class="nc" id="L671">				continue;</span>
+<span class="pc bpc" id="L774" title="1 of 2 branches missed.">			if (!(type.binding().getJavaElement() instanceof IType modelType)) {</span>
+<span class="nc" id="L775">				blocked.add(type.bindingKey());</span>
+<span class="nc" id="L776">				continue;</span>
 			}
-<span class="fc" id="L673">			List&lt;IJavaElement&gt; contract= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L674">			contract.add(modelType);</span>
-<span class="fc" id="L675">			contract.addAll(exposures.getOrDefault(type.bindingKey(), Set.of()));</span>
+<span class="fc" id="L778">			List&lt;IJavaElement&gt; contract= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L779">			contract.add(modelType);</span>
+<span class="fc" id="L780">			contract.addAll(exposures.getOrDefault(type.bindingKey(), Set.of()));</span>
 			// Mixed type/member OR patterns can turn accurate JDT matches into
 			// inaccurate ones. Prove each binding-derived target independently.
-<span class="fc bfc" id="L678" title="All 2 branches covered.">			for (IJavaElement target : contract) {</span>
-<span class="pc bpc" id="L679" title="1 of 4 branches missed.">				if (target == null || !references.allReferencesSelected(target, monitor)) {</span>
-<span class="fc" id="L680">					blocked.add(type.bindingKey());</span>
-<span class="fc" id="L681">					break;</span>
+<span class="fc bfc" id="L783" title="All 2 branches covered.">			for (IJavaElement target : contract) {</span>
+<span class="pc bpc" id="L784" title="1 of 4 branches missed.">				if (target == null || !references.allReferencesSelected(target, monitor)) {</span>
+<span class="fc" id="L785">					blocked.add(type.bindingKey());</span>
+<span class="fc" id="L786">					break;</span>
 				}
 			}
 		}
-<span class="fc bfc" id="L685" title="All 2 branches covered.">		if (blocked.isEmpty()) {</span>
-<span class="fc" id="L686">			return;</span>
+<span class="fc bfc" id="L790" title="All 2 branches covered.">		if (blocked.isEmpty()) {</span>
+<span class="fc" id="L791">			return;</span>
 		}
 
 		// Renaming one callback in a selected superclass chain would also break any
 		// retained sibling/subclass. Preserve only the connected resource contract.
 		boolean expanded;
 		do {
-<span class="fc" id="L693">			expanded= false;</span>
-<span class="fc bfc" id="L694" title="All 2 branches covered.">			for (SourceType type : sourceTypes.values()) {</span>
-<span class="fc" id="L695">				Set&lt;String&gt; chain= selectedResourceChain(type.binding(), sourceTypes);</span>
-<span class="fc bfc" id="L696" title="All 2 branches covered.">				if (chain.stream().anyMatch(blocked::contains)) {</span>
-<span class="fc" id="L697">					expanded|= blocked.addAll(chain);</span>
+<span class="fc" id="L798">			expanded= false;</span>
+<span class="fc bfc" id="L799" title="All 2 branches covered.">			for (SourceType type : sourceTypes.values()) {</span>
+<span class="fc" id="L800">				Set&lt;String&gt; chain= selectedResourceChain(type.binding(), sourceTypes);</span>
+<span class="fc bfc" id="L801" title="All 2 branches covered.">				if (chain.stream().anyMatch(blocked::contains)) {</span>
+<span class="fc" id="L802">					expanded|= blocked.addAll(chain);</span>
 				}
 			}
-<span class="fc bfc" id="L700" title="All 2 branches covered.">		} while (expanded);</span>
+<span class="fc bfc" id="L805" title="All 2 branches covered.">		} while (expanded);</span>
 
-<span class="fc" id="L702">		String reason= &quot;EXTERNAL_RESOURCE_CALLER_OUT_OF_SCOPE&quot;; //$NON-NLS-1$</span>
-<span class="fc" id="L703">		String explanation= &quot;An ExternalResource contract has a reference outside the selected source scope or an unresolved reference; its existing JUnit 4 callers must keep before()/after() and Rule behavior.&quot;; //$NON-NLS-1$</span>
-<span class="fc" id="L704">		String remediation= &quot;Select the complete fixture and caller contract for coordinated migration, or retain this fixture and its JUnit 4 consumers.&quot;; //$NON-NLS-1$</span>
-<span class="fc bfc" id="L705" title="All 2 branches covered.">		for (String key : blocked) {</span>
-<span class="fc" id="L706">			SourceType type= sourceTypes.get(key);</span>
-<span class="fc" id="L707">			addGap(gaps, type, &quot;external-resource:&quot; + type.name(), reason, explanation, remediation); //$NON-NLS-1$</span>
+<span class="fc" id="L807">		String reason= &quot;EXTERNAL_RESOURCE_CALLER_OUT_OF_SCOPE&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L808">		String explanation= &quot;An ExternalResource contract has a reference outside the selected source scope or an unresolved reference; its existing JUnit 4 callers must keep before()/after() and Rule behavior.&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L809">		String remediation= &quot;Select the complete fixture and caller contract for coordinated migration, or retain this fixture and its JUnit 4 consumers.&quot;; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L810" title="All 2 branches covered.">		for (String key : blocked) {</span>
+<span class="fc" id="L811">			SourceType type= sourceTypes.get(key);</span>
+<span class="fc" id="L812">			addGap(gaps, type, &quot;external-resource:&quot; + type.name(), reason, explanation, remediation); //$NON-NLS-1$</span>
 		}
-<span class="fc bfc" id="L709" title="All 2 branches covered.">		for (ResourceUsage usage : usages.values()) {</span>
-<span class="pc bpc" id="L710" title="1 of 2 branches missed.">			if (!usage.ruleKinds.isEmpty()</span>
-<span class="fc bfc" id="L711" title="All 2 branches covered.">					&amp;&amp; selectedResourceChain(usage.binding, sourceTypes).stream().anyMatch(blocked::contains)) {</span>
-<span class="fc bfc" id="L712" title="All 2 branches covered.">				for (SourceType owner : usage.owners) {</span>
-<span class="fc" id="L713">					addGap(gaps, owner, &quot;external-resource:&quot; + qualifiedName(usage.binding), //$NON-NLS-1$</span>
-<span class="fc" id="L714">							reason, explanation, remediation);</span>
+<span class="fc bfc" id="L814" title="All 2 branches covered.">		for (ResourceUsage usage : usages.values()) {</span>
+<span class="pc bpc" id="L815" title="1 of 2 branches missed.">			if (!usage.ruleKinds.isEmpty()</span>
+<span class="fc bfc" id="L816" title="All 2 branches covered.">					&amp;&amp; selectedResourceChain(usage.binding, sourceTypes).stream().anyMatch(blocked::contains)) {</span>
+<span class="fc bfc" id="L817" title="All 2 branches covered.">				for (SourceType owner : usage.owners) {</span>
+<span class="fc" id="L818">					addGap(gaps, owner, &quot;external-resource:&quot; + qualifiedName(usage.binding), //$NON-NLS-1$</span>
+<span class="fc" id="L819">							reason, explanation, remediation);</span>
 				}
 			}
 		}
-<span class="fc" id="L718">	}</span>
+<span class="fc" id="L823">	}</span>
 
 	private static Map&lt;String, Set&lt;IJavaElement&gt;&gt; resourceExposures(Map&lt;String, CompilationUnit&gt; roots,
 			Map&lt;String, SourceType&gt; sourceTypes) {
-<span class="fc" id="L722">		Map&lt;String, Set&lt;IJavaElement&gt;&gt; exposures= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L723" title="All 2 branches covered.">		for (CompilationUnit root : roots.values()) {</span>
-<span class="fc" id="L724">			root.accept(new ASTVisitor() {</span>
+<span class="fc" id="L827">		Map&lt;String, Set&lt;IJavaElement&gt;&gt; exposures= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L828" title="All 2 branches covered.">		for (CompilationUnit root : roots.values()) {</span>
+<span class="fc" id="L829">			root.accept(new ASTVisitor() {</span>
 				@Override
 				public boolean visit(MethodDeclaration method) {
-<span class="fc bfc" id="L727" title="All 2 branches covered.">					if (method.getReturnType2() != null) {</span>
-<span class="fc" id="L728">						var binding= method.resolveBinding();</span>
-<span class="fc" id="L729">						addExposure(method.getReturnType2().resolveBinding(),</span>
-<span class="pc bpc" id="L730" title="1 of 2 branches missed.">								binding == null ? null : binding.getJavaElement());</span>
+<span class="fc bfc" id="L832" title="All 2 branches covered.">					if (method.getReturnType2() != null) {</span>
+<span class="fc" id="L833">						var binding= method.resolveBinding();</span>
+<span class="fc" id="L834">						addExposure(method.getReturnType2().resolveBinding(),</span>
+<span class="pc bpc" id="L835" title="1 of 2 branches missed.">								binding == null ? null : binding.getJavaElement());</span>
 					}
-<span class="fc" id="L732">					return true;</span>
+<span class="fc" id="L837">					return true;</span>
 				}
 
 				@Override
 				public boolean visit(VariableDeclarationFragment variable) {
-<span class="fc bfc" id="L737" title="All 2 branches covered.">					if (variable.getParent() instanceof FieldDeclaration field) {</span>
-<span class="fc" id="L738">						var binding= variable.resolveBinding();</span>
-<span class="pc bpc" id="L739" title="1 of 2 branches missed.">						addExposure(binding == null ? field.getType().resolveBinding() : binding.getType(),</span>
-<span class="pc bpc" id="L740" title="1 of 2 branches missed.">								binding == null ? null : binding.getJavaElement());</span>
+<span class="fc bfc" id="L842" title="All 2 branches covered.">					if (variable.getParent() instanceof FieldDeclaration field) {</span>
+<span class="fc" id="L843">						var binding= variable.resolveBinding();</span>
+<span class="pc bpc" id="L844" title="1 of 2 branches missed.">						addExposure(binding == null ? field.getType().resolveBinding() : binding.getType(),</span>
+<span class="pc bpc" id="L845" title="1 of 2 branches missed.">								binding == null ? null : binding.getJavaElement());</span>
 					}
-<span class="fc" id="L742">					return true;</span>
+<span class="fc" id="L847">					return true;</span>
 				}
 
 				@Override
 				public boolean visit(SingleVariableDeclaration variable) {
-<span class="fc bfc" id="L747" title="All 2 branches covered.">					if (variable.getParent() instanceof RecordDeclaration) {</span>
-<span class="fc" id="L748">						var binding= variable.resolveBinding();</span>
-<span class="pc bpc" id="L749" title="1 of 2 branches missed.">						addExposure(binding == null ? variable.getType().resolveBinding() : binding.getType(),</span>
-<span class="pc bpc" id="L750" title="1 of 2 branches missed.">								binding == null ? null : binding.getJavaElement());</span>
+<span class="fc bfc" id="L852" title="All 2 branches covered.">					if (variable.getParent() instanceof RecordDeclaration) {</span>
+<span class="fc" id="L853">						var binding= variable.resolveBinding();</span>
+<span class="pc bpc" id="L854" title="1 of 2 branches missed.">						addExposure(binding == null ? variable.getType().resolveBinding() : binding.getType(),</span>
+<span class="pc bpc" id="L855" title="1 of 2 branches missed.">								binding == null ? null : binding.getJavaElement());</span>
 					}
-<span class="fc" id="L752">					return true;</span>
+<span class="fc" id="L857">					return true;</span>
 				}
 
 				private void addExposure(ITypeBinding type, IJavaElement declaration) {
-<span class="fc" id="L756">					addExposure(type, declaration, new LinkedHashSet&lt;&gt;());</span>
-<span class="fc" id="L757">				}</span>
+<span class="fc" id="L861">					addExposure(type, declaration, new LinkedHashSet&lt;&gt;());</span>
+<span class="fc" id="L862">				}</span>
 
 				private void addExposure(ITypeBinding type, IJavaElement declaration, Set&lt;String&gt; visited) {
-<span class="pc bpc" id="L760" title="1 of 4 branches missed.">					if (type == null || !visited.add(type.getKey())) {</span>
-<span class="fc" id="L761">						return;</span>
+<span class="pc bpc" id="L865" title="1 of 4 branches missed.">					if (type == null || !visited.add(type.getKey())) {</span>
+<span class="fc" id="L866">						return;</span>
 					}
 					// Callers of a factory or field need not name the resource type. Its
 					// declared source signature still exposes that exact Rule contract.
-<span class="fc bfc" id="L765" title="All 2 branches covered.">					for (String key : selectedResourceChain(type, sourceTypes)) {</span>
-<span class="fc" id="L766">						exposures.computeIfAbsent(key, _ -&gt; new LinkedHashSet&lt;&gt;()).add(declaration);</span>
+<span class="fc bfc" id="L870" title="All 2 branches covered.">					for (String key : selectedResourceChain(type, sourceTypes)) {</span>
+<span class="fc" id="L871">						exposures.computeIfAbsent(key, _ -&gt; new LinkedHashSet&lt;&gt;()).add(declaration);</span>
 					}
-<span class="fc bfc" id="L768" title="All 2 branches covered.">					if (type.isArray()) {</span>
-<span class="fc" id="L769">						addExposure(type.getElementType(), declaration, visited);</span>
+<span class="fc bfc" id="L873" title="All 2 branches covered.">					if (type.isArray()) {</span>
+<span class="fc" id="L874">						addExposure(type.getElementType(), declaration, visited);</span>
 					}
-<span class="fc bfc" id="L771" title="All 2 branches covered.">					for (ITypeBinding argument : type.getTypeArguments()) {</span>
-<span class="fc" id="L772">						addExposure(argument, declaration, visited);</span>
+<span class="fc bfc" id="L876" title="All 2 branches covered.">					for (ITypeBinding argument : type.getTypeArguments()) {</span>
+<span class="fc" id="L877">						addExposure(argument, declaration, visited);</span>
 					}
-<span class="pc bpc" id="L774" title="1 of 2 branches missed.">					for (ITypeBinding bound : type.getTypeBounds()) {</span>
-<span class="nc" id="L775">						addExposure(bound, declaration, visited);</span>
+<span class="pc bpc" id="L879" title="1 of 2 branches missed.">					for (ITypeBinding bound : type.getTypeBounds()) {</span>
+<span class="nc" id="L880">						addExposure(bound, declaration, visited);</span>
 					}
-<span class="fc" id="L777">					addExposure(type.getBound(), declaration, visited);</span>
-<span class="fc" id="L778">				}</span>
+<span class="fc" id="L882">					addExposure(type.getBound(), declaration, visited);</span>
+<span class="fc" id="L883">				}</span>
 			});
 		}
-<span class="fc" id="L781">		return exposures;</span>
+<span class="fc" id="L886">		return exposures;</span>
 	}
 
 	private static Set&lt;String&gt; selectedResourceChain(ITypeBinding binding, Map&lt;String, SourceType&gt; sourceTypes) {
-<span class="fc" id="L785">		Set&lt;String&gt; chain= new LinkedHashSet&lt;&gt;();</span>
-<span class="fc bfc" id="L786" title="All 2 branches covered.">		if (extendsExternalResource(binding)) {</span>
-<span class="pc bpc" id="L787" title="1 of 2 branches missed.">			for (ITypeBinding current= binding; current != null</span>
-<span class="fc bfc" id="L788" title="All 2 branches covered.">					&amp;&amp; !ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(qualifiedName(current)); current= current.getSuperclass()) {</span>
-<span class="fc" id="L789">				String key= JUnitMigrationPlan.typeKey(current);</span>
-<span class="fc bfc" id="L790" title="All 2 branches covered.">				if (sourceTypes.containsKey(key)) chain.add(key);</span>
+<span class="fc" id="L890">		Set&lt;String&gt; chain= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L891" title="All 2 branches covered.">		if (extendsExternalResource(binding)) {</span>
+<span class="pc bpc" id="L892" title="1 of 2 branches missed.">			for (ITypeBinding current= binding; current != null</span>
+<span class="fc bfc" id="L893" title="All 2 branches covered.">					&amp;&amp; !ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(qualifiedName(current)); current= current.getSuperclass()) {</span>
+<span class="fc" id="L894">				String key= JUnitMigrationPlan.typeKey(current);</span>
+<span class="fc bfc" id="L895" title="All 2 branches covered.">				if (sourceTypes.containsKey(key)) chain.add(key);</span>
 			}
 		}
-<span class="fc" id="L793">		return chain;</span>
+<span class="fc" id="L898">		return chain;</span>
 	}
 
 	private static void addInheritedAnonymousRuleGaps(Map&lt;String, Gap&gt; gaps, Map&lt;String, SourceType&gt; sourceTypes,
 			SourceType owner, FieldDeclaration field, ITypeBinding resource) {
-<span class="fc" id="L798">		String candidate= fieldCandidate(&quot;anonymous-external-resource&quot;, field); //$NON-NLS-1$</span>
-<span class="fc" id="L799">		String reason= &quot;INHERITED_ANONYMOUS_EXTERNAL_RESOURCE&quot;; //$NON-NLS-1$</span>
-<span class="fc" id="L800">		String explanation= &quot;An anonymous rule inherits lifecycle or helper behavior from a custom ExternalResource superclass; copying only its body cannot preserve that contract.&quot;; //$NON-NLS-1$</span>
-<span class="fc" id="L801">		String remediation= &quot;Retain the JUnit 4 rule, or migrate its complete superclass contract to a Jupiter extension before changing the test lifecycle.&quot;; //$NON-NLS-1$</span>
-<span class="fc" id="L802">		addGap(gaps, owner, candidate, reason, explanation, remediation);</span>
+<span class="fc" id="L903">		String candidate= fieldCandidate(&quot;anonymous-external-resource&quot;, field); //$NON-NLS-1$</span>
+<span class="fc" id="L904">		String reason= &quot;INHERITED_ANONYMOUS_EXTERNAL_RESOURCE&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L905">		String explanation= &quot;An anonymous rule inherits lifecycle or helper behavior from a custom ExternalResource superclass; copying only its body cannot preserve that contract.&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L906">		String remediation= &quot;Retain the JUnit 4 rule, or migrate its complete superclass contract to a Jupiter extension before changing the test lifecycle.&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L907">		addGap(gaps, owner, candidate, reason, explanation, remediation);</span>
 		// A selected source superclass must also retain before()/after() while the
 		// anonymous JUnit 4 consumer continues to invoke those inherited methods.
-<span class="pc bpc" id="L805" title="1 of 2 branches missed.">		for (ITypeBinding current= resource.getSuperclass(); current != null</span>
-<span class="fc bfc" id="L806" title="All 2 branches covered.">				&amp;&amp; !ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(qualifiedName(current)); current= current.getSuperclass()) {</span>
-<span class="fc" id="L807">			SourceType superclass= sourceTypes.get(JUnitMigrationPlan.typeKey(current));</span>
-<span class="pc bpc" id="L808" title="1 of 2 branches missed.">			if (superclass != null) addGap(gaps, superclass, candidate, reason, explanation, remediation);</span>
+<span class="pc bpc" id="L910" title="1 of 2 branches missed.">		for (ITypeBinding current= resource.getSuperclass(); current != null</span>
+<span class="fc bfc" id="L911" title="All 2 branches covered.">				&amp;&amp; !ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(qualifiedName(current)); current= current.getSuperclass()) {</span>
+<span class="fc" id="L912">			SourceType superclass= sourceTypes.get(JUnitMigrationPlan.typeKey(current));</span>
+<span class="pc bpc" id="L913" title="1 of 2 branches missed.">			if (superclass != null) addGap(gaps, superclass, candidate, reason, explanation, remediation);</span>
 		}
-<span class="fc" id="L810">	}</span>
+<span class="fc" id="L915">	}</span>
 
 	/** Adds one idempotent marker operation for the supplied compilation-unit gaps. */
 	public static void addMarkerOperation(CompilationUnit root, List&lt;Gap&gt; gaps,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations) {
-<span class="pc bpc" id="L815" title="2 of 6 branches missed.">		if (root == null || gaps == null || gaps.isEmpty()) {</span>
-<span class="fc" id="L816">			return;</span>
+<span class="pc bpc" id="L920" title="2 of 6 branches missed.">		if (root == null || gaps == null || gaps.isEmpty()) {</span>
+<span class="fc" id="L921">			return;</span>
 		}
-<span class="fc" id="L818">		Map&lt;TypeDeclaration, List&lt;Gap&gt;&gt; resolved= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L819">		List&lt;TypeDeclaration&gt; types= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L820">		root.accept(new ASTVisitor() {</span>
+<span class="fc" id="L923">		Map&lt;TypeDeclaration, List&lt;Gap&gt;&gt; resolved= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L924">		List&lt;TypeDeclaration&gt; types= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L925">		root.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(TypeDeclaration node) {
-<span class="fc" id="L823">				types.add(node);</span>
-<span class="fc" id="L824">				return true;</span>
+<span class="fc" id="L928">				types.add(node);</span>
+<span class="fc" id="L929">				return true;</span>
 			}
 		});
-<span class="fc bfc" id="L827" title="All 2 branches covered.">		for (Gap gap : gaps) {</span>
-<span class="fc" id="L828">			TypeDeclaration target= types.stream().filter(type -&gt; matches(type, gap)).findFirst().orElse(null);</span>
-<span class="pc bpc" id="L829" title="3 of 4 branches missed.">			if (target == null &amp;&amp; !types.isEmpty()) {</span>
-<span class="nc" id="L830">				target= types.get(0);</span>
+<span class="fc bfc" id="L932" title="All 2 branches covered.">		for (Gap gap : gaps) {</span>
+<span class="fc" id="L933">			TypeDeclaration target= types.stream().filter(type -&gt; matches(type, gap)).findFirst().orElse(null);</span>
+<span class="pc bpc" id="L934" title="3 of 4 branches missed.">			if (target == null &amp;&amp; !types.isEmpty()) {</span>
+<span class="nc" id="L935">				target= types.get(0);</span>
 			}
-<span class="pc bpc" id="L832" title="1 of 4 branches missed.">			if (target != null &amp;&amp; !hasMarker(target, gap)) {</span>
-<span class="fc" id="L833">				resolved.computeIfAbsent(target, ignored -&gt; new ArrayList&lt;&gt;()).add(gap);</span>
+<span class="pc bpc" id="L937" title="1 of 4 branches missed.">			if (target != null &amp;&amp; !hasMarker(target, gap)) {</span>
+<span class="fc" id="L938">				resolved.computeIfAbsent(target, ignored -&gt; new ArrayList&lt;&gt;()).add(gap);</span>
 			}
 		}
-<span class="fc bfc" id="L836" title="All 2 branches covered.">		if (!resolved.isEmpty()) {</span>
-<span class="fc" id="L837">			operations.add(new GapMarkerOperation(resolved));</span>
+<span class="fc bfc" id="L941" title="All 2 branches covered.">		if (!resolved.isEmpty()) {</span>
+<span class="fc" id="L942">			operations.add(new GapMarkerOperation(resolved));</span>
 		}
-<span class="fc" id="L839">	}</span>
+<span class="fc" id="L944">	}</span>
 
-<span class="fc" id="L841">	private enum RuleKind {</span>
-<span class="fc" id="L842">		NONE,</span>
-<span class="fc" id="L843">		INSTANCE,</span>
-<span class="fc" id="L844">		CLASS</span>
+<span class="fc" id="L946">	private enum RuleKind {</span>
+<span class="fc" id="L947">		NONE,</span>
+<span class="fc" id="L948">		INSTANCE,</span>
+<span class="fc" id="L949">		CLASS</span>
 	}
 
 	private static final class GapMarkerOperation extends CompilationUnitRewriteOperationWithSourceRange {
 		private final Map&lt;TypeDeclaration, List&lt;Gap&gt;&gt; gapsByType;
 
-<span class="fc" id="L850">		GapMarkerOperation(Map&lt;TypeDeclaration, List&lt;Gap&gt;&gt; gapsByType) {</span>
-<span class="fc" id="L851">			this.gapsByType= gapsByType;</span>
-<span class="fc" id="L852">		}</span>
+<span class="fc" id="L955">		GapMarkerOperation(Map&lt;TypeDeclaration, List&lt;Gap&gt;&gt; gapsByType) {</span>
+<span class="fc" id="L956">			this.gapsByType= gapsByType;</span>
+<span class="fc" id="L957">		}</span>
 
 		@Override
 		public void rewriteASTInternal(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
-<span class="fc" id="L856">			TextEditGroup group= createTextEditGroup(</span>
-<span class="fc" id="L857">					&quot;Mark incomplete best-effort JUnit migrations&quot;, cuRewrite); //$NON-NLS-1$</span>
-<span class="fc" id="L858">			ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L859">			AST ast= cuRewrite.getRoot().getAST();</span>
-<span class="fc bfc" id="L860" title="All 2 branches covered.">			for (Map.Entry&lt;TypeDeclaration, List&lt;Gap&gt;&gt; entry : gapsByType.entrySet()) {</span>
-<span class="fc" id="L861">				TypeDeclaration type= entry.getKey();</span>
-<span class="fc" id="L862">				Set&lt;String&gt; methodNames= new LinkedHashSet&lt;&gt;();</span>
-<span class="fc bfc" id="L863" title="All 2 branches covered.">				for (MethodDeclaration method : type.getMethods()) {</span>
-<span class="fc" id="L864">					methodNames.add(method.getName().getIdentifier());</span>
+<span class="fc" id="L961">			TextEditGroup group= createTextEditGroup(</span>
+<span class="fc" id="L962">					&quot;Mark incomplete best-effort JUnit migrations&quot;, cuRewrite); //$NON-NLS-1$</span>
+<span class="fc" id="L963">			ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L964">			AST ast= cuRewrite.getRoot().getAST();</span>
+<span class="fc bfc" id="L965" title="All 2 branches covered.">			for (Map.Entry&lt;TypeDeclaration, List&lt;Gap&gt;&gt; entry : gapsByType.entrySet()) {</span>
+<span class="fc" id="L966">				TypeDeclaration type= entry.getKey();</span>
+<span class="fc" id="L967">				Set&lt;String&gt; methodNames= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L968" title="All 2 branches covered.">				for (MethodDeclaration method : type.getMethods()) {</span>
+<span class="fc" id="L969">					methodNames.add(method.getName().getIdentifier());</span>
 				}
-<span class="fc bfc" id="L866" title="All 2 branches covered.">				Javadoc documentation= type.getJavadoc() == null ? ast.newJavadoc()</span>
-<span class="fc" id="L867">						: (Javadoc) ASTNode.copySubtree(ast, type.getJavadoc());</span>
-<span class="fc bfc" id="L868" title="All 2 branches covered.">				for (Gap gap : entry.getValue()) {</span>
-<span class="pc bpc" id="L869" title="1 of 2 branches missed.">					if (hasMarker(type, gap)) {</span>
-<span class="nc" id="L870">						continue;</span>
+<span class="fc bfc" id="L971" title="All 2 branches covered.">				Javadoc documentation= type.getJavadoc() == null ? ast.newJavadoc()</span>
+<span class="fc" id="L972">						: (Javadoc) ASTNode.copySubtree(ast, type.getJavadoc());</span>
+<span class="fc bfc" id="L973" title="All 2 branches covered.">				for (Gap gap : entry.getValue()) {</span>
+<span class="pc bpc" id="L974" title="1 of 2 branches missed.">					if (hasMarker(type, gap)) {</span>
+<span class="nc" id="L975">						continue;</span>
 					}
-<span class="fc" id="L872">					MethodDeclaration marker= markerMethod(ast, gap, methodNames);</span>
-<span class="fc" id="L873">					methodNames.add(marker.getName().getIdentifier());</span>
-<span class="fc" id="L874">					TagElement todo= (TagElement) ASTNode.copySubtree(ast, (ASTNode) marker.getJavadoc().tags().get(0));</span>
-<span class="fc" id="L875">					marker.setJavadoc(null);</span>
-<span class="fc" id="L876">					TextElement example= ast.newTextElement();</span>
-<span class="fc" id="L877">					String sample= marker.toString().replace(&quot;*/&quot;, &quot;* /&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L878">							.replace(&quot;&amp;&quot;, &quot;&amp;amp;&quot;).replace(&quot;&lt;&quot;, &quot;&amp;lt;&quot;).replace(&quot;&gt;&quot;, &quot;&amp;gt;&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$</span>
-<span class="fc" id="L879">					example.setText(&quot; &lt;pre&gt;\n * &quot; + sample.replace(&quot;\n&quot;, &quot;\n * &quot;) + &quot;\n * &lt;/pre&gt;&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
-<span class="fc" id="L880">					todo.fragments().add(example);</span>
-<span class="fc" id="L881">					documentation.tags().add(todo);</span>
+<span class="fc" id="L977">					MethodDeclaration marker= markerMethod(ast, gap, methodNames);</span>
+<span class="fc" id="L978">					methodNames.add(marker.getName().getIdentifier());</span>
+<span class="fc" id="L979">					TagElement todo= (TagElement) ASTNode.copySubtree(ast, (ASTNode) marker.getJavadoc().tags().get(0));</span>
+<span class="fc" id="L980">					marker.setJavadoc(null);</span>
+<span class="fc" id="L981">					TextElement example= ast.newTextElement();</span>
+<span class="fc" id="L982">					String sample= marker.toString().replace(&quot;*/&quot;, &quot;* /&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L983">							.replace(&quot;&amp;&quot;, &quot;&amp;amp;&quot;).replace(&quot;&lt;&quot;, &quot;&amp;lt;&quot;).replace(&quot;&gt;&quot;, &quot;&amp;gt;&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$</span>
+<span class="fc" id="L984">					example.setText(&quot; &lt;pre&gt;\n * &quot; + sample.replace(&quot;\n&quot;, &quot;\n * &quot;) + &quot;\n * &lt;/pre&gt;&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="fc" id="L985">					ASTNodes.getChildListProperty(todo, TagElement.FRAGMENTS_PROPERTY).add(example);</span>
+<span class="fc" id="L986">					ASTNodes.getChildListProperty(documentation, Javadoc.TAGS_PROPERTY).add(todo);</span>
 				}
-<span class="fc" id="L883">				rewrite.set(type, TypeDeclaration.JAVADOC_PROPERTY, documentation, group);</span>
+<span class="fc" id="L988">				rewrite.set(type, TypeDeclaration.JAVADOC_PROPERTY, documentation, group);</span>
 			}
-<span class="fc" id="L885">		}</span>
+<span class="fc" id="L990">		}</span>
 	}
 
 	private static MethodDeclaration markerMethod(AST ast, Gap gap, Set&lt;String&gt; existingNames) {
-<span class="fc" id="L889">		MethodDeclaration method= ast.newMethodDeclaration();</span>
-<span class="fc" id="L890">		String baseName= markerMethodName(gap.reasonCode());</span>
-<span class="fc" id="L891">		String name= baseName;</span>
-<span class="pc bpc" id="L892" title="1 of 2 branches missed.">		for (int suffix= 2; existingNames.contains(name); suffix++) {</span>
-<span class="nc" id="L893">			name= baseName + suffix;</span>
+<span class="fc" id="L994">		MethodDeclaration method= ast.newMethodDeclaration();</span>
+<span class="fc" id="L995">		String baseName= markerMethodName(gap.reasonCode());</span>
+<span class="fc" id="L996">		String name= baseName;</span>
+<span class="pc bpc" id="L997" title="1 of 2 branches missed.">		for (int suffix= 2; existingNames.contains(name); suffix++) {</span>
+<span class="nc" id="L998">			name= baseName + suffix;</span>
 		}
-<span class="fc" id="L895">		method.setName(ast.newSimpleName(name));</span>
-<span class="fc" id="L896">		method.setReturnType2(ast.newPrimitiveType(org.eclipse.jdt.core.dom.PrimitiveType.VOID));</span>
-<span class="fc" id="L897">		method.modifiers().add(ast.newModifier(org.eclipse.jdt.core.dom.Modifier.ModifierKeyword.PRIVATE_KEYWORD));</span>
-<span class="fc" id="L898">		method.modifiers().add(ast.newModifier(org.eclipse.jdt.core.dom.Modifier.ModifierKeyword.STATIC_KEYWORD));</span>
+<span class="fc" id="L1000">		method.setName(ast.newSimpleName(name));</span>
+<span class="fc" id="L1001">		method.setReturnType2(ast.newPrimitiveType(org.eclipse.jdt.core.dom.PrimitiveType.VOID));</span>
+<span class="fc" id="L1002">		ASTNodes.getChildListProperty(method, MethodDeclaration.MODIFIERS2_PROPERTY)</span>
+<span class="fc" id="L1003">				.add(ast.newModifier(org.eclipse.jdt.core.dom.Modifier.ModifierKeyword.PRIVATE_KEYWORD));</span>
+<span class="fc" id="L1004">		ASTNodes.getChildListProperty(method, MethodDeclaration.MODIFIERS2_PROPERTY)</span>
+<span class="fc" id="L1005">				.add(ast.newModifier(org.eclipse.jdt.core.dom.Modifier.ModifierKeyword.STATIC_KEYWORD));</span>
 
-<span class="fc" id="L900">		Javadoc javadoc= ast.newJavadoc();</span>
-<span class="fc" id="L901">		TagElement todo= ast.newTagElement();</span>
-<span class="fc" id="L902">		todo.setTagName(&quot;@todo&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L903">		TextElement text= ast.newTextElement();</span>
-<span class="fc" id="L904">		text.setText(javadocText(gap.markerText()));</span>
-<span class="fc" id="L905">		todo.fragments().add(text);</span>
-<span class="fc" id="L906">		javadoc.tags().add(todo);</span>
-<span class="fc" id="L907">		method.setJavadoc(javadoc);</span>
+<span class="fc" id="L1007">		Javadoc javadoc= ast.newJavadoc();</span>
+<span class="fc" id="L1008">		TagElement todo= ast.newTagElement();</span>
+<span class="fc" id="L1009">		todo.setTagName(&quot;@todo&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L1010">		TextElement text= ast.newTextElement();</span>
+<span class="fc" id="L1011">		text.setText(javadocText(gap.markerText()));</span>
+<span class="fc" id="L1012">		ASTNodes.getChildListProperty(todo, TagElement.FRAGMENTS_PROPERTY).add(text);</span>
+<span class="fc" id="L1013">		ASTNodes.getChildListProperty(javadoc, Javadoc.TAGS_PROPERTY).add(todo);</span>
+<span class="fc" id="L1014">		method.setJavadoc(javadoc);</span>
 
-<span class="fc" id="L909">		ClassInstanceCreation exception= ast.newClassInstanceCreation();</span>
-<span class="fc" id="L910">		exception.setType(ast.newSimpleType(ast.newSimpleName(&quot;UnsupportedOperationException&quot;))); //$NON-NLS-1$</span>
-<span class="fc" id="L911">		StringLiteral message= ast.newStringLiteral();</span>
-<span class="fc" id="L912">		message.setLiteralValue(&quot;Manual JUnit migration required: &quot; + gap.reasonCode()); //$NON-NLS-1$</span>
-<span class="fc" id="L913">		exception.arguments().add(message);</span>
-<span class="fc" id="L914">		ThrowStatement throwStatement= ast.newThrowStatement();</span>
-<span class="fc" id="L915">		throwStatement.setExpression(exception);</span>
-<span class="fc" id="L916">		org.eclipse.jdt.core.dom.Block body= ast.newBlock();</span>
-<span class="fc" id="L917">		body.statements().add(throwStatement);</span>
-<span class="fc" id="L918">		method.setBody(body);</span>
-<span class="fc" id="L919">		return method;</span>
+<span class="fc" id="L1016">		ClassInstanceCreation exception= ast.newClassInstanceCreation();</span>
+<span class="fc" id="L1017">		exception.setType(ast.newSimpleType(ast.newSimpleName(&quot;UnsupportedOperationException&quot;))); //$NON-NLS-1$</span>
+<span class="fc" id="L1018">		StringLiteral message= ast.newStringLiteral();</span>
+<span class="fc" id="L1019">		message.setLiteralValue(&quot;Manual JUnit migration required: &quot; + gap.reasonCode()); //$NON-NLS-1$</span>
+<span class="fc" id="L1020">		ASTNodes.getChildListProperty(exception, ClassInstanceCreation.ARGUMENTS_PROPERTY).add(message);</span>
+<span class="fc" id="L1021">		ThrowStatement throwStatement= ast.newThrowStatement();</span>
+<span class="fc" id="L1022">		throwStatement.setExpression(exception);</span>
+<span class="fc" id="L1023">		Block body= ast.newBlock();</span>
+<span class="fc" id="L1024">		ASTNodes.getChildListProperty(body, Block.STATEMENTS_PROPERTY).add(throwStatement);</span>
+<span class="fc" id="L1025">		method.setBody(body);</span>
+<span class="fc" id="L1026">		return method;</span>
 	}
 
 	private static boolean hasMarker(TypeDeclaration type, Gap gap) {
-<span class="fc" id="L923">		String marker= MARKER_PREFIX + gap.candidateId() + &quot; (&quot;; //$NON-NLS-1$</span>
-<span class="fc bfc" id="L924" title="All 4 branches covered.">		if (type.getJavadoc() != null &amp;&amp; type.getJavadoc().toString().contains(marker)) {</span>
-<span class="fc" id="L925">			return true;</span>
+<span class="fc" id="L1030">		String marker= MARKER_PREFIX + gap.candidateId() + &quot; (&quot;; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L1031" title="All 4 branches covered.">		if (type.getJavadoc() != null &amp;&amp; type.getJavadoc().toString().contains(marker)) {</span>
+<span class="fc" id="L1032">			return true;</span>
 		}
 		// Recognize earlier executable scaffolds without duplicating or editing them.
-<span class="fc bfc" id="L928" title="All 2 branches covered.">		for (MethodDeclaration method : type.getMethods()) {</span>
-<span class="fc" id="L929">			Javadoc javadoc= method.getJavadoc();</span>
-<span class="pc bpc" id="L930" title="1 of 4 branches missed.">			if (javadoc != null &amp;&amp; javadoc.toString().contains(marker)) {</span>
-<span class="fc" id="L931">				return true;</span>
+<span class="fc bfc" id="L1035" title="All 2 branches covered.">		for (MethodDeclaration method : type.getMethods()) {</span>
+<span class="fc" id="L1036">			Javadoc javadoc= method.getJavadoc();</span>
+<span class="pc bpc" id="L1037" title="1 of 4 branches missed.">			if (javadoc != null &amp;&amp; javadoc.toString().contains(marker)) {</span>
+<span class="fc" id="L1038">				return true;</span>
 			}
 		}
-<span class="fc" id="L934">		return false;</span>
+<span class="fc" id="L1041">		return false;</span>
 	}
 
 	private static String markerMethodName(String reasonCode) {
-<span class="fc" id="L938">		StringBuilder name= new StringBuilder(&quot;sandboxJUnitMigrationTodo&quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L939" title="All 2 branches covered.">		for (String part : reasonCode.toLowerCase(Locale.ROOT).split(&quot;[^a-z0-9]+&quot;)) { //$NON-NLS-1$</span>
-<span class="pc bpc" id="L940" title="1 of 2 branches missed.">			if (!part.isEmpty()) {</span>
-<span class="fc" id="L941">				name.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1));</span>
+<span class="fc" id="L1045">		StringBuilder name= new StringBuilder(&quot;sandboxJUnitMigrationTodo&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L1046" title="All 2 branches covered.">		for (String part : reasonCode.toLowerCase(Locale.ROOT).split(&quot;[^a-z0-9]+&quot;)) { //$NON-NLS-1$</span>
+<span class="pc bpc" id="L1047" title="1 of 2 branches missed.">			if (!part.isEmpty()) {</span>
+<span class="fc" id="L1048">				name.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1));</span>
 			}
 		}
-<span class="pc bpc" id="L944" title="1 of 2 branches missed.">		if (name.length() &gt; 100) {</span>
-<span class="nc" id="L945">			name.setLength(88);</span>
-<span class="nc" id="L946">			name.append(Integer.toUnsignedString(reasonCode.hashCode(), 16));</span>
+<span class="pc bpc" id="L1051" title="1 of 2 branches missed.">		if (name.length() &gt; 100) {</span>
+<span class="nc" id="L1052">			name.setLength(88);</span>
+<span class="nc" id="L1053">			name.append(Integer.toUnsignedString(reasonCode.hashCode(), 16));</span>
 		}
-<span class="fc" id="L948">		return name.toString();</span>
+<span class="fc" id="L1055">		return name.toString();</span>
 	}
 
 	private static boolean matches(TypeDeclaration type, Gap gap) {
-<span class="fc" id="L952">		String key= JUnitMigrationPlan.typeKey(type.resolveBinding());</span>
-<span class="pc bpc" id="L953" title="1 of 4 branches missed.">		if (!gap.targetTypeBindingKey().isBlank() &amp;&amp; gap.targetTypeBindingKey().equals(key)) {</span>
-<span class="fc" id="L954">			return true;</span>
+<span class="fc" id="L1059">		String key= JUnitMigrationPlan.typeKey(type.resolveBinding());</span>
+<span class="pc bpc" id="L1060" title="1 of 4 branches missed.">		if (!gap.targetTypeBindingKey().isBlank() &amp;&amp; gap.targetTypeBindingKey().equals(key)) {</span>
+<span class="fc" id="L1061">			return true;</span>
 		}
-<span class="pc bpc" id="L956" title="1 of 2 branches missed.">		return gap.targetTypeStart() == type.getStartPosition()</span>
-<span class="nc bnc" id="L957" title="All 2 branches missed.">				&amp;&amp; gap.targetTypeName().equals(sourceTypeName(type));</span>
+<span class="pc bpc" id="L1063" title="1 of 2 branches missed.">		return gap.targetTypeStart() == type.getStartPosition()</span>
+<span class="nc bnc" id="L1064" title="All 2 branches missed.">				&amp;&amp; gap.targetTypeName().equals(sourceTypeName(type));</span>
 	}
 
 	private static Map&lt;String, CompilationUnit&gt; parse(IJavaProject project, ICompilationUnit[] units,
 			IProgressMonitor monitor) {
-<span class="fc" id="L962">		Map&lt;String, CompilationUnit&gt; roots= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L963">		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);</span>
-<span class="fc" id="L964">		parser.setProject(project);</span>
-<span class="fc" id="L965">		parser.setResolveBindings(true);</span>
-<span class="fc" id="L966">		parser.setBindingsRecovery(IASTSharedValues.SHARED_BINDING_RECOVERY);</span>
-<span class="fc" id="L967">		parser.setStatementsRecovery(IASTSharedValues.SHARED_AST_STATEMENT_RECOVERY);</span>
-<span class="fc" id="L968">		parser.setCompilerOptions(RefactoringASTParser.getCompilerOptions(project));</span>
-<span class="fc" id="L969">		parser.createASTs(units, new String[0], new ASTRequestor() {</span>
+<span class="fc" id="L1069">		Map&lt;String, CompilationUnit&gt; roots= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L1070">		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);</span>
+<span class="fc" id="L1071">		parser.setProject(project);</span>
+<span class="fc" id="L1072">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L1073">		parser.setBindingsRecovery(IASTSharedValues.SHARED_BINDING_RECOVERY);</span>
+<span class="fc" id="L1074">		parser.setStatementsRecovery(IASTSharedValues.SHARED_AST_STATEMENT_RECOVERY);</span>
+<span class="fc" id="L1075">		parser.setCompilerOptions(RefactoringASTParser.getCompilerOptions(project));</span>
+<span class="fc" id="L1076">		parser.createASTs(units, new String[0], new ASTRequestor() {</span>
 			@Override
 			public void acceptAST(ICompilationUnit source, CompilationUnit ast) {
-<span class="fc" id="L972">				roots.put(source.getPrimary().getHandleIdentifier(), ast);</span>
-<span class="fc" id="L973">			}</span>
-<span class="fc" id="L974">		}, monitor);</span>
-<span class="fc" id="L975">		return roots;</span>
+<span class="fc" id="L1079">				roots.put(source.getPrimary().getHandleIdentifier(), ast);</span>
+<span class="fc" id="L1080">			}</span>
+<span class="fc" id="L1081">		}, monitor);</span>
+<span class="fc" id="L1082">		return roots;</span>
 	}
 
 	private static SourceType sourceType(String handle, TypeDeclaration type) {
-<span class="fc" id="L979">		ITypeBinding binding= type.resolveBinding();</span>
-<span class="fc" id="L980">		String key= JUnitMigrationPlan.typeKey(binding);</span>
-<span class="pc bpc" id="L981" title="1 of 2 branches missed.">		return new SourceType(handle, key == null ? &quot;&quot; : key, sourceTypeName(type), //$NON-NLS-1$</span>
-<span class="fc" id="L982">				type.getStartPosition(), type, binding);</span>
+<span class="fc" id="L1086">		ITypeBinding binding= type.resolveBinding();</span>
+<span class="fc" id="L1087">		String key= JUnitMigrationPlan.typeKey(binding);</span>
+<span class="pc bpc" id="L1088" title="1 of 2 branches missed.">		return new SourceType(handle, key == null ? &quot;&quot; : key, sourceTypeName(type), //$NON-NLS-1$</span>
+<span class="fc" id="L1089">				type.getStartPosition(), type, binding);</span>
 	}
 
 	private static TypeDeclaration enclosingType(ASTNode node) {
-<span class="pc bpc" id="L986" title="1 of 2 branches missed.">		for (ASTNode current= node.getParent(); current != null; current= current.getParent()) {</span>
-<span class="pc bpc" id="L987" title="1 of 2 branches missed.">			if (current instanceof TypeDeclaration type) {</span>
-<span class="fc" id="L988">				return type;</span>
+<span class="pc bpc" id="L1093" title="1 of 2 branches missed.">		for (ASTNode current= node.getParent(); current != null; current= current.getParent()) {</span>
+<span class="pc bpc" id="L1094" title="1 of 2 branches missed.">			if (current instanceof TypeDeclaration type) {</span>
+<span class="fc" id="L1095">				return type;</span>
 			}
 		}
-<span class="nc" id="L991">		return null;</span>
+<span class="nc" id="L1098">		return null;</span>
 	}
 
 	private static String fieldCandidate(String kind, FieldDeclaration field) {
-<span class="pc bpc" id="L995" title="1 of 2 branches missed.">		if (field.fragments().size() == 1</span>
-<span class="pc bpc" id="L996" title="1 of 2 branches missed.">				&amp;&amp; field.fragments().get(0) instanceof VariableDeclarationFragment fragment) {</span>
-<span class="fc" id="L997">			return kind + ':' + fragment.getName().getIdentifier();</span>
+<span class="pc bpc" id="L1102" title="1 of 2 branches missed.">		if (field.fragments().size() == 1</span>
+<span class="pc bpc" id="L1103" title="1 of 2 branches missed.">				&amp;&amp; field.fragments().get(0) instanceof VariableDeclarationFragment fragment) {</span>
+<span class="fc" id="L1104">			return kind + ':' + fragment.getName().getIdentifier();</span>
 		}
-<span class="nc" id="L999">		return kind + &quot;:field@&quot; + field.getStartPosition(); //$NON-NLS-1$</span>
+<span class="nc" id="L1106">		return kind + &quot;:field@&quot; + field.getStartPosition(); //$NON-NLS-1$</span>
 	}
 
 	private static void addGap(Map&lt;String, Gap&gt; gaps, SourceType type, String candidateId,
 			String reasonCode, String explanation, String remediation) {
-<span class="fc" id="L1004">		Gap gap= new Gap(type.unitHandle(), type.bindingKey(), type.name(), type.start(), candidateId,</span>
-<span class="fc" id="L1005">				reasonCode, explanation, remediation);</span>
-<span class="fc" id="L1006">		gaps.putIfAbsent(type.unitHandle() + '|' + candidateId + '|' + reasonCode, gap);</span>
-<span class="fc" id="L1007">	}</span>
+<span class="fc" id="L1111">		Gap gap= new Gap(type.unitHandle(), type.bindingKey(), type.name(), type.start(), candidateId,</span>
+<span class="fc" id="L1112">				reasonCode, explanation, remediation);</span>
+<span class="fc" id="L1113">		gaps.putIfAbsent(type.unitHandle() + '|' + candidateId + '|' + reasonCode, gap);</span>
+<span class="fc" id="L1114">	}</span>
 
 	private static RuleKind ruleKind(FieldDeclaration field) {
-<span class="fc bfc" id="L1010" title="All 2 branches covered.">		for (Object modifier : field.modifiers()) {</span>
-<span class="fc bfc" id="L1011" title="All 2 branches covered.">			if (!(modifier instanceof Annotation annotation)) {</span>
+<span class="fc bfc" id="L1117" title="All 2 branches covered.">		for (Object modifier : field.modifiers()) {</span>
+<span class="fc bfc" id="L1118" title="All 2 branches covered.">			if (!(modifier instanceof Annotation annotation)) {</span>
 				continue;
 			}
-<span class="fc" id="L1014">			ITypeBinding binding= annotation.resolveTypeBinding();</span>
-<span class="fc" id="L1015">			String name= qualifiedName(binding);</span>
-<span class="fc bfc" id="L1016" title="All 2 branches covered.">			if (ORG_JUNIT_RULE.equals(name)) {</span>
-<span class="fc" id="L1017">				return RuleKind.INSTANCE;</span>
+<span class="fc" id="L1121">			ITypeBinding binding= annotation.resolveTypeBinding();</span>
+<span class="fc" id="L1122">			String name= qualifiedName(binding);</span>
+<span class="fc bfc" id="L1123" title="All 2 branches covered.">			if (ORG_JUNIT_RULE.equals(name)) {</span>
+<span class="fc" id="L1124">				return RuleKind.INSTANCE;</span>
 			}
-<span class="fc bfc" id="L1019" title="All 2 branches covered.">			if (ORG_JUNIT_CLASS_RULE.equals(name)) {</span>
-<span class="fc" id="L1020">				return RuleKind.CLASS;</span>
+<span class="fc bfc" id="L1126" title="All 2 branches covered.">			if (ORG_JUNIT_CLASS_RULE.equals(name)) {</span>
+<span class="fc" id="L1127">				return RuleKind.CLASS;</span>
 			}
 		}
-<span class="fc" id="L1023">		return RuleKind.NONE;</span>
+<span class="fc" id="L1130">		return RuleKind.NONE;</span>
 	}
 
 	private static ITypeBinding resourceTypeBinding(FieldDeclaration field) {
-<span class="fc bfc" id="L1027" title="All 2 branches covered.">		if (field.fragments().size() == 1</span>
-<span class="pc bpc" id="L1028" title="1 of 2 branches missed.">				&amp;&amp; field.fragments().get(0) instanceof VariableDeclarationFragment fragment) {</span>
-<span class="fc bfc" id="L1029" title="All 2 branches covered.">			if (fragment.getInitializer() instanceof ClassInstanceCreation creation) {</span>
-<span class="fc" id="L1030">				ITypeBinding created= creation.resolveTypeBinding();</span>
-<span class="pc bpc" id="L1031" title="1 of 2 branches missed.">				if (created != null) {</span>
-<span class="fc" id="L1032">					return created;</span>
+<span class="fc bfc" id="L1134" title="All 2 branches covered.">		if (field.fragments().size() == 1</span>
+<span class="pc bpc" id="L1135" title="1 of 2 branches missed.">				&amp;&amp; field.fragments().get(0) instanceof VariableDeclarationFragment fragment) {</span>
+<span class="fc bfc" id="L1136" title="All 2 branches covered.">			if (fragment.getInitializer() instanceof ClassInstanceCreation creation) {</span>
+<span class="fc" id="L1137">				ITypeBinding created= creation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L1138" title="1 of 2 branches missed.">				if (created != null) {</span>
+<span class="fc" id="L1139">					return created;</span>
 				}
 			}
-<span class="fc" id="L1035">			IVariableBinding variable= fragment.resolveBinding();</span>
-<span class="pc bpc" id="L1036" title="1 of 2 branches missed.">			if (variable != null) {</span>
-<span class="fc" id="L1037">				return variable.getType();</span>
+<span class="fc" id="L1142">			IVariableBinding variable= fragment.resolveBinding();</span>
+<span class="pc bpc" id="L1143" title="1 of 2 branches missed.">			if (variable != null) {</span>
+<span class="fc" id="L1144">				return variable.getType();</span>
 			}
 		}
-<span class="fc" id="L1040">		return field.getType().resolveBinding();</span>
+<span class="fc" id="L1147">		return field.getType().resolveBinding();</span>
 	}
 
 	private static ITypeBinding selectedInitializerFixture(VariableDeclarationFragment fragment, boolean multiple,
 			Map&lt;String, SourceType&gt; sourceTypes) {
-<span class="fc" id="L1045">		Expression initializer= fragment.getInitializer();</span>
-<span class="pc bpc" id="L1046" title="1 of 6 branches missed.">		if (initializer == null || !multiple &amp;&amp; initializer instanceof ClassInstanceCreation) {</span>
-<span class="fc" id="L1047">			return null;</span>
+<span class="fc" id="L1152">		Expression initializer= fragment.getInitializer();</span>
+<span class="pc bpc" id="L1153" title="1 of 6 branches missed.">		if (initializer == null || !multiple &amp;&amp; initializer instanceof ClassInstanceCreation) {</span>
+<span class="fc" id="L1154">			return null;</span>
 		}
-<span class="fc" id="L1049">		ITypeBinding binding= initializer.resolveTypeBinding();</span>
-<span class="pc bpc" id="L1050" title="2 of 6 branches missed.">		return binding != null &amp;&amp; !binding.isRecovered() &amp;&amp; !selectedResourceChain(binding, sourceTypes).isEmpty()</span>
-<span class="fc" id="L1051">				? binding : null;</span>
+<span class="fc" id="L1156">		ITypeBinding binding= initializer.resolveTypeBinding();</span>
+<span class="pc bpc" id="L1157" title="2 of 6 branches missed.">		return binding != null &amp;&amp; !binding.isRecovered() &amp;&amp; !selectedResourceChain(binding, sourceTypes).isEmpty()</span>
+<span class="fc" id="L1158">				? binding : null;</span>
 	}
 
 	// For a factory or parenthesized expression the planner starts at the declared
 	// field type. Every callback below it would miss the Rule's coordinated lifecycle.
 	private static boolean plannerCoversInitializer(ITypeBinding plannedFixture, ITypeBinding initializer,
 			Map&lt;String, SourceType&gt; sourceTypes) {
-<span class="fc" id="L1058">		String plannedKey= JUnitMigrationPlan.typeKey(plannedFixture);</span>
-<span class="fc" id="L1059">		boolean inPlannedChain= false;</span>
-<span class="pc bpc" id="L1060" title="2 of 4 branches missed.">		for (ITypeBinding current= initializer; current != null &amp;&amp; !current.isRecovered(); current= current.getSuperclass()) {</span>
-<span class="fc bfc" id="L1061" title="All 2 branches covered.">			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(qualifiedName(current))) {</span>
-<span class="fc" id="L1062">				return inPlannedChain;</span>
+<span class="fc" id="L1165">		String plannedKey= JUnitMigrationPlan.typeKey(plannedFixture);</span>
+<span class="fc" id="L1166">		boolean inPlannedChain= false;</span>
+<span class="pc bpc" id="L1167" title="2 of 4 branches missed.">		for (ITypeBinding current= initializer; current != null &amp;&amp; !current.isRecovered(); current= current.getSuperclass()) {</span>
+<span class="fc bfc" id="L1168" title="All 2 branches covered.">			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(qualifiedName(current))) {</span>
+<span class="fc" id="L1169">				return inPlannedChain;</span>
 			}
-<span class="fc" id="L1064">			SourceType selected= sourceTypes.get(JUnitMigrationPlan.typeKey(current));</span>
-<span class="pc bpc" id="L1065" title="1 of 2 branches missed.">			if (selected == null) {</span>
-<span class="nc" id="L1066">				return false;</span>
+<span class="fc" id="L1171">			SourceType selected= sourceTypes.get(JUnitMigrationPlan.typeKey(current));</span>
+<span class="pc bpc" id="L1172" title="1 of 2 branches missed.">			if (selected == null) {</span>
+<span class="nc" id="L1173">				return false;</span>
 			}
-<span class="fc" id="L1068">			inPlannedChain|= selected.bindingKey().equals(plannedKey);</span>
-<span class="fc bfc" id="L1069" title="All 4 branches covered.">			if (!inPlannedChain &amp;&amp; JUnitMultiFilePlanner.requiresLocalExternalResourceRewrite(selected.declaration(), current)) {</span>
-<span class="fc" id="L1070">				return false;</span>
+<span class="fc" id="L1175">			inPlannedChain|= selected.bindingKey().equals(plannedKey);</span>
+<span class="fc bfc" id="L1176" title="All 4 branches covered.">			if (!inPlannedChain &amp;&amp; JUnitMultiFilePlanner.requiresLocalExternalResourceRewrite(selected.declaration(), current)) {</span>
+<span class="fc" id="L1177">				return false;</span>
 			}
 		}
-<span class="nc" id="L1073">		return false;</span>
+<span class="nc" id="L1180">		return false;</span>
 	}
 
 	private static boolean extendsExternalResource(ITypeBinding binding) {
-<span class="fc bfc" id="L1077" title="All 2 branches covered.">		for (ITypeBinding current= binding; current != null; current= current.getSuperclass()) {</span>
-<span class="fc bfc" id="L1078" title="All 2 branches covered.">			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(qualifiedName(current))) {</span>
-<span class="fc" id="L1079">				return true;</span>
+<span class="fc bfc" id="L1184" title="All 2 branches covered.">		for (ITypeBinding current= binding; current != null; current= current.getSuperclass()) {</span>
+<span class="fc bfc" id="L1185" title="All 2 branches covered.">			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(qualifiedName(current))) {</span>
+<span class="fc" id="L1186">				return true;</span>
 			}
 		}
-<span class="fc" id="L1082">		return false;</span>
+<span class="fc" id="L1189">		return false;</span>
 	}
 
 	private static String runnerType(TypeDeclaration type) {
-<span class="fc bfc" id="L1086" title="All 2 branches covered.">		for (Object modifier : type.modifiers()) {</span>
-<span class="fc bfc" id="L1087" title="All 2 branches covered.">			if (!(modifier instanceof Annotation annotation)) {</span>
+<span class="fc bfc" id="L1193" title="All 2 branches covered.">		for (Object modifier : type.modifiers()) {</span>
+<span class="fc bfc" id="L1194" title="All 2 branches covered.">			if (!(modifier instanceof Annotation annotation)) {</span>
 				continue;
 			}
-<span class="fc" id="L1090">			ITypeBinding annotationType= annotation.resolveTypeBinding();</span>
-<span class="fc bfc" id="L1091" title="All 2 branches covered.">			if (!ORG_JUNIT_RUNWITH.equals(qualifiedName(annotationType))) {</span>
-<span class="fc" id="L1092">				continue;</span>
+<span class="fc" id="L1197">			ITypeBinding annotationType= annotation.resolveTypeBinding();</span>
+<span class="fc bfc" id="L1198" title="All 2 branches covered.">			if (!ORG_JUNIT_RUNWITH.equals(qualifiedName(annotationType))) {</span>
+<span class="fc" id="L1199">				continue;</span>
 			}
-<span class="fc" id="L1094">			org.eclipse.jdt.core.dom.Expression value= annotationValue(annotation);</span>
-<span class="pc bpc" id="L1095" title="1 of 2 branches missed.">			if (value instanceof TypeLiteral literal) {</span>
-<span class="fc" id="L1096">				return qualifiedName(literal.getType().resolveBinding());</span>
+<span class="fc" id="L1201">			org.eclipse.jdt.core.dom.Expression value= annotationValue(annotation);</span>
+<span class="pc bpc" id="L1202" title="1 of 2 branches missed.">			if (value instanceof TypeLiteral literal) {</span>
+<span class="fc" id="L1203">				return qualifiedName(literal.getType().resolveBinding());</span>
 			}
-<span class="nc" id="L1098">			return &quot;&lt;unresolved&gt;&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L1205">			return &quot;&lt;unresolved&gt;&quot;; //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L1100">		return null;</span>
+<span class="fc" id="L1207">		return null;</span>
 	}
 
 	private static org.eclipse.jdt.core.dom.Expression annotationValue(Annotation annotation) {
-<span class="pc bpc" id="L1104" title="1 of 2 branches missed.">		if (annotation instanceof SingleMemberAnnotation single) {</span>
-<span class="fc" id="L1105">			return single.getValue();</span>
+<span class="pc bpc" id="L1211" title="1 of 2 branches missed.">		if (annotation instanceof SingleMemberAnnotation single) {</span>
+<span class="fc" id="L1212">			return single.getValue();</span>
 		}
-<span class="nc bnc" id="L1107" title="All 2 branches missed.">		if (annotation instanceof NormalAnnotation normal) {</span>
-<span class="nc bnc" id="L1108" title="All 2 branches missed.">			for (Object value : normal.values()) {</span>
-<span class="nc bnc" id="L1109" title="All 2 branches missed.">				if (value instanceof MemberValuePair pair</span>
-<span class="nc bnc" id="L1110" title="All 2 branches missed.">						&amp;&amp; &quot;value&quot;.equals(pair.getName().getIdentifier())) { //$NON-NLS-1$</span>
-<span class="nc" id="L1111">					return pair.getValue();</span>
+<span class="nc bnc" id="L1214" title="All 2 branches missed.">		if (annotation instanceof NormalAnnotation normal) {</span>
+<span class="nc bnc" id="L1215" title="All 2 branches missed.">			for (Object value : normal.values()) {</span>
+<span class="nc bnc" id="L1216" title="All 2 branches missed.">				if (value instanceof MemberValuePair pair</span>
+<span class="nc bnc" id="L1217" title="All 2 branches missed.">						&amp;&amp; &quot;value&quot;.equals(pair.getName().getIdentifier())) { //$NON-NLS-1$</span>
+<span class="nc" id="L1218">					return pair.getValue();</span>
 				}
 			}
 		}
-<span class="nc" id="L1115">		return null;</span>
+<span class="nc" id="L1222">		return null;</span>
 	}
 
 
-	private static boolean requiresParameterizedClosure(EnumSet&lt;JUnitCleanUpFixCore&gt; fixes) {
-<span class="fc" id="L1120">		EnumSet&lt;JUnitCleanUpFixCore&gt; structural= fixes.clone();</span>
-<span class="fc" id="L1121">		structural.removeAll(independentlySafeFixes(fixes));</span>
-<span class="pc bpc" id="L1122" title="1 of 2 branches missed.">		return !structural.isEmpty();</span>
+	private static boolean changesExecutionContract(EnumSet&lt;JUnitCleanUpFixCore&gt; fixes) {
+<span class="fc" id="L1227">		EnumSet&lt;JUnitCleanUpFixCore&gt; structural= fixes.clone();</span>
+<span class="fc" id="L1228">		structural.removeAll(independentlySafeFixes(fixes));</span>
+<span class="fc bfc" id="L1229" title="All 2 branches covered.">		return !structural.isEmpty();</span>
 	}
 
 	private static boolean rulesEnabled(EnumSet&lt;JUnitCleanUpFixCore&gt; fixes) {
-<span class="fc bfc" id="L1126" title="All 2 branches covered.">		return fixes.contains(JUnitCleanUpFixCore.RULETEMPORARYFOLDER)</span>
-<span class="fc bfc" id="L1127" title="All 2 branches covered.">				|| fixes.contains(JUnitCleanUpFixCore.RULETESTNAME)</span>
-<span class="fc bfc" id="L1128" title="All 2 branches covered.">				|| fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE)</span>
-<span class="fc bfc" id="L1129" title="All 2 branches covered.">				|| fixes.contains(JUnitCleanUpFixCore.RULETIMEOUT)</span>
-<span class="fc bfc" id="L1130" title="All 2 branches covered.">				|| fixes.contains(JUnitCleanUpFixCore.RULEEXPECTEDEXCEPTION)</span>
-<span class="fc bfc" id="L1131" title="All 2 branches covered.">				|| fixes.contains(JUnitCleanUpFixCore.RULEERRORCOLLECTOR);</span>
+<span class="fc bfc" id="L1233" title="All 2 branches covered.">		return fixes.contains(JUnitCleanUpFixCore.RULETEMPORARYFOLDER)</span>
+<span class="fc bfc" id="L1234" title="All 2 branches covered.">				|| fixes.contains(JUnitCleanUpFixCore.RULETESTNAME)</span>
+<span class="fc bfc" id="L1235" title="All 2 branches covered.">				|| fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE)</span>
+<span class="fc bfc" id="L1236" title="All 2 branches covered.">				|| fixes.contains(JUnitCleanUpFixCore.RULETIMEOUT)</span>
+<span class="fc bfc" id="L1237" title="All 2 branches covered.">				|| fixes.contains(JUnitCleanUpFixCore.RULEEXPECTEDEXCEPTION)</span>
+<span class="fc bfc" id="L1238" title="All 2 branches covered.">				|| fixes.contains(JUnitCleanUpFixCore.RULEERRORCOLLECTOR);</span>
 	}
 
 	private static boolean isKnownRuleType(String qualifiedType) {
-<span class="pc bpc" id="L1135" title="1 of 2 branches missed.">		return ORG_JUNIT_RULES_TEMPORARY_FOLDER.equals(qualifiedType)</span>
-<span class="fc bfc" id="L1136" title="All 2 branches covered.">				|| TEST_NAME.equals(qualifiedType)</span>
-<span class="fc bfc" id="L1137" title="All 2 branches covered.">				|| ORG_JUNIT_RULES_EXPECTED_EXCEPTION.equals(qualifiedType)</span>
-<span class="fc bfc" id="L1138" title="All 2 branches covered.">				|| TIMEOUT.equals(qualifiedType)</span>
-<span class="fc bfc" id="L1139" title="All 2 branches covered.">				|| ERROR_COLLECTOR.equals(qualifiedType)</span>
-<span class="pc bpc" id="L1140" title="1 of 2 branches missed.">				|| ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(qualifiedType);</span>
+<span class="pc bpc" id="L1242" title="1 of 2 branches missed.">		return ORG_JUNIT_RULES_TEMPORARY_FOLDER.equals(qualifiedType)</span>
+<span class="fc bfc" id="L1243" title="All 2 branches covered.">				|| TEST_NAME.equals(qualifiedType)</span>
+<span class="fc bfc" id="L1244" title="All 2 branches covered.">				|| ORG_JUNIT_RULES_EXPECTED_EXCEPTION.equals(qualifiedType)</span>
+<span class="fc bfc" id="L1245" title="All 2 branches covered.">				|| TIMEOUT.equals(qualifiedType)</span>
+<span class="fc bfc" id="L1246" title="All 2 branches covered.">				|| ERROR_COLLECTOR.equals(qualifiedType)</span>
+<span class="pc bpc" id="L1247" title="1 of 2 branches missed.">				|| ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(qualifiedType);</span>
 	}
 
 	private static String sourceTypeName(TypeDeclaration type) {
-<span class="fc" id="L1144">		ITypeBinding binding= type.resolveBinding();</span>
-<span class="fc" id="L1145">		String qualified= qualifiedName(binding);</span>
-<span class="pc bpc" id="L1146" title="2 of 4 branches missed.">		return qualified == null || qualified.isBlank() ? type.getName().getIdentifier() : qualified;</span>
+<span class="fc" id="L1251">		ITypeBinding binding= type.resolveBinding();</span>
+<span class="fc" id="L1252">		String qualified= qualifiedName(binding);</span>
+<span class="pc bpc" id="L1253" title="2 of 4 branches missed.">		return qualified == null || qualified.isBlank() ? type.getName().getIdentifier() : qualified;</span>
 	}
 
 	private static String qualifiedName(ITypeBinding binding) {
-<span class="pc bpc" id="L1150" title="1 of 2 branches missed.">		return binding == null ? null : binding.getErasure().getQualifiedName();</span>
+<span class="pc bpc" id="L1257" title="1 of 2 branches missed.">		return binding == null ? null : binding.getErasure().getQualifiedName();</span>
 	}
 
 	private static String remediationFor(String reasonCode) {
-<span class="fc bfc" id="L1154" title="All 2 branches covered.">		if (&quot;PARAMETERIZED_COMPONENT_NOT_SELECTED&quot;.equals(reasonCode)) { //$NON-NLS-1$</span>
-<span class="fc" id="L1155">			return &quot;Enable the Parameterized migration for the same source component, or leave its JUnit 4 test, lifecycle and Rule annotations unchanged until that coordinated migration can run.&quot;; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L1261" title="All 2 branches covered.">		if (&quot;PARAMETERIZED_COMPONENT_NOT_SELECTED&quot;.equals(reasonCode)) { //$NON-NLS-1$</span>
+<span class="fc" id="L1262">			return &quot;Enable the Parameterized migration for the same source component, or leave its JUnit 4 test, lifecycle and Rule annotations unchanged until that coordinated migration can run.&quot;; //$NON-NLS-1$</span>
 		}
-<span class="fc bfc" id="L1157" title="All 2 branches covered.">		if (reasonCode.startsWith(&quot;PARAMETERIZED_&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L1158">			return &quot;Replace field injection or the custom provider with explicit Jupiter method arguments/Arguments sources, then remove the Parameterized runner and constructor coupling.&quot;; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L1264" title="All 2 branches covered.">		if (reasonCode.startsWith(&quot;PARAMETERIZED_&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L1265">			return &quot;Replace field injection or the custom provider with explicit Jupiter method arguments/Arguments sources, then remove the Parameterized runner and constructor coupling.&quot;; //$NON-NLS-1$</span>
 		}
-<span class="fc bfc" id="L1160" title="All 2 branches covered.">		if (reasonCode.startsWith(&quot;TEMPORARY_FOLDER_&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L1161">			return &quot;Introduce @TempDir Path and translate the remaining custom folder semantics to java.nio.file.Files calls before removing TemporaryFolder.&quot;; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L1267" title="All 2 branches covered.">		if (reasonCode.startsWith(&quot;TEMPORARY_FOLDER_&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L1268">			return &quot;Introduce @TempDir Path and translate the remaining custom folder semantics to java.nio.file.Files calls before removing TemporaryFolder.&quot;; //$NON-NLS-1$</span>
 		}
-<span class="fc bfc" id="L1163" title="All 2 branches covered.">		if (reasonCode.startsWith(&quot;TEST_NAME_&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L1164">			return &quot;Inject TestInfo in @BeforeEach and replace every remaining rule use with the intended method-name or display-name contract.&quot;; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L1270" title="All 2 branches covered.">		if (reasonCode.startsWith(&quot;TEST_NAME_&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L1271">			return &quot;Inject TestInfo in @BeforeEach and replace every remaining rule use with the intended method-name or display-name contract.&quot;; //$NON-NLS-1$</span>
 		}
-<span class="pc bpc" id="L1166" title="1 of 2 branches missed.">		if (reasonCode.startsWith(&quot;EXPECTED_EXCEPTION_&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L1167">			return &quot;Wrap only the throwing statements in assertThrows(), then express message, cause and matcher checks with explicit Jupiter assertions.&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L1273" title="1 of 2 branches missed.">		if (reasonCode.startsWith(&quot;EXPECTED_EXCEPTION_&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L1274">			return &quot;Wrap only the throwing statements in assertThrows(), then express message, cause and matcher checks with explicit Jupiter assertions.&quot;; //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L1169">		return &quot;Complete this construct manually using the Jupiter extension and assertion APIs described by the reason code.&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L1276">		return &quot;Complete this construct manually using the Jupiter extension and assertion APIs described by the reason code.&quot;; //$NON-NLS-1$</span>
 	}
 
 	private static String javadocText(String value) {
-<span class="fc" id="L1173">		return value.replace(&quot;*/&quot;, &quot;* /&quot;).replace('\r', ' ').replace('\n', ' '); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L1280">		return value.replace(&quot;*/&quot;, &quot;* /&quot;).replace('\r', ' ').replace('\n', ' '); //$NON-NLS-1$ //$NON-NLS-2$</span>
 	}
 
 	private static String opaqueId(String value) {
 		try {
-<span class="fc" id="L1178">			byte[] digest= MessageDigest.getInstance(&quot;SHA-256&quot;) //$NON-NLS-1$</span>
-<span class="fc" id="L1179">					.digest(value.getBytes(StandardCharsets.UTF_8));</span>
-<span class="fc" id="L1180">			return HexFormat.of().formatHex(digest, 0, 8);</span>
-<span class="nc" id="L1181">		} catch (NoSuchAlgorithmException e) {</span>
-<span class="nc" id="L1182">			throw new IllegalStateException(e);</span>
+<span class="fc" id="L1285">			byte[] digest= MessageDigest.getInstance(&quot;SHA-256&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L1286">					.digest(value.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L1287">			return HexFormat.of().formatHex(digest, 0, 8);</span>
+<span class="nc" id="L1288">		} catch (NoSuchAlgorithmException e) {</span>
+<span class="nc" id="L1289">			throw new IllegalStateException(e);</span>
 		}
 	}
 
 	private static String jsonEscape(String value) {
-<span class="fc" id="L1187">		StringBuilder escaped= new StringBuilder(value.length() + 16);</span>
-<span class="fc bfc" id="L1188" title="All 2 branches covered.">		for (int index= 0; index &lt; value.length(); index++) {</span>
-<span class="fc" id="L1189">			char character= value.charAt(index);</span>
-<span class="pc bpc" id="L1190" title="7 of 8 branches missed.">			switch (character) {</span>
-<span class="nc" id="L1191">			case '&quot;' -&gt; escaped.append(&quot;\\\&quot;&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L1192">			case '\\' -&gt; escaped.append(&quot;\\\\&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L1193">			case '\b' -&gt; escaped.append(&quot;\\b&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L1194">			case '\f' -&gt; escaped.append(&quot;\\f&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L1195">			case '\n' -&gt; escaped.append(&quot;\\n&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L1196">			case '\r' -&gt; escaped.append(&quot;\\r&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L1197">			case '\t' -&gt; escaped.append(&quot;\\t&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L1294">		StringBuilder escaped= new StringBuilder(value.length() + 16);</span>
+<span class="fc bfc" id="L1295" title="All 2 branches covered.">		for (int index= 0; index &lt; value.length(); index++) {</span>
+<span class="fc" id="L1296">			char character= value.charAt(index);</span>
+<span class="pc bpc" id="L1297" title="7 of 8 branches missed.">			switch (character) {</span>
+<span class="nc" id="L1298">			case '&quot;' -&gt; escaped.append(&quot;\\\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L1299">			case '\\' -&gt; escaped.append(&quot;\\\\&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L1300">			case '\b' -&gt; escaped.append(&quot;\\b&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L1301">			case '\f' -&gt; escaped.append(&quot;\\f&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L1302">			case '\n' -&gt; escaped.append(&quot;\\n&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L1303">			case '\r' -&gt; escaped.append(&quot;\\r&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L1304">			case '\t' -&gt; escaped.append(&quot;\\t&quot;); //$NON-NLS-1$</span>
 			default -&gt; {
-<span class="pc bpc" id="L1199" title="1 of 2 branches missed.">				if (character &lt; 0x20) {</span>
-<span class="nc" id="L1200">					escaped.append(String.format(Locale.ROOT, &quot;\\u%04x&quot;, Integer.valueOf(character))); //$NON-NLS-1$</span>
-<span class="nc" id="L1201">				} else {</span>
-<span class="fc" id="L1202">					escaped.append(character);</span>
+<span class="pc bpc" id="L1306" title="1 of 2 branches missed.">				if (character &lt; 0x20) {</span>
+<span class="nc" id="L1307">					escaped.append(String.format(Locale.ROOT, &quot;\\u%04x&quot;, Integer.valueOf(character))); //$NON-NLS-1$</span>
+<span class="nc" id="L1308">				} else {</span>
+<span class="fc" id="L1309">					escaped.append(character);</span>
 				}
 			}
 			}
 		}
-<span class="fc" id="L1207">		return escaped.toString();</span>
+<span class="fc" id="L1314">		return escaped.toString();</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

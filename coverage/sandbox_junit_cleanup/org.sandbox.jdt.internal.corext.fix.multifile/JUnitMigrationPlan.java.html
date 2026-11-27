@@ -127,7 +127,7 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 	 * by a strict-mode compilation unit that cannot be migrated atomically.
 	 */
 	public JUnitMigrationPlan withJUnit4CompatibilityForBlockedRuleUnits(Set&lt;String&gt; blockedRuleUnitHandles) {
-<span class="pc bpc" id="L130" title="2 of 4 branches missed.">		if (blockedRuleUnitHandles == null || blockedRuleUnitHandles.isEmpty()</span>
+<span class="pc bpc" id="L130" title="1 of 4 branches missed.">		if (blockedRuleUnitHandles == null || blockedRuleUnitHandles.isEmpty()</span>
 <span class="fc bfc" id="L131" title="All 2 branches covered.">				|| externalResourceRules.isEmpty()) {</span>
 <span class="fc" id="L132">			return this;</span>
 		}

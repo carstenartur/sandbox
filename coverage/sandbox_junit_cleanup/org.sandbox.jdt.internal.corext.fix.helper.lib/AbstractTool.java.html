@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>AbstractTool.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper.lib</a> &gt; <span class="el_source">AbstractTool.java</span></div><h1>AbstractTool.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>AbstractTool.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper.lib</a> &gt; <span class="el_source">AbstractTool.java</span></div><h1>AbstractTool.java</h1><pre class="source lang-java linenums">/*
  * Copyright (c) 2021, 2025 Carsten Hammer.
  *
  * This program and the accompanying materials
@@ -229,7 +229,9 @@ import org.sandbox.jdt.internal.corext.util.NamingUtils;
 <span class="fc" id="L229">		ImportRewrite importRewriter = cuRewrite.getImportRewrite();</span>
 <span class="fc" id="L230">		JunitHolder junitHolder = hit.get(hit.size() - 1);</span>
 <span class="fc" id="L231">		process2Rewrite(group, rewriter, ast, importRewriter, junitHolder);</span>
-<span class="fc" id="L232">		hit.remove(hit.size() - 1);</span>
-<span class="fc" id="L233">	}</span>
+<span class="fc" id="L232">		JUnit4AssertionNls.recordMoved(junitHolder.getMinv(), cuRewrite);</span>
+<span class="fc" id="L233">		AbstractMethodMigrationPlugin.recordRetainedImports(junitHolder.getMinv(), cuRewrite);</span>
+<span class="fc" id="L234">		hit.remove(hit.size() - 1);</span>
+<span class="fc" id="L235">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

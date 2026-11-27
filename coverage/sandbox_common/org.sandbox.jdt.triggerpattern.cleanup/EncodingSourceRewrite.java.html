@@ -114,8 +114,8 @@ public final class EncodingSourceRewrite {
 
 			@Override
 			public boolean visit(TextBlock block) {
-<span class="nc" id="L117">				add(block, block.getStartPosition() + block.getLength() - 1);</span>
-<span class="nc" id="L118">				return false;</span>
+<span class="fc" id="L117">				add(block, block.getStartPosition() + block.getLength() - 1);</span>
+<span class="fc" id="L118">				return false;</span>
 			}
 
 			@Override
@@ -211,8 +211,8 @@ public final class EncodingSourceRewrite {
 				}
 <span class="fc" id="L212">				int tagStart= element.getTagPosition().getOffset();</span>
 <span class="fc" id="L213">				int tagLength= element.getTagPosition().getLength();</span>
-<span class="pc bpc" id="L214" title="1 of 2 branches missed.">				if (isRemoved(tagStart, tagLength, replacements.nodes())) {</span>
-<span class="nc" id="L215">					continue;</span>
+<span class="fc bfc" id="L214" title="All 2 branches covered.">				if (isRemoved(tagStart, tagLength, replacements.nodes())) {</span>
+<span class="fc" id="L215">					continue;</span>
 				}
 <span class="fc" id="L217">				LineComment comment= containingComment(root, tagStart, tagLength);</span>
 <span class="fc bfc" id="L218" title="All 2 branches covered.">				String tag= deleted ? &quot;&quot; : NLSElement.createTagText(index + 1 - removed); //$NON-NLS-1$</span>

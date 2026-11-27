@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JUnitCleanUpCore.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.fix</a> &gt; <span class="el_source">JUnitCleanUpCore.java</span></div><h1>JUnitCleanUpCore.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JUnitCleanUpCore.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.fix</a> &gt; <span class="el_source">JUnitCleanUpCore.java</span></div><h1>JUnitCleanUpCore.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*</span>
  * Copyright (c) 2021, 2026 Carsten Hammer.
  *
  * This program and the accompanying materials
@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
@@ -52,6 +53,7 @@ import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCo
 import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.jdt.internal.junit.launcher.JUnit3TestFinder;
 import org.eclipse.jdt.internal.junit.launcher.JUnit4TestFinder;
+import org.eclipse.jdt.internal.ui.fix.MapCleanUpOptions;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
@@ -83,472 +85,490 @@ import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 /** Core cleanup implementation for JUnit 3/4 to Jupiter migration. */
 public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp&lt;JUnitMigrationPlan&gt; {
 
-<span class="fc" id="L86">	private final Map&lt;IJavaProject, Set&lt;String&gt;&gt; pendingExpandedScopes= new HashMap&lt;&gt;();</span>
-<span class="fc" id="L87">	private final Map&lt;IJavaProject, Set&lt;String&gt;&gt; verifiedClosedScopes= new HashMap&lt;&gt;();</span>
-<span class="fc" id="L88">	private final Set&lt;IJavaProject&gt; rejectedScopes= new HashSet&lt;&gt;();</span>
-<span class="fc" id="L89">	private final Map&lt;IJavaProject, Analysis&gt; migrationAnalyses= new HashMap&lt;&gt;();</span>
-<span class="fc" id="L90">	private final Map&lt;IJavaProject, AssumptionScope&gt; assumptionScopes= new HashMap&lt;&gt;();</span>
+	private CleanUpOptions cleanUpOptions;
+<span class="fc" id="L89">	private final Map&lt;IJavaProject, Set&lt;String&gt;&gt; pendingExpandedScopes= new HashMap&lt;&gt;();</span>
+<span class="fc" id="L90">	private final Map&lt;IJavaProject, Set&lt;String&gt;&gt; verifiedClosedScopes= new HashMap&lt;&gt;();</span>
+<span class="fc" id="L91">	private final Set&lt;IJavaProject&gt; rejectedScopes= new HashSet&lt;&gt;();</span>
+<span class="fc" id="L92">	private final Map&lt;IJavaProject, Analysis&gt; migrationAnalyses= new HashMap&lt;&gt;();</span>
+<span class="fc" id="L93">	private final Map&lt;IJavaProject, AssumptionScope&gt; assumptionScopes= new HashMap&lt;&gt;();</span>
 
 	private record AssumptionScope(List&lt;IJavaProject&gt; projects, Map&lt;ICompilationUnit, String&gt; sources) {
 		boolean isCurrent() throws CoreException {
-<span class="pc bpc" id="L94" title="1 of 2 branches missed.">			return JavaProjectCompilationUnits.readOnlyProjects(projects).isEmpty()</span>
-<span class="pc bpc" id="L95" title="1 of 2 branches missed.">					&amp;&amp; sources.keySet().stream().allMatch(JUnitCleanUpCore::editable)</span>
-<span class="pc bpc" id="L96" title="1 of 2 branches missed.">					&amp;&amp; projects.equals(JavaProjectCompilationUnits.withReferencingProjects(projects))</span>
-<span class="pc bpc" id="L97" title="1 of 2 branches missed.">					&amp;&amp; sources.equals(sourceSnapshot(assumptionSourceUnits(projects)));</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">			return JavaProjectCompilationUnits.readOnlyProjects(projects).isEmpty()</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">					&amp;&amp; sources.keySet().stream().allMatch(JUnitCleanUpCore::editable)</span>
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">					&amp;&amp; projects.equals(JavaProjectCompilationUnits.withReferencingProjects(projects))</span>
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">					&amp;&amp; sources.equals(sourceSnapshot(assumptionSourceUnits(projects)));</span>
 		}
 	}
 
-<span class="fc" id="L101">	public JUnitCleanUpCore(final Map&lt;String, String&gt; options) {</span>
-<span class="fc" id="L102">		setOptions(options);</span>
-<span class="fc" id="L103">	}</span>
-
-<span class="fc" id="L105">	public JUnitCleanUpCore() {</span>
+<span class="fc" id="L104">	public JUnitCleanUpCore(final Map&lt;String, String&gt; options) {</span>
+<span class="fc" id="L105">		cleanUpOptions= new MapCleanUpOptions(options);</span>
 <span class="fc" id="L106">	}</span>
+
+<span class="fc" id="L108">	public JUnitCleanUpCore() {</span>
+<span class="fc" id="L109">	}</span>
 
 	@Override
 	public void setOptions(CleanUpOptions options) {
-<span class="fc" id="L110">		super.setOptions(options);</span>
-<span class="fc" id="L111">		migrationAnalyses.clear();</span>
-<span class="fc" id="L112">		assumptionScopes.clear();</span>
-<span class="fc" id="L113">		pendingExpandedScopes.clear();</span>
-<span class="fc" id="L114">		verifiedClosedScopes.clear();</span>
-<span class="fc" id="L115">		rejectedScopes.clear();</span>
-<span class="fc" id="L116">	}</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">		Assert.isLegal(options != null);</span>
+<span class="fc" id="L114">		cleanUpOptions= options;</span>
+<span class="fc" id="L115">		migrationAnalyses.clear();</span>
+<span class="fc" id="L116">		assumptionScopes.clear();</span>
+<span class="fc" id="L117">		pendingExpandedScopes.clear();</span>
+<span class="fc" id="L118">		verifiedClosedScopes.clear();</span>
+<span class="fc" id="L119">		rejectedScopes.clear();</span>
+<span class="fc" id="L120">	}</span>
+
+	@Override
+	public boolean isEnabled(String key) {
+<span class="fc" id="L124">		Assert.isNotNull(cleanUpOptions);</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">		Assert.isLegal(key != null);</span>
+<span class="fc" id="L126">		return cleanUpOptions.isEnabled(key);</span>
+	}
 
 	@Override
 	protected RefactoringStatus checkPlanPostConditions(IProgressMonitor monitor) throws CoreException {
-<span class="fc" id="L120">		migrationAnalyses.clear();</span>
-<span class="fc" id="L121">		assumptionScopes.clear();</span>
-<span class="fc" id="L122">		return super.checkPlanPostConditions(monitor);</span>
+<span class="fc" id="L131">		migrationAnalyses.clear();</span>
+<span class="fc" id="L132">		assumptionScopes.clear();</span>
+<span class="fc" id="L133">		return super.checkPlanPostConditions(monitor);</span>
 	}
 
 	@Override
 	public CleanUpRequirements getRequirements() {
-<span class="fc" id="L127">		return new CleanUpRequirements(requireAST(), false, false, null);</span>
+<span class="fc" id="L138">		return new CleanUpRequirements(requireAST(), false, false, null);</span>
 	}
 
 	public boolean requireAST() {
-<span class="fc bfc" id="L131" title="All 4 branches covered.">		return isEnabled(JUNIT_CLEANUP) || isEnabled(JUNIT3_CLEANUP);</span>
+<span class="fc bfc" id="L142" title="All 4 branches covered.">		return isEnabled(JUNIT_CLEANUP) || isEnabled(JUNIT3_CLEANUP);</span>
 	}
 
 	@Override
 	protected MultiFileCleanUpPlanResult&lt;JUnitMigrationPlan&gt; createPlan(IJavaProject project,
 			ICompilationUnit[] compilationUnits, IProgressMonitor monitor) throws CoreException {
-<span class="fc" id="L137">		assumptionScopes.remove(project);</span>
-<span class="fc" id="L138">		EnumSet&lt;JUnitCleanUpFixCore&gt; fixes= computeFixSet();</span>
-<span class="pc bpc" id="L139" title="1 of 6 branches missed.">		if (!(isEnabled(JUNIT_CLEANUP) || isEnabled(JUNIT3_CLEANUP)) || fixes.isEmpty()) {</span>
-<span class="fc" id="L140">			migrationAnalyses.remove(project);</span>
-<span class="fc" id="L141">			return MultiFileCleanUpPlanResult.noPlan();</span>
+<span class="fc" id="L148">		assumptionScopes.remove(project);</span>
+<span class="fc" id="L149">		EnumSet&lt;JUnitCleanUpFixCore&gt; fixes= computeFixSet();</span>
+<span class="pc bpc" id="L150" title="1 of 6 branches missed.">		if (!(isEnabled(JUNIT_CLEANUP) || isEnabled(JUNIT3_CLEANUP)) || fixes.isEmpty()) {</span>
+<span class="fc" id="L151">			migrationAnalyses.remove(project);</span>
+<span class="fc" id="L152">			return MultiFileCleanUpPlanResult.noPlan();</span>
 		}
-<span class="pc bpc" id="L143" title="1 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
-<span class="nc" id="L144">			throw new OperationCanceledException();</span>
+<span class="pc bpc" id="L154" title="1 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
+<span class="nc" id="L155">			throw new OperationCanceledException();</span>
 		}
 
-<span class="fc" id="L147">		boolean junit4Enabled= isEnabled(JUNIT_CLEANUP);</span>
-<span class="fc bfc" id="L148" title="All 4 branches covered.">		boolean bestEffort= junit4Enabled &amp;&amp; isEnabled(JUnitMigrationOptions.BEST_EFFORT);</span>
-<span class="fc" id="L149">		Boolean closedScope= consumeClosedScopeDecision(project, compilationUnits);</span>
-<span class="fc" id="L150">		boolean migrateExternalResources= fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE);</span>
-<span class="fc" id="L151">		JUnitMultiFilePlanner.PlanningOptions planningOptions=</span>
-<span class="fc" id="L152">				new JUnitMultiFilePlanner.PlanningOptions(</span>
-<span class="fc" id="L153">						migrateExternalResources,</span>
-<span class="fc" id="L154">						fixes.contains(JUnitCleanUpFixCore.TEST3),</span>
-<span class="fc" id="L155">						fixes.contains(JUnitCleanUpFixCore.PARAMETERIZED), true)</span>
-<span class="fc" id="L156">				.withMixedTestAdapters(fixes.contains(JUnitCleanUpFixCore.TEST));</span>
+<span class="fc" id="L158">		boolean junit4Enabled= isEnabled(JUNIT_CLEANUP);</span>
+<span class="fc bfc" id="L159" title="All 4 branches covered.">		boolean bestEffort= junit4Enabled &amp;&amp; isEnabled(JUnitMigrationOptions.BEST_EFFORT);</span>
+<span class="fc" id="L160">		Boolean closedScope= consumeClosedScopeDecision(project, compilationUnits);</span>
+<span class="fc" id="L161">		boolean migrateExternalResources= fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE);</span>
+<span class="fc" id="L162">		JUnitMultiFilePlanner.PlanningOptions planningOptions=</span>
+<span class="fc" id="L163">				new JUnitMultiFilePlanner.PlanningOptions(</span>
+<span class="fc" id="L164">						migrateExternalResources,</span>
+<span class="fc" id="L165">						fixes.contains(JUnitCleanUpFixCore.TEST3),</span>
+<span class="fc" id="L166">						fixes.contains(JUnitCleanUpFixCore.PARAMETERIZED), true)</span>
+<span class="fc" id="L167">				.withMixedTestAdapters(fixes.contains(JUnitCleanUpFixCore.TEST));</span>
 
 		// Parse and classify the complete project scope before the strict per-file gap
 		// analysis. On a newly imported Eclipse project this first coordinated parse
 		// materializes the Java model and bindings. Running the gap analysis before it
 		// made check and apply race against classpath initialization and could therefore
 		// disagree about whether an unsupported runner or rule must keep a file atomic.
-<span class="fc bfc" id="L163" title="All 2 branches covered.">		MultiFileCleanUpPlanResult&lt;JUnitMigrationPlan&gt; result= closedScope == null</span>
-<span class="fc" id="L164">				? JUnitMultiFilePlanner.createCoordinated(project, compilationUnits, planningOptions, monitor)</span>
-<span class="fc" id="L165">				: JUnitMultiFilePlanner.createCoordinated(project, compilationUnits, planningOptions,</span>
-<span class="fc" id="L166">						closedScope.booleanValue(), monitor);</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">		MultiFileCleanUpPlanResult&lt;JUnitMigrationPlan&gt; result= closedScope == null</span>
+<span class="fc" id="L175">				? JUnitMultiFilePlanner.createCoordinated(project, compilationUnits, planningOptions, monitor)</span>
+<span class="fc" id="L176">				: JUnitMultiFilePlanner.createCoordinated(project, compilationUnits, planningOptions,</span>
+<span class="fc" id="L177">						closedScope.booleanValue(), monitor);</span>
 
-<span class="fc bfc" id="L168" title="All 2 branches covered.">		Analysis analysis= junit4Enabled</span>
-<span class="fc" id="L169">				? JUnitBestEffortSupport.analyze(project, compilationUnits, fixes, bestEffort, monitor)</span>
-<span class="fc" id="L170">				: Analysis.empty();</span>
-<span class="fc bfc" id="L171" title="All 2 branches covered.">		if (result.plan() != null) analysis= JUnitBestEffortSupport.reconcileMixed(analysis, result.plan().mixedResources());</span>
-<span class="fc bfc" id="L172" title="All 6 branches covered.">		if (bestEffort &amp;&amp; migrateExternalResources &amp;&amp; analysis.disableCoordinatedExternalResource()) {</span>
-<span class="fc" id="L173">			planningOptions= planningOptions.withRetainedExternalResourceUnits(analysis.retainedExternalResourceCompilationUnitHandles());</span>
-<span class="pc bpc" id="L174" title="1 of 2 branches missed.">			result= closedScope == null</span>
-<span class="fc" id="L175">					? JUnitMultiFilePlanner.createCoordinated(project, compilationUnits, planningOptions, monitor)</span>
-<span class="nc" id="L176">					: JUnitMultiFilePlanner.createCoordinated(project, compilationUnits, planningOptions,</span>
-<span class="nc" id="L177">							closedScope.booleanValue(), monitor);</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">		Analysis analysis= junit4Enabled</span>
+<span class="fc" id="L180">				? JUnitBestEffortSupport.analyze(project, compilationUnits, fixes, bestEffort, monitor)</span>
+<span class="fc" id="L181">				: Analysis.empty();</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">		if (result.plan() != null) analysis= JUnitBestEffortSupport.reconcileMixed(analysis, result.plan().mixedResources());</span>
+<span class="fc bfc" id="L183" title="All 6 branches covered.">		if (bestEffort &amp;&amp; migrateExternalResources &amp;&amp; analysis.disableCoordinatedExternalResource()) {</span>
+<span class="fc" id="L184">			planningOptions= planningOptions.withRetainedExternalResourceUnits(analysis.retainedExternalResourceCompilationUnitHandles());</span>
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">			result= closedScope == null</span>
+<span class="fc" id="L186">					? JUnitMultiFilePlanner.createCoordinated(project, compilationUnits, planningOptions, monitor)</span>
+<span class="nc" id="L187">					: JUnitMultiFilePlanner.createCoordinated(project, compilationUnits, planningOptions,</span>
+<span class="nc" id="L188">							closedScope.booleanValue(), monitor);</span>
 		}
-<span class="fc bfc" id="L179" title="All 2 branches covered.">		if (result.plan() != null) analysis= JUnitBestEffortSupport.reconcileMixed(analysis, result.plan().mixedResources());</span>
-<span class="fc" id="L180">		analysis= JUnitBestEffortSupport.reconcileParameterized(analysis, result.plan(), result.diagnostics(),</span>
-<span class="fc bfc" id="L181" title="All 2 branches covered.">				fixes.contains(JUnitCleanUpFixCore.PARAMETERIZED)</span>
-<span class="fc bfc" id="L182" title="All 2 branches covered.">						&amp;&amp; project.findType(&quot;org.junit.jupiter.params.ParameterizedClass&quot;) != null); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L183" title="All 6 branches covered.">		if (!bestEffort &amp;&amp; result.plan() != null &amp;&amp; !analysis.gaps().isEmpty()) {</span>
-<span class="fc" id="L184">			Set&lt;String&gt; blockedRuleUnits= analysis.gaps().stream()</span>
-<span class="fc" id="L185">					.map(JUnitBestEffortSupport.Gap::ownerCompilationUnitHandle)</span>
-<span class="fc" id="L186">					.collect(Collectors.toCollection(LinkedHashSet::new));</span>
-<span class="fc" id="L187">			JUnitMigrationPlan compatiblePlan=</span>
-<span class="fc" id="L188">					result.plan().withJUnit4CompatibilityForBlockedRuleUnits(blockedRuleUnits);</span>
-<span class="fc bfc" id="L189" title="All 2 branches covered.">			if (compatiblePlan != result.plan()) {</span>
-<span class="fc" id="L190">				result= new MultiFileCleanUpPlanResult&lt;&gt;(compatiblePlan, result.status(),</span>
-<span class="fc" id="L191">						result.metrics(), result.diagnostics());</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">		if (result.plan() != null) analysis= JUnitBestEffortSupport.reconcileMixed(analysis, result.plan().mixedResources());</span>
+<span class="fc" id="L191">		analysis= JUnitBestEffortSupport.reconcileParameterized(analysis, result.plan(), result.diagnostics(),</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">				fixes.contains(JUnitCleanUpFixCore.PARAMETERIZED)</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">						&amp;&amp; project.findType(&quot;org.junit.jupiter.params.ParameterizedClass&quot;) != null); //$NON-NLS-1$</span>
+<span class="fc" id="L194">		var diagnostics= analysis.withUnselectedFixtureDiagnostics(result.diagnostics());</span>
+<span class="fc bfc" id="L195" title="All 2 branches covered.">		if (diagnostics != result.diagnostics()) {</span>
+<span class="fc" id="L196">			result= new MultiFileCleanUpPlanResult&lt;&gt;(result.plan(), result.status(), result.metrics(), diagnostics);</span>
+		}
+<span class="fc bfc" id="L198" title="All 4 branches covered.">		if (result.plan() != null &amp;&amp; !analysis.gaps().isEmpty()) {</span>
+<span class="fc" id="L199">			Set&lt;String&gt; blockedRuleUnits= analysis.gaps().stream()</span>
+<span class="fc bfc" id="L200" title="All 4 branches covered.">					.filter(gap -&gt; !bestEffort || gap.retainsUnselectedFixture())</span>
+<span class="fc" id="L201">					.map(JUnitBestEffortSupport.Gap::ownerCompilationUnitHandle)</span>
+<span class="fc" id="L202">					.collect(Collectors.toCollection(LinkedHashSet::new));</span>
+<span class="fc" id="L203">			JUnitMigrationPlan compatiblePlan=</span>
+<span class="fc" id="L204">					result.plan().withJUnit4CompatibilityForBlockedRuleUnits(blockedRuleUnits);</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">			if (compatiblePlan != result.plan()) {</span>
+<span class="fc" id="L206">				result= new MultiFileCleanUpPlanResult&lt;&gt;(compatiblePlan, result.status(),</span>
+<span class="fc" id="L207">						result.metrics(), result.diagnostics());</span>
 			}
 		}
-<span class="fc" id="L194">		migrationAnalyses.put(project, analysis);</span>
-<span class="fc bfc" id="L195" title="All 4 branches covered.">		if (bestEffort &amp;&amp; fixes.contains(JUnitCleanUpFixCore.ASSUME)) {</span>
-<span class="fc" id="L196">			prepareAssumptionScope(project, compilationUnits, fixes, analysis, result.plan(), closedScope, monitor);</span>
+<span class="fc" id="L210">		migrationAnalyses.put(project, analysis);</span>
+<span class="fc bfc" id="L211" title="All 4 branches covered.">		if (bestEffort &amp;&amp; fixes.contains(JUnitCleanUpFixCore.ASSUME)) {</span>
+<span class="fc" id="L212">			prepareAssumptionScope(project, compilationUnits, fixes, analysis, result.plan(), closedScope, monitor);</span>
 		}
-<span class="fc" id="L198">		return result;</span>
+<span class="fc" id="L214">		return result;</span>
 	}
 
 	@Override
 	protected ICleanUpFix createFixForPlan(JUnitMigrationPlan plan, CleanUpContext context) throws CoreException {
-<span class="pc bpc" id="L203" title="1 of 2 branches missed.">		if (!plan.contains(context.getCompilationUnit())) {</span>
-<span class="nc" id="L204">			return null;</span>
+<span class="pc bpc" id="L219" title="1 of 2 branches missed.">		if (!plan.contains(context.getCompilationUnit())) {</span>
+<span class="nc" id="L220">			return null;</span>
 		}
-<span class="fc" id="L206">		CompilationUnit compilationUnit= context.getAST();</span>
-<span class="pc bpc" id="L207" title="1 of 2 branches missed.">		if (compilationUnit == null) {</span>
-<span class="nc" id="L208">			return null;</span>
+<span class="fc" id="L222">		CompilationUnit compilationUnit= context.getAST();</span>
+<span class="pc bpc" id="L223" title="1 of 2 branches missed.">		if (compilationUnit == null) {</span>
+<span class="nc" id="L224">			return null;</span>
 		}
-<span class="fc" id="L210">		EnumSet&lt;JUnitCleanUpFixCore&gt; computeFixSet= computeFixSet();</span>
-<span class="pc bpc" id="L211" title="2 of 6 branches missed.">		if (!(isEnabled(JUNIT_CLEANUP) || isEnabled(JUNIT3_CLEANUP)) || computeFixSet.isEmpty()) {</span>
-<span class="nc" id="L212">			return null;</span>
+<span class="fc" id="L226">		EnumSet&lt;JUnitCleanUpFixCore&gt; computeFixSet= computeFixSet();</span>
+<span class="pc bpc" id="L227" title="2 of 6 branches missed.">		if (!(isEnabled(JUNIT_CLEANUP) || isEnabled(JUNIT3_CLEANUP)) || computeFixSet.isEmpty()) {</span>
+<span class="nc" id="L228">			return null;</span>
 		}
 
-<span class="pc bpc" id="L215" title="1 of 4 branches missed.">		boolean bestEffort= isEnabled(JUnitMigrationOptions.BEST_EFFORT) &amp;&amp; isEnabled(JUNIT_CLEANUP);</span>
-<span class="fc" id="L216">		Analysis analysis= migrationAnalyses.getOrDefault(</span>
-<span class="fc" id="L217">				context.getCompilationUnit().getJavaProject(), Analysis.empty());</span>
-<span class="fc" id="L218">		List&lt;JUnitBestEffortSupport.Gap&gt; localGaps= analysis.gapsFor(context.getCompilationUnit());</span>
-<span class="fc bfc" id="L219" title="All 2 branches covered.">		if (plan.mixedResources().retains(context.getCompilationUnit())) {</span>
-<span class="fc bfc" id="L220" title="All 2 branches covered.">			if (!bestEffort) return null;</span>
-<span class="fc" id="L221">			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; markers= new LinkedHashSet&lt;&gt;();</span>
-<span class="fc" id="L222">			JUnitBestEffortSupport.addMarkerOperation(compilationUnit, localGaps, markers);</span>
-<span class="fc bfc" id="L223" title="All 2 branches covered.">			return markers.isEmpty() ? null : new NlsAwareCleanUpFix(JUnitCleanUpFix_refactor, compilationUnit,</span>
-<span class="fc" id="L224">					markers.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]));</span>
+<span class="pc bpc" id="L231" title="1 of 4 branches missed.">		boolean bestEffort= isEnabled(JUnitMigrationOptions.BEST_EFFORT) &amp;&amp; isEnabled(JUNIT_CLEANUP);</span>
+<span class="fc" id="L232">		Analysis analysis= migrationAnalyses.getOrDefault(</span>
+<span class="fc" id="L233">				context.getCompilationUnit().getJavaProject(), Analysis.empty());</span>
+<span class="fc" id="L234">		List&lt;JUnitBestEffortSupport.Gap&gt; localGaps= analysis.gapsFor(context.getCompilationUnit());</span>
+<span class="fc bfc" id="L235" title="All 2 branches covered.">		if (localGaps.stream().anyMatch(JUnitBestEffortSupport.Gap::retainsUnselectedFixture)) {</span>
+			// Retain the complete owner. Best-effort mode still records its Javadoc gap.
+<span class="fc" id="L237">			computeFixSet.clear();</span>
 		}
-<span class="fc bfc" id="L226" title="All 4 branches covered.">		if (!bestEffort &amp;&amp; !localGaps.isEmpty()) {</span>
+<span class="fc bfc" id="L239" title="All 2 branches covered.">		if (plan.mixedResources().retains(context.getCompilationUnit())) {</span>
+<span class="fc bfc" id="L240" title="All 2 branches covered.">			if (!bestEffort) return null;</span>
+<span class="fc" id="L241">			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; markers= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L242">			JUnitBestEffortSupport.addMarkerOperation(compilationUnit, localGaps, markers);</span>
+<span class="fc bfc" id="L243" title="All 2 branches covered.">			return markers.isEmpty() ? null : new NlsAwareCleanUpFix(JUnitCleanUpFix_refactor, compilationUnit,</span>
+<span class="fc" id="L244">					markers.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]));</span>
+		}
+<span class="fc bfc" id="L246" title="All 4 branches covered.">		if (!bestEffort &amp;&amp; !localGaps.isEmpty()) {</span>
 			// Strict mode remains atomic for migration edits. The only permitted
 			// compatibility change makes inherited JUnit 4 virtual lifecycle dispatch
 			// explicit when this compilation unit must stay on JUnit 4.
-<span class="fc" id="L230">			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; compatibilityOperations=</span>
-<span class="fc" id="L231">					new LinkedHashSet&lt;&gt;();</span>
-<span class="fc" id="L232">			Set&lt;ASTNode&gt; compatibilityNodes= new HashSet&lt;&gt;();</span>
-<span class="fc bfc" id="L233" title="All 2 branches covered.">			if (computeFixSet.contains(JUnitCleanUpFixCore.BEFORE)) {</span>
-<span class="fc" id="L234">				InheritedLifecycleMethodRefactorer.addInheritedLifecycleOverrides(compilationUnit,</span>
-<span class="fc" id="L235">						compatibilityOperations, compatibilityNodes,</span>
-<span class="fc" id="L236">						Set.of(JUnitConstants.ORG_JUNIT_BEFORE,</span>
-<span class="fc" id="L237">								JUnitConstants.ORG_JUNIT_JUPITER_API_BEFORE_EACH),</span>
-<span class="fc" id="L238">						JUnitConstants.ORG_JUNIT_BEFORE);</span>
+<span class="fc" id="L250">			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; compatibilityOperations=</span>
+<span class="fc" id="L251">					new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L252">			Set&lt;ASTNode&gt; compatibilityNodes= new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L253" title="All 2 branches covered.">			if (computeFixSet.contains(JUnitCleanUpFixCore.BEFORE)) {</span>
+<span class="fc" id="L254">				InheritedLifecycleMethodRefactorer.addInheritedLifecycleOverrides(compilationUnit,</span>
+<span class="fc" id="L255">						compatibilityOperations, compatibilityNodes,</span>
+<span class="fc" id="L256">						Set.of(JUnitConstants.ORG_JUNIT_BEFORE,</span>
+<span class="fc" id="L257">								JUnitConstants.ORG_JUNIT_JUPITER_API_BEFORE_EACH),</span>
+<span class="fc" id="L258">						JUnitConstants.ORG_JUNIT_BEFORE);</span>
 			}
-<span class="fc bfc" id="L240" title="All 2 branches covered.">			if (computeFixSet.contains(JUnitCleanUpFixCore.AFTER)) {</span>
-<span class="fc" id="L241">				InheritedLifecycleMethodRefactorer.addInheritedLifecycleOverrides(compilationUnit,</span>
-<span class="fc" id="L242">						compatibilityOperations, compatibilityNodes,</span>
-<span class="fc" id="L243">						Set.of(JUnitConstants.ORG_JUNIT_AFTER,</span>
-<span class="fc" id="L244">								JUnitConstants.ORG_JUNIT_JUPITER_API_AFTER_EACH),</span>
-<span class="fc" id="L245">						JUnitConstants.ORG_JUNIT_AFTER);</span>
+<span class="fc bfc" id="L260" title="All 2 branches covered.">			if (computeFixSet.contains(JUnitCleanUpFixCore.AFTER)) {</span>
+<span class="fc" id="L261">				InheritedLifecycleMethodRefactorer.addInheritedLifecycleOverrides(compilationUnit,</span>
+<span class="fc" id="L262">						compatibilityOperations, compatibilityNodes,</span>
+<span class="fc" id="L263">						Set.of(JUnitConstants.ORG_JUNIT_AFTER,</span>
+<span class="fc" id="L264">								JUnitConstants.ORG_JUNIT_JUPITER_API_AFTER_EACH),</span>
+<span class="fc" id="L265">						JUnitConstants.ORG_JUNIT_AFTER);</span>
 			}
-<span class="fc bfc" id="L247" title="All 2 branches covered.">			if (compatibilityOperations.isEmpty()) {</span>
-<span class="fc" id="L248">				return null;</span>
+<span class="fc bfc" id="L267" title="All 2 branches covered.">			if (compatibilityOperations.isEmpty()) {</span>
+<span class="fc" id="L268">				return null;</span>
 			}
-<span class="fc" id="L250">			return new CompilationUnitRewriteOperationsFixCore(JUnitCleanUpFix_refactor, compilationUnit,</span>
-<span class="fc" id="L251">					compatibilityOperations.toArray(</span>
-<span class="fc" id="L252">							new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]));</span>
+<span class="fc" id="L270">			return new CompilationUnitRewriteOperationsFixCore(JUnitCleanUpFix_refactor, compilationUnit,</span>
+<span class="fc" id="L271">					compatibilityOperations.toArray(</span>
+<span class="fc" id="L272">							new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]));</span>
 		}
 
-<span class="fc bfc" id="L255" title="All 4 branches covered.">		boolean preserveExecutionContract= bestEffort &amp;&amp; !localGaps.isEmpty();</span>
-<span class="fc bfc" id="L256" title="All 2 branches covered.">		EnumSet&lt;JUnitCleanUpFixCore&gt; effectiveFixSet= preserveExecutionContract</span>
-<span class="fc" id="L257">				? JUnitBestEffortSupport.independentlySafeFixes(computeFixSet)</span>
-<span class="fc" id="L258">				: computeFixSet;</span>
-<span class="fc bfc" id="L259" title="All 4 branches covered.">		if (bestEffort &amp;&amp; effectiveFixSet.contains(JUnitCleanUpFixCore.ASSUME)) {</span>
-<span class="fc" id="L260">			AssumptionScope scope= assumptionScopes.get(context.getCompilationUnit().getJavaProject());</span>
-<span class="pc bpc" id="L261" title="1 of 4 branches missed.">			if (scope == null || !scope.isCurrent()) {</span>
-<span class="fc" id="L262">				effectiveFixSet.remove(JUnitCleanUpFixCore.ASSUME);</span>
+<span class="fc bfc" id="L275" title="All 4 branches covered.">		boolean preserveExecutionContract= bestEffort &amp;&amp; !localGaps.isEmpty();</span>
+<span class="fc bfc" id="L276" title="All 2 branches covered.">		EnumSet&lt;JUnitCleanUpFixCore&gt; effectiveFixSet= preserveExecutionContract</span>
+<span class="fc" id="L277">				? JUnitBestEffortSupport.independentlySafeFixes(computeFixSet)</span>
+<span class="fc" id="L278">				: computeFixSet;</span>
+<span class="fc bfc" id="L279" title="All 4 branches covered.">		if (bestEffort &amp;&amp; effectiveFixSet.contains(JUnitCleanUpFixCore.ASSUME)) {</span>
+<span class="fc" id="L280">			AssumptionScope scope= assumptionScopes.get(context.getCompilationUnit().getJavaProject());</span>
+<span class="pc bpc" id="L281" title="1 of 4 branches missed.">			if (scope == null || !scope.isCurrent()) {</span>
+<span class="fc" id="L282">				effectiveFixSet.remove(JUnitCleanUpFixCore.ASSUME);</span>
 			}
 		}
-<span class="fc" id="L265">		Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations= new LinkedHashSet&lt;&gt;();</span>
-<span class="fc" id="L266">		Set&lt;ASTNode&gt; sharedNodesProcessed= new HashSet&lt;&gt;();</span>
-<span class="fc bfc" id="L267" title="All 2 branches covered.">		if (!preserveExecutionContract) {</span>
-<span class="fc" id="L268">			plan.addOperationsFor(context.getCompilationUnit(), compilationUnit, operations, sharedNodesProcessed);</span>
+<span class="fc" id="L285">		Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L286">		Set&lt;ASTNode&gt; sharedNodesProcessed= new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L287" title="All 2 branches covered.">		if (!preserveExecutionContract) {</span>
+<span class="fc" id="L288">			plan.addOperationsFor(context.getCompilationUnit(), compilationUnit, operations, sharedNodesProcessed);</span>
 		}
-<span class="fc" id="L270">		effectiveFixSet.forEach(i -&gt; i.findOperations(compilationUnit, operations, sharedNodesProcessed));</span>
-<span class="fc" id="L271">		RuleImportCleanupSupport.addIfSafe(compilationUnit, effectiveFixSet, operations);</span>
-<span class="fc bfc" id="L272" title="All 2 branches covered.">		if (bestEffort) {</span>
-<span class="fc" id="L273">			JUnitBestEffortSupport.addMarkerOperation(compilationUnit, localGaps, operations);</span>
+<span class="fc" id="L290">		effectiveFixSet.forEach(i -&gt; i.findOperations(compilationUnit, operations, sharedNodesProcessed));</span>
+<span class="fc" id="L291">		RuleImportCleanupSupport.addIfSafe(compilationUnit, effectiveFixSet, operations);</span>
+<span class="fc bfc" id="L292" title="All 2 branches covered.">		if (bestEffort) {</span>
+<span class="fc" id="L293">			JUnitBestEffortSupport.addMarkerOperation(compilationUnit, localGaps, operations);</span>
 		}
-<span class="fc bfc" id="L275" title="All 2 branches covered.">		if (operations.isEmpty()) {</span>
-<span class="fc" id="L276">			return null;</span>
+<span class="fc bfc" id="L295" title="All 2 branches covered.">		if (operations.isEmpty()) {</span>
+<span class="fc" id="L296">			return null;</span>
 		}
-<span class="fc" id="L278">		InstanceTestMethodDiagnostics.addIfNeeded(compilationUnit, effectiveFixSet, operations);</span>
-<span class="fc" id="L279">		return new NlsAwareCleanUpFix(JUnitCleanUpFix_refactor, compilationUnit,</span>
-<span class="fc" id="L280">				operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]));</span>
+<span class="fc" id="L298">		InstanceTestMethodDiagnostics.addIfNeeded(compilationUnit, effectiveFixSet, operations);</span>
+<span class="fc" id="L299">		return new NlsAwareCleanUpFix(JUnitCleanUpFix_refactor, compilationUnit,</span>
+<span class="fc" id="L300">				operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]));</span>
 	}
 
 	/** Returns difficult-construct analysis captured during the latest project plan. */
 	protected Analysis getMigrationAnalysis(IJavaProject project) {
-<span class="fc" id="L285">		return migrationAnalyses.getOrDefault(project, Analysis.empty());</span>
+<span class="fc" id="L305">		return migrationAnalyses.getOrDefault(project, Analysis.empty());</span>
 	}
 
 	/** Proves assumption compatibility before any member fix, including on an unpatched host. */
 	private void prepareAssumptionScope(IJavaProject project, ICompilationUnit[] selected,
 			EnumSet&lt;JUnitCleanUpFixCore&gt; fixes, Analysis analysis, JUnitMigrationPlan plan, Boolean closedScope,
 			IProgressMonitor monitor) throws CoreException {
-<span class="pc bpc" id="L292" title="2 of 6 branches missed.">		if (plan == null || Boolean.FALSE.equals(closedScope) || !analysis.gaps().isEmpty()) {</span>
-<span class="fc" id="L293">			return;</span>
+<span class="pc bpc" id="L312" title="2 of 6 branches missed.">		if (plan == null || Boolean.FALSE.equals(closedScope) || !analysis.gaps().isEmpty()) {</span>
+<span class="fc" id="L313">			return;</span>
 		}
-<span class="fc" id="L295">		List&lt;ICompilationUnit&gt; current= List.of(selected);</span>
-<span class="fc" id="L296">		Map&lt;ICompilationUnit, String&gt; selectedSnapshot= sourceSnapshot(current);</span>
-<span class="fc" id="L297">		HelperSearchSeeds helpers= JUnitSharedHelperScopeDetector.findSearchSeeds(project, current,</span>
-<span class="fc" id="L298">				false, true, false, monitor);</span>
-<span class="fc" id="L299">		List&lt;IJavaProject&gt; projects= coordinatedProjects(project, helpers.ordinary(), helpers);</span>
-<span class="pc bpc" id="L300" title="1 of 4 branches missed.">		if (!helpers.ordinary().complete() || !JavaProjectCompilationUnits.readOnlyProjects(projects).isEmpty()) {</span>
-<span class="fc" id="L301">			return;</span>
+<span class="fc" id="L315">		List&lt;ICompilationUnit&gt; current= List.of(selected);</span>
+<span class="fc" id="L316">		Map&lt;ICompilationUnit, String&gt; selectedSnapshot= sourceSnapshot(current);</span>
+<span class="fc" id="L317">		HelperSearchSeeds helpers= JUnitSharedHelperScopeDetector.findSearchSeeds(project, current,</span>
+<span class="fc" id="L318">				false, true, false, monitor);</span>
+<span class="fc" id="L319">		List&lt;IJavaProject&gt; projects= coordinatedProjects(project, helpers.ordinary(), helpers);</span>
+<span class="pc bpc" id="L320" title="1 of 4 branches missed.">		if (!helpers.ordinary().complete() || !JavaProjectCompilationUnits.readOnlyProjects(projects).isEmpty()) {</span>
+<span class="fc" id="L321">			return;</span>
 		}
 		// Expansion seeds intentionally omit public/protected and non-direct wrappers.
 		// Their absence cannot exclude consumers from the assumption compatibility proof.
-<span class="fc" id="L305">		List&lt;ICompilationUnit&gt; group= assumptionSourceUnits(projects);</span>
-<span class="fc" id="L306">		Map&lt;ICompilationUnit, String&gt; snapshot= sourceSnapshot(group);</span>
-<span class="pc bpc" id="L307" title="1 of 2 branches missed.">		if (!snapshot.entrySet().containsAll(selectedSnapshot.entrySet())) {</span>
-<span class="nc" id="L308">			return;</span>
+<span class="fc" id="L325">		List&lt;ICompilationUnit&gt; group= assumptionSourceUnits(projects);</span>
+<span class="fc" id="L326">		Map&lt;ICompilationUnit, String&gt; snapshot= sourceSnapshot(group);</span>
+<span class="pc bpc" id="L327" title="1 of 2 branches missed.">		if (!snapshot.entrySet().containsAll(selectedSnapshot.entrySet())) {</span>
+<span class="nc" id="L328">			return;</span>
 		}
-<span class="fc bfc" id="L310" title="All 2 branches covered.">		if (helpers.ordinary().candidateFound() &amp;&amp; !RelatedCompilationUnitSearch.findReferences(projects,</span>
-<span class="pc bpc" id="L311" title="1 of 2 branches missed.">				helpers.ordinary().elements(), current, group, monitor).complete()) {</span>
-<span class="nc" id="L312">			return;</span>
+<span class="fc bfc" id="L330" title="All 2 branches covered.">		if (helpers.ordinary().candidateFound() &amp;&amp; !RelatedCompilationUnitSearch.findReferences(projects,</span>
+<span class="pc bpc" id="L331" title="1 of 2 branches missed.">				helpers.ordinary().elements(), current, group, monitor).complete()) {</span>
+<span class="nc" id="L332">			return;</span>
 		}
-<span class="fc" id="L314">		Set&lt;String&gt; selectedHandles= handles(current);</span>
-<span class="fc" id="L315">		JUnit4TestFinder vintage= new JUnit4TestFinder();</span>
-<span class="fc" id="L316">		JUnit3TestFinder junit3= new JUnit3TestFinder();</span>
-<span class="fc bfc" id="L317" title="All 2 branches covered.">		for (ICompilationUnit unit : group) {</span>
-<span class="pc bpc" id="L318" title="1 of 4 branches missed.">			if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
-<span class="nc" id="L319">				throw new OperationCanceledException();</span>
+<span class="fc" id="L334">		Set&lt;String&gt; selectedHandles= handles(current);</span>
+<span class="fc" id="L335">		JUnit4TestFinder vintage= new JUnit4TestFinder();</span>
+<span class="fc" id="L336">		JUnit3TestFinder junit3= new JUnit3TestFinder();</span>
+<span class="fc bfc" id="L337" title="All 2 branches covered.">		for (ICompilationUnit unit : group) {</span>
+<span class="pc bpc" id="L338" title="1 of 4 branches missed.">			if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
+<span class="nc" id="L339">				throw new OperationCanceledException();</span>
 			}
-<span class="fc bfc" id="L321" title="All 2 branches covered.">			if (selectedHandles.contains(unit.getPrimary().getHandleIdentifier())</span>
-<span class="fc bfc" id="L322" title="All 2 branches covered.">					&amp;&amp; retainsVintageAnnotations(unit, plan, fixes, monitor)) {</span>
-<span class="fc" id="L323">				return;</span>
+<span class="fc bfc" id="L341" title="All 2 branches covered.">			if (selectedHandles.contains(unit.getPrimary().getHandleIdentifier())</span>
+<span class="fc bfc" id="L342" title="All 2 branches covered.">					&amp;&amp; retainsVintageAnnotations(unit, plan, fixes, monitor)) {</span>
+<span class="fc" id="L343">				return;</span>
 			}
-<span class="fc bfc" id="L325" title="All 2 branches covered.">			for (IType type : unit.getAllTypes()) {</span>
-<span class="fc bfc" id="L326" title="All 2 branches covered.">				if (!vintage.isTest(type)) {</span>
-<span class="fc" id="L327">					continue;</span>
+<span class="fc bfc" id="L345" title="All 2 branches covered.">			for (IType type : unit.getAllTypes()) {</span>
+<span class="fc bfc" id="L346" title="All 2 branches covered.">				if (!vintage.isTest(type)) {</span>
+<span class="fc" id="L347">					continue;</span>
 				}
-<span class="fc bfc" id="L329" title="All 2 branches covered.">				if (!selectedHandles.contains(unit.getPrimary().getHandleIdentifier())</span>
-<span class="pc bpc" id="L330" title="1 of 2 branches missed.">						|| !fixes.contains(JUnitCleanUpFixCore.TEST)</span>
-<span class="pc bpc" id="L331" title="1 of 4 branches missed.">						|| junit3.isTest(type) &amp;&amp; !fixes.contains(JUnitCleanUpFixCore.TEST3)) {</span>
+<span class="fc bfc" id="L349" title="All 2 branches covered.">				if (!selectedHandles.contains(unit.getPrimary().getHandleIdentifier())</span>
+<span class="pc bpc" id="L350" title="1 of 2 branches missed.">						|| !fixes.contains(JUnitCleanUpFixCore.TEST)</span>
+<span class="pc bpc" id="L351" title="1 of 4 branches missed.">						|| junit3.isTest(type) &amp;&amp; !fixes.contains(JUnitCleanUpFixCore.TEST3)) {</span>
 					// Later per-project preconditions do not prove that this consumer is selected.
-<span class="fc" id="L333">					return;</span>
+<span class="fc" id="L353">					return;</span>
 				}
-<span class="fc bfc" id="L335" title="All 2 branches covered.">				for (IType ancestor : type.newSupertypeHierarchy(monitor).getAllSuperclasses(type)) {</span>
-<span class="fc" id="L336">					ICompilationUnit declaration= ancestor.getCompilationUnit();</span>
-<span class="fc bfc" id="L337" title="All 4 branches covered.">					if (declaration == null &amp;&amp; binaryVintageContract(ancestor)) {</span>
-<span class="fc" id="L338">						return;</span>
+<span class="fc bfc" id="L355" title="All 2 branches covered.">				for (IType ancestor : type.newSupertypeHierarchy(monitor).getAllSuperclasses(type)) {</span>
+<span class="fc" id="L356">					ICompilationUnit declaration= ancestor.getCompilationUnit();</span>
+<span class="fc bfc" id="L357" title="All 4 branches covered.">					if (declaration == null &amp;&amp; binaryVintageContract(ancestor)) {</span>
+<span class="fc" id="L358">						return;</span>
 					}
-<span class="pc bpc" id="L340" title="1 of 4 branches missed.">					if (declaration != null &amp;&amp; !selectedHandles.contains(declaration.getPrimary().getHandleIdentifier())) {</span>
+<span class="pc bpc" id="L360" title="1 of 4 branches missed.">					if (declaration != null &amp;&amp; !selectedHandles.contains(declaration.getPrimary().getHandleIdentifier())) {</span>
 						// Abstract test declarations are not themselves finder-visible consumers.
-<span class="fc" id="L342">						return;</span>
+<span class="fc" id="L362">						return;</span>
 					}
 				}
 			}
 		}
-<span class="fc" id="L347">		AssumptionScope scope= new AssumptionScope(projects, snapshot);</span>
-<span class="pc bpc" id="L348" title="1 of 2 branches missed.">		if (scope.isCurrent()) {</span>
-<span class="fc" id="L349">			assumptionScopes.put(project, scope);</span>
+<span class="fc" id="L367">		AssumptionScope scope= new AssumptionScope(projects, snapshot);</span>
+<span class="pc bpc" id="L368" title="1 of 2 branches missed.">		if (scope.isCurrent()) {</span>
+<span class="fc" id="L369">			assumptionScopes.put(project, scope);</span>
 		}
-<span class="fc" id="L351">	}</span>
+<span class="fc" id="L371">	}</span>
 
 	/** Uses the actual selected operations: enabled TEST alone does not convert every annotation form. */
 	private static boolean retainsVintageAnnotations(ICompilationUnit unit, JUnitMigrationPlan plan,
 			EnumSet&lt;JUnitCleanUpFixCore&gt; fixes, IProgressMonitor monitor) throws CoreException {
-<span class="fc" id="L356">		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());</span>
-<span class="fc" id="L357">		parser.setSource(unit);</span>
-<span class="fc" id="L358">		parser.setResolveBindings(true);</span>
-<span class="fc" id="L359">		CompilationUnit root= (CompilationUnit) parser.createAST(monitor);</span>
-<span class="fc" id="L360">		Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations= new LinkedHashSet&lt;&gt;();</span>
-<span class="fc" id="L361">		Set&lt;ASTNode&gt; processed= new HashSet&lt;&gt;();</span>
-<span class="fc" id="L362">		plan.addOperationsFor(unit, root, operations, processed);</span>
-<span class="fc" id="L363">		EnumSet&lt;JUnitCleanUpFixCore&gt; effective= fixes.clone();</span>
-<span class="fc" id="L364">		effective.remove(JUnitCleanUpFixCore.ASSUME);</span>
-<span class="fc bfc" id="L365" title="All 2 branches covered.">		for (JUnitCleanUpFixCore fix : effective) {</span>
-<span class="fc" id="L366">			fix.findOperations(root, operations, processed);</span>
+<span class="fc" id="L376">		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L377">		parser.setSource(unit);</span>
+<span class="fc" id="L378">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L379">		CompilationUnit root= (CompilationUnit) parser.createAST(monitor);</span>
+<span class="fc" id="L380">		Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L381">		Set&lt;ASTNode&gt; processed= new HashSet&lt;&gt;();</span>
+<span class="fc" id="L382">		plan.addOperationsFor(unit, root, operations, processed);</span>
+<span class="fc" id="L383">		EnumSet&lt;JUnitCleanUpFixCore&gt; effective= fixes.clone();</span>
+<span class="fc" id="L384">		effective.remove(JUnitCleanUpFixCore.ASSUME);</span>
+<span class="fc bfc" id="L385" title="All 2 branches covered.">		for (JUnitCleanUpFixCore fix : effective) {</span>
+<span class="fc" id="L386">			fix.findOperations(root, operations, processed);</span>
 		}
-<span class="fc" id="L368">		RuleImportCleanupSupport.addIfSafe(root, effective, operations);</span>
-<span class="fc bfc" id="L369" title="All 2 branches covered.">		if (!operations.isEmpty()) {</span>
-<span class="fc" id="L370">			var change= new NlsAwareCleanUpFix(JUnitCleanUpFix_refactor, root, operations.toArray(</span>
-<span class="fc" id="L371">					new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0])).createOptionalChange(monitor);</span>
-<span class="pc bpc" id="L372" title="1 of 2 branches missed.">			if (change != null) {</span>
+<span class="fc" id="L388">		RuleImportCleanupSupport.addIfSafe(root, effective, operations);</span>
+<span class="fc bfc" id="L389" title="All 2 branches covered.">		if (!operations.isEmpty()) {</span>
+<span class="fc" id="L390">			var change= new NlsAwareCleanUpFix(JUnitCleanUpFix_refactor, root, operations.toArray(</span>
+<span class="fc" id="L391">					new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0])).createOptionalChange(monitor);</span>
+<span class="pc bpc" id="L392" title="1 of 2 branches missed.">			if (change != null) {</span>
 				try {
-<span class="fc" id="L374">					parser.setProject(unit.getJavaProject());</span>
-<span class="fc" id="L375">					parser.setUnitName(unit.getPath().removeFirstSegments(1).toString());</span>
-<span class="fc" id="L376">					parser.setSource(change.getPreviewContent(monitor).toCharArray());</span>
-<span class="fc" id="L377">					parser.setResolveBindings(true);</span>
-<span class="fc" id="L378">					root= (CompilationUnit) parser.createAST(monitor);</span>
-<span class="fc" id="L379">				} finally {</span>
-<span class="fc" id="L380">					change.dispose();</span>
+<span class="fc" id="L394">					parser.setProject(unit.getJavaProject());</span>
+<span class="fc" id="L395">					parser.setUnitName(unit.getPath().removeFirstSegments(1).toString());</span>
+<span class="fc" id="L396">					parser.setSource(change.getPreviewContent(monitor).toCharArray());</span>
+<span class="fc" id="L397">					parser.setResolveBindings(true);</span>
+<span class="fc" id="L398">					root= (CompilationUnit) parser.createAST(monitor);</span>
+<span class="fc" id="L399">				} finally {</span>
+<span class="fc" id="L400">					change.dispose();</span>
 				}
 			}
 		}
-<span class="fc" id="L384">		boolean[] retained= { false };</span>
-<span class="fc" id="L385">		root.accept(new ASTVisitor() {</span>
+<span class="fc" id="L404">		boolean[] retained= { false };</span>
+<span class="fc" id="L405">		root.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean preVisit2(ASTNode node) {
-<span class="fc bfc" id="L388" title="All 2 branches covered.">				if (node instanceof Annotation annotation) {</span>
-<span class="fc" id="L389">					var type= annotation.resolveTypeBinding();</span>
-<span class="pc bpc" id="L390" title="2 of 4 branches missed.">					retained[0]|= type == null || type.isRecovered()</span>
-<span class="fc bfc" id="L391" title="All 2 branches covered.">							|| JUnitConstants.ORG_JUNIT_TEST.equals(type.getQualifiedName())</span>
-<span class="fc bfc" id="L392" title="All 2 branches covered.">							|| JUnitConstants.ORG_JUNIT_RUNWITH.equals(type.getQualifiedName());</span>
+<span class="fc bfc" id="L408" title="All 2 branches covered.">				if (node instanceof Annotation annotation) {</span>
+<span class="fc" id="L409">					var type= annotation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L410" title="2 of 4 branches missed.">					retained[0]|= type == null || type.isRecovered()</span>
+<span class="fc bfc" id="L411" title="All 2 branches covered.">							|| JUnitConstants.ORG_JUNIT_TEST.equals(type.getQualifiedName())</span>
+<span class="fc bfc" id="L412" title="All 2 branches covered.">							|| JUnitConstants.ORG_JUNIT_RUNWITH.equals(type.getQualifiedName());</span>
 				}
-<span class="fc bfc" id="L394" title="All 2 branches covered.">				return !retained[0];</span>
+<span class="fc bfc" id="L414" title="All 2 branches covered.">				return !retained[0];</span>
 			}
 		});
-<span class="fc" id="L397">		return retained[0];</span>
+<span class="fc" id="L417">		return retained[0];</span>
 	}
 
 	private static boolean binaryVintageContract(IType type) throws CoreException {
-<span class="pc bpc" id="L401" title="1 of 2 branches missed.">		if (binaryVintageAnnotation(type)) return true;</span>
-<span class="fc bfc" id="L402" title="All 2 branches covered.">		for (var method : type.getMethods()) {</span>
-<span class="fc bfc" id="L403" title="All 2 branches covered.">			if (binaryVintageAnnotation(method)) return true;</span>
+<span class="pc bpc" id="L421" title="1 of 2 branches missed.">		if (binaryVintageAnnotation(type)) return true;</span>
+<span class="fc bfc" id="L422" title="All 2 branches covered.">		for (var method : type.getMethods()) {</span>
+<span class="fc bfc" id="L423" title="All 2 branches covered.">			if (binaryVintageAnnotation(method)) return true;</span>
 		}
-<span class="fc" id="L405">		return false;</span>
+<span class="fc" id="L425">		return false;</span>
 	}
 
 	private static boolean binaryVintageAnnotation(IAnnotatable element) throws CoreException {
-<span class="fc bfc" id="L409" title="All 2 branches covered.">		for (var annotation : element.getAnnotations()) {</span>
+<span class="fc bfc" id="L429" title="All 2 branches covered.">		for (var annotation : element.getAnnotations()) {</span>
 			// The Java model guarantees fully qualified annotation names for class files.
-<span class="fc bfc" id="L411" title="All 2 branches covered.">			if (JUnitConstants.ORG_JUNIT_TEST.equals(annotation.getElementName())</span>
-<span class="pc bpc" id="L412" title="1 of 2 branches missed.">					|| JUnitConstants.ORG_JUNIT_RUNWITH.equals(annotation.getElementName())) return true;</span>
+<span class="fc bfc" id="L431" title="All 2 branches covered.">			if (JUnitConstants.ORG_JUNIT_TEST.equals(annotation.getElementName())</span>
+<span class="pc bpc" id="L432" title="1 of 2 branches missed.">					|| JUnitConstants.ORG_JUNIT_RUNWITH.equals(annotation.getElementName())) return true;</span>
 		}
-<span class="fc" id="L414">		return false;</span>
+<span class="fc" id="L434">		return false;</span>
 	}
 
 	private static boolean editable(ICompilationUnit unit) {
-<span class="fc" id="L418">		var resource= unit.getResource();</span>
-<span class="pc bpc" id="L419" title="1 of 2 branches missed.">		var attributes= resource == null ? null : resource.getResourceAttributes();</span>
-<span class="pc bpc" id="L420" title="4 of 8 branches missed.">		return !unit.isReadOnly() &amp;&amp; resource != null &amp;&amp; (attributes == null || !attributes.isReadOnly());</span>
+<span class="fc" id="L438">		var resource= unit.getResource();</span>
+<span class="pc bpc" id="L439" title="1 of 2 branches missed.">		var attributes= resource == null ? null : resource.getResourceAttributes();</span>
+<span class="pc bpc" id="L440" title="4 of 8 branches missed.">		return !unit.isReadOnly() &amp;&amp; resource != null &amp;&amp; (attributes == null || !attributes.isReadOnly());</span>
 	}
 
 	/** Observes executable source roots, including generated/derived roots that cannot be expanded for edits. */
 	private static List&lt;ICompilationUnit&gt; assumptionSourceUnits(Collection&lt;IJavaProject&gt; projects) throws CoreException {
-<span class="fc" id="L425">		Map&lt;String, ICompilationUnit&gt; units= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L426" title="All 2 branches covered.">		for (IJavaProject project : projects) {</span>
-<span class="fc bfc" id="L427" title="All 2 branches covered.">			for (IPackageFragmentRoot root : project.getPackageFragmentRoots()) {</span>
-<span class="pc bpc" id="L428" title="1 of 4 branches missed.">				if (!root.exists() || root.getKind() != IPackageFragmentRoot.K_SOURCE) continue;</span>
-<span class="fc bfc" id="L429" title="All 2 branches covered.">				for (IJavaElement child : root.getChildren()) {</span>
-<span class="pc bpc" id="L430" title="1 of 2 branches missed.">					if (child instanceof IPackageFragment pack) {</span>
-<span class="fc bfc" id="L431" title="All 2 branches covered.">						for (ICompilationUnit unit : pack.getCompilationUnits()) {</span>
-<span class="pc bpc" id="L432" title="1 of 2 branches missed.">							if (unit.exists()) units.put(unit.getPrimary().getHandleIdentifier(), unit.getPrimary());</span>
+<span class="fc" id="L445">		Map&lt;String, ICompilationUnit&gt; units= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L446" title="All 2 branches covered.">		for (IJavaProject project : projects) {</span>
+<span class="fc bfc" id="L447" title="All 2 branches covered.">			for (IPackageFragmentRoot root : project.getPackageFragmentRoots()) {</span>
+<span class="pc bpc" id="L448" title="1 of 4 branches missed.">				if (!root.exists() || root.getKind() != IPackageFragmentRoot.K_SOURCE) continue;</span>
+<span class="fc bfc" id="L449" title="All 2 branches covered.">				for (IJavaElement child : root.getChildren()) {</span>
+<span class="pc bpc" id="L450" title="1 of 2 branches missed.">					if (child instanceof IPackageFragment pack) {</span>
+<span class="fc bfc" id="L451" title="All 2 branches covered.">						for (ICompilationUnit unit : pack.getCompilationUnits()) {</span>
+<span class="pc bpc" id="L452" title="1 of 2 branches missed.">							if (unit.exists()) units.put(unit.getPrimary().getHandleIdentifier(), unit.getPrimary());</span>
 						}
 					}
 				}
 			}
 		}
-<span class="fc" id="L438">		return List.copyOf(units.values());</span>
+<span class="fc" id="L458">		return List.copyOf(units.values());</span>
 	}
 
 	private static Map&lt;ICompilationUnit, String&gt; sourceSnapshot(Collection&lt;ICompilationUnit&gt; units) throws CoreException {
-<span class="fc" id="L442">		Map&lt;ICompilationUnit, String&gt; result= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L443" title="All 2 branches covered.">		for (ICompilationUnit unit : units) {</span>
-<span class="fc" id="L444">			result.put(unit.getPrimary(), unit.getSource());</span>
+<span class="fc" id="L462">		Map&lt;ICompilationUnit, String&gt; result= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L463" title="All 2 branches covered.">		for (ICompilationUnit unit : units) {</span>
+<span class="fc" id="L464">			result.put(unit.getPrimary(), unit.getSource());</span>
 		}
-<span class="fc" id="L446">		return result;</span>
+<span class="fc" id="L466">		return result;</span>
 	}
 
 	@Override
 	protected Collection&lt;ICompilationUnit&gt; discoverAdditionalCompilationUnits(IJavaProject project,
 			Collection&lt;ICompilationUnit&gt; currentScope, IProgressMonitor monitor) throws CoreException {
-<span class="fc" id="L452">		EnumSet&lt;JUnitCleanUpFixCore&gt; fixes= computeFixSet();</span>
-<span class="fc" id="L453">		boolean migrateExternalResourceRules= fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE);</span>
-<span class="pc bpc" id="L454" title="1 of 2 branches missed.">		boolean followSuiteMembership= isEnabled(JUNIT_CLEANUP)</span>
-<span class="pc bpc" id="L455" title="2 of 4 branches missed.">				&amp;&amp; fixes.stream().anyMatch(fix -&gt; fix != JUnitCleanUpFixCore.JUNIT6_COMPATIBILITY);</span>
-<span class="fc" id="L456">		boolean migrateJUnit3Hierarchies= fixes.contains(JUnitCleanUpFixCore.TEST3);</span>
-<span class="fc" id="L457">		Set&lt;String&gt; lifecycleAnnotations= lifecycleAnnotations(fixes);</span>
-<span class="fc bfc" id="L458" title="All 2 branches covered.">		boolean migrateLifecycleHierarchies= !lifecycleAnnotations.isEmpty();</span>
-<span class="fc" id="L459">		boolean migrateAssertionHelpers= fixes.contains(JUnitCleanUpFixCore.ASSERT);</span>
-<span class="fc" id="L460">		boolean migrateAssumptionHelpers= fixes.contains(JUnitCleanUpFixCore.ASSUME);</span>
-<span class="pc bpc" id="L461" title="3 of 6 branches missed.">		if (!migrateExternalResourceRules &amp;&amp; !followSuiteMembership &amp;&amp; !migrateJUnit3Hierarchies</span>
-<span class="nc bnc" id="L462" title="All 6 branches missed.">				&amp;&amp; !migrateLifecycleHierarchies &amp;&amp; !migrateAssertionHelpers &amp;&amp; !migrateAssumptionHelpers) {</span>
-<span class="nc" id="L463">			return List.of();</span>
+<span class="fc" id="L472">		EnumSet&lt;JUnitCleanUpFixCore&gt; fixes= computeFixSet();</span>
+<span class="fc" id="L473">		boolean migrateExternalResourceRules= fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE);</span>
+<span class="pc bpc" id="L474" title="1 of 2 branches missed.">		boolean followSuiteMembership= isEnabled(JUNIT_CLEANUP)</span>
+<span class="pc bpc" id="L475" title="2 of 4 branches missed.">				&amp;&amp; fixes.stream().anyMatch(fix -&gt; fix != JUnitCleanUpFixCore.JUNIT6_COMPATIBILITY);</span>
+<span class="fc" id="L476">		boolean migrateJUnit3Hierarchies= fixes.contains(JUnitCleanUpFixCore.TEST3);</span>
+<span class="fc" id="L477">		Set&lt;String&gt; lifecycleAnnotations= lifecycleAnnotations(fixes);</span>
+<span class="fc bfc" id="L478" title="All 2 branches covered.">		boolean migrateLifecycleHierarchies= !lifecycleAnnotations.isEmpty();</span>
+<span class="fc" id="L479">		boolean migrateAssertionHelpers= fixes.contains(JUnitCleanUpFixCore.ASSERT);</span>
+<span class="fc" id="L480">		boolean migrateAssumptionHelpers= fixes.contains(JUnitCleanUpFixCore.ASSUME);</span>
+<span class="pc bpc" id="L481" title="3 of 6 branches missed.">		if (!migrateExternalResourceRules &amp;&amp; !followSuiteMembership &amp;&amp; !migrateJUnit3Hierarchies</span>
+<span class="nc bnc" id="L482" title="All 6 branches missed.">				&amp;&amp; !migrateLifecycleHierarchies &amp;&amp; !migrateAssertionHelpers &amp;&amp; !migrateAssumptionHelpers) {</span>
+<span class="nc" id="L483">			return List.of();</span>
 		}
-<span class="pc bpc" id="L465" title="3 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
-<span class="nc" id="L466">			throw new OperationCanceledException();</span>
+<span class="pc bpc" id="L485" title="3 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
+<span class="nc" id="L486">			throw new OperationCanceledException();</span>
 		}
 
-<span class="fc" id="L469">		Set&lt;String&gt; currentHandles= handles(currentScope);</span>
-<span class="fc" id="L470">		Set&lt;String&gt; pendingScope= pendingExpandedScopes.remove(project);</span>
-<span class="fc" id="L471">		JUnitScopeDiagnostics.Expansion trace= JUnitScopeDiagnostics.expansion(project, currentHandles, pendingScope);</span>
-<span class="pc bpc" id="L472" title="1 of 4 branches missed.">		if (pendingScope != null &amp;&amp; currentHandles.containsAll(pendingScope)) {</span>
-<span class="fc" id="L473">			verifiedClosedScopes.put(project, pendingScope);</span>
-<span class="fc" id="L474">			trace.finish(&quot;pending-verified&quot;, null, null, null, null, null); //$NON-NLS-1$</span>
-<span class="fc" id="L475">			return List.of();</span>
+<span class="fc" id="L489">		Set&lt;String&gt; currentHandles= handles(currentScope);</span>
+<span class="fc" id="L490">		Set&lt;String&gt; pendingScope= pendingExpandedScopes.remove(project);</span>
+<span class="fc" id="L491">		JUnitScopeDiagnostics.Expansion trace= JUnitScopeDiagnostics.expansion(project, currentHandles, pendingScope);</span>
+<span class="pc bpc" id="L492" title="1 of 4 branches missed.">		if (pendingScope != null &amp;&amp; currentHandles.containsAll(pendingScope)) {</span>
+<span class="fc" id="L493">			verifiedClosedScopes.put(project, pendingScope);</span>
+<span class="fc" id="L494">			trace.finish(&quot;pending-verified&quot;, null, null, null, null, null); //$NON-NLS-1$</span>
+<span class="fc" id="L495">			return List.of();</span>
 		}
-<span class="fc" id="L477">		rejectedScopes.remove(project);</span>
-<span class="fc" id="L478">		JUnitScopeCandidateDetector.SearchSeeds standardSeeds= JUnitScopeCandidateDetector.findSearchSeeds(project,</span>
-<span class="fc" id="L479">				currentScope, migrateExternalResourceRules, followSuiteMembership, monitor);</span>
-<span class="pc bpc" id="L480" title="1 of 2 branches missed.">		JUnitScopeCandidateDetector.SearchSeeds junit3Seeds= migrateJUnit3Hierarchies</span>
-<span class="nc" id="L481">				? JUnit3HierarchyScopeDetector.findSearchSeeds(project, currentScope, monitor)</span>
-<span class="fc" id="L482">				: new JUnitScopeCandidateDetector.SearchSeeds(false, true, List.of(), List.of());</span>
-<span class="fc bfc" id="L483" title="All 2 branches covered.">		JUnitScopeCandidateDetector.SearchSeeds lifecycleSeeds= migrateLifecycleHierarchies</span>
-<span class="fc" id="L484">				? JUnitLifecycleScopeDetector.findSearchSeeds(project, currentScope,</span>
-<span class="fc" id="L485">						lifecycleAnnotations, monitor)</span>
-<span class="fc" id="L486">				: new JUnitScopeCandidateDetector.SearchSeeds(false, true, List.of(), List.of());</span>
+<span class="fc" id="L497">		rejectedScopes.remove(project);</span>
+<span class="fc" id="L498">		JUnitScopeCandidateDetector.SearchSeeds standardSeeds= JUnitScopeCandidateDetector.findSearchSeeds(project,</span>
+<span class="fc" id="L499">				currentScope, migrateExternalResourceRules, followSuiteMembership, monitor);</span>
+<span class="pc bpc" id="L500" title="1 of 2 branches missed.">		JUnitScopeCandidateDetector.SearchSeeds junit3Seeds= migrateJUnit3Hierarchies</span>
+<span class="nc" id="L501">				? JUnit3HierarchyScopeDetector.findSearchSeeds(project, currentScope, monitor)</span>
+<span class="fc" id="L502">				: new JUnitScopeCandidateDetector.SearchSeeds(false, true, List.of(), List.of());</span>
+<span class="fc bfc" id="L503" title="All 2 branches covered.">		JUnitScopeCandidateDetector.SearchSeeds lifecycleSeeds= migrateLifecycleHierarchies</span>
+<span class="fc" id="L504">				? JUnitLifecycleScopeDetector.findSearchSeeds(project, currentScope,</span>
+<span class="fc" id="L505">						lifecycleAnnotations, monitor)</span>
+<span class="fc" id="L506">				: new JUnitScopeCandidateDetector.SearchSeeds(false, true, List.of(), List.of());</span>
 		// Every newly admitted unit receives the active cleanup options. Limit the
 		// additional helper scope to the one rewrite its proof covers.
-<span class="fc bfc" id="L489" title="All 6 branches covered.">		boolean allowAssertionPaths= (migrateAssertionHelpers || migrateAssumptionHelpers) &amp;&amp; fixes.size() == 1</span>
-<span class="pc bpc" id="L490" title="1 of 2 branches missed.">				&amp;&amp; !isEnabled(JUnitMigrationOptions.BEST_EFFORT);</span>
-<span class="fc" id="L491">		HelperSearchSeeds helperSeeds=</span>
-<span class="fc" id="L492">				JUnitSharedHelperScopeDetector.findSearchSeeds(project, currentScope,</span>
-<span class="fc" id="L493">						migrateAssertionHelpers, migrateAssumptionHelpers, allowAssertionPaths, monitor);</span>
-<span class="fc" id="L494">		JUnitScopeCandidateDetector.SearchSeeds seeds= mergeSeeds(</span>
-<span class="fc" id="L495">				mergeSeeds(mergeSeeds(standardSeeds, junit3Seeds), lifecycleSeeds), helperSeeds.ordinary());</span>
-<span class="fc" id="L496">		trace.seeds(standardSeeds, junit3Seeds, lifecycleSeeds, helperSeeds.ordinary(), seeds);</span>
-<span class="fc bfc" id="L497" title="All 4 branches covered.">		if (!seeds.candidateFound() &amp;&amp; helperSeeds.assertionPaths().isEmpty()) {</span>
-<span class="fc" id="L498">			clearScopeDecision(project);</span>
-<span class="fc" id="L499">			trace.finish(&quot;no-candidate&quot;, null, null, null, null, null); //$NON-NLS-1$</span>
-<span class="fc" id="L500">			return List.of();</span>
+<span class="fc bfc" id="L509" title="All 6 branches covered.">		boolean allowAssertionPaths= (migrateAssertionHelpers || migrateAssumptionHelpers) &amp;&amp; fixes.size() == 1</span>
+<span class="pc bpc" id="L510" title="1 of 2 branches missed.">				&amp;&amp; !isEnabled(JUnitMigrationOptions.BEST_EFFORT);</span>
+<span class="fc" id="L511">		HelperSearchSeeds helperSeeds=</span>
+<span class="fc" id="L512">				JUnitSharedHelperScopeDetector.findSearchSeeds(project, currentScope,</span>
+<span class="fc" id="L513">						migrateAssertionHelpers, migrateAssumptionHelpers, allowAssertionPaths, monitor);</span>
+<span class="fc" id="L514">		JUnitScopeCandidateDetector.SearchSeeds seeds= mergeSeeds(</span>
+<span class="fc" id="L515">				mergeSeeds(mergeSeeds(standardSeeds, junit3Seeds), lifecycleSeeds), helperSeeds.ordinary());</span>
+<span class="fc" id="L516">		trace.seeds(standardSeeds, junit3Seeds, lifecycleSeeds, helperSeeds.ordinary(), seeds);</span>
+<span class="fc bfc" id="L517" title="All 4 branches covered.">		if (!seeds.candidateFound() &amp;&amp; helperSeeds.assertionPaths().isEmpty()) {</span>
+<span class="fc" id="L518">			clearScopeDecision(project);</span>
+<span class="fc" id="L519">			trace.finish(&quot;no-candidate&quot;, null, null, null, null, null); //$NON-NLS-1$</span>
+<span class="fc" id="L520">			return List.of();</span>
 		}
 
-<span class="fc" id="L503">		List&lt;IJavaProject&gt; coordinatedProjects= coordinatedProjects(project, seeds, helperSeeds);</span>
-<span class="fc" id="L504">		List&lt;IJavaProject&gt; readOnlyProjects= JavaProjectCompilationUnits.readOnlyProjects(coordinatedProjects);</span>
-<span class="pc bpc" id="L505" title="1 of 2 branches missed.">		if (!readOnlyProjects.isEmpty()) {</span>
-<span class="nc" id="L506">			clearScopeDecision(project);</span>
-<span class="nc" id="L507">			rejectedScopes.add(project);</span>
-<span class="nc" id="L508">			trace.finish(&quot;read-only&quot;, coordinatedProjects, readOnlyProjects, null, null, null); //$NON-NLS-1$</span>
-<span class="nc" id="L509">			return List.of();</span>
+<span class="fc" id="L523">		List&lt;IJavaProject&gt; coordinatedProjects= coordinatedProjects(project, seeds, helperSeeds);</span>
+<span class="fc" id="L524">		List&lt;IJavaProject&gt; readOnlyProjects= JavaProjectCompilationUnits.readOnlyProjects(coordinatedProjects);</span>
+<span class="pc bpc" id="L525" title="1 of 2 branches missed.">		if (!readOnlyProjects.isEmpty()) {</span>
+<span class="nc" id="L526">			clearScopeDecision(project);</span>
+<span class="nc" id="L527">			rejectedScopes.add(project);</span>
+<span class="nc" id="L528">			trace.finish(&quot;read-only&quot;, coordinatedProjects, readOnlyProjects, null, null, null); //$NON-NLS-1$</span>
+<span class="nc" id="L529">			return List.of();</span>
 		}
-<span class="fc" id="L511">		List&lt;ICompilationUnit&gt; allowedUnits= JavaProjectCompilationUnits.collect(coordinatedProjects, currentScope,</span>
-<span class="fc" id="L512">				SourceRootPolicy.TEST_ROOTS_AND_SELECTED_SUPPORT);</span>
+<span class="fc" id="L531">		List&lt;ICompilationUnit&gt; allowedUnits= JavaProjectCompilationUnits.collect(coordinatedProjects, currentScope,</span>
+<span class="fc" id="L532">				SourceRootPolicy.TEST_ROOTS_AND_SELECTED_SUPPORT);</span>
 		List&lt;ICompilationUnit&gt; requiredUnits;
-<span class="fc" id="L514">		RelatedCompilationUnitSearch.Result related= null;</span>
-<span class="pc bpc" id="L515" title="1 of 2 branches missed.">		if (!seeds.complete()) {</span>
-<span class="nc" id="L516">			requiredUnits= allowedUnits;</span>
-<span class="nc" id="L517">		} else {</span>
-<span class="fc" id="L518">			Set&lt;ICompilationUnit&gt; required= new LinkedHashSet&lt;&gt;(seeds.directCompilationUnits());</span>
-<span class="fc bfc" id="L519" title="All 2 branches covered.">			if (!seeds.elements().isEmpty()) {</span>
-<span class="fc" id="L520">				related= RelatedCompilationUnitSearch.findReferences(</span>
-<span class="fc" id="L521">						coordinatedProjects, seeds.elements(), currentScope, allowedUnits, monitor);</span>
-<span class="fc bfc" id="L522" title="All 2 branches covered.">				if (!related.complete()) {</span>
-<span class="fc" id="L523">					clearScopeDecision(project);</span>
-<span class="fc" id="L524">					rejectedScopes.add(project);</span>
-<span class="fc" id="L525">					trace.finish(&quot;search-rejected&quot;, coordinatedProjects, readOnlyProjects, allowedUnits, null, related); //$NON-NLS-1$</span>
-<span class="fc" id="L526">					return List.of();</span>
+<span class="fc" id="L534">		RelatedCompilationUnitSearch.Result related= null;</span>
+<span class="pc bpc" id="L535" title="1 of 2 branches missed.">		if (!seeds.complete()) {</span>
+<span class="nc" id="L536">			requiredUnits= allowedUnits;</span>
+<span class="nc" id="L537">		} else {</span>
+<span class="fc" id="L538">			Set&lt;ICompilationUnit&gt; required= new LinkedHashSet&lt;&gt;(seeds.directCompilationUnits());</span>
+<span class="fc bfc" id="L539" title="All 2 branches covered.">			if (!seeds.elements().isEmpty()) {</span>
+<span class="fc" id="L540">				related= RelatedCompilationUnitSearch.findReferences(</span>
+<span class="fc" id="L541">						coordinatedProjects, seeds.elements(), currentScope, allowedUnits, monitor);</span>
+<span class="fc bfc" id="L542" title="All 2 branches covered.">				if (!related.complete()) {</span>
+<span class="fc" id="L543">					clearScopeDecision(project);</span>
+<span class="fc" id="L544">					rejectedScopes.add(project);</span>
+<span class="fc" id="L545">					trace.finish(&quot;search-rejected&quot;, coordinatedProjects, readOnlyProjects, allowedUnits, null, related); //$NON-NLS-1$</span>
+<span class="fc" id="L546">					return List.of();</span>
 				}
-<span class="fc" id="L528">				required.addAll(related.compilationUnits());</span>
+<span class="fc" id="L548">				required.addAll(related.compilationUnits());</span>
 			}
-<span class="fc" id="L530">			requiredUnits= new ArrayList&lt;&gt;(required);</span>
+<span class="fc" id="L550">			requiredUnits= new ArrayList&lt;&gt;(required);</span>
 		}
-<span class="fc bfc" id="L532" title="All 2 branches covered.">		if (!helperSeeds.assertionPaths().isEmpty()) {</span>
-<span class="fc" id="L533">			Set&lt;ICompilationUnit&gt; existingScope= new LinkedHashSet&lt;&gt;(currentScope);</span>
-<span class="fc" id="L534">			existingScope.addAll(requiredUnits);</span>
-<span class="fc" id="L535">			List&lt;ICompilationUnit&gt; additional= JUnitSharedHelperScopeDetector.closeAssertionPaths(</span>
-<span class="fc" id="L536">					coordinatedProjects, helperSeeds.assertionPaths(), existingScope, allowedUnits, migrateAssertionHelpers, monitor);</span>
-<span class="fc bfc" id="L537" title="All 2 branches covered.">			if (!additional.isEmpty()) {</span>
-<span class="fc" id="L538">				existingScope.addAll(additional);</span>
-<span class="fc" id="L539">				requiredUnits= new ArrayList&lt;&gt;(existingScope);</span>
-<span class="pc bpc" id="L540" title="1 of 2 branches missed.">			} else if (!seeds.candidateFound()) {</span>
-<span class="fc" id="L541">				clearScopeDecision(project);</span>
-<span class="fc" id="L542">				trace.finish(&quot;assertion-path-rejected&quot;, coordinatedProjects, readOnlyProjects, //$NON-NLS-1$</span>
-<span class="fc" id="L543">						allowedUnits, null, null);</span>
-<span class="fc" id="L544">				return List.of();</span>
+<span class="fc bfc" id="L552" title="All 2 branches covered.">		if (!helperSeeds.assertionPaths().isEmpty()) {</span>
+<span class="fc" id="L553">			Set&lt;ICompilationUnit&gt; existingScope= new LinkedHashSet&lt;&gt;(currentScope);</span>
+<span class="fc" id="L554">			existingScope.addAll(requiredUnits);</span>
+<span class="fc" id="L555">			List&lt;ICompilationUnit&gt; additional= JUnitSharedHelperScopeDetector.closeAssertionPaths(</span>
+<span class="fc" id="L556">					coordinatedProjects, helperSeeds.assertionPaths(), existingScope, allowedUnits, migrateAssertionHelpers, monitor);</span>
+<span class="fc bfc" id="L557" title="All 2 branches covered.">			if (!additional.isEmpty()) {</span>
+<span class="fc" id="L558">				existingScope.addAll(additional);</span>
+<span class="fc" id="L559">				requiredUnits= new ArrayList&lt;&gt;(existingScope);</span>
+<span class="pc bpc" id="L560" title="1 of 2 branches missed.">			} else if (!seeds.candidateFound()) {</span>
+<span class="fc" id="L561">				clearScopeDecision(project);</span>
+<span class="fc" id="L562">				trace.finish(&quot;assertion-path-rejected&quot;, coordinatedProjects, readOnlyProjects, //$NON-NLS-1$</span>
+<span class="fc" id="L563">						allowedUnits, null, null);</span>
+<span class="fc" id="L564">				return List.of();</span>
 			}
 		}
-<span class="fc" id="L547">		Collection&lt;ICompilationUnit&gt; expanded= registerRequiredScope(project, currentHandles, requiredUnits);</span>
-<span class="pc bpc" id="L548" title="1 of 2 branches missed.">		trace.finish((seeds.complete() ? &quot;search-&quot; : &quot;fallback-&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="pc bpc" id="L549" title="1 of 2 branches missed.">				+ (expanded.isEmpty() ? &quot;verified&quot; : &quot;pending&quot;), //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L550">				coordinatedProjects, readOnlyProjects, allowedUnits, requiredUnits, related);</span>
-<span class="fc" id="L551">		return expanded;</span>
+<span class="fc" id="L567">		Collection&lt;ICompilationUnit&gt; expanded= registerRequiredScope(project, currentHandles, requiredUnits);</span>
+<span class="pc bpc" id="L568" title="1 of 2 branches missed.">		trace.finish((seeds.complete() ? &quot;search-&quot; : &quot;fallback-&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L569" title="1 of 2 branches missed.">				+ (expanded.isEmpty() ? &quot;verified&quot; : &quot;pending&quot;), //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L570">				coordinatedProjects, readOnlyProjects, allowedUnits, requiredUnits, related);</span>
+<span class="fc" id="L571">		return expanded;</span>
 	}
 
 	/**
@@ -558,200 +578,200 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp&lt;JUnitMi
 	 */
 	private static List&lt;IJavaProject&gt; coordinatedProjects(IJavaProject project,
 			JUnitScopeCandidateDetector.SearchSeeds seeds, HelperSearchSeeds helpers) {
-<span class="fc" id="L561">		Set&lt;IJavaProject&gt; declaring= new LinkedHashSet&lt;&gt;();</span>
-<span class="fc" id="L562">		declaring.add(project);</span>
-<span class="fc bfc" id="L563" title="All 2 branches covered.">		for (IJavaElement element : seeds.elements()) {</span>
-<span class="pc bpc" id="L564" title="1 of 2 branches missed.">			IJavaProject owner= element == null ? null : element.getJavaProject();</span>
-<span class="pc bpc" id="L565" title="2 of 4 branches missed.">			if (owner != null &amp;&amp; owner.exists()) {</span>
-<span class="fc" id="L566">				declaring.add(owner);</span>
+<span class="fc" id="L581">		Set&lt;IJavaProject&gt; declaring= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L582">		declaring.add(project);</span>
+<span class="fc bfc" id="L583" title="All 2 branches covered.">		for (IJavaElement element : seeds.elements()) {</span>
+<span class="pc bpc" id="L584" title="1 of 2 branches missed.">			IJavaProject owner= element == null ? null : element.getJavaProject();</span>
+<span class="pc bpc" id="L585" title="2 of 4 branches missed.">			if (owner != null &amp;&amp; owner.exists()) {</span>
+<span class="fc" id="L586">				declaring.add(owner);</span>
 			}
 		}
-<span class="fc" id="L569">		declaring.addAll(JavaProjectCompilationUnits.owningProjects(seeds.directCompilationUnits()));</span>
-<span class="fc" id="L570">		helpers.assertionPaths().stream().flatMap(List::stream).map(IJavaElement::getJavaProject).forEach(declaring::add);</span>
-<span class="fc" id="L571">		return JavaProjectCompilationUnits.withReferencingProjects(declaring);</span>
+<span class="fc" id="L589">		declaring.addAll(JavaProjectCompilationUnits.owningProjects(seeds.directCompilationUnits()));</span>
+<span class="fc" id="L590">		helpers.assertionPaths().stream().flatMap(List::stream).map(IJavaElement::getJavaProject).forEach(declaring::add);</span>
+<span class="fc" id="L591">		return JavaProjectCompilationUnits.withReferencingProjects(declaring);</span>
 	}
 
 
 	private static Set&lt;String&gt; lifecycleAnnotations(EnumSet&lt;JUnitCleanUpFixCore&gt; fixes) {
-<span class="fc" id="L576">		Set&lt;String&gt; result= new LinkedHashSet&lt;&gt;();</span>
-<span class="fc bfc" id="L577" title="All 2 branches covered.">		if (fixes.contains(JUnitCleanUpFixCore.BEFORE)) {</span>
-<span class="fc" id="L578">			result.add(JUnitConstants.ORG_JUNIT_BEFORE);</span>
-<span class="fc" id="L579">			result.add(JUnitConstants.ORG_JUNIT_JUPITER_API_BEFORE_EACH);</span>
+<span class="fc" id="L596">		Set&lt;String&gt; result= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L597" title="All 2 branches covered.">		if (fixes.contains(JUnitCleanUpFixCore.BEFORE)) {</span>
+<span class="fc" id="L598">			result.add(JUnitConstants.ORG_JUNIT_BEFORE);</span>
+<span class="fc" id="L599">			result.add(JUnitConstants.ORG_JUNIT_JUPITER_API_BEFORE_EACH);</span>
 		}
-<span class="fc bfc" id="L581" title="All 2 branches covered.">		if (fixes.contains(JUnitCleanUpFixCore.AFTER)) {</span>
-<span class="fc" id="L582">			result.add(JUnitConstants.ORG_JUNIT_AFTER);</span>
-<span class="fc" id="L583">			result.add(JUnitConstants.ORG_JUNIT_JUPITER_API_AFTER_EACH);</span>
+<span class="fc bfc" id="L601" title="All 2 branches covered.">		if (fixes.contains(JUnitCleanUpFixCore.AFTER)) {</span>
+<span class="fc" id="L602">			result.add(JUnitConstants.ORG_JUNIT_AFTER);</span>
+<span class="fc" id="L603">			result.add(JUnitConstants.ORG_JUNIT_JUPITER_API_AFTER_EACH);</span>
 		}
-<span class="pc bpc" id="L585" title="1 of 2 branches missed.">		if (fixes.contains(JUnitCleanUpFixCore.BEFORECLASS)) {</span>
-<span class="nc" id="L586">			result.add(JUnitConstants.ORG_JUNIT_BEFORECLASS);</span>
-<span class="nc" id="L587">			result.add(JUnitConstants.ORG_JUNIT_JUPITER_API_BEFORE_ALL);</span>
+<span class="pc bpc" id="L605" title="1 of 2 branches missed.">		if (fixes.contains(JUnitCleanUpFixCore.BEFORECLASS)) {</span>
+<span class="nc" id="L606">			result.add(JUnitConstants.ORG_JUNIT_BEFORECLASS);</span>
+<span class="nc" id="L607">			result.add(JUnitConstants.ORG_JUNIT_JUPITER_API_BEFORE_ALL);</span>
 		}
-<span class="pc bpc" id="L589" title="1 of 2 branches missed.">		if (fixes.contains(JUnitCleanUpFixCore.AFTERCLASS)) {</span>
-<span class="nc" id="L590">			result.add(JUnitConstants.ORG_JUNIT_AFTERCLASS);</span>
-<span class="nc" id="L591">			result.add(JUnitConstants.ORG_JUNIT_JUPITER_API_AFTER_ALL);</span>
+<span class="pc bpc" id="L609" title="1 of 2 branches missed.">		if (fixes.contains(JUnitCleanUpFixCore.AFTERCLASS)) {</span>
+<span class="nc" id="L610">			result.add(JUnitConstants.ORG_JUNIT_AFTERCLASS);</span>
+<span class="nc" id="L611">			result.add(JUnitConstants.ORG_JUNIT_JUPITER_API_AFTER_ALL);</span>
 		}
-<span class="fc" id="L593">		return Set.copyOf(result);</span>
+<span class="fc" id="L613">		return Set.copyOf(result);</span>
 	}
 
 	private static JUnitScopeCandidateDetector.SearchSeeds mergeSeeds(
 			JUnitScopeCandidateDetector.SearchSeeds first,
 			JUnitScopeCandidateDetector.SearchSeeds second) {
-<span class="fc" id="L599">		Set&lt;IJavaElement&gt; elements= new LinkedHashSet&lt;&gt;(first.elements());</span>
-<span class="fc" id="L600">		elements.addAll(second.elements());</span>
-<span class="fc" id="L601">		Set&lt;ICompilationUnit&gt; units= new LinkedHashSet&lt;&gt;(first.directCompilationUnits());</span>
-<span class="fc" id="L602">		units.addAll(second.directCompilationUnits());</span>
-<span class="fc" id="L603">		return new JUnitScopeCandidateDetector.SearchSeeds(</span>
-<span class="fc bfc" id="L604" title="All 4 branches covered.">				first.candidateFound() || second.candidateFound(),</span>
-<span class="pc bpc" id="L605" title="2 of 4 branches missed.">				first.complete() &amp;&amp; second.complete(), new ArrayList&lt;&gt;(elements), new ArrayList&lt;&gt;(units));</span>
+<span class="fc" id="L619">		Set&lt;IJavaElement&gt; elements= new LinkedHashSet&lt;&gt;(first.elements());</span>
+<span class="fc" id="L620">		elements.addAll(second.elements());</span>
+<span class="fc" id="L621">		Set&lt;ICompilationUnit&gt; units= new LinkedHashSet&lt;&gt;(first.directCompilationUnits());</span>
+<span class="fc" id="L622">		units.addAll(second.directCompilationUnits());</span>
+<span class="fc" id="L623">		return new JUnitScopeCandidateDetector.SearchSeeds(</span>
+<span class="fc bfc" id="L624" title="All 4 branches covered.">				first.candidateFound() || second.candidateFound(),</span>
+<span class="pc bpc" id="L625" title="2 of 4 branches missed.">				first.complete() &amp;&amp; second.complete(), new ArrayList&lt;&gt;(elements), new ArrayList&lt;&gt;(units));</span>
 	}
 
 	@Override
 	public String[] getStepDescriptions() {
-<span class="fc" id="L610">		List&lt;String&gt; result= new ArrayList&lt;&gt;();</span>
-<span class="pc bpc" id="L611" title="1 of 4 branches missed.">		if (isEnabled(JUNIT_CLEANUP) || isEnabled(JUNIT3_CLEANUP)) {</span>
-<span class="fc" id="L612">			result.add(Messages.format(JUnitCleanUp_description, new Object[] { String.join(&quot;,&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L613">					computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collectors.toList())) }));</span>
-<span class="pc bpc" id="L614" title="1 of 2 branches missed.">			if (isEnabled(JUnitMigrationOptions.BEST_EFFORT)) {</span>
-<span class="nc" id="L615">				result.add(&quot;Migrate independently safe JUnit constructs and add @todo scaffolds for manual completion&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L630">		List&lt;String&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L631" title="1 of 4 branches missed.">		if (isEnabled(JUNIT_CLEANUP) || isEnabled(JUNIT3_CLEANUP)) {</span>
+<span class="fc" id="L632">			result.add(Messages.format(JUnitCleanUp_description, new Object[] { String.join(&quot;,&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L633">					computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collectors.toList())) }));</span>
+<span class="pc bpc" id="L634" title="1 of 2 branches missed.">			if (isEnabled(JUnitMigrationOptions.BEST_EFFORT)) {</span>
+<span class="nc" id="L635">				result.add(&quot;Migrate independently safe JUnit constructs and add @todo scaffolds for manual completion&quot;); //$NON-NLS-1$</span>
 			}
 		}
-<span class="fc" id="L618">		return result.toArray(new String[0]);</span>
+<span class="fc" id="L638">		return result.toArray(new String[0]);</span>
 	}
 
 	@Override
 	public String getPreview() {
-<span class="nc" id="L623">		StringBuilder sb= new StringBuilder();</span>
-<span class="nc bnc" id="L624" title="All 2 branches missed.">		if (isEnabled(JUnitMigrationOptions.BEST_EFFORT)) {</span>
-<span class="nc" id="L625">			sb.append(&quot;// Best-effort mode: unsupported constructs stay in place and receive an @todo scaffold.&quot;) //$NON-NLS-1$</span>
-<span class="nc" id="L626">					.append(System.lineSeparator())</span>
-<span class="nc" id="L627">					.append(&quot;// The resulting project may require manual completion before its tests run.&quot;) //$NON-NLS-1$</span>
-<span class="nc" id="L628">					.append(System.lineSeparator()).append(System.lineSeparator());</span>
+<span class="nc" id="L643">		StringBuilder sb= new StringBuilder();</span>
+<span class="nc bnc" id="L644" title="All 2 branches missed.">		if (isEnabled(JUnitMigrationOptions.BEST_EFFORT)) {</span>
+<span class="nc" id="L645">			sb.append(&quot;// Best-effort mode: unsupported constructs stay in place and receive an @todo scaffold.&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L646">					.append(System.lineSeparator())</span>
+<span class="nc" id="L647">					.append(&quot;// The resulting project may require manual completion before its tests run.&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L648">					.append(System.lineSeparator()).append(System.lineSeparator());</span>
 		}
-<span class="nc" id="L630">		EnumSet&lt;JUnitCleanUpFixCore&gt; computeFixSet= computeFixSet();</span>
-<span class="nc" id="L631">		boolean first= true;</span>
-<span class="nc bnc" id="L632" title="All 2 branches missed.">		for (JUnitCleanUpFixCore e : allOfJunit4()) {</span>
-<span class="nc bnc" id="L633" title="All 2 branches missed.">			if (!first) {</span>
-<span class="nc" id="L634">				sb.append(&quot;// ─── &quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L635">				sb.append(e.toString());</span>
-<span class="nc" id="L636">				sb.append(&quot; ───&quot;).append(System.lineSeparator()); //$NON-NLS-1$</span>
+<span class="nc" id="L650">		EnumSet&lt;JUnitCleanUpFixCore&gt; computeFixSet= computeFixSet();</span>
+<span class="nc" id="L651">		boolean first= true;</span>
+<span class="nc bnc" id="L652" title="All 2 branches missed.">		for (JUnitCleanUpFixCore e : allOfJunit4()) {</span>
+<span class="nc bnc" id="L653" title="All 2 branches missed.">			if (!first) {</span>
+<span class="nc" id="L654">				sb.append(&quot;// ─── &quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L655">				sb.append(e.toString());</span>
+<span class="nc" id="L656">				sb.append(&quot; ───&quot;).append(System.lineSeparator()); //$NON-NLS-1$</span>
 			}
-<span class="nc" id="L638">			sb.append(e.getPreview(computeFixSet.contains(e)));</span>
-<span class="nc" id="L639">			first= false;</span>
+<span class="nc" id="L658">			sb.append(e.getPreview(computeFixSet.contains(e)));</span>
+<span class="nc" id="L659">			first= false;</span>
 		}
-<span class="nc" id="L641">		return sb.toString();</span>
+<span class="nc" id="L661">		return sb.toString();</span>
 	}
 
 	private EnumSet&lt;JUnitCleanUpFixCore&gt; computeFixSet() {
-<span class="fc bfc" id="L645" title="All 2 branches covered.">		EnumSet&lt;JUnitCleanUpFixCore&gt; fixSetJunit4= isEnabled(JUNIT_CLEANUP)</span>
-<span class="fc" id="L646">				? allOfJunit4()</span>
-<span class="fc" id="L647">				: EnumSet.noneOf(JUnitCleanUpFixCore.class);</span>
-<span class="fc bfc" id="L648" title="All 2 branches covered.">		EnumSet&lt;JUnitCleanUpFixCore&gt; fixSetJunit3= isEnabled(JUNIT3_CLEANUP)</span>
-<span class="fc" id="L649">				? allOfJunit3()</span>
-<span class="fc" id="L650">				: EnumSet.noneOf(JUnitCleanUpFixCore.class);</span>
-<span class="fc" id="L651">		Map&lt;String, JUnitCleanUpFixCore&gt; cleanupMappings= Map.ofEntries(</span>
-<span class="fc" id="L652">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT, JUnitCleanUpFixCore.ASSERT),</span>
-<span class="fc" id="L653">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT_OPTIMIZATION, JUnitCleanUpFixCore.ASSERT_OPTIMIZATION),</span>
-<span class="fc" id="L654">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME, JUnitCleanUpFixCore.ASSUME),</span>
-<span class="fc" id="L655">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME_OPTIMIZATION, JUnitCleanUpFixCore.ASSUME_OPTIMIZATION),</span>
-<span class="fc" id="L656">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTER, JUnitCleanUpFixCore.AFTER),</span>
-<span class="fc" id="L657">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE, JUnitCleanUpFixCore.BEFORE),</span>
-<span class="fc" id="L658">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTERCLASS, JUnitCleanUpFixCore.AFTERCLASS),</span>
-<span class="fc" id="L659">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORECLASS, JUnitCleanUpFixCore.BEFORECLASS),</span>
-<span class="fc" id="L660">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST, JUnitCleanUpFixCore.TEST),</span>
-<span class="fc" id="L661">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_TIMEOUT, JUnitCleanUpFixCore.TEST_TIMEOUT),</span>
-<span class="fc" id="L662">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_EXPECTED, JUnitCleanUpFixCore.TEST_EXPECTED),</span>
-<span class="fc" id="L663">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_3_TEST, JUnitCleanUpFixCore.TEST3),</span>
-<span class="fc" id="L664">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_IGNORE, JUnitCleanUpFixCore.IGNORE),</span>
-<span class="fc" id="L665">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_CATEGORY, JUnitCleanUpFixCore.CATEGORY),</span>
-<span class="fc" id="L666">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_FIX_METHOD_ORDER, JUnitCleanUpFixCore.FIX_METHOD_ORDER),</span>
-<span class="fc" id="L667">				Map.entry(JUnitMigrationOptions.JUNIT6_COMPATIBILITY, JUnitCleanUpFixCore.JUNIT6_COMPATIBILITY),</span>
-<span class="fc" id="L668">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH, JUnitCleanUpFixCore.RUNWITH),</span>
-<span class="fc" id="L669">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_SUITE, JUnitCleanUpFixCore.SUITEMETHOD),</span>
-<span class="fc" id="L670">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE, JUnitCleanUpFixCore.EXTERNALRESOURCE),</span>
-<span class="fc" id="L671">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETEMPORARYFOLDER, JUnitCleanUpFixCore.RULETEMPORARYFOLDER),</span>
-<span class="fc" id="L672">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME, JUnitCleanUpFixCore.RULETESTNAME),</span>
-<span class="fc" id="L673">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE, JUnitCleanUpFixCore.RULEEXTERNALRESOURCE),</span>
-<span class="fc" id="L674">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETIMEOUT, JUnitCleanUpFixCore.RULETIMEOUT),</span>
-<span class="fc" id="L675">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXPECTEDEXCEPTION, JUnitCleanUpFixCore.RULEEXPECTEDEXCEPTION),</span>
-<span class="fc" id="L676">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEERRORCOLLECTOR, JUnitCleanUpFixCore.RULEERRORCOLLECTOR),</span>
-<span class="fc" id="L677">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_PARAMETERIZED, JUnitCleanUpFixCore.PARAMETERIZED),</span>
-<span class="fc" id="L678">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_LOST_TESTS, JUnitCleanUpFixCore.LOSTTESTS),</span>
-<span class="fc" id="L679">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE, JUnitCleanUpFixCore.THROWINGRUNNABLE));</span>
-<span class="fc" id="L680">		EnumSet&lt;JUnitCleanUpFixCore&gt; fixSetCombined= EnumSet.copyOf(fixSetJunit4);</span>
-<span class="fc" id="L681">		fixSetCombined.addAll(fixSetJunit3);</span>
-<span class="fc" id="L682">		cleanupMappings.forEach((config, fix) -&gt; {</span>
-<span class="fc bfc" id="L683" title="All 2 branches covered.">			if (!isEnabled(config)) {</span>
-<span class="fc" id="L684">				fixSetCombined.remove(fix);</span>
+<span class="fc bfc" id="L665" title="All 2 branches covered.">		EnumSet&lt;JUnitCleanUpFixCore&gt; fixSetJunit4= isEnabled(JUNIT_CLEANUP)</span>
+<span class="fc" id="L666">				? allOfJunit4()</span>
+<span class="fc" id="L667">				: EnumSet.noneOf(JUnitCleanUpFixCore.class);</span>
+<span class="fc bfc" id="L668" title="All 2 branches covered.">		EnumSet&lt;JUnitCleanUpFixCore&gt; fixSetJunit3= isEnabled(JUNIT3_CLEANUP)</span>
+<span class="fc" id="L669">				? allOfJunit3()</span>
+<span class="fc" id="L670">				: EnumSet.noneOf(JUnitCleanUpFixCore.class);</span>
+<span class="fc" id="L671">		Map&lt;String, JUnitCleanUpFixCore&gt; cleanupMappings= Map.ofEntries(</span>
+<span class="fc" id="L672">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT, JUnitCleanUpFixCore.ASSERT),</span>
+<span class="fc" id="L673">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT_OPTIMIZATION, JUnitCleanUpFixCore.ASSERT_OPTIMIZATION),</span>
+<span class="fc" id="L674">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME, JUnitCleanUpFixCore.ASSUME),</span>
+<span class="fc" id="L675">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME_OPTIMIZATION, JUnitCleanUpFixCore.ASSUME_OPTIMIZATION),</span>
+<span class="fc" id="L676">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTER, JUnitCleanUpFixCore.AFTER),</span>
+<span class="fc" id="L677">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE, JUnitCleanUpFixCore.BEFORE),</span>
+<span class="fc" id="L678">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTERCLASS, JUnitCleanUpFixCore.AFTERCLASS),</span>
+<span class="fc" id="L679">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORECLASS, JUnitCleanUpFixCore.BEFORECLASS),</span>
+<span class="fc" id="L680">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST, JUnitCleanUpFixCore.TEST),</span>
+<span class="fc" id="L681">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_TIMEOUT, JUnitCleanUpFixCore.TEST_TIMEOUT),</span>
+<span class="fc" id="L682">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_EXPECTED, JUnitCleanUpFixCore.TEST_EXPECTED),</span>
+<span class="fc" id="L683">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_3_TEST, JUnitCleanUpFixCore.TEST3),</span>
+<span class="fc" id="L684">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_IGNORE, JUnitCleanUpFixCore.IGNORE),</span>
+<span class="fc" id="L685">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_CATEGORY, JUnitCleanUpFixCore.CATEGORY),</span>
+<span class="fc" id="L686">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_FIX_METHOD_ORDER, JUnitCleanUpFixCore.FIX_METHOD_ORDER),</span>
+<span class="fc" id="L687">				Map.entry(JUnitMigrationOptions.JUNIT6_COMPATIBILITY, JUnitCleanUpFixCore.JUNIT6_COMPATIBILITY),</span>
+<span class="fc" id="L688">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH, JUnitCleanUpFixCore.RUNWITH),</span>
+<span class="fc" id="L689">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_SUITE, JUnitCleanUpFixCore.SUITEMETHOD),</span>
+<span class="fc" id="L690">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE, JUnitCleanUpFixCore.EXTERNALRESOURCE),</span>
+<span class="fc" id="L691">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETEMPORARYFOLDER, JUnitCleanUpFixCore.RULETEMPORARYFOLDER),</span>
+<span class="fc" id="L692">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME, JUnitCleanUpFixCore.RULETESTNAME),</span>
+<span class="fc" id="L693">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE, JUnitCleanUpFixCore.RULEEXTERNALRESOURCE),</span>
+<span class="fc" id="L694">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETIMEOUT, JUnitCleanUpFixCore.RULETIMEOUT),</span>
+<span class="fc" id="L695">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXPECTEDEXCEPTION, JUnitCleanUpFixCore.RULEEXPECTEDEXCEPTION),</span>
+<span class="fc" id="L696">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEERRORCOLLECTOR, JUnitCleanUpFixCore.RULEERRORCOLLECTOR),</span>
+<span class="fc" id="L697">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_PARAMETERIZED, JUnitCleanUpFixCore.PARAMETERIZED),</span>
+<span class="fc" id="L698">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_LOST_TESTS, JUnitCleanUpFixCore.LOSTTESTS),</span>
+<span class="fc" id="L699">				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE, JUnitCleanUpFixCore.THROWINGRUNNABLE));</span>
+<span class="fc" id="L700">		EnumSet&lt;JUnitCleanUpFixCore&gt; fixSetCombined= EnumSet.copyOf(fixSetJunit4);</span>
+<span class="fc" id="L701">		fixSetCombined.addAll(fixSetJunit3);</span>
+<span class="fc" id="L702">		cleanupMappings.forEach((config, fix) -&gt; {</span>
+<span class="fc bfc" id="L703" title="All 2 branches covered.">			if (!isEnabled(config)) {</span>
+<span class="fc" id="L704">				fixSetCombined.remove(fix);</span>
 			}
-<span class="fc" id="L686">		});</span>
-<span class="fc bfc" id="L687" title="All 2 branches covered.">		if (isEnabled(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_EXPECTED)</span>
-<span class="fc bfc" id="L688" title="All 2 branches covered.">				&amp;&amp; isEnabled(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_TIMEOUT)) {</span>
-<span class="fc" id="L689">			fixSetCombined.add(JUnitCleanUpFixCore.TEST_EXPECTED_TIMEOUT);</span>
+<span class="fc" id="L706">		});</span>
+<span class="fc bfc" id="L707" title="All 2 branches covered.">		if (isEnabled(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_EXPECTED)</span>
+<span class="fc bfc" id="L708" title="All 2 branches covered.">				&amp;&amp; isEnabled(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_TIMEOUT)) {</span>
+<span class="fc" id="L709">			fixSetCombined.add(JUnitCleanUpFixCore.TEST_EXPECTED_TIMEOUT);</span>
 		}
-<span class="fc bfc" id="L691" title="All 2 branches covered.">		if (fixSetCombined.contains(JUnitCleanUpFixCore.EXTERNALRESOURCE)</span>
-<span class="fc bfc" id="L692" title="All 2 branches covered.">				|| fixSetCombined.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE)) {</span>
-<span class="fc" id="L693">			fixSetCombined.add(JUnitCleanUpFixCore.EXTERNALRESOURCE);</span>
-<span class="fc" id="L694">			fixSetCombined.add(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE);</span>
+<span class="fc bfc" id="L711" title="All 2 branches covered.">		if (fixSetCombined.contains(JUnitCleanUpFixCore.EXTERNALRESOURCE)</span>
+<span class="fc bfc" id="L712" title="All 2 branches covered.">				|| fixSetCombined.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE)) {</span>
+<span class="fc" id="L713">			fixSetCombined.add(JUnitCleanUpFixCore.EXTERNALRESOURCE);</span>
+<span class="fc" id="L714">			fixSetCombined.add(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE);</span>
 		}
-<span class="fc" id="L696">		return fixSetCombined;</span>
+<span class="fc" id="L716">		return fixSetCombined;</span>
 	}
 
 	private EnumSet&lt;JUnitCleanUpFixCore&gt; allOfJunit4() {
-<span class="fc" id="L700">		EnumSet&lt;JUnitCleanUpFixCore&gt; allOf= EnumSet.allOf(JUnitCleanUpFixCore.class);</span>
-<span class="fc" id="L701">		allOf.remove(JUnitCleanUpFixCore.TEST3);</span>
-<span class="fc" id="L702">		allOf.remove(JUnitCleanUpFixCore.TEST_EXPECTED_TIMEOUT);</span>
-<span class="fc" id="L703">		return allOf;</span>
+<span class="fc" id="L720">		EnumSet&lt;JUnitCleanUpFixCore&gt; allOf= EnumSet.allOf(JUnitCleanUpFixCore.class);</span>
+<span class="fc" id="L721">		allOf.remove(JUnitCleanUpFixCore.TEST3);</span>
+<span class="fc" id="L722">		allOf.remove(JUnitCleanUpFixCore.TEST_EXPECTED_TIMEOUT);</span>
+<span class="fc" id="L723">		return allOf;</span>
 	}
 
 	private EnumSet&lt;JUnitCleanUpFixCore&gt; allOfJunit3() {
-<span class="fc" id="L707">		return EnumSet.of(JUnitCleanUpFixCore.TEST3);</span>
+<span class="fc" id="L727">		return EnumSet.of(JUnitCleanUpFixCore.TEST3);</span>
 	}
 
 	private Collection&lt;ICompilationUnit&gt; registerRequiredScope(IJavaProject project,
 			Set&lt;String&gt; currentHandles, Collection&lt;ICompilationUnit&gt; requiredUnits) {
-<span class="fc" id="L712">		Set&lt;String&gt; requiredHandles= handles(requiredUnits);</span>
-<span class="pc bpc" id="L713" title="1 of 2 branches missed.">		if (currentHandles.containsAll(requiredHandles)) {</span>
-<span class="nc" id="L714">			verifiedClosedScopes.put(project, requiredHandles);</span>
-<span class="nc" id="L715">			pendingExpandedScopes.remove(project);</span>
-<span class="nc" id="L716">			return List.of();</span>
+<span class="fc" id="L732">		Set&lt;String&gt; requiredHandles= handles(requiredUnits);</span>
+<span class="pc bpc" id="L733" title="1 of 2 branches missed.">		if (currentHandles.containsAll(requiredHandles)) {</span>
+<span class="nc" id="L734">			verifiedClosedScopes.put(project, requiredHandles);</span>
+<span class="nc" id="L735">			pendingExpandedScopes.remove(project);</span>
+<span class="nc" id="L736">			return List.of();</span>
 		}
-<span class="fc" id="L718">		pendingExpandedScopes.put(project, requiredHandles);</span>
-<span class="fc" id="L719">		verifiedClosedScopes.remove(project);</span>
-<span class="fc" id="L720">		return requiredUnits;</span>
+<span class="fc" id="L738">		pendingExpandedScopes.put(project, requiredHandles);</span>
+<span class="fc" id="L739">		verifiedClosedScopes.remove(project);</span>
+<span class="fc" id="L740">		return requiredUnits;</span>
 	}
 
 	private Boolean consumeClosedScopeDecision(IJavaProject project, ICompilationUnit[] compilationUnits) {
-<span class="fc bfc" id="L724" title="All 2 branches covered.">		if (rejectedScopes.remove(project)) {</span>
-<span class="fc" id="L725">			clearScopeDecision(project);</span>
-<span class="fc" id="L726">			JUnitScopeDiagnostics.consumed(project, compilationUnits, null, null, null, Boolean.FALSE, &quot;rejected&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L727">			return Boolean.FALSE;</span>
+<span class="fc bfc" id="L744" title="All 2 branches covered.">		if (rejectedScopes.remove(project)) {</span>
+<span class="fc" id="L745">			clearScopeDecision(project);</span>
+<span class="fc" id="L746">			JUnitScopeDiagnostics.consumed(project, compilationUnits, null, null, null, Boolean.FALSE, &quot;rejected&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L747">			return Boolean.FALSE;</span>
 		}
-<span class="fc" id="L729">		Set&lt;String&gt; expected= verifiedClosedScopes.remove(project);</span>
-<span class="fc" id="L730">		Set&lt;String&gt; pending= pendingExpandedScopes.remove(project);</span>
-<span class="pc bpc" id="L731" title="1 of 2 branches missed.">		if (expected == null) {</span>
-<span class="fc" id="L732">			expected= pending;</span>
+<span class="fc" id="L749">		Set&lt;String&gt; expected= verifiedClosedScopes.remove(project);</span>
+<span class="fc" id="L750">		Set&lt;String&gt; pending= pendingExpandedScopes.remove(project);</span>
+<span class="pc bpc" id="L751" title="1 of 2 branches missed.">		if (expected == null) {</span>
+<span class="fc" id="L752">			expected= pending;</span>
 		}
-<span class="fc bfc" id="L734" title="All 2 branches covered.">		Set&lt;String&gt; selected= expected == null ? null : handles(List.of(compilationUnits));</span>
-<span class="fc bfc" id="L735" title="All 2 branches covered.">		Boolean decision= expected == null ? null : Boolean.valueOf(selected.containsAll(expected));</span>
-<span class="fc" id="L736">		JUnitScopeDiagnostics.consumed(project, compilationUnits, selected, expected, pending, decision,</span>
-<span class="fc bfc" id="L737" title="All 2 branches covered.">				expected == null ? &quot;undecided&quot; : &quot;expected&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L738">		return decision;</span>
+<span class="fc bfc" id="L754" title="All 2 branches covered.">		Set&lt;String&gt; selected= expected == null ? null : handles(List.of(compilationUnits));</span>
+<span class="fc bfc" id="L755" title="All 2 branches covered.">		Boolean decision= expected == null ? null : Boolean.valueOf(selected.containsAll(expected));</span>
+<span class="fc" id="L756">		JUnitScopeDiagnostics.consumed(project, compilationUnits, selected, expected, pending, decision,</span>
+<span class="fc bfc" id="L757" title="All 2 branches covered.">				expected == null ? &quot;undecided&quot; : &quot;expected&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L758">		return decision;</span>
 	}
 
 	private void clearScopeDecision(IJavaProject project) {
-<span class="fc" id="L742">		pendingExpandedScopes.remove(project);</span>
-<span class="fc" id="L743">		verifiedClosedScopes.remove(project);</span>
-<span class="fc" id="L744">	}</span>
+<span class="fc" id="L762">		pendingExpandedScopes.remove(project);</span>
+<span class="fc" id="L763">		verifiedClosedScopes.remove(project);</span>
+<span class="fc" id="L764">	}</span>
 
 	private static Set&lt;String&gt; handles(Collection&lt;ICompilationUnit&gt; units) {
-<span class="pc bpc" id="L747" title="2 of 4 branches missed.">		if (units == null || units.isEmpty()) {</span>
-<span class="nc" id="L748">			return Set.of();</span>
+<span class="pc bpc" id="L767" title="2 of 4 branches missed.">		if (units == null || units.isEmpty()) {</span>
+<span class="nc" id="L768">			return Set.of();</span>
 		}
-<span class="fc" id="L750">		return units.stream()</span>
-<span class="fc" id="L751">				.filter(java.util.Objects::nonNull)</span>
-<span class="fc" id="L752">				.map(ICompilationUnit::getPrimary)</span>
-<span class="fc" id="L753">				.map(ICompilationUnit::getHandleIdentifier)</span>
-<span class="fc" id="L754">				.collect(Collectors.toSet());</span>
+<span class="fc" id="L770">		return units.stream()</span>
+<span class="fc" id="L771">				.filter(java.util.Objects::nonNull)</span>
+<span class="fc" id="L772">				.map(ICompilationUnit::getPrimary)</span>
+<span class="fc" id="L773">				.map(ICompilationUnit::getHandleIdentifier)</span>
+<span class="fc" id="L774">				.collect(Collectors.toSet());</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

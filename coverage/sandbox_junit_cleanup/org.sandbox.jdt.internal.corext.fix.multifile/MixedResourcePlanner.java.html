@@ -342,7 +342,7 @@ final class MixedResourcePlanner {
 <span class="fc" id="L342">	}</span>
 
 	private String familyKey(ITypeBinding type) {
-<span class="pc bpc" id="L345" title="1 of 4 branches missed.">		for (var current= type; current != null &amp;&amp; !current.isRecovered(); current= current.getSuperclass()) {</span>
+<span class="fc bfc" id="L345" title="All 4 branches covered.">		for (var current= type; current != null &amp;&amp; !current.isRecovered(); current= current.getSuperclass()) {</span>
 <span class="fc" id="L346">			var parent= current.getSuperclass();</span>
 <span class="fc bfc" id="L347" title="All 4 branches covered.">			if (parent != null &amp;&amp; RESOURCE.equals(parent.getQualifiedName())) {</span>
 <span class="fc" id="L348">				String key= current.getTypeDeclaration().getKey();</span>

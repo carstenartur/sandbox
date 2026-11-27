@@ -1088,10 +1088,10 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public boolean visit(TextBlock node) {
-<span class="nc bnc" id="L1091" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.TextBlock)) {</span>
+<span class="pc bpc" id="L1091" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.TextBlock)) {</span>
 <span class="nc" id="L1092">			return this.helperVisitor.testPredicate(VisitorEnum.TextBlock, node);</span>
 		}
-<span class="nc" id="L1094">		return true;</span>
+<span class="fc" id="L1094">		return true;</span>
 	}
 
 	@Override
@@ -1930,10 +1930,10 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public void endVisit(TextBlock node) {
-<span class="nc bnc" id="L1933" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.TextBlock)) {</span>
+<span class="pc bpc" id="L1933" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.TextBlock)) {</span>
 <span class="nc" id="L1934">			this.helperVisitor.acceptConsumer(VisitorEnum.TextBlock, node);</span>
 		}
-<span class="nc" id="L1936">	}</span>
+<span class="fc" id="L1936">	}</span>
 
 	@Override
 	public void endVisit(TextElement node) {
