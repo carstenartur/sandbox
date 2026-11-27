@@ -187,9 +187,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/carstenartur/sandbox": {
-      "lastProcessedCommit": "1e94a557b47cd1a575474eb545d983c86ca39826",
-      "lastProcessedDate": "2026-11-26T02:19:45.284587581Z",
-      "totalProcessed": 160,
+      "lastProcessedCommit": "164bfb8d575334f1396fde2178819cb8c2a63b63",
+      "lastProcessedDate": "2026-11-27T02:53:58.166819190Z",
+      "totalProcessed": 232,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -324,6 +324,51 @@
           "diffLines": 502,
           "reason": "DIFF_TOO_LARGE",
           "deferredAt": "2026-11-26T02:18:46.978892140Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b3214d3f332d80eeb24c6e5faf653c75c7e50033",
+          "message": "back to java 11 and 2022-06",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-27T02:48:22.039395543Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "04ddb7c80d4b05552c27a0c309245a00ec2119e5",
+          "message": "set vendor/provider in features",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-27T02:49:11.417797546Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "00bc746f8d4367d60c5e1f463d9b5d27025e2a73",
+          "message": "Formatting, trailing spaces and so on",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-27T02:49:29.661635348Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ad4d6664eeeb07f4bbc42cbe7893fc99bb0dcff7",
+          "message": "test setup change and cleanup in pom file",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-27T02:52:25.811402123Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "fdc4e5966229ef9198ad6691885ab38115889463",
+          "message": "first take over full formatter (#50)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-11-27T02:53:00.757646020Z",
           "retryCount": 0,
           "maxRetries": 3
         }
@@ -6547,5 +6592,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 55249
+  "globalTotalProcessed": 55321
 }
