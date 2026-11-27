@@ -53,6 +53,18 @@ public class PdeManifestImportUpdaterTest {
 	}
 
 	@Test
+	public void preservesDeeplyFoldedImportAndTheFollowingHeader() {
+		String packageName= "org." + "segment.".repeat(2048) + "api"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		String header= "Import-Package: org.\r\n" + " segment.\r\n".repeat(2048) + " api"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		String tail= "\r\nExport-Package: another.api\r\n"; //$NON-NLS-1$
+		String manifest= header + tail;
+
+		assertSame(manifest, PdeManifestImportUpdater.addImport(manifest, packageName));
+		assertEquals(header + ",\r\n " + PARALLEL_PACKAGE + tail, //$NON-NLS-1$
+				PdeManifestImportUpdater.addImport(manifest, PARALLEL_PACKAGE));
+	}
+
+	@Test
 	public void preservesCrLfAndAddsHeaderBeforeNamedSections() {
 		String manifest= "Manifest-Version: 1.0\r\nBundle-SymbolicName: example\r\n\r\n" //$NON-NLS-1$
 				+ "Name: section\r\nValue: retained\r\n"; //$NON-NLS-1$

@@ -23,10 +23,10 @@ public final class PdeManifestImportUpdater {
 
 	private static final String IMPORT_PACKAGE_HEADER= "Import-Package:"; //$NON-NLS-1$
 	private static final Pattern IMPORT_PACKAGE_PATTERN= Pattern.compile(
-			"(?m)^Import-Package:[^\\r\\n]*(?:\\r?\\n [^\\r\\n]*)*"); //$NON-NLS-1$
+			"(?m)^Import-Package:[^\\r\\n]*+(?:\\r?\\n [^\\r\\n]*+)*+"); //$NON-NLS-1$
 	private static final Pattern MAIN_SECTION_SEPARATOR= Pattern.compile("\\r?\\n\\r?\\n"); //$NON-NLS-1$
 	private static final Pattern PACKAGE_NAME= Pattern.compile(
-			"[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*"); //$NON-NLS-1$
+			"[A-Za-z_][A-Za-z0-9_]*+(?:\\.[A-Za-z_][A-Za-z0-9_]*+)*+"); //$NON-NLS-1$
 
 	private PdeManifestImportUpdater() {
 	}

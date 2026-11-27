@@ -50,6 +50,18 @@ public class ImportDirectiveTest {
 	}
 
 	@Test
+	public void infersTypeAndMethodAfterManyPackageSegments() {
+		String packagePrefix = "segment.".repeat(2048); //$NON-NLS-1$
+		String type = packagePrefix + "Source"; //$NON-NLS-1$
+		String source = "consume(" + packagePrefix + "field, " + type + ".call())"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		assertEquals(List.of(type), ImportDirective.detectFromPattern(source).getAddImports());
+
+		ImportDirective directive = ImportDirective.inferFromFqnPatterns(source, List.of("target.Result.call()")); //$NON-NLS-1$
+		assertEquals(List.of(type), directive.getRemoveImports());
+		assertEquals("target.Result", directive.getReplaceStaticImports().get(type)); //$NON-NLS-1$
+	}
+
+	@Test
 	public void testDetectFromPatternWithFqn() {
 		ImportDirective directive = ImportDirective.detectFromPattern(
 				"java.util.Objects.equals($x, $y)"); //$NON-NLS-1$
