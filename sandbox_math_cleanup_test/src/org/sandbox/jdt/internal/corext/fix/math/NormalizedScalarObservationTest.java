@@ -103,7 +103,7 @@ class NormalizedScalarObservationTest {
 
     private URLClassLoader compile(String source, String profile) throws Exception {
         Path dir = Files.createTempDirectory(temporary, "classes");
-        Path java = Files.writeString(dir.resolve("Ocean.java"), source);
+        Path java = Files.writeString(dir.resolve("Ocean.java"), source, StandardCharsets.UTF_8);
         var args = new ArrayList<>(List.of("--release", "17", "-proc:none", "-classpath", dir.toString(), "-d", dir.toString()));
         if (profile.equals("ecj")) {
             args.addAll(List.of("-g:none", java.toString()));
