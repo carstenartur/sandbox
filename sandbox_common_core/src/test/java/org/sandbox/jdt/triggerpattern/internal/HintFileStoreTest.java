@@ -216,7 +216,7 @@ class HintFileStoreTest {
 		Path first = store.saveInferredHintFiles(project).getFirst();
 		hint.setTags(List.of("updated"));
 		assertEquals(List.of(first), store.saveInferredHintFiles(project));
-		assertEquals(new HintFileSerializer().serialize(hint), Files.readString(first));
+		assertEquals(new HintFileSerializer().serialize(hint), Files.readString(first, StandardCharsets.UTF_8));
 	}
 
 	@Test
@@ -243,10 +243,10 @@ class HintFileStoreTest {
 	void rejectsLinkedHintDestination(@TempDir Path project) throws IOException {
 		store.registerInferredRules(new HintFile(), "fixture");
 		Path hints = Files.createDirectory(project.resolve(".hints"));
-		Path other = Files.writeString(project.resolve("other"), "fixture");
+		Path other = Files.writeString(project.resolve("other"), "fixture", StandardCharsets.UTF_8);
 		Files.createSymbolicLink(hints.resolve("ai-inferred-fixture.sandbox-hint"), other);
 		assertThrows(IOException.class, () -> store.saveInferredHintFiles(project));
-		assertEquals("fixture", Files.readString(other));
+		assertEquals("fixture", Files.readString(other, StandardCharsets.UTF_8));
 	}
 
 	@Test
