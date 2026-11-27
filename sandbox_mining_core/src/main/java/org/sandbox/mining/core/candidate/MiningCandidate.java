@@ -19,6 +19,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.sandbox.jdt.triggerpattern.llm.SourceEvidence;
 
@@ -31,6 +32,9 @@ import org.sandbox.jdt.triggerpattern.llm.SourceEvidence;
  * by {@link CandidateStore}.</p>
  */
 public class MiningCandidate {
+
+	static final String FILE_SUFFIX = "-candidate.json"; //$NON-NLS-1$
+	private static final Pattern CANDIDATE_ID = Pattern.compile("[0-9a-f]{64}"); //$NON-NLS-1$
 
 	private int schemaVersion = 2;
 	private String candidateId;
@@ -103,6 +107,10 @@ public class MiningCandidate {
 					+ candidateOrdinal);
 		}
 		return candidateId;
+	}
+
+	static boolean isValidCandidateId(String id) {
+		return id != null && CANDIDATE_ID.matcher(id).matches();
 	}
 
 	public void setCandidateId(String candidateId) {
@@ -330,7 +338,11 @@ public class MiningCandidate {
 
 	/** Returns the stable JSON file name for this candidate. */
 	public String toFileName() {
-		return getCandidateId() + "-candidate.json"; //$NON-NLS-1$
+		String id = getCandidateId();
+		if (!isValidCandidateId(id)) {
+			throw new IllegalArgumentException("Candidate ID must be a lowercase SHA-256 digest"); //$NON-NLS-1$
+		}
+		return id + FILE_SUFFIX;
 	}
 
 	private static String normalizeDsl(String value) {

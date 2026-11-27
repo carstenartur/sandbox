@@ -14,12 +14,9 @@
 package org.sandbox.mining.core.candidate;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
-
-import com.google.gson.Gson;
 
 /**
  * Applies an explicit review or promotion decision to one verified candidate.
@@ -32,8 +29,6 @@ import com.google.gson.Gson;
  * independently re-verified by {@link CandidatePromotionCli}.</p>
  */
 public final class CandidateReviewCli {
-
-	private static final Gson GSON = new Gson();
 
 	private CandidateReviewCli() {
 	}
@@ -91,11 +86,7 @@ public final class CandidateReviewCli {
 			throw new IOException("Candidate file has no parent directory: " + absoluteCandidateFile); //$NON-NLS-1$
 		}
 		CandidateStore store = new CandidateStore(parent);
-		MiningCandidate candidate = GSON.fromJson(
-				Files.readString(absoluteCandidateFile, StandardCharsets.UTF_8), MiningCandidate.class);
-		if (candidate == null) {
-			throw new IllegalArgumentException("Candidate JSON is empty"); //$NON-NLS-1$
-		}
+		MiningCandidate candidate = CandidateStore.readCandidate(absoluteCandidateFile);
 
 		try {
 			applyAction(candidate, action.toLowerCase(Locale.ROOT), actor, reason);

@@ -14,11 +14,14 @@
 package org.sandbox.mining.core.candidate;
 
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -57,13 +60,13 @@ public class CandidateStore {
 		if (candidate == null) {
 			throw new IllegalArgumentException("candidate must not be null"); //$NON-NLS-1$
 		}
+		Path target = storeDir.resolve(candidate.toFileName());
 		Files.createDirectories(storeDir);
 		if (candidate.getSchemaVersion() < 2) {
 			candidate.setSchemaVersion(2);
 		}
 		candidate.setRevision(candidate.getRevision());
 
-		Path target = storeDir.resolve(candidate.toFileName());
 		Optional<MiningCandidate> existing = load(target);
 		if (existing.isPresent()) {
 			MiningCandidate previous = existing.get();
@@ -75,14 +78,18 @@ public class CandidateStore {
 			}
 		}
 
-		Path tmpFile = storeDir.resolve(candidate.toFileName() + ".tmp"); //$NON-NLS-1$
-		Files.writeString(tmpFile, GSON.toJson(candidate) + System.lineSeparator(),
-				StandardCharsets.UTF_8);
+		Path tmpFile = Files.createTempFile(storeDir, "candidate-", ".tmp"); //$NON-NLS-1$ //$NON-NLS-2$
 		try {
-			Files.move(tmpFile, target, StandardCopyOption.REPLACE_EXISTING,
-					StandardCopyOption.ATOMIC_MOVE);
-		} catch (AtomicMoveNotSupportedException e) {
-			Files.move(tmpFile, target, StandardCopyOption.REPLACE_EXISTING);
+			Files.writeString(tmpFile, GSON.toJson(candidate) + System.lineSeparator(), StandardCharsets.UTF_8,
+					StandardOpenOption.WRITE, LinkOption.NOFOLLOW_LINKS);
+			try {
+				Files.move(tmpFile, target, StandardCopyOption.REPLACE_EXISTING,
+						StandardCopyOption.ATOMIC_MOVE);
+			} catch (AtomicMoveNotSupportedException e) {
+				Files.move(tmpFile, target, StandardCopyOption.REPLACE_EXISTING);
+			}
+		} finally {
+			Files.deleteIfExists(tmpFile);
 		}
 		deleteLegacyAliases(candidate, target);
 	}
@@ -111,10 +118,11 @@ public class CandidateStore {
 
 	/** Loads a candidate by stable candidate ID. */
 	public Optional<MiningCandidate> findById(String candidateId) {
-		if (candidateId == null || candidateId.isBlank()) {
+		if (!MiningCandidate.isValidCandidateId(candidateId)) {
 			return Optional.empty();
 		}
-		return load(storeDir.resolve(candidateId + "-candidate.json")); //$NON-NLS-1$
+		return load(storeDir.resolve(candidateId + MiningCandidate.FILE_SUFFIX))
+				.filter(candidate -> candidateId.equals(candidate.getCandidateId()));
 	}
 
 	/** Returns whether the same candidate revision content is already stored. */
@@ -187,39 +195,56 @@ public class CandidateStore {
 	}
 
 	private Optional<MiningCandidate> load(Path path) {
-		if (!Files.isRegularFile(path)) {
+		if (!Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)) {
 			return Optional.empty();
 		}
 		try {
-			String json = Files.readString(path, StandardCharsets.UTF_8);
-			JsonObject object = JsonParser.parseString(json).getAsJsonObject();
-			MiningCandidate candidate = GSON.fromJson(object, MiningCandidate.class);
-			if (candidate == null) {
-				return Optional.empty();
-			}
-			if (!object.has("schemaVersion")) { //$NON-NLS-1$
-				candidate.setSchemaVersion(1);
-			}
-			if (!object.has("revision")) { //$NON-NLS-1$
-				candidate.setRevision(1);
-			}
-			if (!object.has("candidateId")) { //$NON-NLS-1$
-				candidate.setCandidateId(null);
-			}
-			if (!object.has("sourceVersion")) { //$NON-NLS-1$
-				candidate.setSourceVersion(null);
-			}
-			return Optional.of(candidate);
+			return Optional.of(readCandidate(path));
 		} catch (Exception e) {
 			System.err.println("Warning: could not load candidate " + path + ": " + e.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$
 			return Optional.empty();
 		}
 	}
 
+	/** Reads a staged record, including legacy schema defaults and the v2 filename binding. */
+	static MiningCandidate readCandidate(Path path) throws IOException {
+		Path fileName = path.getFileName();
+		if (fileName == null) {
+			throw new IllegalArgumentException("Candidate path must name a file"); //$NON-NLS-1$
+		}
+		try (var reader = new InputStreamReader(Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS),
+				StandardCharsets.UTF_8.newDecoder())) {
+			var json = JsonParser.parseReader(reader);
+			if (!json.isJsonObject()) {
+				throw new IllegalArgumentException("Candidate file must contain a JSON object"); //$NON-NLS-1$
+			}
+			JsonObject object = json.getAsJsonObject();
+			MiningCandidate candidate = GSON.fromJson(object, MiningCandidate.class);
+			if (!object.has("schemaVersion")) { //$NON-NLS-1$
+				candidate.setSchemaVersion(1);
+			}
+			if (!object.has("revision")) { //$NON-NLS-1$
+				candidate.setRevision(1);
+			}
+			if (!object.has("sourceVersion")) { //$NON-NLS-1$
+				candidate.setSourceVersion(null);
+			}
+			String canonicalName = candidate.toFileName();
+			String name = fileName.toString();
+			// Schema v1 had no persisted ID and used a different content hash for its filenames.
+			var storedId = object.get("candidateId"); //$NON-NLS-1$
+			if ((candidate.getSchemaVersion() >= 2 || storedId != null && !storedId.isJsonNull())
+					&& name.endsWith(MiningCandidate.FILE_SUFFIX) && !canonicalName.equals(name)) {
+				throw new IllegalArgumentException("Stored candidate ID does not match its filename"); //$NON-NLS-1$
+			}
+			return candidate;
+		}
+	}
+
 	private static boolean isCandidateFile(Path path) {
 		Path fileName = path.getFileName();
-		return Files.isRegularFile(path)
+		return Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)
 				&& fileName != null
-				&& fileName.toString().endsWith("-candidate.json"); //$NON-NLS-1$
+				&& fileName.toString().endsWith(MiningCandidate.FILE_SUFFIX);
 	}
 }
