@@ -16,6 +16,7 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,8 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 /** Launches the public binary and its resulting ordinary EPP product on an isolated native desktop. */
 class PublicEppInstallerTest {
     private static final String FILE="/oomph/drops/release/1.42.0/products/eclipse-inst-linux64.tar.gz";
+    private static final String PROJECT_SETUP =
+            "https://raw.githubusercontent.com/carstenartur/sandbox/%s/sandbox_oomph/sandboxproject.setup";
     private final Path run=Path.of("target/public-epp").toAbsolutePath();
     private final Path home=run.resolve("user-home");
     private final Path sources=Path.of("src/test/resources/probe").toAbsolutePath();
@@ -61,6 +64,13 @@ class PublicEppInstallerTest {
         exec("unpack",List.of("tar","-xf",archive.toString(),"-C",run.toString()),3);
         Path installer=only(run,"eclipse-inst",true);
         Files.writeString(run.resolve("expected-main.txt"), expected + "\n");
+        // The public catalog reads raw main, while the workbench clones the Git branch.
+        // After a push those endpoints can temporarily expose different revisions.
+        URI pinnedSetup = URI.create(PROJECT_SETUP.formatted(expected));
+        URI publicSetup = URI.create(PROJECT_SETUP.formatted("main"));
+        byte[] setup = awaitPublishedSetup(http, pinnedSetup, publicSetup, 21, Duration.ofSeconds(15));
+        String setupSha256 = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(setup));
+        Files.writeString(run.resolve("public-project-setup.txt"), publicSetup + "\n" + pinnedSetup + "\n" + setupSha256 + "\n");
         Path agentClasses=compile("agent",List.of(),sources.resolve("PublicInstallerAgent.java"));
         Path uiClasses=compile("installer-ui",List.of(installer.getParent()),sources.resolve("PublicInstallerUi.java"));
         Path agent=jar(run.resolve("public-agent.jar"),agentClasses,Map.of("Premain-Class","PublicInstallerAgent"),null);
@@ -93,6 +103,28 @@ class PublicEppInstallerTest {
             Path olog=eclipse.getParent().resolve("configuration/org.eclipse.oomph.setup/setup.log");
             if(Files.isRegularFile(olog)) Files.copy(olog,run.resolve(phase+"-oomph.log"));
         }
+    }
+
+    static byte[] awaitPublishedSetup(HttpClient http, URI pinned, URI published,
+            int maxAttempts, Duration retryDelay) throws Exception {
+        byte[] expected = readSetup(http, pinned);
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            byte[] observed = readSetup(http, published);
+            if (Arrays.equals(expected, observed)) {
+                return observed;
+            }
+            if (attempt < maxAttempts) {
+                Thread.sleep(retryDelay);
+            }
+        }
+        return fail("Public setup " + published + " did not match " + pinned + " after " + maxAttempts + " attempts");
+    }
+
+    private static byte[] readSetup(HttpClient http, URI uri) throws Exception {
+        var response = http.send(HttpRequest.newBuilder(uri).timeout(Duration.ofSeconds(30)).GET().build(),
+                HttpResponse.BodyHandlers.ofByteArray());
+        assertEquals(200, response.statusCode(), () -> "Could not read the setup at " + uri);
+        return response.body();
     }
 
     private static String digest(Path file, String algorithm) throws Exception {

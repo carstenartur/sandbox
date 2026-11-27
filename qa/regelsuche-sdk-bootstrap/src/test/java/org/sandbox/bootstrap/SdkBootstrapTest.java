@@ -7,15 +7,46 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jgit.api.Git;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 
 class SdkBootstrapTest {
     @TempDir Path temp;
+
+    @Test
+    @ResourceLock(Resources.SYSTEM_PROPERTIES)
+    void runsTheWrapperFromEmbeddedMaven() throws Exception {
+        Path sandbox = Path.of("../..").toRealPath();
+        Path project = Files.createDirectory(temp.resolve("wrapper project"));
+        Path localRepository = Files.createDirectory(temp.resolve("wrapper repository"));
+        Files.writeString(project.resolve("pom.xml"), """
+                <project xmlns="http://maven.apache.org/POM/4.0.0">
+                  <modelVersion>4.0.0</modelVersion>
+                  <groupId>org.sandbox</groupId>
+                  <artifactId>bootstrap-wrapper-fixture</artifactId>
+                  <version>1</version>
+                </project>
+                """);
+        Path settings = temp.resolve("missing-settings.xml");
+        String previous = System.setProperty("maven.home", "EMBEDDED");
+        try {
+            var maven = new SdkBootstrap.Maven(sandbox, localRepository, settings, settings);
+            assertDoesNotThrow(() -> maven.run(project, List.of("--offline", "validate"), Map.of(), false));
+        } finally {
+            if (previous == null) {
+                System.clearProperty("maven.home");
+            } else {
+                System.setProperty("maven.home", previous);
+            }
+        }
+    }
 
     @Test
     void freshCustomRepositoryIsPopulatedOnceAndConflictingBytesAreRejected() throws Exception {
