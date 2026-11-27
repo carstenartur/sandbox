@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Copyright (c) 2026 Carsten Hammer.
  * This program and the accompanying materials are made available under the terms
  * of the Eclipse Public License 2.0 which accompanies this distribution, and is
@@ -40,7 +40,11 @@ class LambdaParameterReferenceTest {
 
     @BeforeEach
     void createProject() throws Exception {
-        project= ResourcesPlugin.getWorkspace().getRoot().getProject("LambdaParameterReference");
+        createProject("LambdaParameterReference", JavaCore.VERSION_22);
+    }
+
+    private void createProject(String name, String version) throws Exception {
+        project= ResourcesPlugin.getWorkspace().getRoot().getProject(name);
         project.create(null);
         project.open(null);
         var description= project.getDescription();
@@ -53,7 +57,7 @@ class LambdaParameterReferenceTest {
                 JavaCore.newSourceEntry(src.getFullPath()),
                 JavaCore.newContainerEntry(new Path("org.eclipse.jdt.launching.JRE_CONTAINER")) },
                 project.getFullPath().append("bin"), null);
-        sourceVersion(JavaCore.VERSION_22);
+        sourceVersion(version);
         unit= javaProject.getPackageFragmentRoot(src).createPackageFragment("probe", false, null)
                 .createCompilationUnit("Example.java", "package probe; public class Example {}", false, null);
         root= parse();
@@ -88,7 +92,11 @@ class LambdaParameterReferenceTest {
 
     @Test
     void olderSourceLevelsKeepNamedParameters() throws Exception {
-        sourceVersion(JavaCore.VERSION_21);
+        // Parse the original and generated units in the same explicit Java 21 project.
+        deleteProject();
+        createProject("LambdaParameterReference21", JavaCore.VERSION_21);
+        assertEquals(javaProject, root.getJavaElement().getJavaProject());
+        assertEquals(JavaCore.VERSION_21, root.getJavaElement().getJavaProject().getOption(JavaCore.COMPILER_SOURCE, true));
         check(renderer().renderForEachWithBody(root.getAST().newSimpleName("items"), () -> null, "value", false), "value");
     }
 
@@ -130,8 +138,10 @@ class LambdaParameterReferenceTest {
     }
 
     private void sourceVersion(String version) {
-        var options= javaProject.getOptions(true);
+        var options= javaProject.getOptions(false);
         JavaCore.setComplianceOptions(version, options);
         javaProject.setOptions(options);
+        assertEquals(version, javaProject.getOption(JavaCore.COMPILER_SOURCE, false), "explicit project source");
+        assertEquals(version, javaProject.getOption(JavaCore.COMPILER_SOURCE, true), "effective project source");
     }
 }

@@ -146,7 +146,10 @@ public final class SdkBootstrap {
             props.setProperty("user.home", System.getProperty("user.home"));
             var request = new DefaultInvocationRequest();
             var wrapper = System.getProperty("os.name").startsWith("Windows") ? "mvnw.cmd" : "mvnw";
-            request.setMavenExecutable(sandbox.resolve(wrapper).toFile()).setBaseDirectory(cwd.toFile())
+            // m2e uses the non-path identifier EMBEDDED as maven.home. The absolute
+            // wrapper selects its own distribution, so anchor Invoker to its checkout.
+            request.setMavenHome(sandbox.toFile()).setMavenExecutable(sandbox.resolve(wrapper).toFile())
+                    .setBaseDirectory(cwd.toFile())
                     .setJavaHome(Path.of(System.getProperty("java.home")).toFile()).setLocalRepositoryDirectory(repo.toFile())
                     .setBatchMode(true).setNoTransferProgress(true).addArgs(goals).setProperties(props)
                     .addShellEnvironment("MAVEN_USER_HOME", Path.of(System.getProperty("user.home"), ".m2").toString());
