@@ -93,14 +93,10 @@ public final class EmbeddedJavaCompiler {
 			int syntheticHeaderLength) {
 
 		public CompilationResult {
-			problems = snapshot(problems);
-			guardMethods = snapshot(guardMethods);
-			fixMethods = snapshot(fixMethods);
-			lineMappings = snapshot(lineMappings);
-		}
-
-		private static <T> List<T> snapshot(List<T> elements) {
-			return elements == null ? null : Collections.unmodifiableList(new ArrayList<>(elements));
+			problems = problems == null ? null : Collections.unmodifiableList(new ArrayList<>(problems));
+			guardMethods = guardMethods == null ? null : Collections.unmodifiableList(new ArrayList<>(guardMethods));
+			fixMethods = fixMethods == null ? null : Collections.unmodifiableList(new ArrayList<>(fixMethods));
+			lineMappings = lineMappings == null ? null : Collections.unmodifiableList(new ArrayList<>(lineMappings));
 		}
 
 		/**
