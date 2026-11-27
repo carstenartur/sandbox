@@ -12,6 +12,7 @@ import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis.*;
 import de.regelsuche.math.algorithms.modular.PrimeEvidenceCatalog;
 import de.regelsuche.math.algorithms.modular.QuadraticRootContract;
 import de.regelsuche.math.algorithms.modular.QuadraticRootSearch;
+import de.regelsuche.math.algorithms.modular.QuadraticRootNormalization;
 import de.regelsuche.math.algorithms.modular.QuadraticRootProgram;
 import de.regelsuche.math.algorithms.modular.SharedPowerPlan;
 import de.regelsuche.sdk.optimization.NumericKind;
@@ -19,7 +20,7 @@ import de.regelsuche.sdk.optimization.OptimizationGoal;
 import de.regelsuche.sdk.optimization.SafetyProfile;
 import de.regelsuche.sdk.optimization.power.QuadraticRootSdk;
 
-/** The source adapter supplies executable scalar input and consumes only independently proven exact pairs. */
+/** Checks exact raw or post-normalization coordinate observations against the executable scalar source. */
 final class JavaGuardedFieldOptimizer {
     private JavaGuardedFieldOptimizer() {}
 
@@ -71,17 +72,19 @@ final class JavaGuardedFieldOptimizer {
             List<Replacement> edits, List<VerifiedRegion> evidence, List<Diagnostic> diagnostics, JavaFieldCallOptimizer.Context call) {
         var work = site.work;
         var localHashes = localHashes(site.source, local);
-        var deps = JavaSourceContext.receipts(site.unit);
+        var normalization = call == null ? null : call.normalization();
+        var deps = normalization == null ? JavaSourceContext.receipts(site.unit) : site.dependencies();
         String methodHash = hash(site.source, site.method);
-        String identity = MathematicalAnalysis.digest(key(site.method.resolveBinding()) + methodHash + site.definitions + localHashes + deps);
-        var contract = contract(site, identity);
+        var contract = normalization == null ? contract(site, MathematicalAnalysis.digest(
+                key(site.method.resolveBinding()) + methodHash + site.definitions + localHashes + deps)) : normalizedContract(site);
         var found = search(contract, options, work);
         if (found.certificate().isEmpty()) {
             if (!site.swappedInputs) return false;
             throw new IllegalArgumentException(found.reason());
         }
         var certificate = found.certificate().get();
-        verifyCertificate(contract, certificate, options, work);
+        if (normalization == null) verifyCertificate(contract, certificate, options, work);
+        else verifyNormalized(contract, normalization, certificate, options, work);
         work.charge(site.source.length());
         String prefix = "mathRoot";
         while (site.source.contains(prefix) || call != null && JavaFieldCallSite.identifierUsesPrefix(site, prefix)) {
@@ -137,12 +140,19 @@ final class JavaGuardedFieldOptimizer {
         try (var context = JavaSourceContext.open(ast, source, environment, monitor, options, work.remaining());
                 var local = JavaSourceContext.captureLocalSources(ast)) {
             JavaSourceContext.valueWork(ast, work);
-            var site = new JavaGuardedFieldSource(ast, source, method, proof.callSite() == null, proof.swappedInputs(), work);
+            var normalization = proof.callSite() == null ? null : proof.callSite().normalization();
+            var site = normalization != null ? JavaGuardedFieldSource.forNormalization(ast, source, method, proof.swappedInputs(), work)
+                    : new JavaGuardedFieldSource(ast, source, method, proof.callSite() == null, proof.swappedInputs(), work);
             QuadraticRootProgram decoded;
             String restored;
             if (proof.callSite() != null) {
                 restored = JavaFieldCallSite.text(source, method);
-                decoded = JavaFieldCallOptimizer.replay(site, region);
+                if (normalization == null) decoded = JavaFieldCallOptimizer.replay(site, region);
+                else {
+                    var replayed = JavaFieldCallOptimizer.replayNormalized(site, region);
+                    decoded = replayed.program();
+                    normalization = replayed.normalization();
+                }
             } else {
                 var fast = requireType(method.getBody().statements().get(2), IfStatement.class);
                 require(fast.getStartPosition() == start && site.start - start == region.replacement().length() - region.original().length());
@@ -151,22 +161,29 @@ final class JavaGuardedFieldOptimizer {
                 decoded = new JavaFieldProgramLowering(site, proof.prefix(), proof.indent()).decode(fast);
             }
             require(MathematicalAnalysis.digest(restored).equals(proof.methodHash()) && proof.sinkKey().equals(key(site.sink.resolveMethodBinding()))
-                    && List.copyOf(site.definitions).equals(proof.bindings()) && localHashes(source, local).equals(proof.localDefinitions()) && proof.dependencies().containsAll(context.checkpoint().receipts()));
+                    && List.copyOf(site.definitions).equals(proof.bindings()) && localHashes(source, local).equals(proof.localDefinitions()));
+            require(normalization == null ? proof.dependencies().containsAll(context.checkpoint().receipts())
+                    : proof.dependencies().equals(site.dependencies()));
             var stored = proof.certificate();
-            var expected = new QuadraticRootContract(stored.contract().sourceIdentity(), site.modulus.value(), stored.contract().primeEvidence(),
-                    site.original, QuadraticRootContract.Observation.EXACT_PAIR);
+            var expected = normalization == null ? contract(site, stored.contract().sourceIdentity()) : normalizedContract(site);
             require(stored.contract().equals(expected) && decoded.equals(stored.program()));
             var actual = new QuadraticRootSearch.Certificate(expected, stored.power(), decoded);
-            verifyCertificate(expected, actual, options, work);
+            if (normalization == null) verifyCertificate(expected, actual, options, work);
+            else verifyNormalized(expected, normalization, actual, options, work);
             context.checkpoint().requireCurrent();
         }
     }
 
     static QuadraticRootContract contract(JavaGuardedFieldSource site, String identity) {
+        return contract(site, identity, QuadraticRootContract.Observation.EXACT_PAIR);
+    }
+    static QuadraticRootContract normalizedContract(JavaGuardedFieldSource site) {
+        return contract(site, JavaFieldNormalizationSite.rootIdentity(site), QuadraticRootContract.Observation.UP_TO_JOINT_SIGN);
+    }
+    private static QuadraticRootContract contract(JavaGuardedFieldSource site, String identity, QuadraticRootContract.Observation observation) {
         var prime = PrimeEvidenceCatalog.forModulus(site.modulus.value());
         if (prime.isEmpty()) throw new IllegalArgumentException("Prime evidence unavailable");
-        return new QuadraticRootContract(identity, site.modulus.value(), prime.get(), site.original,
-                QuadraticRootContract.Observation.EXACT_PAIR);
+        return new QuadraticRootContract(identity, site.modulus.value(), prime.get(), site.original, observation);
     }
 
     static QuadraticRootSearch.Result search(QuadraticRootContract contract, MathCleanUpOptions options, JavaValueSourceSummary.Work work) {
@@ -175,6 +192,14 @@ final class JavaGuardedFieldOptimizer {
         return found;
     }
 
+    static void verifyNormalized(QuadraticRootContract expected, FieldNormalizationEvidence evidence,
+            QuadraticRootSearch.Certificate certificate, MathCleanUpOptions options, JavaValueSourceSummary.Work work) {
+        require(!certificate.program().equal().normalizeRealCharacter() && !certificate.program().unequal().normalizeRealCharacter());
+        var replay = QuadraticRootSdk.verifyNormalized(expected, evidence.contract(),
+                new QuadraticRootNormalization.Certificate(certificate, evidence.contract()), work.budget(work.remaining(), options), work);
+        work.charge(replay.work());
+        if (!replay.valid()) throw new IllegalArgumentException(replay.reason());
+    }
     private static void verifyCertificate(QuadraticRootContract expected, QuadraticRootSearch.Certificate certificate,
             MathCleanUpOptions options, JavaValueSourceSummary.Work work) {
         var replay = QuadraticRootSdk.verify(expected, certificate, work.budget(work.remaining(), options), work);

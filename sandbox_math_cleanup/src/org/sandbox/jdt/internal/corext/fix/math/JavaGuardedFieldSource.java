@@ -26,10 +26,11 @@ final class JavaGuardedFieldSource {
     final JavaValueSourceSummary.Work work;
     final MethodDeclaration method;
     final String source;
-    final boolean swappedInputs;
+    final boolean swappedInputs, normalized;
     final List<Ref> inputs = new ArrayList<>();
     final Map<String,Ref> constants = new LinkedHashMap<>();
     final Set<String> constantOwners = new HashSet<>();
+    private final Map<String,JavaSourceContext.Receipt> dependencies = new java.util.TreeMap<>();
     final Set<String> definitions = new java.util.TreeSet<>();
     final Ref modulus, modulusField;
     final boolean localModulus;
@@ -39,6 +40,15 @@ final class JavaGuardedFieldSource {
 
     JavaGuardedFieldSource(CompilationUnit unit, String source, MethodDeclaration method, boolean replay,
             boolean swappedInputs, JavaValueSourceSummary.Work work) {
+        this(unit, source, method, replay, swappedInputs, work, false);
+    }
+    static JavaGuardedFieldSource forNormalization(CompilationUnit unit, String source, MethodDeclaration method,
+            boolean swapped, JavaValueSourceSummary.Work work) {
+        return new JavaGuardedFieldSource(unit, source, method, false, swapped, work, true);
+    }
+    private JavaGuardedFieldSource(CompilationUnit unit, String source, MethodDeclaration method, boolean replay,
+            boolean swappedInputs, JavaValueSourceSummary.Work work, boolean normalized) {
+        this.normalized = normalized;
         this.unit = unit; this.method = method; this.source = source; this.work = work; this.swappedInputs = swappedInputs;
         require(method.getBody() != null && method.parameters().size() == 3 && method.resolveBinding() != null);
         List<?> list = method.getBody().statements();
@@ -77,7 +87,7 @@ final class JavaGuardedFieldSource {
         end = last.getStartPosition() + last.getLength();
         sink = requireType(unwrap(last.getExpression()), MethodInvocation.class);
         var factory = sink.resolveMethodBinding();
-        require(staticCall(sink) && sink.arguments().size() == 2 && !factory.isVarargs()
+        require(checkedStaticCall(sink) && sink.arguments().size() == 2 && !factory.isVarargs()
                 && big(factory.getParameterTypes()[0]) && big(factory.getParameterTypes()[1]));
         var prefix = new Lane();
         for (int i = 0; i < 3; i++) prefix.locals.put(inputs.get(i).key(), new Scalar(i, true, value.bitLength()));
@@ -99,8 +109,11 @@ final class JavaGuardedFieldSource {
         Arm onTrue = yes.finish(list, branch + 1, prefix.steps.size());
         Arm onFalse = no.finish(list, branch + 1, prefix.steps.size());
         original = new QuadraticRootProgram(List.copyOf(prefix.steps), left, right, reversed ? onFalse : onTrue, reversed ? onTrue : onFalse);
-        new JavaGuardedFieldEffects(this).check(factory);
-        new JavaFieldValueSink(this).check(factory);
+        if (normalized) JavaFieldNormalizationSite.freshFactory(this);
+        else {
+            new JavaGuardedFieldEffects(this).check(factory);
+            new JavaFieldValueSink(this).check(factory);
+        }
     }
 
     private final class Lane {
@@ -203,6 +216,13 @@ final class JavaGuardedFieldSource {
         return constants.computeIfAbsent(id, unused -> new Ref(name.getFullyQualifiedName(), id, constant(binding, 0)));
     }
 
+    JavaSourceContext.Definition definition(IBinding binding) {
+        var result = JavaSourceContext.definition(unit, binding);
+        if (result != null && result.receipt() != null) dependencies.put(result.receipt().identity(), result.receipt());
+        return result;
+    }
+    List<JavaSourceContext.Receipt> dependencies() { return List.copyOf(dependencies.values()); }
+
     BigInteger constant(IVariableBinding binding, int depth) {
         work.charge(1);
         definitions.add(key(binding));
@@ -217,7 +237,7 @@ final class JavaGuardedFieldSource {
             default -> throw unavailable();
         };
         require(binding.getDeclaringClass().isFromSource());
-        var definition = JavaSourceContext.definition(unit, binding);
+        var definition = definition(binding);
         require(definition != null);
         var declaration = requireType(definition.declaration(), VariableDeclarationFragment.class);
         Expression initializer = unwrap(declaration.getInitializer());
@@ -240,7 +260,7 @@ final class JavaGuardedFieldSource {
             return constant(field, depth + 1);
         }
         var call = requireType(node, MethodInvocation.class);
-        if (jdk(call, "valueOf", "long") && staticCall(call)) {
+        if (jdk(call, "valueOf", "long") && checkedStaticCall(call)) {
             require(call.getExpression() instanceof Name owner
                     && JavaSourceTypeNames.closedTypeName(owner, call.resolveMethodBinding().getDeclaringClass(), work::charge));
             var literal = requireType(unwrap(arg(call, 0)), NumberLiteral.class);
@@ -266,32 +286,90 @@ final class JavaGuardedFieldSource {
         return node instanceof ReturnStatement || node instanceof Block block && !block.statements().isEmpty()
                 && block.statements().getLast() instanceof ReturnStatement;
     }
-    private static VariableDeclarationFragment fragment(Object node) {
+    static VariableDeclarationFragment fragment(Object node) {
         var declaration = requireType(node, VariableDeclarationStatement.class);
         require(declaration.fragments().size() == 1);
         var fragment = (VariableDeclarationFragment) declaration.fragments().getFirst();
         require(fragment.resolveBinding() != null && !fragment.resolveBinding().isRecovered());
         return fragment;
     }
+    /** Prove the lexical path to a static member. No inherited member types, expression receivers or wildcard imports. */
+    boolean directOwner(ASTNode use, Expression qualifier, ITypeBinding declaring, boolean allowImport) {
+        if (declaring == null || declaring.isRecovered()) return false;
+        var scope = JavaSourceTypeNames.enclosingType(use, work::charge);
+        if (qualifier == null && !normalized) return scope != null && declaring.isEqualTo(scope.resolveBinding());
+        if (!(scope instanceof TypeDeclaration lexical) || !(lexical.getParent() instanceof CompilationUnit ast)
+                || lexical.isInterface() || lexical.getSuperclassType() != null || !lexical.superInterfaceTypes().isEmpty()) return false;
+        if (!declaring.isTopLevel() || !JavaSourceTypeNames.visibleType(ast, declaring, allowImport, work::charge)) return false;
+        if (qualifier == null) return declaring.isEqualTo(lexical.resolveBinding());
+        return qualifier instanceof SimpleName name && declaring.isEqualTo(name.resolveBinding());
+    }
+
+    String bigName() { return normalized ? "BigInteger" : BIG; }
     IVariableBinding checkedVariable(Expression node) {
         var field = variable(node);
-        if (field.isField() && big(field.getType()) && field.getDeclaringClass().isFromSource()) {
+        if (field.isField() && (normalized || big(field.getType()) && field.getDeclaringClass().isFromSource())) {
             var name = (Name)unwrap(node);
-            if (name instanceof QualifiedName) {
-                var lexical = JavaSourceTypeNames.enclosingType(name, work::charge);
-                require(lexical != null && lexical.getParent() instanceof CompilationUnit);
+            require(directOwner(name, name instanceof QualifiedName q ? q.getQualifier() : null, field.getDeclaringClass(), true));
+            if (field.getDeclaringClass().isFromSource()) {
+                var current = requireType(definitionNode(field), VariableDeclarationFragment.class).resolveBinding();
+                require(current != null && field.getType().isEqualTo(current.getType()) && field.getModifiers() == current.getModifiers());
             }
-            require(JavaSourceTypeNames.directFieldRead(name, field, work::charge));
-            var declaration = unit.findDeclaringNode(field.getKey());
-            if (declaration == null) {
-                var definition = JavaSourceContext.definition(unit, field);
-                if (definition == null) throw unavailable();
-                declaration = definition.declaration();
-            }
-            var current = requireType(declaration, VariableDeclarationFragment.class).resolveBinding();
-            require(current != null && field.getType().isEqualTo(current.getType()) && field.getModifiers() == current.getModifiers());
         }
         return field;
+    }
+    /** An explicit receiver declaration fixes overload resolution; a final method alone fixes only overriding. */
+    boolean directInstanceReceiver(MethodInvocation call, ITypeBinding owner) {
+        var receiver = call.getExpression();
+        if (receiver == null || receiver instanceof ThisExpression self && self.getQualifier() == null) {
+            var lexical = JavaSourceTypeNames.enclosingType(call, work::charge);
+            return lexical != null && owner.isEqualTo(lexical.resolveBinding());
+        }
+        if (!(receiver instanceof SimpleName name) || !JavaFieldCallSite.local(name) || !owner.isEqualTo(name.resolveTypeBinding())) return false;
+        var declaration = ((CompilationUnit)call.getRoot()).findDeclaringNode(name.resolveBinding());
+        Type type;
+        if (declaration instanceof SingleVariableDeclaration parameter) type = parameter.getType();
+        else if (declaration instanceof VariableDeclarationFragment local && local.getParent() instanceof VariableDeclarationStatement statement)
+            type = statement.getType();
+        else return false;
+        if (!(type instanceof SimpleType simple) || !(simple.getName() instanceof SimpleName) || type.isVar()
+                || !owner.isEqualTo(type.resolveBinding())) return false;
+        if (owner.isTopLevel()) return JavaSourceTypeNames.closedType(type, work::charge);
+        var lexical = JavaSourceTypeNames.enclosingType(type, work::charge);
+        return lexical != null && owner.isMember() && lexical.resolveBinding().isEqualTo(owner.getDeclaringClass());
+    }
+    boolean checkedStaticCall(MethodInvocation call) {
+        return normalized ? closedStaticCall(call) : staticCall(call);
+    }
+    boolean closedStaticCall(MethodInvocation call) {
+        if (!staticCall(call)) return false;
+        var method = call.resolveMethodBinding();
+        if (!directOwner(call, call.getExpression(), method.getDeclaringClass(), true)) return false;
+        if (method.getDeclaringClass().isFromSource()) checkSourceMethod(method);
+        return true;
+    }
+    private ASTNode definitionNode(IBinding binding) {
+        // The primary unit is already pinned; the generated helper has no declaration in the original receipt.
+        var local = unit.findDeclaringNode(binding.getKey());
+        if (local != null) return local;
+        var result = definition(binding);
+        if (result == null) throw unavailable();
+        return result.declaration();
+    }
+    /** A fresh declaration must still select this one method even if a caller AST predates the source read. */
+    IMethodBinding checkSourceMethod(IMethodBinding binding) {
+        if (binding == null || binding.isRecovered()) throw unavailable();
+        var method = requireType(definitionNode(binding.getMethodDeclaration()), MethodDeclaration.class);
+        var current = method.resolveBinding();
+        var owner = requireType(method.getParent(), TypeDeclaration.class);
+        require(current != null && current.getModifiers() == binding.getModifiers() && !current.isVarargs() && !current.isGenericMethod()
+                && !owner.isInterface() && owner.getSuperclassType() == null && owner.superInterfaceTypes().isEmpty());
+        for (Object item : owner.bodyDeclarations()) {
+            work.charge(1);
+            if (item instanceof MethodDeclaration other && other != method)
+                require(!other.getName().getIdentifier().equals(method.getName().getIdentifier()));
+        }
+        return current;
     }
     static IVariableBinding variable(Expression node) {
         var name = requireType(unwrap(node), Name.class);

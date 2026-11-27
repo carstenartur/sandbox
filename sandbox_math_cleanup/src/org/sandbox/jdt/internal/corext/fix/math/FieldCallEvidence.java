@@ -5,7 +5,11 @@ import java.util.List;
 
 /** Source facts that must be re-established at the specific invocation before the field proof applies. */
 public record FieldCallEvidence(String callerKey, String callerHash, String helperName, String temporaryName,
-        List<String> arguments, List<Input> inputs, String normWitnessKey) {
+        List<String> arguments, List<Input> inputs, String normWitnessKey, FieldNormalizationEvidence normalization) {
+    public FieldCallEvidence(String callerKey, String callerHash, String helperName, String temporaryName,
+            List<String> arguments, List<Input> inputs, String normWitnessKey) {
+        this(callerKey, callerHash, helperName, temporaryName, arguments, inputs, normWitnessKey, null);
+    }
     public record Input(boolean exactClass, boolean nonnegative, boolean belowModulus) {}
     public FieldCallEvidence {
         arguments = List.copyOf(arguments);

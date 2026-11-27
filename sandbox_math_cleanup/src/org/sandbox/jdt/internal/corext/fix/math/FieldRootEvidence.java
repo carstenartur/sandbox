@@ -4,7 +4,7 @@ package org.sandbox.jdt.internal.corext.fix.math;
 import java.util.List;
 import de.regelsuche.math.algorithms.modular.QuadraticRootSearch;
 
-/** The independently verified exact-pair certificate and the Java source/primitive bindings it refines. */
+/** The root certificate and its Java source bindings. A normalized call supplies a separate observation contract. */
 public record FieldRootEvidence(QuadraticRootSearch.Certificate certificate, String methodKey, String sinkKey,
         String prefix, String indent, boolean swappedInputs, String methodHash, List<String> bindings, List<String> localDefinitions,
         List<JavaSourceContext.Receipt> dependencies, long searchWork, int candidates, FieldCallEvidence callSite) {

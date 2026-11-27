@@ -26,7 +26,7 @@ final class JavaFieldValueSink {
         if (checked.contains(id)) return;
         require(active.size() < 8 && checked.size() < 64 && active.add(id) && Modifier.isStatic(target.getModifiers())
                 && target.getDeclaringClass().isFromSource() && !target.isVarargs() && big(target.getParameterTypes()[position]));
-        var definition = JavaSourceContext.definition(site.unit, target.getMethodDeclaration());
+        var definition = site.definition(target.getMethodDeclaration());
         require(definition != null);
         var method = requireType(definition.declaration(), MethodDeclaration.class);
         require(method.getBody() != null);
@@ -71,11 +71,11 @@ final class JavaFieldValueSink {
                     || jdk(call, "longValue") || jdk(call, "intValue") || jdk(call, "signum")) return;
             // BigInteger.mod may return the receiver by identity. Its result therefore stays tainted.
             require(jdk(call, "mod", BIG));
-            site.constant(variable(arg(call, 0)), 0);
+            site.constant(site.checkedVariable(arg(call, 0)), 0);
             use(owner, call, followed);
         } else {
             int position = call.arguments().indexOf(value);
-            require(position >= 0 && staticCall(call));
+            require(position >= 0 && site.checkedStaticCall(call));
             parameter(call.resolveMethodBinding(), position);
         }
     }

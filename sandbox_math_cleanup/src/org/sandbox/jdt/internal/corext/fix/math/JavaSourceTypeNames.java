@@ -32,14 +32,14 @@ final class JavaSourceTypeNames {
                 || !binding.isEqualTo(name.resolveBinding())) return false;
         for (ASTNode scope = name.getParent(); scope != null; scope = scope.getParent()) {
             charge.accept(1);
-            if (scope instanceof CompilationUnit ast) return visibleType(ast, binding, charge);
+            if (scope instanceof CompilationUnit ast) return visibleType(ast, binding, true, charge);
             if (scope instanceof AnonymousClassDeclaration || scope instanceof AbstractTypeDeclaration
                     && !(scope instanceof TypeDeclaration t && !t.isInterface() && t.getSuperclassType() == null
                         && t.superInterfaceTypes().isEmpty())) return false;
         }
         return false;
     }
-    private static boolean visibleType(CompilationUnit ast, ITypeBinding declaring, LongConsumer charge) {
+    static boolean visibleType(CompilationUnit ast, ITypeBinding declaring, boolean allowImport, LongConsumer charge) {
         String canonical = declaring.getQualifiedName();
         String pkg = ast.getPackage() == null ? "" : ast.getPackage().getName().getFullyQualifiedName() + ".";
         boolean visible = canonical.equals(pkg + declaring.getName());
@@ -48,7 +48,8 @@ final class JavaSourceTypeNames {
             var entry = (ImportDeclaration)item;
             if (entry.isOnDemand() || entry.isStatic()) return false;
             String imported = entry.getName().getFullyQualifiedName();
-            if (imported.equals(canonical)) visible = true;
+            if (!allowImport && imported.endsWith("." + declaring.getName())) return false;
+            if (allowImport && imported.equals(canonical)) visible = true;
         }
         return visible;
     }

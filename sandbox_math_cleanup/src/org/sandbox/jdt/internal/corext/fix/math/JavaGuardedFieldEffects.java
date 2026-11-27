@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import org.eclipse.jdt.core.dom.*;
 
@@ -23,6 +25,7 @@ final class JavaGuardedFieldEffects {
     private final Map<Call,Value> summaries = new HashMap<>();
     private final Set<Call> active = new HashSet<>();
     private final Set<String> initialized;
+    private final Map<String,Optional<Object>> primitiveFields = new HashMap<>();
 
     JavaGuardedFieldEffects(JavaGuardedFieldSource site) {
         this.site = site;
@@ -92,9 +95,47 @@ final class JavaGuardedFieldEffects {
     private <T> T declaration(IBinding binding, Class<T> type) {
         site.work.charge(1);
         site.definitions.add(key(binding));
-        var definition = JavaSourceContext.definition(site.unit, binding);
+        var definition = site.definition(binding);
         check(definition != null && type.isInstance(definition.declaration()), "source unavailable");
         return type.cast(definition.declaration());
+    }
+
+    /** A constant read can skip class initialization only while its complete source expression stays constant. */
+    private boolean primitiveConstant(Name use, IVariableBinding field, int depth) {
+        check(field.isField() && field.getType().isPrimitive() && Modifier.isStatic(field.getModifiers())
+                && Modifier.isFinal(field.getModifiers()) && field.getDeclaringClass().isFromSource(), "unbound primitive field");
+        check(site.directOwner(use, use instanceof QualifiedName q ? q.getQualifier() : null, field.getDeclaringClass(), site.normalized), "indirect primitive field lookup");
+        String id = key(field);
+        Object value = field.getConstantValue();
+        var cached = primitiveFields.get(id);
+        if (cached != null) {
+            check(Objects.equals(cached.orElse(null), value), "inconsistent primitive field");
+            return cached.isPresent();
+        }
+        check(depth < 16 && primitiveFields.size() < 128, "primitive constant bound");
+        var fragment = declaration(field, VariableDeclarationFragment.class);
+        var current = fragment.resolveBinding();
+        check(current != null && id.equals(key(current)) && current.getType().isEqualTo(field.getType())
+                && Modifier.isStatic(current.getModifiers()) && Modifier.isFinal(current.getModifiers())
+                && Objects.equals(current.getConstantValue(), value), "changed primitive field");
+        if (value != null) {
+            var initializer = fragment.getInitializer();
+            if (initializer == null) throw unsupported("missing constant initializer");
+            initializer.accept(new ASTVisitor() {
+                int nesting;
+                @Override public void preVisit(ASTNode node) { site.work.charge(1); check(++nesting <= 64, "constant syntax depth"); }
+                @Override public void postVisit(ASTNode node) { nesting--; }
+                @Override public boolean visit(SimpleName name) {
+                    if (name.resolveBinding() instanceof IVariableBinding dependency) {
+                        Name reference = name.getParent() instanceof QualifiedName q && q.getName() == name ? q : name;
+                        check(primitiveConstant(reference, dependency, depth + 1), "nonconstant initializer reference");
+                    }
+                    return true;
+                }
+            });
+        }
+        primitiveFields.put(id, Optional.ofNullable(value));
+        return value != null;
     }
 
     private final class Scope {
@@ -135,7 +176,8 @@ final class JavaGuardedFieldEffects {
                 expression(expr.getExpression());
             } else if (statement instanceof ThrowStatement thrown) {
                 var error = requireType(thrown.getExpression(), ClassInstanceCreation.class);
-                check(error.getAnonymousClassDeclaration() == null && error.resolveTypeBinding() != null
+                check(error.getAnonymousClassDeclaration() == null && (!site.normalized || JavaSourceTypeNames.closedType(error.getType(), site.work::charge))
+                        && error.resolveTypeBinding() != null
                         && !error.resolveTypeBinding().isFromSource() && error.resolveTypeBinding().getQualifiedName().equals("java.lang.IllegalArgumentException")
                         && (error.arguments().isEmpty() || error.arguments().size() == 1 && error.arguments().getFirst() instanceof StringLiteral), "unverified throw");
             } else throw unsupported("statement " + statement.getClass().getSimpleName());
@@ -163,7 +205,7 @@ final class JavaGuardedFieldEffects {
                 array(n.getQualifier());
                 return Value.PRIMITIVE;
             }
-            if (e instanceof Name name) return read(site.checkedVariable(name));
+            if (e instanceof Name name) return read(name);
             if (e instanceof ArrayAccess access) {
                 array(access.getArray()); primitive(access.getIndex()); return Value.PRIMITIVE;
             }
@@ -179,12 +221,14 @@ final class JavaGuardedFieldEffects {
             }
             if (e instanceof MethodInvocation call) return call(call);
             if (e instanceof ClassInstanceCreation creation) {
-                check(creation.getExpression() == null && creation.getAnonymousClassDeclaration() == null, "constructor dispatch");
+                check(creation.getExpression() == null && creation.getAnonymousClassDeclaration() == null
+                        && (!site.normalized || JavaSourceTypeNames.closedType(creation.getType(), site.work::charge)), "constructor dispatch");
                 var args = arguments(creation.arguments());
                 if (big(creation.resolveTypeBinding())) {
                     check(args.equals(List.of(Value.STRING, Value.PRIMITIVE)) || args.equals(List.of(Value.STRING)), "integer constructor");
                     return Value.BIG;
                 }
+                if (site.normalized) site.checkSourceMethod(creation.resolveConstructorBinding());
                 return invoke(creation.resolveConstructorBinding(), args);
             }
             if (e instanceof InfixExpression binary) {
@@ -223,11 +267,12 @@ final class JavaGuardedFieldEffects {
             throw unsupported("expression " + (e == null ? "null" : e.getClass().getSimpleName()));
         }
 
-        private Value read(IVariableBinding binding) {
+        private Value read(Name name) {
+            var binding = site.checkedVariable(name);
             var value = locals.get(key(binding));
             if (value != null) return value;
             check(binding.isField() && Modifier.isStatic(binding.getModifiers()) && Modifier.isFinal(binding.getModifiers()), "nonlocal mutable read");
-            if (binding.getConstantValue() != null && binding.getType().isPrimitive()) return Value.PRIMITIVE;
+            if (binding.getType().isPrimitive() && primitiveConstant(name, binding, 0)) return Value.PRIMITIVE;
             if (big(binding.getDeclaringClass())) {
                 site.constant(binding, 0);
                 return Value.BIG;
@@ -266,7 +311,7 @@ final class JavaGuardedFieldEffects {
             var method = call.resolveMethodBinding();
             check(method != null && !method.isRecovered(), "unresolved call");
             if (Modifier.isStatic(method.getModifiers())) {
-                check(staticCall(call), "effectful qualifier");
+                check(site.checkedStaticCall(call), "effectful qualifier");
                 var args = arguments(call.arguments());
                 if (method.getDeclaringClass().isFromSource()) return invoke(method, args);
                 String name = method.getDeclaringClass().getQualifiedName() + "." + method.getName();
