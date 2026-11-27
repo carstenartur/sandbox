@@ -20,6 +20,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 
 import org.sandbox.jdt.triggerpattern.internal.JavaSourceMask;
@@ -58,15 +59,12 @@ import org.sandbox.jdt.triggerpattern.internal.JavaSourceMask;
  */
 public final class ImportDirective {
 	
-	// Also consume package-only paths so find() never retries at each dot in the same path.
-	private static final String PACKAGE_PATH = "\\b[a-z][a-z0-9_]*+(?:\\.[a-z][a-z0-9_]*+)*+"; //$NON-NLS-1$
-	private static final String TYPE_SUFFIX = "\\.[A-Z][A-Za-z0-9_]*+"; //$NON-NLS-1$
-
-	// Group 1 is present only when the package path has the requested type or member suffix.
-	private static final java.util.regex.Pattern FQN_PATTERN = java.util.regex.Pattern.compile(
-			PACKAGE_PATH + "(" + TYPE_SUFFIX + "\\b)?"); //$NON-NLS-1$ //$NON-NLS-2$
-	private static final java.util.regex.Pattern FQN_METHOD_PATTERN = java.util.regex.Pattern.compile(
-			PACKAGE_PATH + "(?:" + TYPE_SUFFIX + "\\.([A-Za-z][A-Za-z0-9_]*+)\\b)?"); //$NON-NLS-1$ //$NON-NLS-2$
+	private static final java.util.regex.Pattern PACKAGE_SEGMENT = java.util.regex.Pattern.compile(
+			"\\b[a-z][a-z0-9_]*+"); //$NON-NLS-1$
+	private static final String TYPE_NAME = "(\\.[A-Z][A-Za-z0-9_]*+)"; //$NON-NLS-1$
+	private static final java.util.regex.Pattern TYPE_SUFFIX = java.util.regex.Pattern.compile(TYPE_NAME + "\\b"); //$NON-NLS-1$
+	private static final java.util.regex.Pattern MEMBER_SUFFIX = java.util.regex.Pattern.compile(
+			TYPE_NAME + "\\.([A-Za-z][A-Za-z0-9_]*+)\\b"); //$NON-NLS-1$
 
 	private final List<String> addImports;
 	private final List<String> removeImports;
@@ -346,19 +344,10 @@ public final class ImportDirective {
 	 */
 	private static Map<String, String> extractFqnMethods(String pattern) {
 		Map<String, String> result = new LinkedHashMap<>();
-		if (pattern == null || pattern.isEmpty()) {
-			return result;
-		}
-		String code = JavaSourceMask.codeOnly(pattern);
-		Matcher matcher = FQN_METHOD_PATTERN.matcher(code);
-		while (matcher.find()) {
-			if (matcher.start(1) >= 0) {
-				String type = code.substring(matcher.start(), matcher.start(1) - 1);
-				result.put(matcher.group(1), type);
-			}
-		}
+		matchQualifiedNames(pattern, MEMBER_SUFFIX, (type, suffix) -> result.put(suffix.group(2), type));
 		return result;
 	}
+
 	/**
 	 * Extracts fully qualified type names from a pattern string.
 	 * 
@@ -371,18 +360,37 @@ public final class ImportDirective {
 	 */
 	private static Set<String> extractFqns(String pattern) {
 		Set<String> fqns = new HashSet<>();
-		if (pattern == null || pattern.isEmpty()) {
-			return fqns;
-		}
-		Matcher matcher = FQN_PATTERN.matcher(JavaSourceMask.codeOnly(pattern));
-		while (matcher.find()) {
-			if (matcher.start(1) >= 0) {
-				fqns.add(matcher.group());
-			}
-		}
+		matchQualifiedNames(pattern, TYPE_SUFFIX, (type, suffix) -> fqns.add(type));
 		return fqns;
 	}
-	
+
+	/**
+	 * Visits each package path once. The suffix matcher captures the type segment in group 1
+	 * and, when requested, the following member in group 2.
+	 */
+	private static void matchQualifiedNames(String pattern, java.util.regex.Pattern suffixPattern,
+			BiConsumer<String, Matcher> onMatch) {
+		if (pattern == null || pattern.isEmpty()) {
+			return;
+		}
+		String code = JavaSourceMask.codeOnly(pattern);
+		Matcher segment = PACKAGE_SEGMENT.matcher(code);
+		Matcher suffix = suffixPattern.matcher(code);
+		int next = 0;
+		while (segment.find(next)) {
+			int start = segment.start();
+			next = segment.end();
+			while (next < code.length() && code.charAt(next) == '.'
+					&& segment.region(next + 1, code.length()).lookingAt()) {
+				next = segment.end();
+			}
+			if (suffix.region(next, code.length()).lookingAt()) {
+				onMatch.accept(code.substring(start, suffix.end(1)), suffix);
+				next = suffix.end();
+			}
+		}
+	}
+
 	/**
 	 * Merges another directive into this one.
 	 * 
