@@ -218,9 +218,10 @@ class NormalizedScalarObservationTest {
                         var actual = failure(edited, args);
                         assertEquals(NullPointerException.class, expected.getClass());
                         assertEquals(expected.getClass(), actual.getClass());
-                        String name = profile.startsWith("-g:vars") ? names.get(i) : "<local" + (4 + i + (prefix ? 2 : 0)) + ">";
-                        assertTrue(expected.getMessage().contains(name), profile + expected.getMessage());
                         assertEquals(expected.getMessage(), actual.getMessage());
+                        // Coverage probes can shift unnamed local slots in both compiled methods.
+                        String local = profile.startsWith("-g:vars") ? names.get(i) : "<local[0-9]+>";
+                        assertTrue(expected.getMessage().matches(".*\"" + local + "\" is null"), profile + expected.getMessage());
                     }
                 }
             }
