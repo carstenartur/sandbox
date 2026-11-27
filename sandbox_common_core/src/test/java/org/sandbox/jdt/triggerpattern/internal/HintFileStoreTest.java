@@ -17,17 +17,22 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
@@ -198,6 +203,50 @@ class HintFileStoreTest {
 
 		assertFalse(written.isEmpty());
 		assertTrue(Files.isDirectory(tempDir.resolve(".hints")));
+	}
+
+	@Test
+	void overwritesExistingHintInProject(@TempDir Path project) throws IOException {
+		assertOverwrite(project);
+	}
+
+	private void assertOverwrite(Path project) throws IOException {
+		HintFile hint = new HintFile();
+		store.registerInferredRules(hint, "fixture");
+		Path first = store.saveInferredHintFiles(project).getFirst();
+		hint.setTags(List.of("updated"));
+		assertEquals(List.of(first), store.saveInferredHintFiles(project));
+		assertEquals(new HintFileSerializer().serialize(hint), Files.readString(first));
+	}
+
+	@Test
+	void overwritesExistingHintOnZipFileSystem(@TempDir Path directory) throws IOException {
+		try (var zip = FileSystems.newFileSystem(directory.resolve("project.zip"), Map.of("create", "true"))) {
+			assertOverwrite(zip.getPath("/"));
+		}
+	}
+
+	@Test
+	@EnabledOnOs({ OS.LINUX, OS.MAC })
+	void rejectsLinkedHintDirectory(@TempDir Path project) throws IOException {
+		store.registerInferredRules(new HintFile(), "fixture");
+		Path other = Files.createDirectory(project.resolve("other"));
+		Files.createSymbolicLink(project.resolve(".hints"), other);
+		assertThrows(IOException.class, () -> store.saveInferredHintFiles(project));
+		try (var entries = Files.list(other)) {
+			assertEquals(0L, entries.count());
+		}
+	}
+
+	@Test
+	@EnabledOnOs({ OS.LINUX, OS.MAC })
+	void rejectsLinkedHintDestination(@TempDir Path project) throws IOException {
+		store.registerInferredRules(new HintFile(), "fixture");
+		Path hints = Files.createDirectory(project.resolve(".hints"));
+		Path other = Files.writeString(project.resolve("other"), "fixture");
+		Files.createSymbolicLink(hints.resolve("ai-inferred-fixture.sandbox-hint"), other);
+		assertThrows(IOException.class, () -> store.saveInferredHintFiles(project));
+		assertEquals("fixture", Files.readString(other));
 	}
 
 	@Test
