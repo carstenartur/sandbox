@@ -672,7 +672,7 @@ public final class HintFileStore {
 						writer.write(content);
 					}
 				} else {
-					replaceHintFile(target, content);
+					replaceHintFile(hintsDir, target, content);
 				}
 				written.add(target);
 			}
@@ -682,11 +682,11 @@ public final class HintFileStore {
 
 	// Providers without directory handles may also lack NOFOLLOW_LINKS for byte channels.
 	// Moving a new file over the destination replaces the directory entry without following it.
-	private static void replaceHintFile(Path target, String content) throws IOException {
+	private static void replaceHintFile(Path hintsDir, Path target, String content) throws IOException {
 		if (Files.exists(target, LinkOption.NOFOLLOW_LINKS) && !Files.isRegularFile(target, LinkOption.NOFOLLOW_LINKS)) {
 			throw new IOException("Expected a regular hint file: " + target); //$NON-NLS-1$
 		}
-		Path temporary = Files.createTempFile(target.getParent(), "inferred-", ".tmp"); //$NON-NLS-1$ //$NON-NLS-2$
+		Path temporary = Files.createTempFile(hintsDir, "inferred-", ".tmp"); //$NON-NLS-1$ //$NON-NLS-2$
 		try {
 			Files.writeString(temporary, content, StandardCharsets.UTF_8);
 			Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING);
