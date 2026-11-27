@@ -3,6 +3,8 @@ package org.sandbox.jdt.internal.corext.fix.math;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.sandbox.jdt.internal.corext.fix.math.NormalizedScalarObservationTest.*;
+
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -112,19 +114,21 @@ class NormalizedScalarReplayTest {
 
     @Test void followsDirectAndTransitiveForeignSinkSourcesAtApplyTime() throws Exception {
         Path encoder = temporary.resolve("Encoder.java"), bytes = temporary.resolve("Bytes.java");
-        Files.writeString(encoder, "import java.math.BigInteger; final class Encoder { "
-                + "static byte[] encode(BigInteger x, BigInteger y) { return Bytes.encode(x, y); } }");
-        Files.writeString(bytes, IMPORTS + "final class Bytes {" + ENCODE + "}");
+        Files.writeString(encoder,
+				("import java.math.BigInteger; final class Encoder { "
+						+ "static byte[] encode(BigInteger x, BigInteger y) { return Bytes.encode(x, y); } }"),
+				StandardCharsets.UTF_8);
+        Files.writeString(bytes, (IMPORTS + "final class Bytes {" + ENCODE + "}"), StandardCharsets.UTF_8);
         String source = SOURCE.replace(ENCODE, "").replace("return encode(x, y);", "return Encoder.encode(x, y);");
         var result = analyze(source, source.indexOf("recover(a, b, g)"), temporary.toString());
         var proof = result.evidence().stream().filter(r -> r.fieldRoot() != null).findFirst().orElseThrow().fieldRoot();
         assertEquals(2, proof.dependencies().size());
         for (Path external : List.of(encoder, bytes)) {
-            String original = Files.readString(external);
-            Files.writeString(external, original + "\n");
+            String original = Files.readString(external, StandardCharsets.UTF_8);
+            Files.writeString(external, (original + "\n"), StandardCharsets.UTF_8);
             assertFalse(result.matches(source, result.compilerOptions()));
             assertThrows(IllegalArgumentException.class, result::newEdit);
-            Files.writeString(external, original);
+            Files.writeString(external, original, StandardCharsets.UTF_8);
             assertTrue(result.matches(source, result.compilerOptions()));
         }
         var doc = new Document(source);
@@ -132,28 +136,32 @@ class NormalizedScalarReplayTest {
         assertNotEquals(source, doc.get());
         undo.apply(doc);
         assertEquals(source, doc.get());
-        String saved = Files.readString(bytes);
-        Files.writeString(bytes, saved.replace("byte[] left =", "if (x == y) return null; byte[] left ="));
+        String saved = Files.readString(bytes, StandardCharsets.UTF_8);
+        Files.writeString(bytes, saved.replace("byte[] left =", "if (x == y) return null; byte[] left ="),
+				StandardCharsets.UTF_8);
         assertFalse(analyze(source, source.indexOf("recover(a, b, g)"), temporary.toString()).changed());
-        Files.writeString(bytes, saved);
+        Files.writeString(bytes, saved, StandardCharsets.UTF_8);
         String flag = "static boolean bit() { return true; }";
-        Files.writeString(encoder, Files.readString(encoder).replace("static byte[] encode", flag + " static byte[] encode"));
+        Files.writeString(encoder,
+				Files.readString(encoder).replace("static byte[] encode", flag + " static byte[] encode"),
+				StandardCharsets.UTF_8);
         String inferred = source.replace("final BigInteger[] pair", "var inferred = Encoder.bit(); final BigInteger[] pair")
                 .replace("!= target", "!= inferred");
         assertFalse(analyze(inferred, inferred.indexOf("recover(a, b, g)"), temporary.toString()).changed());
-        Files.writeString(encoder, Files.readString(encoder).replace(flag, "static Boolean bit() { return null; }"));
+        Files.writeString(encoder, Files.readString(encoder).replace(flag, "static Boolean bit() { return null; }"),
+				StandardCharsets.UTF_8);
         assertFalse(analyze(inferred, inferred.indexOf("recover(a, b, g)"), temporary.toString()).changed());
     }
 
     @Test void cachedApplyRetainsTheRangeGuardForAnExternalConstructorSign() throws Exception {
         Path origin = temporary.resolve("Origin.java");
         String constant = "final class Origin { static final int SIGN = 1; }";
-        Files.writeString(origin, constant);
+        Files.writeString(origin, constant, StandardCharsets.UTF_8);
         String source = SOURCE.replace("final BigInteger[] pair = recover(a, b, g);",
                 "BigInteger v = new BigInteger(Origin.SIGN, a.toByteArray()); final BigInteger[] pair = recover(v, b, g);");
         int at = source.indexOf("recover(v, b, g)");
         var cached = analyze(source, at, temporary.toString());
-        Files.writeString(origin, constant.replace("= 1", "= -1"));
+        Files.writeString(origin, constant.replace("= 1", "= -1"), StandardCharsets.UTF_8);
         for (var result : List.of(cached, analyze(source, at, temporary.toString()))) {
             var proof = result.evidence().stream().filter(r -> r.fieldRoot() != null).findFirst().orElseThrow().fieldRoot();
             var input = proof.callSite().inputs().getFirst();
@@ -170,25 +178,27 @@ class NormalizedScalarReplayTest {
     void primitiveSinkReadsBindTheirTransitiveConstantStatus(String use) throws Exception {
         Path origin = temporary.resolve("Origin.java"), encoder = temporary.resolve("Encoder.java");
         String constant = "final class Origin { static final int LIMIT = 1; }";
-        Files.writeString(origin, constant);
+        Files.writeString(origin, constant, StandardCharsets.UTF_8);
         String source = SOURCE.replace(ENCODE, "").replace("return encode(x, y);", "return Encoder.encode(x, y);");
         String alias = "final int BOUND = 2 * Origin.LIMIT + 1; ";
         String field = use.equals("field") ? "static " + alias : "";
         String local = use.equals("local") ? alias : "";
         String guard = "if (x.intValue() == " + (use.equals("direct") ? "Origin.LIMIT" : "BOUND") + ") return new byte[0]; ";
-        Files.writeString(encoder, IMPORTS + "final class Encoder {" + field
-                + ENCODE.replace("byte[] left =", local + guard + "byte[] left =") + "}");
+        Files.writeString(encoder,
+				(IMPORTS + "final class Encoder {" + field
+						+ ENCODE.replace("byte[] left =", local + guard + "byte[] left =") + "}"),
+				StandardCharsets.UTF_8);
         int at = source.indexOf("recover(a, b, g)");
         var cached = analyze(source, at, temporary.toString());
         assertTrue(cached.changed());
         var doc = new Document(source);
         cached.newEdit().apply(doc);
         assertNotEquals(source, doc.get());
-        Files.writeString(origin, constant.replace("static final", "static"));
+        Files.writeString(origin, constant.replace("static final", "static"), StandardCharsets.UTF_8);
         assertFalse(cached.matches(source, cached.compilerOptions()));
         assertThrows(IllegalArgumentException.class, cached::newEdit);
         assertFalse(analyze(source, at, temporary.toString()).changed());
-        Files.writeString(origin, constant);
+        Files.writeString(origin, constant, StandardCharsets.UTF_8);
         assertTrue(cached.matches(source, cached.compilerOptions()));
     }
 
@@ -196,23 +206,30 @@ class NormalizedScalarReplayTest {
     @ValueSource(booleans = {false, true})
     void cachedApplyDeclinesAnInheritedOrImportedNestedFieldOwner(boolean imported) throws Exception {
         Path support = Files.createDirectory(temporary.resolve("support"));
-        Files.writeString(support.resolve("Parent.java"), "package support; public class Parent { "
-                + "public static class Holder { public static final int LIMIT = 1; } }");
+        Files.writeString(support.resolve("Parent.java"),
+				("package support; public class Parent { "
+						+ "public static class Holder { public static final int LIMIT = 1; } }"),
+				StandardCharsets.UTF_8);
         Path child = support.resolve("Child.java");
         String original = "package support; public final class Child extends Parent {}";
-        Files.writeString(child, original);
+        Files.writeString(child, original, StandardCharsets.UTF_8);
         String imports = imported ? "import static support.Child.*; " : "import support.Child; ";
         String read = imported ? "Holder.LIMIT" : "Child.Holder.LIMIT";
-        Files.writeString(temporary.resolve("Encoder.java"), imports + IMPORTS + "final class Encoder {"
-                + ENCODE.replace("byte[] left =", "if (x.intValue() == " + read + ") return new byte[0]; byte[] left =") + "}");
+        Files.writeString(temporary.resolve("Encoder.java"),
+				(imports + IMPORTS + "final class Encoder {"
+						+ ENCODE.replace("byte[] left =",
+								"if (x.intValue() == " + read + ") return new byte[0]; byte[] left =")
+						+ "}"),
+				StandardCharsets.UTF_8);
         String source = SOURCE.replace(ENCODE, "").replace("return encode(x, y);", "return Encoder.encode(x, y);");
         assertNoCachedEditAfterShadowing(source, child, original.replace("{}", "{ public static class Holder { public static int LIMIT = 1; } }"));
     }
 
     @Test void aNewInheritedTypeCannotShadowAnOriginallyTopLevelFieldOwner() throws Exception {
         Path base = temporary.resolve("Base.java");
-        Files.writeString(base, "class Base {}");
-        Files.writeString(temporary.resolve("Origin.java"), "final class Origin { static final int LIMIT = 1; }");
+        Files.writeString(base, "class Base {}", StandardCharsets.UTF_8);
+        Files.writeString(temporary.resolve("Origin.java"), "final class Origin { static final int LIMIT = 1; }",
+				StandardCharsets.UTF_8);
         String source = SOURCE.replace("class Ocean {", "class Ocean extends Base {").replace(
                 "byte[] left =", "if (x.intValue() == Origin.LIMIT) return new byte[0]; byte[] left =");
         assertNoCachedEditAfterShadowing(source, base, "class Base { static class Origin { static int LIMIT = 1; } }");
@@ -238,11 +255,13 @@ class NormalizedScalarReplayTest {
             }
             default -> {
                 parent = "Parent";
-                Files.writeString(temporary.resolve("Parent.java"), imports + "class Parent {" + ENCODE + "}");
+                Files.writeString(temporary.resolve("Parent.java"), (imports + "class Parent {" + ENCODE + "}"),
+						StandardCharsets.UTF_8);
                 String dispatch = "Child.encode(x, y)";
                 if (role.equals("transitive sink")) {
-                    Files.writeString(temporary.resolve("Encoder.java"), imports + "class Encoder { "
-                            + "static byte[] encode(BigInteger x, BigInteger y) { return " + dispatch + "; } }");
+                    Files.writeString(temporary.resolve("Encoder.java"), (imports + "class Encoder { "
+							+ "static byte[] encode(BigInteger x, BigInteger y) { return " + dispatch + "; } }"),
+							StandardCharsets.UTF_8);
                     dispatch = "Encoder.encode(x, y)";
                 }
                 source = source.replace(ENCODE, "").replace("return encode(x, y);", "return " + dispatch + ";");
@@ -250,17 +269,20 @@ class NormalizedScalarReplayTest {
             }
         }
         assertNotEquals(SOURCE, source);
-        Files.writeString(temporary.resolve("Ocean.java"), source);
+        Files.writeString(temporary.resolve("Ocean.java"), source, StandardCharsets.UTF_8);
         String child = imports + "class Child extends " + parent + " {";
-        Path file = Files.writeString(temporary.resolve("Child.java"), child + "}");
+        Path file = Files.writeString(temporary.resolve("Child.java"), (child + "}"), StandardCharsets.UTF_8);
         assertNoCachedEditAfterShadowing(source, file, child + hidden + "}");
     }
 
     @Test void inheritedGuardFactCallsRetainTheRuntimeChecks() throws Exception {
         String imports = "import java.math.BigInteger; ";
-        Files.writeString(temporary.resolve("Parent.java"), imports + "class Parent { "
-                + "static BigInteger magnitude(BigInteger a) { return new BigInteger(1, a.toByteArray()); } }");
-        Path child = Files.writeString(temporary.resolve("Child.java"), imports + "class Child extends Parent {}");
+        Files.writeString(temporary.resolve("Parent.java"),
+				(imports + "class Parent { "
+						+ "static BigInteger magnitude(BigInteger a) { return new BigInteger(1, a.toByteArray()); } }"),
+				StandardCharsets.UTF_8);
+        Path child = Files.writeString(temporary.resolve("Child.java"), (imports + "class Child extends Parent {}"),
+				StandardCharsets.UTF_8);
         String source = SOURCE.replace("final BigInteger[] pair = recover(a, b, g);",
                 "BigInteger v = Child.magnitude(a); final BigInteger[] pair = recover(v, b, g);");
         assertGuardChecksAfterShadowing(source, child, imports + "class Child extends Parent { static BigInteger magnitude(BigInteger a) { return a; } }");
@@ -269,7 +291,7 @@ class NormalizedScalarReplayTest {
     private void assertGuardChecksAfterShadowing(String source, Path shadow, String replacement) throws Exception {
         int selected = source.indexOf("recover(v, b, g)");
         var cached = analyze(source, selected, temporary.toString());
-        Files.writeString(shadow, replacement);
+        Files.writeString(shadow, replacement, StandardCharsets.UTF_8);
         for (var result : List.of(cached, analyze(source, selected, temporary.toString()))) {
             var call = result.evidence().stream().filter(r -> r.fieldRoot() != null).findFirst().orElseThrow().fieldRoot().callSite();
             assertFalse(call.inputs().getFirst().exactClass());
@@ -282,9 +304,9 @@ class NormalizedScalarReplayTest {
     }
 
     @Test void generatedTypesStillCompileAfterAnUnrelatedTypeNamedJavaAppears() throws Exception {
-        Path shadow = Files.writeString(temporary.resolve("java.java"), "/* no type yet */");
+        Path shadow = Files.writeString(temporary.resolve("java.java"), "/* no type yet */", StandardCharsets.UTF_8);
         var cached = analyze(SOURCE, SOURCE.indexOf("recover(a, b, g)"), temporary.toString());
-        Files.writeString(shadow, "class java {}");
+        Files.writeString(shadow, "class java {}", StandardCharsets.UTF_8);
         var doc = new Document(SOURCE);
         cached.newEdit().apply(doc);
         assertNotEquals(SOURCE, doc.get());
@@ -293,17 +315,19 @@ class NormalizedScalarReplayTest {
 
     @Test void implicitSystemCannotBindTheCachedSink() throws Exception {
         String source = SOURCE.replace("import java.lang.System;", "");
-        Path shadow = Files.writeString(temporary.resolve("System.java"), "/* no type yet */");
+        Path shadow = Files.writeString(temporary.resolve("System.java"), "/* no type yet */", StandardCharsets.UTF_8);
         assertNoCachedEditAfterShadowing(source, shadow, "class System { static int copies; "
                 + "static void arraycopy(byte[] l, int i, byte[] r, int j, int n) { copies++; } }");
     }
 
     @Test void aPackageQualifierCannotBindTheCachedSink() throws Exception {
         Path helpers = Files.createDirectory(temporary.resolve("helpers")), codecs = Files.createDirectory(temporary.resolve("codecs"));
-        Path shadow = Files.writeString(helpers.resolve("codecs.java"), "package helpers;");
-        Files.writeString(codecs.resolve("Raw.java"), "package codecs; " + IMPORTS + "public class Raw { public " + ENCODE + "}");
-        Files.writeString(helpers.resolve("Encoder.java"), "package helpers; " + IMPORTS + "public class Encoder { "
-                + "public static byte[] encode(BigInteger x, BigInteger y) { return codecs.Raw.encode(x, y); } }");
+        Path shadow = Files.writeString(helpers.resolve("codecs.java"), "package helpers;", StandardCharsets.UTF_8);
+        Files.writeString(codecs.resolve("Raw.java"),
+				("package codecs; " + IMPORTS + "public class Raw { public " + ENCODE + "}"), StandardCharsets.UTF_8);
+        Files.writeString(helpers.resolve("Encoder.java"), ("package helpers; " + IMPORTS + "public class Encoder { "
+				+ "public static byte[] encode(BigInteger x, BigInteger y) { return codecs.Raw.encode(x, y); } }"),
+				StandardCharsets.UTF_8);
         String source = "import helpers.Encoder; " + SOURCE.replace(ENCODE, "").replace("return encode(x, y);", "return Encoder.encode(x, y);");
         assertNoCachedEditAfterShadowing(source, shadow, "package helpers; " + IMPORTS + "class codecs { static class Raw { "
                 + "static byte[] encode(BigInteger x, BigInteger y) { return x == y ? null : new byte[0]; } } }");
@@ -311,14 +335,17 @@ class NormalizedScalarReplayTest {
 
     @Test void aWildcardConstructorCannotSupplyCachedGuardFacts() throws Exception {
         Path helpers = Files.createDirectory(temporary.resolve("helpers"));
-        Path shadow = Files.writeString(helpers.resolve("BigInteger.java"), "package helpers;");
-        Path provider = Files.writeString(helpers.resolve("Provider.java"), "package helpers; import java.math.*; public class Provider { "
-                + "public static java.math.BigInteger mag(java.math.BigInteger a) { return new BigInteger(1, a.toByteArray()); } }");
+        Path shadow = Files.writeString(helpers.resolve("BigInteger.java"), "package helpers;", StandardCharsets.UTF_8);
+        Path provider = Files.writeString(helpers.resolve("Provider.java"),
+				("package helpers; import java.math.*; public class Provider { "
+						+ "public static java.math.BigInteger mag(java.math.BigInteger a) { return new BigInteger(1, a.toByteArray()); } }"),
+				StandardCharsets.UTF_8);
         String source = "import helpers.Provider; " + SOURCE.replace("final BigInteger[] pair = recover(a, b, g);",
                 "BigInteger v = Provider.mag(a); final BigInteger[] pair = recover(v, b, g);");
         assertGuardChecksAfterShadowing(source, shadow, "package helpers; class BigInteger extends java.math.BigInteger { "
                 + "BigInteger(int sign, byte[] bytes) { super(sign, bytes); } }");
-        Files.writeString(provider, Files.readString(provider).replace("java.math.*", "java.math.BigInteger"));
+        Files.writeString(provider, Files.readString(provider).replace("java.math.*", "java.math.BigInteger"),
+				StandardCharsets.UTF_8);
         var imported = analyze(source, source.indexOf("recover(v, b, g)"), temporary.toString());
         var input = imported.evidence().stream().filter(r -> r.fieldRoot() != null).findFirst().orElseThrow()
                 .fieldRoot().callSite().inputs().getFirst();
@@ -328,7 +355,7 @@ class NormalizedScalarReplayTest {
     private void assertNoCachedEditAfterShadowing(String source, Path shadowed, String replacement) throws Exception {
         int selected = source.indexOf("recover(a, b, g)");
         var cached = analyze(source, selected, temporary.toString());
-        Files.writeString(shadowed, replacement);
+        Files.writeString(shadowed, replacement, StandardCharsets.UTF_8);
         assertFalse(analyze(source, selected, temporary.toString()).changed());
         var document = new Document(source);
         cached.newEdit().apply(document);
@@ -338,11 +365,11 @@ class NormalizedScalarReplayTest {
     @Test void stalePrimaryBindingsCannotEndorseAnUpdatedExternalConstant() throws Exception {
         Path origin = temporary.resolve("Origin.java");
         String constant = "final class Origin { static final int LIMIT = 1; }";
-        Files.writeString(origin, constant);
+        Files.writeString(origin, constant, StandardCharsets.UTF_8);
         String source = SOURCE.replace(ENCODE, "static final int BOUND = 2 * Origin.LIMIT + 1;\n" + ENCODE.replace(
                 "byte[] left =", "if (x.intValue() == BOUND) return new byte[0]; byte[] left ="));
         var stale = parse(source, temporary.toString());
-        Files.writeString(origin, constant.replace("= 1", "= 7"));
+        Files.writeString(origin, constant.replace("= 1", "= 7"), StandardCharsets.UTF_8);
         var environment = new MathematicalAnalysis.SourceEnvironment("Ocean.java", List.of(), List.of(temporary.toString()),
                 List.of(), StrictCompilerOptions.allWarnings(17));
         int selected = source.indexOf("recover(a, b, g)");
