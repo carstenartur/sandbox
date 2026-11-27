@@ -30,11 +30,11 @@
    <testExcludes><testExclude>**/SharedSourceReceiptTest.java</testExclude><testExclude>**/StrictCompilerOptions.java</testExclude></testExcludes><annotationProcessorPaths><path><groupId>org.openjdk.jmh</groupId><artifactId>jmh-generator-annprocess</artifactId><version>1.37</version></path></annotationProcessorPaths>
   </configuration><executions>
    <execution><id>guarded-root-strict-main</id><phase>process-classes</phase><goals><goal>compile</goal></goals><configuration>
-    <includes combine.self="override"><include>**/FieldRootEvidence.java</include><include>**/JavaGuardedField*.java</include><include>**/JavaFieldValueSink.java</include><include>**/JavaFieldProgramLowering.java</include><include>**/MathematicalAnalysis.java</include><include>**/JavaSourceRewritePlan.java</include><include>qa/math-optimization/src/main/java/org/sandbox/math/qa/GuardedRootBenchmark*.java</include></includes>
+    <includes combine.self="override"><include>**/FieldRootEvidence.java</include><include>**/FieldCallEvidence.java</include><include>**/JavaFieldCall*.java</include><include>**/JavaFieldGuardFacts.java</include><include>**/JavaGuardedField*.java</include><include>**/JavaFieldValueSink.java</include><include>**/JavaFieldProgramLowering.java</include><include>**/MathematicalAnalysis.java</include><include>**/JavaSourceRewritePlan.java</include><include>qa/math-optimization/src/main/java/org/sandbox/math/qa/GuardedRootBenchmark*.java</include></includes>
     <proc>none</proc><compilerArgs><arg>-Xlint:all</arg><arg>-Werror</arg></compilerArgs><failOnWarning>true</failOnWarning>
    </configuration></execution>
    <execution><id>guarded-root-strict-tests</id><phase>process-test-classes</phase><goals><goal>testCompile</goal></goals><configuration>
-    <testIncludes combine.self="override"><testInclude>**/GuardedQuadraticRootSourceTest.java</testInclude><testInclude>**/BouncyCastleGuardedRootTest.java</testInclude><testInclude>**/GuardedRootBenchmarkTest.java</testInclude><testInclude>**/BouncyCastleRuntimeCorpusTest.java</testInclude></testIncludes>
+    <testIncludes combine.self="override"><testInclude>**/GuardedQuadraticRootSourceTest.java</testInclude><testInclude>**/FieldGuardFactsTest.java</testInclude><testInclude>**/BouncyCastleGuardedRootTest.java</testInclude><testInclude>**/GuardedRootBenchmarkTest.java</testInclude><testInclude>**/BouncyCastleRuntimeCorpusTest.java</testInclude></testIncludes>
     <proc>none</proc><compilerArgs><arg>-Xlint:all</arg><arg>-Werror</arg></compilerArgs><failOnWarning>true</failOnWarning>
    </configuration></execution>
   </executions></plugin>

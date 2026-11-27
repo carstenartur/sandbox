@@ -82,6 +82,14 @@ fallbacks. For 64 candidate pairs, the newer search reported 1,003,408 work
 units versus 504,157 before. That difference concerns acquisition inside the
 optimizer. The complete calls after Apply run identical code.
 
+The call-context qualification runs the same ordinary analysis and Apply on
+the pinned source. It checks exact raw roots on both norm branches, axes,
+the original private method body, public hash points and signatures. Constructor
+returns in the checked-out field sources establish the coordinate classes and
+their lower bounds. The upper bounds and norm-root class are checked at runtime.
+The false norm branch and exact Jacobi correction remain in the generated code.
+The earlier timing table describes the earlier local lowering.
+
 ## Explicit compiler diagnostics
 
 Archive scanners use the [shared strict compiler profile](../../sandbox_math_cleanup_test/ARCHITECTURE.md#compiler-diagnostics).
