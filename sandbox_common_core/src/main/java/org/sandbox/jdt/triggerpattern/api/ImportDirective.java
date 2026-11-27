@@ -58,25 +58,15 @@ import org.sandbox.jdt.triggerpattern.internal.JavaSourceMask;
  */
 public final class ImportDirective {
 	
-	/**
-	 * Compiled regex for detecting fully qualified type names in patterns.
-	 * Matches patterns like {@code java.util.Objects} or {@code org.junit.Assert}.
-	 */
-	private static final java.util.regex.Pattern FQN_PATTERN = java.util.regex.Pattern.compile(
-			"\\b([a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*(\\.[A-Z][A-Za-z0-9_]*))\\b"); //$NON-NLS-1$
+	// Also consume package-only paths so find() never retries at each dot in the same path.
+	private static final String PACKAGE_PATH = "\\b[a-z][a-z0-9_]*+(?:\\.[a-z][a-z0-9_]*+)*+"; //$NON-NLS-1$
+	private static final String TYPE_SUFFIX = "\\.[A-Z][A-Za-z0-9_]*+"; //$NON-NLS-1$
 
-	/**
-	 * Compiled regex for detecting FQN.method patterns (e.g., {@code org.junit.Assert.assertEquals}).
-	 * 
-	 * <p>Capture groups:</p>
-	 * <ul>
-	 *   <li>Group 1: full match including method (e.g., {@code org.junit.Assert.assertEquals})</li>
-	 *   <li>Group 2: type part only (e.g., {@code org.junit.Assert})</li>
-	 *   <li>The method name is the last segment after the type part's last dot</li>
-	 * </ul>
-	 */
+	// Group 1 is present only when the package path has the requested type or member suffix.
+	private static final java.util.regex.Pattern FQN_PATTERN = java.util.regex.Pattern.compile(
+			PACKAGE_PATH + "(" + TYPE_SUFFIX + "\\b)?"); //$NON-NLS-1$ //$NON-NLS-2$
 	private static final java.util.regex.Pattern FQN_METHOD_PATTERN = java.util.regex.Pattern.compile(
-			"\\b(([a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*(\\.[A-Z][A-Za-z0-9_]*))\\.[a-zA-Z][A-Za-z0-9_]*)\\b"); //$NON-NLS-1$
+			PACKAGE_PATH + "(?:" + TYPE_SUFFIX + "\\.([A-Za-z][A-Za-z0-9_]*+)\\b)?"); //$NON-NLS-1$ //$NON-NLS-2$
 
 	private final List<String> addImports;
 	private final List<String> removeImports;
@@ -237,33 +227,9 @@ public final class ImportDirective {
 	 */
 	public static ImportDirective detectFromPattern(String replacementPattern) {
 		ImportDirective directive = new ImportDirective();
-		if (replacementPattern == null || replacementPattern.isEmpty()) {
-			return directive;
-		}
-		
-		Set<String> detected = new HashSet<>();
-		Matcher matcher = FQN_PATTERN.matcher(JavaSourceMask.codeOnly(replacementPattern));
-		
-		while (matcher.find()) {
-			String fqn = matcher.group(1);
-			// Skip placeholders
-			if (fqn.contains("$")) { //$NON-NLS-1$
-				continue;
-			}
-			// Only add if it looks like a real qualified name (has at least package.Class)
-			int lastDot = fqn.lastIndexOf('.');
-			if (lastDot > 0) {
-				String className = fqn.substring(lastDot + 1);
-				if (Character.isUpperCase(className.charAt(0))) {
-					detected.add(fqn);
-				}
-			}
-		}
-		
-		for (String fqn : detected) {
+		for (String fqn : extractFqns(replacementPattern)) {
 			directive.addImport(fqn);
 		}
-		
 		return directive;
 	}
 	
@@ -383,19 +349,12 @@ public final class ImportDirective {
 		if (pattern == null || pattern.isEmpty()) {
 			return result;
 		}
-		Matcher matcher = FQN_METHOD_PATTERN.matcher(JavaSourceMask.codeOnly(pattern));
+		String code = JavaSourceMask.codeOnly(pattern);
+		Matcher matcher = FQN_METHOD_PATTERN.matcher(code);
 		while (matcher.find()) {
-			String fullMatch = matcher.group(1); // e.g., "org.junit.Assert.assertEquals"
-			if (fullMatch.contains("$")) { //$NON-NLS-1$
-				continue;
-			}
-			String typePart = matcher.group(2); // e.g., "org.junit.Assert"
-			int lastDot = fullMatch.lastIndexOf('.');
-			String methodPart = fullMatch.substring(lastDot + 1); // e.g., "assertEquals"
-			// Only include if the type part is a real FQN (last segment starts with uppercase)
-			int typeLastDot = typePart.lastIndexOf('.');
-			if (typeLastDot > 0 && Character.isUpperCase(typePart.substring(typeLastDot + 1).charAt(0))) {
-				result.put(methodPart, typePart);
+			if (matcher.start(1) >= 0) {
+				String type = code.substring(matcher.start(), matcher.start(1) - 1);
+				result.put(matcher.group(1), type);
 			}
 		}
 		return result;
@@ -415,15 +374,10 @@ public final class ImportDirective {
 		if (pattern == null || pattern.isEmpty()) {
 			return fqns;
 		}
-		java.util.regex.Matcher matcher = FQN_PATTERN.matcher(JavaSourceMask.codeOnly(pattern));
+		Matcher matcher = FQN_PATTERN.matcher(JavaSourceMask.codeOnly(pattern));
 		while (matcher.find()) {
-			String fqn = matcher.group(1);
-			if (fqn.contains("$")) { //$NON-NLS-1$
-				continue;
-			}
-			int lastDot = fqn.lastIndexOf('.');
-			if (lastDot > 0 && Character.isUpperCase(fqn.substring(lastDot + 1).charAt(0))) {
-				fqns.add(fqn);
+			if (matcher.start(1) >= 0) {
+				fqns.add(matcher.group());
 			}
 		}
 		return fqns;
