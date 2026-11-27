@@ -16,8 +16,15 @@ package org.sandbox.jdt.triggerpattern.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.eclipse.jdt.core.compiler.IProblem;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.triggerpattern.api.EmbeddedJavaBlock;
 import org.sandbox.jdt.triggerpattern.internal.EmbeddedJavaCompiler;
@@ -82,6 +89,34 @@ public class EmbeddedJavaCompilerTest {
 
 		assertNotNull(result);
 		assertTrue(result.hasErrors(), "Should have compilation errors");
+	}
+
+	@Test
+	public void testCompilationResultSnapshotsLists() {
+		String source = "public boolean broken( { return true; }";
+		EmbeddedJavaBlock block = new EmbeddedJavaBlock(source, 1, 1, 0, source.length());
+		CompilationResult parsed = EmbeddedJavaCompiler.compile(block, "error");
+		MethodDeclaration guard = parsed.compilationUnit().getAST().newMethodDeclaration();
+		MethodDeclaration fix = parsed.compilationUnit().getAST().newMethodDeclaration();
+		List<IProblem> problems = new ArrayList<>(parsed.problems());
+		List<MethodDeclaration> guards = new ArrayList<>(List.of(guard));
+		List<MethodDeclaration> fixes = new ArrayList<>(List.of(fix));
+		List<SourceLineMapping> mappings = new ArrayList<>(List.of(new SourceLineMapping(5, 10)));
+		CompilationResult result = new CompilationResult(parsed.compilationUnit(), problems, guards, fixes,
+				0, "error", mappings, 0);
+
+		problems.clear();
+		guards.clear();
+		fixes.clear();
+		mappings.clear();
+		assertTrue(result.hasErrors());
+		assertSame(guard, result.guardMethods().getFirst());
+		assertSame(fix, result.fixMethods().getFirst());
+		assertEquals(10, result.toSyntheticLine(5));
+		assertThrows(UnsupportedOperationException.class, result.problems()::clear);
+		assertThrows(UnsupportedOperationException.class, result.guardMethods()::clear);
+		assertThrows(UnsupportedOperationException.class, result.fixMethods()::clear);
+		assertThrows(UnsupportedOperationException.class, result.lineMappings()::clear);
 	}
 
 	@Test

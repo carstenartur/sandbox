@@ -71,6 +71,7 @@ public final class EmbeddedJavaCompiler {
 
 	/**
 	 * Result of compiling an embedded Java block.
+	 * The lists capture the compilation results in order and retain the original AST nodes.
 	 *
 	 * @param compilationUnit the parsed AST compilation unit
 	 * @param problems        compilation problems (errors and warnings)
@@ -90,6 +91,17 @@ public final class EmbeddedJavaCompiler {
 			String syntheticClassName,
 			List<SourceLineMapping> lineMappings,
 			int syntheticHeaderLength) {
+
+		public CompilationResult {
+			problems = snapshot(problems);
+			guardMethods = snapshot(guardMethods);
+			fixMethods = snapshot(fixMethods);
+			lineMappings = snapshot(lineMappings);
+		}
+
+		private static <T> List<T> snapshot(List<T> elements) {
+			return elements == null ? null : Collections.unmodifiableList(new ArrayList<>(elements));
+		}
 
 		/**
 		 * Backwards-compatible constructor without fixMethods, syntheticClassName,

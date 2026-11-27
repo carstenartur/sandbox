@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -132,6 +133,22 @@ public class EmbeddedJavaExecutionLoggerTest {
 
 		// Original traces should still be there
 		assertEquals(1, logger.getTraces().size());
+	}
+
+	@Test
+	public void testRecordedBindingsKeepTheirInvocationValues() {
+		Map<String, String> bindings = new LinkedHashMap<>();
+		bindings.put("$x", "before");
+		bindings.put("$optional", null);
+		logger.logGuardExecution("r1", "g1", bindings, true, 1);
+		bindings.put("$x", "after");
+		bindings.remove("$optional");
+
+		Map<String, String> recorded = logger.getTraces().get(0).bindings();
+		assertEquals("before", recorded.get("$x"));
+		assertTrue(recorded.containsKey("$optional"));
+		assertNull(recorded.get("$optional"));
+		assertThrows(UnsupportedOperationException.class, recorded::clear);
 	}
 
 	@Test
