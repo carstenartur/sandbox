@@ -101,7 +101,7 @@ class JavaValueReuseTest {
             .replace("public static Leaf scale(Leaf x){return x.combine(TWIST);}","public static int scale(Leaf x){Leaf a=x.square().copy();Leaf b=x.square().copy();a.first();b.first();return calls;}")
             .replace("return new Leaf(a.mod(P),b.mod(P));","return new Leaf(a.mod(Foreign.P),b.mod(Foreign.P));")
             .replace("public Leaf combine(Leaf other)","public Leaf square(){return combine(this);}public Leaf copy(){return new Leaf(amber,blue);}public Leaf combine(Leaf other)")
-            +"final class Foreign {static {Calculation.calls++;}public static final java.math.BigInteger P=java.math.BigInteger.valueOf(101);}";
+            +"final class Foreign {static {Calculation.calls++;}public static final java.math.BigInteger P=BigInteger.valueOf(101);}";
         var helper=new JavaImmutableValueTest();helper.directory=directory;
         var result=MathematicalAnalysis.analyze(helper.parse(source),source,options(),null,-1,0,helper.environment());
         String generated=helper.apply(source,result);assertEquals(0,executeIdentity(source,false,8,"scale"));
@@ -123,7 +123,7 @@ class JavaValueReuseTest {
                 "public Leaf square(){return combine(this);}"
                 +"public Leaf copy(){return new Leaf(amber,blue);}public Leaf combine(Leaf other)")
             +"final class Foreign {static {Calculation.calls++;Calculation.initializedBy=new Throwable().getStackTrace()[1].getMethodName();}"
-                +"public static final java.math.BigInteger P=java.math.BigInteger.valueOf(101);}";
+                +"public static final java.math.BigInteger P=BigInteger.valueOf(101);}";
         var helper=new JavaImmutableValueTest();helper.directory=directory;
         var result=MathematicalAnalysis.analyze(helper.parse(source),source,options(),null,-1,0,helper.environment());
         String generated=helper.apply(source,result);

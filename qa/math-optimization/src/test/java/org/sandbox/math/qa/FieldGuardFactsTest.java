@@ -22,6 +22,8 @@ import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
 import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
 import org.sandbox.jdt.math.tests.StrictCompilerOptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class FieldGuardFactsTest {
     @TempDir Path temporary;
@@ -210,6 +212,61 @@ class FieldGuardFactsTest {
         receipt(analyze(explicit, explicit.indexOf("destination[0]"), temporary.toString()));
     }
 
+    @ParameterizedTest @ValueSource(booleans = {false, true})
+    void cachedFieldInitializersCannotFoldInheritedJdkMembers(boolean factory) throws Exception {
+        String source = factory ? SOURCE.replace("Q = BigInteger.valueOf(19)", "Q = Child.valueOf(19)")
+                : SOURCE.replace("Half = BigInteger.TWO", "Half = Child.TWO");
+        String header = "import java.math.BigInteger; class Child extends BigInteger { "
+                + "private static final long serialVersionUID = 1L; Child() { super(\"0\"); } ";
+        Path child = Files.writeString(temporary.resolve("Child.java"), header + "}");
+        int selected = source.indexOf("destination[0]");
+        var cached = analyze(source, selected, temporary.toString());
+        String hidden = factory ? "public static BigInteger valueOf(long ignored) { return BigInteger.valueOf(13); }"
+                : "public static final BigInteger TWO = BigInteger.valueOf(3);";
+        Files.writeString(child, header + hidden + "}");
+        String expected = factory ? "true[[8, 9]]" : "true[[5, 2]]";
+        try (var baseline = compile(source, "original")) {
+            assertEquals(expected, run(baseline.loadClass("Ocean"), 0, 1, 1));
+        }
+        for (var result : List.of(cached, analyze(source, selected, temporary.toString()))) {
+            var doc = new Document(source);
+            result.newEdit().apply(doc);
+            try (var loader = compile(doc.get(), result == cached ? "cached" : "fresh")) {
+                assertEquals(expected, run(loader.loadClass("Ocean"), 0, 1, 1));
+            }
+        }
+    }
+
+    @Test void anInheritedModulusAliasCannotQualifyACachedExactCall() throws Exception {
+        String imports = "import java.math.BigInteger; ";
+        Files.writeString(temporary.resolve("Parent.java"), imports + "class Parent { static final BigInteger P = BigInteger.valueOf(19); }");
+        Path child = Files.writeString(temporary.resolve("Child.java"), "class Child extends Parent {}");
+        String source = SOURCE.replace("Q = BigInteger.valueOf(19)", "Q = Child.P");
+        int selected = source.indexOf("destination[0]");
+        var cached = analyze(source, selected, temporary.toString());
+        Files.writeString(child, imports + "class Child extends Parent { static final BigInteger P = BigInteger.ZERO; }");
+        for (var result : List.of(cached, analyze(source, selected, temporary.toString()))) {
+            var doc = new Document(source);
+            result.newEdit().apply(doc);
+            assertEquals(source, doc.get());
+        }
+    }
+
+    @Test void anInheritedModulusCannotCertifyTheCallersNormWitness() throws Exception {
+        String source = SOURCE.replace("BigInteger modulus = Q;", "BigInteger modulus = Child.Q;");
+        Files.writeString(temporary.resolve("Ocean.java"), source);
+        Path child = Files.writeString(temporary.resolve("Child.java"), "class Child extends Ocean {}");
+        int selected = source.indexOf("destination[0]");
+        var cached = analyze(source, selected, temporary.toString());
+        Files.writeString(child, "import java.math.BigInteger; class Child extends Ocean { static final BigInteger Q = BigInteger.valueOf(17); }");
+        for (var result : List.of(cached, analyze(source, selected, temporary.toString()))) {
+            var doc = new Document(source);
+            result.newEdit().apply(doc);
+            assertTrue(result.evidence().stream().noneMatch(r -> r.fieldRoot() != null && r.fieldRoot().callSite() != null
+                    && !r.fieldRoot().callSite().normWitnessKey().isEmpty()), doc::get);
+        }
+    }
+
     private static void assertSelectedScalar(String source) throws Exception {
         var analysis = analyze(source, source.indexOf("BigInteger delta ="));
         assertTrue(analysis.evidence().stream().anyMatch(r -> r.fieldRoot() != null && r.fieldRoot().callSite() == null));
@@ -304,7 +361,7 @@ class FieldGuardFactsTest {
         Path classes = Files.createDirectory(temporary.resolve(name));
         Path file = Files.writeString(classes.resolve("Ocean.java"), source);
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null, "--release", "17", "-Xlint:all", "-Werror",
-                "-d", classes.toString(), file.toString()));
+                "-sourcepath", temporary.toString(), "-d", classes.toString(), file.toString()));
         return new URLClassLoader(new URL[]{classes.toUri().toURL()}, ClassLoader.getPlatformClassLoader());
     }
 

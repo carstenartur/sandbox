@@ -197,7 +197,7 @@ final class JavaFieldCallOptimizer {
         require(p.fragments().size() == 1);
         var modulus = (VariableDeclarationFragment)p.fragments().getFirst();
         require(modulus.getName().getIdentifier().equals(site.modulus.spelling())
-                && key(variable(modulus.getInitializer())).equals(site.modulusField.key()));
+                && key(site.checkedVariable(modulus.getInitializer())).equals(site.modulusField.key()));
         var fast = requireType(body.get(1), IfStatement.class);
         if (count == 4) {
             String id = key(((SingleVariableDeclaration)helper.parameters().get(3)).resolveBinding());

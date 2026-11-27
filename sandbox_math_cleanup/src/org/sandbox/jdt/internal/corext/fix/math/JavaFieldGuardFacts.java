@@ -83,7 +83,8 @@ record JavaFieldGuardFacts(List<Input> inputs, String witnessName, String witnes
             values.put(name, big(fragment.resolveBinding().getType()) ? proof.value(expr, values, moduli) : UNKNOWN);
             if (expr instanceof Name ref && ref.resolveBinding() instanceof IVariableBinding binding
                     && key(binding).equals(proof.site.modulusField.key())
-                    && (!(ref instanceof QualifiedName q) || q.getQualifier().resolveBinding() instanceof ITypeBinding)) moduli.add(name);
+                    && (!(ref instanceof QualifiedName q) || q.getQualifier().resolveBinding() instanceof ITypeBinding)
+                    && proof.site.checkedVariable(ref).isEqualTo(binding)) moduli.add(name);
         }
     }
 
@@ -106,7 +107,7 @@ record JavaFieldGuardFacts(List<Input> inputs, String witnessName, String witnes
                 || !(definitions.get(key(name.resolveBinding())) instanceof MethodInvocation right) || !jdk(right, "mod", BIG)
                 || !(arg(left, 0) instanceof SimpleName p) || !(arg(right, 0) instanceof SimpleName q)
                 || !p.resolveBinding().isEqualTo(q.resolveBinding()) || !(definitions.get(key(p.resolveBinding())) instanceof Name field)
-                || !site.modulusField.key().equals(key(variable(field)))
+                || !site.modulusField.key().equals(key(site.checkedVariable(field)))
                 || !(right.getExpression() instanceof MethodInvocation sum) || !jdk(sum, "add", BIG)) return false;
         return square(left.getExpression(), roles.get(2))
                 && (square(sum.getExpression(), roles.get(0)) && square(arg(sum, 0), roles.get(1))

@@ -21,7 +21,7 @@ class JavaValueAlgebraProofTest {
         OptimizationGoal.LOWER_ESTIMATED_RUNTIME,20_000_000,20_000,false,17,List.of(),true);}
     JavaValueAlgebraProof.Receipt prove(String source) throws Exception {
         var fixture=new JavaImmutableValueTest();fixture.directory=directory;var ast=fixture.parse(source);var options=options();
-        try(var context=JavaSourceContext.open(ast,source,fixture.environment(),null,options)) {
+        try(var _=JavaSourceContext.open(ast,source,fixture.environment(),null,options)) {
             var work=new JavaValueSourceSummary.Work(options.workBudget(),options,()->false);var session=new JavaValueSourceSummary.Session(ast,options,work);
             var type=((TypeDeclaration)ast.types().getFirst()).resolveBinding();
             var multiply=Arrays.stream(type.getDeclaredMethods()).filter(m->m.getName().equals("mul")).findFirst().orElseThrow();
@@ -47,7 +47,7 @@ class JavaValueAlgebraProofTest {
         assertEquals("VALUE_ALGEBRA_FRESH_TREE",assertThrows(IllegalArgumentException.class,()->prove(source)).getMessage());
     }
     @Test void rejectsForeignInitializationFromSquareOnlyCallsAndUnusedConstants()throws Exception {
-        String foreign="final class Foreign{static final java.math.BigInteger VALUE=java.math.BigInteger.ONE;static java.math.BigInteger touch(java.math.BigInteger x){return x;}}";
+        String foreign="final class Foreign{static final java.math.BigInteger VALUE=BigInteger.ONE;static java.math.BigInteger touch(java.math.BigInteger x){return x;}}";
         for(String source:List.of(source(JavaImmutableValueTest.multiplication(),"BigInteger unused=Foreign.touch(amber);"+square(),"BigInteger.ONE,BigInteger.ZERO")+foreign,
             source("BigInteger unused=Foreign.VALUE;"+JavaImmutableValueTest.multiplication(),square(),"BigInteger.ONE,BigInteger.ZERO")+foreign))
             assertEquals("VALUE_ALGEBRA_INITIALIZATION_OWNER",assertThrows(IllegalArgumentException.class,()->prove(source)).getMessage());

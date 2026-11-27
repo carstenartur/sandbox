@@ -163,7 +163,7 @@ final class JavaGuardedFieldEffects {
                 array(n.getQualifier());
                 return Value.PRIMITIVE;
             }
-            if (e instanceof Name name) return read(variable(name));
+            if (e instanceof Name name) return read(site.checkedVariable(name));
             if (e instanceof ArrayAccess access) {
                 array(access.getArray()); primitive(access.getIndex()); return Value.PRIMITIVE;
             }

@@ -219,7 +219,7 @@ final class JavaFieldProgramLowering {
                 && arg(call, 0) instanceof NumberLiteral number && number.resolveConstantExpressionValue() instanceof Long l)
             return BigInteger.valueOf(l);
         if (expr instanceof MethodInvocation call && jdk(call, "subtract", BIG)) {
-            var one = variable(arg(call, 0));
+            var one = site.checkedVariable(arg(call, 0));
             require(big(one.getDeclaringClass()) && one.getName().equals("ONE"));
             return literal(call.getExpression()).subtract(BigInteger.ONE);
         }
@@ -227,7 +227,7 @@ final class JavaFieldProgramLowering {
                 && creation.getAnonymousClassDeclaration() == null && creation.arguments().size() == 2
                 && creation.arguments().getFirst() instanceof StringLiteral hex && hex.getLiteralValue().length() <= 1024
                 && integer((Expression)creation.arguments().get(1)) == 16) return new BigInteger(hex.getLiteralValue(), 16);
-        Ref ref = site.constants.get(key(variable(expr))); require(ref != null);
+        Ref ref = site.constants.get(key(site.checkedVariable(expr))); require(ref != null);
         return ref.value();
     }
 

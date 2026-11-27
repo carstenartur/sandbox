@@ -44,7 +44,7 @@ final class JavaGuardedFieldSource {
         List<?> list = method.getBody().statements();
         require(list.size() >= 5 && list.size() <= 32);
         var prime = fragment(list.getFirst());
-        var initial = variable(prime.getInitializer());
+        var initial = checkedVariable(prime.getInitializer());
         var value = constant(initial, 0);
         require(value.signum() > 0 && value.bitLength() <= 4096);
         localModulus = initial.getDeclaringClass().isEqualTo(method.resolveBinding().getDeclaringClass());
@@ -154,7 +154,7 @@ final class JavaGuardedFieldSource {
             require(depth < 24);
             Expression node = unwrap(expression);
             if (node instanceof Name name) {
-                var binding = variable(name);
+                var binding = checkedVariable(name);
                 Scalar local = locals.get(key(binding));
                 if (local != null) { unread.remove(key(binding)); return local; }
                 var ref = guardConstant(name, binding);
@@ -171,7 +171,7 @@ final class JavaGuardedFieldSource {
             if (jdk(call, "modPow", BIG, BIG)) {
                 require(modulus.key().equals(key(variable(arg(call, 1)))));
                 var exponent = requireType(unwrap(arg(call, 0)), Name.class);
-                BigInteger e = guardConstant(exponent, variable(exponent)).value();
+                BigInteger e = guardConstant(exponent, checkedVariable(exponent)).value();
                 require(e.signum() >= 0);
                 return new Scalar(add(Step.power(a, e)), true, modulus.value().bitLength());
             }
@@ -234,9 +234,15 @@ final class JavaGuardedFieldSource {
         work.charge(1);
         require(depth < 12);
         var node = unwrap(expression);
-        if (node instanceof Name) return constant(variable(node), depth + 1);
+        if (node instanceof Name name) {
+            var field = checkedVariable(name);
+            if (big(field.getDeclaringClass())) require(JavaSourceTypeNames.directFieldRead(name, field, work::charge));
+            return constant(field, depth + 1);
+        }
         var call = requireType(node, MethodInvocation.class);
         if (jdk(call, "valueOf", "long") && staticCall(call)) {
+            require(call.getExpression() instanceof Name owner
+                    && JavaSourceTypeNames.closedTypeName(owner, call.resolveMethodBinding().getDeclaringClass(), work::charge));
             var literal = requireType(unwrap(arg(call, 0)), NumberLiteral.class);
             Object value = literal.resolveConstantExpressionValue();
             require(value instanceof Long || value instanceof Integer);
@@ -266,6 +272,26 @@ final class JavaGuardedFieldSource {
         var fragment = (VariableDeclarationFragment) declaration.fragments().getFirst();
         require(fragment.resolveBinding() != null && !fragment.resolveBinding().isRecovered());
         return fragment;
+    }
+    IVariableBinding checkedVariable(Expression node) {
+        var field = variable(node);
+        if (field.isField() && big(field.getType()) && field.getDeclaringClass().isFromSource()) {
+            var name = (Name)unwrap(node);
+            if (name instanceof QualifiedName) {
+                var lexical = JavaSourceTypeNames.enclosingType(name, work::charge);
+                require(lexical != null && lexical.getParent() instanceof CompilationUnit);
+            }
+            require(JavaSourceTypeNames.directFieldRead(name, field, work::charge));
+            var declaration = unit.findDeclaringNode(field.getKey());
+            if (declaration == null) {
+                var definition = JavaSourceContext.definition(unit, field);
+                if (definition == null) throw unavailable();
+                declaration = definition.declaration();
+            }
+            var current = requireType(declaration, VariableDeclarationFragment.class).resolveBinding();
+            require(current != null && field.getType().isEqualTo(current.getType()) && field.getModifiers() == current.getModifiers());
+        }
+        return field;
     }
     static IVariableBinding variable(Expression node) {
         var name = requireType(unwrap(node), Name.class);
