@@ -138,6 +138,43 @@ class GuardedQuadraticRootSourceTest {
         }
     }
 
+    @Test void replaysTheActualTryCallFallbackAndRemainingGuards() throws Exception {
+        String source = ORIGINAL.replace("static long pack", "static long[] pack")
+                .replace("left.longValueExact()*1000L + right.longValueExact()", "new long[]{left.longValueExact(), right.longValueExact()}")
+                .replace("static long recover", """
+                        static void send(byte[] ar, byte[] br, BigInteger g, long[][] out) {
+                            BigInteger a = new BigInteger(1, ar);
+                            BigInteger b = new BigInteger(1, br);
+                            out[0] = recover(a, b, g);
+                        }
+                        static long[] recover""");
+        var compiler = JavaCore.getOptions();
+        JavaCore.setComplianceOptions("17", compiler);
+        var options = options(100_000_000);
+        var analysis = MathematicalAnalysis.analyze(parse(source, compiler), source, options, null, source.indexOf("out[0] ="), 1,
+                new MathematicalAnalysis.SourceEnvironment("Ocean.java", List.of(), List.of(), List.of(), compiler));
+        var region = analysis.evidence().stream().filter(r -> r.fieldRoot() != null && r.fieldRoot().callSite() != null).findFirst().orElseThrow();
+        var proof = region.fieldRoot();
+        var document = new Document(source);
+        analysis.newEdit().apply(document);
+        String output = document.get(), helper = proof.callSite().helperName();
+        for (var changed : List.of(output.replace(helper + "(a, b, g)", helper + "(b, a, g)"),
+                output.replace(": recover(a, b, g)", ": recover(b, a, g)"),
+                output.replace("cobalt.signum() > 0", "cobalt.signum() < 0"),
+                output.replace("grey.getClass()", "amber.getClass()"), output.replace("new BigInteger(1, ar)", "new BigInteger(1, br)"))) {
+            assertNotEquals(output, changed);
+            var ast = parse(changed, compiler);
+            var method = (MethodDeclaration)ast.findDeclaringNode(proof.methodKey());
+            var work = new JavaValueSourceSummary.Work(options.workBudget(), options, () -> false);
+            try (var context = JavaSourceContext.open(ast, changed, null, null, options)) {
+                JavaSourceContext.valueWork(ast, work);
+                var root = new JavaGuardedFieldSource(ast, changed, method, false, proof.swappedInputs(), work);
+                assertThrows(IllegalArgumentException.class, () -> JavaFieldCallOptimizer.replay(root, region));
+                assertTrue(context.checkpoint().current());
+            }
+        }
+    }
+
     @Test void comparesBothCoordinatesAndExceptionTypesAcrossEverySmallPrimeTriple() throws Exception {
         for (int prime : new int[]{7, 11, 19, 23}) {
             String original = ORIGINAL.replace("valueOf(19)", "valueOf(" + prime + ")")

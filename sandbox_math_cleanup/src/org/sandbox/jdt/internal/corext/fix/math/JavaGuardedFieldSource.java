@@ -31,7 +31,8 @@ final class JavaGuardedFieldSource {
     final Map<String,Ref> constants = new LinkedHashMap<>();
     final Set<String> constantOwners = new HashSet<>();
     final Set<String> definitions = new java.util.TreeSet<>();
-    final Ref modulus;
+    final Ref modulus, modulusField;
+    final boolean localModulus;
     final MethodInvocation sink;
     final int start, end;
     final QuadraticRootProgram original;
@@ -46,6 +47,8 @@ final class JavaGuardedFieldSource {
         var initial = variable(prime.getInitializer());
         var value = constant(initial, 0);
         require(value.signum() > 0 && value.bitLength() <= 4096);
+        localModulus = initial.getDeclaringClass().isEqualTo(method.resolveBinding().getDeclaringClass());
+        modulusField = new Ref(((Name)unwrap(prime.getInitializer())).getFullyQualifiedName(), key(initial), value);
         modulus = new Ref(prime.getName().getIdentifier(), key(prime.resolveBinding()), value);
         var zero = requireType(list.get(1), IfStatement.class);
         var equality = requireType(unwrap(zero.getExpression()), InfixExpression.class);

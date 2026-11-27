@@ -96,11 +96,33 @@ package-level observations. The existing real/zero path stays outside the
 changed region. The proof also binds constants, resolved source dependencies,
 the coordinate sink's value-only use and the actual emitted statements.
 
+At a direct static call in the same type, the analyzer can also specialize the
+caller's local declaration or constant-index array store. Three stable local
+arguments feed a new private method. A null result routes control to the
+original invocation in the caller. The original scalar method keeps its body.
+Each scalar root receives at most one call-specific specialization. Further
+eligible callers keep their original calls. Repeated analysis binds the generated
+helper and compares its decoded program with the SDK result before reserving
+the root again.
+A source constructor and statically bound forwarding returns can establish
+exact BigInteger class and nonnegativity. A remainder with an exact receiver
+and the same observed modulus establishes a numeric range. The remaining
+checks guard the proven schedule, including its Jacobi sign correction.
+
+A dominant equality between the squared norm root and the sum of squared
+coordinates discharges the norm check on its unchanged true path. Conditional
+updates on the false path retain the norm check. The analyzer binds the flag,
+all three local values, the modulus field, the fresh result factory and the
+direct fallback. It replays the generated method and source facts on the combined
+AST. A synchronized scalar method or an effectful address or argument excludes
+this call-specific rewrite.
+
 This contract preserves coordinate values, exception types and messages, and
 relevant ordered effects. It does not preserve diagnostic source locations,
 bytecode positions, or debugger/profiler metadata. An unchanged caller that
 inspects an exception's stack-trace line numbers can therefore observe the
-rewritten source layout. A coordinate sink or one of its source helpers that
+rewritten source layout. An exception stack trace on the specialized path can
+identify the generated private method. A coordinate sink or one of its source helpers that
 uses stack inspection or other calling-context observations is rejected.
 
 The [source qualification](../qa/math-optimization/README.md#guarded-quadratic-root-qualification)

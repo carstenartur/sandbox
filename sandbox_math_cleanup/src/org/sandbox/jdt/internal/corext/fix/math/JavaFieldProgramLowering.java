@@ -17,17 +17,26 @@ import de.regelsuche.math.algorithms.modular.QuadraticRootProgram.Step;
 final class JavaFieldProgramLowering {
     private final JavaGuardedFieldSource site;
     private final String prefix, p, factory, indent;
+    private final JavaFieldGuardFacts facts;
+    private final String witness;
+    private final List<Ref> boundInputs;
+    private final String modulusKey;
     private final Map<String,String> external = new HashMap<>();
 
     JavaFieldProgramLowering(JavaGuardedFieldSource site, String prefix, String indent) {
+        this(site, prefix, indent, null, "", site.inputs, site.modulus.key());
+    }
+
+    JavaFieldProgramLowering(JavaGuardedFieldSource site, String prefix, String indent, JavaFieldGuardFacts facts,
+            String witness, List<Ref> boundInputs, String modulusKey) {
         this.site = site; this.prefix = prefix; this.indent = indent;
+        this.facts = facts; this.witness = witness; this.boundInputs = List.copyOf(boundInputs); this.modulusKey = modulusKey;
         p = site.modulus.spelling();
         factory = (site.sink.getExpression() == null ? "" : ((Name)site.sink.getExpression()).getFullyQualifiedName() + ".")
                 + site.sink.getName().getIdentifier();
-        var refs = new ArrayList<>(site.inputs);
-        refs.add(site.modulus);
-        refs.addAll(site.constants.values());
-        for (var ref : refs) external.put(ref.spelling(), ref.key());
+        for (var ref : boundInputs) external.put(ref.spelling(), ref.key());
+        external.put(p, modulusKey);
+        for (var ref : site.constants.values()) external.put(ref.spelling(), ref.key());
     }
 
     String emit(QuadraticRootProgram program) {
@@ -49,16 +58,24 @@ final class JavaFieldProgramLowering {
         refs.addAll(site.constants.values());
         for (var ref : refs) {
             String s = ref.spelling();
+            int role = site.inputs.indexOf(ref);
+            if (facts != null && role >= 0 && facts.inputs().get(role).exactClass()) continue;
             // Class.isInstance is null-safe and does not introduce a nullable flow fact into the
             // unchanged fallback. The retained zero test has already dereferenced the imaginary input.
-            checks.add((s.equals(b) ? "" : BIG + ".class.isInstance(" + s + ") && ") + s + ".getClass() == java.math.BigInteger.class");
+            checks.add((s.equals(b) && facts == null ? "" : BIG + ".class.isInstance(" + s + ") && ") + s + ".getClass() == java.math.BigInteger.class");
         }
         for (var input : site.inputs) {
             String s = input.spelling();
-            checks.add(s + (s.equals(b) ? ".signum() > 0" : ".signum() >= 0") + " && " + s + ".compareTo(" + p + ") < 0");
+            var fact = facts == null ? null : facts.inputs().get(site.inputs.indexOf(input));
+            var bounds = new ArrayList<String>();
+            if (s.equals(b) || fact == null || !fact.nonnegative())
+                bounds.add(s + (s.equals(b) ? ".signum() > 0" : ".signum() >= 0"));
+            if (fact == null || !fact.belowModulus()) bounds.add(s + ".compareTo(" + p + ") < 0");
+            if (!bounds.isEmpty()) checks.add(String.join(" && ", bounds));
         }
-        checks.add(g + ".multiply(" + g + ").mod(" + p + ").equals(" + a + ".multiply(" + a + ").add("
-                + b + ".multiply(" + b + ")).mod(" + p + "))");
+        String norm = g + ".multiply(" + g + ").mod(" + p + ").equals(" + a + ".multiply(" + a + ").add("
+                + b + ".multiply(" + b + ")).mod(" + p + "))";
+        checks.add(witness.isEmpty() ? norm : "(" + witness + " || " + norm + ")");
         return String.join("\n        && ", checks);
     }
 
@@ -133,7 +150,7 @@ final class JavaFieldProgramLowering {
         var branch = requireType(body.get(split), IfStatement.class);
         require(branch.getElseStatement() == null);
         var registers = new HashMap<String,Integer>();
-        for (int i = 0; i < 3; i++) registers.put(site.inputs.get(i).key(), i);
+        for (int i = 0; i < 3; i++) registers.put(boundInputs.get(i).key(), i);
         var prefixSteps = instructions(body.subList(0, split), registers);
         var predicate = requireType(branch.getExpression(), MethodInvocation.class);
         require(jdk(predicate, "equals", "java.lang.Object"));
@@ -235,7 +252,7 @@ final class JavaFieldProgramLowering {
         });
     }
     private String text(ASTNode node) { return site.source.substring(node.getStartPosition(), node.getStartPosition() + node.getLength()); }
-    private void modulus(Expression expr) { require(site.modulus.key().equals(key(variable(expr)))); }
+    private void modulus(Expression expr) { require(modulusKey.equals(key(variable(expr)))); }
     private static int register(Map<String,Integer> registers, Expression expr) {
         Integer result = registers.get(key(variable(expr))); require(result != null); return result;
     }

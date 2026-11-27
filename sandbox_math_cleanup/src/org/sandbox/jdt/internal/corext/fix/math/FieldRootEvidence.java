@@ -7,7 +7,15 @@ import de.regelsuche.math.algorithms.modular.QuadraticRootSearch;
 /** The independently verified exact-pair certificate and the Java source/primitive bindings it refines. */
 public record FieldRootEvidence(QuadraticRootSearch.Certificate certificate, String methodKey, String sinkKey,
         String prefix, String indent, boolean swappedInputs, String methodHash, List<String> bindings, List<String> localDefinitions,
-        List<JavaSourceContext.Receipt> dependencies, long searchWork, int candidates) {
+        List<JavaSourceContext.Receipt> dependencies, long searchWork, int candidates, FieldCallEvidence callSite) {
+    /** Local suffix evidence predating call-specific specialization. */
+    public FieldRootEvidence(QuadraticRootSearch.Certificate certificate, String methodKey, String sinkKey, String prefix,
+            String indent, boolean swappedInputs, String methodHash, List<String> bindings, List<String> localDefinitions,
+            List<JavaSourceContext.Receipt> dependencies, long searchWork, int candidates) {
+        this(certificate, methodKey, sinkKey, prefix, indent, swappedInputs, methodHash, bindings, localDefinitions,
+                dependencies, searchWork, candidates, null);
+    }
+
     public FieldRootEvidence {
         bindings = List.copyOf(bindings);
         localDefinitions = List.copyOf(localDefinitions);
