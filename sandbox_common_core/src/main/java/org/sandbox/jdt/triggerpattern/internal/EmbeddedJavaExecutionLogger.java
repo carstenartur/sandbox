@@ -15,6 +15,7 @@ package org.sandbox.jdt.triggerpattern.internal;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -48,7 +49,7 @@ public final class EmbeddedJavaExecutionLogger {
 	 *
 	 * @param ruleId        the hint rule ID
 	 * @param functionName  the guard/fix function name
-	 * @param bindings      input placeholder bindings (may be empty)
+	 * @param bindings      input placeholder bindings at invocation time (may be empty)
 	 * @param result        the return value (for guards: Boolean; for fix: null)
 	 * @param exception     the exception if execution failed, or {@code null}
 	 * @param durationMs    execution time in milliseconds
@@ -60,6 +61,12 @@ public final class EmbeddedJavaExecutionLogger {
 			Object result,
 			Throwable exception,
 			long durationMs) {
+
+		public ExecutionTrace {
+			if (bindings != null) {
+				bindings = Collections.unmodifiableMap(new LinkedHashMap<>(bindings));
+			}
+		}
 
 		/**
 		 * Returns {@code true} if the execution succeeded without exception.
