@@ -168,7 +168,7 @@ final class MixedSupportImport implements AutoCloseable {
 <span class="pc bpc" id="L168" title="1 of 2 branches missed.">				if (binary == null) continue;</span>
 <span class="fc" id="L169">				String pkg= type.substring(0, type.lastIndexOf('.'));</span>
 <span class="pc bpc" id="L170" title="1 of 2 branches missed.">				for (var target : PluginRegistry.getActiveModels()) {</span>
-<span class="pc bpc" id="L171" title="2 of 4 branches missed.">					if (target.getInstallLocation() == null || !binary.equals(Path.of(target.getInstallLocation()))) continue;</span>
+<span class="pc bpc" id="L171" title="1 of 4 branches missed.">					if (target.getInstallLocation() == null || !binary.equals(Path.of(target.getInstallLocation()))) continue;</span>
 <span class="fc" id="L172">					var supplier= target.getBundleDescription();</span>
 <span class="pc bpc" id="L173" title="2 of 4 branches missed.">					if (supplier != null &amp;&amp; Arrays.stream(supplier.getExportPackages()).anyMatch(cap -&gt; pkg.equals(cap.getName()))) {</span>
 <span class="fc" id="L174">						return new Api(new Exporter(supplier.getSymbolicName(), supplier.getVersion().toString()),</span>
