@@ -195,7 +195,11 @@ public class GithubPagesGenerator {
 				  if(dsl.length===0){el.textContent='No DSL sequences discovered yet.';return;}
 				  dsl.forEach(e=>{
 				    var p=document.createElement('p');
-				    p.innerHTML='<strong>'+e.trafficLight+'</strong> ['+e.category+'] '+e.summary+'<pre>'+e.dslRule+'</pre>';
+				    var light=document.createElement('strong');
+				    light.textContent=e.trafficLight;
+				    var rule=document.createElement('pre');
+				    rule.textContent=e.dslRule;
+				    p.append(light, ' ['+e.category+'] '+e.summary, rule);
 				    el.appendChild(p);
 				  });
 				});

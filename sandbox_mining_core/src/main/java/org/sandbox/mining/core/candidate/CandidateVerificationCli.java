@@ -14,6 +14,8 @@
 package org.sandbox.mining.core.candidate;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -366,9 +368,16 @@ public final class CandidateVerificationCli {
 					.append(escape(candidate.getCandidateId())).append("</code></a><br>revision ") //$NON-NLS-1$
 					.append(candidate.getRevision()).append("</td><td>") //$NON-NLS-1$
 					.append(escape(candidate.getSummary())).append("<br><code>") //$NON-NLS-1$
-					.append(escape(candidate.getTargetHintFile())).append("</code></td><td><a href=\"") //$NON-NLS-1$
-					.append(escape(commitUrl(candidate))).append("\"><code>") //$NON-NLS-1$
-					.append(escape(shortCommit(candidate.getSourceCommit()))).append("</code></a></td><td>"); //$NON-NLS-1$
+					.append(escape(candidate.getTargetHintFile())).append("</code></td><td>"); //$NON-NLS-1$
+			String sourceUrl = commitUrl(candidate);
+			if (sourceUrl != null) {
+				html.append("<a href=\"").append(escape(sourceUrl)).append("\">"); //$NON-NLS-1$ //$NON-NLS-2$
+			}
+			html.append("<code>").append(escape(shortCommit(candidate.getSourceCommit()))).append("</code>"); //$NON-NLS-1$ //$NON-NLS-2$
+			if (sourceUrl != null) {
+				html.append("</a>"); //$NON-NLS-1$
+			}
+			html.append("</td><td>"); //$NON-NLS-1$
 			if (verification == null) {
 				html.append("not run"); //$NON-NLS-1$
 			} else {
@@ -384,8 +393,17 @@ public final class CandidateVerificationCli {
 
 	private static String commitUrl(MiningCandidate candidate) {
 		String repo = candidate.getSourceRepo();
-		if (repo == null) {
-			return "#"; //$NON-NLS-1$
+		if (repo == null || candidate.getSourceCommit() == null) {
+			return null;
+		}
+		try {
+			URI uri = new URI(repo);
+			if (uri.getHost() == null || !("https".equalsIgnoreCase(uri.getScheme()) //$NON-NLS-1$
+					|| "http".equalsIgnoreCase(uri.getScheme()))) { //$NON-NLS-1$
+				return null;
+			}
+		} catch (URISyntaxException e) {
+			return null;
 		}
 		if (repo.endsWith(".git")) { //$NON-NLS-1$
 			repo = repo.substring(0, repo.length() - 4);

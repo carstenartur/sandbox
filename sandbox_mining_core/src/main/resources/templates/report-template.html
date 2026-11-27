@@ -400,7 +400,7 @@
                 var tdCommit = document.createElement('td');
                 var code = document.createElement('code');
                 code.textContent = (evaluation.commitHash || '').substring(0, 8);
-                if (evaluation.repoUrl && evaluation.commitHash) {
+                if (typeof evaluation.repoUrl === 'string' && /^https?:\/\//i.test(evaluation.repoUrl) && evaluation.commitHash) {
                     var hashLink = document.createElement('a');
                     hashLink.href = evaluation.repoUrl + '/commit/' + evaluation.commitHash;
                     hashLink.target = '_blank';
