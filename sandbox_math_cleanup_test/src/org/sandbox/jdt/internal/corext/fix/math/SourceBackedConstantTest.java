@@ -2,6 +2,8 @@
 package org.sandbox.jdt.internal.corext.fix.math;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumSet;
@@ -43,11 +45,14 @@ class SourceBackedConstantTest {
         """;
     private void sources(String constant) throws Exception {
         Files.createDirectories(directory.resolve("sample"));
-        Files.writeString(directory.resolve("sample/Sample.java"), SOURCE);
+        Files.writeString(directory.resolve("sample/Sample.java"), SOURCE, StandardCharsets.UTF_8);
         Files.writeString(directory.resolve("sample/Bridge.java"),
-            "package sample; import java.math.BigInteger; public class Bridge { public static final BigInteger P = Constants.Q; }");
+				"package sample; import java.math.BigInteger; public class Bridge { public static final BigInteger P = Constants.Q; }",
+				StandardCharsets.UTF_8);
         Files.writeString(directory.resolve("sample/Constants.java"),
-            "package sample; import java.math.BigInteger; public class Constants { public static final BigInteger Q = " + constant + "; }");
+				("package sample; import java.math.BigInteger; public class Constants { public static final BigInteger Q = "
+						+ constant + "; }"),
+				StandardCharsets.UTF_8);
     }
     @Test void emitsMinimalModularRewriteFromThreeRealSourceUnits() throws Exception {
         sources("new BigInteger(\"1fffffff\", 16)");
@@ -70,17 +75,21 @@ class SourceBackedConstantTest {
         Path pkg = directory.resolve("sample"), child = pkg.resolve("Child.java");
         String header = "package sample; import java.math.BigInteger; ";
         String base = header + "public class Child extends Constants {";
-        Files.writeString(child, base + "}");
-        Files.writeString(pkg.resolve("Bridge.java"), header + "public class Bridge " + (qualified ? "" : "extends Child")
-                + " { public static final BigInteger P = " + (qualified ? "Child.Q" : "Q") + "; }");
+        Files.writeString(child, (base + "}"), StandardCharsets.UTF_8);
+        Files.writeString(pkg.resolve("Bridge.java"),
+				(header + "public class Bridge " + (qualified ? "" : "extends Child")
+						+ " { public static final BigInteger P = " + (qualified ? "Child.Q" : "Q") + "; }"),
+				StandardCharsets.UTF_8);
         String source = SOURCE.replace("x.multiply(x).mod(P).multiply(x).mod(P)\n            .add(BigInteger.valueOf(4)).mod(P)", "P.add(BigInteger.ZERO)");
         var cached = analyze(source);
-        Files.writeString(child, base + "public static final BigInteger Q = new BigInteger(\"7\") { "
-                + "@Override public BigInteger add(BigInteger x) { return BigInteger.valueOf(23); } }; }");
+        Files.writeString(child,
+				(base + "public static final BigInteger Q = new BigInteger(\"7\") { "
+						+ "@Override public BigInteger add(BigInteger x) { return BigInteger.valueOf(23); } }; }"),
+				StandardCharsets.UTF_8);
         for (var analysis : List.of(cached, analyze(source))) {
             var doc = new Document(source);
             analysis.newEdit().apply(doc);
-            Path classes = Files.createTempDirectory(directory, "classes"), file = Files.writeString(classes.resolve("Sample.java"), doc.get());
+            Path classes = Files.createTempDirectory(directory, "classes"), file = Files.writeString(classes.resolve("Sample.java"), doc.get(), StandardCharsets.UTF_8);
             assertEquals(0, javax.tools.ToolProvider.getSystemJavaCompiler().run(null, null, null, "--release", "17", "-sourcepath",
                     directory.toString(), "-d", classes.toString(), file.toString()));
             try (var loader = new java.net.URLClassLoader(new java.net.URL[]{classes.toUri().toURL()}, ClassLoader.getPlatformClassLoader())) {
@@ -94,7 +103,8 @@ class SourceBackedConstantTest {
         assertTrue(result.changed(), result.diagnostics().toString());
         assertTrue(result.matches(SOURCE, Map.of()));
         Files.writeString(directory.resolve("sample/Constants.java"),
-            "package sample; import java.math.BigInteger; public class Constants { public static final BigInteger Q = BigInteger.ZERO; }");
+				"package sample; import java.math.BigInteger; public class Constants { public static final BigInteger Q = BigInteger.ZERO; }",
+				StandardCharsets.UTF_8);
         assertFalse(result.matches(SOURCE, Map.of()), "External source changes must invalidate source-proved assumptions");
         assertThrows(IllegalArgumentException.class, result::newEdit);
     }
@@ -104,8 +114,8 @@ class SourceBackedConstantTest {
     void ambiguousTypeNamesKeepTheModulusReceiverGuard(String initializer) throws Exception {
         boolean local = initializer.equals("comparison");
         sources(local ? "new BigInteger(\"1fffffff\", 16)" : initializer);
-        Files.writeString(directory.resolve("sample/Child.java"), "package sample; import java.math.BigInteger; "
-                + "class Child extends BigInteger { Child() { super(\"0\"); } }");
+        Files.writeString(directory.resolve("sample/Child.java"), ("package sample; import java.math.BigInteger; "
+				+ "class Child extends BigInteger { Child() { super(\"0\"); } }"), StandardCharsets.UTF_8);
         String source = local ? SOURCE.replace("new BigInteger(1,", "new java.math.BigInteger(1,") : SOURCE;
         var doc = new Document(source);
         analyze(source).newEdit().apply(doc);
@@ -114,7 +124,8 @@ class SourceBackedConstantTest {
     @Test void incompleteDefinitionDoesNotPermitAnUnguardedRewrite() throws Exception {
         sources("make()");
         Files.writeString(directory.resolve("sample/Constants.java"),
-            "package sample; import java.math.BigInteger; public class Constants { public static final BigInteger Q = make(); private static BigInteger make() { return BigInteger.TEN; } }");
+				"package sample; import java.math.BigInteger; public class Constants { public static final BigInteger Q = make(); private static BigInteger make() { return BigInteger.TEN; } }",
+				StandardCharsets.UTF_8);
         var result = analyze(SOURCE);
         assertTrue(!result.changed() || result.replacements().stream().allMatch(r -> r.replacement().contains("getClass()")));
     }
@@ -148,7 +159,7 @@ class SourceBackedConstantTest {
     @Test void mutableAliasTargetsDoNotEstablishAValue() throws Exception {
         sources("new BigInteger(\"1fffffff\", 16)");
         Path path=directory.resolve("sample/Constants.java");
-        Files.writeString(path,Files.readString(path).replace("static final", "static"));
+        Files.writeString(path, Files.readString(path).replace("static final", "static"), StandardCharsets.UTF_8);
         var result=analyze(SOURCE);
         assertTrue(!result.changed() || result.replacements().stream().allMatch(r -> r.replacement().contains("getClass()")));
     }
@@ -158,7 +169,8 @@ class SourceBackedConstantTest {
         var roots = List.of(directory.toString());
         var ast = parse(source, roots);
         Path definition = directory.resolve("sample/Constants.java");
-        Files.writeString(definition, Files.readString(definition).replace("static final", "static"));
+        Files.writeString(definition, Files.readString(definition).replace("static final", "static"),
+				StandardCharsets.UTF_8);
         var result = analyze(ast, source, roots);
         assertTrue(!result.changed() || result.replacements().stream().allMatch(r -> r.replacement().contains("getClass()")),
             "The fresh declaration is mutable even though the caller's old binding was final: " + result.replacements());
