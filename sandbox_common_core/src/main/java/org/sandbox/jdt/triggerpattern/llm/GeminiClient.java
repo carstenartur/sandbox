@@ -50,7 +50,7 @@ public class GeminiClient implements LlmClient {
 
 	private static final String DEFAULT_MODEL = "gemini-2.5-flash";
 	private static final String API_URL_TEMPLATE =
-			"https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s";
+			"https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent";
 	private static final int RATE_LIMIT_DELAY_MS = 15000;
 	/** Maximum HTTP attempts per client instance, including failed attempts and retries. */
 	public static final int MAX_DAILY_REQUESTS = 18;
@@ -401,7 +401,8 @@ public class GeminiClient implements LlmClient {
 		for (int attempt = 0; attempt < MAX_RETRIES; attempt++) {
 			try {
 				HttpRequest request = HttpRequest.newBuilder()
-						.uri(URI.create(String.format(API_URL_TEMPLATE, model, apiKey)))
+						.uri(URI.create(String.format(API_URL_TEMPLATE, model)))
+						.header("x-goog-api-key", apiKey)
 						.header("Content-Type", "application/json")
 						.timeout(REQUEST_TIMEOUT)
 						.POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
