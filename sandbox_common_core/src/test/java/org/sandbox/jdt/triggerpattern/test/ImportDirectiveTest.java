@@ -18,6 +18,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.triggerpattern.api.ImportDirective;
@@ -59,6 +61,17 @@ public class ImportDirectiveTest {
 		ImportDirective directive = ImportDirective.inferFromFqnPatterns(source, List.of("target.Result.call()")); //$NON-NLS-1$
 		assertEquals(List.of(type), directive.getRemoveImports());
 		assertEquals("target.Result", directive.getReplaceStaticImports().get(type)); //$NON-NLS-1$
+	}
+
+	@Test
+	public void keepsQualifiedNameBoundariesWhenTypeAndMemberMatchesOverlap() {
+		String source = "badCase.pkg.Type.member.next.Other.run(9no.X, _none.Y, éuni.Name)"; //$NON-NLS-1$
+		assertEquals(Set.of("pkg.Type", "member.next.Other", "uni.Name"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				Set.copyOf(ImportDirective.detectFromPattern(source).getAddImports()));
+
+		ImportDirective directive = ImportDirective.inferFromFqnPatterns(source,
+				List.of("repl.One.member(repl.Two.run())")); //$NON-NLS-1$
+		assertEquals(Map.of("pkg.Type", "repl.One", "next.Other", "repl.Two"), directive.getReplaceStaticImports()); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 	}
 
 	@Test
