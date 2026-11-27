@@ -142,10 +142,12 @@ class GuardedQuadraticRootSourceTest {
         String source = ORIGINAL.replace("static long pack", "static long[] pack")
                 .replace("left.longValueExact()*1000L + right.longValueExact()", "new long[]{left.longValueExact(), right.longValueExact()}")
                 .replace("static long recover", """
-                        static void send(byte[] ar, byte[] br, BigInteger g, long[][] out) {
+                        static java.lang.Number send(byte[] ar, byte[] br, BigInteger g, long[][] out) {
+                            Number allowed = null;
                             BigInteger a = new BigInteger(1, ar);
                             BigInteger b = new BigInteger(1, br);
                             out[0] = recover(a, b, g);
+                            return allowed;
                         }
                         static long[] recover""");
         var compiler = JavaCore.getOptions();
@@ -160,6 +162,7 @@ class GuardedQuadraticRootSourceTest {
         String output = document.get(), helper = proof.callSite().helperName();
         for (var changed : List.of(output.replace(helper + "(a, b, g)", helper + "(b, a, g)"),
                 output.replace(proof.callSite().temporaryName(), "differentLocal"),
+                output + " abstract class Number extends java.lang.Number { private static final long serialVersionUID = 1L; }",
                 output.replace(": recover(a, b, g)", ": recover(b, a, g)"),
                 output.replace("cobalt.signum() > 0", "cobalt.signum() < 0"),
                 output.replace("grey.getClass()", "amber.getClass()"), output.replace("new BigInteger(1, ar)", "new BigInteger(1, br)"))) {

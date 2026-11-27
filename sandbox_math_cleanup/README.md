@@ -97,9 +97,13 @@ changed region. The proof also binds constants, resolved source dependencies,
 the coordinate sink's value-only use and the actual emitted statements.
 
 At a direct static call in the same type, the analyzer can also specialize the
-caller's local declaration or constant-index array store. Three stable local
-arguments feed a new private method. A null result routes control to the
-original invocation in the caller. The original scalar method keeps its body.
+caller's local declaration or constant-index array store. It must end the method
+or precede one final direct return. That return may be bare, return null for a
+reference result, or return an explicitly typed local, method parameter, or
+literal of exactly the declared return type. This preserves helpful exception messages that identify
+locals by their bytecode slots. Three stable local arguments feed a new private
+method. A null result routes control to the original invocation in the caller.
+The original scalar method keeps its body.
 Each scalar root receives at most one call-specific specialization. Further
 eligible callers keep their original calls. Repeated analysis binds the generated
 helper and compares its decoded program with the SDK result before reserving

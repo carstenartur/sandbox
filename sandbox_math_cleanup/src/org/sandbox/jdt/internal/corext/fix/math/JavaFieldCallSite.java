@@ -83,11 +83,39 @@ record JavaFieldCallSite(MethodDeclaration caller, Statement statement, MethodIn
     }
 
     static JavaFieldCallSite bind(JavaGuardedFieldSource site, MethodDeclaration caller, Statement statement, MethodInvocation call) {
-        require(matches(site.method, call));
+        require(matches(site.method, call) && terminalContinuation(site, caller, statement));
         var formals = new ArrayList<String>();
         for (Object item : site.method.parameters()) formals.add(key(((SingleVariableDeclaration)item).resolveBinding()));
         var args = site.inputs.stream().map(role -> (SimpleName)arg(call, formals.indexOf(role.key()))).toList();
         return new JavaFieldCallSite(caller, statement, call, args);
+    }
+
+    /** A generated caller local can change the slot number in a later helpful NPE message. */
+    private static boolean terminalContinuation(JavaGuardedFieldSource site, MethodDeclaration caller, Statement statement) {
+        site.work.charge(3);
+        List<?> body = caller.getBody().statements();
+        if (body.getLast() == statement) return true;
+        if (body.size() < 2 || body.get(body.size() - 2) != statement || !(body.getLast() instanceof ReturnStatement ret)) return false;
+        var method = caller.resolveBinding();
+        if (method == null || method.isRecovered()) return false;
+        var expected = method.getReturnType();
+        if (expected == null || expected.isRecovered()) return false;
+        var value = ret.getExpression();
+        if (value == null) return method.isConstructor() || "void".equals(expected.getName());
+        if (value instanceof NullLiteral) return !expected.isPrimitive();
+        if (value.resolveBoxing() || value.resolveUnboxing() || !expected.isEqualTo(value.resolveTypeBinding())) return false;
+        if (value instanceof SimpleName name) {
+            if (!(name.resolveBinding() instanceof IVariableBinding variable) || variable.isRecovered() || variable.isField()
+                    || !method.isEqualTo(variable.getDeclaringMethod()) || !expected.isEqualTo(variable.getType())) return false;
+            site.work.charge(1);
+            var declaration = site.unit.findDeclaringNode(variable);
+            if (declaration instanceof SingleVariableDeclaration parameter)
+                return parameter.getParent() == caller && !parameter.getType().isVar();
+            return declaration instanceof VariableDeclarationFragment fragment && fragment.getParent() instanceof VariableDeclarationStatement local
+                    && !local.getType().isVar();
+        }
+        return value instanceof BooleanLiteral || value instanceof CharacterLiteral || value instanceof NumberLiteral
+                || value instanceof StringLiteral || value instanceof TextBlock;
     }
 
     static boolean nonnullFactory(JavaGuardedFieldSource site) {

@@ -145,10 +145,69 @@ class FieldGuardFactsTest {
         String generated = doc.get();
         for (String changed : List.of(
                 generated.replace(helper + "(left, right, root, confirmed)", helper + "(right, left, root, confirmed)"),
-                generated.replace("blue.signum() > 0", "blue.signum() < 0"))) {
+                generated.replace("blue.signum() > 0", "blue.signum() < 0"),
+                generated.replace("return confirmed;", "return !confirmed;"))) {
             assertNotEquals(generated, changed);
             assertSelectedScalar(changed);
         }
+    }
+
+    @Test void laterDereferencePreservesTheHelpfulNpeOnFastAndFallbackInputs() throws Exception {
+        String source = SOURCE.replace("destination[0] = ", "int[] result = ")
+                .replace("return confirmed;", "String doomed = result.length > 0 ? null : \"\"; return doomed.length() > 0;");
+        var document = new Document(source);
+        var whole = analyze(source, -1);
+        whole.newEdit().apply(document);
+        try (var baseline = compile(source, "original"); var applied = compile(document.get(), "applied")) {
+            var before = baseline.loadClass("Ocean");
+            var after = applied.loadClass("Ocean");
+            for (int imaginary : new int[]{2, 0}) {
+                String expected = run(before, 0, imaginary, 1);
+                assertTrue(expected.startsWith("java.lang.NullPointerException|"), expected);
+                assertEquals(expected, run(after, 0, imaginary, 1));
+            }
+        }
+        assertTrue(whole.evidence().stream().anyMatch(r -> r.fieldRoot() != null && r.fieldRoot().callSite() == null));
+        var selected = analyze(source, source.indexOf("int[] result ="));
+        var original = new Document(source);
+        selected.newEdit().apply(original);
+        assertEquals(source, original.get());
+    }
+
+    @Test void admitsOnlyDirectReturnsWithNoBoxingOrUnboxing() {
+        String caller = SOURCE.replace("int[][] destination)", "int[][] destination, Boolean boxed)")
+                .replace("destination[0] = ", "int[] result = ");
+        record Ending(String type, String suffix, boolean eligible) {}
+        for (var form : List.of(new Ending("void", "", true), new Ending("void", "return;", true),
+                new Ending("int[]", "return result;", true), new Ending("BigInteger", "return left;", true),
+                new Ending("Boolean", "return boxed;", true), new Ending("boolean", "return confirmed;", true),
+                new Ending("boolean", "return true;", true), new Ending("int[]", "return null;", true),
+                new Ending("boolean", "return boxed;", false), new Ending("Boolean", "return confirmed;", false),
+                new Ending("BigInteger", "return Q;", false), new Ending("BigInteger", "return point.first();", false),
+                new Ending("boolean", "return (boolean)confirmed;", false))) {
+            String source = caller.replace("static boolean publish", "static " + form.type() + " publish")
+                    .replace("return confirmed;", form.suffix());
+            var analysis = analyze(source, source.indexOf("int[] result ="));
+            assertEquals(form.eligible(), analysis.evidence().stream().anyMatch(r -> r.fieldRoot() != null && r.fieldRoot().callSite() != null),
+                    form.toString());
+        }
+    }
+
+    @Test void inferredReturnLocalCannotCreateAnEditThatOutlivesItsForeignInitializerType() throws Exception {
+        String explicit = SOURCE.replace("BigInteger modulus = Q;", "boolean allowed = Foreign.flag(); BigInteger modulus = Q;")
+                .replace("return confirmed;", "return allowed;");
+        String inferred = explicit.replace("boolean allowed", "var allowed");
+        Path foreign = temporary.resolve("Foreign.java");
+        Files.writeString(foreign, "class Foreign { static boolean flag() { return true; } }");
+        var cached = analyze(inferred, inferred.indexOf("destination[0]"), temporary.toString());
+        receipt(analyze(explicit, explicit.indexOf("destination[0]"), temporary.toString()));
+        Files.writeString(foreign, "class Foreign { static Boolean flag() { return null; } }");
+        var document = new Document(inferred);
+        cached.newEdit().apply(document);
+        assertEquals(inferred, document.get());
+        assertFalse(cached.changed());
+        assertFalse(analyze(inferred, inferred.indexOf("destination[0]"), temporary.toString()).changed());
+        receipt(analyze(explicit, explicit.indexOf("destination[0]"), temporary.toString()));
     }
 
     private static void assertSelectedScalar(String source) throws Exception {
@@ -268,10 +327,10 @@ class FieldGuardFactsTest {
         return analyze(source, source.indexOf("destination["));
     }
 
-    private static MathematicalAnalysis.Analysis analyze(String source, int selection) {
+    private static MathematicalAnalysis.Analysis analyze(String source, int selection, String... sourcepath) {
         var compiler = StrictCompilerOptions.allWarnings(17);
         var parser = ASTParser.newParser(AST.getJLSLatest());
-        parser.setEnvironment(new String[0], new String[0], null, true);
+        parser.setEnvironment(new String[0], sourcepath, null, true);
         parser.setUnitName("Ocean.java");
         parser.setCompilerOptions(compiler);
         parser.setResolveBindings(true);
@@ -281,6 +340,6 @@ class FieldGuardFactsTest {
         var options = MathCleanUpOptions.parse(Map.of(MathCleanUpOptions.CLEANUP, "true", MathCleanUpOptions.WORK_BUDGET, "100000000",
                 MathCleanUpOptions.MAX_STATES, "20000", MathCleanUpOptions.TIMEOUT_SECONDS, "30"), 17);
         return MathematicalAnalysis.analyze(ast, source, options, null, selection, 1,
-                new MathematicalAnalysis.SourceEnvironment("Ocean.java", List.of(), List.of(), List.of(), compiler));
+                new MathematicalAnalysis.SourceEnvironment("Ocean.java", List.of(), List.of(sourcepath), List.of(), compiler));
     }
 }
