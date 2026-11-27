@@ -33,7 +33,7 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 2121,
+        "files": 2141,
         "matches": 190,
         "rules": 10
       }
@@ -2702,7 +2702,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java",
-      "line": 363,
+      "line": 383,
       "matchedCode": "fixes.clone()"
     },
     {
@@ -2710,7 +2710,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java",
-      "line": 318,
+      "line": 342,
       "matchedCode": "fixes.clone()"
     },
     {
@@ -2718,7 +2718,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java",
-      "line": 1120,
+      "line": 1227,
       "matchedCode": "fixes.clone()"
     },
     {
@@ -2742,7 +2742,7 @@
       "hintFile": "arrays",
       "rule": "arrays.aslist-contains.review",
       "file": "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/ExternalResourceCallerScopeTest.java",
-      "line": 80,
+      "line": 86,
       "matchedCode": "Arrays.asList(provider.getJavaProject().getProject().getReferencingProjects()).contains(caller.getJavaProject().getProject())"
     },
     {
@@ -3366,7 +3366,7 @@
       "hintFile": "string-equals",
       "rule": "string-equals.null-or-empty.review",
       "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java",
-      "line": 747,
+      "line": 767,
       "matchedCode": "units == null || units.isEmpty()"
     },
     {
@@ -3686,7 +3686,7 @@
       "hintFile": "modernize-java9",
       "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
       "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java",
-      "line": 613,
+      "line": 633,
       "matchedCode": "computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collectors.toList())"
     },
     {
