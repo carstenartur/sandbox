@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.sandbox.mining.core.candidate;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -23,6 +25,10 @@ import java.nio.file.Path;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+
+import com.google.gson.JsonParser;
 
 /** Tests minimal promotion change generation. */
 class CandidatePromotionCliTest {
@@ -54,6 +60,25 @@ class CandidatePromotionCliTest {
 				candidate().getCandidateId() + ".json"))); //$NON-NLS-1$
 		assertTrue(Files.readString(fixtureDirectory.resolve("index.txt"), StandardCharsets.UTF_8) //$NON-NLS-1$
 				.contains(candidate().getCandidateId()));
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "archive/item", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }) //$NON-NLS-1$ //$NON-NLS-2$
+	void validatesPersistedIdBeforeChangingTheHintOrFixtureDirectory(String id) throws IOException {
+		Path hint = createTargetHint();
+		String original = Files.readString(hint, StandardCharsets.UTF_8);
+		Path candidateFile = saveApprovedCandidate(candidate());
+		var record = JsonParser.parseString(Files.readString(candidateFile, StandardCharsets.UTF_8)).getAsJsonObject();
+		record.addProperty("candidateId", id); //$NON-NLS-1$
+		Files.writeString(candidateFile, record.toString(), StandardCharsets.UTF_8);
+
+		assertThrows(IllegalArgumentException.class, () -> CandidatePromotionCli.run(new String[] {
+				"--candidate", candidateFile.toString(), //$NON-NLS-1$
+				"--repo-root", tempDir.toString(), //$NON-NLS-1$
+				"--actor", "reviewer" //$NON-NLS-1$ //$NON-NLS-2$
+		}));
+		assertEquals(original, Files.readString(hint, StandardCharsets.UTF_8));
+		assertFalse(Files.exists(tempDir.resolve(FIXTURE_DIRECTORY)));
 	}
 
 	@Test

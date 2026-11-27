@@ -83,9 +83,9 @@ public final class CandidatePromotionCli {
 			throw new IllegalArgumentException("--actor is required"); //$NON-NLS-1$
 		}
 
-		MiningCandidate candidate = GSON.fromJson(
-				Files.readString(candidateFile, StandardCharsets.UTF_8), MiningCandidate.class);
+		MiningCandidate candidate = CandidateStore.readCandidate(candidateFile);
 		validateApprovedCandidate(candidate);
+		String fixtureName = candidate.getCandidateId() + ".json"; //$NON-NLS-1$
 		CandidateVerification verification = new CandidateVerifier().verify(candidate);
 		if (!verification.successful()) {
 			throw new IllegalStateException("Approved candidate no longer verifies: " //$NON-NLS-1$
@@ -114,7 +114,6 @@ public final class CandidatePromotionCli {
 		appendRule(candidate, hintFile);
 		Path fixtureDirectory = normalizedRoot.resolve(FIXTURE_DIRECTORY);
 		Files.createDirectories(fixtureDirectory);
-		String fixtureName = candidate.getCandidateId() + ".json"; //$NON-NLS-1$
 		Path fixtureFile = fixtureDirectory.resolve(fixtureName);
 		PromotionFixture fixture = PromotionFixture.from(candidate, verification, actor);
 		Files.writeString(fixtureFile, GSON.toJson(fixture) + System.lineSeparator(),
@@ -129,9 +128,6 @@ public final class CandidatePromotionCli {
 	}
 
 	private static void validateApprovedCandidate(MiningCandidate candidate) {
-		if (candidate == null) {
-			throw new IllegalArgumentException("Candidate JSON is empty"); //$NON-NLS-1$
-		}
 		if (candidate.getStatus() != CandidateStatus.APPROVED) {
 			throw new IllegalStateException("Only APPROVED candidates can generate promotion changes"); //$NON-NLS-1$
 		}
