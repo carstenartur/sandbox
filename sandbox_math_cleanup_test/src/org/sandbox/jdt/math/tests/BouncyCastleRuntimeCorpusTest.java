@@ -146,9 +146,11 @@ class BouncyCastleRuntimeCorpusTest {
         var mapper = new ObjectMapper();
         var current = mapper.readTree(sdk.resolve("qualification.json").toFile());
         var historical = mapper.readTree(sdk.resolve("qualification-0.5.3.json").toFile());
+        var previous = mapper.readTree(sdk.resolve("qualification-2026-11-26-guarded-field.json").toFile());
         var qualified = screenshotQualifications(sdk, current);
         assertQualifiedScreenshotSdk(screenshotEvidence(SdkIdentity.fromQualification(current)), qualified, "current capture");
         assertQualifiedScreenshotSdk(screenshotEvidence(SdkIdentity.fromQualification(historical)), qualified, "historical capture");
+        assertQualifiedScreenshotSdk(screenshotEvidence(SdkIdentity.fromQualification(previous)), qualified, "previous source pin capture");
     }
 
     @Test void screenshotSdkProvenanceRejectsMixedAndUnknownQualifications() throws IOException {
@@ -156,11 +158,10 @@ class BouncyCastleRuntimeCorpusTest {
         var current = new ObjectMapper().readTree(sdk.resolve("qualification.json").toFile());
         var qualified = screenshotQualifications(sdk, current);
         var live = qualified.getFirst();
-        var historical = qualified.getLast();
-        assertThrows(AssertionError.class, () -> assertQualifiedScreenshotSdk(
-                screenshotEvidence(new SdkIdentity(live.sourceRevision(), historical.jarSha256())), qualified, "mixed capture"));
-        assertThrows(AssertionError.class, () -> assertQualifiedScreenshotSdk(
-                screenshotEvidence(new SdkIdentity(historical.sourceRevision(), live.jarSha256())), qualified, "mixed capture"));
+        for (var revision : qualified)
+            for (var artifact : qualified)
+                if (!revision.equals(artifact)) assertThrows(AssertionError.class, () -> assertQualifiedScreenshotSdk(
+                        screenshotEvidence(new SdkIdentity(revision.sourceRevision(), artifact.jarSha256())), qualified, "mixed capture"));
         assertThrows(AssertionError.class, () -> assertQualifiedScreenshotSdk(
                 screenshotEvidence(new SdkIdentity("0".repeat(40), live.jarSha256())), qualified, "unknown revision"));
         assertThrows(AssertionError.class, () -> assertQualifiedScreenshotSdk(
@@ -168,8 +169,10 @@ class BouncyCastleRuntimeCorpusTest {
     }
 
     private static List<SdkIdentity> screenshotQualifications(Path sdk, JsonNode currentQualification) throws IOException {
-        var historical = new ObjectMapper().readTree(sdk.resolve("qualification-0.5.3.json").toFile());
-        return List.of(SdkIdentity.fromQualification(currentQualification), SdkIdentity.fromQualification(historical));
+        var mapper = new ObjectMapper();
+        var historical = mapper.readTree(sdk.resolve("qualification-0.5.3.json").toFile());
+        var previous = mapper.readTree(sdk.resolve("qualification-2026-11-26-guarded-field.json").toFile());
+        return List.of(SdkIdentity.fromQualification(currentQualification), SdkIdentity.fromQualification(previous), SdkIdentity.fromQualification(historical));
     }
 
     private static JsonNode screenshotEvidence(SdkIdentity sdk) {
