@@ -111,6 +111,18 @@ class SourceBackedConstantTest {
         analyze(source).newEdit().apply(doc);
         assertTrue(source.equals(doc.get()) || doc.get().contains("P.getClass()"), doc::get);
     }
+    @Test void anInheritedMemberTypeCannotSupplyAFieldAlias() throws Exception {
+        String direct = SOURCE.replace("Bridge.P", "Parent.Holder.Q")
+                + "class Parent { static class Holder { static final BigInteger Q = new BigInteger(\"1fffffff\", 16); } } "
+                + "class Child extends Parent {}";
+        var accepted = analyze(direct);
+        assertTrue(accepted.changed(), accepted.diagnostics().toString());
+        assertFalse(accepted.replacements().getFirst().replacement().contains("P.getClass()"));
+        String inherited = direct.replace("Parent.Holder.Q", "Child.Holder.Q");
+        var document = new Document(inherited);
+        analyze(inherited).newEdit().apply(document);
+        assertTrue(inherited.equals(document.get()) || document.get().contains("P.getClass()"), document::get);
+    }
     @Test void incompleteDefinitionDoesNotPermitAnUnguardedRewrite() throws Exception {
         sources("make()");
         Files.writeString(directory.resolve("sample/Constants.java"),

@@ -34,7 +34,7 @@
     <proc>none</proc><compilerArgs><arg>-Xlint:all</arg><arg>-Werror</arg></compilerArgs><failOnWarning>true</failOnWarning>
    </configuration></execution>
    <execution><id>guarded-root-strict-tests</id><phase>process-test-classes</phase><goals><goal>testCompile</goal></goals><configuration>
-    <testIncludes combine.self="override"><testInclude>**/GuardedQuadraticRootSourceTest.java</testInclude><testInclude>**/FieldGuardFactsTest.java</testInclude><testInclude>**/SourceBackedConstantTest.java</testInclude><testInclude>**/BouncyCastleGuardedRootTest.java</testInclude><testInclude>**/GuardedRootBenchmarkTest.java</testInclude><testInclude>**/BouncyCastleRuntimeCorpusTest.java</testInclude></testIncludes>
+    <testIncludes combine.self="override"><testInclude>**/GuardedQuadraticRootSourceTest.java</testInclude><testInclude>**/FieldGuardFactsTest.java</testInclude><testInclude>**/SourceBackedConstantTest.java</testInclude><testInclude>**/JavaImmutableValueTest.java</testInclude><testInclude>**/JavaValueAlgebraProofTest.java</testInclude><testInclude>**/JavaValueInverseReuseTest.java</testInclude><testInclude>**/JavaValueReuseTest.java</testInclude><testInclude>**/BouncyCastleGuardedRootTest.java</testInclude><testInclude>**/GuardedRootBenchmarkTest.java</testInclude><testInclude>**/BouncyCastleRuntimeCorpusTest.java</testInclude></testIncludes>
     <proc>none</proc><compilerArgs><arg>-Xlint:all</arg><arg>-Werror</arg></compilerArgs><failOnWarning>true</failOnWarning>
    </configuration></execution>
   </executions></plugin>

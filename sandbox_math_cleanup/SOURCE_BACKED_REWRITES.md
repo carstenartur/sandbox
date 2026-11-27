@@ -17,6 +17,13 @@ Only this supported fragment is evaluated; project methods and constructors are
 never executed to learn their values. A different type or an unresolved binding
 is not treated as a JDK operation because it has a familiar name.
 
+Use a single-type import of `java.math.BigInteger` and the simple name
+`BigInteger` for JDK constructors, constants and factories. Earlier versions
+also accepted the fully qualified spelling in these initializers. The source
+proof now declines it because another type can change what the qualifier selects.
+An alias may use `Outer.Nested.FIELD` when that compilation unit directly
+declares both types and the nested type declares the field.
+
 A Java static alias can observe null during class initialization. Therefore the
 resolver first establishes only "this supported value, or null". A guard is removed
 only when an original, completed non-null use dominates the entire calculation.

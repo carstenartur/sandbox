@@ -257,7 +257,7 @@ public final class JavaSourceContext implements AutoCloseable {
             ASTNode declaration = ast == null ? null : ast.findDeclaringNode(key);
             Optional<BigInteger> value = declaration instanceof VariableDeclarationFragment fragment && constantField(fragment.resolveBinding())
                 && key.equals(fragment.resolveBinding().getVariableDeclaration().getKey())
-                ? expression(fragment.getInitializer(), active, depth + 1) : Optional.empty();
+                ? expression(ast, fragment.getInitializer(), active, depth + 1) : Optional.empty();
             values.put(key, new Constant(value, Set.copyOf(captured.declarations())));
             return value;
         } finally { active.remove(key); }
@@ -268,12 +268,23 @@ public final class JavaSourceContext implements AutoCloseable {
             && Modifier.isStatic(field.getModifiers()) && Modifier.isFinal(field.getModifiers())
             && !field.getType().isRecovered() && BIG_INTEGER.equals(field.getType().getQualifiedName());
     }
-    private Optional<BigInteger> expression(Expression expression, Set<String> active, int depth) {
+    /** A direct member type and its declaring top-level type must both be in this initializer's pinned unit. */
+    private boolean directNestedField(CompilationUnit unit, Name name, IVariableBinding field) {
+        if (!(name instanceof QualifiedName read) || !(read.getQualifier() instanceof QualifiedName nested)
+                || !(nested.getQualifier() instanceof SimpleName outerName)) return false;
+        var owner = field.getDeclaringClass();
+        if (owner == null || owner.isRecovered() || !owner.isMember() || !owner.isEqualTo(nested.resolveBinding())) return false;
+        if (!(unit.findDeclaringNode(owner.getKey()) instanceof TypeDeclaration member)
+                || !(member.getParent() instanceof TypeDeclaration outer) || outer.getParent() != unit) return false;
+        return owner.isEqualTo(member.resolveBinding()) && owner.getDeclaringClass().isEqualTo(outer.resolveBinding())
+                && JavaSourceTypeNames.closedTypeName(outerName, outer.resolveBinding(), this::charge);
+    }
+    private Optional<BigInteger> expression(CompilationUnit unit, Expression expression, Set<String> active, int depth) {
         charge(1);
         if (depth > MAX_DEPTH || expression == null) return Optional.empty();
         expression = unwrap(expression);
         if (expression instanceof Name name && name.resolveBinding() instanceof IVariableBinding field) {
-            if (!JavaSourceTypeNames.directFieldRead(name, field, this::charge)) return Optional.empty();
+            if (!JavaSourceTypeNames.directFieldRead(name, field, this::charge) && !directNestedField(unit, name, field)) return Optional.empty();
             if (JavaGuardedFieldSource.big(field.getDeclaringClass())) {
                 return switch (field.getName()) {
                     case "ZERO" -> Optional.of(BigInteger.ZERO); //$NON-NLS-1$
