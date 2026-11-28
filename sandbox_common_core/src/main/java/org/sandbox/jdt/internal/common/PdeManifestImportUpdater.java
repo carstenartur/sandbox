@@ -22,11 +22,10 @@ import java.util.regex.Pattern;
 public final class PdeManifestImportUpdater {
 
 	private static final String IMPORT_PACKAGE_HEADER= "Import-Package:"; //$NON-NLS-1$
-	private static final Pattern IMPORT_PACKAGE_PATTERN= Pattern.compile(
-			"(?m)^Import-Package:[^\\r\\n]*(?:\\r?\\n [^\\r\\n]*)*"); //$NON-NLS-1$
+	private static final Pattern IMPORT_PACKAGE_LINE= Pattern.compile("(?m)^Import-Package:[^\\r\\n]*"); //$NON-NLS-1$
+	private static final Pattern CONTINUATION_LINE= Pattern.compile("\\r?\\n [^\\r\\n]*"); //$NON-NLS-1$
 	private static final Pattern MAIN_SECTION_SEPARATOR= Pattern.compile("\\r?\\n\\r?\\n"); //$NON-NLS-1$
-	private static final Pattern PACKAGE_NAME= Pattern.compile(
-			"[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*"); //$NON-NLS-1$
+	private static final Pattern PACKAGE_COMPONENT= Pattern.compile("[A-Za-z_][A-Za-z0-9_]*"); //$NON-NLS-1$
 
 	private PdeManifestImportUpdater() {
 	}
@@ -63,12 +62,12 @@ public final class PdeManifestImportUpdater {
 	private static String addImport(String manifest, String packageName, Exporter exporter) {
 		Objects.requireNonNull(manifest);
 		Objects.requireNonNull(packageName);
-		if (!PACKAGE_NAME.matcher(packageName).matches()) {
+		if (!Arrays.stream(packageName.split("\\.", -1)).allMatch(PACKAGE_COMPONENT.asMatchPredicate())) { //$NON-NLS-1$
 			throw new IllegalArgumentException("Invalid Java package name: " + packageName); //$NON-NLS-1$
 		}
 
 		int mainSectionEnd= mainSectionEnd(manifest);
-		Matcher header= IMPORT_PACKAGE_PATTERN.matcher(manifest.substring(0, mainSectionEnd));
+		Matcher header= IMPORT_PACKAGE_LINE.matcher(manifest).region(0, mainSectionEnd);
 		String lineDelimiter= lineDelimiter(manifest);
 		String clause= packageName;
 		if (exporter != null) {
@@ -78,7 +77,12 @@ public final class PdeManifestImportUpdater {
 			clause= (clause + attributes).replaceAll("(.{54})(?=.)", "$1" + lineDelimiter + " "); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		}
 		if (header.find()) {
-			String physicalHeader= header.group();
+			int headerEnd= header.end();
+			Matcher continuation= CONTINUATION_LINE.matcher(manifest);
+			while (continuation.region(headerEnd, mainSectionEnd).lookingAt()) {
+				headerEnd= continuation.end();
+			}
+			String physicalHeader= manifest.substring(header.start(), headerEnd);
 			String unfolded= physicalHeader.substring(IMPORT_PACKAGE_HEADER.length())
 					.replace("\r\n ", "").replace("\n ", ""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 			if (containsPackage(unfolded, packageName)) {
@@ -86,8 +90,8 @@ public final class PdeManifestImportUpdater {
 			}
 			String separator= physicalHeader.stripTrailing().endsWith(",") //$NON-NLS-1$
 					? lineDelimiter + " " : "," + lineDelimiter + " "; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-			return manifest.substring(0, header.end()) + separator + clause
-					+ manifest.substring(header.end());
+			return manifest.substring(0, headerEnd) + separator + clause
+					+ manifest.substring(headerEnd);
 		}
 
 		String prefix= mainSectionEnd == 0 || isLineBreakBefore(manifest, mainSectionEnd)

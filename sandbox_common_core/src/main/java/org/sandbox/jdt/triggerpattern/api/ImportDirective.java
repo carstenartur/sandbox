@@ -20,6 +20,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 
 import org.sandbox.jdt.triggerpattern.internal.JavaSourceMask;
@@ -58,25 +59,12 @@ import org.sandbox.jdt.triggerpattern.internal.JavaSourceMask;
  */
 public final class ImportDirective {
 	
-	/**
-	 * Compiled regex for detecting fully qualified type names in patterns.
-	 * Matches patterns like {@code java.util.Objects} or {@code org.junit.Assert}.
-	 */
-	private static final java.util.regex.Pattern FQN_PATTERN = java.util.regex.Pattern.compile(
-			"\\b([a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*(\\.[A-Z][A-Za-z0-9_]*))\\b"); //$NON-NLS-1$
-
-	/**
-	 * Compiled regex for detecting FQN.method patterns (e.g., {@code org.junit.Assert.assertEquals}).
-	 * 
-	 * <p>Capture groups:</p>
-	 * <ul>
-	 *   <li>Group 1: full match including method (e.g., {@code org.junit.Assert.assertEquals})</li>
-	 *   <li>Group 2: type part only (e.g., {@code org.junit.Assert})</li>
-	 *   <li>The method name is the last segment after the type part's last dot</li>
-	 * </ul>
-	 */
-	private static final java.util.regex.Pattern FQN_METHOD_PATTERN = java.util.regex.Pattern.compile(
-			"\\b(([a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*(\\.[A-Z][A-Za-z0-9_]*))\\.[a-zA-Z][A-Za-z0-9_]*)\\b"); //$NON-NLS-1$
+	private static final java.util.regex.Pattern PACKAGE_SEGMENT = java.util.regex.Pattern.compile(
+			"\\b[a-z][a-z0-9_]*+"); //$NON-NLS-1$
+	private static final String TYPE_NAME = "(\\.[A-Z][A-Za-z0-9_]*+)"; //$NON-NLS-1$
+	private static final java.util.regex.Pattern TYPE_SUFFIX = java.util.regex.Pattern.compile(TYPE_NAME + "\\b"); //$NON-NLS-1$
+	private static final java.util.regex.Pattern MEMBER_SUFFIX = java.util.regex.Pattern.compile(
+			TYPE_NAME + "\\.([A-Za-z][A-Za-z0-9_]*+)\\b"); //$NON-NLS-1$
 
 	private final List<String> addImports;
 	private final List<String> removeImports;
@@ -237,33 +225,9 @@ public final class ImportDirective {
 	 */
 	public static ImportDirective detectFromPattern(String replacementPattern) {
 		ImportDirective directive = new ImportDirective();
-		if (replacementPattern == null || replacementPattern.isEmpty()) {
-			return directive;
-		}
-		
-		Set<String> detected = new HashSet<>();
-		Matcher matcher = FQN_PATTERN.matcher(JavaSourceMask.codeOnly(replacementPattern));
-		
-		while (matcher.find()) {
-			String fqn = matcher.group(1);
-			// Skip placeholders
-			if (fqn.contains("$")) { //$NON-NLS-1$
-				continue;
-			}
-			// Only add if it looks like a real qualified name (has at least package.Class)
-			int lastDot = fqn.lastIndexOf('.');
-			if (lastDot > 0) {
-				String className = fqn.substring(lastDot + 1);
-				if (Character.isUpperCase(className.charAt(0))) {
-					detected.add(fqn);
-				}
-			}
-		}
-		
-		for (String fqn : detected) {
+		for (String fqn : extractFqns(replacementPattern)) {
 			directive.addImport(fqn);
 		}
-		
 		return directive;
 	}
 	
@@ -380,26 +344,10 @@ public final class ImportDirective {
 	 */
 	private static Map<String, String> extractFqnMethods(String pattern) {
 		Map<String, String> result = new LinkedHashMap<>();
-		if (pattern == null || pattern.isEmpty()) {
-			return result;
-		}
-		Matcher matcher = FQN_METHOD_PATTERN.matcher(JavaSourceMask.codeOnly(pattern));
-		while (matcher.find()) {
-			String fullMatch = matcher.group(1); // e.g., "org.junit.Assert.assertEquals"
-			if (fullMatch.contains("$")) { //$NON-NLS-1$
-				continue;
-			}
-			String typePart = matcher.group(2); // e.g., "org.junit.Assert"
-			int lastDot = fullMatch.lastIndexOf('.');
-			String methodPart = fullMatch.substring(lastDot + 1); // e.g., "assertEquals"
-			// Only include if the type part is a real FQN (last segment starts with uppercase)
-			int typeLastDot = typePart.lastIndexOf('.');
-			if (typeLastDot > 0 && Character.isUpperCase(typePart.substring(typeLastDot + 1).charAt(0))) {
-				result.put(methodPart, typePart);
-			}
-		}
+		matchQualifiedNames(pattern, MEMBER_SUFFIX, (type, suffix) -> result.put(suffix.group(2), type));
 		return result;
 	}
+
 	/**
 	 * Extracts fully qualified type names from a pattern string.
 	 * 
@@ -412,23 +360,37 @@ public final class ImportDirective {
 	 */
 	private static Set<String> extractFqns(String pattern) {
 		Set<String> fqns = new HashSet<>();
-		if (pattern == null || pattern.isEmpty()) {
-			return fqns;
-		}
-		java.util.regex.Matcher matcher = FQN_PATTERN.matcher(JavaSourceMask.codeOnly(pattern));
-		while (matcher.find()) {
-			String fqn = matcher.group(1);
-			if (fqn.contains("$")) { //$NON-NLS-1$
-				continue;
-			}
-			int lastDot = fqn.lastIndexOf('.');
-			if (lastDot > 0 && Character.isUpperCase(fqn.substring(lastDot + 1).charAt(0))) {
-				fqns.add(fqn);
-			}
-		}
+		matchQualifiedNames(pattern, TYPE_SUFFIX, (type, suffix) -> fqns.add(type));
 		return fqns;
 	}
-	
+
+	/**
+	 * Visits each package path once. The suffix matcher captures the type segment in group 1
+	 * and, when requested, the following member in group 2.
+	 */
+	private static void matchQualifiedNames(String pattern, java.util.regex.Pattern suffixPattern,
+			BiConsumer<String, Matcher> onMatch) {
+		if (pattern == null || pattern.isEmpty()) {
+			return;
+		}
+		String code = JavaSourceMask.codeOnly(pattern);
+		Matcher segment = PACKAGE_SEGMENT.matcher(code);
+		Matcher suffix = suffixPattern.matcher(code);
+		int next = 0;
+		while (segment.find(next)) {
+			int start = segment.start();
+			next = segment.end();
+			while (next < code.length() && code.charAt(next) == '.'
+					&& segment.region(next + 1, code.length()).lookingAt()) {
+				next = segment.end();
+			}
+			if (suffix.region(next, code.length()).lookingAt()) {
+				onMatch.accept(code.substring(start, suffix.end(1)), suffix);
+				next = suffix.end();
+			}
+		}
+	}
+
 	/**
 	 * Merges another directive into this one.
 	 * 
