@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "ac0520fc7f2c60e28e6671bb81a1432d599501cae2bf1ea3c95f1ed74d934d70",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.util.AbstractMap.SimpleEntry\u003c$K, $V\u003e($arg1, $arg2)\n\u003d\u003e new java.util.AbstractMap.SimpleEntry\u003c\u003e($arg1, $arg2)\n;;",
+  "beforeExample": "import java.util.AbstractMap;\nimport java.util.Map;\n\nclass Example {\n    static final String TYPEOF \u003d \"typeof\";\n    void method(Class\u003c?\u003e typeof) {\n        Map\u003cString, Object\u003e map \u003d Map.ofEntries(\n                new AbstractMap.SimpleEntry\u003cString, Object\u003e(TYPEOF, typeof)\n        );\n    }\n}",
+  "afterExample": "import java.util.AbstractMap;\nimport java.util.Map;\n\nclass Example {\n    static final String TYPEOF \u003d \"typeof\";\n    void method(Class\u003c?\u003e typeof) {\n        Map\u003cString, Object\u003e map \u003d Map.ofEntries(\n                new AbstractMap.SimpleEntry\u003c\u003e(TYPEOF, typeof)\n        );\n    }\n}",
+  "negativeExample": "import java.util.AbstractMap;\nimport java.util.ArrayList;\n\nclass NegativeExample {\n    void method() {\n        // Not an AbstractMap.SimpleEntry constructor\n        ArrayList\u003cString\u003e list \u003d new ArrayList\u003cString\u003e();\n\n        // Already uses diamond operator\n        AbstractMap.SimpleEntry\u003cString, Object\u003e existingDiamond \u003d new AbstractMap.SimpleEntry\u003c\u003e( \"key\", 1 );\n    }\n}",
+  "targetHintFile": "modernize-java7.sandbox-hint",
+  "sourceCommit": "587fc42028419780f212534478c9d5745f488397",
+  "sourceRepo": "https://github.com/carstenartur/sandbox",
+  "sourceEvidence": {
+    "path": "sandbox_common/src/org/sandbox/jdt/internal/common/HelperVisitor.java",
+    "before": "new AbstractMap.SimpleEntry\u003cString, Object\u003e(TYPEOF, typeof)",
+    "after": "new AbstractMap.SimpleEntry\u003c\u003e(TYPEOF, typeof)",
+    "diffHunk": "diff --git a/sandbox_common/src/org/sandbox/jdt/internal/common/HelperVisitor.java b/sandbox_common/src/org/sandbox/jdt/internal/common/HelperVisitor.java\nindex d7a81cc..99e7597 100644\n--- a/sandbox_common/src/org/sandbox/jdt/internal/common/HelperVisitor.java\n+++ b/sandbox_common/src/org/sandbox/jdt/internal/common/HelperVisitor.java\n@@ -373,7 +373,7 @@\n \t */\n \tpublic BiPredicate\u003c? extends ASTNode, E\u003e addClassInstanceCreation(Class\u003c?\u003e typeof, BiPredicate\u003cClassInstanceCreation, E\u003e bs) {\n \t\tMap\u003cString, Object\u003e map \u003d Map.ofEntries(\n-\t\t\t\tnew AbstractMap.SimpleEntry\u003cString, Object\u003e(TYPEOF, typeof)\n+\t\t\t\tnew AbstractMap.SimpleEntry\u003c\u003e(TYPEOF, typeof)\n \t\t\t\t);\n \t\tpredicatedata.put(VisitorEnum.ClassInstanceCreation, map);\n \t\treturn predicatemap.put(VisitorEnum.ClassInstanceCreation, bs);\n"
+  },
+  "category": "Modernization",
+  "summary": "Use diamond operator for AbstractMap.SimpleEntry constructor",
+  "sourceVersion": "8",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-28T02:19:16.098741574Z",
+  "ruleFingerprint": "sha256:3daa65694d2f0750dc12441346d478e87667ebf23e274bf7fdd8d3f133581918",
+  "behaviorFingerprint": "sha256:a1475c92c2ade11a2ae6e1bddfe455e060a280a9f6c3d45f608e31c327389b92",
+  "verification": {
+    "successful": false,
+    "stage": "AFTER_REWRITE",
+    "message": "Transformed syntax tree does not equal afterExample",
+    "verifiedAt": "2026-11-28T02:21:19.143148539Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": []
+}

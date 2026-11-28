@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "AFTER_REWRITE",
     "message": "Transformed source is invalid: Java compile error at line 17: The constructor JavaOutlineInformationControl.OrStringMatcher(String, String, boolean) is undefined",
-    "verifiedAt": "2026-11-27T02:54:15.988102671Z",
+    "verifiedAt": "2026-11-28T02:21:10.345551829Z",
     "verifierVersion": "9",
     "matches": 1,
     "replacements": 1

@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "77bde73373074a7f20cc333562f81a9f24f1943f455fce2a4b87cb904bc18123",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.util.AbstractMap.SimpleEntry\u003c$Type1, $Type2\u003e($key, $value)\n\u003d\u003e\nnew java.util.AbstractMap.SimpleEntry\u003c\u003e($key, $value)\n;;",
+  "beforeExample": "package example;\n\nimport java.util.AbstractMap;\nimport java.util.Map;\n\npublic class MyClass {\n    public void testIntegerString() {\n        Integer key \u003d 1;\n        String value \u003d \"one\";\n        Map.Entry\u003cInteger, String\u003e entry \u003d new AbstractMap.SimpleEntry\u003cInteger, String\u003e(key, value);\n        System.out.println(entry.getKey() + \": \" + entry.getValue());\n    }\n}",
+  "afterExample": "package example;\n\nimport java.util.AbstractMap;\nimport java.util.Map;\n\npublic class MyClass {\n    public void testIntegerString() {\n        Integer key \u003d 1;\n        String value \u003d \"one\";\n        Map.Entry\u003cInteger, String\u003e entry \u003d new AbstractMap.SimpleEntry\u003c\u003e(key, value);\n        System.out.println(entry.getKey() + \": \" + entry.getValue());\n    }\n}",
+  "negativeExample": "package example;\n\nimport java.util.ArrayList;\nimport java.util.List;\nimport java.util.Map;\nimport java.util.AbstractMap;\n\npublic class MyClassNegative {\n    public void testDifferentClass() {\n        // Not a SimpleEntry constructor, should not match\n        List\u003cString\u003e list \u003d new ArrayList\u003cString\u003e();\n    }\n\n    public void testCustomEntry() {\n        // Constructor of a different custom class, should not match\n        class CustomEntry\u003cK, V\u003e {\n            K k; V v;\n            public CustomEntry(K k, V v) { this.k \u003d k; this.v \u003d v; }\n        }\n        CustomEntry\u003cString, String\u003e customEntry \u003d new CustomEntry\u003cString, String\u003e(\"A\", \"B\");\n    }\n\n    public void testAnonymousInnerClass() {\n        // Anonymous inner class creation for SimpleEntry, which is syntactically different from a direct constructor call\n        String key \u003d \"anon\";\n        Object value \u003d new Object();\n        Map.Entry\u003cString, Object\u003e anonEntry \u003d new AbstractMap.SimpleEntry\u003cString, Object\u003e(key, value) {}; \n    }\n\n    public void testAlreadyDiamond() {\n        // Already uses diamond operator, should not match as the pattern requires explicit type arguments\n        String key \u003d \"existing\";\n        Object value \u003d \"diamond\";\n        Map.Entry\u003cString, Object\u003e existingEntry \u003d new AbstractMap.SimpleEntry\u003c\u003e(key, value);\n    }\n}",
+  "targetHintFile": "java-7-modernize.sandbox-hint",
+  "sourceCommit": "c203a32b2fd4f2548b9a0f3e7547a49a3bb8256d",
+  "sourceRepo": "https://github.com/carstenartur/sandbox",
+  "sourceEvidence": {
+    "path": "sandbox_common/src/org/sandbox/jdt/internal/common/HelperVisitor.java",
+    "before": "\t\t\t\tnew AbstractMap.SimpleEntry\u003cString, Object\u003e(METHODNAME, methodname)",
+    "after": "\t\t\t\tnew AbstractMap.SimpleEntry\u003c\u003e(METHODNAME, methodname)",
+    "diffHunk": "diff --git a/sandbox_common/src/org/sandbox/jdt/internal/common/HelperVisitor.java b/sandbox_common/src/org/sandbox/jdt/internal/common/HelperVisitor.java\nindex 0a74341..f51cc76 100644\n--- a/sandbox_common/src/org/sandbox/jdt/internal/common/HelperVisitor.java\n+++ b/sandbox_common/src/org/sandbox/jdt/internal/common/HelperVisitor.java\n@@ -681,7 +681,7 @@\n \tpublic BiPredicate\u003c? extends ASTNode, E\u003e addMethodInvocation(String methodname,\n \t\t\tBiPredicate\u003cMethodInvocation, E\u003e bs) {\n \t\tpredicatedata.put(VisitorEnum.MethodInvocation, Map.ofEntries(\n-\t\t\t\tnew AbstractMap.SimpleEntry\u003cString, Object\u003e(METHODNAME, methodname)\n+\t\t\t\tnew AbstractMap.SimpleEntry\u003c\u003e(METHODNAME, methodname)\n \t\t\t\t));\n \t\treturn predicatemap.put(VisitorEnum.MethodInvocation, bs);\n \t}\n"
+  },
+  "category": "Modernization",
+  "summary": "Replaces explicit type arguments in `AbstractMap.SimpleEntry` constructor with diamond operator for type inference.",
+  "sourceVersion": "8",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-28T02:18:11.495104784Z",
+  "ruleFingerprint": "sha256:5c86bfad97b00acb3c1952082f36a6e268a8b735364a5a921d852e2cb9f30566",
+  "behaviorFingerprint": "sha256:16af9b6c1037a731508c7ce53072e92e402a80240b367cd633cec4f92c577333",
+  "verification": {
+    "successful": false,
+    "stage": "AFTER_REWRITE",
+    "message": "Transformed syntax tree does not equal afterExample",
+    "verifiedAt": "2026-11-28T02:21:19.057017283Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": []
+}

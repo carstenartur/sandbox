@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "6125440c3aa6d8ea23545e13cee0d32b1c2e6931716dee90c8643cff8ea484f1",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new $Type\u003c$args$\u003e()\n\u003d\u003e\nnew $Type\u003c\u003e()\n;;",
+  "beforeExample": "import java.util.AbstractMap;\nimport java.util.Map;\n\nclass MyClass {\n    static class HelperVisitor {\n        static final String TYPEOF \u003d \"typeof\";\n    }\n    public void foo(Class\u003c?\u003e typeof) {\n        Map\u003cString, Object\u003e map \u003d Map.ofEntries(\n                new AbstractMap.SimpleEntry\u003cString, Object\u003e(HelperVisitor.TYPEOF, typeof)\n        );\n    }\n}",
+  "afterExample": "import java.util.AbstractMap;\nimport java.util.Map;\n\nclass MyClass {\n    static class HelperVisitor {\n        static final String TYPEOF \u003d \"typeof\";\n    }\n    public void foo(Class\u003c?\u003e typeof) {\n        Map\u003cString, Object\u003e map \u003d Map.ofEntries(\n                new AbstractMap.SimpleEntry\u003c\u003e(HelperVisitor.TYPEOF, typeof)\n        );\n    }\n}",
+  "negativeExample": "import java.util.Set;\nimport java.util.AbstractMap;\nimport java.util.Map;\n\n// Dummy imports for compilation\nclass ASTNode {}\nclass ReferenceHolder\u003cT, U\u003e {}\nclass NodeFound {}\nclass HelperVisitor\u003cA, B, C\u003e { HelperVisitor(Set\u003cASTNode\u003e nodesprocessed, A initialHolder) {} }\n\nclass Test {\n    static class NonGenericClass {\n        NonGenericClass() {}\n    }\n    static class AnotherGenericClass\u003cT\u003e {\n        AnotherGenericClass(T t) {}\n    }\n\n    public void foo() {\n        // Already uses diamond operator\n        HelperVisitor\u003cReferenceHolder\u003cString,NodeFound\u003e,String,NodeFound\u003e hv \u003d new HelperVisitor\u003c\u003e(null, new ReferenceHolder\u003c\u003e());\n\n        // Not a generic class instance creation\n        String s \u003d new NonGenericClass().toString();\n\n        // Already using diamond operator for AbstractMap.SimpleEntry\n        Map\u003cString, Object\u003e map \u003d Map.ofEntries(\n                new AbstractMap.SimpleEntry\u003c\u003e(\"key\", \"value\")\n        );\n    }\n}",
+  "targetHintFile": "idioms.sandbox-hint",
+  "sourceCommit": "59c771976151e5572175c6a7e9141d96e4d4d587",
+  "sourceRepo": "https://github.com/carstenartur/sandbox",
+  "sourceEvidence": {
+    "path": "sandbox_common/src/org/sandbox/jdt/internal/common/ASTProcessor.java",
+    "before": "new AbstractMap.SimpleEntry\u003cString, Object\u003e(HelperVisitor.TYPEOF, typeof)",
+    "after": "new AbstractMap.SimpleEntry\u003c\u003e(HelperVisitor.TYPEOF, typeof)",
+    "diffHunk": "diff --git a/sandbox_common/src/org/sandbox/jdt/internal/common/ASTProcessor.java b/sandbox_common/src/org/sandbox/jdt/internal/common/ASTProcessor.java\nindex f08476a..2fc9d71 100644\n--- a/sandbox_common/src/org/sandbox/jdt/internal/common/ASTProcessor.java\n+++ b/sandbox_common/src/org/sandbox/jdt/internal/common/ASTProcessor.java\n@@ -442,7 +442,7 @@\n \t */\n \tpublic ASTProcessor\u003cE, V, T\u003e callClassInstanceCreationVisitor(Class typeof,BiPredicate\u003cClassInstanceCreation, E\u003e bs) {\n \t\tMap\u003cString, Object\u003e map \u003d Map.ofEntries(\n-\t\t\t\tnew AbstractMap.SimpleEntry\u003cString, Object\u003e(HelperVisitor.TYPEOF, typeof)\n+\t\t\t\tnew AbstractMap.SimpleEntry\u003c\u003e(HelperVisitor.TYPEOF, typeof)\n \t\t\t\t);\n \t\tnodetypelist.put(VisitorEnum.ClassInstanceCreation, new NodeHolder(bs, null, map));\n \t\treturn this;\n"
+  },
+  "category": "Generics Simplification",
+  "summary": "Simplifies generic constructor calls by using the diamond operator (\u003c\u003e) where type arguments can be inferred by the compiler, removing redundant type specification. This is a general rule applicable to all generic constructors, including AbstractMap.SimpleEntry.",
+  "sourceVersion": "8",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-11-28T02:18:51.574443502Z",
+  "ruleFingerprint": "sha256:ea61d989c400c768ee1c68bd2bfc1125d155145acb95a777cbf8afd53ed5678c",
+  "behaviorFingerprint": "sha256:80ea99b4104ffdce92195ba1161bf3d9d4cc0b58b784ef16d236d41d576cf52d",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-11-28T02:21:19.112365687Z",
+    "verifierVersion": "9",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
