@@ -147,7 +147,9 @@ class BouncyCastleRuntimeCorpusTest {
         var current = mapper.readTree(sdk.resolve("qualification.json").toFile());
         var historical = mapper.readTree(sdk.resolve("qualification-0.5.3.json").toFile());
         var previous = mapper.readTree(sdk.resolve("qualification-2026-11-26-guarded-field.json").toFile());
+        var parity = mapper.readTree(sdk.resolve("qualification-2026-11-27-parity-observations.json").toFile());
         var qualified = screenshotQualifications(sdk, current);
+        assertQualifiedScreenshotSdk(screenshotEvidence(SdkIdentity.fromQualification(parity)), qualified, "parity observation capture");
         assertQualifiedScreenshotSdk(screenshotEvidence(SdkIdentity.fromQualification(current)), qualified, "current capture");
         assertQualifiedScreenshotSdk(screenshotEvidence(SdkIdentity.fromQualification(historical)), qualified, "historical capture");
         assertQualifiedScreenshotSdk(screenshotEvidence(SdkIdentity.fromQualification(previous)), qualified, "previous source pin capture");
@@ -172,7 +174,9 @@ class BouncyCastleRuntimeCorpusTest {
         var mapper = new ObjectMapper();
         var historical = mapper.readTree(sdk.resolve("qualification-0.5.3.json").toFile());
         var previous = mapper.readTree(sdk.resolve("qualification-2026-11-26-guarded-field.json").toFile());
-        return List.of(SdkIdentity.fromQualification(currentQualification), SdkIdentity.fromQualification(previous), SdkIdentity.fromQualification(historical));
+        var parity = mapper.readTree(sdk.resolve("qualification-2026-11-27-parity-observations.json").toFile());
+        return List.of(SdkIdentity.fromQualification(currentQualification), SdkIdentity.fromQualification(parity),
+                SdkIdentity.fromQualification(previous), SdkIdentity.fromQualification(historical));
     }
 
     private static JsonNode screenshotEvidence(SdkIdentity sdk) {

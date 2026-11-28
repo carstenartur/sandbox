@@ -47,8 +47,9 @@ class MathematicalReportTest {
   var report=new MathematicalReport(1,"Example","analysis",options,options,"sdk","adapter",List.of(file));
   Path output=temporary.resolve("report.json");report.write(output);
   var json=new ObjectMapper().readTree(Files.readString(output));
-  assertEquals(1,json.path("schemaVersion").asInt());assertEquals(15,json.path("requestedOptions").size());
+  assertEquals(1,json.path("schemaVersion").asInt());assertEquals(16,json.path("requestedOptions").size());
   assertEquals("false",json.path("requestedOptions").path(MathCleanUpOptions.FIELD_INVERSIONS).asText());
+  assertEquals("false",json.path("requestedOptions").path(MathCleanUpOptions.ORDERED_INPUT_PREFIX).asText());
   assertEquals("false",json.path("requestedOptions").path("cleanup.mathematics.tailRecursion").asText());
   assertEquals("UNSPECIFIED",json.path("requestedOptions").path(MathCleanUpOptions.VALUE_RUNTIME).asText());
   assertEquals("30",json.path("requestedOptions").path(MathCleanUpOptions.TIMEOUT_SECONDS).asText());

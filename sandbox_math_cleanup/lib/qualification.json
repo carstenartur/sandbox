@@ -3,39 +3,39 @@
   "version": "0.5.4-SNAPSHOT",
   "distribution": "commit-pinned source build",
   "sourceRepository": "https://github.com/carstenartur/Regelsuche",
-  "sourceRevision": "e29218175e11af2d7f16fcc42bb42e995c8d9567",
-  "sourceTree": "988d068737a529c50b8531729835055758ec5245",
+  "sourceRevision": "016eaeab18e7f50afa6de9e6db1ae0704c27751a",
+  "sourceTree": "784317e335c47e142607e0b6a680b2eb1d62b52b",
   "javaCompiler": "Temurin 25.0.5+8",
-  "buildOutputTimestamp": "2026-11-27T00:00:00Z",
-  "jarSha256": "02ea112c6eff8c472ff7e1ae16d36c6fb91f7d2c658dd19d9fbe57cb83390e63",
+  "buildOutputTimestamp": "2026-11-28T00:00:00Z",
+  "jarSha256": "4076bc86339a95e2304deeb5af3aa2a7c0018f1cf9add0ef2d9f534dcb49d32b",
   "artifacts": [
     {
       "artifactId": "regelsuche-core",
-      "sha256": "7cf8e48f839809ba74a86161902b03dca8b8c6157f8fe833ae956aa3d04952b7"
+      "sha256": "dc0e95607673ab7d6d13d87b0ec65bc7f1faf0f81c84452f6b1112773dab2b97"
     },
     {
       "artifactId": "regelsuche-egraph",
-      "sha256": "a355cd424b952f8c0f78b479880572a4d7b2e51244b64f351c4abbc51753556e"
+      "sha256": "9cb0d54f28cfc90bafd3d840ee4f18c00421a645a0ebafc1e50ce05d010a2a9d"
     },
     {
       "artifactId": "regelsuche-search",
-      "sha256": "db39ed6c58eb450917c3aaa65dd61ce3a32945641b7820510d2a5f29d2a03fae"
+      "sha256": "0ef6df0f221fe28b8043c3f284f046d0847b0c9ff0978eb1026882d7bb8c6357"
     },
     {
       "artifactId": "regelsuche-validation",
-      "sha256": "04676fcf6be815def2454211bd1e5a77fe647da48b1eca70b4d8df5528d1fb7a"
+      "sha256": "0eb539bfb1f146c2ba40773d9d6f59166ea8e5e80bf0e94c569c7e964cdf1395"
     },
     {
       "artifactId": "regelsuche-math-algorithms",
-      "sha256": "303ffc65d5b2b78d0d645f0528d033bd06d24fbec2143f7d8c764c0579f109fa"
+      "sha256": "214230cff1d49b42272c071a1a72ecf9bd06914db137206abfadf2ca42aeb567"
     },
     {
       "artifactId": "regelsuche-optimization-sdk",
-      "sha256": "02ea112c6eff8c472ff7e1ae16d36c6fb91f7d2c658dd19d9fbe57cb83390e63"
+      "sha256": "4076bc86339a95e2304deeb5af3aa2a7c0018f1cf9add0ef2d9f534dcb49d32b"
     }
   ],
   "tests": {
-    "reactor": 3593,
+    "reactor": 3646,
     "failures": 0,
     "errors": 0,
     "skipped": 1

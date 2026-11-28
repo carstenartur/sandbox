@@ -8,10 +8,12 @@ The receipt binds the source revision, Java compiler, reproducible archive
 timestamp and checksums of all six Regelsuche runtime artifacts and their
 seven Maven descriptors, including the parent POM.
 
-The current pin `e29218175e11af2d7f16fcc42bb42e995c8d9567`, merged in
-[Regelsuche PR1415](https://github.com/carstenartur/Regelsuche/pull/1415), adds
-the core proof and thin SDK entry point for exact observations after parity
-normalization. Java source, effect and observation proofs remain the consumer's responsibility.
+The current pin `016eaeab18e7f50afa6de9e6db1ae0704c27751a` adds a typed
+byte-table XOR reduction, a verifier for binary-field multiplication tables,
+and a checked input-prefix schedule. Sandbox maps Java loop bounds, bindings
+and the order of array accesses to this API. The Java front end verifies the
+generated loop bodies against the original source.
+[Regelsuche PR 1425](https://github.com/carstenartur/Regelsuche/pull/1425)
 
 CI uses [the source provisioning action](../../.github/actions/provision-regelsuche/action.yml)
 before resolving the plug-in dependencies. The action checks out that full
@@ -27,7 +29,7 @@ root, use the same path for the bootstrap and every subsequent Maven build or
 test of this checkout.
 
 ```bash
-sdk_repo="$HOME/.m2/sandbox-regelsuche-e2921817"  # Choose an unused absolute path on upgrade.
+sdk_repo="$HOME/.m2/sandbox-regelsuche-016eaeab"  # Choose an unused absolute path on upgrade.
 ./mvnw -Dmaven.repo.local="$sdk_repo" -f qa/regelsuche-sdk-bootstrap/pom.xml compile exec:java
 ./mvnw -Dmaven.repo.local="$sdk_repo" -f qa/math-optimization/pom.xml test
 ```
@@ -51,7 +53,8 @@ step after the source SDK is installed. The packaged plug-in works offline;
 the generated consumer Java has no Regelsuche runtime dependency.
 
 The preceding source receipt is retained byte-for-byte in
-[qualification-2026-11-26-guarded-field.json](qualification-2026-11-26-guarded-field.json),
+[qualification-2026-11-27-parity-observations.json](qualification-2026-11-27-parity-observations.json). Earlier receipts include
+[qualification-2026-11-26-guarded-field.json](qualification-2026-11-26-guarded-field.json)
 and the original release in [qualification-0.5.3.json](qualification-0.5.3.json).
 Screenshot validation accepts only complete qualified revision/artifact pairs;
 mixed or unknown identities fail. Screenshots retain the

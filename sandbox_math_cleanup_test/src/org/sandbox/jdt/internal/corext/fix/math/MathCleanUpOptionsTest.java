@@ -81,8 +81,13 @@ class MathCleanUpOptionsTest {
  }
  @Test void optionFamiliesAndHistoricalConstructorsRemainIndependent() {
   var defaults=MathCleanUpOptions.defaults(17);
-  assertEquals(15,defaults.toMap().size());
+  assertEquals(16,defaults.toMap().size());
   assertFalse(defaults.fieldInversions());
+  assertFalse(defaults.orderedInputPrefix());
+  var prefix = MathCleanUpOptions.parse(Map.of(MathCleanUpOptions.ORDERED_INPUT_PREFIX, "true",
+          MathCleanUpOptions.GOAL, "LOWER_ESTIMATED_RUNTIME"), 17);
+  assertEquals(prefix, MathCleanUpOptions.parse(prefix.toMap(), 17));
+  assertTrue(prefix.orderedInputPrefix());
   assertEquals(MathCleanUpOptions.ValueRuntime.UNSPECIFIED,defaults.valueRuntime());
   assertEquals(5,defaults.timeoutSeconds());
   assertFalse(defaults.mathematicalOptIn());

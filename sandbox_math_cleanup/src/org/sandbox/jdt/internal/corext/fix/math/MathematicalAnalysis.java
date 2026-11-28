@@ -178,7 +178,7 @@ public final class MathematicalAnalysis {
                   List.of(), List.of(), dependencies);
          }
          return new Analysis(result.replacements(), result.diagnostics(), result.sourceDigest(), result.compilerOptions(),
-               result.evidence(), result.documentation(), dependencies);
+               result.evidence(), result.documentation(), dependencies, dependencies.receipts(), result.byteTableAccumulations());
       } catch (JavaValueSourceSummary.DeadlineExceeded expired) {
          return cancelled(digest(source), compilerOptions(ast,environment));
       } catch (OperationCanceledException cancelled) {
@@ -215,9 +215,13 @@ public final class MathematicalAnalysis {
             } : null;
       boolean currentSource;
       boolean[] runtimeTemplates = {false};
+      var byteTableCandidates = new JavaByteTableAccumulation.Candidates(options);
       try {
          currentSource = matchesAstSource(ast, source, compilerOptions, options.targetJava(), collectResidueCalls,
-               declaration -> { if (declaration.getName().getIdentifier().startsWith("$series")) runtimeTemplates[0] = true; }); //$NON-NLS-1$
+               declaration -> {
+                  if (declaration.getName().getIdentifier().startsWith("$series")) runtimeTemplates[0] = true; //$NON-NLS-1$
+                  byteTableCandidates.consider(declaration);
+               });
       } catch (SourceDiscoveryLimit exhausted) {
          diagnostics.add(new Diagnostic("BUDGET_EXCEEDED", "Source call discovery exceeds the analysis budget", 0, source.length(), Stage.BUDGET)); //$NON-NLS-1$ //$NON-NLS-2$
          return new Analysis(List.of(), diagnostics, sourceDigest, compilerOptions);
@@ -279,6 +283,12 @@ public final class MathematicalAnalysis {
       // Existing specialized passes already reject collisions with this list.
       // Remove reservations before any final source/binding replay or public result.
       replacements.addAll(protectedReservations);
+      var byteTables = byteTableCandidates.find(ast, sourceDigest, selectionOffset, selectionLength, mergedProtection, valueWork);
+      for (var region : byteTables) diagnostics.add(new Diagnostic("BYTE_TABLE_XOR_REDUCTION", //$NON-NLS-1$
+            "Recognized byte-table XOR reduction with ordered array accesses and a final byte store", //$NON-NLS-1$
+            region.sourceStart(), region.sourceLength(), Stage.SOURCE));
+      JavaOrderedInputPrefix.optimize(ast, source, options, monitor, selectionOffset, selectionLength, compilerOptions,
+            environment, byteTables, replacements, evidence, diagnostics, valueWork);
       MathematicalJavadoc documentation = new MathematicalJavadoc();
       JavaByteArrayPrefixOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
             compilerOptions, environment, replacements, evidence, valueWork);
@@ -899,7 +909,8 @@ public final class MathematicalAnalysis {
             compilerOptions, environment, replacements, evidence, diagnostics, remainingWork);
 
       replacements.removeAll(protectedReservations);
-      MathematicalAnalysis.Analysis analysis = new MathematicalAnalysis.Analysis(replacements, diagnostics, sourceDigest, compilerOptions, evidence, documentation.edits(source));
+      MathematicalAnalysis.Analysis analysis = new MathematicalAnalysis.Analysis(replacements, diagnostics, sourceDigest, compilerOptions, evidence, documentation.edits(source),
+            JavaSourceContext.Checkpoint.EMPTY, List.of(), byteTables);
       if (replacements.size() > 1 || !analysis.documentation().isEmpty()) {
          try {
             Document combined = new Document(source);
@@ -962,6 +973,20 @@ public final class MathematicalAnalysis {
                      JavaQuadraticDenominatorOptimizer.verifyCombined(combinedAst, combined.get(), region, allEdits, valueWork);
                }
                remainingWork -= valueWork.used - beforeDenominatorReplay;
+            }
+            if (evidence.stream().anyMatch(region -> region.orderedInputPrefix() != null)) {
+               valueWork.charge(Math.max(0, valueWork.remaining() - Math.max(0, remainingWork)));
+               long previous = valueWork.used;
+               var edits = new ArrayList<>(replacements);
+               edits.addAll(analysis.documentation());
+               for (var region : evidence) if (region.orderedInputPrefix() != null) {
+                  int start = region.offset();
+                  for (var edit : edits) if (edit.offset() + edit.length() <= region.offset()) {
+                     start += edit.replacement().length() - edit.length();
+                  }
+                  JavaOrderedInputPrefix.replay(ast, combinedAst, region.orderedInputPrefix(), start, region.replacement().length(), valueWork);
+               }
+               remainingWork -= valueWork.used - previous;
             }
             for (var region : acceptedContexts) JavaExpressionContexts.verifyBoundary(ast, combinedAst, region, replacements);
             for (var pair : acceptedStreamPairs) JavaNumericStreamOptimizer.verifyBoundary(ast, combinedAst, pair, replacements);
@@ -1356,7 +1381,8 @@ public final class MathematicalAnalysis {
       List<MathematicalAnalysis.VerifiedRegion> evidence,
       List<MathematicalAnalysis.Replacement> documentation,
       @com.fasterxml.jackson.annotation.JsonIgnore JavaSourceContext.Checkpoint sourceDependencies,
-      List<JavaSourceContext.Receipt> sourceDependencyReceipts
+      List<JavaSourceContext.Receipt> sourceDependencyReceipts,
+      List<JavaByteTableAccumulation> byteTableAccumulations
    ) {
       public Analysis(
          List<MathematicalAnalysis.Replacement> replacements,
@@ -1366,7 +1392,8 @@ public final class MathematicalAnalysis {
          List<MathematicalAnalysis.VerifiedRegion> evidence,
          List<MathematicalAnalysis.Replacement> documentation,
          JavaSourceContext.Checkpoint sourceDependencies,
-         List<JavaSourceContext.Receipt> sourceDependencyReceipts
+         List<JavaSourceContext.Receipt> sourceDependencyReceipts,
+         List<JavaByteTableAccumulation> byteTableAccumulations
       ) {
          replacements = List.copyOf(replacements);
          diagnostics = List.copyOf(diagnostics);
@@ -1385,6 +1412,14 @@ public final class MathematicalAnalysis {
          if (!sourceDependencyReceipts.equals(this.sourceDependencies.receipts()))
             throw new IllegalArgumentException("SOURCE_RECEIPTS_DIFFER_FROM_CONTEXT"); //$NON-NLS-1$
          this.sourceDependencyReceipts = sourceDependencyReceipts;
+         this.byteTableAccumulations = byteTableAccumulations == null ? List.of() : List.copyOf(byteTableAccumulations);
+      }
+
+      public Analysis(List<Replacement> replacements, List<Diagnostic> diagnostics, String sourceDigest,
+            Map<String, String> compilerOptions, List<VerifiedRegion> evidence, List<Replacement> documentation,
+            JavaSourceContext.Checkpoint sourceDependencies, List<JavaSourceContext.Receipt> sourceDependencyReceipts) {
+         this(replacements, diagnostics, sourceDigest, compilerOptions, evidence, documentation, sourceDependencies,
+               sourceDependencyReceipts, List.of());
       }
 
       public Analysis(List<Replacement> replacements, List<Diagnostic> diagnostics, String sourceDigest,
@@ -1491,7 +1526,16 @@ public final class MathematicalAnalysis {
       String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,
       LoopSchedulingEvidence scheduling, FiniteSumEvidence finiteSum, RuntimeIterationEvidence runtimeIteration,
       SourceNumericBranchEvidence sourceNumericBranch, FixedPowerEvidence fixedPower, ValueInverseEvidence valueInverse,
-      FieldInversionEvidence fieldInversion, ConstructorGuardEvidence constructorGuard, FieldRootEvidence fieldRoot) {
+      FieldInversionEvidence fieldInversion, ConstructorGuardEvidence constructorGuard, FieldRootEvidence fieldRoot,
+      JavaOrderedInputPrefix.Evidence orderedInputPrefix) {
+      public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
+            String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,
+            LoopSchedulingEvidence scheduling, FiniteSumEvidence finiteSum, RuntimeIterationEvidence runtimeIteration,
+            SourceNumericBranchEvidence sourceNumericBranch, FixedPowerEvidence fixedPower, ValueInverseEvidence valueInverse,
+            FieldInversionEvidence fieldInversion, ConstructorGuardEvidence constructorGuard, FieldRootEvidence fieldRoot) {
+         this(offset, length, proof, cost, original, replacement, explanation, sourcePlan, scheduling, finiteSum, runtimeIteration,
+               sourceNumericBranch, fixedPower, valueInverse, fieldInversion, constructorGuard, fieldRoot, null);
+      }
       public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
             String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,
             LoopSchedulingEvidence scheduling, FiniteSumEvidence finiteSum, RuntimeIterationEvidence runtimeIteration,
@@ -1501,6 +1545,12 @@ public final class MathematicalAnalysis {
                runtimeIteration, sourceNumericBranch, fixedPower, valueInverse, fieldInversion, constructorGuard, null);
       }
       public VerifiedRegion {
+         if (orderedInputPrefix != null) {
+            var inner = orderedInputPrefix.source().loops().getLast();
+            if (sourcePlan == null || !sourcePlan.sourceSha256().equals(orderedInputPrefix.source().sourceSha256())
+                  || offset != inner.sourceStart() || length != inner.sourceLength())
+               throw new IllegalArgumentException("ORDERED_INPUT_PREFIX_SOURCE_DIFFERS"); //$NON-NLS-1$
+         }
          if (sourcePlan != null) sourcePlan.requireEnvelope(offset, length, original, replacement);
          if (explanation != null && !proof.equals(explanation.verified().proof())) {
             throw new IllegalArgumentException("EXPLANATION_PROOF_BINDING_DIFFERS");

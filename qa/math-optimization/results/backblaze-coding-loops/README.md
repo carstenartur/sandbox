@@ -7,7 +7,9 @@ It uses Backblaze/JavaReedSolomon at
 Its twelve alternatives implement six loop orders with two different
 finite-field multiplication methods.
 
-## Protocol
+The [complete-region follow-up](complete-region/README.md) adds source-bound recognition of two table reductions and tests their mutable Java behavior. The [four-input prefix experiment](complete-region/prefix/README.md) records the exact Apply patch and full-call timing against the original encoders.
+
+## Initial scan protocol
 
 Compile the complete original Java library for Java 17. Use all upstream
 production sources as binding context. Select only the twelve registered

@@ -125,6 +125,7 @@ public final class ProjectMathScan {
                         throw new IOException("Definition differs from the supplied archive: " + dependency.identity());
                 }
                 row.put("sourceDependencies", analysis.sourceDependencies().receipts());
+                row.put("byteTableAccumulations", analysis.byteTableAccumulations());
                 row.put("status", "ANALYZED"); row.put("acceptedRegions", analysis.replacements().size()); row.put("diagnostics", analysis.diagnostics());
                 replacements += analysis.replacements().size();
                 if (analysis.changed()) {
@@ -227,6 +228,7 @@ public final class ProjectMathScan {
         var values = new HashMap<String, String>(); properties.forEach((key, value) -> values.put(key.toString(), value.toString()));
         // An older pinned profile never grants the new opt-in. Keep its original bytes usable.
         values.putIfAbsent(MathCleanUpOptions.FIELD_INVERSIONS, "false");
+        values.putIfAbsent(MathCleanUpOptions.ORDERED_INPUT_PREFIX, "false");
         if (!values.keySet().equals(MathCleanUpOptions.defaults(java).toMap().keySet()))
             throw new IOException("Profile must explicitly specify every required mathematics option, without extra keys");
         var options = MathCleanUpOptions.parse(values, java);
