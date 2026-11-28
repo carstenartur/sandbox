@@ -22,9 +22,10 @@ import org.eclipse.pde.core.plugin.PluginRegistry;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkUtil;
 import org.sandbox.jdt.internal.common.MigrationSupportProvider;
+import org.sandbox.jdt.internal.common.PdeManifestImportUpdater.Exporter;
 
 /** The type identities used by the generated factory call in a PDE consumer. */
-final class PdeMixedSupportWiring {
+public final class PdeMixedSupportWiring {
 	private static final String API= "org.junit.jupiter.api"; //$NON-NLS-1$
 	private static final String EXTENSION= API + ".extension"; //$NON-NLS-1$
 	private static final String FUNCTION= API + ".function"; //$NON-NLS-1$
@@ -34,6 +35,23 @@ final class PdeMixedSupportWiring {
 			FUNCTION + ".ThrowingConsumer", PARALLEL + ".Isolated", MigrationSupportProvider.FACTORY); //$NON-NLS-1$ //$NON-NLS-2$
 
 	private PdeMixedSupportWiring() {}
+
+	/** Identify the consumer's current Jupiter API when the native preview adds a package. */
+	public static Exporter jupiterExporter(IJavaProject java, String pkg) throws JavaModelException {
+		var model= PluginRegistry.findModel(java.getProject());
+		if (model == null || model.getBundleDescription() == null) return null;
+		for (String type : List.of(API + ".Test", EXTENSION + ".Extension")) { //$NON-NLS-1$ //$NON-NLS-2$
+			var binary= MigrationSupportProvider.binaryLocation(java, type);
+			if (binary == null) continue;
+			var supplier= targetBundle(model.getBundleDescription(), binary);
+			if (supplier == null) continue;
+			if (Arrays.stream(supplier.getExportPackages()).noneMatch(cap -> pkg.equals(cap.getName()))) {
+				throw new IllegalStateException("Selected Jupiter provider does not export " + pkg); //$NON-NLS-1$
+			}
+			return new Exporter(supplier.getSymbolicName(), supplier.getVersion().toString());
+		}
+		return null;
+	}
 
 	static boolean available(IJavaProject java) throws JavaModelException {
 		var model= PluginRegistry.findModel(java.getProject());
