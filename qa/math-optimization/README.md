@@ -1,5 +1,7 @@
 # Mathematics corpus and generated-Java qualification
 
+[Backblaze Reed–Solomon coding loops](results/backblaze-coding-loops/README.md) records ordinary Apply on all twelve upstream variants, including the typed source fragments and whole-buffer parity checks.
+
 The scanner uses the production extractor, optimizer, independent checker,
 emitter and complete generated-compilation-unit validation without modifying the
 input archives. Qualification tests and benchmarks compile and execute separate
