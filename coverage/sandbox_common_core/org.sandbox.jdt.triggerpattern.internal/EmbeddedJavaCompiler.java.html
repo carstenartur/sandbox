@@ -71,6 +71,7 @@ public final class EmbeddedJavaCompiler {
 
 	/**
 	 * Result of compiling an embedded Java block.
+	 * The lists capture the compilation results in order and retain the original AST nodes.
 	 *
 	 * @param compilationUnit the parsed AST compilation unit
 	 * @param problems        compilation problems (errors and warnings)
@@ -81,7 +82,7 @@ public final class EmbeddedJavaCompiler {
 	 * @param lineMappings    source line mappings from hint file to synthetic class
 	 * @param syntheticHeaderLength the character length of the synthetic header before embedded code
 	 */
-<span class="fc" id="L84">	public record CompilationResult(</span>
+	public record CompilationResult(
 			CompilationUnit compilationUnit,
 			List&lt;IProblem&gt; problems,
 			List&lt;MethodDeclaration&gt; guardMethods,
@@ -90,6 +91,13 @@ public final class EmbeddedJavaCompiler {
 			String syntheticClassName,
 			List&lt;SourceLineMapping&gt; lineMappings,
 			int syntheticHeaderLength) {
+
+<span class="fc" id="L95">		public CompilationResult {</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">			problems = problems == null ? null : Collections.unmodifiableList(new ArrayList&lt;&gt;(problems));</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">			guardMethods = guardMethods == null ? null : Collections.unmodifiableList(new ArrayList&lt;&gt;(guardMethods));</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">			fixMethods = fixMethods == null ? null : Collections.unmodifiableList(new ArrayList&lt;&gt;(fixMethods));</span>
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">			lineMappings = lineMappings == null ? null : Collections.unmodifiableList(new ArrayList&lt;&gt;(lineMappings));</span>
+<span class="fc" id="L100">		}</span>
 
 		/**
 		 * Backwards-compatible constructor without fixMethods, syntheticClassName,
@@ -100,9 +108,9 @@ public final class EmbeddedJavaCompiler {
 				List&lt;IProblem&gt; problems,
 				List&lt;MethodDeclaration&gt; guardMethods,
 				int lineOffset) {
-<span class="nc" id="L103">			this(compilationUnit, problems, guardMethods, Collections.emptyList(),</span>
-<span class="nc" id="L104">					lineOffset, &quot;&quot;, Collections.emptyList(), 0); //$NON-NLS-1$</span>
-<span class="nc" id="L105">		}</span>
+<span class="nc" id="L111">			this(compilationUnit, problems, guardMethods, Collections.emptyList(),</span>
+<span class="nc" id="L112">					lineOffset, &quot;&quot;, Collections.emptyList(), 0); //$NON-NLS-1$</span>
+<span class="nc" id="L113">		}</span>
 
 		/**
 		 * Returns {@code true} if compilation produced no errors.
@@ -110,7 +118,7 @@ public final class EmbeddedJavaCompiler {
 		 * @return {@code true} if error-free
 		 */
 		public boolean hasErrors() {
-<span class="fc" id="L113">			return problems.stream().anyMatch(IProblem::isError);</span>
+<span class="fc" id="L121">			return problems.stream().anyMatch(IProblem::isError);</span>
 		}
 
 		/**
@@ -121,12 +129,12 @@ public final class EmbeddedJavaCompiler {
 		 * @since 1.5.0
 		 */
 		public int toSyntheticLine(int hintLine) {
-<span class="fc bfc" id="L124" title="All 2 branches covered.">			for (SourceLineMapping mapping : lineMappings) {</span>
-<span class="fc bfc" id="L125" title="All 2 branches covered.">				if (mapping.hintFileLine() == hintLine) {</span>
-<span class="fc" id="L126">					return mapping.syntheticClassLine();</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">			for (SourceLineMapping mapping : lineMappings) {</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">				if (mapping.hintFileLine() == hintLine) {</span>
+<span class="fc" id="L134">					return mapping.syntheticClassLine();</span>
 				}
-<span class="fc" id="L128">			}</span>
-<span class="fc" id="L129">			return -1;</span>
+<span class="fc" id="L136">			}</span>
+<span class="fc" id="L137">			return -1;</span>
 		}
 
 		/**
@@ -137,12 +145,12 @@ public final class EmbeddedJavaCompiler {
 		 * @since 1.5.0
 		 */
 		public int toHintLine(int syntheticLine) {
-<span class="fc bfc" id="L140" title="All 2 branches covered.">			for (SourceLineMapping mapping : lineMappings) {</span>
-<span class="fc bfc" id="L141" title="All 2 branches covered.">				if (mapping.syntheticClassLine() == syntheticLine) {</span>
-<span class="fc" id="L142">					return mapping.hintFileLine();</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">			for (SourceLineMapping mapping : lineMappings) {</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">				if (mapping.syntheticClassLine() == syntheticLine) {</span>
+<span class="fc" id="L150">					return mapping.hintFileLine();</span>
 				}
-<span class="fc" id="L144">			}</span>
-<span class="fc" id="L145">			return -1;</span>
+<span class="fc" id="L152">			}</span>
+<span class="fc" id="L153">			return -1;</span>
 		}
 	}
 
@@ -160,30 +168,30 @@ public final class EmbeddedJavaCompiler {
 	 * @return the compilation result
 	 */
 	public static CompilationResult compile(EmbeddedJavaBlock block, String ruleId) {
-<span class="fc" id="L163">		String className = CLASS_PREFIX + sanitizeIdentifier(ruleId);</span>
-<span class="fc" id="L164">		String syntheticSource = buildSyntheticSource(className, block.getSource());</span>
+<span class="fc" id="L171">		String className = CLASS_PREFIX + sanitizeIdentifier(ruleId);</span>
+<span class="fc" id="L172">		String syntheticSource = buildSyntheticSource(className, block.getSource());</span>
 
 		// The number of lines added before the embedded code starts
-<span class="fc" id="L167">		int headerLineCount = countLines(syntheticSource.substring(0,</span>
-<span class="fc bfc" id="L168" title="All 2 branches covered.">				syntheticSource.indexOf(block.getSource().isEmpty() ? &quot;}&quot; : block.getSource()))); //$NON-NLS-1$</span>
+<span class="fc" id="L175">		int headerLineCount = countLines(syntheticSource.substring(0,</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">				syntheticSource.indexOf(block.getSource().isEmpty() ? &quot;}&quot; : block.getSource()))); //$NON-NLS-1$</span>
 
-<span class="fc" id="L170">		CompilationUnit cu = parseSource(syntheticSource);</span>
+<span class="fc" id="L178">		CompilationUnit cu = parseSource(syntheticSource);</span>
 
-<span class="fc" id="L172">		List&lt;IProblem&gt; problems = collectProblems(cu);</span>
-<span class="fc" id="L173">		List&lt;MethodDeclaration&gt; guardMethods = extractGuardMethods(cu);</span>
-<span class="fc" id="L174">		List&lt;MethodDeclaration&gt; fixMethods = extractFixMethods(cu);</span>
+<span class="fc" id="L180">		List&lt;IProblem&gt; problems = collectProblems(cu);</span>
+<span class="fc" id="L181">		List&lt;MethodDeclaration&gt; guardMethods = extractGuardMethods(cu);</span>
+<span class="fc" id="L182">		List&lt;MethodDeclaration&gt; fixMethods = extractFixMethods(cu);</span>
 
-<span class="fc" id="L176">		int lineOffset = block.getStartLine() - headerLineCount - 1;</span>
+<span class="fc" id="L184">		int lineOffset = block.getStartLine() - headerLineCount - 1;</span>
 
 		// Build source line mappings for debugging support
-<span class="fc" id="L179">		String syntheticClassName = SYNTHETIC_PACKAGE + &quot;.&quot; + className; //$NON-NLS-1$</span>
-<span class="fc" id="L180">		List&lt;SourceLineMapping&gt; lineMappings = buildLineMappings(block, headerLineCount);</span>
-<span class="fc" id="L181">		int headerCharLength = computeSyntheticHeaderLength(ruleId);</span>
+<span class="fc" id="L187">		String syntheticClassName = SYNTHETIC_PACKAGE + &quot;.&quot; + className; //$NON-NLS-1$</span>
+<span class="fc" id="L188">		List&lt;SourceLineMapping&gt; lineMappings = buildLineMappings(block, headerLineCount);</span>
+<span class="fc" id="L189">		int headerCharLength = computeSyntheticHeaderLength(ruleId);</span>
 
-<span class="fc" id="L183">		LOGGER.log(Level.FINE, &quot;Compiled embedded Java block: {0} problems, {1} guard methods, {2} fix methods&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L184">				new Object[] { problems.size(), guardMethods.size(), fixMethods.size() });</span>
+<span class="fc" id="L191">		LOGGER.log(Level.FINE, &quot;Compiled embedded Java block: {0} problems, {1} guard methods, {2} fix methods&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L192">				new Object[] { problems.size(), guardMethods.size(), fixMethods.size() });</span>
 
-<span class="fc" id="L186">		return new CompilationResult(cu, problems, guardMethods, fixMethods, lineOffset,</span>
+<span class="fc" id="L194">		return new CompilationResult(cu, problems, guardMethods, fixMethods, lineOffset,</span>
 				syntheticClassName, lineMappings, headerCharLength);
 	}
 
@@ -191,16 +199,16 @@ public final class EmbeddedJavaCompiler {
 	 * Builds the synthetic Java source by wrapping the embedded code in a class.
 	 */
 	static String buildSyntheticSource(String className, String embeddedCode) {
-<span class="fc" id="L194">		StringBuilder sb = new StringBuilder();</span>
-<span class="fc" id="L195">		sb.append(&quot;package &quot;).append(SYNTHETIC_PACKAGE).append(&quot;;\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L196">		sb.append(&quot;\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L197">		sb.append(&quot;public class &quot;).append(className).append(&quot; {\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L198">		sb.append(embeddedCode);</span>
-<span class="fc bfc" id="L199" title="All 2 branches covered.">		if (!embeddedCode.endsWith(&quot;\n&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L200">			sb.append(&quot;\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L202">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L203">		sb.append(&quot;package &quot;).append(SYNTHETIC_PACKAGE).append(&quot;;\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L204">		sb.append(&quot;\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L205">		sb.append(&quot;public class &quot;).append(className).append(&quot; {\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L206">		sb.append(embeddedCode);</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">		if (!embeddedCode.endsWith(&quot;\n&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L208">			sb.append(&quot;\n&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L202">		sb.append(&quot;}\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L203">		return sb.toString();</span>
+<span class="fc" id="L210">		sb.append(&quot;}\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L211">		return sb.toString();</span>
 	}
 
 	/**
@@ -213,39 +221,39 @@ public final class EmbeddedJavaCompiler {
 	 * @since 1.5.0
 	 */
 	public static int computeSyntheticHeaderLength(String ruleId) {
-<span class="fc" id="L216">		String className = CLASS_PREFIX + sanitizeIdentifier(ruleId);</span>
-<span class="fc" id="L217">		String header = &quot;package &quot; + SYNTHETIC_PACKAGE + &quot;;\n\npublic class &quot; + className + &quot; {\n&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
-<span class="fc" id="L218">		return header.length();</span>
+<span class="fc" id="L224">		String className = CLASS_PREFIX + sanitizeIdentifier(ruleId);</span>
+<span class="fc" id="L225">		String header = &quot;package &quot; + SYNTHETIC_PACKAGE + &quot;;\n\npublic class &quot; + className + &quot; {\n&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc" id="L226">		return header.length();</span>
 	}
 
 	/**
 	 * Parses Java source using JDT's ASTParser.
 	 */
 	private static CompilationUnit parseSource(String source) {
-<span class="fc" id="L225">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
-<span class="fc" id="L226">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
-<span class="fc" id="L227">		parser.setSource(source.toCharArray());</span>
+<span class="fc" id="L233">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L234">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
+<span class="fc" id="L235">		parser.setSource(source.toCharArray());</span>
 
-<span class="fc" id="L229">		Map&lt;String, String&gt; options = JavaCore.getOptions();</span>
-<span class="fc" id="L230">		options.put(JavaCore.COMPILER_SOURCE, &quot;21&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L231">		options.put(JavaCore.COMPILER_COMPLIANCE, &quot;21&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L232">		options.put(JavaCore.COMPILER_CODEGEN_TARGET_PLATFORM, &quot;21&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L233">		parser.setCompilerOptions(options);</span>
+<span class="fc" id="L237">		Map&lt;String, String&gt; options = JavaCore.getOptions();</span>
+<span class="fc" id="L238">		options.put(JavaCore.COMPILER_SOURCE, &quot;21&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L239">		options.put(JavaCore.COMPILER_COMPLIANCE, &quot;21&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L240">		options.put(JavaCore.COMPILER_CODEGEN_TARGET_PLATFORM, &quot;21&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L241">		parser.setCompilerOptions(options);</span>
 
-<span class="fc" id="L235">		return (CompilationUnit) parser.createAST(null);</span>
+<span class="fc" id="L243">		return (CompilationUnit) parser.createAST(null);</span>
 	}
 
 	/**
 	 * Collects all problems from the compilation unit.
 	 */
 	private static List&lt;IProblem&gt; collectProblems(CompilationUnit cu) {
-<span class="fc" id="L242">		IProblem[] rawProblems = cu.getProblems();</span>
-<span class="pc bpc" id="L243" title="1 of 4 branches missed.">		if (rawProblems == null || rawProblems.length == 0) {</span>
-<span class="fc" id="L244">			return Collections.emptyList();</span>
+<span class="fc" id="L250">		IProblem[] rawProblems = cu.getProblems();</span>
+<span class="pc bpc" id="L251" title="1 of 4 branches missed.">		if (rawProblems == null || rawProblems.length == 0) {</span>
+<span class="fc" id="L252">			return Collections.emptyList();</span>
 		}
-<span class="fc" id="L246">		List&lt;IProblem&gt; problems = new ArrayList&lt;&gt;(rawProblems.length);</span>
-<span class="fc" id="L247">		Collections.addAll(problems, rawProblems);</span>
-<span class="fc" id="L248">		return problems;</span>
+<span class="fc" id="L254">		List&lt;IProblem&gt; problems = new ArrayList&lt;&gt;(rawProblems.length);</span>
+<span class="fc" id="L255">		Collections.addAll(problems, rawProblems);</span>
+<span class="fc" id="L256">		return problems;</span>
 	}
 
 	/**
@@ -253,17 +261,17 @@ public final class EmbeddedJavaCompiler {
 	 * as guard functions (public boolean methods).
 	 */
 	private static List&lt;MethodDeclaration&gt; extractGuardMethods(CompilationUnit cu) {
-<span class="fc" id="L256">		List&lt;MethodDeclaration&gt; guards = new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L257" title="All 2 branches covered.">		for (Object typeObj : cu.types()) {</span>
-<span class="pc bpc" id="L258" title="1 of 2 branches missed.">			if (typeObj instanceof TypeDeclaration typeDecl) {</span>
-<span class="fc bfc" id="L259" title="All 2 branches covered.">				for (MethodDeclaration method : typeDecl.getMethods()) {</span>
-<span class="fc bfc" id="L260" title="All 2 branches covered.">					if (isGuardMethod(method)) {</span>
-<span class="fc" id="L261">						guards.add(method);</span>
+<span class="fc" id="L264">		List&lt;MethodDeclaration&gt; guards = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L265" title="All 2 branches covered.">		for (Object typeObj : cu.types()) {</span>
+<span class="pc bpc" id="L266" title="1 of 2 branches missed.">			if (typeObj instanceof TypeDeclaration typeDecl) {</span>
+<span class="fc bfc" id="L267" title="All 2 branches covered.">				for (MethodDeclaration method : typeDecl.getMethods()) {</span>
+<span class="fc bfc" id="L268" title="All 2 branches covered.">					if (isGuardMethod(method)) {</span>
+<span class="fc" id="L269">						guards.add(method);</span>
 					}
 				}
 			}
-<span class="fc" id="L265">		}</span>
-<span class="fc" id="L266">		return guards;</span>
+<span class="fc" id="L273">		}</span>
+<span class="fc" id="L274">		return guards;</span>
 	}
 
 	/**
@@ -271,11 +279,11 @@ public final class EmbeddedJavaCompiler {
 	 * A guard method is any method that returns {@code boolean}.
 	 */
 	private static boolean isGuardMethod(MethodDeclaration method) {
-<span class="pc bpc" id="L274" title="1 of 2 branches missed.">		if (method.getReturnType2() == null) {</span>
-<span class="nc" id="L275">			return false;</span>
+<span class="pc bpc" id="L282" title="1 of 2 branches missed.">		if (method.getReturnType2() == null) {</span>
+<span class="nc" id="L283">			return false;</span>
 		}
-<span class="fc" id="L277">		String returnType = method.getReturnType2().toString();</span>
-<span class="fc" id="L278">		return &quot;boolean&quot;.equals(returnType); //$NON-NLS-1$</span>
+<span class="fc" id="L285">		String returnType = method.getReturnType2().toString();</span>
+<span class="fc" id="L286">		return &quot;boolean&quot;.equals(returnType); //$NON-NLS-1$</span>
 	}
 
 	/**
@@ -283,17 +291,17 @@ public final class EmbeddedJavaCompiler {
 	 * with {@code @FixFunction}.
 	 */
 	private static List&lt;MethodDeclaration&gt; extractFixMethods(CompilationUnit cu) {
-<span class="fc" id="L286">		List&lt;MethodDeclaration&gt; fixes = new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L287" title="All 2 branches covered.">		for (Object typeObj : cu.types()) {</span>
-<span class="pc bpc" id="L288" title="1 of 2 branches missed.">			if (typeObj instanceof TypeDeclaration typeDecl) {</span>
-<span class="fc bfc" id="L289" title="All 2 branches covered.">				for (MethodDeclaration method : typeDecl.getMethods()) {</span>
-<span class="fc bfc" id="L290" title="All 2 branches covered.">					if (isFixMethod(method)) {</span>
-<span class="fc" id="L291">						fixes.add(method);</span>
+<span class="fc" id="L294">		List&lt;MethodDeclaration&gt; fixes = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L295" title="All 2 branches covered.">		for (Object typeObj : cu.types()) {</span>
+<span class="pc bpc" id="L296" title="1 of 2 branches missed.">			if (typeObj instanceof TypeDeclaration typeDecl) {</span>
+<span class="fc bfc" id="L297" title="All 2 branches covered.">				for (MethodDeclaration method : typeDecl.getMethods()) {</span>
+<span class="fc bfc" id="L298" title="All 2 branches covered.">					if (isFixMethod(method)) {</span>
+<span class="fc" id="L299">						fixes.add(method);</span>
 					}
 				}
 			}
-<span class="fc" id="L295">		}</span>
-<span class="fc" id="L296">		return fixes;</span>
+<span class="fc" id="L303">		}</span>
+<span class="fc" id="L304">		return fixes;</span>
 	}
 
 	/**
@@ -301,23 +309,23 @@ public final class EmbeddedJavaCompiler {
 	 * A fix method must return {@code void} and be annotated with {@code @FixFunction}.
 	 */
 	private static boolean isFixMethod(MethodDeclaration method) {
-<span class="pc bpc" id="L304" title="1 of 2 branches missed.">		if (method.getReturnType2() == null) {</span>
-<span class="nc" id="L305">			return false;</span>
+<span class="pc bpc" id="L312" title="1 of 2 branches missed.">		if (method.getReturnType2() == null) {</span>
+<span class="nc" id="L313">			return false;</span>
 		}
-<span class="fc" id="L307">		String returnType = method.getReturnType2().toString();</span>
-<span class="fc bfc" id="L308" title="All 2 branches covered.">		if (!&quot;void&quot;.equals(returnType)) { //$NON-NLS-1$</span>
-<span class="fc" id="L309">			return false;</span>
+<span class="fc" id="L315">		String returnType = method.getReturnType2().toString();</span>
+<span class="fc bfc" id="L316" title="All 2 branches covered.">		if (!&quot;void&quot;.equals(returnType)) { //$NON-NLS-1$</span>
+<span class="fc" id="L317">			return false;</span>
 		}
-<span class="fc bfc" id="L311" title="All 2 branches covered.">		for (Object modifier : method.modifiers()) {</span>
-<span class="fc bfc" id="L312" title="All 2 branches covered.">			if (modifier instanceof org.eclipse.jdt.core.dom.Annotation annotation) {</span>
-<span class="fc" id="L313">				String annotName = annotation.getTypeName().getFullyQualifiedName();</span>
-<span class="pc bpc" id="L314" title="1 of 2 branches missed.">				if (&quot;FixFunction&quot;.equals(annotName) //$NON-NLS-1$</span>
-<span class="nc bnc" id="L315" title="All 2 branches missed.">						|| &quot;org.sandbox.jdt.triggerpattern.api.FixFunction&quot;.equals(annotName)) { //$NON-NLS-1$</span>
-<span class="fc" id="L316">					return true;</span>
+<span class="fc bfc" id="L319" title="All 2 branches covered.">		for (Object modifier : method.modifiers()) {</span>
+<span class="fc bfc" id="L320" title="All 2 branches covered.">			if (modifier instanceof org.eclipse.jdt.core.dom.Annotation annotation) {</span>
+<span class="fc" id="L321">				String annotName = annotation.getTypeName().getFullyQualifiedName();</span>
+<span class="pc bpc" id="L322" title="1 of 2 branches missed.">				if (&quot;FixFunction&quot;.equals(annotName) //$NON-NLS-1$</span>
+<span class="nc bnc" id="L323" title="All 2 branches missed.">						|| &quot;org.sandbox.jdt.triggerpattern.api.FixFunction&quot;.equals(annotName)) { //$NON-NLS-1$</span>
+<span class="fc" id="L324">					return true;</span>
 				}
 			}
-<span class="fc" id="L319">		}</span>
-<span class="fc" id="L320">		return false;</span>
+<span class="fc" id="L327">		}</span>
+<span class="fc" id="L328">		return false;</span>
 	}
 
 	/**
@@ -339,43 +347,43 @@ public final class EmbeddedJavaCompiler {
 	public static CompilationResult compile(EmbeddedJavaBlock block, String ruleId, boolean debugInfo) {
 		// TODO: When bytecode compilation is implemented (Phase 6.3),
 		// pass debugInfo to BatchCompiler to generate debug attributes.
-<span class="fc" id="L342">		return compile(block, ruleId);</span>
+<span class="fc" id="L350">		return compile(block, ruleId);</span>
 	}
 
 	/**
 	 * Sanitizes a string for use as a Java identifier.
 	 */
 	static String sanitizeIdentifier(String input) {
-<span class="pc bpc" id="L349" title="1 of 4 branches missed.">		if (input == null || input.isEmpty()) {</span>
-<span class="fc" id="L350">			return &quot;anonymous&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L357" title="1 of 4 branches missed.">		if (input == null || input.isEmpty()) {</span>
+<span class="fc" id="L358">			return &quot;anonymous&quot;; //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L352">		StringBuilder sb = new StringBuilder();</span>
-<span class="fc bfc" id="L353" title="All 2 branches covered.">		for (int i = 0; i &lt; input.length(); i++) {</span>
-<span class="fc" id="L354">			char c = input.charAt(i);</span>
-<span class="fc bfc" id="L355" title="All 2 branches covered.">			if (Character.isJavaIdentifierPart(c)) {</span>
-<span class="fc" id="L356">				sb.append(c);</span>
+<span class="fc" id="L360">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L361" title="All 2 branches covered.">		for (int i = 0; i &lt; input.length(); i++) {</span>
+<span class="fc" id="L362">			char c = input.charAt(i);</span>
+<span class="fc bfc" id="L363" title="All 2 branches covered.">			if (Character.isJavaIdentifierPart(c)) {</span>
+<span class="fc" id="L364">				sb.append(c);</span>
 			} else {
-<span class="fc" id="L358">				sb.append('_');</span>
+<span class="fc" id="L366">				sb.append('_');</span>
 			}
 		}
-<span class="fc" id="L361">		String result = sb.toString();</span>
-<span class="pc bpc" id="L362" title="2 of 4 branches missed.">		if (result.isEmpty() || !Character.isJavaIdentifierStart(result.charAt(0))) {</span>
-<span class="nc" id="L363">			return &quot;_&quot; + result; //$NON-NLS-1$</span>
+<span class="fc" id="L369">		String result = sb.toString();</span>
+<span class="pc bpc" id="L370" title="2 of 4 branches missed.">		if (result.isEmpty() || !Character.isJavaIdentifierStart(result.charAt(0))) {</span>
+<span class="nc" id="L371">			return &quot;_&quot; + result; //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L365">		return result;</span>
+<span class="fc" id="L373">		return result;</span>
 	}
 
 	/**
 	 * Counts the number of newlines in a string.
 	 */
 	private static int countLines(String text) {
-<span class="fc" id="L372">		int count = 0;</span>
-<span class="fc bfc" id="L373" title="All 2 branches covered.">		for (int i = 0; i &lt; text.length(); i++) {</span>
-<span class="fc bfc" id="L374" title="All 2 branches covered.">			if (text.charAt(i) == '\n') {</span>
-<span class="fc" id="L375">				count++;</span>
+<span class="fc" id="L380">		int count = 0;</span>
+<span class="fc bfc" id="L381" title="All 2 branches covered.">		for (int i = 0; i &lt; text.length(); i++) {</span>
+<span class="fc bfc" id="L382" title="All 2 branches covered.">			if (text.charAt(i) == '\n') {</span>
+<span class="fc" id="L383">				count++;</span>
 			}
 		}
-<span class="fc" id="L378">		return count;</span>
+<span class="fc" id="L386">		return count;</span>
 	}
 
 	/**
@@ -391,14 +399,14 @@ public final class EmbeddedJavaCompiler {
 	 */
 	private static List&lt;SourceLineMapping&gt; buildLineMappings(EmbeddedJavaBlock block,
 			int headerLineCount) {
-<span class="fc" id="L394">		int lineCount = block.getLineCount();</span>
-<span class="fc" id="L395">		List&lt;SourceLineMapping&gt; mappings = new ArrayList&lt;&gt;(lineCount);</span>
-<span class="fc bfc" id="L396" title="All 2 branches covered.">		for (int i = 0; i &lt; lineCount; i++) {</span>
-<span class="fc" id="L397">			int hintLine = block.getStartLine() + i;</span>
-<span class="fc" id="L398">			int syntheticLine = headerLineCount + 1 + i; // +1 for 1-based indexing</span>
-<span class="fc" id="L399">			mappings.add(new SourceLineMapping(hintLine, syntheticLine));</span>
+<span class="fc" id="L402">		int lineCount = block.getLineCount();</span>
+<span class="fc" id="L403">		List&lt;SourceLineMapping&gt; mappings = new ArrayList&lt;&gt;(lineCount);</span>
+<span class="fc bfc" id="L404" title="All 2 branches covered.">		for (int i = 0; i &lt; lineCount; i++) {</span>
+<span class="fc" id="L405">			int hintLine = block.getStartLine() + i;</span>
+<span class="fc" id="L406">			int syntheticLine = headerLineCount + 1 + i; // +1 for 1-based indexing</span>
+<span class="fc" id="L407">			mappings.add(new SourceLineMapping(hintLine, syntheticLine));</span>
 		}
-<span class="fc" id="L401">		return Collections.unmodifiableList(mappings);</span>
+<span class="fc" id="L409">		return Collections.unmodifiableList(mappings);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

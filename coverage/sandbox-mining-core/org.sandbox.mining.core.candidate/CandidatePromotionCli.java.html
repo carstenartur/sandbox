@@ -83,9 +83,9 @@ public final class CandidatePromotionCli {
 <span class="nc" id="L83">			throw new IllegalArgumentException(&quot;--actor is required&quot;); //$NON-NLS-1$</span>
 		}
 
-<span class="fc" id="L86">		MiningCandidate candidate = GSON.fromJson(</span>
-<span class="fc" id="L87">				Files.readString(candidateFile, StandardCharsets.UTF_8), MiningCandidate.class);</span>
-<span class="fc" id="L88">		validateApprovedCandidate(candidate);</span>
+<span class="fc" id="L86">		MiningCandidate candidate = CandidateStore.readCandidate(candidateFile);</span>
+<span class="fc" id="L87">		validateApprovedCandidate(candidate);</span>
+<span class="fc" id="L88">		String fixtureName = candidate.getCandidateId() + &quot;.json&quot;; //$NON-NLS-1$</span>
 <span class="fc" id="L89">		CandidateVerification verification = new CandidateVerifier().verify(candidate);</span>
 <span class="pc bpc" id="L90" title="1 of 2 branches missed.">		if (!verification.successful()) {</span>
 <span class="nc" id="L91">			throw new IllegalStateException(&quot;Approved candidate no longer verifies: &quot; //$NON-NLS-1$</span>
@@ -114,99 +114,95 @@ public final class CandidatePromotionCli {
 <span class="fc" id="L114">		appendRule(candidate, hintFile);</span>
 <span class="fc" id="L115">		Path fixtureDirectory = normalizedRoot.resolve(FIXTURE_DIRECTORY);</span>
 <span class="fc" id="L116">		Files.createDirectories(fixtureDirectory);</span>
-<span class="fc" id="L117">		String fixtureName = candidate.getCandidateId() + &quot;.json&quot;; //$NON-NLS-1$</span>
-<span class="fc" id="L118">		Path fixtureFile = fixtureDirectory.resolve(fixtureName);</span>
-<span class="fc" id="L119">		PromotionFixture fixture = PromotionFixture.from(candidate, verification, actor);</span>
-<span class="fc" id="L120">		Files.writeString(fixtureFile, GSON.toJson(fixture) + System.lineSeparator(),</span>
+<span class="fc" id="L117">		Path fixtureFile = fixtureDirectory.resolve(fixtureName);</span>
+<span class="fc" id="L118">		PromotionFixture fixture = PromotionFixture.from(candidate, verification, actor);</span>
+<span class="fc" id="L119">		Files.writeString(fixtureFile, GSON.toJson(fixture) + System.lineSeparator(),</span>
 				StandardCharsets.UTF_8);
-<span class="fc" id="L122">		updateIndex(fixtureDirectory.resolve(&quot;index.txt&quot;), fixtureName); //$NON-NLS-1$</span>
+<span class="fc" id="L121">		updateIndex(fixtureDirectory.resolve(&quot;index.txt&quot;), fixtureName); //$NON-NLS-1$</span>
 
-<span class="fc" id="L124">		System.out.println(&quot;Promotion changes generated:&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L125">		System.out.println(&quot;  &quot; + normalizedRoot.relativize(hintFile)); //$NON-NLS-1$</span>
-<span class="fc" id="L126">		System.out.println(&quot;  &quot; + normalizedRoot.relativize(fixtureFile)); //$NON-NLS-1$</span>
-<span class="fc" id="L127">		System.out.println(&quot;  &quot; + normalizedRoot.relativize(fixtureDirectory.resolve(&quot;index.txt&quot;))); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L128">		return 0;</span>
+<span class="fc" id="L123">		System.out.println(&quot;Promotion changes generated:&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L124">		System.out.println(&quot;  &quot; + normalizedRoot.relativize(hintFile)); //$NON-NLS-1$</span>
+<span class="fc" id="L125">		System.out.println(&quot;  &quot; + normalizedRoot.relativize(fixtureFile)); //$NON-NLS-1$</span>
+<span class="fc" id="L126">		System.out.println(&quot;  &quot; + normalizedRoot.relativize(fixtureDirectory.resolve(&quot;index.txt&quot;))); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L127">		return 0;</span>
 	}
 
 	private static void validateApprovedCandidate(MiningCandidate candidate) {
-<span class="pc bpc" id="L132" title="1 of 2 branches missed.">		if (candidate == null) {</span>
-<span class="nc" id="L133">			throw new IllegalArgumentException(&quot;Candidate JSON is empty&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">		if (candidate.getStatus() != CandidateStatus.APPROVED) {</span>
+<span class="fc" id="L132">			throw new IllegalStateException(&quot;Only APPROVED candidates can generate promotion changes&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc bfc" id="L135" title="All 2 branches covered.">		if (candidate.getStatus() != CandidateStatus.APPROVED) {</span>
-<span class="fc" id="L136">			throw new IllegalStateException(&quot;Only APPROVED candidates can generate promotion changes&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L134">		CandidateVerification previousVerification = candidate.getVerification();</span>
+<span class="pc bpc" id="L135" title="2 of 4 branches missed.">		if (previousVerification == null || !previousVerification.successful()) {</span>
+<span class="nc" id="L136">			throw new IllegalStateException(&quot;Approved candidate has no successful persisted verification&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L138">		CandidateVerification previousVerification = candidate.getVerification();</span>
-<span class="pc bpc" id="L139" title="2 of 4 branches missed.">		if (previousVerification == null || !previousVerification.successful()) {</span>
-<span class="nc" id="L140">			throw new IllegalStateException(&quot;Approved candidate has no successful persisted verification&quot;); //$NON-NLS-1$</span>
-		}
-<span class="fc" id="L142">	}</span>
+<span class="fc" id="L138">	}</span>
 
 	private static String validateTargetFileName(String targetHintFile) {
-<span class="pc bpc" id="L145" title="2 of 4 branches missed.">		if (targetHintFile == null || targetHintFile.isBlank()) {</span>
-<span class="nc" id="L146">			throw new IllegalArgumentException(&quot;targetHintFile is required&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L141" title="2 of 4 branches missed.">		if (targetHintFile == null || targetHintFile.isBlank()) {</span>
+<span class="nc" id="L142">			throw new IllegalArgumentException(&quot;targetHintFile is required&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L148">		String target = targetHintFile.trim();</span>
-<span class="pc bpc" id="L149" title="1 of 2 branches missed.">		if (!target.endsWith(&quot;.sandbox-hint&quot;) //$NON-NLS-1$</span>
-<span class="pc bpc" id="L150" title="1 of 4 branches missed.">				|| target.indexOf('/') &gt;= 0 || target.indexOf('\\') &gt;= 0</span>
-<span class="pc bpc" id="L151" title="2 of 4 branches missed.">				|| &quot;.&quot;.equals(target) || &quot;..&quot;.equals(target)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L152">			throw new IllegalArgumentException(&quot;targetHintFile must be a simple .sandbox-hint filename&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L144">		String target = targetHintFile.trim();</span>
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">		if (!target.endsWith(&quot;.sandbox-hint&quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L146" title="1 of 4 branches missed.">				|| target.indexOf('/') &gt;= 0 || target.indexOf('\\') &gt;= 0</span>
+<span class="pc bpc" id="L147" title="2 of 4 branches missed.">				|| &quot;.&quot;.equals(target) || &quot;..&quot;.equals(target)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L148">			throw new IllegalArgumentException(&quot;targetHintFile must be a simple .sandbox-hint filename&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc bfc" id="L154" title="All 2 branches covered.">		if (!ACTIVE_BUNDLED_HINTS.contains(target)) {</span>
-<span class="fc" id="L155">			throw new IllegalArgumentException(</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">		if (!ACTIVE_BUNDLED_HINTS.contains(target)) {</span>
+<span class="fc" id="L151">			throw new IllegalArgumentException(</span>
 					&quot;targetHintFile is not an active cleanup/quick-assist bundle: &quot; + target); //$NON-NLS-1$
 		}
-<span class="fc" id="L158">		return target;</span>
+<span class="fc" id="L154">		return target;</span>
 	}
 
 	private static void appendRule(MiningCandidate candidate, Path hintFile) throws IOException {
-<span class="fc" id="L162">		String existing = Files.readString(hintFile, StandardCharsets.UTF_8);</span>
-<span class="fc" id="L163">		String rule = candidate.getDslRule().strip();</span>
-<span class="pc bpc" id="L164" title="1 of 2 branches missed.">		if (existing.contains(rule)) {</span>
-<span class="nc" id="L165">			throw new IllegalStateException(&quot;The exact DSL rule already exists in &quot; + hintFile); //$NON-NLS-1$</span>
+<span class="fc" id="L158">		String existing = Files.readString(hintFile, StandardCharsets.UTF_8);</span>
+<span class="fc" id="L159">		String rule = candidate.getDslRule().strip();</span>
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">		if (existing.contains(rule)) {</span>
+<span class="nc" id="L161">			throw new IllegalStateException(&quot;The exact DSL rule already exists in &quot; + hintFile); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L167">		StringBuilder addition = new StringBuilder();</span>
-<span class="pc bpc" id="L168" title="1 of 2 branches missed.">		if (!existing.endsWith(System.lineSeparator())) {</span>
-<span class="nc" id="L169">			addition.append(System.lineSeparator());</span>
+<span class="fc" id="L163">		StringBuilder addition = new StringBuilder();</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">		if (!existing.endsWith(System.lineSeparator())) {</span>
+<span class="nc" id="L165">			addition.append(System.lineSeparator());</span>
 		}
-<span class="fc" id="L171">		addition.append(System.lineSeparator())</span>
-<span class="fc" id="L172">				.append(&quot;// Promoted mining candidate: &quot;).append(candidate.getCandidateId()) //$NON-NLS-1$</span>
-<span class="fc" id="L173">				.append(System.lineSeparator())</span>
-<span class="fc" id="L174">				.append(&quot;// Source: &quot;).append(commitUrl(candidate)) //$NON-NLS-1$</span>
-<span class="fc" id="L175">				.append(System.lineSeparator())</span>
-<span class="fc" id="L176">				.append(rule)</span>
-<span class="fc" id="L177">				.append(System.lineSeparator());</span>
-<span class="fc" id="L178">		Files.writeString(hintFile, existing + addition, StandardCharsets.UTF_8);</span>
-<span class="fc" id="L179">	}</span>
+<span class="fc" id="L167">		addition.append(System.lineSeparator())</span>
+<span class="fc" id="L168">				.append(&quot;// Promoted mining candidate: &quot;).append(candidate.getCandidateId()) //$NON-NLS-1$</span>
+<span class="fc" id="L169">				.append(System.lineSeparator())</span>
+<span class="fc" id="L170">				.append(&quot;// Source: &quot;).append(commitUrl(candidate)) //$NON-NLS-1$</span>
+<span class="fc" id="L171">				.append(System.lineSeparator())</span>
+<span class="fc" id="L172">				.append(rule)</span>
+<span class="fc" id="L173">				.append(System.lineSeparator());</span>
+<span class="fc" id="L174">		Files.writeString(hintFile, existing + addition, StandardCharsets.UTF_8);</span>
+<span class="fc" id="L175">	}</span>
 
 	private static void updateIndex(Path indexFile, String fixtureName) throws IOException {
-<span class="pc bpc" id="L182" title="1 of 2 branches missed.">		List&lt;String&gt; entries = Files.isRegularFile(indexFile)</span>
-<span class="nc" id="L183">				? new ArrayList&lt;&gt;(Files.readAllLines(indexFile, StandardCharsets.UTF_8))</span>
-<span class="fc" id="L184">				: new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L185">		entries.removeIf(String::isBlank);</span>
-<span class="pc bpc" id="L186" title="1 of 2 branches missed.">		if (!entries.contains(fixtureName)) {</span>
-<span class="fc" id="L187">			entries.add(fixtureName);</span>
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">		List&lt;String&gt; entries = Files.isRegularFile(indexFile)</span>
+<span class="nc" id="L179">				? new ArrayList&lt;&gt;(Files.readAllLines(indexFile, StandardCharsets.UTF_8))</span>
+<span class="fc" id="L180">				: new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L181">		entries.removeIf(String::isBlank);</span>
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">		if (!entries.contains(fixtureName)) {</span>
+<span class="fc" id="L183">			entries.add(fixtureName);</span>
 		}
-<span class="fc" id="L189">		entries.sort(String::compareTo);</span>
-<span class="fc" id="L190">		Files.write(indexFile, entries, StandardCharsets.UTF_8);</span>
-<span class="fc" id="L191">	}</span>
+<span class="fc" id="L185">		entries.sort(String::compareTo);</span>
+<span class="fc" id="L186">		Files.write(indexFile, entries, StandardCharsets.UTF_8);</span>
+<span class="fc" id="L187">	}</span>
 
 	private static String commitUrl(MiningCandidate candidate) {
-<span class="fc" id="L194">		String repo = candidate.getSourceRepo();</span>
-<span class="pc bpc" id="L195" title="2 of 4 branches missed.">		if (repo != null &amp;&amp; repo.endsWith(&quot;.git&quot;)) { //$NON-NLS-1$</span>
-<span class="nc" id="L196">			repo = repo.substring(0, repo.length() - 4);</span>
+<span class="fc" id="L190">		String repo = candidate.getSourceRepo();</span>
+<span class="pc bpc" id="L191" title="2 of 4 branches missed.">		if (repo != null &amp;&amp; repo.endsWith(&quot;.git&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L192">			repo = repo.substring(0, repo.length() - 4);</span>
 		}
-<span class="fc" id="L198">		return repo + &quot;/commit/&quot; + candidate.getSourceCommit(); //$NON-NLS-1$</span>
+<span class="fc" id="L194">		return repo + &quot;/commit/&quot; + candidate.getSourceCommit(); //$NON-NLS-1$</span>
 	}
 
 	private static String requireValue(String[] args, int index, String option) {
-<span class="pc bpc" id="L202" title="1 of 2 branches missed.">		if (index &gt;= args.length) {</span>
-<span class="nc" id="L203">			throw new IllegalArgumentException(option + &quot; requires a value&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">		if (index &gt;= args.length) {</span>
+<span class="nc" id="L199">			throw new IllegalArgumentException(option + &quot; requires a value&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L205">		return args[index];</span>
+<span class="fc" id="L201">		return args[index];</span>
 	}
 
 	/** Permanent data-driven behavior test fixture generated for promotion. */
-<span class="fc" id="L209">	public record PromotionFixture(</span>
+<span class="fc" id="L205">	public record PromotionFixture(</span>
 			String candidateId,
 			int revision,
 			String sourceRepo,
@@ -224,20 +220,20 @@ public final class CandidatePromotionCli {
 
 		static PromotionFixture from(MiningCandidate candidate,
 				CandidateVerification verification, String actor) {
-<span class="fc" id="L227">			return new PromotionFixture(</span>
-<span class="fc" id="L228">					candidate.getCandidateId(),</span>
-<span class="fc" id="L229">					candidate.getRevision(),</span>
-<span class="fc" id="L230">					candidate.getSourceRepo(),</span>
-<span class="fc" id="L231">					candidate.getSourceCommit(),</span>
-<span class="fc" id="L232">					candidate.getTargetHintFile(),</span>
-<span class="fc" id="L233">					candidate.getSourceVersion(),</span>
-<span class="fc" id="L234">					candidate.getDslRule(),</span>
-<span class="fc" id="L235">					candidate.getBeforeExample(),</span>
-<span class="fc" id="L236">					candidate.getAfterExample(),</span>
-<span class="fc" id="L237">					candidate.getNegativeExample(),</span>
-<span class="fc" id="L238">					candidate.getRuleFingerprint(),</span>
-<span class="fc" id="L239">					candidate.getBehaviorFingerprint(),</span>
-<span class="fc" id="L240">					verification.verifierVersion(),</span>
+<span class="fc" id="L223">			return new PromotionFixture(</span>
+<span class="fc" id="L224">					candidate.getCandidateId(),</span>
+<span class="fc" id="L225">					candidate.getRevision(),</span>
+<span class="fc" id="L226">					candidate.getSourceRepo(),</span>
+<span class="fc" id="L227">					candidate.getSourceCommit(),</span>
+<span class="fc" id="L228">					candidate.getTargetHintFile(),</span>
+<span class="fc" id="L229">					candidate.getSourceVersion(),</span>
+<span class="fc" id="L230">					candidate.getDslRule(),</span>
+<span class="fc" id="L231">					candidate.getBeforeExample(),</span>
+<span class="fc" id="L232">					candidate.getAfterExample(),</span>
+<span class="fc" id="L233">					candidate.getNegativeExample(),</span>
+<span class="fc" id="L234">					candidate.getRuleFingerprint(),</span>
+<span class="fc" id="L235">					candidate.getBehaviorFingerprint(),</span>
+<span class="fc" id="L236">					verification.verifierVersion(),</span>
 					actor);
 		}
 	}
