@@ -159,7 +159,7 @@
 		<dependency>
 			<groupId>org.flywaydb</groupId>
 			<artifactId>flyway-sqlserver</artifactId>
-			<version>13.10.0</version>
+			<version>13.13.0</version>
 			<scope>runtime</scope>
 		</dependency>
 		<dependency>
