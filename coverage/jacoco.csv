@@ -1369,7 +1369,7 @@ sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.api,RuleExam
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.api,RuleExampleVerifier.new ASTVisitor() {...},0,16,0,0,0,2,0,2,0,2
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.api,RuleMatchDiagnostics.Candidate,7,291,3,25,2,40,3,14,0,3
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.api,ExecutionTreeComparator.Comparison,2,25,1,1,0,5,1,1,0,1
-sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.api,ImportDirective,87,560,32,72,19,128,28,45,1,20
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.api,ImportDirective,80,513,19,63,14,114,15,50,1,23
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.api,RewriteActionCatalog,2,172,1,3,0,31,1,11,0,10
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.api,PatternMatchSupport,60,307,24,56,14,68,20,28,0,8
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.api,PreviewGenerator,2,323,4,12,1,70,4,10,0,6
@@ -1679,7 +1679,7 @@ sandbox_coverage/sandbox_common_core,org.sandbox.jdt.internal.common,ASTProcesso
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.internal.common,ScopedAstProcessorBuilder,28,336,7,17,6,62,8,32,1,27
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.internal.common,LibStandardNames,3,0,0,0,1,0,1,0,1,0
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.internal.common,IndependentAstProcessorBuilder,0,124,0,6,0,25,0,11,0,8
-sandbox_coverage/sandbox_common_core,org.sandbox.jdt.internal.common,PdeManifestImportUpdater,11,320,8,48,5,69,8,30,0,10
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.internal.common,PdeManifestImportUpdater,11,345,8,50,5,74,8,31,0,10
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.internal.common,LambdaASTVisitor,1284,2242,288,390,295,603,264,298,39,184
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.internal.common,ImportVisitorBuilder,0,16,0,0,0,5,0,2,0,2
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.internal.common,ASTProcessor.NodeHolder,11,31,0,0,3,9,1,2,1,2
@@ -1823,7 +1823,7 @@ sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.history,Sand
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.history,SandboxHistorySearch.AuthorCount,0,12,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.history,SandboxHistoryAnalysisConfigurer,0,23,0,0,0,9,0,2,0,2
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.history,GitHistorySnapshot,7,147,3,17,1,32,3,9,0,2
-sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.analysis,ApplicationVectorIndex,1,367,3,35,0,55,3,28,0,12
+sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.analysis,ApplicationVectorIndex,8,360,4,34,0,55,4,27,0,12
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.analysis,AnalysisGenerationCache,43,619,14,64,4,127,12,44,0,17
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.analysis,ApplicationApiComparison.Change,0,12,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.analysis,ApplicationSourceReports.AuthorTypes,0,12,0,0,0,1,0,1,0,1

@@ -20,6 +20,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 
 import org.sandbox.jdt.triggerpattern.internal.JavaSourceMask;
@@ -58,25 +59,12 @@ import org.sandbox.jdt.triggerpattern.internal.JavaSourceMask;
  */
 public final class ImportDirective {
 	
-	/**
-	 * Compiled regex for detecting fully qualified type names in patterns.
-	 * Matches patterns like {@code java.util.Objects} or {@code org.junit.Assert}.
-	 */
-<span class="fc" id="L65">	private static final java.util.regex.Pattern FQN_PATTERN = java.util.regex.Pattern.compile(</span>
-			&quot;\\b([a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*(\\.[A-Z][A-Za-z0-9_]*))\\b&quot;); //$NON-NLS-1$
-
-	/**
-	 * Compiled regex for detecting FQN.method patterns (e.g., {@code org.junit.Assert.assertEquals}).
-	 * 
-	 * &lt;p&gt;Capture groups:&lt;/p&gt;
-	 * &lt;ul&gt;
-	 *   &lt;li&gt;Group 1: full match including method (e.g., {@code org.junit.Assert.assertEquals})&lt;/li&gt;
-	 *   &lt;li&gt;Group 2: type part only (e.g., {@code org.junit.Assert})&lt;/li&gt;
-	 *   &lt;li&gt;The method name is the last segment after the type part's last dot&lt;/li&gt;
-	 * &lt;/ul&gt;
-	 */
-<span class="fc" id="L78">	private static final java.util.regex.Pattern FQN_METHOD_PATTERN = java.util.regex.Pattern.compile(</span>
-			&quot;\\b(([a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*(\\.[A-Z][A-Za-z0-9_]*))\\.[a-zA-Z][A-Za-z0-9_]*)\\b&quot;); //$NON-NLS-1$
+<span class="fc" id="L62">	private static final java.util.regex.Pattern PACKAGE_SEGMENT = java.util.regex.Pattern.compile(</span>
+			&quot;\\b[a-z][a-z0-9_]*+&quot;); //$NON-NLS-1$
+	private static final String TYPE_NAME = &quot;(\\.[A-Z][A-Za-z0-9_]*+)&quot;; //$NON-NLS-1$
+<span class="fc" id="L65">	private static final java.util.regex.Pattern TYPE_SUFFIX = java.util.regex.Pattern.compile(TYPE_NAME + &quot;\\b&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L66">	private static final java.util.regex.Pattern MEMBER_SUFFIX = java.util.regex.Pattern.compile(</span>
+			TYPE_NAME + &quot;\\.([A-Za-z][A-Za-z0-9_]*+)\\b&quot;); //$NON-NLS-1$
 
 	private final List&lt;String&gt; addImports;
 	private final List&lt;String&gt; removeImports;
@@ -87,13 +75,13 @@ public final class ImportDirective {
 	/**
 	 * Creates an empty import directive.
 	 */
-<span class="fc" id="L90">	public ImportDirective() {</span>
-<span class="fc" id="L91">		this.addImports = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L92">		this.removeImports = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L93">		this.addStaticImports = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L94">		this.removeStaticImports = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L95">		this.replaceStaticImports = new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L96">	}</span>
+<span class="fc" id="L78">	public ImportDirective() {</span>
+<span class="fc" id="L79">		this.addImports = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L80">		this.removeImports = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L81">		this.addStaticImports = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L82">		this.removeStaticImports = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L83">		this.replaceStaticImports = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L84">	}</span>
 	
 	/**
 	 * Creates an import directive with the given imports.
@@ -104,13 +92,13 @@ public final class ImportDirective {
 	 * @param removeStaticImports static imports to remove
 	 */
 	public ImportDirective(List&lt;String&gt; addImports, List&lt;String&gt; removeImports,
-<span class="fc" id="L107">			List&lt;String&gt; addStaticImports, List&lt;String&gt; removeStaticImports) {</span>
-<span class="pc bpc" id="L108" title="1 of 2 branches missed.">		this.addImports = addImports != null ? new ArrayList&lt;&gt;(addImports) : new ArrayList&lt;&gt;();</span>
-<span class="pc bpc" id="L109" title="1 of 2 branches missed.">		this.removeImports = removeImports != null ? new ArrayList&lt;&gt;(removeImports) : new ArrayList&lt;&gt;();</span>
-<span class="pc bpc" id="L110" title="1 of 2 branches missed.">		this.addStaticImports = addStaticImports != null ? new ArrayList&lt;&gt;(addStaticImports) : new ArrayList&lt;&gt;();</span>
-<span class="pc bpc" id="L111" title="1 of 2 branches missed.">		this.removeStaticImports = removeStaticImports != null ? new ArrayList&lt;&gt;(removeStaticImports) : new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L112">		this.replaceStaticImports = new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L113">	}</span>
+<span class="fc" id="L95">			List&lt;String&gt; addStaticImports, List&lt;String&gt; removeStaticImports) {</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">		this.addImports = addImports != null ? new ArrayList&lt;&gt;(addImports) : new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">		this.removeImports = removeImports != null ? new ArrayList&lt;&gt;(removeImports) : new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">		this.addStaticImports = addStaticImports != null ? new ArrayList&lt;&gt;(addStaticImports) : new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">		this.removeStaticImports = removeStaticImports != null ? new ArrayList&lt;&gt;(removeStaticImports) : new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L100">		this.replaceStaticImports = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L101">	}</span>
 	
 	/**
 	 * Adds a regular import.
@@ -118,8 +106,8 @@ public final class ImportDirective {
 	 * @param qualifiedName the fully qualified type name (e.g., {@code &quot;java.util.Objects&quot;})
 	 */
 	public void addImport(String qualifiedName) {
-<span class="fc" id="L121">		addImports.add(qualifiedName);</span>
-<span class="fc" id="L122">	}</span>
+<span class="fc" id="L109">		addImports.add(qualifiedName);</span>
+<span class="fc" id="L110">	}</span>
 	
 	/**
 	 * Adds a regular import to be removed.
@@ -127,8 +115,8 @@ public final class ImportDirective {
 	 * @param qualifiedName the fully qualified type name to remove
 	 */
 	public void removeImport(String qualifiedName) {
-<span class="fc" id="L130">		removeImports.add(qualifiedName);</span>
-<span class="fc" id="L131">	}</span>
+<span class="fc" id="L118">		removeImports.add(qualifiedName);</span>
+<span class="fc" id="L119">	}</span>
 	
 	/**
 	 * Adds a static import.
@@ -137,8 +125,8 @@ public final class ImportDirective {
 	 *        (e.g., {@code &quot;java.util.Objects.requireNonNull&quot;})
 	 */
 	public void addStaticImport(String qualifiedName) {
-<span class="fc" id="L140">		addStaticImports.add(qualifiedName);</span>
-<span class="fc" id="L141">	}</span>
+<span class="fc" id="L128">		addStaticImports.add(qualifiedName);</span>
+<span class="fc" id="L129">	}</span>
 	
 	/**
 	 * Adds a static import to be removed.
@@ -146,8 +134,8 @@ public final class ImportDirective {
 	 * @param qualifiedName the fully qualified static member name to remove
 	 */
 	public void removeStaticImport(String qualifiedName) {
-<span class="fc" id="L149">		removeStaticImports.add(qualifiedName);</span>
-<span class="fc" id="L150">	}</span>
+<span class="fc" id="L137">		removeStaticImports.add(qualifiedName);</span>
+<span class="fc" id="L138">	}</span>
 	
 	/**
 	 * Adds a static import replacement mapping.
@@ -163,8 +151,8 @@ public final class ImportDirective {
 	 * @param newType the fully qualified new type name
 	 */
 	public void replaceStaticImport(String oldType, String newType) {
-<span class="fc" id="L166">		replaceStaticImports.put(oldType, newType);</span>
-<span class="fc" id="L167">	}</span>
+<span class="fc" id="L154">		replaceStaticImports.put(oldType, newType);</span>
+<span class="fc" id="L155">	}</span>
 	
 	/**
 	 * Returns the list of imports to add.
@@ -172,7 +160,7 @@ public final class ImportDirective {
 	 * @return unmodifiable list of imports to add
 	 */
 	public List&lt;String&gt; getAddImports() {
-<span class="fc" id="L175">		return Collections.unmodifiableList(addImports);</span>
+<span class="fc" id="L163">		return Collections.unmodifiableList(addImports);</span>
 	}
 	
 	/**
@@ -181,7 +169,7 @@ public final class ImportDirective {
 	 * @return unmodifiable list of imports to remove
 	 */
 	public List&lt;String&gt; getRemoveImports() {
-<span class="fc" id="L184">		return Collections.unmodifiableList(removeImports);</span>
+<span class="fc" id="L172">		return Collections.unmodifiableList(removeImports);</span>
 	}
 	
 	/**
@@ -190,7 +178,7 @@ public final class ImportDirective {
 	 * @return unmodifiable list of static imports to add
 	 */
 	public List&lt;String&gt; getAddStaticImports() {
-<span class="fc" id="L193">		return Collections.unmodifiableList(addStaticImports);</span>
+<span class="fc" id="L181">		return Collections.unmodifiableList(addStaticImports);</span>
 	}
 	
 	/**
@@ -199,7 +187,7 @@ public final class ImportDirective {
 	 * @return unmodifiable list of static imports to remove
 	 */
 	public List&lt;String&gt; getRemoveStaticImports() {
-<span class="fc" id="L202">		return Collections.unmodifiableList(removeStaticImports);</span>
+<span class="fc" id="L190">		return Collections.unmodifiableList(removeStaticImports);</span>
 	}
 	
 	/**
@@ -211,7 +199,7 @@ public final class ImportDirective {
 	 * @return unmodifiable map of old type → new type
 	 */
 	public Map&lt;String, String&gt; getReplaceStaticImports() {
-<span class="fc" id="L214">		return Collections.unmodifiableMap(replaceStaticImports);</span>
+<span class="fc" id="L202">		return Collections.unmodifiableMap(replaceStaticImports);</span>
 	}
 	
 	/**
@@ -220,9 +208,9 @@ public final class ImportDirective {
 	 * @return {@code true} if empty
 	 */
 	public boolean isEmpty() {
-<span class="fc bfc" id="L223" title="All 4 branches covered.">		return addImports.isEmpty() &amp;&amp; removeImports.isEmpty()</span>
-<span class="pc bpc" id="L224" title="2 of 4 branches missed.">				&amp;&amp; addStaticImports.isEmpty() &amp;&amp; removeStaticImports.isEmpty()</span>
-<span class="pc bpc" id="L225" title="1 of 2 branches missed.">				&amp;&amp; replaceStaticImports.isEmpty();</span>
+<span class="fc bfc" id="L211" title="All 4 branches covered.">		return addImports.isEmpty() &amp;&amp; removeImports.isEmpty()</span>
+<span class="pc bpc" id="L212" title="2 of 4 branches missed.">				&amp;&amp; addStaticImports.isEmpty() &amp;&amp; removeStaticImports.isEmpty()</span>
+<span class="pc bpc" id="L213" title="1 of 2 branches missed.">				&amp;&amp; replaceStaticImports.isEmpty();</span>
 	}
 	
 	/**
@@ -236,35 +224,11 @@ public final class ImportDirective {
 	 * @return an {@link ImportDirective} with detected imports
 	 */
 	public static ImportDirective detectFromPattern(String replacementPattern) {
-<span class="fc" id="L239">		ImportDirective directive = new ImportDirective();</span>
-<span class="fc bfc" id="L240" title="All 4 branches covered.">		if (replacementPattern == null || replacementPattern.isEmpty()) {</span>
-<span class="fc" id="L241">			return directive;</span>
-		}
-		
-<span class="fc" id="L244">		Set&lt;String&gt; detected = new HashSet&lt;&gt;();</span>
-<span class="fc" id="L245">		Matcher matcher = FQN_PATTERN.matcher(JavaSourceMask.codeOnly(replacementPattern));</span>
-		
-<span class="fc bfc" id="L247" title="All 2 branches covered.">		while (matcher.find()) {</span>
-<span class="fc" id="L248">			String fqn = matcher.group(1);</span>
-			// Skip placeholders
-<span class="pc bpc" id="L250" title="1 of 2 branches missed.">			if (fqn.contains(&quot;$&quot;)) { //$NON-NLS-1$</span>
-<span class="nc" id="L251">				continue;</span>
-			}
-			// Only add if it looks like a real qualified name (has at least package.Class)
-<span class="fc" id="L254">			int lastDot = fqn.lastIndexOf('.');</span>
-<span class="pc bpc" id="L255" title="1 of 2 branches missed.">			if (lastDot &gt; 0) {</span>
-<span class="fc" id="L256">				String className = fqn.substring(lastDot + 1);</span>
-<span class="pc bpc" id="L257" title="1 of 2 branches missed.">				if (Character.isUpperCase(className.charAt(0))) {</span>
-<span class="fc" id="L258">					detected.add(fqn);</span>
-				}
-			}
-<span class="fc" id="L261">		}</span>
-		
-<span class="fc bfc" id="L263" title="All 2 branches covered.">		for (String fqn : detected) {</span>
-<span class="fc" id="L264">			directive.addImport(fqn);</span>
-<span class="fc" id="L265">		}</span>
-		
-<span class="fc" id="L267">		return directive;</span>
+<span class="fc" id="L227">		ImportDirective directive = new ImportDirective();</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">		for (String fqn : extractFqns(replacementPattern)) {</span>
+<span class="fc" id="L229">			directive.addImport(fqn);</span>
+<span class="fc" id="L230">		}</span>
+<span class="fc" id="L231">		return directive;</span>
 	}
 	
 	/**
@@ -280,30 +244,30 @@ public final class ImportDirective {
 	 * @return an {@link ImportDirective} with detected removeImport candidates
 	 */
 	public static ImportDirective detectRemovedTypes(String sourcePattern, List&lt;RewriteAlternative&gt; alternatives) {
-<span class="fc" id="L283">		ImportDirective directive = new ImportDirective();</span>
-<span class="pc bpc" id="L284" title="1 of 8 branches missed.">		if (sourcePattern == null || sourcePattern.isEmpty() || alternatives == null || alternatives.isEmpty()) {</span>
-<span class="fc" id="L285">			return directive;</span>
+<span class="fc" id="L247">		ImportDirective directive = new ImportDirective();</span>
+<span class="pc bpc" id="L248" title="1 of 8 branches missed.">		if (sourcePattern == null || sourcePattern.isEmpty() || alternatives == null || alternatives.isEmpty()) {</span>
+<span class="fc" id="L249">			return directive;</span>
 		}
 		
-<span class="fc" id="L288">		Set&lt;String&gt; sourceFqns = extractFqns(sourcePattern);</span>
-<span class="fc bfc" id="L289" title="All 2 branches covered.">		if (sourceFqns.isEmpty()) {</span>
-<span class="fc" id="L290">			return directive;</span>
+<span class="fc" id="L252">		Set&lt;String&gt; sourceFqns = extractFqns(sourcePattern);</span>
+<span class="fc bfc" id="L253" title="All 2 branches covered.">		if (sourceFqns.isEmpty()) {</span>
+<span class="fc" id="L254">			return directive;</span>
 		}
 		
 		// Collect all FQNs from all replacement patterns
-<span class="fc" id="L294">		Set&lt;String&gt; replacementFqns = new HashSet&lt;&gt;();</span>
-<span class="fc bfc" id="L295" title="All 2 branches covered.">		for (RewriteAlternative alt : alternatives) {</span>
-<span class="fc" id="L296">			replacementFqns.addAll(extractFqns(alt.replacementPattern()));</span>
-<span class="fc" id="L297">		}</span>
+<span class="fc" id="L258">		Set&lt;String&gt; replacementFqns = new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L259" title="All 2 branches covered.">		for (RewriteAlternative alt : alternatives) {</span>
+<span class="fc" id="L260">			replacementFqns.addAll(extractFqns(alt.replacementPattern()));</span>
+<span class="fc" id="L261">		}</span>
 		
 		// Types in source but not in any replacement are candidates for removeImport
-<span class="fc bfc" id="L300" title="All 2 branches covered.">		for (String fqn : sourceFqns) {</span>
-<span class="fc bfc" id="L301" title="All 2 branches covered.">			if (!replacementFqns.contains(fqn)) {</span>
-<span class="fc" id="L302">				directive.removeImport(fqn);</span>
+<span class="fc bfc" id="L264" title="All 2 branches covered.">		for (String fqn : sourceFqns) {</span>
+<span class="fc bfc" id="L265" title="All 2 branches covered.">			if (!replacementFqns.contains(fqn)) {</span>
+<span class="fc" id="L266">				directive.removeImport(fqn);</span>
 			}
-<span class="fc" id="L304">		}</span>
+<span class="fc" id="L268">		}</span>
 		
-<span class="fc" id="L306">		return directive;</span>
+<span class="fc" id="L270">		return directive;</span>
 	}
 	
 	/**
@@ -323,49 +287,49 @@ public final class ImportDirective {
 	 * @return an {@link ImportDirective} with all inferred import directives
 	 */
 	public static ImportDirective inferFromFqnPatterns(String sourcePattern, List&lt;String&gt; replacementPatterns) {
-<span class="fc" id="L326">		ImportDirective directive = new ImportDirective();</span>
-<span class="fc bfc" id="L327" title="All 4 branches covered.">		if (replacementPatterns == null || replacementPatterns.isEmpty()) {</span>
-<span class="fc" id="L328">			return directive;</span>
+<span class="fc" id="L290">		ImportDirective directive = new ImportDirective();</span>
+<span class="fc bfc" id="L291" title="All 4 branches covered.">		if (replacementPatterns == null || replacementPatterns.isEmpty()) {</span>
+<span class="fc" id="L292">			return directive;</span>
 		}
 		
-<span class="fc" id="L331">		Set&lt;String&gt; sourceFqns = extractFqns(sourcePattern);</span>
-<span class="fc" id="L332">		Map&lt;String, String&gt; sourceFqnMethods = extractFqnMethods(sourcePattern);</span>
+<span class="fc" id="L295">		Set&lt;String&gt; sourceFqns = extractFqns(sourcePattern);</span>
+<span class="fc" id="L296">		Map&lt;String, String&gt; sourceFqnMethods = extractFqnMethods(sourcePattern);</span>
 		
-<span class="fc" id="L334">		Set&lt;String&gt; replacementFqns = new HashSet&lt;&gt;();</span>
-<span class="fc" id="L335">		Map&lt;String, String&gt; replacementFqnMethods = new LinkedHashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L336" title="All 2 branches covered.">		for (String replacement : replacementPatterns) {</span>
-<span class="fc" id="L337">			replacementFqns.addAll(extractFqns(replacement));</span>
-<span class="fc" id="L338">			replacementFqnMethods.putAll(extractFqnMethods(replacement));</span>
-<span class="fc" id="L339">		}</span>
+<span class="fc" id="L298">		Set&lt;String&gt; replacementFqns = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L299">		Map&lt;String, String&gt; replacementFqnMethods = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L300" title="All 2 branches covered.">		for (String replacement : replacementPatterns) {</span>
+<span class="fc" id="L301">			replacementFqns.addAll(extractFqns(replacement));</span>
+<span class="fc" id="L302">			replacementFqnMethods.putAll(extractFqnMethods(replacement));</span>
+<span class="fc" id="L303">		}</span>
 		
 		// addImport: FQN types in replacement (regardless of source)
-<span class="fc bfc" id="L342" title="All 2 branches covered.">		for (String fqn : replacementFqns) {</span>
-<span class="fc" id="L343">			directive.addImport(fqn);</span>
-<span class="fc" id="L344">		}</span>
+<span class="fc bfc" id="L306" title="All 2 branches covered.">		for (String fqn : replacementFqns) {</span>
+<span class="fc" id="L307">			directive.addImport(fqn);</span>
+<span class="fc" id="L308">		}</span>
 		
 		// removeImport: FQN types in source but not in replacement
-<span class="fc bfc" id="L347" title="All 2 branches covered.">		for (String fqn : sourceFqns) {</span>
-<span class="fc bfc" id="L348" title="All 2 branches covered.">			if (!replacementFqns.contains(fqn)) {</span>
-<span class="fc" id="L349">				directive.removeImport(fqn);</span>
+<span class="fc bfc" id="L311" title="All 2 branches covered.">		for (String fqn : sourceFqns) {</span>
+<span class="fc bfc" id="L312" title="All 2 branches covered.">			if (!replacementFqns.contains(fqn)) {</span>
+<span class="fc" id="L313">				directive.removeImport(fqn);</span>
 			}
-<span class="fc" id="L351">		}</span>
+<span class="fc" id="L315">		}</span>
 		
 		// replaceStaticImport: Detect when source and replacement have FQN.method()
 		// patterns with the same method name but different types
 		// e.g., org.junit.Assert.assertEquals → org.junit.jupiter.api.Assertions.assertEquals
-<span class="fc bfc" id="L356" title="All 2 branches covered.">		for (Map.Entry&lt;String, String&gt; sourceEntry : sourceFqnMethods.entrySet()) {</span>
-<span class="fc" id="L357">			String sourceMethod = sourceEntry.getKey(); // e.g., &quot;assertEquals&quot;</span>
-<span class="fc" id="L358">			String sourceType = sourceEntry.getValue(); // e.g., &quot;org.junit.Assert&quot;</span>
-<span class="fc bfc" id="L359" title="All 2 branches covered.">			for (Map.Entry&lt;String, String&gt; replEntry : replacementFqnMethods.entrySet()) {</span>
-<span class="fc" id="L360">				String replMethod = replEntry.getKey();</span>
-<span class="fc" id="L361">				String replType = replEntry.getValue();</span>
-<span class="fc bfc" id="L362" title="All 4 branches covered.">				if (sourceMethod.equals(replMethod) &amp;&amp; !sourceType.equals(replType)) {</span>
-<span class="fc" id="L363">					directive.replaceStaticImport(sourceType, replType);</span>
+<span class="fc bfc" id="L320" title="All 2 branches covered.">		for (Map.Entry&lt;String, String&gt; sourceEntry : sourceFqnMethods.entrySet()) {</span>
+<span class="fc" id="L321">			String sourceMethod = sourceEntry.getKey(); // e.g., &quot;assertEquals&quot;</span>
+<span class="fc" id="L322">			String sourceType = sourceEntry.getValue(); // e.g., &quot;org.junit.Assert&quot;</span>
+<span class="fc bfc" id="L323" title="All 2 branches covered.">			for (Map.Entry&lt;String, String&gt; replEntry : replacementFqnMethods.entrySet()) {</span>
+<span class="fc" id="L324">				String replMethod = replEntry.getKey();</span>
+<span class="fc" id="L325">				String replType = replEntry.getValue();</span>
+<span class="fc bfc" id="L326" title="All 4 branches covered.">				if (sourceMethod.equals(replMethod) &amp;&amp; !sourceType.equals(replType)) {</span>
+<span class="fc" id="L327">					directive.replaceStaticImport(sourceType, replType);</span>
 				}
-<span class="fc" id="L365">			}</span>
-<span class="fc" id="L366">		}</span>
+<span class="fc" id="L329">			}</span>
+<span class="fc" id="L330">		}</span>
 		
-<span class="fc" id="L368">		return directive;</span>
+<span class="fc" id="L332">		return directive;</span>
 	}
 	
 	/**
@@ -379,27 +343,11 @@ public final class ImportDirective {
 	 * @return map of method name to FQN type
 	 */
 	private static Map&lt;String, String&gt; extractFqnMethods(String pattern) {
-<span class="fc" id="L382">		Map&lt;String, String&gt; result = new LinkedHashMap&lt;&gt;();</span>
-<span class="pc bpc" id="L383" title="2 of 4 branches missed.">		if (pattern == null || pattern.isEmpty()) {</span>
-<span class="nc" id="L384">			return result;</span>
-		}
-<span class="fc" id="L386">		Matcher matcher = FQN_METHOD_PATTERN.matcher(JavaSourceMask.codeOnly(pattern));</span>
-<span class="fc bfc" id="L387" title="All 2 branches covered.">		while (matcher.find()) {</span>
-<span class="fc" id="L388">			String fullMatch = matcher.group(1); // e.g., &quot;org.junit.Assert.assertEquals&quot;</span>
-<span class="pc bpc" id="L389" title="1 of 2 branches missed.">			if (fullMatch.contains(&quot;$&quot;)) { //$NON-NLS-1$</span>
-<span class="nc" id="L390">				continue;</span>
-			}
-<span class="fc" id="L392">			String typePart = matcher.group(2); // e.g., &quot;org.junit.Assert&quot;</span>
-<span class="fc" id="L393">			int lastDot = fullMatch.lastIndexOf('.');</span>
-<span class="fc" id="L394">			String methodPart = fullMatch.substring(lastDot + 1); // e.g., &quot;assertEquals&quot;</span>
-			// Only include if the type part is a real FQN (last segment starts with uppercase)
-<span class="fc" id="L396">			int typeLastDot = typePart.lastIndexOf('.');</span>
-<span class="pc bpc" id="L397" title="2 of 4 branches missed.">			if (typeLastDot &gt; 0 &amp;&amp; Character.isUpperCase(typePart.substring(typeLastDot + 1).charAt(0))) {</span>
-<span class="fc" id="L398">				result.put(methodPart, typePart);</span>
-			}
-<span class="fc" id="L400">		}</span>
-<span class="fc" id="L401">		return result;</span>
+<span class="fc" id="L346">		Map&lt;String, String&gt; result = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L347">		matchQualifiedNames(pattern, MEMBER_SUFFIX, (type, suffix) -&gt; result.put(suffix.group(2), type));</span>
+<span class="fc" id="L348">		return result;</span>
 	}
+
 	/**
 	 * Extracts fully qualified type names from a pattern string.
 	 * 
@@ -411,60 +359,74 @@ public final class ImportDirective {
 	 * @return set of fully qualified type names found in the pattern
 	 */
 	private static Set&lt;String&gt; extractFqns(String pattern) {
-<span class="fc" id="L414">		Set&lt;String&gt; fqns = new HashSet&lt;&gt;();</span>
-<span class="pc bpc" id="L415" title="2 of 4 branches missed.">		if (pattern == null || pattern.isEmpty()) {</span>
-<span class="nc" id="L416">			return fqns;</span>
-		}
-<span class="fc" id="L418">		java.util.regex.Matcher matcher = FQN_PATTERN.matcher(JavaSourceMask.codeOnly(pattern));</span>
-<span class="fc bfc" id="L419" title="All 2 branches covered.">		while (matcher.find()) {</span>
-<span class="fc" id="L420">			String fqn = matcher.group(1);</span>
-<span class="pc bpc" id="L421" title="1 of 2 branches missed.">			if (fqn.contains(&quot;$&quot;)) { //$NON-NLS-1$</span>
-<span class="nc" id="L422">				continue;</span>
-			}
-<span class="fc" id="L424">			int lastDot = fqn.lastIndexOf('.');</span>
-<span class="pc bpc" id="L425" title="2 of 4 branches missed.">			if (lastDot &gt; 0 &amp;&amp; Character.isUpperCase(fqn.substring(lastDot + 1).charAt(0))) {</span>
-<span class="fc" id="L426">				fqns.add(fqn);</span>
-			}
-<span class="fc" id="L428">		}</span>
-<span class="fc" id="L429">		return fqns;</span>
+<span class="fc" id="L362">		Set&lt;String&gt; fqns = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L363">		matchQualifiedNames(pattern, TYPE_SUFFIX, (type, suffix) -&gt; fqns.add(type));</span>
+<span class="fc" id="L364">		return fqns;</span>
 	}
-	
+
+	/**
+	 * Visits each package path once. The suffix matcher captures the type segment in group 1
+	 * and, when requested, the following member in group 2.
+	 */
+	private static void matchQualifiedNames(String pattern, java.util.regex.Pattern suffixPattern,
+			BiConsumer&lt;String, Matcher&gt; onMatch) {
+<span class="fc bfc" id="L373" title="All 4 branches covered.">		if (pattern == null || pattern.isEmpty()) {</span>
+<span class="fc" id="L374">			return;</span>
+		}
+<span class="fc" id="L376">		String code = JavaSourceMask.codeOnly(pattern);</span>
+<span class="fc" id="L377">		Matcher segment = PACKAGE_SEGMENT.matcher(code);</span>
+<span class="fc" id="L378">		Matcher suffix = suffixPattern.matcher(code);</span>
+<span class="fc" id="L379">		int next = 0;</span>
+<span class="fc bfc" id="L380" title="All 2 branches covered.">		while (segment.find(next)) {</span>
+<span class="fc" id="L381">			int start = segment.start();</span>
+<span class="fc" id="L382">			next = segment.end();</span>
+<span class="fc bfc" id="L383" title="All 4 branches covered.">			while (next &lt; code.length() &amp;&amp; code.charAt(next) == '.'</span>
+<span class="fc bfc" id="L384" title="All 2 branches covered.">					&amp;&amp; segment.region(next + 1, code.length()).lookingAt()) {</span>
+<span class="fc" id="L385">				next = segment.end();</span>
+			}
+<span class="fc bfc" id="L387" title="All 2 branches covered.">			if (suffix.region(next, code.length()).lookingAt()) {</span>
+<span class="fc" id="L388">				onMatch.accept(code.substring(start, suffix.end(1)), suffix);</span>
+<span class="fc" id="L389">				next = suffix.end();</span>
+			}
+<span class="fc" id="L391">		}</span>
+<span class="fc" id="L392">	}</span>
+
 	/**
 	 * Merges another directive into this one.
 	 * 
 	 * @param other the directive to merge
 	 */
 	public void merge(ImportDirective other) {
-<span class="pc bpc" id="L438" title="1 of 2 branches missed.">		if (other == null) {</span>
-<span class="nc" id="L439">			return;</span>
+<span class="pc bpc" id="L400" title="1 of 2 branches missed.">		if (other == null) {</span>
+<span class="nc" id="L401">			return;</span>
 		}
-<span class="fc" id="L441">		addImports.addAll(other.addImports);</span>
-<span class="fc" id="L442">		removeImports.addAll(other.removeImports);</span>
-<span class="fc" id="L443">		addStaticImports.addAll(other.addStaticImports);</span>
-<span class="fc" id="L444">		removeStaticImports.addAll(other.removeStaticImports);</span>
-<span class="fc" id="L445">		replaceStaticImports.putAll(other.replaceStaticImports);</span>
-<span class="fc" id="L446">	}</span>
+<span class="fc" id="L403">		addImports.addAll(other.addImports);</span>
+<span class="fc" id="L404">		removeImports.addAll(other.removeImports);</span>
+<span class="fc" id="L405">		addStaticImports.addAll(other.addStaticImports);</span>
+<span class="fc" id="L406">		removeStaticImports.addAll(other.removeStaticImports);</span>
+<span class="fc" id="L407">		replaceStaticImports.putAll(other.replaceStaticImports);</span>
+<span class="fc" id="L408">	}</span>
 	
 	@Override
 	public String toString() {
-<span class="nc" id="L450">		StringBuilder sb = new StringBuilder(&quot;ImportDirective[&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L451" title="All 2 branches missed.">		if (!addImports.isEmpty()) {</span>
-<span class="nc" id="L452">			sb.append(&quot;add=&quot;).append(addImports); //$NON-NLS-1$</span>
+<span class="nc" id="L412">		StringBuilder sb = new StringBuilder(&quot;ImportDirective[&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L413" title="All 2 branches missed.">		if (!addImports.isEmpty()) {</span>
+<span class="nc" id="L414">			sb.append(&quot;add=&quot;).append(addImports); //$NON-NLS-1$</span>
 		}
-<span class="nc bnc" id="L454" title="All 2 branches missed.">		if (!removeImports.isEmpty()) {</span>
-<span class="nc" id="L455">			sb.append(&quot;, remove=&quot;).append(removeImports); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L416" title="All 2 branches missed.">		if (!removeImports.isEmpty()) {</span>
+<span class="nc" id="L417">			sb.append(&quot;, remove=&quot;).append(removeImports); //$NON-NLS-1$</span>
 		}
-<span class="nc bnc" id="L457" title="All 2 branches missed.">		if (!addStaticImports.isEmpty()) {</span>
-<span class="nc" id="L458">			sb.append(&quot;, addStatic=&quot;).append(addStaticImports); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L419" title="All 2 branches missed.">		if (!addStaticImports.isEmpty()) {</span>
+<span class="nc" id="L420">			sb.append(&quot;, addStatic=&quot;).append(addStaticImports); //$NON-NLS-1$</span>
 		}
-<span class="nc bnc" id="L460" title="All 2 branches missed.">		if (!removeStaticImports.isEmpty()) {</span>
-<span class="nc" id="L461">			sb.append(&quot;, removeStatic=&quot;).append(removeStaticImports); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L422" title="All 2 branches missed.">		if (!removeStaticImports.isEmpty()) {</span>
+<span class="nc" id="L423">			sb.append(&quot;, removeStatic=&quot;).append(removeStaticImports); //$NON-NLS-1$</span>
 		}
-<span class="nc bnc" id="L463" title="All 2 branches missed.">		if (!replaceStaticImports.isEmpty()) {</span>
-<span class="nc" id="L464">			sb.append(&quot;, replaceStatic=&quot;).append(replaceStaticImports); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L425" title="All 2 branches missed.">		if (!replaceStaticImports.isEmpty()) {</span>
+<span class="nc" id="L426">			sb.append(&quot;, replaceStatic=&quot;).append(replaceStaticImports); //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L466">		sb.append(']');</span>
-<span class="nc" id="L467">		return sb.toString();</span>
+<span class="nc" id="L428">		sb.append(']');</span>
+<span class="nc" id="L429">		return sb.toString();</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
