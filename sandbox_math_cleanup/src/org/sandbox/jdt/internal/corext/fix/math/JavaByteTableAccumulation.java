@@ -129,7 +129,7 @@ public record JavaByteTableAccumulation(String sourceSha256, int sourceStart, in
                 ArrayRole role = byBinding.get(ref(base));
                 require(role != null);
                 var type = event.source().resolveTypeBinding();
-                require(type != null && !type.isRecovered());
+                if (type == null || type.isRecovered()) throw UNSUPPORTED;
                 Element element = type.isArray() ? Element.BYTE_ROW : Element.BYTE;
                 schedule.add(new Access(event.kind(), role, element, event.depth(), event.source().getStartPosition(), event.source().getLength()));
             }
