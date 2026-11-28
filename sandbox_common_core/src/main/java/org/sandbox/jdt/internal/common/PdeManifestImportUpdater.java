@@ -59,7 +59,7 @@ public final class PdeManifestImportUpdater {
 		return addImport(manifest, packageName, null);
 	}
 
-	private static String addImport(String manifest, String packageName, Exporter exporter) {
+	public static String addImport(String manifest, String packageName, Exporter exporter) {
 		Objects.requireNonNull(manifest);
 		Objects.requireNonNull(packageName);
 		if (!Arrays.stream(packageName.split("\\.", -1)).allMatch(PACKAGE_COMPONENT.asMatchPredicate())) { //$NON-NLS-1$

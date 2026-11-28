@@ -19,13 +19,16 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdapterFactory;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.ltk.core.refactoring.Change;
 import org.eclipse.ltk.core.refactoring.NullChange;
 import org.eclipse.ltk.core.refactoring.TextFileChange;
 import org.eclipse.text.edits.ReplaceEdit;
 
 import org.sandbox.jdt.internal.common.PdeManifestImportUpdater;
+import org.sandbox.jdt.internal.corext.fix.multifile.PdeMixedSupportWiring;
 
 /** Supplies the PDE import required by an atomic ExternalResource-to-Jupiter migration. */
 public final class JUnitManifestChangeAdapter implements IAdapterFactory {
@@ -80,6 +83,11 @@ public final class JUnitManifestChangeAdapter implements IAdapterFactory {
 		String updated= PdeManifestImportUpdater.addImport(original, PARALLEL_PACKAGE);
 		if (updated.equals(original)) {
 			return null;
+		}
+		var project= manifest.getProject();
+		if (project.hasNature("org.eclipse.pde.PluginNature") && Platform.getBundle("org.eclipse.pde.core") != null) { //$NON-NLS-1$ //$NON-NLS-2$
+			var exporter= PdeMixedSupportWiring.jupiterExporter(JavaCore.create(project), PARALLEL_PACKAGE);
+			updated= PdeManifestImportUpdater.addImport(original, PARALLEL_PACKAGE, exporter);
 		}
 		change.original= original;
 		change.updated= updated;
