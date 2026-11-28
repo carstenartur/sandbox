@@ -1,19 +1,19 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-28T06:23:26.566379+00:00",
+  "generated_at": "2026-11-28T10:03:05.663561+00:00",
   "repository": "carstenartur/sandbox",
-  "commit_sha": "d63c2388d4d23023300c27cdb71e1215621df1d8",
-  "commit_url": "https://github.com/carstenartur/sandbox/commit/d63c2388d4d23023300c27cdb71e1215621df1d8",
+  "commit_sha": "e5bae89d5ca95d36faf88b0fb618f4c36bb20dd9",
+  "commit_url": "https://github.com/carstenartur/sandbox/commit/e5bae89d5ca95d36faf88b0fb618f4c36bb20dd9",
   "ref": "refs/heads/main",
   "event_name": "workflow_run",
   "provenance_workflow": {
     "name": "Deploy Snapshot to GitHub Pages",
-    "run_id": "46112296608",
-    "run_number": "1017",
+    "run_id": "46129917493",
+    "run_number": "1018",
     "run_attempt": "1",
-    "run_url": "https://github.com/carstenartur/sandbox/actions/runs/46112296608",
-    "source_java_ci_run_id": "46110363243",
-    "source_java_ci_run_url": "https://github.com/carstenartur/sandbox/actions/runs/46110363243"
+    "run_url": "https://github.com/carstenartur/sandbox/actions/runs/46129917493",
+    "source_java_ci_run_id": "46127281279",
+    "source_java_ci_run_url": "https://github.com/carstenartur/sandbox/actions/runs/46127281279"
   },
   "toolchain": {
     "project_version": "1.3.11-SNAPSHOT",
@@ -51,11 +51,11 @@
       "disabled_tests": 30
     },
     "executed": {
-      "tests": 8458,
+      "tests": 8463,
       "failures": 0,
       "errors": 0,
       "skipped": 11,
-      "report_files": 830
+      "report_files": 831
     }
   },
   "artifacts": {
@@ -252,42 +252,42 @@
       },
       {
         "path": "sandbox_product/target/products/sandbox.bundle.producteclipse-linux.gtk.x86_64.tar.gz",
-        "size_bytes": 334954516,
-        "sha256": "77e34589daff201c56e537f6587bd0d25a955236c4a3f1393f47b092369c4416"
+        "size_bytes": 335092231,
+        "sha256": "3831631abd19bc74c400a0d68deee110d72b6c2c97ecac07d3ddad4d9b5436f4"
       },
       {
         "path": "sandbox_product/target/products/sandbox.bundle.producteclipse-macosx.cocoa.x86_64.tar.gz",
-        "size_bytes": 280820480,
-        "sha256": "b6c0ea5192284086e2c585933200655f1b1b882d437cdff664d3b0515e2fff25"
+        "size_bytes": 280960299,
+        "sha256": "fb1e0c45ba06f0d18e7a967b721b25133593bcf9863d59e4ad671c3483797b4f"
       },
       {
         "path": "sandbox_product/target/products/sandbox.bundle.producteclipse-win32.win32.x86_64.zip",
-        "size_bytes": 332743221,
-        "sha256": "7e708c215494484b8779a7a32997416bb9c34470c7e37bbd3f350a4da8179e1b"
+        "size_bytes": 332883760,
+        "sha256": "77a49583eb2d783ac7a5a583e3d11533b17c40a64a8c2a4f2619897169b7c2a0"
       }
     ],
     "product_tree": {
       "path": "sandbox_product/target/products",
       "file_count": 4812,
-      "total_bytes": 2135494957,
-      "sha256_tree": "e0cfa8b674721c58212d49bf9b8795c4fda3af53a06c37c88ceb638956947a42"
+      "total_bytes": 2136462565,
+      "sha256_tree": "a21e4de01e9d2c46ba2cadaba780e3531cca1e80be4b5fdc655f26c60981b558"
     },
     "product_status": "built",
     "update_site": {
       "path": "sandbox_updatesite/target/repository",
       "file_count": 61,
-      "total_bytes": 16884067,
-      "sha256_tree": "8bbac635585b542d4a5a4818a47f55cd8557e38588c6a75270d958aaaf0d4bf1",
+      "total_bytes": 17028788,
+      "sha256_tree": "722e90c22ee99fc6ebb484f7bd07214cf3124615ee959fd971927d8e451ba848",
       "metadata": [
         {
           "path": "sandbox_updatesite/target/repository/artifacts.jar",
-          "size_bytes": 9651,
-          "sha256": "5f5c6c213327f37f6c3825ac844ac5efbeee77f0f87bf397a26912ebef3ec63e"
+          "size_bytes": 9617,
+          "sha256": "7d186f368a18862873c456c8462a1436ade661711c99f038b8ae30e991805e75"
         },
         {
           "path": "sandbox_updatesite/target/repository/content.jar",
-          "size_bytes": 40713,
-          "sha256": "7aa5f6863e59453f22844c307c039dc1b588e09037c9fe308c018a0a7271ec9f"
+          "size_bytes": 41028,
+          "sha256": "71745cc6d97bf6aebc9de5a457af8845014ca65fbecbfbc29ad74ac76bc991c7"
         }
       ]
     },
