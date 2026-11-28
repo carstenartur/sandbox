@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.Document;
+import org.sandbox.jdt.internal.corext.fix.math.JavaByteTableAccumulation;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
 import org.sandbox.jdt.internal.corext.fix.math.MathReviewReport;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -50,13 +51,15 @@ record MathematicalReport(int schemaVersion,String project,String mode,Map<Strin
   try { analysis.newEdit().apply(document); } catch(BadLocationException invalid) { throw new IllegalArgumentException("Invalid verified replacement range",invalid); }
   String replacement=document.get();
   return new FileReport(path,options.targetJava(),options.toMap(),MathematicalEnvironment.digest(source),MathematicalEnvironment.digest(replacement),
-    source,replacement,compilerOptions,environment.digest(),analysis.diagnostics(),analysis.replacements(),analysis.evidence(),applied,
+    source,replacement,compilerOptions,environment.digest(),analysis.diagnostics(),analysis.replacements(),analysis.evidence(),analysis.byteTableAccumulations(),applied,
     applied?MathematicalEnvironment.digest(replacement):MathematicalEnvironment.digest(source),applied?"REPLACEMENT":"ORIGINAL");
  }
  record FileReport(String path,int targetJava,Map<String,String> options,String sourceSha256,String afterSha256,
    String original,String replacement,Map<String,String> compilerOptions,String environmentDigest,List<Diagnostic> diagnostics,
-   List<Replacement> changes,List<VerifiedRegion> evidence,boolean applied,String observedSourceSha256,String applicationStatus) {
-  FileReport { options=Map.copyOf(options);compilerOptions=Map.copyOf(compilerOptions);diagnostics=List.copyOf(diagnostics);changes=List.copyOf(changes);evidence=List.copyOf(evidence); }
+   List<Replacement> changes,List<VerifiedRegion> evidence,List<JavaByteTableAccumulation> byteTableAccumulations,
+   boolean applied,String observedSourceSha256,String applicationStatus) {
+  FileReport { options=Map.copyOf(options);compilerOptions=Map.copyOf(compilerOptions);diagnostics=List.copyOf(diagnostics);changes=List.copyOf(changes);evidence=List.copyOf(evidence);
+   byteTableAccumulations=byteTableAccumulations==null?List.of():List.copyOf(byteTableAccumulations); }
   /** Additive advisory metadata; the original evidence and application state remain unchanged. */
   @JsonProperty(value="reviewCandidates", access=JsonProperty.Access.READ_ONLY) //$NON-NLS-1$
   public List<MathReviewReport.Entry> reviewCandidates() {
@@ -65,7 +68,7 @@ record MathematicalReport(int schemaVersion,String project,String mode,Map<Strin
   FileReport withObserved(String source) {
    String hash=source==null?null:MathematicalEnvironment.digest(source);
    String state=source==null?"UNAVAILABLE":source.equals(original)?"ORIGINAL":source.equals(replacement)?"REPLACEMENT":"OTHER";
-   return new FileReport(path,targetJava,options,sourceSha256,afterSha256,original,replacement,compilerOptions,environmentDigest,diagnostics,changes,evidence,
+   return new FileReport(path,targetJava,options,sourceSha256,afterSha256,original,replacement,compilerOptions,environmentDigest,diagnostics,changes,evidence,byteTableAccumulations,
      source!=null && !source.equals(original),hash,state);
   }
  }

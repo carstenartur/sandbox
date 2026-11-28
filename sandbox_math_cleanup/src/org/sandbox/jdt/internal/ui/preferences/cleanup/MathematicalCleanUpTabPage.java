@@ -172,6 +172,8 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 				new String[] { "Lower estimated runtime", "Lower allocation", "Readability" }); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		CheckboxPreference fieldInversions= createCheckboxPref(group, columns, "Reuse verified byte-field inversions in loops", //$NON-NLS-1$
 				MathCleanUpOptions.FIELD_INVERSIONS, FALSE_TRUE);
+        CheckboxPreference inputPrefix = createCheckboxPref(group, columns, "Expand the first four inputs in byte-table loops (benchmark on your workload)", //$NON-NLS-1$
+                MathCleanUpOptions.ORDERED_INPUT_PREFIX, FALSE_TRUE);
         ComboPreference explanations= createComboPref(group, columns, "Source explanations:", MathCleanUpOptions.EXPLANATIONS, //$NON-NLS-1$
                 Arrays.stream(MathCleanUpOptions.ExplanationMode.values()).map(Enum::name).toArray(String[]::new),
                 new String[] { "No source comments", "Nontrivial changes", "All changes" }); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -217,6 +219,8 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 			warning.setVisible(checked);
 			((GridData) warning.getLayoutData()).exclude= !checked;
 			setEnabledIfChanged(goal, active);
+            setEnabledIfChanged(inputPrefix, active && safety.hasValue(SafetyProfile.PRESERVE_JAVA.name())
+                    && goal.hasValue(OptimizationGoal.LOWER_ESTIMATED_RUNTIME.name()));
 			setEnabledIfChanged(fieldInversions, active && safety.hasValue(SafetyProfile.PRESERVE_JAVA.name())
 					&& !mathematical.getChecked() && goal.hasValue(OptimizationGoal.LOWER_ESTIMATED_RUNTIME.name()));
             setEnabledIfChanged(valueRuntime, active && mathematical.getChecked());
@@ -240,10 +244,13 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 			if (!safety.hasValue(SafetyProfile.PRESERVE_JAVA.name()) || mathematical.getChecked()) combined.setChecked(false);
 			if (!safety.hasValue(SafetyProfile.PRESERVE_JAVA.name()) || mathematical.getChecked()
 					|| !goal.hasValue(OptimizationGoal.LOWER_ESTIMATED_RUNTIME.name())) fieldInversions.setChecked(false);
+            if (!safety.hasValue(SafetyProfile.PRESERVE_JAVA.name()) || !goal.hasValue(OptimizationGoal.LOWER_ESTIMATED_RUNTIME.name()))
+                inputPrefix.setChecked(false);
 			refresh.run();
 		};
 		safety.addObserver((source, value) -> safetyChanged.run());
 		goal.addObserver((source, value) -> safetyChanged.run());
+        inputPrefix.addObserver((source, value) -> refresh.run());
 		fieldInversions.addObserver((source, value) -> refresh.run());
 		optIn.addObserver((source, value) -> refresh.run());
 		mathematical.addObserver((source, value) -> safetyChanged.run());

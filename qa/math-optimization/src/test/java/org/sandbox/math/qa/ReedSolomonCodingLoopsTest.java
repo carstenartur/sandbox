@@ -13,7 +13,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
@@ -24,6 +27,7 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.api.io.TempDir;
 import org.sandbox.jdt.triggerpattern.test.policy.PinnedGitRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.regelsuche.ast.iteration.TableXorReduction;
 
 /** Run the existing source scanner on the upstream inventory without supplying a target. */
 @EnabledIfSystemProperty(named = "sandbox.math.backblaze", matches = "true")
@@ -60,15 +64,32 @@ class ReedSolomonCodingLoopsTest {
                 var reference = codec.getMethod("create", int.class, int.class).invoke(null, 4, 2);
                 var expected = exercise(reference);
                 for (var loop : loops) assertTrue(Arrays.deepEquals(expected, exercise(encoder(loader, loop))));
+                Map<Map<String, String>, Path> candidateOverlays = new LinkedHashMap<>();
                 for (String profile : List.of("bc-strict", "bc-mathematical")) {
                     Path scan = output.resolve(profile);
-                    scan(binaryJar, sourceJar, profile, scan, names);
+                    var result = scan(binaryJar, sourceJar, source, profile, scan, names);
+                    if (!result.changed().isEmpty()) candidateOverlays.putIfAbsent(result.changed(), scan);
                     Path classes = compile(source, temporary.resolve(profile), scan.resolve("generated"));
                     try (var generated = loader(classes)) {
                         for (var loop : implementations(generated)) {
+                            Object counterpart = loader.loadClass(loop.getClass().getName()).getConstructor().newInstance();
+                            ReedSolomonRegionSemantics.compare(counterpart, loop);
+                            var reduction = result.reductions().get(loop.getClass().getName());
+                            if (reduction != null) {
+                                ReedSolomonRegionSemantics.checkTypedReduction(counterpart, loop, reduction);
+                            }
                             assertTrue(Arrays.deepEquals(expected, exercise(encoder(generated, loop))),
                                     loop.getClass().getName());
                         }
+                    }
+                }
+                if (Boolean.getBoolean("sandbox.math.backblaze.appliedTiming")) {
+                    assertFalse(candidateOverlays.isEmpty(), "Paired timing requires a changed ordinary Apply source");
+                    for (var entry : candidateOverlays.entrySet()) {
+                        Path scan = entry.getValue();
+                        String profile = scan.getFileName().toString();
+                        ReedSolomonEncodingTiming.measure(source, scan.resolve("generated"), entry.getKey().keySet(),
+                                temporary.resolve(profile + "-timing-classes"), scan.resolve("timing"));
                     }
                 }
                 if (Boolean.getBoolean("sandbox.math.backblaze.timing")) {
@@ -78,10 +99,19 @@ class ReedSolomonCodingLoopsTest {
         }
     }
 
-    private static void scan(Path binary, Path source, String profile, Path output, List<String> names)
-            throws Exception {
+    private record Scan(Map<String, TableXorReduction> reductions, Map<String, String> changed) {}
+
+    private static Scan scan(Path binary, Path source, Path sourceRoot, String profile,
+            Path output, List<String> names) throws Exception {
+        Path profileFile = Path.of("qa/math-optimization/profiles", profile + ".properties");
+        boolean prefixCandidate = Boolean.getBoolean("sandbox.math.backblaze.prefixCandidate");
+        if (prefixCandidate) {
+            String baseProfile = Files.readString(profileFile);
+            profileFile = output.resolveSibling(profile + "-prefix.properties");
+            Files.writeString(profileFile, baseProfile + "\ncleanup.mathematics.orderedInputPrefix=true\n");
+        }
         var args = new ArrayList<>(List.of(binary.toString(), source.toString(),
-                "qa/math-optimization/profiles/" + profile + ".properties", output.toString(),
+                profileFile.toString(), output.toString(),
                 CorpusFiles.sha256(source), "17", "--tasks"));
         var entries = names.stream().map(name -> name.replace('.', '/') + ".java").toList();
         args.addAll(entries);
@@ -91,11 +121,35 @@ class ReedSolomonCodingLoopsTest {
         assertEquals(entries.size(), report.required("parsedFiles").asInt());
         assertEquals(0, report.required("parseErrorFiles").asInt());
         List<String> seen = new ArrayList<>();
+        Map<String, TableXorReduction> reductions = new HashMap<>();
+        Map<String, String> changed = new HashMap<>();
         for (var row : report.required("files")) {
             assertEquals("ANALYZED", row.required("status").asText());
-            seen.add(row.required("path").asText());
+            String path = row.required("path").asText();
+            String name = path.substring(0, path.length() - ".java".length()).replace('/', '.');
+            if (row.required("acceptedRegions").asInt() > 0) {
+                String after = CorpusFiles.sha256(output.resolve("generated").resolve(path));
+                assertEquals(row.required("afterSha256").asText(), after);
+                assertFalse(after.equals(CorpusFiles.sha256(sourceRoot.resolve(path))));
+                changed.put(name.substring(name.lastIndexOf('.') + 1), after);
+            }
+            ReedSolomonRegionSemantics.readReduction(row, sourceRoot.resolve(path)).ifPresent(
+                    reduction -> reductions.put(name, reduction));
+            seen.add(path);
         }
         assertEquals(entries, seen);
+        assertEquals(prefixCandidate ? 2 : 0, changed.size());
+        if (prefixCandidate) {
+            Path measured = Path.of("qa/math-optimization/results/backblaze-coding-loops/complete-region/prefix/sources.tsv");
+            var hashes = Files.readAllLines(measured);
+            assertEquals(changed.size() + 1, hashes.size());
+            for (String line : hashes.subList(1, hashes.size())) {
+                String[] columns = line.split("\t");
+                String file = Path.of(columns[0]).getFileName().toString();
+                assertEquals(columns[2], changed.get(file.substring(0, file.length() - ".java".length())), file);
+            }
+        }
+        return new Scan(Map.copyOf(reductions), Map.copyOf(changed));
     }
 
     private static Path compile(Path sources, Path classes, Path overlay) throws IOException {

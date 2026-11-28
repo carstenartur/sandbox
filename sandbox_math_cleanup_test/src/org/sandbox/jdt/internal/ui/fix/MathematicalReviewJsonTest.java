@@ -13,8 +13,9 @@ class MathematicalReviewJsonTest {
     @Test void serializedReportRetainsEvidenceAndAddsSeparateReviewMetadata() throws Exception {
         var file = new MathematicalReport.FileReport("Sample.java", 17, MathCleanUpOptions.defaults(17).toMap(),
                 "source", "after", "return x;", "return x;", Map.of(), "environment", List.of(), List.of(),
-                List.of(new VerifiedRegion(0, 9, null, null, "return x;", "return x;")), false, "source", "ORIGINAL");
+                List.of(new VerifiedRegion(0, 9, null, null, "return x;", "return x;")), List.of(), false, "source", "ORIGINAL");
         var json = new ObjectMapper().readTree(new ObjectMapper().writeValueAsString(file));
+        assertTrue(json.required("byteTableAccumulations").isArray());
         assertEquals(1, json.path("evidence").size());
         assertEquals(1, json.path("reviewCandidates").size());
         assertEquals("UNASSESSED", json.path("reviewCandidates").get(0).path("assessment").path("disposition").asText());

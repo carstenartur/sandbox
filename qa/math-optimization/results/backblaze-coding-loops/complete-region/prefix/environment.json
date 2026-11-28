@@ -1,0 +1,35 @@
+{
+  "upstreamCommit": "d3c481dc69471e0c47ff6f67f33d53bde941675e",
+  "sdkCommit": "016eaeab18e7f50afa6de9e6db1ae0704c27751a",
+  "sdkSha256": "4076bc86339a95e2304deeb5af3aa2a7c0018f1cf9add0ef2d9f534dcb49d32b",
+  "upstreamSourcesSha256": "6673c22525244e510e2637e15786ced3879afa4d0ff38a00e8bf16dc6d7ac7e9",
+  "upstreamScanBinarySha256": "e34ebb6993241cbdc2d1dbecc44aa9b30d8fea6f9421199a6bb00cf8fc38180f",
+  "profileSha256": {
+    "bc-strict": "b0f85dc616ddb3d37a5f779566be70afeb7285cffc312e91c31bd0f3e26e2eb9",
+    "bc-mathematical": "de1a5f6eaa47bc22040a13ab3aa975206a74b24ad1c0e635000a5ef30b8c978a"
+  },
+  "javaRuntime": "25.0.5+8-LTS",
+  "scanTargetJava": 17,
+  "benchmarkRelease": 21,
+  "host": "Linux 6.18.57 x86_64",
+  "cpu": "AMD EPYC 9V74 80-Core Processor",
+  "logicalCpusVisibleToRunner": 9,
+  "benchmarkAffinity": [
+    7,
+    8
+  ],
+  "exclusiveAffinity": false,
+  "childFlags": [
+    "-Xms512m",
+    "-Xmx512m",
+    "-XX:ActiveProcessorCount=2"
+  ],
+  "workloads": 3,
+  "forksPerVariantAndWorkload": 3,
+  "measuredWindowsPerFork": 3,
+  "originalVariants": 12,
+  "generatedVariants": 2,
+  "jobShuffleJavaSeed": 4711,
+  "loadSamples": "runtime-load.tsv",
+  "loadSamplingIntervalSeconds": 15
+}

@@ -401,3 +401,11 @@ Sandbox verifies the Java bindings and source bodies for fixed-round byte-field 
 The fast path starts at two elements or factors and requires an exact arithmetic receiver class. The original Java runs for smaller inputs, null receivers and subclasses. The rewrite preserves scratch array allocation and the order of potentially throwing share reads. The fast path uses primitive locals and branches only on receiver class and length. The report records arithmetic operation counts.
 
 Run the opt-in upstream comparison with `mvn -f qa/math-optimization/pom.xml -Dtest=BouncyCastleThresholdInversionTest -Dsandbox.math.bc.threshold.upstream=true test`. It checks out one exact Bouncy Castle commit, rewrites both loops through the production adapter, compiles both versions, and compares results and subclass calls.
+
+### Review byte-table XOR reductions
+
+With `BYTE` and `INT` enabled, the cleanup recognizes two loop orders that sum table lookups with XOR. Each output byte has its own zero-initialized accumulator. The input shard is the innermost loop. The source report records the three loop bounds, the four array bindings and each array access in execution order. Mutable rows may overlap, and the table can contain arbitrary bytes.
+
+For a checked candidate, select **Expand the first four inputs in byte-table loops** under **Preserve Java behavior** and **Lower estimated runtime**, or set `cleanup.mathematics.orderedInputPrefix=true` in a profile. This option defaults to off. Ordinary Apply expands four input iterations when the count is at least four and keeps the residual loop. The generated program reads the arrays in their original order. Counts below four still run the original body and pay for two additional comparisons.
+
+On the pinned Backblaze source the two generated encoders showed higher median throughput than their respective originals in all six comparisons. Three fork ranges were disjoint. The upstream default was faster on all three workloads. The qualification includes the exact patches and complete-call measurements. [Backblaze source and timing qualification](../qa/math-optimization/results/backblaze-coding-loops/complete-region/README.md)
