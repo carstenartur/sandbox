@@ -20,15 +20,20 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.sandbox.jdt.triggerpattern.llm.SourceEvidence;
+
+import com.google.gson.Gson;
 
 /** Tests candidate persistence, revisioning, and status queries. */
 class CandidateStoreTest {
@@ -50,6 +55,74 @@ class CandidateStoreTest {
 		assertEquals(candidate.getRuleFingerprint(), loaded.getRuleFingerprint());
 		assertEquals(candidate.getBehaviorFingerprint(), loaded.getBehaviorFingerprint());
 		assertEquals(2, loaded.getSchemaVersion());
+	}
+
+	@Test
+	void rejectsInvalidStoredIdBeforeResolvingFiles() throws IOException {
+		CandidateStore store = new CandidateStore(tempDir);
+		MiningCandidate valid = createCandidate("first", 0); //$NON-NLS-1$
+		MiningCandidate invalid = createCandidate("second", 0); //$NON-NLS-1$
+		Path record = tempDir.resolve(invalid.toFileName());
+		String id = "archive/item"; //$NON-NLS-1$
+		invalid.setCandidateId(id);
+		assertThrows(IllegalArgumentException.class, () -> store.save(invalid));
+		Files.writeString(record, new Gson().toJson(invalid), StandardCharsets.UTF_8);
+		store.save(valid);
+
+		assertTrue(store.findById(id).isEmpty());
+		assertEquals(List.of(valid.getCandidateId()), store.loadAll().stream().map(MiningCandidate::getCandidateId).toList());
+	}
+
+	@Test
+	void storeAndReviewRejectACanonicalFileForADifferentId() throws IOException {
+		MiningCandidate first = createCandidate("first", 0); //$NON-NLS-1$
+		MiningCandidate second = createCandidate("second", 0); //$NON-NLS-1$
+		Path file = tempDir.resolve(first.toFileName());
+		Files.writeString(file, new Gson().toJson(second), StandardCharsets.UTF_8);
+
+		CandidateStore store = new CandidateStore(tempDir);
+		assertTrue(store.findById(first.getCandidateId()).isEmpty());
+		assertTrue(store.loadAll().isEmpty());
+		assertThrows(IllegalArgumentException.class, () -> CandidateReviewCli.run(new String[] {
+				"--candidate", file.toString(), "--action", "reject", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				"--reason", "reviewed", "--actor", "reviewer" //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+		}));
+		assertFalse(Files.exists(tempDir.resolve(second.toFileName())));
+	}
+
+	@Test
+	void rejectsFileSystemRootAsCandidateFile() {
+		Path root = tempDir.toAbsolutePath().getRoot();
+		assertThrows(IllegalArgumentException.class, () -> CandidateStore.readCandidate(root));
+	}
+
+	@Test
+	void leavesPreexistingTemporaryFilesAlone() throws IOException {
+		CandidateStore store = new CandidateStore(tempDir);
+		MiningCandidate candidate = createCandidate("first", 0); //$NON-NLS-1$
+		Path oldTemporaryName = tempDir.resolve(candidate.toFileName() + ".tmp"); //$NON-NLS-1$
+		Files.writeString(oldTemporaryName, "other writer", StandardCharsets.UTF_8); //$NON-NLS-1$
+
+		store.save(candidate);
+
+		assertEquals("other writer", Files.readString(oldTemporaryName, StandardCharsets.UTF_8)); //$NON-NLS-1$
+		try (var paths = Files.list(tempDir)) {
+			assertEquals(2L, paths.count());
+		}
+	}
+
+	@Test
+	@EnabledOnOs({ OS.LINUX, OS.MAC })
+	void excludesSymbolicLinksFromStoredRecords() throws IOException {
+		MiningCandidate candidate = createCandidate("test", 0); //$NON-NLS-1$
+		Path sourceDir = tempDir.resolve("source"); //$NON-NLS-1$
+		new CandidateStore(sourceDir).save(candidate);
+		Path storeDir = Files.createDirectory(tempDir.resolve("review")); //$NON-NLS-1$
+		Files.createSymbolicLink(storeDir.resolve(candidate.toFileName()), sourceDir.resolve(candidate.toFileName()));
+
+		CandidateStore store = new CandidateStore(storeDir);
+		assertTrue(store.loadAll().isEmpty());
+		assertTrue(store.findById(candidate.getCandidateId()).isEmpty());
 	}
 
 	@Test

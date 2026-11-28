@@ -213,8 +213,12 @@ jobs:
         with:
           java-version: '25.0.5+8'
           distribution: temurin
-          cache: maven
-          cache-dependency-path: sandbox/pom.xml
+      - name: Restore shared reactor dependencies
+        uses: actions/cache/restore@v6
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('sandbox/**/pom.xml', 'sandbox/sandbox_target/*.target') }}
+          restore-keys: ${{ runner.os }}-maven-
       - name: Provision the pinned mathematics SDK
         uses: ./sandbox/.github/actions/provision-regelsuche
         with:
@@ -373,8 +377,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '25.0.5+8'
-          cache: maven
-          cache-dependency-path: sandbox/qa/upstream-cleanups/pom.xml
+      - name: Restore shared reactor dependencies
+        uses: actions/cache/restore@v6
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('sandbox/**/pom.xml', 'sandbox/sandbox_target/*.target') }}
+          restore-keys: ${{ runner.os }}-maven-
       - name: Install native display dependencies
         run: |
           sudo apt-get update
