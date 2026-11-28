@@ -1,0 +1,78 @@
+name: Provision pinned Regelsuche source SDK
+description: Build and verify the exact source dependency used by mathematics cleanup
+inputs:
+  sandbox-directory:
+    description: Sandbox checkout path relative to the workspace
+    default: .
+runs:
+  using: composite
+  steps:
+    - name: Read the source qualification receipt
+      id: receipt
+      shell: bash
+      env:
+        SANDBOX_DIRECTORY: ${{ inputs.sandbox-directory }}
+      run: |
+        set -euo pipefail
+        receipt="$GITHUB_WORKSPACE/$SANDBOX_DIRECTORY/sandbox_math_cleanup/lib/qualification.json"
+        compiler_version=$(javac -version)
+        [[ "${compiler_version%$'\r'}" == 'javac 25.0.5' ]]
+        revision=$(jq -ber '.sourceRevision' "$receipt")
+        [[ "$revision" =~ ^[0-9a-f]{40}$ ]]
+        jq -e '.artifacts | length >= 6' "$receipt" > /dev/null
+        printf 'revision=%s\n' "$revision" >> "$GITHUB_OUTPUT"
+    - name: Checkout the qualified mathematical core
+      uses: actions/checkout@v7
+      env:
+        GIT_CONFIG_COUNT: '1'
+        GIT_CONFIG_KEY_0: core.autocrlf
+        GIT_CONFIG_VALUE_0: 'false'
+      with:
+        repository: carstenartur/Regelsuche
+        ref: ${{ steps.receipt.outputs.revision }}
+        path: ${{ inputs.sandbox-directory }}/target/regelsuche-source
+        persist-credentials: false
+    - name: Install and compare the qualified dependency artifacts
+      shell: bash
+      env:
+        SANDBOX_DIRECTORY: ${{ inputs.sandbox-directory }}
+        REGELSUCHE_REVISION: ${{ steps.receipt.outputs.revision }}
+      run: |
+        set -euo pipefail
+        sandbox="$GITHUB_WORKSPACE/$SANDBOX_DIRECTORY"
+        sdk_source="$sandbox/target/regelsuche-source"
+        receipt="$sandbox/sandbox_math_cleanup/lib/qualification.json"
+        [[ "$(git -C "$sdk_source" rev-parse HEAD)" == "$REGELSUCHE_REVISION" ]]
+        timestamp=$(jq -ber '.buildOutputTimestamp' "$receipt")
+        version=$(jq -ber '.version' "$receipt")
+        artifacts=$(jq -ber '.artifacts[] | [.artifactId, .sha256] | @tsv' "$receipt")
+        repository_file="$sdk_source/target/local-repository.txt"
+        if [[ "$RUNNER_OS" == 'Windows' ]]; then
+          repository_file=$(cygpath -m "$repository_file")
+        fi
+        # Read the effective repository from the same Maven session that installs the jars.
+        "$sandbox/mvnw" --batch-mode --no-transfer-progress -f "$sdk_source/pom.xml" \
+          -pl regelsuche-optimization-sdk -am -DskipTests \
+          -Dproject.build.outputTimestamp="$timestamp" \
+          -Dexpression=session.localRepository.basedir -Doutput="$repository_file" \
+          install org.apache.maven.plugins:maven-help-plugin:3.5.1:evaluate
+        local_repository=$(< "$repository_file")
+        local_repository=${local_repository%$'\r'}
+        if [[ "$RUNNER_OS" == 'Windows' ]]; then
+          local_repository=$(cygpath -u "$local_repository")
+        fi
+        [[ -d "$local_repository" ]]
+        while IFS=$'\t' read -r artifact expected; do
+          [[ "$artifact" =~ ^regelsuche-[a-z-]+$ && "$expected" =~ ^[0-9a-f]{64}$ ]]
+          jar="$local_repository/io/github/carstenartur/$artifact/$version/$artifact-$version.jar"
+          printf '%s  %s\n' "$expected" "$jar" | sha256sum --check --status
+        done <<< "$artifacts"
+        # Git pack indexes are read-only on Windows. Remove this action's checkout
+        # before a subsequent reactor clean tries to delete it with ordinary file permissions.
+        if [[ "$RUNNER_OS" == 'Windows' ]]; then
+          SDK_CHECKOUT=$(cygpath -w "$sdk_source") pwsh -NoProfile -NonInteractive -Command \
+            'Remove-Item -LiteralPath $env:SDK_CHECKOUT -Recurse -Force -ErrorAction Stop'
+        else
+          rm -rf -- "$sdk_source"
+        fi
+        [[ ! -e "$sdk_source" ]]

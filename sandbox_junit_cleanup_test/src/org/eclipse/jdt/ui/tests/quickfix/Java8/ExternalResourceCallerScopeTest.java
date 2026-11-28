@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Copyright (c) 2026 Carsten Hammer and others.
  *
  * This program and the accompanying materials are made available under the
@@ -11,6 +11,7 @@ package org.eclipse.jdt.ui.tests.quickfix.Java8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
@@ -22,6 +23,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.stream.Collectors;
@@ -36,11 +38,15 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
+import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.ITypeRoot;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.junit.JUnitCore;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
@@ -53,7 +59,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
-import org.sandbox.jdt.internal.ui.fix.JUnitCleanUpCore;
+import org.sandbox.jdt.internal.ui.fix.ReportingJUnitCleanUpCore;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.CompilerDiagnosticAssertions;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
@@ -355,6 +361,212 @@ class ExternalResourceCallerScopeTest {
 		assertTrue(changed.get(1).contains("import org.junit.jupiter.api.Test;"), changed.toString());
 	}
 
+	@ParameterizedTest
+	@ValueSource(strings= { "strict", "best-effort", "junit6", "test-without-rule-rewrite" })
+	void retainsOwnersOfUnselectedRuleFixtures(String profile) throws Exception {
+		ICompilationUnit resource= resource();
+		ICompilationUnit child= providers.createCompilationUnit("ChildResource.java",
+				"package test; public class ChildResource extends Resource {}", false, null);
+		String ownerSource= """
+				package test;
+				import org.junit.Rule;
+				import org.junit.Test;
+				import static org.junit.Assert.assertNotNull;
+				public class Owner {
+					@Rule public Resource value = new Resource();
+					@Test public void runsFixture() { assertNotNull(value.getProject()); }
+				}
+				""";
+		ICompilationUnit owner= callers.createCompilationUnit("Owner.java", ownerSource, false, null);
+		String peerSource= ownerSource.replace("class Owner", "class Peer")
+				.replace("@Test public void", "@Rule public ChildResource child = new ChildResource();\n\t@Test public void")
+				.replace("assertNotNull(value.getProject());", "assertNotNull(value.getProject()); assertNotNull(child.getProject());");
+		ICompilationUnit peer= callers.createCompilationUnit("Peer.java", peerSource, false, null);
+		ICompilationUnit unrelatedBase= providers.createCompilationUnit("OtherBase.java", """
+				package test;
+				public abstract class OtherBase {
+					public @interface Rule {}
+					@Rule public Object field;
+					@Rule public void ordinaryMethod() {}
+				}
+				""", false, null);
+		ICompilationUnit independent= callers.createCompilationUnit("Independent.java", """
+				package test;
+				import org.junit.Test;
+				public class Independent extends OtherBase {
+					@Test public void runnable() { System.out.println(getClass()); }
+				}
+				""", false, null);
+		var selected= new ArrayList<>(List.of(owner, peer, independent));
+		var affected= new ArrayList<>(List.of(resource, child, unrelatedBase, owner, peer, independent));
+		var retained= new LinkedHashMap<ICompilationUnit, String>();
+		retained.put(owner, ownerSource);
+		retained.put(peer, peerSource);
+		for (var fixture : List.of(
+				new InheritedFixture("Concrete", "@org.junit.Rule public Resource value = new Resource();", "value.getProject()"),
+				new InheritedFixture("Folder", "@Rule public org.junit.rules.TemporaryFolder tmp = new org.junit.rules.TemporaryFolder();", "tmp.getRoot()"),
+				new InheritedFixture("ErasedField", "public Resource value = new Resource(); @org.junit.Rule public org.junit.rules.TestRule rule = value;", "value.getProject()"),
+				new InheritedFixture("Method", "public Resource value = new Resource(); @org.junit.Rule public Resource rule() { return value; }", "value.getProject()"),
+				new InheritedFixture("ErasedMethod", "public static Resource value = new Resource(); @org.junit.ClassRule public static org.junit.rules.TestRule rule() { return value; }", "value.getProject()"))) {
+			String baseName= fixture.name() + "Base";
+			String declaration= fixture.declaration();
+			String imports= declaration.startsWith("@Rule ") ? "import org.junit.Rule; " : "";
+			affected.add(providers.createCompilationUnit(baseName + ".java",
+					"package test; " + imports + "public abstract class " + baseName + " { " + declaration + " }", false, null));
+			String source= "package test; public class " + fixture.name() + " extends " + baseName
+					+ " { @org.junit.Test public void initialized() { org.junit.Assert.assertNotNull(" + fixture.observation() + "); } }";
+			var unit= callers.createCompilationUnit(fixture.name() + ".java", source, false, null);
+			selected.add(unit);
+			affected.add(unit);
+			retained.put(unit, source);
+		}
+		applyAndUndo(profile.equals("best-effort"), selected, affected,
+				Map.of(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT, CleanUpOptions.TRUE,
+						MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE, Boolean.toString(!profile.equals("test-without-rule-rewrite")),
+						MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE, Boolean.toString(!profile.equals("test-without-rule-rewrite")),
+						"cleanup.junitcleanup_6_compatibility", Boolean.toString(profile.equals("junit6"))),
+				cleanup -> {
+					var names= selected.stream().map(ITypeRoot::findPrimaryType).map(IType::getFullyQualifiedName).toList();
+					var expected= names.stream().map(name -> (name.equals("test.Independent") ? "junit-jupiter " : "junit-vintage ")
+							+ name + " SUCCESSFUL").toList();
+					assertEquals(expected, engineResults(names));
+					for (var entry : retained.entrySet()) assertRetainedOwner(entry.getValue(), entry.getKey().getSource(), profile);
+					assertTrue(independent.getSource().contains("import org.junit.jupiter.api.Test;"), independent.getSource());
+					assertTrue(cleanup.getLastPlanningDiagnosticsJson(caller.getJavaProject())
+							.contains("EXTERNAL_RESOURCE_FIXTURE_OUT_OF_SCOPE"));
+				});
+	}
+
+	private record InheritedFixture(String name, String declaration, String observation) {}
+
+	@ParameterizedTest
+	@ValueSource(strings= { "strict", "best-effort", "junit6", "test-without-rule-rewrite" })
+	void retainsUnavailableAncestorWithoutAbortingIndependentMigration(String profile) throws Exception {
+		String original= """
+				package test;
+				import unavailable.fixture.MissingBase;
+				public class UnavailableOwner extends MissingBase {
+					@org.junit.Test public void unresolvedFixture() {}
+				}
+				""";
+		ICompilationUnit owner= callers.createCompilationUnit("UnavailableOwner.java", original, false, null);
+		ICompilationUnit independent= callers.createCompilationUnit("Independent.java", """
+				package test;
+				import org.junit.Test;
+				public class Independent {
+					@Test public void runnable() { System.out.println(getClass()); }
+				}
+				""", false, null);
+		String independentOriginal= independent.getSource();
+		var parser= ASTParser.newParser(AST.getJLSLatest());
+		parser.setSource(owner);
+		parser.setResolveBindings(true);
+		parser.setBindingsRecovery(true);
+		var ast= (CompilationUnit) parser.createAST(null);
+		var ancestor= ((TypeDeclaration) ast.types().getFirst()).resolveBinding().getSuperclass();
+		assertNotNull(ancestor);
+		assertTrue(ancestor.getJavaElement() instanceof IType);
+		IType unavailable= (IType) ancestor.getJavaElement();
+		assertFalse(unavailable.exists());
+		JavaModelException absent= assertThrows(JavaModelException.class, unavailable::getFields);
+		assertTrue(absent.isDoesNotExist());
+		assertTrue(Arrays.stream(ast.getProblems()).anyMatch(IProblem::isError),
+				"The unavailable ancestor is an existing input problem, not a cleanup-generated error");
+		var diagnostics= CompilerDiagnosticAssertions.capture(owner, independent);
+		var originalOptions= caller.getJavaProject().getOptions(false);
+		var cleanup= new ReportingJUnitCleanUpCore(Map.of(
+				MYCleanUpConstants.JUNIT_CLEANUP, CleanUpOptions.TRUE,
+				MYCleanUpConstants.JUNIT_CLEANUP_4_TEST, CleanUpOptions.TRUE,
+				MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE, Boolean.toString(!profile.equals("test-without-rule-rewrite")),
+				MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE, Boolean.toString(!profile.equals("test-without-rule-rewrite")),
+				"cleanup.junitcleanup_best_effort", Boolean.toString(profile.equals("best-effort")),
+				"cleanup.junitcleanup_6_compatibility", Boolean.toString(profile.equals("junit6"))));
+		var change= new CompositeChange("Retain an unavailable ancestor");
+		var monitor= new NullProgressMonitor();
+		try {
+			var status= cleanup.checkPreConditions(caller.getJavaProject(), new ICompilationUnit[] { owner, independent }, monitor);
+			assertFalse(status.hasFatalError(), status.toString());
+			for (ICompilationUnit unit : List.of(owner, independent)) {
+				var fix= cleanup.createFix(new CleanUpContext(unit, parse(unit)));
+				if (fix != null) change.add(fix.createChange(monitor));
+			}
+			change.initializeValidationData(monitor);
+			var undo= change.perform(monitor);
+			assertNotNull(undo);
+			try {
+				diagnostics.assertNoNewDiagnostics();
+				assertRetainedOwner(original, owner.getSource(), profile);
+				assertTrue(independent.getSource().contains("import org.junit.jupiter.api.Test;"), independent.getSource());
+				assertEquals(List.of("junit-jupiter test.Independent SUCCESSFUL"), engineResults(List.of("test.Independent")));
+				assertTrue(cleanup.getLastPlanningDiagnosticsJson(caller.getJavaProject())
+						.contains("EXTERNAL_RESOURCE_FIXTURE_OUT_OF_SCOPE"));
+			} finally {
+				var redo= undo.perform(monitor);
+				if (redo != null) redo.dispose();
+				undo.dispose();
+			}
+		} finally {
+			change.dispose();
+			cleanup.checkPostConditions(monitor);
+			assertEquals(original, owner.getSource());
+			assertEquals(independentOriginal, independent.getSource());
+			assertEquals(originalOptions, caller.getJavaProject().getOptions(false));
+			diagnostics.assertRestored();
+		}
+	}
+
+	private static void assertRetainedOwner(String original, String applied, String profile) {
+		if (profile.equals("best-effort")) {
+			assertTrue(applied.contains("(EXTERNAL_RESOURCE_FIXTURE_OUT_OF_SCOPE)"), applied);
+			applied= applied.replaceFirst("(?s)/\\*\\*.*?\\*/\\s*", "");
+		}
+		assertEquals(original, applied);
+	}
+
+	private List<String> engineResults(List<String> names) throws Exception {
+		var classpath= new ArrayList<String>();
+		for (var project : List.of(provider.getJavaProject(), caller.getJavaProject())) {
+			project.getProject().build(IncrementalProjectBuilder.FULL_BUILD, null);
+			classpath.add(ResourcesPlugin.getWorkspace().getRoot().findMember(project.getOutputLocation()).getLocation().toOSString());
+		}
+		for (var entry : caller.getJavaProject().getResolvedClasspath(true)) {
+			if (entry.getEntryKind() == IClasspathEntry.CPE_LIBRARY) classpath.add(entry.getPath().toOSString());
+		}
+		Path probe= temporary.resolve("Observe.java");
+		Files.writeString(probe, """
+				import org.junit.platform.launcher.*;
+				import org.junit.platform.launcher.core.*;
+				import org.junit.platform.engine.*;
+				import org.junit.platform.engine.discovery.DiscoverySelectors;
+				import org.junit.platform.engine.support.descriptor.MethodSource;
+				class Observe implements TestExecutionListener {
+					public void executionFinished(TestIdentifier id, TestExecutionResult result) {
+						if (id.isTest() && id.getSource().orElse(null) instanceof MethodSource method)
+							System.out.println("TEST " + id.getUniqueIdObject().getEngineId().orElseThrow()
+								+ " " + method.getClassName() + " " + result.getStatus());
+					}
+					public static void main(String[] args) {
+						var launcher = LauncherFactory.create();
+						for (String name : args) launcher.execute(LauncherDiscoveryRequestBuilder.request()
+							.selectors(DiscoverySelectors.selectClass(name)).build(), new Observe());
+					}
+				}
+				""", StandardCharsets.UTF_8);
+		Path output= temporary.resolve("engine.log");
+		var command= new ArrayList<>(List.of(Path.of(System.getProperty("java.home"), "bin", "java").toString(),
+				"--class-path", String.join(File.pathSeparator, classpath), probe.toString()));
+		command.addAll(names);
+		var process= new ProcessBuilder(command).redirectErrorStream(true).redirectOutput(output.toFile()).start();
+		try {
+			assertTrue(process.waitFor(60, TimeUnit.SECONDS));
+			assertEquals(0, process.exitValue(), Files.readString(output, StandardCharsets.UTF_8));
+		} finally {
+			if (process.isAlive()) process.destroyForcibly();
+		}
+		return Files.readAllLines(output, StandardCharsets.UTF_8).stream().filter(line -> line.startsWith("TEST "))
+				.map(line -> line.substring("TEST ".length())).toList();
+	}
+
 	private ICompilationUnit resource() throws Exception {
 		return providers.createCompilationUnit("Resource.java", """
 				package test;
@@ -413,6 +625,16 @@ class ExternalResourceCallerScopeTest {
 
 	private List<String> applyAndUndo(boolean bestEffort, List<ICompilationUnit> selected,
 			List<ICompilationUnit> affected) throws Exception {
+		return applyAndUndo(bestEffort, selected, affected, Map.of(), cleanup -> {});
+	}
+
+	@FunctionalInterface
+	private interface AppliedCheck {
+		void verify(ReportingJUnitCleanUpCore cleanup) throws Exception;
+	}
+
+	private List<String> applyAndUndo(boolean bestEffort, List<ICompilationUnit> selected,
+			List<ICompilationUnit> affected, Map<String, String> additionalOptions, AppliedCheck afterApply) throws Exception {
 		Map<ICompilationUnit, String> originals= new LinkedHashMap<>();
 		for (ICompilationUnit unit : affected) originals.put(unit, unit.getSource());
 		var providerOptions= provider.getJavaProject().getOptions(false);
@@ -421,18 +643,20 @@ class ExternalResourceCallerScopeTest {
 		for (ICompilationUnit unit : affected) {
 			assertTrue(Arrays.stream(parse(unit).getProblems()).noneMatch(IProblem::isError), unit.getSource());
 		}
-		var cleanup= new JUnitCleanUpCore(Map.of(
+		var options= new LinkedHashMap<>(Map.of(
 				MYCleanUpConstants.JUNIT_CLEANUP, CleanUpOptions.TRUE,
 				MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE, CleanUpOptions.TRUE,
 				MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE, CleanUpOptions.TRUE,
 				MYCleanUpConstants.JUNIT_CLEANUP_4_TEST, CleanUpOptions.TRUE,
 				"cleanup.junitcleanup_best_effort", Boolean.toString(bestEffort)));
+		options.putAll(additionalOptions);
+		var cleanup= new ReportingJUnitCleanUpCore(options);
 		CompositeChange change= new CompositeChange("ExternalResource caller scope");
 		var monitor= new NullProgressMonitor();
 		try {
 			// Native JDT cleanup provides the selected project to this lifecycle;
 			// optional workbench scope expansion is not required by ICleanUp.
-			var status= cleanup.checkPreConditions(provider.getJavaProject(), selected.toArray(ICompilationUnit[]::new), null);
+			var status= cleanup.checkPreConditions(selected.getFirst().getJavaProject(), selected.toArray(ICompilationUnit[]::new), null);
 			assertFalse(status.hasFatalError(), status.toString());
 			for (ICompilationUnit unit : selected) {
 				var fix= cleanup.createFix(new CleanUpContext(unit, parse(unit)));
@@ -446,6 +670,7 @@ class ExternalResourceCallerScopeTest {
 				for (ICompilationUnit unit : affected) {
 					if (!selected.contains(unit)) assertEquals(originals.get(unit), unit.getSource());
 				}
+				afterApply.verify(cleanup);
 				List<String> changed= new ArrayList<>();
 				for (ICompilationUnit unit : selected) changed.add(unit.getSource());
 				return changed;

@@ -59,7 +59,7 @@ class JavaValueInverseReuseTest {
             ast=helper.parse(source);var work=new JavaValueSourceSummary.Work(options.workBudget(),options,()->false);
             var replacements=new ArrayList<MathematicalAnalysis.Replacement>();var evidence=new ArrayList<MathematicalAnalysis.VerifiedRegion>();
             var diagnostics=new ArrayList<MathematicalAnalysis.Diagnostic>();
-            try(var context=JavaSourceContext.open(ast,source,helper.environment(),null,options)) {
+            try(var _=JavaSourceContext.open(ast,source,helper.environment(),null,options)) {
                 // Seed the verified square so cost rejection cannot mask a faulty inverse selection gate.
                 JavaValueReuseOptimizer.optimize(ast,source,options,null,-1,0,Map.of(),helper.environment(),replacements,evidence,diagnostics,work,new MathematicalJavadoc());
                 assertTrue(replacements.stream().anyMatch(edit->edit.replacement().contains("Mathematics value reuse")),diagnostics.toString());
@@ -94,7 +94,7 @@ class JavaValueInverseReuseTest {
             .replace("public static Leaf scale(Leaf x){","public static int scale(Leaf x){")
             .replace("return weighted.combine(x.reciprocal());","Leaf answer=weighted.combine(x.reciprocal());answer.first();return calls;")
             .replace("return new Leaf(a.mod(P),b.mod(P));","return new Leaf(a.mod(Foreign.P),b.mod(Foreign.P));")
-            +"final class Foreign {static {Calculation.calls++;}public static final java.math.BigInteger P=new java.math.BigInteger(\"4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787\");}";
+            +"final class Foreign {static {Calculation.calls++;}public static final java.math.BigInteger P=new BigInteger(\"4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787\");}";
         var helper=new JavaImmutableValueTest();helper.directory=directory;
         var result=MathematicalAnalysis.analyze(helper.parse(source),source,JavaValueReuseTest.options(),null,-1,0,helper.environment());
         String generated=helper.apply(source,result);var execution=new JavaValueReuseTest();execution.directory=directory;

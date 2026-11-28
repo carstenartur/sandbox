@@ -15,21 +15,11 @@ on:
       - 'sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/JUnitXmlInventoryComparator*.java'
       - 'sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/PinnedGitRepository*.java'
       - '.github/workflows/benchmark.yml'
+      - '.github/actions/provision-regelsuche/**'
   pull_request:
     types: [opened, reopened, synchronize, labeled]
     branches:
       - main
-    paths:
-      - 'sandbox-benchmarks/**'
-      - 'qa/math-optimization/**'
-      - 'qa/upstream-cleanups/**'
-      - 'sandbox_math_cleanup/**'
-      - 'sandbox_math_cleanup_test/**'
-      - 'sandbox-functional-converter-core/**'
-      - 'sandbox-ast-api/**'
-      - 'sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/JUnitXmlInventoryComparator*.java'
-      - 'sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/PinnedGitRepository*.java'
-      - '.github/workflows/benchmark.yml'
   workflow_dispatch:
     inputs:
       jdt_upstream:
@@ -42,8 +32,75 @@ on:
         default: false
 
 jobs:
-  swt-before-after:
+  guarded-root:
+    needs: benchmark-scope
+    if: needs.benchmark-scope.outputs.run == 'true'
+    name: Source-discovered exact quadratic roots
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25.0.5+8'
+          cache: maven
+      - uses: ./.github/actions/provision-regelsuche
+      - name: Qualify original upstream source and generated Java
+        run: >-
+          ./mvnw --batch-mode --no-transfer-progress -f qa/math-optimization/pom.xml
+          -Dtest=GuardedQuadraticRootSourceTest,BouncyCastleGuardedRootTest
+          -Dsandbox.math.bc.root.upstream=true
+          -Dsandbox.math.bc.root.output="${{ runner.temp }}/guarded-root" test
+      - name: Check benchmark isolation, exact outputs and artifact freshness
+        run: >-
+          ./mvnw --batch-mode --no-transfer-progress -f qa/math-optimization/pom.xml
+          -Dtest=GuardedRootBenchmarkTest
+          -Dsandbox.math.bc.root.benchmarkExport="${{ runner.temp }}/guarded-root" test
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: guarded-root-qualification
+          path: |
+            qa/math-optimization/target/surefire-reports/**
+            ${{ runner.temp }}/guarded-root/root-qualification.properties
+            ${{ runner.temp }}/guarded-root/original/*.java
+            ${{ runner.temp }}/guarded-root/generated/*.java
+          retention-days: 14
+
+  benchmark-scope:
+    name: Check benchmark paths
     if: github.event.action != 'labeled'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      run: ${{ steps.paths.outputs.run }}
+    steps:
+      - id: paths
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" != pull_request ]]; then
+            printf 'run=true\n' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          files=$(gh api --paginate "repos/$GH_REPO/pulls/$PR_NUMBER/files?per_page=100" \
+            --jq '.[] | (.filename, (.previous_filename // empty))')
+          benchmark_paths='^(sandbox-benchmarks|qa/math-optimization|qa/upstream-cleanups|sandbox_math_cleanup|sandbox_math_cleanup_test|sandbox-functional-converter-core|sandbox-ast-api)/'
+          policy_paths='^sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/(JUnitXmlInventoryComparator|PinnedGitRepository)[^/]*\.java$'
+          if grep -Eq -e '^\.github/actions/provision-regelsuche/' -e "$benchmark_paths" -e "$policy_paths" -e '^\.github/workflows/benchmark\.yml$' <<< "$files"; then
+            printf 'run=true\n' >> "$GITHUB_OUTPUT"
+          fi
+
+  swt-before-after:
+    needs: benchmark-scope
+    if: needs.benchmark-scope.outputs.run == 'true'
     name: Pinned SWT mathematics before and after
     runs-on: ubuntu-24.04
     timeout-minutes: 120
@@ -78,10 +135,15 @@ jobs:
       - name: Set up Java 25
         uses: actions/setup-java@v6
         with:
-          java-version: '25'
+          java-version: '25.0.5+8'
           distribution: temurin
           cache: maven
           cache-dependency-path: sandbox/qa/math-optimization/pom.xml
+      - name: Provision the pinned mathematics SDK
+        uses: ./sandbox/.github/actions/provision-regelsuche
+        with:
+          sandbox-directory: sandbox
+
       - name: Install GTK and headless display dependencies
         run: |
           sudo apt-get update
@@ -149,10 +211,15 @@ jobs:
           path: sandbox
       - uses: actions/setup-java@v6
         with:
-          java-version: '25'
+          java-version: '25.0.5+8'
           distribution: temurin
           cache: maven
           cache-dependency-path: sandbox/pom.xml
+      - name: Provision the pinned mathematics SDK
+        uses: ./sandbox/.github/actions/provision-regelsuche
+        with:
+          sandbox-directory: sandbox
+
       - name: Record bootstrap dependency availability
         run: |
           curl --silent --show-error --head --max-time 60 \
@@ -225,7 +292,7 @@ jobs:
             8
             17
             21
-            25
+            25.0.5+8
           mvn-toolchain-id: |
             JavaSE-1.8
             JavaSE-17
@@ -233,6 +300,11 @@ jobs:
             JavaSE-25
           cache: maven
           cache-dependency-path: sandbox/qa/math-optimization/pom.xml
+      - name: Provision the pinned mathematics SDK
+        uses: ./sandbox/.github/actions/provision-regelsuche
+        with:
+          sandbox-directory: sandbox
+
       - name: Install native test dependencies
         run: |
           sudo apt-get update
@@ -300,7 +372,7 @@ jobs:
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: '25'
+          java-version: '25.0.5+8'
           cache: maven
           cache-dependency-path: sandbox/qa/upstream-cleanups/pom.xml
       - name: Install native display dependencies
@@ -312,20 +384,13 @@ jobs:
         with:
           name: jdt-math-product
           path: jdt-product
-      - name: Verify and unpack this run's product
-        run: |
-          cd jdt-product
-          sha256sum -c SHA256SUMS
-          mkdir eclipse
-          tar -xzf product.tar.gz -C eclipse
       - name: Verify cleanup application and compiler diagnostic preservation
         working-directory: sandbox
         run: >-
           dbus-run-session -- xvfb-run -a -s '-screen 0 1280x1024x24 -noreset'
           ./mvnw --batch-mode --no-transfer-progress -f qa/upstream-cleanups/pom.xml
           -Dsandbox.cleanup.family=${{ matrix.family }}
-          -Dsandbox.cleanup.product="$GITHUB_WORKSPACE/jdt-product/eclipse"
-          -Dsandbox.cleanup.productCommit="$(cat ../jdt-product/source-commit.txt)"
+          -Dsandbox.cleanup.productArtifact="$GITHUB_WORKSPACE/jdt-product"
           -Dsandbox.cleanup.output="$GITHUB_WORKSPACE/cleanup-evidence-${{ matrix.family }}"
           test
       - name: Retain corpus inputs, changes and diagnostics on every outcome
@@ -339,7 +404,8 @@ jobs:
             sandbox/qa/upstream-cleanups/target/surefire-reports/
 
   benchmark:
-    if: github.event.action != 'labeled'
+    needs: benchmark-scope
+    if: needs.benchmark-scope.outputs.run == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -351,10 +417,13 @@ jobs:
       - name: Set up JDK 25
         uses: actions/setup-java@v6
         with:
-          java-version: '25'
+          java-version: '25.0.5+8'
           distribution: 'temurin'
           cache: maven
           
+      - name: Provision the pinned mathematics SDK
+        uses: ./.github/actions/provision-regelsuche
+
       - name: Install Parent POM
         run: mvn install -N -DskipTests
           

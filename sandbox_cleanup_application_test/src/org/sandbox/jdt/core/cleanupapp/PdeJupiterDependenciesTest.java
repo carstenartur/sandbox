@@ -78,6 +78,10 @@ class PdeJupiterDependenciesTest {
 
 	static Stream<Arguments> introducedReferences() {
 		return Stream.of(
+				Arguments.of("import org.sandbox.junit.jupiter.ExternalResourceExtension; class Example { Object factory = ExternalResourceExtension.perTest(null,null); }", //$NON-NLS-1$
+						Set.of("org.sandbox.junit.jupiter")), //$NON-NLS-1$
+				Arguments.of("class Example { Object factory = org.sandbox.junit.jupiter.ExternalResourceExtension.perClass(() -> this, r -> r.start(), r -> r.stop()); }", //$NON-NLS-1$
+						Set.of("org.sandbox.junit.jupiter", "org.junit.jupiter.api.function")), //$NON-NLS-1$ //$NON-NLS-2$
 				Arguments.of("import org.junit.jupiter.api.Test; @Test class Example {}", //$NON-NLS-1$
 						Set.of("org.junit.jupiter.api")), //$NON-NLS-1$
 				Arguments.of("import static org.junit.jupiter.api.Assertions.assertTrue; class Example { void run() { assertTrue(true); } }", //$NON-NLS-1$
@@ -169,10 +173,10 @@ class PdeJupiterDependenciesTest {
 		Object resource= resourceConstructor.newInstance(descriptor, path(descriptor),
 				descriptor.getProjectRelativePath().toString(), bytes(descriptor));
 		List<Object> written= new ArrayList<>();
-		Method update= owner.getDeclaredMethod("updateProjectMetadata", List.class, List.class, List.class, Map.class); //$NON-NLS-1$
+		Method update= owner.getDeclaredMethod("updateProjectMetadata", List.class, List.class, List.class, Map.class, MixedSupportImport.Bindings.class); //$NON-NLS-1$
 		update.setAccessible(true);
 		try {
-			update.invoke(null, List.of(snapshot), List.of(resource), written, JavaCore.getOptions());
+			update.invoke(null, List.of(snapshot), List.of(resource), written, JavaCore.getOptions(), null);
 		} catch (InvocationTargetException exception) {
 			if (exception.getCause() instanceof Exception cause) {
 				throw cause;

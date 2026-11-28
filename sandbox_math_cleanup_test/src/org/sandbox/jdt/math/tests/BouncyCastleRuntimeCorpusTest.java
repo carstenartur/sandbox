@@ -18,6 +18,10 @@ import java.util.SplittableRandom;
 import java.util.Set;
 import java.util.jar.JarFile;
 import javax.tools.ToolProvider;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Platform;
@@ -97,7 +101,7 @@ class BouncyCastleRuntimeCorpusTest {
         Map<String, String> sources = productionSources();
         Path root = checkout();
         Path sdk = root.resolve("sandbox_math_cleanup/lib");
-        var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        var mapper = new ObjectMapper();
         var qualification = mapper.readTree(sdk.resolve("qualification.json").toFile());
         String sdkHash;
         var installed = FrameworkUtil.getBundle(OptimizationGoal.class);
@@ -112,7 +116,7 @@ class BouncyCastleRuntimeCorpusTest {
             }
         }
         assertEquals(qualification.required("jarSha256").asText(), sdkHash, "Qualified SDK artifact");
-        String sdkSourceRevision = qualification.required("sourceRevision").asText();
+        List<SdkIdentity> screenshotQualifications = screenshotQualifications(sdk, qualification);
         Path directory = root.resolve("sandbox_eclipse_help_swtbot_test/fixtures/mathematics");
         Path gallery = root.resolve("sandbox_math_cleanup_help/images");
         try (var entries = Files.list(directory)) {
@@ -129,13 +133,63 @@ class BouncyCastleRuntimeCorpusTest {
 
                 String id = Objects.requireNonNull(fixture.getFileName(), "Fixture directory must have a name").toString();
                 var evidence = mapper.readTree(gallery.resolve(id + ".provenance.json").toFile()).required("evidence");
-                assertEquals(sdkHash, evidence.required("sdkSha256").asText(), fixture + ": screenshot SDK artifact");
-                assertEquals(sdkSourceRevision, evidence.required("sdkOptimizationSourceRevision").asText(),
-                        fixture + ": screenshot SDK source revision");
+                assertQualifiedScreenshotSdk(evidence, screenshotQualifications, id);
                 assertEquals(expected, evidence.required("before").asText(), fixture + ": captured production source");
                 assertEquals(digest(Files.readAllBytes(gallery.resolve(id + ".png"))), evidence.required("screenshotSha256").asText(),
                         fixture + ": screenshot content");
             }
+        }
+    }
+
+    @Test void screenshotSdkProvenanceAcceptsCurrentAndHistoricalQualifications() throws IOException {
+        Path sdk = checkout().resolve("sandbox_math_cleanup/lib");
+        var mapper = new ObjectMapper();
+        var current = mapper.readTree(sdk.resolve("qualification.json").toFile());
+        var historical = mapper.readTree(sdk.resolve("qualification-0.5.3.json").toFile());
+        var previous = mapper.readTree(sdk.resolve("qualification-2026-11-26-guarded-field.json").toFile());
+        var qualified = screenshotQualifications(sdk, current);
+        assertQualifiedScreenshotSdk(screenshotEvidence(SdkIdentity.fromQualification(current)), qualified, "current capture");
+        assertQualifiedScreenshotSdk(screenshotEvidence(SdkIdentity.fromQualification(historical)), qualified, "historical capture");
+        assertQualifiedScreenshotSdk(screenshotEvidence(SdkIdentity.fromQualification(previous)), qualified, "previous source pin capture");
+    }
+
+    @Test void screenshotSdkProvenanceRejectsMixedAndUnknownQualifications() throws IOException {
+        Path sdk = checkout().resolve("sandbox_math_cleanup/lib");
+        var current = new ObjectMapper().readTree(sdk.resolve("qualification.json").toFile());
+        var qualified = screenshotQualifications(sdk, current);
+        var live = qualified.getFirst();
+        for (var revision : qualified)
+            for (var artifact : qualified)
+                if (!revision.equals(artifact)) assertThrows(AssertionError.class, () -> assertQualifiedScreenshotSdk(
+                        screenshotEvidence(new SdkIdentity(revision.sourceRevision(), artifact.jarSha256())), qualified, "mixed capture"));
+        assertThrows(AssertionError.class, () -> assertQualifiedScreenshotSdk(
+                screenshotEvidence(new SdkIdentity("0".repeat(40), live.jarSha256())), qualified, "unknown revision"));
+        assertThrows(AssertionError.class, () -> assertQualifiedScreenshotSdk(
+                screenshotEvidence(new SdkIdentity(live.sourceRevision(), "0".repeat(64))), qualified, "unknown artifact"));
+    }
+
+    private static List<SdkIdentity> screenshotQualifications(Path sdk, JsonNode currentQualification) throws IOException {
+        var mapper = new ObjectMapper();
+        var historical = mapper.readTree(sdk.resolve("qualification-0.5.3.json").toFile());
+        var previous = mapper.readTree(sdk.resolve("qualification-2026-11-26-guarded-field.json").toFile());
+        return List.of(SdkIdentity.fromQualification(currentQualification), SdkIdentity.fromQualification(previous), SdkIdentity.fromQualification(historical));
+    }
+
+    private static JsonNode screenshotEvidence(SdkIdentity sdk) {
+        return new ObjectMapper().createObjectNode().put("sdkOptimizationSourceRevision", sdk.sourceRevision())
+                .put("sdkSha256", sdk.jarSha256());
+    }
+
+    private static void assertQualifiedScreenshotSdk(JsonNode evidence, List<SdkIdentity> qualified, String screenshot) {
+        var captured = new SdkIdentity(evidence.required("sdkOptimizationSourceRevision").asText(),
+                evidence.required("sdkSha256").asText());
+        assertTrue(qualified.contains(captured), () -> "Screenshot SDK qualification for " + screenshot
+                + " is " + captured + ", expected one of " + qualified);
+    }
+
+    private record SdkIdentity(String sourceRevision, String jarSha256) {
+        private static SdkIdentity fromQualification(JsonNode qualification) {
+            return new SdkIdentity(qualification.required("sourceRevision").asText(), qualification.required("jarSha256").asText());
         }
     }
 

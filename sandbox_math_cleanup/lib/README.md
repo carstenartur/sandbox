@@ -1,19 +1,64 @@
 # Pinned Regelsuche optimization SDK
 
-The mathematics plug-in and headless QA use
-[`io.github.carstenartur:regelsuche-optimization-sdk:0.5.3`](https://central.sonatype.com/artifact/io.github.carstenartur/regelsuche-optimization-sdk/0.5.3).
-Maven resolves the SDK and its runtime dependencies. The plug-in's
-`generate-resources` step copies these JARs into `lib/` for its private
-OSGi bundle classpath. Eclipse m2e runs the same step on project configuration.
-The packaged plug-in works offline. [qualification.json](qualification.json)
-records the released SDK JAR's checksum and source commit.
+The mathematics plug-in and headless QA use `0.5.4-SNAPSHOT` built from the
+exact Regelsuche commit in [qualification.json](qualification.json). The
+coupled quadratic-root API requires this source build. There is no claim
+that these APIs are available in the published Maven Central 0.5.3 artifact.
+The receipt binds the source revision, Java compiler, reproducible archive
+timestamp and checksums of all six Regelsuche runtime artifacts and their
+seven Maven descriptors, including the parent POM.
 
-This receipt qualifies the packaged 0.5.3 dependency. Source-only methods
-added later in Regelsuche, including finite Hall/Hunter and proof-DAG APIs,
-rational positivity certificates and Montgomery schedule planning, are not
-present in this pinned release. Exposing a future method in a cleanup also
-requires Java-source effect checks and a separately replayed consumer test.
-Keep this release receipt unchanged until that dependency is actually upgraded.
+The current pin `e29218175e11af2d7f16fcc42bb42e995c8d9567`, merged in
+[Regelsuche PR1415](https://github.com/carstenartur/Regelsuche/pull/1415), adds
+the core proof and thin SDK entry point for exact observations after parity
+normalization. Java source, effect and observation proofs remain the consumer's responsibility.
+
+CI uses [the source provisioning action](../../.github/actions/provision-regelsuche/action.yml)
+before resolving the plug-in dependencies. The action checks out that full
+commit, installs the SDK reactor with the pinned compiler and compares all
+artifact checksums. It does not resolve a mutable source branch or assume
+that a matching SNAPSHOT is present in a shared Maven cache.
+
+For a local build, use Temurin 25.0.5+8 and the checked source bootstrap.
+The previous pin uses the same `0.5.4-SNAPSHOT` coordinates with different
+checksums. If you already installed that pin, keep its cache intact and choose
+a fresh, empty local Maven repository at an absolute path. From the checkout
+root, use the same path for the bootstrap and every subsequent Maven build or
+test of this checkout.
+
+```bash
+sdk_repo="$HOME/.m2/sandbox-regelsuche-e2921817"  # Choose an unused absolute path on upgrade.
+./mvnw -Dmaven.repo.local="$sdk_repo" -f qa/regelsuche-sdk-bootstrap/pom.xml compile exec:java
+./mvnw -Dmaven.repo.local="$sdk_repo" -f qa/math-optimization/pom.xml test
+```
+
+The bootstrap uses Maven's effective local repository and settings. It reuses
+an installation only after all thirteen files match the receipt. Otherwise
+it fetches the exact source revision and tree, verifies the fresh build before
+installation, and rejects conflicting cached artifacts. Oomph runs this same
+bootstrap before importing the Maven projects and checks it again on restart.
+
+For an existing Eclipse workbench, create a separate Maven settings file,
+copying any existing user settings. Set `<localRepository>` to the same
+absolute path and select the file as m2e's Maven user settings. If the Eclipse
+JVM already sets `maven.repo.local`, point it at the same path as well because
+the Oomph launch passes that property to the bootstrap as an override. Restart
+the workbench and update the Maven projects after the bootstrap succeeds.
+
+The plug-in's `generate-resources` step copies the Maven runtime closure
+into `lib/` for its private OSGi classpath. Eclipse m2e runs the same copy
+step after the source SDK is installed. The packaged plug-in works offline;
+the generated consumer Java has no Regelsuche runtime dependency.
+
+The preceding source receipt is retained byte-for-byte in
+[qualification-2026-11-26-guarded-field.json](qualification-2026-11-26-guarded-field.json),
+and the original release in [qualification-0.5.3.json](qualification-0.5.3.json).
+Screenshot validation accepts only complete qualified revision/artifact pairs;
+mixed or unknown identities fail. Screenshots retain the
+SDK identity recorded by their genuine capture; a dependency upgrade does
+not relabel a historical capture.
+Source availability does not automatically authorize another cleanup:
+each source adapter still needs effect checks and replayed consumer tests.
 
 ## Previous qualified snapshot for polynomial denominators and projective handoffs
 

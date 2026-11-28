@@ -17,6 +17,8 @@ import org.eclipse.jface.text.Document;
 import org.eclipse.text.edits.TextEdit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import de.regelsuche.sdk.optimization.NumericKind;
 import de.regelsuche.sdk.optimization.OptimizationGoal;
 import de.regelsuche.sdk.optimization.SafetyProfile;
@@ -62,6 +64,30 @@ class SourceBackedConstantTest {
         assertTrue(document.get().contains("x.compareTo(P)"));
         undo.apply(document); assertEquals(SOURCE, document.get());
     }
+    @ParameterizedTest @ValueSource(booleans = {false, true})
+    void aHiddenAliasCannotRemoveTheCachedReceiverCheck(boolean qualified) throws Exception {
+        sources("new BigInteger(\"1fffffff\", 16)");
+        Path pkg = directory.resolve("sample"), child = pkg.resolve("Child.java");
+        String header = "package sample; import java.math.BigInteger; ";
+        String base = header + "public class Child extends Constants {";
+        Files.writeString(child, base + "}");
+        Files.writeString(pkg.resolve("Bridge.java"), header + "public class Bridge " + (qualified ? "" : "extends Child")
+                + " { public static final BigInteger P = " + (qualified ? "Child.Q" : "Q") + "; }");
+        String source = SOURCE.replace("x.multiply(x).mod(P).multiply(x).mod(P)\n            .add(BigInteger.valueOf(4)).mod(P)", "P.add(BigInteger.ZERO)");
+        var cached = analyze(source);
+        Files.writeString(child, base + "public static final BigInteger Q = new BigInteger(\"7\") { "
+                + "@Override public BigInteger add(BigInteger x) { return BigInteger.valueOf(23); } }; }");
+        for (var analysis : List.of(cached, analyze(source))) {
+            var doc = new Document(source);
+            analysis.newEdit().apply(doc);
+            Path classes = Files.createTempDirectory(directory, "classes"), file = Files.writeString(classes.resolve("Sample.java"), doc.get());
+            assertEquals(0, javax.tools.ToolProvider.getSystemJavaCompiler().run(null, null, null, "--release", "17", "-sourcepath",
+                    directory.toString(), "-d", classes.toString(), file.toString()));
+            try (var loader = new java.net.URLClassLoader(new java.net.URL[]{classes.toUri().toURL()}, ClassLoader.getPlatformClassLoader())) {
+                assertEquals(java.math.BigInteger.valueOf(23), loader.loadClass("sample.Sample").getMethod("calculate", byte.class).invoke(null, (byte)3));
+            }
+        }
+    }
     @Test void changedDependencyInvalidatesAnAlreadyPreparedPatch() throws Exception {
         sources("new BigInteger(\"1fffffff\", 16)");
         var result = analyze(SOURCE);
@@ -71,6 +97,31 @@ class SourceBackedConstantTest {
             "package sample; import java.math.BigInteger; public class Constants { public static final BigInteger Q = BigInteger.ZERO; }");
         assertFalse(result.matches(SOURCE, Map.of()), "External source changes must invalidate source-proved assumptions");
         assertThrows(IllegalArgumentException.class, result::newEdit);
+    }
+    @ParameterizedTest
+    @ValueSource(strings = {"comparison", "new java.math.BigInteger(\"1fffffff\", 16)", "java.math.BigInteger.valueOf(19)",
+            "java.math.BigInteger.TEN", "Child.valueOf(19)", "Child.TEN"})
+    void ambiguousTypeNamesKeepTheModulusReceiverGuard(String initializer) throws Exception {
+        boolean local = initializer.equals("comparison");
+        sources(local ? "new BigInteger(\"1fffffff\", 16)" : initializer);
+        Files.writeString(directory.resolve("sample/Child.java"), "package sample; import java.math.BigInteger; "
+                + "class Child extends BigInteger { Child() { super(\"0\"); } }");
+        String source = local ? SOURCE.replace("new BigInteger(1,", "new java.math.BigInteger(1,") : SOURCE;
+        var doc = new Document(source);
+        analyze(source).newEdit().apply(doc);
+        assertTrue(source.equals(doc.get()) || doc.get().contains("P.getClass()"), doc::get);
+    }
+    @Test void anInheritedMemberTypeCannotSupplyAFieldAlias() throws Exception {
+        String direct = SOURCE.replace("Bridge.P", "Parent.Holder.Q")
+                + "class Parent { static class Holder { static final BigInteger Q = new BigInteger(\"1fffffff\", 16); } } "
+                + "class Child extends Parent {}";
+        var accepted = analyze(direct);
+        assertTrue(accepted.changed(), accepted.diagnostics().toString());
+        assertFalse(accepted.replacements().getFirst().replacement().contains("P.getClass()"));
+        String inherited = direct.replace("Parent.Holder.Q", "Child.Holder.Q");
+        var document = new Document(inherited);
+        analyze(inherited).newEdit().apply(document);
+        assertTrue(inherited.equals(document.get()) || document.get().contains("P.getClass()"), document::get);
     }
     @Test void incompleteDefinitionDoesNotPermitAnUnguardedRewrite() throws Exception {
         sources("make()");

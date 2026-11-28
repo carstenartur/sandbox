@@ -1,6 +1,7 @@
 /* Copyright (c) 2026 Carsten Hammer. SPDX-License-Identifier: EPL-2.0 */
 package org.sandbox.qa.cleanup;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -12,6 +13,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -23,10 +25,15 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
 import java.time.Duration;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -51,6 +58,94 @@ class UpstreamCleanupTest {
     private static final String BUNDLE = "org.sandbox.qa.cleanup.corpus";
     private static final Path ROOT = Path.of(System.getProperty("sandbox.cleanup.repo", ".")).toAbsolutePath().normalize();
     private static final Path FIXTURES = ROOT.resolve("qa/upstream-cleanups/src/testFixtures");
+    // Each row specifies a profile stem and the cleanup settings that define its coverage.
+    private static final String PROFILE_CONTRACT = """
+            all-java-preserve explicit_encoding_keep_behavior=true loop_conversion.enabled=true loop_conversion.target_format=stream loop_conversion.with_mathematics=false mathematics.safetyProfile=PRESERVE_JAVA junitcleanup_best_effort=false junitcleanup_6_compatibility=false
+            container-all container_contracts=true
+            encoding-aggregate_to_utf8 explicit_encoding=true explicit_encoding_aggregate_to_utf8=true explicit_encoding_insert_utf8=false explicit_encoding_keep_behavior=false
+            encoding-insert_utf8 explicit_encoding=true explicit_encoding_aggregate_to_utf8=false explicit_encoding_insert_utf8=true explicit_encoding_keep_behavior=false
+            encoding-keep_behavior explicit_encoding=true explicit_encoding_aggregate_to_utf8=false explicit_encoding_insert_utf8=false explicit_encoding_keep_behavior=true
+            general-type use_general_type=true
+            hintfile-all hintfile=true
+            int-to-enum int_to_enum=true int_to_enum.project_wide=true
+            jface jfacecleanup=true
+            junit-best-effort junitcleanup=true junitcleanup_4_externalresource=true junitcleanup_4_ruleexternalresource=true junitcleanup_best_effort=true junitcleanup_6_compatibility=false
+            junit-strict junitcleanup=true junitcleanup_4_externalresource=true junitcleanup_4_ruleexternalresource=true junitcleanup_best_effort=false junitcleanup_6_compatibility=false
+            junit6-compatibility junitcleanup=true junitcleanup_4_externalresource=true junitcleanup_4_ruleexternalresource=true junitcleanup_best_effort=false junitcleanup_6_compatibility=true
+            loop-enhanced_for loop_conversion.enabled=true loop_conversion.target_format=enhanced_for loop_conversion.with_mathematics=false
+            loop-iterator_while loop_conversion.enabled=true loop_conversion.target_format=iterator_while loop_conversion.with_mathematics=false
+            loop-stream loop_conversion.enabled=true loop_conversion.target_format=stream loop_conversion.with_mathematics=false
+            math-checked mathematics=true mathematics.safetyProfile=CHECKED_THROW mathematics.checkedOptIn=true mathematics.mathematicalOptIn=false
+            math-guarded mathematics=true mathematics.safetyProfile=GUARDED_FALLBACK mathematics.checkedOptIn=false mathematics.mathematicalOptIn=false
+            math-mathematical-opt-in mathematics=true mathematics.safetyProfile=PRESERVE_JAVA mathematics.checkedOptIn=false mathematics.mathematicalOptIn=true
+            math-preserve mathematics=true mathematics.safetyProfile=PRESERVE_JAVA mathematics.checkedOptIn=false mathematics.mathematicalOptIn=false
+            math-with-loop mathematics=true mathematics.safetyProfile=PRESERVE_JAVA mathematics.checkedOptIn=false mathematics.mathematicalOptIn=false loop_conversion.enabled=true loop_conversion.target_format=stream loop_conversion.with_mathematics=true
+            method-reuse method_reuse=true
+            pattern-missing_hashcode missing_hashcode=true
+            pattern-obsolete_collection obsolete_collection=true
+            pattern-overridable_in_constructor overridable_in_constructor=true
+            pattern-print_stacktrace print_stacktrace=true
+            pattern-shift_out_of_range shift_out_of_range=true
+            pattern-string_simplification string_simplification=true
+            pattern-system_out system_out=true
+            pattern-threading threading=true
+            pattern-wrong_string_comparison wrong_string_comparison=true
+            platform-status simplify_status_creation=true
+            """;
+
+    @Test
+    void rejectsMissingProfilesAndChangedModes(@TempDir Path temporary) throws Exception {
+        Path profiles = temporary.resolve("profiles");
+        copyTree(FIXTURES.resolve("profiles"), profiles);
+        Path loop = profiles.resolve("loop-iterator_while.properties");
+        Path junit = profiles.resolve("junit-best-effort.properties");
+        Files.delete(loop);
+        assertAll(
+                () -> assertThrows(AssertionError.class, () -> verifyProfiles(profiles)),
+                () -> {
+                    Files.copy(FIXTURES.resolve("profiles").resolve(loop.getFileName()), loop);
+                    Files.writeString(junit, "cleanup.unrecognized=true\n", StandardCharsets.UTF_8);
+                    assertThrows(AssertionError.class, () -> verifyProfiles(profiles));
+                });
+    }
+
+    @Test
+    void rejectsUnverifiedProductBytes(@TempDir Path artifact) throws Exception {
+        Path commit = artifact.resolve("source-commit.txt");
+        Path archive = artifact.resolve("product.tar.gz");
+        Files.writeString(commit, "source\n", StandardCharsets.UTF_8);
+        Files.writeString(archive, "archive\n", StandardCharsets.UTF_8);
+        // Known SHA-256 values for the two exact UTF-8 payloads above.
+        Files.writeString(artifact.resolve("SHA256SUMS"), """
+                b8bb034f9b63bd0254fbc7c157cae746c75853f4643d6cea844dc48ddb57f522  source-commit.txt
+                371e16ce98051a3ea7af3eaef8b87d69033154fb5bb33da349d611f0fae061d6  product.tar.gz
+                """, StandardCharsets.UTF_8);
+        assertEquals(archive, verifyProductArtifact(artifact, "source"));
+        Files.writeString(archive, "other archive\n", StandardCharsets.UTF_8);
+        assertThrows(AssertionError.class, () -> verifyProductArtifact(artifact, "source"));
+    }
+
+    @Test
+    void rejectsMissingOrExtraExecutionsInPassingReceipt(@TempDir Path corpus) throws Exception {
+        Properties receipt = new Properties();
+        receipt.setProperty("project.names", "sample.project");
+        receipt.setProperty("profile.names", "first,second");
+        receipt.setProperty("projects", "1");
+        receipt.setProperty("profiles", "2");
+        receipt.setProperty("executions", "2");
+        receipt.setProperty("failures", "0");
+        for (String profile : List.of("first", "second")) {
+            Files.writeString(Files.createDirectories(corpus.resolve("sample.project/" + profile))
+                    .resolve("result.txt"), "PASS\n", StandardCharsets.UTF_8);
+        }
+        Set<String> profiles = Set.of("first", "second");
+        verifyCoverage(corpus, receipt, profiles, 1);
+        Files.move(corpus.resolve("sample.project/first"), corpus.resolve("sample.project/unexpected"));
+        assertThrows(AssertionError.class, () -> verifyCoverage(corpus, receipt, profiles, 1));
+        Files.move(corpus.resolve("sample.project/unexpected"), corpus.resolve("sample.project/first"));
+        Files.writeString(corpus.resolve("sample.project/first/result.txt"), "FAIL\n", StandardCharsets.UTF_8);
+        assertThrows(AssertionError.class, () -> verifyCoverage(corpus, receipt, profiles, 1));
+    }
 
     @Test
     void profilesCoverEveryRegisteredSandboxCleanup() throws Exception {
@@ -80,17 +175,88 @@ class UpstreamCleanupTest {
         var expectedMap = new TreeMap<String, String>();
         expected.stringPropertyNames().forEach(key -> expectedMap.put(key, expected.getProperty(key)));
         assertEquals(actual, expectedMap, "Every source registration must be exercised by the runtime inventory");
-        try (var files = Files.list(FIXTURES.resolve("profiles"))) {
-            List<Path> profiles = files.filter(p -> p.toString().endsWith(".properties"))
-                    .filter(p -> !p.getFileName().toString().equals("registrations.properties")).toList();
-            assertFalse(profiles.isEmpty(), "No cleanup profiles configured");
-            for (Path profile : profiles) assertTrue(properties(profile).containsValue("true"), "Disabled profile: " + profile);
+        verifyProfiles(FIXTURES.resolve("profiles"));
+    }
+
+    private static Set<String> verifyProfiles(Path directory) throws IOException {
+        List<String[]> contract = PROFILE_CONTRACT.lines().map(row -> row.split(" ")).toList();
+        Set<String> expected = contract.stream().map(entries -> entries[0]).collect(Collectors.toCollection(TreeSet::new));
+        assertEquals(31, contract.size(), "The corpus must keep all 31 explicit profiles");
+        assertEquals(31, expected.size(), "Duplicate corpus profile in contract");
+        try (var files = Files.list(directory)) {
+            var actual = files.map(path -> path.getFileName().toString())
+                    .filter(name -> name.endsWith(".properties") && !name.equals("registrations.properties"))
+                    .map(name -> name.substring(0, name.length() - ".properties".length())).collect(Collectors.toSet());
+            assertEquals(expected, actual, "Unexpected cleanup profile inventory in " + directory);
         }
+        for (String[] entries : contract) {
+            Properties profile = properties(directory.resolve(entries[0] + ".properties"));
+            for (int i = 1; i < entries.length; i++) {
+                String[] setting = entries[i].split("=", 2);
+                assertEquals(setting[1], profile.getProperty("cleanup." + setting[0]), entries[0] + ": " + setting[0]);
+            }
+            if ("true".equals(profile.getProperty("cleanup.loop_conversion.enabled"))) {
+                for (String source : List.of("classic_for", "enhanced_for", "iterator_while", "stream"))
+                    assertEquals("true", profile.getProperty("cleanup.loop_conversion.from." + source), entries[0] + ": " + source);
+            }
+        }
+        return expected;
+    }
+
+    private static Path verifyProductArtifact(Path artifact, String head) throws Exception {
+        Path checksums = artifact.resolve("SHA256SUMS");
+        assertTrue(Files.isRegularFile(checksums), "Missing product build checksums: " + checksums);
+        var hashes = new TreeMap<String, String>();
+        for (String line : Files.readAllLines(checksums, StandardCharsets.UTF_8)) {
+            String[] entry = line.split("  ", 2);
+            assertTrue(entry.length == 2 && entry[0].matches("[0-9a-f]{64}"), "Invalid SHA256SUMS entry: " + line);
+            assertEquals(null, hashes.put(entry[1], entry[0]), "Duplicate SHA256SUMS entry: " + entry[1]);
+        }
+        for (String file : List.of("source-commit.txt", "product.tar.gz")) {
+            Path path = artifact.resolve(file);
+            assertTrue(Files.isRegularFile(path), "Missing product build file: " + path);
+            assertNotNull(hashes.get(file), "Missing checksum for " + path);
+            var digest = MessageDigest.getInstance("SHA-256");
+            try (var input = new DigestInputStream(Files.newInputStream(path), digest)) {
+                input.transferTo(OutputStream.nullOutputStream());
+            }
+            assertEquals(hashes.get(file), HexFormat.of().formatHex(digest.digest()), "Product checksum mismatch: " + path);
+        }
+        assertEquals(head, Files.readString(artifact.resolve("source-commit.txt"), StandardCharsets.UTF_8).strip(),
+                "Build the product artifact from this source checkout");
+        return artifact.resolve("product.tar.gz");
+    }
+
+    private static void verifyCoverage(Path corpus, Properties receipt, Set<String> profiles, int count) throws IOException {
+        String projectNames = receipt.getProperty("project.names", "");
+        var projects = new TreeSet<>(List.of(projectNames.split(",")));
+        assertEquals(count, projects.size(), "Unexpected pinned project inventory: " + projectNames);
+        assertEquals(String.join(",", projects), projectNames, "Expected sorted unique project names");
+        assertEquals(String.join(",", new TreeSet<>(profiles)), receipt.getProperty("profile.names"), "Receipt profile inventory");
+        assertEquals(Integer.toString(count), receipt.getProperty("projects"), "Receipt project count");
+        assertEquals(Integer.toString(profiles.size()), receipt.getProperty("profiles"), "Receipt profile count");
+        assertEquals(Integer.toString(count * profiles.size()), receipt.getProperty("executions"), "Receipt execution count");
+        assertEquals("0", receipt.getProperty("failures"), "Receipt failure count");
+        var expected = new TreeSet<Path>();
+        for (String project : projects)
+            for (String profile : profiles)
+                expected.add(Path.of(project, profile, "result.txt"));
+        try (var files = Files.walk(corpus)) {
+            var actual = files.filter(path -> path.getFileName().toString().equals("result.txt"))
+                    .map(corpus::relativize).filter(path -> path.getNameCount() == 3).collect(Collectors.toCollection(TreeSet::new));
+            var missing = new TreeSet<>(expected);
+            missing.removeAll(actual);
+            actual.removeAll(expected);
+            assertTrue(missing.isEmpty() && actual.isEmpty(), "Missing results: " + missing + "; unexpected results: " + actual);
+        }
+        for (Path result : expected)
+            assertEquals("PASS", Files.readString(corpus.resolve(result), StandardCharsets.UTF_8).strip(), result.toString());
     }
 
     @Test
     @EnabledIfSystemProperty(named = "sandbox.cleanup.product", matches = ".+")
     void actualCorpusHelperResolvesAndInventoriesInstalledCleanups(@TempDir Path temporary) throws Exception {
+        verifyProfiles(FIXTURES.resolve("profiles"));
         String expected = "BASELINE scope.ä units=1\nAPPLY scope.ä profile";
         byte[] log = ("noise".repeat(5000) + "\nBASELINE scope.ä units=1\nwarning\nAPPLY scope.ä profile")
                 .getBytes(StandardCharsets.UTF_8);
@@ -129,6 +295,7 @@ class UpstreamCleanupTest {
     @Test
     @EnabledIfSystemProperty(named = "sandbox.cleanup.family", matches = "core|ui|swt")
     void pinnedUpstreamSourcesPreserveCompilerDiagnostics() throws Exception {
+        Set<String> profiles = verifyProfiles(FIXTURES.resolve("profiles"));
         String family = required("family");
         String remote = switch (family) {
             case "core", "ui" -> "https://github.com/eclipse-jdt/eclipse.jdt." + family + ".git";
@@ -141,17 +308,29 @@ class UpstreamCleanupTest {
             case "swt" -> "3e3b24b4691c4f18a7d5e22653fe28d4c47385d7";
             default -> throw new IllegalArgumentException(family);
         };
-        String productCommit = required("productCommit");
+        String productCommit;
         try (var repository = new FileRepositoryBuilder().findGitDir(ROOT.toFile()).build()) {
-            assertEquals(repository.resolve(Constants.HEAD).name(), productCommit, "Product must come from this source commit");
+            productCommit = repository.resolve(Constants.HEAD).name();
         }
+        Path artifact = Path.of(required("productArtifact")).toRealPath();
+        Path archive = verifyProductArtifact(artifact, productCommit);
         Path output = Path.of(required("output")).toAbsolutePath().normalize();
         Path runtime = output.resolve("runtime");
         assertFalse(Files.exists(output), "Use a fresh evidence directory: " + output);
         Files.createDirectories(output);
         Files.writeString(output.resolve("source-identity.txt"), remote + "\nrefs/tags/R4_41\n" + commit + "\n");
         Files.writeString(output.resolve("product-commit.txt"), productCommit + "\n");
-        copyTree(Path.of(required("product")).toRealPath(), runtime);
+        Files.copy(artifact.resolve("SHA256SUMS"), output.resolve("product-SHA256SUMS"));
+        Files.createDirectory(runtime);
+        Path extractionLog = output.resolve("product-extract.log");
+        var extraction = new ProcessBuilder("tar", "-xzf", archive.toString(), "-C", runtime.toString())
+                .redirectErrorStream(true).redirectOutput(extractionLog.toFile()).start();
+        try {
+            assertTrue(extraction.waitFor(5, TimeUnit.MINUTES), "Product extraction timed out: " + extractionLog);
+            assertEquals(0, extraction.exitValue(), "Cannot extract product: " + extractionLog);
+        } finally {
+            if (extraction.isAlive()) extraction.destroyForcibly();
+        }
         provisionUpstreamTestSupport(runtime, output);
         copyTree(FIXTURES, output.resolve("helper-inputs"));
         compileHelper(runtime, output);
@@ -167,6 +346,13 @@ class UpstreamCleanupTest {
                 assertEquals("PASS", receipt.getProperty("status"), receipt.toString());
                 assertTrue(Integer.parseInt(receipt.getProperty("source.units", "0")) > 0, "No source units checked");
                 assertEquals("25", receipt.getProperty("registrations"), "Incomplete runtime cleanup inventory");
+                assertEquals("PASS", receipt.getProperty("diagnostic.scope.regression"), "Native environment guards must run in every family");
+                verifyCoverage(output.resolve("corpus"), receipt, profiles, switch (family) {
+                    case "core" -> 17;
+                    case "ui" -> 18;
+                    case "swt" -> 12;
+                    default -> throw new IllegalArgumentException(family);
+                });
             } finally {
                 // Preserve the last actual files, including partial failures, before the JGit fixture deletes them.
                 copyTree(checkout, output.resolve("last-checkout"));

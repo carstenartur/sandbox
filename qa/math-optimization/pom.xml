@@ -1,9 +1,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
  <modelVersion>4.0.0</modelVersion><groupId>org.sandbox.qa</groupId><artifactId>math-qualification</artifactId><version>1.0.0-SNAPSHOT</version>
  <name>Standalone qualification of the production mathematics core</name>
- <properties><maven.compiler.release>25</maven.compiler.release><project.build.sourceEncoding>UTF-8</project.build.sourceEncoding><repo>${project.basedir}/../..</repo><bc.binary>${settings.localRepository}/org/bouncycastle/bcprov-jdk18on/1.85.2/bcprov-jdk18on-1.85.2.jar</bc.binary><bc.sources>${settings.localRepository}/org/bouncycastle/bcprov-jdk18on/1.85.2/bcprov-jdk18on-1.85.2-sources.jar</bc.sources><bc.sources.sha256>b37ac84b1d5435ab7b8d166c16ab9f75e09f68f8ec50479bae433939b241b03f</bc.sources.sha256></properties>
+ <properties><regelsuche.version>0.5.4-SNAPSHOT</regelsuche.version><maven.compiler.release>25</maven.compiler.release><project.build.sourceEncoding>UTF-8</project.build.sourceEncoding><repo>${project.basedir}/../..</repo><bc.binary>${settings.localRepository}/org/bouncycastle/bcprov-jdk18on/1.85.2/bcprov-jdk18on-1.85.2.jar</bc.binary><bc.sources>${settings.localRepository}/org/bouncycastle/bcprov-jdk18on/1.85.2/bcprov-jdk18on-1.85.2-sources.jar</bc.sources><bc.sources.sha256>b37ac84b1d5435ab7b8d166c16ab9f75e09f68f8ec50479bae433939b241b03f</bc.sources.sha256></properties>
  <dependencies>
-  <dependency><groupId>io.github.carstenartur</groupId><artifactId>regelsuche-optimization-sdk</artifactId><version>0.5.3</version></dependency>
+  <dependency><groupId>io.github.carstenartur</groupId><artifactId>regelsuche-optimization-sdk</artifactId><version>${regelsuche.version}</version></dependency>
   <dependency><groupId>org.eclipse.jdt</groupId><artifactId>org.eclipse.jdt.core</artifactId><version>3.47.0</version></dependency>
   <dependency><groupId>org.eclipse.platform</groupId><artifactId>org.eclipse.text</artifactId><version>3.14.700</version></dependency>
   <dependency><groupId>org.eclipse.jgit</groupId><artifactId>org.eclipse.jgit</artifactId><version>7.8.0.202609011348-r</version></dependency>
@@ -28,7 +28,16 @@
    <testIncludes><testInclude>sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/PinnedGitRepositoryTest.java</testInclude><testInclude>sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/JUnitXmlInventoryComparator.java</testInclude><testInclude>sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/JUnitXmlInventoryComparatorTest.java</testInclude><testInclude>sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/math/*Test.java</testInclude><testInclude>sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/*.java</testInclude><testInclude>qa/math-optimization/src/test/java/**/*.java</testInclude><testInclude>sandbox-benchmarks/src/test/java/org/sandbox/math/qa/*.java</testInclude></testIncludes>
    <!-- Reuse the entire headless mathematics suite, including all target/safety contracts. Workspace/UI tests remain in Tycho. -->
    <testExcludes><testExclude>**/SharedSourceReceiptTest.java</testExclude><testExclude>**/StrictCompilerOptions.java</testExclude></testExcludes><annotationProcessorPaths><path><groupId>org.openjdk.jmh</groupId><artifactId>jmh-generator-annprocess</artifactId><version>1.37</version></path></annotationProcessorPaths>
-  </configuration></plugin>
+  </configuration><executions>
+   <execution><id>guarded-root-strict-main</id><phase>process-classes</phase><goals><goal>compile</goal></goals><configuration>
+    <includes combine.self="override"><include>**/JavaSourceTypeNames.java</include><include>**/JavaSourceContext.java</include><include>**/FieldNormalizationEvidence.java</include><include>**/JavaFieldNormalizationSite.java</include><include>**/FieldRootEvidence.java</include><include>**/FieldCallEvidence.java</include><include>**/JavaFieldCall*.java</include><include>**/JavaFieldGuardFacts.java</include><include>**/JavaGuardedField*.java</include><include>**/JavaFieldValueSink.java</include><include>**/JavaFieldProgramLowering.java</include><include>**/MathematicalAnalysis.java</include><include>**/JavaSourceRewritePlan.java</include><include>qa/math-optimization/src/main/java/org/sandbox/math/qa/GuardedRootBenchmark*.java</include></includes>
+    <proc>none</proc><compilerArgs><arg>-Xlint:all</arg><arg>-Werror</arg></compilerArgs><failOnWarning>true</failOnWarning>
+   </configuration></execution>
+   <execution><id>guarded-root-strict-tests</id><phase>process-test-classes</phase><goals><goal>testCompile</goal></goals><configuration>
+    <testIncludes combine.self="override"><testInclude>**/GuardedQuadraticRootSourceTest.java</testInclude><testInclude>**/NormalizedScalar*Test.java</testInclude><testInclude>**/FieldGuardFactsTest.java</testInclude><testInclude>**/SourceBackedConstantTest.java</testInclude><testInclude>**/JavaImmutableValueTest.java</testInclude><testInclude>**/JavaValueAlgebraProofTest.java</testInclude><testInclude>**/JavaValueInverseReuseTest.java</testInclude><testInclude>**/JavaValueReuseTest.java</testInclude><testInclude>**/BouncyCastleGuardedRootTest.java</testInclude><testInclude>**/GuardedRootBenchmarkTest.java</testInclude><testInclude>**/BouncyCastleRuntimeCorpusTest.java</testInclude></testIncludes>
+    <proc>none</proc><compilerArgs><arg>-Xlint:all</arg><arg>-Werror</arg></compilerArgs><failOnWarning>true</failOnWarning>
+   </configuration></execution>
+  </executions></plugin>
   <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId><version>3.6.0</version><configuration><argLine>-Xmx768m</argLine><workingDirectory>${repo}</workingDirectory><systemPropertyVariables><sandbox.math.bc.jar>${settings.localRepository}/org/bouncycastle/bcprov-jdk18on/1.85.2/bcprov-jdk18on-1.85.2.jar</sandbox.math.bc.jar><sandbox.math.bc.sourceArchive>${settings.localRepository}/org/bouncycastle/bcprov-jdk18on/1.85.2/bcprov-jdk18on-1.85.2-sources.jar</sandbox.math.bc.sourceArchive>
    <sandbox.math.bc.mavenBinary>${bc.binary}</sandbox.math.bc.mavenBinary><sandbox.math.bc.mavenSources>${bc.sources}</sandbox.math.bc.mavenSources>
    <sandbox.math.swt.binary>${settings.localRepository}/org/eclipse/platform/org.eclipse.swt.gtk.linux.x86_64/3.135.0/org.eclipse.swt.gtk.linux.x86_64-3.135.0.jar</sandbox.math.swt.binary>
@@ -41,6 +50,21 @@
   </systemPropertyVariables></configuration></plugin>
  </plugins></build>
  <profiles>
+  <profile><id>guarded-root-benchmark</id><build><plugins>
+   <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId><configuration><systemPropertyVariables>
+    <sandbox.math.bc.root.upstream>true</sandbox.math.bc.root.upstream>
+    <sandbox.math.bc.root.output>${project.build.directory}/guarded-root</sandbox.math.bc.root.output>
+   </systemPropertyVariables></configuration></plugin>
+   <plugin><groupId>org.codehaus.mojo</groupId><artifactId>exec-maven-plugin</artifactId><version>3.6.4</version>
+    <executions><execution><id>measure-generated-guarded-root</id><phase>verify</phase><goals><goal>exec</goal></goals><configuration>
+     <classpathScope>compile</classpathScope><longModulepath>false</longModulepath>
+     <executable>${java.home}/bin/java</executable><workingDirectory>${repo}</workingDirectory><arguments>
+      <argument>-cp</argument><classpath/><argument>org.sandbox.math.qa.GuardedRootBenchmark</argument>
+      <argument>${project.build.directory}/guarded-root</argument><argument>${project.build.directory}/guarded-root-jmh.json</argument>
+     </arguments>
+    </configuration></execution></executions>
+   </plugin>
+  </plugins></build></profile>
   <profile><id>bc-corpus</id><build><plugins><plugin>
    <groupId>org.codehaus.mojo</groupId><artifactId>exec-maven-plugin</artifactId><version>3.6.4</version><configuration><classpathScope>compile</classpathScope></configuration>
    <executions><execution><id>bc-strict</id><phase>verify</phase><goals><goal>exec</goal></goals><configuration>

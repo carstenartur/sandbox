@@ -23,6 +23,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IMember;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.*;
 
 /** Request-local source facts. Never executes project code or assumes class initialization is complete. */
@@ -104,7 +105,7 @@ public final class JavaSourceContext implements AutoCloseable {
             for(var runtime:valueRuntimes)if(!runtime.current())return false;
             for (var dependency : dependencies) {
                 try { if (!dependency.sha256().equals(hash(dependency.read().get()))) return false; }
-                catch (Exception unavailable) { return false; }
+                catch (IOException | JavaModelException | RuntimeException unavailable) { return false; }
             }
             return true;
         }
@@ -116,12 +117,12 @@ public final class JavaSourceContext implements AutoCloseable {
         }
     }
     public record Receipt(String identity, String sha256) { }
-    private interface Read { String get() throws Exception; }
+    private interface Read { String get() throws IOException, JavaModelException; }
     private record Dependency(String identity, String sha256, Read read) { }
     private record Unit(CompilationUnit ast, String source, String identity, String sha256) { }
     record Fact(BigInteger value, String provenance) { }
 
-    record Definition(CompilationUnit unit, String source, ASTNode declaration) { }
+    record Definition(CompilationUnit unit, String source, ASTNode declaration, Receipt receipt) { }
     private record Constant(Optional<BigInteger> value, Set<ASTNode> declarations) { }
     /** Only definitions actually read in this scope; nested constant reads retain their transitive provenance. */
     record LocalSources(JavaSourceContext context, Set<ASTNode> previous, Set<ASTNode> declarations) implements AutoCloseable {
@@ -156,9 +157,9 @@ public final class JavaSourceContext implements AutoCloseable {
             CompilationUnit ast = context.definitionUnit(binding, owner);
             ASTNode declaration = ast == null ? null : ast.findDeclaringNode(binding.getKey());
             if (declaration == null) return null;
-            String source = ast == context.root ? context.rootSource : context.units.values().stream()
-                .filter(unit -> unit.ast() == ast).findFirst().orElseThrow().source();
-            return new Definition(ast, source, declaration);
+            if (ast == context.root) return new Definition(ast, context.rootSource, declaration, null);
+            var unit = context.units.values().stream().filter(candidate -> candidate.ast() == ast).findFirst().orElseThrow();
+            return new Definition(ast, unit.source(), declaration, new Receipt(unit.identity(), unit.sha256()));
         } catch (Unavailable unavailable) { return null; }
     }
     static Fact constant(CompilationUnit request, IVariableBinding binding) {
@@ -215,7 +216,9 @@ public final class JavaSourceContext implements AutoCloseable {
             }
             @Override public boolean visit(SimpleName name) {
                 if (!requirements.containsKey(name.getIdentifier()) || name.isDeclaration()) return true;
-                if (name.resolveBinding() instanceof IVariableBinding binding && binding.isField()) {
+                Name read = name.getParent() instanceof QualifiedName q && q.getName() == name ? q : name;
+                if (name.resolveBinding() instanceof IVariableBinding binding && !(name.getParent() instanceof FieldAccess)
+                        && !(name.getParent() instanceof SuperFieldAccess) && JavaSourceTypeNames.directFieldRead(read, binding, context::charge)) {
                     var old = bindings.putIfAbsent(name.getIdentifier(), binding.getVariableDeclaration());
                     if (old != null && !old.isEqualTo(binding.getVariableDeclaration())) conflicts.add(name.getIdentifier());
                 } else conflicts.add(name.getIdentifier());
@@ -254,7 +257,7 @@ public final class JavaSourceContext implements AutoCloseable {
             ASTNode declaration = ast == null ? null : ast.findDeclaringNode(key);
             Optional<BigInteger> value = declaration instanceof VariableDeclarationFragment fragment && constantField(fragment.resolveBinding())
                 && key.equals(fragment.resolveBinding().getVariableDeclaration().getKey())
-                ? expression(fragment.getInitializer(), active, depth + 1) : Optional.empty();
+                ? expression(ast, fragment.getInitializer(), active, depth + 1) : Optional.empty();
             values.put(key, new Constant(value, Set.copyOf(captured.declarations())));
             return value;
         } finally { active.remove(key); }
@@ -265,14 +268,24 @@ public final class JavaSourceContext implements AutoCloseable {
             && Modifier.isStatic(field.getModifiers()) && Modifier.isFinal(field.getModifiers())
             && !field.getType().isRecovered() && BIG_INTEGER.equals(field.getType().getQualifiedName());
     }
-    private Optional<BigInteger> expression(Expression expression, Set<String> active, int depth) {
+    /** A direct member type and its declaring top-level type must both be in this initializer's pinned unit. */
+    private boolean directNestedField(CompilationUnit unit, Name name, IVariableBinding field) {
+        if (!(name instanceof QualifiedName read) || !(read.getQualifier() instanceof QualifiedName nested)
+                || !(nested.getQualifier() instanceof SimpleName outerName)) return false;
+        var owner = field.getDeclaringClass();
+        if (owner == null || owner.isRecovered() || !owner.isMember() || !owner.isEqualTo(nested.resolveBinding())) return false;
+        if (!(unit.findDeclaringNode(owner.getKey()) instanceof TypeDeclaration member)
+                || !(member.getParent() instanceof TypeDeclaration outer) || outer.getParent() != unit) return false;
+        return owner.isEqualTo(member.resolveBinding()) && owner.getDeclaringClass().isEqualTo(outer.resolveBinding())
+                && JavaSourceTypeNames.closedTypeName(outerName, outer.resolveBinding(), this::charge);
+    }
+    private Optional<BigInteger> expression(CompilationUnit unit, Expression expression, Set<String> active, int depth) {
         charge(1);
         if (depth > MAX_DEPTH || expression == null) return Optional.empty();
         expression = unwrap(expression);
         if (expression instanceof Name name && name.resolveBinding() instanceof IVariableBinding field) {
-            if (name instanceof QualifiedName qualified && !(qualified.getQualifier().resolveBinding() instanceof ITypeBinding))
-                return Optional.empty();
-            if (BIG_INTEGER.equals(field.getDeclaringClass() == null ? null : field.getDeclaringClass().getQualifiedName())) {
+            if (!JavaSourceTypeNames.directFieldRead(name, field, this::charge) && !directNestedField(unit, name, field)) return Optional.empty();
+            if (JavaGuardedFieldSource.big(field.getDeclaringClass())) {
                 return switch (field.getName()) {
                     case "ZERO" -> Optional.of(BigInteger.ZERO); //$NON-NLS-1$
                     case "ONE" -> Optional.of(BigInteger.ONE); //$NON-NLS-1$
@@ -285,7 +298,8 @@ public final class JavaSourceContext implements AutoCloseable {
         }
         if (expression instanceof ClassInstanceCreation creation && creation.getAnonymousClassDeclaration() == null
                 && creation.resolveConstructorBinding() != null && !creation.resolveConstructorBinding().isRecovered()
-                && BIG_INTEGER.equals(creation.resolveConstructorBinding().getDeclaringClass().getQualifiedName())
+                && JavaGuardedFieldSource.big(creation.resolveConstructorBinding().getDeclaringClass())
+                && JavaSourceTypeNames.closedType(creation.getType(), this::charge)
                 && (creation.arguments().size() == 1 || creation.arguments().size() == 2)
                 && creation.arguments().getFirst() instanceof StringLiteral text && text.getLiteralValue().length() <= 1234) {
             int radix = 10;
@@ -300,9 +314,10 @@ public final class JavaSourceContext implements AutoCloseable {
         if (expression instanceof MethodInvocation invocation && invocation.arguments().size() == 1
                 && invocation.resolveMethodBinding() != null && !invocation.resolveMethodBinding().isRecovered()
                 && Modifier.isStatic(invocation.resolveMethodBinding().getModifiers())
-                && BIG_INTEGER.equals(invocation.resolveMethodBinding().getDeclaringClass().getQualifiedName())
+                && JavaGuardedFieldSource.big(invocation.resolveMethodBinding().getDeclaringClass())
                 && "valueOf".equals(invocation.getName().getIdentifier()) //$NON-NLS-1$
-                && invocation.getExpression() instanceof Name qualifier && qualifier.resolveBinding() instanceof ITypeBinding) {
+                && invocation.getExpression() instanceof Name qualifier
+                && JavaSourceTypeNames.closedTypeName(qualifier, invocation.resolveMethodBinding().getDeclaringClass(), this::charge)) {
             Expression argument = (Expression)invocation.arguments().getFirst();
             if (!(argument instanceof NumberLiteral || argument instanceof PrefixExpression prefix && prefix.getOperand() instanceof NumberLiteral))
                 return Optional.empty();
@@ -375,7 +390,7 @@ public final class JavaSourceContext implements AutoCloseable {
             for (var problem : ast.getProblems()) if (problem.isError()) return null;
             Unit unit = new Unit(ast, source, identity, digest); units.put(type, unit);
             return ast;
-        } catch (Exception unavailable) { return null; }
+        } catch (IOException | JavaModelException | RuntimeException unavailable) { return null; }
     }
     private record SourceFile(Path path, Charset encoding) { }
     /** Rechecked at use time, including formerly absent source roots that can introduce a competing definition. */
@@ -445,12 +460,12 @@ public final class JavaSourceContext implements AutoCloseable {
         if (!(root.findDeclaringNode(binding) instanceof VariableDeclarationFragment declaration) || declaration.getStartPosition() >= position) return false;
         Expression initializer = unwrap(declaration.getInitializer());
         return initializer instanceof ClassInstanceCreation creation && creation.getAnonymousClassDeclaration() == null
-            && creation.resolveTypeBinding() != null && BIG_INTEGER.equals(creation.resolveTypeBinding().getQualifiedName());
+            && JavaGuardedFieldSource.big(creation.resolveTypeBinding()) && JavaSourceTypeNames.closedType(creation.getType(), this::charge);
     }
-    private static boolean same(Expression expression, IVariableBinding binding) {
+    private boolean same(Expression expression, IVariableBinding binding) {
         expression = unwrap(expression);
         return expression instanceof Name name && name.resolveBinding() instanceof IVariableBinding other
-            && binding.isEqualTo(other.getVariableDeclaration());
+            && binding.isEqualTo(other.getVariableDeclaration()) && JavaSourceTypeNames.directFieldRead(name, binding, this::charge);
     }
     private static Expression unwrap(Expression expression) {
         int depth = 0;

@@ -211,17 +211,17 @@ class JavaImmutableValueTest {
     }
     @Test void sourceModulusDependencyIsRecheckedBeforeApply() throws Exception {
         String source=fixture(multiplication());String declaration=source.substring(source.indexOf("new BigInteger(\""),source.indexOf(";private Calculation"));
-        Files.writeString(directory.resolve("Modulus.java"),"final class Modulus {static final java.math.BigInteger VALUE="+declaration.replace("new BigInteger","new java.math.BigInteger")+";}");
+        Files.writeString(directory.resolve("Modulus.java"),"import java.math.BigInteger; final class Modulus {static final BigInteger VALUE="+declaration+";}");
         source=source.replace(declaration,"Modulus.VALUE");var result=analyze(source);
         assertTrue(apply(source,result).contains("Mathematics value path"),result.diagnostics().toString());
         assertEquals(1,result.sourceDependencies().receipts().size());
-        Files.writeString(directory.resolve("Modulus.java"),"final class Modulus {static final java.math.BigInteger VALUE=java.math.BigInteger.ONE;}");
+        Files.writeString(directory.resolve("Modulus.java"),"import java.math.BigInteger; final class Modulus {static final BigInteger VALUE=BigInteger.ONE;}");
         assertFalse(result.matches(source,Map.of()));assertThrows(IllegalArgumentException.class,result::newEdit);
     }
     @Test void sourceSummaryAndAllSdkAllocationsShareTheOriginalDeadline() throws Exception {
         String source=fixture(multiplication());var ast=parse(source);var clock=new java.util.concurrent.atomic.AtomicLong(0);
         var work=new JavaValueSourceSummary.Work(1_000_000,2_000_000_000L,()->false,clock::get);
-        try(var context=JavaSourceContext.open(ast,source,environment(),null,options())) {
+        try(var _=JavaSourceContext.open(ast,source,environment(),null,options())) {
             var methods=((TypeDeclaration)ast.types().getFirst()).getMethods();
             var method=Arrays.stream(methods).filter(m->m.getName().getIdentifier().equals("mul")).findFirst().orElseThrow();
             var summary=new JavaValueSourceSummary.Session(ast,options(),work).method(method,method.getBody());

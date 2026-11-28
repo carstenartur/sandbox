@@ -92,10 +92,18 @@ final class ExternalResourceReferenceSearch {
 	}
 
 	boolean allReferencesSelected(IJavaElement target, IProgressMonitor monitor) throws CoreException {
+		return allReferencesSelected(target, false, monitor);
+	}
+
+	boolean allDiscoveryReferencesSelected(IType owner, IProgressMonitor monitor) throws CoreException {
+		return allReferencesSelected(owner, true, monitor);
+	}
+
+	private boolean allReferencesSelected(IJavaElement target, boolean discovery, IProgressMonitor monitor) throws CoreException {
 		checkCanceled(monitor);
 		if (!validSelection || target == null || !target.exists() || !isSelected(target)) return false;
 		SearchPattern exact= SearchPattern.createPattern(target, IJavaSearchConstants.REFERENCES);
-		if (exact == null || !matchesSelected(exact, SearchEngine.createWorkspaceScope(), target, false, monitor)) {
+		if (exact == null || !matchesSelected(exact, SearchEngine.createWorkspaceScope(), target, false, discovery, monitor)) {
 			return false;
 		}
 		// Element-focused JDT searches can omit an indexed caller whose last builder
@@ -103,14 +111,31 @@ final class ExternalResourceReferenceSearch {
 		List<SearchPattern> patterns= candidatePatterns(target);
 		if (patterns == null) return false;
 		for (SearchPattern pattern : patterns) {
-			if (pattern == null || !matchesSelected(pattern, sourceScope, target, true, monitor)) return false;
+			if (pattern == null || !matchesSelected(pattern, sourceScope, target, true, discovery, monitor)) return false;
 		}
 		checkCanceled(monitor);
 		return true;
 	}
 
+	/** Deferred registrations preserve every read; a mutable fixture requires closure over writes. */
+	boolean allWritesSelected(IField field, IProgressMonitor monitor) throws CoreException {
+		if (!validSelection || !field.exists() || !isSelected(field)) return false;
+		var exact= SearchPattern.createPattern(field, IJavaSearchConstants.WRITE_ACCESSES);
+		String name= field.getDeclaringType().getFullyQualifiedName('.') + '.' + field.getElementName();
+		var candidates= SearchPattern.createPattern(name, IJavaSearchConstants.FIELD, IJavaSearchConstants.WRITE_ACCESSES,
+				SearchPattern.R_EXACT_MATCH | SearchPattern.R_CASE_SENSITIVE);
+		return exact != null && candidates != null
+				&& matchesSelected(exact, SearchEngine.createWorkspaceScope(), field, false, monitor)
+				&& matchesSelected(candidates, sourceScope, field, true, monitor);
+	}
+
 	private boolean matchesSelected(SearchPattern pattern, IJavaSearchScope scope, IJavaElement target,
 			boolean refineCandidates, IProgressMonitor monitor) throws CoreException {
+		return matchesSelected(pattern, scope, target, refineCandidates, false, monitor);
+	}
+
+	private boolean matchesSelected(SearchPattern pattern, IJavaSearchScope scope, IJavaElement target,
+			boolean refineCandidates, boolean discovery, IProgressMonitor monitor) throws CoreException {
 		boolean[] complete= { true };
 		new SearchEngine().search(pattern,
 					new SearchParticipant[] { SearchEngine.getDefaultSearchParticipant() },
@@ -123,6 +148,11 @@ final class ExternalResourceReferenceSearch {
 									|| !(match.getElement() instanceof IJavaElement element)
 									|| !(element.getAncestor(IJavaElement.COMPILATION_UNIT) instanceof ICompilationUnit unit)
 									|| !unit.exists()) {
+								complete[0]= false;
+								return;
+							}
+							if (discovery && isSelected(unit) && !MixedResourcePlanner.platformDiscoveryReference(referenceNode(unit, match, monitor))
+									&& (!refineCandidates || !isOtherDeclaration(unit.getPrimary(), match, target, monitor))) {
 								complete[0]= false;
 								return;
 							}
@@ -234,6 +264,11 @@ final class ExternalResourceReferenceSearch {
 
 	private boolean isOtherDeclaration(ICompilationUnit unit, SearchMatch match, IJavaElement target,
 			IProgressMonitor monitor) throws JavaModelException {
+		var node= referenceNode(unit, match, monitor);
+		return isOtherDeclaration(node, target);
+	}
+
+	private ASTNode referenceNode(ICompilationUnit unit, SearchMatch match, IProgressMonitor monitor) {
 		String handle= unit.getHandleIdentifier();
 		CompilationUnit root= candidateRoots.get(handle);
 		if (root == null) {
@@ -243,7 +278,10 @@ final class ExternalResourceReferenceSearch {
 			root= (CompilationUnit) parser.createAST(monitor);
 			candidateRoots.put(handle, root);
 		}
-		var node= NodeFinder.perform(root, match.getOffset(), match.getLength());
+		return NodeFinder.perform(root, match.getOffset(), match.getLength());
+	}
+
+	private static boolean isOtherDeclaration(ASTNode node, IJavaElement target) throws JavaModelException {
 		IBinding binding= node instanceof Name name ? name.resolveBinding()
 				: node instanceof Type type ? type.resolveBinding() : null;
 		if (binding == null || binding.isRecovered()) return false;

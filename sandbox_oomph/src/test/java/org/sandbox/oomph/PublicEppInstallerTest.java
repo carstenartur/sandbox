@@ -15,6 +15,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +34,8 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 /** Launches the public binary and its resulting ordinary EPP product on an isolated native desktop. */
 class PublicEppInstallerTest {
     private static final String FILE="/oomph/drops/release/1.42.0/products/eclipse-inst-linux64.tar.gz";
+    private static final String PROJECT_SETUP =
+            "https://raw.githubusercontent.com/carstenartur/sandbox/%s/sandbox_oomph/sandboxproject.setup";
     private final Path run=Path.of("target/public-epp").toAbsolutePath();
     private final Path home=run.resolve("user-home");
     private final Path sources=Path.of("src/test/resources/probe").toAbsolutePath();
@@ -60,8 +64,15 @@ class PublicEppInstallerTest {
         exec("unpack",List.of("tar","-xf",archive.toString(),"-C",run.toString()),3);
         Path installer=only(run,"eclipse-inst",true);
         Files.writeString(run.resolve("expected-main.txt"), expected + "\n");
-        Path agentClasses=compile("agent",List.of(),"PublicInstallerAgent.java");
-        Path uiClasses=compile("installer-ui",List.of(installer.getParent()),"PublicInstallerUi.java");
+        // The public catalog reads raw main, while the workbench clones the Git branch.
+        // After a push those endpoints can temporarily expose different revisions.
+        URI pinnedSetup = URI.create(PROJECT_SETUP.formatted(expected));
+        URI publicSetup = URI.create(PROJECT_SETUP.formatted("main"));
+        byte[] setup = awaitPublishedSetup(http, pinnedSetup, publicSetup, 21, Duration.ofSeconds(15));
+        String setupSha256 = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(setup));
+        Files.writeString(run.resolve("public-project-setup.txt"), publicSetup + "\n" + pinnedSetup + "\n" + setupSha256 + "\n");
+        Path agentClasses=compile("agent",List.of(),sources.resolve("PublicInstallerAgent.java"));
+        Path uiClasses=compile("installer-ui",List.of(installer.getParent()),sources.resolve("PublicInstallerUi.java"));
         Path agent=jar(run.resolve("public-agent.jar"),agentClasses,Map.of("Premain-Class","PublicInstallerAgent"),null);
         Path ui=jar(run.resolve("public-ui.jar"),uiClasses,Map.of(),null);
         exec("installer",List.of(installer.toString(),"-nosplash","-vm",jdk.resolve("bin/java").toString(),"--launcher.appendVmargs",
@@ -70,10 +81,12 @@ class PublicEppInstallerTest {
         assertTrue(Files.isRegularFile(run.resolve("installer-complete")),"Installer exited without verified BOOTSTRAP");
         Path eclipse=only(home,"eclipse",true);
         Path workspace=only(home,"workspace.setup",false).getParent().getParent().getParent().getParent();
-        Path workbenchClasses=compile("workbench",List.of(home),"PublicWorkbenchProbe.java");
+        Path inventorySource = Path.of("src/test/java/org/sandbox/oomph/probe/PublicProjectInventory.java").toAbsolutePath();
+        Path workbenchClasses=compile("workbench",List.of(home),sources.resolve("PublicWorkbenchProbe.java"),inventorySource);
         Path dropin=Files.createDirectories(eclipse.getParent().resolve("dropins")).resolve("sandbox.public.acceptance.jar");
         jar(dropin,workbenchClasses,Map.of("Bundle-ManifestVersion","2","Bundle-SymbolicName","sandbox.public.acceptance;singleton:=true",
-                "Bundle-Version","1.0.0","Bundle-RequiredExecutionEnvironment","JavaSE-25","Require-Bundle",
+                "Bundle-Version","1.0.0","Bundle-RequiredExecutionEnvironment","JavaSE-25",
+                "Import-Package","javax.xml,javax.xml.parsers,org.w3c.dom,org.xml.sax","Require-Bundle",
                 "org.eclipse.core.runtime,org.eclipse.core.resources,org.eclipse.ui,org.eclipse.ui.ide,org.eclipse.ui.workbench,org.eclipse.jface,org.eclipse.swt,org.eclipse.jdt.core,org.eclipse.jdt.launching,org.eclipse.pde.core,org.eclipse.osgi,org.eclipse.oomph.setup.core,org.eclipse.oomph.setup,org.eclipse.emf.ecore,org.eclipse.emf.common"),
                 "<plugin><extension point=\"org.eclipse.ui.startup\"><startup class=\"org.sandbox.oomph.probe.PublicWorkbenchProbe\"/></extension></plugin>");
         for(String phase:List.of("fresh","restart")) {
@@ -92,6 +105,28 @@ class PublicEppInstallerTest {
         }
     }
 
+    static byte[] awaitPublishedSetup(HttpClient http, URI pinned, URI published,
+            int maxAttempts, Duration retryDelay) throws Exception {
+        byte[] expected = readSetup(http, pinned);
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            byte[] observed = readSetup(http, published);
+            if (Arrays.equals(expected, observed)) {
+                return observed;
+            }
+            if (attempt < maxAttempts) {
+                Thread.sleep(retryDelay);
+            }
+        }
+        return fail("Public setup " + published + " did not match " + pinned + " after " + maxAttempts + " attempts");
+    }
+
+    private static byte[] readSetup(HttpClient http, URI uri) throws Exception {
+        var response = http.send(HttpRequest.newBuilder(uri).timeout(Duration.ofSeconds(30)).GET().build(),
+                HttpResponse.BodyHandlers.ofByteArray());
+        assertEquals(200, response.statusCode(), () -> "Could not read the setup at " + uri);
+        return response.body();
+    }
+
     private static String digest(Path file, String algorithm) throws Exception {
         var md=MessageDigest.getInstance(algorithm);
         try(var stream=new java.security.DigestInputStream(Files.newInputStream(file),md)) {
@@ -106,15 +141,19 @@ class PublicEppInstallerTest {
             return paths.getFirst();
         }
     }
-    private Path compile(String name,List<Path> roots,String source) throws Exception {
+    private Path compile(String name,List<Path> roots,Path... sourceFiles) throws Exception {
         Path dst=Files.createDirectories(run.resolve(name+"-classes"));
         Set<String> jars=new TreeSet<>();
         for(Path root:roots) try(var files=Files.walk(root)) {
             files.filter(f->f.getFileName().toString().endsWith(".jar")&&f.getParent().getFileName().toString().equals("plugins"))
                     .filter(f->!f.getFileName().toString().contains(".source_")).forEach(f->jars.add(f.toString()));
         }
-        assertEquals(0,ToolProvider.getSystemJavaCompiler().run(null,null,null,"--release","25","-sourcepath","",
-                "-classpath",String.join(File.pathSeparator,jars),"-d",dst.toString(),sources.resolve(source).toString()));
+        var arguments = new ArrayList<>(List.of("--release", "25", "-sourcepath", "",
+                "-classpath", String.join(File.pathSeparator,jars), "-d", dst.toString()));
+        for (Path source : sourceFiles) {
+            arguments.add(source.toString());
+        }
+        assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null, arguments.toArray(String[]::new)));
         return dst;
     }
     private static Path jar(Path destination,Path classes,Map<String,String> attrs,String plugin) throws Exception {

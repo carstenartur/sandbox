@@ -16,10 +16,42 @@
 			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_cleanup_application</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>io.github.carstenartur</groupId>
+			<artifactId>sandbox-junit-migration-support</artifactId>
+			<version>${project.version}</version>
+			<exclusions>
+				<!-- Use the Jupiter 5 and Platform 1 bundles supplied by the JDT 5 target. -->
+				<exclusion><groupId>org.junit.jupiter</groupId><artifactId>*</artifactId></exclusion>
+				<exclusion><groupId>org.junit.platform</groupId><artifactId>*</artifactId></exclusion>
+			</exclusions>
+		</dependency>
 	</dependencies>
 	<build>
 		<testSourceDirectory>src</testSourceDirectory>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>3.11.0</version>
+				<executions>
+					<execution>
+						<id>earlier-jupiter-exporter</id>
+						<phase>generate-test-resources</phase>
+						<goals><goal>copy</goal></goals>
+						<configuration>
+							<artifactItems>
+								<artifactItem>
+									<groupId>org.junit.jupiter</groupId>
+									<artifactId>junit-jupiter-api</artifactId>
+									<version>5.14.1</version>
+									<outputDirectory>${project.build.directory}/fixture</outputDirectory>
+								</artifactItem>
+							</artifactItems>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>tycho-surefire-plugin</artifactId>
@@ -29,6 +61,9 @@
 					<skip>false</skip>
 					<!-- The JDT LS runtime also exposes JUnit 4; these tests use Jupiter. -->
 					<providerHint>junit6</providerHint>
+					<systemProperties>
+						<sandbox.test.earlierJupiterApi>${project.build.directory}/fixture/junit-jupiter-api-5.14.1.jar</sandbox.test.earlierJupiterApi>
+					</systemProperties>
 					<failIfNoTests>true</failIfNoTests>
 					<useUIHarness>false</useUIHarness>
 					<showEclipseLog>true</showEclipseLog>

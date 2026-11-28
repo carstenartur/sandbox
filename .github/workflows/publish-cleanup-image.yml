@@ -44,9 +44,12 @@ jobs:
     - name: Set up JDK 25
       uses: actions/setup-java@v6
       with:
-        java-version: '25'
+        java-version: '25.0.5+8'
         distribution: 'temurin'
         cache: 'maven'
+
+    - name: Provision the pinned mathematics SDK
+      uses: ./.github/actions/provision-regelsuche
 
     - name: Install Xvfb and dependencies
       run: |

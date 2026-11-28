@@ -10,6 +10,7 @@ Bundle-ActivationPolicy: lazy
 Eclipse-BundleShape: dir
 Eclipse-BuddyPolicy: global
 Require-Bundle: org.eclipse.jdt.ls.core,
+ org.eclipse.pde.core,
  sandbox_encoding_quickfix,
  sandbox_functional_converter,
  sandbox_platform_helper,
@@ -23,7 +24,8 @@ Require-Bundle: org.eclipse.jdt.ls.core,
  sandbox_triggerpattern,
  sandbox_xml_cleanup,
  sandbox_tools
-Import-Package: org.junit.jupiter.api;version="[6,7)",
+Import-Package: org.sandbox.junit.jupiter,
+ org.junit.jupiter.api;version="[6,7)",
  org.junit.jupiter.api.extension;version="[6,7)",
  org.junit.jupiter.api.function;version="[6,7)",
  org.junit.jupiter.api.io;version="[6,7)",

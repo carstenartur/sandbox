@@ -50,30 +50,53 @@ and checks the real cleanup registrations:
   -Dsandbox.cleanup.product=/absolute/path/to/eclipse test
 ```
 
-For a full corpus run, build the product from the same source commit and run:
+For full qualification, build and package the Linux GTK product from a clean
+checkout using Bash:
 
-```sh
+```bash
+set -euo pipefail
+test -z "$(git status --porcelain)"
+artifact="$(mktemp -d)"
+git rev-parse HEAD > "$artifact/source-commit.txt"
+./mvnw --batch-mode --no-transfer-progress -Pproduct -Dsandbox.tycho.linux-only=true \
+  -DskipTests -Dspotbugs.skip=true -Dtycho.localArtifacts=ignore clean package
+git diff --exit-code HEAD
+mapfile -d '' launchers < <(find sandbox_product/target/products -type f \
+  -path '*/linux/gtk/x86_64/eclipse' -perm -u+x -print0)
+test "${#launchers[@]}" -eq 1
+tar -czf "$artifact/product.tar.gz" -C "$(dirname "${launchers[0]}")" .
+(cd "$artifact" && sha256sum product.tar.gz source-commit.txt > SHA256SUMS)
+
 dbus-run-session -- xvfb-run -a ./mvnw -f qa/upstream-cleanups/pom.xml \
   -Dsandbox.cleanup.family=core \
-  -Dsandbox.cleanup.product=/absolute/path/to/eclipse \
-  -Dsandbox.cleanup.productCommit=FULL_SANDBOX_COMMIT \
+  -Dsandbox.cleanup.productArtifact="$artifact" \
   -Dsandbox.cleanup.output=/absolute/path/to/fresh-evidence test
 ```
 
-Repeat for `ui` and `swt`. The existing Benchmark workflow provides the same
-three-family matrix through its `cleanup_upstream` input or the
-`cleanup-upstream-qa` pull-request label. It builds one product, verifies its
-archive and source identity, and retains evidence even when qualification fails.
+Reuse the build-produced artifact for `ui` and `swt` with fresh evidence
+directories. The corpus verifies both the archive and commit file against
+the producer's checksums, checks the commit against its own source checkout,
+and extracts the verified archive itself. The unpacked-product command above
+serves only as a registration and harness smoke test. Benchmark uses one
+artifact for all three families through its `cleanup_upstream` input or the
+`cleanup-upstream-qa` pull-request label and retains evidence on failure.
 
 ## Acceptance and evidence
 
 Every profile starts with the original source and project metadata. Conflicting
-encoding, loop-target, and mathematical modes have separate profiles. The real
+encoding, loop-target, and mathematical modes have separate profiles. The gate
+requires the named 31 profiles with their mode settings and passing results for
+every pair with the pinned 17 Core, 18 UI and 12 SWT projects. The real
 application performs Apply and records its report and patch. The shared
-`CompilerDiagnosticAssertions` checks complete compilation units in the target
+native caller/environment regression runs in the verified product before every
+family. `CompilerDiagnosticAssertions` checks complete compilation units in the target
 and every transitively dependent imported source project. The reverse dependency
 closure comes from actual resolved `CPE_PROJECT` entries, including PDE container
-resolution; unrelated projects are outside that target's diagnostic scope.
+resolution. The harness waits for PDE classpath updates before capturing the graph,
+checking Apply and verifying restoration. A new manifest import may add an exact
+accessible package rule on its resolved exporter. Previous dependencies, their
+order, attributes and access rules must survive Apply. Restoration requires the
+complete original classpath. Unrelated projects are outside the diagnostic scope.
 Each CU uses its own project's compiler options, with optional warnings enabled
 and the original language level, release setting and error severities retained.
 Additional occurrences of an existing warning also fail. An error in the original

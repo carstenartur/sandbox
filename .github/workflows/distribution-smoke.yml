@@ -15,6 +15,7 @@ on:
       - 'mvnw'
       - 'mvnw.cmd'
       - '.github/actions/verify-eclipse-desktop-runtime/**'
+      - '.github/actions/provision-regelsuche/**'
       - '.github/scripts/smoke_test_distribution.sh'
       - '.github/scripts/validate_distribution_evidence.py'
       - '.github/workflows/distribution-smoke.yml'
@@ -34,6 +35,7 @@ on:
       - 'mvnw'
       - 'mvnw.cmd'
       - '.github/actions/verify-eclipse-desktop-runtime/**'
+      - '.github/actions/provision-regelsuche/**'
       - '.github/scripts/smoke_test_distribution.sh'
       - '.github/scripts/validate_distribution_evidence.py'
       - '.github/workflows/distribution-smoke.yml'
@@ -66,8 +68,11 @@ jobs:
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: '25'
+          java-version: '25.0.5+8'
           cache: maven
+      - name: Provision the pinned mathematics SDK
+        uses: ./.github/actions/provision-regelsuche
+
       - name: Verify pinned Maven Wrapper
         shell: bash
         run: ./mvnw --batch-mode --no-transfer-progress --version
