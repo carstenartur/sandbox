@@ -90,6 +90,22 @@ final class MixedSupportImport implements AutoCloseable {
 		}
 	}
 
+	/** Retain the binary provider visible to JDT when ordinary migrations add a PDE import. */
+	static byte[] addProjectImport(byte[] before, String name, ResourceSnapshot descriptor) throws IOException, CoreException {
+		byte[] unqualified= PdeManifestImportUpdater.addImport(before, name);
+		if (unqualified == before || !descriptor.file().getProject().hasNature("org.eclipse.pde.PluginNature") //$NON-NLS-1$
+				|| Platform.getBundle("org.eclipse.pde.core") == null) return unqualified; //$NON-NLS-1$
+		var project= org.eclipse.jdt.core.JavaCore.create(descriptor.file().getProject());
+		Api provider;
+		if (isApi(name)) provider= Target.api(project);
+		else if (PlatformSuiteDependencies.API_PACKAGE.equals(name))
+			provider= Target.provider(project, List.of("org.junit.platform.suite.api.Suite")); //$NON-NLS-1$
+		else return unqualified;
+		if (provider == null) return unqualified;
+		if (!provider.packages().contains(name)) throw new IOException("Selected provider does not export " + name); //$NON-NLS-1$
+		return PdeManifestImportUpdater.addImport(before, name, provider.exporter());
+	}
+
 	private static boolean isApi(String name) {
 		return name.equals("org.junit.jupiter.api") || name.startsWith("org.junit.jupiter.api."); //$NON-NLS-1$ //$NON-NLS-2$
 	}
@@ -163,7 +179,11 @@ final class MixedSupportImport implements AutoCloseable {
 		}
 
 		static Api api(IJavaProject java) throws JavaModelException {
-			for (String type : List.of("org.junit.jupiter.api.Test", "org.junit.jupiter.api.extension.Extension")) { //$NON-NLS-1$ //$NON-NLS-2$
+			return provider(java, List.of("org.junit.jupiter.api.Test", "org.junit.jupiter.api.extension.Extension")); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+
+		static Api provider(IJavaProject java, List<String> types) throws JavaModelException {
+			for (String type : types) {
 				var binary= MigrationSupportProvider.binaryLocation(java, type);
 				if (binary == null) continue;
 				String pkg= type.substring(0, type.lastIndexOf('.'));

@@ -95,7 +95,9 @@ class MixedSupportImportTest {
 	@Test void preservesTheApiExporterForAnIndependentTempDir() throws Exception { withTarget(Fixture.TEMP_DIR); }
 	@Test void extendsAPreviouslyAdaptedRuleFamily() throws Exception { withTarget(Fixture.PRIOR_RULE); }
 
-	private enum Fixture { STANDARD, CALLBACK_SIX, DESCRIPTOR_SIX, OLD_FACTORY, PREVIOUS_USE, OLDER_API, TEMP_DIR, PRIOR_RULE }
+	@Test void keepsTheJupiterExporterWithoutAMixedAdapter() throws Exception { withTarget(Fixture.ORDINARY); }
+
+	private enum Fixture { ORDINARY, STANDARD, CALLBACK_SIX, DESCRIPTOR_SIX, OLD_FACTORY, PREVIOUS_USE, OLDER_API, TEMP_DIR, PRIOR_RULE }
 
 	private void withTarget(Fixture shape) throws Exception {
 		// Tycho references jars outside eclipse_home/plugins. Build the consumer target from
@@ -245,7 +247,7 @@ class MixedSupportImportTest {
 				}
 				""" : instanceSource.replace("InstanceTest", "ClassTest")
 						.replace("@org.junit.Rule public", "@org.junit.ClassRule public static"));
-		if (shape == Fixture.TEMP_DIR) file("src/mixed/FolderTest.java", """
+		if (shape == Fixture.TEMP_DIR || shape == Fixture.ORDINARY) file("src/mixed/FolderTest.java", """
 				package mixed;
 				import java.io.File;
 				import java.io.IOException;
@@ -278,10 +280,23 @@ class MixedSupportImportTest {
 		if (shape == Fixture.OLD_FACTORY || shape == Fixture.PREVIOUS_USE || shape == Fixture.PRIOR_RULE) assertNotNull(java.findType(MigrationSupportProvider.FACTORY));
 		else assertNull(java.findType(MigrationSupportProvider.FACTORY));
 		Path config= temporary.resolve("cleanup.properties");
-		Files.writeString(config, "cleanup.junitcleanup=true\ncleanup.junitcleanup_4_ruleexternalresource=true\ncleanup.junitcleanup_4_test=true\n"+ (shape == Fixture.TEMP_DIR ? "cleanup.junitcleanup_4_ruletemporaryfolder=true\n" : ""), StandardCharsets.UTF_8);
+		Files.writeString(config, "cleanup.junitcleanup=true\ncleanup.junitcleanup_4_ruleexternalresource=true\ncleanup.junitcleanup_4_test=true\n"+ (shape == Fixture.TEMP_DIR || shape == Fixture.ORDINARY ? "cleanup.junitcleanup_4_ruletemporaryfolder=true\n" : ""), StandardCharsets.UTF_8);
 		byte[] fixtureBytes= Files.readAllBytes(path(fixture));
 		byte[] original= Files.readAllBytes(path(manifest));
 		Path report= temporary.resolve("report.json");
+		if (shape == Fixture.ORDINARY) {
+			for (var unrelated : List.of(fixture, instance, shared)) unrelated.delete(true, null);
+			var api= MigrationSupportProvider.binaryLocation(java, "org.junit.jupiter.api.Test");
+			assertNotNull(api);
+			assertEquals(0, invoke("apply", report, config), () -> report(report));
+			Job.getJobManager().join(ClasspathComputer.class, null);
+			assertTrue(Files.readString(path(project.getFile("src/mixed/FolderTest.java"))).contains("org.junit.jupiter.api.io.TempDir"));
+			var model= org.eclipse.pde.core.plugin.PluginRegistry.findModel(project).getBundleDescription();
+			var wire= Arrays.stream(model.getResolvedImports()).filter(dep -> "org.junit.jupiter.api.io".equals(dep.getName())).findFirst().orElseThrow();
+			assertEquals(5, wire.getExporter().getVersion().getMajor());
+			assertEquals(api, MigrationSupportProvider.binaryLocation(java, "org.junit.jupiter.api.io.TempDir"));
+			return;
+		}
 		var sources= List.of(fixture, instance, shared);
 		if (shape == Fixture.CALLBACK_SIX || shape == Fixture.DESCRIPTOR_SIX || shape == Fixture.OLD_FACTORY) {
 			byte[] sharedBefore= Files.readAllBytes(path(shared));

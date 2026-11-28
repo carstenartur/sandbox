@@ -62,7 +62,6 @@ import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpDiagnosticsProvide
 import org.sandbox.jdt.cleanup.multifile.api.LineDelimiterPreserver;
 import org.sandbox.jdt.triggerpattern.git.UnifiedDiffFormatter;
 
-import org.sandbox.jdt.internal.common.PdeManifestImportUpdater;
 
 /**
  * Executes one cleanup refactoring over every source compilation unit of one
@@ -510,11 +509,11 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 		var bindings= mixedAdapter ? mixedBindings : null;
 		byte[] updated= bindings == null ? descriptor.before() : bindings.manifest();
 		for (String packageName : jupiterPackages) {
-			updated= bindings == null ? PdeManifestImportUpdater.addImport(updated, packageName) : bindings.addImport(updated, packageName);
+			updated= bindings == null ? MixedSupportImport.addProjectImport(updated, packageName, descriptor) : bindings.addImport(updated, packageName);
 		}
 		if (suiteIntroduced) {
 			if (pde) {
-				updated= PdeManifestImportUpdater.addImport(updated, PlatformSuiteDependencies.API_PACKAGE);
+				updated= MixedSupportImport.addProjectImport(updated, PlatformSuiteDependencies.API_PACKAGE, descriptor);
 			} else {
 				String pom= StandardCharsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(updated)).toString();
 				String withSuite= PlatformSuiteDependencies.addToPom(pom);
