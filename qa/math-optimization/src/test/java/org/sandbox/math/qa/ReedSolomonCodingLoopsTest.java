@@ -71,6 +71,9 @@ class ReedSolomonCodingLoopsTest {
                         }
                     }
                 }
+                if (Boolean.getBoolean("sandbox.math.backblaze.timing")) {
+                    ReedSolomonEncodingTiming.measure(source, temporary.resolve("timing-classes"), output.resolve("timing"));
+                }
             }
         }
     }

@@ -1,0 +1,48 @@
+{
+  "revision": "d3c481dc69471e0c47ff6f67f33d53bde941675e",
+  "java": "openjdk version \"25.0.5\" 2026-10-20 LTS\nOpenJDK Runtime Environment Temurin-25.0.5+8 (build 25.0.5+8-LTS)\nOpenJDK 64-Bit Server VM Temurin-25.0.5+8 (build 25.0.5+8-LTS, mixed mode, sharing)",
+  "vm_flags": [
+    "-Xms512m",
+    "-Xmx512m",
+    "-XX:ActiveProcessorCount=2"
+  ],
+  "host": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "processor": "AMD EPYC 9V74 80-Core Processor",
+  "cpu_affinity": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "jobs": 108,
+  "cases": {
+    "calibration": [
+      17,
+      3,
+      200000,
+      0
+    ],
+    "small_holdout": [
+      17,
+      3,
+      4096,
+      7
+    ],
+    "large_holdout": [
+      10,
+      4,
+      1048576,
+      13
+    ]
+  },
+  "buffers": 4,
+  "seed": 381691,
+  "schedule_seed": 4711,
+  "harness_sha256": "290c9c3aa01648dc28b48d3a989390df7284c632da55c51ac1c20e01c45c19b5",
+  "protocol_sha256": "19c11efa2ae70a6dd4667d5b171abd4e111132c0ba3bf56b4d1e92518ee9f64d"
+}
