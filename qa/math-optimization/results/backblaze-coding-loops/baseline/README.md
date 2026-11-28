@@ -10,6 +10,18 @@ All twelve original encoders at Backblaze commit `d3c481dc69471e0c47ff6f67f33d53
 
 The calibration choice ranked first on the small reserved workload and second on the large one. Both finalists allocated a median of 32 bytes per complete encoder call in all three configurations. The broad overlapping fork ranges on the first two workloads limit fine-grained rankings. The large workload changes both shard count and shard length. These figures establish the cost of existing alternatives and show the risk of choosing a loop on a single input geometry. A speedup attributable to a generated rewrite would require timing that rewrite separately.
 
+## Second complete run
+
+The documented Maven/JUnit entry point completed another 108 forks on the same
+host with the same order, workload settings and unmodified upstream code. See
+the [second fork records](replay/forks.csv) and [second summary](replay/summary.csv).
+On calibration, the default reached a median 548.9 MB/s and the original
+calibration choice reached 520.8 MB/s. Thus the ordering of the calibration
+winner changed between runs. On the 1 MiB workload the default reached
+444.7 MB/s versus 240.5 MB/s for the first run’s calibration choice.
+The tables keep each run separate. Both full source scans again yielded the
+same two extracted regions and zero accepted edits per profile.
+
 ## Reproduction
 
 With Java 25 and the [qualified Regelsuche SDK](../../../../../sandbox_math_cleanup/lib/README.md), run the following from the Sandbox checkout. Use a fresh output directory.
