@@ -1,9 +1,9 @@
 {
-  "totalProcessed": 2291,
-  "relevant": 178,
-  "irrelevant": 2113,
+  "totalProcessed": 2345,
+  "relevant": 183,
+  "irrelevant": 2162,
   "duplicates": 0,
-  "green": 168,
+  "green": 173,
   "yellow": 0,
   "red": 2,
   "irrelevantReasons": {
@@ -1201,7 +1201,42 @@
     "The commit modifies a Maven POM XML file to bump a plugin version, not Java source code. The TriggerPattern DSL is designed for Java code transformations.": 1,
     "The commit adds a new Maven module and related configuration files (.gitignore, .project, build.properties, feature.xml, pom.xml). This is an architectural addition, not a cleanup or transformation of existing Java code.": 1,
     "The commit only updates a dependency version in pom.xml, which is a build configuration change and not a Java code cleanup.": 2,
-    "The commit refactors internal cleanup framework implementation (e.g., changing visitor pattern, method modifiers/signatures for internal utility methods), rather than providing a cleanup applicable to user Java code.": 1
+    "The commit refactors internal cleanup framework implementation (e.g., changing visitor pattern, method modifiers/signatures for internal utility methods), rather than providing a cleanup applicable to user Java code.": 1,
+    "Not a Java code cleanup; it\u0027s a build configuration change in pom.xml.": 3,
+    "Not a Java code cleanup; it\u0027s a GitHub Actions workflow configuration change.": 1,
+    "This commit changes a Maven plugin version in a pom.xml file, which is not a Java code cleanup applicable to the TriggerPattern DSL.": 1,
+    "This commit changes a Maven property version in a pom.xml file, which is not a Java code cleanup applicable to the TriggerPattern DSL.": 1,
+    "This commit changes a GitHub Actions workflow configuration, which is not Java code and cannot be addressed by the TriggerPattern DSL.": 1,
+    "This commit changes GitHub Actions workflow configurations, which are not Java code and cannot be addressed by the TriggerPattern DSL.": 1,
+    "The commit modifies a Maven pom.xml file, which is an XML build configuration, not Java source code. The TriggerPattern DSL is designed for Java code transformations.": 1,
+    "The commit modifies GitHub Actions workflow files (.yml) and Maven pom.xml files, which are YAML and XML configuration files, respectively. The TriggerPattern DSL is designed for Java code transformations.": 1,
+    "The commit modifies a GitHub Actions workflow file (maven.yml), which is a YAML configuration file, not Java source code. The TriggerPattern DSL is designed for Java code transformations.": 2,
+    "The change is a version bump for a Maven plugin in a POM file, not a Java code cleanup.": 1,
+    "The change is a version bump for a Maven property in a POM file, not a Java code cleanup.": 1,
+    "The change is a version bump for a GitHub Action in YAML workflow files, not a Java code cleanup.": 1,
+    "The commit modifies a GitHub Actions workflow file (YAML), not Java source code. The TriggerPattern DSL is for Java code transformations.": 2,
+    "The commit modifies a Maven POM file (XML), not Java source code. The TriggerPattern DSL is for Java code transformations.": 2,
+    "The change is an update to a GitHub Actions workflow configuration, not Java code. It involves bumping the version of a GitHub Action, which is outside the scope of Java code cleanups.": 2,
+    "The changes involve updates to GitHub Actions workflow configurations (bumping action versions) and Maven POM files (bumping plugin and dependency versions). These are build/CI/CD configuration changes, not Java code cleanups.": 1,
+    "The change is an update to a GitHub Actions workflow configuration, not Java code. It involves bumping the version of a GitHub Action, which is outside the scope of Java code cleanups. This is identical to Commit 2.": 1,
+    "The commit involves changes to an XML Maven configuration file (`pom.xml`), not Java source code. The TriggerPattern DSL is designed exclusively for Java code transformations.": 1,
+    "The cleanup performed in this commit (replacing explicit type arguments with the diamond operator for `AbstractMap.SimpleEntry` constructors) is identical to the one identified and proposed for Commit 2. To avoid redundancy, no new rule is proposed.": 1,
+    "The change is in a pom.xml file, not a Java source file, and thus cannot be analyzed or transformed by the Java-specific TriggerPattern DSL.": 1,
+    "The change is in a GitHub Actions workflow file (.github/workflows/codeql.yml), not a Java source file, and thus cannot be analyzed or transformed by the Java-specific TriggerPattern DSL.": 1,
+    "The commit modifies a YAML workflow file, not Java code. No Java cleanup rule can be derived.": 1,
+    "The commit modifies YAML workflow files, not Java code. No Java cleanup rule can be derived.": 1,
+    "The commit modifies an XML POM file, not Java code. No Java cleanup rule can be derived.": 1,
+    "The change is a version update in a Maven POM file, which is a build configuration change and not a Java code cleanup. It falls outside the scope of local, semantics-preserving Java transformations.": 2,
+    "The change replaces a direct field access (`context.fSourceFolder`) with a getter method call (`context.getfSourceFolder()`). While this can be a valid refactoring, the semantic preservation cannot be reliably guaranteed by the DSL without knowing the implementation of `getfSourceFolder()`. The getter might introduce side effects, different nullability behavior, or perform complex logic not present in direct field access. Additionally, the specific types (`IPackageFragment`, `CoreException`) are from Eclipse JDT, preventing the creation of self-contained JDK-only examples as required for verification without inventing an unrelated scenario, which would violate the local transformation requirement.": 1,
+    "The commit modifies a Maven pom.xml file to bump a plugin version. This is a build configuration change, not a Java code cleanup.": 1,
+    "The commit modifies a Maven pom.xml file to bump a property version. This is a build configuration change, not a Java code cleanup.": 2,
+    "The commit modifies GitHub Actions workflow YAML files to update an action version. This is a CI/CD configuration change, not a Java code cleanup.": 1,
+    "The commit updates a Maven plugin version in pom.xml, which is a build system change, not a Java code cleanup.": 3,
+    "The commit updates a GitHub Actions workflow configuration file, which is a CI/CD system change, not a Java code cleanup.": 1,
+    "The commit changes a Maven pom.xml file to update a plugin version, which is not a Java code cleanup.": 3,
+    "The commit adds a new Markdown file (CODE_OF_CONDUCT.md), which is not a Java code cleanup.": 1,
+    "The commit modifies a Maven pom.xml file to update a dependency version. This is not a Java code cleanup and cannot be expressed with the TriggerPattern DSL.": 2,
+    "The commit modifies a GitHub Actions workflow YAML file to update an action version. This is not a Java code cleanup and cannot be expressed with the TriggerPattern DSL.": 2
   },
   "perRepository": {
     "https://github.com/eclipse-platform/eclipse.platform.text": {
@@ -1219,9 +1254,9 @@
       "red": 0
     },
     "https://github.com/carstenartur/sandbox": {
-      "totalProcessed": 188,
-      "relevant": 1,
-      "green": 1,
+      "totalProcessed": 242,
+      "relevant": 6,
+      "green": 6,
       "yellow": 0,
       "red": 0
     }
@@ -1421,12 +1456,17 @@
       "date": "2026-11-27",
       "processed": 59,
       "relevant": 0
+    },
+    {
+      "date": "2026-11-28",
+      "processed": 54,
+      "relevant": 5
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-11-27T02:44:38.392Z",
-    "completedAt": "2026-11-27T02:54:06.359245798Z",
-    "durationSeconds": 567,
+    "startedAt": "2026-11-28T02:11:56.595Z",
+    "completedAt": "2026-11-28T02:21:00.904627752Z",
+    "durationSeconds": 544,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
@@ -1437,8 +1477,8 @@
   },
   "timeWindow": {
     "earliestEvaluation": "2026-10-20T02:20:11.033616597Z",
-    "latestEvaluation": "2026-11-27T02:53:57.961002617Z",
+    "latestEvaluation": "2026-11-28T02:20:53.279908061Z",
     "earliestCommitDate": "2010-01-04T11:37:57Z",
-    "latestCommitDate": "2023-06-30T14:47:04Z"
+    "latestCommitDate": "2024-07-15T06:08:56Z"
   }
 }

@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "c3b38a7e426d033b538e5e651d40568862f75b3a7008c164e925bed6734c1147",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$context.fSourceFolder :: instanceof($context, \"example.AbstractEclipseJava\")\n\u003d\u003e\n$context.getfSourceFolder()\n;;",
+  "beforeExample": "package example;\n\n// Dummy interfaces/classes to satisfy compilation without actual Eclipse JDT types\ninterface IPackageFragment { }\ninterface IPackageFragmentRoot {\n    IPackageFragment createPackageFragment(String name, boolean b, Object o);\n}\n\nclass AbstractEclipseJava { \n    // Mimic the field *before* it became private in the commit\n    public IPackageFragmentRoot fSourceFolder \u003d new IPackageFragmentRoot() {\n        @Override\n        public IPackageFragment createPackageFragment(String name, boolean b, Object o) {\n            return null; // Dummy implementation\n        }\n    };\n    // The getter introduced in the commit, which the rule will use\n    public IPackageFragmentRoot getfSourceFolder() {\n        return fSourceFolder;\n    }\n}\n\npublic class MyClass {\n    private AbstractEclipseJava context \u003d new AbstractEclipseJava();\n\n    public void testMethod() {\n        IPackageFragment pack \u003d context.fSourceFolder.createPackageFragment(\"test1\", false, null);\n    }\n}",
+  "afterExample": "package example;\n\n// Dummy interfaces/classes to satisfy compilation without actual Eclipse JDT types\ninterface IPackageFragment { }\ninterface IPackageFragmentRoot {\n    IPackageFragment createPackageFragment(String name, boolean b, Object o);\n}\n\nclass AbstractEclipseJava { \n    public IPackageFragmentRoot fSourceFolder \u003d new IPackageFragmentRoot() {\n        @Override\n        public IPackageFragment createPackageFragment(String name, boolean b, Object o) {\n            return null; \n        }\n    };\n    public IPackageFragmentRoot getfSourceFolder() {\n        return fSourceFolder;\n    }\n}\n\npublic class MyClass {\n    private AbstractEclipseJava context \u003d new AbstractEclipseJava();\n\n    public void testMethod() {\n        IPackageFragment pack \u003d context.getfSourceFolder().createPackageFragment(\"test1\", false, null);\n    }\n}",
+  "negativeExample": "package example;\n\ninterface IPackageFragment { }\ninterface IPackageFragmentRoot {\n    IPackageFragment createPackageFragment(String name, boolean b, Object o);\n}\n\n// A different class with the same field name, but not an instance of AbstractEclipseJava\nclass AnotherClass {\n    public IPackageFragmentRoot fSourceFolder \u003d new IPackageFragmentRoot() {\n        @Override public IPackageFragment createPackageFragment(String name, boolean b, Object o) { return null; }\n    };\n}\n\nclass AbstractEclipseJava { \n    public IPackageFragmentRoot fSourceFolder \u003d new IPackageFragmentRoot() {\n        @Override public IPackageFragment createPackageFragment(String name, boolean b, Object o) { return null; }\n    };\n    public IPackageFragmentRoot getfSourceFolder() { return fSourceFolder; }\n}\n\npublic class MyClassNegative {\n    private AnotherClass otherContext \u003d new AnotherClass();\n\n    public void testDifferentClassFieldAccess() {\n        // This should NOT match because \u0027otherContext\u0027 is not an \u0027AbstractEclipseJava\u0027\n        IPackageFragment pack \u003d otherContext.fSourceFolder.createPackageFragment(\"test1\", false, null);\n    }\n}",
+  "targetHintFile": "field-access-to-getter.sandbox-hint",
+  "sourceCommit": "ba20f09e60fd7ae57cc519dde3612b750cb602bf",
+  "sourceRepo": "https://github.com/carstenartur/sandbox",
+  "sourceEvidence": {
+    "path": "sandbox_encoding_quickfix_test/src/org/sandbox/jdt/ui/tests/quickfix/Java9CleanUpTest.java",
+    "before": "\t\tIPackageFragment pack\u003d context.fSourceFolder.createPackageFragment(\"test1\", false, null);",
+    "after": "\t\tIPackageFragment pack\u003d context.getfSourceFolder().createPackageFragment(\"test1\", false, null);",
+    "diffHunk": "diff --git a/sandbox_encoding_quickfix_test/src/org/sandbox/jdt/ui/tests/quickfix/Java9CleanUpTest.java b/sandbox_encoding_quickfix_test/src/org/sandbox/jdt/ui/tests/quickfix/Java9CleanUpTest.java\nindex 305e078..54ebe8d 100644\n--- a/sandbox_encoding_quickfix_test/src/org/sandbox/jdt/ui/tests/quickfix/Java9CleanUpTest.java\n+++ b/sandbox_encoding_quickfix_test/src/org/sandbox/jdt/ui/tests/quickfix/Java9CleanUpTest.java\n@@ -375,7 +375,7 @@\n \t@ParameterizedTest\n \t@EnumSource(ExplicitEncodingPatterns.class)\n \tpublic void testExplicitEncodingParametrized(ExplicitEncodingPatterns test) throws CoreException {\n-\t\tIPackageFragment pack\u003d context.fSourceFolder.createPackageFragment(\"test1\", false, null);\n+\t\tIPackageFragment pack\u003d context.getfSourceFolder().createPackageFragment(\"test1\", false, null);\n \t\tICompilationUnit cu\u003d pack.createCompilationUnit(\"E1.java\", test.given, false, null);\n \t\tcontext.enable(MYCleanUpConstants.EXPLICITENCODING_CLEANUP);\n \t\tcontext.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);\n"
+  },
+  "category": "Encapsulation",
+  "summary": "Replaces direct field access to `fSourceFolder` with `getfSourceFolder()` for instances of `AbstractEclipseJava`.",
+  "sourceVersion": "8",
+  "status": "READY_FOR_REVIEW",
+  "discoveredAt": "2026-11-28T02:18:11.409501601Z",
+  "ruleFingerprint": "sha256:5a979eadc80a4db9fda992eb4458be244e12595a6e2eb53e025f6866064bd9e6",
+  "behaviorFingerprint": "sha256:39dd912547995080cac7dcd897eb5121bc94427729ccf5edefddab3bd825439c",
+  "verification": {
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Example rewrite verified; semantic review still required",
+    "verifiedAt": "2026-11-28T02:21:19.019595994Z",
+    "verifierVersion": "9",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-11-28T02:21:19.020537135Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-11-28T02:21:19.020564655Z"
+    }
+  ]
+}

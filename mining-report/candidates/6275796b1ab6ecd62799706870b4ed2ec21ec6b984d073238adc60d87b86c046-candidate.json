@@ -26,7 +26,7 @@
     "successful": false,
     "stage": "AFTER_PARSE",
     "message": "Java compile error at line 10: org.eclipse.debug cannot be resolved to a variable",
-    "verifiedAt": "2026-11-27T02:54:24.602915467Z",
+    "verifiedAt": "2026-11-28T02:21:18.909586280Z",
     "verifierVersion": "9",
     "matches": 0,
     "replacements": 0
